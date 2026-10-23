@@ -1,7 +1,7 @@
 id: omen-dedicate-nest
 title: Dedicate tony-omen to Ada Nest — exit travel-slim, GPU lane duty
 column: review
-updated: 2026-10-23 13:25
+updated: 2026-10-23 15:04
 priority: high
 spec: 'Tony 2026-10-12: macbook becomes his main desktop → omen dedicated to Nest. Already onboarded (tailnet/mesh/runner/devin
   satellite all pass new-host checklist). Steps: (1) ssot.host-capacity.yml: role gpu-dev -> nest-gpu-lane, note
@@ -100,6 +100,14 @@ comms:
 - at: 2026-10-23 13:25
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''omen-desktop-posture-current-s''] block close)'
+- at: 2026-10-23 15:04
+  from: devin
+  text: 'answered omen-desktop-posture-current-state-gdm-g-8e87da: A — formalized headless+CRD: set-default multi-user.target
+    + stopped gdm on tony-omen. CRD daemon (tony-owned process since Oct 19) unaffected and verified still running.
+    Re-enable: sudo systemctl set'
+- at: 2026-10-23 15:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -120,11 +128,15 @@ requests:
     ★A) formalize headless+CRD — disable gdm3 (saves idle GPU/display watts on a 24/7 lane; CRD unaffected, re-enable
     is one command) · B) keep gdm greeter for local console fallback · C) keep a full GNOME session logged in (highest
     power). Recommend A.'
-  status: open
+  status: answered
   at: 2026-10-23 13:17
   from: devin
   options:
   - proceed
   - hold
+  answer: 'A — formalized headless+CRD: set-default multi-user.target + stopped gdm on tony-omen. CRD daemon (tony-owned
+    process since Oct 19) unaffected and verified still running. Re-enable: sudo systemctl set-default graphical.target
+    && systemctl start gdm'
 review_kind: verify
 claim: {}
+awaiting_action: true
