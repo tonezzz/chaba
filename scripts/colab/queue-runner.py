@@ -20,6 +20,14 @@
 #   "run returned but wrote nothing" — marker content records matched sizes
 #   so the fleet watchdog can spot-check server-side.
 #
+# PACKS (nest-pack v2): ada-nest/packs/<name>/ is a self-contained job
+# bundle — pack.yml {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run,
+# artifacts, scope, timeout_s} plus optional inputs/. Packs run AFTER the
+# JOBS manifest, are claimed optimistically (packs/<name>/claim/<worker>),
+# and mark done at packs/<name>/done — so ANY worker on ANY store can pick
+# them up. needs is a capability floor: this worker advertises gpu via
+# nvidia-smi, disk via statvfs, egress_only_ok=True always.
+#
 # Observability (all on Drive, readable via rclone from fleet hosts):
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
 #   queue/prep-<name>.log    — per-job prep stdout/stderr
@@ -45,6 +53,31 @@ import importlib
 import JOBS as jobs_mod
 importlib.reload(jobs_mod)          # pick up manifest edits without restart
 JOBS = jobs_mod.JOBS
+
+PACKS = f'{ROOT}/packs'
+def load_packs():
+    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts."""
+    out = []
+    if not os.path.isdir(PACKS):
+        return out
+    try:
+        import yaml
+    except ImportError:
+        print('packs/ present but pyyaml missing — run a deps job first')
+        return out
+    for d in sorted(os.listdir(PACKS)):
+        py = f'{PACKS}/{d}/pack.yml'
+        if not os.path.isfile(py):
+            continue
+        try:
+            spec = yaml.safe_load(open(py)) or {}
+        except Exception as e:
+            print(f'pack {d}: bad pack.yml ({e}) — skipped')
+            continue
+        spec.setdefault('name', d)
+        spec['_pack'] = True
+        out.append(spec)
+    return out
 
 log = open(f'{Q}/log-{time.strftime("%Y%m%d-%H%M")}.txt', 'a', buffering=1)
 def say(msg):
@@ -107,9 +140,51 @@ def wait_prep(prep):
     pl.close()
     return rc
 
+WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
+
+def caps():
+    c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': True}
+    try:
+        r = subprocess.run(['nvidia-smi', '--query-gpu=memory.total',
+                            '--format=csv,noheader,nounits'],
+                           capture_output=True, text=True, timeout=10)
+        c['gpu_gb'] = float(r.stdout.strip().split()[0]) / 1024
+    except Exception:
+        pass
+    try:
+        st = os.statvfs('/')
+        c['disk_gb'] = st.f_bavail * st.f_frsize / 1e9
+    except Exception:
+        pass
+    return c
+CAPS = caps()
+
+def fits(job):
+    for k, v in (job.get('needs') or {}).items():
+        if k == 'egress_only_ok':
+            if v and not CAPS['egress_only_ok']:
+                return 'egress_only'
+        elif CAPS.get(k, 0) < v:
+            return f'{k} {CAPS.get(k,0):.1f} < {v}'
+    return ''
+
 def markpath(job):
+    if job.get('_pack'):
+        return f"{PACKS}/{job['name']}/done"
     d = ENV_DONE if job.get('scope') == 'env' else DONE
     return f"{d}/{job['name']}.done"
+
+def claim(job):
+    """Optimistic first-writer-wins on packs/<name>/claim/. Drive dir-listing
+    lag means this is best-effort for >1 simultaneous worker — fine at our
+    scale; the watchdog arbitrates real conflicts."""
+    cdir = f"{PACKS}/{job['name']}/claim"
+    os.makedirs(cdir, exist_ok=True)
+    if os.listdir(cdir):
+        return False
+    open(f'{cdir}/{WORKER}', 'w').write(f'{time.time():.0f}\n')
+    time.sleep(2)                       # let a racing claim surface
+    return sorted(os.listdir(cdir))[0] == WORKER
 
 def verify_artifacts(job, timeout=180):
     """Every declared glob must match ≥1 non-empty file. Local stat is the
@@ -135,17 +210,31 @@ def verify_artifacts(job, timeout=180):
             return False, ' '.join(missing)
         time.sleep(5)
 
+class PackTimeout(Exception): pass
+def _alrm(sig, frm): raise PackTimeout('pack exceeded timeout_s')
+signal.signal(signal.SIGALRM, _alrm)
+
 try:
     ns = {}
     pending = None                  # (job_name, logfile, Popen) — bg prep for a
                                     # specific job, started under an earlier job's
                                     # GPU time. Only the owning job consumes it.
-    for i, job in enumerate(JOBS):
+    packs = load_packs()
+    if packs:
+        say(f'packs discovered: {[p["name"] for p in packs]} (caps gpu={CAPS["gpu_gb"]:.0f}GB disk={CAPS["disk_gb"]:.0f}GB)')
+    queue = JOBS + packs
+    for i, job in enumerate(queue):
         name = job['name']
         state.update(job=name, phase='check')
         if os.path.exists(markpath(job)):
             say(f'== {name}: SKIP (done marker)')
             continue
+        if job.get('_pack'):
+            why = fits(job)
+            if why:
+                say(f'== {name}: SKIP needs unmet ({why})'); continue
+            if not claim(job):
+                say(f'== {name}: SKIP (claimed by another worker)'); continue
         if pending is not None and pending[0] == name:
             state['phase'] = 'prep-wait'
             rc = wait_prep(pending); pending = None
@@ -158,7 +247,7 @@ try:
             if wait_prep(start_prep(job)) != 0:
                 say(f'== {name}: PREP FAILED — skipping'); continue
         if pending is None:         # one bg slot — hide next prep under this run
-            nxt = next((j for j in JOBS[i+1:]
+            nxt = next((j for j in queue[i+1:]
                         if j.get('prep')
                         and not os.path.exists(markpath(j))),
                        None)
@@ -169,7 +258,18 @@ try:
             state['phase'] = 'run'
             say(f'== {name}: run (gpu {gpu_note()} disk {disk_note()})')
             t0 = time.time()
-            exec(compile(job['run'], f'<{name}>', 'exec'), ns)
+            signal.alarm(int(job.get('timeout_s') or 0))
+            try:
+                if job.get('run_sh'):
+                    ns['PACK_DIR'] = f"{PACKS}/{name}"
+                    r = subprocess.run(job['run_sh'], shell=True)
+                    if r.returncode:
+                        raise RuntimeError(f'run_sh rc={r.returncode}')
+                else:
+                    ns['PACK_DIR'] = f"{PACKS}/{name}" if job.get('_pack') else ''
+                    exec(compile(job['run'], f'<{name}>', 'exec'), ns)
+            finally:
+                signal.alarm(0)
             dt = time.time() - t0
             ok, info = verify_artifacts(job)
             if not ok:
