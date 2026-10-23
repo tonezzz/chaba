@@ -1,0 +1,18 @@
+id: replace-stale-michael-dev-llat-on-tony-o-ecaba3
+title: Replace stale michael-dev LLAT on tony-omen
+column: backlog
+updated: 2026-10-23 20:46
+action:
+  type: manual
+ref: OPS-0804
+comms:
+- at: 2026-10-23 20:46
+  from: devin
+  text: key-watch monitor (SEC-0499, completed) verified that the developer Home Assistant long-lived access token
+    used from tony-omen is stale (HTTP 401). This card is credential remediation, not monitor implementation. Identify
+    the exact consumer/service and secret-file path without printing token values; ask Tony to mint a replacement
+    LLAT in Home Assistant and securely install it on tony-omen; then verify the intended consumer returns 200 and
+    no unrelated services were affected. Do not put token val
+- at: 2026-10-23 20:46
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
