@@ -47,6 +47,45 @@ def api(method, route, data=None, raw=None, ctype="application/json", filename=N
 
 state = json.load(open(STATE)) if os.path.exists(STATE) else {"media": {}}
 
+# --- activity CPT dedupe (card wp-activity-cpt-timeline-links) ----------
+# Tool executions (renders/translate) are durable `activity` posts — a
+# journal media row whose url is a post's artifact_url, or that carries
+# the relay-stamped event_id, renders a link to the post instead of
+# re-uploading + re-inlining the media (nothing stored twice).
+def _act_norm(u):
+    u = (u or "").strip()
+    u = re.sub(r"^https?://boards\.h3\.gizmo-thailand\.com",
+               "https://boards.surf-thailand.com", u)
+    return u.split("?", 1)[0]  # relay-img URLs can carry query junk
+
+def load_activity_maps():
+    """({artifact_url: (link, title)}, {event_id: (link, title)}) over
+    the most recent activity posts — failures degrade to empty maps so a
+    WP outage can't wedge the timeline (items just render as before)."""
+    by_url, by_event = {}, {}
+    for page in range(1, 6):  # cap 500 recent rows
+        s, r = api("GET", f"activity&status=private&per_page=100&page={page}")
+        if s != 200 or not isinstance(r, list) or not r:
+            break
+        for p in r:
+            meta = p.get("meta") or {}
+            link = _act_norm(p.get("link")) or p.get("link") or ""
+            title = html_unescape(
+                (p.get("title") or {}).get("rendered") or "activity")
+            au = _act_norm(meta.get("artifact_url"))
+            if au:
+                by_url[au] = (link, title)
+            ev = (meta.get("event_id") or "").strip()
+            if ev:
+                by_event[ev] = (link, title)
+    return by_url, by_event
+
+def html_unescape(s):
+    return s.replace("&#8217;", "'").replace("&#8211;", "-") \
+            .replace("&#8212;", "—").replace("&amp;", "&")
+
+ACT_BY_URL, ACT_BY_EVENT = load_activity_maps()
+
 ICON = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>"
         "<path d='M256 32C114.6 32 0 125.1 0 240c0 49.6 21.4 95 57 130.7C44.5 421.1 2.7 466 2.2 466.5"
         "c-2.2 2.3-2.8 5.7-1.5 8.7S4.8 480 8 480c66.3 0 116-31.8 140.6-51.4 32.7 12.3 69 19.4 107.4 19.4"
@@ -184,19 +223,29 @@ for lane, (chat_id, post_id) in LANES.items():
             if txt.strip().startswith('{\n  "tool"'): continue  # skip internal tool chatter
             desc = esc(txt).replace("\n", "<br>")
         elif kind in ("image", "file", "audio", "video", "sticker"):
-            fpath = find_media(d.get("message_id"))
-            if fpath and os.path.getsize(fpath) == 0:
-                fpath = None  # zero-byte capture — nothing to upload
-            murl = upload_media(fpath) if fpath else d.get("url")
-            if murl:
-                if kind == "image" or (murl.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp"))):
-                    desc = f'<img src="{murl}" style="max-width:100%" loading="lazy">'
-                else:
-                    desc = f'<a href="{murl}">attachment ({kind})</a>'
+            # activity dedupe — a journal row that already produced an
+            # activity post links it instead of re-inlining the media
+            act = (ACT_BY_EVENT.get(str(d.get("event_id") or ""))
+                   or ACT_BY_URL.get(_act_norm(d.get("url"))))
+            if act:
+                link, atitle = act
+                desc = f'🔧 <a href="{esc(link)}">{esc(atitle)}</a>'
                 if d.get("text"):
                     desc += "<br>" + esc(d["text"])
             else:
-                desc = f"[{kind}]"
+                fpath = find_media(d.get("message_id"))
+                if fpath and os.path.getsize(fpath) == 0:
+                    fpath = None  # zero-byte capture — nothing to upload
+                murl = upload_media(fpath) if fpath else d.get("url")
+                if murl:
+                    if kind == "image" or (murl.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp"))):
+                        desc = f'<img src="{murl}" style="max-width:100%" loading="lazy">'
+                    else:
+                        desc = f'<a href="{murl}">attachment ({kind})</a>'
+                    if d.get("text"):
+                        desc += "<br>" + esc(d["text"])
+                else:
+                    desc = f"[{kind}]"
         if not desc: continue
         items.append({"icon": ICON, "date": date_s, "label": sender,
                       "description": desc, "isAddTinyEditor": False})

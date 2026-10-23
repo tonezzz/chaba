@@ -944,6 +944,28 @@ jobs:
     --since ''2026-10-13 16:00'' --session 183e9c8d7e. condition_path keeps the
     unit skipped until the script lands in the served checkout on merge.
     Added 2026-10-15.'
+- id: activity-posts
+  name: Ada tool executions -> WP activity posts
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/activity-posts.py
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/activity-posts.py'
+  note: 'card wp-activity-cpt-timeline-links (ADA-0650) — tails journalctl
+    --user -u ada-kk/ada-ha-tony/ada-michael function_call received/result
+    pairs for the emitters allowlist (renders + translate/vision;
+    ACTIVITY_TOOLS env overrides). One private activity CPT child per call
+    (status ok|failed|blocked — received-without-result >15min = blocked,
+    i.e. killed/refused mid-turn) under a kind=session parent per
+    lane+session. Dedup = deterministic slug act-<md5> via ?slug= lookup;
+    state ~/.local/share/ada/activity-posts-state.json holds the since-cursor
+    + in-flight pending calls. Requires chaba-boards v0.8.0 deployed — until
+    it lands, POSTs 404 and the cursor holds (no events lost).
+    line-chat-timeline.py links these posts via artifact_url/event_id.
+    condition_path keeps the unit skipped until the script lands in the
+    served checkout on merge. Added 2026-10-23.'
 - id: wp-comment-sync
   name: WP member comments -> suggestion lanes
   host: idc03

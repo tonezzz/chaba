@@ -1,0 +1,119 @@
+title: activity CPT + activity-posts writer — tool executions as durable boards items; timeline links instead of duplicates
+id: 2026-10-23-activity-cpt-timeline-links
+card: wp-activity-cpt-timeline-links
+ref: ADA-0650
+date: 2026-10-23
+status: implemented-in-worktree (plugin v0.8.0 + writer + timeline dedupe + rendered units; live only after plugin deploy + branch merge)
+summary: |
+  Tony 2026-10-14: add an incident/activity post type to boards WP so
+  tool executions (image render, video render, translate, …) become
+  durable items, and point the timeline at these items so nothing is
+  stored twice. Failed/blocked calls land too — that IS the incident
+  report (killed/refused turns, e.g. the 2026-10-14 14:36
+  restart-mid-turn, leave durable evidence, not just a journal line).
+
+  All three board requests answered 2026-10-14 with the starred
+  defaults: CPT name `activity` (status field marks incidents),
+  emitters = renders + translate only, visibility = per-lane private
+  (member sees own lane, same model as /chat/line/*).
+
+design:
+  cpt: |
+    `activity` in chaba-boards v0.8.0 — hierarchical like news:
+    parent = session/turn (kind=session, slug act-s-<lane>-<sid>),
+    children = one per tool call (kind=tool, slug
+    act-<md5(lane|session|call)>). has_archive /wp/activity/. REST-
+    writable meta: kind/tool/lane/status(ok|failed|blocked)/model/
+    cost_usd/artifact_url/ref_url/prompt_excerpt/session_id/chat_id/
+    duration_s/event_id/occurred_at/error (error keeps raw JSON like
+    ops_error.raw_result). Admin list: artifact thumb + status badge +
+    tool/lane/model/secs/$ columns, occurred_at-desc default sort.
+    Single view: status badge + artifact media + prompt blockquote +
+    params table + error <details>; session parents list their children.
+    [chaba_activity lane= status= limit=] renders the per-lane feed —
+    put it on a per-lane private page to gate visibility the same way
+    /chat/line/* pages do.
+  writer: |
+    scripts/ada/activity-posts.py on idc03 (activity-posts.timer every
+    15min, ssot.jobs.yml). Journald sweep — NOT an ada-voice hook —
+    tails `journalctl --user -u ada-kk|ada-ha-tony|ada-michael` and joins
+    `function_call received`/`result` pairs on (lane, session, call id)
+    for the emitters allowlist (regex: ada_render_image|ada_render_video|
+    page_snapshot|.*translat.*|.*vision.*; ACTIVITY_TOOLS env replaces
+    it). The sweep was chosen over the card's tool_runner post-call hook
+    because it needs no ada-voice change AND it catches what a hook
+    cannot: a `received` that never got a `result` (service restart,
+    provider drop, refusal mid-turn) is emitted as status=blocked after
+    PENDING_GRACE_S=900 — pending calls persist in the state file so the
+    script's own restarts don't lose them. Confirm-gate and ACL denials
+    classify as blocked (the call did not run — still evidence).
+  fields: |
+    artifact_url pulled from result payload (preferred keys
+    artifact_url/output_url/image_url/video_url/media_url/url/file_url/
+    download_url, then any URL string, /relay-img/ and
+    /wp-content/uploads/ preferred); prompt_excerpt from call args
+    (prompt|text|instruction|description|query, clipped 400); duration_s
+    from result else result_ts-received_ts; model/cost_usd/ref_url/
+    chat_id extracted defensively from args+result. event_id =
+    <lane>:<session>:<call> stored in meta — the relay can stamp the
+    same id into journal rows later for a cheaper timeline join.
+  session_parents: |
+    Upserted by slug act-s-<lane>-<sid> before first child; parent meta
+    status escalates to the worst child status (ok < blocked < failed)
+    but never downgrades. Title "Activity — session <sid> <lane>".
+    KNB-0659 hierarchy: the timeline links the post once and tool
+    events nest under the session instead of polluting top-level feeds.
+  timeline_dedupe: |
+    scripts/ada/line-chat-timeline.py fetches the recent activity posts
+    (GET /wp/v2/activity?status=private, ≤500) once per run and builds
+    artifact_url → permalink and event_id → permalink maps. A journal
+    media row matching either renders `🔧 <a>Activity — …</a>` instead
+    of upload_media + inline <img>. URL matching normalizes the
+    boards.h3→surf host and strips query junk; a WP outage degrades to
+    empty maps (items render as before — the timeline never wedges).
+  privacy: |
+    activity posts are status=private — member-visible per lane like
+    /chat/line/*; anonymous 404. artifact media stays public-by-URL
+    under /relay-img/arch/ — same caveat as wp-content/uploads/.
+
+dedup: |
+  Child slug act-<md5(lane|session|call)[:16]>; parent slug
+  act-s-<lane>-<sid>. WP lookup GET /wp/v2/activity?slug=<slug>
+  &status=private,archived before every create — idempotent across
+  restarts and the 5min journal refetch overlap; no local ledger needed.
+  State file ~/.local/share/ada/activity-posts-state.json holds only the
+  since-cursor and the pending (received-not-resulted) call map.
+
+files:
+  - integrations/wp-boards/chaba-boards.php      # v0.8.0 — activity CPT + meta + columns + views + [chaba_activity]
+  - scripts/ada/activity-posts.py                # the sweep writer (--dry-run/--since/--session/--lane/--journal-file/--selftest)
+  - scripts/ada/line-chat-timeline.py            # artifact_url/event_id dedupe -> permalink link
+  - docs/ssot/infrastructure/ssot.jobs.yml       # job activity-posts (idc03, every 15m)
+  - systemd/generated/idc03/activity-posts.{service,timer}  # render-jobs.py output
+  - docs/ssot/apps/ssot.wp-boards.yml            # post_types/title_standard/writers + v0.8.0 note
+
+deploy:
+  - "chaba-boards v0.8.0 -> boards WP via scripts/wp-boards/deploy-plugin-zip.sh
+     (needs Tony approval — prod change; until it lands POSTs 404 and the
+     writer's cursor holds so nothing is lost)"
+  - "merge this branch; condition_path arms the idc03 timer once the
+     script lands in the served checkout"
+  - "optional per-lane member pages embedding [chaba_activity lane=X]"
+
+verify: |
+  php -l integrations/wp-boards/chaba-boards.php -> clean;
+  python3 scripts/ada/activity-posts.py --selftest -> parses a fixture
+  journal (ok / failed / allowlist-skip / pending->blocked paths);
+  python3 -m py_compile on both scripts; render-jobs.py --check +
+  --host idc03 render clean. Live path (post-deploy): POSTs return 201,
+  children visible under /wp/activity/, a journal row whose url matches
+  an artifact_url renders the 🔧 link in the lane timeline_block.
+
+followups:
+  - "media_receipt fold-in (KNB-0657) — media-* receipts become activity
+    children kind=media_receipt; rollup replaced by a WP archive view.
+    MDDB receipts stay write-truth until then."
+  - ada-voice tool_runner may later stamp event_id into journal rows
+    (cheap join); the artifact_url match already covers today.
+  - emitters allowlist widening to all tools = one env change
+    (ACTIVITY_TOOLS) once the first lanes prove the signal-to-noise.
