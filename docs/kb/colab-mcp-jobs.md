@@ -60,7 +60,12 @@ kanban cards classified in 2x50 parallel batches (204s+296s), published as
   `os._exit(0)` crashes just the kernel — frees orphaned GPU mem while
   `/tmp` weights + Drive mount (VM-level) survive.
 - Drive FUSE writes flush async — files may `cp` locally but not appear
-  to rclone for ~60s; poll before archiving.
+  to rclone for ~60s; poll before archiving. Multi-GB writes are worse:
+  `tar` can exit 0 while DriveFS is still uploading in the background —
+  a runtime restart before the remote listing shows the file LOSES it
+  (observed: 13GB hf-hub.tar.zst written, VM restarted, never landed).
+  "Durable" means visible in `rclone lsf` from a fleet host, not present
+  in the local mount. Keep the VM alive until big artifacts verify.
 - `torch_dtype=` (not `dtype=`) is the diffusers kwarg; the wrong one is
   silently ignored and loads fp32 (slow + big).
 - **Poll out-of-band, not through MCP** (verified 2026-10-23): while the
