@@ -21,10 +21,11 @@
     #freshness.fail { color: var(--fail); border-color: var(--fail); }
     .topbar .spacer { flex: 1; }
     #refresh-status { color: var(--muted); font-size: 0.8rem; }
-    #refresh { background: var(--card); color: var(--text); border: 1px solid var(--border);
+    #refresh, #deep { background: var(--card); color: var(--text); border: 1px solid var(--border);
                border-radius: 0.5rem; padding: 0.45rem 1rem; font-size: 0.85rem; cursor: pointer; }
-    #refresh:hover:not(:disabled) { border-color: var(--link); }
-    #refresh:disabled { opacity: 0.5; cursor: default; }
+    #refresh:hover:not(:disabled), #deep:hover:not(:disabled) { border-color: var(--link); }
+    #refresh:disabled, #deep:disabled { opacity: 0.5; cursor: default; }
+    #deep { color: var(--muted); }
     .wrap { padding: 0 1.5rem; max-width: 1400px; }
     .meta { color: var(--muted); font-size: 0.8rem; margin: 0.8rem 0 0.4rem; }
     .summary { display: flex; gap: 0.7rem; flex-wrap: wrap; margin: 0.8rem 0; }
@@ -88,6 +89,7 @@
     <span id="freshness" title="Age of the generated report data">…</span>
     <span class="spacer"></span>
     <span id="refresh-status"></span>
+    <button id="deep" type="button" title="Re-run host audits + every report node (slow, ~10–20 min)">Deep rescan</button>
     <button id="refresh" type="button">Refresh now</button>
   </div>
   <div class="wrap">
@@ -108,6 +110,6 @@
       <div id="report"></div>
     </details>
   </div>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>
