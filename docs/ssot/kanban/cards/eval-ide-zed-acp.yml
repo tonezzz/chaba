@@ -1,0 +1,21 @@
+id: eval-ide-zed-acp
+title: 'eval: install Zed + wire opencode over ACP (free IDE-ish lane)'
+column: backlog
+updated: 2026-10-23 17:09
+brief: Zed editor has a built-in agent panel; opencode speaks ACP. Zed+opencode = closest free analog to an agentic
+  IDE.
+priority: medium
+program: chaba-ci
+tags:
+- eval
+- free-lane
+- ide
+spec: '~30-60min. 1) Install Zed (flatpak or zed.dev install script). 2) In Zed settings, configure an external
+  ACP agent pointing at opencode. 3) Open a repo in Zed, send the agent an o2-style YAML chore. Accept when: agent
+  panel responds and edits files via opencode+LiteLLM.'
+note: Needs LITELLM_KEY env for opencode (already in ~/.config/secrets/litellm-chaba.env). Part of OPS-0792.
+ref: OPS-0796
+comms:
+- at: 2026-10-23 17:09
+  from: devin
+  text: card captured via board-api
