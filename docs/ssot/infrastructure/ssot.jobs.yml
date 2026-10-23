@@ -398,6 +398,21 @@ jobs:
     so an emptied serve config was invisible until a scenario probe caught
     it 2026-10-20. --alert drops one deduped focus-inbox file
     (serve-config-<host>.yml); self-heals the alert file on recovery.'
+- id: podman-lock-watchdog
+  name: Podman lock-wedge watchdog (probe + stale-lock self-heal)
+  host: tony_dell
+  dispatch: systemd
+  every: 2min
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/podman-lock-watchdog.py
+  note: 'card podman-lock-wedge-watchdog (OPS-0726); runbook
+    docs/ssot/jobs/infrastructure/2026-10-16-tony-dell-podman-lock-wedge.yml.
+    Probes `timeout 8 podman ps`; on 3 consecutive failures with no live
+    podman/docker CLI procs (conmon/pause excluded) it clears
+    /dev/shm/libpod_rootless_lock_$UID + dead pause.pid + alive.lck,
+    runs `podman system renumber`, re-probes, and alerts chaba-admin +
+    LINE on both recovery and failure-to-recover. Monitors the local
+    rootless podman — must stay on tony_dell.'
 - id: kraut-rain-watch
   name: Kraut rain-event watch (mn-ha)
   host: idc03
