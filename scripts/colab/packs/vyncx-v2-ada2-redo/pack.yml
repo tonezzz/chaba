@@ -1,0 +1,65 @@
+# vyncx-v2-ada2-redo — vx9s-ada-2 rendered SILENT (0.0dB) at step 32
+# and 64: deterministic ref-length-dependent failure on the longest
+# SENTS entry with the 9s ref (the 17s ref produced audio for it, but
+# that ref bleeds content). This pack attacks it three ways and lets
+# the CER leaf pick: (a) one more full-sentence attempt at step=48,
+# (b) sentence split at the clause boundary, generated as two halves,
+# (c) halves concatenated with a 250ms gap — the ship-it candidate.
+name: vyncx-v2-ada2-redo
+needs:
+  gpu_gb: 3
+  disk_gb: 4
+venv: true        # PEP-668 fleet hosts (dell/omen); ignored on Colab
+timeout_s: 900
+artifacts:
+  - packs/vyncx-v2-ada2-redo/out/vx9s2-ada-2.wav
+  - packs/vyncx-v2-ada2-redo/notes.md
+prep: |
+  pip install -q torch
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile librosa matplotlib transformers audioop-lts torchcodec
+  pip install -q --no-deps 'numpy>=2'
+run: |
+  import time, os
+  import numpy as np
+  import torch
+  import soundfile as sf
+  from f5_tts_th.tts import TTS
+  IN = f'{PACK_DIR}/inputs'
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  FULL = "อย่าลืมพกร่มไปด้วยเพราะพยากรณ์อากาศบอกว่าฝนจะตกตอนเย็น"
+  HALVES = ["อย่าลืมพกร่มไปด้วย",
+            "เพราะพยากรณ์อากาศบอกว่าฝนจะตกตอนเย็น"]
+  t0 = time.time()
+  tts = TTS(model='v2')
+  print('vyncx loaded %.0fs gpu=%.1fGB' % (time.time()-t0,
+        torch.cuda.memory_allocated()/1e9), flush=True)
+  rt = open(f'{IN}/ref_text_9s.txt', encoding='utf-8').read().strip()
+
+  def gen(text, out, step):
+      t0 = time.time()
+      w = tts.infer(ref_audio=f'{IN}/ada-ref-9s.wav', ref_text=rt,
+                    gen_text=text, step=step, cfg=2.0, speed=1.0)
+      sf.write(out, w, 24000)
+      peak = float(np.abs(w).max()) if len(w) else 0.0
+      print(f'{os.path.basename(out)} step={step} dur={len(w)/24000:.2f}s'
+            f' peak={peak:.3f} ({time.time()-t0:.0f}s)', flush=True)
+      return w
+
+  notes = ['# vyncx-v2-ada2-redo', '']
+  # (a) full sentence, step=48 — confirm/deny silence repro
+  w = gen(FULL, f'{OUT}/vx9s2-ada-2-full48.wav', 48)
+  notes.append(f"- full@48: dur={len(w)/24000:.2f}s "
+               f"peak={float(np.abs(w).max()):.3f}")
+  # (b) halves
+  parts = [gen(t, f'{OUT}/vx9s2-ada-2-part{i}.wav', 32)
+           for i, t in enumerate(HALVES)]
+  # (c) joined candidate — 250ms breath gap
+  gap = np.zeros(int(24000 * 0.25), dtype='float32')
+  joined = np.concatenate([parts[0], gap, parts[1]]).astype('float32')
+  sf.write(f'{OUT}/vx9s2-ada-2.wav', joined, 24000)
+  notes.append(f"- joined: dur={len(joined)/24000:.2f}s "
+               f"peak={float(np.abs(joined).max()):.3f} "
+               "(part0 + 250ms + part1)")
+  open(f'{PACK_DIR}/notes.md', 'w').write('\n'.join(notes) + '\n')
+  print('vyncx-v2-ada2-redo complete', flush=True)
