@@ -9,7 +9,7 @@ lab:
   review_by: '2026-10-25'
 note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-*
   cards if it promotes.'
-updated: 2026-10-23 15:05
+updated: 2026-10-23 15:51
 comms:
 - at: 2026-10-06 06:45
   from: tony
@@ -101,6 +101,13 @@ comms:
 - at: 2026-10-23 15:05
   from: chaba
   text: 'display watchdog: probes healthy — resumed devin-task-20261023-082053-lab-bench-local-yolo-object-de (SIGCONT)'
+- at: 2026-10-23 15:51
+  from: devin
+  text: '[devin] SCORECARD (22 labeled snaps: 20 vms-snap/mn01 + 2 tony-ha cam; 5p/7v/1pkg/9none) — yolov8n@cpu
+    e2e p50 139ms p95 184ms 77% · yolov8n@cuda p50 40ms p95 63ms 77% · yolo11n@cpu p50 157ms p95 226ms 73% · yolo11n@cuda
+    p50 49ms p95 62ms 73%. Gates: p50<800ms ✓ (all, 16-20x headroom), >=70% ✓ (all). VERDICT: PROMOTE to cms-auto-cctv-*
+    — pick yolov8n.onnx + CUDAExecutionProvider on tony-omen. Caveats: (1) package class structurally undetectable
+    with stock COCO — needs custom class or drop from s'
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).
