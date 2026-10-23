@@ -2,7 +2,7 @@ title: Artifact Lifecycle Standard
 subtitle: How old code, docs, reports, cards and config age out safely — detect, classify, retire, never lose knowledge
 icon: ♻️
 status: operational
-updated: '2026-10-11'
+updated: '2026-10-23'
 source_of_truth: true
 owner: tony
 
@@ -40,10 +40,15 @@ detect:
   - "ssot-validate: schema + card_schema warnings flag stale records."
   - "cms-regen-sweep: command-generators that cannot run surface as
     last_status=error/rejected on the registry doc."
-  - "NEW (card stale-report-regen-lane leftovers + this standard):
-    dead-code lint — scripts with zero references from jobs/cards/tools/
-    READMEs, and docs with no inbound links older than ~90d land in the
-    digest as an Orphans section instead of invisibly rotting."
+  - "standard-drift Orphans section (built 2026-10-23, card
+    corpus-orphan-detector): scripts/**/*.py|sh unreachable from the
+    declared surfaces (ssot.jobs exec, tool decls, cards, AGENTS.md,
+    systemd units, .husky, workflows) via a script->script graph walk —
+    qualified paths, basenames, import/python -m module refs, slug stems,
+    dir prefixes, globs; plus docs/{kb,reports,assessments} files with
+    zero inbound doc/README/AGENTS links AND no git touch in 90d.
+    Ratcheted via scripts/ada/orphans-baseline.json — new orphans are
+    flagged NEW, stale baseline entries flagged for removal."
 
 decide:
   superseded: has a live successor — tombstone it (status + superseded_by
@@ -75,5 +80,6 @@ references:
   - docs/ssot/ssot.file-control.yml (SSOT naming/archive/size rules)
   - docs/ssot/apps/ssot.apps.cms-reports.yml (report contract + report_first_protocol)
   - scripts/ada/standard-drift-digest.py + cms-regen-sweep.py (detectors)
+  - scripts/ada/orphans-baseline.json (Orphans ratchet baseline)
   - scripts/ada/report-distill.py DEAD_STATUS set
   - docs/ssot/kanban/cards/stale-report-regen-lane.yml (first findings)
