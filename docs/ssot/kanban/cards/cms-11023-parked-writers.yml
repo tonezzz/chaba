@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: review
-updated: 2026-10-22 20:07
+updated: 2026-10-23 08:01
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -80,6 +80,9 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261022-193424-sweep-every-unit-env-script-ar on
     tony-omen — if the work was never pushed it may be gone'
+- at: 2026-10-23 08:01
+  from: chaba
+  text: 'request-sweep: 2 request(s) unanswered >12h — escalation pushed'
 action:
   type: dispatch
   status: done
@@ -100,6 +103,7 @@ requests:
   options:
   - proceed
   - hold
+  escalated_at: 2026-10-23 08:01
 - id: delete-parked-collections-on-11023-all-m-ba0de1
   ask: 'Delete parked collections on :11023? All migrated writers verified repointed (bench-jev/ops-health/flood-report/flood-alert
     docs now land :11027; parked copies frozen). 15 collections to delete on :11023: ada-cms-pages(529), ada-cms-pages-kk(10),
@@ -114,5 +118,6 @@ requests:
   - delete now
   - wait for window (say how many days)
   - leave parked
+  escalated_at: 2026-10-23 08:01
 review_kind: verify
 claim: {}
