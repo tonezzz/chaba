@@ -1,7 +1,7 @@
 id: mddb-query-embedder-down
 title: mddb /v1/vector-search failing — query embedder providers down (OR circuit-open + Gemini fail)
 column: review
-updated: 2026-10-23 14:46
+updated: 2026-10-23 16:34
 brief: 'Found during OPS-0779 worker wiring: POST /v1/vector-search on mddbd (100.102.134.91:11023) returns {error:
   failed to embed query: ollama API error (status 502): all same-space providers down (OR circuit-open + Gemini
   failed)} — 2026-10-23 ~14:30+07. /v1/health says healthy and /search doc listing works, so only the query-embedding
@@ -35,3 +35,17 @@ comms:
     resume-safe script (scripts/nest/mddb-embed-backfill.py). Same collection name => consumer switch = one URL
     change. BENCHMARK PLAN for later A/B: scripts/bench-recall.py already accepts MDDB_REST_URL — run the same fixture
     (22 sessions / 36 goldens, same judge) against :11023 (gemini-'
+- at: 2026-10-23 16:34
+  from: devin
+  text: 'A/B bench results (fixture bench-recall-fixtures.json, 36 grounded goldens, same corpus both banks):
+
+
+    RETRIEVAL QUALITY (is the golden-session doc in top-k):
+
+    - gemini-embedding-2 bank (:11023, 2560 docs indexed): retrieval@1 = 30.6%, retrieval@3 = 33.3% — from bench-recall-v2-20261022,
+    judged hit@3 = 50.0%
+
+    - bge-m3 local bank (:11028, 1604/2560 indexed): retrieval@1 = 22.2%, retrieval@3 = 38.9%
+
+
+    => Top-3 retrieval: BGE at/above parity (+5.6pp). Top-1: BGE -8.4pp. Model quality is in the right ne'
