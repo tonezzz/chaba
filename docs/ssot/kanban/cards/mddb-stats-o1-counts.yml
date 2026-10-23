@@ -1,7 +1,7 @@
 id: mddb-stats-o1-counts
 title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
 column: doing
-updated: 2026-10-23 09:54
+updated: 2026-10-23 09:58
 priority: medium
 tags:
 - mddb
@@ -122,6 +122,11 @@ comms:
 - at: 2026-10-23 09:54
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''mddb-fork'' — can''t land devin-task-20261023-082703-handlestats-services-mddbd-htt'
+- at: 2026-10-23 09:58
+  from: devin
+  text: 'Done: /v1/stats now serves a 60s single-flight stale-while-revalidate snapshot; checksums folded into the
+    one docs walk (byte-identical, parity-tested) — 57 extra read txs gone. ?refresh=1 for fresh numbers. Full package
+    suite green; committed on dispatch branch, not pushed. gRPC Stats twin noted for follow-up.'
 action:
   type: dispatch
   status: running
@@ -131,5 +136,6 @@ action:
     failed_noted: 2026-10-23 08:54
     session_gone: 2026-10-23 09:39
     stale_running: 2026-10-23 09:54
+    no_repo: 2026-10-23 09:54
   host: idc02
   runner: idc02
