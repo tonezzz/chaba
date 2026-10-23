@@ -596,9 +596,11 @@ jobs:
   dispatch: dispatcher
   every: 15m
   timeout: 120s
-  exec: '%h/CascadeProjects/chaba-tony-dell/venv/bin/python3 scripts/network-scan.py --push'
-  cwd: '%h/CascadeProjects/chaba-tony-dell'
-  note: scans the LAN — stays on tony_dell
+  exec: '%h/CascadeProjects/chaba/venv/bin/python3 scripts/network-scan.py --push'
+  cwd: '%h/CascadeProjects/chaba'
+  note: scans the LAN — stays on tony_dell. exec/cwd moved chaba-tony-dell (readonly
+    mirror) -> chaba (exec checkout) 2026-10-23 (migration-stragglers-orphaned-units);
+    venv created on exec checkout with PyYAML==6.0.3 websockets==17.1
 - id: ada-flood-news
   name: Flood news CMS refresh
   host: idc02
