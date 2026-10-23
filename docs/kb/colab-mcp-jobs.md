@@ -167,3 +167,54 @@ of staging cells per job:
   runs before it. Minimize it: cache-restore first, and order the queue
   so the job needing the *least* new download runs first; every later
   prep hides under a GPU run.
+
+## Packs — work units for any worker (nest-pack v2, 2026-10-23)
+
+OPS-0759: work now ships as **packs**, not manifest jobs — a pack is a
+self-contained bundle any capable worker on any store can claim, so the
+same bundle runs on Colab today and a fleet host tomorrow.
+
+- **Layout** — `ada-nest/packs/<name>/pack.yml` (+ optional `inputs/`):
+  ```yaml
+  name: my-job
+  needs: {gpu_gb: 3, disk_gb: 4, egress_only_ok: true}   # capability floor
+  timeout_s: 1200     # runner-side SIGALRM around the whole run
+  artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
+    - packs/my-job/out/*.wav
+  prep: |             # shell — CPU-bound fetch/install (same as manifest)
+    pip install -q ...
+  run: |              # python exec'd in shared ns; PACK_DIR injected
+    ...
+  # run_sh: |       # alternative: shell run instead of python
+  ```
+- **Canonical source** = `scripts/colab/packs/<name>/` in the chaba repo;
+  deploy to Drive with `rclone copy` (con01 has rclone).
+- **Claiming** — worker writes `packs/<name>/claim/<worker-id>`
+  (first-writer-wins, 2 s settle; Drive listing lag makes it best-effort
+  for simultaneous claims — fine at our scale). Done marker is a FILE:
+  `packs/<name>/done` (note: not `.done` suffix — inside the pack dir).
+- **needs check** — runner advertises `gpu_gb` (nvidia-smi),
+  `disk_gb` (statvfs), `egress_only_ok=True` (Colab can only egress).
+  Unmatched packs skip cleanly with the reason logged.
+- **Packs run AFTER the whole JOBS manifest** — so keep env/bootstrap
+  (cache restore, deps, asset extract) in JOBS.py and everything else as
+  packs. A pack can depend on env jobs' outputs (`/tmp/vbench` etc.) but
+  must not assume other packs ran — order is `sorted(os.listdir)` and
+  claims are independent.
+- **PACK_DIR** — `ada-nest/packs/<name>` absolute path, injected into the
+  run namespace; write outputs under `PACK_DIR/` so the pack stays
+  self-contained and the artifacts globs stay inside the pack.
+- **No signal.alarm inside pack run code** — it cancels the runner's
+  timeout_s alarm. Per-step guards belong in the runner or a thread.
+- Verified live 2026-10-23: `smoke` pack (lifecycle proof) +
+  `thonburian-bench` (Thai voice-clone eval — 10 wavs in 98 s on T4,
+  report.md inside the pack dir).
+
+### Writing packs — lessons so far
+
+- Declare honest `needs` floors — they decide which workers can take the
+  pack; too high and it starves, too low and it claims then OOMs.
+- `ref_text`-equivalent inputs belong in `inputs/` (pack-local) when not
+  already staged by an env job — a pack is meant to be self-contained.
+- Pack `run` is exec'd in a *shared* namespace with the manifest jobs —
+  pop stale `model`/`pipe` globals and `torch.cuda.empty_cache()` first.
