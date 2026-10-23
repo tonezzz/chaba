@@ -1,9 +1,9 @@
 id: eval-surface-probe
 title: eval probe — kanban script executor on idc02
-column: doing
+column: review
 priority: low
 created: '2026-10-23'
-updated: 2026-10-23 16:48
+updated: 2026-10-23 16:49
 tags:
 - eval
 - surface-test
@@ -20,8 +20,10 @@ action:
     repo: chaba
     cmd: uname -a; uptime; echo PROBE_OK $(hostname) $(date -Is); pwd
     timeout: 300
-  status: running
+  status: done
   runner: idc02
+  result: exit=0 Started runner-eval-surface-probe-1792748883.service - runner eval-surface-probe. | PROBE_OK idc02
+    2026-10-23T16:48:12+07:00 | /home/tony/.local/share/runner-agent/repos/chaba
 comms:
 - at: 2026-10-23 17:05
   from: devin
@@ -38,3 +40,9 @@ comms:
 - at: 2026-10-23 16:48
   from: chaba
   text: started runner-eval-surface-probe-1792748883 on idc02 (script)
+- at: 2026-10-23 16:49
+  from: idc02
+  text: 'finished (ok): exit=0 Started runner-eval-surface-probe-1792748883.service - runner eval-surface-probe.
+    | PROBE_OK idc02 2026-10-23T16:'
+review_kind: verify
+claim: {}
