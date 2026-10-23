@@ -1,0 +1,18 @@
+id: system-report-refresh-full-depth
+title: api/refresh depth=full — re-run L1 audit-hosts before consolidating
+column: doing
+updated: 2026-10-23 14:09
+spec: 'Today: POST api/refresh re-ran the report subtree (rollups/digests) but L1 audit-hosts/* inputs stayed from
+  the 06:45 run — a stale macbook unreachable persisted all day. Extend report-api.py refresh handling: depth=full
+  re-runs audit-hosts.py --host for each declared host first, then consolidates + report-system.py as today. Keep
+  depth=subtree as the default (fast path).'
+action:
+  type: manual
+ref: KNB-0787
+comms:
+- at: 2026-10-23 14:09
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-23 14:09
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
