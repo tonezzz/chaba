@@ -62,30 +62,29 @@ services:
 - id: mddb-panel
   name: MDDB Panel
   type: http
-  url: http://100.68.142.13:3002/
+  url: http://idc02.taila0626a.ts.net:3002/
   expected_status: 200
   timeout: 5
   category: web
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: idc02
 - id: home-assistant
   name: Home Assistant
   type: http
-  url: https://tony-dell.taila0626a.ts.net:8123/
+  url: https://tony-omen.taila0626a.ts.net:8123/
   expected_status: 200
   timeout: 10
   category: web
   profiles:
   - home
   verification:
-  - 'Check container: ssh tony-dell podman ps | grep home-assistant'
-  - 'Check logs: ssh tony-dell podman logs home-assistant --tail 20'
-  - 'Test direct: curl -s https://tony-dell.taila0626a.ts.net:8123/ (tailnet; HA binds loopback only)'
+  - 'Check service: ssh tony-omen systemctl --user status home-assistant'
+  - 'Test direct: curl -sk https://tony-omen.taila0626a.ts.net:8123/'
   recovery_actions:
-  - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
-  host: tony_dell
+  - 'Restart service: ssh tony-omen systemctl --user restart home-assistant'
+  host: tony_omen
 - id: home-assistant-michael
   name: Home Assistant (Michael)
   type: http
@@ -108,6 +107,9 @@ services:
   profiles:
   - home
   - mobile
+  disabled: true
+  note: "Disabled 2026-10-23 — idc03->michael-ha:8123 is deliberately dropped by
+    mn-ha-quarantine.service (Tony order). Re-enable when quarantine lifts."
   host: michael_ha
   verification:
   - 'tailscale ping michael-ha'
