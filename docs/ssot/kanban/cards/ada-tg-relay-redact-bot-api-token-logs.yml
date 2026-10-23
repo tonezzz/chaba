@@ -1,7 +1,7 @@
 id: ada-tg-relay-redact-bot-api-token-logs
 title: Redact Telegram Bot API tokens from relay journals
 column: backlog
-updated: 2026-10-23 20:22
+updated: 2026-10-23 21:02
 priority: high
 spec: 'Security hardening after ADA-0801: backend.tg_relay currently allows HTTP client INFO logs to emit full api.telegram.org/bot<TOKEN>/...
   URLs into journald. Suppress or redact httpx/httpcore request URLs before logging while retaining useful status/error
@@ -12,3 +12,9 @@ comms:
 - at: 2026-10-23 20:22
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 21:02
+  from: devin
+  text: Implementing now. Code is committed and pushed on ada-voice main as 59562cf. Added a token-redaction filter
+    for message/traceback records and raised httpx/httpcore request tracing to WARNING. Focused regression tests
+    pass on the edit point and idc02 staging via unittest; staging lacks pytest, so production deploy script will
+    run its required full pytest gate before any restart.
