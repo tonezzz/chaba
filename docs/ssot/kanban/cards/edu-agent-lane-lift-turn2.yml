@@ -1,7 +1,7 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
-column: review
-updated: 2026-10-23 14:53
+column: done
+updated: 2026-10-23 14:55
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
   WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
@@ -100,6 +100,9 @@ comms:
 - at: 2026-10-23 14:53
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-23 14:55
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: mn01-has-no-openrouter-api-key-secrets-o-2e1151
   ask: 'mn01 has no OPENROUTER_API_KEY (secrets origin macbook never synced it here) — clawbot lane cannot auth.
@@ -116,3 +119,7 @@ requests:
     -> mn01, mode 600. clawbot lane can auth now.
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 14:55
+  note: verified — evidence checks green, closing itself
