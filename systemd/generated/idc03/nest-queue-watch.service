@@ -1,0 +1,8 @@
+[Unit]
+Description=Nest queue watch — TG notify on pack claim/done/fail (job:nest-queue-watch, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=60
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-watch.py
+Environment="BOARD_NOTIFY_CHANNEL=tg"
