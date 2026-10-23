@@ -1,6 +1,6 @@
 id: system-report-refresh-full-depth
 title: api/refresh depth=full — re-run L1 audit-hosts before consolidating
-column: doing
+column: review
 updated: 2026-10-23 14:24
 spec: 'Today: POST api/refresh re-ran the report subtree (rollups/digests) but L1 audit-hosts/* inputs stayed from
   the 06:45 run — a stale macbook unreachable persisted all day. Extend report-api.py refresh handling: depth=full
@@ -23,3 +23,7 @@ comms:
     report regenerated 14:22. Frontend: Deep rescan button next to Refresh now (v=8). Note: audit-hosts/con01+idc01
     arent in fleets children — only the 5 declared hosts rescan; oneshot service still audits 7. macbook unreachable
     is real (ssh from idc02 fails), not a stale artifact.'
+- at: 2026-10-23 14:24
+  from: tony
+  text: moved doing -> review
+review_kind: verify
