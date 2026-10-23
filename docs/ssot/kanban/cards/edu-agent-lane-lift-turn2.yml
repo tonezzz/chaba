@@ -1,6 +1,6 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
-column: backlog
+column: doing
 updated: 2026-10-23 11:02
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
@@ -14,7 +14,8 @@ spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.jso
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: mn01
 note: 'Lane-lift loop (Tony''s idea 2026-10-22, card edu-agent-benchmark): iterate the SAME agent loop across model
   lanes — improve local until it beats clawbot, port back, repeat. The fixture is the shared ruler. Turn 1 (gpt-oss:20b
   pull on omen) never landed a result comm/report.'
@@ -23,3 +24,6 @@ comms:
 - at: 2026-10-23 11:02
   from: tony
   text: card created by devin — lane-lift turn 2 queued per Tony 2026-10-23
+- at: 2026-10-23 11:02
+  from: mn01
+  text: claimed
