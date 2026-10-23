@@ -39,6 +39,7 @@ files. Keys are loaded at runtime and never printed.
 from __future__ import annotations
 
 import argparse
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -336,36 +337,145 @@ Rules:
   slug of the lesson that answers it, or "none"."""
 
 
-class AgentLane:
-    """OpenClaw-shaped tool-calling loop over an OpenAI-compat endpoint."""
+REQUIRED_ARGS = {t["function"]["name"]:
+                 set(t["function"]["parameters"].get("required", []))
+                 for t in TOOLS}
 
-    def __init__(self, name, base, key, model, timeout, retries=2):
+JSON_RETRY_INSTR = (
+    "That reply was not a valid tool call. Emit exactly ONE JSON object "
+    "{\"name\": \"<tool>\", \"arguments\": {...}} — or, if you are "
+    "finished, the one-line summary.")
+
+
+class AgentLane:
+    """OpenClaw-shaped tool-calling loop over an OpenAI-compat endpoint.
+
+    Turn-2 structured-output hardening (card edu-agent-lane-lift-turn2):
+    - parallel_tool_calls disabled — serial calls parse cleaner on small
+      models;
+    - malformed `arguments` JSON is repaired (balanced-brace extract,
+      trailing-comma strip, literal_eval) — counted as arg_repairs;
+    - calls still unparseable or missing schema-required params are NOT
+      executed — an error is fed back as the tool result so the model
+      re-emits (stricter schema retry) — counted as arg_errors;
+    - a reply that looks like a text-blob call but fails fallback parsing
+      escalates once to response_format=json_object where the backend
+      supports it (auto-disabled lane-wide on a 4xx complaint) —
+      counted as json_retries.
+    """
+
+    def __init__(self, name, base, key, model, timeout, retries=2,
+                 json_mode=True):
         self.name, self.base, self.key = name, base.rstrip("/"), key
         self.model, self.timeout, self.retries = model, timeout, retries
+        self.json_mode_ok = json_mode
 
-    def _chat(self, messages, tools):
+    def _chat(self, messages, tools, response_format=None):
         body = {"model": self.model, "messages": messages,
-                "tools": tools, "temperature": 0.2}
-        req = urllib.request.Request(
-            self.base + "/chat/completions", data=json.dumps(body).encode(),
-            headers={"Content-Type": "application/json",
-                     "Authorization": f"Bearer {self.key or 'none'}"})
+                "tools": tools, "temperature": 0.2,
+                "parallel_tool_calls": False}
+        if response_format:
+            body["response_format"] = response_format
         err = None
         for attempt in range(self.retries + 1):
             try:
+                req = urllib.request.Request(
+                    self.base + "/chat/completions",
+                    data=json.dumps(body).encode(),
+                    headers={"Content-Type": "application/json",
+                             "Authorization":
+                             f"Bearer {self.key or 'none'}"})
                 with urllib.request.urlopen(req, timeout=self.timeout) as r:
                     d = json.loads(r.read())
                 ch = (d.get("choices") or [{}])[0]
                 return (ch.get("message") or {}, d.get("usage") or {},
                         d.get("model"), None)
             except urllib.error.HTTPError as e:
+                detail = ""
+                try:
+                    detail = e.read()[:400].decode("utf-8", "replace")
+                except Exception:
+                    pass
                 err = f"HTTP {e.code}"
+                if (response_format and e.code in (400, 404, 422)
+                        and re.search(r"response_format|json_object|"
+                                      r"format", detail, re.I)):
+                    # backend rejects forced JSON — drop it lane-wide
+                    self.json_mode_ok = False
+                    body.pop("response_format", None)
+                    response_format = None
+                    continue
                 if e.code not in (429, 500, 502, 503, 504):
                     break
             except Exception as e:
                 err = f"{type(e).__name__}: {e}"
             time.sleep(5 * (attempt + 1))
         return {}, {}, None, err
+
+    @staticmethod
+    def _outer_braces(s):
+        """First balanced {...} substring (quote/escape-aware) or None."""
+        start = s.find("{")
+        if start < 0:
+            return None
+        depth, quote, esc = 0, None, False
+        for i in range(start, len(s)):
+            c = s[i]
+            if esc:
+                esc = False
+            elif c == "\\" and quote:
+                esc = True
+            elif quote:
+                if c == quote:
+                    quote = None
+            elif c in "\"'":
+                quote = c
+            elif c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+                if depth == 0:
+                    return s[start:i + 1]
+        return None
+
+    def _parse_args(self, raw):
+        """-> (args_dict, 'ok'|'repaired'|'bad')"""
+        if isinstance(raw, dict):
+            return raw, "ok"
+        if raw is None or raw == "":
+            return {}, "ok"
+        s = str(raw)
+        try:
+            v = json.loads(s)
+            return (v if isinstance(v, dict) else {}), "ok"
+        except json.JSONDecodeError:
+            pass
+        frag = self._outer_braces(s)
+        if frag:
+            for cand in (frag, re.sub(r",\s*([}\]])", r"\1", frag)):
+                try:
+                    v = json.loads(cand)
+                    if isinstance(v, dict):
+                        return v, "repaired"
+                except json.JSONDecodeError:
+                    pass
+            try:
+                v = ast.literal_eval(frag)
+                if isinstance(v, dict):
+                    return v, "repaired"
+            except (ValueError, SyntaxError):
+                pass
+        return {}, "bad"
+
+    @staticmethod
+    def _looks_like_call(content):
+        """Reply text that tried to be a tool call (brace blob naming a
+        tool or the name/arguments keys) but failed fallback parsing."""
+        if not content or "{" not in content:
+            return False
+        return bool(re.search(
+            r'"(name|arguments|parameters|tool)"|'
+            + "|".join(REQUIRED_ARGS), content))
 
     def _fallback_call(self, content: str):
         """Prompted-JSON rescue: a tool call emitted as plain text
@@ -394,6 +504,8 @@ class AgentLane:
                     {"role": "user", "content": task_user_msg}]
         calls, tok_in, tok_out, llm_calls = [], 0, 0, 0
         models_seen, final_text, err = set(), "", None
+        arg_repairs = arg_errors = json_retries = 0
+        json_retried = False
         t0 = time.time()
         for _ in range(MAX_ROUNDS):
             msg, usage, model_seen, err = self._chat(messages, TOOLS)
@@ -411,6 +523,30 @@ class AgentLane:
                 if fb:
                     tcalls = [{"id": "fb", "type": "function",
                                "function": fb}]
+            if (not tcalls and not json_retried and self.json_mode_ok
+                    and self._looks_like_call(content)):
+                # malformed text-blob call -> one forced-JSON retry
+                json_retried = True
+                json_retries += 1
+                messages.append({"role": "assistant", "content": content})
+                messages.append({"role": "user",
+                                 "content": JSON_RETRY_INSTR})
+                msg2, u2, ms2, err2 = self._chat(
+                    messages, TOOLS,
+                    response_format={"type": "json_object"})
+                tok_in += int(u2.get("prompt_tokens") or 0)
+                tok_out += int(u2.get("completion_tokens") or 0)
+                if not err2:
+                    llm_calls += 1
+                    if ms2:
+                        models_seen.add(ms2)
+                    content = msg2.get("content") or ""
+                    tcalls = msg2.get("tool_calls") or []
+                    if not tcalls:
+                        fb = self._fallback_call(content)
+                        if fb:
+                            tcalls = [{"id": "fb2", "type": "function",
+                                       "function": fb}]
             if not tcalls:
                 final_text = content
                 break
@@ -419,14 +555,25 @@ class AgentLane:
             for tc in tcalls:
                 fn = tc.get("function", {})
                 name = fn.get("name", "")
-                args = fn.get("arguments") or {}
-                if isinstance(args, str):
-                    try:
-                        args = json.loads(args)
-                    except json.JSONDecodeError:
-                        args = {}
-                result = exec_tool(store, name, args)
-                calls.append({"tool": name, "args": args, "result": result})
+                args, arg_status = self._parse_args(fn.get("arguments"))
+                missing = REQUIRED_ARGS.get(name, set()) - set(args)
+                if arg_status == "bad" or (name in REQUIRED_ARGS
+                                           and missing):
+                    why = ("invalid JSON arguments" if arg_status == "bad"
+                           else f"missing required: {sorted(missing)}")
+                    arg_errors += 1
+                    result = {"error": (
+                        f"tool call rejected — {why}; re-emit {name} "
+                        "with a single valid JSON object matching the "
+                        "tool schema")}
+                    calls.append({"tool": name, "args": args,
+                                  "result": result, "arg_error": why})
+                else:
+                    if arg_status == "repaired":
+                        arg_repairs += 1
+                    result = exec_tool(store, name, args)
+                    calls.append({"tool": name, "args": args,
+                                  "result": result})
                 messages.append({"role": "tool",
                                  "tool_call_id": tc.get("id", "x"),
                                  "name": name, "content": json.dumps(result)})
@@ -437,6 +584,9 @@ class AgentLane:
                 "llm_calls": llm_calls, "tokens_in": tok_in,
                 "tokens_out": tok_out, "models": sorted(models_seen),
                 "latency": lat, "err": err,
+                "arg_repairs": arg_repairs, "arg_errors": arg_errors,
+                "json_retries": json_retries,
+                "json_mode": self.json_mode_ok,
                 "completed": err is None and bool(final_text)}
 
 
@@ -747,6 +897,14 @@ def aggregate(lane_name, task_scores, task_recs):
                  "lat_mean": round(statistics.mean(lat), 1) if lat else None,
                  "lat_p50": round(statistics.median(lat), 1) if lat else None,
                  "tokens_in": tok_in, "tokens_out": tok_out,
+                 "arg_repairs": sum(r.get("arg_repairs", 0)
+                                    for r in task_recs),
+                 "arg_errors": sum(r.get("arg_errors", 0)
+                                   for r in task_recs),
+                 "json_retries": sum(r.get("json_retries", 0)
+                                     for r in task_recs),
+                 "json_mode": (task_recs[-1].get("json_mode")
+                               if task_recs else None),
                  "cost_usd": 0.0},
     }
 
@@ -762,6 +920,10 @@ def main():
                     help="model for the local-ollama agent lane "
                          "(default hermes3:8b; lane is renamed "
                          "local-<model> when a different model is given)")
+    ap.add_argument("--ollama-timeout", type=int, default=300,
+                    help="per-call timeout (s) for the local-ollama lane "
+                         "(default 300 — reasoning models on a shared "
+                         "RAM-offloaded GPU need more than the old 150)")
     ap.add_argument("--tasks", nargs="+", default=None,
                     help="task ids to run (default: all)")
     ap.add_argument("--limit", type=int, default=0)
@@ -801,7 +963,7 @@ def main():
                  else "local-" + re.sub(r"[^a-z0-9]+", "-",
                                         args.ollama_model.lower()))
         lanes[lname] = AgentLane(lname, ollama + "/v1", "ollama",
-                                 args.ollama_model, 150)
+                                 args.ollama_model, args.ollama_timeout)
 
     out_prefix = args.out or str(
         REPO / "reports" / f"bench-edu-manage-{date.today().isoformat()}")
@@ -866,7 +1028,8 @@ def main():
     result = {"at": time.strftime("%Y-%m-%d %H:%M:%S"),
               "date": date.today().isoformat(),
               "config": {"lanes": {k: (v if isinstance(v, dict) else
-                                     {"base": v.base, "model": v.model})
+                                     {"base": v.base, "model": v.model,
+                                      "json_mode": v.json_mode_ok})
                                    for k, v in lanes.items()},
                          "judge": None if args.no_judge else JUDGE_MODEL,
                          "corpus": str(CORPUS)},
@@ -934,6 +1097,17 @@ def write_md(path, result):
         if lk.startswith("local-") or lk == "hermes":
             L.append(f"- `{lk}` = identical loop on omen ollama /v1 "
                      f"{lc.get('model')}.")
+    fid = "; ".join(
+        f"{lane}: arg_repairs={a['loop'].get('arg_repairs', 0)} "
+        f"arg_errors={a['loop'].get('arg_errors', 0)} "
+        f"json_retries={a['loop'].get('json_retries', 0)} "
+        f"json_mode={'on' if a['loop'].get('json_mode') else 'off'}"
+        for lane, a in ((l, aggs[-1]) for l, aggs
+                        in result["scores"].items())
+        if "arg_repairs" in a["loop"])
+    if fid:
+        L.append("- Structured-output counters (turn-2 loop change — args "
+                 "repair, schema-retry, forced-JSON escalation): " + fid)
     L.append("- Judge = one fixed model (gemini-3.5-flash-lite) for all "
              "lanes; it is also the `current` lane's model — symmetry "
              "caveat applies to draft-quality only.")
