@@ -1,7 +1,7 @@
 id: stale-non-served-clones-dell-cascadeproj-efbd23
 title: stale non-served clones — dell ~/CascadeProjects/chaba is 219 commits behind, agents keep tripping on it
-column: review
-updated: 2026-10-23 08:21
+column: backlog
+updated: 2026-10-23 08:31
 note: from 2026-10-15 session — surfaced while chasing WP repeat-ask sync gap
 ref: BEN-0703
 comms:
@@ -105,18 +105,19 @@ comms:
     to ~/backups/worktree-reap-20261023/chaba-kanban-sync.patch (990 lines), worktree removed (209M freed), kanban-sync.{service,timer}.parked
     deleted + daemon-reload. Still open on the request: chaba-tony-dell-experiment (53M, detached 2026-09-11, staged
     files) — Tony call.'
+- at: 2026-10-23 08:31
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
+  status: queued
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
     close_held: 2026-10-22 20:07
-  runner: mn01
   result: 'exit=0 -task-20261022-125416-stale-non-served-clones-dell-c.service: Failed with result ''exit-code''.
     | devin-task-20261022-125416-stale-non-served-clones-dell-c.service: Consumed 10.504s CPU time over 8min 7.727s
     wall clock time, 209M memory peak.'
-  verified: true
 requests:
 - id: reap-the-2-dead-chaba-worktrees-on-dell-01517e
   ask: 'Reap the 2 dead chaba worktrees on dell? chaba-kanban-sync (209M, job unit .parked, ~24 dirty files incl
@@ -131,6 +132,6 @@ requests:
   - hold
   escalated_at: 2026-10-23 08:01
   answer: proceed
+  executed: 2026-10-23 queue
 review_kind: verify
 claim: {}
-awaiting_action: true
