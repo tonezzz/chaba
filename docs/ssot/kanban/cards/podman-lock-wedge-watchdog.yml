@@ -1,7 +1,7 @@
 id: podman-lock-wedge-watchdog
 title: 'tony-dell: watchdog for wedged rootless-podman state DB (stale shm lock -> auto-clear + alert)'
 column: doing
-updated: 2026-10-23 08:27
+updated: 2026-10-23 08:36
 priority: medium
 spec: 'Timer on tony-dell: probe `timeout 8 podman ps`; on 3 consecutive failures with no live `podman` CLI processes
   (conmon/pause excluded), remove stale /dev/shm/libpod_rootless_lock_$(id -u), dead pause.pid under /run/user/$UID/containers,
@@ -30,7 +30,15 @@ comms:
 - at: 2026-10-23 08:27
   from: chaba
   text: started devin-task-20261023-012712-timer-on-tony-dell-probe-timeo on mn01 (dispatch)
+- at: 2026-10-23 08:36
+  from: devin
+  text: 'built podman-lock-watchdog (dispatch branch, commit 01f36e43): scripts/ops/podman-lock-watchdog.py — 2min
+    probe `timeout 8 podman ps`; on 3 consec fails + zero live podman/docker CLI procs (conmon/pause excluded) it
+    rm’s shm lock + dead pause.pid + alive.lck, renumbers, re-probes; alerts chaba-admin + LINE on recovered (warn)
+    and still-wedged (critical), 1 alert/episode, 6h resend, 20min re-attempt cooldown. Registered in ssot.jobs.yml
+    (host tony_dell) + rendered units committed; 7 offline tests'
 action:
   type: dispatch
   status: running
   runner: mn01
+  repo: chaba
