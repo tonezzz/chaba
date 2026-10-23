@@ -9,7 +9,7 @@ priority: high
 note: 'Auto-recovered 2026-10-23: tony-omen /home back in bounds (72%, slope 9.51 GiB/d)'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 20:03
+updated: 2026-10-23 20:04
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -105,6 +105,12 @@ comms:
     (SHA-256 verified). Also backed up current cpufreq-limit.service text at gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
     (SHA-256 verified). Repo branch dispatch/20261023-omen-cpu-cap-2ghz now contains a proposed tracked 2.00GHz
     ceiling unit + SSOT/runbook changes; syntax checks pass. NOT installed: live c'
+- at: 2026-10-23 20:04
+  from: devin
+  text: 'Update: captured the installed cpufreq-limit.service text before change at gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
+    (SHA-256 verified). Prepared a repo-managed 2.00GHz unit + SSOT/runbook edits in branch dispatch/20261023-omen-cpu-cap-2ghz;
+    `systemd-analyze verify` and YAML parse checks pass. Not committed or installed yet. Full ssot-validate-all
+    is blocked by unrelated pre-existing YAML syntax error in jobs/kanban/2026-10-23-card-union-merge-dri'
 requests:
 - id: omen-disk-plan
   from: devin
