@@ -1,7 +1,7 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
 column: review
-updated: 2026-10-23 14:31
+updated: 2026-10-23 14:53
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
   WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
@@ -93,16 +93,26 @@ comms:
     scripts/colab/packs/). Runs the identical harness+corpus against local ollama gpt-oss:20b on a T4 — full-VRAM,
     ~40-80 tok/s vs omen 9. Local lane only, --no-judge; filings re-judgeable offline. Answers latency-vs-capability
     for the local lane.'
+- at: 2026-10-23 14:53
+  from: devin
+  text: 'answered mn01-has-no-openrouter-api-key-secrets-o-2e1151: (a) done — openrouter.env synced dell -> macbook
+    (canonical backfill; macbook only had the empty template) -> mn01, mode 600. clawbot lane can auth now.'
+- at: 2026-10-23 14:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: mn01-has-no-openrouter-api-key-secrets-o-2e1151
   ask: 'mn01 has no OPENROUTER_API_KEY (secrets origin macbook never synced it here) — clawbot lane cannot auth.
     Options: (a) ★ sync ~/.config/secrets/openrouter.env to mn01 so future bench dispatches work; (b) accept OR-lane
     skipped this run and I record it honestly; (c) point me at another reachable OR/free endpoint. Proceeding with
     gpt-oss lane meanwhile; will recheck before finishing.'
-  status: open
+  status: answered
   at: 2026-10-23 11:09
   from: devin
   options:
   - proceed
   - hold
+  answer: (a) done — openrouter.env synced dell -> macbook (canonical backfill; macbook only had the empty template)
+    -> mn01, mode 600. clawbot lane can auth now.
 claim: {}
+awaiting_action: true
