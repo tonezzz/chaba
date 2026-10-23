@@ -84,8 +84,11 @@ For multi-experiment sessions, drive the notebook from a **manifest** instead
 of staging cells per job:
 
 - **Manifest** — `gdrive:ada-nest/queue/JOBS.py`: a `JOBS` list of
-  `{name, prep, run}` — `prep` is a shell string (fetch/install/extract),
-  `run` is a Python source string exec'd in a shared namespace.
+  `{name, scope, prep, run, artifacts}` — `prep` is a shell string
+  (fetch/install/extract), `run` is a Python source string exec'd in a
+  shared namespace. `scope` (default `'work'`) picks the marker space;
+  `artifacts` is a list of globs vs `ada-nest/` that must match ≥1
+  non-empty file before the job may mark done.
 - **Runner cell** — one self-contained cell loops the manifest: per-job
   try/except isolation, `queue/done/<name>.done` markers make it
   resumable (rerun the same cell after any crash/recycle), and every job
@@ -106,6 +109,20 @@ of staging cells per job:
 - **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` +
   `queue/prep-<name>.log` (prep stdout/stderr) on Drive are the durable
   record — the notebook doc can be recycled at will.
+- **Marker scope is part of the contract** (2026-10-23): `scope:'env'`
+  jobs (pip installs, `/tmp` extracts, HF-cache restore/save) mark under
+  `queue/env-done/<boot_id>/` so a fresh VM always re-runs them — a pip
+  install cannot outlive its VM. `scope:'work'` (default) marks under
+  `queue/done/` globally. Earlier, a runtime restart left a stale
+  `deps.done` while the pip env was gone — the next job died on import.
+- **Verify-before-mark** (2026-10-23): a job's `run` returning is not
+  proof its artifact landed — observed live: `save-hf-cache.done`
+  existed while `hf-hub.tar.zst` never reached Drive (runner exited
+  before the FUSE upload flushed). The runner now requires every
+  `artifacts` glob to match ≥1 non-empty file and records matched sizes
+  in the marker; a fleet-side rclone check remains the server-side
+  truth. Runner also settles 120 s after drain so big uploads land
+  before the VM idles.
 - **Detached mode (2026-10-23)** — prefer `queue-launcher-cell.py`: it
   starts `queue/runner.py` as a session-detached process (output →
   `queue/run-<ts>.out.log`, pid → `queue/runner.pid`, `queue/heartbeat`
@@ -129,7 +146,7 @@ of staging cells per job:
 - **Bracket every manifest with cache jobs** so the second runtime of a
   session (or the next session) skips weight re-downloads entirely:
   ```python
-  {"name":"restore-hf-cache",
+  {"name":"restore-hf-cache","scope":"env",
    "prep":"test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
           " && mkdir -p /root/.cache/huggingface"
           " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
@@ -137,7 +154,7 @@ of staging cells per job:
    "run":"import os;print('hub entries:',len(os.listdir('/root/.cache/huggingface/hub'))if os.path.exists('/root/.cache/huggingface/hub')else 0)"},
   # ... gpu jobs whose preps stay `snapshot_download` — they validate the
   # restored cache instantly instead of re-downloading ...
-  {"name":"save-hf-cache",
+  {"name":"save-hf-cache","scope":"env","artifacts":["cache/hf-hub.tar.zst"],
    "prep":"tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
           " -C /root/.cache/huggingface hub",
    "run":"print('hf cache packed')"},
