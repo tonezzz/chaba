@@ -40,7 +40,7 @@ TIMELINE = Path(os.environ.get(
 INSTANCES = [
     ("michael-ha", "http://michael-ha:8123",
      Path.home() / ".local/share/home-assistant-michael/ha-token"),
-    ("tony-ha", "https://tony-dell.taila0626a.ts.net:8123",
+    ("tony-ha", "https://tony-omen.taila0626a.ts.net:8123",
      Path.home() / ".config/secrets/home-assistant-token.env"),
 ]
 
