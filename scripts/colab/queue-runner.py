@@ -260,13 +260,15 @@ try:
             t0 = time.time()
             signal.alarm(int(job.get('timeout_s') or 0))
             try:
+                pack_dir = f"{PACKS}/{name}" if job.get('_pack') else ''
                 if job.get('run_sh'):
-                    ns['PACK_DIR'] = f"{PACKS}/{name}"
-                    r = subprocess.run(job['run_sh'], shell=True)
+                    env = dict(os.environ, NEST_ROOT=ROOT, PACK_DIR=pack_dir)
+                    r = subprocess.run(job['run_sh'], shell=True, env=env)
                     if r.returncode:
                         raise RuntimeError(f'run_sh rc={r.returncode}')
                 else:
-                    ns['PACK_DIR'] = f"{PACKS}/{name}" if job.get('_pack') else ''
+                    ns['PACK_DIR'] = pack_dir
+                    ns['NEST_ROOT'] = ROOT
                     exec(compile(job['run'], f'<{name}>', 'exec'), ns)
             finally:
                 signal.alarm(0)

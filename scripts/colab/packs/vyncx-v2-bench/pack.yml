@@ -13,7 +13,12 @@ artifacts:
   - packs/vyncx-v2-bench/out/vx-ada-*.wav
   - packs/vyncx-v2-bench/out/vx-tony-*.wav
 prep: |
-  pip install -q f5-tts-th soundfile
+  # f5-tts-th hard-pins numpy<=1.26.4 — installing it normally downgrades
+  # numpy and breaks jax/tf (numpy.dtypes.StringDType) -> transformers
+  # lazy-import collapses. --no-deps + explicit deps + force numpy back.
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile
+  pip install -q --no-deps 'numpy>=2'
 run: |
   import time, os
   import torch
