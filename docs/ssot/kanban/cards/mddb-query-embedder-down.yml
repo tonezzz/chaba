@@ -1,7 +1,7 @@
 id: mddb-query-embedder-down
 title: mddb /v1/vector-search failing — query embedder providers down (OR circuit-open + Gemini fail)
 column: review
-updated: 2026-10-23 14:22
+updated: 2026-10-23 14:29
 brief: 'Found during OPS-0779 worker wiring: POST /v1/vector-search on mddbd (100.102.134.91:11023) returns {error:
   failed to embed query: ollama API error (status 502): all same-space providers down (OR circuit-open + Gemini
   failed)} — 2026-10-23 ~14:30+07. /v1/health says healthy and /search doc listing works, so only the query-embedding
@@ -14,3 +14,10 @@ comms:
 - at: 2026-10-23 14:22
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 14:29
+  from: devin
+  text: '[verify] root cause traced: chain is mddb -> :11435 gemini-ollama-proxy -> providers [OpenRouter(Vertex
+    gemini) -> direct Gemini -> local Ollama]. All fail: OR returns 403 Key limit exceeded (weekly limit), direct
+    Gemini returns 429 project quota. Ollama leg exists in code but OLLAMA_FALLBACK_BASE unset — and by design it
+    CANNOT substitute: proxy is fail-closed because gemini vs ollama embed different vector spaces; a silent fallback
+    would corrupt the index. So no free local fix. Options need To'
