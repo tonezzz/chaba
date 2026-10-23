@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
 column: doing
-updated: 2026-10-23 08:39
+updated: 2026-10-23 08:41
 priority: high
 tags:
 - line
@@ -129,6 +129,10 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261023-082652-2026-10-14-17-12-two-queued-ch on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-23 08:41
+  from: devin
+  text: 'raised request line-oa-spend-gate-bot-339sbrov-is-on-th-6cd7cf: LINE OA spend gate: bot @339sbrov is on
+    the free 300 push-msgs/mo plan; healthy burn was ~35 calls/day and the cap died '
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
@@ -153,6 +157,18 @@ requests:
   suggested: keep open — push/reply accounting tail remains ★
   answer: keep open — push/reply accounting tail remains ★
   executed: 2026-10-15 hold
+- id: line-oa-spend-gate-bot-339sbrov-is-on-th-6cd7cf
+  ask: 'LINE OA spend gate: bot @339sbrov is on the free 300 push-msgs/mo plan; healthy burn was ~35 calls/day and
+    the cap died Oct 14 (resets Nov 1). Relay-side fixes are now in (parked queue rides free replyTokens, bulk class
+    coalescing, send ledger + hourly quota probe). Decision needed: (a) stay free + demote nag/watch/digest senders
+    to class=bulk via LINE_BULK_LANES on idc03, (b) upgrade to a paid OA plan, or (c) split per-member OAs. Which
+    way?'
+  status: open
+  at: 2026-10-23 08:41
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   status: running
   type: dispatch
@@ -161,3 +177,4 @@ action:
   runner: tony-macbook
   sweep:
     stale_running: 2026-10-23 08:39
+    session_gone: 2026-10-23 08:39
