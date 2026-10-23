@@ -2,19 +2,12 @@ id: runner-auto-tony-omen
 title: Runner host `tony-omen` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-omen that will strand
   dispatch cards. Read the note, fix on the host, close the card.
-column: review
+column: done
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: chaba clone 739 commits behind origin/master (limit 200). Info: chaba
-  origin is fetch-only (by design — no push creds); merge-sweep salvage path verified;
-  ada-voice: push probe ok — declare push:ada-voice in RUNNER_LABELS for the fast
-  path (live probe still gates); sunsynk-card: push probe ok — declare push:sunsynk-card
-  in RUNNER_LABELS for the fast path (live probe still gates); no mddb-fork checkout
-  — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
-  can''t take action.repo=gods-eye-view cards; devin: /home/tony/.local/bin/devin
-  (devin 3000.11.205 (6dea39440ae3)).'
+note: 'Auto-recovered 2026-10-23: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - clone-stale: ssh <host> ''git -C ~/CascadeProjects/chaba pull --ff-only'' — stale

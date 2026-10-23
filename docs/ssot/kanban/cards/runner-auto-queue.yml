@@ -3,13 +3,17 @@ title: 1 queued card(s) unsatisfiable by the live runner fleet
 brief: action.labels/action.host are hard requirements — a queued card nothing satisfies
   starves silently. Fix the card's requirements or teach a host the label (RUNNER_LABELS
   in runner-agent.service + mirror in ssot.kanban.yml runner_fleet).
-column: done
+column: review
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Auto-recovered 2026-10-23: every queued card is claimable.'
+note: '- kanban-commit-reconcile-rebase-deadlocks-4d95a9: labels [''devin-task'',
+  ''push:chaba''] satisfied by no live runner (fleet advertises [''ada'', ''always-home'',
+  ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'', ''local-8c'', ''low-mem'',
+  ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+  ''push:sunsynk-card'', ''small'', ''ssd''])'
 updated: '2026-10-23'
 comms:
 - at: 2026-10-13 07:23
