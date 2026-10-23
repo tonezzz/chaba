@@ -209,6 +209,12 @@ same bundle runs on Colab today and a fleet host tomorrow.
 - Verified live 2026-10-23: `smoke` pack (lifecycle proof) +
   `thonburian-bench` (Thai voice-clone eval — 10 wavs in 98 s on T4,
   report.md inside the pack dir).
+- **Member-surface mirror** — queue-mgr (dell, watches the Drive store)
+  mirrors job/pack state into WP `nest_job` posts via board-api
+  `POST /job` (upsert by slug, `status`, `comms` append log, `parent`
+  for job trees). Watchers stay read-only on Drive; the door is the
+  only writer — workers and Colab never hold WP creds.
+  See `docs/kb/board-api-write-door.md`.
 
 ### Writing packs — lessons so far
 

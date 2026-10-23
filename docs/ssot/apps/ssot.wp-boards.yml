@@ -89,6 +89,15 @@ post_types:
   # Writer: scripts/ada/activity-posts.py (activity-posts job, idc03).
   # Timeline dedupe: line-chat-timeline.py links these posts via
   # artifact_url/event_id instead of re-inlining media.
+  # v0.9.0 (repo, pending deploy): nest_job CPT — the ada-nest offload
+  # queue mirrored to the member surface (card
+  # nest-api-unified-mutation-service). Hierarchical like activity —
+  # parent jobs own child jobs/packs (job trees); has_archive
+  # /wp/nest_job/. meta: kind(pack|queue|sub)/status(queued|claimed|
+  # running|done|failed|stalled|cancelled)/host/pack/runner/result_ref/
+  # error/comms(JSON append log [{at,from,text}])/updated. ONLY writer:
+  # board-api POST /job on idc03 (queue-mgr on dell mirrors Drive
+  # queue/packs state -> CPT through the door).
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -126,8 +135,9 @@ post_types:
              meta: topic/count/last_repeat/status; admin list defaults to
              last_repeat desc, Asked/Last-repeat columns sortable (v0.3.7)"
   lesson:      "Tony's education ledger — knowledge he asked for, filed by
-             agents via scripts/lesson-add.py (slug lesson-<md5>, upsert on
-             re-ask). meta: topic/level(intro|working|deep)/source/
+             agents via board-api POST /lesson (slug lesson-<md5>, upsert on
+             re-ask; scripts/lesson-add.py is the thin CLI). meta:
+             topic/level(intro|working|deep)/source/
              learned_at/next_review/status — next_review feeds spaced-recall
              digests (v0.3.8)"
   score:       "balance board — praise + complaint events per subject
@@ -154,6 +164,14 @@ post_types:
              event_id(<lane>:<session>:<call>)/occurred_at/error.
              [chaba_activity lane= status= limit=] renders the feed;
              private posts = member-visible per lane like /chat/line/*."
+  nest_job:    "ada-nest Drive-queue mirror (v0.9.0, card
+             nest-api-unified-mutation-service). One private post per
+             offload job/pack; hierarchical parent field links job
+             trees. Written ONLY via board-api POST /job — queue-mgr
+             (dell) and pack runners never hold WP creds.
+             meta: kind/status(queued|claimed|running|done|failed|
+             stalled|cancelled)/host/pack/runner/result_ref/error/
+             comms(JSON [{at,from,text}])/updated. /wp/nest_job/ archive."
 
 taxonomy_axes:
   category: "broad topic axis — curated, hierarchical. News desks live
@@ -264,11 +282,14 @@ writers:
                   attachment then creates the private cam post; upserts the
                   per-camera directory post; purges snapshot posts+media
                   >7d. go2rtc is loopback — host-bound."
-  lesson_add:   "scripts/lesson-add.py on any host with
-                  ~/.config/secrets/wp-boards.env — upserts private lesson
-                  posts by slug lesson-<md5(topic)>; Thai section appended
-                  via gemini flash-lite (GEMINI_API_KEY_FREE first); meta
-                  incl. next_review default learned_at+7d"
+  lesson_add:   "scripts/lesson-add.py — thin client of board-api POST
+                  /lesson on idc03 (2026-10-23: unified mutation door,
+                  card nest-api-unified-mutation-service; callers need
+                  tailnet, not wp-boards.env). The endpoint upserts
+                  private lesson posts by slug lesson-<md5(topic)>;
+                  Thai section appended via gemini flash-lite
+                  (GEMINI_API_KEY_FREE first); meta incl. next_review
+                  default learned_at+7d"
   lessons_due:  "scripts/lessons-due.py on idc03 — chaba-lessons-due.timer
                   daily 07:30 (ssot.jobs.yml); refreshes private page slug
                   education-due (post 354): due-now + upcoming review lists"
