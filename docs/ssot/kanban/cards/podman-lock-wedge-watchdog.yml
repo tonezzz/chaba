@@ -1,7 +1,7 @@
 id: podman-lock-wedge-watchdog
 title: 'tony-dell: watchdog for wedged rootless-podman state DB (stale shm lock -> auto-clear + alert)'
-column: doing
-updated: 2026-10-23 08:36
+column: review
+updated: 2026-10-23 08:39
 priority: medium
 spec: 'Timer on tony-dell: probe `timeout 8 podman ps`; on 3 consecutive failures with no live `podman` CLI processes
   (conmon/pause excluded), remove stale /dev/shm/libpod_rootless_lock_$(id -u), dead pause.pid under /run/user/$UID/containers,
@@ -37,8 +37,17 @@ comms:
     rm’s shm lock + dead pause.pid + alive.lck, renumbers, re-probes; alerts chaba-admin + LINE on recovered (warn)
     and still-wedged (critical), 1 alert/episode, 6h resend, 20min re-attempt cooldown. Registered in ssot.jobs.yml
     (host tony_dell) + rendered units committed; 7 offline tests'
+- at: 2026-10-23 08:39
+  from: mn01
+  text: 'finished (ok): exit=0 scripts/render-jobs.py --host tony_dell --install` on the dell exec checkout after
+    merge. | devin-task-20261023-0'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
   repo: chaba
+  result: 'exit=0 scripts/render-jobs.py --host tony_dell --install` on the dell exec checkout after merge. | devin-task-20261023-012712-timer-on-tony-dell-probe-timeo.service:
+    Consumed 14.596s CPU time over 10min 50.497s wall clock time, 282.3M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
