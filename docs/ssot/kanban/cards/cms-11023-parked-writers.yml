@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: done
-updated: 2026-10-23 08:21
+updated: 2026-10-23 09:26
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -104,6 +104,13 @@ comms:
     rejection) — merged to origin/master now; (2) ada-voice d438a52 rebased + pushed to origin/main (request option
     a) — fix is durable, no longer uncommitted-only on runners. deploy-ada.sh on idc03 still pending (= request
     option b, lane restarts). Parked-collection delete on :11023 remains Tonys call (destructive, rollback window).'
+- at: 2026-10-23 09:26
+  from: devin
+  text: '[sweep 2026-10-23] delete-now executed per Tonys answer: all 15 parked collections deleted on :11023 (~4348
+    docs: infrastructure-ssot 2996, ada-cms-pages 529, documents 275, kb-operations 279, kb-features 70, ada-cms-automation
+    64, chaba-docs 40, kb-system 34, kb-development 19, chaba-archive 14, ada-cms-pages-kk 10, devin-kb 9, chaba-architecture
+    4, ada-cms-pages-kk-dev 4, chaba-glossary 1). Rollback = nightly filecopy mddb-filecopy-mddb-20261023-0230.db
+    (8.2G, pre-delete). Stale writers now fa'
 action:
   type: dispatch
   status: done
