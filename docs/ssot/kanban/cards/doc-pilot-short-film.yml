@@ -1,7 +1,7 @@
 id: doc-pilot-short-film
 title: doc-pilot — first AI short documentary end-to-end
 column: backlog
-updated: 2026-10-23 17:38
+updated: 2026-10-23 18:38
 priority: medium
 tags:
 - ada-nest
@@ -40,3 +40,10 @@ comms:
     guard), doc-render-ss1 (18x73f t2v + i2v on shots 2/18, per-shot resumable, Colab-only gpu_gb14). tony-macbook
     lacked venv+gpu so Omen claimed embeds; VO follows in same worker pass. REMAINING: Colab T4 session for doc-render-ss1
     (also picks up ltx-probe-81f + s1-i2v-chain while conn'
+- at: 2026-10-23 18:38
+  from: devin
+  text: 'VO status 2026-10-23: doc-vo-ss1 generated/published all 18 wavs + vo-report.md to Drive. QC caught NaN
+    peaks on shots 4 and 8 (vo-report incorrectly says fails:none because NaN compares false to <0.01); hold assembly.
+    Remaining 16 clips have finite peak, durations ~2.2–4.4s. Need add finite-value check to pack, regenerate only
+    shots 4/8 with clause splits, verify waveform/CER before cut. Colab runner currently active on doc-embeds-ss1;
+    no embeds landed yet.'
