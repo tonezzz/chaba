@@ -1,7 +1,7 @@
 id: text-lane-provider-routing
 title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
 column: doing
-updated: 2026-10-23 08:39
+updated: 2026-10-23 08:46
 priority: medium
 spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
   use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
@@ -47,6 +47,12 @@ comms:
   from: devin
   text: 'investigated: OpenRouterTextProvider(tools=True) already runs real lane tools via Gemini REST; gap is routing
     is opt-in (mode=text/env) not channel-keyed. Implementing server-side channel routing + watchdog stubs.'
+- at: 2026-10-23 08:46
+  from: devin
+  text: 'done in worktree: /ws now routes channel=telegram|tg|line to OpenRouterTextProvider(tools=True) via ADA_TEXT_ONLY_CHANNELS
+    (mode=live escape hatch); relays pin mode=text unconditionally; reconnect loop guarded so text lanes never upgrade
+    to Live; watchdog stubs added (stall_watchdog was dying on text sessions). Tool audit: full lane tool set works
+    via Gemini REST tool loop. 1630 tests pass, lint clean. No commit/push/deploy.'
 action:
   type: dispatch
   status: running
