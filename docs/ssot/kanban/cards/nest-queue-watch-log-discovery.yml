@@ -1,0 +1,21 @@
+id: nest-queue-watch-log-discovery
+title: Nest queue watch is missing current Colab events
+column: doing
+updated: 2026-10-23 20:04
+priority: high
+spec: Investigate and fix quiet Ada-HA Telegram notifications. Current watcher selects only queue/run-*.out.log,
+  while current queue-runner emits queue/log-*.txt; watcher state remains pinned to the old run-20261023-1028.out.log
+  despite later Colab events. Update discovery/parser to follow active log formats, add regression tests, confirm
+  relay routing to ada-ha group (-5410424865) and log send failures. Deploy through SSOT-rendered systemd job. Do
+  not send unsolicited Telegram test messages without approval. Done when current events are consumed and watcher
+  reports target/transport status; card progress appended.
+action:
+  type: manual
+ref: OPS-0800
+comms:
+- at: 2026-10-23 20:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 20:04
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
