@@ -11,7 +11,8 @@ Intended as a dispatcher job (every: 1m) on idc03:
   - Drive read : ssh idc02 rclone cat/lsf gdrive:ada-nest/...
   - notify     : board_notify tg -> http://127.0.0.1:8911/send
 
-Events reported (from the newest queue/run-*.out.log):
+Events reported (from the newest queue/log-*.txt or legacy
+queue/run-*.out.log):
   == <name>: run            -> taken
   == <name>: DONE           -> finished (includes duration)
   == <name>: FAIL|PREP FAILED -> failed
@@ -57,18 +58,34 @@ REMOTE = os.environ.get("NEST_QUEUE_REMOTE", "gdrive:ada-nest").rstrip("/")
 Q = f"{REMOTE}/queue"
 STALE_S = int(os.environ.get("NEST_QUEUE_STALE_S", "240"))
 MAX_CATCHUP = 5  # don't burst-notify ancient history on first tick
+LOG_NAME = re.compile(r"^(?:log|run)-(?P<stamp>\d{8}-\d{4})")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "board"))
 import board_notify  # noqa: E402
 
 
 def remote(*args: str) -> str:
-    """rclone over ssh to the proxy host; '' on any failure."""
+    """rclone over ssh to the proxy host; log failures and return ''."""
     r = subprocess.run(
         ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
          SSH_HOST, "~/.local/bin/rclone " + " ".join(args)],
         capture_output=True, text=True, timeout=60)
-    return r.stdout if r.returncode == 0 else ""
+    if r.returncode != 0:
+        print(f"nest-queue-watch: remote {' '.join(args[:2])} failed: "
+              f"{r.stderr.strip()[:300]}", file=sys.stderr)
+        return ""
+    return r.stdout
+
+
+def newest_log(listing: str) -> str:
+    """Select the newest current or legacy runner log by its timestamp."""
+    candidates = []
+    for line in listing.splitlines():
+        name = line.strip()
+        match = LOG_NAME.match(name)
+        if match:
+            candidates.append((match.group("stamp"), name))
+    return max(candidates, default=("", ""))[1]
 
 
 def load_state() -> dict:
@@ -86,12 +103,17 @@ def save_state(st: dict) -> None:
         print(f"state write failed: {e}", file=sys.stderr)
 
 
-def notify(title: str, body: str = "") -> None:
-    board_notify.send(f"[nest] {title}", body, url="")
+def notify(title: str, body: str = "") -> bool:
+    ok = board_notify.send(f"[nest] {title}", body, url="")
+    if not ok:
+        print(f"nest-queue-watch: notification was not accepted: {title}",
+              file=sys.stderr)
+    return ok
 
 
 EVENT = re.compile(
-    r"^(?P<t>\d\d:\d\d:\d\d) (?:== (?P<job>\S+): (?P<ev>run|DONE|FAIL"
+    r"^(?P<t>\d\d:\d\d:\d\d) (?:== (?P<job>\S+): "
+    r"(?P<ev>prep|run|DONE|FAIL"
     r"|PREP FAILED)(?P<rest>.*)|(?P<other>QUEUE-DRAINED.*|lease acquired:.*"
     r"|lease lost.*|fenced.*))")
 
@@ -99,6 +121,8 @@ EVENT = re.compile(
 def fmt_event(m: re.Match) -> str | None:
     job, ev, rest = m.group("job"), m.group("ev"), m.group("rest") or ""
     if job:
+        if ev == "prep":
+            return f"{job} — preparing"
         if ev == "run":
             return f"{job} — started"
         if ev == "DONE":
@@ -124,10 +148,11 @@ def main() -> int:
         except ValueError:
             pass
 
-    # newest run-*.out.log
-    listing = remote("lsf", Q, "--files-only", "--include", "run-*.out.log")
-    logs = sorted(x for x in listing.splitlines() if x.strip())
-    cur = logs[-1].strip() if logs else ""
+    # Current detached runner uses log-*.txt; retain legacy logs during
+    # migration so a format change cannot silently stop notifications.
+    listing = remote("lsf", Q, "--files-only", "--include",
+                     "run-*.out.log", "--include", "log-*.txt")
+    cur = newest_log(listing)
 
     events: list[str] = []
     if cur:
@@ -152,10 +177,14 @@ def main() -> int:
     elif hb_ts and now - hb_ts <= STALE_S:
         st["stalled"] = False
 
-    for e in events:
-        notify(e)
-    save_state(st)
-    if events:
+    delivered = all(notify(e) for e in events)
+    if delivered:
+        save_state(st)
+    else:
+        # Keep the old cursor so failed Telegram delivery is retried next tick.
+        print("nest-queue-watch: retaining event cursor for retry",
+              file=sys.stderr)
+    if events and delivered:
         print("sent: " + " | ".join(events))
     return 0
 
