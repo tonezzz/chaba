@@ -1,7 +1,7 @@
 id: local-stt-lane-eval
 title: Local STT lane POC — audio.cpp Qwen3-ASR vs sherpa-onnx vs whisper-large-v3 (4-way Thai/EN shootout on idc02)
-column: review
-updated: 2026-10-23 09:18
+column: done
+updated: 2026-10-23 09:24
 spec: 'Host: idc02 (4-core ~9GB free, CPU lane). Install audio-v0.9.2-bin-ubuntu-x64-cpu-portable (~57MB); pull
   GGUFs: Qwen3-ASR-0.6B Q8+F16, CrisperWhisper-Large Q8; sherpa-onnx binary + whisper small/medium. Corpus ~25-30
   real utterances: Thai/EN/code-switched, names (Ada, Kaewta, KK), household commands — from Ada transcripts or
@@ -67,6 +67,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-083126-host-idc02-4-core-9gb-free-cpu,
     branch dispatch/20261023-083126-host-idc02-4-core-9gb-free-cpu'
+- at: 2026-10-23 09:24
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -79,3 +82,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 09:24
+  note: verified — evidence checks green, closing itself
