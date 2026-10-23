@@ -117,6 +117,10 @@ comms:
     (SHA-256 840a38f3ad634a3af77a3db885a9a564a986194995d2ec4c64f2c4b77e25ec29). It caps frequency only and leaves
     the current balanced/powersave governor under power-profiles-daemon. No root install/restart has run; live cap
     is still 2.20GHz.
+- at: 2026-10-23 20:06
+  from: devin
+  text: 'raised request install-omen-cpufreq-limit-2ghz: The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz
+    on Omen. To apply the requested persistent 2.00GHz ce'
 requests:
 - id: omen-disk-plan
   from: devin
@@ -130,6 +134,20 @@ requests:
   - id: accept-tidy
     label: Accept, tidy only
   answer: move-cache — Move caches to data disk
+- id: install-omen-cpufreq-limit-2ghz
+  ask: 'The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz on Omen. To apply the requested persistent
+    2.00GHz ceiling, please run these on Omen: sudo install -m 0644 /tmp/cpufreq-limit.service.pending-2ghz /etc/systemd/system/cpufreq-limit.service
+    && sudo systemctl daemon-reload && sudo systemctl restart cpufreq-limit.service; verify cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+    returns 2000000. This preserves the current power-profiles-daemon governor. Run now, or hold at 2.20GHz?'
+  status: open
+  at: 2026-10-23 20:06
+  from: devin
+  options:
+  - id: run-now
+    label: Run the privileged install and verify
+  - id: hold
+    label: Hold at 2.20GHz
+  suggested: run-now
 action:
   status: done
   type: dispatch
