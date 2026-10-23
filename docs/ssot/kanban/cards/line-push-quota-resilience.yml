@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
-column: doing
-updated: 2026-10-23 08:41
+column: review
+updated: 2026-10-23 08:42
 priority: high
 tags:
 - line
@@ -139,6 +139,10 @@ comms:
     write-through LINE_SEND_LEDGER) + hourly free quota probe (quota_status/quota_low/quota_depleted) — burn now
     visible before the wall. /quota exposes ledger_today+month_push_msgs. Fixes 1+3 were already in from the Oct-17
     card. 1631 tests pass, tool-lint clean. Spend-gate decision requested on board.'
+- at: 2026-10-23 08:42
+  from: tony-macbook
+  text: 'finished (ok): exit=0 an vs per-member split — since it''s a spend gate; no answer had arrived by session
+    end. | devin-task-20261023-083'
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
@@ -176,7 +180,7 @@ requests:
   - proceed
   - hold
 action:
-  status: running
+  status: done
   type: dispatch
   repo: ada-voice
   attempts: 1
@@ -184,3 +188,8 @@ action:
   sweep:
     stale_running: 2026-10-23 08:39
     session_gone: 2026-10-23 08:39
+  result: 'exit=0 an vs per-member split — since it''s a spend gate; no answer had arrived by session end. | devin-task-20261023-083039-2026-10-14-17-12-two-queued-ch.service:
+    Consumed 5min 6.635s CPU time over 11min 10.530s wall clock time, 1.5G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
