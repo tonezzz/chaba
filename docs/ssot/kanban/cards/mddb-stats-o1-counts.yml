@@ -1,7 +1,7 @@
 id: mddb-stats-o1-counts
 title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
 column: doing
-updated: 2026-10-23 09:46
+updated: 2026-10-23 09:51
 priority: medium
 tags:
 - mddb
@@ -110,6 +110,11 @@ comms:
 - at: 2026-10-23 09:46
   from: chaba
   text: started devin-task-20261023-094646-handlestats-services-mddbd-htt on idc02 (dispatch)
+- at: 2026-10-23 09:51
+  from: devin
+  text: 'Investigating: implementing option (b)+(c) — 60s single-flight TTL cache w/ stale-while-revalidate for
+    the collection-stats snapshot; folding per-collection crc32 checksums into the one docs walk (kills the 57 extra
+    read txs). gRPC Stats twin noted, out of scope.'
 action:
   type: dispatch
   status: running
