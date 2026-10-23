@@ -63,3 +63,31 @@ kanban cards classified in 2x50 parallel batches (204s+296s), published as
   to rclone for ~60s; poll before archiving.
 - `torch_dtype=` (not `dtype=`) is the diffusers kwarg; the wrong one is
   silently ignored and loads fp32 (slow + big).
+
+## Batch-queue mode (verified 2026-10-23)
+
+For multi-experiment sessions, drive the notebook from a **manifest** instead
+of staging cells per job:
+
+- **Manifest** — `gdrive:ada-nest/queue/JOBS.py`: a `JOBS` list of
+  `{name, prep, run}` — `prep` is a shell string (fetch/install/extract),
+  `run` is a Python source string exec'd in a shared namespace.
+- **Runner cell** — one self-contained cell loops the manifest: per-job
+  try/except isolation, `queue/done/<name>.done` markers make it
+  resumable (rerun the same cell after any crash/recycle), and every job
+  publishes its artifact to Drive inside its own `run`.
+- **Overlap rule** — while job N's `run` holds the GPU, the runner starts
+  job N+1's `prep` in a background `Popen` and `wait()`s for it before
+  that job's run. This is how you fill the GPU: downloads, tar extracts
+  and pip installs are CPU-bound, denoise is GPU-bound — running them
+  serially wastes one side or the other. On 2026-10-22 the LTX 17GB
+  extract (~9min CPU) ran entirely inside the VoxCPM2 gen window.
+- **Write the manifest from a fleet host** (`rclone copy JOBS.py
+  gdrive:ada-nest/queue/` from tony-dell) — no notebook edit needed to
+  requeue; bump the file and rerun the cell.
+- **Order jobs GPU-heavy-first within constraints**: queue the work that
+  needs no new weights first if its inputs are already staged; put the
+  big extract/download as the *next* job's prep so it hides under the
+  current job's GPU time.
+- **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` on Drive
+  are the durable record — the notebook doc can be recycled at will.
