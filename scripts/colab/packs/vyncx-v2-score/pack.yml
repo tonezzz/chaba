@@ -7,11 +7,15 @@ needs:
   egress_only_ok: true
   disk_gb: 2
 venv: true        # PEP-668 hosts (dell/omen) — prep/run inside .venv
+fetch:            # store paths outside this pack's dir, materialized at NEST_ROOT
+  - voice-bench/voice-bench-assets.tgz
+  - packs/vyncx-v2-bench/out/
 timeout_s: 900
 artifacts:
   - packs/vyncx-v2-score/report.md
   - packs/vyncx-v2-score/scores.json
 prep: |
+  pip install -q 'setuptools<81'   # >=81 removes pkg_resources; webrtcvad needs it
   pip install -q resemblyzer soundfile
 run: |
   import os, json, glob, tarfile
