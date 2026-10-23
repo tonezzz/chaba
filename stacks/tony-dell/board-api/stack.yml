@@ -1,8 +1,11 @@
 id: chaba-board-api
 host: tony-dell
 description: >-
-  Kanban board write API — card actions/respond/comment → YAML + board
-  rerender. Binds 127.0.0.1:8787; /health returns {"ok": true}.
+  Kanban board write API — the unified mutation door: card
+  actions/respond/comment → YAML + board rerender; /lesson /job → WP
+  lesson/nest_job CPTs; /report → ada-cms-pages; /inbox → focus-inbox
+  (docs/kb/board-api-write-door.md). Binds 127.0.0.1:8787; /health
+  returns {"ok": true}.
 verify: >-
   curl -sf http://127.0.0.1:8787/health | grep -q '"ok": *true'
 requires:

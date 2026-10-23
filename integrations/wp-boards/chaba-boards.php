@@ -2,7 +2,8 @@
 /**
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
- *              contact, reminder, bench, report, xlate, cam, render_job, news,
+ *              contact, reminder, bench, report, xlate, cam, render_job,
+ *              news, nest_job,
  *              repeat_ask, lesson, ops_error, score, activity)
  *              + member-post translation + member-gated media endpoint
  *              + usage pull-render worker (pulls the idc02 usage feed into
@@ -14,15 +15,18 @@
  *              + activity CPT — durable tool-execution records
  *              ([chaba_activity] feed block; timeline links these posts
  *              instead of re-inlining media).
+ *              + nest_job CPT — ada-nest Drive-queue job mirror: queue-mgr
+ *              upserts one post per job/pack via board-api POST /job so
+ *              members can browse the offload queue on the board site.
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.8.0
+ * Version: 0.9.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.8.0';
+const CHABA_BOARDS_VER = '0.9.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -72,6 +76,12 @@ add_action('init', function () {
         // call (kind=tool). Failed/blocked calls land too — that IS the
         // incident report. Writer: scripts/ada/activity-posts.py.
         'activity' => ['Activity','Activities','dashicons-list-view'],
+        // nest_job — the ada-nest offload queue mirrored to the member
+        // surface (card nest-api-unified-mutation-service): queue-mgr
+        // mirrors Drive queue/packs state -> CPT via board-api POST /job.
+        // Hierarchical like activity — a parent job can own child
+        // jobs/packs (job trees). comms is a JSON append log.
+        'nest_job' => ['Nest Job','Nest Jobs','dashicons-networking'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -93,9 +103,10 @@ add_action('init', function () {
         if (in_array($slug, ['render_job', 'lesson'], true)) {
             $extra['has_archive'] = true;
         }
-        // activity — hierarchical (session parents own tool children) +
-        // archive so members can re-browse /wp/activity/.
-        if ($slug === 'activity') {
+        // activity + nest_job — hierarchical (session parents own tool
+        // children; parent jobs own child jobs/packs) + archive so members
+        // can re-browse /wp/activity/ and /wp/nest_job/.
+        if (in_array($slug, ['activity', 'nest_job'], true)) {
             $extra['hierarchical'] = true;
             $extra['has_archive']  = true;
             $extra['supports']     = array_merge($common['supports'],
@@ -268,6 +279,14 @@ add_action('init', function () {
                        'cost_usd', 'artifact_url', 'ref_url',
                        'prompt_excerpt', 'session_id', 'chat_id',
                        'duration_s', 'event_id', 'occurred_at', 'error'],
+        // nest_job — one post per ada-nest offload job/pack (board-api
+        // POST /job is the only writer). kind(pack|queue|sub)/status
+        // (queued|claimed|running|done|failed|stalled)/host(worker that
+        // claimed)/pack(name)/runner(colab worker id)/result_ref(drive
+        // path or report slug)/error/comms(JSON append log
+        // [{at,from,text}])/updated(ISO).
+        'nest_job' => ['kind', 'status', 'host', 'pack', 'runner',
+                       'result_ref', 'error', 'comms', 'updated'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -315,11 +334,13 @@ function chaba_cpt_admin_columns(string $type): array {
         'activity'   => ['artifact' => 'Artifact', 'tool' => 'Tool', 'lane' => 'Lane',
                          'status' => 'Status', 'model' => 'Model', 'duration_s' => 'Secs',
                          'cost_usd' => '$', 'occurred_at' => 'At'],
+        'nest_job'   => ['kind' => 'Kind', 'status' => 'Status', 'host' => 'Host',
+                         'pack' => 'Pack', 'updated' => 'Updated'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error','score','activity'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error','score','activity','nest_job'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {

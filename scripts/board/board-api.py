@@ -58,6 +58,24 @@ Endpoints (after prefix strip):
       CI pipeline write path (docs/ssot/ssot.ci.yml). opt_in:true sets the
       `pipeline: ci` opt-in; pipeline:{...} merges a full status block
       (stages deep-merged); stage+status records one stage result.
+  POST /lesson   {topic, content, level?, source?, next_review?, status?,
+                  no_th?} — WP lesson CPT upsert by topic slug (re-asked
+                  topics update in place) + auto-Thai section. The remote
+                  write half of the lesson-capture duty; lesson-add.py is
+                  now a thin CLI client of this endpoint.
+  POST /job      {slug, title?, status?, comms?|note?, parent?, kind?,
+                  host?, pack?, runner?, result_ref?, error?} — nest_job
+                  CPT upsert by slug: queue-mgr mirrors the ada-nest Drive
+                  queue -> member surface. comms appends {at,from,text} to
+                  a JSON log in meta.comms; parent (post id or slug) links
+                  job trees.
+  POST /report   {query} | {slug, note, lang?} | {title, content_md,
+                  slug?, meta?} — report-integration duty as an endpoint:
+                  search ada-cms-pages for integrate candidates, append a
+                  session-log line (integrate), or create a page.
+  POST /inbox    {label?, text, priority?, tags?, missing_info?,
+                  session?, owner?} — focus-inbox YAML entry under the
+                  card flock with the same immediate-commit discipline.
   POST /card     {id?, title, column?, note?, help?, text?, from?,
                   spec?, report?, action?, queue?, brief?, priority?,
                   tags?, program?, blocked_by?, on_exists?}
@@ -81,6 +99,13 @@ Writes are serialized with an flock so concurrent clicks don't race.
 ALL card writes must go through this API — any direct card-YAML edit
 outside it (scripts, dispatch rails, hand fixes) must hold LOCK
 (/tmp/board-api.lock) first or it races the server.
+
+Unified mutation door (card nest-api-unified-mutation-service): the
+namespaced write endpoints beyond card files — WP lesson/nest_job CPTs,
+MDDB ada-cms-pages, focus-inbox — live here too so agents never hold
+WP/mddb creds (same reason Colab stays credential-free). Remote-backed
+writes (/lesson, /job, /report) serialize under WP_LOCK, NOT the card
+flock — a 45s WP REST call must not stall /comment.
 
 Write auth (card board-api-auth): POSTs need a verified identity —
 either the Tailscale-User-Login header that tailscale serve injects on
@@ -106,7 +131,10 @@ import re
 import subprocess
 import sys
 import threading
-from datetime import datetime, timezone, timedelta
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address, ip_network
 from pathlib import Path
@@ -1291,6 +1319,487 @@ def do_pipeline(card: dict, body: dict, frm: str) -> str:
     return "pipeline updated"
 
 
+# --- unified mutation door (card nest-api-unified-mutation-service) ----
+# WP-bound writes (/lesson, /job) and MDDB-bound writes (/report) run
+# under WP_LOCK — remote-service calls serialize among themselves WITHOUT
+# holding the card flock (a slow WP round-trip must not stall /comment).
+# /inbox writes a repo file, so it stays under the card LOCK where the
+# immediate-commit discipline lives.
+
+WP_LOCK = Path(os.environ.get("BOARD_API_WP_LOCK",
+                              "/tmp/board-api-wp.lock"))
+WP_ENV_FILE = Path(os.environ.get(
+    "BOARD_API_WP_ENV",
+    str(Path.home() / ".config/secrets/wp-boards.env")))
+INBOX_DIR = REPO / "docs/ssot/focus-inbox"
+MDDB = os.environ.get("MDDB_BASE_URL",
+                      "http://100.102.134.91:11027/v1").rstrip("/")
+MDDB_PAGES = "ada-cms-pages"
+REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report"}
+
+
+class UpstreamError(RuntimeError):
+    """Remote write service (WP/MDDB) failed — surfaces as a 502 so a
+    caller can tell door-unavailable from bad-request."""
+
+
+def _load_env_file(p: Path) -> dict:
+    env = {}
+    for ln in p.read_text().splitlines():
+        ln = ln.strip()
+        if ln and not ln.startswith("#") and "=" in ln:
+            k, v = ln.split("=", 1)
+            env[k.strip()] = v.strip().strip('"').strip("'")
+    return env
+
+
+def wp_api(route: str, data=None):
+    """WP REST call (index.php?rest_route= style — the Plesk vhost 404s
+    /wp-json). Creds live in wp-boards.env on the SERVICE host only;
+    callers of /lesson and /job never see them — that is the point of
+    the door. Tests monkeypatch this seam."""
+    try:
+        env = _load_env_file(WP_ENV_FILE)
+        base = env["WP_SITE_URL"].rstrip("/")
+        tok = base64.b64encode(
+            f'{env["WP_APP_USER"]}:{env["WP_APP_PASSWORD"]}'
+            .encode()).decode()
+    except (OSError, KeyError) as e:
+        raise UpstreamError(f"wp creds unavailable: {e}")
+    u = (f"{base}/index.php?rest_route="
+         f"{urllib.parse.quote(route, safe='/&=')}")
+    body = json.dumps(data).encode() if data is not None else None
+    req = urllib.request.Request(
+        u, data=body, method="POST" if data else "GET",
+        headers={"Authorization": f"Basic {tok}",
+                 "Content-Type": "application/json",
+                 "User-Agent": "chaba-board-api/1.0"})
+    try:
+        return json.loads(urllib.request.urlopen(req, timeout=45).read())
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace")
+        raise UpstreamError(f"wp {route} -> {e.code}: {detail}")
+    except OSError as e:
+        raise UpstreamError(f"wp {route} -> {e}")
+
+
+def _mddb_post(path: str, payload: dict, timeout: int = 30):
+    req = urllib.request.Request(
+        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"})
+    try:
+        return json.load(urllib.request.urlopen(req, timeout=timeout))
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace")
+        raise UpstreamError(f"mddb {path} -> {e.code}: {detail}")
+    except OSError as e:
+        raise UpstreamError(f"mddb {path} -> {e}")
+
+
+_gemini_mod = None
+
+
+def _gemini_key() -> str:
+    key = os.environ.get("GEMINI_API_KEY_FREE")
+    if key:
+        return key
+    found = {}
+    for f in (Path.home() / ".config/secrets/mddb-gemini.env",
+              Path.home() / ".config/secrets/gemini-keys.env",
+              Path.home() / ".config/secrets/gemini-api-key.env"):
+        try:
+            for ln in f.read_text().splitlines():
+                m = re.match(
+                    r"^(GEMINI_API_KEY_FREE|GOOGLE_API_KEY|GEMINI_API_KEY)"
+                    r"=(.*)$", ln.strip())
+                if m:
+                    found.setdefault(
+                        m.group(1), m.group(2).strip().strip('"').strip("'"))
+        except OSError:
+            pass
+    return (found.get("GEMINI_API_KEY_FREE") or found.get("GOOGLE_API_KEY")
+            or found.get("GEMINI_API_KEY")
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY") or "")
+
+
+def _gemini_thai(html_text: str) -> str:
+    """Thai translation for lessons — the same gemini_rest flash-lite lane
+    lesson-add.py used. Best-effort: any failure returns '' so a quota or
+    edge hiccup degrades to EN-only instead of failing the write."""
+    global _gemini_mod
+    if _gemini_mod is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "gemini_rest", REPO / "scripts/ada/gemini_rest.py")
+        mod = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(mod)
+            _gemini_mod = mod
+        except Exception:
+            _gemini_mod = False
+    if not _gemini_mod:
+        return ""
+    key = _gemini_key()
+    if not key:
+        return ""
+    try:
+        th = _gemini_mod.generate(
+            "Translate the following HTML lesson to natural Thai. "
+            "Keep HTML tags, code, URLs, and proper names verbatim. "
+            "Output ONLY the translated HTML.\n\n" + html_text,
+            "gemini-3.5-flash-lite", key=key)
+        return (th or "").strip()
+    except Exception:
+        return ""
+
+
+LESSON_LEVELS = {"intro", "working", "deep"}
+LESSON_SOURCES = {"chat", "voice", "link"}
+
+
+def do_lesson(body: dict, frm: str) -> dict:
+    """/lesson — the remote write half of the lesson-capture duty: upsert
+    the WP lesson CPT by topic slug (re-asked topics update in place, WP
+    upserts by slug), append the Thai section unless no_th, and preserve
+    first-learn provenance + review state on re-file. Identical semantics
+    to the old lesson-add.py — which is now a thin client of this door."""
+    topic = str(body.get("topic") or "").strip()
+    if not topic:
+        raise ValueError("topic required")
+    level = str(body.get("level") or "intro").strip()
+    if level not in LESSON_LEVELS:
+        raise ValueError(f"level must be one of {sorted(LESSON_LEVELS)}")
+    source = str(body.get("source") or "chat").strip()
+    if source not in LESSON_SOURCES:
+        raise ValueError(f"source must be one of {sorted(LESSON_SOURCES)}")
+    content = str(body.get("content") or "").strip()
+    if not content:
+        raise ValueError("content required")
+    slug = "lesson-" + hashlib.md5(
+        topic.lower().encode()).hexdigest()[:12]
+    th_ok = False
+    if not body.get("no_th"):
+        th = _gemini_thai(content)
+        if th:
+            content += "\n<hr>\n<h3>ไทย</h3>\n" + th
+            th_ok = True
+    today = str(date.today())
+    meta = {"topic": topic[:160], "level": level, "source": source,
+            "learned_at": today,
+            "next_review": str(body.get("next_review") or "").strip()
+            or str(date.today() + timedelta(days=7)),
+            "status": str(body.get("status") or "open").strip()[:40],
+            "updated": today}
+    payload = {"title": f"Education — {topic}"[:160], "slug": slug,
+               "status": "private", "content": content, "meta": meta}
+    hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
+    if isinstance(hits, list) and hits:
+        pid = hits[0]["id"]
+        old_meta = hits[0].get("meta", {})
+        # preserve first-learn provenance + review state on re-file
+        for k in ("learned_at", "next_review", "status"):
+            if old_meta.get(k):
+                meta[k] = old_meta[k]
+        r = wp_api(f"/wp/v2/lesson/{pid}", payload)
+        action = "updated"
+    else:
+        r = wp_api("/wp/v2/lesson", payload)
+        action = "created"
+    return {"message": f"{action} {slug} (post {r.get('id')})",
+            "slug": slug, "post_id": r.get("id"), "action": action,
+            "th": th_ok}
+
+
+JOB_STATUSES = {"queued", "claimed", "running", "done", "failed",
+                "stalled", "cancelled"}
+JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
+                 "result_ref", "error", "updated")
+JOB_COMMS_CAP = 200
+JOB_FROM_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,40}$")
+
+
+def job_actor(body: dict, ident: str) -> str:
+    """/job writers are daemons (queue-mgr, pack runners) — allow ACTORS
+    plus host/daemon names, defaulting to the verified caller identity."""
+    frm = str(body.get("from") or "").strip() or ident
+    if frm in ACTORS or JOB_FROM_RE.match(frm):
+        return frm
+    raise ValueError("from must be an actor or a host/daemon name")
+
+
+def _job_by_slug(slug: str):
+    hits = wp_api(f"/wp/v2/nest_job&slug={slug}"
+                  "&status=private,archived&per_page=1")
+    return hits[0] if isinstance(hits, list) and hits else None
+
+
+def do_job(body: dict, frm: str) -> dict:
+    """/job — nest_job CPT upsert: the Drive-queue mirror write for
+    queue-mgr and pack runners. One post per job slug; status/meta merge;
+    `comms` (or `note`) appends {at,from,text} to a JSON log in
+    meta.comms; `parent` accepts a post id or a sibling job slug for
+    job trees."""
+    slug = str(body.get("slug") or "").strip()
+    if not re.fullmatch(r"[a-z0-9-]{1,80}", slug):
+        raise ValueError("slug must match [a-z0-9-]{1,80}")
+    status = str(body.get("status") or "").strip()
+    if status and status not in JOB_STATUSES:
+        raise ValueError(f"status must be one of {sorted(JOB_STATUSES)}")
+    parent = body.get("parent")
+    pid = 0
+    if parent not in (None, "", 0):
+        if isinstance(parent, int) or str(parent).isdigit():
+            pid = int(parent)
+        else:
+            pslug = str(parent).strip()
+            if not re.fullmatch(r"[a-z0-9-]{1,80}", pslug):
+                raise ValueError("parent must be a post id or job slug")
+            hit = _job_by_slug(pslug)
+            if not hit:
+                raise ValueError(f"no parent job {pslug}")
+            pid = hit["id"]
+
+    existing = _job_by_slug(slug)
+    meta = dict(existing.get("meta") or {}) if existing else {}
+    note_text = str(body.get("comms") or body.get("note") or "").strip()
+    if note_text:
+        try:
+            log = json.loads(str(meta.get("comms") or "[]"))
+            if not isinstance(log, list):
+                log = []
+        except Exception:
+            log = []
+        log.append({"at": now(), "from": frm, "text": note_text[:500]})
+        meta["comms"] = json.dumps(log[-JOB_COMMS_CAP:], ensure_ascii=False)
+    for k in JOB_META_KEYS:
+        v = body.get(k)
+        if v is not None and str(v).strip() != "":
+            meta[k] = str(v)[:300]
+    extra = body.get("meta")
+    if isinstance(extra, dict):
+        for k, v in extra.items():
+            k = str(k)
+            if k in JOB_META_KEYS and str(v).strip():
+                meta[k] = str(v)[:300]
+    meta["updated"] = datetime.now(timezone.utc).isoformat(
+        timespec="seconds")
+    title = str(body.get("title") or "").strip()
+    payload = {"slug": slug, "status": "private", "meta": meta}
+    if title or not existing:
+        payload["title"] = title or f"nest job {slug}"
+    if pid:
+        payload["parent"] = pid
+    if existing:
+        r = wp_api(f"/wp/v2/nest_job/{existing['id']}", payload)
+        action = "updated"
+    else:
+        r = wp_api("/wp/v2/nest_job", payload)
+        action = "created"
+    return {"message": f"{action} nest_job {slug} (post {r.get('id')})",
+            "slug": slug, "post_id": r.get("id"), "action": action}
+
+
+def _dashed_slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:50] \
+        .strip("-") or "item"
+
+
+def do_inbox(body: dict, frm: str) -> dict:
+    """/inbox — a focus-inbox entry as an endpoint: agents park ideas
+    without a repo checkout. Same atomic write + immediate commit as
+    cards; runs under the card flock."""
+    text = str(body.get("text") or "").strip()
+    if not text:
+        raise ValueError("text required")
+    label = str(body.get("label") or body.get("title") or "").strip() \
+        or " ".join(text.split())[:80]
+    pri = str(body.get("priority") or "medium").strip()
+    if pri not in PRIORITIES:
+        raise ValueError(f"priority must be one of {sorted(PRIORITIES)}")
+    tags = body.get("tags")
+    if tags is not None and not isinstance(tags, list):
+        raise ValueError("tags must be a list")
+    par = body.get("safe_to_parallel")
+    if isinstance(par, dict):
+        safe_par = {"value": bool(par.get("value")),
+                    "reason": str(par.get("reason") or "")[:200]}
+    else:
+        safe_par = {"value": bool(par),
+                    "reason": str(body.get("parallel_reason") or "")[:200]}
+    subtasks = []
+    for s in (body.get("subtasks") or [])[:20]:
+        if isinstance(s, dict):
+            subtasks.append({"label": str(s.get("label") or "")[:200],
+                             "status": str(s.get("status")
+                                           or "not_started")[:20]})
+        else:
+            subtasks.append({"label": str(s)[:200],
+                             "status": "not_started"})
+    ts = datetime.now(timezone(timedelta(hours=7)))
+    entry = {
+        "title": label[:120],
+        "subtitle": str(body.get("subtitle")
+                        or "Focus inbox item")[:160],
+        "icon": str(body.get("icon") or "inbox")[:40],
+        "focus": {
+            "label": label[:120],
+            "text": text[:4000],
+            "priority": pri,
+            "status": "draft",
+            "tags": [str(t)[:40] for t in tags or []][:20],
+            "missing_info": [str(m)[:200] for m in
+                             (body.get("missing_info") or [])][:10],
+            "safe_to_parallel": safe_par,
+            "subtasks": subtasks,
+        },
+        "ownership": {
+            "owner": str(body.get("owner") or "tony")[:40],
+            "session": "",
+            "locked": False,
+            "lock_reason": "",
+        },
+        "source": {
+            "session": str(body.get("session") or "")[:80],
+            "date": ts.date().isoformat(),
+        },
+    }
+    slug = _dashed_slug(label)
+    p = INBOX_DIR / f"{ts.strftime('%Y-%m-%d-%H%M%S')}-{slug}.yml"
+    if p.exists():   # same-second collision — hash disambiguates
+        h = hashlib.sha1(text.encode()).hexdigest()[:6]
+        p = INBOX_DIR / f"{ts.strftime('%Y-%m-%d-%H%M%S')}-{slug}-{h}.yml"
+    out = yaml.safe_dump(entry, allow_unicode=True, sort_keys=False,
+                         width=110)
+    tmp = p.with_suffix(".yml.tmp")
+    tmp.write_text(out)
+    tmp.replace(p)
+    _commit_write(p, _pending_label or f"inbox {slug}")
+    return {"message": f"inbox item {p.name} filed", "file": p.name}
+
+
+_crn_mod = None
+
+
+def _crn():
+    """scripts/ada/cms-report-note.py — lazy import so /report shares the
+    session-log/managed-block/writer-contract logic instead of forking it
+    (same pattern as _lab_decision)."""
+    global _crn_mod
+    if _crn_mod is None:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "cms_report_note", REPO / "scripts/ada/cms-report-note.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _crn_mod = mod
+    return _crn_mod
+
+
+def _meta_first(meta: dict, name: str) -> str:
+    v = (meta or {}).get(name)
+    if isinstance(v, list):
+        return str(v[0]) if v else ""
+    return str(v) if v else ""
+
+
+def report_search(query: str, limit: int = 10) -> list:
+    docs = _mddb_post("search", {"collection": MDDB_PAGES,
+                                 "query": query, "limit": limit})
+    if not isinstance(docs, list):
+        docs = docs.get("result", docs.get("docs", []))
+    return [{"slug": d.get("key"),
+             "title": _meta_first(d.get("meta"), "title"),
+             "updated": _meta_first(d.get("meta"), "updated")}
+            for d in docs[:limit]]
+
+
+def report_note_append(slug: str, text: str, lang: str) -> dict:
+    try:
+        return _crn().note(slug, text, lang)
+    except (urllib.error.URLError, OSError) as e:
+        raise UpstreamError(f"report note {slug} -> {e}")
+    except SystemExit as e:
+        raise ValueError(str(e))
+
+
+def report_create_doc(slug: str, title: str, content_md: str,
+                      meta_extra: dict) -> dict:
+    """Create an ada-cms-pages doc honoring the writer contract — reuses
+    cms-report-note's merged_meta (empty doc = contract defaults) so the
+    create branch stays format-compatible with note-appended pages."""
+    now_dt = datetime.now(timezone.utc)
+    meta = _crn().merged_meta({}, slug, now_dt, now_dt.date().isoformat())
+    if meta_extra:
+        for k, v in meta_extra.items():
+            meta[str(k)] = v if isinstance(v, list) else [str(v)]
+    _mddb_post("add", {"collection": MDDB_PAGES, "key": slug, "lang": "en",
+                       "contentMd": content_md, "meta": meta}, timeout=60)
+    try:
+        from lib.cms_index import regen_reports_index
+        regen_reports_index(MDDB, written_by="board-api /report")
+    except Exception as e:
+        sys.stderr.write(f"board-api report index regen failed: {e}\n")
+    return {"slug": slug}
+
+
+def do_report(body: dict, frm: str) -> dict:
+    """/report — the report-integration duty as an endpoint. Callers
+    search first (query → candidate slugs), then either note-append to an
+    existing page (integrate) or create a new one (create). `mode` may be
+    given explicitly; otherwise inferred from the fields present."""
+    mode = str(body.get("mode") or body.get("do") or "").strip()
+    slug = str(body.get("slug") or "").strip()
+    note_text = str(body.get("note") or "").strip()
+    query = str(body.get("query") or "").strip()
+    title = str(body.get("title") or "").strip()
+    content_md = str(body.get("content_md") or body.get("content")
+                     or "").strip()
+    if mode and mode not in ("search", "note", "create"):
+        raise ValueError("mode must be search|note|create")
+    if not mode:
+        if slug and note_text:
+            mode = "note"
+        elif (slug or title) and content_md:
+            mode = "create"
+        elif query or title:
+            mode = "search"
+        else:
+            raise ValueError(
+                "report needs query | slug+note | title+content_md")
+    if mode == "search":
+        q = query or title
+        if not q:
+            raise ValueError("search needs query")
+        cands = report_search(q)
+        return {"message": f"{len(cands)} candidate page(s) for {q!r}",
+                "candidates": cands}
+    if mode == "note":
+        if not re.fullmatch(REPORT_SLUG_RE, slug):
+            raise ValueError("slug must match ^[a-z0-9-]{1,80}")
+        if not note_text:
+            raise ValueError("note required")
+        lang = str(body.get("lang") or "en").strip()[:10]
+        r = report_note_append(slug, note_text, lang)
+        return {"message": f"noted {r['slug']}: {r['line']}",
+                "slug": r["slug"], "updated": r.get("updated")}
+    # create
+    if not content_md:
+        raise ValueError("content_md required")
+    if slug and not re.fullmatch(REPORT_SLUG_RE, slug):
+        raise ValueError("slug must match ^[a-z0-9-]{1,80}")
+    if not slug:
+        if not title:
+            raise ValueError("create needs slug or title")
+        slug = _dashed_slug(title)[:80]
+    title = title or slug
+    meta_extra = body.get("meta") if isinstance(body.get("meta"), dict) \
+        else {}
+    r = report_create_doc(slug, title, content_md[:200000], meta_extra)
+    return {"message": f"created report page {r['slug']}",
+            "slug": r["slug"]}
+
+
 _render_flag = threading.Event()
 _render_worker_started = False
 
@@ -1372,6 +1881,31 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write(
             "board-api write %s id=%s via=%s\n"
             % (path, body.get("id") or body.get("card"), ident))
+
+        # remote-backed mutation endpoints (WP/MDDB) — separate flock so a
+        # slow upstream call never stalls card writes; no board re-render
+        # needed (cards.json untouched)
+        if path in REMOTE_WRITE_PATHS:
+            try:
+                frm = (job_actor(body, ident) if path == "/job"
+                       else actor(body))
+                with WP_LOCK.open("w") as lf:
+                    fcntl.flock(lf, fcntl.LOCK_EX)
+                    if path == "/lesson":
+                        res = do_lesson(body, frm)
+                    elif path == "/job":
+                        res = do_job(body, frm)
+                    else:
+                        res = do_report(body, frm)
+                msg = res.pop("message")
+                return self._send(200, {"ok": True, "message": msg,
+                                        "via": ident, **res})
+            except ValueError as e:
+                return self._send(400, {"error": str(e)})
+            except UpstreamError as e:
+                return self._send(502, {"error": str(e)})
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
 
         notify_req = None
         resp_extra = {}
@@ -1458,6 +1992,10 @@ class H(BaseHTTPRequestHandler):
                     msg = do_pipeline(card, body, frm)
                     card["updated"] = now()
                     save(p, card)
+                elif path == "/inbox":
+                    res = do_inbox(body, actor(body))
+                    msg = res["message"]
+                    resp_extra = {"file": res["file"]}
                 else:
                     return self._send(404, {"error": "not found"})
             except ValueError as e:
@@ -1922,6 +2460,174 @@ def _selftest() -> None:
     save(tmp / "outside.yml", {"id": "o", "title": "t"})
     globals()["REPO"] = real_repo
     globals()["CARD_DIR"] = real_cards
+
+    # ---- unified mutation door (nest-api-unified-mutation-service) ----
+    class FakeWP:
+        """Records POSTs, returns `existing` for slug GETs."""
+        def __init__(self, existing=None):
+            self.existing = existing or []
+            self.posts = []
+
+        def __call__(self, route, data=None):
+            if data is None:
+                return self.existing
+            self.posts.append((route, data))
+            return {"id": 42}
+
+    real_wp, real_th = wp_api, _gemini_thai
+    real_mddb, real_crn = _mddb_post, _crn
+    try:
+        # /lesson — validation
+        rejects(lambda: do_lesson({}, "devin"), "topic required")
+        rejects(lambda: do_lesson({"topic": "t"}, "devin"),
+                "content required")
+        rejects(lambda: do_lesson({"topic": "t", "content": "x",
+                                   "level": "phd"}, "devin"),
+                "level must be one of")
+        rejects(lambda: do_lesson({"topic": "t", "content": "x",
+                                   "source": "smoke"}, "devin"),
+                "source must be one of")
+        # create: Thai section appended, contract meta stamped
+        wp = FakeWP()
+        globals()["wp_api"] = wp
+        globals()["_gemini_thai"] = lambda h: "<p>แปล</p>"
+        res = do_lesson({"topic": "Object Storage",
+                         "content": "<p>hi</p>", "level": "intro",
+                         "source": "chat"}, "devin")
+        assert res["action"] == "created" and res["post_id"] == 42
+        assert res["th"] is True
+        route, payload = wp.posts[-1]
+        assert route == "/wp/v2/lesson"
+        assert payload["slug"].startswith("lesson-")
+        assert "ไทย" in payload["content"]
+        assert payload["meta"]["topic"] == "Object Storage"
+        assert payload["meta"]["next_review"]
+        # re-file: update path, first-learn provenance preserved, no_th honored
+        wp2 = FakeWP([{"id": 42, "meta": {"learned_at": "2026-01-01",
+                                          "next_review": "2026-01-08",
+                                          "status": "learned"}}])
+        globals()["wp_api"] = wp2
+        res = do_lesson({"topic": "Object Storage",
+                         "content": "<p>v2</p>", "no_th": True}, "devin")
+        assert res["action"] == "updated" and res["th"] is False
+        route, payload = wp2.posts[-1]
+        assert route == "/wp/v2/lesson/42"
+        assert payload["meta"]["learned_at"] == "2026-01-01"
+        assert payload["meta"]["next_review"] == "2026-01-08"
+        assert payload["meta"]["status"] == "learned"
+        assert "ไทย" not in payload["content"]
+
+        # /job — validation + create/update + comms log + parent
+        assert job_actor({}, "local") == "local"
+        assert job_actor({"from": "queue-mgr"}, "local") == "queue-mgr"
+        rejects(lambda: job_actor({"from": "Bad Name!"}, "x"),
+                "from must be")
+        rejects(lambda: do_job({}, "queue-mgr"), "slug must match")
+        rejects(lambda: do_job({"slug": "Bad_Slug"}, "queue-mgr"),
+                "slug must match")
+        rejects(lambda: do_job({"slug": "s", "status": "weird"},
+                               "queue-mgr"), "status must be one of")
+        wp3 = FakeWP()
+        globals()["wp_api"] = wp3
+        rejects(lambda: do_job({"slug": "s", "parent": "nope"},
+                               "queue-mgr"), "no parent job")
+        res = do_job({"slug": "thonburian-bench", "status": "done",
+                      "comms": "finished in 98s", "pack": "thonburian-bench",
+                      "kind": "pack"}, "queue-mgr")
+        assert res["action"] == "created"
+        route, payload = wp3.posts[-1]
+        assert route == "/wp/v2/nest_job"
+        assert payload["slug"] == "thonburian-bench"
+        assert payload["status"] == "private"
+        assert payload["meta"]["status"] == "done"
+        assert payload["meta"]["pack"] == "thonburian-bench"
+        log = json.loads(payload["meta"]["comms"])
+        assert log[0]["from"] == "queue-mgr" and "98s" in log[0]["text"]
+        assert payload["meta"]["updated"]
+        # update: comms append keeps prior entries, status flips
+        wp3.existing = [{"id": 7, "meta": {
+            "comms": '[{"at":"x","from":"a","text":"first"}]'}}]
+        res = do_job({"slug": "thonburian-bench", "status": "failed",
+                      "note": "retry blew up"}, "queue-mgr")
+        assert res["action"] == "updated"
+        route, payload = wp3.posts[-1]
+        assert route == "/wp/v2/nest_job/7"
+        log = json.loads(payload["meta"]["comms"])
+        assert len(log) == 2 and log[0]["text"] == "first"
+        assert "retry blew up" in log[1]["text"]
+        # bad comms json on the post heals instead of dying
+        wp3.existing = [{"id": 7, "meta": {"comms": "not json"}}]
+        res = do_job({"slug": "thonburian-bench", "note": "recovered"},
+                     "queue-mgr")
+        log = json.loads(wp3.posts[-1][1]["meta"]["comms"])
+        assert len(log) == 1 and "recovered" in log[0]["text"]
+        # parent as numeric id passes straight through
+        wp3.existing = [{"id": 7, "meta": {}}]
+        do_job({"slug": "child", "parent": 7, "status": "queued"},
+               "queue-mgr")
+        assert wp3.posts[-1][1]["parent"] == 7
+
+        # /inbox — focus-inbox file write
+        idir = tmp / "focus-inbox"
+        idir.mkdir()
+        globals()["INBOX_DIR"] = idir
+        res = do_inbox({"text": "Try the new sweep cadence",
+                        "label": "Sweep cadence", "tags": ["ops"],
+                        "priority": "high"}, "ada")
+        fp = idir / res["file"]
+        assert fp.exists() and res["file"].endswith("-sweep-cadence.yml")
+        doc = yaml.safe_load(fp.read_text())
+        assert doc["focus"]["label"] == "Sweep cadence"
+        assert doc["focus"]["priority"] == "high"
+        assert doc["focus"]["status"] == "draft"
+        assert doc["focus"]["tags"] == ["ops"]
+        assert doc["source"]["date"]
+        rejects(lambda: do_inbox({"text": "x", "priority": "urgent"}, "ada"),
+                "priority must be")
+        rejects(lambda: do_inbox({}, "ada"), "text required")
+
+        # /report — mode inference, validation, search/note/create
+        globals()["_mddb_post"] = lambda p, payload, timeout=30: [
+            {"key": "dev-kanban",
+             "meta": {"title": ["Dev kanban"], "updated": "u"}}]
+        res = do_report({"query": "kanban"}, "devin")
+        assert res["candidates"][0]["slug"] == "dev-kanban"
+        assert res["candidates"][0]["title"] == "Dev kanban"
+        rejects(lambda: do_report({"slug": "Bad!", "note": "x"}, "devin"),
+                "slug must match")
+        rejects(lambda: do_report({}, "devin"), "report needs")
+        rejects(lambda: do_report({"mode": "bogus"}, "devin"),
+                "mode must be")
+
+        class FakeCRN:
+            @staticmethod
+            def note(slug, text, lang):
+                return {"slug": slug, "line": f"* t — {text}",
+                        "updated": "u"}
+
+            @staticmethod
+            def merged_meta(doc, slug, now, today):
+                return {"bank": ["cms"], "subject": [slug]}
+
+        globals()["_crn"] = lambda: FakeCRN
+        res = do_report({"slug": "dev-kanban", "note": "progress"},
+                        "devin")
+        assert "noted dev-kanban" in res["message"]
+        adds = []
+        globals()["_mddb_post"] = (
+            lambda p, payload, timeout=30: adds.append((p, payload)) or {})
+        res = do_report({"title": "New Report", "content_md": "# hi"},
+                        "devin")
+        assert res["slug"] == "new-report"
+        assert adds[0][0] == "add" and adds[0][1]["key"] == "new-report"
+        assert adds[0][1]["meta"]["subject"] == ["new-report"]
+    finally:
+        globals()["wp_api"] = real_wp
+        globals()["_gemini_thai"] = real_th
+        globals()["_mddb_post"] = real_mddb
+        globals()["_crn"] = real_crn
+        globals()["INBOX_DIR"] = REPO / "docs/ssot/focus-inbox"
+
     print("selftest ok")
 
 
