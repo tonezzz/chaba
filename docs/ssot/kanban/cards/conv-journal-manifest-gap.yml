@@ -1,7 +1,7 @@
 id: conv-journal-manifest-gap
 title: conv_journal tools.d module never manifest-enabled — dead code since b776e81
 column: backlog
-updated: 2026-10-13 16:39
+updated: 2026-10-23 14:45
 priority: medium
 spec: 'backend/tools.d/conv_journal.py (LINE journal -> kind=report CMS page, committed b776e81 2026-10-12) has
   no entry in backend/tools.d/manifest.yml, so it is never declared or offered at runtime — persons.kk.tools listed
@@ -16,3 +16,9 @@ comms:
 - at: 2026-10-13 16:39
   from: tony
   text: card captured via board-api
+- at: 2026-10-23 14:45
+  from: devin
+  text: 'Done in-session: manifest entry added (ada-voice f6f159e, policy=read timeout=120s), persons.tony + persons.kk
+    includes re-added (chaba), env_file fields updated to per-instance stores (tony-ha/backend.env, kk-ha/backend.env),
+    render-tool-profiles tmp-path bug fixed for subdir env_file. Blocks applied on idc03, deployed via deploy-ada.sh
+    (1692 tests pass), module verified loadable + DECLARED. Journals are live (today''s journal-*.jsonl exist).'
