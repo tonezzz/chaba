@@ -101,6 +101,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261022-194701-per-model-scorecard-across-the no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-10-23 11:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261022-194701-per-model-scorecard-across-the on
+    tony-omen — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: running
@@ -109,6 +113,8 @@ action:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261022-194701-per-model-scorecard-across-the.service:
     No such file or directory'
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-23 11:10
 spec: 'Per-model scorecard across the ghostroute OR free-model rotation: fixed prompt suite through the gateway
   API, measure latency + tool-call correctness per model; jev-bench shape. Post the scorecard to card comms and
   flag models that should drop out of rotation.'
