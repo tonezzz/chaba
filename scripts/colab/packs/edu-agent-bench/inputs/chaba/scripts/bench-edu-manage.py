@@ -334,7 +334,15 @@ Rules:
   otherwise.
 - Use the tools. When finished, reply with ONE line summarising every
   action you took (slug + what changed) — or for recall questions, the
-  slug of the lesson that answers it, or "none"."""
+  slug of the lesson that answers it, or "none".{existing}"""
+
+EXISTING_TOPICS_BLOCK = """
+
+The ledger already has lessons on these topics — reuse an EXISTING
+topic name whenever the question covers it (a re-asked topic updates
+its lesson, never creates a second one); invent a new topic only for
+genuinely new knowledge:
+{topics}"""
 
 
 REQUIRED_ARGS = {t["function"]["name"]:
@@ -498,9 +506,16 @@ class AgentLane:
                 args = {}
         return {"name": obj["name"], "arguments": args}
 
-    def run_task(self, task_user_msg, store):
+    def run_task(self, task_user_msg, store, store_aware=False):
+        existing = ""
+        if store_aware:
+            topics = ", ".join(sorted(
+                r["topic"] for r in store.list_all()))
+            existing = EXISTING_TOPICS_BLOCK.format(
+                topics=topics or "(none)")
         messages = [{"role": "system",
-                     "content": AGENT_SYS.format(today=date.today())},
+                     "content": AGENT_SYS.format(
+                         today=date.today(), existing=existing)},
                     {"role": "user", "content": task_user_msg}]
         calls, tok_in, tok_out, llm_calls = [], 0, 0, 0
         models_seen, final_text, err = set(), "", None
@@ -601,9 +616,12 @@ TRANSCRIPT:
 %s"""
 
 
-def run_current(task, store, key, stats):
+def run_current(task, store, key, stats, topics=None):
     """The scripted pipeline (transcript) or its documented
-    scripted-equivalent (ops/recall). Returns task record."""
+    scripted-equivalent (ops/recall). Returns task record. `topics`
+    injects the store's existing topic list into classify — the same
+    store-awareness the production miner gets from the /lesson topics
+    door (turn-3 A/B)."""
     t0 = time.time()
     rec = {"calls": [], "llm_calls": 0, "tokens_in": 0, "tokens_out": 0,
            "models": [CURRENT_MODEL], "err": None, "final_text": "",
@@ -618,7 +636,8 @@ def run_current(task, store, key, stats):
             _sid, _d, turns = lm.parse_transcript(tmp)
             cands = lm.find_candidates(turns)
             rec["candidates"] = len(cands)
-            kept = lm.classify(cands, CURRENT_MODEL, key) if cands else []
+            kept = (lm.classify(cands, CURRENT_MODEL, key, topics=topics)
+                    if cands else [])
             rec["llm_calls"] += 1 if cands else 0
             for c in kept:
                 html = lm.draft_lesson(task["transcript"], c,
@@ -701,7 +720,7 @@ def stats_drafts(rec, task, store):
     rec["filings"] = filings
 
 
-def run_agent_task(lane, task, store):
+def run_agent_task(lane, task, store, store_aware=False):
     if task["type"] == "transcript":
         msg = TRANSCRIPT_INSTR % task["transcript"]
     elif task["type"] == "ops":
@@ -712,7 +731,7 @@ def run_agent_task(lane, task, store):
         msg = ("Tony asks: %s\n\nPoint to the lesson that answers this — "
                "use the tools to find it and reply with its slug, or "
                "reply \"none\" if no lesson covers it." % task["query"])
-    rec = lane.run_task(msg, store)
+    rec = lane.run_task(msg, store, store_aware=store_aware)
     stats_drafts(rec, task, store)
     return rec
 
@@ -929,6 +948,10 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--reps", type=int, default=1)
     ap.add_argument("--no-judge", action="store_true")
+    ap.add_argument("--agent-topics", action="store_true",
+                    help="inject the store's existing topic list into "
+                         "the agent system prompt (turn-3 store-"
+                         "awareness A/B — off = baseline prompt)")
     ap.add_argument("--rescore", default=None, metavar="RESULT.json",
                     help="recompute transcript metrics in a finished "
                          "result file and rewrite it + the .md")
@@ -975,9 +998,13 @@ def main():
             for task in tasks:
                 store = MockStore(corpus["seeds"][task["seed"]])
                 if name == "current":
-                    rec = run_current(task, store, gkey, None)
+                    topics = ([r["topic"] for r in store.list_all()]
+                              if args.agent_topics else None)
+                    rec = run_current(task, store, gkey, None,
+                                      topics=topics)
                 else:
-                    rec = run_agent_task(lane, task, store)
+                    rec = run_agent_task(lane, task, store,
+                                         store_aware=args.agent_topics)
                 stats_drafts(rec, task, store)
                 sc = score_task(task, store, rec)
                 t_scores.append(sc)
@@ -1032,6 +1059,7 @@ def main():
                                       "json_mode": v.json_mode_ok})
                                    for k, v in lanes.items()},
                          "judge": None if args.no_judge else JUDGE_MODEL,
+                         "agent_topics": bool(args.agent_topics),
                          "corpus": str(CORPUS)},
               "scores": all_scores, "tasks": all_recs,
               "drafts": [{k: v for k, v in d.items() if k != "html"}

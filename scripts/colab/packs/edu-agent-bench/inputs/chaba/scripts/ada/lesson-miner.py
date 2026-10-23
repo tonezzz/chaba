@@ -50,6 +50,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from datetime import date
 from pathlib import Path
 
@@ -98,12 +99,20 @@ For each kept item give a short topic title (3-8 words, no dates) and a
 level: intro (new concept), working (practical how-to), deep (internals).
 
 Transcript may be Thai or mixed-language; topics/lessons are English.
-
+%s
 Candidates (Q = user question, A = Ada's answer):
 %s
 
 Reply with ONE JSON object only, matching: %s
 Empty result = {"keep": []}."""
+
+EXISTING_TOPICS_BLOCK = """The ledger already has lessons on these topics. When a kept question
+covers one of them, reuse that EXISTING title verbatim — lessons upsert
+by topic title, so a re-asked topic with a fresh title would fork a
+duplicate lesson. Invent a new title only for genuinely new knowledge.
+Existing topics: %s
+
+"""
 
 DRAFT_PROMPT = """You are writing a durable lesson page from an Ada
 voice-assistant transcript.
@@ -226,15 +235,46 @@ def load_key() -> str | None:
     return None
 
 
-def classify(candidates: list[dict], model: str, key: str) -> list[dict]:
+LESSON_TOPICS_URL = os.environ.get(
+    "LESSON_TOPICS_URL", "http://127.0.0.1:8787/lesson")
+
+
+def fetch_lesson_topics() -> list[str]:
+    """Existing lesson topics for classify store-awareness (turn-3):
+    the WP ledger via the board-api /lesson topics op — callers hold no
+    WP creds. Falls back to this host's miner state map on any failure
+    so a dead door degrades to yesterday's knowledge, not a crash."""
+    try:
+        req = urllib.request.Request(
+            LESSON_TOPICS_URL,
+            data=json.dumps({"op": "topics", "from": "lesson-miner"})
+            .encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            d = json.loads(r.read())
+        topics = [t["topic"] for t in d.get("topics") or []
+                  if t.get("topic")]
+        if topics:
+            return topics
+    except Exception as e:
+        print(f"  topics fetch failed ({e}) — using miner state",
+              file=sys.stderr)
+    return []
+
+
+def classify(candidates: list[dict], model: str, key: str,
+             topics: list[str] | None = None) -> list[dict]:
     """One JSON-mode call over the whole batch -> kept items with
     topic/level attached."""
     body = "\n\n".join(
         f"{i + 1}. Q: {c['q']}\n   A: {c['a']}"
         for i, c in enumerate(candidates))
+    block = (EXISTING_TOPICS_BLOCK % ", ".join(sorted(topics))
+             if topics else "")
     try:
         r = gemini_rest.generate_json(
-            CLASSIFY_PROMPT % (body, CLASSIFY_SCHEMA), model, key=key)
+            CLASSIFY_PROMPT % (block, body, CLASSIFY_SCHEMA), model,
+            key=key)
     except ValueError as e:
         print(f"  classify: unparseable JSON ({e})", file=sys.stderr)
         return []
@@ -373,7 +413,10 @@ def main() -> int:
 
     kept: list[dict] = []
     if all_candidates:
-        kept = classify(all_candidates, model, key)
+        topics = fetch_lesson_topics() or [
+            v["topic"] for v in state["filed"].values()
+            if v.get("topic")]
+        kept = classify(all_candidates, model, key, topics=topics)
     print(f"classify: {len(all_candidates)} candidates -> "
           f"{len(kept)} lesson-worthy")
 

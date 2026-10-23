@@ -52,7 +52,9 @@ run: |
   prefix = f"{out}/bench-edu-manage-{time.strftime('%Y-%m-%d')}"
   cmd = ['python3', '/tmp/chaba/scripts/bench-edu-manage.py',
          '--lanes', 'hermes', '--ollama-model', 'gpt-oss:20b',
-         '--ollama-timeout', '300', '--no-judge', '--out', prefix]
+         '--ollama-timeout', '300', '--no-judge',
+         '--agent-topics',      # turn-3 store-awareness A/B (b6d76af)
+         '--out', prefix]
   print('bench:', ' '.join(cmd), flush=True)
   t0 = time.time()
   r = subprocess.run(cmd, cwd='/tmp/chaba', env=env)
