@@ -15,8 +15,18 @@ comms:
   text: card captured via board-api
 - at: 2026-10-14 06:33
   from: devin
-  text: 'CORRECTION on card premise (same-hour data): the 00-06 usage actually landed where it should — 21.54M of
-    21.81M went to ada-dev (the free lane; its key = ada-free.env, distinct from tony''s 0MDA key). Smoke retarget
-    IS working. The 102 admin connects on ada-ha-tony produced ZERO usage events — open/close churn without turns
-    (relay/backend restart window ~06:11), not scenario turns. Repurpose the card: why do admin sessions still CONNECT
-    to ada-ha-tony at 6.6s intervals during suite windows, and w'
+  text: 'CORRECTION on card premise (same-hour data): the 00-06 usage actually landed where it should
+    — 21.54M of 21.81M went to ada-dev (the free lane; its key = ada-free.env, distinct from tony''s 0MDA
+    key). Smoke retarget IS working. The 102 admin connects on ada-ha-tony produced ZERO usage events
+    — open/close churn without turns (relay/backend restart window ~06:11), not scenario turns. Repurpose
+    the card: why do admin sessions still CONNECT to ada-ha-tony at 6.6s intervals during suite windows,
+    and w'
+- at: 2026-10-23 15:34
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate why admin sessions still connect to ada-ha-tony at 6.6s intervals during suite windows
+  despite smoke retargeting working for actual usage. The target repository is ada-voice and the operations
+  run on host tony-dell. Constraints include relying solely on existing logs and connection metrics without
+  modifying live routing infrastructure unless explicitly verified. The testable done-condition is a documented
+  root cause analysis explaining the source of the 6.6s interval admin connections to ada-ha-tony during
+  test suites.

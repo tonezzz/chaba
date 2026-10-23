@@ -7,10 +7,17 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (10-16 10:25) of `cam-wall-roster-audit.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u cam-wall-roster-audit.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (10-16 10:25) of `cam-wall-roster-audit.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u cam-wall-roster-audit.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: AUD-0720
 comms:
 - at: 2026-10-16 11:00
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 15:36
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: 'Investigate the failure of `cam-wall-roster-audit.service` on `tony-dell` by inspecting the systemd
+  journal as indicated in the card note. Host: tony-dell. Constraints: do not invent paths or decisions
+  beyond checking the journal and referenced CMS timeline. Done condition: the root cause of the timer''s
+  exit-code failure is identified and documented in the card comments or resolved.'

@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (10-16 03:31) of `mddb-standby-pull.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u mddb-standby-pull.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (10-16 03:31) of `mddb-standby-pull.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u mddb-standby-pull.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: MEM-0715
 comms:
 - at: 2026-10-16 05:08
@@ -26,3 +26,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (10-16 03:31) of `mddb-standby-pull.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u mddb-standby-pull.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-23 15:36
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `mddb-standby-pull.service` on the host `tony-dell` by examining the
+  systemd user journal using `journalctl --user -u mddb-standby-pull.service`. Review the CMS `timer-timeline-tony-dell`
+  to cross-reference historical execution details for the timer. The done-condition is met when the root
+  cause of the exit-code failure on 10-16 03:31 is identified and documented.
