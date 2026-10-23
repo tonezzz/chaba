@@ -1,7 +1,7 @@
 id: per-lane-litellm-keys
 title: Per-lane LiteLLM virtual keys — stop shared free-quota starvation
 column: doing
-updated: 2026-10-23 13:41
+updated: 2026-10-23 13:57
 priority: medium
 action:
   type: manual
@@ -16,3 +16,10 @@ comms:
 - at: 2026-10-23 13:41
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 13:57
+  from: devin
+  text: 'VERIFIED ALREADY DONE — no work needed. Per-lane virtual keys exist and are wired: tony lane (ada-ha-tony,
+    ada-pi-pwa, ada-line-relay) -> CHABA $5 cap; kk lane -> KK $5; michael lane + tg-relay-mn -> MICHAEL $5; dev
+    lanes (ada-dev, ada-kk-dev, ada-ha) -> BENCH $2 model-scoped; plus ADA $10, MDDB $10, proxy-wide $50/30d. Spend
+    metering live per key. The bench-judge 429s were DIRECT free Gemini keys on mn01 — a host lacking LiteLLM keys,
+    not a per-lane gap. Residual = key sync to mn01, already a f'
