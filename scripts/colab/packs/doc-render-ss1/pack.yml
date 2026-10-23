@@ -26,7 +26,10 @@ prep: |
   if [ -f "$TAR" ]; then
     tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
       && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
-    mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+    # skip re-extract when the snapshot already has real weights (~9GB+)
+    if du -sh "$DEST/models--Lightricks--LTX-Video" 2>/dev/null | awk '$1+0 >= 9 {exit 1}'; then
+      mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+    fi
   fi
   python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
 run: |

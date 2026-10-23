@@ -99,23 +99,22 @@ def read_lease():
         return 0, ''
 
 def take_lease(worker):
+    # FUSE write->read visibility can lag arbitrarily — a read-back
+    # check would self-exit on a healthy store. Write-and-remember:
+    # fence_watch arbitrates (last-writer wins; a beaten writer sees a
+    # different (epoch,worker) within its 15s poll and exits).
     e, _w = read_lease()
     with open(LEASE, 'w') as f:
         f.write(json.dumps(
             {'worker': worker, 'epoch': e + 1, 'ts': int(time.time())}))
-    time.sleep(3)                        # let a racing take surface
-    # Drive FUSE write->read visibility can lag past the settle window —
-    # an empty/absent read-back is not proof of loss; retry before exit
-    for _ in range(3):
-        e2, w2 = read_lease()
-        if (e2, w2) == (e + 1, worker):
-            return e + 1
-        time.sleep(2)
-    say(f'lease lost at take (got {w2} epoch {e2}) — exiting')
-    os._exit(1)
+    return e + 1
 
 def fenced_out(my_epoch, worker):
     e, w = read_lease()
+    # FUSE read-lag: an empty/absent lease is NOT proof of loss — only
+    # yield when the lease is readable and names a different worker.
+    if not w:
+        return False
     return (e, w) != (my_epoch, worker)
 
 # heartbeat: lets fleet-side checks flag a stall without any notebook access

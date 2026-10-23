@@ -272,6 +272,9 @@ def main():
         time.sleep(3)
         if sorted(lsf(f'{pdir}/claim'))[0] != WORKER:
             say(f'{d}: lost claim race — skip')
+            # remove our own losing claim file — otherwise it lingers
+            # and can poison the pack for the 60min stale-claim window
+            rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
             continue
         say(f'{d}: CLAIMED — running')
         ok, info = run_pack(d, spec, args.remote)

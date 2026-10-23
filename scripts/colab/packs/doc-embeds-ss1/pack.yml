@@ -19,7 +19,7 @@ artifacts:
 publish:
   model-archive/t5xxl: model-archive/t5xxl   # fleet-side Drive persist
 prep: |
-  pip install -q torch transformers pyyaml
+  pip install -q torch transformers pyyaml tiktoken sentencepiece protobuf
   python -c "import torch, transformers; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
 run: |
   import os, time
@@ -33,7 +33,9 @@ run: |
   sb = yaml.safe_load(open(f'{IN}/storyboard.yml', encoding='utf-8'))
   STYLE = sb['style_suffix'].strip()
   NEG = sb.get('negative', '') + ', worst quality, inconsistent motion, blurry, jittery, distorted'
-  dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+  dev = ('cuda' if torch.cuda.is_available() and
+         torch.cuda.get_device_properties(0).total_memory >= 12e9
+         else 'cpu')   # T5-XXL bf16 ~9.5GB — small GPUs (1650) go CPU
   t0 = time.time()
   if os.path.exists(f'{ARC_FETCH}/encoder/config.json'):
       src_tok, src_enc = f'{ARC_FETCH}/tokenizer', f'{ARC_FETCH}/encoder'
@@ -42,15 +44,14 @@ run: |
       src_tok = src_enc = 'Lightricks/LTX-Video'
       tok = AutoTokenizer.from_pretrained(src_tok, subfolder='tokenizer')
       enc = T5EncoderModel.from_pretrained(src_enc, subfolder='text_encoder',
-                                           torch_dtype=torch.bfloat16)
-      os.makedirs(ARC_LOCAL, exist_ok=True)
-      tok.save_pretrained(f'{ARC_LOCAL}/tokenizer')
-      enc.save_pretrained(f'{ARC_LOCAL}/encoder')
+                                           torch_dtype=torch.bfloat16,
+                                           low_cpu_mem_usage=True)
   if src_enc == 'Lightricks/LTX-Video':
       pass  # already loaded above
   else:
       tok = AutoTokenizer.from_pretrained(src_tok)
-      enc = T5EncoderModel.from_pretrained(src_enc, torch_dtype=torch.bfloat16)
+      enc = T5EncoderModel.from_pretrained(src_enc, torch_dtype=torch.bfloat16,
+                                           low_cpu_mem_usage=True)
   enc = enc.to(dev).eval()
   print(f't5xxl ready {time.time()-t0:.0f}s dev={dev}', flush=True)
 
@@ -75,4 +76,14 @@ run: |
                   'negative_prompt_embeds': neg_e,
                   'negative_prompt_attention_mask': neg_m}, out)
       print(f'shot{s["shot"]} embedded {time.time()-t0:.0f}s', flush=True)
+  # bonus: persist the t5xxl archive for future runs (best-effort —
+  # disk-tight hosts skip; embeds are the deliverable, already on disk)
+  try:
+      os.makedirs(ARC_LOCAL, exist_ok=True)
+      tok.save_pretrained(f'{ARC_LOCAL}/tokenizer')
+      enc.save_pretrained(f'{ARC_LOCAL}/encoder')
+      print('t5xxl archive saved', flush=True)
+  except Exception as e:
+      print(f'archive save skipped: {type(e).__name__}: {str(e)[:120]}',
+            flush=True)
   print('doc-embeds-ss1 complete', flush=True)
