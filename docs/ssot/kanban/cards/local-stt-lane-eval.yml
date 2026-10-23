@@ -1,7 +1,7 @@
 id: local-stt-lane-eval
 title: Local STT lane POC — audio.cpp Qwen3-ASR vs sherpa-onnx vs whisper-large-v3 (4-way Thai/EN shootout on idc02)
 column: doing
-updated: 2026-10-23 08:35
+updated: 2026-10-23 09:04
 spec: 'Host: idc02 (4-core ~9GB free, CPU lane). Install audio-v0.9.2-bin-ubuntu-x64-cpu-portable (~57MB); pull
   GGUFs: Qwen3-ASR-0.6B Q8+F16, CrisperWhisper-Large Q8; sherpa-onnx binary + whisper small/medium. Corpus ~25-30
   real utterances: Thai/EN/code-switched, names (Ada, Kaewta, KK), household commands — from Ada transcripts or
@@ -38,6 +38,12 @@ comms:
     11-clip corpus, ada-stt.service). Corpus on idc03 grew to 28 clips (14 tony + 3 michael new). Plan: sync new
     clips, Gemini refs, extend eval (qwen3 + sherpa-onnx whisper small/medium + omen large-v3), streaming gate check,
     report.'
+- at: 2026-10-23 09:04
+  from: devin
+  text: 'Interim (28-clip corpus: 11 orig + 17 new incl michael/EN/DE/TL/gibberish, Gemini-3.1-flash-lite refs):
+    qwen3-asr-0.6b-q8 CER 0.212, RTF med 0.65, RSS 2.25GB — beats whisper-large-v3 GPU (CER 0.291) and sherpa whisper-small-int8
+    (CER 0.348, RTF 1.49). Streaming SSE endpoint verified (delta/done events). 3 near-silent clips correctly return
+    empty from all engines (Gemini had hallucinated refs). whisper-medium-int8 running.'
 action:
   type: dispatch
   status: running
