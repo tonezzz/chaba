@@ -1,7 +1,7 @@
 id: wp-activity-cpt-timeline-links
 title: 'WP boards: activity/incident CPT for tool events — timeline links instead of duplicates'
 column: backlog
-updated: 2026-10-14 22:09
+updated: 2026-10-23 08:26
 priority: medium
 tags:
 - wp-boards
@@ -100,6 +100,9 @@ comms:
     fetch at :00). Clustering = ollama-nomic-embed via LiteLLM (free/local), title cosine 0.85 union-find; gemini-3.5-flash-lite
     writes topic+brief+coverage-diffs per multi-source cluster. Parents get synthesis cat + digest/sources:N tags.
     First run: 7 digests from 100 items, 25 reparented '
+- at: 2026-10-23 08:26
+  from: devin
+  text: queued for processing
 requests:
 - id: cpt-name-for-tool-event-records-e1f701
   ask: CPT name for tool-event records?
@@ -134,4 +137,6 @@ requests:
   - public
   suggested: per-lane private (member sees own lane) ★
   answer: per-lane private (member sees own lane) ★
-awaiting_action: true
+action:
+  type: dispatch
+  status: queued
