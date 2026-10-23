@@ -101,6 +101,26 @@ of staging cells per job:
 - **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` +
   `queue/prep-<name>.log` (prep stdout/stderr) on Drive are the durable
   record — the notebook doc can be recycled at will.
+- **Detached mode (2026-10-23)** — prefer `queue-launcher-cell.py`: it
+  starts `queue/runner.py` as a session-detached process (output →
+  `queue/run-<ts>.out.log`, pid → `queue/runner.pid`, `queue/heartbeat`
+  rewritten every 15 s). The kernel stays free for diagnostics mid-run,
+  and the queue survives a kernel restart. Blocking in-kernel mode is
+  only for interactive debugging.
+- **Interrupts don't propagate into `subprocess.run`** — a cell stop
+  button may leave a hung prep/running job alive; only
+  Runtime → Interrupt execution reliably kills it (MCP has no interrupt
+  tool). Preps launched `start_new_session=True` die with the runner on
+  VM/kernel teardown.
+- **Never bare-`snapshot_download` multi-variant repos** — LTX-Video is
+  ~187 GB across all variants; only transformer+vae+scheduler (~9 GB)
+  are needed. Always `ignore_patterns` (text_encoder/tokenizer/.bin/fp8)
+  or the disk fills mid-queue (observed: ENOSPC at 235 GB used, killed
+  the run's final job). Surgical cleanup: keep only the snapshot paths
+  the pipeline loads, then delete unlinked blobs + `*.incomplete`.
+- **Per-clip timeouts** — any GPU call that can hang gets a
+  `signal.alarm(N)` guard + a `start` print before it; a silent stall
+  otherwise looks identical to a slow run (VoxCPM2 sat ~1 h at 0% GPU).
 - **Bracket every manifest with cache jobs** so the second runtime of a
   session (or the next session) skips weight re-downloads entirely:
   ```python
