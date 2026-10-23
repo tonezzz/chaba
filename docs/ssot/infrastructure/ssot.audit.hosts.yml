@@ -1647,6 +1647,14 @@ hosts:
         expected_state: active
         critical: false
         note: No-embed ops instance on :11026 — host-logs/host-logs-state collections
+      - name: mddb-embed.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Local-embedding bank on :11028 — same collection names as leader,
+          embeds via local ollama bge-m3 (1024d) instead of the gemini proxy
+          (MEM-0788); ada-ha-bank-devin-tony backfilled 2560/2560 2026-10-23"
       - name: mddb-panel.service
         type: service
         scope: user
