@@ -1,7 +1,7 @@
 id: mddb-idc03-followers-lag-status-audit
 title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
 column: backlog
-updated: 2026-10-23 18:29
+updated: 2026-10-23 18:38
 priority: high
 tags:
 - mddb
@@ -19,3 +19,10 @@ comms:
 - at: 2026-10-23 18:29
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 18:38
+  from: devin
+  text: 'Observed 2026-10-23 11:28Z: idc03 leader /health 200, role leader healthy=true, LSN 237519337; mddb + mddb-cms
+    active, both health 200. Followers respond HTTP 200 but each self-report healthy=false. Leader view: idc02 confirmed
+    237455166, lag_ms 641710; con01 confirmed 236903675, lag_ms 6156620. Follower views: idc02 replication_lag_ms
+    10338952; con01 34294204 (large discrepancy). Last-seen was current. No restarts/changes made. Need sample advancement
+    and reconcile units/health calculation.'
