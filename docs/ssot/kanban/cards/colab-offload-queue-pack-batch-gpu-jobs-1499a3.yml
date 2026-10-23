@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
 column: backlog
-updated: 2026-10-23 11:48
+updated: 2026-10-23 12:32
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -22,3 +22,10 @@ comms:
     save+restore hf-cache all live + verified today); lane:omen-gpu|dell-cpu|idc|kk-mac goes through EXISTING kanban
     dispatch (labels+RUNNER_CAP — do not build a second fleet queue). Hardening list: artifact-granular tasks (one
     artifact=one marker; LTX pre-split embeds is the model'
+- at: 2026-10-23 12:32
+  from: devin
+  text: 'v2 spec APPROVED by Tony — nest-pack: pull-based worker fleet. Unit of work = pack dir {pack.yml, inputs/,
+    run.sh|py} — pack.yml = {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run, artifacts[globs], timeout_s}.
+    Lanes become CAPABILITIES not routes: colab=gpu15g+ephemeral+egress-only, omen=gpu4g+always-on, dell/idc=cpu,
+    kk-mac=idle-window-gated. Same loop everywhere: scan store -> claim pack matching needs -> prep/run -> verify
+    artifacts -> mark done. Transports: one interface two stores —'
