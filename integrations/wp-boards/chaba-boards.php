@@ -2,8 +2,9 @@
 /**
  * Plugin Name: Chaba Boards
  * Description: Project CPTs for boards.surf-thailand.com (asset, expense,
- *              contact, reminder, bench, report, xlate, cam, render_job, news,
- *              repeat_ask, lesson, ops_error, score)
+ *              contact, reminder, bench, report, xlate, cam, render_job,
+ *              news, nest_job,
+ *              repeat_ask, lesson, ops_error, score, activity)
  *              + member-post translation + member-gated media endpoint
  *              + usage pull-render worker (pulls the idc02 usage feed into
  *              a report CPT post; Plesk Scheduled Task or WP-Cron)
@@ -11,15 +12,21 @@
  *              [chaba_situations] index block)
  *              + score CPT — balance board: praise AND complaints score
  *              points for anyone incl. Tony ([chaba_balance] tally block).
+ *              + activity CPT — durable tool-execution records
+ *              ([chaba_activity] feed block; timeline links these posts
+ *              instead of re-inlining media).
+ *              + nest_job CPT — ada-nest Drive-queue job mirror: queue-mgr
+ *              upserts one post per job/pack via board-api POST /job so
+ *              members can browse the offload queue on the board site.
  *              All CPTs are REST-writable (show_in_rest) so the
  *              fleet writers can create them via App Password. Meta keys are
  *              registered REST-writable AND shown as admin list columns.
- * Version: 0.7.1
+ * Version: 0.9.0
  */
 
 if (!defined('ABSPATH')) exit;
 
-const CHABA_BOARDS_VER = '0.7.0';
+const CHABA_BOARDS_VER = '0.9.0';
 
 // ============================================================================
 // CPTs — member-visible records, private by post status (same model as the
@@ -63,6 +70,18 @@ add_action('init', function () {
         // subject is anyone — tony/devin/ada/system. One post per event;
         // [chaba_balance] renders the per-who tally.
         'score'    => ['Score','Scores','dashicons-star-half'],
+        // activity — durable tool-execution records (card
+        // wp-activity-cpt-timeline-links). Hierarchical like news:
+        // parent = session/turn (kind=session), children = one per tool
+        // call (kind=tool). Failed/blocked calls land too — that IS the
+        // incident report. Writer: scripts/ada/activity-posts.py.
+        'activity' => ['Activity','Activities','dashicons-list-view'],
+        // nest_job — the ada-nest offload queue mirrored to the member
+        // surface (card nest-api-unified-mutation-service): queue-mgr
+        // mirrors Drive queue/packs state -> CPT via board-api POST /job.
+        // Hierarchical like activity — a parent job can own child
+        // jobs/packs (job trees). comms is a JSON append log.
+        'nest_job' => ['Nest Job','Nest Jobs','dashicons-networking'],
     ];
     foreach ($types as $slug => [$sing, $plural, $icon]) {
         $extra = [
@@ -83,6 +102,15 @@ add_action('init', function () {
         // /wp/render_job/ = results index, /wp/lesson/ = re-read ledger.
         if (in_array($slug, ['render_job', 'lesson'], true)) {
             $extra['has_archive'] = true;
+        }
+        // activity + nest_job — hierarchical (session parents own tool
+        // children; parent jobs own child jobs/packs) + archive so members
+        // can re-browse /wp/activity/ and /wp/nest_job/.
+        if (in_array($slug, ['activity', 'nest_job'], true)) {
+            $extra['hierarchical'] = true;
+            $extra['has_archive']  = true;
+            $extra['supports']     = array_merge($common['supports'],
+                                                 ['page-attributes']);
         }
         register_post_type($slug, array_merge($common, $extra));
     }
@@ -241,6 +269,24 @@ add_action('init', function () {
         // kind = praise|complaint; topic = short label; card = kanban ref;
         // at = ISO event time; status = open|standing|reverted
         'score'    => ['who', 'delta', 'kind', 'topic', 'card', 'at', 'status'],
+        // activity — kind(session|tool|media_receipt)/tool/lane/
+        // status(ok|failed|blocked)/model/cost_usd/artifact_url/ref_url/
+        // prompt_excerpt/session_id/chat_id/duration_s/event_id
+        // (deterministic <lane>:<session>:<call> — the relay stamps the
+        // same id into the journal so the timeline links this post
+        // instead of re-inlining the artifact)/occurred_at/error.
+        'activity' => ['kind', 'tool', 'lane', 'status', 'model',
+                       'cost_usd', 'artifact_url', 'ref_url',
+                       'prompt_excerpt', 'session_id', 'chat_id',
+                       'duration_s', 'event_id', 'occurred_at', 'error'],
+        // nest_job — one post per ada-nest offload job/pack (board-api
+        // POST /job is the only writer). kind(pack|queue|sub)/status
+        // (queued|claimed|running|done|failed|stalled)/host(worker that
+        // claimed)/pack(name)/runner(colab worker id)/result_ref(drive
+        // path or report slug)/error/comms(JSON append log
+        // [{at,from,text}])/updated(ISO).
+        'nest_job' => ['kind', 'status', 'host', 'pack', 'runner',
+                       'result_ref', 'error', 'comms', 'updated'],
         // pre-existing CPTs (registered elsewhere) — make their meta REST-writable too
         'place'    => ['coords', 'address', 'maps_url', 'osm_url'],
         'trip'     => ['start_date', 'end_date', 'travellers'],
@@ -251,9 +297,10 @@ add_action('init', function () {
                 'show_in_rest'      => true,
                 'single'            => true,
                 'type'              => 'string',
-                // raw_result holds JSON error payloads — sanitize_text_field
+                // raw_result/error hold JSON error payloads — sanitize_text_field
                 // would strip anything tag-shaped out of the evidence.
-                'sanitize_callback' => ($type === 'ops_error' && $k === 'raw_result')
+                'sanitize_callback' => (($type === 'ops_error' && $k === 'raw_result')
+                    || ($type === 'activity' && $k === 'error'))
                     ? function ($v) { return is_string($v) ? mb_substr($v, 0, 8000) : ''; }
                     : 'sanitize_text_field',
                 'auth_callback'     => function () { return current_user_can('edit_posts'); },
@@ -284,11 +331,16 @@ function chaba_cpt_admin_columns(string $type): array {
         'lesson'     => ['level' => 'Level', 'learned_at' => 'Learned', 'next_review' => 'Review', 'status' => 'Status', 'updated' => 'Updated'],
         'ops_error'  => ['lane' => 'Lane', 'tool' => 'Tool', 'error_type' => 'Type', 'occurred_at' => 'At', 'status' => 'Status'],
         'score'      => ['who' => 'Who', 'delta' => 'Δ', 'kind' => 'Kind', 'topic' => 'Topic', 'at' => 'At'],
+        'activity'   => ['artifact' => 'Artifact', 'tool' => 'Tool', 'lane' => 'Lane',
+                         'status' => 'Status', 'model' => 'Model', 'duration_s' => 'Secs',
+                         'cost_usd' => '$', 'occurred_at' => 'At'],
+        'nest_job'   => ['kind' => 'Kind', 'status' => 'Status', 'host' => 'Host',
+                         'pack' => 'Pack', 'updated' => 'Updated'],
     ];
     return $cols[$type] ?? [];
 }
 
-foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error','score'] as $_t) {
+foreach (['asset','expense','contact','reminder','bench','report','xlate','cam','render_job','news','repeat_ask','lesson','ops_error','score','activity','nest_job'] as $_t) {
     add_filter("manage_{$_t}_posts_columns", function ($cols) use ($_t) {
         $extra = [];
         foreach (chaba_cpt_admin_columns($_t) as $k => $label) {
@@ -328,6 +380,27 @@ foreach (['asset','expense','contact','reminder','bench','report','xlate','cam',
         if ($_t === 'render_job' && $k === 'prompt') {
             echo '<span title="' . esc_attr($v) . '">'
                . esc_html(mb_strimwidth($v, 0, 90, '…')) . '</span>';
+            return;
+        }
+        // activity: artifact = thumb/link from artifact_url; status = colored badge
+        if ($_t === 'activity' && $k === 'artifact') {
+            $u = (string) get_post_meta($post_id, 'artifact_url', true);
+            if ($u === '' || !preg_match('#^https?://#', $u)) {
+                echo '<span style="opacity:.5">—</span>';
+                return;
+            }
+            echo preg_match('#\.(mp4|webm|mov)(\?|$)#i', $u)
+                ? '<a href="' . esc_url($u) . '" target="_blank">▶ video</a>'
+                : '<a href="' . esc_url($u) . '" target="_blank"><img src="'
+                  . esc_url($u) . '" style="width:64px;height:64px;object-fit:cover;border-radius:4px" loading="lazy"></a>';
+            return;
+        }
+        if ($_t === 'activity' && $k === 'status') {
+            $c = ['ok' => '#137333', 'failed' => '#b3261e',
+                  'blocked' => '#a05a00'][$v] ?? '#5f6368';
+            echo '<span style="display:inline-block;padding:0 8px;border-radius:9px;'
+               . 'background:' . esc_attr($c) . ';color:#fff;font-size:.85em">'
+               . esc_html($v ?: '?') . '</span>';
             return;
         }
         echo esc_html($v);
@@ -384,6 +457,29 @@ add_action('pre_get_posts', function ($q) {
         ]);
         $q->set('orderby', 'meta_value');
         if ($ob === 'lesson_updated') return;  // honour clicked ASC/DESC
+        $q->set('order', 'DESC');
+    }
+});
+
+// activity admin list — default view = newest events on top (occurred_at
+// meta, ISO-lexical); At column is clickable-sortable. Posts that predate
+// the key (session parents) stay listed via the OR meta_query.
+add_filter('manage_edit-activity_sortable_columns', function ($cols) {
+    $cols['chaba_occurred_at'] = 'act_occurred_at';
+    return $cols;
+});
+add_action('pre_get_posts', function ($q) {
+    if (!is_admin() || !$q->is_main_query()) return;
+    if ($q->get('post_type') !== 'activity') return;
+    $ob = $q->get('orderby');
+    if ($ob === 'act_occurred_at' || !$ob) {
+        $q->set('meta_query', [
+            'relation' => 'OR',
+            ['key' => 'occurred_at', 'compare' => 'EXISTS'],
+            ['key' => 'occurred_at', 'compare' => 'NOT EXISTS'],
+        ]);
+        $q->set('orderby', 'meta_value');
+        if ($ob === 'act_occurred_at') return;  // honour clicked ASC/DESC
         $q->set('order', 'DESC');
     }
 });
@@ -617,6 +713,93 @@ add_filter('the_content', function ($content) {
     if ($status !== 'resolved') {
         $out .= '<p style="opacity:.65;font-size:.85em"><em>Explain this error '
               . 'plainly in the comments below, then set status=resolved.</em></p>';
+    }
+    return $out;
+});
+
+// ============================================================================
+// activity single view — the record lives in meta; render an event card:
+// status badge + artifact media + prompt excerpt + params table + error.
+// Session parents (kind=session) list their tool children instead.
+// Private posts already gate this to logged-in members.
+// ============================================================================
+
+add_filter('the_content', function ($content) {
+    if (!is_singular('activity') || !in_the_loop() || !is_main_query()) return $content;
+    $id  = get_the_ID();
+    $m   = function ($k) use ($id) { return trim((string) get_post_meta($id, $k, true)); };
+    $out = $content;
+
+    $status = $m('status') ?: 'ok';
+    $badge  = ['ok' => '#137333', 'failed' => '#b3261e',
+               'blocked' => '#a05a00'][$status] ?? '#5f6368';
+    $out .= '<p><span style="display:inline-block;padding:1px 10px;border-radius:10px;'
+          . 'background:' . esc_attr($badge) . ';color:#fff;font-size:.85em">'
+          . esc_html($status) . '</span></p>';
+
+    if ($m('kind') === 'session') {
+        // session parent: list tool children newest-first
+        $kids = get_posts(['post_type' => 'activity', 'post_parent' => $id,
+                           'post_status' => 'any', 'posts_per_page' => 200,
+                           'meta_key' => 'occurred_at', 'orderby' => 'meta_value',
+                           'order' => 'DESC']);
+        if ($kids) {
+            $out .= '<ul style="list-style:none;padding-left:0">';
+            foreach ($kids as $k) {
+                $ks  = trim((string) get_post_meta($k->ID, 'status', true)) ?: 'ok';
+                $ico = ['ok' => '✓', 'failed' => '✗', 'blocked' => '⏸'][$ks] ?? '·';
+                $out .= '<li style="margin-bottom:.4em">' . esc_html($ico) . ' <a href="'
+                      . esc_url(get_permalink($k)) . '">'
+                      . esc_html(get_the_title($k)) . '</a> '
+                      . '<small style="opacity:.65">' . esc_html($ks) . '</small></li>';
+            }
+            $out .= '</ul>';
+        }
+        return $out;
+    }
+
+    $u = $m('artifact_url');
+    if ($u !== '' && preg_match('#^https?://#', $u)) {
+        $out .= preg_match('#\.(mp4|webm|mov)(\?|$)#i', $u)
+            ? '<p><video controls style="max-width:100%;border-radius:8px" src="' . esc_url($u) . '"></video></p>'
+            : '<p><a href="' . esc_url($u) . '" target="_blank"><img src="' . esc_url($u)
+              . '" style="max-width:100%;border-radius:8px" loading="lazy"></a></p>';
+    } elseif ($u !== '') {
+        $out .= '<p style="opacity:.7">⚠ artifact_url is a path, not a web URL: <code>'
+              . esc_html($u) . '</code></p>';
+    }
+    if ($m('prompt_excerpt') !== '') {
+        $out .= '<blockquote style="border-left:3px solid #888;padding:.2em .8em;margin:.8em 0">'
+              . nl2br(esc_html($m('prompt_excerpt'))) . '</blockquote>';
+    }
+
+    $rows = '';
+    foreach (['kind' => 'Kind', 'tool' => 'Tool', 'lane' => 'Lane',
+              'model' => 'Model', 'cost_usd' => 'Cost $', 'duration_s' => 'Duration s',
+              'session_id' => 'Session', 'chat_id' => 'Chat', 'event_id' => 'Event',
+              'occurred_at' => 'Occurred', 'ref_url' => 'Ref'] as $k => $label) {
+        $v = $m($k);
+        if ($v === '') continue;
+        $cell = ($k === 'ref_url')
+            ? '<a href="' . esc_url($v) . '" target="_blank">link</a>'
+            : esc_html($v);
+        $rows .= '<tr><th style="text-align:left;padding:2px 10px 2px 0;opacity:.6;font-weight:600">'
+               . esc_html($label) . '</th><td style="padding:2px 0">' . $cell . '</td></tr>';
+    }
+    if ($rows) {
+        $out .= '<table style="font-size:.9em;margin-top:.8em">' . $rows . '</table>';
+    }
+    $err = $m('error');
+    if ($err !== '') {
+        $pretty = json_decode($err, true);
+        $out .= '<details open style="margin:.6em 0"><summary style="cursor:pointer;'
+              . 'opacity:.7">error</summary><pre style="white-space:pre-wrap;'
+              . 'font-size:.85em;background:#f6f6f6;padding:.6em;border-radius:6px;'
+              . 'overflow-x:auto">'
+              . esc_html($pretty !== null
+                    ? json_encode($pretty, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    : $err)
+              . '</pre></details>';
     }
     return $out;
 });
@@ -1128,4 +1311,62 @@ add_shortcode('chaba_balance', function ($atts) {
         $out .= '</ul>';
     }
     return $out . '</div>';
+});
+
+// [chaba_activity] — recent tool-execution feed (card
+// wp-activity-cpt-timeline-links). Attrs: lane (default '' = all),
+// limit (default 30), status (default '' = all, else ok|failed|blocked).
+// Rows are the tool children (kind=tool); session parents are reachable
+// via each row's link. Put it on a per-lane private page the same way
+// /chat/line/* pages gate visibility.
+add_shortcode('chaba_activity', function ($atts) {
+    $atts = shortcode_atts(['lane' => '', 'limit' => 30, 'status' => ''], $atts);
+    $limit  = max(1, min(200, (int) $atts['limit']));
+    $lane   = trim((string) $atts['lane']);
+    $status = trim((string) $atts['status']);
+
+    $meta_query = [['key' => 'kind', 'value' => 'tool']];
+    if ($lane !== '') {
+        $meta_query[] = ['key' => 'lane', 'value' => $lane];
+    }
+    if (in_array($status, ['ok', 'failed', 'blocked'], true)) {
+        $meta_query[] = ['key' => 'status', 'value' => $status];
+    }
+    $posts = get_posts(['post_type' => 'activity',
+                        'post_status' => is_user_logged_in() ? ['publish', 'private'] : ['publish'],
+                        'posts_per_page' => $limit,
+                        'meta_key' => 'occurred_at', 'orderby' => 'meta_value',
+                        'order' => 'DESC', 'meta_query' => $meta_query]);
+
+    $out = '<div class="chaba-activity">';
+    if (!$posts) return $out . '<p>No activity yet.</p></div>';
+    $out .= '<ul style="list-style:none;padding-left:0">';
+    foreach ($posts as $p) {
+        $m   = function ($k) use ($p) { return trim((string) get_post_meta($p->ID, $k, true)); };
+        $st  = $m('status') ?: 'ok';
+        $ico = ['ok' => '✅', 'failed' => '❌', 'blocked' => '⏸️'][$st] ?? '·';
+        $au  = $m('artifact_url');
+        $out .= '<li style="margin-bottom:.6em">' . $ico . ' <a href="'
+              . esc_url(get_permalink($p)) . '"><strong>'
+              . esc_html(get_the_title($p)) . '</strong></a>'
+              . ' <small style="opacity:.65">'
+              . esc_html(trim(($m('lane') ? $m('lane') . ' · ' : '')
+                              . ($m('model') ? $m('model') . ' · ' : '')
+                              . ($m('duration_s') ? $m('duration_s') . 's · ' : '')
+                              . ($m('cost_usd') !== '' ? '$' . $m('cost_usd') . ' · ' : '')
+                              . ($m('occurred_at') ?: get_the_date('Y-m-d H:i', $p)), ' ·'))
+              . '</small>';
+        if ($au !== '' && preg_match('#^https?://#', $au)
+                && !preg_match('#\.(mp4|webm|mov)(\?|$)#i', $au)) {
+            $out .= '<br><a href="' . esc_url(get_permalink($p)) . '"><img src="'
+                  . esc_url($au) . '" style="width:96px;height:96px;object-fit:cover;'
+                  . 'border-radius:6px;margin-top:.3em" loading="lazy"></a>';
+        }
+        if ($m('error') !== '') {
+            $out .= '<br><small style="color:#b3261e">'
+                  . esc_html(mb_strimwidth($m('error'), 0, 140, '…')) . '</small>';
+        }
+        $out .= '</li>';
+    }
+    return $out . '</ul></div>';
 });

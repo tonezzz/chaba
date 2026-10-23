@@ -1,0 +1,60 @@
+# thonburian-bench — Thai voice-clone bench via biodatlab ThonburianTTS
+# (F5-TTS-based, ~330M params, zero-shot clone, CC BY-NC-SA). Replaces the
+# closed VoxCPM2 lane (T4-infeasible: pathological bf16 compile init) with
+# the same 5 Thai sentences x ada+tony refs for comparability.
+#
+# Upstream quirks encoded here:
+#  - flowtts/ ships no __init__.py -> pip install yields empty dist;
+#    we git-clone + stub __init__ + sys.path instead.
+#  - FlowTTSPipeline(model=..., model_config=...) — README calls it
+#    positionally but first param is `model`; MUST use kwargs.
+#  - ref_text supplied -> model.transcribe() (whisper) never invoked.
+name: thonburian-bench
+needs:
+  gpu_gb: 3        # megaF5 ~1.3GB + vocos + activations
+  disk_gb: 4       # weights + pip deps
+timeout_s: 1200    # whole-pack budget (runner-side alarm); clips are ~seconds each
+artifacts:
+  - packs/thonburian-bench/out/thon-ada-*.wav
+  - packs/thonburian-bench/out/thon-tony-*.wav
+prep: |
+  test -d /tmp/thonburian-tts || git clone -q --depth 1 https://github.com/biodatlab/thonburian-tts.git /tmp/thonburian-tts
+  touch /tmp/thonburian-tts/flowtts/__init__.py
+  pip install -q f5-tts vocos pythainlp cached-path librosa pydub
+  (apt-get install -y -qq ffmpeg >/dev/null 2>&1 || true)
+run: |
+  import sys, time, os
+  sys.path.insert(0, '/tmp/thonburian-tts')
+  import torch
+  from flowtts.inference import FlowTTSPipeline, ModelConfig, AudioConfig
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  SENTS = [
+   "วันนี้ตลาดมีผลไม้สดใหม่หลายอย่างเลย",
+   "รถไฟฟ้าขบวนถัดไปจะมาถึงในอีกห้านาที",
+   "อย่าลืมพกร่มไปด้วยเพราะพยากรณ์อากาศบอกว่าฝนจะตกตอนเย็น",
+   "อาหารจานนี้รสชาติเผ็ดกำลังดีและหอมมาก",
+   "ประชุมพรุ่งนี้เลื่อนไปเป็นสิบโมงครึ่งแทน",
+  ]
+  REFS = [
+   ('ada',  '/tmp/vbench/ada-ref.wav',     '/tmp/vbench/ref_text.txt'),
+   ('tony', '/tmp/vbench/tony-ref-8s.wav', '/tmp/vbench/ref_text_tony.txt'),
+  ]
+  t0 = time.time()
+  mc = ModelConfig(language='th', model_type='F5',
+      checkpoint='hf://biodatlab/ThonburianTTS/megaF5/mega_f5_last.safetensors',
+      vocab_file='hf://biodatlab/ThonburianTTS/megaF5/mega_vocab.txt',
+      vocoder='vocos', device='cuda')
+  ac = AudioConfig(silence_threshold=-45, cfg_strength=2.5, speed=1.0)
+  pipe = FlowTTSPipeline(model_config=mc, audio_config=ac)  # kwargs! positional binds model=
+  print('thonburian loaded %.0fs gpu=%.1fGB' % (time.time()-t0, torch.cuda.memory_allocated()/1e9), flush=True)
+  for who, wav, rtxt in REFS:
+      rt = open(rtxt, encoding='utf-8').read().strip()
+      for i, t in enumerate(SENTS):
+          out = f'{OUT}/thon-{who}-{i}.wav'
+          if os.path.exists(out) and os.path.getsize(out) > 0:
+              print(f'gen {who}{i} cached', flush=True); continue
+          t0 = time.time()
+          print(f'gen {who}{i} start', flush=True)
+          pipe(text=t, ref_voice=wav, ref_text=rt, output_file=out)
+          print(f'gen {who}{i} %.0fs' % (time.time()-t0), flush=True)
+  print('thonburian-bench complete', flush=True)

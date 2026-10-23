@@ -514,7 +514,7 @@ def or_drift_finding(recs: dict) -> dict | None:
 def send_line(text: str) -> tuple[bool, str]:
     """LINE push via ada-line-relay :8912/send — direct loopback first
     (relay lives on idc03), then chaba-nag's `ssh idc03 curl` fallback."""
-    payload = json.dumps({"text": text})
+    payload = json.dumps({"text": text, "class": "critical"})
     try:
         req = urllib.request.Request(
             RELAY_URL, data=payload.encode(),

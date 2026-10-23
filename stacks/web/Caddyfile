@@ -102,6 +102,15 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	# OPS-0779 — iPhone WebGPU worker probe; no COOP/COEP (CDN transformers.js)
+	handle /apps/webgpu-bench {
+		redir * /apps/webgpu-bench/ 308
+	}
+	handle_path /apps/webgpu-bench/* {
+		root * /srv/public/apps/webgpu-bench
+		file_server
+	}
+
 	handle /apps/gev-cmd {
 		redir * /apps/gev-cmd/ 308
 	}

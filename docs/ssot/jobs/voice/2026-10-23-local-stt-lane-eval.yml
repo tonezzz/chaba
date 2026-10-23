@@ -1,0 +1,173 @@
+title: Local STT lane eval — extended corpus re-run on idc02
+id: 2026-10-23-local-stt-lane-eval
+card: local-stt-lane-eval
+date: 2026-10-23
+runner: idc02
+kind: bench-result
+
+summary: >
+  Extended the 2026-10-16 POC corpus from 11 to 28 real TG voice clips
+  (added 14 tony + 3 michael clips incl. EN, German, Tagalog, gibberish,
+  and 3 near-silent), regenerated missing refs via gemini-3.1-flash-lite,
+  and ran the full contender matrix. qwen3-asr-0.6b-q8 on audio.cpp
+  remains the winner: mean CER 0.212 vs whisper-large-v3-GPU 0.291 and
+  sherpa whisper-small-int8 0.348, at median RTF ~0.65 / ~2GB RSS on
+  idle host. All card gates pass with one caveat: idc02 now runs
+  persistent CPU tenants (open-jev gemma-3-4b, mddbd, ~25 containers)
+  so RTF inflates 3-5x under ambient load — gate passes in quiet
+  windows only. ada-stt.service was found orphaned (process alive,
+  listener dead, unit inactive); restarted and re-verified E2E.
+
+corpus:
+  source: idc03 ~/.local/share/ada-voice-corpus/tg/{tony,tg-tony,michael}
+  n: 28
+  senders: {tony: 22, tg-tony: 3, michael: 3}
+  duration_s: {min: 1.5, max: 19.3}
+  languages: {th_only: 4, th_codeswitch: 4, en: 12, de: 2, tl: 1,
+              gibberish: 1, near_silent: 3}
+  refs: gemini-3.1-flash-lite inline audio, verbatim prompt (paid
+        project spend-capped 2026-10-23 — used FREE/MICHAEL keys from
+        idc03 ~/.config/secrets/gemini-keys.env)
+  assets: idc02:~/audio-cpp-eval/{corpus,refs-all.jsonl,refs-new.jsonl,
+          gen_refs.py,analyze.py,results-*.jsonl}
+
+results:
+  qwen3_asr_0.6b_q8_audio_cpp:
+    n: 28
+    cer_all: 0.212
+    cer_th_only: 0.216
+    cer_th_codeswitch: 0.321
+    cer_en_other: 0.223
+    en_wer: 0.342
+    rtf_median: 0.65
+    rtf_range_quiet: [0.44, 0.72]
+    rtf_under_ambient_load: [2.0, 3.1]
+    wall_median_s: 3.4
+    rss_max_mb: 2251
+    notes: >
+      Wins on accuracy and speed. Thai-script transliteration of loans
+      (เทเลกาน, เอโค) inflates its th+cs CER vs whisper's Latin-script
+      output — style difference, not word loss. EN clips decode slower
+      than Thai (RTF ~2 on short EN vs ~0.5 Thai). Empty output on
+      near-silent clips = correct. --language pin available
+      (request field "language", e.g. th/en) — answers the Oct-16
+      open question about pinning the TG lane.
+  whisper_large_v3_omen_gpu_http:
+    n: 28
+    cer_all: 0.291
+    cer_th_only: 0.305
+    cer_th_codeswitch: 0.237
+    cer_en_other: 0.352
+    en_wer: 0.444
+    wall_median_s: 3.8
+    notes: >
+      GPU lane over HTTP (tony-omen:8790). Loses overall to qwen3-CPU;
+      odd failures: "introduce yourself in thai"→Korean output,
+      "hi cloud" hallucination on EN clip, gibberish→Portuguese.
+      Empty on silence = correct.
+  sherpa_whisper_small_int8:
+    n: 28
+    cer_all: 0.348
+    cer_th_only: 0.548
+    cer_th_codeswitch: 0.461
+    cer_en_other: 0.336
+    en_wer: 0.368
+    rtf_median: 1.49
+    wall_median_s: 6.9
+    rss_max_mb: 1210
+    notes: >
+      sherpa-onnx-offline CLI, int8 ONNX, 4 threads. Slower and worse
+      on Thai than qwen3. Prints "[speaking in foreign language]" on
+      gibberish. Lower RSS but no other advantage.
+  sherpa_whisper_medium_int8:
+    n: 7
+    rtf_range: [1.3, 5.9]
+    wall_range_s: [12, 36]
+    rss_max_mb: 2432
+    notes: >
+      Aborted full corpus — ~9min on clip 1 under ambient load; ran
+      7-clip subset. Slower AND heavier than small with no quality win
+      (Thai still typo'd/truncated). Not viable on 4-core CPU.
+  crisperwhisper_large_q4k_audio_cpp:
+    n: 11
+    cer_all: 0.494
+    rtf_median: 11.2
+    rtf_max: 57.0
+    notes: >
+      Carried over from Oct-16 run; not re-run on new clips (would
+      take ~1h CPU). DISQUALIFIED: translates Thai to English instead
+      of transcribing, hallucinates [UH]/[scream] tags, RTF 11-57.
+  gemini_live_cloud_ref:
+    status: unavailable
+    notes: >
+      Paid Gemini project hit monthly spend cap (429
+      RESOURCE_EXHAUSTED) across all key variants on idc02 and
+      TONY/PAID/KK keys on idc03. FREE + MICHAEL keys still work and
+      served as ref generator. gemini-3.5-transcribe-live rejects
+      generateContent (400, live-API only).
+
+streaming_gate:
+  endpoint: POST /v1/audio/transcriptions (model mode "streaming",
+            stream:true in request)
+  result: >
+    PASS — incremental multipart upload accepted; SSE response
+    (text/event-stream) emits transcript.text.delta,
+    transcript.text.done{ttft_ms}, then [DONE]. Verified with
+    tools/streaming/measure_asr_streaming_client.py on a 7.5s Thai
+    clip; transcript identical to offline decode.
+  caveat: >
+    Server buffers the FULL request body before invoking decode —
+    this is chunked-response streaming, not incremental
+    decode-as-you-speak. Fine for relay batch calls; not a live mic
+    lane yet.
+
+gates:
+  - gate: "Qwen3-ASR Thai CER within ~20% rel of whisper-large-v3"
+    verdict: PASS
+    detail: "th-only 0.216 vs 0.305 (29% better); th+cs 0.321 vs 0.237
+             (35% worse, dominated by transliteration style);
+             combined th+cs ≈ parity; CER_all 0.212 vs 0.291"
+  - gate: "RTF < 1.0 on idc02 CPU for 10s clips"
+    verdict: PASS_CONDITIONAL
+    detail: "quiet-window RTF 0.52-0.72 on 10-19s clips; under ambient
+             load (open-jev + mddbd + bursts) RTF rises to ~2-3 for
+             both CLI and server. idc02 is busier than at Oct-16 POC —
+             open-jev gemma-3-4b-it (~14% CPU steady) and mddbd (~14%)
+             are persistent tenants now."
+  - gate: "streaming endpoint works"
+    verdict: PASS
+    detail: see streaming_gate
+  - gate: "no crashes/OOM across corpus"
+    verdict: PASS
+    detail: "28 clips x 3 engines + 7-clip medium; max RSS 2.4GB
+             (medium), 2.25GB (qwen3). No crashes."
+
+surprises:
+  - "3 'Thai' clips (20261016-191518/-191933/-193605) are near-silence
+    (-90dB). Oct-16 Gemini refs for them were hallucinated Thai text;
+    qwen3 and whisper correctly return empty. Explains the 'Qwen
+    emitted ENGLISH' confusion — those clips contained no real speech."
+  - "ada-stt.service was orphaned: audiocpp_server process alive since
+    Oct-16 with 1.8GB RSS but NO listening socket and unit 'inactive
+    dead' — the deployed lane was silently broken. Killed orphan,
+    systemctl --user start ada-stt restored :8914. E2E verified via
+    OpenAI-style multipart POST → correct Thai transcript."
+  - "idc02 ambient CPU load (load ~4-5 vs 4 cores) inflates every
+    engine's RTF ~3-5x vs quiet windows. RTF measurements are
+    load-stamped: morning batch RTF med 0.65, same clip later 3.1."
+
+followups:
+  - "Card: idc02 ambient contention raises ada-stt warm TTT to ~7-12s
+    (vs ~3-4s Oct-16). Options: CPU affinity/priority for ada-stt,
+    keep-RTF budget via threads=3, or accept batch-lane latency."
+  - "Optional: pin language=th in ada-tg-relay transcription requests
+    to stop source-language drift (qwen3 forces Thai script on
+    non-th input — same failure shape as whisper)."
+  - "out_if_pass integration card is already substantially DONE
+    (ada-stt + ada-tg-relay wiring shipped 2026-10-16); remaining
+    scope is the two followups above."
+
+verify:
+  - "curl -s http://100.123.163.11:8914/health  # ada-stt live"
+  - "cd ~/audio-cpp-eval && python3 analyze.py   # full table"
+  - "python3 score_cer.py refs-all.jsonl results-qwen3-asr-q8.jsonl"

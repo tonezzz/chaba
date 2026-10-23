@@ -245,7 +245,8 @@ jobs:
     -> bench/orch-* docs + nest-bench trend page. CPU-heavy (~30-60min); gemma-3-1b/4b local on tony-omen. Corpus
     loop feeds misses into the next run. Deployed 2026-10-06. Bounded 2026-10-13 (--limit 30) after an unbounded
     run was TERM'd at the old 90m cap — the installed unit is systemd/ada-pi-orch-bench.service, which also carries
-    ExecStartPre/Post to bring open-jev + open-jev-student up and back down around the bench; the renderer cannot
+    ExecStartPre to start + health-wait open-jev + open-jev-student (ExecStartPost is a no-op since 2026-10-23 —
+    travel-slim exited per omen-dedicate-nest, scorers run 24/7); the renderer cannot
     express pre/post hooks yet, so generated/tony_omen/ is a stub and the hand unit is the deployed source of truth.
     env MDDB_CMS_URL added 2026-10-22 (cms-11023-parked-writers) — mixed producer — scenario-report docs stay on
     :11023 via --mddb, ada-cms-pages writes route to :11027 via ada-pi mddb_client cms-plane.
@@ -398,6 +399,20 @@ jobs:
     so an emptied serve config was invisible until a scenario probe caught
     it 2026-10-20. --alert drops one deduped focus-inbox file
     (serve-config-<host>.yml); self-heals the alert file on recovery.'
+- id: system-report-watchdog
+  name: System-report freshness watchdog (stale-data / host-down alert)
+  host: tony_dell
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/report/system-report-watchdog.py
+  note: 'KNB-0786 — independent of the pipeline it watches: runs on
+    tony_dell while the report chain lives on idc02, reads generated_at
+    off the idc02 exec checkout over ssh, files a deduped board-api
+    /inbox entry when data is >26h old or idc02 is unreachable. Kills
+    the corpse-display failure mode (Oct-19 freeze: 3-day-old page, no
+    alert).'
 - id: podman-lock-watchdog
   name: Podman lock-wedge watchdog (probe + stale-lock self-heal)
   host: tony_dell
@@ -944,6 +959,28 @@ jobs:
     --since ''2026-10-13 16:00'' --session 183e9c8d7e. condition_path keeps the
     unit skipped until the script lands in the served checkout on merge.
     Added 2026-10-15.'
+- id: activity-posts
+  name: Ada tool executions -> WP activity posts
+  host: idc03
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/activity-posts.py
+  condition_path: '%h/CascadeProjects/chaba/scripts/ada/activity-posts.py'
+  note: 'card wp-activity-cpt-timeline-links (ADA-0650) — tails journalctl
+    --user -u ada-kk/ada-ha-tony/ada-michael function_call received/result
+    pairs for the emitters allowlist (renders + translate/vision;
+    ACTIVITY_TOOLS env overrides). One private activity CPT child per call
+    (status ok|failed|blocked — received-without-result >15min = blocked,
+    i.e. killed/refused mid-turn) under a kind=session parent per
+    lane+session. Dedup = deterministic slug act-<md5> via ?slug= lookup;
+    state ~/.local/share/ada/activity-posts-state.json holds the since-cursor
+    + in-flight pending calls. Requires chaba-boards v0.8.0 deployed — until
+    it lands, POSTs 404 and the cursor holds (no events lost).
+    line-chat-timeline.py links these posts via artifact_url/event_id.
+    condition_path keeps the unit skipped until the script lands in the
+    served checkout on merge. Added 2026-10-23.'
 - id: wp-comment-sync
   name: WP member comments -> suggestion lanes
   host: idc03

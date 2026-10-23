@@ -1,0 +1,439 @@
+{
+ "at": "2026-10-23 04:51:11",
+ "date": "2026-10-23",
+ "config": {
+  "lanes": {
+   "local-gpt-oss-20b": {
+    "base": "http://100.75.102.88:11434/v1",
+    "model": "gpt-oss:20b",
+    "json_mode": true
+   }
+  },
+  "judge": "gemini-3.5-flash-lite",
+  "corpus": "/home/tony/CascadeProjects/dispatch-wt-20261023-040252-in-chaba-repo-scripts-bench-ed/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "local-gpt-oss-20b": [
+   {
+    "lane": "local-gpt-oss-20b",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 3,
+     "total": 5,
+     "score": 0.6
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 5,
+     "creates": 5
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 75.5,
+     "lat_p50": 78.3,
+     "tokens_in": 43305,
+     "tokens_out": 6191,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": null
+   }
+  ]
+ },
+ "tasks": {
+  "local-gpt-oss-20b": [
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "lesson-137f1d531308 created",
+    "llm_calls": 3,
+    "tokens_in": 3287,
+    "tokens_out": 816,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 114.44508767127991,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-137f1d531308",
+      "topic": "TCP BBR vs CUBIC difference",
+      "created": true,
+      "content": "<p><strong>TCP BBR vs CUBIC</strong> – BBR is a model‑based congestion control that estimates bottleneck bandwidth and RTT to pace traffic, keeping latency low, whereas CUBIC is loss‑based, aggressively increasing the congestion window until packet loss triggers a multiplicative decrease, which can fill buffers and raise latency.</p><p>BBR’s algorithm maintains a target sending rate by measuring the maximum bandwidth observed and the minimum RTT, then pacing packets to stay near that rate. It reacts to changes in bandwidth quickly and avoids the “bufferbloat” that can occur with loss‑based schemes.</p><p>CUBIC, on the other hand, grows the congestion window using a cubic function of time since the last loss event. When loss is detected, it cuts the window by a factor (typically 0.7). This aggressive growth can achieve higher throughput on short, high‑bandwidth paths but often leads to higher queue occupancy and latency on congested links.</p><p>In practice, BBR tends to perform better on links with variable bandwidth or high latency, while CUBIC can outperform BBR on stable, low‑latency, high‑bandwidth networks where loss is rare.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1824,
+    "tokens_out": 105,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 20.006245136260986,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "lesson-aa52e10104af + created (tailscale ACL tags)",
+    "llm_calls": 3,
+    "tokens_in": 3332,
+    "tokens_out": 526,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 78.27090668678284,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-aa52e10104af",
+      "topic": "tailscale ACL tags",
+      "created": true,
+      "content": "<h3>Tailscale ACL Tags vs Regular ACL Rules</h3><p>A Tailscale ACL rule specifies which <strong>source</strong> identities can reach which <strong>destination</strong> identities or IP ranges on which ports. It is written in the form <code>source: <em>identity</em> can reach destination: <em>identity</em> on port <em>number</em>.</p><p>A <strong>tag</strong> is an identity that you assign to a device instead of to a user. Tags let you group devices (e.g., <code>tag:server</code>) and then write ACL rules that refer to those tags. The key difference is that tags are attached to devices, not users, so the rule remains valid even if a user changes or leaves.</p><p>Example rule: <code>group:admins can reach tag:server on port 22</code>. Here <code>group:admins</code> is a user group, <code>tag:server</code> is a device tag, and the rule allows SSH access to all devices marked as servers.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "lesson-eecd44a8c891 created",
+    "llm_calls": 3,
+    "tokens_in": 3295,
+    "tokens_out": 934,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 134.00204062461853,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-eecd44a8c891",
+      "topic": "CAP theorem",
+      "created": true,
+      "content": "<h3>CAP Theorem</h3><p>The CAP theorem states that a distributed data store can simultaneously provide only two of the following three guarantees: <strong>Consistency</strong> (all nodes see the same data at the same time), <strong>Availability</strong> (every request receives a response, even if it is not the most recent data), and <strong>Partition Tolerance</strong> (the system continues to operate despite arbitrary network partitions). In practice, when a network partition occurs, a system must choose between maintaining consistency or maintaining availability. If it prioritizes consistency (CP), it may refuse writes or delay responses until the partition is resolved. If it prioritizes availability (AP), it will continue to serve requests and reconcile divergent data later. When no partition exists, a system can achieve all three properties, but the trade‑off becomes relevant only during failures. Understanding this trade‑off helps architects design systems that meet their operational requirements under real‑world network conditions.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "lesson-78970e65962d created.",
+    "llm_calls": 5,
+    "tokens_in": 5653,
+    "tokens_out": 948,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 144.41487622261047,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-78970e65962d",
+      "topic": "LLM quantization and GGUF",
+      "created": true,
+      "content": "<h3>Quantization in LLMs and the GGUF format</h3>\n<p>Quantization reduces the numerical precision of model weights from 16‑ or 32‑bit floating point to 8‑, 4‑bit, or even lower integer representations. This shrinks the model size and speeds up arithmetic on modern hardware, at the cost of a small drop in accuracy.</p>\n<p>GGUF (Generalized GPU‑Friendly Unified Format) is a lightweight file format that stores these quantized weights in a memory‑mapped layout. Because the data can be loaded directly into GPU memory without decompression, GGUF enables very fast local inference, especially on devices with limited bandwidth.</p>\n<p>Key points:</p>\n<ul>\n<li>Quantization trades precision for size and speed.</li>\n<li>GGUF’s memory‑mapped layout eliminates runtime decoding overhead.</li>\n<li>Combined, they allow large language models to run efficiently on edge devices.</li>\n</ul>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson-69cd1a5df775 + created (ada nest heartbeat escalation)",
+    "llm_calls": 3,
+    "tokens_in": 3194,
+    "tokens_out": 484,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 77.52639579772949,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-69cd1a5df775",
+      "topic": "ada nest heartbeat escalation",
+      "created": true,
+      "content": "<h3>Ada Nest Heartbeat Escalation</h3><p>The Ada Nest hub monitors the health of each member node by receiving periodic heartbeats. Each node sends a heartbeat at a fixed interval (e.g., every 30 s). The hub records the timestamp of the last received beat.</p><p>If a node fails to send a heartbeat for <strong>N</strong> consecutive intervals, the hub marks the node’s state as <em>stale</em> and then transitions it to <em>degraded</em>. During the degraded period the hub continues to watch for a recovery heartbeat. Only if the node remains degraded for the entire <em>degraded window</em> (e.g., 5 min) without sending a new heartbeat does the hub trigger an escalation: it sends a page or notification to the user’s phone.</p><p>Thus, a single missed beat or a brief Wi‑Fi flap will not cause a notification; escalation occurs only after sustained failure beyond the degraded window.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1826,
+    "tokens_out": 126,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 23.99381947517395,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "lesson-abdcd6c6c5e1 + status updated to learned.",
+    "llm_calls": 4,
+    "tokens_in": 4033,
+    "tokens_out": 560,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 96.17563009262085,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-22",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "lesson-90f614241c87: next_review updated to 2026-11-22.",
+    "llm_calls": 4,
+    "tokens_in": 4059,
+    "tokens_out": 735,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 119.23077416419983,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-22",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 1664,
+    "tokens_out": 240,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 41.79874038696289,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 1702,
+    "tokens_out": 148,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 26.585477352142334,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "lesson-90f614241c87",
+    "llm_calls": 8,
+    "tokens_in": 7823,
+    "tokens_out": 510,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 92.47125601768494,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 7
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1613,
+    "tokens_out": 59,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 12.766051054000854,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-137f1d531308",
+   "topic": "TCP BBR vs CUBIC difference",
+   "q": "bbr",
+   "judge": null,
+   "html_len": 1152
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-aa52e10104af",
+   "topic": "tailscale ACL tags",
+   "q": "tailscale",
+   "judge": null,
+   "html_len": 900
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-eecd44a8c891",
+   "topic": "CAP theorem",
+   "q": "cap theorem",
+   "judge": null,
+   "html_len": 1057
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-78970e65962d",
+   "topic": "LLM quantization and GGUF",
+   "q": "quantiz",
+   "judge": null,
+   "html_len": 882
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-69cd1a5df775",
+   "topic": "ada nest heartbeat escalation",
+   "q": "heartbeat",
+   "judge": null,
+   "html_len": 893
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "judge": null,
+   "html_len": 286
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "judge": null,
+   "html_len": 244
+  }
+ ]
+}

@@ -1,0 +1,75 @@
+title: board-api unified mutation door — /lesson /job /report /inbox endpoints
+subtitle: >
+  Card nest-api-unified-mutation-service (Tony 2026-10-23, approved:
+  "extend board-api rather than a new daemon"). Write paths were
+  scattered — board-api (cards), lesson-add.py (WP lesson CPT),
+  cms-report-note.py (mddb), focus-inbox files, queue-mgr (coming).
+  Now board-api on idc03 is THE write service for all of them; agents
+  call HTTP and never hold WP/mddb creds — same reason Colab stays
+  credential-free.
+icon: service
+date: 2026-10-23
+slug: board-api-unified-mutations
+card: nest-api-unified-mutation-service
+kind: service-extension
+dispatch: dispatch-wt-20261023-130452-tony-2026-10-23-suggest-if-we- (tony-macbook)
+
+shape: >
+  New namespaced endpoints on the existing service (after prefix strip):
+  POST /lesson {topic, content, level?, source?, next_review?, status?,
+  no_th?} — WP lesson CPT upsert by slug lesson-<md5(topic)>, auto-Thai
+  via gemini flash-lite (best-effort), first-learn provenance preserved
+  on re-file. POST /job {slug, title?, status?, comms?|note?, parent?,
+  kind?/host?/pack?/runner?/result_ref?/error?} — nest_job CPT upsert;
+  comms appends {at,from,text} to meta.comms JSON log (cap 200); parent
+  accepts post id or sibling slug for job trees; `from` allows daemon/
+  host names (queue-mgr, tony-dell). POST /report — report-integration
+  duty as an endpoint: {query} searches ada-cms-pages for candidates,
+  {slug, note} appends a session-log line via cms-report-note.py logic
+  (managed block + writer-contract meta merge + index regen),
+  {title|slug, content_md, meta?} creates a page. POST /inbox {text,
+  label?, priority?, tags?, missing_info?, subtasks?, session?} —
+  focus-inbox YAML in TEMPLATE shape.
+
+locks_and_errors: >
+  Remote-backed writes (/lesson, /job, /report) serialize under
+  /tmp/board-api-wp.lock — NOT the card flock — so a slow WP/mddb
+  round-trip never stalls /comment. /inbox uses the card LOCK (repo
+  file + immediate commit, same as cards). Error surface: 400
+  validation, 502 UpstreamError naming the failing upstream route, 500
+  unexpected. WP creds (wp-boards.env) load lazily per call — missing
+  creds fail only the WP-backed endpoints.
+
+changes: >
+  scripts/board/board-api.py — WP client (wp_api seam), _mddb_post seam,
+  _gemini_thai (lazy gemini_rest import, same key hunt as old
+  lesson-add), do_lesson/do_job/do_inbox/do_report, REMOTE_WRITE_PATHS
+  routing, selftest coverage. integrations/wp-boards/chaba-boards.php
+  v0.9.0 — nest_job CPT (hierarchical, archive, meta:
+  kind/status/host/pack/runner/result_ref/error/comms/updated, admin
+  columns). scripts/lesson-add.py — rewritten as a thin /lesson client
+  (dispatch_repos.board_api_base, BOARD_API env). tests/board/
+  test_board_api_mutations.py — 17 unit tests over the four endpoints
+  with faked seams. Docs: docs/kb/board-api-write-door.md (runbook),
+  ssot.procedures.yml board-write entry, ssot.wp-boards.yml nest_job +
+  v0.9.0 note, AGENTS.md unified-mutation-door bullet.
+
+split: >
+  Watchers watch, one door writes. queue-mgr (dell, next in the OPS-0759
+  build order) mirrors gdrive:ada-nest queue/packs -> CPT via /job;
+  agents write via board-api; Colab never touches WP.
+
+deploy_dependencies: >
+  /job needs chaba-boards v0.9.0 deployed to WP (wp-admin zip upload via
+  scripts/wp-boards/deploy-plugin-zip.sh from tony-omen — Tony-approved
+  step per bump). Until then /job returns 502 rest_post_invalid…;
+  /lesson, /report, /inbox are live-independent. board-api itself
+  redeploys with the served checkout sync + unit restart on idc03 —
+  deployment is the merge/promotion path, not this worktree.
+
+verify: >
+  python3 scripts/board/board-api.py --selftest  (card + door paths)
+  python3 -m unittest board.test_board_api_mutations  (from tests/)
+  curl -s http://127.0.0.1:8787/health
+  POST /inbox smoke-verified live on tony-macbook (local lane);
+  /lesson correctly 502s where wp-boards.env is absent.

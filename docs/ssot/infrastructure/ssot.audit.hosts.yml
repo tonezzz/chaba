@@ -926,7 +926,6 @@ hosts:
       - {name: mcp-health-snapshot.timer, type: timer, scope: user}
       - {name: michael-dev-parity.timer, type: timer, scope: user}
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
-      - {name: open-jev-leash.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
       - {name: secrets-collect.timer, type: timer, scope: user}
@@ -1010,11 +1009,11 @@ hosts:
         reason: "Desktop-cast instance exits 255 when display :0 is idle-asleep; cast pipeline largely moved off this host — verify whether the instance should be retired like dell's @1"
         action: verify-cast-instance-needed
       - name: open-jev.service
-        reason: "Bench-time LLM service (gemma-3-4b, ~11G RSS + heavy swap) — stopped 2026-10-09 01:00 freeing RAM; failed flag is stop residue, not a crash. idc02 runs the always-on second instance (:8777)"
-        action: start-when-benching
+        reason: "24/7 since 2026-10-23 (travel-slim exited, omen-dedicate-nest) — a failed flag now is a real crash"
+        action: investigate
       - name: open-jev-student.service
-        reason: "Bench-time student scorer (gemma-3-1b) — stopped alongside open-jev; same stop residue"
-        action: start-when-benching
+        reason: "24/7 since 2026-10-23 alongside open-jev — a failed flag now is a real crash"
+        action: investigate
       - name: ada-review-refresh.service
         reason: "prune-old-docs.py subprocess hits its 600s timeout sweeping mddb collections — tracked in card fix-review-refresh-prune"
         action: card-fix-review-refresh-prune

@@ -152,9 +152,10 @@ def _load_state(path: Path) -> dict:
 
 def _alert_targets(var: str, depleted: bool) -> list[dict]:
     text_en = _depleted_en(var) if depleted else _recovered_en(var)
-    targets = [{"to": "tony", "instance": "tony", "text": text_en}]
+    targets = [{"to": "tony", "instance": "tony", "text": text_en,
+                "class": "critical"}]
     if var in KK_LANE_VARS:
-        targets.append({"instance": "kk", "text":
+        targets.append({"instance": "kk", "class": "critical", "text":
                         _depleted_th(var) if depleted else _RECOVERED_TH})
     return targets
 

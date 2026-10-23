@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebGPU bench — lab-iphone-webgpu-worker</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font: 15px/1.5 system-ui, sans-serif; margin: 0; background: #0d1117; color: #e6edf3; }
+  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 1.3rem; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px 16px; margin: 14px 0; }
+  button { display: block; width: 100%; padding: 14px; margin: 8px 0; font-size: 1rem; font-weight: 600;
+           border: 0; border-radius: 8px; background: #238636; color: #fff; }
+  button:disabled { opacity: .5; }
+  button.alt { background: #1f6feb; }
+  pre { background: #010409; border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 12.5px;
+        white-space: pre-wrap; word-break: break-word; }
+  .ok { color: #3fb950; } .bad { color: #f85149; } .dim { color: #8b949e; }
+</style>
+</head>
+<body>
+<main>
+  <h1>WebGPU bench <span class="dim">— OPS-0779</span></h1>
+  <div class="card">
+    <button id="bProbe" onclick="runProbe()">1 · Probe GPU adapter</button>
+    <button id="bMm" onclick="runMatmul()" disabled>2 · Matmul bench (WGSL compute)</button>
+    <button id="bEmb" onclick="runEmbed()" disabled>3 · Real inference — MiniLM embedding</button>
+    <button id="bPost" class="alt" onclick="postResults()" disabled>4 · Post results to kanban card</button>
+    <button id="bWork" class="alt" onclick="toggleWorker()" disabled>5 · Worker mode — poll job queue</button>
+  </div>
+  <div class="card"><pre id="out">tap step 1 — results accumulate here
+</pre></div>
+</main>
+<script>
+const out = document.getElementById('out');
+const results = { ua: navigator.userAgent, at: new Date().toISOString() };
+let adapter = null, device = null;
+let workerOn = false, workerBusy = false, doneJobs = new Set(), embedPipe = null;
+function log(s, cls) { out.innerHTML += (cls ? `<span class="${cls}">` : '') + s + '\n' + (cls ? '</span>' : ''); out.scrollTop = out.scrollHeight; }
+
+async function runProbe() {
+  document.getElementById('bProbe').disabled = true;
+  try {
+    if (!navigator.gpu) {
+      results.webgpu = false;
+      log('✗ navigator.gpu absent — WebGPU not available', 'bad');
+      log('  iOS <26: Settings → Apps → Safari → Advanced → Feature Flags → enable WebGPU', 'dim');
+      return;
+    }
+    adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) { results.webgpu = false; log('✗ requestAdapter() returned null', 'bad'); return; }
+    device = await adapter.requestDevice();
+    const info = adapter.info || {};
+    results.webgpu = true;
+    results.adapter = { vendor: info.vendor, architecture: info.architecture,
+                        device: info.device, description: info.description };
+    results.limits = {
+      maxBufferSize: device.limits.maxBufferSize,
+      maxStorageBufferBindingSize: device.limits.maxStorageBufferBindingSize,
+      maxComputeWorkgroupSizeX: device.limits.maxComputeWorkgroupSizeX,
+      maxComputeInvocationsPerWorkgroup: device.limits.maxComputeInvocationsPerWorkgroup,
+    };
+    log(`✓ WebGPU adapter: ${info.vendor || '?'} ${info.architecture || ''} ${info.device || info.description || ''}`, 'ok');
+    log(`  maxStorageBuffer=${(device.limits.maxStorageBufferBindingSize/1e6).toFixed(0)}MB  maxBuffer=${(device.limits.maxBufferSize/1e9).toFixed(2)}GB`);
+    document.getElementById('bMm').disabled = false;
+    document.getElementById('bEmb').disabled = false;
+    document.getElementById('bWork').disabled = false;
+  } catch (e) { results.probe_error = String(e); log('✗ ' + e, 'bad'); }
+  document.getElementById('bProbe').disabled = false;
+}
+
+const MATMUL_WGSL = `
+@group(0) @binding(0) var<storage, read> A: array<f32>;
+@group(0) @binding(1) var<storage, read> B: array<f32>;
+@group(0) @binding(2) var<storage, read_write> C: array<f32>;
+const N: u32 = NVALu;
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) g: vec3<u32>) {
+  if (g.x >= N || g.y >= N) { return; }
+  var sum = 0.0;
+  for (var k = 0u; k < N; k = k + 1u) { sum += A[g.y * N + k] * B[k * N + g.x]; }
+  C[g.y * N + g.x] = sum;
+}`;
+
+async function matmulOnce(n) {
+  const shader = MATMUL_WGSL.replaceAll('NVAL', String(n));
+  const mod = device.createShaderModule({ code: shader });
+  const pipe = device.createComputePipeline({ layout: 'auto', compute: { module: mod, entryPoint: 'main' } });
+  const sz = n * n * 4;
+  const a = new Float32Array(n * n), b = new Float32Array(n * n);
+  for (let i = 0; i < n * n; i++) { a[i] = Math.random(); b[i] = Math.random(); }
+  const mk = (data, usage) => { const buf = device.createBuffer({ size: sz, usage, mappedAtCreation: !!data });
+    if (data) { new Float32Array(buf.getMappedRange()).set(data); buf.unmap(); } return buf; };
+  const bA = mk(a, GPUBufferUsage.STORAGE), bB = mk(b, GPUBufferUsage.STORAGE);
+  const bC = mk(null, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC);
+  const bind = device.createBindGroup({ layout: pipe.getBindGroupLayout(0),
+    entries: [{ binding: 0, resource: { buffer: bA } }, { binding: 1, resource: { buffer: bB } },
+              { binding: 2, resource: { buffer: bC } }] });
+  const enc = device.createCommandEncoder();
+  const pass = enc.beginComputePass();
+  pass.setPipeline(pipe); pass.setBindGroup(0, bind);
+  pass.dispatchWorkgroups(Math.ceil(n / 8), Math.ceil(n / 8));
+  pass.end();
+  const t0 = performance.now();
+  device.queue.submit([enc.finish()]);
+  await device.queue.onSubmittedWorkDone();
+  const ms = performance.now() - t0;
+  [bA, bB, bC].forEach(x => x.destroy());
+  return ms;
+}
+
+async function runMatmul() {
+  document.getElementById('bMm').disabled = true;
+  try {
+    results.matmul = {};
+    for (const n of [256, 512, 1024]) {
+      const w = await matmulOnce(n);           // warmup
+      const t = await matmulOnce(n);           // timed
+      const gflops = (2 * n ** 3) / (t * 1e6);
+      results.matmul['n' + n] = { ms: +t.toFixed(1), gflops: +gflops.toFixed(1) };
+      log(`  matmul ${n}³: ${t.toFixed(1)} ms → ${gflops.toFixed(1)} GFLOPS`);
+    }
+    log('✓ matmul bench done', 'ok');
+  } catch (e) { results.matmul_error = String(e); log('✗ matmul: ' + e, 'bad'); }
+  document.getElementById('bMm').disabled = false;
+  document.getElementById('bPost').disabled = false;
+}
+
+async function runEmbed() {
+  document.getElementById('bEmb').disabled = true;
+  try {
+    log('  loading @huggingface/transformers + all-MiniLM-L6-v2 (~23MB q8)…', 'dim');
+    const t0 = performance.now();
+    const pipe = await getPipe();
+    const loadMs = performance.now() - t0;
+    const sents = ['the kanban writer moved to idc03', 'webgpu maps one-to-one onto metal',
+                   'a session is a sequence of tool calls'];
+    const inf = [];
+    for (const s of sents) {
+      const t1 = performance.now();
+      const o = await pipe(s, { pooling: 'mean', normalize: true });
+      inf.push(performance.now() - t1);
+      results.embedding_dims = o.data.length;
+    }
+    results.embed = { model: 'all-MiniLM-L6-v2', load_ms: +loadMs.toFixed(0),
+                      infer_ms: inf.map(x => +x.toFixed(1)), dims: results.embedding_dims };
+    log(`  model loaded in ${(loadMs / 1000).toFixed(1)}s — embed dim ${results.embedding_dims}`);
+    log(`  inference: ${inf.map(x => x.toFixed(0) + 'ms').join(', ')}`, 'ok');
+  } catch (e) { results.embed_error = String(e); log('✗ embed: ' + e, 'bad'); }
+  document.getElementById('bEmb').disabled = false;
+  document.getElementById('bPost').disabled = false;
+}
+
+async function getPipe() {
+  if (embedPipe) return embedPipe;
+  const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6');
+  embedPipe = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { device: 'webgpu' });
+  return embedPipe;
+}
+
+function cosine(a, b) { let d = 0; for (let i = 0; i < a.length; i++) d += a[i] * b[i]; return d; }
+
+async function toggleWorker() {
+  workerOn = !workerOn;
+  document.getElementById('bWork').textContent = workerOn
+    ? '5 · Worker mode ON — polling job.json (tap to stop)' : '5 · Worker mode — poll job queue';
+  log(workerOn ? '  worker mode on — polling job.json every 4s' : '  worker mode off', 'dim');
+  while (workerOn) {
+    try {
+      if (!workerBusy) { workerBusy = true; await pollJob(); workerBusy = false; }
+    } catch (e) { log('✗ poll: ' + e, 'bad'); workerBusy = false; }
+    await new Promise(r => setTimeout(r, 4000));
+  }
+}
+
+async function pollJob() {
+  const r = await fetch('job.json?ts=' + Date.now());
+  if (!r.ok) return;
+  const job = await r.json();
+  if (!job.id || job.status !== 'pending' || doneJobs.has(job.id)) return;
+  doneJobs.add(job.id);
+  log('  picked up job ' + job.id + ' — ' + job.docs.length + ' docs vs query…');
+  const pipe = await getPipe();
+  const t0 = performance.now();
+  const qv = (await pipe(job.query, { pooling: 'mean', normalize: true })).data;
+  const ranked = [];
+  for (const d of job.docs) {
+    const text = (typeof d === 'string' ? d : (d.text || '')).slice(0, 480);
+    const key = typeof d === 'string' ? text.slice(0, 90) : (d.key || text.slice(0, 90));
+    const dv = (await pipe(text, { pooling: 'mean', normalize: true })).data;
+    ranked.push({ doc: key, score: +cosine(qv, dv).toFixed(3) });
+  }
+  ranked.sort((a, b) => b.score - a.score);
+  const ms = Math.round(performance.now() - t0);
+  const summary = ['[webgpu-worker] job ' + job.id + ' — ' + (job.docs.length + 1) + ' embeddings in ' + ms + 'ms on iPhone GPU',
+    'query: ' + job.query, 'ranking:']
+    .concat(ranked.map((x, i) => '  ' + (i + 1) + '. ' + x.score + ' — ' + x.doc)).join('\n');
+  log('✓ job ' + job.id + ' done in ' + ms + 'ms — top: ' + ranked[0].doc, 'ok');
+  log(ranked.map((x, i) => '    ' + (i + 1) + '. ' + x.score + ' — ' + x.doc).join('\n'), 'dim');
+  const resp = await fetch('/apps/board-api/comment', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'devin', text: summary }),
+  });
+  log(resp.ok ? '  result posted to OPS-0779' : '  post failed: ' + resp.status, resp.ok ? 'ok' : 'bad');
+}
+
+async function postResults() {
+  document.getElementById('bPost').disabled = true;
+  const summary = ['[webgpu-bench]',
+    `ua: ${results.ua.slice(0, 120)}`,
+    `adapter: ${JSON.stringify(results.adapter || null)}`,
+    `matmul: ${JSON.stringify(results.matmul || null)}`,
+    `embed: ${JSON.stringify(results.embed || null)}`,
+    results.webgpu === false ? 'webgpu: NOT AVAILABLE' : ''].filter(Boolean).join('\n');
+  try {
+    const r = await fetch('/apps/board-api/comment', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'devin', text: summary }),
+    });
+    const j = await r.json();
+    log(r.ok ? '✓ posted to card OPS-0779' : '✗ post: ' + JSON.stringify(j), r.ok ? 'ok' : 'bad');
+  } catch (e) {
+    log('✗ post failed (' + e + ') — results below, copy manually:', 'bad');
+    log(summary, 'dim');
+  }
+  document.getElementById('bPost').disabled = false;
+}
+</script>
+</body>
+</html>

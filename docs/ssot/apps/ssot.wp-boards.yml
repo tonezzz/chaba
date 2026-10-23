@@ -76,6 +76,28 @@ post_types:
   # repo-pending (folded into 0.7.x next deploy): saved_by meta on asset/expense/
   # contact/reminder (+ 'By' admin column) — cpt_post attributes each
   # LINE save to a member. Card line-cpt-writer-router.
+  # v0.8.0 (repo, pending deploy 2026-10-23): activity CPT — durable
+  # tool-execution records (card wp-activity-cpt-timeline-links, ADA-0650).
+  # Hierarchical like news: parent = session/turn (kind=session), children =
+  # one per tool call (kind=tool); has_archive /wp/activity/. status
+  # ok|failed|blocked — failed/blocked calls land too (that IS the incident
+  # report). meta: kind/tool/lane/status/model/cost_usd/artifact_url/
+  # ref_url/prompt_excerpt/session_id/chat_id/duration_s/event_id/
+  # occurred_at/error. Artifact thumb + status badge admin columns,
+  # occurred_at-desc default sort, single-view event card (session parents
+  # list their children), [chaba_activity lane= status= limit=] feed block.
+  # Writer: scripts/ada/activity-posts.py (activity-posts job, idc03).
+  # Timeline dedupe: line-chat-timeline.py links these posts via
+  # artifact_url/event_id instead of re-inlining media.
+  # v0.9.0 (repo, pending deploy): nest_job CPT — the ada-nest offload
+  # queue mirrored to the member surface (card
+  # nest-api-unified-mutation-service). Hierarchical like activity —
+  # parent jobs own child jobs/packs (job trees); has_archive
+  # /wp/nest_job/. meta: kind(pack|queue|sub)/status(queued|claimed|
+  # running|done|failed|stalled|cancelled)/host/pack/runner/result_ref/
+  # error/comms(JSON append log [{at,from,text}])/updated. ONLY writer:
+  # board-api POST /job on idc03 (queue-mgr on dell mirrors Drive
+  # queue/packs state -> CPT through the door).
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -113,8 +135,9 @@ post_types:
              meta: topic/count/last_repeat/status; admin list defaults to
              last_repeat desc, Asked/Last-repeat columns sortable (v0.3.7)"
   lesson:      "Tony's education ledger — knowledge he asked for, filed by
-             agents via scripts/lesson-add.py (slug lesson-<md5>, upsert on
-             re-ask). meta: topic/level(intro|working|deep)/source/
+             agents via board-api POST /lesson (slug lesson-<md5>, upsert on
+             re-ask; scripts/lesson-add.py is the thin CLI). meta:
+             topic/level(intro|working|deep)/source/
              learned_at/next_review/status — next_review feeds spaced-recall
              digests (v0.3.8)"
   score:       "balance board — praise + complaint events per subject
@@ -130,6 +153,25 @@ post_types:
              raw_result(JSON)/transcript_ref/occurred_at/status(open|
              explained|resolved)/resolved_by/resolved_at. Comments = the
              plain-language explanations Kaewta/Devin write; Tony resolves."
+  activity:    "durable tool-execution records (v0.8.0, card
+             wp-activity-cpt-timeline-links). Hierarchical: parent =
+             session/turn (kind=session, slug act-s-<lane>-<sid>),
+             children = one per tool call (kind=tool, slug
+             act-<md5(lane|session|call)>). status ok|failed|blocked —
+             failed/blocked land too, that IS the incident report.
+             meta: kind/tool/lane/status/model/cost_usd/artifact_url/
+             ref_url/prompt_excerpt/session_id/chat_id/duration_s/
+             event_id(<lane>:<session>:<call>)/occurred_at/error.
+             [chaba_activity lane= status= limit=] renders the feed;
+             private posts = member-visible per lane like /chat/line/*."
+  nest_job:    "ada-nest Drive-queue mirror (v0.9.0, card
+             nest-api-unified-mutation-service). One private post per
+             offload job/pack; hierarchical parent field links job
+             trees. Written ONLY via board-api POST /job — queue-mgr
+             (dell) and pack runners never hold WP creds.
+             meta: kind/status(queued|claimed|running|done|failed|
+             stalled|cancelled)/host/pack/runner/result_ref/error/
+             comms(JSON [{at,from,text}])/updated. /wp/nest_job/ archive."
 
 taxonomy_axes:
   category: "broad topic axis — curated, hierarchical. News desks live
@@ -168,6 +210,7 @@ title_standard:
   repeat_ask:  free-form (topic text from register)
   lesson:      "Education — {topic}"
   ops_error:   "Err — {lane} {tool} {date}"
+  activity:    "Activity — {tool} {lane} {date} | parent: Activity — session {sid} {lane}"
   pages:       bare names (Tony, KK, Chat, Line, Ops)
 
 writers:
@@ -183,7 +226,11 @@ writers:
                   Needs wp_client slug patch (staged drop 11)."
   place_report:   place + person tag            # maps links / place names
   trip_calendar:  trip parent+children + person # --public flag
-  line-chat-timeline.py: timeline_block rebuilds (journal+ops-events)
+  line-chat-timeline.py: "timeline_block rebuilds (journal+ops-events);
+                  activity dedupe (v0.8.0) — a journal media row whose url
+                  is an activity post's artifact_url (or carrying the
+                  relay-stamped event_id) renders a 🔧 link to the post
+                  instead of re-inlining the media"
   lane-transcript-timeline.py: "voice-lane transcripts -> timeline_block;
                   mn-ha -> ada-ai-kraut post 872 private; timer 15min idc03"
   render_job:     "OPS-0658 local_image lane / manual — one record per render
@@ -235,11 +282,14 @@ writers:
                   attachment then creates the private cam post; upserts the
                   per-camera directory post; purges snapshot posts+media
                   >7d. go2rtc is loopback — host-bound."
-  lesson_add:   "scripts/lesson-add.py on any host with
-                  ~/.config/secrets/wp-boards.env — upserts private lesson
-                  posts by slug lesson-<md5(topic)>; Thai section appended
-                  via gemini flash-lite (GEMINI_API_KEY_FREE first); meta
-                  incl. next_review default learned_at+7d"
+  lesson_add:   "scripts/lesson-add.py — thin client of board-api POST
+                  /lesson on idc03 (2026-10-23: unified mutation door,
+                  card nest-api-unified-mutation-service; callers need
+                  tailnet, not wp-boards.env). The endpoint upserts
+                  private lesson posts by slug lesson-<md5(topic)>;
+                  Thai section appended via gemini flash-lite
+                  (GEMINI_API_KEY_FREE first); meta incl. next_review
+                  default learned_at+7d"
   lessons_due:  "scripts/lessons-due.py on idc03 — chaba-lessons-due.timer
                   daily 07:30 (ssot.jobs.yml); refreshes private page slug
                   education-due (post 354): due-now + upcoming review lists"
@@ -255,6 +305,19 @@ writers:
                   origin_base. Backfill: --since '<ts>' --session <sid>
                   (seed run for session 183e9c8d7e documented in
                   docs/ssot/jobs/ada/2026-10-15-ops-error-posts.yml)"
+  activity_posts: "scripts/ada/activity-posts.py on idc03 —
+                  activity-posts.timer every 15min (ssot.jobs.yml job
+                  activity-posts). Tails journalctl --user -u ada-kk/
+                  ada-ha-tony/ada-michael function_call received/result
+                  pairs for the emitters allowlist (renders + translate/
+                  vision; ACTIVITY_TOOLS env override). Resolved pairs ->
+                  ok|failed children; received-without-result >15min ->
+                  blocked (killed/refused mid-turn evidence). Session
+                  parents upserted by slug act-s-<lane>-<sid>, status =
+                  worst child. Dedup via slug act-<md5> ?slug= lookup;
+                  pending calls persist in ~/.local/share/ada/
+                  activity-posts-state.json. Design:
+                  docs/ssot/jobs/ada/2026-10-23-activity-cpt-timeline-links.yml"
   usage_pull:   "Plesk-side pull-render (OPS-0661, repo v0.5.0 pending deploy)
                   — usage-pull-cron.php via Plesk Scheduled Task fetches the
                   bearer-gated /feeds/usage.json on idc02 caddy-edge

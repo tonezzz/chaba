@@ -1,0 +1,54 @@
+# vyncx-v2-bench — Thai voice-clone bench via VYNCX F5-TTS-THAI v2 (IPA).
+# The documented winner of lab-thai-voice-clone (2026-10-08): normCER 2.2%,
+# SIM 0.81, gates pass — vs megaF5's CER fail (re-measured today at
+# 0.37-0.52 on this same corpus). This pack re-runs the winning lane on
+# the canonical ada-nest refs/sentences for the apples-to-apples and to
+# stage canonical artifacts for the yt-dub thai-clone-tts wrapper.
+name: vyncx-v2-bench
+needs:
+  gpu_gb: 3        # ~335M F5 + vocos
+  disk_gb: 4
+timeout_s: 1200
+artifacts:
+  - packs/vyncx-v2-bench/out/vx-ada-*.wav
+  - packs/vyncx-v2-bench/out/vx-tony-*.wav
+prep: |
+  # f5-tts-th hard-pins numpy<=1.26.4 — installing it normally downgrades
+  # numpy and breaks jax/tf (numpy.dtypes.StringDType) -> transformers
+  # lazy-import collapses. --no-deps + explicit deps + force numpy back.
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile
+  pip install -q --no-deps 'numpy>=2'
+run: |
+  import time, os
+  import torch
+  import soundfile as sf
+  from f5_tts_th.tts import TTS
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  SENTS = [
+   "วันนี้ตลาดมีผลไม้สดใหม่หลายอย่างเลย",
+   "รถไฟฟ้าขบวนถัดไปจะมาถึงในอีกห้านาที",
+   "อย่าลืมพกร่มไปด้วยเพราะพยากรณ์อากาศบอกว่าฝนจะตกตอนเย็น",
+   "อาหารจานนี้รสชาติเผ็ดกำลังดีและหอมมาก",
+   "ประชุมพรุ่งนี้เลื่อนไปเป็นสิบโมงครึ่งแทน",
+  ]
+  REFS = [
+   ('ada',  '/tmp/vbench/ada-ref.wav',     '/tmp/vbench/ref_text.txt'),
+   ('tony', '/tmp/vbench/tony-ref-8s.wav', '/tmp/vbench/ref_text_tony.txt'),
+  ]
+  t0 = time.time()
+  tts = TTS(model='v2')   # v2 = IPA reading lane (the lab winner)
+  print('vyncx loaded %.0fs gpu=%.1fGB' % (time.time()-t0, torch.cuda.memory_allocated()/1e9), flush=True)
+  for who, wav, rtxt in REFS:
+      rt = open(rtxt, encoding='utf-8').read().strip()
+      for i, t in enumerate(SENTS):
+          out = f'{OUT}/vx-{who}-{i}.wav'
+          if os.path.exists(out) and os.path.getsize(out) > 0:
+              print(f'gen {who}{i} cached', flush=True); continue
+          t0 = time.time()
+          print(f'gen {who}{i} start', flush=True)
+          w = tts.infer(ref_audio=wav, ref_text=rt, gen_text=t,
+                        step=32, cfg=2.0, speed=1.0)
+          sf.write(out, w, 24000)
+          print(f'gen {who}{i} %.0fs' % (time.time()-t0), flush=True)
+  print('vyncx-v2-bench complete', flush=True)

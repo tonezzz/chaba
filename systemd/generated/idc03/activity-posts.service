@@ -1,0 +1,8 @@
+[Unit]
+Description=Ada tool executions -> WP activity posts (job:activity-posts, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/ada/activity-posts.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/activity-posts.py

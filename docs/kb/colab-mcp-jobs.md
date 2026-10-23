@@ -60,9 +60,23 @@ kanban cards classified in 2x50 parallel batches (204s+296s), published as
   `os._exit(0)` crashes just the kernel — frees orphaned GPU mem while
   `/tmp` weights + Drive mount (VM-level) survive.
 - Drive FUSE writes flush async — files may `cp` locally but not appear
-  to rclone for ~60s; poll before archiving.
+  to rclone for ~60s; poll before archiving. Multi-GB writes are worse:
+  `tar` can exit 0 while DriveFS is still uploading in the background —
+  a runtime restart before the remote listing shows the file LOSES it
+  (observed: 13GB hf-hub.tar.zst written, VM restarted, never landed).
+  "Durable" means visible in `rclone lsf` from a fleet host, not present
+  in the local mount. Keep the VM alive until big artifacts verify.
 - `torch_dtype=` (not `dtype=`) is the diffusers kwarg; the wrong one is
   silently ignored and loads fp32 (slow + big).
+- **Poll out-of-band, not through MCP** (verified 2026-10-23): while the
+  runner cell holds the kernel, `run_code_cell` queues behind it and MCP
+  `get_cells` never sees `subprocess` output. Watch progress from a fleet
+  host instead: `rclone cat gdrive:ada-nest/queue/log-<date>.txt` +
+  `queue/prep-<name>.log` + `queue/done/`. con01 has `~/.local/bin/rclone`.
+- **HF cache dies with the runtime** — a fresh T4 re-downloads ~19GB of
+  LTX weights with the GPU idle (the first job's prep can't hide under
+  anything). Persist it like any packed artifact: see the cache-restore/
+  save jobs below.
 
 ## Batch-queue mode (verified 2026-10-23)
 
@@ -70,8 +84,11 @@ For multi-experiment sessions, drive the notebook from a **manifest** instead
 of staging cells per job:
 
 - **Manifest** — `gdrive:ada-nest/queue/JOBS.py`: a `JOBS` list of
-  `{name, prep, run}` — `prep` is a shell string (fetch/install/extract),
-  `run` is a Python source string exec'd in a shared namespace.
+  `{name, scope, prep, run, artifacts}` — `prep` is a shell string
+  (fetch/install/extract), `run` is a Python source string exec'd in a
+  shared namespace. `scope` (default `'work'`) picks the marker space;
+  `artifacts` is a list of globs vs `ada-nest/` that must match ≥1
+  non-empty file before the job may mark done.
 - **Runner cell** — one self-contained cell loops the manifest: per-job
   try/except isolation, `queue/done/<name>.done` markers make it
   resumable (rerun the same cell after any crash/recycle), and every job
@@ -89,5 +106,121 @@ of staging cells per job:
   needs no new weights first if its inputs are already staged; put the
   big extract/download as the *next* job's prep so it hides under the
   current job's GPU time.
-- **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` on Drive
-  are the durable record — the notebook doc can be recycled at will.
+- **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` +
+  `queue/prep-<name>.log` (prep stdout/stderr) on Drive are the durable
+  record — the notebook doc can be recycled at will.
+- **Marker scope is part of the contract** (2026-10-23): `scope:'env'`
+  jobs (pip installs, `/tmp` extracts, HF-cache restore/save) mark under
+  `queue/env-done/<boot_id>/` so a fresh VM always re-runs them — a pip
+  install cannot outlive its VM. `scope:'work'` (default) marks under
+  `queue/done/` globally. Earlier, a runtime restart left a stale
+  `deps.done` while the pip env was gone — the next job died on import.
+- **Verify-before-mark** (2026-10-23): a job's `run` returning is not
+  proof its artifact landed — observed live: `save-hf-cache.done`
+  existed while `hf-hub.tar.zst` never reached Drive (runner exited
+  before the FUSE upload flushed). The runner now requires every
+  `artifacts` glob to match ≥1 non-empty file and records matched sizes
+  in the marker; a fleet-side rclone check remains the server-side
+  truth. Runner also settles 120 s after drain so big uploads land
+  before the VM idles.
+- **Detached mode (2026-10-23)** — prefer `queue-launcher-cell.py`: it
+  starts `queue/runner.py` as a session-detached process (output →
+  `queue/run-<ts>.out.log`, pid → `queue/runner.pid`, `queue/heartbeat`
+  rewritten every 15 s). The kernel stays free for diagnostics mid-run,
+  and the queue survives a kernel restart. Blocking in-kernel mode is
+  only for interactive debugging.
+- **Interrupts don't propagate into `subprocess.run`** — a cell stop
+  button may leave a hung prep/running job alive; only
+  Runtime → Interrupt execution reliably kills it (MCP has no interrupt
+  tool). Preps launched `start_new_session=True` die with the runner on
+  VM/kernel teardown.
+- **Never bare-`snapshot_download` multi-variant repos** — LTX-Video is
+  ~187 GB across all variants; only transformer+vae+scheduler (~9 GB)
+  are needed. Always `ignore_patterns` (text_encoder/tokenizer/.bin/fp8)
+  or the disk fills mid-queue (observed: ENOSPC at 235 GB used, killed
+  the run's final job). Surgical cleanup: keep only the snapshot paths
+  the pipeline loads, then delete unlinked blobs + `*.incomplete`.
+- **Per-clip timeouts** — any GPU call that can hang gets a
+  `signal.alarm(N)` guard + a `start` print before it; a silent stall
+  otherwise looks identical to a slow run (VoxCPM2 sat ~1 h at 0% GPU).
+- **Bracket every manifest with cache jobs** so the second runtime of a
+  session (or the next session) skips weight re-downloads entirely:
+  ```python
+  {"name":"restore-hf-cache","scope":"env",
+   "prep":"test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          " && mkdir -p /root/.cache/huggingface"
+          " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          "    -C /root/.cache/huggingface || true",
+   "run":"import os;print('hub entries:',len(os.listdir('/root/.cache/huggingface/hub'))if os.path.exists('/root/.cache/huggingface/hub')else 0)"},
+  # ... gpu jobs whose preps stay `snapshot_download` — they validate the
+  # restored cache instantly instead of re-downloading ...
+  {"name":"save-hf-cache","scope":"env","artifacts":["cache/hf-hub.tar.zst"],
+   "prep":"tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          " -C /root/.cache/huggingface hub",
+   "run":"print('hf cache packed')"},
+  ```
+  Drive read + zstd decompress beats an HF re-pull, and `snapshot_download`
+  becomes a fast no-op validator when the cache is warm. Keep the
+  `snapshot_download` preps regardless — they self-heal when the tar is
+  missing or stale.
+- **The first GPU job's prep is the one un-hideable window** — nothing
+  runs before it. Minimize it: cache-restore first, and order the queue
+  so the job needing the *least* new download runs first; every later
+  prep hides under a GPU run.
+
+## Packs — work units for any worker (nest-pack v2, 2026-10-23)
+
+OPS-0759: work now ships as **packs**, not manifest jobs — a pack is a
+self-contained bundle any capable worker on any store can claim, so the
+same bundle runs on Colab today and a fleet host tomorrow.
+
+- **Layout** — `ada-nest/packs/<name>/pack.yml` (+ optional `inputs/`):
+  ```yaml
+  name: my-job
+  needs: {gpu_gb: 3, disk_gb: 4, egress_only_ok: true}   # capability floor
+  timeout_s: 1200     # runner-side SIGALRM around the whole run
+  artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
+    - packs/my-job/out/*.wav
+  prep: |             # shell — CPU-bound fetch/install (same as manifest)
+    pip install -q ...
+  run: |              # python exec'd in shared ns; PACK_DIR injected
+    ...
+  # run_sh: |       # alternative: shell run instead of python
+  ```
+- **Canonical source** = `scripts/colab/packs/<name>/` in the chaba repo;
+  deploy to Drive with `rclone copy` (con01 has rclone).
+- **Claiming** — worker writes `packs/<name>/claim/<worker-id>`
+  (first-writer-wins, 2 s settle; Drive listing lag makes it best-effort
+  for simultaneous claims — fine at our scale). Done marker is a FILE:
+  `packs/<name>/done` (note: not `.done` suffix — inside the pack dir).
+- **needs check** — runner advertises `gpu_gb` (nvidia-smi),
+  `disk_gb` (statvfs), `egress_only_ok=True` (Colab can only egress).
+  Unmatched packs skip cleanly with the reason logged.
+- **Packs run AFTER the whole JOBS manifest** — so keep env/bootstrap
+  (cache restore, deps, asset extract) in JOBS.py and everything else as
+  packs. A pack can depend on env jobs' outputs (`/tmp/vbench` etc.) but
+  must not assume other packs ran — order is `sorted(os.listdir)` and
+  claims are independent.
+- **PACK_DIR** — `ada-nest/packs/<name>` absolute path, injected into the
+  run namespace; write outputs under `PACK_DIR/` so the pack stays
+  self-contained and the artifacts globs stay inside the pack.
+- **No signal.alarm inside pack run code** — it cancels the runner's
+  timeout_s alarm. Per-step guards belong in the runner or a thread.
+- Verified live 2026-10-23: `smoke` pack (lifecycle proof) +
+  `thonburian-bench` (Thai voice-clone eval — 10 wavs in 98 s on T4,
+  report.md inside the pack dir).
+- **Member-surface mirror** — queue-mgr (dell, watches the Drive store)
+  mirrors job/pack state into WP `nest_job` posts via board-api
+  `POST /job` (upsert by slug, `status`, `comms` append log, `parent`
+  for job trees). Watchers stay read-only on Drive; the door is the
+  only writer — workers and Colab never hold WP creds.
+  See `docs/kb/board-api-write-door.md`.
+
+### Writing packs — lessons so far
+
+- Declare honest `needs` floors — they decide which workers can take the
+  pack; too high and it starves, too low and it claims then OOMs.
+- `ref_text`-equivalent inputs belong in `inputs/` (pack-local) when not
+  already staged by an env job — a pack is meant to be self-contained.
+- Pack `run` is exec'd in a *shared* namespace with the manifest jobs —
+  pop stale `model`/`pipe` globals and `torch.cuda.empty_cache()` first.

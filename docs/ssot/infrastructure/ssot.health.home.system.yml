@@ -174,31 +174,6 @@ services:
   name: open-jev scorer (gemma-3-4b)
   type: systemd
   service: open-jev.service
-  expected_state: inactive
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  host: tony_omen
-  note: 'Dormant by design (travel-slim): ada-pi-orch-bench starts it via ExecStartPre Mon 04:30, ExecStartPost stops it;
-    open-jev-leash.timer reaps it if up >2.5h. ''unknown'' during bench window = expected.'
-- id: open-jev-student-scorer
-  name: open-jev student scorer (gemma-3-1b)
-  type: systemd
-  service: open-jev-student.service
-  expected_state: inactive
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  host: tony_omen
-  note: Same on-demand lifecycle as open-jev-scorer.
-- id: open-jev-leash-timer
-  name: open-jev leash timer
-  type: systemd
-  service: open-jev-leash.timer
   expected_state: active
   timeout: 5
   category: system
@@ -206,6 +181,22 @@ services:
   - home
   - mobile
   host: tony_omen
+  note: '24/7 since 2026-10-23 — travel-slim exited per omen-dedicate-nest (orch-bench ExecStartPost no
+    longer stops it, open-jev-leash.timer retired). Serves :8777 for ada-dev/ada-kk ADA_JEV_URL +
+    weekly orch-bench --heavy. Model load ~140s after unit start.'
+- id: open-jev-student-scorer
+  name: open-jev student scorer (gemma-3-1b)
+  type: systemd
+  service: open-jev-student.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  host: tony_omen
+  note: 24/7 alongside open-jev since 2026-10-23 — serves :8778 (orch-bench --student). The separate
+    openjev-student.service quadlet (:8779, nest distributed lane) was already always-on.
 - id: ada-pi-orch-bench-timer
   name: Orch topology bench timer
   type: systemd

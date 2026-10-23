@@ -242,7 +242,7 @@ def send_event(severity: str, body: str) -> tuple[bool, str]:
 def send_line(text: str) -> tuple[bool, str]:
     """LINE push via ada-line-relay :8912/send — direct loopback first,
     then the chaba-nag `ssh idc03 curl` fallback."""
-    payload = json.dumps({"text": text})
+    payload = json.dumps({"text": text, "class": "critical"})
     try:
         import urllib.request
         req = urllib.request.Request(

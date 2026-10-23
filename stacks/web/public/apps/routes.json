@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-22 13:21 +07",
+  "generated": "2026-10-23 13:46 +07",
   "schema": 1,
   "edges": {
     "tony-dell-web": {
@@ -42,10 +42,11 @@
     "idc03-serve": {
       "kind": "tailscale-serve",
       "mounts": {
-        "/": "http://127.0.0.1:8001",
+        "/": "http://127.0.0.1:8002",
         "/apps/ha/ada-tony": "http://127.0.0.1:8002",
         "/apps/ha/ada-michael": "http://127.0.0.1:8003",
         "/apps/ha/ada-dev": "http://127.0.0.1:8005",
+        "/apps/ha/ada-ha": "http://127.0.0.1:8006",
         "/apps/ha/ada-kk": "http://127.0.0.1:8007"
       }
     }
@@ -71,10 +72,16 @@
       "listen": "127.0.0.1:8007",
       "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"
     },
+    "ada-ha-ada": {
+      "host": "idc03",
+      "listen": "127.0.0.1:8006",
+      "tailnet": "https://idc03.taila0626a.ts.net/apps/ha/ada-ha"
+    },
     "ada-pi-pwa": {
       "host": "idc03",
       "listen": "127.0.0.1:8001",
-      "tailnet": "https://idc03.taila0626a.ts.net/"
+      "tailnet": "https://idc03.taila0626a.ts.net/",
+      "status": "retired 2026-10-23 — unit stopped+disabled; shared pool replaced by per-lane stores (card per-instance-secret-stores-migration)"
     },
     "tony-ha": {
       "host": "tony-omen",
@@ -261,6 +268,11 @@
     "jev-bench": {
       "kind": "static",
       "path": "/apps/jev-bench",
+      "owner": "chaba"
+    },
+    "webgpu-bench": {
+      "kind": "static",
+      "path": "/apps/webgpu-bench",
       "owner": "chaba"
     },
     "gev-cmd": {
