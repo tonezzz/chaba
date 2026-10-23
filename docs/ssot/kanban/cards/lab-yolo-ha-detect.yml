@@ -89,6 +89,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261022-195037-lab-bench-local-yolo-object-de no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-10-23 08:24
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261022-195037-lab-bench-local-yolo-object-de on
+    tony-omen — if the work was never pushed it may be gone'
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).
@@ -105,4 +109,6 @@ action:
   - gpu
   attempts: 1
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-23 08:24
 ref: HOM-0193
