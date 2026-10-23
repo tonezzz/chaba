@@ -1,7 +1,7 @@
 id: omen-dedicate-nest
 title: Dedicate tony-omen to Ada Nest — exit travel-slim, GPU lane duty
 column: doing
-updated: 2026-10-23 13:10
+updated: 2026-10-23 13:17
 priority: high
 spec: 'Tony 2026-10-12: macbook becomes his main desktop → omen dedicated to Nest. Already onboarded (tailnet/mesh/runner/devin
   satellite all pass new-host checklist). Steps: (1) ssot.host-capacity.yml: role gpu-dev -> nest-gpu-lane, note
@@ -69,10 +69,28 @@ comms:
 - at: 2026-10-23 13:10
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261016-045119-tony-2026-10-12-macbook-become'
+- at: 2026-10-23 13:17
+  from: devin
+  text: 'raised request omen-desktop-posture-current-state-gdm-g-8e87da: Omen desktop posture? Current state: gdm
+    greeter sits on tty1 (no interactive GNOME session logged in, idle 2d), chrome-'
 action:
   type: dispatch
   status: running
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
+    no_repo: 2026-10-23 13:10
   runner: idc02
+requests:
+- id: omen-desktop-posture-current-state-gdm-g-8e87da
+  ask: 'Omen desktop posture? Current state: gdm greeter sits on tty1 (no interactive GNOME session logged in, idle
+    2d), chrome-remote-desktop session for tony already active — so it is effectively headless+CRD today. Options:
+    ★A) formalize headless+CRD — disable gdm3 (saves idle GPU/display watts on a 24/7 lane; CRD unaffected, re-enable
+    is one command) · B) keep gdm greeter for local console fallback · C) keep a full GNOME session logged in (highest
+    power). Recommend A.'
+  status: open
+  at: 2026-10-23 13:17
+  from: devin
+  options:
+  - proceed
+  - hold
