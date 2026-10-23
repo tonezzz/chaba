@@ -1,6 +1,6 @@
 id: scenario-sessions-hitting-ada-ha-tony-in-4d180d
 title: Scenario sessions hitting ada-ha-tony instead of ada-dev free lane
-column: backlog
+column: doing
 updated: 2026-10-23 19:33
 priority: high
 tags:
@@ -26,6 +26,9 @@ comms:
 - at: 2026-10-23 19:33
   from: tony
   text: queued for processing
+- at: 2026-10-23 19:33
+  from: tony-omen
+  text: claimed
 spec: Investigate why admin sessions still connect to ada-ha-tony at 6.6s intervals during suite windows despite
   smoke retargeting working for actual usage. The target repository is ada-voice and the operations run on host
   tony-dell. Constraints include relying solely on existing logs and connection metrics without modifying live routing
@@ -33,4 +36,5 @@ spec: Investigate why admin sessions still connect to ada-ha-tony at 6.6s interv
   the source of the 6.6s interval admin connections to ada-ha-tony during test suites.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-omen
