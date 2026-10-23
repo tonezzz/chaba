@@ -1,7 +1,7 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
 column: doing
-updated: 2026-10-23 11:05
+updated: 2026-10-23 11:09
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
   WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
@@ -35,3 +35,19 @@ comms:
   text: 'Turn 2 started on mn01. gpt-oss:20b confirmed pulled on omen ollama (13.8GB). Implementing structured-output
     loop change (args repair + schema retry + json-mode escalation), then running local-gpt-oss-20b + clawbot lanes
     sequentially. Note: no OPENROUTER_API_KEY on mn01 secrets — searching; will raise a request if absent.'
+- at: 2026-10-23 11:09
+  from: devin
+  text: 'raised request mn01-has-no-openrouter-api-key-secrets-o-2e1151: mn01 has no OPENROUTER_API_KEY (secrets
+    origin macbook never synced it here) — clawbot lane cannot auth. Options: (a) ★ '
+requests:
+- id: mn01-has-no-openrouter-api-key-secrets-o-2e1151
+  ask: 'mn01 has no OPENROUTER_API_KEY (secrets origin macbook never synced it here) — clawbot lane cannot auth.
+    Options: (a) ★ sync ~/.config/secrets/openrouter.env to mn01 so future bench dispatches work; (b) accept OR-lane
+    skipped this run and I record it honestly; (c) point me at another reachable OR/free endpoint. Proceeding with
+    gpt-oss lane meanwhile; will recheck before finishing.'
+  status: open
+  at: 2026-10-23 11:09
+  from: devin
+  options:
+  - proceed
+  - hold
