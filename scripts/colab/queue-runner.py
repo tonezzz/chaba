@@ -100,14 +100,19 @@ def read_lease():
 
 def take_lease(worker):
     e, _w = read_lease()
-    open(LEASE, 'w').write(json.dumps(
-        {'worker': worker, 'epoch': e + 1, 'ts': int(time.time())}))
+    with open(LEASE, 'w') as f:
+        f.write(json.dumps(
+            {'worker': worker, 'epoch': e + 1, 'ts': int(time.time())}))
     time.sleep(3)                        # let a racing take surface
-    e2, w2 = read_lease()
-    if (e2, w2) != (e + 1, worker):
-        say(f'lease lost at take (got {w2} epoch {e2}) — exiting')
-        os._exit(1)
-    return e + 1
+    # Drive FUSE write->read visibility can lag past the settle window —
+    # an empty/absent read-back is not proof of loss; retry before exit
+    for _ in range(3):
+        e2, w2 = read_lease()
+        if (e2, w2) == (e + 1, worker):
+            return e + 1
+        time.sleep(2)
+    say(f'lease lost at take (got {w2} epoch {e2}) — exiting')
+    os._exit(1)
 
 def fenced_out(my_epoch, worker):
     e, w = read_lease()
@@ -123,12 +128,13 @@ def heartbeat():
             # refresh lease ts while I still hold it — liveness for watchers
             e, w = read_lease()
             if w == WORKER:
-                open(LEASE, 'w').write(json.dumps(
-                    {'worker': WORKER, 'epoch': EPOCH, 'ts': int(time.time())}))
+                with open(LEASE, 'w') as f:
+                    f.write(json.dumps(
+                        {'worker': WORKER, 'epoch': EPOCH,
+                         'ts': int(time.time())}))
         except OSError:
             pass
         time.sleep(15)
-threading.Thread(target=heartbeat, daemon=True).start()
 
 def fence_watch():
     # self-fencing: if my lease was overwritten, my writes are no longer
@@ -144,6 +150,10 @@ def fence_watch():
 WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
 EPOCH = take_lease(WORKER)
 say(f'lease acquired: {WORKER} epoch {EPOCH}')
+# heartbeat thread starts only after WORKER/EPOCH exist — starting it
+# earlier raced the take_lease settle window and died on NameError
+# (observed 2026-10-23: heartbeat NameError: EPOCH -> no heartbeat ever)
+threading.Thread(target=heartbeat, daemon=True).start()
 threading.Thread(target=fence_watch, daemon=True).start()
 
 open(f'{Q}/runner.pid', 'w').write(str(os.getpid()))
