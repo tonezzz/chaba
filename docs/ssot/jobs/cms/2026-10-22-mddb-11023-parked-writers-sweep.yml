@@ -61,7 +61,7 @@ producer_classification:
     - job: chaba-audit + chaba-audit-full (idc02)
       writes: ada-ha-scenario-reports ship (:11023); audits READ migrated colls
       fix: jobs.yml env +MDDB_BASE :11023 +MDDB_CMS_URL :11027; audit scripts
-           patched to route migrated-collection reads via MDDB_CMS_URL:
+           patched to route migrated-collection reads via MDDB_CMS_URL —
            cms-pages-audit (whole audit -> CMS plane), mddb-audit (kb-system
            probe -> :11027, added ada-ha-bank-general probe -> :11023),
            memory-banks-audit (two-plane stats union + per-coll plane routing)
@@ -71,12 +71,12 @@ producer_classification:
   no_change_needed:
     - log-shipper* (all hosts): writes host-logs + host-logs-state — stays :11023
     - obsidian-vault.service: memory viewer — repointed dead dell IP
-      100.68.142.13 -> 100.102.134.91 (memory leader), still :11023
+        100.68.142.13 -> 100.102.134.91 (memory leader), still :11023
     - ssot-optimization-snapshot (idc02): MDDB_BASE env removed — no child
-      of ssot-optimize.mjs touches MDDB; pin was vestigial
+        of ssot-optimize.mjs touches MDDB; pin was vestigial
     - mddb.service: the server itself
     - ops-report/ops-error-posts/memory-*/seed-*/sync-ada-memory scripts:
-      memory-plane defaults :11023 are correct
+        memory-plane defaults :11023 are correct
   generated_orphans_removed:
     - systemd/generated/idc02/jev-bench.{service,timer} — job host is con01
     - systemd/generated/tony_dell/session-audit.{service,timer} — job host is
@@ -86,9 +86,9 @@ script_fixes:
   - scripts/audits/cms-pages-audit.mjs: MDDB_CMS_URL wins over MDDB_BASE
   - scripts/audits/mddb-audit.mjs: probeSearch() — kb-system@:11027 + ada-ha-bank-general@:11023
   - scripts/audits/memory-banks-audit.mjs: union stats both planes; per-collection
-    reads routed via collBase map (devin-kb no longer false-flags DRIFT-missing)
+      reads routed via collBase map (devin-kb no longer false-flags DRIFT-missing)
   - scripts/test-global-rules-and-mddb.sh: collection probes -> :11027 with
-    post-split names (infrastructure-ssot, kb-system); generic health/perf stays :11023
+      post-split names (infrastructure-ssot, kb-system); generic health/perf stays :11023
 
 live_apply:  # per host — generated units already rendered in this branch
   tony_omen: |
@@ -145,12 +145,12 @@ parked_collection_deletion_runbook:
     publishes into a dead letterbox (the nest-* lesson).
 
 residual_risks:
-  - ada-voice repo scripts (jev-bench.py, orch-bench.py, ops-health-report.py)
+  - "ada-voice repo scripts (jev-bench.py, orch-bench.py, ops-health-report.py)
     must honor MDDB_CMS_URL via mddb_client — assumed per MEM-0545 deploy note;
     if a bench script bypasses mddb_client, its --mddb arg should flip to :11027
-    only when it writes no ada-ha-* docs. Verify on first post-fix run.
-  - ada-cms-pages-kk-dev exists on both planes (4 vs 8 docs) — dev variant,
-    parked copy also in deletion list.
-  - 'ssot' collection exists on both planes (1 doc) — tiny, left alone.
-  - tony_dell generated/ has ~25 stale rendered units from the idc02/idc03
-    migrations (pre-existing drift beyond this card — audit worth its own card).
+    only when it writes no ada-ha-* docs. Verify on first post-fix run."
+  - "ada-cms-pages-kk-dev exists on both planes (4 vs 8 docs) — dev variant,
+    parked copy also in deletion list."
+  - "'ssot' collection exists on both planes (1 doc) — tiny, left alone."
+  - "tony_dell generated/ has ~25 stale rendered units from the idc02/idc03
+    migrations (pre-existing drift beyond this card — audit worth its own card)."

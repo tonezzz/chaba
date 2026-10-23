@@ -17,20 +17,20 @@ planning:
     - stable label is primary identity; drift + dup labels surface; /screen
       refuses a dup label on a live screen
     - lifecycle derives from socket+timestamps:
-      pairing/connected/idle/playing/reconnecting(age)/stale(age)/released
+        pairing/connected/idle/playing/reconnecting(age)/stale(age)/released
     - cast results are honest (delivered counts) + per-pane last_cast with
       timestamps in /displays
     - /sweep frees a dead entry, 409s a live one with a next action;
       /release answers with the tombstone note
     - /displays health block: connected/reconnecting/stale/pending/released
-      + last_flap + flaps_24h (same definition vcast-auto-health counts)
+        + last_flap + flaps_24h (same definition vcast-auto-health counts)
     - claim/release/resurrect/register/disconnect/sweep/dismiss in a
-      persisted events timeline, surfaced in /displays
+        persisted events timeline, surfaced in /displays
     - recovery benchmark: disconnect->rebound measured vs the ~30min manual
-      baseline
+        baseline
   resources:
     - prior groundwork: commit 92dd8168 (grace, tombstones, forensics),
-      vcast-claim-tombstone card (resurrect chain, done)
+        vcast-claim-tombstone card (resurrect chain, done)
 
 processing:
   status: completed
