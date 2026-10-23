@@ -1,0 +1,20 @@
+id: ada-tg-relay-rotate-token-session-log-exposure
+title: Rotate Ada Telegram bot token after session-output exposure
+column: backlog
+updated: 2026-10-23 20:13
+priority: high
+spec: 'Security follow-up: while diagnosing nest-queue-watch, a relay journal line containing the Telegram bot API
+  URL (and token) was included in this session’s command output. No token value is copied into this card. Owner
+  action: rotate the Ada Telegram bot token, update the existing secret file securely, restart ada-tg-relay.service,
+  and verify relay health. Do not put the token in chat, cards, or logs. Devin did not modify secrets or restart
+  the relay.'
+action:
+  type: manual
+ref: ADA-0801
+comms:
+- at: 2026-10-23 20:13
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 20:13
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
