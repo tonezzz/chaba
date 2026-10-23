@@ -8,7 +8,7 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
 column: review
-updated: 2026-10-23 11:49
+updated: 2026-10-23 14:24
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
 comms:
@@ -147,6 +147,11 @@ comms:
 - at: 2026-10-23 11:49
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-23 14:24
+  from: devin
+  text: 'MERGE UNHELD manually: e2e32bb0d merged + pushed to master. Held gate failure (test_podman_lock_watchdog::test_dead_pause_pid_removed)
+    verified as env flake — the dispatch diff adds only report/job files, and the test passes standalone on master
+    (unittest, 7/7 green). Scorecard canonical: reports/or-free-scorecard-2026-10-23.{json,md} + docs/ssot/jobs/models/2026-10-23-or-free-scorecard.yml'
 action:
   type: dispatch
   status: done
