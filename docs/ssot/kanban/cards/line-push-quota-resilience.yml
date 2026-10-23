@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
 column: done
-updated: 2026-10-23 11:33
+updated: 2026-10-23 13:09
 priority: high
 tags:
 - line
@@ -172,6 +172,13 @@ comms:
     on idc03 (bak-20261023 kept), ada-line-relay restarted. All lanes now class=bulk — proactive sends coalesce
     <=5 msgs/push on a 300s window or ride free replyTokens. Current quota state: 300/300 used, resets Nov 1; 86
     msgs parked across 4 targets draining free via replyTokens.'
+- at: 2026-10-23 13:09
+  from: devin
+  text: 'Policy refined per Tony: critical-only proactive pushes, everything else replyToken-only. Shipped: ada-voice
+    4829387 adds class=critical escape (bypasses bulk-lane demotion); 16a718b fixes a time-dependent gemini_pool
+    test the deploy gate caught; idc03 env LINE_BULK_COALESCE_S=2592000 (bulk parks ~30d = reply-only); chaba eaa24b9
+    tags key-watch, podman-lock-watchdog, gemini-wallet-watch as critical. Deployed via deploy-ada.sh (all gates
+    passed), verified live: bulk env in process, parked drain s'
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
