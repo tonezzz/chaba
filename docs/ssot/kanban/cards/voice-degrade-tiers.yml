@@ -4,10 +4,10 @@ column: backlog
 priority: high
 autonomy: t2
 kind: lab
-description: 'When Gemini Live dies (dunning 1008, quota), Ada currently goes fully silent. Define degrade
-  tiers so communication continues: tier0 Gemini Live (paid), tier1 Gemini Live (free key), tier2 OpenRouter
-  chat + browser/edge TTS (text-paced voice), tier3 local cascade whisper+ollama+piper on omen (offline).
-  Each tier announces itself so Tony knows the mode.'
+description: 'When Gemini Live dies (dunning 1008, quota), Ada currently goes fully silent. Define degrade tiers
+  so communication continues: tier0 Gemini Live (paid), tier1 Gemini Live (free key), tier2 OpenRouter chat + browser/edge
+  TTS (text-paced voice), tier3 local cascade whisper+ollama+piper on omen (offline). Each tier announces itself
+  so Tony knows the mode.'
 acceptance:
 - create_provider picks tier by probe order, not env rewrite
 - 1008/quota on tier N -> try N+1 automatically, log tier to comms
@@ -17,15 +17,25 @@ comms:
 - at: 2026-10-23 15:34
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-23 17:24
+  from: tony
+  text: 'answered the-card-requests-a-voice-degr-cfbca5: ★ Clarify target repository and host environment for implementing
+    the degrade chain.'
+- at: 2026-10-23 17:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-card-requests-a-voice-degr-cfbca5
   ask: The card requests a voice degrade chain featuring Live, text+TTS, and a local cascade with benchmarking,
-    but does not specify the target repository, host, implementation language, or baseline constraints
-    for the fallback mechanism.
+    but does not specify the target repository, host, implementation language, or baseline constraints for the fallback
+    mechanism.
   options:
   - ★ Clarify target repository and host environment for implementing the degrade chain.
   - Postpone the card until downstream voice services stabilize.
   - Implement the degrade chain as a generic module in the primary voice repository.
-  status: open
+  status: answered
   at: 2026-10-23 15:34
   from: backlog-spec-enrich
+  answer: ★ Clarify target repository and host environment for implementing the degrade chain.
+awaiting_action: true
+updated: 2026-10-23 17:24
