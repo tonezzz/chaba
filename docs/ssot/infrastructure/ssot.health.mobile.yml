@@ -115,16 +115,16 @@ services:
     profiles:
       - home
       - mobile
-    host: tony_dell
+    host: idc03
     verification:
-      - "Test container: ssh tony-dell podman ps | grep trade-api"
-      - "Test health endpoint: curl -s http://tony-dell:9002/api/health"
-      - "Test root endpoint: curl -s http://tony-dell:9002/"
-      - "Check container logs: ssh tony-dell podman logs trade-api"
+      - "Test container: ssh idc03 podman ps | grep trade-api"
+      - "Test health endpoint: curl -s http://idc03:9002/api/health"
+      - "Test root endpoint: curl -s http://idc03:9002/"
+      - "Check container logs: ssh idc03 podman logs trade-api"
     recovery_actions:
-      - "Restart container: ssh tony-dell podman restart trade-api"
-      - "Check container networking: ssh tony-dell podman inspect trade-api"
-      - "Verify port mapping: ssh tony-dell podman port trade-api"
+      - "Restart container: ssh idc03 podman restart trade-api"
+      - "Check container networking: ssh idc03 podman inspect trade-api"
+      - "Verify port mapping: ssh idc03 podman port trade-api"
   - id: gpu-queue
     name: GPU Queue
     type: http
