@@ -1,7 +1,7 @@
 id: stale-non-served-clones-dell-cascadeproj-efbd23
 title: stale non-served clones — dell ~/CascadeProjects/chaba is 219 commits behind, agents keep tripping on it
 column: doing
-updated: 2026-10-23 09:06
+updated: 2026-10-23 09:07
 note: from 2026-10-15 session — surfaced while chasing WP repeat-ask sync gap
 ref: BEN-0703
 comms:
@@ -131,6 +131,10 @@ comms:
     15min, role=exec). KEY CORRECTION: writer is on idc03 since OPS-0725 — dell chaba-tony-dell is a readonly pull-only
     MIRROR (served-mirror-sync hourly); its readonly marker is correct. AGENTS.md + census doc updated. Stamped
     roles: dell mirror wts (iphone-dev/nest-lane/tony-ha=branch, ma'
+- at: 2026-10-23 09:07
+  from: devin
+  text: 'raised request reap-the-remaining-stale-clone-traps-1-d-36c042: Reap the remaining stale clone traps? (1)
+    Dell mirror has 4 stale linked worktrees: iphone-dev (0 unmerged commits, 7wk '
 action:
   type: dispatch
   status: running
@@ -159,6 +163,20 @@ requests:
   escalated_at: 2026-10-23 08:01
   answer: proceed
   executed: 2026-10-23 queue
+- id: reap-the-remaining-stale-clone-traps-1-d-36c042
+  ask: 'Reap the remaining stale clone traps? (1) Dell mirror has 4 stale linked worktrees: iphone-dev (0 unmerged
+    commits, 7wk cold, clean), master detached (0 unmerged, 4wk, clean), nest-lane (1 unmerged, 2wk, clean), tony-ha
+    (45 unmerged, 6wk, 4 dirty files). git worktree remove preserves the branch refs — non-destructive once tony-ha
+    dirty files are archived to a patch bundle. (2) idc03 has two dead backup trees on the WRITER host: chaba-kanban-sync.bak-20261019
+    (209M) + chaba-tony-dell.livebak-20261018 (7.2G) — .bak trees violate declared-or-dead hygiene and are prime
+    agent-confusion traps. Recommend PROCEED: archive diffs to ~/backups/worktree-reap-20261023/, remove all six.'
+  status: open
+  at: 2026-10-23 09:07
+  from: devin
+  options:
+  - proceed
+  - reap .baks only
+  - hold
 review_kind: verify
 claim: {}
 auto_close:
