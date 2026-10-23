@@ -1,0 +1,49 @@
+title: ada-nest Colab queue — resume after T4 flip
+subtitle: Manifest-driven batch session staged on gdrive; runtime recycle killed the VM
+icon: inbox
+
+focus:
+  label: ada-nest-colab-queue
+  text: >-
+    Ada Nest Colab batch session is staged and waiting on a runtime. Queue
+    manifest: gdrive:ada-nest/queue/JOBS.py (jobs: deps, assets,
+    voxcpm2-bench, i2v-chain, headroom-probe). Resume = open the Colab
+    notebook, pick T4, mount Drive, run the runner cell
+    (docs/kb/colab-mcp-jobs.md#batch-queue-mode). done-markers in
+    gdrive:ada-nest/queue/done/ make it resumable. Voice assets staged at
+    gdrive:ada-nest/voice-bench/; LTX weights tarball verified on gdrive.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [ada-nest, colab, handoff, gpu]
+  missing_info:
+    - Tony must flip runtime to T4 GPU in the Colab UI (UI-only step) and
+      approve the Drive mount OAuth click.
+  safe_to_parallel:
+    value: true
+    reason: Runs entirely on rented Colab + gdrive; no member-device windows.
+  subtasks:
+    - label: voxcpm2-bench — openbmb/VoxCPM2, ada-ref.wav x 5 held-out TH sents; pip needs protobuf+sentencepiece; kernel restart required after install
+      status: not_started
+    - label: i2v-chain — 4 scene-0 continuation shots from real last-frames (keyframes at gdrive:ada-nest/renders/keyframes/scene0-frames/)
+      status: not_started
+    - label: headroom-probe — s1 shot0 at 73f/40-step resident; maps T4 ceiling between 49f (works) and 97f (OOM)
+      status: not_started
+    - label: Score VoxCPM2 clips on omen (whisper CER + CAM++ SIM vs ada-ref) once wavs land
+      status: not_started
+    - label: board-api on tony-dell was DOWN at close (port 8787 refused, no unit) — check unit state next sweep
+      status: not_started
+    - label: Bench flywheel turn 2 — structured-output loop change, rerun gpt-oss + clawbot fixture
+      status: not_started
+    - label: Optional A100 pass — full-res 768x512x97f render (T4 activation ceiling is 640x384x~73f)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+
+source:
+  session: devin-colab-batch-2026-10-23
+  date: 2026-10-23

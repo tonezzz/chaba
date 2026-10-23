@@ -88,7 +88,26 @@ Standard workflow for ending a session when the user asks to finish/close.
    - Items deliberately dropped or already tracked elsewhere don't need parking.
    - Tell the user what was parked; the next active session triages it from the inbox.
 
-8. Push (only if asked)
+7b. Session handoff (when live state outlives the session)
+   - If the session leaves live external state — a Colab runtime awaiting
+     a UI flip, a staged job manifest, an in-flight dispatch, a warm cache
+     that costs real time to rebuild — the focus-inbox entry is not just a
+     task note: it is the *handoff document*.
+   - The entry must answer, with no conversation context needed:
+     1. What is staged/live right now (paths, manifest, runtime state)
+     2. The exact next action, including any UI-only steps only Tony can do
+     3. What survives a fresh start (durable artifacts) vs what dies
+        (ephemeral runtime state)
+     4. Subtasks for each unfinished lane
+   - Name it `handoff`-style: `<UTC-ts>-<slug>-handoff.yml` or keep the
+     plain `<ts>-<slug>.yml` naming — the `tags: [handoff]` marks it.
+   - Push is implied for handoffs: another session (possibly another host)
+     is the consumer — use `scripts/git-safe-push.sh` on satellite
+     checkouts. State that can't be pushed (live runtimes, Drive mounts)
+     gets its resume recipe written into the entry.
+
+8. Push (only if asked — except handoff entries, which exist to be read
+   by another session and always push)
    - Push to `origin` for the current branch only when the user explicitly asks for it
      ('push', 'push/etc.', or similar).
    - Report the remote tracking status.
