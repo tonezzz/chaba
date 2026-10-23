@@ -1,7 +1,7 @@
 id: kanban-commit-reconcile-rebase-deadlocks-4d95a9
 title: 'kanban-commit reconcile: rebase deadlocks on card-file divergence — merge+union-comms instead'
 column: doing
-updated: 2026-10-23 16:56
+updated: 2026-10-23 17:01
 priority: high
 tags:
 - board
@@ -41,3 +41,9 @@ comms:
 - at: 2026-10-23 16:56
   from: chaba
   text: started devin-task-20261023-165619-incident-2026-10-23-idc03-serv on idc02 (dispatch)
+- at: 2026-10-23 17:01
+  from: devin
+  text: 'dispatch picked up. Plan: (1) card-union git merge driver for docs/ssot/kanban/cards/*.yml so rebase merges
+    card paths inline instead of sidecar-deadlocking; (2) git-safe-pull falls back to a single git merge when rebase
+    cannot complete; (3) accept dispatch card writes via union merge in dispatch_repos; (4) kanban-commit failure-streak
+    alert on ops-kanban-commit-guard.'
