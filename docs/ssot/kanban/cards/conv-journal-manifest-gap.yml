@@ -1,16 +1,16 @@
 id: conv-journal-manifest-gap
 title: conv_journal tools.d module never manifest-enabled — dead code since b776e81
-column: review
+column: done
 updated: 2026-10-23 14:48
 priority: medium
-spec: 'backend/tools.d/conv_journal.py (LINE journal -> kind=report CMS page, committed b776e81 2026-10-12) has
-  no entry in backend/tools.d/manifest.yml, so it is never declared or offered at runtime — persons.kk.tools listed
-  it in include but the lint flagged it stale and it was removed 2026-10-13 (card tony-lane-tool-profile). If the
-  tool is meant to be live for kk/tony lanes, add the manifest entry (module: conv_journal, policy: read, timeout
-  ~120s) and re-add conv_journal to persons.kk.tools.include in docs/ssot/apps/ssot.apps.ada-persons.yml. If deliberately
-  disabled, delete or comment the module.'
-note: Found by render-tool-profiles.py --lint during tony-lane-tool-profile dispatch 2026-10-13 — the stale-name
-  tripwire caught it, working as designed.
+spec: 'backend/tools.d/conv_journal.py (LINE journal -> kind=report CMS page, committed b776e81 2026-10-12)
+  has no entry in backend/tools.d/manifest.yml, so it is never declared or offered at runtime — persons.kk.tools
+  listed it in include but the lint flagged it stale and it was removed 2026-10-13 (card tony-lane-tool-profile).
+  If the tool is meant to be live for kk/tony lanes, add the manifest entry (module: conv_journal, policy:
+  read, timeout ~120s) and re-add conv_journal to persons.kk.tools.include in docs/ssot/apps/ssot.apps.ada-persons.yml.
+  If deliberately disabled, delete or comment the module.'
+note: Found by render-tool-profiles.py --lint during tony-lane-tool-profile dispatch 2026-10-13 — the
+  stale-name tripwire caught it, working as designed.
 ref: OPS-0584
 comms:
 - at: 2026-10-13 16:39
@@ -18,10 +18,11 @@ comms:
   text: card captured via board-api
 - at: 2026-10-23 14:45
   from: devin
-  text: 'Done in-session: manifest entry added (ada-voice f6f159e, policy=read timeout=120s), persons.tony + persons.kk
-    includes re-added (chaba), env_file fields updated to per-instance stores (tony-ha/backend.env, kk-ha/backend.env),
-    render-tool-profiles tmp-path bug fixed for subdir env_file. Blocks applied on idc03, deployed via deploy-ada.sh
-    (1692 tests pass), module verified loadable + DECLARED. Journals are live (today''s journal-*.jsonl exist).'
+  text: 'Done in-session: manifest entry added (ada-voice f6f159e, policy=read timeout=120s), persons.tony
+    + persons.kk includes re-added (chaba), env_file fields updated to per-instance stores (tony-ha/backend.env,
+    kk-ha/backend.env), render-tool-profiles tmp-path bug fixed for subdir env_file. Blocks applied on
+    idc03, deployed via deploy-ada.sh (1692 tests pass), module verified loadable + DECLARED. Journals
+    are live (today''s journal-*.jsonl exist).'
 - at: 2026-10-23 14:45
   from: tony
   text: queued for processing
@@ -42,12 +43,16 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-144614-backend-tools-d-conv-journal-p,
     branch dispatch/20261023-144614-backend-tools-d-conv-journal-p'
+- at: 2026-10-23 14:52
+  from: devin
+  text: 'closed in-session — dispatch 20261023-144614 stopped on omen (work already landed: manifest entry
+    f6f159e + lane includes deployed)'
 action:
   type: dispatch
   status: done
   runner: tony-omen
   result: 'exit=0 al/share/devin-dispatch/tasks/20261023-144614-backend-tools-d-conv-journal-p/transcript.json.
-    | devin-task-20261023-144614-backend-tools-d-conv-journal-p.service: Consumed 43.468s CPU time over 2min 8.207s
-    wall clock time, 1.4G memory peak.'
+    | devin-task-20261023-144614-backend-tools-d-conv-journal-p.service: Consumed 43.468s CPU time over
+    2min 8.207s wall clock time, 1.4G memory peak.'
 review_kind: verify
 claim: {}
