@@ -1,0 +1,94 @@
+title: OR :free rotation scorecard — per-model bench through the gateway surface
+subtitle: super-vl + laguna-s top the side-tool composite; 8 dead ids + 2 harness-gated to prune; paid refs blocked by weekly key cap
+icon: flask
+version: 1
+
+card: openclaw-bench-per-model-scorecard-acros-3df00d
+ref: KNB-0174
+date: 2026-10-23
+dispatch: 20261023-110246-per-model-scorecard-across-the
+
+question: |
+  Grade each ghostroute OR :free model on speed + tool-call correctness
+  (fixed prompt suite, jev-bench shape) so the ada-gemini-free-tier-quota
+  decision knows which :free models can take Ada side-tool calls
+  (classify / decision / devteam — plain chat/completions, no harness).
+
+method: |
+  scripts/bench-or-scorecard.py (landed by the 2026-10-22 dispatch) —
+  5 arms x ~32 calls/model against OR /chat/completions with the model
+  pinned (gateway is loopback-only on tony-omen; same emulation as
+  edu-agent-bench). Arms: toolcall_native, toolcall_prompted, routing
+  (12 intents), reasoning (6), json_strict (4). 3.5s global request
+  spacing to protect the shared OR key; circuit breaker at 6
+  consecutive errors. Models: all 17 live :free + openrouter/free
+  auto-router + 3 paid refs (gemini-2.5-flash-lite, 2.5-flash,
+  3.5-flash-lite). Ran 40.5min on tony-omen.
+
+measured: |
+  Raw: reports/or-free-scorecard-2026-10-23.{json,md}
+  Side-tool composite = mean(routing, json_strict, toolcall_prompted).
+
+  model                                   comp   p50    err  notes
+  poolside/laguna-s-2.1:free              100.0  3.3s    0   NOT in allowlist — add; tps 15.6 (slow gen, accurate)
+  nvidia/nemotron-3.5-super-vl:free       100.0  1.9s    0   allowlist fallback#2 — best overall (96 avg all arms)
+  recursive/flint-v1.0:free                85.0  1.3s    0   in allowlist — keep, fast
+  dots-studio/dots-3-note-preview:free     83.3  2.8s    0   NOT in allowlist — add
+  nvidia/nemotron-3-ultra-550b-a55b:free   78.3  4.8s    0   keep — deep/slow lane (tps 28)
+  nvidia/nemotron-3.5-lightning:free       75.6  4.1s    0   current primary — keep (100 native tools)
+  cohere/north-mini-code:free              66.7  2.3s    0   100 native but 0 prompted-JSON — native-tool lanes only
+  openrouter/free                          58.9  2.6s    0   auto-router; lands on content-safety (non-chat) sometimes
+  nvidia/nemotron-3-nano-omni-30b:free     56.1  1.3s    0   weak reasoning/routing — don't add
+  poolside/laguna-xs-2.1:free              39.4  0.8s   11   429 storm — don't add
+  liquid/lfm-2.5-2.6b:free                 38.9 22.9s    0   accurate but far too slow — don't add
+  xingchen-agi/xing4.0-29b-a4b:free        20.6  4.5s   22   rambles past the label + 429s — DROP from allowlist
+  thinkingmachines/inkling(-small):free     0.0     -   26   403 harness-gated — DROP both (inkling-small is fallback#3!)
+  nvidia/nemotron-3.5-content-safety:free   0.0   —      5   moderation model, no tool endpoints — never add
+  nvidia/nemotron-3-super-120b-a12b:free    0.0     -   26   404 provider-dead — don't add
+  google/gemma-4-26b/31b-it:free            0.0     -   26   HTTP 400 upstream (OR Google path broken today) — quarantine
+  google/gemini-2.5-flash(-lite)            0.0     -   26   403 "Key limit exceeded (weekly limit)" — NOT a model fail
+  google/gemini-3.5-flash-lite              0.0     -   26   same weekly-cap 403
+
+findings:
+  dead-allowlist-ids: |
+    8 ids in the ghostroute allowlist are absent from the live :free
+    shelf (qwen3.8-27b, ling-3.0-flash-sante/-fin, space-bunny-alpha,
+    apodex-1.1-mini, ling-3.1-flash, lyria-3-pro-preview,
+    minimax-m3.1-flash) — pure dead weight, every rotation hit is a
+    guaranteed failure.
+  harness-gated: |
+    thinkingmachines inkling + inkling-small return 403 "only available
+    on agentic harnesses" on raw API calls. openclaw itself may still
+    reach them (it IS a harness) but they are dead for the Ada
+    side-tool use-case this bench feeds — and inkling-small sits at
+    fallback#3 in the live allowlist.
+  weekly-key-cap: |
+    ALL three paid Gemini refs failed 403 "Key limit exceeded (weekly
+    limit)" — the shared OR key has a weekly spend cap that is already
+    exhausted, so the free-vs-paid comparison could not be measured.
+    Confirms the card's risk note: a dedicated openclaw/bench key is
+    needed (or the weekly cap raised) before paid refs can be graded.
+  openrouter-free-noise: |
+    openrouter/free resolved across 11 different models including
+    nemotron-3.5-content-safety (a moderation endpoint that cannot
+    chat) — some auto-router failures are routing to non-chat models,
+    not model weakness. Keep it only as fallback-of-last-resort.
+  gemma-quarantine: |
+    Both gemma-4 :free ids 400'd on every call with an upstream
+    "API key not valid" from OR's Google provider path — same path
+    family as the paid refs' 403. Likely OR-side Google outage today;
+    quarantine rather than permanent drop, re-check next sweep.
+
+verdict: prune-and-add
+aq_result: |
+  DROP from ghostroute allowlist: 8 dead ids (see dead-allowlist-ids),
+  + inkling, inkling-small (harness-gated), + xingchen-agi/xing4.0-29b
+  (20.6 composite, 429s). QUARANTINE: gemma-4-26b/31b (upstream-broken
+  today). ADD candidates: poolside/laguna-s-2.1 (100 comp),
+  dots-studio/dots-3-note-preview (83.3 comp). PROMOTE:
+  nemotron-3.5-super-vl (100 comp, p50 1.9s) above the harness-gated
+  inklings in the fallback chain. Suggested post-prune order:
+  lightning -> super-vl -> laguna-s -> flint -> dots-3 -> ultra-550b
+  -> north-mini-code(native lanes) -> openrouter/free (last resort).
+  Paid-ref grading is BLOCKED on the weekly key cap — needs a
+  dedicated key or cap raise, then re-run just the paid rows.
