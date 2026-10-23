@@ -1,0 +1,78 @@
+# vyncx-v2-cer — transcription leaf for the TTS eval. SIM scores said
+# the voice matches; this asks "did it say the right sentence" — CER
+# vs the target SENTS, which also catches the ref-bleed insertion
+# (bench ada clips should show high CER from the hallucinated prefix;
+# ada9s clips should be clean). whisper-small on CPU is coarse for
+# Thai — treat CER deltas as signal, absolute values with care.
+name: vyncx-v2-cer
+needs:
+  egress_only_ok: true
+  disk_gb: 3
+venv: true
+fetch:
+  - packs/vyncx-v2-bench/out/
+  - packs/vyncx-v2-ada9s/out/
+timeout_s: 1800     # whisper-small CPU x 15 short clips
+artifacts:
+  - packs/vyncx-v2-cer/report.md
+  - packs/vyncx-v2-cer/cer.json
+prep: |
+  pip install -q faster-whisper jiwer soundfile   # decode wavs ourselves — py3.14's av wheels lack open(metadata_errors=)
+run: |
+  import os, glob, json
+  import numpy as np
+  import soundfile as sf
+  from faster_whisper import WhisperModel
+  import jiwer
+
+  def load16k(path):
+      y, sr = sf.read(path, dtype='float32')
+      if y.ndim > 1:
+          y = y.mean(axis=1)
+      if sr != 16000:
+          n = int(len(y) * 16000 / sr)
+          y = np.interp(np.linspace(0, len(y) - 1, n),
+                        np.arange(len(y)), y).astype('float32')
+      return y
+
+  SENTS = [
+   "วันนี้ตลาดมีผลไม้สดใหม่หลายอย่างเลย",
+   "รถไฟฟ้าขบวนถัดไปจะมาถึงในอีกห้านาที",
+   "อย่าลืมพกร่มไปด้วยเพราะพยากรณ์อากาศบอกว่าฝนจะตกตอนเย็น",
+   "อาหารจานนี้รสชาติเผ็ดกำลังดีและหอมมาก",
+   "ประชุมพรุ่งนี้เลื่อนไปเป็นสิบโมงครึ่งแทน",
+  ]
+  # clip name -> (set, sentence index). vx-*/vx9s-ada-N -> SENTS[N]
+  SETS = {'vyncx-v2-bench': '17s ref', 'vyncx-v2-ada9s': '9s ref'}
+
+  model = WhisperModel('small', device='cpu', compute_type='int8')
+  rows = []
+  for s, label in SETS.items():
+      for w in sorted(glob.glob(f'{NEST_ROOT}/packs/{s}/out/*.wav')):
+          idx = int(os.path.basename(w).rsplit('-', 1)[1].split('.')[0])
+          segs, _ = model.transcribe(load16k(w), language='th')
+          hyp = ''.join(g.text for g in segs).replace(' ', '')
+          tgt = SENTS[idx].replace(' ', '')
+          cer = jiwer.cer(tgt, hyp)
+          rows.append({'clip': os.path.basename(w), 'set': label,
+                       'cer': round(cer, 3), 'hyp': hyp, 'tgt': tgt})
+          print(os.path.basename(w), label, 'cer', round(cer, 3),
+                flush=True)
+
+  json.dump(rows, open(f'{PACK_DIR}/cer.json', 'w'), indent=1,
+            ensure_ascii=False)
+  md = ['# vyncx-v2 — CER vs target sentences (whisper-small/th)',
+        '',
+        'ASR-noise caveat: whisper-small is coarse on Thai; read CER',
+        '*deltas* between sets, not absolutes. Inserted ref-prefix =',
+        'big CER from leading extra text.', '',
+        '| clip | set | CER | hypothesis |', '|---|---|---|---|']
+  md += [f"| {r['clip']} | {r['set']} | {r['cer']} | {r['hyp'][:40]} |"
+         for r in rows]
+  for label in SETS.values():
+      rs = [r['cer'] for r in rows if r['set'] == label]
+      if rs:
+          md += ['', f"mean CER ({label}): "
+                 f"{round(sum(rs)/len(rs), 3)} (n={len(rs)})"]
+  open(f'{PACK_DIR}/report.md', 'w').write('\n'.join(md) + '\n')
+  print('scored', len(rows), 'clips', flush=True)
