@@ -1,7 +1,7 @@
 id: speaker-enroll-merge-guard-starves-1-pri-dfd1e1
 title: speaker enroll merge-guard starves 1-print profiles (own-voice check uses hard threshold)
-column: doing
-updated: 2026-10-23 17:26
+column: review
+updated: 2026-10-23 17:27
 brief: 'enroll() own-voice check requires cosine >= DEFAULT_THRESHOLD (0.45) vs the single stored print. Michael
   profile: 3 TG corpus clips of his real voice scored 0.42/0.44 vs his sole print -> REJECTED as foreign. A sparse
   profile can never accumulate prints via the intended corpus flow; only force-replace or manual _prints surgery
@@ -27,7 +27,16 @@ comms:
 - at: 2026-10-23 17:26
   from: chaba
   text: started devin-task-20261023-172648-lower-the-own-voice-merge-bar- on tony-omen (dispatch)
+- at: 2026-10-23 17:27
+  from: tony-omen
+  text: 'finished (ok): exit=0 vin-task-20261023-172648-lower-the-own-voice-merge-bar-.service: Failed with result
+    ''exit-code''. | devin-task-202'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 vin-task-20261023-172648-lower-the-own-voice-merge-bar-.service: Failed with result ''exit-code''.
+    | devin-task-20261023-172648-lower-the-own-voice-merge-bar-.service: Consumed 25.694s CPU time over 7.130s wall
+    clock time, 913.1M memory peak.'
+review_kind: verify
+claim: {}
