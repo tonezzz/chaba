@@ -1,0 +1,25 @@
+id: edu-agent-lane-lift-turn2
+title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
+column: backlog
+updated: 2026-10-23 11:02
+priority: low
+spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
+  WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
+  the loop, e.g. stricter schema retry / forced JSON mode where the backend supports it). (2) Rerun lanes local-gpt-oss:20b
+  (--ollama-model gpt-oss:20b, omen ollama http://100.75.102.88:11434) and clawbot (openrouter/free emulation, as
+  before) on the identical fixture. (3) Compare vs the 2026-10-22 baseline (clawbot: F1 1.0, dedupe 4/5, draft-Q
+  4.72, 12.5s; hermes: 0.545/2/5/1/3, 3.9, 19.4s). (4) Land reports/bench-edu-manage-<date>.{json,md} + docs/ssot/jobs/models/
+  entry + verdict comm on this card. Guard: omen GPU shared — run sequential, note contention; keep MockStore (never
+  prod WP); if OR free tier is saturated record partial results honestly rather than fabricating.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'Lane-lift loop (Tony''s idea 2026-10-22, card edu-agent-benchmark): iterate the SAME agent loop across model
+  lanes — improve local until it beats clawbot, port back, repeat. The fixture is the shared ruler. Turn 1 (gpt-oss:20b
+  pull on omen) never landed a result comm/report.'
+ref: OPS-0776
+comms:
+- at: 2026-10-23 11:02
+  from: tony
+  text: card created by devin — lane-lift turn 2 queued per Tony 2026-10-23
