@@ -9,7 +9,7 @@ priority: high
 note: '98% used (7.6 GiB free) top grower 24h: /home/tony/.cache +23.4 GiB, /home/tony/.cache/pip/ +2.3 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 19:25
+updated: 2026-10-23 19:31
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -85,6 +85,13 @@ comms:
     restore requires a separate verified backup (GDrive or another disk). Treat p5 deletion as gated on confirming
     its contents are disposable or that a real backup is verified. Live USB is also the safer offline environment
     for partition changes. No changes made.'
+- at: 2026-10-23 19:31
+  from: devin
+  text: 'Live Omen check 2026-10-23 19:31 +07: USB is present as USB Disk 20 (USB 3, /dev/sda); sda2 is 116.7G ext4
+    label ubuntu-usb, but not mounted. udisksctl mount over noninteractive SSH was denied by polkit; no file written.
+    Thermal snapshot: CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz graphics/405MHz
+    memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite 61C/sensor2 79C. Package throttle counters show
+    brief historical throttling (817ms total/4 days; no co'
 requests:
 - id: omen-disk-plan
   from: devin
