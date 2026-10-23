@@ -1,7 +1,7 @@
 id: text-lane-provider-routing
 title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
-column: doing
-updated: 2026-10-23 08:46
+column: review
+updated: 2026-10-23 08:47
 priority: medium
 spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
   use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
@@ -53,8 +53,18 @@ comms:
     (mode=live escape hatch); relays pin mode=text unconditionally; reconnect loop guarded so text lanes never upgrade
     to Live; watchdog stubs added (stall_watchdog was dying on text sessions). Tool audit: full lane tool set works
     via Gemini REST tool loop. 1630 tests pass, lint clean. No commit/push/deploy.'
+- at: 2026-10-23 08:47
+  from: idc02
+  text: 'finished (ok): exit=0 nt posted; outcome written to `dispatch-outcome-20261023-083121-channel-telegram-line-already-.md`.
+    | devin-task-'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-voice
   runner: idc02
+  result: 'exit=0 nt posted; outcome written to `dispatch-outcome-20261023-083121-channel-telegram-line-already-.md`.
+    | devin-task-20261023-083121-channel-telegram-line-already-.service: Consumed 1min 59.058s CPU time, 80.2M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
