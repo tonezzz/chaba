@@ -57,14 +57,10 @@ persons:
       # emit nothing) at ~0.5k tok each -> first-turn input ~28.9k full
       # surface, ~27.8k on this 49-decl keep-list (OPS-0583).
       instance: tony
-      env_file: ada-ha-tony.env
+      env_file: tony-ha/backend.env
       host: idc03
       include:
         # kk-parity core — memory / cms / comms / calendar / persona.
-        # conv_journal deliberately absent: the tools.d module exists but
-        # was never manifest-enabled (b776e81) — undeclared names warn
-        # stale in the lint. Re-add here (and to persons.kk) once the
-        # manifest enables it.
         - ada_memory_search
         - ada_remember
         - ada_forget
@@ -72,6 +68,10 @@ persons:
         - cms_read
         - cms_publish_page
         - cms_edit
+        # conv_journal enabled 2026-10-23 (card conv-journal-manifest-gap):
+        # manifest entry added in ada-voice — LINE journal -> private
+        # kind=report CMS page recall.
+        - conv_journal
         - chat_send
         - calendar_read
         - calendar_write
@@ -157,7 +157,7 @@ persons:
       # tool_profiles: below for the field semantics. Keep-list only —
       # every declared tool NOT under include: is stripped.
       instance: kk
-      env_file: ada-kk.env
+      env_file: kk-ha/backend.env
       host: idc03
       include:
         - ada_memory_search
@@ -165,6 +165,10 @@ persons:
         - ada_forget
         - ada_session_recall
         - cms_read
+        # conv_journal re-added 2026-10-23 (card conv-journal-manifest-gap):
+        # manifest-enabled in ada-voice — compiles the LINE journal into a
+        # private kind=report CMS page ("what did we discuss" recall).
+        - conv_journal
         # cms_publish_page/cms_edit dropped 2026-10-14 (Tony): the public
         # member surface moved to WordPress — wp_post writes to
         # boards.surf-thailand.com, so the CMS writers stayed only as a

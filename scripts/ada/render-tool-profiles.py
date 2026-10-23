@@ -167,7 +167,8 @@ def _write_env(host: str | None, prof: dict, text: str) -> None:
         f.write(text)
         tmp = f.name
     try:
-        remote_tmp = f"/tmp/.{prof['env_file']}.rendered"
+        remote_tmp = ("/tmp/." + prof["env_file"].replace("/", "__")
+                      + ".rendered")
         subprocess.run(["scp", "-q", tmp, f"{host}:{remote_tmp}"], check=True)
         subprocess.run(
             ["ssh", "-o", "BatchMode=yes", host,
