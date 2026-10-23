@@ -1,7 +1,7 @@
 id: lab-yolo-ha-detect
 title: 'Lab: YOLO object detect on HA cams'
 brief: An experiment to run object detection on the home camera feeds. Sitting in the backlog — no action needed.
-column: doing
+column: review
 lab:
   hypothesis: Local YOLO on camera snapshots gives useful detections (person/vehicle/package) fast enough for Ada
     camera answers
@@ -9,7 +9,7 @@ lab:
   review_by: '2026-10-25'
 note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-*
   cards if it promotes.'
-updated: 2026-10-23 15:51
+updated: 2026-10-23 15:55
 comms:
 - at: 2026-10-06 06:45
   from: tony
@@ -108,6 +108,9 @@ comms:
     p50 49ms p95 62ms 73%. Gates: p50<800ms ✓ (all, 16-20x headroom), >=70% ✓ (all). VERDICT: PROMOTE to cms-auto-cctv-*
     — pick yolov8n.onnx + CUDAExecutionProvider on tony-omen. Caveats: (1) package class structurally undetectable
     with stock COCO — needs custom class or drop from s'
+- at: 2026-10-23 15:55
+  from: tony-omen
+  text: 'finished (ok): exit=0 cal-yolo-object-de.service: Failed with result ''exit-code''. | devin-task-20261023-082053-lab-bench-local-yolo-obj'
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).
@@ -117,7 +120,7 @@ spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create expe
   comms.'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   host: tony-omen
   labels:
@@ -127,4 +130,9 @@ action:
   sweep:
     stale_running: 2026-10-23 08:24
     session_gone: 2026-10-23 08:24
+  result: 'exit=0 cal-yolo-object-de.service: Failed with result ''exit-code''. | devin-task-20261023-082053-lab-bench-local-yolo-object-de.service:
+    Consumed 15min 26.729s CPU time over 7h 31min 51.074s wall clock time, 3.5G memory peak, 1.1G memory swap peak.'
+  verified: false
 ref: HOM-0193
+review_kind: verify
+claim: {}
