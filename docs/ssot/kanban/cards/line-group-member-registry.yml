@@ -1,7 +1,7 @@
 id: line-group-member-registry
 title: Auto-register LINE senders on first message in allowed groups
-column: review
-updated: 2026-10-23 09:30
+column: done
+updated: 2026-10-23 10:00
 priority: medium
 spec: 'LINE members API is gated to verified accounts (404 on group/members/userIds 2026-10-11), so users cannot
   be pre-enumerated — registration must happen on first message. Procedure: when a message arrives in an allow-listed
@@ -89,6 +89,9 @@ comms:
   text: '[sweep 2026-10-23] merge conflict resolved manually: raced the text-lane-provider-routing merge which touched
     the same lines in .env.example + line_relay.py. Union-merged (send-ledger block + registry block both kept),
     compile-verified, pushed 720d358 -> origin/main. Card verified -> sweep can close.'
+- at: 2026-10-23 10:00
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
