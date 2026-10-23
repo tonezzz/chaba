@@ -32,6 +32,9 @@ Env:
                          Only usable from a host that can reach it —
                          loopback, so run the caller on idc03 or set the
                          URL to a forwarded port.
+  BOARD_NOTIFY_TG_CHAT_ID  tg target chat; default = the relay's first
+                         allowed chat (Tony DM 8960073266). Group chat
+                         -5410424865 = the ada-ha group.
   HA_NOTIFY_URL          default https://tony-omen.taila0626a.ts.net:8123
                          (tony-ha lives on omen since ph5; tailscale serve
                          is TLS-only — plain http gets a 400)
@@ -119,7 +122,15 @@ def _tg_send(title: str, body: str, url: str) -> bool:
     api = os.environ.get("BOARD_NOTIFY_TG_SEND_URL",
                          "http://127.0.0.1:8911/send")
     text = f"{title}\n{body}\n{url}" if url else f"{title}\n{body}"
-    return _post(api, {"text": text.strip()[:3500]})
+    payload = {"text": text.strip()[:3500]}
+    chat = os.environ.get("BOARD_NOTIFY_TG_CHAT_ID", "").strip()
+    if chat:
+        try:
+            payload["chat_id"] = int(chat)
+        except ValueError:
+            print(f"board_notify: bad BOARD_NOTIFY_TG_CHAT_ID {chat!r}",
+                  file=sys.stderr)
+    return _post(api, payload)
 
 
 def _ntfy_send(title: str, body: str, url: str) -> bool:

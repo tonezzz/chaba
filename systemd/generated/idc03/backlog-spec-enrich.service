@@ -1,0 +1,7 @@
+[Unit]
+Description=Backlog spec enrichment (thin cards -> drafted spec | owner ask) (job:backlog-spec-enrich, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/backlog-spec-enrich.py

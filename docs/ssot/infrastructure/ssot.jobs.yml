@@ -1088,6 +1088,7 @@ jobs:
   timeout: 60s
   env:
     BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-watch.py
   note: 'Tony ask 2026-10-23 — watch ada-nest Colab queue movement for a
     while. One-shot poller: reads gdrive:ada-nest/queue heartbeat +
@@ -1095,7 +1096,9 @@ jobs:
     remote; idc03 has none), notifies on pack run/DONE/FAIL/drain/
     lease events through the TG relay /send on idc03 loopback :8911
     (board_notify tg channel), plus a >4min mid-job heartbeat-stall
-    alert. OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
+    alert. Targets the ada-ha TG group (-5410424865 via
+    BOARD_NOTIFY_TG_CHAT_ID — /send otherwise defaults to Tony''s DM).
+    OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
     (every tick exits silently), rm to resume — or pull this job entry.'
 related_files:
 - scripts/render-jobs.py
