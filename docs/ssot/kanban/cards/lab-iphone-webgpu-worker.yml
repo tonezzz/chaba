@@ -1,0 +1,15 @@
+id: lab-iphone-webgpu-worker
+title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
+column: backlog
+updated: 2026-10-23 13:40
+brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
+  default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
+  (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
+  Safari tab memory ~1-1.5GB (models <=~800MB), foreground-only, no SSH/persistence. NOT viable: tmux/Linux shells
+  (iSH/a-Shell have no GPU), UTM VM (virtual GPU, no Metal passthrough), exo (maintainer: iOS = thin client only,
+  no inference participation). Na'
+ref: OPS-0779
+comms:
+- at: 2026-10-23 13:40
+  from: devin
+  text: card captured via board-api
