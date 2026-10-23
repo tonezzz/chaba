@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: backlog
-updated: 2026-10-23 16:50
+updated: 2026-10-23 16:59
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -31,3 +31,9 @@ comms:
     needs NO new dispatch code — only (a) opencode/openhands + litellm secret on a runner host (idc02 has node v18,
     no npm, 10.7G free; dell has everything but no runner-agent and is RAM-tight), and (b) cards seeded on the writer
     (API gates action.type to dispatch|manual). Agent cmd can '
+- at: 2026-10-23 16:59
+  from: devin
+  text: 'FIRST kanban->free-lane cell PASSED (eval-o1-opencode): idc02 claimed, opencode+gemini-3.5-flash-lite ran
+    o1-endpoint-health, inline verifier scored 1.0 (all 3 endpoints correct), ~2min total, $0. idc02 now has opencode
+    1.19.4 + litellm provider config + litellm-chaba.env. Recipe: writer-seed script card -> /action queue -> runner
+    claims -> bash -lc sources secrets + runs agent + verifier -> score lands in comms.'
