@@ -1,7 +1,7 @@
 id: relays-remote-whisper-review
 title: Review+merge relays-remote-whisper branch (remote WHISPER_URL transcription)
 column: doing
-updated: 2026-10-23 08:51
+updated: 2026-10-23 08:56
 spec: 'A Devin session committed daa0e0a directly onto idc03''s deploy-only checkout (2026-10-14 ~22:28): relays
   gain remote whisper transcription via omen large-v3 (WHISPER_URL env) with local ffmpeg-decode fallback — line_relay.py
   + tg_relay.py + requirements.txt, +108 lines. Rescued to origin branch `relays-remote-whisper`; idc03 reset to
@@ -44,6 +44,11 @@ comms:
   text: 'ported line half merged to main (af310ef): LINE_WHISPER_URL remote STT in mains av+soundfile/OpenAI-style
     contract, local faster-whisper fallback unchanged; tg half dropped as superseded. pytest gate green on idc03
     venv (1637 passed). Deploy running on idc03 now.'
+- at: 2026-10-23 08:56
+  from: devin
+  text: 'done. main=af310ef deployed on idc03 (all 10 services active; gates green). LINE_WHISPER_URL dormant until
+    set in ada-line-relay env. Trail: docs/ssot/jobs/ada/2026-10-23-line-remote-whisper.yml + dispatch-outcome md
+    on branch dispatch/20261023-084239-a-devin-session-committed-daa0.'
 action:
   type: dispatch
   status: running
