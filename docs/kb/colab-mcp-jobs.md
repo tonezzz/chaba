@@ -63,6 +63,15 @@ kanban cards classified in 2x50 parallel batches (204s+296s), published as
   to rclone for ~60s; poll before archiving.
 - `torch_dtype=` (not `dtype=`) is the diffusers kwarg; the wrong one is
   silently ignored and loads fp32 (slow + big).
+- **Poll out-of-band, not through MCP** (verified 2026-10-23): while the
+  runner cell holds the kernel, `run_code_cell` queues behind it and MCP
+  `get_cells` never sees `subprocess` output. Watch progress from a fleet
+  host instead: `rclone cat gdrive:ada-nest/queue/log-<date>.txt` +
+  `queue/prep-<name>.log` + `queue/done/`. con01 has `~/.local/bin/rclone`.
+- **HF cache dies with the runtime** — a fresh T4 re-downloads ~19GB of
+  LTX weights with the GPU idle (the first job's prep can't hide under
+  anything). Persist it like any packed artifact: see the cache-restore/
+  save jobs below.
 
 ## Batch-queue mode (verified 2026-10-23)
 
@@ -89,5 +98,30 @@ of staging cells per job:
   needs no new weights first if its inputs are already staged; put the
   big extract/download as the *next* job's prep so it hides under the
   current job's GPU time.
-- **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` on Drive
-  are the durable record — the notebook doc can be recycled at will.
+- **Done markers + log**: `queue/done/` + `queue/log-<date>.txt` +
+  `queue/prep-<name>.log` (prep stdout/stderr) on Drive are the durable
+  record — the notebook doc can be recycled at will.
+- **Bracket every manifest with cache jobs** so the second runtime of a
+  session (or the next session) skips weight re-downloads entirely:
+  ```python
+  {"name":"restore-hf-cache",
+   "prep":"test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          " && mkdir -p /root/.cache/huggingface"
+          " && tar -I zstd -xf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          "    -C /root/.cache/huggingface || true",
+   "run":"import os;print('hub entries:',len(os.listdir('/root/.cache/huggingface/hub'))if os.path.exists('/root/.cache/huggingface/hub')else 0)"},
+  # ... gpu jobs whose preps stay `snapshot_download` — they validate the
+  # restored cache instantly instead of re-downloading ...
+  {"name":"save-hf-cache",
+   "prep":"tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
+          " -C /root/.cache/huggingface hub",
+   "run":"print('hf cache packed')"},
+  ```
+  Drive read + zstd decompress beats an HF re-pull, and `snapshot_download`
+  becomes a fast no-op validator when the cache is warm. Keep the
+  `snapshot_download` preps regardless — they self-heal when the tar is
+  missing or stale.
+- **The first GPU job's prep is the one un-hideable window** — nothing
+  runs before it. Minimize it: cache-restore first, and order the queue
+  so the job needing the *least* new download runs first; every later
+  prep hides under a GPU run.
