@@ -1,0 +1,18 @@
+id: con01-ada-lane-warm-standby
+title: con01 warm standby for ada-line-relay + ada-ha-tony
+column: backlog
+updated: 2026-10-23 13:41
+priority: low
+action:
+  type: manual
+note: 'LINE relay + tony lane are idc03-only. Apply the proven DR pattern (mddb-follower, caddy-edge, ada-stt on
+  con01): standby unit files, env/secrets sync path, caddy-edge failover route for /webhook/line, doc restore steps.
+  Size: multi-step infra work — dispatch or dedicated session.'
+ref: ADA-0784
+comms:
+- at: 2026-10-23 13:41
+  from: tony
+  text: carded by devin 2026-10-23 — scoped, needs dedicated run
+- at: 2026-10-23 13:41
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
