@@ -1,0 +1,30 @@
+id: lesson-comments-dev-board
+title: Comment → work bridge — turn WP post comments into a dev discussion board
+column: backlog
+updated: 2026-10-23 13:46
+brief: 'Tony wants comment sections on boards (lesson/CMS posts) to function as a development discussion board —
+  comments become actionable threads, not just a suggestion log. Today the digest bot files comments as reference-only
+  (digest:74) and nothing acts. Live demo of the target loop already ran: Tony commented images-vertical→horizontal
+  on lesson-7988868998ad (post 2040, comment 74) → Devin read it via /wp/v2/comments, re-rendered landscape, updated
+  the post, replied in-thread (comment 76). Automate that loop.'
+priority: medium
+tags:
+- board
+- wordpress
+- integration
+spec: 'Phase 1 only: (1) digest-worker change — classify each new post comment as actionable|discussion|question;
+  actionable → kanban card via board-api POST /request with post_id + comment_id + permalink in spec, default column
+  backlog. (2) WP identity — create proper devin/ada WP users so agent comments post under real identity and skip
+  the hold queue (manual REST comment today landed status=hold, needed admin approval). (3) Loop-close convention
+  — the agent that actioned a comment replies in-thread with result + card link; card comms records the comment
+  id. Deferred to a later card: status badges on page (state stays on kanban), bbPress/forum rejected — kanban is
+  the single work list, comments are the front door. Verify: a comment on any lesson/CMS post produces a kanban
+  card (or question-thread reply) within the digest cycle, and the agent reply appears threaded under the comment
+  with real author identity — no hold queue. Ref: lesson post 2040, session 2026-10-22 tony-dell.'
+ref: KNB-0785
+comms:
+- at: 2026-10-23 13:46
+  from: devin
+  text: 'Carded from chat ask on the lesson page. Phase-1 spec is the recommendation: digest-worker classification
+    + board-api card creation + WP service users. Phase 2 (status badges, per-card discussion links) deferred —
+    kanban stays the only trustworthy work list.'
