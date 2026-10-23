@@ -1,35 +1,37 @@
-title: ada-nest Colab queue — resume after T4 flip
-subtitle: Manifest-driven batch session staged on gdrive; runtime recycle killed the VM
+title: ada-nest Colab queue — 2026-10-23 run outcome + leftovers
+subtitle: i2v + headroom done; VoxCPM2 judged T4-infeasible; runner v2 shipped
 icon: inbox
 
 focus:
   label: ada-nest-colab-queue
   text: >-
-    Ada Nest Colab batch session is staged and waiting on a runtime. Queue
-    manifest: gdrive:ada-nest/queue/JOBS.py (jobs: deps, assets,
-    voxcpm2-bench, i2v-chain, headroom-probe). Resume = open the Colab
-    notebook, pick T4, mount Drive, run the runner cell
-    (docs/kb/colab-mcp-jobs.md#batch-queue-mode). done-markers in
-    gdrive:ada-nest/queue/done/ make it resumable. Voice assets staged at
-    gdrive:ada-nest/voice-bench/; LTX weights tarball verified on gdrive.
+    Ran the manifest queue on metered T4 (2026-10-23). DONE: headroom-probe
+    (73f/40s = 379s, 13.7GB peak — T4 ceiling mapped), i2v-chain (4 cont
+    shots, reviewed: good motion continuity, shot3 pseudo-text artifact).
+    CLOSED-INFEASIBLE: VoxCPM2 on T4 — from_pretrained init is pathological
+    on a cold kernel (compile warmup, bf16 unsupported on T4); a single
+    clip also exceeded 300s. Needs A100 or a different TTS lane.
+    Runner v2 shipped: detached queue/runner.py + launcher cell, env-scoped
+    markers (env-done/<boot_id>), verify-before-mark artifacts, heartbeat,
+    prep logs — see docs/kb/colab-mcp-jobs.md#batch-queue-mode.
+    NOTE: hf-hub.tar.zst write finished but never landed on Drive (FUSE
+    async flush lost it at runtime restart) — restore will re-download.
   branch: chaba
   priority: medium
   status: draft
   tags: [ada-nest, colab, handoff, gpu]
-  missing_info:
-    - Tony must flip runtime to T4 GPU in the Colab UI (UI-only step) and
-      approve the Drive mount OAuth click.
+  missing_info: []
   safe_to_parallel:
     value: true
     reason: Runs entirely on rented Colab + gdrive; no member-device windows.
   subtasks:
-    - label: voxcpm2-bench — openbmb/VoxCPM2, ada-ref.wav x 5 held-out TH sents; pip needs protobuf+sentencepiece; kernel restart required after install
-      status: not_started
-    - label: i2v-chain — 4 scene-0 continuation shots from real last-frames (keyframes at gdrive:ada-nest/renders/keyframes/scene0-frames/)
-      status: not_started
-    - label: headroom-probe — s1 shot0 at 73f/40-step resident; maps T4 ceiling between 49f (works) and 97f (OOM)
-      status: not_started
-    - label: Score VoxCPM2 clips on omen (whisper CER + CAM++ SIM vs ada-ref) once wavs land
+    - label: headroom-probe — DONE 379s peak 13.7GB (marker in queue/done/)
+      status: done
+    - label: i2v-chain — DONE + reviewed; 4 cont shots on gdrive:ada-nest/renders/
+      status: done
+    - label: voxcpm2-bench — CLOSED infeasible on T4 (init pathological, clip >300s); retry needs A100 or alternate TTS
+      status: done
+    - label: VoxCPM2 alternate path — if voice clone still wanted, try on omen GPU or Colab A100; scorer venv staged on omen /tmp/vbench-score (resemblyzer + ada-stt CER path verified)
       status: not_started
     - label: board-api on tony-dell was DOWN at close (port 8787 refused, no unit) — check unit state next sweep
       status: not_started
