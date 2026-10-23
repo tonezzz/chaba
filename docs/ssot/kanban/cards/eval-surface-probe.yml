@@ -1,0 +1,33 @@
+id: eval-surface-probe
+title: eval probe — kanban script executor on idc02
+column: backlog
+priority: low
+created: '2026-10-23'
+updated: 2026-10-23 16:47
+tags:
+- eval
+- surface-test
+brief: Proof that the kanban surface carries tasks to runner hosts end-to-end (eval Phase 3, OPS-0792).
+note: Script-type card pinned to idc02. Runs a trivial probe under systemd-run; result lands in comms via do=finish.
+spec: Surface probe only — no agent. Verifies POST queue -> runner-agent claim -> systemd-run -> do=finish comms
+  loop.
+action:
+  type: script
+  host: idc02
+  labels:
+  - cpu
+  script:
+    repo: chaba
+    cmd: uname -a; uptime; echo PROBE_OK $(hostname) $(date -Is); pwd
+    timeout: 300
+  status: queued
+comms:
+- at: 2026-10-23 17:05
+  from: devin
+  text: created by devin — eval Phase-3 surface probe (OPS-0792)
+- at: 2026-10-23 16:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-23 16:47
+  from: chaba
+  text: 'WARNING: action.type=script — kanban-dispatch claims only type=dispatch; this card will starve in queue'
