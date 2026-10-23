@@ -1,74 +1,63 @@
 id: disk-auto-tony-omen-home
 title: Disk tony-omen /home critical
-brief: Disk space on tony-omen (/home) is running critically low — check the note
-  for the rate and top growers, then free space or close the card.
-column: review
+brief: Disk space on tony-omen (/home) is running critically low — check the note for the rate and top growers,
+  then free space or close the card.
+column: done
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: '98% used (7.2 GiB free) top grower 24h: /home/tony/.cache +23.5 GiB, /home/tony/.cache/pip/
-  +2.3 GiB'
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
-  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
-  ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 19:31
+note: 'Auto-recovered 2026-10-23: tony-omen /home back in bounds (72%, slope 9.51 GiB/d)'
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
+  (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
+updated: 2026-10-23 20:01
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'PARTIAL: pruned uv cache on omen (was 38G under ~/.cache/uv; freed ~5-6G
-    usable — uv hardlinks keep some space held). /home now 77% (was 79%). Real grower
-    remains ~/.cache/huggingface +21.4G/day — purging models is a judgment call: needs
-    Tony to pick purge-hf-old vs move-cache vs accept+tidy.'
+  text: 'PARTIAL: pruned uv cache on omen (was 38G under ~/.cache/uv; freed ~5-6G usable — uv hardlinks keep some
+    space held). /home now 77% (was 79%). Real grower remains ~/.cache/huggingface +21.4G/day — purging models is
+    a judgment call: needs Tony to pick purge-hf-old vs move-cache vs accept+tidy.'
 - at: 2026-10-09 17:47
   from: tony
   text: 'answered omen-disk-plan: move-cache — Move caches to data disk'
 - at: 2026-10-09 17:47
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
-    an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-09 19:53
   from: devin
-  text: 'UPDATE on move-cache: huggingface cache already emptied (~/.cache/huggingface
-    = 0B — cleaned by something since the +21G/day measurement; uv pruned to 340M
-    by this session). /home now 77% (70G free) with the growth driver gone. /data
-    partition exists (295G, 134G free) and remains the right landing zone if cache
-    pressure returns — can still execute the move as prevention: mkdir /data/tony-cache,
-    mv+symlink ~/.cache/{huggingface,uv}. Flagging: if HF regrows, the move is a 2-min
-    job — no need to ke'
+  text: 'UPDATE on move-cache: huggingface cache already emptied (~/.cache/huggingface = 0B — cleaned by something
+    since the +21G/day measurement; uv pruned to 340M by this session). /home now 77% (70G free) with the growth
+    driver gone. /data partition exists (295G, 134G free) and remains the right landing zone if cache pressure returns
+    — can still execute the move as prevention: mkdir /data/tony-cache, mv+symlink ~/.cache/{huggingface,uv}. Flagging:
+    if HF regrows, the move is a 2-min job — no need to ke'
 - at: 2026-10-10 10:45
   from: devin
-  text: 'closed: resolved — HF cache already emptied (0B); disk-auto finding no longer
-    live.'
+  text: 'closed: resolved — HF cache already emptied (0B); disk-auto finding no longer live.'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'RESOLVED: HF cache already 0B + uv pruned (38G→340M); /home 77% stable, /data
-    has 134G headroom if it regrows. Your move-cache answer recorded as prevention
-    option — closing since the alert condition cleared.'
+  text: 'RESOLVED: HF cache already 0B + uv pruned (38G→340M); /home 77% stable, /data has 134G headroom if it regrows.
+    Your move-cache answer recorded as prevention option — closing since the alert condition cleared.'
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
-    was restored accidentally by an autostash-pop conflict resolution — normalizing
-    to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
+    by an autostash-pop conflict resolution — normalizing to done.'
 - at: 2026-10-11 08:10
   from: devin
-  text: 'closed (3rd verification): HF cache 0B, uv pruned, /home 77% stable; move-cache
-    answer recorded. Re-review was autostash-pop state.'
+  text: 'closed (3rd verification): HF cache 0B, uv pruned, /home 77% stable; move-cache answer recorded. Re-review
+    was autostash-pop state.'
 - at: 2026-10-11 08:35
   from: devin
-  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified
-    live this session).'
+  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified live this session).'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0405'
 - at: 2026-10-11 09:06
   from: devin
-  text: 'DONE (move-cache): /home 80%->50% (232G->144G used, 149G free). Moved to
-    /data: mddb-backups 64G -> /data/backups/mddb-backups (mddb-backup-pull.service
-    repointed), .cache heavy dirs ~13G -> /data/cache/* + symlinks, open-jev/models
-    13G -> /data/cache/open-jev-models + symlink. HF cache was already moved (105G
-    on /data). /data now 87% — 39G free left. Note: mddb-backup-pull has NO retention
-    — accumulates ~3.4G/day; worth a gdrive tier or keep-N like dell standby-pull.'
+  text: 'DONE (move-cache): /home 80%->50% (232G->144G used, 149G free). Moved to /data: mddb-backups 64G -> /data/backups/mddb-backups
+    (mddb-backup-pull.service repointed), .cache heavy dirs ~13G -> /data/cache/* + symlinks, open-jev/models 13G
+    -> /data/cache/open-jev-models + symlink. HF cache was already moved (105G on /data). /data now 87% — 39G free
+    left. Note: mddb-backup-pull has NO retention — accumulates ~3.4G/day; worth a gdrive tier or keep-N like dell
+    standby-pull.'
 - at: 2026-10-11 09:06
   from: devin
   text: queued for processing
@@ -77,45 +66,37 @@ comms:
   text: moved backlog -> done
 - at: 2026-10-23 19:16
   from: devin
-  text: 'Live recheck 2026-10-23: /home is 306G total, 276G used, 17G avail (95%);
-    /data is 295G total, 198G used, 98G avail. This conflicts with the prior ''move-cache
-    done'' evidence: ~/.cache/huggingface is currently a real 62G directory, not a
-    symlink; /data/cache/huggingface is a separate 38G directory. Ollama''s model
-    store is 39G at ~/.ollama; Nest worker cache is 12G (active doc-embeds worker
-    currently uses it). Other large home dirs: model-bench 18G, .venvs 19G, .local
-    21G. No files moved/deleted. '
+  text: 'Live recheck 2026-10-23: /home is 306G total, 276G used, 17G avail (95%); /data is 295G total, 198G used,
+    98G avail. This conflicts with the prior ''move-cache done'' evidence: ~/.cache/huggingface is currently a real
+    62G directory, not a symlink; /data/cache/huggingface is a separate 38G directory. Ollama''s model store is
+    39G at ~/.ollama; Nest worker cache is 12G (active doc-embeds worker currently uses it). Other large home dirs:
+    model-bench 18G, .venvs 19G, .local 21G. No files moved/deleted. '
 - at: 2026-10-23 19:21
   from: devin
-  text: 'Tony confirms nvme0n1p5 (ubuntu-000, 64.9GiB, unmounted; old root per fstab
-    comment) is the old backup and says recovery is via tony-usb, so it is a removal
-    candidate. Current read-only probe did NOT see a USB disk or mount on Omen, so
-    backup verification is still a gate. Proposed partition plan: preserve p1 EFI,
-    p2 MSR, p3 /home, p4 NTFS, p6 /, p7 /data; after verified backup + GPT/partition-table
-    backup, delete p5 and extend p7 across its 64.9GiB plus the ~40.7GiB adjacent
-    unallocated gap (abo'
+  text: 'Tony confirms nvme0n1p5 (ubuntu-000, 64.9GiB, unmounted; old root per fstab comment) is the old backup
+    and says recovery is via tony-usb, so it is a removal candidate. Current read-only probe did NOT see a USB disk
+    or mount on Omen, so backup verification is still a gate. Proposed partition plan: preserve p1 EFI, p2 MSR,
+    p3 /home, p4 NTFS, p6 /, p7 /data; after verified backup + GPT/partition-table backup, delete p5 and extend
+    p7 across its 64.9GiB plus the ~40.7GiB adjacent unallocated gap (abo'
 - at: 2026-10-23 19:25
   from: devin
-  text: 'Correction from Tony: tony-usb is a bootable Ubuntu rescue medium for scanning/repairing
-    Omen''s disk, NOT a backup containing p5 data. It can help inspect/repair or boot
-    recovery tools; if the NVMe/p5 data is lost, restore requires a separate verified
-    backup (GDrive or another disk). Treat p5 deletion as gated on confirming its
-    contents are disposable or that a real backup is verified. Live USB is also the
-    safer offline environment for partition changes. No changes made.'
+  text: 'Correction from Tony: tony-usb is a bootable Ubuntu rescue medium for scanning/repairing Omen''s disk,
+    NOT a backup containing p5 data. It can help inspect/repair or boot recovery tools; if the NVMe/p5 data is lost,
+    restore requires a separate verified backup (GDrive or another disk). Treat p5 deletion as gated on confirming
+    its contents are disposable or that a real backup is verified. Live USB is also the safer offline environment
+    for partition changes. No changes made.'
 - at: 2026-10-23 19:31
   from: devin
-  text: 'Live Omen check 2026-10-23 19:31 +07: USB is present as USB Disk 20 (USB
-    3, /dev/sda); sda2 is 116.7G ext4 label ubuntu-usb, but not mounted. udisksctl
-    mount over noninteractive SSH was denied by polkit; no file written. Thermal snapshot:
-    CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz
-    graphics/405MHz memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite
-    61C/sensor2 79C. Package throttle counters show brief historical throttling (817ms
-    total/4 days; no co'
+  text: 'Live Omen check 2026-10-23 19:31 +07: USB is present as USB Disk 20 (USB 3, /dev/sda); sda2 is 116.7G ext4
+    label ubuntu-usb, but not mounted. udisksctl mount over noninteractive SSH was denied by polkit; no file written.
+    Thermal snapshot: CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz graphics/405MHz
+    memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite 61C/sensor2 79C. Package throttle counters show
+    brief historical throttling (817ms total/4 days; no co'
 requests:
 - id: omen-disk-plan
   from: devin
   status: answered
-  ask: '/home is 77% growing ~12G/day (huggingface cache +21G/day is the driver).
-    Pick the disk plan:'
+  ask: '/home is 77% growing ~12G/day (huggingface cache +21G/day is the driver). Pick the disk plan:'
   options:
   - id: purge-hf-old
     label: Purge old HF models
@@ -129,4 +110,3 @@ action:
   type: dispatch
 ref: OPS-0405
 claim: {}
-awaiting_action: true
