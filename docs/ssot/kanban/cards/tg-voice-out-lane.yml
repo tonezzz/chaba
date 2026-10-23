@@ -1,7 +1,7 @@
 id: tg-voice-out-lane
 title: 'Voice-out lane: TTS replies over Telegram/LINE'
-column: doing
-updated: 2026-10-23 08:49
+column: review
+updated: 2026-10-23 08:51
 brief: Relay sessions are text-only (realtime_provider.py) — personas can hear but cannot speak back on TG/LINE.
 priority: high
 tags:
@@ -69,12 +69,21 @@ comms:
   text: 'done: TG_VOICE_REPLY bridge lands — reply -> tts.synth_pcm -> own /send audio_b64; modes off|voice|all;
     poll-mode /send audio_b64 parity fixed; 9 new tests, suite 1630 pass, lint clean; needs TG_VOICE_REPLY=1 + GEMINI_API_KEY
     in lane env'
+- at: 2026-10-23 08:51
+  from: tony-macbook
+  text: 'finished (ok): exit=0 s lane: set `TG_VOICE_REPLY=1` (or `=voice`) plus `GEMINI_API_KEY*` in the relay''s
+    env. | devin-task-20261023-083'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-voice
   attempts: 1
   runner: tony-macbook
   sweep:
     stale_running: 2026-10-23 08:39
     session_gone: 2026-10-23 08:39
+  result: 'exit=0 s lane: set `TG_VOICE_REPLY=1` (or `=voice`) plus `GEMINI_API_KEY*` in the relay''s env. | devin-task-20261023-083045-send-voice-send-audio-b64-plum.service:
+    Consumed 6min 17.054s CPU time over 19min 1.609s wall clock time, 1.2G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
