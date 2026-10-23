@@ -1,7 +1,7 @@
 id: podman-lock-wedge-watchdog
 title: 'tony-dell: watchdog for wedged rootless-podman state DB (stale shm lock -> auto-clear + alert)'
 column: backlog
-updated: 2026-10-16 18:30
+updated: 2026-10-23 08:26
 priority: medium
 spec: 'Timer on tony-dell: probe `timeout 8 podman ps`; on 3 consecutive failures with no live `podman` CLI processes
   (conmon/pause excluded), remove stale /dev/shm/libpod_rootless_lock_$(id -u), dead pause.pid under /run/user/$UID/containers,
@@ -17,3 +17,9 @@ comms:
 - at: 2026-10-16 18:30
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 08:26
+  from: devin
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
