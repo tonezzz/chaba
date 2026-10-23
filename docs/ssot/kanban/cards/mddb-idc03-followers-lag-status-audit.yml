@@ -1,7 +1,7 @@
 id: mddb-idc03-followers-lag-status-audit
 title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
-column: doing
-updated: 2026-10-23 19:33
+column: review
+updated: 2026-10-23 19:34
 priority: high
 tags:
 - mddb
@@ -48,7 +48,17 @@ comms:
 - at: 2026-10-23 19:33
   from: chaba
   text: started devin-task-20261023-193336-read-only-investigation-verify on tony-omen (dispatch)
+- at: 2026-10-23 19:34
+  from: tony-omen
+  text: 'finished (ok): exit=0 devin-task-20261023-193336-read-only-investigation-verify.service: Failed with result
+    ''exit-code''. | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 devin-task-20261023-193336-read-only-investigation-verify.service: Failed with result ''exit-code''.
+    | devin-task-20261023-193336-read-only-investigation-verify.service: Consumed 22.643s CPU time over 5.059s wall
+    clock time, 1.1G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
