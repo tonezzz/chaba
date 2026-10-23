@@ -1,7 +1,7 @@
 id: mddb-query-embedder-down
 title: mddb /v1/vector-search failing — query embedder providers down (OR circuit-open + Gemini fail)
 column: review
-updated: 2026-10-23 14:37
+updated: 2026-10-23 14:46
 brief: 'Found during OPS-0779 worker wiring: POST /v1/vector-search on mddbd (100.102.134.91:11023) returns {error:
   failed to embed query: ollama API error (status 502): all same-space providers down (OR circuit-open + Gemini
   failed)} — 2026-10-23 ~14:30+07. /v1/health says healthy and /search doc listing works, so only the query-embedding
@@ -28,3 +28,10 @@ comms:
     -> FREE key in mddb-gemini.env (old key prefix kept in file comment for revert), restarted gemini-ollama-proxy.
     vector-search now 200 in 1.2s, real ranked results. OR weekly limit still outstanding (Tony topping up later)
     but direct-Gemini leg now covers the chain. Structural fix in par'
+- at: 2026-10-23 14:46
+  from: devin
+  text: '[progress] structural fix live: mddb-embed quadlet on idc03:11028 (wr, standalone) -> local ollama bge-m3
+    (1024d, multilingual — better fit for Thai bank docs than nomic). Backfill running from leader ~5-35 docs/s,
+    resume-safe script (scripts/nest/mddb-embed-backfill.py). Same collection name => consumer switch = one URL
+    change. BENCHMARK PLAN for later A/B: scripts/bench-recall.py already accepts MDDB_REST_URL — run the same fixture
+    (22 sessions / 36 goldens, same judge) against :11023 (gemini-'
