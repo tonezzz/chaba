@@ -8,7 +8,7 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
 column: doing
-updated: 2026-10-23 11:04
+updated: 2026-10-23 11:10
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
 comms:
@@ -97,6 +97,10 @@ comms:
     Benching 21 models (17 live + openrouter/free + 3 paid refs incl 3.5-flash-lite) x 5 arms via bench-or-scorecard.py.
     Note: inkling-small is 403 harness-gated via raw API, gemma-4 :free upstream-broken — recorded as data, not
     skipped.'
+- at: 2026-10-23 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261022-194701-per-model-scorecard-across-the no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
