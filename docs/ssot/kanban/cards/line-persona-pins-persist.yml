@@ -1,0 +1,18 @@
+id: line-persona-pins-persist
+title: Persist LINE persona pins across relay restarts
+column: doing
+updated: 2026-10-23 13:41
+priority: medium
+action:
+  type: manual
+note: Interview-room persona pins are in-memory in ada-line-relay — a restart falls back to LINE_DEFAULT_PERSONA
+  and users must re-mention. Persist pin map to disk (JSON), reload on startup. From chaba-line-architecture review
+  2026-10-23 (lesson post 2121).
+ref: OPS-0780
+comms:
+- at: 2026-10-23 13:41
+  from: tony
+  text: carded by devin — implementing in-session
+- at: 2026-10-23 13:41
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
