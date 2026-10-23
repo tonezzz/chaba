@@ -22,17 +22,27 @@ artifacts:
 
 # CPU-bound: install ollama + stage the bench repo subset + pull model.
 # PACK_DIR is not injected into prep env — Drive path is absolute.
+# Cache-bracket per colab-mcp-jobs.md: restore ollama model cache from
+# ada-nest/cache if present (a rerun after VM recycle skips the ~13.8GB
+# pull); the run tail saves it back best-effort. Drive FUSE caveat:
+# the cache tar is NOT an artifacts gate — report files are.
 prep: |
   set -e
-  PACK=/content/drive/MyDrive/ada-nest/packs/edu-agent-bench
+  NEST=/content/drive/MyDrive/ada-nest
+  PACK=$NEST/packs/edu-agent-bench
+  CACHE=$NEST/cache/ollama-gpt-oss-20b.tar.zst
+  mkdir -p /root/.ollama /tmp/chaba/scripts/ada
+  if [ -f "$CACHE" ]; then
+    echo "restoring ollama model cache ($(du -h "$CACHE" | cut -f1))"
+    tar -I zstd -xf "$CACHE" -C /root/.ollama
+  fi
   curl -fsSL https://ollama.com/install.sh | sh > "$PACK/ollama-install.log" 2>&1 || {
     echo "ollama install.sh failed — see log"; exit 1; }
-  mkdir -p /tmp/chaba/scripts/ada
   cp "$PACK/inputs/chaba/scripts/"*.py "$PACK/inputs/chaba/scripts/"*.json /tmp/chaba/scripts/
   cp "$PACK/inputs/chaba/scripts/ada/"*.py /tmp/chaba/scripts/ada/
   nohup ollama serve > "$PACK/ollama-serve.log" 2>&1 &
   for i in $(seq 1 60); do curl -sf http://localhost:11434/api/tags >/dev/null 2>&1 && break; sleep 2; done
-  ollama pull gpt-oss:20b
+  ollama pull gpt-oss:20b   # no-op when the cache restored
 
 run: |
   import os, subprocess, time
@@ -49,3 +59,11 @@ run: |
   print(f'bench rc={r.returncode} in {time.time()-t0:.0f}s', flush=True)
   if r.returncode != 0:
     raise RuntimeError(f'bench rc={r.returncode}')
+  # save model cache back to Drive for the next VM — best-effort,
+  # intentionally not an artifacts glob (report is the contract)
+  subprocess.run('mkdir -p /content/drive/MyDrive/ada-nest/cache && '
+                 'tar -I zstd -cf /content/drive/MyDrive/ada-nest/cache/'
+                 'ollama-gpt-oss-20b.tar.zst -C /root/.ollama models',
+                 shell=True)
+  print('ollama model cache saved (FUSE flush async — runner settle '
+        'window covers it)', flush=True)
