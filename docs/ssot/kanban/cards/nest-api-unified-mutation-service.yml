@@ -1,0 +1,30 @@
+id: nest-api-unified-mutation-service
+title: nest-api — extend board-api into the fleet's single mutation service
+column: backlog
+updated: 2026-10-23 12:56
+brief: 'One write door for agents: cards, nest-job CPT, lessons, reports, inbox — same doctrine as the card write-path
+  split, applied to every mutable surface.'
+priority: high
+tags:
+- ada-nest
+- nest-pack
+- board-api
+- infrastructure
+spec: "Tony 2026-10-23 — 'suggest if we need a single point of service? how?' — approved: extend board-api rather\
+  \ than a new daemon.\n\nWHY: write paths are scattered today — board-api (cards), lesson-add.py (lessons), report-note.py\
+  \ (mddb), focus-inbox files, queue-mgr (jobs, coming). board-api on idc03 is already the declared write door with\
+  \ secrets plumbing + uptime conventions; agents should call HTTP and never hold WP/mddb creds — same reason Colab\
+  \ stays credential-free.\n\nSHAPE (endpoints on the existing service, namespaced):\n  /card /comment /request\
+  \ /respond /action /pipeline   (existing)\n  /job      nest_job CPT upsert by slug + status + comms-append (hierarchical\
+  \ parent field for job trees)\n  /lesson   wraps lesson-add logic — upsert by slug, hub refresh, auto-Thai\n \
+  \ /report   integrate-vs-create helper (report-integration duty as an endpoint)\n  /inbox    focus-inbox entry\
+  \ as an endpoint\n\nSPLIT: watchers watch, one door writes. queue-mgr (dell) mirrors Drive store -> CPT via /job;\
+  \ agents write via board-api; Colab never touches WP.\n\nCONTEXT: nest-pack architecture on OPS-0759 (colab-offload-queue-pack-batch-gpu-jobs-1499a3)\
+  \ — v3 spec comms. Build order there: runner.py packs/ (SHIPPED), then queue-mgr, then this.\n\nDONE-CONDITION:\
+  \ /job + /lesson live on board-api with tests; lesson-add.py refactored to call /lesson (or kept as thin CLI wrapper);\
+  \ docs/kb updated; no agent writes bypass the door."
+ref: OPS-0777
+comms:
+- at: 2026-10-23 12:56
+  from: tony
+  text: card captured via board-api
