@@ -1,0 +1,14 @@
+id: distiller-enrich-productionize
+title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
+column: backlog
+updated: 2026-10-23 13:35
+brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
+  T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
+  pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
+  path — T1 semantic + T2 local transcript keyword fallback; (3) keep T2 transcripts locally grep-able (.md dir,
+  not GDrive-only); (4) mddb has no FTS — local BM25 over T2 dir or FTS endpoint in mddbd fork. Evidence: reports/bench-recall-v2-20261022.md'
+ref: OPS-0778
+comms:
+- at: 2026-10-23 13:35
+  from: devin
+  text: card captured via board-api
