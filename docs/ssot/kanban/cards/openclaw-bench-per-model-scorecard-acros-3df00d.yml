@@ -7,7 +7,7 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   points (gemini-2.5-flash-lite, gemini-2.5-flash) so free-vs-paid quality is compared directly. RISK: OR key is
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
-column: backlog
+column: doing
 updated: 2026-10-23 11:02
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
@@ -85,13 +85,17 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 11:02
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   result: 'exit=0 ice: No such file or directory | devin-task-20261022-194701-per-model-scorecard-across-the.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261022-194701-per-model-scorecard-across-the.service:
     No such file or directory'
+  runner: tony-omen
 spec: 'Per-model scorecard across the ghostroute OR free-model rotation: fixed prompt suite through the gateway
   API, measure latency + tool-call correctness per model; jev-bench shape. Post the scorecard to card comms and
   flag models that should drop out of rotation.'
