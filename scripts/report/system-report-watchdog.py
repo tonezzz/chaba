@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""system-report freshness watchdog (KNB-0786).
+"""system-report watchdog (KNB-0786 + node-level reds).
 
 Runs OUTSIDE the pipeline it watches: hourly timer on tony_dell, the
 report chain lives on idc02. If the chain dies, this still fires —
 that is the whole point (the Oct-19 freeze served 3-day-old data for
 days with zero alerting).
 
-Check: ssh into idc02 and read `generated_at` from the exec checkout's
-system-report.yml — the same file report-api serves. Alerts when:
-  * idc02 is unreachable over ssh, or
-  * generated_at is missing/unparseable, or
-  * generated_at is older than --stale-h (default 26h; daily 06:45 run
-    + slack).
+Checks — one ssh read of the served system-report.yml:
+  * chain health: idc02 unreachable, generated_at missing/unparseable,
+    or older than --stale-h (default 26h; daily 06:45 run + slack)
+  * node health: any node in a red status — error / missing /
+    unreachable (missing excluded unless it persists: see below)
 
-Alert channel: board-api /inbox (unified write door) — lands a
-deduped focus-inbox entry that surfaces in the focus inbox and the
-daily brief. Re-alerts at most once per --repeat-h (default 12h) for
-the same condition; recovers silently (no resolve API — the next
-healthy run just stops alerting, and a recovered stamp goes to the
-journal).
+Alert channel: board-api /inbox (unified write door) — lands a deduped
+focus-inbox entry that surfaces in the focus inbox and the daily brief.
+Dedupe: per-condition, at most once per --repeat-h (default 12h). A node
+alert fires again if the red-set CHANGES (new node went red / one
+recovered mid-incident — the set hash is part of the dedupe key).
+Recovery is silent in-state and journaled (no resolve API for inbox
+entries): recovered nodes drop out of the next alert's set.
 
 Exit 0 when healthy, 1 when alerting (service-failure semantics so a
 failing check is visible in `systemctl --user failed` too).
@@ -38,13 +38,14 @@ TARGET_HOST = "idc02"
 BOARD_API = "https://idc03.taila0626a.ts.net:10000"
 STATE = Path.home() / ".local/state/system-report-watchdog.json"
 SSH_TIMEOUT = 20
+RED_STATUSES = {"error", "missing", "unreachable"}
 
 
-def read_generated_at() -> tuple[str | None, str | None]:
-    """(generated_at, error) — parse the yml line over ssh."""
+def read_report() -> tuple[dict | None, str | None]:
+    """(parsed yml, error) — one ssh read of the served report file."""
     cmd = ["ssh", "-o", "BatchMode=yes",
            "-o", f"ConnectTimeout={SSH_TIMEOUT}", TARGET_HOST,
-           f"grep -m1 '^generated_at' ~/{SUMMARY_REL}"]
+           f"cat ~/{SUMMARY_REL}"]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=SSH_TIMEOUT + 10)
@@ -52,15 +53,16 @@ def read_generated_at() -> tuple[str | None, str | None]:
         return None, f"ssh failed: {e}"
     if r.returncode != 0:
         return None, f"ssh rc={r.returncode}: {(r.stderr or '').strip()[:200]}"
-    line = r.stdout.strip()
-    # generated_at: '2026-10-23T06:55:47+07:00' (quoted or bare)
-    val = line.split(":", 1)[1].strip().strip("'\"") if ":" in line else ""
-    return (val or None), (None if val else f"unparseable line: {line[:120]}")
+    try:
+        import yaml
+        return yaml.safe_load(r.stdout), None
+    except Exception as e:
+        return None, f"report yml unparseable: {e}"
 
 
 def age_hours(iso: str) -> float | None:
     try:
-        t = dt.datetime.fromisoformat(iso)
+        t = dt.datetime.fromisoformat(str(iso).strip("'\""))
         if t.tzinfo is None:
             t = t.replace(tzinfo=dt.timezone.utc)
         return (dt.datetime.now(dt.timezone.utc) - t).total_seconds() / 3600
@@ -70,41 +72,34 @@ def age_hours(iso: str) -> float | None:
 
 def load_state() -> dict:
     try:
-        return json.loads(STATE.read_text())
+        st = json.loads(STATE.read_text())
+        if "conditions" not in st:  # migrate flat {condition, alerted_at}
+            st = {"conditions": {st["condition"]: st["alerted_at"]}} \
+                if st.get("condition") else {"conditions": {}}
+        return st
     except Exception:
-        return {}
+        return {"conditions": {}}
 
 
-def save_state(cond: str) -> None:
+def save_state(st: dict) -> None:
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(
-        {"condition": cond,
-         "alerted_at": dt.datetime.now(dt.timezone.utc).isoformat()}))
+    STATE.write_text(json.dumps(st))
 
 
-def recently_alerted(cond: str, repeat_h: float) -> bool:
-    st = load_state()
-    if st.get("condition") != cond or not st.get("alerted_at"):
+def recently_alerted(st: dict, cond: str, repeat_h: float) -> bool:
+    at = st.get("conditions", {}).get(cond)
+    if not at:
         return False
     try:
-        at = dt.datetime.fromisoformat(st["alerted_at"])
         return (dt.datetime.now(dt.timezone.utc)
-                - at).total_seconds() < repeat_h * 3600
+                - dt.datetime.fromisoformat(at)).total_seconds() < repeat_h * 3600
     except Exception:
         return False
 
 
-def file_inbox(cond: str, findings: list[str]) -> bool:
-    body = {
-        "text": "System-report monitor is unhealthy: " + "; ".join(findings)
-                + ". Page shows last-known data — verify the idc02 report "
-                  "chain (chaba-system-report.service, chaba-report-api) "
-                  "and the web-srv data sync.",
-        "label": "Monitor stale — system-report pipeline",
-        "priority": "high",
-        "tags": ["ops", "monitor", "system-report", "knb-0786"],
-        "owner": "tony",
-    }
+def file_inbox(text: str, label: str, tags: list[str]) -> bool:
+    body = {"text": text, "label": label, "priority": "high",
+            "tags": tags, "owner": "tony"}
     try:
         req = urllib.request.Request(
             f"{BOARD_API}/inbox", data=json.dumps(body).encode(),
@@ -126,31 +121,105 @@ def main() -> int:
                     help="check only, print verdict")
     args = ap.parse_args()
 
-    gen, err = read_generated_at()
-    findings = []
-    if err:
-        findings.append(f"idc02 unreachable/check failed — {err}")
-        cond = "unreachable"
-    else:
-        h = age_hours(gen)
-        if h is None:
-            findings.append(f"generated_at unparseable: {gen!r}")
-            cond = "unparseable"
-        elif h > args.stale_h:
-            findings.append(f"system-report data is {h:.1f}h old "
-                            f"(generated_at {gen}, threshold {args.stale_h}h)")
-            cond = f"stale:{gen}"
-        else:
-            print(f"ok — generated {h:.1f}h ago ({gen})")
-            return 0
+    rep, err = read_report()
+    st = load_state()
+    now = dt.datetime.now(dt.timezone.utc).isoformat()
+    rc = 0
 
-    if recently_alerted(cond, args.repeat_h):
-        print(f"alerting suppressed (dedupe): {findings[0]}")
-        return 1
-    posted = args.no_alert or file_inbox(cond, findings)
-    save_state(cond)
-    print(f"ALERT{' (inbox filed)' if posted else ''}: {findings[0]}")
-    return 1
+    # --- chain-level checks --------------------------------------------
+    if err:
+        cond = "unreachable"
+        if not recently_alerted(st, cond, args.repeat_h):
+            text = (f"System-report monitor is unhealthy: idc02 check failed — "
+                    f"{err}. Page shows last-known data — verify the idc02 "
+                    "report chain (chaba-system-report.service, "
+                    "chaba-report-api) and the web-srv data sync.")
+            if args.no_alert or file_inbox(
+                    text, "Monitor stale — system-report pipeline",
+                    ["ops", "monitor", "system-report", "knb-0786"]):
+                st["conditions"][cond] = now
+            print(f"ALERT: idc02 check failed — {err}")
+            rc = 1
+        else:
+            print(f"alert suppressed (dedupe): idc02 check failed — {err}")
+            rc = 1
+    else:
+        gen = rep.get("generated_at") if rep else None
+        h = age_hours(gen) if gen else None
+        if h is None:
+            cond = "unparseable"
+            if not recently_alerted(st, cond, args.repeat_h):
+                if args.no_alert or file_inbox(
+                        f"System-report generated_at unparseable: {gen!r}",
+                        "Monitor stale — system-report pipeline",
+                        ["ops", "monitor", "system-report", "knb-0786"]):
+                    st["conditions"][cond] = now
+                print(f"ALERT: generated_at unparseable: {gen!r}")
+                rc = 1
+            else:
+                print(f"alert suppressed (dedupe): generated_at unparseable")
+                rc = 1
+        elif h > args.stale_h:
+            cond = f"stale:{gen}"
+            if not recently_alerted(st, cond, args.repeat_h):
+                text = (f"System-report data is {h:.1f}h old (generated_at "
+                        f"{gen}, threshold {args.stale_h}h). Page shows "
+                        "last-known data — verify the idc02 report chain "
+                        "(chaba-system-report.service, chaba-report-api) "
+                        "and the web-srv data sync.")
+                if args.no_alert or file_inbox(
+                        text, "Monitor stale — system-report pipeline",
+                        ["ops", "monitor", "system-report", "knb-0786"]):
+                    st["conditions"][cond] = now
+                print(f"ALERT: report {h:.1f}h old")
+                rc = 1
+            else:
+                print(f"alert suppressed (dedupe): report {h:.1f}h old")
+                rc = 1
+        else:
+            print(f"chain ok — generated {h:.1f}h ago ({gen})")
+
+    # --- node-level checks ---------------------------------------------
+    if rep:
+        red = [n for n in (rep.get("nodes") or [])
+               if n.get("status") in RED_STATUSES]
+        if red:
+            key = ",".join(sorted(f"{n['id']}:{n['status']}" for n in red))
+            cond = f"nodes:{key}"
+            lines = [f"{n['id']} = {n['status']}"
+                     + (f" ({n['summary'][:80]})" if n.get("summary") else "")
+                     for n in red]
+            prev_red = set(st.get("last_red", []))
+            recovered = prev_red - {n["id"] for n in red}
+            if not recently_alerted(st, cond, args.repeat_h):
+                text = ("System-report red nodes: " + "; ".join(lines)
+                        + ". Drill into the node on the monitor page or via "
+                          "reports/meta.<node>.yml on idc02.")
+                if recovered:
+                    text += (f" Recovered since last alert: "
+                             f"{', '.join(sorted(recovered))}.")
+                if args.no_alert or file_inbox(
+                        text, "Monitor red nodes",
+                        ["ops", "monitor", "system-report", "nodes"]):
+                    st["conditions"][cond] = now
+                    st["last_red"] = [n["id"] for n in red]
+                print(f"ALERT: {len(red)} red node(s): "
+                      + ", ".join(f"{n['id']}={n['status']}" for n in red))
+                rc = 1
+            else:
+                print(f"node alert suppressed (dedupe): "
+                      + ", ".join(f"{n['id']}={n['status']}" for n in red))
+                rc = 1
+        else:
+            prev_red = st.get("last_red") or []
+            if prev_red:
+                sys.stderr.write(
+                    f"watchdog: red nodes recovered: {', '.join(prev_red)}\n")
+            st.pop("last_red", None)
+            print("nodes ok — no error/missing/unreachable")
+
+    save_state(st)
+    return rc
 
 
 if __name__ == "__main__":
