@@ -1,0 +1,33 @@
+id: kanban-commit-reconcile-rebase-deadlocks-4d95a9
+title: 'kanban-commit reconcile: rebase deadlocks on card-file divergence — merge+union-comms instead'
+column: backlog
+updated: 2026-10-23 14:50
+priority: high
+tags:
+- board
+- git
+- reconcile
+- incident
+- dispatch
+spec: 'Incident 2026-10-23: idc03 served checkout diverged 275 commits from origin — kanban-commit.service failed
+  every 15min tick all day on ''pull --rebase needs manual resolution''. Root cause: wp-activity-cpt-timeline-links.yml
+  differed semantically on both sides (local live-writer said column=done with merge-sweep comms; origin had a different
+  write pushed via a dispatch worktree merge). The reconcile''s .local-conflict sidecar path only handled the file
+  when versions were ''identical''; real semantic divergence deadlocked it, and every board write for ~6h piled
+  up unpushed (board truth only existed locally). Fixed by hand: git merge (not rebase) + union-merge of the card
+  — local workflow fields won (live writer is authoritative for column/action), comms unioned by (at,text). Fixes
+  needed: (1) kanban-commit reconcile should MERGE card paths rather than rebase-deadlock — cards are append-mostly
+  YAML, union-comms resolution is mechanical (already proven by hand today); (2) decide the write-path contract:
+  dispatches currently write card files through worktree merges — either gate that (card writes go through board-api
+  only, merge guard rejects card diffs in dispatch merges) or accept and resolve via the union merge; (3) alert
+  on kanban-commit failure streak — the deadlock ran silent all day, only found by accident.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - devin-task
+ref: KNB-0789
+comms:
+- at: 2026-10-23 14:50
+  from: tony
+  text: card captured via board-api
