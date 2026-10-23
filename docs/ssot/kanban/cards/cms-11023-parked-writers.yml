@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: done
-updated: 2026-10-23 08:15
+updated: 2026-10-23 08:21
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -98,6 +98,12 @@ comms:
 - at: 2026-10-23 08:15
   from: tony
   text: closed by tony
+- at: 2026-10-23 08:21
+  from: devin
+  text: '[sweep 2026-10-23] loose ends closed: (1) dispatch branch was pushed but unmerged since 20:04 (fetch-first
+    rejection) — merged to origin/master now; (2) ada-voice d438a52 rebased + pushed to origin/main (request option
+    a) — fix is durable, no longer uncommitted-only on runners. deploy-ada.sh on idc03 still pending (= request
+    option b, lane restarts). Parked-collection delete on :11023 remains Tonys call (destructive, rollback window).'
 action:
   type: dispatch
   status: done
