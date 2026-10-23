@@ -186,8 +186,10 @@ async function pollJob() {
   const qv = (await pipe(job.query, { pooling: 'mean', normalize: true })).data;
   const ranked = [];
   for (const d of job.docs) {
-    const dv = (await pipe(d, { pooling: 'mean', normalize: true })).data;
-    ranked.push({ doc: String(d).slice(0, 90), score: +cosine(qv, dv).toFixed(3) });
+    const text = (typeof d === 'string' ? d : (d.text || '')).slice(0, 480);
+    const key = typeof d === 'string' ? text.slice(0, 90) : (d.key || text.slice(0, 90));
+    const dv = (await pipe(text, { pooling: 'mean', normalize: true })).data;
+    ranked.push({ doc: key, score: +cosine(qv, dv).toFixed(3) });
   }
   ranked.sort((a, b) => b.score - a.score);
   const ms = Math.round(performance.now() - t0);
