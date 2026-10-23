@@ -20,7 +20,7 @@ run: |
 
   OUT = PACK_DIR
   os.makedirs(f'{OUT}/refs', exist_ok=True)
-  with tarfile.open('/content/drive/MyDrive/ada-nest/voice-bench/'
+  with tarfile.open(f'{NEST_ROOT}/voice-bench/'
                     'voice-bench-assets.tgz') as t:
       t.extractall(f'{OUT}/refs')
 
@@ -32,7 +32,7 @@ run: |
 
   refs = {'ada': f'{OUT}/refs/ada-ref.wav',
           'tony': f'{OUT}/refs/tony-ref-8s.wav'}
-  bench = '/content/drive/MyDrive/ada-nest/packs/thonburian-bench/out'
+  bench = f'{NEST_ROOT}/packs/thonburian-bench/out'
   rows = []
   for who, ref in refs.items():
       for w in sorted(glob.glob(f'{bench}/thon-{who}-*.wav')):

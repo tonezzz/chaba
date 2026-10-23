@@ -128,9 +128,12 @@ def start_prep(job):
     pl = open(f'{Q}/prep-{job["name"]}.log', 'ab')
     pl.write(f'\n===== {time.strftime("%H:%M:%S")} prep start =====\n'.encode())
     pl.flush()
+    pack_dir = f'{PACKS}/{job["name"]}' if job.get('_pack') else ''
     return (job['name'], pl,
             subprocess.Popen(job['prep'], shell=True,
                              stdout=pl, stderr=subprocess.STDOUT,
+                             env=dict(os.environ, NEST_ROOT=ROOT,
+                                      PACK_DIR=pack_dir),
                              start_new_session=True))
 
 def wait_prep(prep):
