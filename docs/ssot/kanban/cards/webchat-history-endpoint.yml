@@ -1,7 +1,7 @@
 id: webchat-history-endpoint
 title: Per-chat_id history endpoint + card backfill for web channels
 column: doing
-updated: 2026-10-23 08:51
+updated: 2026-10-23 09:00
 tags:
 - ada
 - webchat
@@ -65,6 +65,11 @@ comms:
   text: 'Explored: turns funnel through ConversationMemory._channel_append; adding per-chat_id JSONL store there
     + GET /api/chat/history + ws history_request frame; card will backfill on first ready with push dedupe vs parked
     flush.'
+- at: 2026-10-23 09:00
+  from: devin
+  text: 'Done: per-chat_id JSONL history (ADA_WEBCHAT_HISTORY_DIR, keep 500) journaled from _channel_append + pushes;
+    GET /api/chat/history + ws history_request/history frame (bound chat_id only); card backfills on first ready
+    w/ push dedupe. 1652 tests pass, tool-lint clean. Outcome md + job yml written.'
 action:
   type: dispatch
   status: running
