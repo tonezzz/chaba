@@ -1,7 +1,7 @@
 id: system-report-refresh-full-depth
 title: api/refresh depth=full — re-run L1 audit-hosts before consolidating
 column: doing
-updated: 2026-10-23 14:09
+updated: 2026-10-23 14:24
 spec: 'Today: POST api/refresh re-ran the report subtree (rollups/digests) but L1 audit-hosts/* inputs stayed from
   the 06:45 run — a stale macbook unreachable persisted all day. Extend report-api.py refresh handling: depth=full
   re-runs audit-hosts.py --host for each declared host first, then consolidates + report-system.py as today. Keep
@@ -16,3 +16,10 @@ comms:
 - at: 2026-10-23 14:09
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 14:24
+  from: devin
+  text: 'Done. force:true added to api/refresh — bypasses the dirty gate so every runnable subtree node re-runs
+    incl. L1 audit-hosts/* (commit 24b0c90e6). Live-verified: full rescan took ~3min, all 5 host audits re-ran,
+    report regenerated 14:22. Frontend: Deep rescan button next to Refresh now (v=8). Note: audit-hosts/con01+idc01
+    arent in fleets children — only the 5 declared hosts rescan; oneshot service still audits 7. macbook unreachable
+    is real (ssh from idc02 fails), not a stale artifact.'
