@@ -11,8 +11,8 @@ hosts:
   tony_dell:
     role: evacuated   # FULLY DRAINED 2026-10-19/20 (OPS-0725 ph5) — failover capacity after SSD+RAM upgrade
     cpu_cores: 8
-    mem_gb: 15.3    # ~7G avail, load ~0.6 — cool post-evacuation
-    disk_gb: {total: 118, free: 20}     # 83% used — all migrated units .parked, ghost-guarded
+    mem_gb: 15.3    # measured 2026-10-23: ~4G avail (~10G used) — warmer than the ~7G noted at ph5
+    disk_gb: {total: 220, free: 78}     # re-measured 2026-10-23 post SSD upgrade — 63% used, no longer under rebalance trigger
     gpu: none
     note: >-
       Evacuated 2026-10-19/20 — entire LAN cohort now on tony-omen (tony-ha,
@@ -28,7 +28,7 @@ hosts:
   tony_omen:
     role: lan-hub + nest-gpu-lane    # absorbed dell's LAN cohort 2026-10-19/20 (OPS-0725 ph5)
     cpu_cores: 12
-    mem_gb: 31        # ~17G avail, load ~1.5 — absorbed HA stack cleanly
+    mem_gb: 31        # measured 2026-10-23: ~5G avail with JEV scorers 24/7 (24G used) — watch
     disk_gb: {total: 98, free: 59}
     gpu: yes          # GTX1650 4GB — jev/nest serve+train lane, ollama :11434 (user svc, reinstalled 2026-10-12)
     note: >-
@@ -37,6 +37,11 @@ hosts:
       yt-live-api+raceman media, ha-live, guests (pending .67 handoff),
       yolo/playlive/cast timers. heavy/ML workloads, development;
       power-hungry — prefer Colab for burst GPU.
+      Desktop role moved to tony-macbook 2026-10-12 (omen-dedicate-nest) —
+      omen is a dedicated server lane now. Travel-slim exited 2026-10-23:
+      open-jev (:8777) + open-jev-student (:8778) run 24/7, leash timer
+      retired, orch-bench no longer stops them. GNOME-console vs
+      headless+CRD decision pending (board request on the card).
   idc02:
     role: edge-primary   # +capacity-absorber 2026-10-16 — idlest host, bias new VPS placements HERE
     cpu_cores: 4
@@ -70,13 +75,14 @@ hosts:
     note: legacy/home node; warm capacity. Unreachable at 2026-10-16 probe
       (off-net is normal for it — verify before counting on it).
   tony_macbook:
-    role: portable-dev
+    role: primary-desktop + portable-dev   # became Tony's main desktop 2026-10-12 (omen-dedicate-nest)
     cpu_cores: 4
     mem_gb: 16        # i7-6700HQ, MacBookPro13,3
     disk_gb: {total: 234, free: 203}
     gpu: none         # Radeon Pro 450 2GB — Vulkan only, no CUDA/ROCm/OpenCL
     note: >-
-      Tony's travel workstation (Ubuntu 26.04 since 2026-10-10). Laptop —
+      Tony's main desktop + travel workstation (Ubuntu 26.04 since 2026-10-10;
+      took over the desktop role from tony-omen 2026-10-12). Laptop —
       sleeps/off-net is normal; never a hard dependency. Runner lane cap 2
       labels cpu,dev,portable (enrolled 2026-10-11).
   idc01:
@@ -136,4 +142,4 @@ procedure:
 
 related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
 status: active
-updated: 2026-10-22
+updated: 2026-10-23
