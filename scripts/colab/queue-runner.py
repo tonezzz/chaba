@@ -85,6 +85,34 @@ def say(msg):
     print(line, flush=True)          # stdout -> run-<ts>.out.log on Drive
     log.write(line + '\n')
 
+# --- nest-fence (v4): lease + epoch. Only the newest generation may write;
+# a zombie that resurfaces discovers it lost the lease and self-exits
+# before it can mutate the store. Two-VM race: newer epoch wins. ---
+import json
+LEASE = f'{Q}/lease'
+
+def read_lease():
+    try:
+        d = json.loads(open(LEASE).read())
+        return int(d.get('epoch', 0)), str(d.get('worker', ''))
+    except Exception:
+        return 0, ''
+
+def take_lease(worker):
+    e, _w = read_lease()
+    open(LEASE, 'w').write(json.dumps(
+        {'worker': worker, 'epoch': e + 1, 'ts': int(time.time())}))
+    time.sleep(3)                        # let a racing take surface
+    e2, w2 = read_lease()
+    if (e2, w2) != (e + 1, worker):
+        say(f'lease lost at take (got {w2} epoch {e2}) — exiting')
+        os._exit(1)
+    return e + 1
+
+def fenced_out(my_epoch, worker):
+    e, w = read_lease()
+    return (e, w) != (my_epoch, worker)
+
 # heartbeat: lets fleet-side checks flag a stall without any notebook access
 state = {'job': 'boot', 'phase': 'boot'}
 def heartbeat():
@@ -92,10 +120,31 @@ def heartbeat():
         try:
             with open(f'{Q}/heartbeat', 'w') as h:
                 h.write(f'{time.time():.0f} {state["job"]} {state["phase"]}\n')
+            # refresh lease ts while I still hold it — liveness for watchers
+            e, w = read_lease()
+            if w == WORKER:
+                open(LEASE, 'w').write(json.dumps(
+                    {'worker': WORKER, 'epoch': EPOCH, 'ts': int(time.time())}))
         except OSError:
             pass
         time.sleep(15)
 threading.Thread(target=heartbeat, daemon=True).start()
+
+def fence_watch():
+    # self-fencing: if my lease was overwritten, my writes are no longer
+    # legitimate — die before corrupting the store
+    while True:
+        time.sleep(15)
+        try:
+            if fenced_out(EPOCH, WORKER):
+                os._exit(1)
+        except OSError:
+            pass                    # unreadable lease ≠ lost lease; retry
+
+WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
+EPOCH = take_lease(WORKER)
+say(f'lease acquired: {WORKER} epoch {EPOCH}')
+threading.Thread(target=fence_watch, daemon=True).start()
 
 open(f'{Q}/runner.pid', 'w').write(str(os.getpid()))
 def bye(*a):
@@ -143,8 +192,6 @@ def wait_prep(prep):
     pl.close()
     return rc
 
-WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
-
 def caps():
     c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': True}
     try:
@@ -181,11 +228,13 @@ def claim(job):
     """Optimistic first-writer-wins on packs/<name>/claim/. Drive dir-listing
     lag means this is best-effort for >1 simultaneous worker — fine at our
     scale; the watchdog arbitrates real conflicts."""
+    if fenced_out(EPOCH, WORKER):
+        sys.exit('fenced — lost lease before claim')
     cdir = f"{PACKS}/{job['name']}/claim"
     os.makedirs(cdir, exist_ok=True)
     if os.listdir(cdir):
         return False
-    open(f'{cdir}/{WORKER}', 'w').write(f'{time.time():.0f}\n')
+    open(f'{cdir}/{WORKER}', 'w').write(f'{time.time():.0f} ep={EPOCH}\n')
     time.sleep(2)                       # let a racing claim surface
     return sorted(os.listdir(cdir))[0] == WORKER
 
@@ -280,7 +329,9 @@ try:
             if not ok:
                 say(f'== {name}: FAIL artifacts missing after run: {info}')
                 continue
-            open(markpath(job), 'w').write(f'{dt:.0f}s boot={BOOT_ID} {info}\n')
+            if fenced_out(EPOCH, WORKER):
+                sys.exit('fenced — lost lease before done-mark')
+            open(markpath(job), 'w').write(f'{dt:.0f}s boot={BOOT_ID} ep={EPOCH} {info}\n')
             say(f'== {name}: DONE {dt:.0f}s {info} (gpu {gpu_note()})')
         except Exception:
             say(f'== {name}: FAIL')

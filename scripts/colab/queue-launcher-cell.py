@@ -20,8 +20,26 @@ if os.path.exists(pid_f):
         pass  # stale pid file
 
 if alive:
-    print('queue already running, pid', open(pid_f).read().strip())
-else:
+    # proactive reap (nest-fence v4): a runner whose heartbeat is stale is
+    # a zombie — kernel survived a restart or Drive flaked. Kill it before
+    # spawning so the old generation can't compete with the new.
+    try:
+        hb_age = time.time() - float(open(f'{Q}/heartbeat').read().split()[0])
+    except Exception:
+        hb_age = 9999
+    if hb_age > 90:
+        old = int(open(pid_f).read().strip())
+        print(f'runner {old} alive but heartbeat {hb_age:.0f}s stale — reaping')
+        try:
+            os.kill(old, 15); time.sleep(3)
+            os.kill(old, 9)
+        except ProcessLookupError:
+            pass
+        alive = False
+    else:
+        print('queue already running, pid', open(pid_f).read().strip())
+
+if not alive:
     ts = time.strftime('%Y%m%d-%H%M')
     out = open(f'{Q}/run-{ts}.out.log', 'ab')
     p = subprocess.Popen([sys.executable, '-u', f'{Q}/runner.py'],
