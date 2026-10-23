@@ -1,7 +1,7 @@
 id: mddb-stats-o1-counts
 title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
-column: doing
-updated: 2026-10-23 09:58
+column: review
+updated: 2026-10-23 09:59
 priority: medium
 tags:
 - mddb
@@ -127,9 +127,13 @@ comms:
   text: 'Done: /v1/stats now serves a 60s single-flight stale-while-revalidate snapshot; checksums folded into the
     one docs walk (byte-identical, parity-tested) — 57 extra read txs gone. ?refresh=1 for fresh numbers. Full package
     suite green; committed on dispatch branch, not pushed. gRPC Stats twin noted for follow-up.'
+- at: 2026-10-23 09:59
+  from: idc02
+  text: 'finished (ok): exit=0 b-stats-snapshot-cache.md` and `dispatch-outcome-20261023-094646-handlestats-services-mddbd-htt.md`.
+    | devin-task'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: mddb-fork
   attempts: 0
   sweep:
@@ -139,3 +143,9 @@ action:
     no_repo: 2026-10-23 09:54
   host: idc02
   runner: idc02
+  result: 'exit=0 b-stats-snapshot-cache.md` and `dispatch-outcome-20261023-094646-handlestats-services-mddbd-htt.md`.
+    | devin-task-20261023-094646-handlestats-services-mddbd-htt.service: Consumed 6min 24.934s CPU time, 1.9G memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
