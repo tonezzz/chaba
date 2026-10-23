@@ -1,0 +1,18 @@
+id: wire-hybrid-recall-t1-semantic-t2-keywor-ef89a0
+title: Wire hybrid recall (T1 semantic + T2 keyword) into notebooklm-recall.sh — prune prerequisite
+column: backlog
+updated: 2026-10-23 15:34
+priority: medium
+spec: 'bench-recall v2 verdict (session-mddb-recall-benchmark): sessions.db prune to T0 is AQ-safe ONLY if recall
+  runs BOTH retrievals — T1 semantic (mddb devin-session/* docs, now enriched via --enrich) + T2 keyword over locally
+  grep-able transcript archives (~/.local/share/devin/summaries/*.md). Today notebooklm-recall.sh on the macbook
+  injects only a flat session-memory.md tail (~5.6% recall). Work: extend the SessionStart recall hook to (a) semantic_search
+  the devin-session/* bank scoped to recent project/cards, (b) BM25/grep the T2 archive dir for keyword hits, (c)
+  merge top-k into the injected context. Constraints: keep injection <=8KB, fail-open if mddb unreachable, T2 archives
+  must stay local (not GDrive-only). Verify: rerun bench-recall hybrid_t2 lane live, then a manual recall test on
+  3 known sessions.'
+ref: SEC-0791
+comms:
+- at: 2026-10-23 15:34
+  from: tony
+  text: card captured via board-api
