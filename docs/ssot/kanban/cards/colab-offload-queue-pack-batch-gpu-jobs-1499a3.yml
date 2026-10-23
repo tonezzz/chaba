@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
 column: backlog
-updated: 2026-10-23 12:53
+updated: 2026-10-23 14:04
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -35,3 +35,10 @@ comms:
     — needs=capability floor not hostname; optimistic claim packs/<name>/claim/<worker>; done at packs/<name>/done.
     SHIPPED in runner.py today incl smoke pack. (2) nest-job CPT: WP record upserted by slug, hierarchical parent/child
     = job tree; parent status DERIVED from children; comments = job comms (queue-mgr transitions + agent decisi'
+- at: 2026-10-23 14:04
+  from: devin
+  text: 'v4 spec APPROVED — nest-fence (split-brain fix for cattle workers). Lease file queue/lease={worker,epoch,ts}:
+    new runner bumps epoch at boot; highest epoch = only legit writer; ties break on smaller worker id. Fence thread
+    re-reads lease every 15s + inline check before every mutating step (claim/done/artifact) — zombie that resurfaces
+    self-exits process group BEFORE it writes. Zombie paths closed: same-VM survivor (kernel restart), 2-VM race
+    (the 2-colab-tabs case — newer epoch wins, loser suici'
