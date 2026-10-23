@@ -47,10 +47,11 @@ edges:
   idc03-serve:
     kind: tailscale-serve          # host fabric exports
     mounts:
-      /: http://127.0.0.1:8001                    # ada-pi-pwa
+      /: http://127.0.0.1:8002                    # ada-ha-tony (root repointed off ada-pi-pwa :8001, retired 2026-10-23)
       /apps/ha/ada-tony: http://127.0.0.1:8002    # ada-ha-tony backend
-      /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ha-michael backend
+      /apps/ha/ada-michael: http://127.0.0.1:8003 # ada-ai-kraut backend (renamed from ada-ha-michael 2026-10-16)
       /apps/ha/ada-dev: http://127.0.0.1:8005     # ada-dev backend (added 2026-10-08 for Chaba AI tab)
+      /apps/ha/ada-ha: http://127.0.0.1:8006      # ada-ha-ada backend (Ada lab lane, added 2026-10-23)
       /apps/ha/ada-kk: http://127.0.0.1:8007      # ada-kk backend (Kaewta — KK member node, 2026-10-09)
       # :8447 mount = vcast display front (2026-10-17): whole port proxies to
       # caddy-edge http://127.0.0.1:8749, which serves /srv/public static
@@ -84,8 +85,8 @@ edges:
   #   handle_path /chatui* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
   #   (handle_path strips /chatui; chat card derives ws {base}/ws -> ada-tony
   #    /ws on :8002 — no separate /ada-ws route needed for the tab)
-  #   /cms* + /api/cms* already proxied to idc03 root CMS (tony's own pages)
-  # 2026-10-12
+  #   /cms* + /api/cms* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
+  #   (repointed 2026-10-23 off idc03 root/:8001 shared pool onto the tony lane)
   #   /ada-ws/tony/* -> rewrite /apps/ha/ada-tony{uri} -> idc03 tailnet
   #   (voice card same-origin lane; missing route 404'd the card 2026-10-13)
   #   /apps/roster* -> 127.0.0.1:8099 web origin (agents roster console,
@@ -99,7 +100,8 @@ services:
   ada-ha-michael: {host: idc03, listen: "127.0.0.1:8003", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael"}
   ada-dev:        {host: idc03, listen: "127.0.0.1:8005", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-dev"}
   ada-kk:         {host: idc03, listen: "127.0.0.1:8007", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-kk"}
-  ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/"}
+  ada-ha-ada:     {host: idc03, listen: "127.0.0.1:8006", tailnet: "https://idc03.taila0626a.ts.net/apps/ha/ada-ha"}
+  ada-pi-pwa:     {host: idc03, listen: "127.0.0.1:8001", tailnet: "https://idc03.taila0626a.ts.net/", status: "retired 2026-10-23 — unit stopped+disabled; shared pool replaced by per-lane stores (card per-instance-secret-stores-migration)"}
   tony-ha:        {host: tony-omen, listen: "127.0.0.1:8123", tailnet: "https://tony-omen.taila0626a.ts.net:8123"}   # evacuated dell 2026-10-19/20 (ph5)
   michael-dev:    {host: idc03,     listen: "127.0.0.1:8124", tailnet: "https://idc03.taila0626a.ts.net:8124"}     # migrated 2026-10-09
   board-api:      {host: idc03, listen: "127.0.0.1:8787", tailnet: "https://idc03.taila0626a.ts.net:10000"}    # migrated 2026-10-16 OPS-0725 ph2
