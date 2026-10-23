@@ -1,0 +1,18 @@
+id: per-lane-litellm-keys
+title: Per-lane LiteLLM virtual keys — stop shared free-quota starvation
+column: doing
+updated: 2026-10-23 13:41
+priority: medium
+action:
+  type: manual
+note: All ada lanes share free Gemini keys — quota died mid-bench (judge 429 on both keys, 2026-10-23). Create LiteLLM
+  virtual keys per lane (tony/kk/mn/bench) on idc03 :4000, point each lane env ADA_GEMINI_REST_API_KEY at its own
+  key, restart lanes.
+ref: SEC-0782
+comms:
+- at: 2026-10-23 13:41
+  from: tony
+  text: carded by devin — implementing in-session
+- at: 2026-10-23 13:41
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
