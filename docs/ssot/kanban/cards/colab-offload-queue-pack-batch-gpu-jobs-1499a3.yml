@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
 column: backlog
-updated: 2026-10-23 12:32
+updated: 2026-10-23 12:53
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -29,3 +29,9 @@ comms:
     Lanes become CAPABILITIES not routes: colab=gpu15g+ephemeral+egress-only, omen=gpu4g+always-on, dell/idc=cpu,
     kk-mac=idle-window-gated. Same loop everywhere: scan store -> claim pack matching needs -> prep/run -> verify
     artifacts -> mark done. Transports: one interface two stores —'
+- at: 2026-10-23 12:53
+  from: devin
+  text: 'v3 spec APPROVED — three legs: (1) PACKS: self-contained dir {pack.yml{name,needs{gpu_gb,disk_gb,egress_only_ok},prep,run|run_sh,artifacts,scope,timeout_s},inputs/}
+    — needs=capability floor not hostname; optimistic claim packs/<name>/claim/<worker>; done at packs/<name>/done.
+    SHIPPED in runner.py today incl smoke pack. (2) nest-job CPT: WP record upserted by slug, hierarchical parent/child
+    = job tree; parent status DERIVED from children; comments = job comms (queue-mgr transitions + agent decisi'
