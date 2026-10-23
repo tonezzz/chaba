@@ -1,7 +1,7 @@
 id: mddb-stats-o1-counts
 title: mddbd /v1/stats is O(1.6M keys) — serve stats from counters/cache, not bucket walks
 column: doing
-updated: 2026-10-23 08:54
+updated: 2026-10-23 09:27
 priority: medium
 tags:
 - mddb
@@ -75,13 +75,16 @@ comms:
   text: 'merge-sweep: devin-task-20261023-082703-handlestats-services-mddbd-htt failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261023-082703-handlestats-services-mddbd-htt by
     hand.'
+- at: 2026-10-23 09:27
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   repo: mddb-fork
-  attempts: 1
-  runner: tony-macbook
-  result: 'start failed: unknown repo ''mddb-fork'' (allowed: ada-voice sunsynk-card ada-pi gods-eye-view mddb-fork
-    chaba)'
+  attempts: 2
   sweep:
     failed_noted: 2026-10-23 08:54
+  host: tony-dell
+  last_failure: 'start failed: unknown repo ''mddb-fork'' (allowed: ada-voice sunsynk-card ada-pi gods-eye-view
+    mddb-fork chaba)'
