@@ -1,7 +1,7 @@
 id: omen-dedicate-nest
 title: Dedicate tony-omen to Ada Nest — exit travel-slim, GPU lane duty
-column: doing
-updated: 2026-10-23 13:17
+column: review
+updated: 2026-10-23 13:18
 priority: high
 spec: 'Tony 2026-10-12: macbook becomes his main desktop → omen dedicated to Nest. Already onboarded (tailnet/mesh/runner/devin
   satellite all pass new-host checklist). Steps: (1) ssot.host-capacity.yml: role gpu-dev -> nest-gpu-lane, note
@@ -80,14 +80,22 @@ comms:
     was dead since the 10-19 reboot (disabled, 10-12 restart was start-only) — enabled --now open-jev:8777 + open-jev-student:8778
     (both /health ok, 4b load 141s), leash timer retired, orch-bench ExecStartPost stop removed on-host+repo. 10-19
     bench run itself was clean (Result='
+- at: 2026-10-23 13:18
+  from: idc02
+  text: 'finished (ok): exit=0 the card, and the full writeup in `dispatch-outcome-20261023-130505-tony-2026-10-12-macbook-become.md`.
+    | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     stale_running: 2026-10-16 14:42
     session_gone: 2026-10-16 14:42
     no_repo: 2026-10-23 13:10
   runner: idc02
+  result: 'exit=0 the card, and the full writeup in `dispatch-outcome-20261023-130505-tony-2026-10-12-macbook-become.md`.
+    | devin-task-20261023-130505-tony-2026-10-12-macbook-become.service: Consumed 28.785s CPU time, 378.1M memory
+    peak, 0B memory swap peak.'
+  verified: true
 requests:
 - id: omen-desktop-posture-current-state-gdm-g-8e87da
   ask: 'Omen desktop posture? Current state: gdm greeter sits on tty1 (no interactive GNOME session logged in, idle
@@ -101,3 +109,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
