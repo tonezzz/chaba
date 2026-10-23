@@ -8,7 +8,7 @@ brief: 'Grade each OpenRouter free model on speed + tool-call correctness throug
   shared with mddb embeddings (per-key cap starved it before) — spread calls, <=50/model; note if a dedicated openclaw
   key is needed.'
 column: doing
-updated: 2026-10-23 11:10
+updated: 2026-10-23 11:46
 note: 'Fixed prompt suite through the gateway API: latency + tool-call correctness per OR free model; jev-bench
   shape. From request-lifecycle exploration 2026-10-07.'
 comms:
@@ -105,6 +105,23 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261022-194701-per-model-scorecard-across-the on
     tony-omen — if the work was never pushed it may be gone'
+- at: 2026-10-23 11:46
+  from: devin
+  text: 'SCORECARD 2026-10-23 (21 models x ~32 calls, jev-bench arms vs OR /chat/completions; raw: reports/or-free-scorecard-2026-10-23.{json,md};
+    job doc: docs/ssot/jobs/models/2026-10-23-or-free-scorecard.yml)
+
+
+    model | tc_nat tc_prm rout reas json | p50 | comp*
+
+    poolside/laguna-s-2.1:free | 100 100 100 67 100 | 3.3s | 100
+
+    nvidia/nemotron-3.5-super-vl:free | 80 100 100 100 100 | 1.9s | 100
+
+    recursive/flint-v1.0:free | 100 80 100 100 75 | 1.3s | 85
+
+    dots-3-note-preview:free | 100 100 100 83 50 | 2.8s | 83
+
+    n'
 action:
   type: dispatch
   status: running
