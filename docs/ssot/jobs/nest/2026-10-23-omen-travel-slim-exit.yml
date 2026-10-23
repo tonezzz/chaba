@@ -1,0 +1,84 @@
+id: jobs/nest/2026-10-23-omen-travel-slim-exit
+title: omen travel-slim exit — JEV scorers 24/7, leash retired, bench stop-hook removed
+card: omen-dedicate-nest
+date: 2026-10-23
+runner: idc02 (dispatch worktree; changes applied on tony-omen via ssh)
+status: done
+
+# ---------------------------------------------------------------------------
+# Result: omen's gemma JEV scorers now run continuously instead of only during
+# the Monday 04:30 orch-bench window. The travel-slim mechanism (disabled units
+# + bench ExecStartPre/ExecStartPost lifecycle + hourly reaper leash) is
+# dismantled — the card's "exit travel-slim posture ... both active" is now
+# durable across reboots and bench runs.
+# ---------------------------------------------------------------------------
+
+context: >-
+  Travel-slim existed because omen was Tony's go-anywhere desktop — gemma
+  scorers stayed dormant and the weekly orch-bench started/stopped them on
+  demand, with open-jev-leash.timer reaping leftovers >2.5h. Tony made
+  tony-macbook his main desktop 2026-10-12 and dedicated omen to the Nest
+  lane; the 10-12 dispatch restarted the scorers but left the mechanism in
+  place, so the 2026-10-19 reboot (uptime reset 17:51) silently took
+  open-jev down again — the unit was disabled, so nothing restarted it.
+
+changes_on_host_tony_omen:
+  - "systemctl --user enable --now open-jev.service open-jev-student.service
+     — persistent across reboots; :8777 (gemma-3-4b) + :8778 (gemma-3-1b)
+     both /health ok (4b load_s ~141s on CPU)"
+  - "systemctl --user disable --now open-jev-leash.timer — retired; scorers
+     are supposed to stay up now, there are no 'bench leftovers' to reap"
+  - "~/.config/systemd/user/ada-pi-orch-bench.service: ExecStartPost stop
+     replaced with no-op + travel-slim comment updated; ExecStartPre kept
+     (start is a no-op when running, health-wait remains a useful gate);
+     daemon-reload done. Pre-edit copy at .bak-travelslim"
+
+changes_repo:
+  - "systemd/ada-pi-orch-bench.service — ExecStartPost no-op, comment updated
+     (hand unit is the deployed source of truth; generated/ stub untouched)"
+  - "systemd/open-jev-leash.service + .timer — deleted (unit retired)"
+  - "ssot.health.home.system.yml — open-jev-scorer + open-jev-student-scorer
+     expected_state inactive→active; open-jev-leash-timer entry removed"
+  - "ssot.audit.hosts.yml — leash.timer dropped from expected units;
+     open-jev*/open-jev-student* known_failed 'stop residue' entries
+     re-labeled: a failed flag is now a real crash"
+  - "ssot.jobs.yml ada-pi-orch-bench note — documents ExecStartPost as no-op
+     since 2026-10-23"
+  - "ssot.host-capacity.yml — omen note (desktop→macbook, scorers 24/7,
+     ~5G avail watch), tony_macbook role primary-desktop, dell re-measure
+     (220G/78G free post-SSD-upgrade, ~4G mem avail)"
+
+consumers_of_the_lane:
+  - "ada-dev + ada-kk ADA_JEV_URL -> http://100.75.102.88:8777 (advisory
+     confirm-gate probe — was silently dead outside bench windows)"
+  - "ada-pi-orch-bench --student :8778 --heavy :8777 (Mon 04:30)"
+  - "prod ada-ha-tony does NOT use omen: ADA_JEV_URL=idc03:8778,
+     ADA_COMMAND_LLM_URL=idc02:8777 — prod lane already lives off omen"
+  - "openjev-student.service quadlet (:8779, nest distributed lane) was
+     already 24/7 — untouched"
+
+memory_note: >-
+  With both scorers resident, omen sits ~24G used / ~5G avail of 31G.
+  gemma-3-4b torch-on-CPU is ~11G RSS (the 10-09 stop freed exactly this).
+  If the host gets tight, the honest lever is reverting this posture
+  (disable the two units + restore ExecStartPost stop) — git history has
+  the leash.
+
+verify:
+  - "ssh tony-omen 'curl -s http://100.75.102.88:8777/health; curl -s
+     http://100.75.102.88:8778/health' — both ok:true"
+  - "Mon 2026-10-26 04:30 orch-bench run — should pass ExecStartPre health
+     instantly (scorers already up) and leave them running after"
+  - "ssot.health check: open-jev-scorer/open-jev-student-scorer now expect
+     active — the 10-23 monitor 'failing services' list should drop them"
+
+open_items:
+  - "GNOME vs headless+CRD decision — board request on omen-dedicate-nest
+     (current state: gdm greeter on tty1, no interactive session;
+     chrome-remote-desktop session already active → effectively headless+CRD)"
+  - "kanban-brief publish flakiness (idc03 -> mddb-cms :11027
+     RemoteDisconnected on every 30-min run 10:02-13:02; writes appear to
+     land — page updated 13:00 — but the unit exits 1). Same signature as
+     nest-mgr's intermittent tick errors. Worth its own card if it persists —
+     MDDB write-path drops, not an ollama problem (idc02 :11434 serving
+     qwen2.5:7b-instruct fine; omen :11434 serving gpt-oss:20b fine)"
