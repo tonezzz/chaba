@@ -1,7 +1,7 @@
 id: ada-phantom-claim-gate
 title: Phantom-claim gate — denied/skipped tool results must not be narrated as done
-column: doing
-updated: 2026-10-23 08:57
+column: review
+updated: 2026-10-23 09:01
 spec: 'kk-dev probes 2026-10-12: (1) chat_send photo:pick policy-DENIED but she told the user it was being sent;
   (2) run with catalog prime: cms_read ok then claimed delivery with ZERO chat_send calls. Same class as phantom_write_claim
   events. Need provider-level handling: when a tool result is an error/denial or an expected send never fired, the
@@ -43,8 +43,17 @@ comms:
     all segments), DONE-MEANS-DONE send clause. 1633 unit tests green + tool-lint + schema-check clean. Scenario
     tests/scenarios-live/chat_send_denied_claim.yaml forces the KK secondary denial + asserts response_not_contains.
     Trail: docs/ssot/jobs/ada/2026-10-23-phantom-claim-gate.y'
+- at: 2026-10-23 09:01
+  from: tony-omen
+  text: 'finished (ok): exit=0 084031-kk-dev-probes-2026-10-12-1-cha.md`; board updated. Nothing committed or pushed.
+    | devin-task-20261023-0840'
 action:
   type: dispatch
-  status: running
+  status: done
   repo: ada-voice
   runner: tony-omen
+  result: 'exit=0 084031-kk-dev-probes-2026-10-12-1-cha.md`; board updated. Nothing committed or pushed. | devin-task-20261023-084031-kk-dev-probes-2026-10-12-1-cha.service:
+    Consumed 2min 19.805s CPU time over 17min 13.457s wall clock time, 1.6G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
