@@ -1,0 +1,15 @@
+id: detect-ada-telegram-webhook-registration-85a1e9
+title: Detect Ada Telegram webhook registration drift
+column: backlog
+updated: 2026-10-23 20:46
+action:
+  type: dispatch
+ref: ADA-0803
+comms:
+- at: 2026-10-23 20:46
+  from: devin
+  text: 'Prevent repeat of 2026-10-23 incident: ada-tg-relay.service was active in TELEGRAM_MODE=webhook but Telegram
+    getWebhookInfo.url was empty, leaving inbound updates queued. The caddy /webhook/tg route and secret-token validation
+    existed; setWebhook was missing. Add a non-secret health check (at relay startup and/or timer) that compares
+    getWebhookInfo.url to https://api.surf-thailand.com/webhook/tg, reports nonzero pending_update_count/stale delivery
+    errors, and alerts without printing bot token or'
