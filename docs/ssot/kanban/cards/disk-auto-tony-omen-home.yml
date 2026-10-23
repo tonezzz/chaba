@@ -121,6 +121,10 @@ comms:
   from: devin
   text: 'raised request install-omen-cpufreq-limit-2ghz: The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz
     on Omen. To apply the requested persistent 2.00GHz ce'
+- at: 2026-10-23 20:06
+  from: devin
+  text: 'raised request capture-raw-omen-gpt-backup: The GDrive text inventory is not a restorable GPT backup: unprivileged
+    sfdisk was denied on /dev/nvme0n1. To create the '
 requests:
 - id: omen-disk-plan
   from: devin
@@ -148,6 +152,20 @@ requests:
   - id: hold
     label: Hold at 2.20GHz
   suggested: run-now
+- id: capture-raw-omen-gpt-backup
+  ask: 'The GDrive text inventory is not a restorable GPT backup: unprivileged sfdisk was denied on /dev/nvme0n1.
+    To create the binary GPT backup (read-only from the NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
+    /dev/nvme0n1 && sudo chown tony:tony /tmp/omen-nvme0n1-20261023.gpt. Tell me when it exists; I will copy it
+    to gdrive:backups/tony-omen/partition-snapshots/ and verify SHA-256. No partition changes are part of this command.'
+  status: open
+  at: 2026-10-23 20:06
+  from: devin
+  options:
+  - id: run-backup
+    label: Create the GPT backup on Omen
+  - id: hold
+    label: Keep the text inventory only for now
+  suggested: run-backup
 action:
   status: done
   type: dispatch
