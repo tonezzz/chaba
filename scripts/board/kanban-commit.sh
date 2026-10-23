@@ -25,6 +25,14 @@
 # On refuse: log the files to the journal (stderr) and upsert a review-column
 # ops card so the skip is visible on the board — this class is silent
 # otherwise.
+#
+# Failure streak (incident 2026-10-23, card
+# kanban-commit-reconcile-rebase-deadlocks-4d95a9): every nonzero exit
+# bumps $gitdir/kanban-commit-fail-streak; at KANBAN_FAILURE_ALERT_AFTER
+# (default 3 ≈ 45min) the ops alert card is flagged — the wedge that ran
+# silent all day now surfaces on the board. A clean tick resets the
+# counter; recovery after an alerted streak leaves a comms line on the
+# alert card.
 set -uo pipefail
 REPO="${KANBAN_REPO:-$HOME/CascadeProjects/chaba-tony-dell}"
 # Kept in sync with git-safe-pull.sh's default GENERATED_RE plus the
@@ -101,18 +109,92 @@ PY
 }
 
 gitdir=$(git rev-parse --git-dir)
+STREAK_FILE="$gitdir/kanban-commit-fail-streak"
+ALERT_AFTER="${KANBAN_FAILURE_ALERT_AFTER:-3}"
+
+fail_tick() {
+    # Bump the consecutive-failure counter; at ALERT_AFTER flag the ops
+    # card (static note -> bumps `updated`, no per-tick comms spam).
+    local n=1 prev=0
+    [ -f "$STREAK_FILE" ] && prev=$(cat "$STREAK_FILE" 2>/dev/null)
+    [[ "$prev" =~ ^[0-9]+$ ]] || prev=0
+    n=$((prev + 1))
+    echo "$n" > "$STREAK_FILE"
+    if [ "$n" -ge "$ALERT_AFTER" ]; then
+        alert_card "failure-streak" \
+            "kanban-commit failed $ALERT_AFTER+ consecutive ticks — last: $1"
+    fi
+}
+
+reset_tick() {
+    # Clean tick: drop the counter; if the ended streak had alerted, leave
+    # a recovery comms line on the alert card (committed locally, rides
+    # the next tick's push — the served board reads local state anyway).
+    local n=0
+    [ -f "$STREAK_FILE" ] && n=$(cat "$STREAK_FILE" 2>/dev/null)
+    [[ "$n" =~ ^[0-9]+$ ]] || n=0
+    rm -f "$STREAK_FILE"
+    [ "$n" -ge "$ALERT_AFTER" ] || return 0
+    RECOVER_N="$n" python3 - "$REPO" "$ALERT_CARD_ID" <<'PY'
+import fcntl
+import os
+import subprocess
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import yaml
+
+repo, cid = Path(sys.argv[1]), sys.argv[2]
+n = os.environ["RECOVER_N"]
+card_path = repo / "docs/ssot/kanban/cards" / f"{cid}.yml"
+now = datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
+try:
+    with open("/tmp/board-api.lock", "w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        card = yaml.safe_load(card_path.read_text()) \
+            if card_path.exists() else {}
+        if not isinstance(card, dict):
+            card = {}
+        card.setdefault("comms", []).append(
+            {"at": now, "from": "chaba",
+             "text": f"recovered after {n} consecutive failed ticks"})
+        card.update(id=cid, updated=now)
+        card_path.write_text(yaml.safe_dump(
+            card, allow_unicode=True, sort_keys=False, width=110))
+    render = repo / "scripts/render-board.py"
+    if render.exists():
+        subprocess.run([sys.executable, str(render)], cwd=repo,
+                       check=False, timeout=60,
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+except Exception as e:  # recovery note must never crash the loop
+    print(f"kanban-commit: recovery note failed: {e}", file=sys.stderr)
+PY
+    git add -- "docs/ssot/kanban/cards/${ALERT_CARD_ID}.yml" 2>/dev/null \
+      && git -c user.name="kanban-bot" \
+             -c user.email="kanban-bot@chaba.local" \
+             commit --no-verify -qm \
+             "board: kanban-commit recovered" \
+             -- "docs/ssot/kanban/cards/${ALERT_CARD_ID}.yml" 2>/dev/null \
+      || true
+}
+
 if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
    [ -f "$gitdir/MERGE_HEAD" ] || [ -f "$gitdir/CHERRY_PICK_HEAD" ]; then
     echo "kanban-commit: REFUSING to commit — rebase/merge/cherry-pick in progress ($gitdir)" >&2
     alert_card "rebase-in-progress" \
         "rebase/merge/cherry-pick in progress in $REPO — kanban-commit holding until resolved"
+    fail_tick "rebase/merge/cherry-pick in progress"
     exit 1
 fi
 
 for d in docs/ssot/kanban/ docs/ssot/focus-inbox/ stacks/web/public/apps/board/; do
     [ -d "$d" ] && git add "$d" 2>/dev/null
 done
-git diff --cached --quiet && exit 0   # nothing staged
+if git diff --cached --quiet; then
+    rm -f "$STREAK_FILE"   # healthy tick, nothing pending — silent reset
+    exit 0
+fi
 
 check=$(git diff --cached --check)
 if printf '%s\n' "$check" | grep -q 'conflict marker'; then
@@ -121,6 +203,7 @@ if printf '%s\n' "$check" | grep -q 'conflict marker'; then
     printf '%s\n' "$hits" >&2
     files=$(printf '%s\n' "$hits" | cut -d: -f1 | sort -u | paste -sd, -)
     alert_card "conflict-markers" "conflict markers staged in: $files"
+    fail_tick "conflict markers staged"
     exit 1
 fi
 
@@ -153,23 +236,30 @@ if [ -n "$yml_bad" ]; then
     printf '%s\n' "$yml_bad" >&2
     files=$(printf '%s\n' "$yml_bad" | cut -d: -f1 | sort -u | paste -sd, -)
     alert_card "yaml-syntax" "unparseable YAML staged in: $files"
+    fail_tick "unparseable YAML staged"
     exit 1
 fi
 
 git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
-    commit -qm "board: live card updates ($(date '+%F %H:%M'))" || exit 1
+    commit -qm "board: live card updates ($(date '+%F %H:%M'))" \
+    || { fail_tick "commit failed"; exit 1; }
 
 attempt=0
 while [ $attempt -lt "$PUSH_RETRIES" ]; do
     attempt=$((attempt + 1))
     if ! SAFE_PULL_GENERATED_RE="$GENERATED_RE" bash "$SAFE_PULL" "$REPO"; then
-        echo "kanban-commit: pull --rebase needs manual resolution — next tick retries" >&2
+        echo "kanban-commit: pull needs manual resolution — next tick retries" >&2
+        fail_tick "pull needs manual resolution"
         exit 1
     fi
     push_log="$(git push origin master 2>&1)"; rc=$?
     [ -n "$push_log" ] && echo "$push_log" | tail -2
-    [ $rc -eq 0 ] && exit 0
+    if [ $rc -eq 0 ]; then
+        reset_tick
+        exit 0
+    fi
     [ $attempt -lt "$PUSH_RETRIES" ] && sleep $((RANDOM % 8 + 2))
 done
 echo "kanban-commit: push failed after $PUSH_RETRIES attempts" >&2
+fail_tick "push failed after $PUSH_RETRIES attempts"
 exit 1

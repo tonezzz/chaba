@@ -32,6 +32,23 @@
 #      folds each card .local-conflict-* back into its canonical card —
 #      the preserved side usually holds a board write that raced the
 #      pull. Merge failures keep the file and flag the card in review.
+#   6. card-union merge driver (card
+#      kanban-commit-reconcile-rebase-deadlocks-4d95a9, incident
+#      2026-10-23): docs/ssot/kanban/cards/*.yml is bound to a custom
+#      driver (scripts/board/merge-card-yaml.py) so a card that diverged
+#      semantically on both sides merges INLINE — comms unioned, scalars
+#      won by the newer `updated` — instead of stopping every replayed
+#      rebase step until the 25-step guard aborts and deadlocks the
+#      sweep. Armed here (merge.card-union.driver + info/attributes) so
+#      it applies even while replaying commits whose trees predate the
+#      committed .gitattributes.
+#   7. merge fallback: when the rebase still cannot complete (too many
+#      conflicted steps, --continue failure), one `git merge $UPSTREAM`
+#      replaces the whole replay — a single conflict point where cards
+#      union via the driver and other generated paths resolve
+#      upstream-wins (--theirs mid-merge), local side preserved as
+#      .local-conflict-* like the rebase path. Conflicts outside
+#      generated paths still abort and exit 1.
 #
 # Board write flock: before any worktree mutation the script takes the
 # same flock board-api.py holds across save()->commit
@@ -59,6 +76,9 @@
 #                                     /tmp/board-api.lock; empty disables)
 #         SAFE_PULL_BOARD_LOCK_WAIT_S max seconds to wait for the board
 #                                     lock before pulling anyway (60)
+#         SAFE_PULL_NO_REBASE         =1 skips pull --rebase and goes
+#                                     straight to the one-shot merge
+#                                     (merge-fallback path; testing knob)
 # Exit:   0 = HEAD now contains upstream (or pull not needed);
 #         1 = needs manual resolution; 2 = not a repo.
 set -uo pipefail
@@ -277,6 +297,92 @@ _resolve_autostash_pop() {
   return 0
 }
 
+# Arm the card-union merge driver: a card that diverged semantically on
+# both sides used to stall the rebase at every replayed step until the
+# 25-step guard aborted and the sweep deadlocked (incident 2026-10-23 —
+# 275 commits unpushed for ~6h). With the driver bound, card content
+# conflicts union-merge inline via merge_cards (comms union, requests by
+# id, scalars won by newer `updated`). Config is per-clone, so this
+# self-arms on every run; info/attributes carries the binding even while
+# replaying commits whose trees predate the committed .gitattributes.
+_arm_card_union_driver() {
+  # Prefer the target repo's copy; fall back to the copy next to this
+  # script so a checkout that has not yet pulled merge-card-yaml.py
+  # still arms the driver (bootstrap).
+  local drv="$REPO/scripts/board/merge-card-yaml.py" selfdir
+  if [ ! -f "$drv" ]; then
+    selfdir="$(cd "$(dirname "$0")" 2>/dev/null && pwd)"
+    drv="$selfdir/board/merge-card-yaml.py"
+  fi
+  [ -f "$drv" ] && command -v python3 >/dev/null 2>&1 || return 0
+  local want="python3 $drv %O %A %B"
+  [ "$(git config merge.card-union.driver 2>/dev/null)" = "$want" ] \
+    || git config merge.card-union.driver "$want"
+  local gd line
+  gd="$(git rev-parse --git-dir 2>/dev/null)" || return 0
+  line='docs/ssot/kanban/cards/*.yml merge=card-union'
+  mkdir -p "$gd/info" 2>/dev/null || return 0
+  grep -qxF "$line" "$gd/info/attributes" 2>/dev/null \
+    || echo "$line" >> "$gd/info/attributes"
+}
+
+# Rebase could not complete (e.g. >25 conflicted steps replaying a large
+# divergence — the 2026-10-23 deadlock). A single merge has ONE conflict
+# point no matter how many commits diverged: card files union-merge via
+# the card-union driver, other generated paths resolve upstream-wins.
+# Mid-merge "ours" is the LOCAL branch and "theirs" is upstream — the
+# reverse of mid-rebase — so upstream-wins here means --theirs and the
+# preserved local side is stage 2. Conflicts outside generated paths
+# abort and keep the exit-1 contract.
+_merge_fallback() {
+  local why="$1" gd p bad=0
+  git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 || return 1
+  git merge-base --is-ancestor "$UPSTREAM" HEAD 2>/dev/null && return 0
+  [ -n "$(git rev-list -1 "HEAD..$UPSTREAM" 2>/dev/null)" ] || return 0
+  echo "git-safe-pull: rebase failed ($why) — merging $UPSTREAM instead" >&2
+  if ! git -c user.name="kanban-bot" \
+         -c user.email="kanban-bot@chaba.local" \
+         merge --no-edit "$UPSTREAM" >/dev/null 2>&1; then
+    gd="$(git rev-parse --git-dir)"
+    if [ ! -f "$gd/MERGE_HEAD" ]; then
+      echo "git-safe-pull: merge refused before conflict stage (dirty tree?)" >&2
+      return 1
+    fi
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      if [[ "$p" =~ $GENERATED_RE ]]; then
+        local dest="$p.local-conflict-$TS" n=1
+        while [ -e "$dest" ]; do
+          n=$((n + 1)); dest="$p.local-conflict-$TS-$n"
+        done
+        git show ":2:$p" > "$dest" 2>/dev/null || true
+        if git checkout --theirs -- "$p" 2>/dev/null; then
+          git add -- "$p"
+        else
+          git rm -qf -- "$p" 2>/dev/null || git add -- "$p" 2>/dev/null || true
+        fi
+      else
+        echo "git-safe-pull: merge fallback conflict outside generated paths: $p" >&2
+        bad=1
+      fi
+    done < <(git diff --name-only --diff-filter=U 2>/dev/null)
+    if [ $bad -eq 1 ]; then
+      git merge --abort >/dev/null 2>&1
+      return 1
+    fi
+    GIT_EDITOR=true git -c user.name="kanban-bot" \
+      -c user.email="kanban-bot@chaba.local" \
+      commit --no-edit -q >/dev/null 2>&1 \
+      || { git merge --abort >/dev/null 2>&1; return 1; }
+  fi
+  if git merge-base --is-ancestor "$UPSTREAM" HEAD 2>/dev/null; then
+    echo "git-safe-pull: merged $UPSTREAM (rebase fallback: $why)" >&2
+    return 0
+  fi
+  echo "git-safe-pull: merge fallback did not converge" >&2
+  return 1
+}
+
 # Hold the board write flock for the whole worktree-mutating phase —
 # untracked-collision resolution, pull --rebase --autostash, pop
 # resolution, column guard, and the exit-trap reconcile. board-api.py
@@ -305,38 +411,54 @@ if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
   fi
 fi
 
+_arm_card_union_driver
 _resolve_untracked_collisions
 
 # Snapshot the stash tip pre-pull so post-pop code can tell the entry
 # this pull's autostash created from pre-existing stashes.
 PRE_STASH_SHA="$(git rev-parse -q --verify refs/stash 2>/dev/null || true)"
 
-git pull --rebase --autostash "$REMOTE" ${REF:+"$REF"} >/dev/null 2>&1 || true
+rebase_failed=""
+if [ "${SAFE_PULL_NO_REBASE:-0}" != "1" ]; then
+  git pull --rebase --autostash "$REMOTE" ${REF:+"$REF"} >/dev/null 2>&1 || true
 
-guard=0
-while _rebase_in_progress; do
-  guard=$((guard + 1))
-  if [ $guard -gt 25 ]; then
-    git rebase --abort >/dev/null 2>&1
-    echo "git-safe-pull: too many conflicted steps — aborted" >&2
-    exit 1
-  fi
-  if [ -n "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
-    if ! _resolve_generated_conflicts; then
+  guard=0
+  while _rebase_in_progress; do
+    guard=$((guard + 1))
+    if [ $guard -gt 25 ]; then
       git rebase --abort >/dev/null 2>&1
-      exit 1
+      echo "git-safe-pull: too many conflicted steps — aborted" >&2
+      rebase_failed="too many conflicted steps"
+      break
     fi
-    GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
-      || { git rebase --abort >/dev/null 2>&1; exit 1; }
-  else
-    # resolved or empty step — continue; if the commit became empty, skip it
-    GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
-      || git rebase --skip >/dev/null 2>&1 \
-      || { git rebase --abort >/dev/null 2>&1; exit 1; }
-  fi
-done
+    if [ -n "$(git diff --name-only --diff-filter=U 2>/dev/null)" ]; then
+      if ! _resolve_generated_conflicts; then
+        git rebase --abort >/dev/null 2>&1
+        rebase_failed="conflict outside generated paths"
+        break
+      fi
+      GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
+        || { git rebase --abort >/dev/null 2>&1; \
+             rebase_failed="rebase --continue failed"; break; }
+    else
+      # resolved or empty step — continue; if the commit became empty, skip it
+      GIT_EDITOR=true git rebase --continue >/dev/null 2>&1 \
+        || git rebase --skip >/dev/null 2>&1 \
+        || { git rebase --abort >/dev/null 2>&1; \
+             rebase_failed="rebase --continue/--skip failed"; break; }
+    fi
+  done
+fi
 
 _resolve_autostash_pop
+
+# Deadlock breaker (incident 2026-10-23): when the rebase could not
+# complete — most commonly >25 conflicted steps replaying a big
+# divergence on a card that differed on both sides — merge upstream in
+# one shot instead of re-aborting every tick forever.
+if [ -n "$rebase_failed" ] || [ "${SAFE_PULL_NO_REBASE:-0}" = "1" ]; then
+  _merge_fallback "${rebase_failed:-rebase skipped}" || exit 1
+fi
 
 # Every pull doubles as the periodic GC tick — dell's kanban-commit.timer
 # runs this every ~15min, satellites hit it through git-safe-push.
