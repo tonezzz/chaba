@@ -1,9 +1,9 @@
 id: eval-surface-probe
 title: eval probe — kanban script executor on idc02
-column: backlog
+column: doing
 priority: low
 created: '2026-10-23'
-updated: 2026-10-23 16:47
+updated: 2026-10-23 16:48
 tags:
 - eval
 - surface-test
@@ -20,7 +20,8 @@ action:
     repo: chaba
     cmd: uname -a; uptime; echo PROBE_OK $(hostname) $(date -Is); pwd
     timeout: 300
-  status: queued
+  status: running
+  runner: idc02
 comms:
 - at: 2026-10-23 17:05
   from: devin
@@ -31,3 +32,6 @@ comms:
 - at: 2026-10-23 16:47
   from: chaba
   text: 'WARNING: action.type=script — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 16:48
+  from: idc02
+  text: claimed
