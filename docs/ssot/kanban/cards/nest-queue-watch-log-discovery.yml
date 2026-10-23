@@ -1,7 +1,7 @@
 id: nest-queue-watch-log-discovery
 title: Nest queue watch is missing current Colab events
 column: doing
-updated: 2026-10-23 20:12
+updated: 2026-10-23 20:16
 priority: high
 spec: Investigate and fix quiet Ada-HA Telegram notifications. Current watcher selects only queue/run-*.out.log,
   while current queue-runner emits queue/log-*.txt; watcher state remains pinned to the old run-20261023-1028.out.log
@@ -32,3 +32,10 @@ comms:
     send); it discovered current log-20261023-...txt and recovered missed ltx-probe-81f started + DONE events. Relay
     service is active; ada-ha group is allowlisted, no TG_PUSH_DENY configured, systemd supplies chat_id -5410424865.
     Implementing dual-format discovery, prep events, retry cursor on send failure, regression tests.'
+- at: 2026-10-23 20:16
+  from: devin
+  text: 'Fixed and deployed: commit c21e274eb is on master; idc03 exec checkout synced successfully. Timer tick
+    at 20:15:44 parsed the current log-20261023-1233.txt and reported ltx-probe-81f started + DONE; service exited
+    successfully. The systemd env targets ada-ha chat -5410424865, and relay group is allowlisted. Regression suite:
+    5 tests pass; live dry-run with file sink recovered the events without sending a test Telegram. Awaiting Tony
+    confirmation that the group message appeared before closing.'
