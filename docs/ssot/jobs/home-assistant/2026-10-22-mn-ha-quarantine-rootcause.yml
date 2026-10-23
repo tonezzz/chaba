@@ -15,23 +15,23 @@ summary: >
   reach tailscale0.
 
 evidence:
-  - idc03 OUTPUT chain rule: `DROP tcp --dport 8123 -d 100.80.105.88` first
-    rule, above ufw chains; mirrored in `nft list ruleset` (packets 8411457).
-  - tcpdump on idc03 tailscale0: :9584 SYN leaves the tun, :8123 SYN never
-    appears — drop is local egress, before wireguard.
-  - tcpdump on michael-ha tailscale0 (via a0d7b954_ssh, port 2222): idc03
-    :9584 handshake arrives fine; idc02/tony-dell :8123 flows pass — so the
-    destination side is clean.
-  - michael-ha host iptables: INPUT -> ts-input ACCEPTs all tailscale0
-    traffic; no 8123 rules. Not an HAOS firewall issue.
-  - idc03 tailnet PacketFilter is default-allow; michael-ha's filter is
-    unverified but moot — the SYN never leaves idc03.
-  - Reachability matrix for idc03->michael-ha:8123 — FAIL; all other tested
+  - "idc03 OUTPUT chain rule: 'DROP tcp --dport 8123 -d 100.80.105.88' first
+    rule, above ufw chains; mirrored in 'nft list ruleset' (packets 8411457)."
+  - "tcpdump on idc03 tailscale0: ':9584 SYN leaves the tun, :8123 SYN never
+    appears — drop is local egress, before wireguard.'"
+  - "tcpdump on michael-ha tailscale0 (via a0d7b954_ssh, port 2222): idc03
+    ':9584 handshake arrives fine; idc02/tony-dell :8123 flows pass — so the
+    destination side is clean.'"
+  - "michael-ha host iptables: INPUT -> ts-input ACCEPTs all tailscale0
+    traffic; no 8123 rules. Not an HAOS firewall issue."
+  - "idc03 tailnet PacketFilter is default-allow; michael-ha's filter is
+    unverified but moot — the SYN never leaves idc03."
+  - "Reachability matrix for idc03->michael-ha:8123 — FAIL; all other tested
     ports (22,1883,2222,4357,9584 + refused ports) reach the host. Every
     other tailnet source (tony-dell, mn01, idc02, macbook, tony-omen) reaches
-    :8123 — only idc03 is quarantined.
-  - v6 ULA fd7a:115c:a1e0::692d:6959:8123 answered until today — bypassing
-    the v4-only rule.
+    :8123 — only idc03 is quarantined."
+  - "v6 ULA fd7a:115c:a1e0::692d:6959:8123 answered until today — bypassing
+    the v4-only rule."
 
 v6_bypass:
   what: >-
