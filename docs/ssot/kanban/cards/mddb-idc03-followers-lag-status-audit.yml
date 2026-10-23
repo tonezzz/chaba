@@ -1,7 +1,7 @@
 id: mddb-idc03-followers-lag-status-audit
 title: 'mddb: diagnose unhealthy replication lag on idc02 and con01'
 column: backlog
-updated: 2026-10-23 18:38
+updated: 2026-10-23 18:40
 priority: high
 tags:
 - mddb
@@ -26,3 +26,10 @@ comms:
     237455166, lag_ms 641710; con01 confirmed 236903675, lag_ms 6156620. Follower views: idc02 replication_lag_ms
     10338952; con01 34294204 (large discrepancy). Last-seen was current. No restarts/changes made. Need sample advancement
     and reconcile units/health calculation.'
+- at: 2026-10-23 18:40
+  from: devin
+  text: 'Follow-up sample 2026-10-23 11:39Z: leader remains healthy=true at LSN 237522537; followers'' confirmed
+    LSNs advanced since 11:28Z (idc02 237455166→237466744; con01 236903675→236911050), so both appear to be applying
+    rather than fully stalled. Yet both still report healthy=false. Leader lag_ms: idc02 557930 (~9m), con01 6114870
+    (~1h42); follower self-lag_ms: idc02 9555076 (~2h39), con01 34919278 (~9h42). HTTP health remains 200. The issue
+    is degraded/contradictory health/lag reporting and materia'
