@@ -24,8 +24,14 @@ break a card write. Returns True when the channel accepted the message.
 CLI:  python3 board_notify.py [--channel ha|yomi|ntfy|file|off] TITLE [BODY]
 
 Env:
-  BOARD_NOTIFY_CHANNEL   ha (default) | yomi | ntfy | file | off;
+  BOARD_NOTIFY_CHANNEL   ha (default) | yomi | tg | ntfy | file | off;
                          comma list ('ha,yomi') fans out to each
+  BOARD_NOTIFY_TG_SEND_URL  tg channel endpoint — the Ada TG relay's
+                         loopback /send listener; default
+                         http://127.0.0.1:8911/send (tony lane on idc03).
+                         Only usable from a host that can reach it —
+                         loopback, so run the caller on idc03 or set the
+                         URL to a forwarded port.
   HA_NOTIFY_URL          default https://tony-omen.taila0626a.ts.net:8123
                          (tony-ha lives on omen since ph5; tailscale serve
                          is TLS-only — plain http gets a 400)
@@ -105,6 +111,17 @@ def _yomi_send(title: str, body: str, url: str) -> bool:
     return _post(api, {"chatId": chat, "text": text[:900]})
 
 
+def _tg_send(title: str, body: str, url: str) -> bool:
+    """Ada TG relay /send — loopback listener on the relay host
+    (ada-tg-relay.service, TG_WEBHOOK_LISTEN, tony lane :8911 on idc03).
+    No token needed (loopback contract, same path chat_send uses);
+    omitting chat_id targets the first allowed chat = Tony."""
+    api = os.environ.get("BOARD_NOTIFY_TG_SEND_URL",
+                         "http://127.0.0.1:8911/send")
+    text = f"{title}\n{body}\n{url}" if url else f"{title}\n{body}"
+    return _post(api, {"text": text.strip()[:3500]})
+
+
 def _ntfy_send(title: str, body: str, url: str) -> bool:
     topic = os.environ.get("BOARD_NOTIFY_NTFY_TOPIC", "")
     if not topic:
@@ -141,6 +158,7 @@ def _file_send(title: str, body: str, url: str) -> bool:
 CHANNELS = {
     "ha": _ha_send,
     "yomi": _yomi_send,
+    "tg": _tg_send,
     "ntfy": _ntfy_send,
     "file": _file_send,
 }
