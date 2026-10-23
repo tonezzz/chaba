@@ -1,7 +1,7 @@
 id: speaker-id-live-session-low-scores
 title: speaker-id-live-session-low-scores
-column: doing
-updated: 2026-10-23 19:33
+column: review
+updated: 2026-10-23 19:34
 brief: Live PWA voice sessions score 0.03-0.16 vs enrolled prints (match_file on clips verified 0.628/1.0). ada-ai-kraut
   :8003 logs identify ambiguous person speaker=0.03. Live-session audio takes a different embedding path than match_file
   (opus file) - likely PCM/normalization difference. Voice-match demo depends on this path.
@@ -29,7 +29,16 @@ comms:
 - at: 2026-10-23 19:33
   from: chaba
   text: started devin-task-20261023-193355-speaker-id-live-session-low-sc on tony-omen (dispatch)
+- at: 2026-10-23 19:34
+  from: tony-omen
+  text: 'finished (ok): exit=0 vin-task-20261023-193355-speaker-id-live-session-low-sc.service: Failed with result
+    ''exit-code''. | devin-task-202'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 vin-task-20261023-193355-speaker-id-live-session-low-sc.service: Failed with result ''exit-code''.
+    | devin-task-20261023-193355-speaker-id-live-session-low-sc.service: Consumed 25.099s CPU time over 5.964s wall
+    clock time, 980.4M memory peak.'
+review_kind: verify
+claim: {}
