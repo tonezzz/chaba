@@ -1,7 +1,7 @@
 id: relays-remote-whisper-review
 title: Review+merge relays-remote-whisper branch (remote WHISPER_URL transcription)
 column: doing
-updated: 2026-10-23 08:45
+updated: 2026-10-23 08:51
 spec: 'A Devin session committed daa0e0a directly onto idc03''s deploy-only checkout (2026-10-14 ~22:28): relays
   gain remote whisper transcription via omen large-v3 (WHISPER_URL env) with local ffmpeg-decode fallback — line_relay.py
   + tg_relay.py + requirements.txt, +108 lines. Rescued to origin branch `relays-remote-whisper`; idc03 reset to
@@ -39,6 +39,11 @@ comms:
     fallback + silence detect (c8c07c7/a3f905e/b205457), merge would conflict+regress. line_relay half still wanted;
     porting in mains av+soundfile style (no ffmpeg on idc03), then gates->merge->redeploy. Reminder to whichever
     session wrote daa0e0a: idc03 is deploy-only — work belongs in a dispatch worktree.'
+- at: 2026-10-23 08:51
+  from: devin
+  text: 'ported line half merged to main (af310ef): LINE_WHISPER_URL remote STT in mains av+soundfile/OpenAI-style
+    contract, local faster-whisper fallback unchanged; tg half dropped as superseded. pytest gate green on idc03
+    venv (1637 passed). Deploy running on idc03 now.'
 action:
   type: dispatch
   status: running
