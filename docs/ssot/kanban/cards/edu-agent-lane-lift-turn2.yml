@@ -1,7 +1,7 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
 column: review
-updated: 2026-10-23 13:10
+updated: 2026-10-23 13:23
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
   WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
@@ -80,6 +80,13 @@ comms:
   text: 'Option (a) done: openrouter.env existed on tony-dell (not macbook — macbook only had the empty template
     line). Synced dell -> macbook (canonical backfill) -> mn01 ~/.config/secrets/openrouter.env (93B, mode 600).
     clawbot lane can auth now.'
+- at: 2026-10-23 13:23
+  from: devin
+  text: 'RE-SCOPE: turn 2 already landed via dispatch 20261023-040252 (commit 58c50c8aa) — loop hardening + gpt-oss:20b
+    run; see docs/ssot/jobs/models/2026-10-23-edu-agent-bench-turn2.yml. Remaining work for whoever claims this:
+    (1) rerun --lanes clawbot once openrouter.env/LITELLM key reaches the bench host (mn01 lacks both — key-sync
+    request already raised); (2) offline re-judge gpt-oss 7 filings from reports/bench-edu-manage-2026-10-23.json
+    tasks[].filings[].content; (3) turn-3 = store-awareness promp'
 requests:
 - id: mn01-has-no-openrouter-api-key-secrets-o-2e1151
   ask: 'mn01 has no OPENROUTER_API_KEY (secrets origin macbook never synced it here) — clawbot lane cannot auth.
