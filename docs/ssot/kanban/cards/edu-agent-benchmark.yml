@@ -3,7 +3,7 @@ title: Benchmark education-managing agents — OpenClaw vs hermes3:8b vs current
 column: done
 priority: low
 created: 2026-10-22
-updated: 2026-10-22 17:18
+updated: 2026-10-23 15:07
 note: "Tony wants to explore an agent for education managing (the lesson ledger: capture -> dedupe/upsert -> draft\
   \ -> review scheduling -> recall). Benchmark three lanes on the SAME fixture corpus:\n - current: today's pipeline\
   \ (lesson-miner.py classify+draft on gemini-3.5-flash-lite + lesson-add.py + lessons-due.py).\n - clawbot: OpenClaw\
@@ -62,3 +62,8 @@ comms:
     generalized for it: bench-edu-manage.py now takes --ollama-model <m> so ANY local model runs the identical tool
     loop (lane renamed local-<model> in reports; method notes read model from config). Committed + pushed. Experiment
     1 in flight: gpt-oss:20b pulled on omen (13GB, ~9.3 tok/s'
+- at: 2026-10-23 15:07
+  from: devin
+  text: 'T4 lane verdict (edu-agent-bench pack): gpt-oss-20b p50 14.7s vs ~78s omen — 5x faster, same capability
+    (13/13, F1 1.0, dedupe 4/5, ops 4/5, recall 1/3). Gap is LATENCY not capability — model works when it fits VRAM.
+    Options: accept 78s on omen / Colab burst for batch / smaller quant on omen. Evidence: gdrive:ada-nest/packs/edu-agent-bench/out/bench-edu-manage-2026-10-23.{json,md}'
