@@ -1,0 +1,18 @@
+id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
+title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
+column: backlog
+updated: 2026-10-23 15:30
+action:
+  type: manual
+ref: OPS-0790
+comms:
+- at: 2026-10-23 15:30
+  from: devin
+  text: 'Found 2026-10-23 while arming nest-queue-watch: chaba-jobs.timer is inactive/disabled on idc03 and absent
+    on dell+mn01. Every job in ssot.jobs.yml with dispatch:dispatcher + every: has silently not run since the timer
+    died (when? check last journal). Options: (a) re-enable chaba-jobs.timer on the declared dispatcher host — which
+    host owns it? ssot.jobs.yml config does not say; (b) migrate remaining dispatcher jobs to dispatch:systemd rendered
+    timers like nest-queue-watch. Verify which dispatcher'
+- at: 2026-10-23 15:30
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
