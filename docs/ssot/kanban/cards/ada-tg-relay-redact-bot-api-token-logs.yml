@@ -1,6 +1,6 @@
 id: ada-tg-relay-redact-bot-api-token-logs
 title: Redact Telegram Bot API tokens from relay journals
-column: doing
+column: review
 updated: 2026-10-23 21:07
 priority: high
 spec: 'Security hardening after ADA-0801: backend.tg_relay currently allows HTTP client INFO logs to emit full api.telegram.org/bot<TOKEN>/...
@@ -28,3 +28,7 @@ comms:
     full pytest 1695 passed (72 warnings, 31 subtests); deploy-ada.sh restarted only ada-tg-relay and verified active.
     Post-deploy check found zero HTTP Request trace lines in the new relay journal window (no synthetic group message
     sent). Awaiting next genuine Telegram request/event '
+- at: 2026-10-23 21:07
+  from: devin
+  text: moved doing -> review
+review_kind: verify
