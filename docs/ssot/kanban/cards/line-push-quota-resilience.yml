@@ -1,7 +1,7 @@
 id: line-push-quota-resilience
 title: 'LINE relay: monthly push quota exhausted — queue-and-reply fallback + spend visibility'
 column: done
-updated: 2026-10-23 09:59
+updated: 2026-10-23 11:32
 priority: high
 tags:
 - line
@@ -162,6 +162,10 @@ comms:
 - at: 2026-10-23 09:59
   from: tony
   text: closed by tony
+- at: 2026-10-23 11:32
+  from: tony
+  text: 'answered line-oa-spend-gate-bot-339sbrov-is-on-th-6cd7cf: stay free — demote nag/watch/digest senders to
+    class=bulk via LINE_BULK_LANES on idc03 (option a)'
 requests:
 - id: line-oa-plan-after-the-quota-wall-2f8c81
   ask: LINE OA plan after the quota wall?
@@ -192,12 +196,13 @@ requests:
     coalescing, send ledger + hourly quota probe). Decision needed: (a) stay free + demote nag/watch/digest senders
     to class=bulk via LINE_BULK_LANES on idc03, (b) upgrade to a paid OA plan, or (c) split per-member OAs. Which
     way?'
-  status: open
+  status: answered
   at: 2026-10-23 08:41
   from: devin
   options:
   - proceed
   - hold
+  answer: stay free — demote nag/watch/digest senders to class=bulk via LINE_BULK_LANES on idc03 (option a)
 action:
   status: done
   type: dispatch
