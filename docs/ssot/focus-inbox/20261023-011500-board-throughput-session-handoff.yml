@@ -1,0 +1,78 @@
+title: Board throughput + board-api hardening session — handoff
+subtitle: Resume state after board-fix/queue-push session (2026-10-22→23)
+icon: inbox
+
+focus:
+  label: board-session-handoff
+  text: |
+    Session shipped board fixes and pushed 17 backlog cards through the
+    runner fleet. What remains live:
+
+    IN-FLIGHT (no action needed, pipeline owns it):
+    - lab-yolo-ha-detect: action.status=running on tony-omen (GPU job)
+    - migration-stragglers-orphaned-units: queued, claims on a free slot
+
+    NEEDS TONY'S EYES:
+    - 3 cards in column=review from this push: stale-non-served-clones-
+      dell-cascadeproj-efbd23, mn-ha-v4-8123-blocked, cms-11023-parked-
+      writers — read dispatch outcomes, then close or re-arm.
+    - idc04-contabo-vps8-provision and a LINE-registry card were queued
+      by ANOTHER session overnight (not this one) — idc04 is a real-VPS-
+      spend card; check its dispatch outcome before any spend happens.
+
+    NEXT PUSH CANDIDATES:
+    - ~58 spec'd backlog cards remain dispatchable. Held back this round:
+      idc01-teardown / idc04 (spend), omen-dedicate-nest (host-role
+      change), tony-macbook-restore-enroll (needs macbook runner, which
+      has no devin CLI — would fail-loop; pin action.host or spec it as
+      script-type first).
+
+    SHIPPED THIS SESSION (all pushed + deployed):
+    - 2b75d5f55 board-api executes lab-review answers inline on /respond
+      (extend/promote/retire apply in the same write; weekly
+      lab-review-sweep stays as backstop, skips executed stamps)
+    - 6ad6a200d safe-pull self-deadlock fix (RECONCILE_LOCK_HELD + bounded
+      reconcile lock wait) — verified live on idc03 x2, con01, mn01
+    - eeb5414fb delegated clicks (all board2 interactivity), 20516ceb3
+      tab-focus version heal, 366fe9f72 api() 15s timeout — board2
+      vbf4eea68be11 live
+    - lab-gold-thb-causality + lab-meshtastic-th: answered extend-2w,
+      review_by -> 2026-11-01, executed stamped, awaiting_action cleared
+
+    VESTIGE CLEANUP (parked):
+    - tony-dell ~/CascadeProjects/chaba-kanban-sync: detached-HEAD stale
+      snapshot (Oct 16), referenced only by a .parked unit — inert but
+      should be retired per declared-or-dead rule.
+  branch: master
+  priority: medium
+  status: draft
+  tags: [handoff, kanban, board]
+  missing_info:
+    - "Whether tony wants the remaining ~58 spec cards queued in bulk or
+      curated batches (this session queued 17: all type=dispatch plus 5
+      ops-urgent spec cards)."
+  safe_to_parallel:
+    value: true
+    reason: Read-only triage of review cards and queue pushes via
+      board-api do not conflict with other sessions.
+  subtasks:
+    - label: Read + resolve 3 review cards (stale-clones, mn-ha-v4, cms-11023)
+      status: not_started
+    - label: Verify lab-yolo-ha-detect dispatch outcome when it finishes on omen
+      status: not_started
+    - label: Check overnight idc04-contabo + LINE-registry dispatch outcomes (not this session's queue — verify intent + spend)
+      status: not_started
+    - label: Retire chaba-kanban-sync detached-HEAD vestige on tony-dell
+      status: not_started
+    - label: Queue next batch of spec'd backlog cards (curate, ~10 at a time)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: board-throughput-20261022
+  locked: false
+  lock_reason: ""
+
+source:
+  session: board-throughput-20261022
+  date: 2026-10-23
