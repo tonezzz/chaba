@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: backlog
-updated: 2026-10-23 13:40
+updated: 2026-10-23 13:47
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -13,3 +13,9 @@ comms:
 - at: 2026-10-23 13:40
   from: devin
   text: card captured via board-api
+- at: 2026-10-23 13:47
+  from: devin
+  text: '[verify] test page deployed: https://tony-dell.taila0626a.ts.net/apps/webgpu-bench/ (route declared ssot.routes.yml,
+    Caddyfile block added, statics in stacks/web/public/apps/webgpu-bench/, 200 tailnet+local). Page probes adapter,
+    runs WGSL matmul GFLOPS bench, runs real all-MiniLM-L6-v2 embedding via transformers.js WebGPU, then POSTs results
+    back to this card via /apps/board-api. Needs iOS 26 (WebGPU default-on) or feature flag on 17.4+.'
