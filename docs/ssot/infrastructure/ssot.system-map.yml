@@ -157,9 +157,13 @@ edges:
     host: idc03
     keys: [line-relay-channel]
   - id: ada-tg-relay
-    role: Telegram relay — tony lane
+    role: Telegram relay — tony lane (@ChabaClawBot; display name ADA)
     unit: ada-tg-relay.service
     host: idc03
+    target: "ada-ha group (chat_id -5410424865)"
+    token_ref: "idc03 ~/.config/secrets/telegram-bot.env: TELEGRAM_BOT_TOKEN"
+    distinct_from: "tony-omen OpenClaw @myChabaBot; same filename, different host-local token"
+    identity_verified: "Bot API getMe, 2026-10-23; token value not recorded"
   - id: ada-tg-relay-kk
     role: Telegram relay — kk-ha lane (kk_ha_bot)
     unit: ada-tg-relay-kk.service
