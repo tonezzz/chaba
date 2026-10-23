@@ -1,0 +1,61 @@
+# s1-i2v-chain — scene-1 continuation shots, the GPU leaf for the next
+# Colab batch. Same pattern as the proven s0 chain (JOBS.py RUN_I2V):
+# last-frame of each rendered s1 shot + s1 prompt embeds -> 49f/30step
+# continuations. Depends on s1-frames-extract having published
+# scene1-frames/. Outputs land in the pack out/ (artifact gate) AND
+# renders/ for the library.
+name: s1-i2v-chain
+needs:
+  gpu_gb: 14
+  disk_gb: 30
+  egress_only_ok: true
+timeout_s: 3600     # 3 shots x ~5min T4 + model load
+fetch:
+  - renders/keyframes/scene1-frames/
+  - renders/ltx-embeds-s1/
+artifacts:
+  - packs/s1-i2v-chain/out/ltx_s1shot*_cont_*.mp4
+prep: |
+  TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  apt-get install -y -qq zstd >/dev/null 2>&1 || true
+  if [ -f "$TAR" ]; then
+    tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
+      && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
+    mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+  fi
+  python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+run: |
+  import os, time, datetime, gc, subprocess
+  import torch
+  for _v in ('model', 'pipe'):
+      globals().pop(_v, None)
+  gc.collect(); torch.cuda.empty_cache()
+  from diffusers import LTXImageToVideoPipeline
+  from diffusers.utils import export_to_video, load_image
+  KF = f'{NEST_ROOT}/renders/keyframes/scene1-frames'
+  EMB = f'{NEST_ROOT}/renders/ltx-embeds-s1'
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  DST = f'{NEST_ROOT}/renders'
+  ts = datetime.datetime.now().strftime('%Y%m%d-%H%M')
+  pipe = LTXImageToVideoPipeline.from_pretrained('Lightricks/LTX-Video',
+      torch_dtype=torch.bfloat16, text_encoder=None,
+      tokenizer=None).to('cuda')
+  print('i2v resident %.1fGB' % (torch.cuda.memory_allocated()/1e9),
+        flush=True)
+  for i in range(3):
+      img = load_image(f'{KF}/s1shot{i}_last.png')
+      e = {k: (v.cuda() if torch.is_tensor(v) else v)
+           for k, v in torch.load(f'{EMB}/shot{i}.pt',
+                                  map_location='cpu').items()}
+      t = time.time()
+      fr = pipe(image=img, prompt_embeds=e['prompt_embeds'],
+          prompt_attention_mask=e['prompt_attention_mask'],
+          negative_prompt_embeds=e['negative_prompt_embeds'],
+          negative_prompt_attention_mask=e['negative_prompt_attention_mask'],
+          width=640, height=384, num_frames=49, num_inference_steps=30,
+          frame_rate=24).frames[0]
+      mp4 = f'{OUT}/ltx_s1shot{i}_cont_{ts}.mp4'
+      export_to_video(fr, mp4, fps=24)
+      subprocess.run(['cp', mp4, f'{DST}/'], check=False)
+      print(f'cont {i} {time.time()-t:.0f}s', flush=True)
+  print('s1-i2v-chain complete', flush=True)

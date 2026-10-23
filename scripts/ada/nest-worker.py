@@ -191,6 +191,16 @@ def run_pack(name, spec, remote_root):
              '--exclude', '.venv/**', '--exclude', '_run.py'] +
             [x for rel in fetched for x in ('--exclude', rel)])
     rc('copy', local, f'{remote_root}/packs/{name}', *excl, check=False)
+    # publish: {pack-rel src prefix: store-rel dest prefix} — packs that
+    # produce store-side assets (keyframes, caches) outside their own dir.
+    # On Colab the same writes go straight to the mount; this is the
+    # fleet-side equivalent.
+    for src, dest in (spec.get('publish') or {}).items():
+        r = rc('copy', f'{local}/{src.rstrip("/")}',
+               f'{remote_root}/{dest.rstrip("/")}', check=False)
+        if r.returncode != 0:
+            say(f'  publish {src} -> {dest}: {r.stderr.strip()[:200]}')
+            return False, f'publish failed: {src}'
     ok, missing = verify_artifacts(spec, remote_root)
     if not ok:
         return False, f'artifacts missing remote: {missing}'
