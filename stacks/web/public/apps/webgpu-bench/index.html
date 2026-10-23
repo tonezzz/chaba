@@ -161,7 +161,7 @@ async function postResults() {
   try {
     const r = await fetch('/apps/board-api/comment', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'iphone-webgpu', text: summary }),
+      body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'devin', text: summary }),
     });
     const j = await r.json();
     log(r.ok ? '✓ posted to card OPS-0779' : '✗ post: ' + JSON.stringify(j), r.ok ? 'ok' : 'bad');
