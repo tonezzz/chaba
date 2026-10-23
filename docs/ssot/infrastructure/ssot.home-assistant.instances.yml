@@ -29,12 +29,11 @@ instances:
       lane: ada-ha-tony            # voice backend on idc03 :8002 (Chaba persona)
       store: "idc03:~/.config/secrets/tony-ha/"
       files:
-        backend.env: "ADA_API_KEYS admin:… (lane-own admin, minted per lane) + provider keys — consumed by ada-ha-tony.service"
+        backend.env: "ADA_API_KEYS admin:… (lane-own admin minted 2026-10-23) + provider keys — consumed by ada-ha-tony.service"
         keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
       household: "/home/tony/.config/home-assistant/household.yml  # canonical, in HA config dir — people/rooms/roles of this home"
       native: "/home/tony/.config/home-assistant/secrets.yaml      # HA !secret store — stays native per instance"
-      legacy_to_migrate: "mn01:~/.config/secrets/ada-ha-tony.{env,keys.json}"
-      status: planned
+      status: active               # migrated 2026-10-23 (card per-instance-secret-stores-migration); mn01 keeps standby copies
     status: active
 
   michael-dev:
@@ -153,14 +152,14 @@ instances:
     secrets:
       # Ada lab instance — no voice backend yet; dir reserved so its
       # future lane follows the model instead of the shared pool.
-      lane: ada-ha-ada             # future backend (port unallocated)
-      store: "tony-dell:~/.config/secrets/ada-ha/"
+      lane: ada-ha-ada             # backend ada-ha-ada on idc03 :8006 (live 2026-10-23)
+      store: "idc03:~/.config/secrets/ada-ha/"
       files:
-        backend.env: "ADA_API_KEYS admin:… + provider keys"
+        backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-ha-ada.service"
         keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
       household: "/home/tony/.config/ada-ha/household.yml"
       native: "/home/tony/.config/ada-ha/secrets.yaml"
-      status: planned
+      status: active
     status: active
     note: 'created 2026-10-06 by a parallel session — see card
       tony-ha-split-ada-dev'
@@ -215,11 +214,10 @@ instances:
       store: "idc03:~/.config/secrets/kk-ha/"
       files:
         backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-kk.service"
-        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only (today: ada-ha-kk-keys.json)"
+        keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
       household: "/home/tony/.config/kk-ha/household.yml"
       native: "/home/tony/.config/kk-ha/secrets.yaml"
-      legacy_to_migrate: "idc03:~/.config/secrets/ada-ha-kk-keys.json (flat file → kk-ha/keys.json)"
-      status: planned
+      status: active               # migrated 2026-10-23
     status: active
 
   michael-ha:
@@ -255,15 +253,14 @@ instances:
           non-destructive equivalent. To fold it into Overview instead,
           the strategy must first be converted to explicit views.
     secrets:
-      lane: ada-ha-michael         # backend on idc03 :8003 (Ada persona)
+      lane: ada-ai-kraut           # backend on idc03 :8003 (Kraut persona; renamed from ada-ha-michael 2026-10-16, ADA_INSTANCE_ID=michael)
       store: "idc03:~/.config/secrets/michael-ha/"
       files:
-        backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-ha-michael.service"
+        backend.env: "ADA_API_KEYS admin:… + provider keys — consumed by ada-ai-kraut.service"
         keys.json: "ADA_KEYS_FILE — issued device keys for THIS lane only"
-      household: "michael-ha:~/.homeassistant/household.yml   # canonical on the HA host itself"
-      native: "michael-ha:~/.homeassistant/secrets.yaml"
-      legacy_to_migrate: "mn01:~/.config/secrets/ada-ha-michael.{env,keys.json}"
-      status: planned
+      household: "michael-ha:/homeassistant/household.yml   # canonical on the HA host itself (HAOS /config)"
+      native: "michael-ha:/homeassistant/secrets.yaml"
+      status: active               # migrated 2026-10-23; mn01 keeps standby copies
     status: active
 
 status:
