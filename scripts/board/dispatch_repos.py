@@ -845,11 +845,19 @@ def _merge_in(wt: Path, ref: str) -> tuple:
 
     Generated paths resolve --ours (default branch = served state, the
     safe-pull upstream-wins convention); dispatch-outcome*.md resolves
-    --theirs (session scratch). Any other conflict aborts. A merge that
-    fails without conflicted paths (e.g. missing git identity) surfaces
-    as err, not an empty conflict list."""
-    r = sh(["git", "-C", str(wt), "merge", "--no-ff", "--no-edit", ref],
-           timeout=90)
+    --theirs (session scratch). Kanban cards never reach the conflict
+    loop when the card-union merge driver is bound (incident 2026-10-23,
+    card kanban-commit-reconcile-rebase-deadlocks-4d95a9): they union-
+    merge inline via merge_cards, so a session's card writes and the
+    live board's writes both survive. Any other conflict aborts. A merge
+    that fails without conflicted paths (e.g. missing git identity)
+    surfaces as err, not an empty conflict list."""
+    cmd = ["git", "-C", str(wt)]
+    driver = wt / "scripts/board/merge-card-yaml.py"
+    if driver.exists():
+        cmd += ["-c",
+                f"merge.card-union.driver=python3 {driver} %O %A %B"]
+    r = sh(cmd + ["merge", "--no-ff", "--no-edit", ref], timeout=90)
     if r.returncode == 0:
         return True, [], ""
     conflicted = sh(["git", "-C", str(wt), "diff", "--name-only",

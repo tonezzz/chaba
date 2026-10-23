@@ -64,6 +64,19 @@ for repo in "${targets[@]}"; do
     git -C "$repo" config core.hooksPath "$hooks_path"
     git -C "$repo" config pull.rebase true
     git -C "$repo" config rebase.autoStash true
+    # card-union merge driver (incident 2026-10-23, card
+    # kanban-commit-reconcile-rebase-deadlocks-4d95a9): manual git
+    # merge/pull in this checkout union-merges card YAML conflicts
+    # instead of stopping on them. git-safe-pull.sh also self-arms.
+    if [ -f "$top/scripts/board/merge-card-yaml.py" ]; then
+        git -C "$repo" config merge.card-union.driver \
+            "python3 $top/scripts/board/merge-card-yaml.py %O %A %B"
+        gd="$(git -C "$repo" rev-parse --absolute-git-dir)"
+        aline='docs/ssot/kanban/cards/*.yml merge=card-union'
+        mkdir -p "$gd/info"
+        grep -qxF "$aline" "$gd/info/attributes" 2>/dev/null \
+            || echo "$aline" >> "$gd/info/attributes"
+    fi
     role_msg=""
     if [ -n "$role" ]; then
         echo "$role" > "$(git -C "$repo" rev-parse --absolute-git-dir)/chaba-role"

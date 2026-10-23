@@ -57,6 +57,9 @@ export KANBAN_REPO="$TMP/served"
 export CHABA_SERVED_CHECKOUT="$TMP/served"
 export CHABA_CHECKOUTS=""          # keep the sibling scan quiet in tests
 export CHABA_DIVERGENCE_N=2        # small N so the warning is easy to trip
+# reconcile/flag paths must never reach a real board-api from tests —
+# unroutable base -> deterministic local-file fallback.
+export BOARD_API="http://127.0.0.1:9"
 
 # --- A: two parallel sessions ----------------------------------------------
 echo "# live board edit" >> "$TMP/served/docs/ssot/kanban/ssot.kanban.yml"
@@ -241,6 +244,185 @@ check "G: raced write survives the pull in HEAD" \
   "git -C '$TMP/served' show HEAD:docs/ssot/kanban/cards/raced.yml | grep -q 'raced write'"
 check "G: no autostash retained for the raced write" \
   "! git -C '$TMP/served' stash list | grep -qi autostash"
+
+# --- H: card semantic divergence -> union merge (incident 2026-10-23) --
+# A card written on both sides used to stall the rebase until the step
+# guard aborted it — every tick, forever. The card-union merge driver
+# (merge.card-union.driver, armed by safe-pull) now merges inline:
+# comms unioned, scalars won by the newer `updated`.
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  cat > docs/ssot/kanban/cards/card-div.yml <<'YML'
+id: card-div
+title: card-div
+column: backlog
+updated: 2026-10-23 08:00
+comms:
+- at: 2026-10-23 08:00
+  from: ada
+  text: base-note
+YML
+  git add -A && git commit -qm "other: card-div base" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+# served diverges (left uncommitted — kanban-commit stages it)
+cat > "$TMP/served/docs/ssot/kanban/cards/card-div.yml" <<'YML'
+id: card-div
+title: card-div
+column: done
+updated: 2026-10-23 14:00
+comms:
+- at: 2026-10-23 08:00
+  from: ada
+  text: base-note
+- at: 2026-10-23 14:00
+  from: devin
+  text: served-done
+YML
+(
+  cd "$TMP/other" || exit 1
+  cat > docs/ssot/kanban/cards/card-div.yml <<'YML'
+id: card-div
+title: card-div
+column: doing
+updated: 2026-10-23 13:00
+comms:
+- at: 2026-10-23 08:00
+  from: ada
+  text: base-note
+- at: 2026-10-23 13:00
+  from: ada
+  text: origin-doing
+YML
+  git add -A && git commit -qm "other: card-div divergent" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/h.err"; rc_h=$?
+DIVCARD="$TMP/served/docs/ssot/kanban/cards/card-div.yml"
+check "H: kanban-commit exits 0 on card divergence" "[ $rc_h -eq 0 ]"
+check "H: served card comms unioned" \
+  "grep -q 'served-done' '$DIVCARD' && grep -q 'origin-doing' '$DIVCARD'"
+check "H: newer side column won (done)" "grep -q 'column: done' '$DIVCARD'"
+check "H: union reached origin" \
+  "git -C '$TMP/origin.git' show master:docs/ssot/kanban/cards/card-div.yml | grep -q 'served-done'"
+check "H: no card .local-conflict left behind" \
+  "! ls '$TMP/served/docs/ssot/kanban/cards/'*.local-conflict-* >/dev/null 2>&1"
+check "H: no rebase in progress" \
+  "! git -C '$TMP/served' rev-parse -q --verify REBASE_HEAD >/dev/null"
+check "H: union driver armed in served checkout" \
+  "[ -n \"\$(git -C '$TMP/served' config merge.card-union.driver)\" ]"
+
+# --- I: merge fallback (SAFE_PULL_NO_REBASE) ---------------------------
+# When a rebase cannot complete, one `git merge` replaces the replay.
+# Cards union via the driver; other generated paths resolve upstream-
+# wins (--theirs mid-merge) preserving the local side as .local-conflict.
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  cat > docs/ssot/kanban/cards/card-mf.yml <<'YML'
+id: card-mf
+title: card-mf
+column: backlog
+updated: 2026-10-23 08:00
+comms: []
+YML
+  mkdir -p docs/ssot/jobs/kanban
+  printf 'title: mf job\nv: upstream\n' > docs/ssot/jobs/kanban/mf-job.yml
+  git add -A && git commit -qm "other: mf base" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+cat > "$TMP/served/docs/ssot/kanban/cards/card-mf.yml" <<'YML'
+id: card-mf
+title: card-mf
+column: doing
+updated: 2026-10-23 15:00
+comms:
+- at: 2026-10-23 15:00
+  from: devin
+  text: mf-local
+YML
+printf 'title: mf job\nv: local\n' > "$TMP/served/docs/ssot/jobs/kanban/mf-job.yml"
+git -C "$TMP/served" add -A && git -C "$TMP/served" commit -qm "served: mf divergent"
+(
+  cd "$TMP/other" || exit 1
+  cat > docs/ssot/kanban/cards/card-mf.yml <<'YML'
+id: card-mf
+title: card-mf
+column: backlog
+updated: 2026-10-23 14:00
+comms:
+- at: 2026-10-23 14:00
+  from: ada
+  text: mf-origin
+YML
+  printf 'title: mf job\nv: upstream2\n' > docs/ssot/jobs/kanban/mf-job.yml
+  git add -A && git commit -qm "other: mf divergent" || exit 1
+  git push -q origin master || exit 1
+)
+SAFE_PULL_NO_REBASE=1 SAFE_PULL_GENERATED_RE='^docs/ssot/' \
+  bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>"$TMP/i.err"; rc_i=$?
+MFCARD="$TMP/served/docs/ssot/kanban/cards/card-mf.yml"
+check "I: merge fallback exits 0 on card divergence" "[ $rc_i -eq 0 ]"
+check "I: fallback logged the merge" \
+  "grep -q 'rebase skipped' '$TMP/i.err' || grep -q 'merged origin/master' '$TMP/i.err'"
+check "I: card union-merged via merge" \
+  "grep -q 'mf-local' '$MFCARD' && grep -q 'mf-origin' '$MFCARD'"
+check "I: non-card generated path resolved upstream-wins" \
+  "grep -q 'upstream2' '$TMP/served/docs/ssot/jobs/kanban/mf-job.yml'"
+check "I: merge conflict preserved local side as sidecar" \
+  "ls '$TMP/served/docs/ssot/jobs/kanban/mf-job.yml.local-conflict-'* >/dev/null 2>&1"
+check "I: HEAD contains upstream" \
+  "git -C '$TMP/served' merge-base --is-ancestor origin/master HEAD"
+check "I: no merge in progress" \
+  "! git -C '$TMP/served' rev-parse -q --verify MERGE_HEAD >/dev/null"
+# keep the tree converged for later cases
+git -C "$TMP/served" push -q origin master 2>/dev/null || true
+
+# --- J: failure-streak alert -------------------------------------------
+# The deadlock ran silent all day; now ALERT_AFTER consecutive failed
+# ticks flag ops-kanban-commit-guard (incident 2026-10-23).
+(
+  cd "$TMP/other" || exit 1
+  bash "$SAFE_PULL" . >/dev/null 2>&1
+  printf 'v0\n' > code.txt
+  git add code.txt && git commit -qm "other: code base" || exit 1
+  git push -q origin master || exit 1
+)
+bash "$SAFE_PULL" "$TMP/served" >/dev/null 2>&1
+git -C "$TMP/served" push -q origin master 2>/dev/null || true
+printf 'local\n' > "$TMP/served/code.txt"
+git -C "$TMP/served" commit -qam "served: non-generated divergence"
+(
+  cd "$TMP/other" || exit 1
+  printf 'upstream\n' > code.txt
+  git commit -qam "other: non-generated divergence" || exit 1
+  git push -q origin master || exit 1
+)
+STREAK="$(git -C "$TMP/served" rev-parse --absolute-git-dir)/kanban-commit-fail-streak"
+for i in 1 2 3; do
+  printf "id: streak-$i\ntitle: t\n" \
+    > "$TMP/served/docs/ssot/kanban/cards/streak-$i.yml"
+  KANBAN_FAILURE_ALERT_AFTER=3 bash "$KANBAN_COMMIT" >/dev/null \
+    2>"$TMP/j$i.err"; rc_j=$?
+  check "J: tick $i fails on non-generated conflict" "[ $rc_j -ne 0 ]"
+done
+check "J: streak file reached 3" "[ \"\$(cat '$STREAK')\" = 3 ]"
+check "J: alert card flagged failure-streak" \
+  "grep -q 'failure-streak' '$TMP/served/docs/ssot/kanban/cards/ops-kanban-commit-guard.yml'"
+check "J: merge fallback also refused non-generated conflict" \
+  "grep -q 'merge fallback conflict outside generated' '$TMP/j3.err'"
+# recover: drop the offending local commits, write a fresh card
+git -C "$TMP/served" reset --hard -q origin/master
+printf 'id: streak-rec\ntitle: t\n' \
+  > "$TMP/served/docs/ssot/kanban/cards/streak-rec.yml"
+bash "$KANBAN_COMMIT" >/dev/null 2>"$TMP/j4.err"; rc_j4=$?
+check "J: tick recovers once divergence gone" "[ $rc_j4 -eq 0 ]"
+check "J: streak file cleared" "[ ! -f '$STREAK' ]"
+check "J: recovery noted on alert card" \
+  "grep -q 'recovered after 3 consecutive failed ticks' '$TMP/served/docs/ssot/kanban/cards/ops-kanban-commit-guard.yml'"
 
 echo
 echo "passed: $PASS  failed: $FAIL"
