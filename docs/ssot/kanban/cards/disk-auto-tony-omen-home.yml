@@ -9,7 +9,7 @@ priority: high
 note: 'Auto-recovered 2026-10-23: tony-omen /home back in bounds (72%, slope 9.51 GiB/d)'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 20:01
+updated: 2026-10-23 20:03
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -99,6 +99,12 @@ comms:
     is a text inventory, not a restorable GPT backup: unprivileged SSH cannot read /dev/nvme0n1 (`sfdisk: Permission
     denied`). GDrive standard applied: local-staged file -> direct rclone copyto -> remote SHA readback; no FUSE
     write. CPU service currently caps 2.'
+- at: 2026-10-23 20:03
+  from: devin
+  text: 'Follow-up: saved Omen''s non-privileged partition inventory at gdrive:backups/tony-omen/partition-snapshots/omen-nvme0n1-inventory_20261023-194854.txt
+    (SHA-256 verified). Also backed up current cpufreq-limit.service text at gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
+    (SHA-256 verified). Repo branch dispatch/20261023-omen-cpu-cap-2ghz now contains a proposed tracked 2.00GHz
+    ceiling unit + SSOT/runbook changes; syntax checks pass. NOT installed: live c'
 requests:
 - id: omen-disk-plan
   from: devin
