@@ -1,7 +1,7 @@
 id: line-persona-pins-persist
 title: Persist LINE persona pins across relay restarts
 column: doing
-updated: 2026-10-23 13:41
+updated: 2026-10-23 13:57
 priority: medium
 action:
   type: manual
@@ -16,3 +16,9 @@ comms:
 - at: 2026-10-23 13:41
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 13:57
+  from: devin
+  text: 'DONE. ada-voice a4ba077: _PinMap dict subclass (on_change hook) + ROOM_PINS_FILE write-through at ~/.local/share/ada/line-room-pins.json,
+    loaded at run() boot; update() load path bypasses the save hook. Verified: pin/switch/follow-through routing
+    micro-test + 1692 deploy-gate tests green on idc03; post-deploy pins file already shows a live persisted pin
+    {"G1":"ada"}. Deployed 2026-10-23 ~13:20.'
