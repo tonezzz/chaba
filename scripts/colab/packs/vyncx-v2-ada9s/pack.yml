@@ -4,25 +4,27 @@
 # ~17s long) before the target sentence; tony clips (short ref) were
 # clean at CER 0.007. Hypothesis: shorter ref = less context leak.
 # Score: ada9s clips should drop to tony-level CER.
+# Self-sufficient: refs ride in inputs/ (synced by any worker) — no
+# dependency on shared store assets or /tmp state.
 name: vyncx-v2-ada9s
 needs:
   gpu_gb: 3
   disk_gb: 4
+venv: true        # PEP-668 fleet hosts (dell/omen); ignored on Colab
 timeout_s: 900
 artifacts:
   - packs/vyncx-v2-ada9s/out/vx9s-ada-*.wav
 prep: |
-  # self-sufficient: extract ref assets if an env job hasn't already
-  mkdir -p /tmp/vbench
-  test -f /tmp/vbench/ada-ref-9s.wav || tar xzf {NEST_ROOT}/voice-bench/voice-bench-assets.tgz -C /tmp/vbench
+  pip install -q torch          # venv fleet hosts; no-op on Colab
   pip install -q --no-deps f5-tts-th
-  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile librosa matplotlib transformers audioop-lts torchcodec
   pip install -q --no-deps 'numpy>=2'
 run: |
   import time, os
   import torch
   import soundfile as sf
   from f5_tts_th.tts import TTS
+  IN = f'{PACK_DIR}/inputs'
   OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
   SENTS = [
    "วันนี้ตลาดมีผลไม้สดใหม่หลายอย่างเลย",
@@ -34,14 +36,14 @@ run: |
   t0 = time.time()
   tts = TTS(model='v2')
   print('vyncx loaded %.0fs gpu=%.1fGB' % (time.time()-t0, torch.cuda.memory_allocated()/1e9), flush=True)
-  rt = open('/tmp/vbench/ref_text_9s.txt', encoding='utf-8').read().strip()
+  rt = open(f'{IN}/ref_text_9s.txt', encoding='utf-8').read().strip()
   for i, t in enumerate(SENTS):
       out = f'{OUT}/vx9s-ada-{i}.wav'
       if os.path.exists(out) and os.path.getsize(out) > 0:
           print(f'gen ada{i} cached', flush=True); continue
       t0 = time.time()
       print(f'gen ada{i} start', flush=True)
-      w = tts.infer(ref_audio='/tmp/vbench/ada-ref-9s.wav', ref_text=rt,
+      w = tts.infer(ref_audio=f'{IN}/ada-ref-9s.wav', ref_text=rt,
                     gen_text=t, step=32, cfg=2.0, speed=1.0)
       sf.write(out, w, 24000)
       print(f'gen ada{i} %.0fs' % (time.time()-t0), flush=True)
