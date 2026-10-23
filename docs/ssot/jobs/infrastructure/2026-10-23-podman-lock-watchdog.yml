@@ -1,0 +1,85 @@
+title: podman-lock-watchdog — wedged rootless-podman probe + stale-lock self-heal (tony-dell)
+subtitle: >
+  Card podman-lock-wedge-watchdog. A 2min systemd timer probes `timeout 8
+  podman ps`; on 3 consecutive failures with no live podman CLI it clears
+  the stale lock artifacts from the 2026-10-16 collapse runbook, renumbers,
+  re-probes, and alerts chaba-admin + LINE on either outcome.
+icon: watchdog
+date: 2026-10-23
+slug: podman-lock-watchdog
+card: podman-lock-wedge-watchdog
+ref: OPS-0726
+kind: monitor-build
+dispatch: dispatch-wt-20261023-012712-timer-on-tony-dell-probe-timeo (mn01)
+
+summary: >
+  Built scripts/ops/podman-lock-watchdog.py — the self-heal half of the
+  2026-10-16 tony-dell collapse fix (bounded docker-ps callers already
+  landed in aa879d254). A wedged rootless-podman state DB (stale
+  /dev/shm/libpod_rootless_lock_<uid> + dead pause.pid + alive.lck)
+  hangs every container op until someone clears locks by hand; this
+  timer closes that gap. Registered in ssot.jobs.yml (tony_dell, every
+  2min) so render-jobs.py emits the units — NOT yet installed on
+  tony-dell; deployment is a separate gated step on that host.
+
+signature: >
+  >=3 consecutive `timeout 8 podman ps` failures AND zero live podman/
+  docker CLI processes (comm check — conmon, pause, catatonit,
+  fuse-overlayfs are long-lived runtime and intentionally excluded).
+  The no-live-CLI leg is the safety: locks are only removed while no
+  podman op is in-flight, per the runbook.
+
+recovery: >
+  rm /dev/shm/libpod_rootless_lock_<uid>*; rm dead pause.pid under
+  /run/user/<uid>/containers/** (live pause pids — comm catatonit|pause
+  — are kept; a recycled pid counts as stale); rm
+  /run/user/<uid>/libpod/tmp/alive.lck; `timeout 20 podman system
+  renumber` (PODMAN_WD_RENUMBER=0 opts out); re-probe `timeout 10
+  podman ps`.
+
+alerting: >
+  chaba-admin event (HA chaba-event-log.py, local path + ssh-self
+  fallback) + LINE via ada-line-relay :8912/send (loopback, then
+  `ssh idc03 curl` fallback — the chaba-nag path) on BOTH
+  auto-recovery (warn) and failure-to-recover (critical,
+  requires_response). One alert per wedge episode; failed recovery
+  re-alerts at most every 6h (PODMAN_WD_RESEND_MIN). No quiet hours —
+  a wedge is collapse-adjacent. Recovery attempts rate-limit at
+  PODMAN_WD_COOLDOWN_S=1200s so a persistent wedge doesn't rm-loop.
+
+edges: >
+  A probe that keeps failing while a real podman CLI is alive defers
+  (logged, not alerted) — the signature never fires under someone
+  else's op. A wedge that resolves without our action logs
+  recovered-external and stays silent. State survives timer gaps in
+  ~/.local/state/podman-lock-watchdog.json; one JSON result line per
+  tick to journald.
+
+deliverables:
+  - scripts/ops/podman-lock-watchdog.py — watchdog (--dry-run, --self-test)
+  - docs/ssot/infrastructure/ssot.jobs.yml — podman-lock-watchdog job,
+    host tony_dell, systemd, every 2min, timeout 2m
+  - systemd/generated/tony_dell/podman-lock-watchdog.{service,timer} —
+    rendered (CI drift-check enforced)
+  - tests/ops/test_podman_lock_watchdog.py — 7 offline tests
+  - this doc
+
+install: |
+  # on tony-dell, in the exec checkout ~/CascadeProjects/chaba (job repo
+  # per ssot.jobs.yml — kept current by chaba-repo-sync.timer):
+  git pull && python3 scripts/render-jobs.py --host tony_dell --install
+  # or by hand:
+  cp systemd/generated/tony_dell/podman-lock-watchdog.{service,timer} \
+     ~/.config/systemd/user/
+  systemctl --user daemon-reload
+  systemctl --user enable --now podman-lock-watchdog.timer
+
+verify: |
+  python3 scripts/ops/podman-lock-watchdog.py --dry-run   # real probe, no deletes
+  python3 scripts/ops/podman-lock-watchdog.py --self-test # offline judge pass
+  journalctl --user -u podman-lock-watchdog.service -f    # one JSON line/tick
+  systemctl --user list-timers podman-lock-watchdog.timer
+
+tests: tests/ops/test_podman_lock_watchdog.py (7 tests — threshold,
+  live-CLI deferral, recovery alert dedup, cooldown suppression,
+  external-recovery reset, live/dead pause.pid handling)

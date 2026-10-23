@@ -1,0 +1,9 @@
+[Unit]
+Description=Podman lock-wedge watchdog (probe + stale-lock self-heal) (job:podman-lock-watchdog, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+
+[Install]
+WantedBy=timers.target
