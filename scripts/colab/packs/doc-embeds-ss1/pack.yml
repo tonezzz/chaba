@@ -1,0 +1,78 @@
+# doc-embeds-ss1 — T5-XXL prompt embeds for the solar-system doc pilot
+# (OPS-0793). CPU-friendly: t5xxl bf16 is ~10GB RAM, encode is seconds
+# per prompt — keeps metered Colab GPU for render only. Reads prompts
+# from inputs/storyboard.yml (copy of doc-pilot/storyboard.yml v0-draft).
+# Writes per-shot .pt in the same 4-key format as renders/ltx-embeds-s1
+# (prompt_embeds/mask + negative_*). Also persists the T5 encoder to
+# model-archive/t5xxl/ as plain save_pretrained dirs — first run pulls
+# ~10GB from HF, later runs (and future docs) load straight from Drive.
+name: doc-embeds-ss1
+needs:
+  gpu_gb: 0       # cpu-ok: fits() treats 0 as no requirement
+  disk_gb: 30
+venv: true
+timeout_s: 3600   # dominated by the first-run ~10GB HF pull
+fetch:
+  - model-archive/t5xxl/          # after first run: local, skip HF
+artifacts:
+  - packs/doc-embeds-ss1/embeds/shot*.pt
+publish:
+  model-archive/t5xxl: model-archive/t5xxl   # fleet-side Drive persist
+prep: |
+  pip install -q torch transformers pyyaml
+  python -c "import torch, transformers; print('torch', torch.__version__, 'cuda', torch.cuda.is_available())"
+run: |
+  import os, time
+  import torch
+  import yaml
+  from transformers import T5EncoderModel, AutoTokenizer
+  IN = f'{PACK_DIR}/inputs'
+  OUT = f'{PACK_DIR}/embeds'; os.makedirs(OUT, exist_ok=True)
+  ARC_LOCAL = f'{PACK_DIR}/model-archive/t5xxl'
+  ARC_FETCH = f'{NEST_ROOT}/model-archive/t5xxl'
+  sb = yaml.safe_load(open(f'{IN}/storyboard.yml', encoding='utf-8'))
+  STYLE = sb['style_suffix'].strip()
+  NEG = sb.get('negative', '') + ', worst quality, inconsistent motion, blurry, jittery, distorted'
+  dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+  t0 = time.time()
+  if os.path.exists(f'{ARC_FETCH}/encoder/config.json'):
+      src_tok, src_enc = f'{ARC_FETCH}/tokenizer', f'{ARC_FETCH}/encoder'
+  else:
+      print('no t5xxl archive — pulling from HF (~10GB)', flush=True)
+      src_tok = src_enc = 'Lightricks/LTX-Video'
+      tok = AutoTokenizer.from_pretrained(src_tok, subfolder='tokenizer')
+      enc = T5EncoderModel.from_pretrained(src_enc, subfolder='text_encoder',
+                                           torch_dtype=torch.bfloat16)
+      os.makedirs(ARC_LOCAL, exist_ok=True)
+      tok.save_pretrained(f'{ARC_LOCAL}/tokenizer')
+      enc.save_pretrained(f'{ARC_LOCAL}/encoder')
+  if src_enc == 'Lightricks/LTX-Video':
+      pass  # already loaded above
+  else:
+      tok = AutoTokenizer.from_pretrained(src_tok)
+      enc = T5EncoderModel.from_pretrained(src_enc, torch_dtype=torch.bfloat16)
+  enc = enc.to(dev).eval()
+  print(f't5xxl ready {time.time()-t0:.0f}s dev={dev}', flush=True)
+
+  MAXL = 256   # matches renders/ltx-embeds-s1 (.pt = 2MiB: 4096x256 bf16)
+  def encode(prompt):
+      ti = tok(prompt, padding='max_length', max_length=MAXL,
+               truncation=True, add_special_tokens=True,
+               return_tensors='pt')
+      mask = ti.attention_mask.bool().to(dev)
+      with torch.no_grad():
+          emb = enc(ti.input_ids.to(dev))[0]   # pipeline passes NO mask
+      return emb.to('cpu'), mask.to('cpu')
+
+  neg_e, neg_m = encode(NEG)
+  for s in sb['shots']:
+      out = f'{OUT}/shot{s["shot"]:02d}.pt'
+      if os.path.exists(out):
+          print(f'shot{s["shot"]} cached', flush=True); continue
+      prompt = f"{s['prompt']}, {STYLE}"
+      e, m = encode(prompt)
+      torch.save({'prompt_embeds': e, 'prompt_attention_mask': m,
+                  'negative_prompt_embeds': neg_e,
+                  'negative_prompt_attention_mask': neg_m}, out)
+      print(f'shot{s["shot"]} embedded {time.time()-t0:.0f}s', flush=True)
+  print('doc-embeds-ss1 complete', flush=True)

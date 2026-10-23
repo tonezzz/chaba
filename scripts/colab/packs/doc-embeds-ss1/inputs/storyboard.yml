@@ -1,0 +1,73 @@
+doc: solar-system-kk
+version: v0-draft
+status: awaiting-tony-review
+render:
+  model: Lightricks/LTX-Video
+  width: 640
+  height: 384
+  num_frames: 73        # proven T4 ceiling; revisit to 81 if ltx-probe-81f lands
+  steps: 40
+  fps: 24
+  embeds: t5-precomputed-per-shot   # colab prep stage, same as ltx-embeds-s1
+style_suffix: >
+  photoreal cinematic space documentary, volumetric sunlight, deep black
+  space, subtle film grain, slow majestic camera movement, 24fps
+negative: text, watermark, cartoon, people, faces, logos, spacecraft, low detail
+qc:
+  per_shot: [non-black-frames, duration-3.04s, peak-pixel-nonzero]
+  regen_budget_per_shot: 2        # QA: fail a shot after 2 regens, flag to Tony
+shots:
+  - shot: 1
+    continuity: t2v
+    prompt: "a slow orbital approach toward planet Earth, the blue marble with swirling white clouds glowing against pitch black space, a thin glowing line of atmosphere on the rim"
+  - shot: 2
+    continuity: i2v-from-shot-1   # pull-back continues the same move
+    prompt: "the camera pulling steadily back from Earth, the planet shrinking into a small pale sphere, faint distant worlds visible in the blackness"
+  - shot: 3
+    continuity: t2v
+    prompt: "the Sun filling the frame, a colossal roiling sphere of golden plasma, fine surface granulation, a slow solar flare arc rising from the limb"
+  - shot: 4
+    continuity: t2v
+    prompt: "extreme close-up of the sun's surface, seething plasma loops and prominences dancing slowly, blinding golden light"
+  - shot: 5
+    continuity: t2v
+    prompt: "cratered grey planet Mercury drifting slowly, harsh sunlight raking across its moonlike surface, the enormous sun looming far behind"
+  - shot: 6
+    continuity: t2v
+    prompt: "planet Venus wrapped in thick swirling creamy-yellow clouds, a soft opaque atmosphere slowly rotating, no surface visible"
+  - shot: 7
+    continuity: t2v
+    prompt: "planet Earth as a full disc, deep blue oceans and white cloud systems slowly turning, soft sunlight from the left"
+  - shot: 8
+    continuity: t2v
+    prompt: "the rusty red deserts of Mars, a sweeping horizon of dunes and canyons under a butterscotch sky, a distant giant volcano on the horizon"
+  - shot: 9
+    continuity: t2v
+    prompt: "Jupiter's massive banded disc, cream and rust cloud bands slowly churning, a tiny moon crossing in front"
+  - shot: 10
+    continuity: t2v
+    prompt: "the Great Red Spot of Jupiter filling the frame, a colossal rust-red storm vortex slowly rotating"
+  - shot: 11
+    continuity: t2v
+    prompt: "Saturn and its luminous ring system seen at a low graceful angle, icy rings glowing backlit against black space"
+  - shot: 12
+    continuity: t2v
+    prompt: "a slow close pass over Saturn's rings, countless glittering ice fragments streaming gently past the camera"
+  - shot: 13
+    continuity: t2v
+    prompt: "pale teal Uranus, a smooth featureless ice giant tilted on its side, its faint rings seen edge-on"
+  - shot: 14
+    continuity: t2v
+    prompt: "deep blue Neptune with a dark storm spot and thin white cirrus clouds, the farthest world glowing faintly in dim light"
+  - shot: 15
+    continuity: t2v
+    prompt: "a dark field of distant icy bodies and dwarf planets scattered at the edge of the solar system, the sun only a distant bright star"
+  - shot: 16
+    continuity: t2v
+    prompt: "an elegant golden orrery of the solar system, eight small planets on glowing circular orbit lines around the brilliant central sun"
+  - shot: 17
+    continuity: t2v
+    prompt: "the vast darkness of space, and in the center of frame a single tiny pale blue dot, Earth seen from the edge of the solar system"
+  - shot: 18
+    continuity: i2v-from-shot-17  # pull-in closes the loop opened by 1->2
+    prompt: "the camera gliding gently back toward Earth, a soft sunrise breaking over the planet's limb, warm light spreading across the oceans"

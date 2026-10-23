@@ -1,0 +1,118 @@
+# doc-render-ss1 — LTX render of the solar-system doc pilot (OPS-0793).
+# 18 shots @73f/40step/640x384 (proven T4 ceiling). Shots 2 and 18 are
+# i2v last-frame continuations of shots 1 and 17 (the pull-back/pull-in
+# moves); everything else is t2v. Order: t2v batch first, extract last
+# frames, then the two i2v shots — keeps ONE pipeline resident at a time
+# (two pipelines ~19GB > T4). Resumable: per-shot exists-check — a
+# recycled VM continues at the missing shot. Embeds come from
+# packs/doc-embeds-ss1/embeds (fetch mirrors them on fleet; on Colab the
+# store path resolves directly).
+name: doc-render-ss1
+needs:
+  gpu_gb: 14
+  disk_gb: 30
+  egress_only_ok: true
+timeout_s: 9000    # 18 shots x ~5min + two model loads; resume-safe
+fetch:
+  - packs/doc-embeds-ss1/embeds/
+artifacts:
+  - packs/doc-render-ss1/shots/ss1-shot*.mp4
+  - packs/doc-render-ss1/verdict.md
+publish:
+  shots: doc-pilot/shots
+prep: |
+  TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  apt-get install -y -qq zstd ffmpeg >/dev/null 2>&1 || true
+  if [ -f "$TAR" ]; then
+    tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
+      && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
+    mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+  fi
+  python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+run: |
+  import os, time, datetime, gc, subprocess
+  import torch
+  for _v in ('model', 'pipe'):
+      globals().pop(_v, None)
+  gc.collect(); torch.cuda.empty_cache()
+  from diffusers import LTXPipeline, LTXImageToVideoPipeline
+  from diffusers.utils import export_to_video, load_image
+  EMB = f'{NEST_ROOT}/packs/doc-embeds-ss1/embeds'
+  OUT = f'{PACK_DIR}/shots'; os.makedirs(OUT, exist_ok=True)
+  KF = f'{PACK_DIR}/keyframes'; os.makedirs(KF, exist_ok=True)
+  I2V = {2: 1, 18: 17}          # shot -> last-frame source shot
+  W, H, FR, STEPS = 640, 384, 73, 40
+  verdict = ['# doc-render-ss1 verdict', '',
+             '| shot | mode | s | peakGB | note |', '|---|---|---|---|---|']
+
+  def emb(n):
+      return {k: (v.cuda() if torch.is_tensor(v) else v)
+              for k, v in torch.load(f'{EMB}/shot{n:02d}.pt',
+                                     map_location='cpu').items()}
+
+  def run_pipe(pipe, n, image=None):
+      e = emb(n)
+      kw = dict(prompt_embeds=e['prompt_embeds'],
+                prompt_attention_mask=e['prompt_attention_mask'],
+                negative_prompt_embeds=e['negative_prompt_embeds'],
+                negative_prompt_attention_mask=e['negative_prompt_attention_mask'],
+                width=W, height=H, num_frames=FR,
+                num_inference_steps=STEPS, frame_rate=24)
+      if image is not None:
+          kw['image'] = image
+      return pipe(**kw).frames[0]
+
+  def last_frame(mp4, png):
+      subprocess.run(['ffmpeg', '-y', '-sseof', '-0.1', '-i', mp4,
+                      '-frames:v', '1', '-update', '1', png],
+                     capture_output=True)
+
+  done = lambda n: os.path.exists(f'{OUT}/ss1-shot{n:02d}.mp4') \
+                   and os.path.getsize(f'{OUT}/ss1-shot{n:02d}.mp4') > 50000
+
+  # pass 1: t2v (all but the two i2v shots)
+  pipe = LTXPipeline.from_pretrained('Lightricks/LTX-Video',
+      torch_dtype=torch.bfloat16, text_encoder=None,
+      tokenizer=None).to('cuda')
+  print('t2v resident %.1fGB' % (torch.cuda.memory_allocated()/1e9), flush=True)
+  for n in range(1, 19):
+      if n in I2V or done(n):
+          continue
+      t = time.time(); note = ''
+      try:
+          fr = run_pipe(pipe, n)
+          export_to_video(fr, f'{OUT}/ss1-shot{n:02d}.mp4', fps=24)
+      except Exception as e:
+          note = f'{type(e).__name__}: {str(e)[:160]}'
+      pk = torch.cuda.max_memory_allocated()/1e9
+      verdict.append(f'| {n} | t2v | {time.time()-t:.0f} | {pk:.1f} | {note} |')
+      print(f'shot{n} t2v {time.time()-t:.0f}s peak {pk:.1f}GB {note}', flush=True)
+  del pipe; gc.collect(); torch.cuda.empty_cache()
+
+  # pass 2: i2v shots 2 and 18
+  if not all(done(n) for n in I2V):
+      pipe = LTXImageToVideoPipeline.from_pretrained('Lightricks/LTX-Video',
+          torch_dtype=torch.bfloat16, text_encoder=None,
+          tokenizer=None).to('cuda')
+      print('i2v resident %.1fGB' % (torch.cuda.memory_allocated()/1e9), flush=True)
+      for n, src in I2V.items():
+          if done(n):
+              continue
+          t = time.time(); note = ''
+          try:
+              src_mp4 = f'{OUT}/ss1-shot{src:02d}.mp4'
+              png = f'{KF}/shot{src:02d}-last.png'
+              last_frame(src_mp4, png)
+              fr = run_pipe(pipe, n, image=load_image(png))
+              export_to_video(fr, f'{OUT}/ss1-shot{n:02d}.mp4', fps=24)
+          except Exception as e:
+              note = f'{type(e).__name__}: {str(e)[:160]}'
+          pk = torch.cuda.max_memory_allocated()/1e9
+          verdict.append(f'| {n} | i2v:{src} | {time.time()-t:.0f} | {pk:.1f} | {note} |')
+          print(f'shot{n} i2v {time.time()-t:.0f}s peak {pk:.1f}GB {note}', flush=True)
+      del pipe; gc.collect(); torch.cuda.empty_cache()
+
+  missing = [n for n in range(1, 19) if not done(n)]
+  verdict += ['', f'missing: {missing or "none"}']
+  open(f'{PACK_DIR}/verdict.md', 'w').write('\n'.join(verdict) + '\n')
+  print('doc-render-ss1 done missing=%s' % missing, flush=True)

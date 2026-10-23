@@ -1,0 +1,96 @@
+# doc-vo-ss1 — narration for the solar-system doc pilot (OPS-0793).
+# 18 TH beats from gdrive:ada-nest/doc-pilot/script.yml, Tony-clone ref
+# (8s, the clean bench ref). Guards from ada-nest-tts-eval (2133):
+# ~9s on-topic ref; on deterministic silence (peak<0.01) split the beat
+# at the middle space and join halves with a 250ms gap.
+# EN track deferred — f5-tts-th is a Thai-only lane; EN clone needs the
+# XTTS-v2 bench (ADA-0510). TH is the KK-facing deliverable anyway.
+name: doc-vo-ss1
+needs:
+  gpu_gb: 3
+  disk_gb: 4
+venv: true
+timeout_s: 3000
+artifacts:
+  - packs/doc-vo-ss1/out/ss1-vo-*.wav
+  - packs/doc-vo-ss1/vo-report.md
+publish:
+  out: doc-pilot/vo            # fleet-side copy; Colab writes land direct
+prep: |
+  pip install -q torch
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile librosa matplotlib transformers audioop-lts torchcodec
+  pip install -q --no-deps 'numpy>=2'
+run: |
+  import time, os
+  import numpy as np
+  import torch
+  import soundfile as sf
+  from f5_tts_th.tts import TTS
+  IN = f'{PACK_DIR}/inputs'
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  # shots 1-18 from doc-pilot/script.yml (v0-draft, tony-approved)
+  BEATS = [
+   "นี่คือบ้านของเรา โลกสีฟ้าใบเล็ก",
+   "แต่โลกเป็นเพียงจุดหนึ่ง ในครอบครัวที่ยิ่งใหญ่กว่านี้",
+   "ศูนย์กลางของทุกสิ่ง คือดวงอาทิตย์",
+   "ดาวฤกษ์ที่ให้แสงสว่าง และความอบอุ่นแก่เราทุกคน",
+   "ดาวพุธ ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์ที่สุด",
+   "ดาวศุกร์ โลกที่ถูกห่อหุ้มด้วยเมฆพิษ ร้อนที่สุดในระบบ",
+   "และนี่คือโลกของเรา ดาวเคราะห์เพียงดวงเดียวที่มีชีวิต",
+   "ดาวอังคาร โลกสีแดงที่มนุษย์ฝันจะไปเยือน",
+   "ดาวพฤหัสบดี ยักษ์ใหญ่แห่งระบบสุริยะ",
+   "พายุหมุนอันยิ่งใหญ่ ใหญ่กว่าโลกทั้งใบ",
+   "ดาวเสาร์ เจ้าแห่งวงแหวนอันงดงาม",
+   "วงแหวนของน้ำแข็งและหิน นับล้านชิ้น",
+   "ดาวยูเรนัส ดาวเคราะห์น้ำแข็งที่หมุนตะแคงข้าง",
+   "ดาวเนปจูน ไกลและหนาวเย็นที่สุด ลมแรงกว่าพายุใดๆ",
+   "และไกลออกไป ยังมีดาวเคราะห์แคระ และเศษน้ำแข็งนับล้าน",
+   "ทั้งหมดหมุนรอบดวงอาทิตย์ ในจังหวะที่สมบูรณ์แบบ",
+   "จากที่ไกลแสนไกล โลกกลายเป็นเพียงจุดสีฟ้าจางๆ",
+   "บ้านหลังเดียวของเรา ในจักรวาลอันกว้างใหญ่",
+  ]
+  t0 = time.time()
+  tts = TTS(model='v2')
+  print('vyncx loaded %.0fs gpu=%.1fGB' % (time.time()-t0,
+        torch.cuda.memory_allocated()/1e9), flush=True)
+  rt = open(f'{IN}/ref_text_tony.txt', encoding='utf-8').read().strip()
+  REF = f'{IN}/tony-ref-8s.wav'
+
+  def gen(text):
+      w = tts.infer(ref_audio=REF, ref_text=rt, gen_text=text,
+                    step=32, cfg=2.0, speed=1.0)
+      return np.asarray(w, dtype='float32')
+
+  def peak(w):
+      return float(np.abs(w).max()) if len(w) else 0.0
+
+  rep = ['# doc-vo-ss1 vo-report', '',
+         '| shot | dur_s | peak | note |', '|---|---|---|---|']
+  fails = []
+  for i, text in enumerate(BEATS, 1):
+      out = f'{OUT}/ss1-vo-{i:02d}.wav'
+      if os.path.exists(out) and os.path.getsize(out) > 0:
+          w, _ = sf.read(out)
+          rep.append(f'| {i} | {len(w)/24000:.2f} | cached | |')
+          continue
+      t0 = time.time()
+      note = ''
+      w = gen(text)
+      if peak(w) < 0.01:   # deterministic-silence guard: split at
+          ws = text.split(' ')              # the middle space, 250ms gap
+          mid = len(ws) // 2 or 1
+          a, b = ' '.join(ws[:mid]), ' '.join(ws[mid:])
+          wa, wb = gen(a), gen(b)
+          w = np.concatenate([wa, np.zeros(6000, 'float32'), wb])
+          note = f'split@{mid} (silent full-gen)'
+      sf.write(out, w.astype('float32'), 24000)
+      p = peak(w)
+      if p < 0.01:
+          fails.append(i); note += ' STILL-SILENT'
+      rep.append(f'| {i} | {len(w)/24000:.2f} | {p:.3f} | {note} |')
+      print(f'vo{i} dur={len(w)/24000:.2f}s peak={p:.3f} '
+            f'({time.time()-t0:.0f}s) {note}', flush=True)
+  rep += ['', f'fails: {fails or "none"}']
+  open(f'{PACK_DIR}/vo-report.md', 'w').write('\n'.join(rep) + '\n')
+  print('doc-vo-ss1 complete fails=%s' % fails, flush=True)
