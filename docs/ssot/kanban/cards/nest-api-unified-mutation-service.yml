@@ -1,7 +1,7 @@
 id: nest-api-unified-mutation-service
 title: nest-api — extend board-api into the fleet's single mutation service
-column: doing
-updated: 2026-10-23 13:21
+column: review
+updated: 2026-10-23 13:23
 brief: 'One write door for agents: cards, nest-job CPT, lessons, reports, inbox — same doctrine as the card write-path
   split, applied to every mutable surface.'
 priority: high
@@ -47,7 +47,16 @@ comms:
     /inbox (focus-inbox YAML+commit). Remote writes under separate WP_LOCK. lesson-add.py now thin /lesson client
     (no creds). chaba-boards v0.9.0 registers nest_job — needs wp-admin deploy for /job to go live. 17 unit tests
     + selftest green; live smoke: /inbox 200, /lesson 502-correct wi'
+- at: 2026-10-23 13:23
+  from: tony-macbook
+  text: 'finished (ok): exit=0  idc03; queue-mgr is the next OPS-0759 build-order item and becomes the `/job` caller.
+    | devin-task-20261023-1304'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0  idc03; queue-mgr is the next OPS-0759 build-order item and becomes the `/job` caller. | devin-task-20261023-130452-tony-2026-10-23-suggest-if-we-.service:
+    Consumed 5min 28.607s CPU time over 17min 34.825s wall clock time, 359M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
