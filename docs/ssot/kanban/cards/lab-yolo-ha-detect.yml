@@ -66,6 +66,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-195037-lab-bench-local-yolo-object-de,
     branch dispatch/20261022-195037-lab-bench-local-yolo-object-de'
+- at: 2026-10-23 08:20
+  from: tony-omen
+  text: claimed
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).
@@ -75,10 +78,11 @@ spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create expe
   comms.'
 action:
   type: dispatch
-  status: queued
+  status: running
   repo: chaba
   host: tony-omen
   labels:
   - gpu
   attempts: 1
+  runner: tony-omen
 ref: HOM-0193
