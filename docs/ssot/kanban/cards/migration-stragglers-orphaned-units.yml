@@ -1,7 +1,7 @@
 id: migration-stragglers-orphaned-units
 title: 'Migration stragglers: orphaned units after dell/omen->idc02/03 move'
-column: backlog
-updated: 2026-10-22 19:33
+column: doing
+updated: 2026-10-23 16:56
 tags:
 - migration
 - ops-0725
@@ -41,8 +41,10 @@ spec: 'Verified 2026-10-20 — all claimed services are live on the new hosts (g
   Done = each unit either repointed to the new host (and verified active) or retired with a comms note; nothing
   left in failed state for migration reasons.'
 action:
-  type: manual
-  status: queued
+  type: dispatch
+  status: running
+  repo: chaba
+  runner: idc02
 note: Units left pointing at services that moved in the 2026-10-19/20 constellation move (ph3+ph5).
 ref: OPS-0749
 comms:
@@ -59,3 +61,6 @@ comms:
 - at: 2026-10-22 19:33
   from: tony
   text: queued for processing
+- at: 2026-10-23 16:56
+  from: idc02
+  text: claimed
