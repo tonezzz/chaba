@@ -1,0 +1,449 @@
+{
+ "at": "2026-10-23 08:02:07",
+ "date": "2026-10-23",
+ "config": {
+  "lanes": {
+   "local-gpt-oss-20b": {
+    "base": "http://localhost:11434/v1",
+    "model": "gpt-oss:20b",
+    "json_mode": true
+   }
+  },
+  "judge": null,
+  "corpus": "/tmp/chaba/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "local-gpt-oss-20b": [
+   {
+    "lane": "local-gpt-oss-20b",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 4,
+     "total": 5,
+     "score": 0.8
+    },
+    "sched_ops": {
+     "pass": 4,
+     "total": 5,
+     "score": 0.8,
+     "next_review_default_ok": 5,
+     "creates": 5
+    },
+    "recall": {
+     "correct": 1,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 67.6,
+     "lat_p50": 14.7,
+     "tokens_in": 41472,
+     "tokens_out": 6921,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": null
+   }
+  ]
+ },
+ "tasks": {
+  "local-gpt-oss-20b": [
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "lesson-4f03d81ea331 created",
+    "llm_calls": 2,
+    "tokens_in": 2595,
+    "tokens_out": 967,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 699.0074417591095,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-4f03d81ea331",
+      "topic": "TCP BBR vs CUBIC",
+      "created": true,
+      "content": "<p><strong>TCP BBR</strong> is a model‑based congestion control algorithm that estimates the bottleneck bandwidth and round‑trip time (RTT) of a path and then paces traffic to stay near that operating point. <strong>CUBIC</strong> is a loss‑based algorithm that grows the congestion window (cwnd) according to a cubic function of time since the last loss event, backing off sharply when packet loss is detected.</p>\n<ul>\n<li><strong>Goal</strong>: BBR aims to keep latency low by avoiding bufferbloat; CUBIC aims to maximize throughput on paths where loss is a reliable signal of congestion.</li>\n<li><strong>Mechanism</strong>: BBR measures bandwidth and RTT, then sends packets at a rate that matches the measured bandwidth. CUBIC increases cwnd aggressively (cubic growth) until a loss occurs, then reduces cwnd by a multiplicative factor.</li>\n<li><strong>Latency</strong>: BBR keeps queues shallow, so RTT stays near the minimum. CUBIC can fill queues, causing RTT spikes, especially on links with large buffers.</li>\n<li><strong>Performance on short paths</strong>: On short, high‑bandwidth links, CUBIC can reach higher throughput because BBR’s pacing may be limited by its bandwidth estimation accuracy.</li>\n<li><strong>Deployment</strong>: BBR is supported in Linux kernel 4.9+, Chrome, and some routers. CUBIC is the default in many Linux distributions and widely deployed in data centers.</li>\n<li><strong>Use cases</strong>: Use BBR for latency‑sensitive traffic (e.g., VoIP, gaming) or on networks with large buffers. Use CUBIC when maximizing throughput on stable, loss‑based links is critical.</li>\n</ul>\n<p>In practice, BBR tends to keep latency lower on buffer‑bloated links, while CUBIC can win on short, high‑bandwidth paths where loss is a reliable congestion signal.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 1
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1818,
+    "tokens_out": 130,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 4.634119272232056,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "lesson-90f614241c87 updated",
+    "llm_calls": 3,
+    "tokens_in": 3671,
+    "tokens_out": 1212,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 33.87686228752136,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<p>In Tailscale, an ACL rule specifies which source identities can reach which destination identities or tags on which ports. A <strong>tag</strong> is a label you attach to a device (or a group of devices) that acts as an identity in ACL rules, allowing you to refer to the device without tying it to a specific user. For example, <code>group:admins can reach tag:server on port 22</code> lets any admin user SSH into any device marked with the <code>tag:server</code> identity, regardless of who owns the device. Regular ACL rules use <code>group</code> or <code>user</code> identifiers; tags replace the user or group with a device-level identity, making the rule persist even when users change or leave. Tags are especially useful for servers, routers, or IoT devices that should maintain consistent access policies independent of personnel.</p>\n<p>Typical usage pattern:</p>\n<ul>\n<li>Define tags in the Tailscale admin console under <strong>Tags</strong>.</li>\n<li>Assign tags to devices via the console or <code>tailscale up --tag=tag:server</code>.</li>\n<li>Reference tags in ACLs: <code>group:admins can reach tag:server on port 22</code>.</li>\n<li>Use <code>group</code> for user-based rules and <code>tag</code> for device-based rules.</li>\n</ul>\n<p>Best practice: keep tags for long-lived, role-based access (e.g., <code>tag:webserver</code>, <code>tag:db</code>) and use groups for temporary or personnel-based access. This separation ensures that device access remains stable even as team members rotate.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "lesson-eecd44a8c891 created",
+    "llm_calls": 3,
+    "tokens_in": 3293,
+    "tokens_out": 510,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 15.4888277053833,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-eecd44a8c891",
+      "topic": "CAP theorem",
+      "created": true,
+      "content": "<h3>CAP Theorem</h3><p>The CAP theorem states that a distributed data store can provide at most two of the following three guarantees simultaneously: <strong>Consistency</strong> (all nodes see the same data at the same time), <strong>Availability</strong> (every request receives a response, even if it is not the most recent), and <strong>Partition Tolerance</strong> (the system continues to operate despite arbitrary network partitions). In practice, when a network partition occurs, the system must choose between consistency and availability: a <em>CP</em> strategy sacrifices availability (e.g., refusing writes) to maintain consistency, while an <em>AP</em> strategy keeps the system available and reconciles inconsistencies later. When no partition exists, a system can achieve all three. Understanding this trade‑off guides design decisions for distributed databases, key‑value stores, and replicated services.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "lesson-535254811d24 + created.",
+    "llm_calls": 4,
+    "tokens_in": 4556,
+    "tokens_out": 1007,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 28.356995820999146,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-535254811d24",
+      "topic": "Ada quantization in LLM",
+      "created": true,
+      "content": "<p>Ada quantization in LLM models reduces weight precision from 16 or 32 bits to 8, 4, or lower, shrinking model size and speeding up inference at the cost of a small accuracy drop. GGUF files store these quantized weights in a layout that maps efficiently into memory, enabling faster local inference.</p>\n<h3>How Quantization Works</h3>\n<ul>\n<li><strong>Precision Reduction:</strong> Weights are rounded to fewer bits, e.g., 8‑bit integers.</li>\n<li><strong>Storage Savings:</strong> Lower bits mean smaller tensors and less memory bandwidth.</li>\n<li><strong>Computation Speed:</strong> CPUs/GPUs can process more operations per cycle on low‑bit data.</li>\n</ul>\n<h3>Why GGUF Is Faster</h3>\n<ul>\n<li><strong>Memory‑Mapped Layout:</strong> GGUF packs quantized tensors into a contiguous block that can be memory‑mapped, reducing load time.</li>\n<li><strong>Optimized Access Patterns:</strong> The format aligns data for vectorized instructions, minimizing cache misses.</li>\n<li><strong>Zero‑Copy Inference:</strong> Inference engines can read GGUF directly without decompression, cutting overhead.</li>\n</ul>\n<p>Overall, Ada quantization shrinks the model and speeds up arithmetic, while GGUF’s efficient layout turns that potential into real‑world latency gains.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson-69cd1a5df775 + created.",
+    "llm_calls": 3,
+    "tokens_in": 3202,
+    "tokens_out": 474,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 14.659202814102173,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-69cd1a5df775",
+      "topic": "ada nest heartbeat escalation",
+      "created": true,
+      "content": "<h3>Ada Nest Heartbeat Escalation</h3><p>The Ada Nest system keeps a member node’s health by sending a <strong>heartbeat</strong> at a regular interval (e.g., every 30 s). The hub records the timestamp of the last received beat. If a node fails to send a beat for <strong>N</strong> consecutive intervals, the hub marks the node as <em>stale</em> and enters a <strong>degraded</strong> state. During this degraded window the hub continues to monitor for a recovery beat; if one arrives, the node returns to <em>healthy</em> and no alert is generated.</p><p>Only when the degraded window expires without a new beat does the hub trigger an <strong>escalation</strong> by sending a page to the member’s phone. This design prevents brief network hiccups or a single missed beat from flooding users with notifications, while still ensuring that a truly lost node is promptly reported.</p>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1828,
+    "tokens_out": 197,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 6.704103231430054,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "lesson-abdcd6c6c5e1 + status changed to learned",
+    "llm_calls": 4,
+    "tokens_in": 4033,
+    "tokens_out": 521,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 16.2964985370636,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-22",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "lesson-90f614241c87: next_review updated to 2026-11-27",
+    "llm_calls": 4,
+    "tokens_in": 4059,
+    "tokens_out": 421,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 12.54550313949585,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-27",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 1664,
+    "tokens_out": 221,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 7.160250902175903,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 4,
+    "tokens_in": 3495,
+    "tokens_out": 230,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 8.990201711654663,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "none",
+    "llm_calls": 5,
+    "tokens_in": 4313,
+    "tokens_out": 241,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 8.016041994094849,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 4
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "lesson-1a97f325b4e1",
+    "llm_calls": 3,
+    "tokens_in": 2945,
+    "tokens_out": 790,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 23.007213354110718,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-1a97f325b4e1",
+      "topic": "quantum annealing",
+      "created": true,
+      "content": "<h3>Quantum Annealing</h3><p>Quantum annealing is a quantum optimization technique that uses quantum tunneling and superposition to find the global minimum of an objective function, often applied to combinatorial problems such as the traveling salesman or graph partitioning. It differs from classical simulated annealing by exploiting quantum fluctuations instead of thermal fluctuations, enabling it to escape local minima more efficiently.</p><p>In practice, a problem is encoded into a Hamiltonian whose ground state represents the optimal solution. The system is initialized in an easily prepared ground state of a driver Hamiltonian (often a transverse field). Then, the driver is slowly turned off while the problem Hamiltonian is turned on, following the adiabatic theorem. If the evolution is slow enough, the system remains in its instantaneous ground state, ending in the solution of the original problem.</p><p>Key concepts:</p><ul><li><strong>Adiabatic theorem</strong>: Guarantees staying in the ground state if evolution is slow relative to the energy gap.</li><li><strong>Tunneling</strong>: Allows the system to cross energy barriers that would trap classical algorithms.</li><li><strong>Annealing schedule</strong>: The time-dependent interpolation between driver and problem Hamiltonians.</li></ul>",
+      "next_review": "2026-10-30",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-4f03d81ea331",
+   "topic": "TCP BBR vs CUBIC",
+   "q": "bbr",
+   "html_len": 1792
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "html_len": 1521
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-eecd44a8c891",
+   "topic": "CAP theorem",
+   "q": "cap theorem",
+   "html_len": 924
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-535254811d24",
+   "topic": "Ada quantization in LLM",
+   "q": "quantiz",
+   "html_len": 1270
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-69cd1a5df775",
+   "topic": "ada nest heartbeat escalation",
+   "q": "heartbeat",
+   "html_len": 883
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "html_len": 286
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "html_len": 244
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "r3-recall-none",
+   "slug": "lesson-1a97f325b4e1",
+   "topic": "quantum annealing",
+   "q": "quantum annealing",
+   "html_len": 1317
+  }
+ ]
+}

@@ -23,10 +23,13 @@ REMOTE = 'gdrive:ada-nest'
 # packs belong on the real disk
 WORKDIR = os.path.expanduser('~/.cache/nest-worker')
 WORKER = None
+# fleet hosts keep rclone in ~/.local/bin which non-login shells (ssh,
+# systemd units) don't have on PATH — resolve once at start
+RCLONE = shutil.which('rclone') or os.path.expanduser('~/.local/bin/rclone')
 
 
 def rc(*args, check=True):
-    r = subprocess.run(['rclone'] + list(args), capture_output=True,
+    r = subprocess.run([RCLONE] + list(args), capture_output=True,
                        text=True, timeout=300)
     if check and r.returncode != 0:
         raise RuntimeError(f'rclone {args[0]}: {r.stderr.strip()[:300]}')

@@ -1,0 +1,88 @@
+title: Education-agent lane-lift — gpt-oss:20b on Colab T4 (ada-nest pack)
+subtitle: same hardened loop + fixture, full-VRAM — p50 78.3s -> 14.7s;
+  the local lane's latency gap was hardware, not capability
+icon: flask
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-23
+runner: ada-nest queue, worker colab-b6bdfc08-126654 epoch 1
+pack: scripts/colab/packs/edu-agent-bench -> gdrive:ada-nest/packs/edu-agent-bench
+parent: docs/ssot/jobs/models/2026-10-23-edu-agent-bench-turn2.yml
+
+question: |
+  Turn-2 left gpt-oss:20b sweeping capture/ops/recall but at p50 78.3s
+  on omen (4GB GPU, ~9 tok/s RAM offload). Open question: is the local
+  lane's remaining gap vs clawbot (12.5s p50) latency-only — i.e.
+  hardware — or does the model itself regress? Run the IDENTICAL
+  hardened loop + 13-task fixture on a Colab T4 (15GB, model fully in
+  VRAM) via the nest-pack system.
+
+lanes:
+  local-gpt-oss-20b: "identical turn-2 loop (arg repair, schema reject,
+    forced-JSON escalation) on Colab ollama :11434, gpt-oss:20b MXFP4
+    fully resident on the T4. --no-judge: no credentials on the worker
+    by pack policy; filings carry full HTML for offline re-judge."
+  clawbot: "not in this pack — OR key stays off Colab workers;
+    rerun on a fleet host where openrouter.env is synced."
+
+measured: |
+  lane                       F1   dedupe  sched/ops  recall  completed  p50     tokens in/out
+  current   (10-22)          1.0  3/5     5/5        3/3     13/13      ~0-3s   0.9k
+  clawbot   (10-22)          1.0  4/5     5/5        3/3     13/13      12.5s   74k
+  gpt-oss:20b omen  (turn 2) 1.0  3/5     5/5        3/3     13/13      78.3s   43k
+  gpt-oss:20b T4    (this)   1.0  4/5     4/5        1/3     13/13      14.7s   41472/6921
+  Raw: reports/bench-edu-manage-2026-10-23-colab-t4.{json,md}
+  p50 excludes the t1 outlier properly — t1 lat=699s was model
+  cold-load into VRAM on the first call, not per-task cost.
+
+verdict: latency-gap-was-hardware
+aq_result: |
+  Latency: SOLVED — 78.3s -> 14.7s p50 with zero code or model change,
+  putting the local lane within noise of clawbot's 12.5s. Capability:
+  NOT cleanly equal — same model + fixture + loop scored differently
+  run-to-run (dedupe 3/5->4/5 BETTER; ops 5/5->4/5 and recall 3/3->1/3
+  WORSE). With 13 tasks these deltas are single-task swings; the recall
+  dip is real per-task behavior though: r2 answered 'none' for a stored
+  lesson, r3 answered a lesson-id AND created a stray 'quantum
+  annealing' filing (the dedupe loss too). gpt-oss remains the best
+  LOCAL lane but hasn't beaten clawbot; sampling variance on one rep
+  is now the biggest measurement limitation.
+
+findings:
+  - "First-call cold-load dominates: t1 took 699s (weights into VRAM)
+    while t2+ ran 5-34s. Any production-feasibility math should use
+    warm steady-state numbers, not rep-1."
+  - "Run-to-run variance on the SAME model+fixture+loop is the story
+    of this turn: dedupe/ops/recall each moved one task either way.
+    Single-rep lanes can't resolve <1-task differences — the corpus
+    needs to grow (iPhone-captured real asks) or reps need to rise."
+  - "Nest runner survived its first real pack end-to-end after the
+    EPOCH/heartbeat fix — but stalled >5min during the cache-tar
+    DriveFS flush (heartbeat and run-log writes all backpressure-block)
+    and never wrote the done-mark itself; a reconciler marked it
+    post-hoc after verifying the report pair on Drive — the
+    verify-before-mark gate worked as designed."
+  - "Ollama model cache save never landed (no
+    cache/ollama-gpt-oss-20b.tar.zst) — the tar step was lost with the
+    runner exit. Next fresh VM re-pulls ~13.8GB. Cache save is
+    best-effort by design; accept or move it into prep-finish."
+  - "chaba-jobs.timer (dispatcher) is dead on every host — found while
+    arming nest-queue-watch; dispatch:dispatcher jobs have not been
+    firing. Carded separately."
+  - "nest-queue-watch now TG-notifies pack claim/done/fail every 1min
+    from idc03 via the tg relay /send; off switch
+    ~/.config/nest-queue-watch.off."
+
+followups:
+  - "Turn-3 store-awareness prompt change remains the top lever: topic
+    list + family-prefix hint into AGENT_SYS/CLASSIFY_PROMPT — the one
+    fix that lifts every lane's dedupe and lands in production
+    lesson-miner too."
+  - "Clawbot rerun on the hardened loop (openrouter.env synced to mn01
+    13:10) + offline re-judge of gpt-oss filings — the two still-missing
+    cells (card OPS-0776)."
+  - "Raise reps for recall/ops tasks or enlarge the corpus before the
+    next lane verdict — 1-rep runs can't resolve the differences left."
+  - "If gpt-oss-class local lanes stay competitive, a T4 spend-vs-free
+    note: Colab Pro A100 would hold 32B+ probes the free T4 can't."
