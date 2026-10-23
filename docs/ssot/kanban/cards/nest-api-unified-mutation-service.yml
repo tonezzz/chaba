@@ -1,7 +1,7 @@
 id: nest-api-unified-mutation-service
 title: nest-api — extend board-api into the fleet's single mutation service
 column: doing
-updated: 2026-10-23 13:05
+updated: 2026-10-23 13:21
 brief: 'One write door for agents: cards, nest-job CPT, lessons, reports, inbox — same doctrine as the card write-path
   split, applied to every mutable surface.'
 priority: high
@@ -40,6 +40,13 @@ comms:
 - at: 2026-10-23 13:05
   from: devin
   text: '[devin] picked up — exploring board-api.py + lesson-add.py to add /job + /lesson endpoints'
+- at: 2026-10-23 13:21
+  from: devin
+  text: '[devin] door built on dispatch branch cdecf8cc: /lesson (upsert+auto-Thai, provenance preserved), /job
+    (nest_job CPT upsert, status, comms JSON-append, parent trees), /report (search|note|create over ada-cms-pages),
+    /inbox (focus-inbox YAML+commit). Remote writes under separate WP_LOCK. lesson-add.py now thin /lesson client
+    (no creds). chaba-boards v0.9.0 registers nest_job — needs wp-admin deploy for /job to go live. 17 unit tests
+    + selftest green; live smoke: /inbox 200, /lesson 502-correct wi'
 action:
   type: dispatch
   status: running
