@@ -1,0 +1,23 @@
+id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
+title: 'Lesson drift-check: flag lessons whose source docs changed'
+column: backlog
+updated: 2026-10-23 17:03
+brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
+  docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
+  is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
+  / focus-inbox) or auto-refresh.
+tags:
+- education
+- lessons
+- trade
+- drift
+spec: 'Topics: trade-map hub + trade-architecture, trade-data-sources, trade-signals-backtest, trade-gold-thb (posts
+  2167-2171). Source: docs-trade MCP list_sections/get_page (lastModified per page). Job shape: dispatcher job (every:
+  1d or on_calendar), scans covered pages, compares against lesson post modified date, writes a stale list to the
+  hub lesson''s comms or focus-inbox. Decision point for Tony: flag-only vs auto-regenerate — recommend flag-only
+  (auto-regen writes worse prose than a session that actually learned something).'
+ref: OPS-0794
+comms:
+- at: 2026-10-23 17:03
+  from: tony
+  text: card captured via board-api
