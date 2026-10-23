@@ -1,7 +1,7 @@
 id: kanban-commit-reconcile-rebase-deadlocks-4d95a9
 title: 'kanban-commit reconcile: rebase deadlocks on card-file divergence — merge+union-comms instead'
-column: backlog
-updated: 2026-10-23 15:27
+column: doing
+updated: 2026-10-23 16:56
 priority: high
 tags:
 - board
@@ -24,9 +24,9 @@ spec: 'Incident 2026-10-23: idc03 served checkout diverged 275 commits from orig
 action:
   type: dispatch
   repo: chaba
-  labels:
-  - devin-task
-  status: queued
+  labels: []
+  status: running
+  runner: idc02
 ref: KNB-0789
 comms:
 - at: 2026-10-23 14:50
@@ -35,3 +35,6 @@ comms:
 - at: 2026-10-23 15:27
   from: tony
   text: queued for processing
+- at: 2026-10-23 16:56
+  from: idc02
+  text: claimed
