@@ -1,6 +1,6 @@
 id: wp-activity-cpt-timeline-links
 title: 'WP boards: activity/incident CPT for tool events — timeline links instead of duplicates'
-column: doing
+column: done
 updated: 2026-10-23 08:39
 priority: medium
 tags:
@@ -129,6 +129,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261023-083102-tony-2026-10-14-add-an-inciden no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-10-23 08:39
+  from: chaba
+  text: 'merge-sweep: merged 6f286e6e (dispatch/20261023-083102-tony-2026-10-14-add-an-inciden from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261023-083102-tony-2026-10-14-add-an-inciden.md)
+    — auto-closed'
 requests:
 - id: cpt-name-for-tool-event-records-e1f701
   ask: CPT name for tool-event records?
@@ -165,6 +170,14 @@ requests:
   answer: per-lane private (member sees own lane) ★
 action:
   type: dispatch
-  status: running
+  status: done
   repo: chaba
   runner: tony-omen
+  sweep:
+    stale_running: 2026-10-23 08:39
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 08:39
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261023-083102-tony-2026-10-14-add-an-inciden.md
