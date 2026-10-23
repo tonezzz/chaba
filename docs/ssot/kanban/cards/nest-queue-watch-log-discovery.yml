@@ -1,7 +1,7 @@
 id: nest-queue-watch-log-discovery
 title: Nest queue watch is missing current Colab events
 column: doing
-updated: 2026-10-23 20:04
+updated: 2026-10-23 20:06
 priority: high
 spec: Investigate and fix quiet Ada-HA Telegram notifications. Current watcher selects only queue/run-*.out.log,
   while current queue-runner emits queue/log-*.txt; watcher state remains pinned to the old run-20261023-1028.out.log
@@ -19,3 +19,10 @@ comms:
 - at: 2026-10-23 20:04
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 20:06
+  from: devin
+  text: 'Confirmed primary cause: the watcher only lists queue/run-*.out.log, while the current Colab runner creates
+    queue/log-YYYYMMDD-HHMM.txt. Its state remains pinned to the old run-20261023-1028.out.log, so current claim/run/done
+    events are invisible. Group target env (-5410424865) is loaded; relay is active and group is in TELEGRAM_ALLOWED_CHAT_IDS,
+    with no TG_PUSH_DENY set. Add current+legacy log discovery, tests, and failure reporting. No Telegram test send
+    without approval.'
