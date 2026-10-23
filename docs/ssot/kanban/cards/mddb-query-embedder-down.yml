@@ -1,0 +1,16 @@
+id: mddb-query-embedder-down
+title: mddb /v1/vector-search failing — query embedder providers down (OR circuit-open + Gemini fail)
+column: review
+updated: 2026-10-23 14:22
+brief: 'Found during OPS-0779 worker wiring: POST /v1/vector-search on mddbd (100.102.134.91:11023) returns {error:
+  failed to embed query: ollama API error (status 502): all same-space providers down (OR circuit-open + Gemini
+  failed)} — 2026-10-23 ~14:30+07. /v1/health says healthy and /search doc listing works, so only the query-embedding
+  path is dead. Impact: mddb semantic_search degraded fleet-wide — Ada recall, bench lanes, any agent memory lookups
+  that go through the REST transport. Check the embedding provider chain (OpenRouter key/quota, Gemini fallback,
+  local ollama fallback) — was OR key rota'
+priority: high
+ref: MEM-0788
+comms:
+- at: 2026-10-23 14:22
+  from: devin
+  text: card captured via board-api
