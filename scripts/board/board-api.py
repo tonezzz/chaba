@@ -60,6 +60,8 @@ Endpoints (after prefix strip):
       (stages deep-merged); stage+status records one stage result.
   POST /lesson   {topic, content, level?, source?, next_review?, status?,
                   no_th?} — WP lesson CPT upsert by topic slug (re-asked
+                  topics update in place); {op:"topics"} returns the
+                  existing topic list for store-aware classifiers
                   topics update in place) + auto-Thai section. The remote
                   write half of the lesson-capture duty; lesson-add.py is
                   now a thin CLI client of this endpoint.
@@ -1511,6 +1513,30 @@ def do_lesson(body: dict, frm: str) -> dict:
             "th": th_ok}
 
 
+def do_lesson_topics() -> dict:
+    """/lesson {op:"topics"} — READ op on the write door: the lesson
+    store's existing topic titles + slugs so callers (lesson-miner
+    classify, bench agents) can reuse names instead of forking slugs —
+    the turn-3 store-awareness fix. WP keeps the creds here; callers
+    hold none."""
+    out = []
+    page = 1
+    while page <= 5:                    # hard cap 500 lessons
+        hits = wp_api(f"/wp/v2/lesson&status=private&per_page=100"
+                      f"&page={page}&_fields=slug,title,meta")
+        if not isinstance(hits, list) or not hits:
+            break
+        for h in hits:
+            topic = ((h.get("meta") or {}).get("topic")
+                     or (h.get("title") or {}).get("rendered", "")
+                     .replace("Education — ", "").strip())
+            out.append({"topic": topic, "slug": h.get("slug", "")})
+        if len(hits) < 100:
+            break
+        page += 1
+    return {"message": f"{len(out)} lesson topics", "topics": out}
+
+
 JOB_STATUSES = {"queued", "claimed", "running", "done", "failed",
                 "stalled", "cancelled"}
 JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
@@ -1892,7 +1918,9 @@ class H(BaseHTTPRequestHandler):
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
                     if path == "/lesson":
-                        res = do_lesson(body, frm)
+                        res = (do_lesson_topics()
+                               if body.get("op") == "topics"
+                               else do_lesson(body, frm))
                     elif path == "/job":
                         res = do_job(body, frm)
                     else:
