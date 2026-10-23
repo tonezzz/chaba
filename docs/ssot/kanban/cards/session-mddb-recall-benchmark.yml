@@ -120,6 +120,13 @@ comms:
 - at: 2026-10-23 15:34
   from: devin
   text: test-ping
+- at: 2026-10-23 15:34
+  from: devin
+  text: 'v2 verdict (on master: reports/bench-recall-v2-20261022.md, commit dad435639): enriched distiller VALIDATED
+    — T1 oracle coverage 41.7%->86.1%, deterministic session_artifacts.py miner, +~2.5KB/doc. BUT T1-semantic alone
+    still misses AQ: 66.7% hit@3 (retrieval limit — buried artifacts cant rank top-3 in a 4-5KB single-vector doc).
+    HYBRID T1 semantic + T2 local keyword = 91.7% — prune is AQ-safe ONLY with hybrid recall + locally grep-able
+    T2 archives. Arm-state fixed today: devin-summaries-sync no'
 action:
   type: dispatch
   status: done
