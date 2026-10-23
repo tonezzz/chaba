@@ -1,0 +1,63 @@
+title: Household declaration schema (household.yml)
+subtitle: Per-node canonical declaration of people, per-node roles, rooms, and notable devices
+version: 1
+created: '2026-10-23'
+status: active
+related:
+  - docs/ssot/infrastructure/ssot.home-assistant.instances.yml#secrets
+  - docs/ssot/infrastructure/ssot.secrets.yml#ada-device-keys
+  - docs/kb/ada-member-invite.md
+
+overview:
+  purpose: |
+    Every HA instance carries a household.yml in its own HA config dir.
+    It declares WHO belongs to the home behind that node, what ROLE each
+    person has ON THIS NODE, the rooms/areas, and notable devices. It is
+    the declarative half of the per-instance secret-store model: the lane
+    backend owns ~/.config/secrets/<lane>/{backend.env,keys.json}; the
+    node owns household.yml.
+  model: |
+    kk-ha owner/member pattern: person.kk's identity is shared across
+    nodes, but ROLE IS PER NODE — kk is owner on kk-ha and member
+    elsewhere. Tony is owner on tony-ha + ada-ha; Michael is owner on
+    michael-ha. A person absent from a node's people[] has no standing
+    on that node.
+  consumption: |
+    Declarative — read by docs/tooling/review (pairing flows, kanban
+    appliance, member-invite audits). HA itself does not enforce it;
+    enforcement lives in the lane key store (keys.json) + HA's own
+    user/permission model. Keep it truthful, not exhaustive: update on
+    member/room changes, not every entity add.
+
+file_locations:
+  tony-ha:    "tony-omen:~/.config/home-assistant/household.yml"
+  michael-ha: "michael-ha:/homeassistant/household.yml   # HAOS /config symlink"
+  kk-ha:      "idc03:~/.config/kk-ha/household.yml"
+  ada-ha:     "tony-omen:~/.config/ada-ha/household.yml"
+
+schema:
+  version: 1                      # schema version, integer
+  node: "<instance id>"           # must match ssot.home-assistant.instances.yml
+  updated: "<YYYY-MM-DD>"         # last edit date
+  household:
+    id: chaba-household           # the family household the node belongs to
+    name: "<display name>"
+  people:                         # persons present on THIS node
+    - id: "person.<slug>"         # HA person entity id
+      name: "<display>"
+      role: owner|member|guest    # PER NODE role (owner/member pattern)
+      ha_user: "<login>"          # HA username on this node, null if none
+      ada_key: "<keys.json name>" # lane store key name, null if none
+      lang: [en, th]              # optional spoken languages
+      note: "<optional>"
+  rooms:                          # node areas (id = HA area id)
+    - id: "<area_id>"
+      name: "<display>"
+      devices: ["<entity_id>"]    # notable devices in the room
+  notable_devices: ["<entity_id>"] # node-level notables (assist surfaces, cast targets)
+
+seeding_policy: |
+  Seed from .storage/core.area_registry + .storage/person + a few
+  well-known entities — rooms and people must reflect reality; devices
+  stay a short curated list (screens/cast targets/room speakers), not a
+  registry dump.
