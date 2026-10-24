@@ -1,0 +1,36 @@
+title: Pinned Nemotron store-aware treatment — stopped on OpenRouter 429
+subtitle: baseline completed; treatment reached two HTTP 429 failures in
+  rep 1, so the multi-rep A/B is incomplete
+icon: warning
+version: 1
+
+card: pin-a-free-openrouter-model-for-store-aw-ed0cc2
+date: 2026-10-24
+parent: docs/ssot/jobs/models/2026-10-24-edu-agent-bench-nemotron-supervl-baseline.yml
+host: mn01
+model: nvidia/nemotron-3.5-super-vl:free
+artifact: reports/bench-edu-manage-2026-10-24-nemotron-supervl-store-aware-partial.log
+
+configuration:
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+  judge: none
+  requested_repetitions: 3
+  agent_topics: true
+  provider_model_pinned: true
+
+observed: |
+  Rep 1:
+    t1-create-bbr-cubic completed, 126s
+    t2-skip-commands completed, 85s
+    t3-update-tailscale completed, 51s
+    t4-mixed-cap-private failed HTTP 429, 0 tool calls
+    t5-thai-quantization failed HTTP 429, 0 tool calls
+  Stopped after consecutive rate-limit responses to avoid further calls.
+  No aggregate report was written; output remains a partial log.
+
+verdict: provider-rate-limited-incomplete
+followups:
+  - "Retry after free-provider capacity resets; do not use a paid route
+    without Tony's explicit approval."
+  - "Do not compare this partial treatment against the completed baseline."

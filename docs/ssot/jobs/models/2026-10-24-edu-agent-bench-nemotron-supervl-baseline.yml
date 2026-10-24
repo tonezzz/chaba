@@ -1,0 +1,45 @@
+title: Pinned OpenRouter free model baseline — Nemotron 3.5 Super VL
+subtitle: fixed model control for the store-awareness A/B; 3 baseline reps
+icon: flask
+version: 1
+
+card: pin-a-free-openrouter-model-for-store-aw-ed0cc2
+date: 2026-10-24
+parent: docs/ssot/jobs/models/2026-10-24-edu-agent-bench-clawbot-store-aware-multirep.yml
+host: mn01
+model: nvidia/nemotron-3.5-super-vl:free
+reports:
+  json: reports/bench-edu-manage-2026-10-24-nemotron-supervl-baseline-reps3.json
+  markdown: reports/bench-edu-manage-2026-10-24-nemotron-supervl-baseline-reps3.md
+
+configuration:
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+  judge: none
+  repetitions: 3
+  agent_topics: false
+  provider_model_pinned: true
+
+measured: |
+  Per rep:
+    1: F1 1.0, dedupe 3/5, ops 4/5, recall 3/3, complete 12/13, p50 9.7s
+    2: F1 1.0, dedupe 3/5, ops 3/5, recall 3/3, complete 11/13, p50 12.5s
+    3: F1 1.0, dedupe 3/5, ops 5/5, recall 3/3, complete 13/13, p50 9.4s
+  Aggregate: F1 1.0, dedupe 9/15, ops 12/15, recall 9/9,
+  complete 36/39, p50 mean 10.5s.
+
+verdict: pinned-baseline-needs-ops-improvement
+aq_result: |
+  The fixed free model completed all capture and recall tasks but
+  deduped only 3/5 in each rep. Ops was inconsistent (4/5, 3/5, 5/5),
+  with o2-push-review/o3-due-list calls timing out in two repetitions.
+  This is a cleaner fixed-model baseline than openrouter/free rotation,
+  but the model is not a clear manager candidate due to tool/ops
+  reliability.
+
+followups:
+  - "Compare with the store-aware treatment on the same pinned model.
+    The treatment run is blocked by repeated OpenRouter HTTP 429s and is
+    recorded separately; do not infer a treatment effect yet."
+  - "No paid route was used. Wait for free capacity or obtain explicit
+    budget approval before changing provider tier."
