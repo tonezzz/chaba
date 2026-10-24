@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (10-14 19:44) of `mcp-debug-h3-sync.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u mcp-debug-h3-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (10-14 19:44) of `mcp-debug-h3-sync.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u mcp-debug-h3-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-0664
 comms:
 - at: 2026-10-14 19:56
@@ -56,20 +56,24 @@ comms:
     — investigate journal: `journalctl --user -u mcp-debug-h3-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-10-20 16:00
   from: devin
-  text: 'sweep 2026-10-20: unit still enabled on dell, last svc state inactive (not failed) — likely stale alert;
-    expected to auto-close on next green run.'
+  text: 'sweep 2026-10-20: unit still enabled on dell, last svc state inactive (not failed) — likely stale
+    alert; expected to auto-close on next green run.'
 - at: 2026-10-24 19:20
   from: backlog-spec-enrich
-  text: skipped — The unit on tony-dell is inactive rather than failed and the note indicates it is expected to
-    auto-close on the next green run, rendering further manual action obsolete.
+  text: skipped — The unit on tony-dell is inactive rather than failed and the note indicates it is expected
+    to auto-close on the next green run, rendering further manual action obsolete.
 - at: 2026-10-25 01:20
   from: backlog-spec-enrich
-  text: skipped — The unit on tony-dell is inactive rather than failed and the note indicates it is expected to
-    auto-close on the next green run, rendering further manual action obsolete.
+  text: skipped — The unit on tony-dell is inactive rather than failed and the note indicates it is expected
+    to auto-close on the next green run, rendering further manual action obsolete.
 - at: 2026-10-25 05:25
   from: devin
   text: 'FIXED 2026-10-25 05:25: root cause = chaba.h3 multi-writer race. tony-dell cms-h3-publish + mcp-debug-h3-sync
     + chaba-jobs child all did bare git push; another writer (idc03) pushes chaba.h3 on a timer -> non-fast-forward
-    rejection every run. ALSO found a stuck interactive rebase on chaba-h3-tony-dell (aborted + reset to origin/chaba.h3).
-    Fix: retry-safe push (fetch->rebase->push x5) in cms-h3-publish.sh + mcp-debug-h3-sync.sh (bak files saved).
-    VERIFIED: cms-h3-publish rc=0, mcp-debug rc=0, cha'
+    rejection every run. ALSO found a stuck interactive rebase on chaba-h3-tony-dell (aborted + reset
+    to origin/chaba.h3). Fix: retry-safe push (fetch->rebase->push x5) in cms-h3-publish.sh + mcp-debug-h3-sync.sh
+    (bak files saved). VERIFIED: cms-h3-publish rc=0, mcp-debug rc=0, cha'
+- at: 2026-10-25 05:33
+  from: backlog-spec-enrich
+  text: skipped — The card has already been fixed by devin on 2026-10-25 with root cause identified, fixes
+    applied, and services verified as working.

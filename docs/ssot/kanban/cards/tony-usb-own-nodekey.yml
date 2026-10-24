@@ -4,11 +4,10 @@ column: backlog
 priority: medium
 created: 2026-10-10
 updated: '2026-10-10'
-note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s
-  nodekey — any booted host steals the mn01 session (verified 2026-10-10 on the MacBook).
-  Fix at next stick session: sudo tailscale logout + delete tailscaled.state + tailscale
-  up as its own node (name: tony-usb or rescue). Then document generated per-stick
-  identity in mn01-stick-standard.md.
+note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted
+  host steals the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale
+  logout + delete tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document
+  generated per-stick identity in mn01-stick-standard.md.
 
   '
 links:
@@ -21,5 +20,14 @@ comms:
   text: 'ref assigned: SEC-0303'
 - at: 2026-10-11 10:20
   from: devin
-  text: 'note: physical task — needs the tony-usb stick booted to run tailscale logout/up.
-    Correctly parked in backlog until your next stick session; no remote action possible.'
+  text: 'note: physical task — needs the tony-usb stick booted to run tailscale logout/up. Correctly parked
+    in backlog until your next stick session; no remote action possible.'
+- at: 2026-10-25 05:33
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it
+  its own unique node identity. On the tony-usb stick host during the next stick session, run sudo tailscale
+  logout, delete /var/lib/tailscale/tailscaled.state, and run tailscale up as its own node named tony-usb
+  or rescue. Finally, document the generated per-stick identity in mn01-stick-standard.md. The testable
+  done-condition is that the stick successfully authenticates to the tailnet with a distinct node key
+  rather than cloning mn01, and mn01-stick-standard.md is updated with the new identity details.
