@@ -1,6 +1,6 @@
 id: m1-stream-test-hook
 title: 'm1: add a stream state test hook to ReplicationClient for idle-healthy handler coverage'
-column: doing
+column: review
 updated: 2026-10-25 06:05
 brief: The idle-caught-up-follower-stays-healthy handler test needs to simulate a connected-but-quiet stream; ReplicationClient
   has no public setter for connected/lag (all atomic internals). Add a small test-only hook (e.g. SetStreamStateForTest)
@@ -39,7 +39,17 @@ comms:
     on base ed1ff11 — IsHealthy/handler untouched. Live verifier updated on dell: new TestFollowerHealthIdleCaughtUpStaysHealthy
     self-skips until repo.ref bump, so current scores unchanged. Control-validated: plain parent 0.667 / parent+hook
     0.5 / fix+hook 1.0. Activation = push branch + r'
+- at: 2026-10-25 06:05
+  from: idc02
+  text: 'finished (ok): exit=0 .yml`), and `dispatch-outcome-20261025-055220-m1-add-a-stream-state-test-hoo.md`;
+    board comment posted. | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .yml`), and `dispatch-outcome-20261025-055220-m1-add-a-stream-state-test-hoo.md`; board comment
+    posted. | devin-task-20261025-055220-m1-add-a-stream-state-test-hoo.service: Consumed 29.487s CPU time, 268.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
