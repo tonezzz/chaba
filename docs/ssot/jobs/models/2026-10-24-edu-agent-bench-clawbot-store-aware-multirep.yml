@@ -1,0 +1,58 @@
+title: Clawbot education benchmark — store-aware vs baseline, 3 reps
+subtitle: same fixture and OpenRouter free agent loop; topic context
+  improved directional scores but free-router model rotation confounds
+icon: flask
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-24
+parent: docs/ssot/jobs/models/2026-10-23-edu-agent-bench-turn3-store-aware.yml
+host: mn01
+model: openrouter/free
+reports:
+  comparison: reports/bench-edu-manage-2026-10-24-clawbot-store-awareness-ab.md
+  baseline_json: reports/bench-edu-manage-2026-10-24-clawbot-baseline-reps3.json
+  baseline_markdown: reports/bench-edu-manage-2026-10-24-clawbot-baseline-reps3.md
+  store_aware_json: reports/bench-edu-manage-2026-10-24-clawbot-store-aware-reps3.json
+  store_aware_markdown: reports/bench-edu-manage-2026-10-24-clawbot-store-aware-reps3.md
+
+configuration:
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+  judge: none
+  repetitions_per_condition: 3
+  store_aware: "baseline omitted --agent-topics; treatment enabled it"
+  provider_note: "openrouter/free auto-router, not a pinned model"
+
+measured: |
+  condition       F1 mean   dedupe total  ops total  recall total
+  baseline        0.926     11/15        15/15      8/9
+  store-aware     1.000     14/15        15/15      9/9
+
+  Per-rep baseline:
+    F1 .889/.889/1.0; dedupe 4/5,4/5,3/5; ops 5/5 each;
+    recall 3/3,3/3,2/3; completion 13/13,12/13,13/13;
+    p50 11.9/11.8/8.4s.
+  Per-rep store-aware:
+    F1 1.0 each; dedupe 4/5,5/5,5/5; ops and recall 5/5 and 3/3
+    each; completion 13/13 each; p50 12.9/15.5/14.2s.
+  Draft quality: not judged. Tokens-in mean: baseline 63,056;
+  store-aware 58,776. Cost reported as $0 for the free lane.
+
+verdict: promising-but-router-confounded
+aq_result: |
+  Store-aware clawbot completed 39/39 tasks and reached 14/15 dedupe;
+  the baseline completed 38/39 and reached 11/15. This is encouraging
+  evidence that topic context helps across the agent surface. It is not
+  causal proof: the provider was openrouter/free, which rotated across
+  8-12 different model IDs per repetition; baseline ran after treatment;
+  one baseline rep had an HTTP 400 on the family/hub task; and there
+  were only three reps per condition. p50 was 14.2s store-aware vs
+  10.7s baseline, with the same provider/model-mix caveat.
+
+followups:
+  - "Pin a scorecard-tested free model with --or-model, then rerun both
+    prompt conditions at least three reps each in alternating order.
+    This removes the largest model-rotation confound."
+  - "Run an independent draft judge; this pass used --no-judge."
+  - "Expand the 13-task corpus before a promotion decision."

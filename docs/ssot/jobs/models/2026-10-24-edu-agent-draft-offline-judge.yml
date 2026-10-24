@@ -1,0 +1,35 @@
+title: Offline draft-quality judge — saved Colab T4 store-awareness filings
+subtitle: 15 preserved drafts re-scored without rerunning either lane;
+  free judge key only
+icon: flask
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-24
+inputs:
+  - reports/bench-edu-manage-2026-10-23-colab-t4.json
+  - reports/bench-edu-manage-2026-10-23-colab-t4-store-aware.json
+output: reports/bench-edu-draft-judge-2026-10-24.json
+judge: gemini-3.5-flash-lite via GEMINI_API_KEY_FREE
+
+measured: |
+  T4 no-topic reference: n=8, mean 4.700/5
+  T4 store-aware:       n=7, mean 4.714/5
+  All 15 preserved HTML filings received valid JSON grades. Direct
+  answer, accuracy, structure and hygiene scored highly; length was the
+  lowest axis. The two conditions have very similar means.
+
+method: |
+  scripts/bench-edu-rejudge.py reads saved tasks[].filings[].content,
+  maps each filing to its fixture question, grades only stored HTML,
+  and writes a separate artifact without changing source run results.
+  HTTP errors are recorded by status only; no tokenized URL or key is
+  written to logs or reports. The judge is the same Gemini model class
+  used by the production current lane, so results carry a symmetry
+  caveat and are not an independent promotion signal.
+
+verdict: offline-grade-complete-with-symmetry-caveat
+followups:
+  - "Use an independent judge before model promotion if a free,
+    independently-routed judge becomes available."
+  - "Re-judge Omen turn-3 filings after a fresh free-key quota window."

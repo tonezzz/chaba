@@ -1,0 +1,1355 @@
+{
+ "at": "2026-10-24 09:37:12",
+ "date": "2026-10-24",
+ "config": {
+  "lanes": {
+   "clawbot": {
+    "base": "https://openrouter.ai/api/v1",
+    "model": "openrouter/free",
+    "json_mode": true
+   }
+  },
+  "judge": null,
+  "agent_topics": true,
+  "corpus": "/home/tony/CascadeProjects/chaba/scripts/bench-edu-corpus.json",
+  "repetitions": 3,
+  "run_order": "store-aware then baseline"
+ },
+ "scores": {
+  "clawbot": [
+   {
+    "lane": "clawbot",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 4,
+     "total": 5,
+     "score": 0.8
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 4,
+     "creates": 4
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 17.5,
+     "lat_p50": 12.9,
+     "tokens_in": 57002,
+     "tokens_out": 10229,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    }
+   },
+   {
+    "lane": "clawbot",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 5,
+     "total": 5,
+     "score": 1.0
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 4,
+     "creates": 4
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 15.3,
+     "lat_p50": 15.5,
+     "tokens_in": 55922,
+     "tokens_out": 7278,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    }
+   },
+   {
+    "lane": "clawbot",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 5,
+     "total": 5,
+     "score": 1.0
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 3,
+     "creates": 4
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 16.0,
+     "lat_p50": 14.2,
+     "tokens_in": 63405,
+     "tokens_out": 8973,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": null
+   }
+  ]
+ },
+ "tasks": {
+  "clawbot": [
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "Created lesson lesson-3a64ca409edf: new intro content on TCP BBR vs CUBIC congestion control differences",
+    "llm_calls": 4,
+    "tokens_in": 6926,
+    "tokens_out": 1510,
+    "models": [
+     "nvidia/nemotron-3.5-lightning:free",
+     "nvidia/nemotron-3.5-super-vl:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 88.76912021636963,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-3a64ca409edf",
+      "topic": "TCP BBR vs CUBIC congestion control",
+      "created": true,
+      "content": "<h3>TCP BBR vs CUBIC congestion control</h3>\n<p>CUBIC is a loss-based congestion control algorithm: it grows the congestion window until packet loss occurs, then backs off, which can fill network buffers and add latency. BBR (Bottleneck Bandwidth and Round-trip propagation time) is model-based: it measures available bottleneck bandwidth and minimum round-trip time, then paces sends to operate at that point without filling buffers.</p>\n<h4>How CUBIC works</h4>\n<p>CUBIC increases the window using a cubic function of time since the last congestion event. On loss it reduces the window and enters congestion avoidance. Because it relies on loss as a signal, it tends to keep buffers full, raising queuing delay on buffer-bloated links.</p>\n<h4>How BBR works</h4>\n<p>BBR maintains a model of the network path: the maximum recent bandwidth and the minimum recent round-trip propagation time. It paces transmission so in-flight data stays near the bandwidth-delay product, draining queues rather than filling them.</p>\n<h4>Practical trade-offs</h4>\n<ul>\n<li>BBR typically keeps latency lower on links with large or bloated buffers.</li>\n<li>CUBIC can perform well on short, high-bandwidth paths where loss is rare and buffers are small.</li>\n<li>BBR may compete unfairly with loss-based flows sharing the same bottleneck.</li>\n</ul>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3,
+    "rep": 1
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "skip: No durable knowledge in transcript — only device commands, reminders, and chit-chat, none of which qualify for the education ledger.",
+    "llm_calls": 2,
+    "tokens_in": 2938,
+    "tokens_out": 745,
+    "models": [
+     "nvidia/nemotron-3.5-lightning:free",
+     "poolside/laguna-s-2.1:free"
+    ],
+    "latency": 11.37914776802063,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 1
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "\n\nUpdated lesson-90f614241c87 (tailscale acl basics) — added the concrete rule example and clarified the tag vs. regular ACL rule distinction.",
+    "llm_calls": 5,
+    "tokens_in": 8231,
+    "tokens_out": 1778,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free",
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 13.586629152297974,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. A tag is an identity you put on a device instead of a user — tagged devices stop being owned by a person, so servers keep access when users leave. You write rules like <code>group:admins can reach tag:server on port 22</code> — the tag becomes the node identity. Regular ACL rules use user identities, while tags use device identities, making access persistent regardless of personnel changes.</p>",
+      "next_review": "2026-10-29",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4,
+    "rep": 1
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "\n\nCreated lesson `lesson-80a7b20bd1e4` on CAP theorem in distributed systems. Skipped the electricity bill question — it's a personal task, not durable knowledge.",
+    "llm_calls": 3,
+    "tokens_in": 4011,
+    "tokens_out": 754,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free",
+     "poolside/laguna-xs-2.1:free"
+    ],
+    "latency": 9.465501308441162,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-80a7b20bd1e4",
+      "topic": "CAP theorem in distributed systems",
+      "created": true,
+      "content": "<h3>What is the CAP theorem?</h3>\n<p>The CAP theorem states that a distributed data store under a network partition must choose between consistency and availability — you cannot guarantee both while partitioned.</p>\n<h4>Key Trade-offs</h4>\n<ul>\n<li><strong>CP systems</strong> (Consistency + Partition tolerance): refuse writes during partitions to stay consistent</li>\n<li><strong>AP systems</strong> (Availability + Partition tolerance): keep serving data during partitions and reconcile later</li>\n</ul>\n<h4>Practical Implications</h4>\n<p>When there is no network partition, systems can achieve both consistency and availability. The real design decision is what to do during failures — whether to prioritize data consistency (CP) or continuous service (AP). This choice fundamentally shapes how distributed systems handle network issues and determines their behavior under stress.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 1
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "Created new lesson: slug `lesson-fef4207c5e40` — \"Ada quantization in LLM models\" (intro level), covering what quantization is in LLMs and why GGUF enables faster local inference.",
+    "llm_calls": 4,
+    "tokens_in": 5641,
+    "tokens_out": 637,
+    "models": [
+     "cohere/north-mini-code:free",
+     "poolside/laguna-s-2.1:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 23.472155332565308,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-fef4207c5e40",
+      "topic": "Ada quantization in LLM models",
+      "created": true,
+      "content": "<h3>What is quantization in LLM models?</h3>\n<p>Quantization reduces the precision of model weights from 16‑bit or 32‑bit floating point numbers to lower‑bit representations such as 8‑bit, 4‑bit, or even 1‑bit integers. This compression makes the model smaller in memory and allows faster arithmetic operations because the hardware can process fewer bits per value. The trade‑off is a slight loss of accuracy, but for most inference tasks the impact is minimal when using enough bits.</p>\n<h3>Why is GGUF faster?</h3>\n<p>GGUF (GPT‑Generated Unified Format) stores quantized weights in a layout that maps directly into system memory with minimal overhead. The format groups related tensors together and uses efficient indexing, so loading the model into RAM or GPU memory is quicker. Additionally, GGUF supports optimized tensor operations that take advantage of the reduced bit width, enabling faster matrix multiplications during inference. This combination of compact storage and streamlined memory access makes GGUF particularly suitable for local inference on consumer hardware.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3,
+    "rep": 1
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson-70eb25a2b662 created: Ada Nest heartbeat escalation process",
+    "llm_calls": 3,
+    "tokens_in": 4710,
+    "tokens_out": 443,
+    "models": [
+     "google/gemma-4-31b-it:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+     "xingchen-agi/xing4.0-29b-a4b:free"
+    ],
+    "latency": 12.878097772598267,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-70eb25a2b662",
+      "topic": "Ada Nest heartbeat escalation process",
+      "created": true,
+      "content": "<p>The Ada Nest heartbeat escalation prevents false alarms by requiring a member node to remain unresponsive for a specific duration before triggering a notification.</p>\n<p>The process follows these stages:</p>\n<ul>\n    <li><strong>Heartbeat Interval:</strong> Member nodes send regular heartbeats to the hub to signal health.</li>\n    <li><strong>Stale State:</strong> If a member misses <em>N</em> consecutive beats, the hub marks its state as <strong>stale</strong>.</li>\n    <li><strong>Degraded State:</strong> If the node remains unresponsive, the state transitions to <strong>degraded</strong>.</li>\n    <li><strong>Escalation:</strong> A page is only sent to the user after the degraded window expires without recovery.</li>\n</ul>\n<p>This multi-stage window ensures that transient network issues, such as brief Wi-Fi flaps or single missed packets, do not result in unnecessary alerts.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 1
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 2544,
+    "tokens_out": 1538,
+    "models": [
+     "cohere/north-mini-code:free",
+     "nvidia/nemotron-3.5-lightning:free"
+    ],
+    "latency": 18.545340538024902,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 1
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "Updated lesson-abdcd6c6c5e1 (spaced repetition) status to learned.",
+    "llm_calls": 3,
+    "tokens_in": 2873,
+    "tokens_out": 350,
+    "models": [
+     "cohere/north-mini-code:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 4.409383058547974,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-23",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 1
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "Updated lesson-90f614241c87 (tailscale acl basics): next_review moved from 2026-10-29 to 2026-11-23 (+30 days).",
+    "llm_calls": 3,
+    "tokens_in": 4795,
+    "tokens_out": 488,
+    "models": [
+     "nvidia/nemotron-3.5-lightning:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 6.563215017318726,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-23",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 1
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "\n\nlesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 2060,
+    "tokens_out": 1140,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free"
+    ],
+    "latency": 15.065194129943848,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 1
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 2748,
+    "tokens_out": 139,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 3.4906179904937744,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 1
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "The lesson that covers tailnet access rules and tags is **lesson-90f614241c87** (\"Education — tailscale acl basics\").\n\nIt explains that ACLs gate which tailnet nodes can reach which ports, and tags replace a node's user identity with a role identity so servers keep access when people leave; rules then specify things like \"group:admins can reach tag:server on port 22\".",
+    "llm_calls": 4,
+    "tokens_in": 5771,
+    "tokens_out": 469,
+    "models": [
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+     "nvidia/nemotron-3.5-lightning:free",
+     "poolside/laguna-xs-2.1:free"
+    ],
+    "latency": 14.799895286560059,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3,
+    "rep": 1
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 3,
+    "tokens_in": 3754,
+    "tokens_out": 238,
+    "models": [
+     "cohere/north-mini-code:free",
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-ultra-550b-a55b:free"
+    ],
+    "latency": 5.578628778457642,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 2,
+    "rep": 1
+   },
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "Created lesson-3a64ca409edf: new intro-level lesson on \"TCP BBR vs CUBIC congestion control\" with content defining BBR as model-based pacing vs CUBIC as loss-based window growth, including trade-offs.",
+    "llm_calls": 3,
+    "tokens_in": 4963,
+    "tokens_out": 827,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-lightning:free"
+    ],
+    "latency": 13.289012670516968,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-3a64ca409edf",
+      "topic": "TCP BBR vs CUBIC congestion control",
+      "created": true,
+      "content": "<p><strong>BBR is model-based</strong> while <strong>CUBIC is loss-based</strong>. CUBIC increases the congestion window until packet loss occurs, then reduces it, which tends to fill network buffers and increase latency. BBR instead estimates bottleneck bandwidth and round-trip time, then paces packets to operate at that point, keeping latency lower on congested links. In practice BBR excels on buffer-bloated connections, while CUBIC can perform better on short, high-bandwidth paths.</p>\n<ul>\n<li><strong>CUBIC:</strong> loss-driven, buffer-filling, higher latency</li>\n<li><strong>BBR:</strong> model-driven, pacing, lower latency on congested links</li>\n<li>Performance trade-off: BBR for latency-sensitive scenarios, CUBIC for short high-throughput flows</li>\n</ul>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 2
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "skip: no durable lesson found",
+    "llm_calls": 2,
+    "tokens_in": 2949,
+    "tokens_out": 649,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    ],
+    "latency": 24.041038274765015,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 2
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "Updated lesson \"lesson-90f614241c87\" (topic: tailscale acl basics) with new content explaining the difference between tags and regular ACL rules, incorporating the durable knowledge from the transcript.",
+    "llm_calls": 4,
+    "tokens_in": 6937,
+    "tokens_out": 1011,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-lightning:free",
+     "poolside/laguna-s-2.1:free"
+    ],
+    "latency": 21.261586904525757,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports and services. Tags replace a node's user-based identity with a role-based identity: a tag sticks to the device, so servers retain access even when users leave the network. Regular ACL rules reference source groups and destination tags/IPs, while tagged-device rules let you say 'group:admins can reach tag:server on port 22' without tying the rule to a specific person.</p><p><strong>Key difference:</strong> A regular ACL rule ties access to user groups or IP ranges that can change; a tag-based rule ties access to the device's persistent tag, so the rule works regardless of who is using the server.</p>",
+      "next_review": "2026-10-29",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3,
+    "rep": 2
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "Created lesson `lesson-42f30505902d` (\"CAP theorem distributed systems\") from the durable technical content; skipped the personal electricity bill question as not lesson-worthy.",
+    "llm_calls": 4,
+    "tokens_in": 5892,
+    "tokens_out": 609,
+    "models": [
+     "cohere/north-mini-code:free",
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 18.510390043258667,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-42f30505902d",
+      "topic": "CAP theorem distributed systems",
+      "created": true,
+      "content": "<h3>What is the CAP theorem in distributed systems?</h3>\n<p>The CAP theorem states that a distributed data store under a network partition must choose between consistency and availability — you cannot guarantee both while partitioned. In practice you pick CP (refuse writes, stay consistent) or AP (keep serving, reconcile later); when there is no partition you get both, so the real decision is what to do during failures.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4,
+    "rep": 2
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "lesson-caaae400dfa2 created for LLM quantization basics",
+    "llm_calls": 4,
+    "tokens_in": 5546,
+    "tokens_out": 1442,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 22.43652319908142,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-caaae400dfa2",
+      "topic": "LLM quantization basics",
+      "created": true,
+      "content": "<h3>LLM Quantization Basics</h3>\n<p>Quantization reduces the precision of model weights from 16 or 32 bits down to 8, 4, or fewer bits, making the model smaller and faster to compute with only a small loss in accuracy.</p>\n<p>GGUF is a file format that stores quantized weights with a memory-mappable layout, allowing fast loading for local inference.</p>\n<h4>How quantization works</h4>\n<p>Model weights are normally stored as floating-point numbers (FP16 or FP32). Quantization maps these to lower-precision integers such as INT8 or INT4 using a scale factor and zero point. The model occupies less memory and requires less bandwidth, so inference runs faster on CPU and GPU, at the cost of slightly reduced output quality.</p>\n<h4>Why GGUF loads quickly</h4>\n<p>GGUF stores quantized tensors alongside metadata in a layout designed to be memory-mapped directly. The inference engine can map the file into memory and read weights without a full parse or conversion step, which speeds up startup and local inference compared to generic formats.</p>\n<h4>Trade-offs</h4>\n<ul>\n<li>Lower bit width means smaller size and faster speed, but more accuracy loss.</li>\n<li>4-bit quantization often retains most capability; 2-bit or lower can degrade quality noticeably.</li>\n<li>Quantization is usually applied after training (post-training quantization), though some models are trained with low precision from the start.</li>\n</ul>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4,
+    "rep": 2
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "Created new lesson slug lesson-9c1cd7c9ea45 topic ada-nest-heartbeat-escalation — searched existing lessons, found no exact match, drafted HTML fragment and lesson_create the new entry.",
+    "llm_calls": 4,
+    "tokens_in": 7112,
+    "tokens_out": 887,
+    "models": [
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "nvidia/nemotron-3.5-lightning:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 24.960793495178223,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-9c1cd7c9ea45",
+      "topic": "ada-nest-heartbeat-escalation",
+      "created": true,
+      "content": "<h3>Ada Nest Heartbeat Escalation</h3>\n<p>The hub monitors member node heartbeats sent at a fixed interval. When a member misses <code>N</code> consecutive beats, its state transitions from <strong>healthy</strong> to <strong>stale</strong>, then to <strong>degraded</strong>. Only after the degraded window elapses without the member recovering does the system escalate to a page notification. This multi-stage design prevents transient network flaps or single missed beats from triggering alerts.</p>\n<ul>\n<li><strong>Healthy</strong> — heartbeats arriving on schedule</li>\n<li><strong>Stale</strong> — <code>N</code> consecutive missed beats detected</li>\n<li><strong>Degraded</strong> — stale state persists beyond a grace window</li>\n<li><strong>Page</strong> — degraded window expires without recovery; notification sent</li>\n</ul>\n<p>The escalation path ensures only sustained outages reach the operator, filtering out brief Wi-Fi interruptions or momentary latency spikes.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4,
+    "rep": 2
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "none",
+    "llm_calls": 3,
+    "tokens_in": 3529,
+    "tokens_out": 407,
+    "models": [
+     "cohere/north-mini-code:free",
+     "poolside/laguna-s-2.1:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 6.460706472396851,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3,
+    "rep": 2
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "\n\nlesson-abdcd6c6c5e1 marked as learned",
+    "llm_calls": 3,
+    "tokens_in": 3836,
+    "tokens_out": 175,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "liquid/lfm-2.5-2.6b:free",
+     "poolside/laguna-xs-2.1:free"
+    ],
+    "latency": 22.050955057144165,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-23",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 2
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "Updated tailscale acl basics lesson (slug: lesson-90f614241c87) next_review to 2026-11-23.",
+    "llm_calls": 3,
+    "tokens_in": 3242,
+    "tokens_out": 303,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free",
+     "google/gemma-4-31b-it:free"
+    ],
+    "latency": 10.76461124420166,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-23",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 2
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "The only lesson due for review right now is:\n\n- **Education — spaced repetition** (slug: `lesson-abdcd6c6c5e1`) — level: intro, status: open, next_review: 2026-10-23\n\nNo lessons were changed; I only checked the due list.\n\n**Summary:** Reviewed due lessons via `lessons_due`; no updates performed — due lesson is `lesson-abdcd6c6c5e1` (spaced repetition).",
+    "llm_calls": 2,
+    "tokens_in": 2326,
+    "tokens_out": 601,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 6.312603712081909,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 2
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 2416,
+    "tokens_out": 175,
+    "models": [
+     "cohere/north-mini-code:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 9.426900625228882,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 2
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "tailscale-acl-basics",
+    "llm_calls": 3,
+    "tokens_in": 4558,
+    "tokens_out": 137,
+    "models": [
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "poolside/laguna-xs-2.1:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 15.508497476577759,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3,
+    "rep": 2
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 2616,
+    "tokens_out": 55,
+    "models": [
+     "nvidia/nemotron-3.5-super-vl:free",
+     "poolside/laguna-s-2.1:free"
+    ],
+    "latency": 3.538585662841797,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 2
+   },
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "\n\nCreated lesson `lesson-4fd0299edf4e` on TCP BBR vs CUBIC congestion control — CUBIC is loss-based (fills buffers, adds latency), BBR is model-based (measures bandwidth/RTT, paces to avoid filling buffers).",
+    "llm_calls": 3,
+    "tokens_in": 4828,
+    "tokens_out": 1043,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-lightning:free",
+     "xingchen-agi/xing4.0-29b-a4b:free"
+    ],
+    "latency": 38.20741868019104,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-4fd0299edf4e",
+      "topic": "TCP BBR CUBIC congestion control",
+      "created": true,
+      "content": "<h3>TCP BBR vs CUBIC: Congestion Control Algorithms</h3><p><strong>CUBIC</strong> is a loss-based algorithm: it grows the congestion window until packet loss occurs, then backs off. This fills buffers and adds latency on buffer-bloated links. <strong>BBR</strong> is model-based: it continuously measures bottleneck bandwidth and round-trip time, then paces sends to sit at that operating point instead of filling buffers.</p><p>In practice, BBR keeps latency lower on buffer-bloated links; CUBIC can win on short, high-bandwidth paths where loss is rare.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 3
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 3372,
+    "tokens_out": 1054,
+    "models": [
+     "nvidia/nemotron-3.5-lightning:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 10.261499166488647,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 3
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "Updated lesson-90f614241c87 (tailscale acl basics) with expanded explanation of ACL rules vs tags.",
+    "llm_calls": 4,
+    "tokens_in": 6853,
+    "tokens_out": 540,
+    "models": [
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "nvidia/nemotron-3.5-super-vl:free",
+     "poolside/laguna-xs-2.1:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 20.128278255462646,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>An ACL rule says which sources can reach which destinations and ports. A tag is an identity you put on a device instead of a user — tagged devices stop being owned by a person, so servers keep access when users leave. You write rules like 'group:admins can reach tag:server on port 22' — the tag becomes the node identity.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3,
+    "rep": 3
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "Created new lesson `lesson-42f30505902d` — \"Education — CAP theorem distributed systems\" (topic: \"CAP theorem distributed systems\", level: working, status: open, next_review: 2026-11-01), capturing the CAP trade-off between consistency and availability during network partitions.\n\nThe electricity bill question was not lesson-worthy, so no lesson was filed for it.",
+    "llm_calls": 3,
+    "tokens_in": 4603,
+    "tokens_out": 1683,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 31.516432285308838,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-42f30505902d",
+      "topic": "CAP theorem distributed systems",
+      "created": true,
+      "content": "<p><strong>CAP theorem</strong> states that in a distributed data store, when a network partition occurs the system must choose between <em>consistency</em> (all nodes see the same data) and <em>availability</em> (every request receives a response). During a partition you cannot guarantee both properties simultaneously; you must trade one for the other.</p>\n<p>Systems that prioritize consistency over availability (CP) will reject operations that cannot be guaranteed to be consistent across all nodes, effectively pausing writes until the partition heals. Conversely, systems that prioritize availability (AP) continue to serve reads and writes, later reconciling any divergent data through reconciliation processes.</p>\n<p>When the network is healthy and partitions are absent, a well‑designed system can provide both consistency and availability, but the CAP theorem highlights the unavoidable trade‑off under failure conditions. Choosing CP ensures correctness at the cost of reduced responsiveness, while choosing AP ensures liveness but may expose stale or conflicting data until reconciliation completes.</p>",
+      "next_review": "2026-11-01",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 3
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "lesson-858061b92de9 created with topic \"LLM quantization and GGUF format\" covering quantization definition, benefits, and GGUF's memory-mapped layout for fast local inference.",
+    "llm_calls": 3,
+    "tokens_in": 4196,
+    "tokens_out": 1314,
+    "models": [
+     "cohere/north-mini-code:free",
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "poolside/laguna-s-2.1:free"
+    ],
+    "latency": 24.925541162490845,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-858061b92de9",
+      "topic": "LLM quantization and GGUF format",
+      "created": true,
+      "content": "<h3>LLM quantization and GGUF format</h3>\n<p>Quantization reduces the precision of model weights from 16 or 32 bits down to 8, 4, or fewer bits, making models smaller and faster to compute while trading off a small amount of accuracy. GGUF is a file format that stores quantized weights with a memory-mappable layout, enabling fast local inference by avoiding full model loading into RAM.</p>\n<h4>How quantization works</h4>\n<ul>\n<li><strong>Post-training quantization (PTQ):</strong> Convert a trained FP16/FP32 model to lower precision without retraining. Common methods include round-to-nearest, GPTQ, AWQ.</li>\n<li><strong>Quantization-aware training (QAT):</strong> Simulate quantization during training so the model adapts to lower precision, typically yielding better accuracy.</li>\n<li><strong>Common bit widths:</strong> 8-bit (int8) offers near-lossless quality; 4-bit (int4, NF4) is the sweet spot for consumer hardware; 3-bit and 2-bit exist but degrade quality noticeably.</li>\n</ul>\n<h4>Why GGUF is fast for local inference</h4>\n<ul>\n<li><strong>Memory mapping (mmap):</strong> The OS maps file pages directly into virtual memory; only accessed layers are paged in, so large models run on limited RAM.</li>\n<li><strong>Single-file layout:</strong> Weights, metadata, tokenizer, and architecture info live in one file — no separate config or safetensors shards.</li>\n<li><strong>Quantization metadata:</strong> Each tensor stores its quantization scheme (q4_k, q5_k_m, q8_0, etc.), allowing loaders to dispatch the correct dequantization kernel.</li>\n<li><strong>Cross-platform:</strong> Works with llama.cpp, ollama, kobold.cpp, and other inference engines on CPU, Apple Metal, CUDA, Vulkan, and ROCm.</li>\n</ul>\n<h4>Trade-offs</h4>\n<p>Lower bit widths reduce VRAM/RAM usage and increase token throughput, but perplexity rises and reasoning quality drops. For most chat use cases, 4-bit quantization (e.g., q4_k_m) retains ~95–98% of FP16 quality at ~25% of the memory footprint.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3,
+    "rep": 3
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson-b2111839d78c: created new lesson on ada-nest heartbeat escalation",
+    "llm_calls": 7,
+    "tokens_in": 12287,
+    "tokens_out": 1107,
+    "models": [
+     "cohere/north-mini-code:free",
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-lightning:free",
+     "poolside/laguna-s-2.1:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 20.311476230621338,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-b2111839d78c",
+      "topic": "ada-nest heartbeat escalation",
+      "created": true,
+      "content": "<h3>Ada Nest Heartbeat Escalation</h3><p>Member nodes send periodic heartbeats to the hub, which tracks each node's freshness. A single missed beat or brief network flap does not trigger an alert; escalation to a page only occurs after a node first goes stale, then passes through a degraded window without recovering.</p><h4>Escalation Stages</h4><ul><li><strong>Healthy:</strong> Heartbeats arrive within the expected interval; freshness is current.</li><li><strong>Stale:</strong> A node misses N consecutive heartbeats; the hub marks its state stale but does not page.</li><li><strong>Degraded:</strong> The stale condition persists; the node enters a degraded window during which recovery is still possible without alerting.</li><li><strong>Page:</strong> Only after the degraded window passes without recovery does the hub escalate to a page to the responsible operator.</li></ul><h4>Design Rationale</h4><p>This staged approach prevents alert fatigue from transient issues such as brief Wi-Fi flaps or temporary network blips, ensuring pages are reserved for genuine, sustained outages.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 6,
+    "rep": 3
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "skip — both questions (Tokyo current time, afternoon rain forecast) were time-sensitive, momentary queries with no durable knowledge worth filing.",
+    "llm_calls": 3,
+    "tokens_in": 4084,
+    "tokens_out": 651,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "liquid/lfm-2.5-2.6b:free",
+     "recursive/flint-v1.0:free"
+    ],
+    "latency": 17.74577498435974,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3,
+    "rep": 3
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "spaced repetition: marked status as learned",
+    "llm_calls": 3,
+    "tokens_in": 4116,
+    "tokens_out": 311,
+    "models": [
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "poolside/laguna-xs-2.1:free"
+    ],
+    "latency": 14.164445638656616,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-23",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 3
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "tailscale-acl-basics: pushed next_review from 2026-10-29 to 2026-11-23 (30 days out).",
+    "llm_calls": 3,
+    "tokens_in": 4461,
+    "tokens_out": 287,
+    "models": [
+     "nvidia/nemotron-3.5-lightning:free",
+     "poolside/laguna-xs-2.1:free"
+    ],
+    "latency": 7.321547985076904,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-23",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2,
+    "rep": 3
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "Due lessons: spaced repetition (slug: lesson-abdcd6c6c5e1, due 2026-10-23)",
+    "llm_calls": 2,
+    "tokens_in": 2999,
+    "tokens_out": 431,
+    "models": [
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "nvidia/nemotron-3.5-lightning:free"
+    ],
+    "latency": 8.434393167495728,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 3
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 2748,
+    "tokens_out": 155,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3.5-super-vl:free"
+    ],
+    "latency": 3.699551820755005,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 3
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "The lesson that covers tailnet access rules and tags is **lesson-90f614241c87** (topic: *tailscale acl basics*).",
+    "llm_calls": 4,
+    "tokens_in": 6216,
+    "tokens_out": 316,
+    "models": [
+     "liquid/lfm-2.5-2.6b:free",
+     "nvidia/nemotron-3-ultra-550b-a55b:free",
+     "nvidia/nemotron-3.5-lightning:free"
+    ],
+    "latency": 7.965951204299927,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3,
+    "rep": 3
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 2642,
+    "tokens_out": 81,
+    "models": [
+     "dots-studio/dots-3-note-preview:free",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    ],
+    "latency": 3.7017412185668945,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1,
+    "rep": 3
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "clawbot",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-3a64ca409edf",
+   "topic": "TCP BBR vs CUBIC congestion control",
+   "q": "bbr",
+   "html_len": 1331
+  },
+  {
+   "lane": "clawbot",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "html_len": 476
+  },
+  {
+   "lane": "clawbot",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-80a7b20bd1e4",
+   "topic": "CAP theorem in distributed systems",
+   "q": "cap theorem",
+   "html_len": 888
+  },
+  {
+   "lane": "clawbot",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-fef4207c5e40",
+   "topic": "Ada quantization in LLM models",
+   "q": "quantiz",
+   "html_len": 1086
+  },
+  {
+   "lane": "clawbot",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-70eb25a2b662",
+   "topic": "Ada Nest heartbeat escalation process",
+   "q": "heartbeat",
+   "html_len": 898
+  },
+  {
+   "lane": "clawbot",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "html_len": 286
+  },
+  {
+   "lane": "clawbot",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "html_len": 244
+  },
+  {
+   "lane": "clawbot",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-3a64ca409edf",
+   "topic": "TCP BBR vs CUBIC congestion control",
+   "q": "bbr",
+   "html_len": 774
+  },
+  {
+   "lane": "clawbot",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "html_len": 684
+  },
+  {
+   "lane": "clawbot",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-42f30505902d",
+   "topic": "CAP theorem distributed systems",
+   "q": "cap theorem",
+   "html_len": 427
+  },
+  {
+   "lane": "clawbot",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-caaae400dfa2",
+   "topic": "LLM quantization basics",
+   "q": "quantiz",
+   "html_len": 1424
+  },
+  {
+   "lane": "clawbot",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-9c1cd7c9ea45",
+   "topic": "ada-nest-heartbeat-escalation",
+   "q": "heartbeat",
+   "html_len": 984
+  },
+  {
+   "lane": "clawbot",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "html_len": 286
+  },
+  {
+   "lane": "clawbot",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "html_len": 244
+  },
+  {
+   "lane": "clawbot",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-4fd0299edf4e",
+   "topic": "TCP BBR CUBIC congestion control",
+   "q": "bbr",
+   "html_len": 559
+  },
+  {
+   "lane": "clawbot",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "html_len": 352
+  },
+  {
+   "lane": "clawbot",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-42f30505902d",
+   "topic": "CAP theorem distributed systems",
+   "q": "cap theorem",
+   "html_len": 1118
+  },
+  {
+   "lane": "clawbot",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-858061b92de9",
+   "topic": "LLM quantization and GGUF format",
+   "q": "quantiz",
+   "html_len": 1997
+  },
+  {
+   "lane": "clawbot",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-b2111839d78c",
+   "topic": "ada-nest heartbeat escalation",
+   "q": "heartbeat",
+   "html_len": 1097
+  },
+  {
+   "lane": "clawbot",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "html_len": 286
+  },
+  {
+   "lane": "clawbot",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "html_len": 244
+  }
+ ]
+}

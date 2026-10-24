@@ -1,0 +1,60 @@
+title: Education-agent lane-lift — store-aware gpt-oss:20b on Colab T4
+subtitle: first full-VRAM store-aware repetition completed 13/13;
+  dedupe 5/5, ops 5/5, recall 3/3
+icon: flask
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-23
+parent: docs/ssot/jobs/models/2026-10-23-edu-agent-bench-turn3-store-aware.yml
+runner: ada-nest queue, worker colab-4448065a-32908 epoch 6
+pack: scripts/colab/packs/edu-agent-bench
+reports:
+  json: reports/bench-edu-manage-2026-10-23-colab-t4-store-aware.json
+  markdown: reports/bench-edu-manage-2026-10-23-colab-t4-store-aware.md
+offline_judge:
+  artifact: reports/bench-edu-draft-judge-2026-10-24.json
+  n: 7
+  mean: 4.71
+  comparator_no_topic:
+    artifact: reports/bench-edu-manage-2026-10-23-colab-t4.json
+    n: 8
+    mean: 4.70
+  model: gemini-3.5-flash-lite
+
+configuration:
+  lane: local-gpt-oss-20b
+  model: gpt-oss:20b
+  hardware: Colab Tesla T4, 15 GB
+  agent_topics: true
+  judge: none
+  repetitions: 1
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+
+measured: |
+  F1 1.0; dedupe 5/5; scheduling/ops 5/5; recall 3/3;
+  completed 13/13; p50 21.5s; 33,905 input / 7,384 output tokens.
+  The first call was a 416s cold-load outlier; p50 reflects steady-state
+  and other task latencies.
+
+verdict: promising-store-aware-colab-repeat
+aq_result: |
+  This is the first full 13/13 T4 repetition with --agent-topics. The
+  score supports a directional dedupe lift relative to the earlier T4
+  run without topic context (4/5), but it is still one repetition per
+  condition. The change in ops/recall vs that prior run is also
+  single-task scale and cannot be attributed to the prompt without
+  multi-rep, alternating-order tests. Offline draft scoring was nearly
+  unchanged (4.71 vs 4.70); the judge is Gemini Flash Lite, also the
+  production current-lane model class, so this is not independent
+  evidence of a draft-quality lift.
+
+followups:
+  - "A second T4 store-aware attempt on 2026-10-24 had a pre-model HTTP
+    500 on t1-create-bbr-cubic and is separately recorded as a partial
+    availability failure; do not pool it with this completed result."
+  - "Run at least three clean repetitions per prompt condition, same
+    T4/runtime, alternating order; report per-task variance."
+  - "Offline-grade stored HTML when an independent judge becomes
+    available; the current offline judge result has a symmetry caveat."

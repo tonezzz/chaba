@@ -32,6 +32,7 @@ Usage:
   python3 scripts/bench-edu-manage.py                 # all lanes, full suite
   python3 scripts/bench-edu-manage.py --lanes hermes --tasks t1-create-bbr-cubic
   python3 scripts/bench-edu-manage.py --no-judge --out /tmp/bench
+  python3 scripts/bench-edu-manage.py --lanes clawbot --or-model nvidia/nemotron-3.5-super-vl:free
 Env: OLLAMA_URL (default http://100.75.102.88:11434), OPENROUTER_API_KEY
 or ~/.config/secrets/openrouter.env, GEMINI_API_KEY or the usual secrets
 files. Keys are loaded at runtime and never printed.
@@ -943,6 +944,10 @@ def main():
                     help="per-call timeout (s) for the local-ollama lane "
                          "(default 300 — reasoning models on a shared "
                          "RAM-offloaded GPU need more than the old 150)")
+    ap.add_argument("--or-model", default=OR_MODEL,
+                    help="OpenRouter model for the clawbot lane "
+                         f"(default {OR_MODEL}; pin a named model to "
+                         "reduce free-router model-mix confounding)")
     ap.add_argument("--tasks", nargs="+", default=None,
                     help="task ids to run (default: all)")
     ap.add_argument("--limit", type=int, default=0)
@@ -980,7 +985,8 @@ def main():
     if "current" in args.lanes:
         lanes["current"] = {"kind": "scripted", "model": CURRENT_MODEL}
     if "clawbot" in args.lanes:
-        lanes["clawbot"] = AgentLane("clawbot", OR_BASE, orkey, OR_MODEL, 90)
+        lanes["clawbot"] = AgentLane("clawbot", OR_BASE, orkey,
+                                     args.or_model, 90)
     if "hermes" in args.lanes:
         lname = ("hermes" if args.ollama_model == HERMES_MODEL
                  else "local-" + re.sub(r"[^a-z0-9]+", "-",
@@ -1023,7 +1029,8 @@ def main():
             agg = aggregate(name, t_scores, t_recs)
             all_scores.setdefault(name, []).append(agg)
             all_recs.setdefault(name, []).extend(
-                {"task": s["id"], **{k: v for k, v in r.items()
+                {"rep": rep + 1, "task": s["id"],
+                 **{k: v for k, v in r.items()
                                      if k != "calls"},
                  "tool_calls": len(r["calls"])}
                 for s, r in zip(t_scores, t_recs))
@@ -1060,6 +1067,7 @@ def main():
                                    for k, v in lanes.items()},
                          "judge": None if args.no_judge else JUDGE_MODEL,
                          "agent_topics": bool(args.agent_topics),
+                         "repetitions": args.reps,
                          "corpus": str(CORPUS)},
               "scores": all_scores, "tasks": all_recs,
               "drafts": [{k: v for k, v in d.items() if k != "html"}
@@ -1075,26 +1083,81 @@ def write_md(path, result):
     L = []
     L.append(f"# bench-edu-manage — {result['date']}")
     L.append("")
-    L.append("Card: edu-agent-benchmark. Three education-managing lanes on "
-             "one fixed corpus (`scripts/bench-edu-corpus.json`) against a "
-             "LOCAL mock WP-lesson store — never prod WP.")
+    L.append("Card: edu-agent-benchmark. "
+             f"{len(result['scores'])} education-manager lane(s) on one fixed "
+             "corpus (`scripts/bench-edu-corpus.json`) against a LOCAL mock "
+             "WP-lesson store — never prod WP.")
     L.append("")
-    L.append("| lane | capture F1 | P / R | dedupe | sched/ops | recall | "
-             "draft-Q (judge) | completed | p50 lat | tokens in/out |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|")
-    for lane, aggs in result["scores"].items():
-        a = aggs[-1]
-        dq = a.get("draft_quality") or {}
-        L.append(
-            f"| {lane} | {a['capture']['f1']} | "
-            f"{a['capture']['precision']} / {a['capture']['recall']} | "
-            f"{a['dedupe']['correct']}/{a['dedupe']['total']} | "
-            f"{a['sched_ops']['pass']}/{a['sched_ops']['total']} | "
-            f"{a['recall']['correct']}/{a['recall']['total']} | "
-            f"{dq.get('mean', 'n/a')} (n={dq.get('n', 0)}) | "
-            f"{a['loop']['completed']}/{a['loop']['total']} | "
-            f"{a['loop']['lat_p50']}s | "
-            f"{a['loop']['tokens_in']}/{a['loop']['tokens_out']} |")
+    multi_rep = max((len(x) for x in result["scores"].values()), default=1) > 1
+    if multi_rep:
+        def mean_range(values, digits=2):
+            values = [float(v) for v in values]
+            if not values:
+                return "n/a"
+            mean = statistics.mean(values)
+            if len(values) == 1:
+                return f"{mean:.{digits}f}"
+            return (f"{mean:.{digits}f} "
+                    f"[{min(values):.{digits}f}-{max(values):.{digits}f}]")
+
+        L.append("| lane | reps | F1 mean [range] | dedupe mean [range] | "
+                 "ops mean [range] | recall mean [range] | complete | "
+                 "p50 mean [range] | avg tokens in/out; draft-Q |")
+        L.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
+        for lane, aggs in result["scores"].items():
+            dedupe = [a["dedupe"]["score"] for a in aggs]
+            ops = [a["sched_ops"]["pass"] / max(a["sched_ops"]["total"], 1)
+                   for a in aggs]
+            recall = [a["recall"]["correct"] / max(a["recall"]["total"], 1)
+                      for a in aggs]
+            done = sum(a["loop"]["completed"] for a in aggs)
+            total = sum(a["loop"]["total"] for a in aggs)
+            loop = [a["loop"] for a in aggs]
+            judged = [a["draft_quality"]["mean"] for a in aggs
+                      if a.get("draft_quality")]
+            dq = (mean_range(judged) if judged else "n/a")
+            L.append(
+                f"| {lane} | {len(aggs)} | "
+                f"{mean_range([a['capture']['f1'] for a in aggs])} | "
+                f"{mean_range(dedupe)} | {mean_range(ops)} | "
+                f"{mean_range(recall)} | {done}/{total} | "
+                f"{mean_range([a['loop']['lat_p50'] for a in aggs])}s | "
+                f"{round(statistics.mean(a['tokens_in'] for a in loop))}/"
+                f"{round(statistics.mean(a['tokens_out'] for a in loop))} "
+                f"(judge {dq}) |")
+        L.append("")
+        L.append("Ranges are across independent repetitions; completion is "
+                 "the combined count. Reps remain separate in the JSON.")
+        L.append("")
+        L.append("## Per-repetition summary")
+        L.append("| lane | rep | F1 | dedupe | ops | recall | completed | p50 |")
+        L.append("|---|---:|---:|---:|---:|---:|---:|---:|")
+        for lane, aggs in result["scores"].items():
+            for rep, a in enumerate(aggs, start=1):
+                L.append(
+                    f"| {lane} | {rep} | {a['capture']['f1']} | "
+                    f"{a['dedupe']['correct']}/{a['dedupe']['total']} | "
+                    f"{a['sched_ops']['pass']}/{a['sched_ops']['total']} | "
+                    f"{a['recall']['correct']}/{a['recall']['total']} | "
+                    f"{a['loop']['completed']}/{a['loop']['total']} | "
+                    f"{a['loop']['lat_p50']}s |")
+    else:
+        L.append("| lane | capture F1 | P / R | dedupe | sched/ops | recall | "
+                 "draft-Q (judge) | completed | p50 lat | tokens in/out |")
+        L.append("|---|---|---|---|---|---|---|---|---|---|")
+        for lane, aggs in result["scores"].items():
+            a = aggs[-1]
+            dq = a.get("draft_quality") or {}
+            L.append(
+                f"| {lane} | {a['capture']['f1']} | "
+                f"{a['capture']['precision']} / {a['capture']['recall']} | "
+                f"{a['dedupe']['correct']}/{a['dedupe']['total']} | "
+                f"{a['sched_ops']['pass']}/{a['sched_ops']['total']} | "
+                f"{a['recall']['correct']}/{a['recall']['total']} | "
+                f"{dq.get('mean', 'n/a')} (n={dq.get('n', 0)}) | "
+                f"{a['loop']['completed']}/{a['loop']['total']} | "
+                f"{a['loop']['lat_p50']}s | "
+                f"{a['loop']['tokens_in']}/{a['loop']['tokens_out']} |")
     L.append("")
     L.append("## Per-task")
     for lane, recs in result["tasks"].items():
@@ -1104,41 +1167,72 @@ def write_md(path, result):
                 f"{f['topic']}({'new' if f['created'] else 'upd'})"
                 for f in r.get("filings", []))
             L.append(
-                f"- `{r['task']}` completed={r['completed']} "
+                f"- rep={r.get('rep', 1)} `{r['task']}` "
+                f"completed={r['completed']} "
                 f"calls={r.get('tool_calls', 0)} llm={r.get('llm_calls', 0)} "
                 f"lat={r.get('latency', 0):.0f}s"
                 + (f" filed: {fl}" if fl else "")
                 + (f" ERR={r['err']}" if r.get("err") else ""))
     L.append("")
     L.append("## Method notes")
-    L.append("- `current` = real pipeline path (mechanical filter -> "
-             "flash-lite classify with the production CLASSIFY_PROMPT -> "
-             "draft with DRAFT_PROMPT -> lesson-add upsert semantics "
-             "incl. its meta-overwrite quirk). Ops/recall run the "
-             "documented scripted-equivalent (deterministic).")
-    L.append("- `clawbot` = OpenClaw-shaped tool loop (same system-prompt "
-             "duties + store CRUD tools) on `openrouter/free`. The real "
-             "gateway on tony-omen is loopback:18789 — unreachable over "
-             "tailnet — so the surface is emulated in-process on its "
-             "declared provider.")
-    for lk, lc in result["config"]["lanes"].items():
+    configs = result["config"]["lanes"]
+    if "current" in configs:
+        L.append("- `current` = real pipeline path (mechanical filter -> "
+                 "flash-lite classify with the production CLASSIFY_PROMPT -> "
+                 "draft with DRAFT_PROMPT -> lesson-add upsert semantics "
+                 "incl. its meta-overwrite quirk). Ops/recall run the "
+                 "documented scripted-equivalent (deterministic).")
+    if "clawbot" in configs:
+        or_model = configs["clawbot"].get("model", OR_MODEL)
+        L.append("- `clawbot` = OpenClaw-shaped tool loop (same system-prompt "
+                 f"duties + store CRUD tools) on `{or_model}`. The real "
+                 "gateway on tony-omen is loopback:18789 — unreachable over "
+                 "tailnet — so the surface is emulated in-process.")
+    if multi_rep:
+        for lane, recs in result["tasks"].items():
+            reps = {}
+            for record in recs:
+                rep = record.get("rep", 1)
+                reps.setdefault(rep, set()).update(record.get("models") or [])
+            for rep, models in sorted(reps.items()):
+                if models:
+                    L.append(f"- `{lane}` rep {rep} returned model IDs: "
+                             + ", ".join(f"`{m}`" for m in sorted(models)))
+    for lk, lc in configs.items():
         if lk.startswith("local-") or lk == "hermes":
-            L.append(f"- `{lk}` = identical loop on omen ollama /v1 "
-                     f"{lc.get('model')}.")
-    fid = "; ".join(
-        f"{lane}: arg_repairs={a['loop'].get('arg_repairs', 0)} "
-        f"arg_errors={a['loop'].get('arg_errors', 0)} "
-        f"json_retries={a['loop'].get('json_retries', 0)} "
-        f"json_mode={'on' if a['loop'].get('json_mode') else 'off'}"
-        for lane, a in ((l, aggs[-1]) for l, aggs
-                        in result["scores"].items())
-        if "arg_repairs" in a["loop"])
+            L.append(f"- `{lk}` = identical loop on "
+                     f"{lc.get('base', 'Ollama /v1')} {lc.get('model')}.")
+    if multi_rep:
+        fid = "; ".join(
+            f"{lane}: " + " | ".join(
+                f"rep{rep}: repairs={a['loop'].get('arg_repairs', 0)} "
+                f"errors={a['loop'].get('arg_errors', 0)} "
+                f"retries={a['loop'].get('json_retries', 0)}"
+                for rep, a in enumerate(aggs, start=1))
+            for lane, aggs in result["scores"].items()
+            if aggs and "arg_repairs" in aggs[-1]["loop"])
+    else:
+        fid = "; ".join(
+            f"{lane}: arg_repairs={a['loop'].get('arg_repairs', 0)} "
+            f"arg_errors={a['loop'].get('arg_errors', 0)} "
+            f"json_retries={a['loop'].get('json_retries', 0)} "
+            f"json_mode={'on' if a['loop'].get('json_mode') else 'off'}"
+            for lane, aggs in result["scores"].items()
+            for a in aggs[-1:]
+            if "arg_repairs" in a["loop"])
     if fid:
         L.append("- Structured-output counters (turn-2 loop change — args "
                  "repair, schema-retry, forced-JSON escalation): " + fid)
-    L.append("- Judge = one fixed model (gemini-3.5-flash-lite) for all "
-             "lanes; it is also the `current` lane's model — symmetry "
-             "caveat applies to draft-quality only.")
+    if result["config"].get("judge"):
+        judge_note = f"Judge = {result['config']['judge']}."
+        if "current" in configs and result["config"]["judge"] == configs[
+                "current"].get("model"):
+            judge_note += (" It is also the `current` lane's model; the "
+                           "symmetry caveat applies to draft-quality.")
+        L.append("- " + judge_note)
+    else:
+        L.append("- Draft quality was not judged; saved HTML filings can "
+                 "be scored offline.")
     Path(path).write_text("\n".join(L) + "\n")
     print(f"wrote {path}")
 

@@ -1,0 +1,42 @@
+title: Education-agent lane-lift — partial store-aware T4 attempt
+subtitle: t1 failed with HTTP 500 before model execution; remaining
+  12 tasks completed, so this is not a clean comparison repetition
+icon: warning
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-24
+parent: docs/ssot/jobs/models/2026-10-23-edu-agent-bench-colab-t4-store-aware.yml
+runner: ada-nest queue, worker colab-1eb43f13-43937 epoch 10
+pack: scripts/colab/packs/edu-agent-bench
+reports:
+  json: reports/bench-edu-manage-2026-10-24-colab-t4-store-aware-http500.json
+  markdown: reports/bench-edu-manage-2026-10-24-colab-t4-store-aware-http500.md
+
+configuration:
+  lane: local-gpt-oss-20b
+  model: gpt-oss:20b
+  hardware: Colab Tesla T4, 15 GB
+  agent_topics: true
+  judge: none
+  repetitions: 1
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+
+measured: |
+  t1-create-bbr-cubic: HTTP 500, 0 model calls, incomplete.
+  Remaining 12 tasks completed. Partial aggregates: F1 0.889,
+  dedupe 3/5, ops 5/5, recall 3/3, p50 16.1s.
+
+verdict: infra-failed-partial
+aq_result: |
+  The only capture false negative and both dedupe misses are affected by
+  the failed t1 task; the run cannot be compared with the clean 13/13
+  repetition. The HTTP 500 occurred before a model call, so it is not
+  evidence of model failure. Preserve the raw artifact as an availability
+  trace and exclude it from capability aggregates.
+
+followups:
+  - "Retry t1 in a new unique output run; do not overwrite this artifact."
+  - "Continue the planned multi-rep A/B only with fully completed
+    repetitions and record infrastructure errors separately."

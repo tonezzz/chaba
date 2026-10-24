@@ -1,0 +1,414 @@
+{
+ "at": "2026-10-24 05:03:04",
+ "date": "2026-10-24",
+ "config": {
+  "lanes": {
+   "local-gpt-oss-20b": {
+    "base": "http://localhost:11434/v1",
+    "model": "gpt-oss:20b",
+    "json_mode": true
+   }
+  },
+  "judge": null,
+  "agent_topics": true,
+  "corpus": "/tmp/chaba/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "local-gpt-oss-20b": [
+   {
+    "lane": "local-gpt-oss-20b",
+    "capture": {
+     "tp": 4,
+     "fp": 0,
+     "fn": 1,
+     "precision": 1.0,
+     "recall": 0.8,
+     "f1": 0.889
+    },
+    "dedupe": {
+     "correct": 3,
+     "total": 5,
+     "score": 0.6
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 3,
+     "creates": 3
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 12,
+     "total": 13,
+     "lat_mean": 36.7,
+     "lat_p50": 16.1,
+     "tokens_in": 36414,
+     "tokens_out": 6162,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": null
+   }
+  ]
+ },
+ "tasks": {
+  "local-gpt-oss-20b": [
+   {
+    "task": "t1-create-bbr-cubic",
+    "final_text": "",
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "models": [],
+    "latency": 33.847984790802,
+    "err": "HTTP 500",
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": false,
+    "filings": [],
+    "tool_calls": 0
+   },
+   {
+    "task": "t2-skip-commands",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1946,
+    "tokens_out": 107,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 272.4233088493347,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "t3-update-tailscale",
+    "final_text": "lesson-90f614241c87 updated",
+    "llm_calls": 4,
+    "tokens_in": 6680,
+    "tokens_out": 1697,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 47.47474813461304,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<p><strong>ACL rules</strong> specify which <strong>source</strong> nodes can reach which <strong>destination</strong> nodes and ports. They are written as JSON objects in the <code>acl</code> array of the <code>tailscale.com</code> config.</p>\n<p><strong>Tags</strong> are labels you attach to devices instead of users. A tag turns a device into an identity that can be referenced in ACL rules, allowing the rule to apply to all devices with that tag regardless of who owns them.</p>\n<p>Example:</p>\n<pre><code>{\n  \"action\": \"accept\",\n  \"src\": [\"group:admins\"],\n  \"dst\": [\"tag:server\"],\n  \"ports\": [\"22\"]\n}</code></pre>\n<p>Here <code>group:admins</code> is a user group, while <code>tag:server</code> refers to any device marked with the <code>server</code> tag. The rule permits admins to SSH into any tagged server.</p>\n<p>Key differences:</p>\n<ul>\n<li><strong>ACL rule</strong> defines the traffic policy (who can talk to whom on which ports).</li>\n<li><strong>Tag</strong> is a reusable identity that can be applied to multiple devices, decoupling access control from individual users.</li>\n<li>Using tags simplifies management when devices change ownership or when you need to grant or revoke access for a whole class of machines.</li>\n</ul>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "t4-mixed-cap-private",
+    "final_text": "lesson-80a7b20bd1e4 created",
+    "llm_calls": 2,
+    "tokens_in": 2419,
+    "tokens_out": 862,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 22.322810888290405,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-80a7b20bd1e4",
+      "topic": "CAP theorem in distributed systems",
+      "created": true,
+      "content": "<p><strong>CAP theorem states that a distributed data store can guarantee at most two of consistency, availability, and partition tolerance.</strong> When a network partition occurs, you must choose between maintaining consistency (CP) or availability (AP), while partition tolerance is always required.</p><p>In practice:</p><ul><li><strong>CP (Consistency + Partition tolerance)</strong>: The system refuses writes or delays responses during a partition to keep data consistent.</li><li><strong>AP (Availability + Partition tolerance)</strong>: The system continues to serve requests, accepting that data may become temporarily inconsistent and will be reconciled later.</li></ul><p>When no partition exists, a system can provide both consistency and availability. The CAP theorem guides design decisions for distributed databases, messaging systems, and replicated services.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 1
+   },
+   {
+    "task": "t5-thai-quantization",
+    "final_text": "lesson-098b5e999880 created",
+    "llm_calls": 2,
+    "tokens_in": 2300,
+    "tokens_out": 602,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 17.21397066116333,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-098b5e999880",
+      "topic": "LLM quantization",
+      "created": true,
+      "content": "<h3>LLM Quantization</h3><p>Quantization reduces the precision of model weights from 16‑ or 32‑bit floating point to 8‑, 4‑bit, or lower integer representations, shrinking the model size and speeding up inference at the cost of a small drop in accuracy.</p><p>GGUF (Generalized Graph Unified Format) is a file format that stores these quantized weights along with a memory‑friendly layout, enabling fast mapping into RAM and efficient local inference. Because the weights are smaller and the layout is optimized for quick access, GGUF models run noticeably faster than their full‑precision counterparts.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 1
+   },
+   {
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson-69cd1a5df775 + created (ada nest heartbeat escalation)",
+    "llm_calls": 3,
+    "tokens_in": 3258,
+    "tokens_out": 449,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 13.135896921157837,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-69cd1a5df775",
+      "topic": "ada nest heartbeat escalation",
+      "created": true,
+      "content": "<h3>How Ada Nest Heartbeat Escalation Works</h3><p>Each member node sends a heartbeat at a fixed interval. The hub monitors the timestamps of these heartbeats. If a node fails to send <strong>N</strong> consecutive heartbeats, its status becomes <em>stale</em> and then <em>degraded</em>. Only after the degraded period expires without a heartbeat does the hub trigger an escalation (e.g., a page or alert). A single missed heartbeat or a brief network glitch does not cause an escalation.</p>",
+      "next_review": "2026-10-31",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "task": "t7-ephemeral",
+    "final_text": "none",
+    "llm_calls": 4,
+    "tokens_in": 4047,
+    "tokens_out": 597,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 16.066760301589966,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   },
+   {
+    "task": "o1-mark-learned",
+    "final_text": "lesson-abdcd6c6c5e1 + status learned",
+    "llm_calls": 4,
+    "tokens_in": 4285,
+    "tokens_out": 568,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 16.032832145690918,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-10-23",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o2-push-review",
+    "final_text": "lesson-90f614241c87: next_review updated to 2026-11-23",
+    "llm_calls": 4,
+    "tokens_in": 4311,
+    "tokens_out": 555,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 16.091955184936523,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-23",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "task": "o3-due-list",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 1790,
+    "tokens_out": 289,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 8.720244407653809,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1",
+    "llm_calls": 2,
+    "tokens_in": 1828,
+    "tokens_out": 154,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 4.778674840927124,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r2-recall-tailscale",
+    "final_text": "lesson-90f614241c87",
+    "llm_calls": 2,
+    "tokens_in": 1811,
+    "tokens_out": 222,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 6.45181941986084,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1739,
+    "tokens_out": 60,
+    "models": [
+     "gpt-oss:20b"
+    ],
+    "latency": 2.024789810180664,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "html_len": 1247
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-80a7b20bd1e4",
+   "topic": "CAP theorem in distributed systems",
+   "q": "cap theorem",
+   "html_len": 881
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-098b5e999880",
+   "topic": "LLM quantization",
+   "q": "quantiz",
+   "html_len": 607
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-69cd1a5df775",
+   "topic": "ada nest heartbeat escalation",
+   "q": "heartbeat",
+   "html_len": 493
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "html_len": 286
+  },
+  {
+   "lane": "local-gpt-oss-20b",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "html_len": 244
+  }
+ ]
+}
