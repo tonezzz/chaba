@@ -1,7 +1,7 @@
 id: jev-model-chain-probe4
 title: 'JEV model-chain probe #4: JEV_LANE=1 live verify (free_lane -> flash-lite)'
-column: doing
-updated: 2026-10-25 06:26
+column: review
+updated: 2026-10-25 06:28
 brief: 'Probe #4: JEV_LANE=1 drop-in now on idc02 runner-agent. A free_lane card should classify at claim -> card
   lane+model persisted -> session DEVIN_MODEL=flash-lite.'
 priority: low
@@ -16,8 +16,12 @@ spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-fl
   DEVIN_MODEL set. Task: touch marker + commit.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0  as `becc5221` on the dispatch branch (no push), findings posted to the card via board-api. |
+    devin-task-20261024-232257-expected-card-action-lane-free.service: Consumed 7.776s CPU time over 3min 14.247s
+    wall clock time, 390.3M memory peak.'
+  verified: true
 ref: OPS-0840
 comms:
 - at: 2026-10-25 06:22
@@ -48,3 +52,9 @@ comms:
   text: 'session done: marker + outcome committed on dispatch branch (becc5221), no push per rails. Follow-up: re-probe
     after mn01 chaba-repo-sync, and implement queue-time classify in board-api so lane/model persist on the card
     itself.'
+- at: 2026-10-25 06:28
+  from: mn01
+  text: 'finished (ok): exit=0  as `becc5221` on the dispatch branch (no push), findings posted to the card via
+    board-api. | devin-task-20261024'
+review_kind: verify
+claim: {}
