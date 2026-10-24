@@ -1,15 +1,15 @@
 id: disk-auto-tony-omen-home
-title: Disk tony-omen /home critical
-brief: Disk space on tony-omen (/home) is running critically low — check the note for the rate and top growers,
-  then free space or close the card.
-column: done
+title: Disk tony-omen /home fills in <7d
+brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
+  or close the card.
+column: review
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: 'Auto-recovered 2026-10-23: tony-omen /home back in bounds (72%, slope 9.51 GiB/d)'
+note: '83% used, growing 8.2 GiB/day -> full in ~6.2d top grower 24h: /home/tony/.cache/nest-worker/ +27.8 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-23 20:31
+updated: 2026-10-24 13:47
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -125,6 +125,9 @@ comms:
   from: devin
   text: 'raised request capture-raw-omen-gpt-backup: The GDrive text inventory is not a restorable GPT backup: unprivileged
     sfdisk was denied on /dev/nvme0n1. To create the '
+- at: 2026-10-24 13:47
+  from: chaba
+  text: 'request-sweep: 2 request(s) unanswered >12h — escalation pushed'
 requests:
 - id: omen-disk-plan
   from: devin
@@ -152,6 +155,7 @@ requests:
   - id: hold
     label: Hold at 2.20GHz
   suggested: run-now
+  escalated_at: 2026-10-24 13:47
 - id: capture-raw-omen-gpt-backup
   ask: 'The GDrive text inventory is not a restorable GPT backup: unprivileged sfdisk was denied on /dev/nvme0n1.
     To create the binary GPT backup (read-only from the NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
@@ -166,8 +170,10 @@ requests:
   - id: hold
     label: Keep the text inventory only for now
   suggested: run-backup
+  escalated_at: 2026-10-24 13:47
 action:
   status: done
   type: dispatch
 ref: OPS-0405
 claim: {}
+awaiting_action: true
