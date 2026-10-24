@@ -1,7 +1,7 @@
 id: pattern-library-coding-research
 title: 'research: pattern-match coding — JEV matcher + pattern library + bench (P1-P5)'
 column: doing
-updated: 2026-10-24 17:49
+updated: 2026-10-24 17:55
 brief: 'Test the hypothesis: a big share of coding is match-and-transform. Build pattern library (mined from repo
   history) + JEV matcher + two application arms (hint/codemod), benchmark against existing eval corpus (same gates).'
 priority: high
@@ -55,6 +55,13 @@ comms:
   text: 'session start: state audited — collection has 4 patterns (no m1/m2 fix-commit leak in store, but mine-mddb.jsonl
     still lists c0850f0/497b982 as candidates). Plan: codify leak-guard + 3-way router (codemod/hint/agent) + P5
     mine-back in repo, then run arm3 on m1 (and t2 if time).'
+- at: 2026-10-24 17:55
+  from: devin
+  text: 'leak-guard built: banned = children of each task.yaml repo.ref (t1 f8a5d9c, t2 5c5d3c5, m1 c0850f0, m2
+    497b982). Verified: mine_patterns skips them, mine_back refuses them, router drops same-task hits (t1 strict:
+    pat-elevated-geom dropped). mine-mddb.jsonl sanitized (was carrying both banned candidates). Toolkit codified
+    in-repo scripts/pattern-lib/. Now running arm3 on m1 — top retrieval is pat-lsn-too-old-server @0.73 (adjacent-class,
+    different defect) so this exercises the hint path.'
 action:
   type: dispatch
   status: running
