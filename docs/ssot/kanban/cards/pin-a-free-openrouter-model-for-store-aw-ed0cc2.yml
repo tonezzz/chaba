@@ -1,7 +1,7 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
 column: backlog
-updated: 2026-10-24 17:31
+updated: 2026-10-24 17:35
 action:
   type: manual
   status: idle
@@ -41,6 +41,13 @@ comms:
     commit 0e55eea5f): three reps all F1 1.0, dedupe 3/5 each, ops 4/5,3/5,5/5; mean p50 10.5s. Store-aware treatment
     got HTTP 429 twice at rep1 tasks 4 and 5 and was stopped; partial log/job recorded separately. Waiting for free
     capacity; no paid API called. The request options on this card remain open.'
+- at: 2026-10-24 17:35
+  from: devin
+  text: 'Cooldown probe after the first treatment 429s also failed: pinned store-aware tasks t3-update-tailscale
+    and t6-hub-ada-nest-heartbeat each returned HTTP 429 before any model/tool call. Stopped the retry to avoid
+    repeated rate-limited traffic. Partial JSON/Markdown, raw log, and job record are durable; lesson 2103 updated.
+    The existing request still asks whether to wait for free capacity (recommended) or authorize a paid route; no
+    paid calls made.'
 requests:
 - id: pinned-nemotron-store-aware-treatment-hi-0672dc
   ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
