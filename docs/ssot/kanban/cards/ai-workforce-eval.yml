@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: review
-updated: 2026-10-24 18:09
+updated: 2026-10-24 18:31
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -142,6 +142,13 @@ comms:
     from Colab egress — fixed with ufw allow 22/tcp (key-only ssh confirmed safe); (2) fresh runtime generated a
     NEW keypair — authorized the new public key; (3) diagnostic ssh omitted -i key file (false negative). Now firing
     config.colab-live.yaml: t1 + o1 x opencode+openhands on the GPU —'
+- at: 2026-10-24 18:31
+  from: devin
+  text: 'T4 LIVE LANE RESULT: 0/4 — qwen3:8b on GPU made the same non-fix as CPU (zero edits, baseline 6/7). CONFIRMED:
+    the local-lane code gap is MODEL CAPABILITY, not hardware speed. The GPU helps only if a capable model is loaded
+    (gpt-oss:20b or a better qwen). Tunnel itself WORKS (UFW fix + key authorization were the blockers). colab-qwen3
+    stays registered for future capable-model runs. Takeaway for the ladder: local lane = chores only (and codemod
+    for known classes); code needs paid (Fable) or a cap'
 action:
   type: dispatch
   status: done
