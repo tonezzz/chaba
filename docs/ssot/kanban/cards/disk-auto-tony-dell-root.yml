@@ -1,15 +1,17 @@
 id: disk-auto-tony-dell-root
-title: Disk tony-dell / critical
-column: done
+title: Disk tony-dell / fills in <7d
+column: review
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: 'Auto-recovered 2026-10-17: tony-dell / back in bounds (83%, slope -2.15 GiB/d)'
+note: '73% used, growing 8.1 GiB/day -> full in ~7.0d top grower 24h: /home/tony/.cache
+  +17.2 GiB, /home/tony/.cache/nest-worker/ +6.3 GiB, /home/tony/.cache/pip/ +3.1
+  GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
   tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
   ~/.cache/yt-live-media LRU is 8GiB.'
-updated: '2026-10-17'
+updated: '2026-10-24'
 comms:
 - at: 2026-10-07 07:27
   from: tony
@@ -23,8 +25,8 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0292'
-brief: Disk space on tony-dell (/) is running critically low — check the note for
-  the rate and top growers, then free space or close the card.
+brief: Disk space on tony-dell (/) is running low — check the note for the rate and
+  top growers, then free space or close the card.
 action:
   status: done
   verified: true
