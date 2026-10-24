@@ -1,7 +1,7 @@
 id: dispatch-classify-at-queue-time
 title: 'Classify lane at queue time: board-api queue verb must persist action.lane+model'
 column: backlog
-updated: 2026-10-25 06:15
+updated: 2026-10-25 06:28
 priority: medium
 program: chaba-ci
 tags:
@@ -26,3 +26,10 @@ comms:
 - at: 2026-10-25 06:15
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-25 06:28
+  from: devin
+  text: 'probe5 evidence (jev-model-chain-probe5): tony-macbook claimed the card running a pre-patch Oct-15 runner-agent
+    — no classify code, so action.lane/model never landed and DEVIN_MODEL was never set. Patching claim-time classify
+    per-runner is whack-a-mole (fleet has 4+ runners; the brief only patched 3). Queue-time classify in board-api
+    is the claimer-agnostic fix — even old binaries already forward action.model -> DISPATCH_MODEL. Recommend bumping
+    this out of backlog.'
