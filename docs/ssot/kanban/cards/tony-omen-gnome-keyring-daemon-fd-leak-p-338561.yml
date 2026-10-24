@@ -1,7 +1,7 @@
 id: tony-omen-gnome-keyring-daemon-fd-leak-p-338561
 title: tony-omen gnome-keyring-daemon fd leak — pegged at 1024/1024, 30% CPU
 column: doing
-updated: 2026-10-24 19:54
+updated: 2026-10-24 19:55
 priority: high
 note: 'Found while investigating timer-alert-tony-dell-tony-dell-mcp-health. On tony-omen, gnome-keyring-daemon
   pid 9755 (up 4d9h) holds exactly 1024 fds = its soft nofile limit, burns ~30% CPU, and has spammed auth.log with
@@ -42,6 +42,10 @@ comms:
     restart; no clients held keyring sockets). Note: original leaking pid 9755 had already died Oct 19 17:51 when
     user@1000 restarted; this restart confirms the service is clean. Trail: docs/ssot/jobs/infrastructure/2026-10-24-tony-omen-gnome-keyring-fd-leak.yml.
     Side observation: snapd'
+- at: 2026-10-24 19:55
+  from: chaba
+  text: 'patch-relay: dispatch/20261024-195119-restart-the-gnome-keyring-daem from tony-omen — 3270B bundle in patch-inbox
+    (tony-omen-gnome-keyring-daemon-fd-leak-p-338561-d9aed27159.bundle); merge-sweep will land it'
 spec: Restart the gnome-keyring-daemon user service on host tony-omen to resolve the file descriptor leak and high
   CPU usage. Target host is tony-omen, addressing pid 9755 which is pegged at 1024 fds and spamming auth.log. Constraints
   include avoiding disruption to critical active user sessions while executing the restart. The done-condition is
