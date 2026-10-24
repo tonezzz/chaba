@@ -1,7 +1,7 @@
 id: jev-model-chain-probe8
 title: 'JEV model-chain probe #8: debug trace (env DISPATCH_MODEL)'
 column: review
-updated: 2026-10-25 06:40
+updated: 2026-10-25 06:45
 brief: 'Probe #8 with DEBUG trace in runner-agent: verify DISPATCH_MODEL in env at dispatch.'
 priority: low
 program: chaba-ci
@@ -55,5 +55,9 @@ comms:
     and FAILED (exit=1): devin CLI v3000.10.35 on runners does NOT accept --model (help shows no --model flag; devin-dispatch
     passes --setenv=DEVIN_MODEL --model which the CLI ignores). The lane->model chain is blocked at the devin CLI
     compatibility layer, not the routing. NEXT: either '
+- at: 2026-10-25 06:45
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-063835-expected-debug-line-shows-mode on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
