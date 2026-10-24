@@ -1,7 +1,7 @@
 id: mcp-colab-control-plane
 title: build mcp-colab — Colab fleet control plane (packs, tunnel, model probes)
 column: doing
-updated: 2026-10-24 17:47
+updated: 2026-10-24 17:48
 brief: 'Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive
   + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive
   poking.'
@@ -37,6 +37,10 @@ comms:
 - at: 2026-10-24 17:47
   from: chaba
   text: started devin-task-20261024-174711-python-mcp-server-host-tony-de on tony-omen (dispatch)
+- at: 2026-10-24 17:48
+  from: devin
+  text: 'dispatch 174711 picked up card — server.py already on branch (fe76cf12d, built 08:57). Verifying tools
+    end-to-end on omen: rclone gdrive:ada-nest/packs reachable, listing live state now.'
 action:
   type: dispatch
   status: running
