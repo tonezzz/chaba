@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
-column: review
-updated: 2026-10-24 19:49
+column: backlog
+updated: 2026-10-24 20:01
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -162,14 +162,15 @@ comms:
 - at: 2026-10-24 19:49
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-24 20:01
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: done
-  runner: idc02
+  status: queued
   result: 'exit=0 ocs/ssot/jobs/bench/2026-10-24-m1-behavioral-rescore.yml` — all on the dispatch branch, nothing
     pushed. | devin-task-20261024-165138-harness-done-at-evals-agent-co.service: Consumed 42.707s CPU time, 276.9M
     memory peak, 0B memory swap peak.'
-  verified: true
   sweep:
     close_held: 2026-10-24 17:13
 requests:
@@ -185,6 +186,6 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-10-24 queue
 review_kind: verify
 claim: {}
-awaiting_action: true
