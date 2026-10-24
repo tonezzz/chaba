@@ -1,7 +1,7 @@
 id: mcp-colab-control-plane
 title: build mcp-colab — Colab fleet control plane (packs, tunnel, model probes)
-column: review
-updated: 2026-10-24 17:56
+column: done
+updated: 2026-10-24 17:59
 brief: 'Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive
   + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive
   poking.'
@@ -56,12 +56,20 @@ comms:
 - at: 2026-10-24 17:56
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-24 17:59
+  from: chaba
+  text: 'merge-sweep: merged a46d8a14 (dispatch/20261024-174711-python-mcp-server-host-tony-de from tony-omen) ->
+    origin/master — marked verified (exit_code=0; 2 file(s) changed vs base) — auto-closed'
 action:
   type: dispatch
   status: done
   runner: tony-omen
   result: 'exit=0 ctive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261024-174711-python-mcp-server-host-tony-de.service:
     Consumed 1min 673ms CPU time over 6min 3ms wall clock time, 1G memory peak, 343.1M memory swap peak.'
-  verified: false
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-24 17:59
+  note: verified — exit_code=0; 2 file(s) changed vs base
