@@ -1,7 +1,7 @@
 id: detect-ada-telegram-webhook-registration-85a1e9
 title: Detect Ada Telegram webhook registration drift
 column: backlog
-updated: 2026-10-23 20:46
+updated: 2026-10-24 15:55
 action:
   type: dispatch
 ref: ADA-0803
@@ -13,3 +13,9 @@ comms:
     existed; setWebhook was missing. Add a non-secret health check (at relay startup and/or timer) that compares
     getWebhookInfo.url to https://api.surf-thailand.com/webhook/tg, reports nonzero pending_update_count/stale delivery
     errors, and alerts without printing bot token or'
+- at: 2026-10-24 15:55
+  from: devin
+  text: 'Implemented and deployed as commit 5c9605369.  runs via SSOT-rendered idc03 systemd timer every 5m, queries
+    getWebhookInfo using telegram-bot.env, alerts the ada-ha group on URL drift/pending updates/recent delivery
+    errors/API failure, throttles repeats 6h and alerts on recovery. It never calls setWebhook and never logs tokenized
+    URLs. Tests: 5 pass. Live run: healthy; current URL registered, pending=0.'
