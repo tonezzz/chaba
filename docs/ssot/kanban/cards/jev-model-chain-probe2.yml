@@ -1,0 +1,23 @@
+id: jev-model-chain-probe2
+title: 'JEV model-chain probe #2: verify flash-lite reaches the session (post-fix)'
+column: backlog
+updated: 2026-10-25 06:13
+brief: 'Probe #2 after c4fc7cac1: a free_lane card should get action.model=litellm/gemini-3.5-flash-lite persisted,
+  and the runner session should run with DEVIN_MODEL set.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- dispatch
+- probe
+- lane
+- model
+spec: 'Expected: classify_lane -> free_lane -> action.model=litellm/gemini-3.5-flash-lite on the card -> runner
+  session DEVIN_MODEL=flash-lite. Task: touch a marker file and commit.'
+action:
+  type: dispatch
+ref: OPS-0837
+comms:
+- at: 2026-10-25 06:13
+  from: devin
+  text: card captured via board-api
