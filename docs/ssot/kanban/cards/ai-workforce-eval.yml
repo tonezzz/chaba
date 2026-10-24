@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: backlog
-updated: 2026-10-24 13:32
+updated: 2026-10-24 14:06
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -69,3 +69,10 @@ comms:
     bias (held-out test references rc.connected field from the ORIGINAL commit — agent wrote behaviorally-different
     API shape). m2 = same pattern (verifySnapshot symbol missing). t2 = 0/0 verifier no-op. CONCLUSION: paid lane
     CAN carry Go replication fixes; M1/M'
+- at: 2026-10-24 14:06
+  from: devin
+  text: 'M1 verifier assessment: held-out tests couple to the ORIGINAL fix internals (rc.connected, rc.lagMs, rc.applier).
+    The paid model fix is behaviorally correct (streamConnected + IsHealthy + handler surfaces leader_addr/current_lsn/lag)
+    but cannot compile against the original-field tests. Attempted an interface-agnostic behavioral test: works
+    only for the pure-client contract; the handler test needs a live-leader mock that does not exist — full fix
+    = write M1-behavioral task with a mockable interfa'
