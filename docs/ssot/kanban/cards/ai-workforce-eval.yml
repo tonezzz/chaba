@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: doing
-updated: 2026-10-24 20:14
+updated: 2026-10-24 20:16
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -193,6 +193,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261024-165138-harness-done-at-evals-agent-co on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-24 20:16
+  from: devin
+  text: 'T4 PACK QUEUE PREPARED (6 staged, all unclaimed): (1) eval-t1-gptoss — gpt-oss:20b on t1 terrology (the
+    CAPABLE-model-on-GPU experiment; omen CPU couldn''t edit, T4 answers capability ceiling); (2) eval-m1-behavioral
+    — qwen3:8b on m1 follower-health (honest verifier BEN-0832); (3) eval-m1-gptoss — gpt-oss:20b on m1 (Go wiring,
+    the model that might thread the handler); (4) eval-o2 — qwen3:8b on o2 YAML chore (self-contained, no network);
+    (5) lesson-polish — deterministic audit (CPU); (6) eval-code'
 action:
   type: dispatch
   status: running
@@ -204,6 +211,7 @@ action:
   sweep:
     close_held: 2026-10-24 17:13
     stale_running: 2026-10-24 20:14
+    session_gone: 2026-10-24 20:14
 requests:
 - id: or-weekly-key-cap-is-now-exhausted-402-m-d6f35d
   ask: 'OR weekly key cap is now EXHAUSTED (402 mid-run 16:55) — paid lane down until ~Oct 26 reset. Pick: ★ wait
