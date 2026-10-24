@@ -1,7 +1,7 @@
 id: bench-verifier-inject-clobber
 title: agent-cost-bench verifier clobbers tracked repo test files on inject
-column: review
-updated: 2026-10-25 05:43
+column: done
+updated: 2026-10-25 05:45
 brief: score.py copies task tests/* into the repo package dir; when a held-out file shares a name with a tracked
   repo test it overwrites it and leaves residue that contaminates later verifiers.
 priority: medium
@@ -75,6 +75,9 @@ comms:
 - at: 2026-10-25 05:43
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-25 05:45
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -84,3 +87,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 05:45
+  note: verified — evidence checks green, closing itself
