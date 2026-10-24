@@ -1,7 +1,7 @@
 id: ai-lane-delegation-procedure
 title: 'procedure: start using the AI lanes for real — delegation + testing protocol'
 column: backlog
-updated: 2026-10-24 16:22
+updated: 2026-10-24 16:38
 brief: 'Operationalize the eval findings: define HOW real work gets routed to lanes (codemod/cheap/paid/Devin),
   how each lane is tested before trusting it, and which work is safe to delegate NOW vs needs gates.'
 priority: high
@@ -54,3 +54,10 @@ comms:
     Fable is the fastest model lane AND the only one that explained the fix. Head-to-head t1: flash-lite 6/7 (167s+),
     local CPU 6/7 no-edit, Gemini OR 7/7 (218-275s), Fable 7/7 (60s), codemod 7/7 (0.7s $0). L3 proven. Full matrix
     (m1 + repeats + openhands) ready in config.fa'
+- at: 2026-10-24 16:38
+  from: devin
+  text: 'FABLE m1 RESULT: 0/2 BUT both runs made REAL high-quality Go edits (r1: streamConnected atomic.Bool with
+    correct lazy-dial reasoning + LeaderAddr/CurrentLSN accessors; r2: 131-line handlers+client change). Both failed
+    ONLY on the known compile-boundary (held-out test references rc.connected; Fable used streamConnected — same
+    as Gemini). Verdict: Fable Go capability CONFIRMED (matches Gemini), M1 verifier is the blocker for both. Fix
+    = mockable-interface M1-behavioral task (already identified). B'
