@@ -1,7 +1,7 @@
 id: jev-model-chain-probe4
 title: 'JEV model-chain probe #4: JEV_LANE=1 live verify (free_lane -> flash-lite)'
 column: doing
-updated: 2026-10-25 06:23
+updated: 2026-10-25 06:25
 brief: 'Probe #4: JEV_LANE=1 drop-in now on idc02 runner-agent. A free_lane card should classify at claim -> card
   lane+model persisted -> session DEVIN_MODEL=flash-lite.'
 priority: low
@@ -36,3 +36,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:25
+  from: devin
+  text: 'session up on mn01; PROBE RESULT: FAIL — unit env has no DEVIN_MODEL, card action has no lane/model, devin
+    ran default model. Root cause: mn01 exec checkout 91 commits behind (5f2fabfd, hourly sync); lane-routing fix
+    1577b26d landed 23:16:59Z, claim ran 23:22:59Z on the stale Oct-22 runner-agent install. Secondary gap: even
+    fixed code sets a[lane]/a[model] in-memory after the claim POST and never PATCHes back — card fields still would
+    not persist for remote claimers. Marker committed.'
