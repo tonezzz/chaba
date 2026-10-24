@@ -1,0 +1,62 @@
+title: 'Pattern library: leak guard + 3-way router + mine-back (OPS-0809, P1-P5)'
+subtitle: codified pipeline in scripts/pattern-lib; banned-commit guard derived from task.yaml refs; arm3 router now codemod|hint|agent
+icon: flask
+version: 1
+
+card: pattern-library-coding-research
+date: 2026-10-24
+dispatch: 20261024-174715-p1-pattern-mine-leak-safe-terr
+runner: tony-omen
+
+deliverable: |
+  scripts/pattern-lib/ (this repo, durable):
+    leak_guard.py    — derives banned commits per task: children of task.yaml
+                       repo.ref in a local clone + explicit extras. Output
+                       ~/evals/patterns/leak-guard.json.
+    mine_patterns.py — fix-class commit miner; skips banned (verified: drops
+                       c0850f0/497b982 from mddb-fork scan).
+    push_pattern.py  — /v1/add upsert to mddb code-patterns; refuses banned.
+    router.py        — arm3: retrieve -> codemod-if-registered-and-confident
+                       -> hint-injected-agent -> plain-agent. Per-task leak
+                       filtering drops hits whose commit is banned for the
+                       task under test (prefix-safe).
+    run_arm.py       — P4 driver: clone@ref (bare-mirror cache) -> .venv-verify
+                       via uv when task declares deps -> arm -> same score.py
+                       -> results jsonl (pass/cost/latency).
+    mine_back.py     — P5: verified fix -> pattern record; refuses
+                       benchmark-task commits.
+    codemods.json    — pattern-key -> codemod script registry.
+    codemod_t1_covered_by.py — durable copy of the t1 codemod.
+
+findings: |
+  Leak audit: collection held no m1/m2 fix-commit patterns, but
+  mine-mddb.jsonl still carried c0850f0/497b982 as candidates — sanitized;
+  the guard now blocks them structurally at every door (mine/push/retrieve/
+  mine-back).
+  Retrieval noise: with 4 patterns, ANY prompt scores >0.35 on something —
+  t1-strict top hit after leak-drop was pat-binlog-stream-rotate @0.583 on
+  a Python geometry task. Threshold needs calibration per collection size;
+  consider class-gating (repo/lang match) before the score threshold.
+  Hint-path on Go tasks: m1 prompt retrieves pat-lsn-too-old-server @0.73
+  (same subsystem, different defect) — correct semantic adjacency, wrong
+  defect. flash-lite produced ZERO implementation edits on m1 with and
+  without the hint (arm3=0.5, arm0=0.5 on m1-behavioral; arm3=0.0
+  build-fail on the old coupled m1 verifier). Localization != completion
+  again — the t1 arm1 finding repeats on Go.
+
+results: |
+  t1 arm3 warm (unguarded, prior session): codemod 7/7 in ~2s — bootstrap
+  demo of the plumbing, not held-out.
+  t1 arm3 strict (leak-guarded): see results jsonl — own pattern dropped,
+  hint path with unrelated top hit.
+  m1-mddb-follower-health arm3: 0.0 (coupled verifier, zero agent edits).
+  m1-behavioral arm0: 0.5 zero-edit; arm3-hint: 0.5 zero-edit (leader
+  subtest passes trivially) — hint-neutral on this lane.
+  t2 arm3: see results jsonl.
+  Results ledger: ~/evals/results/arms.jsonl on tony-dell.
+
+verdict: pipeline-codified; guard-verified; bench-extended-to-m1
+links:
+- docs/kb/cheap-agent-cascade.md
+- docs/ssot/jobs/bench/2026-10-24-cheap-agent-cascade-design.yml
+- docs/ssot/kanban/cards/pattern-library-coding-research.yml
