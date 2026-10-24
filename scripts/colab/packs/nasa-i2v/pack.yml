@@ -25,8 +25,8 @@ run: |
   FRAMES = f'{NEST_ROOT}/nasa-2p5d'
   EMB = f'{NEST_ROOT}/packs/nasa-embeds-ss1/embeds'
   OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
-  SCENES = [('earth', 'earth-frame-0000.png', 1),
-            ('saturn', 'saturn-frame-0080.png', 2)]
+  SCENES = [('earth', 'earth-blue-marble.jpg', 1),
+            ('saturn', 'saturn-cassini-pia06193.jpg', 2)]
   t0 = time.time()
   pipe = LTXImageToVideoPipeline.from_pretrained(
       'Lightricks/LTX-Video', torch_dtype=torch.bfloat16,
@@ -41,13 +41,23 @@ run: |
       emb = {k: (v.cuda() if torch.is_tensor(v) else v) for k, v in e.items()}
       img = Image.open(f'{FRAMES}/{frame}').convert('RGB').resize((640, 384))
       t = time.time()
+      frames_for = [73, 65]
+      fr = None
       try:
-          fr = pipe(prompt_embeds=emb['prompt_embeds'],
-                    prompt_attention_mask=emb['prompt_attention_mask'],
-                    negative_prompt_embeds=emb['negative_prompt_embeds'],
-                    negative_prompt_attention_mask=emb['negative_prompt_attention_mask'],
-                    image=img, width=640, height=384, num_frames=73,
-                    num_inference_steps=40, frame_rate=24).frames[0]
+          for nf in frames_for:
+              try:
+                  fr = pipe(prompt_embeds=emb['prompt_embeds'],
+                            prompt_attention_mask=emb['prompt_attention_mask'],
+                            negative_prompt_embeds=emb['negative_prompt_embeds'],
+                            negative_prompt_attention_mask=emb['negative_prompt_attention_mask'],
+                            image=img, width=640, height=384, num_frames=nf,
+                            num_inference_steps=40, frame_rate=24).frames[0]
+                  break
+              except Exception as ex:
+                  print(f'{slug}: {nf}f attempt failed ({type(ex).__name__}) — retry', flush=True)
+                  torch.cuda.empty_cache()
+                  if nf == frames_for[-1]:
+                      raise ex
           export_to_video(fr, out, fps=24)
           pk = torch.cuda.max_memory_allocated()/1e9
           rows.append((slug, round(time.time()-t, 1), 'ok'))
