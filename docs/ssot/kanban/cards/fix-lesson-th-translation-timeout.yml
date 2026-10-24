@@ -25,5 +25,12 @@ comms:
 - at: 2026-10-24 12:51
   from: tony
   text: closed by tony
+- at: 2026-10-24 12:51
+  from: devin
+  text: 'FIXED + VERIFIED: /lesson now returns 200 with th:false (EN-only) in ~22s (12s Gemini timeout + ~10s WP
+    write) instead of hanging indefinitely. Two-part root cause: (1) no timeout passed (120s default), (2) gemini_rest
+    4-attempt retry loop with 20s/40s/60s/80s backoff = up to 200s of sleeping on a failing lane. Fix: max_attempts
+    param (default 4, backward-compatible for Ada/batch) + board-api uses timeout=12, max_attempts=1. Committed
+    3a52caccb via served checkout, pushed.'
 action:
   status: done
