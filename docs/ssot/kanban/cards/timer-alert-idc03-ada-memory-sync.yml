@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
 column: backlog
-updated: 2026-10-24 15:54
+updated: 2026-10-24 16:11
 priority: high
 tags:
 - timer-alert
@@ -23,6 +23,13 @@ comms:
     just 10-16): --export-inbox succeeds, --resolve-voice exits 1. Same --resolve-voice command runs OK manually
     (exit 0, 9 conflicts preserved). => env/concurrency difference between systemd context and shell. Needs: capture
     full unit stderr (journal may truncate) + compare env. Verifier: unit exits 0 on next timer run.'
+- at: 2026-10-24 16:11
+  from: devin
+  text: 'DIAGNOSIS COMPLETE — the unit is NOT buggy; the alert is CORRECT. ada-memory-sync exits 1 BY DESIGN when
+    unresolved vault-vs-MDDB conflicts exist (script: return 1 if conflicts). 9 real conflicts have been pending
+    since ~10-16: persona/self, assets/{how-to-send-photos,kk-crv,pool-snap-demo,tony-car}, history/origin (devin),
+    people/{kk,kk-virtual-home,tony-thai-name} (devin/devin-seed/unknown writers). resolve-voice only auto-resolves
+    voice-vs-vault; these are curated-remote-vs-vault — need a dec'
 spec: Investigate the failure of the `ada-memory-sync.service` timer on host `idc03` which failed with exit-code
   on 10-16 14:00. The runner must inspect the journal using `journalctl --user -u ada-memory-sync.service` on `idc03`
   and reference the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the exit-code
