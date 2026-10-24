@@ -1,0 +1,32 @@
+probe: jev-model-chain-probe5 (OPS-0841)
+session: devin-task-20261025-062616-expected-card-action-lane-free
+runner: tony-macbook
+touched_at: 2026-10-25T06:30:00+07:00
+
+model-chain result:
+  action.lane on card:    ABSENT (no lane persisted at claim)
+  action.model on card:   ABSENT
+  DEVIN_MODEL in unit:    ABSENT (systemd-run Environment has no DEVIN_MODEL)
+  devin --model flag:     NOT passed -> session runs devin default model
+  verdict: FAIL - chain still broken, new surface this time:
+
+root cause (probe5-specific):
+  The card brief expected the patched fleet (idc02/mn01/omen, JEV_LANE=1)
+  to claim it - but tony-macbook claimed the card at 06:26 and it runs a
+  PRE-PATCH runner-agent: ~/.local/bin/runner-agent dated 2026-10-15 has
+  no classify_lane / LANE_MODELS / JEV_LANE code. Its unit
+  (runner-agent.service) also carries no JEV_LANE env. So no claim-time
+  classify ran, nothing persisted lane/model to the card, and
+  DISPATCH_MODEL was never set for the spawned devin-task unit.
+
+  Structural note: patching claim-time classify into every runner-agent
+  is whack-a-mole - this fleet has 4+ runners and the probe brief only
+  covered 3. The durable fix is card 'dispatch-classify-at-queue-time'
+  (OPS-0838, still BACKLOG): classify inside board-api's queue verb so
+  action.lane+action.model are on the card before ANY claimer sees it.
+  Old claimers already forward action.model -> DISPATCH_MODEL (line 775
+  of the Oct-15 binary), so queue-time classify fixes even unpatched
+  runners. board-api in master still has no classify_lane/LANE_MODELS.
+
+  Also observed: jev-model-chain-probe4 concurrently 'doing/running'
+  with no lane/model on card - same failure signature.
