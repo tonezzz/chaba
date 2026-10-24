@@ -1,0 +1,27 @@
+id: voice-p0-turn-interrupt
+title: 'voice P0: turn-sequence IDs + streaming TTS chunks + barge-in on voice-miniapp'
+column: backlog
+updated: 2026-10-24 14:16
+brief: 'Apply the VoiceAgent-600ms P0 to our live voice-miniapp (ADA-0816): (1) server streams TTS in ~160ms PCM
+  chunks with a per-reply turn number (X-Turn), (2) client plays chunks incrementally via Web Audio and can stop
+  instantly, (3) tapping mic during playback = interrupt (drop stale frames, start new turn). Base for adaptive
+  endpointing + speculative ASR later.'
+priority: high
+program: chaba-ci
+tags:
+- voice
+- barge-in
+- streaming
+- turn-taking
+- 600ms
+spec: 'Server: /api/voice returns streaming PCM (X-Turn, X-Rate, X-Channels headers) instead of whole wav; turn
+  counter increments per reply; logging unchanged. Client: fetch ReadableStream -> Web Audio scheduled chunks; playableTurn
+  tracking; on new recording start -> stop all sources + discard in-flight. Keep tap-to-talk UI. Verify: reply starts
+  speaking before full synthesis completes; interrupting stops audio <300ms. Bench: time-to-first-audio before/after.'
+note: 'Lesson voice-600ms-turn-taking (post 2274). Reference: HenryZ838978/VoiceAgent-600ms turn-sequence filter
+  + streaming TTS interrupt.'
+ref: ADA-0817
+comms:
+- at: 2026-10-24 14:16
+  from: devin
+  text: card captured via board-api
