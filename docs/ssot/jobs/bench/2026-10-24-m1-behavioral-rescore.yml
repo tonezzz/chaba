@@ -29,7 +29,7 @@ corrected_retrospective:
   - {run: fable-m1 r1 (Fable 5.1),        edits: client+handler, old: 'FAIL (compile)', behavioral: 1.0, verdict: 'correct fix (streamConnected+IsHealthy)'}
   - {run: fable-m1 r2 (Fable 5.1),        edits: none,           old: 'FAIL (compile)', behavioral: 0.5, verdict: 'no-edit — doc "131-line" was injected-test diff'}
   - {run: m1beh-fable live 16:54,         edits: none,           old: 'FAIL (0.5)',     behavioral: 0.5, verdict: 'NOT capability — task-subagent died on OR 402 credit exhaustion'}
-  flash_lite_pilot: {edits: none both cells, verdict: 'free lane cannot carry this class — confirmed'}
+  - {run: flash-lite pilot m1 (both cells), edits: none, old: 'TIMEOUT', behavioral: 'n/a', verdict: 'free lane cannot carry this class — confirmed'}
 
 takeaways:
   paid_lane_m1: '3/4 real attempts fully correct, 1/4 real partial — was recorded 0/7'
@@ -42,10 +42,10 @@ takeaways:
     field — both models converge on IsHealthy naturally; acceptable coupling'
 
 harness_bugs_filed:
-  - BEN-0828 bench-verifier-inject-clobber: score.py injects held-out tests by
-    filename → overwrites tracked repo tests + leaves residue contaminating
-    later scoring (r2 build-failed on stale injected tests until restored)
-  - 'm2 same coupled+clobber pattern (db_integrity_test.go → verifySnapshot
+  - 'BEN-0828 bench-verifier-inject-clobber — score.py injects held-out tests
+    by filename, overwrites tracked repo tests + leaves residue contaminating
+    later scoring (r2 build-failed on stale injected tests until restored)'
+  - 'm2 same coupled+clobber pattern (db_integrity_test.go vs verifySnapshot
     internals) — needs an m2-behavioral task'
 
 artifacts:
