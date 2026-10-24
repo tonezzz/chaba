@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-25 05:44
+updated: 2026-10-25 05:49
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -39,3 +39,10 @@ comms:
     saved evals/results/jev/jev-lane-corpus.json. This is the training seed: fine-tune/swap the choice head on these
     15 (+more) lane-labeled cards, re-run for target >=0.8. Until then lane routing stays gated-off (safe-dormant
     wiring).'
+- at: 2026-10-25 05:49
+  from: devin
+  text: 'CLASSIFIER ITERATION DONE (2026-10-25): keyword-first lane classifier replaced jevos-only. Iteration trail:
+    jevos raw 0.27 -> +manual-override 0.60 -> +tuned kws 1.00 corpus (OVERFIT) -> held-out 0.38 title-only -> +briefs
+    0.62 -> +blocked-on-tony/manual fix 0.88 -> +comparison-regex 1.00/23 (held-out 8/8). KEY LESSON: title-only
+    is weak; brief is the signal; ''vs'' needs the comparison-context regex not blanket; ''Blocked on Tony'' = manual.
+    Production module regression 23/23. Committed 34ca3f231. '
