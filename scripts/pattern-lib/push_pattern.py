@@ -53,6 +53,7 @@ def to_document(rec: dict) -> dict:
         "meta": {
             "repo": rec["repo"], "commit": rec["commit"],
             "class": rec["class"], "trigger": rec["trigger"],
+            "transform": rec["transform"],
             "lang": rec.get("lang", "?"),
             **({"bench_task": rec["bench_task"]} if rec.get("bench_task") else {}),
         },

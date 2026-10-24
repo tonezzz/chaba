@@ -47,13 +47,31 @@ findings: |
 results: |
   t1 arm3 warm (unguarded, prior session): codemod 7/7 in ~2s — bootstrap
   demo of the plumbing, not held-out.
-  t1 arm3 strict (leak-guarded): see results jsonl — own pattern dropped,
-  hint path with unrelated top hit.
+  t1 arm3 strict (leak-guarded): 5/7 in 176s — own pattern dropped before
+  decision, hint fired on unrelated top hit @0.583, agent made the same
+  within->covers near-miss as arm0 (hint-neutral).
   m1-mddb-follower-health arm3: 0.0 (coupled verifier, zero agent edits).
   m1-behavioral arm0: 0.5 zero-edit; arm3-hint: 0.5 zero-edit (leader
   subtest passes trivially) — hint-neutral on this lane.
-  t2 arm3: see results jsonl.
-  Results ledger: ~/evals/results/arms.jsonl on tony-dell.
+  t2 arm3: codemod-skip -> hint fall-through verified live (was a router
+  bug: SKIP treated as success, fixed); agent 352s, zero impl edits,
+  0/0 (t2 gate is the documented no-op).
+  Results ledger: ~/evals/results/arms.jsonl on tony-dell; summary table
+  appended to ~/evals/patterns/bench-t1-results.md.
+
+bugs_fixed_this_session: |
+  router: prefix-length commit compare made the leak filter a no-op —
+  banned 12-char SHAs never matched 7-char record commits (fixed in
+  router, push_pattern, mine_patterns).
+  router: codemod SKIP (rc=0, count=0) ended the arm as success — now
+  falls through to hint/agent unless output shows PATCHED.
+  router: vector-search returns contentMd:"" — hint arms ran with
+  trigger-only text; router hydrates via /v1/get and push_pattern now
+  writes meta.transform.
+  leak_guard: repo name matching missed url-basename aliases
+  (tonezzz/mddb.git vs repo key mddb-fork) — basename matching added.
+  run_arm: parallel runs raced the bare-mirror clone — reuse on
+  already-exists.
 
 verdict: pipeline-codified; guard-verified; bench-extended-to-m1
 links:

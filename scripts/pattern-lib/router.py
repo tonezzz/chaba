@@ -69,6 +69,21 @@ def hit_info(hit):
     }
 
 
+def get_document(key: str, mddb: str = MDDB) -> str:
+    """Hydrate a doc body — vector-search returns contentMd empty."""
+    body = json.dumps({"collection": COLLECTION, "key": key,
+                       "lang": "en"}).encode()
+    req = urllib.request.Request(f"{mddb}/get", data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            d = json.loads(r.read())
+        doc = d.get("document") or d
+        return doc.get("contentMd") or doc.get("content_md") or ""
+    except Exception:
+        return ""
+
+
 def transform_of(content: str) -> str:
     m = re.search(r"## Transform\s*\n(.*?)(\n## |\Z)", content, re.S)
     return m.group(1).strip() if m else ""
@@ -195,9 +210,10 @@ def main() -> int:
         print(json.dumps({**out, "router": "codemod-skip-fallthrough"}))
 
     if top and top["score"] >= args.thr:
+        content = top["content"] or get_document(top["key"], args.mddb)
         prompt += HINT_BLOCK.format(
             cls=top["cls"], trigger=top["trigger"],
-            transform=transform_of(top["content"]) or top["trigger"])
+            transform=transform_of(content) or top["trigger"])
         path = "hint"
     else:
         path = "agent"
