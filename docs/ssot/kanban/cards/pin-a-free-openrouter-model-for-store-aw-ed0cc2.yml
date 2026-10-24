@@ -1,7 +1,7 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
 column: doing
-updated: 2026-10-24 17:06
+updated: 2026-10-24 17:23
 action:
   type: manual
 ref: OPS-0827
@@ -21,3 +21,9 @@ comms:
   text: 'Started on mn01: baseline condition, 3 reps, pinned nvidia/nemotron-3.5-super-vl:free, same 13-task MockStore
     fixture, no judge; treatment will follow baseline to counterbalance the prior free-router order. The new --or-model
     CLI smoke test passed. Outputs will be saved under unique reports/ names.'
+- at: 2026-10-24 17:23
+  from: devin
+  text: 'Pinned Nemotron baseline completed (nvidia/nemotron-3.5-super-vl:free, 3 reps): F1 1.0 each, dedupe 3/5
+    each, ops 4/5,3/5,5/5, recall 3/3 each, 36/39 tasks complete, mean p50 10.5s. The model is stable across reps
+    but fails ops in two reps (HTTP/timeouts on due/review tasks). Store-aware treatment is now running; no judge
+    and no production WP.'
