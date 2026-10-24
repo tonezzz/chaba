@@ -152,3 +152,33 @@ embeds -> render -> vo -> assemble) with a 152-block catalog
 gates -> queue), but every decision slot needs the real Jev API**
 (calibrated Choice + rubric-bound Noul over pipeline semantics). The
 local student stays limited to its one in-domain noul gate.
+
+---
+
+## Composer probes v2-v4 (2026-10-24) — local choice works, compat gate should be deterministic
+
+Probes ran the doc-pilot chain with jevos (the arena's choice winner):
+
+- **v2 (bare criteria)**: jevos latched onto "assemble" (keyword match on
+  "rough cut") and repeated it — choice models match state-vs-criteria
+  text; they have no dependency reasoning
+- **v3 (precondition-rich criteria)**: picks now vary — the rubric IS the
+  model's only reasoning. Still wrong order (vo first, render before
+  embeds) — rubric violations at the edges
+- **v4 (+ shortlist pruning: done blocks removed from candidates)**: valid
+  topological-ish plan, but render picked before its embeds prerequisite
+  (criteria violation)
+
+**Conclusion:**
+1. Local choice (jevos) CAN sequence pipelines with precondition-rich
+   criteria + agent-side shortlist pruning — usable, imperfect
+2. **The compat Noul gate should be DETERMINISTIC** — the nest's pack
+   needs/artifacts/produces/consumes are structured metadata; a rule
+   checker beats both models (student AND jevos noul fail out-of-domain,
+   p~0.005)
+3. Design update: composer = jevos/LLM Choice (next block, pruned
+   shortlist) + deterministic compat checker + queue execution. The
+   model layer shrinks to the ONE decision that needs judgment (which
+   block next), not every edge.
+
+Cards: BEN-0826 (arena), OPS-0825 (composer design v1), BEN-0824 (stagnation gate).
