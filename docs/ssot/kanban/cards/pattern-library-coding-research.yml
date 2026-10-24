@@ -1,7 +1,7 @@
 id: pattern-library-coding-research
 title: 'research: pattern-match coding — JEV matcher + pattern library + bench (P1-P5)'
 column: backlog
-updated: 2026-10-24 10:32
+updated: 2026-10-24 12:11
 brief: 'Test the hypothesis: a big share of coding is match-and-transform. Build pattern library (mined from repo
   history) + JEV matcher + two application arms (hint/codemod), benchmark against existing eval corpus (same gates).'
 priority: high
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-24 10:32
   from: devin
   text: card captured via board-api
+- at: 2026-10-24 12:11
+  from: devin
+  text: 'P1-P4 FIRST BENCH DONE. t1 arms: arm0 agent alone = 6/7 (near-miss covers/timeout). arm1 agent+hint = 6/7
+    BUT localized correctly (glob->grep builder.py predicate) then stopped — hint fixes localization not completion.
+    arm2 deterministic codemod = 7/7 in 0.7s $0 — pattern hypothesis CONFIRMED at strongest case. Findings: codemod
+    encodes exact semantics (agents miss covers vs covered_by); verify venv deps matter (added numpy/shapely/pandas/scipy/trimesh/pyproj/geopandas
+    to t1-hint); opencode mode'
