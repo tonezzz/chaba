@@ -1,0 +1,46 @@
+# Job trail: gnome-keyring-daemon fd-leak remediation on tony-omen
+# Card: tony-omen-gnome-keyring-daemon-fd-leak-p-338561 (dispatch 20261024-195119)
+
+title: tony-omen gnome-keyring-daemon fd-leak restart
+host: tony-omen
+unit: gnome-keyring-daemon.service (user@1000)
+date: 2026-10-24
+
+incident:
+  symptom: |
+    gnome-keyring-daemon[9755] hit its 1024 fd limit and flooded
+    /var/log/auth.log with "couldn't accept new control request:
+    Too many open files" — ~16-37K lines/hour from at least 2026-10-18
+    through 2026-10-19 ~16:59 (~1M lines total in current auth.log).
+  resolution-partial: |
+    The leaking pid 9755 died when user@1000.service restarted on
+    2026-10-19 17:51 (all user-session procs, incl. chrome-remote-desktop
+    session c1 and systemd pid 2545, share that start time). A new daemon
+    (pid 9340) came up clean: 12 fds, 0% CPU, no spam for 5 days.
+  dispatch-action: |
+    Per the card, `systemctl --user restart gnome-keyring-daemon.service`
+    was run 2026-10-24 19:52:56 +07 as belt-and-suspenders. New Main PID
+    1932432; verified: 10 fds (limit 1024), 0.0% CPU sustained, zero
+    "Too many open files" lines post-restart, org.freedesktop.secrets and
+    org.gnome.keyring re-registered on the user bus. No user sessions
+    touched — only the one unit was restarted; control/pkcs11 sockets had
+    no active clients at restart time.
+
+observations:
+  - |
+    Daily at 18:51:41 a transient gnome-keyring-daemon spawns without a
+    session bus ("discover_other_daemon: 1" / "Couldn't connect to
+    session bus") and exits — harmless today, but it is the same
+    headless-spawn pattern that likely produced the leaked instance.
+    Coincides with a daily SSH connect from tony-macbook (100.77.76.112)
+    around 18:51. Worth finding the launcher (cron/timer/remote job) if
+    the leak recurs.
+  - |
+    Unrelated but noisy: snap.snapd-desktop-integration is crash-looping
+    on this host (restart counter ~34580, "Failed to open display") —
+    candidate for its own fix/disable card.
+
+verify:
+  - "ls /proc/$(systemctl --user show -p MainPID --value gnome-keyring-daemon.service)/fd | wc -l   # expect ~10"
+  - "sudo grep -c 'Too many open files' /var/log/auth.log   # expect no growth"
+  - "journalctl --user -u gnome-keyring-daemon.service --since '1 hour ago'"
