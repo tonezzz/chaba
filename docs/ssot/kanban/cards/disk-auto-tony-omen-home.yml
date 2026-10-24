@@ -2,14 +2,14 @@ id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
 brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
   or close the card.
-column: review
+column: backlog
 generated: disk-trend-watch
 area: monitoring
 priority: medium
 note: '84% used, growing 8.4 GiB/day -> full in ~5.7d top grower 24h: /home/tony/.cache/nest-worker/ +15.2 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-24 16:50
+updated: 2026-10-24 17:16
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -140,6 +140,12 @@ comms:
 - at: 2026-10-24 16:50
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-24 17:16
+  from: chaba
+  text: 'answer-sweep: executed ''run-now — Run the privileged install and verify'' -> queued for processing'
+- at: 2026-10-24 17:16
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
 requests:
 - id: omen-disk-plan
   from: devin
@@ -169,6 +175,7 @@ requests:
   suggested: run-now
   escalated_at: 2026-10-24 13:47
   answer: run-now — Run the privileged install and verify
+  executed: 2026-10-24 queue
 - id: capture-raw-omen-gpt-backup
   ask: 'The GDrive text inventory is not a restorable GPT backup: unprivileged sfdisk was denied on /dev/nvme0n1.
     To create the binary GPT backup (read-only from the NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
@@ -185,8 +192,9 @@ requests:
   suggested: run-backup
   escalated_at: 2026-10-24 13:47
   answer: run-backup — Create the GPT backup on Omen
+  executed: 2026-10-24 queue
 action:
-  status: done
+  status: queued
   type: dispatch
 ref: OPS-0405
 claim: {}
