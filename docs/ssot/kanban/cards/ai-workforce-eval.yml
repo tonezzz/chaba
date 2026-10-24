@@ -200,6 +200,13 @@ comms:
     — qwen3:8b on m1 follower-health (honest verifier BEN-0832); (3) eval-m1-gptoss — gpt-oss:20b on m1 (Go wiring,
     the model that might thread the handler); (4) eval-o2 — qwen3:8b on o2 YAML chore (self-contained, no network);
     (5) lesson-polish — deterministic audit (CPU); (6) eval-code'
+- at: 2026-10-24 20:16
+  from: devin
+  text: 'm2-behavioral verifier SHIPPED + control-validated: discriminator fixture = synced-freelist DB w/ corrupt
+    branch page (opens OK, fails full check). Tests use ONLY parent symbols (replaceDatabase/restoreFromBackup/verifyDatabase)
+    — any correct impl passes, no fix-internal names. parent 60ac37c=0.667 (bug caught), fix 497b982=1.0. Coupled
+    heldout retired to .coupled. BEN-0828 fully closed: both-era residue purge in m-tasks + tracked-file backup/restore
+    in t-tasks. CORRECTION: the 452s m1beh-Fable '
 action:
   type: dispatch
   status: running
