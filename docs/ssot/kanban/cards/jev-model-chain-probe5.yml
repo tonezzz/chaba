@@ -1,0 +1,23 @@
+id: jev-model-chain-probe5
+title: 'JEV model-chain probe #5: fleet-wide deploy verify (free_lane -> flash-lite)'
+column: backlog
+updated: 2026-10-25 06:25
+brief: 'Probe #5: all 3 runners (idc02/mn01/omen) now have patched binary + JEV_LANE=1. A free_lane card should
+  classify at claim -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- dispatch
+- probe
+- lane
+- model
+spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-flash-lite; session env DEVIN_MODEL=flash-lite.
+  Task: touch marker + commit.'
+action:
+  type: dispatch
+ref: OPS-0841
+comms:
+- at: 2026-10-25 06:25
+  from: devin
+  text: card captured via board-api
