@@ -1,7 +1,7 @@
 id: mcp-colab-control-plane
 title: build mcp-colab — Colab fleet control plane (packs, tunnel, model probes)
 column: backlog
-updated: 2026-10-24 08:54
+updated: 2026-10-24 09:36
 brief: 'Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive
   + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive
   poking.'
@@ -23,3 +23,8 @@ comms:
 - at: 2026-10-24 08:54
   from: devin
   text: card captured via board-api
+- at: 2026-10-24 09:36
+  from: devin
+  text: 'Deployed to all hosts: dell (local, live in session), omen (local files + litellm secret + registered,
+    verified pack_status), macbook (ssh->dell pattern, registered, verified). Omen also already had Google official
+    colab-mcp (kernel-level) — complements mine (fleet/queue-level).'
