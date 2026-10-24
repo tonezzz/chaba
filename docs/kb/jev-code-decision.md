@@ -131,3 +131,24 @@ order match the working pipelines (accuracy gate).
 - OPS-0825 (v1 service + skill)
 - BEN-0824 (stagnation gate)
 - (next) jev-composer eval pack: replay the working pipelines as Jev assemblies
+
+---
+
+## Phase 0 probe results (2026-10-24) — the local model can't fill ANY slot
+
+Ran the composer probe on the doc-pilot chain (ground truth:
+embeds -> render -> vo -> assemble) with a 152-block catalog
+(scripts/blocks.json):
+
+- compat Nouls (student): **all 4 edges FAIL at p~0.005** — the
+  "proven" noul head does not generalize to pipeline semantics; it only
+  knows its training domain (Ada confirm-gate)
+- skip logic Noul: FAIL (p=0.004)
+- choice step (LLM fallback): picked `assemble` first — wrong; the
+  bare state lacks dependency hints, and uncalibrated choice is
+  unreliable
+
+**Conclusion: the composer SHAPE works (catalog -> choice -> compat
+gates -> queue), but every decision slot needs the real Jev API**
+(calibrated Choice + rubric-bound Noul over pipeline semantics). The
+local student stays limited to its one in-domain noul gate.

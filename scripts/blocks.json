@@ -1,0 +1,1271 @@
+{
+ "blocks": [
+  {
+   "name": "backlog-spec-enrich",
+   "kind": "script",
+   "desc": "backlog-spec-enrich \u2014 draft specs for thin backlog cards via Gemini.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "blocks-index",
+   "kind": "script",
+   "desc": "blocks-index \u2014 generate blocks.json (the composer's block catalog).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kanban-notify",
+   "kind": "script",
+   "desc": "kanban-notify \u2014 TG notify on kanban card state changes.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "key-watch",
+   "kind": "script",
+   "desc": "key-watch \u2014 credential expiry/quota monitor (card key-watch-monitor, SEC-0499).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-efficiency",
+   "kind": "script",
+   "desc": "nest-efficiency \u2014 per-session efficiency report for the ada-nest queue.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-queue-watch",
+   "kind": "script",
+   "desc": "nest-queue-watch \u2014 one-shot poller for the ada-nest Colab queue.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "podman-lock-watchdog",
+   "kind": "script",
+   "desc": "podman-lock-watchdog \u2014 wedged rootless-podman detector + self-heal (card podman-lock-wedge-watchdog, OPS-0726).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "telegram-webhook-watch",
+   "kind": "script",
+   "desc": "Check Ada's Telegram webhook registration without changing it.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-cast-detect",
+   "kind": "script",
+   "desc": "yt-cast-detect.py \u2014 heuristic speaker-turn detection on a karaoke VTT.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-diarize",
+   "kind": "script",
+   "desc": "yt-diarize.py \u2014 pyannote speaker-diarization -> turn file for yt-vtt-dub.py --diarize-file.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-live-api",
+   "kind": "script",
+   "desc": "yt-live-api.py \u2014 REST shim around yt-live.sh for voice/agent casting.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-vtt-dub",
+   "kind": "script",
+   "desc": "yt-vtt-dub.py \u2014 minimal cue-level TTS dub over a yt-live cached video.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-vtt-translate",
+   "kind": "script",
+   "desc": "yt-vtt-translate.py \u2014 translate a WebVTT file via Gemini and emit a merged dual-language VTT (original line(s) + translated line(s) per cue).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "yt-whisper-vtt",
+   "kind": "script",
+   "desc": "yt-whisper-vtt.py \u2014 Whisper transcription lane for caption-less videos.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "activity-posts",
+   "kind": "script",
+   "desc": "activity-posts.py \u2014 Ada tool executions -> WP activity posts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "backup-mddb-banks",
+   "kind": "script",
+   "desc": "Back up Ada memory-bank MDDB collections to JSON files.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "bank-router-mine",
+   "kind": "script",
+   "desc": "bank-router-mine.py \u2014 mine ada_memory_search calls from ada-voice journals.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "bank-router-probe",
+   "kind": "script",
+   "desc": "bank-router-probe.py \u2014 Phase-0 measurement for card nest-bank-router.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "bloat-report",
+   "kind": "script",
+   "desc": "bloat-report.py \u2014 MDDB growth snapshot for the refresh digest.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "burn-watch",
+   "kind": "script",
+   "desc": "burn-watch.py \u2014 guard the voice-burn ledger.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cached-videos-update",
+   "kind": "script",
+   "desc": "cached-videos-update.py \u2014 yt-live media cache -> CMS `cached-videos-report`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "caddy-report",
+   "kind": "script",
+   "desc": "Caddy access-log digest (L1.5i): per-app usage + error rates.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "calendar-smoke",
+   "kind": "script",
+   "desc": "Read-only smoke test for Ada's calendar backend against live providers.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "chaba_event",
+   "kind": "script",
+   "desc": "Shared chaba-admin Events emit helper for ada-* jobs.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-audit",
+   "kind": "script",
+   "desc": "CMS page audit \u2014 mechanical quality gate for ada-cms-pages.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-auto-health",
+   "kind": "script",
+   "desc": "cms-auto-health \u2014 CMS automation registry -> kanban cards.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-ia-normalize",
+   "kind": "script",
+   "desc": "cms-ia-normalize.py \u2014 one-shot IA normalization for ada-cms-pages (card cms-ia-reorg, 2026-10-08).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-normalize-meta",
+   "kind": "script",
+   "desc": "Normalize ada-cms-pages document meta onto the memory-bank schema (ssot.apps.ada-memory-schema.yml) so pages are searchable/filterable with the same conventions",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-publish-site",
+   "kind": "script",
+   "desc": "cms-publish-site.py \u2014 publish public CMS pages to the www.surf-thailand.com static webroot on the idc02 edge.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-regen-sweep",
+   "kind": "script",
+   "desc": "cms-regen-sweep.py \u2014 the missing runner for registry command-generators.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-report-note",
+   "kind": "script",
+   "desc": "cms-report-note.py \u2014 session-side note writer for ada-cms-pages.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "cms-report-reflect",
+   "kind": "script",
+   "desc": "cms-report-reflect \u2014 mirror an ada-cms-pages report into the report graph.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "consolidate-memory",
+   "kind": "script",
+   "desc": "Consolidate voice-inbox notes into curated memory-bank directories.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "devin-report",
+   "kind": "script",
+   "desc": "Devin session digest (L1.5d): per-session facts from CLI history files.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "disk-trend-watch",
+   "kind": "script",
+   "desc": "disk-trend-watch \u2014 df trend per host -> disk-auto-* kanban cards + push.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "distill-devin-bank",
+   "kind": "script",
+   "desc": "Distill raw Devin session transcripts in the devin memory bank into weekly digest docs, then supersede the sources.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "embed-bench",
+   "kind": "script",
+   "desc": "embed-bench.py \u2014 Gemini-direct vs OpenRouter(Vertex) embedding benchmark.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "embed-probe",
+   "kind": "script",
+   "desc": "mddb embed-path probe \u2014 POSTs /v1/vector-search every run and writes an ops-event doc to ada-ha-events-tony on state TRANSITIONS (up->down, or down->up recovery",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "embed-space-eval",
+   "kind": "script",
+   "desc": "embed-space-eval.py \u2014 recall@k benchmark across embedding spaces.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "export-transcripts",
+   "kind": "script",
+   "desc": "Export Ada voice transcripts + session reports for offline review.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "flood-alert",
+   "kind": "script",
+   "desc": "flood-alert.py \u2014 flood-situation severity watchdog + push alerts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "flood-hub-check",
+   "kind": "script",
+   "desc": "flood-hub-check.py \u2014 verify Flood Forecasting API access and list gauges.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "flood-news-update",
+   "kind": "script",
+   "desc": "Flood-news automation \u2014 pull current flood news from RSS feeds and update the `flood-report` CMS page (ada-cms-pages) with a timestamped auto-news block.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "focus-rollup",
+   "kind": "script",
+   "desc": "L2 focus rollup: group per-session reports into per-thread digests.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "gemini-live-canary",
+   "kind": "script",
+   "desc": "gemini-live-canary \u2014 measure the free-tier Live quota by spending the minimum possible: open one Gemini Live session, close immediately, log the verdict. One co",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "gemini-wallet-watch",
+   "kind": "script",
+   "desc": "gemini-wallet-watch \u2014 early warning for depleted/capped Gemini keys.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "gemini_rest",
+   "kind": "script",
+   "desc": "Shared Gemini generateContent caller for the chaba batch chain (report/extract/distill scripts).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "gev-auto-health",
+   "kind": "script",
+   "desc": "gev-auto-health \u2014 God's Eye View service probes -> kanban cards.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "google-calendar-auth",
+   "kind": "script",
+   "desc": "One-time Google OAuth consent flow for Ada's calendar/tasks tools.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ha-ada-isolation-cms",
+   "kind": "script",
+   "desc": "L2 domain report: Ada -> HA isolation posture -> CMS pages (ada-cms-pages).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ha-events-report",
+   "kind": "script",
+   "desc": "HA logbook digest (L1.5g): what actually happened at home.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ha-fabric-cms",
+   "kind": "script",
+   "desc": "L2 domain report: HA nodes + messaging lanes -> CMS pages (ada-cms-pages).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ha-report",
+   "kind": "script",
+   "desc": "L1.5c \u2014 Home Assistant log report.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ha-svc-user",
+   "kind": "script",
+   "desc": "Provision a non-admin svc-* HA user + per-lane long-lived access tokens.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "host-report",
+   "kind": "script",
+   "desc": "Host health sweep (L1.5b): per-host ops facts from journald + systemctl.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "host-services-cms",
+   "kind": "script",
+   "desc": "Regenerate the per-host services CMS pages + services-by-host index.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "house-distill",
+   "kind": "script",
+   "desc": "house-distill.py \u2014 distill one lane's raw MDDB telemetry into a house profile.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "house-timeline-update",
+   "kind": "script",
+   "desc": "house-timeline-update.py \u2014 household device events -> CMS `house-timeline`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "journal-report",
+   "kind": "script",
+   "desc": "Session-ops layer (L1.5): per-session operational facts from journald.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kanban-act",
+   "kind": "script",
+   "desc": "kanban-act.py \u2014 the T2 layer: Chaba pushes the button, with receipts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kanban-brief",
+   "kind": "script",
+   "desc": "kanban-brief.py \u2014 Eisenhower card briefing -> CMS `kanban-brief`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kanban-cms",
+   "kind": "script",
+   "desc": "kanban-cms \u2014 render docs/ssot/kanban/cards/*.yml into the dev-kanban CMS page. Replaces the hand-maintained page: the board is always live.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kb-page-sync",
+   "kind": "script",
+   "desc": "kb-page-sync.py \u2014 publish declared docs/kb/*.md files into ada-cms-pages.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "kk-bench-env",
+   "kind": "script",
+   "desc": "Apply a bench_profiles tool surface to a dev-lane ada env file.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "lane-transcript-timeline",
+   "kind": "script",
+   "desc": "Lane transcript -> WP timeline sync (idempotent).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "lesson-miner",
+   "kind": "script",
+   "desc": "Offline lesson miner \u2014 Ada voice transcripts -> WP lesson CPT.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "lifecycle-check",
+   "kind": "script",
+   "desc": "lifecycle-check \u2014 release lifecycle gate enforcement for kanban cards.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "line-chat-timeline",
+   "kind": "script",
+   "desc": "LINE journal -> WP timeline sync, per lane (idempotent). Rebuilds the timelines[] array inside the timeline_block CPT post each run. Media files upload once (ca",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "line-digest",
+   "kind": "script",
+   "desc": "line-digest.py \u2014 weekly per-member LINE digest push (Ghost-newsletter equivalent for chaba-cms, card cmssurface-render-digest).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "litellm_chat",
+   "kind": "script",
+   "desc": "Shared OpenAI-style chat caller for the chaba batch chain's local/free lane (card chat-local-free-lane).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "log-shipper",
+   "kind": "script",
+   "desc": "Log shipper (L0.5): interesting journald lines -> MDDB host-logs.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "logs-kanban",
+   "kind": "script",
+   "desc": "logs-kanban \u2014 host-log pipeline health -> kanban cards.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "logs-report",
+   "kind": "script",
+   "desc": "Host-logs distillation (L1.5g): MDDB host-logs -> distilled report.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "market-report-update",
+   "kind": "script",
+   "desc": "market-report-update.py \u2014 daily market snapshot -> CMS `market-report`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "media-inbox-fixture",
+   "kind": "script",
+   "desc": "media-inbox-fixture.py \u2014 seed/teardown the media-inbox test fixture.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "media-inbox-update",
+   "kind": "script",
+   "desc": "media-inbox-update.py \u2014 LINE/TG received-media manifest -> CMS page family.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-distill-benchmark",
+   "kind": "script",
+   "desc": "Benchmark for memory-distill.py extraction quality.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-distill",
+   "kind": "script",
+   "desc": "Distill ada voice session summaries into candidate memory drafts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-gap-report",
+   "kind": "script",
+   "desc": "Ada recall-miss -> knowledge-gap drafts (knowledge-circle step 3).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-health-check",
+   "kind": "script",
+   "desc": "Ada memory health checks that emit chaba-events.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-staleness-sweep",
+   "kind": "script",
+   "desc": "Weekly staleness sweep \u2014 re-verifies aging memory-bank docs via the iPhone approve/deny flow (knowledge-circle step 4; runbook: request_iphone_confirmation in s",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "memory-standard",
+   "kind": "script",
+   "desc": "Measure Ada's memory banks against docs/ssot/apps/ssot.apps.ada-memory- standard.yml \u2014 writes one ops-event (memory_standard: PASS|VIOLATION) to ada-ha-events-<",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-overview",
+   "kind": "script",
+   "desc": "nest-overview.py \u2014 Chaba Nest hub -> CMS `chaba-nest`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-pack-submit",
+   "kind": "script",
+   "desc": "nest-pack-submit \u2014 validate a pack dir and stage it to the Drive store.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-queue-status",
+   "kind": "script",
+   "desc": "nest-queue status \u2014 fleet-side truth check for the ada-nest Drive queue.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-train-loop",
+   "kind": "script",
+   "desc": "nest-train-loop.py \u2014 Nest micro-model evolution loop owner.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "nest-worker",
+   "kind": "script",
+   "desc": "nest-worker \u2014 fleet-side pack worker. Same protocol as colab's runner.py, over rclone instead of a Drive FUSE mount. Runs on dell, omen, idc \u2014 any host with rcl",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "net-report",
+   "kind": "script",
+   "desc": "Network inventory digest (L1.5e): deltas from the nightly arp scan.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "news-digest",
+   "kind": "script",
+   "desc": "News digest \u2014 cluster same-story `news` items, write a distilled parent post per multi-source cluster, reparent the raw items under it.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "news-fetch",
+   "kind": "script",
+   "desc": "News ingestion \u2014 pull RSS/Atom feeds into the WordPress `news` CPT.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "news-flood-fetch",
+   "kind": "script",
+   "desc": "news-flood-fetch.py \u2014 automated flood-news page for the Ada CMS news-* group.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "news-situation",
+   "kind": "script",
+   "desc": "News situations \u2014 flag, promote, index (card news-situation-summaries).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ops-error-posts",
+   "kind": "script",
+   "desc": "ops-error-posts.py \u2014 Ada tool/stream failures -> WP ops_error posts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "ops-report",
+   "kind": "script",
+   "desc": "Ada ops-event digest (L1.5f): containment events from MDDB.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "personal-rollup",
+   "kind": "script",
+   "desc": "Personal digest rollup: render personal-tier blocks into one file.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "prune-old-docs",
+   "kind": "script",
+   "desc": "prune-old-docs.py \u2014 retention sweep for append-only MDDB collections.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "recall-canary",
+   "kind": "script",
+   "desc": "Recall canary \u2014 known-answer questions over the memory banks.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "recall-drift-report",
+   "kind": "script",
+   "desc": "Ada bank-recall drift report \u2014 parses ada-ha service journals for recall hit/miss lines and emits a chaba-events entry when quality drifts.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "render-calendar-providers",
+   "kind": "script",
+   "desc": "Render the Ada calendar-provider registry SSOT to runtime JSON.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "render-memory-banks",
+   "kind": "script",
+   "desc": "Render the Ada memory-bank registry SSOT to runtime JSON.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "render-tool-profiles",
+   "kind": "script",
+   "desc": "Render per-persona Ada tool profiles into instance env files.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "report-distill",
+   "kind": "script",
+   "desc": "report-distill.py \u2014 nightly L1 bank -> L2 CMS report promotion.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "restore-mddb-banks",
+   "kind": "script",
+   "desc": "Restore Ada memory banks from backup dumps back into MDDB.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "rollup-summaries",
+   "kind": "script",
+   "desc": "Roll per-session summaries up into daily/weekly/monthly docs.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "scenario-provider-gate",
+   "kind": "script",
+   "desc": "scenario-provider-gate \u2014 fail-fast ExecCondition for ada-scenario-smoke.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "secrets-inventory-cms",
+   "kind": "script",
+   "desc": "L2 domain report: fleet secrets inventory -> CMS pages (ada-cms-pages).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "seed-purchase-criteria",
+   "kind": "script",
+   "desc": "Seed the `purchase` memory bank's criteria docs into MDDB.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "session-audit",
+   "kind": "script",
+   "desc": "session-audit.py \u2014 daily Ada voice-session quality audit (headless).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "session-report",
+   "kind": "script",
+   "desc": "Stage-2: per-session report from an Ada voice transcript (one LLM call).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "session_artifacts",
+   "kind": "script",
+   "desc": "session_artifacts \u2014 deterministic \"## Artifacts\" extractor for devin-session T1 docs (card session-mddb-recall-benchmark).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "spend-ledger",
+   "kind": "script",
+   "desc": "spend-ledger \u2014 daily Ada API burn ledger -> CMS spend-ledger page.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "spend-report",
+   "kind": "script",
+   "desc": "API spend/quota digest (L1.5h): rate-limit + quota signals from journald.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "standard-drift-digest",
+   "kind": "script",
+   "desc": "standard-drift-digest.py \u2014 drift signals -> CMS `standard-drift`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "starboard-tracker-update",
+   "kind": "script",
+   "desc": "starboard-tracker-update.py \u2014 project tracker -> CMS `starboard-catalogs`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "sync-ada-memory-to-mddb",
+   "kind": "script",
+   "desc": "Sync the Ada memory vault (docs/ada-memory/) to MDDB bank collections.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "sync-devin-summaries",
+   "kind": "script",
+   "desc": "Sync Devin session summaries into the ada-ha-bank-devin-tony MDDB bank so Ada can recall \"what did we work on\" via ada_memory_search / ada_session_recall(bank=\"",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "tasks-report",
+   "kind": "script",
+   "desc": "Tasks digest (L1.5j): Google Tasks created-vs-done via the Ada token.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "timer-sentinel",
+   "kind": "script",
+   "desc": "timer-sentinel.py \u2014 independent timer watchdog.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "timer-timeline-update",
+   "kind": "script",
+   "desc": "timer-timeline-update.py \u2014 fleet timer census -> CMS `timer-timeline`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "tony-ideas-update",
+   "kind": "script",
+   "desc": "tony-ideas-update.py \u2014 harvest Tony's direction/decisions -> CMS `tony-ideas`.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "tools-report",
+   "kind": "script",
+   "desc": "Generate the `ada-tools` CMS page \u2014 every tool Ada can call, with descriptions, grouped by layer.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "transcript-index",
+   "kind": "script",
+   "desc": "Stage-1 mechanical index of Ada voice transcripts (no LLM).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "trip-calendar",
+   "kind": "script",
+   "desc": "trip-calendar.py \u2014 trip calendar -> CMS page family (card ada-trip-calendar-pages).",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "vcast-auto-health",
+   "kind": "script",
+   "desc": "vcast-auto-health \u2014 vcast/input-bridge lane probes -> kanban cards.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "vocab-pages-sync",
+   "kind": "script",
+   "desc": "vocab-pages-sync.py \u2014 mirror each speaker's vocab/log memory doc into their per-person CMS glossary page.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "voice-burn-ledger",
+   "kind": "script",
+   "desc": "voice-burn-ledger.py \u2014 Live/voice session ledger per lane from journald.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "weather-bakeoff",
+   "kind": "script",
+   "desc": "weather-bakeoff \u2014 side-by-side forecast comparison for a lane's house.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "webui-timing",
+   "kind": "script",
+   "desc": "Time each stage of the Ada PWA flow end-to-end.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "weekly-digest",
+   "kind": "script",
+   "desc": "weekly-digest.py \u2014 digest-of-digests rollup -> CMS page digest-weekly.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "whisper_server",
+   "kind": "script",
+   "desc": "ada-whisper \u2014 faster-whisper HTTP endpoint for msg-lane STT.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "wp-comment-sync",
+   "kind": "script",
+   "desc": "wp-comment-sync.py \u2014 member comments on boards posts -> suggestion lanes.",
+   "produces": [],
+   "consumes": []
+  },
+  {
+   "name": "colibri-bench",
+   "kind": "pack",
+   "desc": "colibri-bench",
+   "needs": {
+    "gpu_gb": 3,
+    "ram_gb": 20,
+    "disk_gb": 35
+   },
+   "produces": [
+    "packs/colibri-bench/out/colibri-bench-*.json",
+    "packs/colibri-bench/out/colibri-bench-*.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "doc-assemble-ss1",
+   "kind": "pack",
+   "desc": "doc-assemble-ss1",
+   "needs": {
+    "gpu_gb": 0,
+    "disk_gb": 5
+   },
+   "produces": [
+    "packs/doc-assemble-ss1/final/ss1-roughcut.mp4",
+    "packs/doc-assemble-ss1/assemble-report.md"
+   ],
+   "consumes": [
+    "doc-pilot/vo/",
+    "doc-pilot/shots/"
+   ],
+   "publish": [
+    "final"
+   ]
+  },
+  {
+   "name": "doc-embeds-ss1",
+   "kind": "pack",
+   "desc": "doc-embeds-ss1",
+   "needs": {
+    "gpu_gb": 0,
+    "ram_gb": 13,
+    "disk_gb": 30
+   },
+   "produces": [
+    "packs/doc-embeds-ss1/embeds/shot*.pt"
+   ],
+   "consumes": [
+    "model-archive/t5xxl/"
+   ],
+   "publish": [
+    "model-archive/t5xxl"
+   ]
+  },
+  {
+   "name": "doc-render-ss1",
+   "kind": "pack",
+   "desc": "doc-render-ss1",
+   "needs": {
+    "gpu_gb": 14,
+    "disk_gb": 30,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/doc-render-ss1/shots/ss1-shot*.mp4",
+    "packs/doc-render-ss1/verdict.md"
+   ],
+   "consumes": [
+    "packs/doc-embeds-ss1/embeds/"
+   ],
+   "publish": [
+    "shots"
+   ]
+  },
+  {
+   "name": "doc-vo-ss1",
+   "kind": "pack",
+   "desc": "doc-vo-ss1",
+   "needs": {
+    "gpu_gb": 3,
+    "disk_gb": 4
+   },
+   "produces": [
+    "packs/doc-vo-ss1/out/ss1-vo-*.wav",
+    "packs/doc-vo-ss1/vo-report.md"
+   ],
+   "consumes": [],
+   "publish": [
+    "out"
+   ]
+  },
+  {
+   "name": "edu-agent-bench",
+   "kind": "pack",
+   "desc": "edu-agent-bench",
+   "needs": {
+    "gpu_gb": 14,
+    "disk_gb": 22,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/edu-agent-bench/out/bench-edu-manage-*.json",
+    "packs/edu-agent-bench/out/bench-edu-manage-*.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "img-gen-bench",
+   "kind": "pack",
+   "desc": "img-gen-bench",
+   "needs": {
+    "disk_gb": 40,
+    "ram_gb": 18,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/img-gen-bench/out/img-*.png",
+    "packs/img-gen-bench/out/img-gen-report.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "ltx-probe-81f",
+   "kind": "pack",
+   "desc": "ltx-probe-81f",
+   "needs": {
+    "gpu_gb": 14,
+    "disk_gb": 30,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/ltx-probe-81f/probe-result.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "ltx-probe-97f",
+   "kind": "pack",
+   "desc": "ltx-probe-97f",
+   "needs": {
+    "gpu_gb": 14,
+    "disk_gb": 30,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/ltx-probe-97f/probe-result.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "s1-frames-extract",
+   "kind": "pack",
+   "desc": "s1-frames-extract",
+   "needs": {
+    "egress_only_ok": true,
+    "disk_gb": 1
+   },
+   "produces": [
+    "packs/s1-frames-extract/scene1-frames/s1shot0_last.png",
+    "packs/s1-frames-extract/scene1-frames/s1shot1_last.png",
+    "packs/s1-frames-extract/scene1-frames/s1shot2_last.png"
+   ],
+   "consumes": [
+    "renders/ltx_s1_shot0_20261022-1236.mp4",
+    "renders/ltx_s1_shot1_20261022-1236.mp4",
+    "renders/ltx_s1_shot2_20261022-1236.mp4"
+   ],
+   "publish": [
+    "scene1-frames/"
+   ]
+  },
+  {
+   "name": "s1-i2v-chain",
+   "kind": "pack",
+   "desc": "s1-i2v-chain",
+   "needs": {
+    "gpu_gb": 14,
+    "disk_gb": 30,
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/s1-i2v-chain/out/ltx_s1shot*_cont_*.mp4"
+   ],
+   "consumes": [
+    "renders/keyframes/scene1-frames/",
+    "renders/ltx-embeds-s1/"
+   ],
+   "publish": []
+  },
+  {
+   "name": "scout-thai-tts",
+   "kind": "pack",
+   "desc": "scout-thai-tts",
+   "needs": {
+    "disk_gb": 1
+   },
+   "produces": [
+    "packs/scout-thai-tts/candidates.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "smoke",
+   "kind": "pack",
+   "desc": "smoke",
+   "needs": {
+    "egress_only_ok": true
+   },
+   "produces": [
+    "packs/smoke/out.txt"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "thonburian-bench",
+   "kind": "pack",
+   "desc": "thonburian-bench",
+   "needs": {
+    "gpu_gb": 3,
+    "disk_gb": 4
+   },
+   "produces": [
+    "packs/thonburian-bench/out/thon-ada-*.wav",
+    "packs/thonburian-bench/out/thon-tony-*.wav"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "thonburian-score",
+   "kind": "pack",
+   "desc": "thonburian-score",
+   "needs": {
+    "egress_only_ok": true,
+    "disk_gb": 2
+   },
+   "produces": [
+    "packs/thonburian-score/report.md",
+    "packs/thonburian-score/scores.json"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-ada2-redo",
+   "kind": "pack",
+   "desc": "vyncx-v2-ada2-redo",
+   "needs": {
+    "gpu_gb": 3,
+    "disk_gb": 4
+   },
+   "produces": [
+    "packs/vyncx-v2-ada2-redo/out/vx9s2-ada-2.wav",
+    "packs/vyncx-v2-ada2-redo/notes.md"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-ada9s-score",
+   "kind": "pack",
+   "desc": "vyncx-v2-ada9s-score",
+   "needs": {
+    "egress_only_ok": true,
+    "disk_gb": 2
+   },
+   "produces": [
+    "packs/vyncx-v2-ada9s-score/report.md",
+    "packs/vyncx-v2-ada9s-score/scores.json"
+   ],
+   "consumes": [
+    "voice-bench/voice-bench-assets.tgz",
+    "packs/vyncx-v2-ada9s/out/"
+   ],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-ada9s",
+   "kind": "pack",
+   "desc": "vyncx-v2-ada9s",
+   "needs": {
+    "gpu_gb": 3,
+    "disk_gb": 4
+   },
+   "produces": [
+    "packs/vyncx-v2-ada9s/out/vx9s-ada-*.wav"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-bench",
+   "kind": "pack",
+   "desc": "vyncx-v2-bench",
+   "needs": {
+    "gpu_gb": 3,
+    "disk_gb": 4
+   },
+   "produces": [
+    "packs/vyncx-v2-bench/out/vx-ada-*.wav",
+    "packs/vyncx-v2-bench/out/vx-tony-*.wav"
+   ],
+   "consumes": [],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-cer",
+   "kind": "pack",
+   "desc": "vyncx-v2-cer",
+   "needs": {
+    "egress_only_ok": true,
+    "disk_gb": 3
+   },
+   "produces": [
+    "packs/vyncx-v2-cer/report.md",
+    "packs/vyncx-v2-cer/cer.json"
+   ],
+   "consumes": [
+    "packs/vyncx-v2-bench/out/",
+    "packs/vyncx-v2-ada9s/out/"
+   ],
+   "publish": []
+  },
+  {
+   "name": "vyncx-v2-score",
+   "kind": "pack",
+   "desc": "vyncx-v2-score",
+   "needs": {
+    "egress_only_ok": true,
+    "disk_gb": 2
+   },
+   "produces": [
+    "packs/vyncx-v2-score/report.md",
+    "packs/vyncx-v2-score/scores.json"
+   ],
+   "consumes": [
+    "voice-bench/voice-bench-assets.tgz",
+    "packs/vyncx-v2-bench/out/"
+   ],
+   "publish": []
+  }
+ ],
+ "count": 152,
+ "generated": "2026-10-24"
+}
