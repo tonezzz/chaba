@@ -1101,6 +1101,26 @@ jobs:
     BOARD_NOTIFY_TG_CHAT_ID — /send otherwise defaults to Tony''s DM).
     OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
     (every tick exits silently), rm to resume — or pull this job entry.'
+- id: ada-tg-webhook-watch
+  name: Ada Telegram webhook registration monitor
+  host: idc03
+  dispatch: systemd
+  every: 5m
+  persistent: true
+  timeout: 30s
+  env_file: '%h/.config/secrets/telegram-bot.env'
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+    TELEGRAM_EXPECTED_WEBHOOK_URL: https://api.surf-thailand.com/webhook/tg
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/telegram-webhook-watch.py
+  note: 'ADA-0803 — checks Telegram getWebhookInfo every 5m with the
+    idc03 ada-tg-relay token loaded from EnvironmentFile. Alerts to
+    ada-ha group via local relay on URL mismatch, pending updates,
+    recent delivery errors, or API failure; sends recovery notice when
+    healthy again. Does NOT silently call setWebhook. Token and secret
+    are never printed. State at ~/.local/state/telegram-webhook-watch.json;
+    repeated identical alerts are throttled to 6h.'
 - id: kanban-notify
   name: Kanban watch — TG notify on card state changes
   host: idc03

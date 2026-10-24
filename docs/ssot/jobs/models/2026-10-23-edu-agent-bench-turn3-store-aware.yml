@@ -1,0 +1,64 @@
+title: Education-agent lane-lift turn 3 — store-aware topic context
+subtitle: gpt-oss:20b on omen with the existing-topic list in the prompt;
+  dedupe 3/5 -> 5/5 on the fixed 13-task corpus
+icon: flask
+version: 1
+
+card: edu-agent-lane-lift-turn2
+date: 2026-10-23
+parent: docs/ssot/jobs/models/2026-10-23-edu-agent-bench-turn2.yml
+report: reports/bench-edu-manage-2026-10-23-turn3-store-aware.{json,md}
+
+question: |
+  Turn 2 showed dedupe failures were store-awareness failures: the agent
+  did not see the current lesson-topic list, so re-asks forked titles and
+  family lessons missed their prefix. Run the same hardened agent loop
+  and fixed 13-task mock-store corpus with `--agent-topics` enabled.
+
+configuration:
+  lane: local-gpt-oss-20b
+  model: gpt-oss:20b
+  endpoint: omen ollama /v1
+  agent_topics: true
+  judge: none
+  repetitions: 1
+  corpus: scripts/bench-edu-corpus.json
+  store: local MockStore; production WP not used
+
+measured: |
+  lane                         F1   dedupe  sched/ops  recall  completed  p50     tokens-in
+  gpt-oss:20b, no topic list    1.0  3/5     5/5        3/3     13/13      78.3s   43k
+  gpt-oss:20b, --agent-topics   1.0  5/5     5/5        3/3     13/13      81.6s   36,178
+  Draft quality: n/a (no judge; no credentials on this lane).
+  Raw: reports/bench-edu-manage-2026-10-23-turn3-store-aware.{json,md}
+
+verdict: promising-store-awareness-lift
+aq_result: |
+  The store-aware run completed all 13 tasks and scored F1 1.0, dedupe
+  5/5, ops 5/5, recall 3/3. Dedupe improved from 3/5 in the prior
+  single-rep gpt-oss run; the agent also used the ada-nest family prefix
+  on the family task and updated the existing Tailscale lesson on re-ask.
+  Treat this as strong directional evidence, not a statistically robust
+  estimate: one repetition per condition, only 13 tasks, no independent
+  judge, and the 81.6s p50 remains slow for interactive use.
+
+findings:
+  - "The topic-list context directly addresses the known failure mode:
+    it gives the agent exact existing topic names to reuse rather than
+    relying on fuzzy search plus title invention."
+  - "The production classifier receives the same kind of context through
+    lesson-miner -> board-api /lesson {op: topics}; callers hold no WP
+    credentials. Board-api topic read was live-verified at deployment."
+  - "This result does not compare a no-topics and topics condition in
+    randomized multi-rep order. Repeat on more fixtures before calling
+    the lift stable."
+  - "No draft judge ran. Full result JSON and rendered HTML filings are
+    retained for offline review."
+
+followups:
+  - "Rerun the baseline and store-aware conditions for at least 3 reps
+    each, same host/runtime, alternating order; report per-task variance."
+  - "Expand the fixture with real, consented iPhone/LINE asks before
+    treating one-task score changes as reliable."
+  - "Offline re-judge the saved HTML filings with a judge not used by the
+    current production drafting lane."
