@@ -1,7 +1,7 @@
 id: jev-model-chain-probe3
 title: 'JEV model-chain probe #3: post-deploy verify (free_lane -> flash-lite in session)'
-column: doing
-updated: 2026-10-25 06:19
+column: review
+updated: 2026-10-25 06:20
 brief: 'Probe #3 after runner-agent deploy cccc0d38c: a free_lane card should get action.lane+model persisted by
   the CLAIMER, and the session should run with DEVIN_MODEL=flash-lite.'
 priority: low
@@ -16,8 +16,11 @@ spec: 'Expected: runner-agent classifies at claim -> card action.lane=free_lane,
   -> session unit env DEVIN_MODEL set. Task: touch a marker file and commit.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-061936-expected-runner-agent-classifi.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261025-061936-expected-runner-agent-classifi.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0839
 comms:
 - at: 2026-10-25 06:18
@@ -40,3 +43,9 @@ comms:
 - at: 2026-10-25 06:19
   from: chaba
   text: started devin-task-20261025-061936-expected-runner-agent-classifi on idc02 (dispatch)
+- at: 2026-10-25 06:20
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261025-061936-expected-runner-agent-classifi.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
