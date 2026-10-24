@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-25 05:49
+updated: 2026-10-25 05:52
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -46,3 +46,10 @@ comms:
     0.62 -> +blocked-on-tony/manual fix 0.88 -> +comparison-regex 1.00/23 (held-out 8/8). KEY LESSON: title-only
     is weak; brief is the signal; ''vs'' needs the comparison-context regex not blanket; ''Blocked on Tony'' = manual.
     Production module regression 23/23. Committed 34ca3f231. '
+- at: 2026-10-25 05:52
+  from: devin
+  text: 'CORPUS EXPANDED + TRIAL RAN (2026-10-25): expanded to 45 cards (all backlog, hand-labeled per OPS-0823)
+    + 8 held-out = 53/53 = 1.00 production regression (deployed 4971cd4b6, devin-safe fallback for unknown/jevos-down).
+    Key set changes: bench/productionize/hardening->paid_frontier; purge/delete-old/recurring/nest-job->codemod;
+    failing/dep-fix/quadlet/warm-standby->devin; rotation/rekey/lease-teardown->manual; fixture/report->free_lane.
+    REMOVED over-eager ''timer''/''api'' (were misrouting). SUPERVIS'
