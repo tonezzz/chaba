@@ -1,0 +1,26 @@
+id: pattern-library-coding-research
+title: 'research: pattern-match coding — JEV matcher + pattern library + bench (P1-P5)'
+column: backlog
+updated: 2026-10-24 10:32
+brief: 'Test the hypothesis: a big share of coding is match-and-transform. Build pattern library (mined from repo
+  history) + JEV matcher + two application arms (hint/codemod), benchmark against existing eval corpus (same gates).'
+priority: high
+program: chaba-ci
+tags:
+- eval
+- pattern-library
+- jev
+- codemod
+- free-lane
+spec: 'P1 pattern mine (leak-safe, terrology/mddb/chaba) -> mddb code-patterns collection + embeddings. P2 JEV matcher
+  = semantic top-k over triggers. P3 arms: hint mode (pattern in prompt) + codemod mode (deterministic, T1 first:
+  covered_by rule). P4 bench: arms 0-3 on existing corpus, same score.py + held-out tests, metrics pass/cost/latency.
+  P5 every verified fix mined back. Anti-leak: never mine benchmark-task commits.'
+note: 'Tony hypothesis 2026-10-24: agent coding ~ pattern matching + replace/connect strings. JEV already exists
+  (gemma-head+minilm+seqcls, idc03, jev-bench hourly). mddb semantic search = pattern store. Background started:
+  mining seed patterns now.'
+ref: OPS-0809
+comms:
+- at: 2026-10-24 10:32
+  from: devin
+  text: card captured via board-api
