@@ -1,0 +1,20 @@
+id: rename-educations-cpt-label-to-lessons-w-0014fb
+title: Rename Educations CPT label to Lessons (WP registration)
+column: backlog
+updated: 2026-10-24 15:42
+brief: 'Tony 2026-10-24: the lesson CPT admin label reads ''Educations'' — rename to match real usage (''Lessons''
+  — the slug is already lesson). The registration lives in the WP site code (boards.surf-thailand.com, origin behind
+  Cloudflare — not in the chaba repo; the origin host is likely the contabo VPS or a Plesk vhost).'
+tags:
+- wordpress
+- cpt
+- education
+spec: 'Prereq: locate the WP origin host + the register_post_type(''lesson'') call (theme or plugin). Change labels:
+  name/singular_name ''Educations'' -> ''Lessons'', menu_name ''Education'' (or ''Lessons''). Keep the slug ''lesson''
+  (REST + board-api depend on it). Also confirm show_ui/show_in_menu so the admin list is reachable. Verify after:
+  the admin menu + the existing 61 posts listed.'
+ref: OPS-0820
+comms:
+- at: 2026-10-24 15:42
+  from: tony
+  text: card captured via board-api
