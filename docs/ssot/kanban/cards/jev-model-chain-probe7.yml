@@ -1,6 +1,6 @@
 id: jev-model-chain-probe7
 title: 'JEV model-chain probe #7: fleet-final (free_lane -> flash-lite in session)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:34
 brief: 'Probe #7 after macbook-keyword fix a88496755 on all 6 runners. A free_lane card should classify at claim
   -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
@@ -16,7 +16,8 @@ spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-fl
   Task: touch marker + commit.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0843
 comms:
 - at: 2026-10-25 06:34
@@ -29,3 +30,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:34
+  from: idc02
+  text: claimed
