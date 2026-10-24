@@ -1,7 +1,7 @@
 id: ai-lane-delegation-procedure
 title: 'procedure: start using the AI lanes for real — delegation + testing protocol'
 column: doing
-updated: 2026-10-24 16:51
+updated: 2026-10-24 16:52
 brief: 'Operationalize the eval findings: define HOW real work gets routed to lanes (codemod/cheap/paid/Devin),
   how each lane is tested before trusting it, and which work is safe to delegate NOW vs needs gates.'
 priority: high
@@ -74,6 +74,13 @@ comms:
   from: devin
   text: Dispatch picked up on idc02 — exploring repo for existing lane/routing material before drafting the kb doc
     + lesson.
+- at: 2026-10-24 16:52
+  from: devin
+  text: 'M1-BEHAVIORAL VERIFIER BUILT (task m1-behavioral): held-out test asserts follower-with-unhealthy-client
+    must NOT report healthy:true, using only public API — no internal field names. Bidirectional: parent FAILS,
+    real fix PASSES. KEY FINDING: both Fable runs AND Gemini fixed the client but MISSED wiring the handler (Healthy:true
+    still hardcoded line 43) — the old verifier crashed on rc.connected so this real incompleteness was invisible.
+    With the one-line handler fix, Fable workspace PASSES. Veri'
 action:
   type: dispatch
   status: running
