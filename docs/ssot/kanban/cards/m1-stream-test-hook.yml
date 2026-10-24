@@ -1,7 +1,7 @@
 id: m1-stream-test-hook
 title: 'm1: add a stream state test hook to ReplicationClient for idle-healthy handler coverage'
-column: backlog
-updated: 2026-10-25 05:51
+column: doing
+updated: 2026-10-25 05:52
 brief: The idle-caught-up-follower-stays-healthy handler test needs to simulate a connected-but-quiet stream; ReplicationClient
   has no public setter for connected/lag (all atomic internals). Add a small test-only hook (e.g. SetStreamStateForTest)
   to the repo so the behavioral verifier can cover the full handler contract.
@@ -22,6 +22,10 @@ comms:
 - at: 2026-10-25 05:51
   from: devin
   text: queued for processing
+- at: 2026-10-25 05:52
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
