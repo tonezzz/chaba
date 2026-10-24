@@ -1,0 +1,23 @@
+id: jev-model-chain-probe4
+title: 'JEV model-chain probe #4: JEV_LANE=1 live verify (free_lane -> flash-lite)'
+column: backlog
+updated: 2026-10-25 06:22
+brief: 'Probe #4: JEV_LANE=1 drop-in now on idc02 runner-agent. A free_lane card should classify at claim -> card
+  lane+model persisted -> session DEVIN_MODEL=flash-lite.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- dispatch
+- probe
+- lane
+- model
+spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-flash-lite on the card; session env
+  DEVIN_MODEL set. Task: touch marker + commit.'
+action:
+  type: dispatch
+ref: OPS-0840
+comms:
+- at: 2026-10-25 06:22
+  from: devin
+  text: card captured via board-api
