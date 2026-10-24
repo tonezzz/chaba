@@ -56,6 +56,10 @@ comms:
 - at: 2026-10-24 19:56
   from: chaba
   text: 'branch push failed: fatal: could not read Username for ''https://github.com'': No such device or address'
+- at: 2026-10-24 19:56
+  from: chaba
+  text: push failed → session head relayed to the board host as a bundle (tony-omen-gnome-keyring-daemon-fd-leak-p-338561-d9aed27159.bundle,
+    3270B) — merge-sweep will land it from patch-inbox
 spec: Restart the gnome-keyring-daemon user service on host tony-omen to resolve the file descriptor leak and high
   CPU usage. Target host is tony-omen, addressing pid 9755 which is pegged at 1024 fds and spamming auth.log. Constraints
   include avoiding disruption to critical active user sessions while executing the restart. The done-condition is
