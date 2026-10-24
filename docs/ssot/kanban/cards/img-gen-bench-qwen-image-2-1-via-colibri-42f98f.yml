@@ -1,0 +1,24 @@
+id: img-gen-bench-qwen-image-2-1-via-colibri-42f98f
+title: 'img-gen-bench: Qwen-Image-2.1 via Colibri on a fleet host'
+column: backlog
+updated: 2026-10-24 13:17
+brief: 'Tony ask 2026-10-24 — does Colibri-style disk streaming extend to image gen? Colibri ships Qwen-Image-2.1
+  (33GB dl, 12-18GB RAM, one 768x512 pic in 2min40s on 8 Zen4 cores CPU). Test: install on a fleet host with >=18GB
+  RAM + >=40GB disk, generate a small prompt set (doc-pilot scene styles + standard eval prompts), measure latency
+  + quality vs our current image lanes.'
+tags:
+- llm
+- image-gen
+- colibri
+- bench
+- fleet
+spec: 'Pack: packs/img-gen-bench — needs disk_gb 40, egress_only_ok; venv:true. Prep: clone colibri (or reuse ~/colibri),
+  setup --model qwen-image-2.1 --dir $PACK_DIR/model (TMPDIR=$HOME/tmp), serve. Run: generate N images from a prompt
+  list (style prompts from doc-pilot storyboard + 3 generic), write out/img-*.png + report.md (latency per image,
+  RAM/disk used). Host candidates: mn01/idc03 (check RAM >= 18GB); omen busy with colibri-bench LLM run until ~14:30.
+  Depends: colibri-bench (BEN-0814) proves the engine on this fleet.'
+ref: BEN-0815
+comms:
+- at: 2026-10-24 13:17
+  from: tony
+  text: card captured via board-api
