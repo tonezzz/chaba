@@ -233,6 +233,23 @@ def markpath(job):
     d = ENV_DONE if job.get('scope') == 'env' else DONE
     return f"{d}/{job['name']}.done"
 
+def release_claim(name):
+    """Delete our own claim file — a failed/dead worker must not leave a
+    claim that poisons the pack for the stale-claim window (2026-10-23)."""
+    try:
+        os.unlink(f'{PACKS}/{name}/claim/{WORKER}')
+    except OSError:
+        pass
+
+def touch_index(name, state, info=''):
+    """packs-index.json — one tiny line per state change so fleet scans
+    can go O(1) instead of O(packs x rclone lsf). Best-effort."""
+    try:
+        with open(f'{Q}/packs-index.json', 'a') as f:
+            f.write(f'{time.time():.0f} {name} {state} {WORKER} {info}\n')
+    except OSError:
+        pass
+
 def claim(job):
     """Optimistic first-writer-wins on packs/<name>/claim/. Drive dir-listing
     lag means this is best-effort for >1 simultaneous worker — fine at our
@@ -277,6 +294,7 @@ signal.signal(signal.SIGALRM, _alrm)
 
 try:
     ns = {}
+    current = ""                   # pack name whose claim we hold
     pending = None                  # (job_name, logfile, Popen) — bg prep for a
                                     # specific job, started under an earlier job's
                                     # GPU time. Only the owning job consumes it.
@@ -296,17 +314,23 @@ try:
                 say(f'== {name}: SKIP needs unmet ({why})'); continue
             if not claim(job):
                 say(f'== {name}: SKIP (claimed by another worker)'); continue
+            current = name
+            touch_index(name, 'claim')
         if pending is not None and pending[0] == name:
             state['phase'] = 'prep-wait'
             rc = wait_prep(pending); pending = None
             say(f'== {name}: prep rc={rc}')
             if rc != 0:
-                say(f'== {name}: PREP FAILED — skipping'); continue
+                say(f'== {name}: PREP FAILED — skipping')
+                if job.get('_pack'): release_claim(name)
+                continue
         elif job.get('prep') and (pending is None or pending[0] != name):
             state['phase'] = 'prep'
             say(f'== {name}: prep (foreground, see prep-{name}.log)')
             if wait_prep(start_prep(job)) != 0:
-                say(f'== {name}: PREP FAILED — skipping'); continue
+                say(f'== {name}: PREP FAILED — skipping')
+                if job.get('_pack'): release_claim(name)
+                continue
         if pending is None:         # one bg slot — hide next prep under this run
             nxt = next((j for j in queue[i+1:]
                         if j.get('prep')
@@ -337,15 +361,18 @@ try:
             ok, info = verify_artifacts(job)
             if not ok:
                 say(f'== {name}: FAIL artifacts missing after run: {info}')
+                if job.get('_pack'): release_claim(name)
                 continue
             if fenced_out(EPOCH, WORKER):
                 sys.exit('fenced — lost lease before done-mark')
             open(markpath(job), 'w').write(f'{dt:.0f}s boot={BOOT_ID} ep={EPOCH} {info}\n')
+            if job.get('_pack'): touch_index(name, 'done', info)
             say(f'== {name}: DONE {dt:.0f}s {info} (gpu {gpu_note()})')
         except Exception:
             say(f'== {name}: FAIL')
             traceback.print_exc()
             log.write(traceback.format_exc() + '\n')
+            if job.get('_pack'): release_claim(name)
     if pending is not None:
         state['phase'] = 'drain-prep'
         wait_prep(pending)
@@ -357,5 +384,7 @@ try:
     time.sleep(120)
 finally:
     state['job'] = 'exit'; state['phase'] = 'exit'
+    if current:
+        release_claim(current)      # died mid-pack — don't poison the pack
     try: os.unlink(f'{Q}/runner.pid')
     except OSError: pass
