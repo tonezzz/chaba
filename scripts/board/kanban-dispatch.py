@@ -81,6 +81,15 @@ MY_LABELS = {x.strip() for x in
 # dr.push_probe() runs a real `git push --dry-run` (a git@ remote is no
 # proof — ADA-0673's chaba-only deploy key looked ssh-capable).
 PUSH_GUARD = os.environ.get("KANBAN_PUSH_GUARD", "1") != "0"
+# Lane -> cheapest executor mapping (jev-pilot Phase 2, 2026-10-25).
+LANE_MODELS = {
+    "free_lane": "litellm/gemini-3.5-flash-lite",
+    "paid_frontier": "litellm/or-claude-fable-5.1",
+}
+LANE_EXECUTORS = {"codemod": "script", "manual": None}
+JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+JEV_LANE = os.environ.get("JEV_LANE", "0") == "1"
+
 PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
 _PUSH_PROBE_CACHE: dict = {}
 
@@ -501,15 +510,57 @@ def _with_lock(fn):
         return fn()
 
 
+def classify_lane(card: dict) -> str:
+    """Ask jevos for the cheapest lane for this card. '' on failure."""
+    import urllib.request as _ur
+    state = {"card": card.get("id"), "title": card.get("title", ""),
+             "brief": (card.get("brief") or card.get("spec") or "")[:250]}
+    q = {"lane": {"type": "choice",
+                  "instructions": "Choose the cheapest lane that can complete this card's work class.",
+                  "criteria": {"codemod": "deterministic pattern change, known transform, no judgment",
+                               "free_lane": "single-step chore, verification exists, no long horizon",
+                               "paid_frontier": "contained code task needing strong reasoning",
+                               "devin": "multi-step, remote diagnosis, ambiguous, or no-gate work",
+                               "manual": "needs Tony's hands (hardware, accounts, physical)"}}}
+    payload = {"model": "jev-latest", "state": state, "questions": q}
+    try:
+        req = _ur.Request(JEVOS + "/v1/systemone",
+                          data=json.dumps(payload).encode(),
+                          headers={"Content-Type": "application/json"})
+        r = json.loads(_ur.urlopen(req, timeout=30).read().decode())
+        ans = (r.get("answers") or {}).get("lane") or {}
+        lane = ans.get("choice")
+        conf = float(ans.get("confidence") or 0.0)
+        # Confidence gate (jev-pilot Phase 2): only route when the
+        # classifier is confident; otherwise fall back to devin (safe
+        # default). Avoids misrouting real work on borderline flips
+        # (observed: opencode-interactive manual<->free_lane at 0.195).
+        if conf < float(os.environ.get("JEV_LANE_MIN_CONF", "0.5")):
+            return ""
+        return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else ""
+    except Exception:
+        return ""
+
+
 def start_pending(path: Path) -> str:
     """Phase B: devin-dispatch start (slow, no lock), then write back."""
     card = load_card(path)  # read-only peek for spec/task build
     a = card["action"]
     repo = a.get("repo", "chaba")
     task = build_task(card)
+    lane = str(a.get("lane") or "")
+    if not lane and JEV_LANE:
+        lane = classify_lane(card)
+        if lane:
+            a["lane"] = lane
+            save_card(path, card)
+    if lane == "manual":
+        return "manual lane — not dispatched (Tony's hands)"
     env = dict(os.environ)
     if a.get("model"):
         env["DISPATCH_MODEL"] = str(a["model"])  # -> devin --model
+    elif lane in LANE_MODELS:
+        env["DISPATCH_MODEL"] = LANE_MODELS[lane]  # cheapest lane
     r = sh([DISPATCH, "start", repo, task], timeout=120, env=env)
 
     def apply():
