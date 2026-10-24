@@ -71,10 +71,12 @@ def colab_pack_status() -> str:
     names = [l.strip().strip("/") for l in out.splitlines() if l.strip()]
     lines = []
     for n in sorted(names):
-        entries = _rclone("lsf", _pack_dir(n), "--files-only")[1].splitlines()
-        has_claim = any("/claim/" in e for e in entries)
+        # default lsf lists files AND dirs (dirs end "/"); --files-only would
+        # hide claim/ and out/ so CLAIMED/OUT could never display.
+        entries = _rclone("lsf", _pack_dir(n))[1].splitlines()
+        has_claim = any(e.strip() == "claim/" for e in entries)
         has_done = any(e.strip() == "done" for e in entries)
-        has_out = any(e.startswith("out/") for e in entries)
+        has_out = any(e.strip() == "out/" for e in entries)
         state = "DONE" if has_done else ("CLAIMED" if has_claim else ("OUT" if has_out else "queued"))
         lines.append(f"{n:<28} {state}")
     return "\n".join(lines) or "(no packs)"
@@ -106,10 +108,21 @@ def colab_pack_submit(local_dir: str, pack_name: str) -> str:
     ada-nest/packs/<pack_name>. Local dir is on the host running this MCP.
     Refuses to overwrite an existing pack."""
     src = Path(local_dir).expanduser()
-    if not (src / "pack.yml").exists():
-        return f"ERROR: {src}/pack.yml not found"
-    rc, out = _rclone("lsf", _pack_dir(pack_name), "--dirs-only")
-    if rc == 0 and out.strip():
+    yml = src / "pack.yml"
+    if not yml.exists():
+        return f"ERROR: {yml} not found"
+    # runner keys claim/done/PACK_DIR off pack.yml's name: — it must equal
+    # the target dir or markers land on a different pack.
+    declared = ""
+    for line in yml.read_text().splitlines():
+        if line.startswith("name:"):
+            declared = line.split(":", 1)[1].strip().strip("'\"")
+            break
+    if declared and declared != pack_name:
+        return (f"ERROR: pack.yml name={declared!r} != pack_name={pack_name!r} "
+                f"— the runner would write claim/done under packs/{declared}")
+    rc, out = _rclone("lsf", _pack_dir(pack_name))
+    if rc == 0:
         return f"ERROR: pack {pack_name} already exists on Drive"
     # copy pack.yml then inputs/ (best-effort)
     rc1, out1 = _rclone("copyto", str(src / "pack.yml"), f"{_pack_dir(pack_name)}/pack.yml")
