@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-24 15:51
+updated: 2026-10-25 05:32
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -18,3 +18,10 @@ comms:
 - at: 2026-10-24 15:51
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 05:32
+  from: devin
+  text: 'PHASE 1 DONE (2026-10-25): JEV card-triage pilot ran — 10 real backlog cards x 2 backends (jev-student
+    :8778 + jevos :8017). Report: gdrive ada-nest/reports/jev-card-triage-2026-10-25.md. FINDINGS: jev-student =
+    noul-only (choice falls back ''answer'' conf 0.0, keep for confirm-gate only — matches decision-arena 0.481);
+    jevos = real lane choices on all 10, CORRECT on the obvious ones (dispatch-concurrency-bump=codemod, eval-ide-*=free_lane)
+    and flagged bench-verifier (done card) as needs-approval='
