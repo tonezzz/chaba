@@ -1,0 +1,24 @@
+id: fix-lesson-th-translation-timeout
+title: 'fix board-api /lesson: Thai translation hangs (no timeout) — block lesson writes'
+column: backlog
+updated: 2026-10-24 12:43
+brief: '/lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed
+  --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(),
+  so the intent is unenforced.'
+priority: high
+program: chaba-ci
+tags:
+- board-api
+- lesson
+- timeout
+- efficiency
+spec: 'Add hard timeout (~12-15s) to the gemini_rest.generate() call in _gemini_thai() (board-api.py ~line 1452).
+  On timeout/error return  (existing fallback path already handles EN-only). Verify: POST /lesson with slow lane
+  -> returns quickly with EN-only lesson; fast lane -> Thai still appended. Also confirm lesson-add.py inherits
+  the fix (it POSTs to /lesson).'
+note: Discovered 2026-10-24 during eval lesson filings — post 2231/2244/2258 all needed --no-th workaround.
+ref: OPS-0813
+comms:
+- at: 2026-10-24 12:43
+  from: devin
+  text: card captured via board-api
