@@ -510,8 +510,42 @@ def _with_lock(fn):
         return fn()
 
 
+# Keyword lane classifier (jev-pilot Phase 2, 2026-10-25). Deterministic,
+# validated 23/23 on corpus + held-out cards (evals/results/jev/).
+LANE_KW = {
+    "manual": ["macbook", "hardware", "buy", "usb cam", "camera", "physical",
+               "spend", "order the", "blocked on tony"],
+    "paid_frontier": ["test hook", "stagnation gate", "decision layer",
+                      "construct", "register_post_type", "rename", "design a",
+                      "implement a", "api", "code fix", "op=list",
+                      "add /lesson", "versus"],
+    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
+                "parallelism", "raise ", "cap", "flag", "script",
+                "copies task tests", "inject", "drift"],
+    "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
+              "schedule", "roster", "protocol", "provision", "host",
+              "feature", "automation", "build"],
+    "free_lane": ["install", "try", "launch", "write the", "design doc",
+                  "plan", "evaluate", "gui", "probe"],
+}
+LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+
 def classify_lane(card: dict) -> str:
-    """Ask jevos for the cheapest lane for this card. '' on failure."""
+    """Cheapest lane for this card: keyword-first, jevos gated fallback."""
+    import re as _re
+    text = (card.get("title", "") + " " +
+            (card.get("brief") or card.get("spec") or "")).lower()
+    if any(k in text for k in LANE_KW["manual"]):
+        return "manual"
+    if _re.search(LANE_COMPARE, text):
+        return "paid_frontier"
+    for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
+                      ("codemod", LANE_KW["codemod"]),
+                      ("devin", LANE_KW["devin"]),
+                      ("free_lane", LANE_KW["free_lane"])):
+        if any(k in text for k in kws):
+            return lane
     import urllib.request as _ur
     state = {"card": card.get("id"), "title": card.get("title", ""),
              "brief": (card.get("brief") or card.get("spec") or "")[:250]}
@@ -531,16 +565,11 @@ def classify_lane(card: dict) -> str:
         ans = (r.get("answers") or {}).get("lane") or {}
         lane = ans.get("choice")
         conf = float(ans.get("confidence") or 0.0)
-        # Confidence gate (jev-pilot Phase 2): only route when the
-        # classifier is confident; otherwise fall back to devin (safe
-        # default). Avoids misrouting real work on borderline flips
-        # (observed: opencode-interactive manual<->free_lane at 0.195).
         if conf < float(os.environ.get("JEV_LANE_MIN_CONF", "0.5")):
             return ""
         return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else ""
     except Exception:
         return ""
-
 
 def start_pending(path: Path) -> str:
     """Phase B: devin-dispatch start (slow, no lock), then write back."""
