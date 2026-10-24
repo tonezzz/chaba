@@ -1,7 +1,7 @@
 id: jev-model-chain-probe2
 title: 'JEV model-chain probe #2: verify flash-lite reaches the session (post-fix)'
 column: doing
-updated: 2026-10-25 06:14
+updated: 2026-10-25 06:15
 brief: 'Probe #2 after c4fc7cac1: a free_lane card should get action.model=litellm/gemini-3.5-flash-lite persisted,
   and the runner session should run with DEVIN_MODEL set.'
 priority: low
@@ -44,3 +44,10 @@ comms:
   from: devin
   text: session up on idc02; probing model chain — DEVIN_MODEL env is unset in-session, checking unit invocation
     for --model flag
+- at: 2026-10-25 06:15
+  from: devin
+  text: 'PROBE RESULT: FAIL — chain still broken. Live card action has no lane/model; unit Environment has no DEVIN_MODEL;
+    devin ran with no --model flag (default model, not flash-lite). Root cause: c4fc7cac persists lane+model only
+    in kanban-dispatch start_pending — but idc02 runner-agent claimed this card at 06:13 via board-api do:claim,
+    bypassing classify entirely. classify_lane must move to queue time (board-api do_action queue) so the model
+    is on the card before ANY claimer sees it. Marker committed'
