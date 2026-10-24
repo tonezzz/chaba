@@ -1446,11 +1446,16 @@ def _gemini_thai(html_text: str) -> str:
     if not key:
         return ""
     try:
+        # Hard timeout (OPS-0813): a slow/capped Gemini lane must not hang
+        # the lesson write for minutes — degrade to EN-only instead. The
+        # gemini_rest.generate default is 120s; that is too long for a
+        # synchronous board-api request.
         th = _gemini_mod.generate(
             "Translate the following HTML lesson to natural Thai. "
             "Keep HTML tags, code, URLs, and proper names verbatim. "
             "Output ONLY the translated HTML.\n\n" + html_text,
-            "gemini-3.5-flash-lite", key=key)
+            "gemini-3.5-flash-lite", key=key, timeout=12,
+            max_attempts=1)
         return (th or "").strip()
     except Exception:
         return ""

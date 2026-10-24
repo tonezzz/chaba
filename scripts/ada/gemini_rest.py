@@ -44,7 +44,8 @@ def endpoint(model: str) -> str:
 
 def generate(prompt: str, model: str, *, key: str | None = None,
              generation_config: dict | None = None,
-             timeout: int = 120, label: str = "gemini") -> str | None:
+             timeout: int = 120, label: str = "gemini",
+             max_attempts: int = 4) -> str | None:
     """One generateContent call -> text or None. Retries 429/5xx with
     linear backoff; other HTTP errors fail fast with a printed reason."""
     key = (key or os.environ.get("GEMINI_API_KEY")
@@ -56,7 +57,7 @@ def generate(prompt: str, model: str, *, key: str | None = None,
     if generation_config:
         body["generationConfig"] = generation_config
     data = json.dumps(body).encode()
-    for attempt in range(4):
+    for attempt in range(max_attempts):
         try:
             req = urllib.request.Request(
                 endpoint(model), data=data,
