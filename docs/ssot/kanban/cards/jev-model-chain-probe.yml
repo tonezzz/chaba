@@ -1,7 +1,7 @@
 id: jev-model-chain-probe
 title: 'JEV model-chain probe: free_lane card (verify DISPATCH_MODEL reaches the session)'
 column: doing
-updated: 2026-10-25 06:10
+updated: 2026-10-25 06:17
 brief: 'Probe #1 (JEV hands-off): queue a card that classifies to free_lane (flash-lite) and verify the runner session
   actually runs with DEVIN_MODEL=litellm/gemini-3.5-flash-lite.'
 priority: low
@@ -40,3 +40,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:17
+  from: devin
+  text: 'PROBE RESULT: chain BROKEN — no DEVIN_MODEL in unit env, devin launched without --model (default SWE-2
+    High, not flash-lite). Root cause: lane routing lived only in kanban-dispatch (JEV_LANE-gated); idc02 runner-agent
+    claimed and forwarded only action.model. FIX committed 1577b26d: LANE_MODELS+classify_lane moved to dispatch_repos,
+    runner-agent now applies identical routing (explicit model>lane map>JEV_LANE classify; manual never claimed).
+    186 board tests pass. Still needed for unset-lane classi'
