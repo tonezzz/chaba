@@ -1508,6 +1508,13 @@ def do_lesson(body: dict, frm: str) -> dict:
         for k in ("learned_at", "next_review", "status"):
             if old_meta.get(k):
                 meta[k] = old_meta[k]
+        # explicit modified bump — WP only auto-updates it when content
+        # bytes change; re-filed lessons with identical content kept the
+        # ORIGINAL date, so admin sort-by-last-modified was useless
+        # (Tony 2026-10-24).
+        now_iso = datetime.datetime.now(datetime.timezone.utc).replace(
+            microsecond=0).isoformat()
+        payload["modified"] = now_iso
         r = wp_api(f"/wp/v2/lesson/{pid}", payload)
         action = "updated"
     else:
