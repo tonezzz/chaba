@@ -1,7 +1,7 @@
 id: ada-chaba-instance
 title: Provision ada-chaba backend :8008 — the tony-ha lane presence for LINE group
 column: doing
-updated: 2026-10-24 20:34
+updated: 2026-10-24 20:49
 priority: medium
 spec: 'Provision the chaba persona backend on idc03, answering "chaba" mentions in the shared LINE group (spec v3
   on line-multihome-group). Per ha-ada-isolation.md pattern: (1) ada-chaba.service on :8008 cloned from ada-ha-*
@@ -33,6 +33,13 @@ comms:
   text: 'provisioning on idc03 per spec. Design settled post-rebrand check: :8008 ada-chaba = dedicated house/ops-brain
     backend (own bank, ops/docs tools, svc-chaba LLAT); :8002 stays Tony personal Chaba. LINE chaba: repoint ->
     :8008 last, after backend verified.'
+- at: 2026-10-24 20:49
+  from: devin
+  text: PROVISIONED on idc03 per spec. ada-chaba.service :8008 active (MemoryMax=2G/CPUQuota=150% + journal caps);
+    env ada-chaba.env (ADA_INSTANCE_ID=chaba); svc-chaba non-admin LLAT minted + verified (api/states 200, events->ada-ha-events-chaba);
+    ada-ha-chaba-keys.json mirrors caller values tony=owner/kk=member/nhong=guest; 10 memory banks mounted (personal-chaba
+    own bank + shared + read-only kb/ssot/chaba-docs); house-presence identity env; tool profile managed via persons.chaba
+    (32 incl/23 excl, lint
 action:
   type: dispatch
   status: running
