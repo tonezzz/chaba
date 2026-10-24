@@ -1,0 +1,65 @@
+title: AI lane delegation procedure — documented + piloted on 3 real tasks
+subtitle: routing rule, per-lane go-live gates, delegate->gate->escalate protocol, go-live matrix, babysitting roles
+icon: clipboard
+version: 1
+
+card: ai-lane-delegation-procedure
+ref: OPS-0823
+date: 2026-10-24
+dispatch: 20261024-165135-document-in-devin-kb-lesson-1-
+
+question: |
+  Can the eval lanes carry real work now, and under what procedure? Tony:
+  "can we start using them for real? define procedure to start
+  testing/delegating." Operationalize ai-workforce-eval findings.
+
+deliverable: |
+  Canonical doc: devin-kb docs/tools/ai-lane-delegation.md
+  (tony-dell:~/devin-kb, commit 3b26813 on main, NOT pushed per dispatch
+  rails — MDDB sync-docs-to-mddb.py picks it up from the checkout).
+  Linked from docs/tools/ai-workforce-eval.md phase-4 deliverable.
+  Lesson filed via board-api /lesson (topic: ai-lane-delegation).
+  Procedure index entry: ssot.procedures.yml#ai-lane-delegate.
+
+  Contents: (1) task-class -> lane routing table (L0 codemod / L1 free
+  flash-lite / L2-L3 paid / L4 Devin dispatch); (2) per-lane go-live
+  gates (bench pass on the class + inline verifier + blast radius +
+  spend headroom + explicit target_host); (3) card -> classify -> route
+  -> gate -> run -> verify -> escalate loop with the script-card recipe;
+  (4) go-live matrix as of today; (5) verifier/dispatcher/runner/QC/Tony
+  roles + babysitting-minutes metric.
+
+pilots: |
+  Three real chores delegated per the procedure (results on the card):
+  1. timer-alert-idc03-ada-memory-sync (multi-step remote diag) -
+     free lane FAILED cleanly: stopped after ~3 calls; ALSO surfaced a
+     host-mismatch (agent host != target host). Verdict led to the L4
+     resolution: 9 real conflicts, --take-remote, unit green.
+  2. stash-graveyard-triage (single-repo list+classify+report) -
+     free lane COMPLETED: 7 stashes classified, all droppable.
+  3. check-traffic-report-automation (repo-search + verdict artifact) -
+     this session on idc02, opencode+flash-lite in-worktree:
+     run 1 FAILED - searched correctly (grep traffic, glob, read the
+     card) but never wrote verdict-pilot3.json; verifier gate caught it
+     (artifact missing = fail, not false-done).
+     run 2 with ARTIFACT-FIRST prompt contract (write the JSON skeleton
+     before searching) PASSED: verdict correct (no report automation;
+     truth: only traffic-cam snapshot svc exists), minor schema
+     sloppiness (empty related_components). Prompt-contract refinement
+     documented in the procedure.
+
+sharpened_boundaries: |
+  - Free lane carries single-step verifiable ops AND single-repo
+    list+classify+report - with an inline verifier, always.
+  - Free lane cannot carry multi-step remote diagnosis or code-with-test.
+  - Artifact-first prompting (write skeleton -> search -> rewrite filled)
+    rescues the early-stop failure mode; search-then-write loses it.
+  - Some "failures" are correct alerts (exit-1-by-design) - diagnosis
+    must distinguish bug from intended signal.
+  - Escalation ladder: L0 -> L1 -> L2 -> L3 -> L4 -> Tony; two clean
+    fails at a rung = escalate, never silently retry.
+
+verify: |
+  cat docs/ssot/jobs/workflow/2026-10-24-ai-lane-delegation.yml
+  ssh tony-dell 'cd ~/devin-kb && git log -1 --oneline docs/tools/ai-lane-delegation.md'
+  # expect: 3b26813 docs(tools): AI lane delegation procedure ...
