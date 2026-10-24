@@ -1,7 +1,7 @@
 id: mddb-query-embedder-down
 title: mddb /v1/vector-search failing — query embedder providers down (OR circuit-open + Gemini fail)
-column: review
-updated: 2026-10-23 16:34
+column: done
+updated: 2026-10-24 17:47
 brief: 'Found during OPS-0779 worker wiring: POST /v1/vector-search on mddbd (100.102.134.91:11023) returns {error:
   failed to embed query: ollama API error (status 502): all same-space providers down (OR circuit-open + Gemini
   failed)} — 2026-10-23 ~14:30+07. /v1/health says healthy and /search doc listing works, so only the query-embedding
@@ -49,3 +49,8 @@ comms:
 
 
     => Top-3 retrieval: BGE at/above parity (+5.6pp). Top-1: BGE -8.4pp. Model quality is in the right ne'
+- at: 2026-10-24 17:47
+  from: tony
+  text: closed by tony
+action:
+  status: done
