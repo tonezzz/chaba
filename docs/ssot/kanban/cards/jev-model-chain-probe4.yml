@@ -1,7 +1,7 @@
 id: jev-model-chain-probe4
 title: 'JEV model-chain probe #4: JEV_LANE=1 live verify (free_lane -> flash-lite)'
 column: doing
-updated: 2026-10-25 06:25
+updated: 2026-10-25 06:26
 brief: 'Probe #4: JEV_LANE=1 drop-in now on idc02 runner-agent. A free_lane card should classify at claim -> card
   lane+model persisted -> session DEVIN_MODEL=flash-lite.'
 priority: low
@@ -43,3 +43,8 @@ comms:
     1577b26d landed 23:16:59Z, claim ran 23:22:59Z on the stale Oct-22 runner-agent install. Secondary gap: even
     fixed code sets a[lane]/a[model] in-memory after the claim POST and never PATCHes back — card fields still would
     not persist for remote claimers. Marker committed.'
+- at: 2026-10-25 06:26
+  from: devin
+  text: 'session done: marker + outcome committed on dispatch branch (becc5221), no push per rails. Follow-up: re-probe
+    after mn01 chaba-repo-sync, and implement queue-time classify in board-api so lane/model persist on the card
+    itself.'
