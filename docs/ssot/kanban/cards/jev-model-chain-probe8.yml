@@ -1,7 +1,7 @@
 id: jev-model-chain-probe8
 title: 'JEV model-chain probe #8: debug trace (env DISPATCH_MODEL)'
-column: doing
-updated: 2026-10-25 06:38
+column: review
+updated: 2026-10-25 06:39
 brief: 'Probe #8 with DEBUG trace in runner-agent: verify DISPATCH_MODEL in env at dispatch.'
 priority: low
 program: chaba-ci
@@ -14,8 +14,11 @@ tags:
 spec: 'Expected: DEBUG line shows model+ lane + bool(DISPATCH_MODEL). Task: touch marker + commit.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-063835-expected-debug-line-shows-mode.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261025-063835-expected-debug-line-shows-mode.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0844
 comms:
 - at: 2026-10-25 06:37
@@ -34,3 +37,9 @@ comms:
 - at: 2026-10-25 06:38
   from: chaba
   text: started devin-task-20261025-063835-expected-debug-line-shows-mode on idc02 (dispatch)
+- at: 2026-10-25 06:39
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261025-063835-expected-debug-line-shows-mode.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
