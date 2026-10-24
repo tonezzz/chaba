@@ -1,0 +1,56 @@
+# colibri-bench — Qwen3.6-35B-A3B via Colibri on omen (BEN-0814).
+# Colibri streams MoE experts from disk; the 35B-A3B fits omen's
+# 30GB RAM + 83GB free disk, and its CUDA build (~30 tok/s on the
+# 1650) would beat gpt-oss:20b's 5 tok/s CPU by ~6x — this pack
+# answers whether the local lane's gap was latency or capability
+# (same question as edu-agent-bench/eval-code-lane, bigger ceiling).
+# Benchmark: bench-edu-manage.py's hermes lane via OLLAMA_URL ->
+# Colibri's OpenAI-compatible :8000/v1.
+name: colibri-bench
+needs:
+  gpu_gb: 3          # 1650 CUDA build when the toolkit exists; setup self-falls-back
+  disk_gb: 35        # model ~23GB + colibri + bench staging
+venv: true
+timeout_s: 10800     # install + ~23GB download (resume) + 13-task bench
+artifacts:
+  - packs/colibri-bench/out/colibri-bench-*.json
+  - packs/colibri-bench/out/colibri-bench-*.md
+prep: |
+  set -e
+  # engine + model live under $HOME (omen /tmp is small+flaky); the model
+  # dir lands in the pack workdir so the artifact path stays self-contained
+  CLB=$HOME/colibri
+  [ -d $CLB/.git ] || git clone --depth 1 https://github.com/JustVugg/colibri $CLB
+  cd $CLB
+  mkdir -p $PACK_DIR/model
+  # omen /tmp is small+flaky — build temp goes to home
+  export TMPDIR=$HOME/tmp && mkdir -p $TMPDIR
+  ./start-here.sh --yes --model qwen3.6-colibri --backend cuda --dir $PACK_DIR/model 2>&1 | tail -15 \
+    || ./start-here.sh --yes --model qwen3.6-colibri --backend cpu --dir $PACK_DIR/model 2>&1 | tail -15
+  # 2) make sure the OpenAI-compatible server is up
+  ./c/coli stop >/dev/null 2>&1 || true
+  nohup ./c/coli serve > $HOME/colibri-serve.log 2>&1 &
+  sleep 30
+  curl -sf http://127.0.0.1:8000/v1/models >/dev/null \
+    && echo COLIBRI-SERVE-OK || tail -20 $HOME/colibri-serve.log
+  # 3) bench script + corpus (shallow clone; corpus rides in the repo)
+  [ -d $HOME/chaba-bench/.git ] || git clone --depth 1 https://github.com/tonezzz/chaba $HOME/chaba-bench
+run: |
+  import os, subprocess, time, json
+  prefix = f"{PACK_DIR}/out/colibri-bench-{time.strftime('%Y-%m-%d')}"
+  os.makedirs(f"{PACK_DIR}/out", exist_ok=True)
+  env = dict(os.environ,
+             OLLAMA_URL="http://127.0.0.1:8000",
+             OLLAMA_MODEL="qwen3.6-colibri")
+  cmd = ["python3", os.path.expanduser("~/chaba-bench/scripts/bench-edu-manage.py"),
+         "--lanes", "hermes", "--ollama-model", "qwen3.6-colibri",
+         "--ollama-timeout", "600", "--no-judge", "--out", prefix]
+  print('bench:', ' '.join(cmd), flush=True)
+  t0 = time.time()
+  r = subprocess.run(cmd, cwd=os.path.expanduser("~/chaba-bench"), env=env,
+                     timeout=int(os.environ.get("TIMEOUT_S", "9000")))
+  dt = time.time() - t0
+  print(f"bench rc={r.returncode} in {dt:.0f}s", flush=True)
+  if r.returncode != 0:
+      raise SystemExit(f"bench rc={r.returncode}")
+  print('colibri-bench complete', flush=True)

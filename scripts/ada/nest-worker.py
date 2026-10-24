@@ -42,7 +42,7 @@ def lsf(path):
 
 
 def rcat(path, text):
-    r = subprocess.run(['rclone', 'rcat', path], input=text,
+    r = subprocess.run([RCLONE, 'rcat', path], input=text,
                        capture_output=True, text=True, timeout=60)
     if r.returncode != 0:
         raise RuntimeError(f'rcat {path}: {r.stderr.strip()[:200]}')

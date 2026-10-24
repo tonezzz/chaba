@@ -1,0 +1,80 @@
+# img-gen-bench — Qwen-Image-2.1 via Colibri on a fleet host (BEN-0815).
+# Colibri streams MoE experts from disk — the image engine is Qwen-Image
+# 2.1 (33GB dl, 12-18GB RAM; ~2.5 min per 768x512 image on CPU). This
+# pack answers whether the disk-streaming approach extends to image gen
+# on the CPU fleet (con01: 23GB RAM / 263GB free).
+# Generation goes through Colibri's OpenAI-compatible chat endpoint; the
+# response is dumped raw (image + JSON) so parsing evolves with evidence.
+name: img-gen-bench
+needs:
+  disk_gb: 40
+  egress_only_ok: true
+venv: true
+timeout_s: 10800     # 33GB download + engine build + N images
+artifacts:
+  - packs/img-gen-bench/out/img-*.png
+  - packs/img-gen-bench/out/img-gen-report.md
+prep: |
+  set -e
+  CLB=$HOME/colibri
+  [ -d $CLB/.git ] || git clone --depth 1 https://github.com/JustVugg/colibri $CLB
+  cd $CLB
+  mkdir -p $PACK_DIR/model
+  export TMPDIR=$HOME/tmp && mkdir -p $TMPDIR
+  ./start-here.sh --yes --model qwen-image-2.1 --backend cpu --dir $PACK_DIR/model 2>&1 | tail -15
+  ./c/coli stop >/dev/null 2>&1 || true
+  nohup ./c/coli serve > $HOME/colibri-img-serve.log 2>&1 &
+  sleep 30
+  curl -sf http://127.0.0.1:8000/v1/models >/dev/null \
+    && echo COLIBRI-IMG-SERVE-OK || tail -20 $HOME/colibri-img-serve.log
+run: |
+  import os, json, time, base64, urllib.request
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  PROMPTS = {
+    'doc-style-1': "cinematic wide shot, long-tail boat drifting across a golden sunset sea, Thai coastal village, warm light, 768x512",
+    'doc-style-2': "close-up of hands working a fishing net, shallow depth of field, morning haze, documentary style, 768x512",
+    'generic-1': "a minimalist illustration of a hummingbird over a teal gradient, flat design, 768x512",
+    'generic-2': "photorealistic Thai street food market at dusk, lanterns, steam, 768x512",
+  }
+  rows = []
+  for name, prompt in PROMPTS.items():
+      t0 = time.time()
+      body = {"model": "qwen-image-2.1-colibri", "messages": [
+              {"role": "user", "content": prompt}], "max_tokens": 4096}
+      req = urllib.request.Request(
+          "http://127.0.0.1:8000/v1/chat/completions",
+          data=json.dumps(body).encode(),
+          headers={"Content-Type": "application/json"})
+      try:
+          r = json.load(urllib.request.urlopen(req, timeout=900))
+          dt = time.time() - t0
+          # dump the raw response for evidence; try to extract an image
+          raw = json.dumps(r, ensure_ascii=False)
+          open(f'{OUT}/raw-{name}.json', 'w').write(raw)
+          img_b64 = None
+          content = r.get('choices', [{}])[0].get('message', {}).get('content')
+          if isinstance(content, list):
+              for part in content:
+                  if isinstance(part, dict) and part.get('type') == 'image_url':
+                      url = part['image_url']['url']
+                      if url.startswith('data:'):
+                          img_b64 = url.split(',', 1)[1]
+          elif isinstance(content, str) and content.startswith('data:'):
+              img_b64 = content.split(',', 1)[1]
+          if img_b64:
+              open(f'{OUT}/img-{name}.png', 'wb').write(
+                  base64.b64decode(img_b64))
+              note = f'image saved, {dt:.0f}s'
+          else:
+              note = f'no image in response ({dt:.0f}s), raw dumped'
+          rows.append({'name': name, 'sec': round(dt, 1), 'note': note})
+          print(f'{name}: {note}', flush=True)
+      except Exception as e:
+          rows.append({'name': name, 'sec': round(time.time()-t0, 1),
+                       'note': f'{type(e).__name__}: {str(e)[:120]}'})
+          print(f'{name}: FAIL {e}', flush=True)
+  md = ['# img-gen-bench — Qwen-Image-2.1 via Colibri', '',
+        '| prompt | sec | note |', '|---|---|---|']
+  md += [f"| {r['name']} | {r['sec']} | {r['note']} |" for r in rows]
+  open(f'{OUT}/img-gen-report.md', 'w').write('\n'.join(md) + '\n')
+  print('img-gen-bench complete', flush=True)
