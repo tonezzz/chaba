@@ -1,7 +1,7 @@
 id: bench-verifier-inject-clobber
 title: agent-cost-bench verifier clobbers tracked repo test files on inject
 column: backlog
-updated: 2026-10-24 17:03
+updated: 2026-10-24 20:16
 brief: score.py copies task tests/* into the repo package dir; when a held-out file shares a name with a tracked
   repo test it overwrites it and leaves residue that contaminates later verifiers.
 priority: medium
@@ -22,3 +22,10 @@ comms:
 - at: 2026-10-24 17:03
   from: tony
   text: card captured via board-api
+- at: 2026-10-24 20:16
+  from: devin
+  text: 'MOSTLY FIXED (dell ~/evals, not committed to any repo — tasks/ is local state): (a) zz_heldout_ unique-prefix
+    injection was already in m-tasks; I added BOTH-ERA residue purge (zz_ + bare-name leftovers, git-status-guarded
+    so tracked files are never touched) to m1-behavioral/m1/m2 verifiers, and backup/restore of collided tracked
+    files to t1/t1-hint/t2 (t2 collides with 7 tracked terrology tests — overwrite is intentional-version replacement,
+    residue now cleaned). Verified live: contaminated /tmp'
