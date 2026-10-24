@@ -1,0 +1,18 @@
+id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
+title: Pin a free OpenRouter model for store-awareness A/B
+column: doing
+updated: 2026-10-24 17:03
+action:
+  type: manual
+ref: OPS-0827
+comms:
+- at: 2026-10-24 17:03
+  from: devin
+  text: 'Follow-up to OPS-0776 turn 3. The 2026-10-24 openrouter/free A/B used 3 reps per condition, but the router
+    rotated 8-12 model IDs per rep and conditions ran store-aware first; result is directional, not causal. Run
+    the same 13-task fixture + MockStore on the hardened agent loop, baseline (no --agent-topics) and treatment
+    (--agent-topics), 3 reps each, pin nvidia/nemotron-3.5-super-vl:free with the new --or-model flag, alternate
+    order if possible. Use mn01''s existing mode-0600 openrouter.env and '
+- at: 2026-10-24 17:03
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
