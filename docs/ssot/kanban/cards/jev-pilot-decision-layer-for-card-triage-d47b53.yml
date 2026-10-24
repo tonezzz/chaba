@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-25 06:04
+updated: 2026-10-25 06:40
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -60,3 +60,10 @@ comms:
     -> auto-merged a75beb2d -> card DONE in 60s. JEV routing loop is PRODUCTION-REAL end-to-end (card in -> fleet
     work -> merged). Also learned: kanban-dispatch claims type=dispatch only (manual-type cards skipped cleanly,
     JEV-aware); idc03 push-guard defers to idc02 for chaba pushe'
+- at: 2026-10-25 06:40
+  from: devin
+  text: 'MODEL-CHAIN PROBES (OPS-0836..0844) COMPLETE — honest result: routing->lane->env chain PROVEN (debug: DISPATCH_MODEL=True,
+    flash-lite, free_lane at dispatch). Blocked at the LAST layer: devin CLI 3000.10.35 ignores --model (session
+    ran deepseek-v4-pro + exit=1). Fix options: (a) verify devin CLI --model support on runners, (b) route non-devin
+    lanes via opencode executor (honors model), keeping devin for devin-lane. Also fixed: ''macbook'' manual keyword
+    too eager (a88496755, action-bound now). Fle'
