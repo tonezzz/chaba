@@ -1,7 +1,7 @@
 id: jev-model-chain-probe6
 title: 'JEV model-chain probe #6: 6/7 fleet deploy verify (free_lane -> flash-lite)'
 column: doing
-updated: 2026-10-25 06:30
+updated: 2026-10-25 06:32
 brief: 'Probe #6: 6/7 runners deployed (macbook+idc03+dell just synced; idc01 down). free_lane card should classify
   at claim -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
 priority: low
@@ -32,3 +32,9 @@ comms:
 - at: 2026-10-25 06:30
   from: chaba
   text: started devin-task-20261024-232959-expected-card-action-lane-free on mn01 (dispatch)
+- at: 2026-10-25 06:32
+  from: devin
+  text: 'probe6 FAIL: patched runner-agent DID run claim-time classify, but classify_lane returned manual — LANE_KW[manual]
+    substring ''macbook'' fired on the brief host-list (macbook+idc03+dell). No lane/model persisted, no DEVIN_MODEL,
+    default model ran. Secondary: jev-lane.conf drop-in on mn01 malformed (no [Service] header; JEV_LANE ignored).
+    Marker + outcome committed on dispatch branch.'
