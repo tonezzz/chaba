@@ -1,0 +1,84 @@
+title: 'Bench: m2-behavioral verifier shipped — interface-agnostic, parent 0.667 / fix 1.0'
+subtitle: discriminator fixture (opens-but-fails-full-check) tests the property on parent symbols only; BEN-0828 residue purge completed
+icon: flask
+runner: dispatch idc02 (executed on tony-dell via ssh, ~/evals)
+date: 2026-10-24
+card: ai-workforce-eval
+related: [bench-verifier-inject-clobber]
+
+context:
+  harness: ~/evals on tony-dell (agent-cost-bench)
+  prior_state: >-
+    Concurrent dell session had fixed the zz_heldout_ inject-clobber and
+    rewritten m2's held-out test, but it still required reference-fix
+    internals (verifySnapshot, s.swapDatabaseVerified) — same coupling
+    class that invalidated the m1 scores. Card frontier called for an
+    m2-behavioral task; OR weekly cap still 402ing (paid lane down to
+    ~Oct 26).
+
+shipped:
+  task: tasks/m2-mddb-snapshot-proof (verifier swapped in place — m2 task id kept)
+  heldout: tests/behavioral_m2_test.go (3 tests, TestZzBehav*)
+  retired: tests/heldout_m2_test.go -> heldout_m2_test.go.coupled (kept for archaeology)
+  score_py: RUN regex -> TestZzBehav; zz_heldout_ prefix kept
+
+design:
+  discriminator_fixture: >-
+    bolt DB written WITH freelist synced (repo's writeTestDB uses
+    NoFreelistSync — wrong fixture, every open walks the tree), then
+    corruptBranchPage (a parent test helper) points one branch element at
+    a sibling page. Result: file OPENS cleanly but FAILS tx.Check() — the
+    exact seam between open-only proof and full invariant walk.
+  tests:
+    - TestZzBehavSnapshotInstallUsesOpenOnlyProof: rc.replaceDatabase(bad)
+      must SUCCEED (trusted snapshot = open-only). Fails at parent = bug caught.
+    - TestZzBehavRestoreKeepsFullCheck: s.restoreFromBackup(bad) must FAIL
+      (untrusted restore keeps full check). Guards the over-broad fix.
+    - TestZzBehavHealthySnapshotStillInstalls: happy-path regression.
+  coupling: >-
+    Only parent-commit symbols (replaceDatabase, restoreFromBackup,
+    withRestoreLock, verifyDatabase, newTestServer, corruptBranchPage) —
+    NO fix-internal names. Residual: an agent that reroutes the snapshot
+    install OFF rc.replaceDatabase entirely would miss test 1 (same class
+    as m1's s.replClient/handleReplicationStatus seam — documented,
+    accepted).
+
+control_validation:
+  parent_60ac37c: 0.667  # snapshot-install test fails (full check still applied), 2 guards pass
+  fix_497b982: 1.0
+  fixture_control: verifyDatabase(corrupt) rejects in-fixture — proves the two levels differ
+  m2_fable_agent_ws: 0.0 # uncompilable tree — agent wrote tests-only (TDD) then died on OR 402
+
+ben_0828_completion:
+  m_tasks: >-
+    both-era residue purge before inject — zz_heldout_* AND bare-name
+    leftovers from the pre-prefix era, git-status-guarded (only ?? files
+    matching held-out names are removed; tracked files never touched).
+  t_tasks: >-
+    backup .preheldout + restore of tracked files the held-out set
+    overwrites (t2 collides with 7 tracked terrology tests — overwrite is
+    intentional version-replacement; residue now cleaned).
+  verified: contaminated /tmp/m1b-verify/fix (stale bare behavioral_test.go
+    + zz_ file) rescored 1.0 after purge.
+  remaining: post-run tidy of injected zz_ files (cosmetic; pre-run purge
+    already covers contamination).
+
+correction:
+  fable_runs_not_capability: >-
+    The 452s m1-behavioral Fable run (0.67, zero edits) and the m2 Fable
+    run (0/3, tests-only) BOTH ended on OpenRouter 402
+    openrouter_key_limit ("requested 32000 tok, can only afford
+    27739/30047"). devin-kb's "Fable honest m1/m2 verdicts — WEAK
+    cross-layer Go wiring" is confounded by credit truncation; needs
+    rerun after the ~Oct 26 weekly reset or cap raise (card ask #1).
+
+pack_queue:
+  eval-m1-behavioral: staged 19:48 ICT at ~/GoogleDrive/ada-nest/packs/,
+    still unclaimed (worker idle since epoch ~10; runs on next Colab worker)
+  queue_priority: t1-gptoss > m1-gptoss > m1-behavioral > o2 > lesson-polish
+
+artifacts:
+  - 'dell ~/evals/tasks/m2-mddb-snapshot-proof/tests/behavioral_m2_test.go'
+  - 'dell ~/evals/tasks/*/verify/score.py (residue purge + backup/restore)'
+  - 'dell /tmp/m2b-verify/{parent,fix} control clones'
+  - 'devin-kb fb3830e — docs/tools/ai-workforce-eval.md updated (local commit)'
