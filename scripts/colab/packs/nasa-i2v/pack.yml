@@ -1,0 +1,63 @@
+# nasa-i2v — animate the NASA 2.5D parallax frames with LTX (T4).
+# Input: the v1 composited frames (earth-frame-0000, saturn-frame-0080)
+# + T5 embeds from nasa-embeds-ss1. Motion pass: LTXImageToVideoPipeline
+# per scene -> mp4. Uses PIL Image.open (diffusers load_image chokes on
+# plain paths — the doc-render i2v lesson).
+name: nasa-i2v
+needs:
+  gpu_gb: 14
+  disk_gb: 20
+  egress_only_ok: true
+timeout_s: 3600     # 2 scenes x ~7min + model load
+fetch:
+  - packs/nasa-embeds-ss1/embeds/
+  - nasa-2p5d/
+artifacts:
+  - packs/nasa-i2v/out/nasa-*.mp4
+  - packs/nasa-i2v/nasa-i2v-report.md
+publish:
+  out: nasa-2p5d/out
+run: |
+  import os, time, torch, gc
+  from PIL import Image
+  from diffusers import LTXImageToVideoPipeline
+  from diffusers.utils import export_to_video
+  FRAMES = f'{NEST_ROOT}/nasa-2p5d'
+  EMB = f'{NEST_ROOT}/packs/nasa-embeds-ss1/embeds'
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  SCENES = [('earth', 'earth-frame-0000.png', 1),
+            ('saturn', 'saturn-frame-0080.png', 2)]
+  t0 = time.time()
+  pipe = LTXImageToVideoPipeline.from_pretrained(
+      'Lightricks/LTX-Video', torch_dtype=torch.bfloat16,
+      text_encoder=None, tokenizer=None).to('cuda')
+  print('i2v resident %.1fGB in %.0fs' % (torch.cuda.memory_allocated()/1e9, time.time()-t0), flush=True)
+  rows = []
+  for slug, frame, shot in SCENES:
+      out = f'{OUT}/nasa-{slug}-i2v.mp4'
+      if os.path.exists(out) and os.path.getsize(out) > 10000:
+          print(f'{slug} cached', flush=True); continue
+      e = torch.load(f'{EMB}/shot{shot:02d}.pt', map_location='cpu')
+      emb = {k: (v.cuda() if torch.is_tensor(v) else v) for k, v in e.items()}
+      img = Image.open(f'{FRAMES}/{frame}').convert('RGB').resize((640, 384))
+      t = time.time()
+      try:
+          fr = pipe(prompt_embeds=emb['prompt_embeds'],
+                    prompt_attention_mask=emb['prompt_attention_mask'],
+                    negative_prompt_embeds=emb['negative_prompt_embeds'],
+                    negative_prompt_attention_mask=emb['negative_prompt_attention_mask'],
+                    image=img, width=640, height=384, num_frames=73,
+                    num_inference_steps=40, frame_rate=24).frames[0]
+          export_to_video(fr, out, fps=24)
+          pk = torch.cuda.max_memory_allocated()/1e9
+          rows.append((slug, round(time.time()-t, 1), 'ok'))
+          print(f'{slug} i2v {time.time()-t:.0f}s peak {pk:.1f}GB', flush=True)
+      except Exception as ex:
+          rows.append((slug, round(time.time()-t, 1), f'{type(ex).__name__}: {str(ex)[:120]}'))
+          print(f'{slug} FAIL {ex}', flush=True)
+  del pipe; gc.collect(); torch.cuda.empty_cache()
+  md = ['# nasa-i2v — LTX motion pass on the 2.5D frames', '',
+        '| scene | sec | note |', '|---|---|---|']
+  md += [f'| {r[0]} | {r[1]} | {r[2]} |' for r in rows]
+  open(f'{PACK_DIR}/nasa-i2v-report.md', 'w').write('\n'.join(md) + '\n')
+  print('nasa-i2v complete', flush=True)
