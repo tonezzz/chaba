@@ -1,7 +1,7 @@
 id: pattern-library-coding-research
 title: 'research: pattern-match coding — JEV matcher + pattern library + bench (P1-P5)'
-column: doing
-updated: 2026-10-24 18:17
+column: review
+updated: 2026-10-24 18:19
 brief: 'Test the hypothesis: a big share of coding is match-and-transform. Build pattern library (mined from repo
   history) + JEV matcher + two application arms (hint/codemod), benchmark against existing eval corpus (same gates).'
 priority: high
@@ -69,7 +69,15 @@ comms:
     from task.yaml refs — mine_mddb.jsonl sanitized (had both m1/m2 fixes as candidates). Bugs fixed: 12v7-char
     prefix made filter a no-op; codemod SKIP ended arm as success (now falls through); vector-search returns empty
     contentMd so hints ran trigger-only (now hydrates via /v1/get). '
+- at: 2026-10-24 18:19
+  from: tony-omen
+  text: 'finished (ok): exit=0 /bench/2026-10-24-pattern-lib-guard-router.yml` + card comms. | devin-task-20261024-174715-p1-pattern-mine-leak-s'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 /bench/2026-10-24-pattern-lib-guard-router.yml` + card comms. | devin-task-20261024-174715-p1-pattern-mine-leak-safe-terr.service:
+    Consumed 1min 22.907s CPU time over 30min 18.154s wall clock time, 1.1G memory peak, 516.4M memory swap peak.'
+  verified: false
+review_kind: verify
+claim: {}
