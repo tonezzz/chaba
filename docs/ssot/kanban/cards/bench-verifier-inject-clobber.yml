@@ -1,0 +1,24 @@
+id: bench-verifier-inject-clobber
+title: agent-cost-bench verifier clobbers tracked repo test files on inject
+column: backlog
+updated: 2026-10-24 17:03
+brief: score.py copies task tests/* into the repo package dir; when a held-out file shares a name with a tracked
+  repo test it overwrites it and leaves residue that contaminates later verifiers.
+priority: medium
+program: chaba-ci
+tags:
+- eval
+- agent-cost-bench
+- harness-bug
+spec: 'Observed 2026-10-24 on dell ~/evals: m1 task tests/replication_handlers_test.go + replication_client_test.go
+  and m2 tests/db_integrity_test.go overwrite tracked repo files during verify (git shows them as modified). The
+  injected residue then breaks later scoring — fable-m1 r2 scored build-fail on stale coupled tests until files
+  were restored to HEAD. Fix options: (a) inject under unique names (heldout_<task>_test.go — also prevents overwrite),
+  (b) snapshot originals before inject + restore after scoring, (c) both. Also make score.py clean up injected files
+  post-run so workspaces stay pristine artifacts. Affects every repo task in ~/evals/tasks/.'
+note: Found during ai-workforce-eval m1 rescore — see ~/evals/m1-behavioral-rescore-20261024.md harness-bugs section.
+ref: BEN-0828
+comms:
+- at: 2026-10-24 17:03
+  from: tony
+  text: card captured via board-api
