@@ -95,3 +95,39 @@ This decides whether the layer is production-ready or just a gate.
   decides the decision quality (garbage-in)
 - Jev replaces brittle regex/JSON-parsing decisions — it never
   replaces the LLM's writing or the human's review
+---
+
+## v2 — composition-first: Jev as the composer (Tony 2026-10-24 follow-up)
+
+"Lean more into library/modular style, push Jev to the max — Jev helps
+put all code blocks together." This is the decision-tree orchestration
+pattern (jev-orchestration: Jev picks the branch, code/tools do the
+work). The nest is already a block library + assembly line; Jev adds
+the dynamic assembly decisions.
+
+### The split
+| what | who |
+|---|---|
+| block catalog | generated (blocks.json from scripts/ + packs/) |
+| which block next | Jev Choice (state = task + done + shortlist) |
+| edge compatible? | Jev Noul per transition (produces/consumes match) |
+| glue code | the LLM/agent, after Jev picks the plan |
+| execution | the nest queue — packs already claim/run/depend |
+
+### The shape: a dynamic pipeline router
+state={task, done:[...], available:[shortlist]} -> Choice(next) +
+Noul(compat) -> queue runs it. Example ground truth: the doc-pilot
+chain (embeds -> render -> vo -> assemble) — replay it as a Jev
+assembly; if vo is already done, Jev should skip it. Eval = does Jev's
+order match the working pipelines (accuracy gate).
+
+### Deps and limits
+- real Jev API (Choice) — the student's choice head is dead (10-24 test)
+- Jev decides over a SHORTLIST (agent proposes; 255-option ceiling)
+- glue stays with the LLM; Jev never writes code
+- cost ~$0.042/MTok, ~100ms/decision
+
+### Cards
+- OPS-0825 (v1 service + skill)
+- BEN-0824 (stagnation gate)
+- (next) jev-composer eval pack: replay the working pipelines as Jev assemblies
