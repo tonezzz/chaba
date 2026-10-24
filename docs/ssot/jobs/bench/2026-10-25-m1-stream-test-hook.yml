@@ -1,0 +1,63 @@
+title: 'm1: stream-state test hook on ReplicationClient — landed, control-validated'
+subtitle: SetStreamStateForTest enables the idle-caught-up handler test; task ref bump pending push
+icon: flask
+runner: dispatch idc02 (mddb-fork local branch; verifier validation on tony-dell via ssh)
+date: 2026-10-25
+card: m1-stream-test-hook
+ref: BEN-0833
+
+context:
+  problem: >-
+    m1-behavioral's held-out test could not simulate a connected-but-quiet
+    stream — ReplicationClient keeps connectivity/lag in unexported atomics
+    with no setter, so the idle-healthy handler case was only covered
+    semantically (lag contract, 0.67/1.0 discrimination).
+  task_layout: >-
+    tasks/m1-behavioral clones tonezzz/mddb at repo.ref ed1ff11 (parent of
+    the real fix c0850f0); score.py injects tests/behavioral_test.go as
+    zz_heldout_ into services/mddbd and runs go test -run TestFollowerHealth.
+
+hook_design:
+  commit: c66b563 on dispatch/20261025-055220-m1-add-a-stream-state-test-hoo
+    (mddb-fork, based on ed1ff11 — NOT pushed; rails forbid push)
+  api: 'SetStreamStateForTest(connected bool, lagMs int64, lastAppliedAt time.Time, appliedLSN uint64)'
+  semantics: >-
+    Writes the same atomics the replication loop maintains. The commit also
+    adds `connected atomic.Bool` — wired in replicate() (true once the
+    binlog stream establishes) and disconnect() (false) — so the hook
+    mirrors real stream state instead of a test-only side channel.
+    IsHealthy/handler are UNCHANGED at this base: the health-semantics fix
+    remains the agent's task.
+  why_field_at_base: >-
+    Held-out tests compile against the pinned parent AND every agent fix,
+    so they can only call methods that exist at base. A differently-named
+    agent field (e.g. Fable's streamConnected) would escape the hook; the
+    pre-declared, pre-wired `connected` is the field natural fixes reuse.
+
+verifier_update:
+  live_on_dell: ~/evals/tasks/m1-behavioral/tests/behavioral_test.go now
+    carries TestFollowerHealthIdleCaughtUpStaysHealthy — sets connected,
+    lag 0, LSN 5, last-applied 2h ago, then asserts client IsHealthy AND
+    handler healthy:true.
+  skip_guard: >-
+    The test resolves the hook via interface assertion and t.Skips when the
+    base lacks it — deployed live TODAY without changing current scores;
+    it activates automatically when repo.ref is bumped to a hook commit.
+  task_yaml: annotated with the activation step (comment only, ref unchanged).
+
+control_validation:
+  plain_parent_ed1ff11: '0.667 (2/3) — idle test self-skips; live task identical'
+  parent_plus_hook: '0.5 (2/4) — idle test runs and catches time-based IsHealthy'
+  fix_plus_hook_c0850f0: '1.0 (4/4) — connected+lag driven by hook passes'
+  workspaces: 'dell /tmp/m1hook-{plain,parent,fix}; taskdir /tmp/m1hook-task'
+
+activation_pending_push: >-
+  push dispatch/20261025-055220-m1-add-a-stream-state-test-hoo to
+  github-mddb, then set tasks/m1-behavioral repo.ref = c66b563. Until then
+  the gate stays 3-test (0.67/1.0 discriminating); after the bump it is
+  4-test and also rejects fixes that keep time-since-last-entry health.
+
+artifacts:
+  - 'mddb-fork branch dispatch/20261025-055220-m1-add-a-stream-state-test-hoo @ c66b563 (idc02, unpushed)'
+  - 'dell ~/evals/tasks/m1-behavioral/tests/behavioral_test.go (extended, guarded)'
+  - 'dell /tmp/m1hook-{parent,fix}.patch + /tmp/m1hook-task/ (validation kit)'
