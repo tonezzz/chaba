@@ -1,0 +1,67 @@
+title: lesson-polish — full WP lesson CPT audit + agent fixes via /lesson door
+subtitle: 68 posts classified vs the 7-dimension lesson policy; 26 upserts
+  applied; compliance 0.931 -> 0.992; only junk-delete remains (door bug
+  found + fixed, rides merge)
+icon: education
+version: 1
+
+card: lesson-polish-nest-pack
+date: 2026-10-24
+dispatch: 20261024-125107-pack-lesson-polish-prep-query-
+
+deliverables:
+  - >-
+    docs/reports/lesson-polish-2026-10-24/audit.md — the audit table: per-
+    dimension pass counts before/after, per-post fix list, remaining
+    failures + blockers, human-review notes.
+  - >-
+    docs/reports/lesson-polish-2026-10-24/audit-{before,after,final}.json —
+    machine-readable per-lesson check rows (7 dimensions each).
+  - >-
+    scripts/board/board-api.py — root-caused the lesson DELETE 404:
+    wp_api() embeds the route inside rest_route=, so '?force=true' was
+    %-encoded into the route path -> WP rest_no_route. Changed to
+    '&force=true' (matches every other call). Live door keeps the bug
+    until this lands on idc03.
+
+policy_dimensions: |
+  content (non-thin, not junk) · level (intro|working|deep) · source
+  (chat|voice|link) · next_review (present, not overdue) · thai
+  (<h3>ไทย</h3> section or Thai-native body) · hub_link (declared
+  family members reference hub/sibling in EN body — ada-nest-* ->
+  ada-nest-map, trade-* -> trade-map) · split_rule (verdict/decision
+  content carries an SSOT/KB pointer).
+
+benchmark: |
+  policy-compliance score (passed checks / lessons x 7):
+    before 0.9307 (41/68 clean)  ->  final 0.9916 (66/68 clean)
+  per-dimension pass after: level 68/68, source 68/68, next_review
+  68/68, split_rule 68/68, hub_link 68/68, thai 66/68, content 66/68.
+  Human review pass rate: PENDING — all fixes are additive (pointer
+  lines, Thai sections, hub inventory); flagged for Tony review on the
+  card.
+
+fixes_applied: |
+  26 /lesson upserts, all via the door (no WP creds):
+  - 14 Thai backfills (EN verbatim + door-regenerated Thai).
+  - 7 ada-nest members + 4 trade members: one-line family pointer
+    ("<fam> series — hub: <link>") inserted after the h2, Thai regen.
+  - ada-nest-map hub inventory: 6 missing members added to the topic
+    list (tts-eval, iphone-webgpu, drive-store, doc-pilot retro/v2,
+    10-23/24 wrap), Thai regen.
+  - 4 lessons had their SSOT/KB pointer blocks re-attached inside the
+    EN body (earlier polish had tail-appended them AFTER the Thai
+    section; a Thai-strip re-file dropped them — caught by re-audit).
+
+remaining: |
+  - Junk posts lesson-df2515c1a5fd ('speed-probe', 'test') and
+    lesson-f68da2aab485 ('speed-probe-lesson', 'test lesson write
+    timing') — delete blocked until the board-api '&force=true' fix
+    deploys to idc03; then `op:delete` works (door guard: devin/tony).
+  - ada-nest-hardware Thai regen failed 3x on gemini (largest lesson);
+    old Thai preserved via no_th. Two new EN lines untranslated.
+  - Policy gap: door doesn't persist no_th in lesson meta — audit
+    cannot distinguish deliberate skip from missing Thai. Worth a
+    meta.no_th field (small door change) if Tony wants the distinction.
+  - ada-nest-video meta status 'active' vs 'open' norm — cosmetic;
+    status is sticky on re-file, door has no override path.
