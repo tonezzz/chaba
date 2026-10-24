@@ -81,13 +81,12 @@ MY_LABELS = {x.strip() for x in
 # dr.push_probe() runs a real `git push --dry-run` (a git@ remote is no
 # proof — ADA-0673's chaba-only deploy key looked ssh-capable).
 PUSH_GUARD = os.environ.get("KANBAN_PUSH_GUARD", "1") != "0"
-# Lane -> cheapest executor mapping (jev-pilot Phase 2, 2026-10-25).
-LANE_MODELS = {
-    "free_lane": "litellm/gemini-3.5-flash-lite",
-    "paid_frontier": "litellm/or-claude-fable-5.1",
-}
-LANE_EXECUTORS = {"codemod": "script", "manual": None}
-JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+# Lane -> cheapest executor mapping (jev-pilot Phase 2, 2026-10-25) —
+# canonical tables live in dispatch_repos so runner-agent claims route
+# identically; module aliases kept for external importers.
+LANE_MODELS = dr.LANE_MODELS
+LANE_EXECUTORS = dr.LANE_EXECUTORS
+JEVOS = dr.JEVOS
 JEV_LANE = os.environ.get("JEV_LANE", "0") == "1"
 
 PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
@@ -512,70 +511,11 @@ def _with_lock(fn):
 
 # Keyword lane classifier (jev-pilot Phase 2, 2026-10-25). Deterministic,
 # validated 23/23 on corpus + held-out cards (evals/results/jev/).
-LANE_KW = {
-    "manual": ["macbook", "hardware", "buy", "usb cam", "camera", "physical",
-               "spend", "order the", "blocked on tony", "rotation", "rekey",
-               "lease teardown", "sudo-gated"],
-    "paid_frontier": ["test hook", "stagnation gate", "decision layer",
-                      "construct", "register_post_type", "rename", "design a",
-                      "implement a", "code fix", "op=list", "add /lesson",
-                      "versus", "benchmark", "bench ", "productionize",
-                      "promotion gate", "hardening", "hybrid recall",
-                      "discussion board", "work bridge"],
-    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
-                "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift", "delete old", "purge",
-                "schedule", "recurring", "nest job"],
-    "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "roster", "protocol", "provision", "host", "feature",
-              "automation", "diagnos", "experiment", "pipeline", "end-to-end",
-              "quadlet", "warm standby", "repoint", "failing", "dep fix",
-              "dependency"],
-    "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
-}
-LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
-
-
-def classify_lane(card: dict) -> str:
-    """Cheapest lane for this card: keyword-first, jevos gated fallback."""
-    import re as _re
-    text = (card.get("title", "") + " " +
-            (card.get("brief") or card.get("spec") or "")).lower()
-    if any(k in text for k in LANE_KW["manual"]):
-        return "manual"
-    if _re.search(LANE_COMPARE, text):
-        return "paid_frontier"
-    for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
-                      ("codemod", LANE_KW["codemod"]),
-                      ("devin", LANE_KW["devin"]),
-                      ("free_lane", LANE_KW["free_lane"])):
-        if any(k in text for k in kws):
-            return lane
-    import urllib.request as _ur
-    state = {"card": card.get("id"), "title": card.get("title", ""),
-             "brief": (card.get("brief") or card.get("spec") or "")[:250]}
-    q = {"lane": {"type": "choice",
-                  "instructions": "Choose the cheapest lane that can complete this card's work class.",
-                  "criteria": {"codemod": "deterministic pattern change, known transform, no judgment",
-                               "free_lane": "single-step chore, verification exists, no long horizon",
-                               "paid_frontier": "contained code task needing strong reasoning",
-                               "devin": "multi-step, remote diagnosis, ambiguous, or no-gate work",
-                               "manual": "needs Tony's hands (hardware, accounts, physical)"}}}
-    payload = {"model": "jev-latest", "state": state, "questions": q}
-    try:
-        req = _ur.Request(JEVOS + "/v1/systemone",
-                          data=json.dumps(payload).encode(),
-                          headers={"Content-Type": "application/json"})
-        r = json.loads(_ur.urlopen(req, timeout=30).read().decode())
-        ans = (r.get("answers") or {}).get("lane") or {}
-        lane = ans.get("choice")
-        conf = float(ans.get("confidence") or 0.0)
-        if conf < float(os.environ.get("JEV_LANE_MIN_CONF", "0.5")):
-            return "devin"  # safe multi-step default when unsure
-        return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else "devin"
-    except Exception:
-        return "devin"  # jevos down -> safe default, not None
+# Canonical copy lives in dispatch_repos — aliases kept for importlib
+# consumers (tests, evals scripts).
+LANE_KW = dr.LANE_KW
+LANE_COMPARE = dr.LANE_COMPARE
+classify_lane = dr.classify_lane
 
 def start_pending(path: Path) -> str:
     """Phase B: devin-dispatch start (slow, no lock), then write back."""

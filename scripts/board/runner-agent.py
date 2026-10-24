@@ -467,6 +467,8 @@ def claimable(card: dict) -> str:
     if typ == "dispatch":
         if not Path(DISPATCH).exists():
             return ""
+        if a.get("lane") == "manual":
+            return ""  # lane routing: manual = Tony's hands, never claimed
         # runner-push-cred-gap: never claim a repo this host can't push
         # — finishing here strands the branch (ADA-0673)
         if not push_capable(str(a.get("repo") or "chaba")):
@@ -883,6 +885,23 @@ def start_task(card: dict, typ: str) -> tuple:
     env = dict(os.environ)
     if a.get("model"):
         env["DISPATCH_MODEL"] = str(a["model"])
+    elif typ == "dispatch":
+        # lane -> cheapest model (jev-pilot Phase 2). Parity with
+        # kanban-dispatch start_pending — whichever claimer wins applies
+        # the same routing: an explicit action.lane always maps through
+        # LANE_MODELS, and JEV_LANE=1 additionally classifies unset lanes.
+        # jev-model-chain-probe found this missing here: runner claims
+        # silently launched on the devin default model.
+        lane = str(a.get("lane") or "")
+        dr = dr_module()
+        lane_models = getattr(dr, "LANE_MODELS", {}) if dr else {}
+        if not lane and dr and getattr(dr, "classify_lane", None) \
+                and os.environ.get("JEV_LANE", "0") == "1":
+            lane = dr.classify_lane(card) or ""
+        if lane == "manual":
+            return "", "", "manual lane — not dispatched (Tony's hands)"
+        if lane in lane_models:
+            env["DISPATCH_MODEL"] = str(lane_models[lane])
     if typ == "dispatch" and LIMITS_ON:
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the

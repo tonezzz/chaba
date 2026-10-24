@@ -1,0 +1,22 @@
+jev-model-chain-probe — model-chain probe marker
+=================================================
+task:     touch a marker file and commit
+session:  devin-task-20261025-061054-expected-classify-lane-free-la
+runner:   idc02 (runner-agent claim)
+date:     2026-10-25
+
+Verification (this session, observed live):
+- unit env (/proc/<launcher>/environ): DEVIN_MODEL absent; DISPATCH_MODEL
+  never reached the systemd-run call
+- devin cmdline: `devin -p --permission-mode dangerous
+  --respect-workspace-trust false --prompt-file ... --export ...`
+  — no --model flag (${DEVIN_MODEL:+--model} expanded empty)
+- result: session runs the devin default model (SWE-2 High), NOT
+  litellm/gemini-3.5-flash-lite -> chain verdict: BROKEN at claim time
+
+Root cause: lane->model routing (classify_lane + LANE_MODELS) lived only
+in scripts/board/kanban-dispatch.py behind JEV_LANE=1. This card was
+claimed by idc02's runner-agent.py, which forwarded only an explicit
+action.model — no lane classification, no lane->model map. Fix in this
+branch: tables + classifier moved to scripts/board/dispatch_repos.py
+(shared), runner-agent now applies the same routing.
