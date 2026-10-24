@@ -1,0 +1,18 @@
+id: embed-pool-fleet-nest-workers-behind-one-85d83b
+title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
+column: backlog
+updated: 2026-10-24 08:17
+ref: MEM-0805
+comms:
+- at: 2026-10-24 08:17
+  from: devin
+  text: 'Goal: distributed embedding capacity — every host + browser worker feeds the mddb banks through ONE ollama-compatible
+    /api/embed shim pointed at by MDDB_EMBEDDING_API_URL.
+
+
+    Hard constraint found: mddb has NO vector-ingest path — /add silently ignores a vector field, /v1/import|bulk|embed|batch|vectors
+    all 404. Every vector in a bank must come through the internal embed queue => the pool must front EMBEDDING_API_URL,
+    not write to the bank.
+
+
+    Lane A (unblocks production): pool-shim.py on idc03 — ol'
