@@ -1101,6 +1101,24 @@ jobs:
     BOARD_NOTIFY_TG_CHAT_ID — /send otherwise defaults to Tony''s DM).
     OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
     (every tick exits silently), rm to resume — or pull this job entry.'
+- id: kanban-notify
+  name: Kanban watch — TG notify on card state changes
+  host: idc03
+  dispatch: systemd
+  every: 5m
+  timeout: 90s
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/kanban-notify.py
+  note: 'Tony ask 2026-10-24 — same idea as nest-queue-watch but for the
+    kanban: git-diff the served checkout''s cards dir since the last
+    processed SHA, report per-card state changes (column moves, new
+    cards, +comms, requests added/answered) to the ada-ha TG group via
+    board_notify tg. Runs on idc03 (writer host — its git log carries
+    all card mutations, board-api and file-write alike). First tick
+    records position without replaying history. OFF SWITCH:
+    `touch ~/.config/kanban-notify.off` (each tick exits silently).'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
