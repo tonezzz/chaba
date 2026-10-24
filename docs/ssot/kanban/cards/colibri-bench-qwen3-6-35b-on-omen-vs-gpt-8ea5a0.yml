@@ -1,0 +1,24 @@
+id: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0
+title: 'colibri-bench: Qwen3.6-35B on omen vs gpt-oss:20b lanes'
+column: backlog
+updated: 2026-10-24 12:44
+brief: 'Tony ask 2026-10-24. Colibri (JustVugg/colibri) runs MoE models with experts streamed from disk; Qwen3.6-35B-A3B
+  fits omen (30GB RAM, 83GB free disk, CUDA 1650 build ~30 tok/s vs gpt-oss:20b''s 5 tok/s CPU). Test: install colibri
+  + qwen36-35b on omen, run the edu-manage corpus through its OpenAI endpoint (:8000/v1), compare p50 latency +
+  task completion vs gpt-oss:20b on T4 (p50 14.7s) and omen CPU (78s).'
+tags:
+- llm
+- bench
+- colibri
+- fleet
+- local-lane
+spec: 'Pack: packs/colibri-bench — needs gpu_gb 0 (CPU) or 3 (CUDA 1650), disk_gb 35, venv:true. Prep: clone colibri,
+  run start-here.sh --model qwen36-35b --yes --backend cuda (fallback cpu), start serve. Run: bench-edu-manage.py
+  --lanes local-colibri --openai-base http://127.0.0.1:8000/v1 --model qwen3.6-35b (or curl-based mini-bench if
+  the bench script lacks OpenAI-base support). Artifacts: out/colibri-bench-*.json + .md. First bench when the pack
+  lands on Drive + omen worker picks it up (~30-60 min for install+download).'
+ref: BEN-0814
+comms:
+- at: 2026-10-24 12:44
+  from: tony
+  text: card captured via board-api
