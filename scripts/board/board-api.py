@@ -1506,7 +1506,8 @@ def _read_lessons(body: dict, frm: str) -> dict:
                             "modified": h.get("modified"),
                             "next_review": m.get("next_review", ""),
                             "status": m.get("status", "")})
-        return {"lessons": out, "count": len(out), "via": frm}
+        return {"lessons": out, "count": len(out), "via": frm,
+                "message": f"listed {len(out)} lessons"}
     slug = str(body.get("slug") or "").strip()
     if not slug:
         raise ValueError("op=get requires slug")
@@ -1517,7 +1518,7 @@ def _read_lessons(body: dict, frm: str) -> dict:
     return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
             "content": (h.get("content") or {}).get("rendered", ""),
             "meta": h.get("meta") or {}, "modified": h.get("modified"),
-            "via": frm}
+            "via": frm, "message": f"get {slug}"}
 
 
 def do_lesson(body: dict, frm: str) -> dict:
