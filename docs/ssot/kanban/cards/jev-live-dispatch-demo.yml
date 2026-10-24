@@ -1,6 +1,6 @@
 id: jev-live-dispatch-demo
 title: 'JEV live dispatch demo: touch README.md in chaba (deterministic)'
-column: doing
+column: review
 updated: 2026-10-25 06:03
 brief: 'A tiny deterministic task to prove JEV lane routing live: append one line to README.md and commit.'
 priority: low
@@ -15,8 +15,12 @@ spec: 'JEV supervised trial #3 (2026-10-25): dispatch-type card, task = append '
   claim with JEV_LANE=1.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 was recorded in `dispatch-outcome-20261025-060241-jev-supervised-trial-3-2026-10.md`. Verify with
+    `tail -1 README.md` and `git log --oneline -1`. | devin-task-20261025-060241-jev-supervised-trial-3-2026-10.service:
+    Consumed 5.214s CPU time.'
+  verified: true
 ref: OPS-0835
 comms:
 - at: 2026-10-25 05:59
@@ -42,3 +46,9 @@ comms:
   from: devin
   text: 'JEV trial #3 complete: appended JEV lane routing live to README.md, committed bb2502c0 on dispatch branch
     (no push). Outcome file written.'
+- at: 2026-10-25 06:03
+  from: idc02
+  text: 'finished (ok): exit=0 was recorded in `dispatch-outcome-20261025-060241-jev-supervised-trial-3-2026-10.md`.
+    Verify with `tail -1 README'
+review_kind: verify
+claim: {}
