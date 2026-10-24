@@ -1,7 +1,7 @@
 id: bench-verifier-inject-clobber
 title: agent-cost-bench verifier clobbers tracked repo test files on inject
 column: doing
-updated: 2026-10-25 05:33
+updated: 2026-10-25 05:42
 brief: score.py copies task tests/* into the repo package dir; when a held-out file shares a name with a tracked
   repo test it overwrites it and leaves residue that contaminates later verifiers.
 priority: medium
@@ -46,6 +46,13 @@ comms:
 - at: 2026-10-25 05:33
   from: chaba
   text: started devin-task-20261024-223345-observed-2026-10-24-on-dell-ev on mn01 (dispatch)
+- at: 2026-10-25 05:42
+  from: devin
+  text: 'FIXED + swept (dell ~/evals). Root-cause addendum: m1-mddb-follower-health zz_-prefix injection was itself
+    broken — held files are fix-commit versions of TRACKED tests, so zz_heldout_*.go redeclared every symbol in
+    package mddbd → build-fail on ALL workspaces. Reworked m1 to same-name replace + .preheldout snapshot/restore
+    (option b); m1b/m2 keep zz_ unique-prefix (behavioral files, verified zero symbol collisions vs parent). ALL
+    6 repo verifiers now post-run clean in a finally: restore tracked '
 action:
   type: dispatch
   status: running
