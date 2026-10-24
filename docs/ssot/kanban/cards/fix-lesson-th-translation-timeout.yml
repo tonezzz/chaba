@@ -1,7 +1,7 @@
 id: fix-lesson-th-translation-timeout
 title: 'fix board-api /lesson: Thai translation hangs (no timeout) — block lesson writes'
-column: backlog
-updated: 2026-10-24 12:43
+column: done
+updated: 2026-10-24 12:51
 brief: '/lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed
   --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(),
   so the intent is unenforced.'
@@ -22,3 +22,8 @@ comms:
 - at: 2026-10-24 12:43
   from: devin
   text: card captured via board-api
+- at: 2026-10-24 12:51
+  from: tony
+  text: closed by tony
+action:
+  status: done
