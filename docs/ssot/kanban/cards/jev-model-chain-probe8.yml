@@ -1,6 +1,6 @@
 id: jev-model-chain-probe8
 title: 'JEV model-chain probe #8: debug trace (env DISPATCH_MODEL)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:38
 brief: 'Probe #8 with DEBUG trace in runner-agent: verify DISPATCH_MODEL in env at dispatch.'
 priority: low
@@ -14,7 +14,8 @@ tags:
 spec: 'Expected: DEBUG line shows model+ lane + bool(DISPATCH_MODEL). Task: touch marker + commit.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0844
 comms:
 - at: 2026-10-25 06:37
@@ -27,3 +28,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:38
+  from: idc02
+  text: claimed
