@@ -1,0 +1,20 @@
+id: jev-stagnation-gate-for-agent-bench-loop-a70f74
+title: Jev stagnation gate for agent/bench loops (ProgressGate pattern)
+column: backlog
+updated: 2026-10-24 16:07
+brief: 'Semantic stagnation detection in agent loops: Jev judges the trajectory (recent actions/state) -> CONTINUE/WARN/REPLAN/HALT.
+  Would have caught the 4.4h colibri thinking-grind (2026-10-24). Apply to bench loops (edu-agent-bench, colibri-bench,
+  eval-code-lane) + the runner.'
+tags:
+- jev
+- agents
+- loops
+- gates
+spec: 'Phase 1: a noul/choice probe on loop state after N iterations -> halt threshold. Backend: jev-student noul
+  (proven) for the halt decision; real Jev API for choice. Phase 2: wire into the runner''s per-job progress (heartbeat
+  + recent outputs). Bench: replay the 4.4h stall -> does the gate HALT it early?'
+ref: BEN-0824
+comms:
+- at: 2026-10-24 16:07
+  from: tony
+  text: card captured via board-api
