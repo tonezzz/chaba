@@ -1,7 +1,7 @@
 id: m1-stream-test-hook
 title: 'm1: add a stream state test hook to ReplicationClient for idle-healthy handler coverage'
 column: doing
-updated: 2026-10-25 05:52
+updated: 2026-10-25 06:05
 brief: The idle-caught-up-follower-stays-healthy handler test needs to simulate a connected-but-quiet stream; ReplicationClient
   has no public setter for connected/lag (all atomic internals). Add a small test-only hook (e.g. SetStreamStateForTest)
   to the repo so the behavioral verifier can cover the full handler contract.
@@ -32,6 +32,13 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:05
+  from: devin
+  text: 'DONE (pending push to activate): mddb-fork branch dispatch/20261025-055220-m1-add-a-stream-state-test-hoo
+    @ c66b563 adds SetStreamStateForTest(connected,lagMs,lastAppliedAt,appliedLSN) + a wired `connected` atomic
+    on base ed1ff11 — IsHealthy/handler untouched. Live verifier updated on dell: new TestFollowerHealthIdleCaughtUpStaysHealthy
+    self-skips until repo.ref bump, so current scores unchanged. Control-validated: plain parent 0.667 / parent+hook
+    0.5 / fix+hook 1.0. Activation = push branch + r'
 action:
   type: dispatch
   status: running
