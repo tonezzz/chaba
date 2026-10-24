@@ -10,7 +10,7 @@ needs:
   disk_gb: 40
   ram_gb: 18         # qwen-image-2.1 needs 12-18GB
   egress_only_ok: true
-timeout_s: 10800     # 33GB download + engine build + N images
+timeout_s: 18000     # 33GB download + slow CPU engine load + N images (load >3h on con01)
 artifacts:
   - packs/img-gen-bench/out/img-*.png
   - packs/img-gen-bench/out/img-gen-report.md
@@ -39,10 +39,9 @@ run: |
   rows = []
   for name, prompt in PROMPTS.items():
       t0 = time.time()
-      body = {"model": "qwen-image-2.1-colibri", "messages": [
-              {"role": "user", "content": prompt}], "max_tokens": 4096}
+      body = {"model": "qwen-image-2.1-colibri", "prompt": prompt, "size": "768x512"}
       req = urllib.request.Request(
-          "http://127.0.0.1:8000/v1/chat/completions",
+          "http://127.0.0.1:8000/v1/images/generations",
           data=json.dumps(body).encode(),
           headers={"Content-Type": "application/json"})
       try:
@@ -52,15 +51,7 @@ run: |
           raw = json.dumps(r, ensure_ascii=False)
           open(f'{OUT}/raw-{name}.json', 'w').write(raw)
           img_b64 = None
-          content = r.get('choices', [{}])[0].get('message', {}).get('content')
-          if isinstance(content, list):
-              for part in content:
-                  if isinstance(part, dict) and part.get('type') == 'image_url':
-                      url = part['image_url']['url']
-                      if url.startswith('data:'):
-                          img_b64 = url.split(',', 1)[1]
-          elif isinstance(content, str) and content.startswith('data:'):
-              img_b64 = content.split(',', 1)[1]
+          img_b64 = (r.get('data') or [{}])[0].get('b64_json', '')
           if img_b64:
               open(f'{OUT}/img-{name}.png', 'wb').write(
                   base64.b64decode(img_b64))
