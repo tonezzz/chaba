@@ -1535,7 +1535,9 @@ def _delete_lesson(body: dict, frm: str) -> dict:
     if not (isinstance(hits, list) and hits):
         raise ValueError(f"lesson not found: {slug}")
     pid = hits[0]["id"]
-    r = wp_api(f"/wp/v2/lesson/{pid}?force=true", method="DELETE")
+    # NB: '&' not '?' — wp_api puts the whole route inside rest_route=,
+    # so '?' would be %-encoded into the route path -> rest_no_route.
+    r = wp_api(f"/wp/v2/lesson/{pid}&force=true", method="DELETE")
     return {"message": f"deleted {slug} (post {pid})", "slug": slug,
             "post_id": pid, "via": frm}
 
