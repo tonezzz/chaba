@@ -1,0 +1,24 @@
+id: bench-harness-heldout-clobber-fixed
+title: 'bench harness: held-out test injection clobber FIXED + m1/m2 verifiers validated'
+column: done
+updated: 2026-10-24 19:36
+brief: 'The held-out test injection copied by filename into services/mddbd/, clobbering tracked tests (m1/m2 held-out
+  files ARE tracked files). All prior m1/m2 scores tainted. Fixed: unique zz_heldout_ prefix + GOWORK=off + delta-only
+  held-out (m2) / behavioral-only (m1-behavioral). Control-validated: m2 3/3 at fix commit; m1-behavioral 0.67 parent
+  / 1.0 fix — discriminates the hardcoded bug.'
+priority: high
+program: chaba-ci
+tags:
+- bench
+- harness
+- heldout
+- verifier
+- m1
+- m2
+note: '2026-10-24: m2 Fable rerun with honest verifier = 0/3 (Fable edited only the test file, never implemented
+  verifySnapshot/swapDatabaseVerified — genuine capability finding, not harness artifact).'
+ref: BEN-0832
+comms:
+- at: 2026-10-24 19:36
+  from: devin
+  text: card captured via board-api
