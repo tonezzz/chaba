@@ -1,0 +1,25 @@
+id: voice-tier1-omen-local
+title: 'voice Tier-1 test: local voice loop on omen (qwen3:4b + whisper + Piper)'
+column: backlog
+updated: 2026-10-24 13:36
+brief: 'Prove the fully-local voice loop on the weakest box (omen GTX 1650 4GB): Mic → Silero VAD → whisper STT
+  → qwen3:4b LLM → Piper/Kokoro TTS. Baseline to measure the T4 version against later (lesson local-voice-full-landscape,
+  post 2270).'
+priority: high
+program: chaba-ci
+tags:
+- voice
+- local
+- omen
+- qwen3
+- rainy-day
+spec: 'Pick fastest path on omen: check Go toolchain (sherpa-voice-assistant) vs Python (speech-to-speech CPU mode).
+  Pull qwen3:4b on omen Ollama. Wire STT (whisper — ada already has it) + TTS (Piper/Kokoro). Test the loop end-to-end.
+  Accept when: spoken question → spoken answer, fully local, no cloud. Measure latency.'
+note: 'Tony 2026-10-24: excited about voice again, start instead of waiting. Tier-1 = omen local; Tier-2 (T4 full-duplex)
+  blocked on Colab worker.'
+ref: ADA-0816
+comms:
+- at: 2026-10-24 13:36
+  from: devin
+  text: card captured via board-api
