@@ -1,0 +1,17 @@
+id: door-read-ops-lesson-op-list-get-educati-6cfed7
+title: 'Door read ops: /lesson op=list|get (education content to agents)'
+column: backlog
+updated: 2026-10-24 15:51
+brief: Lessons are invisible to agents (only topics slugs exist). Add /lesson op=list (all topics+modified+level+next_review)
+  and op=get (full content by slug) so agents + lessons-due can read without WP creds.
+tags:
+- education
+- board-api
+- lessons
+spec: 'board-api do_lesson: op=list -> paginated {slug, topic, level, modified, next_review, status}; op=get{slug}
+  -> {slug, topic, content, meta}. Keep the write path untouched. Verify via lesson-add/topics consumers.'
+ref: OPS-0821
+comms:
+- at: 2026-10-24 15:51
+  from: tony
+  text: card captured via board-api
