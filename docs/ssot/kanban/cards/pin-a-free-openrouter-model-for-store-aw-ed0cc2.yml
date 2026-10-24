@@ -1,7 +1,7 @@
 id: pin-a-free-openrouter-model-for-store-aw-ed0cc2
 title: Pin a free OpenRouter model for store-awareness A/B
 column: doing
-updated: 2026-10-24 17:23
+updated: 2026-10-24 17:27
 action:
   type: manual
 ref: OPS-0827
@@ -27,3 +27,18 @@ comms:
     each, ops 4/5,3/5,5/5, recall 3/3 each, 36/39 tasks complete, mean p50 10.5s. The model is stable across reps
     but fails ops in two reps (HTTP/timeouts on due/review tasks). Store-aware treatment is now running; no judge
     and no production WP.'
+- at: 2026-10-24 17:27
+  from: devin
+  text: 'raised request pinned-nemotron-store-aware-treatment-hi-0672dc: Pinned Nemotron store-aware treatment hit
+    OpenRouter free-tier HTTP 429 twice and was stopped. What should I do next?'
+requests:
+- id: pinned-nemotron-store-aware-treatment-hi-0672dc
+  ask: Pinned Nemotron store-aware treatment hit OpenRouter free-tier HTTP 429 twice and was stopped. What should
+    I do next?
+  status: open
+  at: 2026-10-24 17:27
+  from: devin
+  options:
+  - Wait for free capacity to reset, then retry the store-aware treatment on the same pinned model (recommended).
+  - Authorize a paid reference route; this can incur API charges.
+  suggested: Wait for free capacity to reset, then retry the store-aware treatment on the same pinned model (recommended).
