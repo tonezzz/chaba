@@ -1,6 +1,6 @@
 id: jev-live-dispatch-demo
 title: 'JEV live dispatch demo: touch README.md in chaba (deterministic)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:02
 brief: 'A tiny deterministic task to prove JEV lane routing live: append one line to README.md and commit.'
 priority: low
@@ -15,7 +15,8 @@ spec: 'JEV supervised trial #3 (2026-10-25): dispatch-type card, task = append '
   claim with JEV_LANE=1.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0835
 comms:
 - at: 2026-10-25 05:59
@@ -24,3 +25,6 @@ comms:
 - at: 2026-10-25 06:02
   from: devin
   text: queued for processing
+- at: 2026-10-25 06:02
+  from: idc02
+  text: claimed
