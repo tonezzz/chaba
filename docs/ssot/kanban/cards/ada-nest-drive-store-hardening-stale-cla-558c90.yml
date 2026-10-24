@@ -1,0 +1,28 @@
+id: ada-nest-drive-store-hardening-stale-cla-558c90
+title: 'ada-nest drive-store hardening: stale-claim release + packs-index'
+column: backlog
+updated: 2026-10-24 08:23
+brief: 'Drive-FUSE lessons from 2026-10-23 cost hours (3 runner self-exits from lease read-back, lost-race claim
+  poisoning, slow fleet scans). Ranked fixes:'
+tags:
+- ada-nest
+- colab
+- drive
+- distributed-systems
+spec: '1. runner.py: release own claim on FAIL + on fence-exit (mirror nest-worker''s deletefile-on-fail; closes
+  the 60min poison window on the Colab side).
+
+  2. packs-index.json on Drive: one tiny file updated per claim/done -> fleet scans O(1) instead of O(packs x rclone
+  lsf).
+
+  3. Split hf-hub.tar.zst per-repo so fresh VMs restore only what pending packs need (LTX not VoxCPM2) -> faster
+  cold start.
+
+  4. Stage-then-push for big Colab outputs (formalize flush-settle).
+
+  5. Unify heartbeat+lease to one liveness file (nest-queue-watch reads heartbeat; lease carries ts).'
+ref: ADA-0806
+comms:
+- at: 2026-10-24 08:23
+  from: tony
+  text: card captured via board-api
