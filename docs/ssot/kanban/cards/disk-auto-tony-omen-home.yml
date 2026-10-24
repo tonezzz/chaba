@@ -2,14 +2,14 @@ id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
 brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
   or close the card.
-column: backlog
+column: doing
 generated: disk-trend-watch
 area: monitoring
 priority: medium
 note: '84% used, growing 8.4 GiB/day -> full in ~5.7d top grower 24h: /home/tony/.cache/nest-worker/ +15.2 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-24 17:16
+updated: 2026-10-24 17:20
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -146,6 +146,9 @@ comms:
 - at: 2026-10-24 17:16
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-24 17:20
+  from: tony-omen
+  text: claimed
 requests:
 - id: omen-disk-plan
   from: devin
@@ -194,8 +197,8 @@ requests:
   answer: run-backup — Create the GPT backup on Omen
   executed: 2026-10-24 queue
 action:
-  status: queued
+  status: running
   type: dispatch
+  runner: tony-omen
 ref: OPS-0405
 claim: {}
-awaiting_action: true
