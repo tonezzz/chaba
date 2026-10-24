@@ -1,7 +1,7 @@
 id: edu-agent-lane-lift-turn2
 title: Lane-lift turn 2 — structured-output loop change, rerun gpt-oss + clawbot on edu fixture
 column: done
-updated: 2026-10-24 17:27
+updated: 2026-10-24 17:31
 priority: low
 spec: 'In chaba repo, scripts/bench-edu-manage.py + scripts/bench-edu-corpus.json (13 tasks, MockStore — never prod
   WP). TURN 2: (1) Apply the structured-output loop change to the agent loop (tighten tool-call JSON fidelity in
@@ -123,6 +123,13 @@ comms:
     capability scores. (2) Offline Gemini Flash Lite re-judged 15 saved T4 drafts: baseline 4.70/5 (n=8), store-aware
     4.71/5 (n=7), effectively tied; same model class as current lane, so not independent. (3) Three-rep openrouter/free
     A/B: baseline dedupe 11/15, store-aware 14/15, but mode'
+- at: 2026-10-24 17:31
+  from: devin
+  text: 'New evidence is durable (master commit 0e55eea5f; Education post 2103 updated). T4 store-aware clean run:
+    F1 1, dedupe 5/5, ops 5/5, recall 3/3, p50 21.5s; a second T4 attempt failed before model execution with HTTP
+    500 and is excluded. Offline judge scored 15 T4 filings: no-topic 4.70/5 (n=8), store-aware 4.71/5 (n=7), effectively
+    tied; judge is Gemini Flash Lite, same model class as current, so not independent. Three-rep OpenRouter-free
+    A/B: baseline dedupe 11/15, store-aware 14/15, but auto-r'
 requests:
 - id: mn01-has-no-openrouter-api-key-secrets-o-2e1151
   ask: 'mn01 has no OPENROUTER_API_KEY (secrets origin macbook never synced it here) — clawbot lane cannot auth.
