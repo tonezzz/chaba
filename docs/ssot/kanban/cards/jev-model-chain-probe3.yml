@@ -1,6 +1,6 @@
 id: jev-model-chain-probe3
 title: 'JEV model-chain probe #3: post-deploy verify (free_lane -> flash-lite in session)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:19
 brief: 'Probe #3 after runner-agent deploy cccc0d38c: a free_lane card should get action.lane+model persisted by
   the CLAIMER, and the session should run with DEVIN_MODEL=flash-lite.'
@@ -16,7 +16,8 @@ spec: 'Expected: runner-agent classifies at claim -> card action.lane=free_lane,
   -> session unit env DEVIN_MODEL set. Task: touch a marker file and commit.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0839
 comms:
 - at: 2026-10-25 06:18
@@ -33,3 +34,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:19
+  from: idc02
+  text: claimed
