@@ -54,7 +54,12 @@ def cat(path):
 
 
 def caps():
-    c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': False}
+    c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': False, 'ram_gb': 0.0}
+    try:
+        m = os.sysconf('SC_PHYS_PAGES') * os.sysconf('SC_PAGE_SIZE') / 1e9
+        c['ram_gb'] = round(m, 1)
+    except Exception:
+        pass
     try:
         r = subprocess.run(['nvidia-smi', '--query-gpu=memory.total',
                             '--format=csv,noheader,nounits'],

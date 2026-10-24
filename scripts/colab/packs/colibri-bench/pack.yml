@@ -9,6 +9,7 @@
 name: colibri-bench
 needs:
   gpu_gb: 3          # 1650 CUDA build when the toolkit exists; setup self-falls-back
+  ram_gb: 20         # qwen3.6-35B dense+experts in RAM
   disk_gb: 35        # model ~23GB + colibri + bench staging
 venv: true
 timeout_s: 10800     # install + ~23GB download (resume) + 13-task bench

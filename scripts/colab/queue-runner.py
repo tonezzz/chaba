@@ -202,7 +202,12 @@ def wait_prep(prep):
     return rc
 
 def caps():
-    c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': True}
+    c = {'gpu_gb': 0.0, 'disk_gb': 0.0, 'egress_only_ok': True, 'ram_gb': 0.0}
+    try:
+        c['ram_gb'] = round(os.sysconf('SC_PHYS_PAGES')
+                            * os.sysconf('SC_PAGE_SIZE') / 1e9, 1)
+    except Exception:
+        pass
     try:
         r = subprocess.run(['nvidia-smi', '--query-gpu=memory.total',
                             '--format=csv,noheader,nounits'],

@@ -8,8 +8,8 @@
 name: img-gen-bench
 needs:
   disk_gb: 40
+  ram_gb: 18         # qwen-image-2.1 needs 12-18GB
   egress_only_ok: true
-venv: true
 timeout_s: 10800     # 33GB download + engine build + N images
 artifacts:
   - packs/img-gen-bench/out/img-*.png

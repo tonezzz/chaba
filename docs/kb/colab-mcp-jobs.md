@@ -177,7 +177,7 @@ same bundle runs on Colab today and a fleet host tomorrow.
 - **Layout** — `ada-nest/packs/<name>/pack.yml` (+ optional `inputs/`):
   ```yaml
   name: my-job
-  needs: {gpu_gb: 3, disk_gb: 4, egress_only_ok: true}   # capability floor
+  needs: {gpu_gb: 3, disk_gb: 4, ram_gb: 8, egress_only_ok: true}   # capability floor
   timeout_s: 1200     # runner-side SIGALRM around the whole run
   artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
     - packs/my-job/out/*.wav
@@ -193,9 +193,11 @@ same bundle runs on Colab today and a fleet host tomorrow.
   (first-writer-wins, 2 s settle; Drive listing lag makes it best-effort
   for simultaneous claims — fine at our scale). Done marker is a FILE:
   `packs/<name>/done` (note: not `.done` suffix — inside the pack dir).
-- **needs check** — runner advertises `gpu_gb` (nvidia-smi),
-  `disk_gb` (statvfs), `egress_only_ok=True` (Colab can only egress).
-  Unmatched packs skip cleanly with the reason logged.
+- **needs check** — workers advertise `gpu_gb` (nvidia-smi),
+  `disk_gb` (statvfs), `ram_gb` (sysconf SC_PHYS_PAGES), and
+  `egress_only_ok` (Colab can only egress). Unmatched packs skip
+  cleanly with the reason logged — RAM floors (added 2026-10-24) keep
+  low-RAM hosts (mn01: 7G) from claiming Colibri-class packs.
 - **Packs run AFTER the whole JOBS manifest** — so keep env/bootstrap
   (cache restore, deps, asset extract) in JOBS.py and everything else as
   packs. A pack can depend on env jobs' outputs (`/tmp/vbench` etc.) but

@@ -9,6 +9,7 @@
 name: doc-embeds-ss1
 needs:
   gpu_gb: 0       # cpu-ok: fits() treats 0 as no requirement
+  ram_gb: 13       # T5-XXL bf16 load peaks ~12GB - OOM risk on 12GB hosts
   disk_gb: 30
 venv: true
 timeout_s: 3600   # dominated by the first-run ~10GB HF pull
