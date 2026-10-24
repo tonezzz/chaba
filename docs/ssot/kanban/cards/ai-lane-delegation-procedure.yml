@@ -1,7 +1,7 @@
 id: ai-lane-delegation-procedure
 title: 'procedure: start using the AI lanes for real — delegation + testing protocol'
 column: backlog
-updated: 2026-10-24 15:53
+updated: 2026-10-24 16:06
 brief: 'Operationalize the eval findings: define HOW real work gets routed to lanes (codemod/cheap/paid/Devin),
   how each lane is tested before trusting it, and which work is safe to delegate NOW vs needs gates.'
 priority: high
@@ -26,3 +26,10 @@ comms:
   text: 'PILOT STARTED — 3 real chores selected: (1) timer-alert-idc03-ada-memory-sync (journal diag, verifier=journal+unit
     state), (2) stash-graveyard-triage (audit 33 autostashes, verifier=count+classify), (3) check-traffic-report-automation
     (verify report+producer, verifier=artifact exists). All free-lane, gated. Running #1 now.'
+- at: 2026-10-24 16:06
+  from: devin
+  text: 'PILOT #1 RESULT (free lane, timer-alert): FAILED cleanly. Run 1: host mismatch (agent on dell investigated
+    dell systemd - no such unit). Run 2 (fixed, ssh idc03): agent did 3 bash calls then STOPPED with a conversational
+    reply instead of completing - flash-lite lost the multi-step thread. VERDICT: the free lane CANNOT carry multi-step
+    remote diagnosis yet. The chore class that IS proven: single-step verifiable ops (probe/write/report). PROCEDURE
+    REFINEMENTS: (a) delegation needs explicit target_'
