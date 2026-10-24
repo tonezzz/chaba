@@ -1,6 +1,6 @@
 id: jev-model-chain-probe2
 title: 'JEV model-chain probe #2: verify flash-lite reaches the session (post-fix)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:13
 brief: 'Probe #2 after c4fc7cac1: a free_lane card should get action.model=litellm/gemini-3.5-flash-lite persisted,
   and the runner session should run with DEVIN_MODEL set.'
@@ -16,7 +16,8 @@ spec: 'Expected: classify_lane -> free_lane -> action.model=litellm/gemini-3.5-f
   session DEVIN_MODEL=flash-lite. Task: touch a marker file and commit.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0837
 comms:
 - at: 2026-10-25 06:13
@@ -29,3 +30,6 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:13
+  from: idc02
+  text: claimed
