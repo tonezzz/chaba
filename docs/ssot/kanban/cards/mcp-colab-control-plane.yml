@@ -1,0 +1,25 @@
+id: mcp-colab-control-plane
+title: build mcp-colab — Colab fleet control plane (packs, tunnel, model probes)
+column: backlog
+updated: 2026-10-24 08:54
+brief: 'Consolidate Colab management into one MCP server (fleet pattern: mcp-gpu, mcp-llama). Wraps rclone gdrive
+  + queue-runner state + tunnel probe so agents/Ada/IDE can submit packs, check status, fetch results without Drive
+  poking.'
+priority: high
+program: chaba-ci
+tags:
+- colab
+- mcp
+- eval
+- free-lane
+spec: 'Python MCP server, host = tony-dell (has gdrive rclone remote + tailnet to idc03). Tools: pack_status (list
+  packs, claim/done state), pack_submit (copy local pack.yml+inputs to ada-nest/packs/<name>/), pack_result (cat
+  out/*.json), tunnel_check (curl 127.0.0.1:11434 via idc03 or probe proxy colab-qwen3), model_probe (chat 1-token
+  through LiteLLM). Depends: rclone gdrive remote (dell), queue-runner convention (drive ada-nest/packs). v1 = read+submit
+  only, no destructive ops. Test: list packs, submit a smoke pack, fetch its result.'
+note: 'OPS-0792 eval family — efficiency driver: one surface to manage Colab instead of manual rclone/notebook poking.'
+ref: OPS-0808
+comms:
+- at: 2026-10-24 08:54
+  from: devin
+  text: card captured via board-api
