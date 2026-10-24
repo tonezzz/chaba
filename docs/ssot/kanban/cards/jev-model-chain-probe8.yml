@@ -1,7 +1,7 @@
 id: jev-model-chain-probe8
 title: 'JEV model-chain probe #8: debug trace (env DISPATCH_MODEL)'
 column: review
-updated: 2026-10-25 06:39
+updated: 2026-10-25 06:40
 brief: 'Probe #8 with DEBUG trace in runner-agent: verify DISPATCH_MODEL in env at dispatch.'
 priority: low
 program: chaba-ci
@@ -48,5 +48,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-063835-expected-debug-line-shows-mode,
     branch dispatch/20261025-063835-expected-debug-line-shows-mode'
+- at: 2026-10-25 06:40
+  from: devin
+  text: 'FINDING (2026-10-25): lane routing chain PROVEN to the env level — DEBUG trace showed DISPATCH_MODEL=True,
+    model=litellm/gemini-3.5-flash-lite, lane=free_lane on the dispatch call. BUT the session ran deepseek-v4-pro
+    and FAILED (exit=1): devin CLI v3000.10.35 on runners does NOT accept --model (help shows no --model flag; devin-dispatch
+    passes --setenv=DEVIN_MODEL --model which the CLI ignores). The lane->model chain is blocked at the devin CLI
+    compatibility layer, not the routing. NEXT: either '
 review_kind: verify
 claim: {}
