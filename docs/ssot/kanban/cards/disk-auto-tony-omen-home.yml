@@ -9,7 +9,7 @@ priority: medium
 note: '84% used, growing 8.4 GiB/day -> full in ~5.7d top grower 24h: /home/tony/.cache/nest-worker/ +15.2 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-24 17:21
+updated: 2026-10-24 17:25
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -152,6 +152,11 @@ comms:
 - at: 2026-10-24 17:21
   from: chaba
   text: started devin-task-20261024-172100-disk-tony-omen-home-fills-in-7 on tony-omen (dispatch)
+- at: 2026-10-24 17:25
+  from: devin
+  text: 'investigating: /home 84% (48G free). Top grower ~/.cache/nest-worker = 28G across 2 pack workdirs — vyncx-v2-ada2-redo
+    (6.4G, remote DONE, safe to drop) and colibri-bench (22G model, pack still claimed + actively served by running
+    coli/bench procs — leaving). Checking for retention gap in nest-worker.py.'
 requests:
 - id: omen-disk-plan
   from: devin
