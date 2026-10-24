@@ -1489,6 +1489,37 @@ def _touch_lessons(body: dict, frm: str) -> dict:
             "touched": touched, "missing": missing, "via": frm}
 
 
+def _read_lessons(body: dict, frm: str) -> dict:
+    """op=list | op=get — read side of the education door (OPS-0821).
+    Agents/lessons-due get lesson content without WP creds."""
+    op = body.get("op")
+    if op == "list":
+        hits = wp_api("/wp/v2/lesson&status=private&per_page=100"
+                      "&_fields=slug,title,modified,meta")
+        out = []
+        if isinstance(hits, list):
+            for h in hits:
+                m = h.get("meta") or {}
+                out.append({"slug": h.get("slug"),
+                            "topic": m.get("topic", ""),
+                            "level": m.get("level", ""),
+                            "modified": h.get("modified"),
+                            "next_review": m.get("next_review", ""),
+                            "status": m.get("status", "")})
+        return {"lessons": out, "count": len(out), "via": frm}
+    slug = str(body.get("slug") or "").strip()
+    if not slug:
+        raise ValueError("op=get requires slug")
+    hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
+    if not (isinstance(hits, list) and hits):
+        raise ValueError(f"lesson not found: {slug}")
+    h = hits[0]
+    return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
+            "content": (h.get("content") or {}).get("rendered", ""),
+            "meta": h.get("meta") or {}, "modified": h.get("modified"),
+            "via": frm}
+
+
 def do_lesson(body: dict, frm: str) -> dict:
     """/lesson — the remote write half of the lesson-capture duty: upsert
     the WP lesson CPT by topic slug (re-asked topics update in place, WP
@@ -1500,8 +1531,10 @@ def do_lesson(body: dict, frm: str) -> dict:
     slugs given) without touching content, so admin sort-by-last-modified
     reflects re-files (Tony 2026-10-24; WP only auto-bumps modified when
     content bytes change)."""
-    if body.get("op") == "touch":
-        return _touch_lessons(body, frm)
+    if body.get("op") in ("touch", "list", "get"):
+        if body.get("op") == "touch":
+            return _touch_lessons(body, frm)
+        return _read_lessons(body, frm)
     topic = str(body.get("topic") or "").strip()
     if not topic:
         raise ValueError("topic required")
