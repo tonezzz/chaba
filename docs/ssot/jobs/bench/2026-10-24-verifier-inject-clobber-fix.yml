@@ -1,0 +1,79 @@
+title: 'BEN-0828 close-out: verifier inject-clobber fixed on all 6 repo tasks + 23 workspaces swept'
+subtitle: per-injection-strategy split (unique-name vs snapshot/restore), finally-guaranteed post-run cleanup, historical residue purge
+icon: flask
+runner: dispatch mn01 (executed on tony-dell via ssh, ~/evals)
+date: 2026-10-24
+card: bench-verifier-inject-clobber
+related: [ai-workforce-eval]
+
+context:
+  harness: ~/evals on tony-dell (agent-cost-bench, local verify runner)
+  prior_state: >-
+    Prior dispatch (2026-10-24 20:16 card comm) had applied option (a)
+    zz_heldout_ unique-prefix injection to m-tasks, both-era residue
+    purge, and .preheldout backup/restore to t-tasks on the success path
+    only. This session found that state had TWO residual defects.
+
+defects_found:
+  - id: m1-redeclare
+    severity: verifier dead
+    detail: >-
+      tasks/m1-mddb-follower-health held-out files are the FIX-commit
+      versions of TRACKED repo tests (replication_client_test.go,
+      replication_handlers_test.go). Injecting them as zz_heldout_*.go
+      puts duplicate copies in package mddbd -> every TestXxx redeclared
+      -> build-fail on ANY workspace (parent AND fix). Unique-name
+      injection is only safe when held tests declare new symbols
+      (behavioral files). Option (a) was the wrong strategy for m1.
+  - id: success-path-restore
+    severity: residue on error paths
+    detail: >-
+      t-task restore ran only after a successful pytest report; the
+      early emit on json.load failure skipped restore AND left injected
+      files + .preheldout + .verify-report.json behind. m-tasks left
+      injected zz_heldout_* copies post-run (pre-run purge covered
+      contamination but workspaces were not pristine artifacts).
+
+fix:
+  m1-mddb-follower-health: >-
+    Rewritten to same-name REPLACE semantics: heal stale .preheldout
+    (tracked original restored over clobber), purge untracked
+    zz_heldout_* residue, snapshot existing targets to .preheldout,
+    copy held files same-name, restore in finally. Backup/restore now
+    also preserves agent-created same-name files (previously deleted).
+  m1-behavioral + m2-mddb-snapshot-proof: >-
+    Kept zz_heldout_ unique-prefix injection (verified zero symbol
+    collisions vs parent refs). Added finally cleanup removing every
+    injected file on all exit paths (emit sys.exit, timeout, exception).
+  t1-hint + t1-terrology + t2-terrology: >-
+    Backup/restore moved into finally; stale .preheldout heal added;
+    injected-only files removed post-run; .verify-report.json removed;
+    new .pytest_cache / tests/__pycache__ pyc residue removed only when
+    verifier-created. Per-file cleanup failures warn on stderr instead
+    of aborting remaining cleanup.
+  o1-o4 + lesson-polish: no injection — confirmed clean, untouched.
+
+verified_live:
+  m1: 'parent ed1ff11 -> 0.0 (fix-coupled build fail, intended); fix c0850f0 -> 1.0 (11/11); git status clean both runs'
+  m1-behavioral: 'parent -> 0.667 (2/3), fix -> 1.0 (3/3); clean'
+  m2: 'parent 60ac37c -> 0.667, fix 497b982 -> 1.0 — matches prior discriminator values; clean'
+  t2: 'pristine git status on normal run, early-emit (unreadable report), and stale-.preheldout heal paths'
+  idempotence: second consecutive run on same workspace = same score, clean
+
+workspace_sweep:
+  scope: all ~/evals/workspaces-*/ run dirs containing a m/t repo task
+  detection: >-
+    git-status-guarded; file byte-identical to a held-out copy = residue
+    (agents cannot produce secret tests independently); .preheldout
+    restored over clobbered file before restore decision
+  actions:
+    - 'restored 6 clobbered tracked terrology tests in each of 6 t2 workspaces (git checkout)'
+    - 'restored replication_client/handlers_test.go in 1 m1 workspace'
+    - 'removed heldout-content untracked files (t1 test_output_quality.py x10, t2 test_web.py x6)'
+    - 'removed 3 zz_heldout_* leftovers + 15 .verify-report.json + /tmp stray'
+  result: rescan 0 remaining of 23 contaminated
+
+notes:
+  - 'm1 (follower-health) remains a fix-coupled verifier by design — parent build-fails because held tests reference rc.connected. m1-behavioral is the interface-agnostic scorer; m1 kept for archaeology/arm runs that expect the coupled gate.'
+  - 'tasks/ on dell is local state, not a git repo — no commit created.'
+  - 'Card moved backlog -> review via board-api /action.'
