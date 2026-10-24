@@ -1,0 +1,48 @@
+probe: jev-model-chain-probe6 (OPS-0842)
+session: devin-task-20261024-232959-expected-card-action-lane-free
+runner: mn01 (runner-agent claim 2026-10-24 23:30:01 UTC)
+touched_at: 2026-10-24T23:31:45Z (06:31 ICT)
+
+model-chain result:
+  action.lane on card:    ABSENT (live GET /cards — action={type,status,runner} only)
+  action.model on card:   ABSENT
+  DEVIN_MODEL in unit:    ABSENT (systemctl --user show Environment has no
+                          DEVIN_MODEL/DISPATCH_MODEL; devin launched with
+                          no --model flag -> default model SWE-2 High)
+  verdict: FAIL - classify RAN this time (runner-agent is patched) but
+           misrouted the card to the 'manual' lane.
+
+root cause (verified on mn01):
+  1. Installed ~/.local/bin/runner-agent is the PATCHED build
+     (mtime Oct 24 23:25; classify_lane at :189, claim-time classify at
+     :932). Claim-time classify is UNGATED and ran at 23:30:01.
+  2. classify_lane() returned "manual" for this card: LANE_KW['manual']
+     contains bare substring "macbook", and the probe brief says
+     "macbook+idc03+dell just synced" (a host-fleet list, not physical
+     work). Manual check runs first and wins over free_lane's "probe"
+     keyword. lane=='manual' -> a["lane"]/a["model"] never set ->
+     DISPATCH_MODEL never set -> devin-dispatch MODEL="" -> no
+     DEVIN_MODEL, no --model flag.
+  3. Card-side persistence would have failed anyway: claim-time classify
+     still mutates the in-memory action AFTER the claim POST and is never
+     PATCHed back (probe4 finding; still unfixed). Queue-time classify
+     (card dispatch-classify-at-queue-time / OPS-0838) remains the
+     durable fix.
+
+secondary defect found on mn01:
+  ~/.config/systemd/user/runner-agent.service.d/jev-lane.conf line 1 is
+  bare 'Environment=JEV_LANE=1' with no [Service] header — systemd logs
+  "Assignment outside of section. Ignoring." (23:25:39, 23:30:12) and
+  the unit env has no JEV_LANE. Ironically this let probe6 dispatch:
+  had JEV_LANE=1 been live, the env-path classify would also have
+  returned "manual" and refused the card entirely ("manual lane — not
+  dispatched").
+
+implications:
+  - 'macbook' as a manual-lane substring is too broad — matches any
+    host-fleet mention. Needs word-boundary/intent narrowing or manual
+    should require stronger signal.
+  - Probes that name runners in their brief will keep tripping this.
+  - The classify-first-manual ordering means a single stray keyword
+    silently downgrades a dispatchable card to never-claimed; a manual
+    verdict should probably log/persist so it is visible on the board.
