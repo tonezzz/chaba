@@ -162,9 +162,10 @@ LANE_MODELS = {
     "paid_frontier": "litellm/or-claude-fable-5.1",
 }
 LANE_KW = {
-    "manual": ["macbook", "hardware", "buy", "usb cam", "camera", "physical",
+    "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend", "order the", "blocked on tony", "rotation", "rekey",
-               "lease teardown", "sudo-gated"],
+               "lease teardown", "sudo-gated", "restore.*macbook",
+               "enroll.*macbook", "macbook.*restore", "macbook.*enroll"],
     "paid_frontier": ["test hook", "stagnation gate", "decision layer",
                       "construct", "register_post_type", "rename", "design a",
                       "implement a", "code fix", "op=list", "add /lesson",
