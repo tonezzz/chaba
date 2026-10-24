@@ -1,0 +1,54 @@
+title: 'Bench: m1 rescore under behavioral verifier — paid lane 3/4, not 0/7'
+subtitle: old coupled verifier conflated compile-boundary with capability; OR weekly cap now exhausted
+icon: flask
+runner: dispatch idc02 (executed on tony-dell via ssh, ~/evals)
+date: 2026-10-24
+card: ai-workforce-eval
+
+context:
+  harness: ~/evals on tony-dell (agent-cost-bench, ~/.local/bin via uv tool)
+  task: tasks/m1-behavioral — held-out behavioral_test.go asserts follower
+    with unhealthy replication client must NOT report healthy:true; injects
+    into services/mddbd and runs `go test -run TestFollowerHealth`
+  trigger: dispatch card spec said "pilot running" — actually finished Oct 23
+    (all 8 flash-lite cells timeout @1800s); frontier had moved to a new
+    behavioral verifier authored 16:49 by a concurrent dell session.
+
+verifier_sanity:
+  parent_ed1ff11: 0.5   # hardcoded Healthy:true caught (NotHardcoded FAILs;
+                        # LagContract trivially passes — IsHealthy/LagMs exist pre-fix)
+  reference_c0850f0: 1.0
+  note: parent IsHealthy() uses time-since-last-entry — the semantics the task
+    prompt bans; real fix = connected+lag semantics AND handler wiring.
+
+corrected_retrospective:
+  - {run: or3 m1 opencode r1 (Gemini paid), edits: client+handler, old: 'FAIL (compile)', behavioral: 1.0, verdict: 'correct fix — old verifier false-negative'}
+  - {run: or3 m1 opencode r2 (Gemini paid), edits: client-only,    old: 'FAIL (compile)', behavioral: 0.5, verdict: 'REAL partial — handler never wired (the one true wiring gap)'}
+  - {run: or m1 openhands (Gemini paid),  edits: client+handler, old: 'FAIL',           behavioral: 1.0, verdict: 'correct fix — first openhands m1 pass'}
+  - {run: or m1 opencode (Gemini paid),   edits: none,           old: 'FAIL',           behavioral: 0.5, verdict: 'no-edit run (parent baseline)'}
+  - {run: fable-m1 r1 (Fable 5.1),        edits: client+handler, old: 'FAIL (compile)', behavioral: 1.0, verdict: 'correct fix (streamConnected+IsHealthy)'}
+  - {run: fable-m1 r2 (Fable 5.1),        edits: none,           old: 'FAIL (compile)', behavioral: 0.5, verdict: 'no-edit — doc "131-line" was injected-test diff'}
+  - {run: m1beh-fable live 16:54,         edits: none,           old: 'FAIL (0.5)',     behavioral: 0.5, verdict: 'NOT capability — task-subagent died on OR 402 credit exhaustion'}
+  - {run: flash-lite pilot m1 (both cells), edits: none, old: 'TIMEOUT', behavioral: 'n/a', verdict: 'free lane cannot carry this class — confirmed'}
+
+takeaways:
+  paid_lane_m1: '3/4 real attempts fully correct, 1/4 real partial — was recorded 0/7'
+  or_status: 'OpenRouter weekly key cap EXHAUSTED ~16:55 ("requested 32000 tok,
+    can only afford 31702") — paid lane down until reset ~Oct 26 or key raise.
+    Card ask #1 (raise OR cap / fix Gemini spend cap) is now the live blocker.'
+  residual_gap: 'behavioral test does not cover idle-healthy follower case —
+    an impl could pass while still time-based'
+  contract_note: 'test still requires IsHealthy()/LagMs() names + s.replClient
+    field — both models converge on IsHealthy naturally; acceptable coupling'
+
+harness_bugs_filed:
+  - 'BEN-0828 bench-verifier-inject-clobber — score.py injects held-out tests
+    by filename, overwrites tracked repo tests + leaves residue contaminating
+    later scoring (r2 build-failed on stale injected tests until restored)'
+  - 'm2 same coupled+clobber pattern (db_integrity_test.go vs verifySnapshot
+    internals) — needs an m2-behavioral task'
+
+artifacts:
+  - '~/evals/m1-behavioral-rescore-20261024.md (dell — full corrected table)'
+  - 'devin-kb b8258e5 — docs/tools/ai-workforce-eval.md corrected (local commit)'
+  - 'verify scratch: dell /tmp/m1b-verify/{parent,fix}'
