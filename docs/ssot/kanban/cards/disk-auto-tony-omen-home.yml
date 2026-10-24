@@ -2,14 +2,14 @@ id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
 brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
   or close the card.
-column: doing
+column: review
 generated: disk-trend-watch
 area: monitoring
 priority: medium
 note: '84% used, growing 8.4 GiB/day -> full in ~5.7d top grower 24h: /home/tony/.cache/nest-worker/ +15.2 GiB'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-24 17:25
+updated: 2026-10-24 17:27
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -157,6 +157,10 @@ comms:
   text: 'investigating: /home 84% (48G free). Top grower ~/.cache/nest-worker = 28G across 2 pack workdirs — vyncx-v2-ada2-redo
     (6.4G, remote DONE, safe to drop) and colibri-bench (22G model, pack still claimed + actively served by running
     coli/bench procs — leaving). Checking for retention gap in nest-worker.py.'
+- at: 2026-10-24 17:27
+  from: tony-omen
+  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
+    tools. | devin-task-20261024-17'
 requests:
 - id: omen-disk-plan
   from: devin
@@ -205,8 +209,10 @@ requests:
   answer: run-backup — Create the GPT backup on Omen
   executed: 2026-10-24 queue
 action:
-  status: running
+  status: done
   type: dispatch
   runner: tony-omen
+  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261024-172100-disk-tony-omen-home-fills-in-7.service:
+    Consumed 1min 32.261s CPU time over 5min 7.817s wall clock time, 2.2G memory peak.'
 ref: OPS-0405
 claim: {}
