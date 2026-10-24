@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-25 05:43
+updated: 2026-10-25 05:44
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -32,3 +32,10 @@ comms:
     opt-in). BUT the classifier is NOT ready: empirical probe — bump(config)=paid_frontier@0.03 (wrong), hardware(physical)=devin@0.06
     (wrong), only install=free_lane@0.55 correct. jevos confuses the lane vocabulary (trained on tool-routing remember/recall/control,
     not lanes). GA'
+- at: 2026-10-25 05:44
+  from: devin
+  text: 'LANE CORPUS BASELINE (15 labeled cards): jevos accuracy 0.27 (4/15). Root pattern: jevos OVER-TRIGGERS
+    manual (9/15 -> manual, incl coding tasks) — its choice head was trained on tool-routing, not lanes. corpus
+    saved evals/results/jev/jev-lane-corpus.json. This is the training seed: fine-tune/swap the choice head on these
+    15 (+more) lane-labeled cards, re-run for target >=0.8. Until then lane routing stays gated-off (safe-dormant
+    wiring).'
