@@ -514,19 +514,25 @@ def _with_lock(fn):
 # validated 23/23 on corpus + held-out cards (evals/results/jev/).
 LANE_KW = {
     "manual": ["macbook", "hardware", "buy", "usb cam", "camera", "physical",
-               "spend", "order the", "blocked on tony"],
+               "spend", "order the", "blocked on tony", "rotation", "rekey",
+               "lease teardown", "sudo-gated"],
     "paid_frontier": ["test hook", "stagnation gate", "decision layer",
                       "construct", "register_post_type", "rename", "design a",
-                      "implement a", "api", "code fix", "op=list",
-                      "add /lesson", "versus"],
+                      "implement a", "code fix", "op=list", "add /lesson",
+                      "versus", "benchmark", "bench ", "productionize",
+                      "promotion gate", "hardening", "hybrid recall",
+                      "discussion board", "work bridge"],
     "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
                 "parallelism", "raise ", "cap", "flag", "script",
-                "copies task tests", "inject", "drift"],
+                "copies task tests", "inject", "drift", "delete old", "purge",
+                "schedule", "recurring", "nest job"],
     "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
-              "schedule", "roster", "protocol", "provision", "host",
-              "feature", "automation", "build"],
+              "roster", "protocol", "provision", "host", "feature",
+              "automation", "diagnos", "experiment", "pipeline", "end-to-end",
+              "quadlet", "warm standby", "repoint", "failing", "dep fix",
+              "dependency"],
     "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "plan", "evaluate", "gui", "probe"],
+                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
@@ -566,10 +572,10 @@ def classify_lane(card: dict) -> str:
         lane = ans.get("choice")
         conf = float(ans.get("confidence") or 0.0)
         if conf < float(os.environ.get("JEV_LANE_MIN_CONF", "0.5")):
-            return ""
-        return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else ""
+            return "devin"  # safe multi-step default when unsure
+        return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else "devin"
     except Exception:
-        return ""
+        return "devin"  # jevos down -> safe default, not None
 
 def start_pending(path: Path) -> str:
     """Phase B: devin-dispatch start (slow, no lock), then write back."""
