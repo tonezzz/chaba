@@ -10,4 +10,22 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: MED-0251'
+- at: 2026-10-25 01:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 ref: MED-0251
+requests:
+- id: tony-omen-requires-a-confirmat-a516b1
+  ask: Tony Omen requires a confirmation workflow before starting subtitle translation on cast_browser
+    to prevent system overload, but the exact mechanism, trigger conditions, and communication channel
+    for this confirmation have not been specified.
+  options:
+  - ★ Implement a synchronous blocking prompt or notification requiring explicit human approval via chat/comms
+    before each cast_browser subtitle translation job starts.
+  - Add a rate limiter or queue concurrency limit to cast_browser translation jobs on tony-omen instead
+    of requiring manual confirmations.
+  - Draft a formal standard operating procedure (SOP) document outlining the manual confirmation steps
+    for Tony Omen without altering the codebase yet.
+  status: open
+  at: 2026-10-25 01:20
+  from: backlog-spec-enrich
