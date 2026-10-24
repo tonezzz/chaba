@@ -104,6 +104,13 @@ comms:
     conflation). or3-r2 = real partial (client fixed, handler never wired) = the one true wiring gap. fable-r2 +
     or-opencode = zero edits. Fresh m1beh-fable run 0.5 was NOT capability — opencode task-subagent died on OpenRouter
     402 (weekly key cap exhausted ~16:55, can aff'
+- at: 2026-10-24 17:03
+  from: devin
+  text: 'Verifier sanity re-verified independently: parent ed1ff11 = 0.5 (bug caught), ref fix c0850f0 = 1.0. Nuance:
+    parent IsHealthy() exists but uses time-since-last-entry — the semantics the prompt bans (idle caught-up follower
+    must stay healthy); real fix = connected+lag semantics AND handler wiring. Gap: behavioral test doesnt cover
+    idle-healthy case yet. Harness bug found: score.py injects held-out tests by filename, CLOBBERS tracked repo
+    tests (replication_handlers_test.go, db_integrity_test.go) '
 action:
   type: dispatch
   status: running
