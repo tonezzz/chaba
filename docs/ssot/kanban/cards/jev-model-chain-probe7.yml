@@ -1,7 +1,7 @@
 id: jev-model-chain-probe7
 title: 'JEV model-chain probe #7: fleet-final (free_lane -> flash-lite in session)'
-column: doing
-updated: 2026-10-25 06:34
+column: review
+updated: 2026-10-25 06:35
 brief: 'Probe #7 after macbook-keyword fix a88496755 on all 6 runners. A free_lane card should classify at claim
   -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
 priority: low
@@ -16,8 +16,11 @@ spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-fl
   Task: touch marker + commit.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-063429-expected-card-action-lane-free.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261025-063429-expected-card-action-lane-free.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0843
 comms:
 - at: 2026-10-25 06:34
@@ -36,3 +39,9 @@ comms:
 - at: 2026-10-25 06:34
   from: chaba
   text: started devin-task-20261025-063429-expected-card-action-lane-free on idc02 (dispatch)
+- at: 2026-10-25 06:35
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261025-063429-expected-card-action-lane-free.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
