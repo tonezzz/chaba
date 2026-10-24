@@ -1,6 +1,6 @@
 id: jev-model-chain-probe6
 title: 'JEV model-chain probe #6: 6/7 fleet deploy verify (free_lane -> flash-lite)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:29
 brief: 'Probe #6: 6/7 runners deployed (macbook+idc03+dell just synced; idc01 down). free_lane card should classify
   at claim -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
@@ -16,7 +16,8 @@ spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-fl
   Task: touch marker + commit.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
 ref: OPS-0842
 comms:
 - at: 2026-10-25 06:29
@@ -25,3 +26,6 @@ comms:
 - at: 2026-10-25 06:29
   from: devin
   text: queued for processing
+- at: 2026-10-25 06:29
+  from: mn01
+  text: claimed
