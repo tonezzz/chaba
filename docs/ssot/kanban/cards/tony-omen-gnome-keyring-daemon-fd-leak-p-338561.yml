@@ -26,6 +26,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-24 19:51
+  from: chaba
+  text: started devin-task-20261024-195119-restart-the-gnome-keyring-daem on tony-omen (dispatch)
 spec: Restart the gnome-keyring-daemon user service on host tony-omen to resolve the file descriptor leak and high
   CPU usage. Target host is tony-omen, addressing pid 9755 which is pegged at 1024 fds and spamming auth.log. Constraints
   include avoiding disruption to critical active user sessions while executing the restart. The done-condition is
