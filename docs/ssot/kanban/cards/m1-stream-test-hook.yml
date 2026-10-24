@@ -1,7 +1,7 @@
 id: m1-stream-test-hook
 title: 'm1: add a stream state test hook to ReplicationClient for idle-healthy handler coverage'
-column: review
-updated: 2026-10-25 06:05
+column: done
+updated: 2026-10-25 06:15
 brief: The idle-caught-up-follower-stays-healthy handler test needs to simulate a connected-but-quiet stream; ReplicationClient
   has no public setter for connected/lag (all atomic internals). Add a small test-only hook (e.g. SetStreamStateForTest)
   to the repo so the behavioral verifier can cover the full handler contract.
@@ -56,6 +56,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-055220-m1-add-a-stream-state-test-hoo,
     branch dispatch/20261025-055220-m1-add-a-stream-state-test-hoo'
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -66,3 +69,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 06:15
+  note: verified — evidence checks green, closing itself
