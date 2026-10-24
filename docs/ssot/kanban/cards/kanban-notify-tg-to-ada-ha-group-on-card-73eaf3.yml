@@ -1,0 +1,18 @@
+id: kanban-notify-tg-to-ada-ha-group-on-card-73eaf3
+title: 'kanban-notify: TG to ada-ha group on card state changes'
+column: done
+updated: 2026-10-24 10:59
+brief: 'Tony ask 2026-10-24: kanban should notify like the nest queue does. Implemented: scripts/ops/kanban-notify.py
+  — git-diffs the served checkout''s cards dir since the last processed SHA, reports column moves / new cards /
+  +comms / request changes via board_notify tg to the ada-ha group.'
+tags:
+- kanban
+- notify
+- telegram
+spec: Dispatcher job kanban-notify on idc03 (every 5m), kill switch ~/.config/kanban-notify.off, first tick records
+  position without replaying history. Committed deee4d9a1, timer enabled+active.
+ref: KNB-0810
+comms:
+- at: 2026-10-24 10:59
+  from: tony
+  text: card captured via board-api
