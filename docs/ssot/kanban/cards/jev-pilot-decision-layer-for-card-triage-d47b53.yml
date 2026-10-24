@@ -1,7 +1,7 @@
 id: jev-pilot-decision-layer-for-card-triage-d47b53
 title: 'Jev pilot: decision layer for card triage + agent Noul-gates'
 column: backlog
-updated: 2026-10-25 05:52
+updated: 2026-10-25 06:04
 brief: 'Jev (decision-only: Choice/Score/Noul) is a bench subject today; pilot it as part of the dev stack. Two
   visible integrations: (1) card triage — Choice/Score over real board cards (column routing + priority); (2) agent
   Noul-gate — before risky actions, ask jev-student (idc03:8778) yes/no.'
@@ -53,3 +53,10 @@ comms:
     Key set changes: bench/productionize/hardening->paid_frontier; purge/delete-old/recurring/nest-job->codemod;
     failing/dep-fix/quadlet/warm-standby->devin; rotation/rekey/lease-teardown->manual; fixture/report->free_lane.
     REMOVED over-eager ''timer''/''api'' (were misrouting). SUPERVIS'
+- at: 2026-10-25 06:04
+  from: devin
+  text: 'LIVE TRIAL COMPLETE (2026-10-25 06:03): jev-live-dispatch-demo (OPS-0835) queued 06:02:41 -> idc02 runner-agent
+    claimed -> executed -> committed bb2502c06 (''JEV supervised trial #3: append lane-routing marker to README'')
+    -> auto-merged a75beb2d -> card DONE in 60s. JEV routing loop is PRODUCTION-REAL end-to-end (card in -> fleet
+    work -> merged). Also learned: kanban-dispatch claims type=dispatch only (manual-type cards skipped cleanly,
+    JEV-aware); idc03 push-guard defers to idc02 for chaba pushe'
