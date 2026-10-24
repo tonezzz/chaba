@@ -1,6 +1,6 @@
 id: jev-model-chain-probe
 title: 'JEV model-chain probe: free_lane card (verify DISPATCH_MODEL reaches the session)'
-column: backlog
+column: doing
 updated: 2026-10-25 06:10
 brief: 'Probe #1 (JEV hands-off): queue a card that classifies to free_lane (flash-lite) and verify the runner session
   actually runs with DEVIN_MODEL=litellm/gemini-3.5-flash-lite.'
@@ -16,7 +16,8 @@ spec: 'Expected: classify_lane -> free_lane -> DISPATCH_MODEL=litellm/gemini-3.5
   touch a marker file and commit. Verify: session transcript/env shows the flash-lite model, not devin default.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0836
 comms:
 - at: 2026-10-25 06:10
@@ -25,3 +26,6 @@ comms:
 - at: 2026-10-25 06:10
   from: devin
   text: queued for processing
+- at: 2026-10-25 06:10
+  from: idc02
+  text: claimed
