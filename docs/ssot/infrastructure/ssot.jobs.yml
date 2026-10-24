@@ -932,7 +932,7 @@ jobs:
   on_calendar: Sun *-*-* 05:15
   persistent: true
   timeout: 30m
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/bench/model-speed.py --targets %h/CascadeProjects/chaba/scripts/bench/targets.weekly.yml --runs 3
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/bench/model-speed.py --targets %h/CascadeProjects/chaba/scripts/bench/targets.weekly.yml --runs 3 --push-meta idc02:/home/tony/CascadeProjects/chaba/reports/model-bench/
   note: 'card model-fleet-benchmark — weekly refresh of the micro/tiny cells in
     reports/model-bench/ (node model-bench in ssot.reports.yml). Cheap tiers
     only by schedule; small/medium/large and remote cells are run on demand

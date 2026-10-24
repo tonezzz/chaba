@@ -4,3 +4,5 @@ Description=Chaba edge route health probe — writes /apps/route-health.json
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/report/run-node.py route-health/tony-dell-web
+# The report graph reads idc02's exec checkout; push back remote producer meta.
+ExecStartPost=/usr/bin/scp -q %h/CascadeProjects/chaba-tony-dell/reports/route-health/meta.tony-dell-web.yml idc02:/home/tony/CascadeProjects/chaba/reports/route-health/

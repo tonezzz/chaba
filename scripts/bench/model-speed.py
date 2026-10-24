@@ -303,6 +303,8 @@ def _update_meta(out_dir, result, filename):
     cell = f"{result['host']}/{result['model']}"
     meta.setdefault("id", "model-bench")
     meta["layer"] = "L1-producer"
+    meta["generated_at"] = result["at"]
+    meta["status"] = "ok"
     meta["last_run"] = result["at"]
     cells = meta.setdefault("cells", {})
     cells[cell] = {
@@ -311,13 +313,16 @@ def _update_meta(out_dir, result, filename):
         **(result.get("summary") or {}),
         "peak_rss_mb": result.get("peak_rss_mb"),
     }
+    meta["summary"] = f"{len(cells)} model cells"
     try:
         import yaml
         meta_path.write_text(yaml.safe_dump(meta, sort_keys=False))
     except ImportError:
         # stdlib fallback — flat dump good enough for the meta reader
         lines = [f"id: model-bench", "layer: L1-producer",
-                 f"last_run: \"{meta['last_run']}\"", "cells:"]
+                 f"generated_at: \"{meta['generated_at']}\"",
+                 "status: ok", f"last_run: \"{meta['last_run']}\"",
+                 f"summary: \"{meta['summary']}\"", "cells:"]
         for k, v in cells.items():
             lines.append(f"  \"{k}\":")
             for kk, vv in v.items():
@@ -337,6 +342,10 @@ def main():
     ap.add_argument("--runs", type=int, default=5)
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--out", default=str(REPO_REPORTS))
+    ap.add_argument("--push-meta",
+                    help="scp meta.model-bench.yml to <host>:<dir> after the "
+                         "run — remote push-back contract (ssot.reports.yml "
+                         "contract.remote_pushback)")
     args = ap.parse_args()
 
     targets = []
@@ -351,12 +360,40 @@ def main():
     else:
         ap.error("need --targets or --provider + --model")
 
+    failures = 0
     for t in targets:
         try:
             run_target(t, args.runs, args.timeout, Path(args.out))
         except Exception as e:
             print(f"TARGET FAILED {t}: {e}", file=sys.stderr)
+            failures += 1
+
+    meta = Path(args.out) / "meta.model-bench.yml"
+    if meta.exists():
+        try:
+            import yaml
+            data = yaml.safe_load(meta.read_text()) or {}
+            data["status"] = "error" if failures else "ok"
+            data["summary"] = (f"{len(data.get('cells', {}))} model cells; "
+                               f"{failures} target failure(s)")
+            meta.write_text(yaml.safe_dump(data, sort_keys=False))
+        except Exception as e:
+            print(f"META UPDATE FAILED: {e}", file=sys.stderr)
+            failures += 1
+
+    if args.push_meta:
+        try:
+            if not meta.is_file():
+                raise FileNotFoundError(meta)
+            subprocess.run(["scp", "-q", str(meta), args.push_meta],
+                           check=True, timeout=30)
+            print(f"meta pushed -> {args.push_meta}")
+        except Exception as e:
+            print(f"META PUSH FAILED {args.push_meta}: {e}",
+                  file=sys.stderr)
+            failures += 1
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

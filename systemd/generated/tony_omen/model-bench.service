@@ -4,4 +4,4 @@ Description=Model fleet speed bench (cheap tiers) (job:model-bench, rendered fro
 [Service]
 Type=oneshot
 TimeoutStartSec=1800
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/bench/model-speed.py --targets %h/CascadeProjects/chaba/scripts/bench/targets.weekly.yml --runs 3
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/bench/model-speed.py --targets %h/CascadeProjects/chaba/scripts/bench/targets.weekly.yml --runs 3 --push-meta idc02:/home/tony/CascadeProjects/chaba/reports/model-bench/

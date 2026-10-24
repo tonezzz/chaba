@@ -310,6 +310,7 @@ nodes:
   - id: route-health/tony-dell-web
     layer: L1-producer
     purpose: Edge route probes from ssot.routes.yml — dead-upstream tripwire
+    observe: remote
     generator: scripts/check-routes.py --write
     cadence: 5m
     output: stacks/web/public/apps
@@ -413,6 +414,7 @@ nodes:
   - id: systemwide-assessment
     layer: L2-domain
     purpose: Joint Ada+Devin systemwide assessment — Ada's memory/tool findings + Devin's audit/registry/SSOT state merged into one shared report
+    observe: remote
     generator: >
       manual — Ada+Devin joint session publishes CMS page
       'chaba-systemwide-assessment' in ada-cms-pages;
@@ -606,6 +608,7 @@ nodes:
     children: []
   - id: model-bench
     layer: L1-producer
+    observe: remote
     purpose: Fleet model-speed matrix — per (host x model) TTFT/decode tok/s,
       plus llama.cpp RPC multi-host POC evidence (rpc-*.json)
     generator: scripts/bench/model-speed.py (job model-bench, tony_omen, Sun 05:15)

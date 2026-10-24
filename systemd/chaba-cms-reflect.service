@@ -4,3 +4,5 @@ Description=CMS report reflector — mirrors ada-cms-pages reports into the repo
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cms-report-reflect.py --slug chaba-systemwide-assessment --node systemwide-assessment
+# CMS reflection runs on tony-dell; publish its observed meta to idc02's graph.
+ExecStartPost=/usr/bin/scp -q %h/CascadeProjects/chaba-tony-dell/reports/meta.systemwide-assessment.yml idc02:/home/tony/CascadeProjects/chaba/reports/

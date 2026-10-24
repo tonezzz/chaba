@@ -22,7 +22,8 @@ incident: |
   unioned by at/text).
 
 deliverables:
-  - scripts/board/merge-card-yaml.py — git merge driver `card-union` for
+  - >-
+    scripts/board/merge-card-yaml.py — git merge driver `card-union` for
     docs/ssot/kanban/cards/*.yml. Reuses reconcile-local-conflicts'
     merge_cards: comms unioned + deduped on (at|ts, from, text) and
     time-sorted; requests merged by id (more-resolved/newer wins);
@@ -33,7 +34,8 @@ deliverables:
     Parse/merge failure exits non-zero, which leaves the path conflicted
     for the existing upstream-wins + .local-conflict-* fallback.
     --selftest covers union, non-mapping, and unparseable sides.
-  - .gitattributes — binds docs/ssot/kanban/cards/*.yml to merge=
+  - >-
+    .gitattributes — binds docs/ssot/kanban/cards/*.yml to merge=
     card-union. git-safe-pull.sh additionally self-arms
     merge.card-union.driver + the info/attributes binding on every run
     (per-clone config; info/attributes applies even while replaying
@@ -41,7 +43,8 @@ deliverables:
     back to the running script's own copy for bootstrapping checkouts
     that have not pulled it yet). install-hooks.sh arms the same config
     for manual merges in every checkout.
-  - scripts/git-safe-pull.sh — rebase failures no longer exit 1
+  - >-
+    scripts/git-safe-pull.sh — rebase failures no longer exit 1
     immediately: when the rebase cannot complete (>25 conflicted steps,
     --continue/--skip failure, conflict outside generated paths), a
     single `git merge $UPSTREAM` replaces the whole replay — one conflict
@@ -52,18 +55,21 @@ deliverables:
     Conflicts outside generated paths abort the merge and keep the old
     exit-1 contract. SAFE_PULL_NO_REBASE=1 skips the rebase entirely
     (testing knob / escape hatch).
-  - scripts/board/dispatch_repos.py — _merge_in passes the card-union
+  - >-
+    scripts/board/dispatch_repos.py — _merge_in passes the card-union
     driver config into the close-out/merge-sweep `git merge --no-ff`, so
     a dispatch session's card writes union-merge with live board state
     instead of being dropped by the generated-paths --ours rule.
-  - scripts/board/kanban-commit.sh — failure streak: every nonzero exit
+  - >-
+    scripts/board/kanban-commit.sh — failure streak: every nonzero exit
     bumps $gitdir/kanban-commit-fail-streak; at KANBAN_FAILURE_ALERT_AFTER
     (default 3 ~= 45min of dead ticks) alert_card upserts
     ops-kanban-commit-guard with a static note (bumps `updated`, no
     per-tick comms spam). A healthy tick clears the counter; recovery
     after an alerted streak appends "recovered after N consecutive
     failed ticks" to the alert card.
-  - tests/test-kanban-commit.sh — cases H (both-sides card divergence
+  - >-
+    tests/test-kanban-commit.sh — cases H (both-sides card divergence
     union-merges inline during pull --rebase, pushed to origin), I
     (SAFE_PULL_NO_REBASE merge fallback unions cards + upstream-wins
     non-card generated paths with sidecar preserved), J (3 failing ticks
