@@ -155,6 +155,54 @@ STATE_FILE = STATE_DIR / "state.json"
 STARVE_HOURS = float(os.environ.get("RUNNER_STARVE_HOURS", "12"))
 DISPATCH = os.environ.get(
     "DEVIN_DISPATCH", str(Path.home() / ".local/bin/devin-dispatch"))
+
+# Lane -> cheapest model (jev-pilot Phase 2). Mirrors kanban-dispatch.
+LANE_MODELS = {
+    "free_lane": "litellm/gemini-3.5-flash-lite",
+    "paid_frontier": "litellm/or-claude-fable-5.1",
+}
+LANE_KW = {
+    "manual": ["macbook", "hardware", "buy", "usb cam", "camera", "physical",
+               "spend", "order the", "blocked on tony", "rotation", "rekey",
+               "lease teardown", "sudo-gated"],
+    "paid_frontier": ["test hook", "stagnation gate", "decision layer",
+                      "construct", "register_post_type", "rename", "design a",
+                      "implement a", "code fix", "op=list", "add /lesson",
+                      "versus", "benchmark", "bench ", "productionize",
+                      "promotion gate", "hardening", "hybrid recall",
+                      "discussion board", "work bridge"],
+    "codemod": ["config", "retire", "remove", "bump", "lock", "change the",
+                "parallelism", "raise ", "cap", "flag", "script",
+                "copies task tests", "inject", "drift", "delete old", "purge",
+                "schedule", "recurring", "nest job"],
+    "devin": ["shims", "wiring", "multi-repo", "backfill", "re-embed",
+              "roster", "protocol", "provision", "host", "feature",
+              "automation", "diagnos", "experiment", "pipeline", "end-to-end",
+              "quadlet", "warm standby", "repoint", "failing", "dep fix",
+              "dependency"],
+    "free_lane": ["install", "try", "launch", "write the", "design doc",
+                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
+}
+LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
+
+
+def classify_lane(card: dict) -> str:
+    """Cheapest lane for this card (keyword-first, devin-safe fallback)."""
+    import re as _re
+    text = (card.get("title", "") + " " +
+            (card.get("brief") or card.get("spec") or "")).lower()
+    if any(k in text for k in LANE_KW["manual"]):
+        return "manual"
+    if _re.search(LANE_COMPARE, text):
+        return "paid_frontier"
+    for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
+                      ("codemod", LANE_KW["codemod"]),
+                      ("devin", LANE_KW["devin"]),
+                      ("free_lane", LANE_KW["free_lane"])):
+        if any(k in text for k in kws):
+            return lane
+    return "devin"
+
 # Parity with kanban-dispatch: unattended sessions die on permission
 # rejection — 'smart' auto-rejects curl/systemctl and the rails ask
 # agents to curl /comment.
@@ -878,6 +926,14 @@ def start_task(card: dict, typ: str) -> tuple:
                  f"cd {shlex.quote(workdir)} && "
                  f"exec {shlex.join(cmd)}"])
     else:  # dispatch
+        # Claim-time lane routing (jev-pilot Phase 2): classify when the
+        # card has no lane yet, persist it, map to the cheapest model.
+        if not a.get("lane"):
+            lane = classify_lane(card)
+            if lane and lane != "manual":
+                a["lane"] = lane
+                if lane in LANE_MODELS and not a.get("model"):
+                    a["model"] = LANE_MODELS[lane]
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
