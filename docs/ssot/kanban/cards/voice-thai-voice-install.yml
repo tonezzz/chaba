@@ -1,0 +1,22 @@
+id: voice-thai-voice-install
+title: 'voice: install Thai Piper voice (th_TH-tsync2) — needs tltk+pandas dep fix'
+column: backlog
+updated: 2026-10-24 15:29
+brief: 'Thai replies in the voice mini-app. Voice model downloaded (61MB th_TH-tsync2) but needs tltk+pandas; numpy
+  dtype mismatch in ada-whisper venv blocks install (ValueError: numpy.dtype size changed).'
+priority: medium
+program: chaba-ci
+tags:
+- voice
+- thai
+- tts
+- followup
+spec: 'Fix venv deps without breaking the working voice lane: create a dedicated venv for tltk/pandas OR rebuild
+  numpy in ada-whisper venv. Then language-aware TTS: if reply has Thai chars use tsync2, else English. Verify Thai
+  reply synthesizes clean.'
+note: 'Deferred 2026-10-24: not worth risking the working lane; English-forced replies are the reliable default.'
+ref: ADA-0819
+comms:
+- at: 2026-10-24 15:29
+  from: devin
+  text: card captured via board-api
