@@ -1,0 +1,22 @@
+id: tony-dell-h3-push-race-fixed
+title: tony-dell chaba.h3 push-race FIXED — retry-safe push added (cms-h3-publish + mcp-debug-h3-sync)
+column: done
+updated: 2026-10-25 05:25
+brief: 3 failing units (cms-h3-publish, mcp-debug-h3-sync, chaba-jobs child) all died on chaba.h3 non-fast-forward
+  push rejections — a multi-writer race (idc03 also pushes chaba.h3). Fixed with fetch->rebase->push retry loops
+  (x5) + cleared a stuck rebase. Verified all green.
+priority: high
+program: chaba-ci
+tags:
+- tony-dell
+- git
+- h3
+- race
+- fix
+note: '2026-10-25: chaba.h3 is multi-writer — any bare push is racy. Retry-safe pattern is now the standard for
+  h3 writers.'
+ref: OPS-0834
+comms:
+- at: 2026-10-25 05:25
+  from: devin
+  text: card captured via board-api
