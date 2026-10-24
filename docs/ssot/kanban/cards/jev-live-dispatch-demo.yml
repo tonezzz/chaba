@@ -1,7 +1,7 @@
 id: jev-live-dispatch-demo
 title: 'JEV live dispatch demo: touch README.md in chaba (deterministic)'
-column: review
-updated: 2026-10-25 06:04
+column: done
+updated: 2026-10-25 06:15
 brief: 'A tiny deterministic task to prove JEV lane routing live: append one line to README.md and commit.'
 priority: low
 program: chaba-ci
@@ -70,5 +70,12 @@ comms:
   from: devin
   text: 'DONE + VERIFIED: merged bb2502c06 to origin/master (README lane-routing marker). This was the JEV supervised
     trial #3 — the first live card routed through the fleet by the kanban dispatch loop. Closing.'
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 06:15
+  note: verified — evidence checks green, closing itself
