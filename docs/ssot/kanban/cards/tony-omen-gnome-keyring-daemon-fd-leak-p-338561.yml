@@ -1,7 +1,7 @@
 id: tony-omen-gnome-keyring-daemon-fd-leak-p-338561
 title: tony-omen gnome-keyring-daemon fd leak — pegged at 1024/1024, 30% CPU
-column: review
-updated: 2026-10-24 19:56
+column: done
+updated: 2026-10-24 19:59
 priority: high
 note: 'Found while investigating timer-alert-tony-dell-tony-dell-mcp-health. On tony-omen, gnome-keyring-daemon
   pid 9755 (up 4d9h) holds exactly 1024 fds = its soft nofile limit, burns ~30% CPU, and has spammed auth.log with
@@ -66,6 +66,11 @@ comms:
 - at: 2026-10-24 19:56
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-24 19:59
+  from: chaba
+  text: 'merge-sweep: merged bda4014f (dispatch/20261024-195119-restart-the-gnome-keyring-daem from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261024-195119-restart-the-gnome-keyring-daem.md)
+    — auto-closed'
 spec: Restart the gnome-keyring-daemon user service on host tony-omen to resolve the file descriptor leak and high
   CPU usage. Target host is tony-omen, addressing pid 9755 which is pegged at 1024 fds and spamming auth.log. Constraints
   include avoiding disruption to critical active user sessions while executing the restart. The done-condition is
@@ -78,6 +83,10 @@ action:
   result: 'exit=0 ote the full outcome to `dispatch-outcome-20261024-195119-restart-the-gnome-keyring-daem.md`.
     | devin-task-20261024-195119-restart-the-gnome-keyring-daem.service: Consumed 56.126s CPU time over 3min 1.366s
     wall clock time, 1.4G memory peak.'
-  verified: false
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-24 19:59
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261024-195119-restart-the-gnome-keyring-daem.md
