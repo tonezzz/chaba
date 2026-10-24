@@ -10,6 +10,11 @@ parent: docs/ssot/jobs/models/2026-10-24-edu-agent-bench-nemotron-supervl-baseli
 host: mn01
 model: nvidia/nemotron-3.5-super-vl:free
 artifact: reports/bench-edu-manage-2026-10-24-nemotron-supervl-store-aware-partial.log
+cooldown_probe:
+  report: reports/bench-edu-manage-2026-10-24-nemotron-supervl-rate-limit-probe.{json,md}
+  tasks:
+    - "t3-update-tailscale: HTTP 429"
+    - "t6-hub-ada-nest-heartbeat: HTTP 429"
 
 configuration:
   corpus: scripts/bench-edu-corpus.json
@@ -24,13 +29,16 @@ observed: |
     t1-create-bbr-cubic completed, 126s
     t2-skip-commands completed, 85s
     t3-update-tailscale completed, 51s
-    t4-mixed-cap-private failed HTTP 429, 0 tool calls
-    t5-thai-quantization failed HTTP 429, 0 tool calls
+  t4-mixed-cap-private failed HTTP 429, 0 tool calls
+  t5-thai-quantization failed HTTP 429, 0 tool calls
   Stopped after consecutive rate-limit responses to avoid further calls.
   No aggregate report was written; output remains a partial log.
+  A two-task retry probe after cooldown also returned HTTP 429 on both
+  tasks. No further requests were sent.
 
 verdict: provider-rate-limited-incomplete
 followups:
-  - "Retry after free-provider capacity resets; do not use a paid route
-    without Tony's explicit approval."
+  - "Wait for free-provider capacity to reset; retry only after the
+    owner request is answered. Do not use a paid route without Tony's
+    explicit approval."
   - "Do not compare this partial treatment against the completed baseline."

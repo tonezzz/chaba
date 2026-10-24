@@ -1,0 +1,103 @@
+{
+ "at": "2026-10-24 10:33:23",
+ "date": "2026-10-24",
+ "config": {
+  "lanes": {
+   "clawbot": {
+    "base": "https://openrouter.ai/api/v1",
+    "model": "nvidia/nemotron-3.5-super-vl:free",
+    "json_mode": true
+   }
+  },
+  "judge": null,
+  "agent_topics": true,
+  "repetitions": 1,
+  "corpus": "/home/tony/CascadeProjects/chaba/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "clawbot": [
+   {
+    "lane": "clawbot",
+    "capture": {
+     "tp": 0,
+     "fp": 0,
+     "fn": 2,
+     "precision": 0.0,
+     "recall": 0.0,
+     "f1": 0.0
+    },
+    "dedupe": {
+     "correct": 0,
+     "total": 2,
+     "score": 0.0
+    },
+    "sched_ops": {
+     "pass": 0,
+     "total": 0,
+     "score": 0.0,
+     "next_review_default_ok": 0,
+     "creates": 0
+    },
+    "recall": {
+     "correct": 0,
+     "total": 0
+    },
+    "loop": {
+     "completed": 0,
+     "total": 2,
+     "lat_mean": 31.1,
+     "lat_p50": 31.1,
+     "tokens_in": 0,
+     "tokens_out": 0,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": null
+   }
+  ]
+ },
+ "tasks": {
+  "clawbot": [
+   {
+    "rep": 1,
+    "task": "t3-update-tailscale",
+    "final_text": "",
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "models": [],
+    "latency": 31.59887671470642,
+    "err": "HTTP 429",
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": false,
+    "filings": [],
+    "tool_calls": 0
+   },
+   {
+    "rep": 1,
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "",
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "models": [],
+    "latency": 30.56387710571289,
+    "err": "HTTP 429",
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": false,
+    "filings": [],
+    "tool_calls": 0
+   }
+  ]
+ },
+ "drafts": []
+}
