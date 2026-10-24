@@ -1465,12 +1465,43 @@ LESSON_LEVELS = {"intro", "working", "deep"}
 LESSON_SOURCES = {"chat", "voice", "link"}
 
 
+
+def _touch_lessons(body: dict, frm: str) -> dict:
+    """Bump WP modified on lessons (all, or the slugs in body['slugs'])."""
+    slugs = [str(x).strip() for x in (body.get("slugs") or []) if str(x).strip()]
+    now_iso = datetime.datetime.now(datetime.timezone.utc).replace(
+        microsecond=0).isoformat()
+    if not slugs:
+        hits = wp_api("/wp/v2/lesson&status=private&per_page=100"
+                      "&_fields=slug,id")
+        if isinstance(hits, list):
+            slugs = [h["slug"] for h in hits if h.get("slug")]
+    touched, missing = 0, []
+    for slug in slugs:
+        hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
+        if isinstance(hits, list) and hits:
+            pid = hits[0]["id"]
+            wp_api(f"/wp/v2/lesson/{pid}", {"modified": now_iso})
+            touched += 1
+        else:
+            missing.append(slug)
+    return {"message": f"touched {touched} lessons",
+            "touched": touched, "missing": missing, "via": frm}
+
+
 def do_lesson(body: dict, frm: str) -> dict:
     """/lesson — the remote write half of the lesson-capture duty: upsert
     the WP lesson CPT by topic slug (re-asked topics update in place, WP
     upserts by slug), append the Thai section unless no_th, and preserve
     first-learn provenance + review state on re-file. Identical semantics
-    to the old lesson-add.py — which is now a thin client of this door."""
+    to the old lesson-add.py — which is now a thin client of this door.
+
+    op:"touch" — bump the WP modified timestamp of every lesson (or the
+    slugs given) without touching content, so admin sort-by-last-modified
+    reflects re-files (Tony 2026-10-24; WP only auto-bumps modified when
+    content bytes change)."""
+    if body.get("op") == "touch":
+        return _touch_lessons(body, frm)
     topic = str(body.get("topic") or "").strip()
     if not topic:
         raise ValueError("topic required")
