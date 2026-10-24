@@ -1,0 +1,60 @@
+title: 'Cheap-agent cascade — full architecture design (BEN-0811)'
+subtitle: JEV router + L0 codemod / L1 cheap local / L2 flash-lite / L3 frontier; entry-level prediction + gate escalation; cascade-cost metric
+icon: flask
+version: 1
+
+card: cheap-agent-cascade
+date: 2026-10-24
+dispatch: 20261024-165204-arch-task-jev-router-l0-codemo
+runner: tony-omen
+
+deliverable: |
+  Full design -> docs/kb/cheap-agent-cascade.md
+  Education lesson -> WP lesson CPT topic "cheap-agent-cascade" (level deep)
+  via board-api /lesson.
+
+design_summary: |
+  task -> feature extract -> ROUTER (entry-level predictor, not a fixed
+  bottom-up ladder) -> L0 codemod / L1 cheap local (jev-student gates,
+  hermes3:8b, qwen3:8b, gpt-oss:20b, OR :free rotation) / L2
+  gemini-3.5-flash-lite / L3 frontier (fable-5.1, OR paid, Devin).
+  Gate-verdict (cheap verifier) decides pass vs escalate one lane.
+  Primary metric = CASCADE COST (sum of cost along the escalation path,
+  router included); constraint = pass-rate >= frontier-only arm.
+  Arms: A frontier-only / B cascade w/o patterns / C cascade w/ patterns
+  (L0 + learned per-family classifier trained on the P5 outcome log).
+  >=3 reps per cell — single-run cheap-lane scores proved noise.
+
+evidence_base: |
+  t1: codemod 7/7 0.7s $0; fable 7/7 60s; gemini-OR 7/7 218-275s;
+      flash-lite 6/7; qwen3:8b CPU 6/7 zero-edit.
+  m1/m2: all frontier lanes made real correct Go edits, "failed" only on
+      verifier compile-boundary coupling -> fix gates before benching.
+  t2: verifier no-op 0/0 — corpus gap.
+  o1: opencode+flash-lite 1.0 in 13s via kanban->lane adapter.
+  edu (13-task fixture): current 1.0 F1 / 5.0 draft-Q ~0-3s; clawbot
+      1.0 / 4.72 12.5s 74k tok; hermes 0.545 / 3.9; gpt-oss:20b T4 13/13
+      F1 1.0 at 14.7s p50 (vs ~78s omen CPU — latency-bound not
+      capability-bound).
+  jev-student: noul 10/10 in-domain, choice dead, no OOD — decision
+      plane only; real Jev API needed for lane Choice (KNB-0822,
+      BEN-0826 arena).
+
+build_order: |
+  P1 scripts/bench-cascade.py driver (3 families x 3 arms x N reps).
+  P2 cascade-outcomes log + router v0 (deterministic rules).
+  P3 expand L0 pattern library (mine mddb-fork) + v1 per-family
+     entry-level classifiers.
+  P4 real-Jev Choice router + Noul pre-gates (needs Jev key).
+  P5 productionize via proven kanban->lane adapter, OPS-0823 go-live.
+  Blockers: dev-family verifiers (m1/m2 bias, t2 missing), chores o2-o4
+  unwritten.
+
+verdict: design-complete
+links:
+- docs/kb/cheap-agent-cascade.md
+- docs/kb/jev-code-decision.md
+- docs/ssot/infrastructure/ssot.model-routing.yml
+- docs/ssot/kanban/cards/ai-workforce-eval.yml
+- docs/ssot/kanban/cards/pattern-library-coding-research.yml
+- docs/ssot/kanban/cards/ai-lane-delegation-procedure.yml
