@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
 column: backlog
-updated: 2026-10-24 16:11
+updated: 2026-10-24 16:46
 priority: high
 tags:
 - timer-alert
@@ -30,6 +30,12 @@ comms:
     since ~10-16: persona/self, assets/{how-to-send-photos,kk-crv,pool-snap-demo,tony-car}, history/origin (devin),
     people/{kk,kk-virtual-home,tony-thai-name} (devin/devin-seed/unknown writers). resolve-voice only auto-resolves
     voice-vs-vault; these are curated-remote-vs-vault — need a dec'
+- at: 2026-10-24 16:46
+  from: devin
+  text: 'RESOLVED — unit GREEN (Result=success, ExecMainStatus=0, 2026-10-24 16:46). Ran --take-remote (backup first:
+    /tmp/ada-memory-backup-*) which resolved all 9 vault-vs-MDDB conflicts by pulling curated remote versions into
+    the vault. 0 conflicts remain on re-run. The daily alert (since 10-16) will stop. FIRST REAL JOB through the
+    delegation procedure (OPS-0823): classify -> per-item decision -> route -> verify (unit exit 0).'
 spec: Investigate the failure of the `ada-memory-sync.service` timer on host `idc03` which failed with exit-code
   on 10-16 14:00. The runner must inspect the journal using `journalctl --user -u ada-memory-sync.service` on `idc03`
   and reference the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the exit-code
