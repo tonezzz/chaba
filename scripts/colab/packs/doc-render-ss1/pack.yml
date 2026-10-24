@@ -21,7 +21,10 @@ artifacts:
 publish:
   shots: doc-pilot/shots
 prep: |
-  TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  TAR=$NEST_ROOT/model-archive/hf/ltx-slim.tar.zst
+  # slim (per-repo) archive preferred: 9GB vs the 17.4GB full
+  # repo tar — the render/probe needs only transformer/vae/scheduler
+  [ -f "$TAR" ] || TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
   apt-get install -y -qq zstd ffmpeg >/dev/null 2>&1 || true
   if [ -f "$TAR" ]; then
     tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
