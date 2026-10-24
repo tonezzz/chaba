@@ -1,7 +1,7 @@
 id: ada-chaba-instance
 title: Provision ada-chaba backend :8008 — the tony-ha lane presence for LINE group
-column: doing
-updated: 2026-10-24 20:49
+column: review
+updated: 2026-10-24 20:50
 priority: medium
 spec: 'Provision the chaba persona backend on idc03, answering "chaba" mentions in the shared LINE group (spec v3
   on line-multihome-group). Per ha-ada-isolation.md pattern: (1) ada-chaba.service on :8008 cloned from ada-ha-*
@@ -44,10 +44,17 @@ comms:
   from: devin
   text: 'raised request ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac: ada-chaba is on GEMINI_API_KEY_PAID as
     its own pool (spec: own key, not the shared tony one) — but that key is also lite'
+- at: 2026-10-24 20:50
+  from: mn01
+  text: 'finished (ok): exit=0 e session checkpoint; a board request is open for a dedicated `GEMINI_API_KEY_CHABA`
+    mint. | devin-task-20261024-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 e session checkpoint; a board request is open for a dedicated `GEMINI_API_KEY_CHABA` mint. | devin-task-20261024-132557-provision-the-chaba-persona-ba.service:
+    Consumed 26.345s CPU time over 24min 8.945s wall clock time, 253.8M memory peak.'
+  verified: true
 requests:
 - id: ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac
   ask: 'ada-chaba is on GEMINI_API_KEY_PAID as its own pool (spec: own key, not the shared tony one) — but that
@@ -59,3 +66,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
