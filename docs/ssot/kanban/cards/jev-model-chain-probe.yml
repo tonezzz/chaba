@@ -1,7 +1,7 @@
 id: jev-model-chain-probe
 title: 'JEV model-chain probe: free_lane card (verify DISPATCH_MODEL reaches the session)'
-column: doing
-updated: 2026-10-25 06:17
+column: review
+updated: 2026-10-25 06:18
 brief: 'Probe #1 (JEV hands-off): queue a card that classifies to free_lane (flash-lite) and verify the runner session
   actually runs with DEVIN_MODEL=litellm/gemini-3.5-flash-lite.'
 priority: low
@@ -16,8 +16,12 @@ spec: 'Expected: classify_lane -> free_lane -> DISPATCH_MODEL=litellm/gemini-3.5
   touch a marker file and commit. Verify: session transcript/env shows the flash-lite model, not devin default.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 runner-agent unit env, though an explicit `action.lane: free_lane` now routes correctly on any
+    claimer. | devin-task-20261025-061054-expected-classify-lane-free-la.service: Consumed 53.676s CPU time, 113.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0836
 comms:
 - at: 2026-10-25 06:10
@@ -47,3 +51,9 @@ comms:
     claimed and forwarded only action.model. FIX committed 1577b26d: LANE_MODELS+classify_lane moved to dispatch_repos,
     runner-agent now applies identical routing (explicit model>lane map>JEV_LANE classify; manual never claimed).
     186 board tests pass. Still needed for unset-lane classi'
+- at: 2026-10-25 06:18
+  from: idc02
+  text: 'finished (ok): exit=0 runner-agent unit env, though an explicit `action.lane: free_lane` now routes correctly
+    on any claimer. | devin-t'
+review_kind: verify
+claim: {}
