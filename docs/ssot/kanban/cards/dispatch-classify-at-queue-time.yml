@@ -1,0 +1,28 @@
+id: dispatch-classify-at-queue-time
+title: 'Classify lane at queue time: board-api queue verb must persist action.lane+model'
+column: backlog
+updated: 2026-10-25 06:15
+priority: medium
+program: chaba-ci
+tags:
+- dispatch
+- lane
+- model
+- runner
+spec: 'jev-model-chain-probe2 (OPS-0837) proved c4fc7cac insufficient: it persists action.lane+model only inside
+  kanban-dispatch start_pending, but remote runner-agents claim queued cards via board-api do:claim before kanban-dispatch
+  ever sees them — so action.model is never written, DISPATCH_MODEL/DEVIN_MODEL stay unset, sessions run the default
+  model. Fix: run classify_lane inside board-api do_action("queue") and persist action.lane+action.model before
+  the card becomes claimable (single mutation door all claimers read). Alternative: runner-agent classifies at claim
+  time — duplicates logic, still racy. Verify: queue a probe card, check card yaml has action.model, check systemd
+  unit Environment has DEVIN_MODEL and ExecStart carries --model.'
+action:
+  type: manual
+ref: OPS-0838
+comms:
+- at: 2026-10-25 06:15
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
