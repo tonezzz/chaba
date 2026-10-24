@@ -588,6 +588,12 @@ def start_pending(path: Path) -> str:
         lane = classify_lane(card)
         if lane:
             a["lane"] = lane
+            # Persist the cheapest model too, so ANY claimer (runner-agent
+            # reads action.model) routes to the right lane — the env-only
+            # path never reached remote runner-agents (model-chain probe
+            # OPS-0836, 2026-10-25).
+            if lane in LANE_MODELS:
+                a["model"] = LANE_MODELS[lane]
             save_card(path, card)
     if lane == "manual":
         return "manual lane — not dispatched (Tony's hands)"
