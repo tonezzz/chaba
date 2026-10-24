@@ -1,6 +1,6 @@
 id: bench-verifier-inject-clobber
 title: agent-cost-bench verifier clobbers tracked repo test files on inject
-column: doing
+column: review
 updated: 2026-10-25 05:42
 brief: score.py copies task tests/* into the repo package dir; when a held-out file shares a name with a tracked
   repo test it overwrites it and leaves residue that contaminates later verifiers.
@@ -53,7 +53,11 @@ comms:
     package mddbd → build-fail on ALL workspaces. Reworked m1 to same-name replace + .preheldout snapshot/restore
     (option b); m1b/m2 keep zz_ unique-prefix (behavioral files, verified zero symbol collisions vs parent). ALL
     6 repo verifiers now post-run clean in a finally: restore tracked '
+- at: 2026-10-25 05:42
+  from: devin
+  text: moved doing -> review
 action:
   type: dispatch
   status: running
   runner: mn01
+review_kind: verify
