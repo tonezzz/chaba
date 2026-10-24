@@ -1,0 +1,23 @@
+id: jev-model-chain-probe6
+title: 'JEV model-chain probe #6: 6/7 fleet deploy verify (free_lane -> flash-lite)'
+column: backlog
+updated: 2026-10-25 06:29
+brief: 'Probe #6: 6/7 runners deployed (macbook+idc03+dell just synced; idc01 down). free_lane card should classify
+  at claim -> card lane+model persisted -> session DEVIN_MODEL=flash-lite.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- dispatch
+- probe
+- lane
+- model
+spec: 'Expected: card action.lane=free_lane + action.model=litellm/gemini-3.5-flash-lite; session DEVIN_MODEL set.
+  Task: touch marker + commit.'
+action:
+  type: dispatch
+ref: OPS-0842
+comms:
+- at: 2026-10-25 06:29
+  from: devin
+  text: card captured via board-api
