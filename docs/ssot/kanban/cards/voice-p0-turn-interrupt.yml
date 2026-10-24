@@ -1,7 +1,7 @@
 id: voice-p0-turn-interrupt
 title: 'voice P0: turn-sequence IDs + streaming TTS chunks + barge-in on voice-miniapp'
 column: backlog
-updated: 2026-10-24 14:16
+updated: 2026-10-24 14:17
 brief: 'Apply the VoiceAgent-600ms P0 to our live voice-miniapp (ADA-0816): (1) server streams TTS in ~160ms PCM
   chunks with a per-reply turn number (X-Turn), (2) client plays chunks incrementally via Web Audio and can stop
   instantly, (3) tapping mic during playback = interrupt (drop stale frames, start new turn). Base for adaptive
@@ -25,3 +25,10 @@ comms:
 - at: 2026-10-24 14:16
   from: devin
   text: card captured via board-api
+- at: 2026-10-24 14:17
+  from: devin
+  text: 'P0 BUILT + DEPLOYED. Server: /api/voice now streams Piper synthesis in ~160ms PCM chunks (StreamingResponse,
+    X-Turn/X-Rate/X-Channels headers, turn counter). Client: fetch ReadableStream -> Web Audio scheduled chunks,
+    playableTurn tracking, tap-mic-during-playback = barge-in (stops all sources instantly, drops stale turns).
+    Verified: HTTP 200, X-Turn=1, chunked audio, turn logged. Test URL: https://tony-omen.taila0626a.ts.net/ — speak,
+    then tap the mic while it talks to interrupt.'
