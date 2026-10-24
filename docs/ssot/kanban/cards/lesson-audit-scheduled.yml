@@ -1,0 +1,25 @@
+id: lesson-audit-scheduled
+title: schedule lesson-polish audit as a recurring nest job (self-perpetuating loop)
+column: backlog
+updated: 2026-10-24 19:16
+brief: 'The lesson-polish audit is one-shot. Make it recurring: a nest job (e.g. weekly) runs the lesson-polish
+  pack, and any new R1/R3/R4 flags get routed to the Fable polish pass automatically — the education system audits
+  + fixes itself.'
+priority: medium
+program: chaba-ci
+tags:
+- lesson
+- education
+- nest-pack
+- scheduled
+- feedback-loop
+spec: 'Wire lesson-polish pack to a schedule (chaba-jobs timer or runner-agent periodic pack). On each run: deterministic
+  audit -> if R1/R3/R4 flags > 0, queue Fable polish for flagged. Report to /lesson (or a digest) + card comms.
+  Policy: lesson-capture duty + split rule stay enforced automatically.'
+note: 'Feedback loop close (2026-10-24): R3 27->0, R4 4->0, R1 10->0; only soft-Thai (legit --no-th) + 2 junk (WP-blocked)
+  remain. OPS-0829 family.'
+ref: AUD-0831
+comms:
+- at: 2026-10-24 19:16
+  from: devin
+  text: card captured via board-api
