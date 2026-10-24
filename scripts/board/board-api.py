@@ -1355,7 +1355,7 @@ def _load_env_file(p: Path) -> dict:
     return env
 
 
-def wp_api(route: str, data=None):
+def wp_api(route: str, data=None, method: str | None = None):
     """WP REST call (index.php?rest_route= style — the Plesk vhost 404s
     /wp-json). Creds live in wp-boards.env on the SERVICE host only;
     callers of /lesson and /job never see them — that is the point of
@@ -1372,7 +1372,7 @@ def wp_api(route: str, data=None):
          f"{urllib.parse.quote(route, safe='/&=')}")
     body = json.dumps(data).encode() if data is not None else None
     req = urllib.request.Request(
-        u, data=body, method="POST" if data else "GET",
+        u, data=body, method=method or ("POST" if data else "GET"),
         headers={"Authorization": f"Basic {tok}",
                  "Content-Type": "application/json",
                  "User-Agent": "chaba-board-api/1.0"})
@@ -1521,6 +1521,25 @@ def _read_lessons(body: dict, frm: str) -> dict:
             "via": frm, "message": f"get {slug}"}
 
 
+def _delete_lesson(body: dict, frm: str) -> dict:
+    """op=delete — remove a lesson by slug (guarded: devin/tony only).
+    KNB-0830: the door had no delete; junk probes (id 2259/2261) were
+    stuck and Cloudflare blocks direct WP DELETE (403/1010) on the public
+    front — the door's server-side wp_api call bypasses that edge."""
+    if frm not in ("devin", "tony"):
+        raise ValueError("delete requires devin/tony actor")
+    slug = str(body.get("slug") or "").strip()
+    if not slug:
+        raise ValueError("delete requires slug")
+    hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
+    if not (isinstance(hits, list) and hits):
+        raise ValueError(f"lesson not found: {slug}")
+    pid = hits[0]["id"]
+    r = wp_api(f"/wp/v2/lesson/{pid}?force=true", method="DELETE")
+    return {"message": f"deleted {slug} (post {pid})", "slug": slug,
+            "post_id": pid, "via": frm}
+
+
 def do_lesson(body: dict, frm: str) -> dict:
     """/lesson — the remote write half of the lesson-capture duty: upsert
     the WP lesson CPT by topic slug (re-asked topics update in place, WP
@@ -1532,9 +1551,11 @@ def do_lesson(body: dict, frm: str) -> dict:
     slugs given) without touching content, so admin sort-by-last-modified
     reflects re-files (Tony 2026-10-24; WP only auto-bumps modified when
     content bytes change)."""
-    if body.get("op") in ("touch", "list", "get"):
+    if body.get("op") in ("touch", "list", "get", "delete"):
         if body.get("op") == "touch":
             return _touch_lessons(body, frm)
+        if body.get("op") == "delete":
+            return _delete_lesson(body, frm)
         return _read_lessons(body, frm)
     topic = str(body.get("topic") or "").strip()
     if not topic:
@@ -1570,8 +1591,13 @@ def do_lesson(body: dict, frm: str) -> dict:
         pid = hits[0]["id"]
         old_meta = hits[0].get("meta", {})
         # preserve first-learn provenance + review state on re-file
+        # (unless an explicit next_review override is given — advance the
+        # spaced-review date after a review pass; KNB-0830)
+        override_review = str(body.get("next_review") or "").strip()
         for k in ("learned_at", "next_review", "status"):
-            if old_meta.get(k):
+            if k == "next_review" and override_review:
+                meta[k] = override_review
+            elif old_meta.get(k):
                 meta[k] = old_meta[k]
         # explicit modified bump — WP only auto-updates it when content
         # bytes change; re-filed lessons with identical content kept the
