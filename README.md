@@ -281,3 +281,5 @@ _Results vary by GPU and scene._
 **COLMAP fails with few images**: Use at least 30–50 overlapping photos. Try `CAMERA_MODEL=SIMPLE_PINHOLE` for simple captures.
 
 **X11 / SIBR viewer not working**: Use nerfstudio web viewer (`localhost:7007`) instead, or export `.ply` and open in [SuperSplat](https://playcanvas.com/supersplat/editor).
+
+JEV lane routing live
