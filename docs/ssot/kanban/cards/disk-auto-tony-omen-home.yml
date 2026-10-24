@@ -1,63 +1,74 @@
 id: disk-auto-tony-omen-home
 title: Disk tony-omen /home fills in <7d
-brief: Disk space on tony-omen (/home) is running low — check the note for the rate and top growers, then free space
-  or close the card.
+brief: Disk space on tony-omen (/home) is running low — check the note for the rate
+  and top growers, then free space or close the card.
 column: review
 generated: disk-trend-watch
 area: monitoring
 priority: medium
-note: '84% used, growing 8.5 GiB/day -> full in ~5.6d top grower 24h: /home/tony/.cache/nest-worker/ +15.2 GiB'
-help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
-  (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
+note: '84% used, growing 8.5 GiB/day -> full in ~5.6d top grower 24h: /home/tony/.cache/nest-worker/
+  +8.9 GiB'
+help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
+  tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
+  ~/.cache/yt-live-media LRU is 8GiB.'
 updated: 2026-10-24 17:46
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'PARTIAL: pruned uv cache on omen (was 38G under ~/.cache/uv; freed ~5-6G usable — uv hardlinks keep some
-    space held). /home now 77% (was 79%). Real grower remains ~/.cache/huggingface +21.4G/day — purging models is
-    a judgment call: needs Tony to pick purge-hf-old vs move-cache vs accept+tidy.'
+  text: 'PARTIAL: pruned uv cache on omen (was 38G under ~/.cache/uv; freed ~5-6G
+    usable — uv hardlinks keep some space held). /home now 77% (was 79%). Real grower
+    remains ~/.cache/huggingface +21.4G/day — purging models is a judgment call: needs
+    Tony to pick purge-hf-old vs move-cache vs accept+tidy.'
 - at: 2026-10-09 17:47
   from: tony
   text: 'answered omen-disk-plan: move-cache — Move caches to data disk'
 - at: 2026-10-09 17:47
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-09 19:53
   from: devin
-  text: 'UPDATE on move-cache: huggingface cache already emptied (~/.cache/huggingface = 0B — cleaned by something
-    since the +21G/day measurement; uv pruned to 340M by this session). /home now 77% (70G free) with the growth
-    driver gone. /data partition exists (295G, 134G free) and remains the right landing zone if cache pressure returns
-    — can still execute the move as prevention: mkdir /data/tony-cache, mv+symlink ~/.cache/{huggingface,uv}. Flagging:
-    if HF regrows, the move is a 2-min job — no need to ke'
+  text: 'UPDATE on move-cache: huggingface cache already emptied (~/.cache/huggingface
+    = 0B — cleaned by something since the +21G/day measurement; uv pruned to 340M
+    by this session). /home now 77% (70G free) with the growth driver gone. /data
+    partition exists (295G, 134G free) and remains the right landing zone if cache
+    pressure returns — can still execute the move as prevention: mkdir /data/tony-cache,
+    mv+symlink ~/.cache/{huggingface,uv}. Flagging: if HF regrows, the move is a 2-min
+    job — no need to ke'
 - at: 2026-10-10 10:45
   from: devin
-  text: 'closed: resolved — HF cache already emptied (0B); disk-auto finding no longer live.'
+  text: 'closed: resolved — HF cache already emptied (0B); disk-auto finding no longer
+    live.'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'RESOLVED: HF cache already 0B + uv pruned (38G→340M); /home 77% stable, /data has 134G headroom if it regrows.
-    Your move-cache answer recorded as prevention option — closing since the alert condition cleared.'
+  text: 'RESOLVED: HF cache already 0B + uv pruned (38G→340M); /home 77% stable, /data
+    has 134G headroom if it regrows. Your move-cache answer recorded as prevention
+    option — closing since the alert condition cleared.'
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
-    by an autostash-pop conflict resolution — normalizing to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
+    was restored accidentally by an autostash-pop conflict resolution — normalizing
+    to done.'
 - at: 2026-10-11 08:10
   from: devin
-  text: 'closed (3rd verification): HF cache 0B, uv pruned, /home 77% stable; move-cache answer recorded. Re-review
-    was autostash-pop state.'
+  text: 'closed (3rd verification): HF cache 0B, uv pruned, /home 77% stable; move-cache
+    answer recorded. Re-review was autostash-pop state.'
 - at: 2026-10-11 08:35
   from: devin
-  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified live this session).'
+  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified
+    live this session).'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0405'
 - at: 2026-10-11 09:06
   from: devin
-  text: 'DONE (move-cache): /home 80%->50% (232G->144G used, 149G free). Moved to /data: mddb-backups 64G -> /data/backups/mddb-backups
-    (mddb-backup-pull.service repointed), .cache heavy dirs ~13G -> /data/cache/* + symlinks, open-jev/models 13G
-    -> /data/cache/open-jev-models + symlink. HF cache was already moved (105G on /data). /data now 87% — 39G free
-    left. Note: mddb-backup-pull has NO retention — accumulates ~3.4G/day; worth a gdrive tier or keep-N like dell
-    standby-pull.'
+  text: 'DONE (move-cache): /home 80%->50% (232G->144G used, 149G free). Moved to
+    /data: mddb-backups 64G -> /data/backups/mddb-backups (mddb-backup-pull.service
+    repointed), .cache heavy dirs ~13G -> /data/cache/* + symlinks, open-jev/models
+    13G -> /data/cache/open-jev-models + symlink. HF cache was already moved (105G
+    on /data). /data now 87% — 39G free left. Note: mddb-backup-pull has NO retention
+    — accumulates ~3.4G/day; worth a gdrive tier or keep-N like dell standby-pull.'
 - at: 2026-10-11 09:06
   from: devin
   text: queued for processing
@@ -66,83 +77,101 @@ comms:
   text: moved backlog -> done
 - at: 2026-10-23 19:16
   from: devin
-  text: 'Live recheck 2026-10-23: /home is 306G total, 276G used, 17G avail (95%); /data is 295G total, 198G used,
-    98G avail. This conflicts with the prior ''move-cache done'' evidence: ~/.cache/huggingface is currently a real
-    62G directory, not a symlink; /data/cache/huggingface is a separate 38G directory. Ollama''s model store is
-    39G at ~/.ollama; Nest worker cache is 12G (active doc-embeds worker currently uses it). Other large home dirs:
-    model-bench 18G, .venvs 19G, .local 21G. No files moved/deleted. '
+  text: 'Live recheck 2026-10-23: /home is 306G total, 276G used, 17G avail (95%);
+    /data is 295G total, 198G used, 98G avail. This conflicts with the prior ''move-cache
+    done'' evidence: ~/.cache/huggingface is currently a real 62G directory, not a
+    symlink; /data/cache/huggingface is a separate 38G directory. Ollama''s model
+    store is 39G at ~/.ollama; Nest worker cache is 12G (active doc-embeds worker
+    currently uses it). Other large home dirs: model-bench 18G, .venvs 19G, .local
+    21G. No files moved/deleted. '
 - at: 2026-10-23 19:21
   from: devin
-  text: 'Tony confirms nvme0n1p5 (ubuntu-000, 64.9GiB, unmounted; old root per fstab comment) is the old backup
-    and says recovery is via tony-usb, so it is a removal candidate. Current read-only probe did NOT see a USB disk
-    or mount on Omen, so backup verification is still a gate. Proposed partition plan: preserve p1 EFI, p2 MSR,
-    p3 /home, p4 NTFS, p6 /, p7 /data; after verified backup + GPT/partition-table backup, delete p5 and extend
-    p7 across its 64.9GiB plus the ~40.7GiB adjacent unallocated gap (abo'
+  text: 'Tony confirms nvme0n1p5 (ubuntu-000, 64.9GiB, unmounted; old root per fstab
+    comment) is the old backup and says recovery is via tony-usb, so it is a removal
+    candidate. Current read-only probe did NOT see a USB disk or mount on Omen, so
+    backup verification is still a gate. Proposed partition plan: preserve p1 EFI,
+    p2 MSR, p3 /home, p4 NTFS, p6 /, p7 /data; after verified backup + GPT/partition-table
+    backup, delete p5 and extend p7 across its 64.9GiB plus the ~40.7GiB adjacent
+    unallocated gap (abo'
 - at: 2026-10-23 19:25
   from: devin
-  text: 'Correction from Tony: tony-usb is a bootable Ubuntu rescue medium for scanning/repairing Omen''s disk,
-    NOT a backup containing p5 data. It can help inspect/repair or boot recovery tools; if the NVMe/p5 data is lost,
-    restore requires a separate verified backup (GDrive or another disk). Treat p5 deletion as gated on confirming
-    its contents are disposable or that a real backup is verified. Live USB is also the safer offline environment
-    for partition changes. No changes made.'
+  text: 'Correction from Tony: tony-usb is a bootable Ubuntu rescue medium for scanning/repairing
+    Omen''s disk, NOT a backup containing p5 data. It can help inspect/repair or boot
+    recovery tools; if the NVMe/p5 data is lost, restore requires a separate verified
+    backup (GDrive or another disk). Treat p5 deletion as gated on confirming its
+    contents are disposable or that a real backup is verified. Live USB is also the
+    safer offline environment for partition changes. No changes made.'
 - at: 2026-10-23 19:31
   from: devin
-  text: 'Live Omen check 2026-10-23 19:31 +07: USB is present as USB Disk 20 (USB 3, /dev/sda); sda2 is 116.7G ext4
-    label ubuntu-usb, but not mounted. udisksctl mount over noninteractive SSH was denied by polkit; no file written.
-    Thermal snapshot: CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz graphics/405MHz
-    memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite 61C/sensor2 79C. Package throttle counters show
-    brief historical throttling (817ms total/4 days; no co'
+  text: 'Live Omen check 2026-10-23 19:31 +07: USB is present as USB Disk 20 (USB
+    3, /dev/sda); sda2 is 116.7G ext4 label ubuntu-usb, but not mounted. udisksctl
+    mount over noninteractive SSH was denied by polkit; no file written. Thermal snapshot:
+    CPU package 60C, cores 54-59C, avg reported clock ~2.2GHz; GTX1650 52C, 300MHz
+    graphics/405MHz memory, 0% at sample. PCH 76C, Wi-Fi sensor 95C, NVMe composite
+    61C/sensor2 79C. Package throttle counters show brief historical throttling (817ms
+    total/4 days; no co'
 - at: 2026-10-23 19:53
   from: devin
   text: 'Omen partition inventory saved to GDrive: gdrive:backups/tony-omen/partition-snapshots/omen-nvme0n1-inventory_20261023-194854.txt;
-    remote readback SHA-256 matches local (eb187d92db4447f67bf6aafc418f4bd2fcc97b730c5201c3c194bc79cfb26bcf). This
-    is a text inventory, not a restorable GPT backup: unprivileged SSH cannot read /dev/nvme0n1 (`sfdisk: Permission
-    denied`). GDrive standard applied: local-staged file -> direct rclone copyto -> remote SHA readback; no FUSE
-    write. CPU service currently caps 2.'
+    remote readback SHA-256 matches local (eb187d92db4447f67bf6aafc418f4bd2fcc97b730c5201c3c194bc79cfb26bcf).
+    This is a text inventory, not a restorable GPT backup: unprivileged SSH cannot
+    read /dev/nvme0n1 (`sfdisk: Permission denied`). GDrive standard applied: local-staged
+    file -> direct rclone copyto -> remote SHA readback; no FUSE write. CPU service
+    currently caps 2.'
 - at: 2026-10-23 20:03
   from: devin
   text: 'Follow-up: saved Omen''s non-privileged partition inventory at gdrive:backups/tony-omen/partition-snapshots/omen-nvme0n1-inventory_20261023-194854.txt
     (SHA-256 verified). Also backed up current cpufreq-limit.service text at gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
-    (SHA-256 verified). Repo branch dispatch/20261023-omen-cpu-cap-2ghz now contains a proposed tracked 2.00GHz
-    ceiling unit + SSOT/runbook changes; syntax checks pass. NOT installed: live c'
+    (SHA-256 verified). Repo branch dispatch/20261023-omen-cpu-cap-2ghz now contains
+    a proposed tracked 2.00GHz ceiling unit + SSOT/runbook changes; syntax checks
+    pass. NOT installed: live c'
 - at: 2026-10-23 20:04
   from: devin
-  text: 'Update: captured the installed cpufreq-limit.service text before change at gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
-    (SHA-256 verified). Prepared a repo-managed 2.00GHz unit + SSOT/runbook edits in branch dispatch/20261023-omen-cpu-cap-2ghz;
-    `systemd-analyze verify` and YAML parse checks pass. Not committed or installed yet. Full ssot-validate-all
-    is blocked by unrelated pre-existing YAML syntax error in jobs/kanban/2026-10-23-card-union-merge-dri'
+  text: 'Update: captured the installed cpufreq-limit.service text before change at
+    gdrive:backups/tony-omen/partition-snapshots/omen-cpufreq-limit.before_20261023-195941.txt
+    (SHA-256 verified). Prepared a repo-managed 2.00GHz unit + SSOT/runbook edits
+    in branch dispatch/20261023-omen-cpu-cap-2ghz; `systemd-analyze verify` and YAML
+    parse checks pass. Not committed or installed yet. Full ssot-validate-all is blocked
+    by unrelated pre-existing YAML syntax error in jobs/kanban/2026-10-23-card-union-merge-dri'
 - at: 2026-10-23 20:06
   from: devin
-  text: For the requested 2.00GHz cap, the proposed repo unit is staged on Omen at /tmp/cpufreq-limit.service.pending-2ghz
-    (SHA-256 840a38f3ad634a3af77a3db885a9a564a986194995d2ec4c64f2c4b77e25ec29). It caps frequency only and leaves
-    the current balanced/powersave governor under power-profiles-daemon. No root install/restart has run; live cap
-    is still 2.20GHz.
+  text: For the requested 2.00GHz cap, the proposed repo unit is staged on Omen at
+    /tmp/cpufreq-limit.service.pending-2ghz (SHA-256 840a38f3ad634a3af77a3db885a9a564a986194995d2ec4c64f2c4b77e25ec29).
+    It caps frequency only and leaves the current balanced/powersave governor under
+    power-profiles-daemon. No root install/restart has run; live cap is still 2.20GHz.
 - at: 2026-10-23 20:06
   from: devin
-  text: 'raised request install-omen-cpufreq-limit-2ghz: The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz
-    on Omen. To apply the requested persistent 2.00GHz ce'
+  text: 'raised request install-omen-cpufreq-limit-2ghz: The repo unit is staged at
+    /tmp/cpufreq-limit.service.pending-2ghz on Omen. To apply the requested persistent
+    2.00GHz ce'
 - at: 2026-10-23 20:06
   from: devin
-  text: 'raised request capture-raw-omen-gpt-backup: The GDrive text inventory is not a restorable GPT backup: unprivileged
-    sfdisk was denied on /dev/nvme0n1. To create the '
+  text: 'raised request capture-raw-omen-gpt-backup: The GDrive text inventory is
+    not a restorable GPT backup: unprivileged sfdisk was denied on /dev/nvme0n1. To
+    create the '
 - at: 2026-10-24 13:47
   from: chaba
   text: 'request-sweep: 2 request(s) unanswered >12h — escalation pushed'
 - at: 2026-10-24 16:50
   from: tony
-  text: 'answered install-omen-cpufreq-limit-2ghz: run-now — Run the privileged install and verify'
+  text: 'answered install-omen-cpufreq-limit-2ghz: run-now — Run the privileged install
+    and verify'
 - at: 2026-10-24 16:50
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-24 16:50
   from: tony
-  text: 'answered capture-raw-omen-gpt-backup: run-backup — Create the GPT backup on Omen'
+  text: 'answered capture-raw-omen-gpt-backup: run-backup — Create the GPT backup
+    on Omen'
 - at: 2026-10-24 16:50
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
+    an action)
 - at: 2026-10-24 17:16
   from: chaba
-  text: 'answer-sweep: executed ''run-now — Run the privileged install and verify'' -> queued for processing'
+  text: 'answer-sweep: executed ''run-now — Run the privileged install and verify''
+    -> queued for processing'
 - at: 2026-10-24 17:16
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
@@ -151,16 +180,18 @@ comms:
   text: claimed
 - at: 2026-10-24 17:21
   from: chaba
-  text: started devin-task-20261024-172100-disk-tony-omen-home-fills-in-7 on tony-omen (dispatch)
+  text: started devin-task-20261024-172100-disk-tony-omen-home-fills-in-7 on tony-omen
+    (dispatch)
 - at: 2026-10-24 17:25
   from: devin
-  text: 'investigating: /home 84% (48G free). Top grower ~/.cache/nest-worker = 28G across 2 pack workdirs — vyncx-v2-ada2-redo
-    (6.4G, remote DONE, safe to drop) and colibri-bench (22G model, pack still claimed + actively served by running
+  text: 'investigating: /home 84% (48G free). Top grower ~/.cache/nest-worker = 28G
+    across 2 pack workdirs — vyncx-v2-ada2-redo (6.4G, remote DONE, safe to drop)
+    and colibri-bench (22G model, pack still claimed + actively served by running
     coli/bench procs — leaving). Checking for retention gap in nest-worker.py.'
 - at: 2026-10-24 17:27
   from: tony-omen
-  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all
-    tools. | devin-task-20261024-17'
+  text: 'finished (ok): exit=0 ning in non-interactive mode. Use --permission-mode
+    dangerous to auto-approve all tools. | devin-task-20261024-17'
 - at: 2026-10-24 17:27
   from: chaba
   text: pushed dispatch/20261024-172100-disk-tony-omen-home-fills-in-7 to origin
@@ -170,13 +201,14 @@ comms:
     branch dispatch/20261024-172100-disk-tony-omen-home-fills-in-7'
 - at: 2026-10-24 17:28
   from: chaba
-  text: 'merge-sweep: no session/worktree found for devin-task-20261024-172100-disk-tony-omen-home-fills-in-7 on
-    tony-omen — if the work was never pushed it may be gone'
+  text: 'merge-sweep: no session/worktree found for devin-task-20261024-172100-disk-tony-omen-home-fills-in-7
+    on tony-omen — if the work was never pushed it may be gone'
 requests:
 - id: omen-disk-plan
   from: devin
   status: answered
-  ask: '/home is 77% growing ~12G/day (huggingface cache +21G/day is the driver). Pick the disk plan:'
+  ask: '/home is 77% growing ~12G/day (huggingface cache +21G/day is the driver).
+    Pick the disk plan:'
   options:
   - id: purge-hf-old
     label: Purge old HF models
@@ -186,10 +218,13 @@ requests:
     label: Accept, tidy only
   answer: move-cache — Move caches to data disk
 - id: install-omen-cpufreq-limit-2ghz
-  ask: 'The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz on Omen. To apply the requested persistent
-    2.00GHz ceiling, please run these on Omen: sudo install -m 0644 /tmp/cpufreq-limit.service.pending-2ghz /etc/systemd/system/cpufreq-limit.service
-    && sudo systemctl daemon-reload && sudo systemctl restart cpufreq-limit.service; verify cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
-    returns 2000000. This preserves the current power-profiles-daemon governor. Run now, or hold at 2.20GHz?'
+  ask: 'The repo unit is staged at /tmp/cpufreq-limit.service.pending-2ghz on Omen.
+    To apply the requested persistent 2.00GHz ceiling, please run these on Omen: sudo
+    install -m 0644 /tmp/cpufreq-limit.service.pending-2ghz /etc/systemd/system/cpufreq-limit.service
+    && sudo systemctl daemon-reload && sudo systemctl restart cpufreq-limit.service;
+    verify cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq returns 2000000.
+    This preserves the current power-profiles-daemon governor. Run now, or hold at
+    2.20GHz?'
   status: answered
   at: 2026-10-23 20:06
   from: devin
@@ -203,10 +238,12 @@ requests:
   answer: run-now — Run the privileged install and verify
   executed: 2026-10-24 queue
 - id: capture-raw-omen-gpt-backup
-  ask: 'The GDrive text inventory is not a restorable GPT backup: unprivileged sfdisk was denied on /dev/nvme0n1.
-    To create the binary GPT backup (read-only from the NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
-    /dev/nvme0n1 && sudo chown tony:tony /tmp/omen-nvme0n1-20261023.gpt. Tell me when it exists; I will copy it
-    to gdrive:backups/tony-omen/partition-snapshots/ and verify SHA-256. No partition changes are part of this command.'
+  ask: 'The GDrive text inventory is not a restorable GPT backup: unprivileged sfdisk
+    was denied on /dev/nvme0n1. To create the binary GPT backup (read-only from the
+    NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
+    /dev/nvme0n1 && sudo chown tony:tony /tmp/omen-nvme0n1-20261023.gpt. Tell me when
+    it exists; I will copy it to gdrive:backups/tony-omen/partition-snapshots/ and
+    verify SHA-256. No partition changes are part of this command.'
   status: answered
   at: 2026-10-23 20:06
   from: devin
@@ -223,7 +260,8 @@ action:
   status: done
   type: dispatch
   runner: tony-omen
-  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261024-172100-disk-tony-omen-home-fills-in-7.service:
+  result: 'exit=0 ning in non-interactive mode. Use --permission-mode dangerous to
+    auto-approve all tools. | devin-task-20261024-172100-disk-tony-omen-home-fills-in-7.service:
     Consumed 1min 32.261s CPU time over 5min 7.817s wall clock time, 2.2G memory peak.'
   sweep:
     session_gone: 2026-10-24 17:28
