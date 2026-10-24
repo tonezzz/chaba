@@ -1,15 +1,15 @@
 id: logs-digest-program
 title: 'Program: log digesting — coverage, health, freshness'
-brief: Umbrella card for turning raw logs into a readable digest — detection and daily reports are already live.
-  It tracks the remaining lanes; no action needed.
+brief: Umbrella card for turning raw logs into a readable digest — detection and daily reports are already
+  live. It tracks the remaining lanes; no action needed.
 column: backlog
 program: logs-digest
-metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships both journals daily; pipeline failures
-  surface as logs-auto-* cards within 15min via kanban-sync; severe spikes and shipper backlog become tracked work;
-  zero silent coverage gaps.
-note: 'Epic for the kanban-in-logs work (2026-10-04). Detection layer live: log-shipper posts per-host ship-state
-  docs (reachable/scanned/shipped/ journals), logs-report posts report/24h, logs-kanban turns gaps into auto cards
-  inside kanban-sync on dell. Remaining work = the child cards.'
+metric: Every expected host (idc01, idc02, mn01, tony-dell, tony-omen) ships both journals daily; pipeline
+  failures surface as logs-auto-* cards within 15min via kanban-sync; severe spikes and shipper backlog
+  become tracked work; zero silent coverage gaps.
+note: 'Epic for the kanban-in-logs work (2026-10-04). Detection layer live: log-shipper posts per-host
+  ship-state docs (reachable/scanned/shipped/ journals), logs-report posts report/24h, logs-kanban turns
+  gaps into auto cards inside kanban-sync on dell. Remaining work = the child cards.'
 updated: 2026-10-06 08:13
 comms:
 - at: 2026-10-06 08:13
@@ -21,4 +21,19 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0094'
+- at: 2026-10-24 19:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
 ref: OPS-0094
+requests:
+- id: the-logs-digest-program-epic-t-8bb097
+  ask: The logs-digest-program epic tracks the kanban-in-logs work where detection and reporting layers
+    are live, but remaining work is delegated to child cards including OPS-0094. Since this is a high-level
+    epic card rather than an actionable task, we need to clarify how to proceed with the parent card itself.
+  options:
+  - ★ Keep the epic card in the backlog as a tracking umbrella while working on its child cards like OPS-0094.
+  - Close the epic card as superseded by its individual child cards.
+  - Move the epic card back to 'doing' to actively aggregate progress updates from the child cards.
+  status: open
+  at: 2026-10-24 19:20
+  from: backlog-spec-enrich

@@ -1,17 +1,27 @@
 id: flood-hub-integration
 title: Flood Hub API integration (blocked on waitlist)
-brief: Waiting on Google's waitlist for the flood-forecast API, which reportedly takes months. Nothing to do until
-  the approval email arrives.
+brief: Waiting on Google's waitlist for the flood-forecast API, which reportedly takes months. Nothing
+  to do until the approval email arrives.
 column: backlog
-note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30, reportedly months). When it lands:
-  reply with GCP project flood-watch-510211, enable floodforecasting.googleapis.com, key restricted to API + idc01
-  IP, store in ~/.config/secrets/flood- forecasting.env. Then in order: verify with scripts/ada/flood-hub- check.py;
-  HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto managed block on flood-report + saraburi
-  leaf via flood-news-update.py; Ada flood_status tool + LINE alert (severity >= WARNING). GEV KML overlay optional.
-  Full plan: docs/assessments/flood-hub-assessment.md (CMS: flood-hub-assessment).'
+note: 'BLOCKED: waiting for Google waitlist approval email (submitted 2026-09-30, reportedly months).
+  When it lands: reply with GCP project flood-watch-510211, enable floodforecasting.googleapis.com, key
+  restricted to API + idc01 IP, store in ~/.config/secrets/flood- forecasting.env. Then in order: verify
+  with scripts/ada/flood-hub- check.py; HA REST sensors on michael-dev (mha_mirror_* pattern); flood-hub:auto
+  managed block on flood-report + saraburi leaf via flood-news-update.py; Ada flood_status tool + LINE
+  alert (severity >= WARNING). GEV KML overlay optional. Full plan: docs/assessments/flood-hub-assessment.md
+  (CMS: flood-hub-assessment).'
 updated: '2026-10-03'
 ref: OPS-0007
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0007'
+- at: 2026-10-24 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Integrate the Google Flood Hub API on host idc01 using GCP project flood-watch-510211 once waitlist
+  approval lands. Enable floodforecasting.googleapis.com with an API key restricted to the API and idc01
+  IP, storing it in ~/.config/secrets/flood-forecasting.env. Execute verification via scripts/ada/flood-hub-check.py,
+  configure HA REST sensors on michael-dev using the mha_mirror_* pattern, and implement flood-news-update.py
+  to manage an auto-block on flood-report and saraburi leaf. Finally, add the Ada flood_status tool and
+  LINE alert for severity >= WARNING, optionally adding the GEV KML overlay as detailed in docs/assessments/flood-hub-assessment.md.
