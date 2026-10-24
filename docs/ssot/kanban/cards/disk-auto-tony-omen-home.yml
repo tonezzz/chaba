@@ -134,6 +134,12 @@ comms:
 - at: 2026-10-24 16:50
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-24 16:50
+  from: tony
+  text: 'answered capture-raw-omen-gpt-backup: run-backup — Create the GPT backup on Omen'
+- at: 2026-10-24 16:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: omen-disk-plan
   from: devin
@@ -168,7 +174,7 @@ requests:
     To create the binary GPT backup (read-only from the NVMe), please run on Omen: sudo sgdisk --backup=/tmp/omen-nvme0n1-20261023.gpt
     /dev/nvme0n1 && sudo chown tony:tony /tmp/omen-nvme0n1-20261023.gpt. Tell me when it exists; I will copy it
     to gdrive:backups/tony-omen/partition-snapshots/ and verify SHA-256. No partition changes are part of this command.'
-  status: open
+  status: answered
   at: 2026-10-23 20:06
   from: devin
   options:
@@ -178,6 +184,7 @@ requests:
     label: Keep the text inventory only for now
   suggested: run-backup
   escalated_at: 2026-10-24 13:47
+  answer: run-backup — Create the GPT backup on Omen
 action:
   status: done
   type: dispatch
