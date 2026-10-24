@@ -1,0 +1,66 @@
+title: runner-agent gets the lane -> model chain (probe found it missing)
+subtitle: classify_lane + LANE_MODELS moved to dispatch_repos so remote
+  claims route DISPATCH_MODEL identically to kanban-dispatch claims
+icon: git
+version: 1
+
+card: jev-model-chain-probe
+date: 2026-10-25
+dispatch: 20261025-061054-expected-classify-lane-free-la
+
+finding: |
+  Probe #1 (OPS-0836) expected classify_lane -> free_lane ->
+  DISPATCH_MODEL=litellm/gemini-3.5-flash-lite -> `devin --model`.
+  Observed live: the session unit env carries no DEVIN_MODEL and the
+  devin cmdline has no --model flag — the session runs the devin default
+  (SWE-2 High). Root cause: the lane routing wired in jev-pilot Phase 2
+  lived only in scripts/board/kanban-dispatch.py behind JEV_LANE=1, but
+  dispatch cards on remote hosts are claimed by runner-agent.py, which
+  forwarded only an explicit action.model. idc03 + tony-omen deferred on
+  the push guard, idc02's runner-agent won the claim — so classify_lane
+  never ran and no lane->model map existed on the claim path. Verified:
+  dr.classify_lane on this card returns free_lane ->
+  litellm/gemini-3.5-flash-lite (keyword layer, no jevos needed).
+
+deliverables:
+  - >-
+    scripts/board/dispatch_repos.py — canonical home for LANE_MODELS,
+    LANE_EXECUTORS, LANE_KW, LANE_COMPARE, JEVOS and classify_lane
+    (moved verbatim from kanban-dispatch; JEVOS_URL env still wins).
+  - >-
+    scripts/board/kanban-dispatch.py — local tables replaced by dr.*
+    aliases (module names kept for importlib consumers); JEV_LANE gate
+    unchanged.
+  - >-
+    scripts/board/runner-agent.py — dispatch claims now resolve
+    DISPATCH_MODEL the same way: explicit action.model wins; else
+    explicit action.lane maps through LANE_MODELS; else JEV_LANE=1 runs
+    dr.classify_lane. lane=manual is never claimed (claimable defer) and
+    a classified-manual claim fails loudly instead of dispatching.
+    Stale dispatch_repos on a runner degrades to today's behavior
+    (getattr guards).
+  - >-
+    docs/ssot/kanban/ssot.kanban.yml — action.lane documented next to
+    action.model.
+  - >-
+    jev-model-chain-probe.marker — the probe's marker deliverable with
+    the observed env/cmdline evidence.
+
+verify:
+  - "python3 -m py_compile on all three touched scripts — OK"
+  - "dr.classify_lane(probe card) -> free_lane -> litellm/gemini-3.5-flash-lite"
+  - "importlib load of kanban-dispatch: aliases resolve, classify works"
+  - "python3 -m unittest discover -s tests/board — 186 tests OK (2 skipped)"
+
+gaps_remaining: |
+  Two things still stand between the code and the probe's expected
+  chain on a remote runner: (1) classification only runs when the
+  claiming process has JEV_LANE=1 — idc02's runner-agent.service env is
+  RUNNER_CAP/RUNNER_LABELS/RUNNER_API only, so until the unit env adds
+  JEV_LANE=1 (a per-host declared change, deliberately opt-in because
+  paid_frontier maps to a paid model) unset lanes still launch on the
+  devin default; (2) jevos fallback wants JEVOS_URL — idc02's open-jev
+  listens on 100.123.163.11:8777, not the 127.0.0.1:8017 default
+  (keyword layer covers known lanes without it). A card with an
+  explicit action.lane: free_lane needs no JEV_LANE — the LANE_MODELS
+  map now applies on every claimer unconditionally.

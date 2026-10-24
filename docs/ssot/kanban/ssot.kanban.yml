@@ -114,6 +114,15 @@ card_schema:
             swe-2-high, swe-2-max; `devin models list`). Passed as
             --model via DISPATCH_MODEL. Omit = host default
             (~/.config/devin/config.json, currently swe-2-high)."
+    lane: "type=dispatch only — cheapest-executor lane
+           (free_lane|paid_frontier|codemod|devin|manual; jev-pilot
+           Phase 2). dispatch_repos.LANE_MODELS maps model lanes to
+           DISPATCH_MODEL (free_lane->litellm/gemini-3.5-flash-lite,
+           paid_frontier->litellm/or-claude-fable-5.1); manual is never
+           dispatched. When unset, JEV_LANE=1 claimers classify the card
+           first (dispatch_repos.classify_lane). Applies identically on
+           kanban-dispatch and runner-agent claims — explicit model
+           wins over lane."
     labels: "optional list — capability requirements; a runner only claims
              the card if every label is in its RUNNER_LABELS (e.g. gpu).
              'desktop' is reserved as a host marker (not a card label): it
