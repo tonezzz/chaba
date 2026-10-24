@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: done
-updated: 2026-10-24 20:29
+updated: 2026-10-24 20:33
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -241,6 +241,13 @@ comms:
 - at: 2026-10-24 20:29
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-24 20:33
+  from: devin
+  text: 'T4 VERDICT COMPLETE (4 pack runs): (1) m1-qwen3 52s no edits; (2) m1-gptoss 198s — tool-name hallucination
+    (repo_browser.print_tree unavailable) then LOST THE PROMPT; (3) o2-qwen3 122s verify 0.0 (wrote file but wrong/partial
+    — 1 write only); (4) t1-gptoss 159s — PLANNING ONLY (text ''Let''s locate builder file'' but ZERO tool calls),
+    verify invalid (ImportError terrology.builder — pack pytest sys.path bug). FINAL: the local-lane code gap is
+    CAPABILITY, triple-confirmed across qwen3:8b + gpt-oss:20'
 action:
   type: dispatch
   status: done
