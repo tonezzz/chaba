@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (10-14 19:46) of `ha-auth-watch.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (10-14 19:46) of `ha-auth-watch.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: SEC-0668
 comms:
 - at: 2026-10-14 20:07
@@ -16,21 +16,29 @@ comms:
   text: card captured via board-api
 - at: 2026-10-14 20:16
   from: devin
-  text: '[still suspicious] Last run (10-14 19:46) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
-    investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (10-14 19:46) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-10-16 15:00
   from: devin
-  text: '[still suspicious] Last run (10-16 14:29) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
-    investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (10-16 14:29) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-10-16 15:20
   from: devin
-  text: '[still suspicious] Last run (10-16 14:59) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
-    investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (10-16 14:59) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-10-16 15:30
   from: devin
-  text: '[still suspicious] Last run (10-16 14:59) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
-    investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[still suspicious] Last run (10-16 14:59) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
 - at: 2026-10-20 16:00
   from: devin
-  text: 'sweep 2026-10-20: still real — unit enabled on dell, svc state=failed; tracked under OPS-0749 (straggler:
-    still polls tony-ha after move to omen).'
+  text: 'sweep 2026-10-20: still real — unit enabled on dell, svc state=failed; tracked under OPS-0749
+    (straggler: still polls tony-ha after move to omen).'
+- at: 2026-10-24 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the recurring exit-code failure of the `ha-auth-watch.service` on `tony-dell` by inspecting
+  the user journal via `journalctl --user -u ha-auth-watch.service`. Resolve or decommission the service
+  as tracked under OPS-0749, noting that it still polls `tony-ha` after a move to `tony-omen`. The task
+  is complete when `ha-auth-watch.service` either runs successfully without exiting with an error or is
+  properly decommissioned according to OPS-0749.
