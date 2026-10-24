@@ -1469,7 +1469,7 @@ LESSON_SOURCES = {"chat", "voice", "link"}
 def _touch_lessons(body: dict, frm: str) -> dict:
     """Bump WP modified on lessons (all, or the slugs in body['slugs'])."""
     slugs = [str(x).strip() for x in (body.get("slugs") or []) if str(x).strip()]
-    now_iso = datetime.datetime.now(datetime.timezone.utc).replace(
+    now_iso = datetime.now(timezone.utc).replace(
         microsecond=0).isoformat()
     if not slugs:
         hits = wp_api("/wp/v2/lesson&status=private&per_page=100"
@@ -1543,7 +1543,7 @@ def do_lesson(body: dict, frm: str) -> dict:
         # bytes change; re-filed lessons with identical content kept the
         # ORIGINAL date, so admin sort-by-last-modified was useless
         # (Tony 2026-10-24).
-        now_iso = datetime.datetime.now(datetime.timezone.utc).replace(
+        now_iso = datetime.now(timezone.utc).replace(
             microsecond=0).isoformat()
         payload["modified"] = now_iso
         r = wp_api(f"/wp/v2/lesson/{pid}", payload)
