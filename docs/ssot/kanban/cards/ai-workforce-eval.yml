@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: review
-updated: 2026-10-24 17:13
+updated: 2026-10-24 18:09
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -135,6 +135,13 @@ comms:
 - at: 2026-10-24 17:13
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''or-weekly-key-cap-is-now-exhau''] block close)'
+- at: 2026-10-24 18:09
+  from: devin
+  text: 'T4 LANE LIVE (2026-10-24 18:08): colab-qwen3 tunnel up, qwen3:8b serving on Colab GPU through the proxy
+    (verified QWEN3_ON_T4_OK). Root cause of the long tunnel struggle: (1) UFW on idc03 silently blocked port 22
+    from Colab egress — fixed with ufw allow 22/tcp (key-only ssh confirmed safe); (2) fresh runtime generated a
+    NEW keypair — authorized the new public key; (3) diagnostic ssh omitted -i key file (false negative). Now firing
+    config.colab-live.yaml: t1 + o1 x opencode+openhands on the GPU —'
 action:
   type: dispatch
   status: done
