@@ -1,0 +1,33 @@
+probe: jev-model-chain-probe4 (JEV model-chain probe #4)
+session: devin-task-20261024-232257-expected-card-action-lane-free
+runner: mn01 (runner-agent oneshot claim, 2026-10-24 23:22:59 UTC)
+touched_at: 2026-10-24T23:26:00Z
+
+model-chain result:
+  action.lane on card:    ABSENT (live GET /cards — action={type,status,runner} only)
+  action.model on card:   ABSENT
+  DEVIN_MODEL in unit:    ABSENT (systemctl --user show Environment has no DEVIN_MODEL)
+  devin --model flag:     NOT passed -> session runs devin default model (SWE-2 High),
+                          not litellm/gemini-3.5-flash-lite
+  verdict: FAIL - chain broke BEFORE classify could run: mn01 claimed with a
+           stale runner-agent.
+
+root cause (verified on mn01):
+  1. mn01 exec checkout ~/CascadeProjects/chaba at 5f2fabfd (05:51 ICT),
+     91 commits behind origin/master. Lane-routing fix 1577b26d
+     ("runner-agent: lane -> DISPATCH_MODEL routing", 06:16:59 ICT)
+     not present. Installed ~/.local/bin/runner-agent (Oct 22 03:12)
+     matches the stale checkout — only passes an explicit action.model,
+     never classifies.
+  2. Claim landed in the chaba-repo-sync lag window: fix merged 23:16:59Z,
+     probe4 claimed 23:22:59Z, mn01's hourly sync had not yet pulled it.
+
+secondary gap (still present in the FIXED code on this branch):
+  runner-agent start_task() sets a["lane"]/a["model"] on the in-memory
+  card AFTER the claim POST (runner-agent.py:1080-1083) and never PATCHes
+  it back — only DISPATCH_MODEL reaches the child env. So even post-sync,
+  "action.lane/model on the card" would still fail for remote claimers;
+  the classification result lives only in the session env. Persist needs a
+  write-back (e.g. claim body carrying lane/model, or board-api queue-verb
+  classify as probe2 recommended — board-api.py in this base has no
+  classify call in do_action queue).
