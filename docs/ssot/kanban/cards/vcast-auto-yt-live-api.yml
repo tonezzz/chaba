@@ -2,16 +2,18 @@ id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
 brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read
   the note, fix it, then close the card.'
-column: done
+column: review
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
-priority: high
-note: 'Auto-recovered 2026-10-22: `yt-live-api` check passing again.'
-help: 'yt-live REST shim for voice/agent casting. Check: systemctl --user status yt-live-api;
-  logs: journalctl --user -u yt-live-api -n 50'
-updated: '2026-10-22'
+priority: medium
+note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error timed
+  out>'
+help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen
+  systemctl --user status yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api
+  -n 50'
+updated: '2026-10-25'
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
