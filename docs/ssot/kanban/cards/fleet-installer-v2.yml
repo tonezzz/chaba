@@ -3,11 +3,11 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: '2026-10-10'
-note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint:
-  installer POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops
-  feed. Same transport the stick-announce unit uses — could share the /enroll contract. Also: DNS record
-  for app.surf-thailand.com needs a DNS-capable CF token (current token is read-only).
+updated: 2026-10-25 17:46
+note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
+  POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
+  the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
+  a DNS-capable CF token (current token is read-only).
 
   '
 links:
@@ -16,17 +16,20 @@ comms:
 - at: 2026-10-25 05:33
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-25 17:46
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
-  ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land
-    in the node registry/ops feed, potentially sharing the /enroll contract with the stick-announce unit.
-    Additionally, updating the DNS record for app.surf-thailand.com requires a DNS-capable Cloudflare
-    token since the current token is read-only.
+  ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
+    registry/ops feed, potentially sharing the /enroll contract with the stick-announce unit. Additionally, updating
+    the DNS record for app.surf-thailand.com requires a DNS-capable Cloudflare token since the current token is
+    read-only.
   options:
-  - ★ Share the existing /enroll contract from the stick-announce unit for the installer POST endpoint
-    and provision a new DNS-capable Cloudflare token for app.surf-thailand.com.
-  - Implement a separate distinct endpoint for the installer instead of sharing the stick-announce /enroll
-    contract.
+  - ★ Share the existing /enroll contract from the stick-announce unit for the installer POST endpoint and provision
+    a new DNS-capable Cloudflare token for app.surf-thailand.com.
+  - Implement a separate distinct endpoint for the installer instead of sharing the stick-announce /enroll contract.
   status: open
   at: 2026-10-25 05:33
   from: backlog-spec-enrich
+  escalated_at: 2026-10-25 17:46
