@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-25 19:54
+updated: 2026-10-26 06:07
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -73,3 +73,10 @@ comms:
     provisioned on con01; timers armed; stale idc02 units removed; audit list updated. Skipped: devin-bank-distill
     (needs chaba-paid.env secret on con01 — decision for Tony), log-shippers (per-host by design). Also: ollama+bge-m3
     deployed on con01 as 4th embed-pool upst'
+- at: 2026-10-26 06:07
+  from: devin
+  text: '[2026-10-26 06:15 ICT] COMPACTED. ops mddb.db: 18.9G -> 235M. Path: host-logs dropped via /v1/delete-collection
+    (Tony-approved, ops OOMd once mid-op, drop committed; shipper recreated coll + backfilled) -> live /v1/export
+    all 3 colls (9,489 docs) -> fresh scratch mddbd -> /v1/add x9489 (0 fail) -> stop ops, swap db file, restart
+    (~2min downtime, freelist-synced open = seconds). Shipper write path re-verified: con01 manual run shipped 6
+    docs post-swap. Guards now armed: maxRevisions host-logs=3, '
