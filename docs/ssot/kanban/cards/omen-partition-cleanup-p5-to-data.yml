@@ -1,0 +1,26 @@
+id: omen-partition-cleanup-p5-to-data
+title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
+column: backlog
+updated: 2026-10-25 08:39
+brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
+  space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
+  restore path.
+priority: high
+program: host-hygiene
+tags:
+- omen
+- partition
+- backup
+- data
+- destructive-gate
+spec: 'Gated runbook: (1) mount p5 read-only and inventory contents; (2) verify p5 is disposable/old root and no
+  live service references it; (3) verify the raw GPT backup artifact plus an independent file backup for any p5
+  data; (4) boot tony-usb rescue environment; (5) delete p5 only after Tony confirms; (6) extend p7 into the contiguous
+  gap+p5; (7) grow ext4; (8) fsck/SMART/df verification; (9) update SSOT + backup inventory. Never alter partitions
+  from the running root. Current state: p1 EFI, p2 MSR, p3 /home, p4 Windows recovery, p5 old ubuntu-000, p6 /,
+  p7 /data.'
+ref: OPS-0848
+comms:
+- at: 2026-10-25 08:39
+  from: devin
+  text: card captured via board-api
