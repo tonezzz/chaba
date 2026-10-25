@@ -1,7 +1,7 @@
 id: sys-mon-system-monitor-de88ff
 title: sys-mon (system monitor)
 column: backlog
-updated: 2026-10-10 15:36
+updated: 2026-10-25 19:17
 note: User wants to insert a live dashboard tab (host loads) using an iframe into the board.
 comms:
 - at: 2026-10-10 15:36
@@ -13,18 +13,26 @@ comms:
 - at: 2026-10-25 07:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-25 19:17
+  from: tony
+  text: 'answered the-user-wants-to-insert-a-liv-cd3c2e: assess and merge into this page https://tony-ha.surf-thailand.com/chaba-admin/monitor'
+- at: 2026-10-25 19:17
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 ref: OPS-0369
 requests:
 - id: the-user-wants-to-insert-a-liv-cd3c2e
-  ask: The user wants to insert a live dashboard tab showing host loads via an iframe into the Chaba board,
-    but the card and recent communications do not specify the target host, URL, or endpoint for the dashboard
-    iframe, nor which repository houses the Chaba board UI.
+  ask: The user wants to insert a live dashboard tab showing host loads via an iframe into the Chaba board, but
+    the card and recent communications do not specify the target host, URL, or endpoint for the dashboard iframe,
+    nor which repository houses the Chaba board UI.
   options:
-  - ★ Ask the user for the specific URL or service endpoint for the live host loads dashboard and the
-    repository path for the Chaba board UI.
-  - Assume the dashboard is hosted on a default local monitoring port and inject a hardcoded iframe into
-    the chaba repository frontend.
+  - ★ Ask the user for the specific URL or service endpoint for the live host loads dashboard and the repository
+    path for the Chaba board UI.
+  - Assume the dashboard is hosted on a default local monitoring port and inject a hardcoded iframe into the chaba
+    repository frontend.
   - Skip the card until further infrastructure monitoring requirements are defined.
-  status: open
+  status: answered
   at: 2026-10-25 07:20
   from: backlog-spec-enrich
+  answer: assess and merge into this page https://tony-ha.surf-thailand.com/chaba-admin/monitor
+awaiting_action: true
