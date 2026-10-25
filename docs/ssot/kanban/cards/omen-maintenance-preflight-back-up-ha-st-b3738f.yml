@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 09:50
+updated: 2026-10-25 09:57
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -40,3 +40,8 @@ comms:
     INCOMPLETE_DO_NOT_RESTORE; transfer stopped. No partition edits performed. Layout: NVMe p1 EFI, p2 MSR, p3 /home,
     p4 NTFS recovery, p5 ubuntu-000 old OS, p6 /, p7 /data; lsblk arithmetic shows ~114GiB free between p2/p3 and
     ~40.7GiB after p7 before p5 (exact '
+- at: 2026-10-25 09:57
+  from: devin
+  text: 'Record correction: MN01 backup-manifest now reflects ~1.2GB/19GB partial data/backups mirror (not the earlier
+    ~942MB estimate), explicitly marked INCOMPLETE_DO_NOT_RESTORE. Core HA config + both SQLite snapshots remain
+    verified; no partition changes made.'
