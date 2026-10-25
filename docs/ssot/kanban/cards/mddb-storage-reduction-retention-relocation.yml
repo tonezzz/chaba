@@ -54,3 +54,15 @@ comms:
   from: devin
   text: '[devin] pipeline executing — leader prune done (12,819 + 149 docs); ops backup verify in progress; scratch-mddb
     enumeration scripted. Full pros/cons in comms.'
+- at: 2026-10-25 19:08
+  from: devin
+  text: '[assessment 2026-10-25] STORAGE-CUT LEVERS — pros/cons:
+
+
+    1. RETENTION SWEEP (prune-old-docs.py) ★ highest value. PRO: policy already declared (host-logs 14d, events/snapshots
+    30d), HTTP-only so host-independent, proved safe — leader cut 12,819 docs clean. CON: enumerates via /v1/search
+    which fails past ~50s server deadline on huge collections — the ops host-logs failure mode today; and its scheduler
+    is chained to ada-review-refresh on a workstation that goes down.
+
+
+    2. BACKUP→RESTORE COMPACTION. '
