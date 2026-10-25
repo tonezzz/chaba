@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 08:39
+updated: 2026-10-25 08:44
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-25 08:39
   from: devin
   text: card captured via board-api
+- at: 2026-10-25 08:44
+  from: devin
+  text: 'READ-ONLY ASSESSMENT COMPLETE: p5 mounted ro,noload, e2fsck -fn clean. It is a 3.2G Ubuntu 26.04 old root
+    (label ubuntu-000, UUID 4516...), with only ~28K /home and no user data; current root is p6 UUID 3103..., current
+    /data is p7 UUID e440.... /etc/fstab p5 reference is stale (points to p6 UUID), confirming p5 is not the boot
+    root. p5 unmounted again. Online is technically possible because p5 is unmounted and p7 is mounted: delete p5,
+    grow p7 into contiguous gap+p5, then online resize2fs. But '
