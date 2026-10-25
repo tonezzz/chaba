@@ -34,6 +34,12 @@ comms:
 - at: 2026-10-25 16:10
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 16:10
+  from: devin
+  text: Retirement scope confirmed. I will remove/disable Barrier KVM server and client, LAN enforcement/watchdogs,
+    and their auto-restart health hooks/SSOT references. I will preserve barrier-pin-vt/lxqt/Xorg seat helpers because
+    they support the desktop/CRD, not Barrier KVM. Verify port 24800 closed and no barriers/barrierc processes after
+    deployment.
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
