@@ -28,6 +28,7 @@
     <button id="bEmb" onclick="runEmbed()" disabled>3 · Real inference — MiniLM embedding</button>
     <button id="bPost" class="alt" onclick="postResults()" disabled>4 · Post results to kanban card</button>
     <button id="bWork" class="alt" onclick="toggleWorker()" disabled>5 · Worker mode — poll job queue</button>
+    <button id="bBge" class="alt" onclick="runBgeCompat()" disabled>6 · bge-m3 compat — bank-space vector test</button>
   </div>
   <div class="card"><pre id="out">tap step 1 — results accumulate here
 </pre></div>
@@ -66,6 +67,7 @@ async function runProbe() {
     document.getElementById('bMm').disabled = false;
     document.getElementById('bEmb').disabled = false;
     document.getElementById('bWork').disabled = false;
+    document.getElementById('bBge').disabled = false;
   } catch (e) { results.probe_error = String(e); log('✗ ' + e, 'bad'); }
   document.getElementById('bProbe').disabled = false;
 }
@@ -203,6 +205,45 @@ async function pollJob() {
     body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'devin', text: summary }),
   });
   log(resp.ok ? '  result posted to OPS-0779' : '  post failed: ' + resp.status, resp.ok ? 'ok' : 'bad');
+}
+
+async function runBgeCompat() {
+  const btn = document.getElementById('bBge');
+  btn.disabled = true;
+  try {
+    const ref = await (await fetch('bge-ref.json?ts=' + Date.now())).json();
+    log('  loading Xenova/bge-m3 q4 (~300MB ONNX) — first run downloads it…', 'dim');
+    const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.6');
+    const t0 = performance.now();
+    const bge = await pipeline('feature-extraction', 'Xenova/bge-m3',
+      { device: 'webgpu', dtype: 'q4' });
+    const loadMs = performance.now() - t0;
+    log(`✓ bge-m3 loaded in ${(loadMs / 1000).toFixed(1)}s`, 'ok');
+    const t1 = performance.now();
+    const outCls = await bge(ref.phrase, { pooling: 'cls', normalize: true });
+    const outMean = await bge(ref.phrase, { pooling: 'mean', normalize: true });
+    const embedMs = performance.now() - t1;
+    const v = Array.from(outCls.data);
+    const simCls = cosine(v, ref.vector);
+    const simMean = cosine(Array.from(outMean.data), ref.vector);
+    const sim = Math.max(simCls, simMean);
+    const pool = simCls >= simMean ? 'cls' : 'mean';
+    results.bge_compat = { dims: v.length, embed_ms: +embedMs.toFixed(0),
+                           cosine_cls: +simCls.toFixed(4),
+                           cosine_mean: +simMean.toFixed(4),
+                           compatible: sim > 0.85, pooling: pool };
+    log(`  dims ${v.length} — embed ~${(embedMs / 2).toFixed(0)}ms — cosine vs ollama bge-m3: cls=${simCls.toFixed(4)} mean=${simMean.toFixed(4)}`,
+        sim > 0.85 ? 'ok' : 'bad');
+    log(sim > 0.85
+      ? '  ✓ SAME vector space — this device can produce bank-compatible embeddings (MEM-0805 lane B unlocked)'
+      : '  ✗ divergent space — browser bge-m3 cannot feed the :11028 bank', 'dim');
+    document.getElementById('bPost').disabled = false;
+  } catch (e) {
+    results.bge_compat = { error: String(e) };
+    log('✗ bge-m3 compat: ' + e, 'bad');
+    log('  if OOM/load-fail: Safari tab budget (~1-1.5GB) is the wall — MiniLM-class only', 'dim');
+  }
+  btn.disabled = false;
 }
 
 async function postResults() {
