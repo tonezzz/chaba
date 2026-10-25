@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-25 19:08
+updated: 2026-10-25 19:54
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -66,3 +66,10 @@ comms:
 
 
     2. BACKUP→RESTORE COMPACTION. '
+- at: 2026-10-25 19:54
+  from: devin
+  text: '[2026-10-25 20:05] con01 absorber move done: 7 batch timers shed idc02→con01 via ssot.jobs.yml (ssot-optimization-snapshot,
+    chaba-audit, chaba-audit-full, chaba-kb-audit, chaba-system-report, ada-flood-news, report-distill). node v22
+    provisioned on con01; timers armed; stale idc02 units removed; audit list updated. Skipped: devin-bank-distill
+    (needs chaba-paid.env secret on con01 — decision for Tony), log-shippers (per-host by design). Also: ollama+bge-m3
+    deployed on con01 as 4th embed-pool upst'
