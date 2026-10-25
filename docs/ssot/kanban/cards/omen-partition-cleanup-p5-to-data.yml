@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 09:04
+updated: 2026-10-25 16:04
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -44,3 +44,8 @@ comms:
     is still configured even though hibernate.target is inactive. Do NOT delete while live: first reboot normally
     to clear stale swap, then verify memory/swap; disable hibernate via systemd sleep drop-in + remove resume config,
     remove hibernate.swap from fstab, swapoff/remove '
+- at: 2026-10-25 16:04
+  from: devin
+  text: 'New DevNest read-only assessment sees Omen back online after rescue: /data now ~400GiB total, 65% used/~148G
+    free, root 39%, GPU GTX1650 at 98%/75C. Partition work appears to have changed capacity; use the live assessment
+    + lsblk/blkid to verify exact p5/p7 state before closing this card. No remediation from the DevNest skill.'
