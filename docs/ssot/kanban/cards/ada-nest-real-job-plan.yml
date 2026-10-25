@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: doing
-updated: 2026-10-25 19:12
+updated: 2026-10-25 19:16
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -66,6 +66,12 @@ comms:
 - at: 2026-10-25 19:12
   from: chaba
   text: started devin-task-20261025-121205-plan-and-sequence-1-idc03-cpu- on mn01 (dispatch)
+- at: 2026-10-25 19:16
+  from: devin
+  text: 'Sequencing in progress. Live state verified 19:13 UTC: omen /data = 174G FREE (the 38G figure was root-fs/stale)
+    => colibri-35B >=83G gate is ALREADY MET; idc03 load 9.3/4 (CPU jobs must serialize + nice); jev-student :8778
+    + jevos :8017 healthy; omen ollama already has nomic+bge-m3 (pilot = ~0G new disk); T4 heartbeat ~16min stale
+    = not confirmed awake; img-gen-bench already done on con01-CPU (~20min/img) so T4 arm needs a cuda variant pack.'
 action:
   type: dispatch
   status: running
