@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 08:44
+updated: 2026-10-25 08:54
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -31,3 +31,9 @@ comms:
     /data is p7 UUID e440.... /etc/fstab p5 reference is stale (points to p6 UUID), confirming p5 is not the boot
     root. p5 unmounted again. Online is technically possible because p5 is unmounted and p7 is mounted: delete p5,
     grow p7 into contiguous gap+p5, then online resize2fs. But '
+- at: 2026-10-25 08:54
+  from: devin
+  text: 'SAFETY PREP COMPLETE: tony-usb /dev/sda2 mounted then unmounted cleanly. Copied GPT backup + current sfdisk
+    dump + SHA256SUMS to /mnt/omen-usb/omen-partition-safety-20261025. Also archived the entire read-only p5 old
+    root (3.2G) to p5-old-root.tar and SHA256; p5 unmounted again. No partition table/filesystem changes made. Ready
+    for offline rescue procedure.'
