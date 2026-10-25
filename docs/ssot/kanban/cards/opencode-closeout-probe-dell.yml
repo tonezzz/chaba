@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-dell
 title: OpenCode closeout probe pinned to tony-dell
-column: review
-updated: 2026-10-26 05:51
+column: backlog
+updated: 2026-10-26 06:55
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-dell runner.
 priority: low
 program: chaba-ci
@@ -15,14 +15,12 @@ spec: Append one marker line to README.md, run OpenCode free_lane with flash-lit
 action:
   type: dispatch
   host: tony-dell
-  status: done
+  status: queued
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   result: 'exit=0 h","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-opencode-closeout-probe-dell-1792968507.service: Consumed 20.580s CPU time over 2min 3.119s wall
     clock time, 672.9M memory peak.'
-  runner: tony-dell
-  verified: false
 ref: OPS-0875
 comms:
 - at: 2026-10-25 20:15
@@ -65,5 +63,8 @@ comms:
 - at: 2026-10-26 05:51
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 06:55
+  from: devin
+  text: queued for processing
 review_kind: verify
 claim: {}
