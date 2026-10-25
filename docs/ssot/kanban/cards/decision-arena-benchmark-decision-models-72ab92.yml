@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: backlog
-updated: 2026-10-25 14:43
+updated: 2026-10-25 20:03
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -32,3 +32,10 @@ comms:
   from: devin
   text: 'NEXT JEV measurement: expand from 27 to 50 labeled cases; jevos choice accuracy is the routing gate before
     more autonomy.'
+- at: 2026-10-25 20:03
+  from: devin
+  text: 'CORPUS v2 LANDED + student arm run (mn01 dispatch wt): 50 labeled cases (confirm 12 / tool 16 / pipe 10
+    / stag 12; noul balanced 17/17; pipe finally has invalid edges — v1 was single-class). jev-student: 0.480 acc,
+    0.676 noul, **0.062 choice** — choice head confirmed dead at scale (15/16 tool calls answered "answer"); pipe
+    rubber-stamps false; stag under-detects (7/8 stagnant→progressing); confirm 12/12 clean. Artifacts: reports/2026-10-25-decision-arena-50.md
+    + evals/results/jev/decision-arena-'
