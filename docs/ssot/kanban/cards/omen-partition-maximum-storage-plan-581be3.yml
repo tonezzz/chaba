@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:45
+updated: 2026-10-25 12:48
 action:
   type: manual
 ref: OPS-0853
@@ -90,6 +90,13 @@ comms:
   from: devin
   text: 'raised request option-3-requires-moving-the-start-of-ex-fce57c: Option 3 requires moving the start of ext4
     p3. The current live USB has parted/e2fsck/resize2fs but no GParted; I will n'
+- at: 2026-10-25 12:48
+  from: tony
+  text: 'answered option-3-requires-moving-the-start-of-ex-fce57c: Yes, install GParted in the current tony-usb
+    live environment. Do not format the SD or modify NVMe partitions during the install.'
+- at: 2026-10-25 12:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -130,7 +137,7 @@ requests:
 - id: option-3-requires-moving-the-start-of-ex-fce57c
   ask: Option 3 requires moving the start of ext4 p3. The current live USB has parted/e2fsck/resize2fs but no GParted;
     I will not improvise a raw block move. Which route do you approve?
-  status: open
+  status: answered
   at: 2026-10-25 12:45
   from: devin
   options:
@@ -140,4 +147,6 @@ requests:
   - Pause Option 3; do not alter NVMe until GParted media/tool is available.
   suggested: Approve apt/network install of GParted in the tony-usb live environment (writes only to the rescue
     SD; then I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
+  answer: Yes, install GParted in the current tony-usb live environment. Do not format the SD or modify NVMe partitions
+    during the install.
 awaiting_action: true
