@@ -1,7 +1,7 @@
 id: fix-dell-devin-watchdog-main-pid-selecto-403839
 title: Fix Dell Devin watchdog main_pid selector
 column: done
-updated: 2026-10-25 11:35
+updated: 2026-10-25 11:42
 action:
   type: manual
   status: done
@@ -26,3 +26,10 @@ comms:
 - at: 2026-10-25 11:35
   from: devin
   text: closed by devin
+- at: 2026-10-25 11:42
+  from: devin
+  text: Fixed and deployed as master commit 0c63ba4ef. Watchdog now validates the single-instance code.lock PID
+    first and excludes the markdown serverWorkerMain child from fallback discovery. Regression selftest and unittest
+    pass. Installed via install-devin-host.sh --watchdog-only; AppArmor unchanged; installed/source hashes match.
+    Verified code.lock PID 255718 equals the running GUI main PID, CRD system service active, and Devin windows
+    exist on DISPLAY :20.
