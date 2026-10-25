@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
 column: backlog
-updated: 2026-10-25 13:57
+updated: 2026-10-25 14:44
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -31,3 +31,10 @@ comms:
 
     In-flight real-world proof of the design: tony-omen went into maintenance MID-backfill — every omen call failed
     and the pool kept serving through idc02+idc03. Graceful degradation, ex'
+- at: 2026-10-25 14:44
+  from: devin
+  text: '[status 2026-10-25 14:50] Force-backfill delivered all 2561 docs to the write path (0 failed), but the
+    real completeness signal is /v1/vector-stats — embedded_documents is 1400/2561 with ~3280 chunks still draining
+    the embed queue. Key lesson: backfill "copied" != "indexed"; only embedded_documents==total_documents means
+    done. Pool is degraded: omen down (maintenance), idc02 now loaded ~6 (qwen2.5 chat) — idc03 carries ~90% of
+    embeds at ~7s each. Drain ETA ~6h at current speed, or ~15-20min once'
