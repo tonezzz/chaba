@@ -1,7 +1,7 @@
 id: investigate-recurrent-devin-desktop-code-d0ad0c
 title: Investigate recurrent Devin Desktop CodeWindow hang on tony-dell
 column: backlog
-updated: 2026-10-25 11:23
+updated: 2026-10-25 11:35
 action:
   type: manual
 ref: DEV-0851
@@ -37,6 +37,13 @@ comms:
   from: devin
   text: 'raised request after-the-devin-restart-can-you-interact-4593bd: After the Devin restart, can you interact
     with Kanban in the Dell CRD window?'
+- at: 2026-10-25 11:35
+  from: devin
+  text: 'Dell recovery update: watchdog main_pid bug fixed/deployed as DEV-0852. The approved Devin-only restart
+    completed, CRD system service remains active, the new main process PID matches code.lock, and three Devin X
+    windows are present on :20. Kanban consumer checks still return 200 with 944 cards; latest post-restart main.log
+    records one CodeWindow ERR_BLOCKED_BY_RESPONSE during startup, so I left the card open for your CRD/UI confirmation.
+    No CRD restart or Dell reboot.'
 requests:
 - id: dell-devin-desktop-is-logging-repeated-c-beacf2
   ask: 'Dell Devin Desktop is logging repeated CodeWindow unresponsive errors. Before restarting its window/app,
