@@ -1,7 +1,7 @@
 id: doc-pilot-short-film
 title: doc-pilot — first AI short documentary end-to-end
 column: backlog
-updated: 2026-10-25 17:10
+updated: 2026-10-25 17:55
 priority: medium
 tags:
 - ada-nest
@@ -198,6 +198,12 @@ comms:
     680.6s). NASA embeds failed because the archived T5 tokenizer lacks spiece.model; NASA i2v then failed because
     shot01 embedding was absent. Neither has a done marker or output. Colab queue drained. Omen retains the 8.9GB
     archive cache; preserve it until the tokenizer/cache retry is fixed.'
+- at: 2026-10-25 17:55
+  from: devin
+  text: 'NASA embed repair verified 2026-10-25: nasa-embeds-ss1 DONE on Omen CPU in 251s. The archived tokenizer
+    lacked spiece.model; T5TokenizerFast loaded the self-contained tokenizer.json. Two Drive artifacts read back
+    (shot01/02.pt, 4.1MB each) and validated with expected keys, 1x256x4096 finite tensors. NASA i2v is now unblocked
+    but still requires a T4; no active claim or done marker yet.'
 requests:
 - id: where-should-tony-see-doc-post
   ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
