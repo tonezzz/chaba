@@ -1,6 +1,6 @@
 id: jev-claim-metadata-probe
 title: 'JEV claim metadata probe: free lane persisted on atomic claim'
-column: backlog
+column: doing
 updated: 2026-10-25 14:47
 brief: Small verified probe for board claim metadata; should classify free_lane and persist action lane/model at
   the atomic claim.
@@ -15,7 +15,8 @@ spec: 'Task: append a marker to README and commit. Expected board action.lane=fr
   after claim. OpenCode is gated; Devin fallback may execute.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
 ref: OPS-0857
 comms:
 - at: 2026-10-25 14:47
@@ -24,3 +25,6 @@ comms:
 - at: 2026-10-25 14:47
   from: devin
   text: queued for processing
+- at: 2026-10-25 14:47
+  from: tony-macbook
+  text: claimed
