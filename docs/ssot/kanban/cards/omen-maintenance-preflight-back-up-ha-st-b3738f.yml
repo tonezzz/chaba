@@ -1,0 +1,21 @@
+id: omen-maintenance-preflight-back-up-ha-st-b3738f
+title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
+column: backlog
+updated: 2026-10-25 09:04
+brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
+  host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
+tags:
+- tony-omen
+- maintenance
+- backup
+- host-hygiene
+spec: 'Verified: loginctl linger=yes, enabled HA/Ollama/OpenJev/OpenClaw/rclone services; 60 user timers; Tony HA
+  backup succeeded at 03:30 but is LOCAL-ONLY git; Ada HA has local git baseline + untracked household.yml + live
+  700KB DB, no recurring off-host backup located. Swap 40/47GB used (mostly 3 OpenJev processes + stale manual Colibri
+  qwen36 4GB). SSOT tony-ha host/health target still says Dell although live Omen (mcp URL :9584 also stale). Inventory
+  audit flags unexpected active services and failed model-bench/wp-cam-snapshot/xiaomi-token-refresh.'
+ref: HOM-0849
+comms:
+- at: 2026-10-25 09:04
+  from: tony
+  text: card captured via board-api
