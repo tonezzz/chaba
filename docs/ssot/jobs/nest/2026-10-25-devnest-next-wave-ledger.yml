@@ -1,0 +1,125 @@
+title: DevNest next-wave ledger — OPS-0846 closeout, OpenHands GUI, JEV arena 50, lesson drift, OPENCODE_LANES gate
+date: 2026-10-25
+card: devnest-kanban-next-wave          # KNB-0856
+session: dispatch-wt-20261025-124112-priority-sequence-1-ops-0846-o (mn01)
+policy: each step carries artifact + verifier + rollback/stop condition;
+        the sequence order is a dependency chain, not a checklist.
+
+step1_opencode_closeout:                # OPS-0846
+  status: code-complete — crash bug fixed + unit-verified; end-to-end
+          merge still UNVERIFIED (probe OPS-0870 unclaimed)
+  findings:
+    - "BUG: start_task `lane` was unbound whenever a card already carried
+       action.lane (explicit lane or JEV_LANE claim-classify persist) —
+       UnboundLocalError at `if lane in LANE_MODELS`, claim crashed, card
+       left claimed with no unit. Present since f9882330; would have
+       broken every JEV_LANE=1 claim and the step-5 supervised card."
+    - "FIX: lane bound from a.get('lane') before classify; classified-
+       manual now refused loudly (matches lane contract + claim_pass
+       behavior). meta.json gains base/executor/started_at parity with
+       devin-dispatch _meta_write."
+    - "LIVE: idc02 runner-agent.service.d/jev-lane.conf is MALFORMED —
+       'Assignment outside of section. Ignoring' (no [Service] header);
+       JEV_LANE/OPENCODE_LANES inert even after daemon-reload. Gates
+       effectively OFF fleet-wide — no rogue opencode lane traffic."
+    - "LIVE: idc02 load ~9.2 (5-min) -> overloaded() holds all claims;
+       why OPS-0870 sits queued since 18:56."
+  artifact: scripts/board/runner-agent.py diff +
+            tests/board/test_runner_agent_lane.py (5 cases)
+  verifier: "tests/board suite: 191 unittest cases pass, 2 skip; new
+            lane tests cover explicit-lane devin path, explicit-lane
+            opencode path, unset-lane classify+persist, classified-free
+            ->opencode, classified-manual refuse. END-TO-END verifier
+            remains OPS-0870: claim -> worktree+meta.json -> opencode ->
+            close_out_merge -> merged, on idc02."
+  blockers_to_endtoend:
+    - idc02 overloaded() — load must fall under 1.0/core
+    - fixed runner-agent must deploy to idc02 (this branch -> merge ->
+      host pulls)
+    - jev-lane.conf needs [Service] header only WHEN enabling (step 5)
+  rollback: "revert runner-agent.py; OPENCODE_LANES unset/0 -> devin
+            executor; no migration, no live conf touched this session"
+
+step2_openhands_gui:                    # eval-ide-openhands-gui
+  status: done (verifier passed, caveats noted)
+  artifact: "card comms on eval-ide-openhands-gui; run on tony-dell vs
+            ~/devnest-sample: `openhands --override-with-envs web
+            --host 127.0.0.1 --port 3100` served HTTP 200 (textual-web
+            GUI); agent loop verified headless with identical env —
+            11 messages, litellm_proxy/bench, README Architecture
+            section added, node test.js green, zero git ops; server
+            stopped, port closed."
+  verifier: "HTTP 200 on the GUI + README.md Architecture section
+            present + `node test.js` all-pass on dell; no commits/push/
+            deploy (sample is not a git repo)."
+  caveat: "browser-supervision UX parity vs OpenCode Web needs a human
+          at the URL — unattended verifies loop+artifacts, not feel.
+          GOTCHA: bare LLM_* env ignored; --override-with-envs must
+          precede the subcommand."
+  rollback: process killed; nothing persisted outside /tmp logs +
+          the sample README edit (the chore's own deliverable)
+  stop_condition: "no deploy, no push, port closed — honored"
+
+step3_jev_arena_50:                     # BEN-0826
+  status: corpus done + student arm run; jevos arm NOT comparable yet
+  artifact: "scripts/ops/decision-arena.py corpus v2 (50 labeled:
+            confirm 12 / tool 16 / pipe 10 / stag 12; noul 17/17;
+            pipe now has invalid edges — v1 was single-class);
+            evals/results/jev/decision-arena-50.json (per-case raw);
+            reports/2026-10-25-decision-arena-50.md"
+  result: "jev-student 0.480 acc / 0.676 noul / 0.062 choice — choice
+          head dead at scale (15/16 -> 'answer'); pipe rubber-stamps
+          false; stag under-detects 7/8; confirm 12/12"
+  verifier: "--corpus-only reports 50 unique labeled cases, errors=[];
+            per-case JSON written. jevos arm must re-run ON IDC03 vs
+            corpus v2 for the routing-gate number (mn01 can't reach
+            jevos; v1 pipe score was inflated)."
+  harness_fixes: dead-backend ping gate (ask() swallows errors),
+            laya single-load, --out records, env-overridable URLs
+  rollback: in-script corpus — git revert restores v1-27; bench-only,
+            no production reader
+
+step4_lesson_drift:
+  status: done — first live audit
+  artifact: "scripts/lessons-drift.py (new, read-only) +
+            reports/2026-10-25-lessons-drift.{md,json}"
+  result: "77 lessons audited: 1 drifted (source committed after
+          re-file), 36 source-gone (~28 point at never-committed
+          docs/tools/ai-workforce-eval.md — broken pointers), 38
+          no-repo-source (informational)"
+  verifier: counts match board-api op=list (77); re-run
+            `python3 scripts/lessons-drift.py --out <file>` reproduces
+  rollback: delete the script; nothing depends on it. Wiring into a
+            periodic audit lane (alongside lessons-audit.py) is a
+            separate card — NOT done here.
+
+step5_opencode_lanes_enable:
+  status: STOPPED AT GATE — not enabled (by design)
+  gate: "OPS-0846 end-to-end verification = OPS-0870 claimed + merged
+        on idc02. State: probe queued-but-unclaimable (idc02 overload),
+        the crash fix rides this branch (not yet on idc02), jev-lane.conf
+        malformed+inert. Enabling today would crash every claim."
+  enable_procedure_when_gates_pass:
+    - "1. merge this branch; pull fixed runner-agent onto idc02
+       (~/CascadeProjects/chaba + ~/.local/bin/runner-agent)"
+    - "2. wait for idc02 load < ~4 (overloaded() releases); confirm
+       OPS-0870 claims, worktree+meta.json appear, close_out_merge
+       reports merged (card comms) — that is THE verifier"
+    - "3. fix jev-lane.conf: add [Service] header over the two
+       Environment= lines, systemctl --user daemon-reload, restart
+       runner-agent.service (or let next timer tick pick it up)"
+    - "4. queue ONE labeled free_lane card pinned idc02
+       (action.labels + action.host + explicit action.lane free_lane +
+       expected_goals marker) and supervise the close-out merge live"
+    - "5. only then consider wider enable; mn01 JEV_LANE=1 also needs
+       this fix deployed first (its runner-agent is an older copy)"
+  stop_condition: "probe fails / merge conflicts / artifact missing ->
+    keep OPENCODE_LANES off, comms note on OPS-0846 card, escalate;
+    never enable on a runner running the pre-fix code (UnboundLocalError)"
+
+open_items:
+  - OPS-0870 must land before step5 proceeds (watchdog: idc02 load)
+  - jevos arm of arena-50 must run on idc03 for the routing-gate number
+  - "28 lessons point at never-committed docs/tools/*.md — decide:
+    commit the docs or fix pointers at next re-file"
+  - lessons-drift.py periodic wiring = new card if wanted

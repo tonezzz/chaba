@@ -135,6 +135,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 
 API = os.environ.get(
@@ -913,10 +914,14 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
                 str(worktree), base], timeout=120)
         if r.returncode:
             return "", "", (r.stderr or r.stdout).strip()[:240]
+        dbranch = ent.get('default_branch') or 'master'
         meta = {"repo": repo_name, "branch": branch,
                 "worktree": str(worktree),
-                "default_branch": ent.get('default_branch') or 'master',
-                "unit": unit, "task_id": tid}
+                "default_branch": dbranch,
+                "base": f"origin/{dbranch}",
+                "executor": f"opencode:{lane}",
+                "unit": unit, "task_id": tid,
+                "started_at": datetime.now(timezone.utc).isoformat()}
         (taskdir / "meta.json").write_text(json.dumps(meta, indent=1))
     except Exception as e:
         return "", "", f"OpenCode worktree setup: {e}"
@@ -986,12 +991,19 @@ def start_task(card: dict, typ: str) -> tuple:
     else:  # dispatch
         # Claim-time lane routing (jev-pilot Phase 2): classify when the
         # card has no lane yet, persist it, map to the cheapest model.
-        if not a.get("lane"):
+        # `lane` must be bound even when the card already carries
+        # action.lane (explicit lane or the JEV_LANE claim-classify that
+        # persisted it) — reading it unbound crashed every such claim
+        # with UnboundLocalError (OPS-0846 review 2026-10-25).
+        lane = str(a.get("lane") or "")
+        if not lane:
             lane = classify_lane(card)
             if lane and lane != "manual":
                 a["lane"] = lane
                 if lane in LANE_MODELS and not a.get("model"):
                     a["model"] = LANE_MODELS[lane]
+        if lane == "manual":
+            return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in LANE_MODELS and OPENCODE_LANES:
             return start_opencode_lane(card, lane, unit)
         spec = (card.get("spec") or "").strip() or \
