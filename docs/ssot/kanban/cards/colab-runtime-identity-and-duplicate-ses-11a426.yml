@@ -1,0 +1,26 @@
+id: colab-runtime-identity-and-duplicate-ses-11a426
+title: Colab runtime identity and duplicate-session guard
+column: backlog
+updated: 2026-10-25 19:40
+brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
+  attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
+  for an idle/duplicate T4 or starting a queue on a CPU runtime.
+tags:
+- colab
+- runtime
+- session-control
+- gpu-efficiency
+- mcp-colab
+spec: 'Add a clear session-control preflight for managed Colab queue runs. Each launch reports boot_id, GPU model/VRAM,
+  Drive-mounted state, runner PID/heartbeat, and a unique session token. Before queue launch, check a TTL-based
+  Drive session lease and refuse/warn if another managed runtime has an active runner. Keep queue epoch fencing
+  as the final concurrency guard. Do not claim account-wide discovery: uninstrumented Google Colab sessions remain
+  visible only via Runtime > Manage sessions. Never auto-stop an ambiguous session; any stop action must name the
+  exact selected session and require explicit confirmation. Done when a two-session test proves the second managed
+  runner is blocked/warned, stale records expire, and the current CPU-only/no-Drive state is distinguished from
+  queue status.'
+ref: OPS-0872
+comms:
+- at: 2026-10-25 19:40
+  from: tony
+  text: card captured via board-api
