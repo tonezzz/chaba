@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: doing
-updated: 2026-10-25 19:16
+updated: 2026-10-25 19:17
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -72,6 +72,13 @@ comms:
     => colibri-35B >=83G gate is ALREADY MET; idc03 load 9.3/4 (CPU jobs must serialize + nice); jev-student :8778
     + jevos :8017 healthy; omen ollama already has nomic+bge-m3 (pilot = ~0G new disk); T4 heartbeat ~16min stale
     = not confirmed awake; img-gen-bench already done on con01-CPU (~20min/img) so T4 arm needs a cuda variant pack.'
+- at: 2026-10-25 19:17
+  from: devin
+  text: 'SEQUENCE PLAN LANDED: docs/ssot/jobs/nest/2026-10-25-ada-nest-real-job-seq.yml — all 5 jobs declare target_host/resource_gate/artifact/verifier/stop_condition.
+    Order: wave-A = idc03 efficiency report (after a --max-sessions/deadline patch — 08:16 hang was unbounded queue
+    scan) ‖ omen embed pilot (~0G new disk, models already pulled, RAM>=4G gate, scorers outrank); wave-B = idc03
+    arena 27->50 (choice-heavy, jevos choice-acc = routing gate) + omen colibri-35b ELIGIBLE — /data is 174G free
+    now, the'
 action:
   type: dispatch
   status: running
