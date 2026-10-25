@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 10:31
+updated: 2026-10-25 11:02
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -78,3 +78,10 @@ comms:
     sudo -n is available. The live-USB GPT backups were copied to MN01 metadata and hashes match the source: sfdisk
     dcf03b... / GPT 345654.... All partitions remain unmounted/unchanged. Awaiting exact new partition/mountpoint
     spec before running mkpart/mkfs/fstab changes.'
+- at: 2026-10-25 11:02
+  from: devin
+  text: 'Storage-max plan (not executed): exact parted output gives two unallocated GPT gaps: 114GiB between p2
+    and p3 + 40.7GiB after p7 before p5 = 154.7GiB total without touching existing data. Recommendation: allocate
+    both as new ext4 p8 `/models` (~114GiB) and p9 `/data/overflow` (~40.7GiB), preserve p1-p7. Later, only after
+    auditing consumers, migrate verified re-downloadable model/cache directories into these mounts to reduce /data
+    pressure (currently 257/295GiB used). Repurposing p5 ubuntu-000 ad'
