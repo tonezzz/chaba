@@ -1,0 +1,23 @@
+id: opencode-closeout-probe-idc02
+title: OpenCode closeout probe pinned to idc02
+column: backlog
+updated: 2026-10-25 18:56
+brief: Validate dispatch-compatible worktree and automatic merge using the OpenCode free lane on idc02.
+priority: low
+program: chaba-ci
+tags:
+- opencode
+- closeout
+- probe
+- idc02
+spec: Append exactly one line `OpenCode closeout probe` to README.md, run no deployment, and leave the change for
+  the runner closeout gate. The runner must create a dispatch/<task> branch/worktree, run OpenCode with flash-lite,
+  checkpoint/push, verify, and merge this card.
+action:
+  type: dispatch
+  host: idc02
+ref: OPS-0870
+comms:
+- at: 2026-10-25 18:56
+  from: devin
+  text: card captured via board-api
