@@ -1,0 +1,18 @@
+id: fix-dell-devin-watchdog-main-pid-selecto-403839
+title: Fix Dell Devin watchdog main_pid selector
+column: doing
+updated: 2026-10-25 11:27
+action:
+  type: manual
+ref: DEV-0852
+comms:
+- at: 2026-10-25 11:27
+  from: devin
+  text: 'Incident 2026-10-25: watchdog logged that it TERM-ed PID 215045 as the Devin main process. That PID was
+    the markdown-language-features serverWorkerMain child (PPID 2727422), while the actual GUI main was PID 2727003.
+    scripts/devin/devin-desktop-watchdog.sh main_pid() matches any cmdline starting with the Devin binary and excludes
+    --type/cli.js/crashpad, but not serverWorkerMain; pgrep order selected the worker. Fix PID selection to validate
+    the single-instance code.lock first and reject serverWo'
+- at: 2026-10-25 11:27
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
