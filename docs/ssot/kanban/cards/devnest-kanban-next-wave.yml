@@ -1,7 +1,7 @@
 id: devnest-kanban-next-wave
 title: 'DevNest next wave: closeout, OpenHands UI, JEV arena, lesson drift'
 column: doing
-updated: 2026-10-25 19:44
+updated: 2026-10-25 20:05
 brief: Push the next safe DevNest capabilities after the OpenCode sample works interactively.
 priority: high
 program: ai-workforce
@@ -39,6 +39,13 @@ comms:
   text: 'mn01 dispatch claimed. Triaging step 1 (OPS-0846): found unbound `lane` bug in runner-agent start_task
     (crashes on explicit action.lane / JEV_LANE claim-classified cards). idc02 jev-lane.conf staged 18:03 but daemon-reload
     never ran — gates still inactive. Probe OPS-0870 still queued; checking idc02 push probe.'
+- at: 2026-10-25 20:05
+  from: devin
+  text: 'SEQUENCE RESULT (ledger: docs/ssot/jobs/nest/2026-10-25-devnest-next-wave-ledger.yml). (1) OPS-0846: found+fixed
+    UnboundLocalError crash on explicit/claim-classified lanes (blocks JEV_LANE + step5); 191 board tests + 5 new
+    lane tests pass; end-to-end merge still UNVERIFIED — OPS-0870 unclaimed (idc02 overloaded ~9.2, jev-lane.conf
+    malformed/inert, fix not yet deployed). (2) OpenHands web GUI on dell vs devnest-sample: served 200 w/ --override-with-envs
+    gotcha; agent loop done headless, README ar'
 action:
   type: dispatch
   status: running
