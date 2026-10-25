@@ -1,7 +1,7 @@
 id: jev-opencode-closeout-probe
 title: 'OpenCode closeout probe: append marker and merge via worktree'
 column: backlog
-updated: 2026-10-25 18:03
+updated: 2026-10-25 18:04
 brief: Small free-lane marker job to prove the new dispatch-compatible OpenCode worktree and auto-merge closeout.
 priority: low
 program: chaba-ci
@@ -14,8 +14,12 @@ spec: 'Append a single line to README.md and commit it. Expected: runner creates
   OpenCode runs with flash-lite, close_out_merge verifies and merges, card done. No deploy.'
 action:
   type: dispatch
+  status: queued
 ref: OPS-0868
 comms:
 - at: 2026-10-25 18:03
   from: devin
   text: card captured via board-api
+- at: 2026-10-25 18:04
+  from: devin
+  text: queued for processing
