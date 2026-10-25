@@ -1,0 +1,56 @@
+id: mddb-storage-reduction-retention-relocation
+title: mddb storage reduction — retention relocation + compaction pipeline
+column: doing
+updated: 2026-10-25 19:08
+brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
+  on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
+  through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
+priority: high
+spec: 'GOAL: bound mddb disk growth on idc03 (28G total; mddb-ops 17G and unreadable through API under load).
+
+
+  ROOT CAUSES:
+
+  1. prune-old-docs.py only runs inside ada-review-refresh chain, daily 08:45 ON TONY-OMEN — dies with host maintenance.
+  Script is HTTP-only, host-independent.
+
+  2. host-logs on ops DB (11026) grew past API-enumerable size — /v1/search limit=5 times out at 120s, /v1/export
+  stream dies on server write deadline, /v1/stats >5min (known bug, fix-mddb-stats-timeout-overnight).
+
+  3. bbolt never shrinks files — deletes feed freelist; physical reclaim needs backup→restore (precedented: 19G→550M
+  Sept cycle).
+
+  4. collection-config maxRevisions only set on leader bank — ops/embed/cms unbounded.
+
+
+  PIPELINE (in flight on idc03):
+
+  a. /v1/backup ops DB → consistent snapshot (verify ~2h under load, running)
+
+  b. scratch mddbd on snapshot copy → enumerate expired ts keys fast
+
+  c. delete-batch live ops DB (small writes work)
+
+  d. POST /v1/truncate revs + set maxRevisions on ops/embed/cms collections
+
+  e. backup→restore compact each bank → physical reclaim
+
+
+  STRUCTURAL (after cuts land):
+
+  - relocate prune to standalone timer on idc03 (or ssot.jobs) — split it out of ada-review-refresh
+
+  - mddb-ops missing from mddb-restart.timer? verify weekly restart covers it
+
+  - consider TTL (/v1/set-ttl) for telemetry classes instead of sweep
+
+  - PROS/CONS recorded in card comms 2026-10-25.
+
+
+  VERIFY: mddb-ops file size + host-logs enumerable via API again; prune timer ticks on idc03.'
+ref: MEM-0871
+comms:
+- at: 2026-10-25 19:08
+  from: devin
+  text: '[devin] pipeline executing — leader prune done (12,819 + 149 docs); ops backup verify in progress; scratch-mddb
+    enumeration scripted. Full pros/cons in comms.'
