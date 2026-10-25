@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 08:54
+updated: 2026-10-25 09:04
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -37,3 +37,10 @@ comms:
     dump + SHA256SUMS to /mnt/omen-usb/omen-partition-safety-20261025. Also archived the entire read-only p5 old
     root (3.2G) to p5-old-root.tar and SHA256; p5 unmounted again. No partition table/filesystem changes made. Ready
     for offline rescue procedure.'
+- at: 2026-10-25 09:04
+  from: devin
+  text: 'SWAP/HIBERNATION ASSESSMENT: Omen has 16G /swapfile + 32G /data/hibernate.swap = 48G configured swap; current
+    swap use ~40G. hibernate.swap is referenced by /etc/fstab and resume=UUID/offset in GRUB + initramfs, so hibernation
+    is still configured even though hibernate.target is inactive. Do NOT delete while live: first reboot normally
+    to clear stale swap, then verify memory/swap; disable hibernate via systemd sleep drop-in + remove resume config,
+    remove hibernate.swap from fstab, swapoff/remove '
