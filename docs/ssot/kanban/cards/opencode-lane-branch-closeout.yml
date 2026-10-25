@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: review
-updated: 2026-10-25 20:16
+updated: 2026-10-26 05:04
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -72,6 +72,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261025-131219-add-an-opencode-lane-executor- on
     mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-26 05:04
+  from: devin
+  text: 'STATUS CORRECTION: card/action shows done on some older probes, but merge-sweep explicitly reported no
+    session/worktree. This is NOT a verified OpenCode closeout. Latest Dell probe remains queued after PATH/start
+    failure; Omen defers push; idc02 probes ran Devin default deepseek-v4-pro, not OpenCode. Keep OPS-0846 open
+    for a real OpenCode branch+verify+merge proof.'
 action:
   type: dispatch
   status: done
