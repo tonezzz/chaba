@@ -1,0 +1,26 @@
+id: devnest-devin-replay-benchmark
+title: Benchmark DevNest against historical Devin jobs — replay corpus + gates
+column: backlog
+updated: 2026-10-25 15:28
+brief: Use the 110-session Devin CLI archive to build a privacy-safe, held-out replay benchmark for DevNest/OpenCode/JEV/runner-agent
+  against the work Devin actually handled.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- devin
+- benchmark
+- replay
+- rainy-day
+spec: 'Read-only mine sessions.db and durable artifacts. Select 12-20 completed engineering/ops/education jobs with
+  explicit target_host, repo/base commit, prompt, artifact, and done-condition. Normalize each into a frozen task
+  fixture: task.yaml, prompt, base ref, held-out verifier, expected artifact, source session id, and redaction report.
+  Arms: Devin historical outcome baseline; DevNest/JEV lane selection; OpenCode interactive/executor; deterministic
+  codemod where applicable. Metrics: gate pass, graduated score, latency, tokens/cost, human interventions, merge/closeout
+  success, unrelated-test breakage. Never replay destructive actions or secrets. Start with 5 safe read-only/report/code
+  tasks; expand after verifier validation.'
+ref: DEV-0861
+comms:
+- at: 2026-10-25 15:28
+  from: devin
+  text: card captured via board-api
