@@ -1,0 +1,24 @@
+id: opencode-lane-branch-closeout
+title: Complete OpenCode lane executor branch commit + auto-merge closeout
+column: backlog
+updated: 2026-10-25 08:07
+brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
+  but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
+  with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
+priority: high
+program: chaba-ci
+tags:
+- jev
+- opencode
+- runner-agent
+- automerge
+- lane
+spec: Add an opencode lane executor that creates a dispatch-compatible worktree/branch or a runner-owned branch
+  record; persist executor/repo/branch on the card; make finish_pass close_out_merge recognize the executor and
+  verify/merge. Keep OPENCODE_LANES gated off until this passes. Test with a free_lane marker job, then a paid_frontier
+  dry-run only if budget allows.
+ref: OPS-0846
+comms:
+- at: 2026-10-25 08:07
+  from: devin
+  text: card captured via board-api
