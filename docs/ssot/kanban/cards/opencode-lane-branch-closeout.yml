@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: review
-updated: 2026-10-25 20:13
+updated: 2026-10-25 20:16
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -68,6 +68,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-131219-add-an-opencode-lane-executor-,
     branch dispatch/20261025-131219-add-an-opencode-lane-executor-'
+- at: 2026-10-25 20:16
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-131219-add-an-opencode-lane-executor- on
+    mn01 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
