@@ -1114,7 +1114,22 @@ def claim_pass(st: dict) -> bool:
         if reason:
             note_gpu_defer(card, reason)
             continue  # stays queued — a later pass or spec fix picks it up
-        resp = api("/action", {"id": cid, "do": "claim", "host": HOST})
+        claim_body = {"id": cid, "do": "claim", "host": HOST}
+        # Classify BEFORE the atomic claim and persist the lane/model in the
+        # claim request. The previous start_task-only classification could
+        # not write action fields back to the board and remote runners lost
+        # the model chain (OPS-0836..0844).
+        if typ == "dispatch" and os.environ.get("JEV_LANE", "0") == "1":
+            lane = classify_lane(card)
+            if lane == "manual":
+                continue
+            a = card.setdefault("action", {})
+            a["lane"] = lane
+            if lane in LANE_MODELS:
+                a["model"] = LANE_MODELS[lane]
+            claim_body["lane"] = lane
+            claim_body["model"] = a.get("model", "")
+        resp = api("/action", claim_body)
         if resp.get("error"):
             continue  # lost the race or rejected — next card
         unit, tid, err = start_task(card, typ)
