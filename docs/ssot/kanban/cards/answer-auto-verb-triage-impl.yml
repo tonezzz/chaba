@@ -1,7 +1,7 @@
 id: answer-auto-verb-triage-impl
 title: Implement answer auto-verb triage — 90 answered board asks sit unactioned
 column: backlog
-updated: 2026-10-25 19:47
+updated: 2026-10-25 20:10
 brief: 'Board health check 2026-10-25: only 2 truly-open requests but ~90 requests with status=answered whose answers
   were never executed — each gets a ''needs triage'' comm and stalls. Tony already picked the policy on knb-answer-action-triage
   (2026-10-15): auto-verb — auto-execute known verbs (queue→dispatch, close→done, hold→parked) at sweep time. That
@@ -22,3 +22,9 @@ comms:
 - at: 2026-10-25 19:47
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 20:10
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
