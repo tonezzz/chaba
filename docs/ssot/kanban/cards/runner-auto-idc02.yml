@@ -2,12 +2,21 @@ id: runner-auto-idc02
 title: Runner host `idc02` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on idc02 that will strand dispatch
   cards. Read the note, fix on the host, close the card.
-column: done
+column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: medium
-note: 'Auto-recovered 2026-10-25: all bootstrap checks pass.'
+priority: high
+note: 'Failing: ~/.local/bin/runner-agent sha 5fce5a0933d1b875 != repo 842506794f62faf6
+  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
+  — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok —
+  declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates);
+  sunsynk-card: push probe ok — declare push:sunsynk-card in RUNNER_LABELS for the
+  fast path (live probe still gates); mddb-fork: push probe ok — declare push:mddb-fork
+  in RUNNER_LABELS for the fast path (live probe still gates); gods-eye-view: push
+  probe fails (fatal: could not read Username for ''https://github.com'': No ) — gods-eye-view
+  dispatches defer to a pushable host; stranded work relays via board-api; devin:
+  /home/tony/.local/bin/devin (devin 3000.10.35 (dfa4a2d6)).'
 help: 'Per-check fixes:
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
