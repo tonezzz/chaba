@@ -8,6 +8,7 @@ A multi-purpose homelab stack: 3D Gaussian Splatting research, Frigate NVR traff
 - **chaba-omen** worktree — stale/broken overlay; do not use for canonical paths
 
 ## Included Implementations
+<!-- Opencode closeout probe marker: 2026-10-26 -->
 
 | Container                 | Method                                | Repo                                     |
 | ------------------------- | ------------------------------------- | ---------------------------------------- |
