@@ -1,7 +1,7 @@
 id: timer-alert-host-tony-omen
 title: Timer sweep cannot reach tony-omen
 column: backlog
-updated: 2026-10-25 11:48
+updated: 2026-10-25 11:53
 priority: high
 tags:
 - timer-alert
@@ -1356,6 +1356,12 @@ comms:
   from: devin
   text: 'raised request do-you-want-to-boot-the-normal-tony-omen-9fc3b4: Do you want to boot the normal tony-omen
     OS on the HP 15-BC so I can resume the Omen Ollama benchmark? The currently rea'
+- at: 2026-10-25 11:53
+  from: devin
+  text: 'Rechecked after Dell recovery: mcp-health for normal tony-omen still times out at 100.75.102.88:22. The
+    user-provided LAN address 192.168.2.86 remains reachable but reports hostname tony-usb; Ollama is inactive and
+    nvidia-smi is absent in that OS. Omen benchmark cannot run there without booting normal tony-omen. Existing
+    request asks Tony to boot the normal OS; no Tailscale/nodekey changes made.'
 spec: The goal is to investigate and resolve why host tony-omen is unreachable during the 15-minute timer sweep,
   leaving its timers unobserved. The target host is tony-omen. Constraints are to check network connectivity, host
   status, and SSH access to determine if this is a host-down or ssh-fail issue rather than a timer failure. The
