@@ -884,6 +884,38 @@ def watchdog_pass(st: dict) -> bool:
     return changed
 
 
+def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
+    """Run explicitly modelled lanes through OpenCode, not Devin."""
+    model = LANE_MODELS[lane]
+    if not shutil_which("opencode"):
+        return "", "", "opencode is not installed on this runner"
+    repo = str((card.get("action") or {}).get("repo") or "chaba")
+    url = REPO_URLS.get(repo)
+    try:
+        path = sync_repo(repo, url, "master")
+    except RuntimeError as e:
+        return "", "", str(e)[:240]
+    workdir = str(path)
+    spec = (card.get("spec") or "").strip() or \
+        f"{card.get('title', '')}\n\n{card.get('note', '')}"
+    task = spec + "\n\n" + RAILS.format(
+        id=card["id"], host=HOST, api=API)
+    shell = (
+        "set -a; . $HOME/.config/secrets/litellm-keys.env; "
+        "export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
+        f"cd {shlex.quote(workdir)} && exec opencode run --format json "
+        f"--dir {shlex.quote(workdir)} --model {shlex.quote(model)} "
+        f"--auto {shlex.quote(task)}"
+    )
+    argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
+             "--description", f"runner {card['id']} OpenCode {lane}"]
+            + task_run_props() + ["bash", "-lc", shell])
+    r = sh(argv, timeout=180)
+    if r.returncode:
+        return "", "", (r.stderr or r.stdout).strip()[:240]
+    return unit, unit, ""
+
+
 def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
@@ -935,6 +967,8 @@ def start_task(card: dict, typ: str) -> tuple:
                 a["lane"] = lane
                 if lane in LANE_MODELS and not a.get("model"):
                     a["model"] = LANE_MODELS[lane]
+        if lane in LANE_MODELS:
+            return start_opencode_lane(card, lane, unit)
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
