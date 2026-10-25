@@ -68,7 +68,7 @@ jobs:
   note: runs from the chaba-tony-dell checkout (writes focus-inbox + commits)
 - id: ssot-optimization-snapshot
   name: SSOT Optimization Snapshot
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: '*-*-* 03:30:00'
   persistent: true
@@ -88,7 +88,7 @@ jobs:
   note: reads tony-ha config — host-bound until moved to an idc02 remote pull
 - id: chaba-audit
   name: Chaba Audit Suite (weekly)
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: Sun *-*-* 02:00:00
   persistent: true
@@ -105,7 +105,7 @@ jobs:
     MDDB_CMS_URL: http://100.102.134.91:11027
 - id: chaba-audit-full
   name: Chaba Audit Suite (monthly full)
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: Sun *-*-1..7 03:00:00
   persistent: true
@@ -123,7 +123,7 @@ jobs:
     MDDB_CMS_URL: http://100.102.134.91:11027
 - id: chaba-system-report
   name: Chaba System Report
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: '*-*-* 06:45:00'
   persistent: true
@@ -603,7 +603,7 @@ jobs:
     venv created on exec checkout with PyYAML==6.0.3 websockets==17.1
 - id: ada-flood-news
   name: Flood news CMS refresh
-  host: idc02
+  host: con01
   dispatch: systemd
   every: 15m
   persistent: true
@@ -633,7 +633,7 @@ jobs:
     under commit 120a10896 but the jobs entry was lost; restored 2026-10-22 to match the deployed unit.'
 - id: chaba-kb-audit
   name: KB audit chain (weekly)
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: Sun *-*-* 04:00:00
   persistent: true
@@ -851,7 +851,7 @@ jobs:
     pulls `ha host logs` hourly with --severe; dedup file is tag-suffixed (log-shipper-ha-severe-michael-ha.json).
 - id: report-distill
   name: Report distill (L1 bank -> L2 domain digests)
-  host: idc02
+  host: con01
   dispatch: systemd
   on_calendar: '*-*-* 04:00:00'
   persistent: true
