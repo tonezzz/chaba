@@ -1,0 +1,22 @@
+id: devnest-host-assessment-tony-dell
+title: 'DevNest read-only host assessment: tony-dell'
+column: done
+updated: 2026-10-25 15:40
+brief: 'First real DevNest skill job: assess tony-dell load without remediation.'
+priority: low
+program: ai-workforce
+tags:
+- devnest
+- skill
+- host-assessment
+- read-only
+spec: 'target_host=tony-dell. Read-only evidence: uptime/load/nproc, free, df, failed user units, nvidia-smi. Artifact:
+  /home/tony/evals/results/devnest-host-tony-dell.json. Gate: JSON exists, target_host explicit, read_only true,
+  no command mutation. No restart/install/kill/push.'
+note: 'Completed 2026-10-25: deterministic skill ran over SSH; load_per_cpu=0.235; memory available ~3.8G; root
+  75%; failed units listed; GPU unavailable. No remediation performed.'
+ref: DEV-0862
+comms:
+- at: 2026-10-25 15:40
+  from: devin
+  text: card captured via board-api
