@@ -1019,7 +1019,7 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     shadows = shadow_paths(mwt, base, "HEAD")
     if shadows:
         return False, [], "", {}, shadows
-    tests = baseline_aware_test_gate(mwt, repo_name, s["base_ref"])
+    tests = baseline_aware_test_gate(mwt, repo_name, base)
     if not tests.get("ok"):
         return False, [], "", tests, []
     return True, [], "", tests, []
