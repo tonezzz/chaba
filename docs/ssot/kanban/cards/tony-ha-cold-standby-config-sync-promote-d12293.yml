@@ -1,0 +1,19 @@
+id: tony-ha-cold-standby-config-sync-promote-d12293
+title: tony-ha cold standby — config sync + promote runbook
+column: backlog
+updated: 2026-10-25 13:55
+ref: HOM-0855
+comms:
+- at: 2026-10-25 13:55
+  from: devin
+  text: 'Pain point (2026-10-25): omen maintenance = tony-ha fully down; idc02 shadow front 502s because it proxies
+    the dead backend. SSOT shows tony-ha is portable — all integrations LAN/cloud (tuya/xiaomi/sonoff/cozylife),
+    no USB radios, secrets already host-independent in idc03 per-instance store.
+
+
+    Proposal (NOT re-homing to dell — that reverses the deliberate omen-dedicate-nest decision): keep a cold standby.
+
+
+    Spec:
+
+    1) Periodic rsync job: omen:~/.config/home-assistant -> standby host (idc02 or dell),'
