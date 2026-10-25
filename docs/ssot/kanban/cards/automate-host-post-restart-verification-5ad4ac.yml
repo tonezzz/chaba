@@ -1,0 +1,18 @@
+id: automate-host-post-restart-verification-5ad4ac
+title: Automate host post-restart verification
+column: doing
+updated: 2026-10-25 15:49
+action:
+  type: manual
+ref: SYS-0863
+comms:
+- at: 2026-10-25 15:49
+  from: devin
+  text: The standard manual procedure exists in docs/kb/host-reboot-verification.md and docs/ssot/infrastructure/ssot.operations.yml#transition.post_restart.
+    The existing mcp-health-snapshot.timer has OnBootSec=5min/OnUnitActiveSec=15min and did run after the latest
+    Omen boot; however scripts/mcp-health-snapshot.mjs only records a global health summary and opens focus-inbox
+    findings. It does not invoke the full host-specific post_restart checklist. Add boot-id-change detection and
+    one check-only run for
+- at: 2026-10-25 15:49
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
