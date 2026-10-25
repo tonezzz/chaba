@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:42
+updated: 2026-10-25 12:44
 action:
   type: manual
 ref: OPS-0853
@@ -66,6 +66,14 @@ comms:
   from: devin
   text: 'raised request option-3-is-selected-and-p5-is-confirmed-8614fd: Option 3 is selected and p5 is confirmed
     disposable. Before any privileged partition operation, choose the data-safety p'
+- at: 2026-10-25 12:44
+  from: tony
+  text: 'answered option-3-is-selected-and-p5-is-confirmed-8614fd: Proceed with Option 3 without a full data backup;
+    I accept that /home and /data may become unrecoverable if the move/resize fails, and authorize root partition
+    commands on the tony-usb live environmen'
+- at: 2026-10-25 12:44
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -87,7 +95,7 @@ requests:
 - id: option-3-is-selected-and-p5-is-confirmed-8614fd
   ask: Option 3 is selected and p5 is confirmed disposable. Before any privileged partition operation, choose the
     data-safety path. No full /home or /data backup is currently verified.
-  status: open
+  status: answered
   at: 2026-10-25 12:42
   from: devin
   options:
@@ -100,4 +108,7 @@ requests:
     the SD).
   suggested: I have an independent verified backup of /home and /data; I will identify its location so you can verify
     it (recommended if available).
+  answer: Proceed with Option 3 without a full data backup; I accept that /home and /data may become unrecoverable
+    if the move/resize fails, and authorize root partition commands on the tony-usb live environment. Do not format
+    the SD.
 awaiting_action: true
