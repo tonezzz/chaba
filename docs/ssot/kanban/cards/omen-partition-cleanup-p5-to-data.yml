@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 16:04
+updated: 2026-10-25 18:48
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -49,3 +49,20 @@ comms:
   text: 'New DevNest read-only assessment sees Omen back online after rescue: /data now ~400GiB total, 65% used/~148G
     free, root 39%, GPU GTX1650 at 98%/75C. Partition work appears to have changed capacity; use the live assessment
     + lsblk/blkid to verify exact p5/p7 state before closing this card. No remediation from the DevNest skill.'
+- at: 2026-10-25 18:48
+  from: devin
+  text: 'raised request final-omen-storage-gate-p5-is-gone-and-p-e3c7ba: Final Omen storage gate: p5 is gone and
+    p7 is now 405.6G; remove the 32G /data/hibernate.swap and disable hibernate/resu'
+requests:
+- id: final-omen-storage-gate-p5-is-gone-and-p-e3c7ba
+  ask: 'Final Omen storage gate: p5 is gone and p7 is now 405.6G; remove the 32G /data/hibernate.swap and disable
+    hibernate/resume config after a normal reboot? Keep the 16G /swapfile for now and measure before shrinking it.'
+  status: open
+  at: 2026-10-25 18:48
+  from: devin
+  options:
+  - id: remove-hibernate-swap
+    label: Remove 32G hibernate swap + disable hibernation (recommended)
+  - id: keep-swap
+    label: Keep hibernation swap for now
+  suggested: remove-hibernate-swap
