@@ -1,6 +1,6 @@
 id: jev-opencode-closeout-probe
 title: 'OpenCode closeout probe: append marker and merge via worktree'
-column: backlog
+column: doing
 updated: 2026-10-25 18:05
 brief: Small free-lane marker job to prove the new dispatch-compatible OpenCode worktree and auto-merge closeout.
 priority: low
@@ -14,7 +14,8 @@ spec: 'Append a single line to README.md and commit it. Expected: runner creates
   OpenCode runs with flash-lite, close_out_merge verifies and merges, card done. No deploy.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
 ref: OPS-0868
 comms:
 - at: 2026-10-25 18:03
@@ -27,3 +28,6 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 18:05
+  from: mn01
+  text: claimed
