@@ -39,7 +39,7 @@ routing:
     OPENCODE_LANES: "1 = model lanes execute via opencode instead of
       devin (runner-agent only; gated on OPS-0846 closeout)"
     JEVOS_URL: "jevos /v1/systemone endpoint; default 127.0.0.1:8017,
-      idc02 serves 100.123.163.11:8777"
+      idc02 serves http://idc02.taila0626a.ts.net:8777"
     JEV_LANE_MIN_CONF: "min jevos confidence, default 0.5"
   never_dispatched: manual (Tony's hands — hardware, spend, accounts)
 
@@ -126,8 +126,8 @@ lanes:
       jevos answers gated at JEV_LANE_MIN_CONF; end-to-end chain verified
       by jev-model-chain-probe cards (card action.lane persisted + unit
       env DEVIN_MODEL set)
-    target_host: runs inside the claimer process; jevos on idc02:8777;
-      jev-student on idc03:8778
+    target_host: "runs inside the claimer process; jevos on
+      idc02.taila0626a.ts.net:8777; jev-student on idc03:8778"
     expected_cost: "~$0 local; real Jev ~$0.042/MTok when keyed"
     expected_tokens: "<1k per decision"
     evidence_artifact: >-
