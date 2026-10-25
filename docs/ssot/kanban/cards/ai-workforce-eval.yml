@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: done
-updated: 2026-10-25 17:10
+updated: 2026-10-25 18:00
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -265,6 +265,11 @@ comms:
   text: 'Colab follow-up 2026-10-25: eval-code-14b (qwen3:14b) ran 421s with opencode_rc=0 but verify_rc=1; no done
     marker. Verification failure is harness/tool-loop related, not a passing code result. No active claim now; retry
     after repairing task/session identifier handling.'
+- at: 2026-10-25 18:00
+  from: devin
+  text: eval-code-14b has been recorded as FAILED_VERIFICATION in its Drive done marker (verify_rc=1, no valid code
+    repair). This prevents wasting the next T4 run on the same harness failure. Do not interpret the marker as a
+    pass; rerun only as a new attempt after fixing OpenCode task/session ID handling.
 action:
   type: dispatch
   status: done
