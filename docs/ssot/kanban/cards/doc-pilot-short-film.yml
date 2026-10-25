@@ -1,7 +1,7 @@
 id: doc-pilot-short-film
 title: doc-pilot — first AI short documentary end-to-end
 column: backlog
-updated: 2026-10-25 17:55
+updated: 2026-10-25 18:00
 priority: medium
 tags:
 - ada-nest
@@ -204,6 +204,12 @@ comms:
     lacked spiece.model; T5TokenizerFast loaded the self-contained tokenizer.json. Two Drive artifacts read back
     (shot01/02.pt, 4.1MB each) and validated with expected keys, 1x256x4096 finite tensors. NASA i2v is now unblocked
     but still requires a T4; no active claim or done marker yet.'
+- at: 2026-10-25 18:00
+  from: devin
+  text: 'NASA T5 embeddings are now DONE on Omen CPU: two validated shot01/02 embeddings (4.1MB each, [1,256,4096])
+    on Drive. The T5 fast tokenizer works from the existing tokenizer.json despite absent spiece.model. nasa-i2v
+    is now an unclaimed T4 pack and will run in the same queue-runner session as any other pending T4 packs; no
+    need to merge it into a benchmark pack.'
 requests:
 - id: where-should-tony-see-doc-post
   ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
