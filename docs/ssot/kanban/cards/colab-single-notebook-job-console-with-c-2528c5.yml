@@ -1,0 +1,28 @@
+id: colab-single-notebook-job-console-with-c-2528c5
+title: Colab single-notebook job console with cache warmup
+column: backlog
+updated: 2026-10-25 19:48
+brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
+  clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
+tags:
+- colab
+- mcp-colab
+- gpu-efficiency
+- nest
+- procedure
+- education
+spec: 'Deliver a canonical Colab notebook with instruction markdown + two operator cells: (1) mount Drive, identify
+  boot ID/GPU/RAM, register this managed runtime, detect another fresh managed runtime and refuse ambiguous duplicate
+  launches; (2) start the detached shared queue once. All workloads remain queue jobs/packs (JOBS.py + packs/<name>/pack.yml),
+  not hand-run per-job cells. Add a standard per-runtime small T4 warmup before HF cache restore so the runner overlaps
+  the cache-restore prep with useful short GPU work; env setup markers remain boot-scoped and artifacts verified
+  before done. Do not auto-stop unknown sessions; Google Runtime > Manage Sessions remains authoritative for uninstrumented
+  notebooks. Update colab-mcp-jobs procedure and an existing Education lesson for Tony review. Test: CPU/no-Drive
+  preflight refuses queue start, fresh T4 preflight passes, duplicate managed T4 session blocks with identity, runner
+  PID/lease never kills another VM by PID collision, warmup runs while cache restore prep is pending, then queued
+  voice/video/DevNest packs continue in the same VM.'
+ref: OPS-0874
+comms:
+- at: 2026-10-25 19:48
+  from: tony
+  text: card captured via board-api
