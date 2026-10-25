@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:22
+updated: 2026-10-25 12:28
 action:
   type: manual
 ref: OPS-0853
@@ -34,6 +34,13 @@ comms:
     gap is ~105.6GiB, available to p7 after deletion. A separate ~114.5GiB gap before p3 could grow /home, but requires
     moving p3 start offline. GDrive raw GPT backup is present; it is metadata-only, not a filesystem backup. Await
     exact target choice and full data-backup gate
+- at: 2026-10-25 12:28
+  from: devin
+  text: 'Important correction to the earlier recommendation: after Ollama moved to /data on 2026-10-24, the latest
+    recorded /home status was 69% used with 47GiB free, not the pre-move 98% from 10/23. Thus expanding p3 is not
+    currently urgent; option 3 still maximizes allocated space but its p3 start-move is the riskier part. Option
+    2 (delete confirmed-disposable p5 + extend p7 by ~105.6GiB) may be the simpler choice if the goal is more /data
+    space. No partition changes run; target choice and active-files'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
