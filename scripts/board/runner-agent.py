@@ -161,6 +161,7 @@ LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
     "paid_frontier": "litellm/or-claude-fable-5.1",
 }
+OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
 LANE_KW = {
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend", "order the", "blocked on tony", "rotation", "rekey",
@@ -968,7 +969,7 @@ def start_task(card: dict, typ: str) -> tuple:
                 a["lane"] = lane
                 if lane in LANE_MODELS and not a.get("model"):
                     a["model"] = LANE_MODELS[lane]
-        if lane in LANE_MODELS:
+        if lane in LANE_MODELS and OPENCODE_LANES:
             return start_opencode_lane(card, lane, unit)
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
