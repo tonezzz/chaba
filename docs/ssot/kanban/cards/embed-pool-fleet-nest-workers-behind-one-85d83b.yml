@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
 column: backlog
-updated: 2026-10-24 08:17
+updated: 2026-10-25 08:11
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -16,3 +16,9 @@ comms:
 
 
     Lane A (unblocks production): pool-shim.py on idc03 — ol'
+- at: 2026-10-25 08:11
+  from: devin
+  text: 'REAL JOB PLAN (Omen, safe pilot): do NOT backfill all banks yet. First run 100 representative documents
+    through nomic-embed-text + bge-m3; expose an Ollama-shaped endpoint on a non-conflicting port; measure p50/p95,
+    throughput, RAM/disk, and recall@3 against current MDDB embeddings. Gate: no production pointer changes until
+    recall >= current and artifact JSON+query fixtures exist. Omen data free=38G, so keep pilot <=5G.'
