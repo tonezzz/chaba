@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: backlog
-updated: 2026-10-25 19:02
+updated: 2026-10-25 19:47
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -37,3 +37,10 @@ comms:
     + devin-dispatch meta.json, runs OpenCode there, and returns devin-task-compatible unit (commit 38956b47 / origin).
     OpenCode lanes remain gated until a pinned idc02 closeout probe passes. Probe OPS-0870 is queued/pinned but
     has not yet been claimed; no false completion claimed.'
+- at: 2026-10-25 19:47
+  from: devin
+  text: 'OPS-0846 review (mn01 dispatch wt): found+fixed UnboundLocalError in start_task — `lane` unbound when card
+    already carries action.lane (explicit lane OR JEV_LANE claim-classify path); every such claim would crash before
+    spawning any unit. Also meta.json now carries base/executor/started_at parity with devin-dispatch. Regression
+    tests: tests/board/test_runner_agent_lane.py (5 cases) + full tests/board suite 191 pass. Live findings: idc02
+    jev-lane.conf is malformed (Assignment outside of section —'
