@@ -1,0 +1,22 @@
+id: jev-claim-metadata-probe
+title: 'JEV claim metadata probe: free lane persisted on atomic claim'
+column: backlog
+updated: 2026-10-25 14:47
+brief: Small verified probe for board claim metadata; should classify free_lane and persist action lane/model at
+  the atomic claim.
+priority: low
+program: chaba-ci
+tags:
+- jev
+- probe
+- lane
+- model
+spec: 'Task: append a marker to README and commit. Expected board action.lane=free_lane and action.model=litellm/gemini-3.5-flash-lite
+  after claim. OpenCode is gated; Devin fallback may execute.'
+action:
+  type: dispatch
+ref: OPS-0857
+comms:
+- at: 2026-10-25 14:47
+  from: devin
+  text: card captured via board-api
