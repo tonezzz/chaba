@@ -1,6 +1,6 @@
 id: devnest-devin-replay-benchmark
 title: Benchmark DevNest against historical Devin jobs — replay corpus + gates
-column: doing
+column: review
 updated: 2026-10-25 19:20
 brief: Use the 110-session Devin CLI archive to build a privacy-safe, held-out replay benchmark for DevNest/OpenCode/JEV/runner-agent
   against the work Devin actually handled.
@@ -55,7 +55,16 @@ comms:
 - at: 2026-10-25 19:20
   from: chaba
   text: started devin-task-20261025-122017-read-only-mine-sessions-db-and on mn01 (dispatch)
+- at: 2026-10-25 19:20
+  from: mn01
+  text: 'finished (ok): exit=0  devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Failed with result
+    ''exit-code''. | devin-task-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0  devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Failed with result ''exit-code''.
+    | devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Consumed 338ms CPU time over 599ms wall
+    clock time, 108.9M memory peak.'
+review_kind: verify
+claim: {}
