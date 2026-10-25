@@ -9,7 +9,7 @@ priority: medium
 note: 'Auto-recovered 2026-10-24: tony-omen /home back in bounds (69%, slope 8.64 GiB/d)'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml. tony-dell playbook
   (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size, ~/.cache/yt-live-media LRU is 8GiB.'
-updated: 2026-10-24 20:31
+updated: 2026-10-25 08:39
 review_kind: triage
 comms:
 - at: 2026-10-09 17:44
@@ -180,6 +180,13 @@ comms:
     via systemd drop-in; all 14 models verified loading (qwen3:8b, gpt-oss:20b, gemma3:12b, hermes3:8b...). Combined
     with earlier: cpufreq 2GHz active + GPT backup in /var/backups/omen-gpt/. Disk plan move-cache DONE (ollama
     tier); .cache (42G) next candidate if /home pressure returns.'
+- at: 2026-10-25 08:39
+  from: devin
+  text: 'PARTITION PLAN SEPARATED: /home is healthy after Ollama move (73%, 81G free); /data is now the pressure
+    point (88%, 38G free). p5=64.9GiB old ubuntu-000, unmounted; p7=300GiB ubuntu-data; ~40.7GiB gap between them.
+    Potential gain ~105.6GiB by deleting p5 + extending p7, but this is destructive and requires read-only p5 inventory,
+    verified restorable GPT/data backup, and offline tony-usb run. New gated card omen-partition-cleanup-p5-to-data
+    created; no partition changes made.'
 requests:
 - id: omen-disk-plan
   from: devin
