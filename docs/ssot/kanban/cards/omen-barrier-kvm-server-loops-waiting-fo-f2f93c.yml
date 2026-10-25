@@ -1,9 +1,10 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
-column: backlog
-updated: 2026-10-25 16:10
+column: done
+updated: 2026-10-25 16:31
 action:
   type: manual
+  status: done
 ref: OPS-0864
 comms:
 - at: 2026-10-25 15:49
@@ -40,6 +41,9 @@ comms:
     and their auto-restart health hooks/SSOT references. I will preserve barrier-pin-vt/lxqt/Xorg seat helpers because
     they support the desktop/CRD, not Barrier KVM. Verify port 24800 closed and no barriers/barrierc processes after
     deployment.
+- at: 2026-10-25 16:31
+  from: chaba
+  text: 'answer-sweep: executed ''Retire the Barrier KVM server/client and its enforcement/wat'' -> moved to done'
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
@@ -56,4 +60,5 @@ requests:
     as the physical Barrier server).'
   answer: Retire the Barrier KVM server/client and its enforcement/watchdog. I do not need Barrier while working
     on MacBook. Preserve unrelated Xfce/CRD physical-seat support.
-awaiting_action: true
+  executed: 2026-10-25 close
+claim: {}
