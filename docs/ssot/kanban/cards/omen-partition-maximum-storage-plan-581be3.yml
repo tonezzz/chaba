@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:28
+updated: 2026-10-25 12:36
 action:
   type: manual
 ref: OPS-0853
@@ -41,6 +41,13 @@ comms:
     currently urgent; option 3 still maximizes allocated space but its p3 start-move is the riskier part. Option
     2 (delete confirmed-disposable p5 + extend p7 by ~105.6GiB) may be the simpler choice if the goal is more /data
     space. No partition changes run; target choice and active-files'
+- at: 2026-10-25 12:36
+  from: devin
+  text: 'New removable media inventory 2026-10-25 via tony-usb: /dev/sda is a 125.8GB removable USB device; p1 512MB
+    EFI, p2 116.7GB ext4 label ubuntu-usb mounted as /. It is the running rescue OS (42GB used, 68GB free), not
+    a blank SD. Do not format while booted from it; doing so would erase the active root and end this session. It
+    is too small for full /home+/data backup (~483GB used). Keep it as the offline recovery/partition-work environment
+    through Option 3; consider repurposing only after booting n'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
