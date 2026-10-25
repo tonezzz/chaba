@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 10:12
+updated: 2026-10-25 10:15
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -59,3 +59,9 @@ comms:
     SSH host-key verification also failed. Therefore I did NOT trust/connect to .86 or run partition commands. Confirm
     identity locally on the booted machine (hostnamectl, DMI product, lsblk model, nvidia-smi) before continuing.
     MN01 is separately verified at 192.168.2.75 / Tail'
+- at: 2026-10-25 10:15
+  from: devin
+  text: 'Identity update 2026-10-25: Tony confirmed at local console `hostnamectl=tony-usb`, DMI `15-BC`, NVMe `KINGSTON
+    SNV2S1000G` 931.5G — this is Omen hardware booted from tony-usb, not MN01. `nvidia-smi` missing is expected
+    in the live USB (driver/tools absent), not evidence of no GPU. No partition changes yet. Tailscale/SSH key changed
+    due live USB; use local console for read-only GPT dump and partition work until host key is verified.'
