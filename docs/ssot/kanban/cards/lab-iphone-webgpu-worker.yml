@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: backlog
-updated: 2026-10-25 14:08
+updated: 2026-10-25 14:11
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -78,3 +78,9 @@ comms:
     matmul: {"n256":{"ms":2,"gflops":16.8},"n512":{"ms":11,"gflops":24.4},"n1024":{"ms":61,"gflops":35.2}}
 
     embed: null'
+- at: 2026-10-25 14:11
+  from: devin
+  text: "[webgpu-worker] job mddb-rerank-20261023-142249 — 9 embeddings in 415ms on iPhone GPU\nquery: how do I\
+    \ deploy changes to the ada voice service\nranking:\n  1. 0.527 — devin/95371ffdee9a4936\n  2. 0.495 — devin/a0264e31339146bb\n\
+    \  3. 0.307 — devin-session/expensive-climb\n  4. 0.306 — devin/d28abb817c154af2\n  5. 0.146 — devin/geode-soybean\n\
+    \  6. 0.077 — devin-session/salty-shell\n  7. 0.071 — devin-session/season-nickel\n  8. 0.049 — devin/2df9058a4a7448a4"
