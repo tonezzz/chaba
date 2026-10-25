@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: backlog
-updated: 2026-10-25 12:53
+updated: 2026-10-25 14:43
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -27,3 +27,7 @@ comms:
   text: 'OpenCode executor package tested: actual opencode process received --model flash-lite + LITELLM_KEY, but
     scratch repo closeout is not dispatch-compatible; OPENCODE_LANES gated off. Next implementation is branch/worktree
     identity + normal close_out_merge; do not enable automatically yet.'
+- at: 2026-10-25 14:43
+  from: devin
+  text: 'NEXT: highest priority. Interactive OpenCode works; finish dispatch-compatible worktree/branch/commit/verify/merge
+    closeout before enabling OPENCODE_LANES.'
