@@ -1,0 +1,22 @@
+id: dispatch-test-baseline-awareness
+title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
+column: backlog
+updated: 2026-10-26 06:08
+brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
+  gate compare base vs branch or support explicit docs-only expected goals.
+priority: high
+program: chaba-ci
+tags:
+- dispatch
+- test-gate
+- closeout
+- opencode
+spec: 'Reproduce: tests/ada/test_tg_forward_provenance.py::TestHandleTurns::test_forwarded_document_described fails
+  on origin/master and the marker branch with identical UnboundLocalError(turn_ok). Implement baseline-aware gate:
+  run the same focused failure on base and branch, classify pre-existing failures separately, while never suppressing
+  new failures. Validate with the OpenCode README marker probe then a source-changing regression probe.'
+ref: OPS-0879
+comms:
+- at: 2026-10-26 06:08
+  from: devin
+  text: card captured via board-api
