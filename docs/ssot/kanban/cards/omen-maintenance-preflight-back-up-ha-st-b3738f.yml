@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 09:23
+updated: 2026-10-25 09:49
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -26,3 +26,10 @@ comms:
     p3 and ~40.7GiB after p7. Lowest-risk organization: add a new /models/cache partition in the large gap; preserve
     p1/p2/p4/p5 and avoid moving /home. Critical: /data/hibernate.swap 32GiB is active (25.7GiB used) and resume
     config pins UUID + offset 34816; do not swapoff/repartition l'
+- at: 2026-10-25 09:49
+  from: devin
+  text: 'Update 2026-10-25: MN01 private backup now has Tony HA config + online SQLite snapshot and Ada HA config
+    (including untracked household.yml) + online SQLite snapshot; both DB SHA256 verified. Backup dir 0700. Manifest/report:
+    gdrive:ada-nest/queue/omen-partition-backup-status-20261025.md. The extra /data copy is partial (942MB/19GB,
+    marked DO_NOT_RESTORE); /data/rescue, ollama-models, gguf not copied. Recommendation: avoid moving/reformatting
+    existing partitions; current lsblk arithmetic indicat'
