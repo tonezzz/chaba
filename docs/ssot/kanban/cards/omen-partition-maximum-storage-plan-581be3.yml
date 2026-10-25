@@ -103,6 +103,10 @@ comms:
     /dev/sda2. No NVMe partition writes. Tool check: parted 3.6 has no move-start operation; GParted is GUI-only.
     tony-usb has Xfce on DISPLAY :0 but no Chrome Remote Desktop service; no remote GUI/input path is available
     to operate GParted safely from this session.'
+- at: 2026-10-25 12:54
+  from: devin
+  text: 'raised request can-you-access-the-omen-tony-usb-xfce-sc-9c0b86: Can you access the Omen tony-usb XFCE screen
+    (DISPLAY :0) locally or through an existing remote desktop so GParted can b'
 - at: 2026-10-25 13:02
   from: chaba
   text: 'answer-sweep: ''queue'' deferred — card action type=manual — not dispatch-claimable'
@@ -161,4 +165,17 @@ requests:
     SD; then I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
   answer: Yes, install GParted in the current tony-usb live environment. Do not format the SD or modify NVMe partitions
     during the install.
+- id: can-you-access-the-omen-tony-usb-xfce-sc-9c0b86
+  ask: Can you access the Omen tony-usb XFCE screen (DISPLAY :0) locally or through an existing remote desktop so
+    GParted can be operated safely?
+  status: open
+  at: 2026-10-25 12:54
+  from: devin
+  options:
+  - I can access the Omen screen now; keep GParted open and guide me through the exact queued operations (recommended).
+  - I cannot access the screen; pause the partition edits and keep the rescue system unchanged.
+  - I want you to propose a temporary remote desktop setup first; do not install/enable it until I approve the exact
+    service and access scope.
+  suggested: I can access the Omen screen now; keep GParted open and guide me through the exact queued operations
+    (recommended).
 awaiting_action: true
