@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: backlog
-updated: 2026-10-25 20:38
+updated: 2026-10-25 20:41
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -33,3 +33,10 @@ comms:
     first in JOBS so cache restore prep overlaps GPU smoke. Queue runner writes per-boot runner identity and no
     longer removes a foreign runner PID. Session detection is managed-notebook-only; no auto-stop. Tests: 3 runtime-registry
     + 7 mc'
+- at: 2026-10-25 20:41
+  from: devin
+  text: 'Final handoff: commit 3f4dcabbb (`feat: add one-notebook Colab queue and session guard`) is local on `fix/colab-session-control`.
+    Worktree is clean; after fetch the branch is 1 ahead / 113 behind `origin/master`, so it has NOT been pushed
+    and needs safe rebase before any push. Runtime files are already deployed to Drive and checksum-verified; queue
+    heartbeat is stale and no runner PID is present. Education post 2231 (`colab-gpu-worker`) was updated in place.
+    The new `colab_session_status`/pack-s'
