@@ -6,12 +6,22 @@ tags:
 - board
 - feature
 - attachments
-note: 'Tony: "Can you let me upload the ups image into the card. Should be a good idea to attach photo evidence."
-  Driver card: find-ups-replacement-batteries — needs 2 UPS photos attached. Feature: board-api POST /upload or
-  /attach {id, filename, b64|multipart} storing under docs/ssot/kanban/attachments/<card-id>/ (or CMS media), comms
-  entry links the file. Board UI renders thumbnails. Also useful for incident captures, receipts, before/after screenshots.'
+note: 'Tony: "Can you let me upload the ups image into the card. Should be a good idea to attach photo
+  evidence." Driver card: find-ups-replacement-batteries — needs 2 UPS photos attached. Feature: board-api
+  POST /upload or /attach {id, filename, b64|multipart} storing under docs/ssot/kanban/attachments/<card-id>/
+  (or CMS media), comms entry links the file. Board UI renders thumbnails. Also useful for incident captures,
+  receipts, before/after screenshots.'
 ref: KNB-0473
 comms:
 - at: 2026-10-11 18:28
   from: devin
   text: card captured via board-api
+- at: 2026-10-25 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via board-api and render
+  thumbnails in the Board UI. Host/Repo: tony-dell / chaba. Constraints: Provide POST /upload or /attach
+  accepting id, filename, and payload, storing files under docs/ssot/kanban/attachments/<card-id>/ while
+  linking them via comms entries, and ensure board UI renders thumbnails. Testable done-condition: Uploading
+  a UPS replacement battery photo via the API successfully stores the file in the designated SSOT path,
+  creates a linked comms entry, and displays the thumbnail in the board UI.'
