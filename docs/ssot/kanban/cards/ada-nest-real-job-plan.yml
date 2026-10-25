@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: backlog
-updated: 2026-10-25 12:53
+updated: 2026-10-25 13:01
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -27,3 +27,10 @@ comms:
     check, throughput/query artifact, no production index mutation). Queue order: embedding throughput first; existing
     vyncx/thonburian voice artifacts already done; image pack only on T4; no Omen Qwen35/image pull while /data
     has 38G free. Omen embedding pilot remains <=5G after rescue/boot.'
+- at: 2026-10-25 13:01
+  from: devin
+  text: 'Nest status check: decomposition is real in the pack graph (01-doc-vo-repair -> 02-doc-assemble-v2 -> 03-doc-align;
+    eval m1/t1 split; VYNCX bench/score/redo/CER split). However current queue heartbeat is ~6h stale (`vyncx-v2-score
+    flush-settle`), and many claims are stale even where done markers exist. So Nest is NOT actively grinding now;
+    it has completed work artifacts but needs stale-claim/heartbeat repair before we call it healthy. New `t4-embedding-bench`
+    is staged but unclaimed.'
