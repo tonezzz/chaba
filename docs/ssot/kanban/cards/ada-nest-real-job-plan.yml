@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: backlog
-updated: 2026-10-25 13:01
+updated: 2026-10-25 13:36
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -34,3 +34,10 @@ comms:
     flush-settle`), and many claims are stale even where done markers exist. So Nest is NOT actively grinding now;
     it has completed work artifacts but needs stale-claim/heartbeat repair before we call it healthy. New `t4-embedding-bench`
     is staged but unclaimed.'
+- at: 2026-10-25 13:36
+  from: devin
+  text: 'Gap-job procedure prepared and staged: ada-nest/queue/gap-runner.py + gap-packs/PROCEDURE.md + gap-packs/embedding-smoke/pack.json.
+    It runs only during fresh main heartbeat prep/prep-wait, uses a separate lease, checks free VRAM, has a timeout/artifact
+    gate, and never starts a second main runner or mutates cache/index. Launch cell: `nohup bash -lc "while true;
+    do python3 /content/drive/MyDrive/ada-nest/queue/gap-runner.py; sleep 20; done" > /content/drive/MyDrive/ada-nest/queue/gap-runner.log
+    2>'
