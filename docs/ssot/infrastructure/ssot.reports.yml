@@ -466,6 +466,26 @@ nodes:
       into the served chaba-tony-dell checkout (dual-root pattern, same
       as report-system.py). Observable on tony-dell checkouts; renders
       as missing from checkouts on other hosts.
+  - id: lane-savings
+    layer: L2-domain
+    purpose: Monthly lane-usage / token-savings accounting — which
+      dispatch work ran off the paid Devin lane, evidence-bound (card
+      devnest-token-savings-lane-catalog). Never claims savings without
+      usage evidence.
+    generator: python3 scripts/board/lane-savings.py --out-dir docs/reports
+    cadence: monthly
+    output: docs/reports
+    artifact_pattern: "lane-savings-*.json"
+    meta: reports/lane-savings/meta.yml
+    references:
+      - docs/ssot/infrastructure/ssot.devnest-lanes.yml
+      - docs/ssot/kanban/ssot.kanban.yml
+    children: []
+    note: >
+      Durable artifacts land in docs/reports/lane-savings-<YYYY-MM>.{md,json}
+      (versioned); reports/lane-savings/ holds only meta. No dedicated
+      timer yet — run manually at month end or ride kanban-sync once a
+      monthly cadence helper exists; the scan is read-only and cheap.
   # --- Attention domain ---
   - id: focus-inbox
     layer: L1-producer
