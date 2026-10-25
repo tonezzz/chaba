@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: review
-updated: 2026-10-26 05:04
+updated: 2026-10-26 06:08
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -78,6 +78,12 @@ comms:
     session/worktree. This is NOT a verified OpenCode closeout. Latest Dell probe remains queued after PATH/start
     failure; Omen defers push; idc02 probes ran Devin default deepseek-v4-pro, not OpenCode. Keep OPS-0846 open
     for a real OpenCode branch+verify+merge proof.'
+- at: 2026-10-26 06:08
+  from: devin
+  text: 'ROOT CAUSE REFINED: OpenCode closeout probe branch changes only README marker, but merge gate failed tests/ada/test_tg_forward_provenance.py::TestHandleTurns::test_forwarded_document_described.
+    Re-ran the exact test on origin/master baseline: SAME UnboundLocalError(turn_ok). This is a pre-existing baseline
+    failure, not OpenCode regression. Next fix: make closeout test gate baseline-aware (or explicit expected-goal
+    for docs-only marker), then rerun; do not bypass globally.'
 action:
   type: dispatch
   status: done
