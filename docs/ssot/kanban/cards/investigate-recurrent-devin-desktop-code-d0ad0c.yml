@@ -1,7 +1,7 @@
 id: investigate-recurrent-devin-desktop-code-d0ad0c
 title: Investigate recurrent Devin Desktop CodeWindow hang on tony-dell
 column: backlog
-updated: 2026-10-25 11:35
+updated: 2026-10-25 11:48
 action:
   type: manual
 ref: DEV-0851
@@ -44,6 +44,12 @@ comms:
     windows are present on :20. Kanban consumer checks still return 200 with 944 cards; latest post-restart main.log
     records one CodeWindow ERR_BLOCKED_BY_RESPONSE during startup, so I left the card open for your CRD/UI confirmation.
     No CRD restart or Dell reboot.'
+- at: 2026-10-25 11:48
+  from: devin
+  text: 'Post-restart check: chrome-remote-desktop@tony.service active; Devin main PID 255718 matches code.lock;
+    three Devin windows exist on DISPLAY :20. Kanban consumer checks return HTTP 200 for /apps/board2/ and cards.json
+    (944 cards). New Devin main.log records startup CodeWindow ERR_BLOCKED_BY_RESPONSE, so interactive UI recovery
+    is not confirmed. Awaiting Tony confirmation; no further restart performed.'
 requests:
 - id: dell-devin-desktop-is-logging-repeated-c-beacf2
   ask: 'Dell Devin Desktop is logging repeated CodeWindow unresponsive errors. Before restarting its window/app,
