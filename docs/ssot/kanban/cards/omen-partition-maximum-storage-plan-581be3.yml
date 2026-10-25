@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 14:37
+updated: 2026-10-25 14:46
 action:
   type: manual
 ref: OPS-0853
@@ -149,6 +149,13 @@ comms:
   text: Tony requested shutdown so he can remove the rescue SD. Verified host tony-usb root was /dev/sda2, zero
     GParted/e2image/e2fsck/resize2fs workers remained; ran sudo systemctl poweroff. SSH port first refused, then
     timed out after 10s, consistent with shutdown. Awaiting Tony to boot normal Omen OS for post-change mount verification.
+- at: 2026-10-25 14:46
+  from: tony
+  text: 'answered can-you-access-the-omen-tony-usb-xfce-sc-9c0b86: You can remote it; use the existing X display
+    over SSH.'
+- at: 2026-10-25 14:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -204,7 +211,7 @@ requests:
 - id: can-you-access-the-omen-tony-usb-xfce-sc-9c0b86
   ask: Can you access the Omen tony-usb XFCE screen (DISPLAY :0) locally or through an existing remote desktop so
     GParted can be operated safely?
-  status: open
+  status: answered
   at: 2026-10-25 12:54
   from: devin
   options:
@@ -214,6 +221,7 @@ requests:
     service and access scope.
   suggested: I can access the Omen screen now; keep GParted open and guide me through the exact queued operations
     (recommended).
+  answer: You can remote it; use the existing X display over SSH.
 - id: partition-edits-are-verified-from-the-re-6c7a16
   ask: Partition edits are verified from the rescue OS. Please remove the tony-usb rescue SD and boot the normal
     Omen OS from the internal NVMe. When it is back, tell me so I can verify /home and /data mount sizes and normal
