@@ -2,20 +2,13 @@ id: runner-auto-tony-macbook
 title: Runner host `tony-macbook` fails 1 dispatch bootstrap check(s)
 brief: Automated fleet audit found provisioning gaps on tony-macbook that will strand
   dispatch cards. Read the note, fix on the host, close the card.
-column: review
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: medium
-note: 'Failing: ~/.local/bin/runner-agent sha 64dd9a9b8c872bfe != repo e784cc2230abc352
-  — installed copy drifted; redeploy. Info: chaba origin is push-capable; no sunsynk-card
-  checkout — host can''t take action.repo=sunsynk-card cards; no mddb-fork checkout
-  — host can''t take action.repo=mddb-fork cards; no gods-eye-view checkout — host
-  can''t take action.repo=gods-eye-view cards; ada-voice: push probe ok — declare
-  push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates); ada-pi:
-  push probe ok — declare push:ada-voice in RUNNER_LABELS for the fast path (live
-  probe still gates); devin: /home/tony/.local/bin/devin (devin 3000.11.3 (9c803229faa4)).'
+note: 'Auto-recovered 2026-10-25: all bootstrap checks pass.'
 help: 'Per-check fixes:
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
