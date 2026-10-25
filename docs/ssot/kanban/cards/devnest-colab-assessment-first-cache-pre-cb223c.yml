@@ -1,0 +1,26 @@
+id: devnest-colab-assessment-first-cache-pre-cb223c
+title: DevNest Colab assessment-first cache preparation
+column: backlog
+updated: 2026-10-26 06:28
+brief: Define and stage a cache-independent DevNest assessment that runs in the same T4 queue window while the next
+  package’s model cache is prepared.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- colab
+- assessment
+- cache-warmup
+- t4
+spec: 'Standard sequence: stage all JOBS.py entries and pack.yml bundles on Drive before launch (queue-runner snapshots
+  both lists at startup); order one cache-independent held-out assessment before the next model/cache prep; runner
+  overlaps only the next prep with the current run, while run stages remain serial; after prep, run the T4 package
+  and verify durable artifacts. Current `devnest-host-assessment` is an SSH/read-only fleet CPU task, not a T4 workload.
+  The DevNest replay benchmark has candidate tasks but its five safe fixtures and held-out verifiers are not frozen
+  yet. Do not claim a benchmark pass without those gates. Update the Colab KB/Education procedure after the assessment
+  choice is settled.'
+ref: OPS-0880
+comms:
+- at: 2026-10-26 06:28
+  from: tony
+  text: card captured via board-api
