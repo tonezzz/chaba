@@ -1,7 +1,7 @@
 id: ada-nest-drive-store-hardening-stale-cla-558c90
 title: 'ada-nest drive-store hardening: stale-claim release + packs-index'
 column: backlog
-updated: 2026-10-25 07:51
+updated: 2026-10-25 07:53
 brief: 'Drive-FUSE lessons from 2026-10-23 cost hours (3 runner self-exits from lease read-back, lost-race claim
   poisoning, slow fleet scans). Ranked fixes:'
 tags:
@@ -33,3 +33,10 @@ comms:
     fleet claim heartbeat (current stale release 60m vs multi-hour timeouts), declare/scan subqueues (doc-pilot-v2
     is Omen-only; default Colab/watchers use ada-nest root), and validate fetch/publish inputs. Core rule: Drive
     is artifact bus, not a transactional lock DB.'
+- at: 2026-10-25 07:53
+  from: devin
+  text: 'Architecture review captured in Education post 2226 (updated ada-nest drive-store design). Highest-value
+    hardening: immutable pack revision = hash(pack.yml+inputs), done markers keyed by revision, attempt-scoped outputs;
+    renew per-pack claim heartbeat and stale only after timeout+grace; declare/scan queue roots (doc-pilot-v2 is
+    Omen-only, invisible to default Colab/watch); add dependency edges and strict fetch/publish validation. Core
+    boundary: Drive is durable artifact bus, not transactional sc'
