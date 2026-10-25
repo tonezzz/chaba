@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 10:26
+updated: 2026-10-25 10:31
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -72,3 +72,9 @@ comms:
     verified .2.86 host key against the previously trusted fingerprint, but SSH auth from the agent is denied (publickey,password);
     I cannot supply an interactive password or sudo. No partition changes executed. Next required local operator
     step: copy /tmp/omen-nvme0n1.sfdisk and /tmp/o'
+- at: 2026-10-25 10:31
+  from: devin
+  text: 'Update after Tony enabled SSH key: verified key-auth to tony-usb (Omen 15-BC hardware, Kingston NVMe);
+    sudo -n is available. The live-USB GPT backups were copied to MN01 metadata and hashes match the source: sfdisk
+    dcf03b... / GPT 345654.... All partitions remain unmounted/unchanged. Awaiting exact new partition/mountpoint
+    spec before running mkpart/mkfs/fstab changes.'
