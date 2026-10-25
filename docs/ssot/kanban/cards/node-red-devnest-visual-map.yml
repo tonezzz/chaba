@@ -1,0 +1,24 @@
+id: node-red-devnest-visual-map
+title: 'Node-RED DevNest visual map: observe first, allowlisted control second'
+column: backlog
+updated: 2026-10-25 16:25
+brief: 'Use Node-RED as a visual mental model for DevNest: cards -> JEV -> lanes -> runners -> verifiers -> Education,
+  with safe controls later.'
+priority: medium
+program: ai-workforce
+tags:
+- node-red
+- devnest
+- visualization
+- control
+- observability
+spec: 'Phase 1 read-only: build a flow that polls board-api /health and /cards, queue heartbeat, JEV lane/runner
+  status, Colab/Omen status, and emits a visual report. Phase 2 controlled actions: only allowlisted board-api actions
+  (queue/hold/request) with confirmation; never arbitrary shell, restart, delete, partition, or deploy from Node-RED.
+  First preview uses existing Node-RED editor at https://tony-dell.taila0626a.ts.net:8080/apps/node-red/ and existing
+  live report https://idc03.taila0626a.ts.net/cms/#/nodred-live-demo.'
+ref: OPS-0867
+comms:
+- at: 2026-10-25 16:25
+  from: devin
+  text: card captured via board-api
