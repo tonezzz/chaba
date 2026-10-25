@@ -1,0 +1,237 @@
+id: jobs/nest/2026-10-25-ada-nest-real-job-seq
+title: >-
+  Ada Nest real-job sequence — idc03 efficiency report + JEV arena-50,
+  omen embed pilot + colibri-35B, T4 qwen-image
+card: ada-nest-real-job-plan
+date: 2026-10-25
+runner: mn01 (dispatch worktree — plan + live verification only, no host mutations)
+status: planned-and-gated
+
+# ---------------------------------------------------------------------------
+# Every job declares: target_host, resource_gate, artifact, verifier,
+# stop_condition. Live state probed 2026-10-25 ~19:13 UTC from mn01.
+# ---------------------------------------------------------------------------
+
+verified_state_2026-10-25T1913Z:
+  tony_omen:
+    data_free_gb: 174        # /dev/nvme0n1p7 399G, 57% — the card's "38G free"
+                             # was the ROOT fs reading (nvme0n1p6 98G, 59G avail)
+                             # or a stale number. /data gate >=83G is MET now.
+    root_free_gb: 59         # too small for the ~83G colibri model — stage to /data
+    mem_avail_gb: 7          # 23G used of 30G; open-jev :8777 + open-jev-student
+                             # :8778 both `active` — they stay resident, budget
+                             # around them.
+    ollama_models_present: [nomic-embed-text, bge-m3, gpt-oss:20b, qwen3:8b,
+                            gemma3:4b, hermes3:8b, qwen2.5:7b, llama3.2:3b,
+                            llama3.2:1b, qwen3:0.6b, phi3, qwen3:4b, gemma3:12b]
+    # ^ embed pilot needs ZERO new pulls — footprint ≈ artifacts only.
+  idc03:
+    load_1m: 9.3             # 4 cores — saturated; all CPU jobs run nice -n19
+                             # and serialize, never concurrently.
+    jev_student: 'ok — http://100.102.134.91:8778 (distilmulti, thr 0.7)'
+    jevos: 'ready — http://127.0.0.1:8017 (jevos-v5, openvino cpu, dq128)'
+  colab_t4:
+    last_worker: colab-289669b4-41509 epoch 18
+    heartbeat_ts: 1792929577 # 2026-10-25 11:59:37 UTC — ~16min stale at probe;
+                             # NOT confirmed awake. Gate treats >5min as asleep.
+    queue_ahead: [gaussian-splat-edu-smoke-v2, t4-gpu-baseline, t4-llm-direct-bench]
+    img_gen_bench_state: >-
+      packs/img-gen-bench is `done` — ran on con01 CPU (4 imgs, ~20 min/img,
+      model load >3h). Verdict in-pack: GPU is the practical lane. T4 arm =
+      NEW pack dir (img-gen-bench-t4, --backend cuda), not a re-claim.
+
+sequence:
+  wave_a_parallel:
+    - job1-nest-efficiency      # idc03, nice'd — cheap CPU, no GPU spend
+    - job3-omen-embed-pilot     # tony_omen — different host, zero contention
+  wave_b_after_a:
+    - job2-jev-arena-50         # idc03 — starts only when job1 exits (load gate)
+    - job5-omen-colibri-35b     # omen — gate met; eligible after job3 frees RAM.
+                                # Pre-flight re-checks /data >=83G before pull.
+  opportunistic:
+    - job4-t4-qwen-image        # fires ONLY inside an awake T4 window, behind
+                              # the three already-staged packs. Never starts a
+                              # runtime for itself.
+
+job1_nest_efficiency:
+  target_host: idc03
+  card: nest-efficiency-session-level-drive-gpu-bf7681   # OPS-0807
+  goal: >-
+    Per-session efficiency report over ada-nest queue history: wall_min,
+    gpu_min (DONE-line gpu%>=50), idle_min, packs_done, failures,
+    cold_start_min, est $/pack — answers whether waking a T4 for the GPU
+    queue pays, BEFORE spending runtime.
+  resource_gate: >-
+    nice -n19; start only when idc03 1-min load <8 (was 9.3 at probe —
+    re-check, serialize behind job2); rclone remote gdrive: — run from a
+    host with the remote configured (idc03 needs it installed/pathed, or
+    run fetch on omen/mn01 which have gdrive:). HARD deadline 10min wall
+    + cap the scan to the newest ~30 run-* sessions — root cause of the
+    08:16 hang was an unbounded scan of the whole queue/ dir, not rclone
+    itself (per-call 45s timeouts already exist).
+  prep: >-
+    Patch scripts/ops/nest-efficiency.py: argparse --max-sessions N
+    (default 30) + --deadline-s (default 600); sort run-*.out.log desc and
+    stop at N; wrap the session loop in the deadline check and emit
+    partial report with `truncated: true` rather than dying silent.
+  artifact: >-
+    reports/2026-10-2X-nest-efficiency.md (per-session table + before/after
+    frame from the drive-store lesson) +
+    gdrive:ada-nest/reports/nest-efficiency-<date>.json (trend row).
+  verifier: >-
+    md exists and has >=1 row per run-* session in the scanned window;
+    JSON parses and carries all seven metric fields; script exits 0 inside
+    the deadline on a re-run.
+  stop_condition: >-
+    Report written OR deadline trips on two consecutive attempts — the
+    second trip goes to a card comm ("still hangs after guards") and the
+    job returns to backlog; do not keep retrying.
+
+job2_jev_arena_50:
+  target_host: idc03
+  card: decision-arena-benchmark-decision-models-72ab92   # BEN-0826
+  goal: >-
+    Grow the labeled corpus 27 -> 50 cases and re-run the arena:
+    jev-student vs jevos (vs Laya if a declared env exists). jevos
+    choice-accuracy is THE routing gate before more autonomy — the
+    expansion is weighted to choice/tool-routing where the backends
+    diverge most (jevos 0.875 vs student 0.125 on the 27-case run).
+  resource_gate: >-
+    After job1 exits (same host, serialize); jev-student :8778 and jevos
+    :8017 health-checked at start (both green at probe); Laya arm only
+    inside a declared venv — skip the arm if no env exists, do NOT
+    pip-install into system.
+  corpus_rule: >-
+    +23 new cases ~ (10 choice: tool-routing incl. the lane vocabulary
+    jevos mis-fires on, 8 noul: confirm/stagnation edge cases mined from
+    real transcripts + pipeline-compat, 5 score if a score question ships).
+    Ambiguous cases are DROPPED, not guessed — every case needs a
+    defensible label; source line noted per case.
+  artifact: >-
+    scripts/ops/decision-arena.py corpus (in-script lists -> 50) +
+    evals/results/jev/decision-arena-50.json (raw per-backend per-case) +
+    reports/2026-10-2X-decision-arena-50.md (acc overall + per type,
+    ECE/calibration, warm p50, disagreement list).
+  verifier: >-
+    corpus == 50 labeled cases; report carries accuracy-by-type for every
+    backend that answered; disagreement list enumerated even if empty;
+    jevos choice-accuracy number lands in a card comm as the routing-gate
+    input.
+  stop_condition: >-
+    50-case run complete and reported; if labeling stalls short of 50 the
+    partial corpus still runs and the gap is reported — the gate input is
+    the accuracy delta, not the corpus size.
+
+job3_omen_embed_pilot:
+  target_host: tony_omen
+  card: embed-pool-fleet-nest-workers-behind-one-85d83b   # MEM-0805 pilot arm
+  goal: >-
+    100 representative docs through nomic-embed-text AND bge-m3 on omen;
+    p50/p95 latency, docs/s, RAM+disk delta, recall@3 vs current mddb
+    vectors on a fixed query fixture. Produces the evidence for whether an
+    omen pool worker earns a production pointer — no pointer changes.
+  resource_gate: >-
+    free -g avail >=4 at start and never sustained <2 while running —
+    JEV scorers are resident and outrank the pilot. Total footprint <=5G
+    (both models already pulled -> ~0G new disk; 100-doc corpus + index
+    artifacts only). nice'd; endpoint on a non-conflicting port for the
+    run duration only.
+  artifact: >-
+    out/embed-pilot-omen.json (per-model p50/p95, docs/s, peak RSS,
+    recall@3 per model vs mddb reference arm) + report md to
+    gdrive:ada-nest/reports/ + repo reports/.
+  verifier: >-
+    JSON parses with all metric fields for both models; query fixture +
+    recall table present; scorers still `active` and mddb/pool config
+    untouched after the run.
+  stop_condition: >-
+    100 docs through both models + report written; abort if mem avail <2G
+    sustained or either scorer health-flaps — pilot yields, scorers win.
+
+job4_t4_qwen_image:
+  target_host: colab-t4 (ada-nest queue — pack arm of BEN-0815)
+  card: img-gen-bench-qwen-image-2-1-via-colibri-42f98f   # BEN-0815
+  goal: >-
+    GPU arm of img-gen-bench: same prompt set as the con01 CPU baseline
+    (~20 min/img there), colibri cuda backend on the T4, 10 prompts
+    (doc-pilot scenes + standard controls), 2 samples/prompt, fixed
+    seed/settings.
+  resource_gate: >-
+    Queue heartbeat <5min old at pack-claim time — fires only inside an
+    ALREADY-awake runtime; never a reason to start one. Queue position:
+    behind gaussian-splat-edu-smoke-v2, t4-gpu-baseline, t4-llm-direct-bench.
+    T4 disk cap ~207G vs 33G model pull — fits; VRAM <=15GB.
+  prep: >-
+    New pack dir gdrive:ada-nest/packs/img-gen-bench-t4 (the con01 pack is
+    `done`; claims/done live per-dir). pack.yml: needs gpu_gb ~15,
+    disk_gb 40, timeout_s 10800 (33G pull + gen), prep = colibri
+    start-here --model qwen-image-2.1 --backend cuda, run = prompt loop +
+    /v1/images/generations, artifacts out/img-*.png + report.
+  artifact: >-
+    packs/img-gen-bench-t4/out/img-*.png + img-gen-report.md +
+    img-gen-t4.json (per-image latency, p50/p95, VRAM peak, failures,
+    side-by-side row vs the con01 CPU baseline) + contact sheet.
+  verifier: >-
+    >=4 images landed with per-image latency recorded; GPU evidence in the
+    log (nvidia-smi/VRAM lines); report carries the con01-baseline
+    comparison row.
+  stop_condition: >-
+    Prompt set done OR heartbeat dies mid-pack — partial artifacts stay in
+    out/ and the pack un-claims for the next awake window; hard cap 3h
+    inside any single runtime session.
+
+job5_omen_colibri_35b:
+  target_host: tony_omen
+  card: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0   # BEN-0814
+  gate_status: >-
+    UNBLOCKED as of 2026-10-25 19:13 UTC — /data has 174G free vs the
+    card's >=83G requirement. The card's "38G" was the root-fs figure.
+    Sequenced last anyway: it shares omen with job3 (RAM) and is the
+    largest single pull in the fleet plan.
+  goal: >-
+    colibri + qwen3.6-35b-A3B (MoE, experts streamed from disk) on omen;
+    edu-manage corpus through the OpenAI endpoint; p50/p95 + tok/s vs
+    gpt-oss:20b T4 (14.7s p50) and omen CPU (~78s) baselines.
+  resource_gate: >-
+    PRE-FLIGHT re-checks at start (not plan time): df -BG /data >=83G AND
+    the model dir is pinned under /data (root has only 59G — a pull to
+    $HOME would fill it); mem avail >=4G post-scorers; backend cuda
+    (GTX1650) else cpu; runs after job3 completes.
+  artifact: >-
+    out/colibri-bench-*.json + .md (per-task latency p50/p95, tok/s, peak
+    RSS, task-completion column vs the two baselines) — Drive +
+    repo reports/ + card comm.
+  verifier: >-
+    colibri /v1/models 200 before the first bench call; bench JSON
+    complete for the corpus; comparison table includes both baselines.
+  stop_condition: >-
+    Bench complete; OR pull stalls >2h / /data drops below 83G mid-pull ->
+    abort, purge partial model blobs, comm the card, re-hold. No retry
+    loop inside the same session.
+
+notes:
+  - >-
+    Correction recorded for the card: "38G data free" was stale/wrong —
+    /data measured 174G free 2026-10-25 19:13 UTC. The hold-gate is
+    currently satisfied; what keeps job5 last is RAM contention with the
+    resident JEV scorers and politeness, not disk.
+  - >-
+    The four standing gates this sequence respects: idc03 is near-saturated
+    (CPU jobs serialize+nice); omen scorers outrank every experiment;
+    T4 work is strictly opportunistic inside awake windows; no production
+    pointer/index mutations anywhere in the plan.
+  - >-
+    Re-verify before dispatch: gates were measured at plan time — each
+    job's resource_gate says "re-check at start", which is the durable
+    part.
+
+links:
+  - docs/ssot/kanban/cards/ada-nest-real-job-plan.yml
+  - docs/ssot/kanban/cards/nest-efficiency-session-level-drive-gpu-bf7681.yml
+  - docs/ssot/kanban/cards/decision-arena-benchmark-decision-models-72ab92.yml
+  - docs/ssot/kanban/cards/embed-pool-fleet-nest-workers-behind-one-85d83b.yml
+  - docs/ssot/kanban/cards/img-gen-bench-qwen-image-2-1-via-colibri-42f98f.yml
+  - docs/ssot/kanban/cards/colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0.yml
+  - scripts/ops/nest-efficiency.py
+  - scripts/ops/decision-arena.py
+  - docs/ssot/infrastructure/ssot.host-capacity.yml
