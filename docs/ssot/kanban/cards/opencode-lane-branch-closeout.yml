@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
-column: backlog
-updated: 2026-10-25 20:10
+column: doing
+updated: 2026-10-25 20:12
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -51,6 +51,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 20:12
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
