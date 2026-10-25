@@ -901,8 +901,9 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     task = spec + "\n\n" + RAILS.format(
         id=card["id"], host=HOST, api=API)
     shell = (
-        "set -a; . $HOME/.config/secrets/litellm-keys.env; "
-        "export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
+        "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
+        ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
+        "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
         f"cd {shlex.quote(workdir)} && exec opencode run --format json "
         f"--dir {shlex.quote(workdir)} --model {shlex.quote(model)} "
         f"--auto {shlex.quote(task)}"
