@@ -1,7 +1,7 @@
 id: nest-gap-gpu-runner
 title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
 column: doing
-updated: 2026-10-25 19:33
+updated: 2026-10-25 19:35
 brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
   with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
 priority: high
@@ -33,6 +33,12 @@ comms:
 - at: 2026-10-25 19:33
   from: chaba
   text: started devin-task-20261025-123310-implement-and-use-ada-nest-que on mn01 (dispatch)
+- at: 2026-10-25 19:35
+  from: devin
+  text: 'started: Drive-staged gap-runner.py + embedding-smoke pack.json from the 13:36 session have real defects
+    (pack.json is invalid JSON — stray chmod line; gap-lease defined but never enforced; no mid-run abort when main
+    leaves prep; no artifact gate; done-marker shape inconsistent). Implementing corrected runner+pack in repo,
+    sandbox-testing on mn01, then restaging to Drive.'
 action:
   type: dispatch
   status: running
