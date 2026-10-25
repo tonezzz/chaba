@@ -2258,6 +2258,15 @@ hosts:
           stacks/con01/mddb-follower, 100.72.146.39:11123/:11124,
           localhost/mddb:2.15.4-lsn) — warm-DR promote target replacing
           retired idc01 (OPS-0763)"
+      # batch timers shed from idc02 2026-10-25 (idc02 contract review —
+      # con01 is the declared absorber; all rendered via ssot.jobs.yml)
+      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
+      - {name: chaba-audit.timer, type: timer, scope: user}
+      - {name: chaba-audit-full.timer, type: timer, scope: user}
+      - {name: chaba-kb-audit.timer, type: timer, scope: user}
+      - {name: chaba-system-report.timer, type: timer, scope: user}
+      - {name: ada-flood-news.timer, type: timer, scope: user}
+      - {name: report-distill.timer, type: timer, scope: user}
     expected_absent:
       - name: qemu-guest-agent.service
         note: "purged 2026-10-22 — Contabo hypervisor exposes no virtio
