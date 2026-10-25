@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
 column: backlog
-updated: 2026-10-25 08:11
+updated: 2026-10-25 13:57
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -22,3 +22,12 @@ comms:
     through nomic-embed-text + bge-m3; expose an Ollama-shaped endpoint on a non-conflicting port; measure p50/p95,
     throughput, RAM/disk, and recall@3 against current MDDB embeddings. Gate: no production pointer changes until
     recall >= current and artifact JSON+query fixtures exist. Omen data free=38G, so keep pilot <=5G.'
+- at: 2026-10-25 13:57
+  from: devin
+  text: 'Lane A shipped and live: embed-pool-shim.service on idc03 (100.102.134.91:11436) — ollama-shaped /api/embed
+    racing proxy, hedged fan-out to idc03+idc02+omen ollama bge-m3, first 2xx wins, 8s timeout under mddbs deadline.
+    mddb-embed repointed to it. Measured: ~100ms/embed via pool vs 12-14s on saturated idc03 solo.
+
+
+    In-flight real-world proof of the design: tony-omen went into maintenance MID-backfill — every omen call failed
+    and the pool kept serving through idc02+idc03. Graceful degradation, ex'
