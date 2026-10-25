@@ -6,6 +6,14 @@ ref: HOM-0514
 comms:
 - at: 2026-10-12 18:39
   from: devin
-  text: 'check_config flagged during the trusted_proxies fix 2026-10-12: "profiler integration does not support
-    YAML setup, please remove it". Non-fatal (HA still boots) but the integration is dead in config — move to UI
-    setup or drop the yaml block. File: ~/.config/home-assistant/configuration.yaml on tony-dell.'
+  text: 'check_config flagged during the trusted_proxies fix 2026-10-12: "profiler integration does not
+    support YAML setup, please remove it". Non-fatal (HA still boots) but the integration is dead in config
+    — move to UI setup or drop the yaml block. File: ~/.config/home-assistant/configuration.yaml on tony-dell.'
+- at: 2026-10-26 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: 'Goal: Resolve Home Assistant''s configuration check warning by removing the unsupported YAML block
+  for the profiler integration in ~/.config/home-assistant/configuration.yaml on tony-dell. Host: tony-dell.
+  Constraints: Do not invent new configuration paths or make unrequested integration changes beyond addressing
+  the 2026.8 YAML rejection. Done-condition: Running the Home Assistant configuration check on tony-dell
+  returns no errors or warnings regarding the profiler integration YAML setup.'
