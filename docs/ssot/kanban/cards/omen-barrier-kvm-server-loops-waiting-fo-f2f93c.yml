@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: backlog
-updated: 2026-10-25 15:50
+updated: 2026-10-25 15:51
 action:
   type: manual
 ref: OPS-0864
@@ -22,3 +22,21 @@ comms:
     waits for /tmp/.X11-unix/X0, but the normal Omen session only exposes X20. Port 24800 is not listening; mcp-health
     marks Barrier KVM Server degraded. No service changes made because expected display target (physical X0 vs CRD
     X20) needs owner decision.'
+- at: 2026-10-25 15:51
+  from: devin
+  text: 'raised request omen-barriers-service-expects-x0-but-onl-e0cc66: Omen barriers.service expects X0 but only
+    X20 exists after boot. Which display should the Barrier server use?'
+requests:
+- id: omen-barriers-service-expects-x0-but-onl-e0cc66
+  ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
+    use?
+  status: open
+  at: 2026-10-25 15:51
+  from: devin
+  options:
+  - 'Keep the physical-screen design: provision/restore X0 for Barrier on Omen (recommended if using Omen as the
+    physical Barrier server).'
+  - Bind Barrier to CRD X20 instead (if the virtual CRD session is the intended shared screen).
+  - Barrier is not needed on Omen; disable this role through the normal repo/service procedure.
+  suggested: 'Keep the physical-screen design: provision/restore X0 for Barrier on Omen (recommended if using Omen
+    as the physical Barrier server).'
