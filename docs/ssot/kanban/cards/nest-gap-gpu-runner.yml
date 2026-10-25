@@ -1,7 +1,7 @@
 id: nest-gap-gpu-runner
 title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
 column: doing
-updated: 2026-10-25 19:35
+updated: 2026-10-25 19:39
 brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
   with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
 priority: high
@@ -39,6 +39,13 @@ comms:
     (pack.json is invalid JSON — stray chmod line; gap-lease defined but never enforced; no mid-run abort when main
     leaves prep; no artifact gate; done-marker shape inconsistent). Implementing corrected runner+pack in repo,
     sandbox-testing on mn01, then restaging to Drive.'
+- at: 2026-10-25 19:39
+  from: devin
+  text: 'DONE (implemented+deployed+tested). Prior Drive staging was broken: pack.json invalid JSON (stray chmod
+    line -> silent skip), gap-lease unused, no mid-run abort, no artifact gate. Rewrote: scripts/colab/gap-runner.py
+    (fresh-hb prep/prep-wait gate + VRAM floor + exclusive gap-lease + 10s window watchdog w/ process-group kill
+    + verify-before-mark + forbidden-pattern scan), gap-packs/embedding-smoke/pack.json (10 docs via RESIDENT nomic-embed-text,
+    /api/tags no-pull guard, out/ only), PROCEDURE.md,'
 action:
   type: dispatch
   status: running
