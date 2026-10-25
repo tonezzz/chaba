@@ -237,6 +237,19 @@ async function runBgeCompat() {
     log(sim > 0.85
       ? '  ✓ SAME vector space — this device can produce bank-compatible embeddings (MEM-0805 lane B unlocked)'
       : '  ✗ divergent space — browser bge-m3 cannot feed the :11028 bank', 'dim');
+    const summary = ['[webgpu-bge-compat]',
+      `ua: ${results.ua.slice(0, 120)}`,
+      `adapter: ${JSON.stringify(results.adapter || null)}`,
+      `bge-m3 webgpu load: ${(loadMs / 1000).toFixed(1)}s, embed ~${(embedMs / 2).toFixed(0)}ms, dims ${v.length}`,
+      `cosine vs ollama bge-m3: cls=${simCls.toFixed(4)} mean=${simMean.toFixed(4)}`,
+      sim > 0.85 ? `VERDICT: compatible (${pool} pooling) — browser can embed in the :11028 bank's vector space`
+                 : 'VERDICT: not compatible — browser bge-m3 diverges from bank space'].join('\n');
+    const resp = await fetch('/apps/board-api/comment', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'lab-iphone-webgpu-worker', from: 'devin', text: summary }),
+    });
+    log(resp.ok ? '  compat result posted to OPS-0779' : '  post failed: ' + resp.status,
+        resp.ok ? 'ok' : 'bad');
     document.getElementById('bPost').disabled = false;
   } catch (e) {
     results.bge_compat = { error: String(e) };
@@ -253,6 +266,7 @@ async function postResults() {
     `adapter: ${JSON.stringify(results.adapter || null)}`,
     `matmul: ${JSON.stringify(results.matmul || null)}`,
     `embed: ${JSON.stringify(results.embed || null)}`,
+    `bge_compat: ${JSON.stringify(results.bge_compat || null)}`,
     results.webgpu === false ? 'webgpu: NOT AVAILABLE' : ''].filter(Boolean).join('\n');
   try {
     const r = await fetch('/apps/board-api/comment', {
