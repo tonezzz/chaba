@@ -218,6 +218,22 @@ same bundle runs on Colab today and a fleet host tomorrow.
   only writer — workers and Colab never hold WP creds.
   See `docs/kb/board-api-write-door.md`.
 
+### Gap packs — idle GPU during main-queue prep (2026-10-25)
+
+`ada-nest/queue/gap-runner.py` fills the GPU-idle prep/prep-wait windows
+of the main queue with tiny self-contained **gap packs** under
+`ada-nest/gap-packs/<name>/pack.json`. It runs only while the main
+heartbeat is fresh (<=60s) AND phase is `prep`/`prep-wait`, a VRAM gate
+passes, and `queue/gap-lease` is free — and it SIGKILLs the pack's process
+group the moment the window closes (claim released for retry). Gap packs
+never pull models, never touch HF/Drive caches or production indexes, and
+get `done`/`failed` FILE markers plus verify-before-mark artifact gates —
+all under `gap-packs/`, never the main pack space. Canonical source:
+`scripts/colab/gap-runner.py` + `scripts/colab/gap-packs/`; launch once
+per runtime with `scripts/colab/gap-launcher-cell.py`. Policy + contract:
+`gap-packs/PROCEDURE.md`; job record:
+`docs/ssot/jobs/nest/2026-10-25-ada-nest-gap-runner.yml`.
+
 ### Writing packs — lessons so far
 
 - Declare honest `needs` floors — they decide which workers can take the

@@ -1,0 +1,104 @@
+id: jobs/nest/2026-10-25-ada-nest-gap-runner
+title: >-
+  Ada Nest gap runner — opportunistic GPU work inside main-queue
+  prep/prep-wait windows
+card: nest-gap-gpu-runner            # OPS-0854
+date: 2026-10-25
+runner: mn01 (dispatch worktree)
+status: implemented-deployed-tested
+
+# ---------------------------------------------------------------------------
+# The main Colab queue burns GPU-paid wall time in CPU-bound prep phases.
+# gap-runner.py fills those gaps with small self-contained "gap packs" —
+# never a second main runner, never the main lease/claim/done space.
+# ---------------------------------------------------------------------------
+
+canonical_source:
+  runner: scripts/colab/gap-runner.py          # -> ada-nest/queue/gap-runner.py
+  launcher_cell: scripts/colab/gap-launcher-cell.py  # notebook cell, repo-only
+  procedure: scripts/colab/gap-packs/PROCEDURE.md    # -> ada-nest/gap-packs/
+  first_pack: scripts/colab/gap-packs/embedding-smoke/pack.json
+  tests: tests/colab/test_gap_runner.py        # 9 cases, all passing 2026-10-25
+
+deployed_state_2026-10-25T123xZ:
+  gdrive:ada-nest/queue/gap-runner.py: md5 31d204ac22333c7a9d0f2ee0384086be
+    (byte-identical to repo source)
+  gdrive:ada-nest/gap-packs/PROCEDURE.md: updated to implemented semantics
+  gdrive:ada-nest/gap-packs/embedding-smoke/pack.json: VALID json (was broken)
+  live_window: >-
+    none at deploy time — queue heartbeat 13+min stale, last phase
+    'vyncx-v2-score flush-settle', QUEUE-DRAINED 12:19 UTC, runner.pid
+    removed. Runner will fire on the next prep/prep-wait window of any
+    awake runtime where the gap-launcher loop is running.
+
+defects_fixed_vs_prior_staging:
+  # The 13:36 session staged a gap-runner + pack on Drive but never
+  # verified them; four defects meant the first gap pack could never run:
+  - pack.json was INVALID — a stray 'chmod +x ...' line after the closing
+    brace made json.loads fail; the pack was silently skipped forever
+  - queue/gap-lease was declared but never used — no mutual exclusion,
+    two gap loops (or two VMs) could run packs concurrently
+  - no mid-run abort — a gap pack kept running to completion even after
+    the main heartbeat moved to 'run', contending for the GPU
+  - no artifact verification despite the docstring contract; 'done' was a
+    directory (done/done), inconsistent with packs/<name>/done FILE shape
+  - pack claim() always returned True — no first-writer-wins check
+  - subprocess timeout killed bash but orphaned grandchildren (no killpg)
+
+gate_contract:
+  run_only_when_all_true:
+    - queue/heartbeat age <= 60s (GAP_STALE_S)
+    - heartbeat phase in {prep, prep-wait}
+    - nvidia-smi memory.free >= pack.min_free_gpu_gb
+    - queue/gap-lease free, stale (>180s), or already ours
+    - pack unclaimed, no done/failed marker, not disabled
+  mid_run: >-
+    every GAP_POLL_S (10s) the pack's process group is checked against
+    window + lease; on close -> SIGTERM, SIGKILL +5s, claim released for
+    retry, out/aborted.txt records the reason.
+  forbidden_enforced: >-
+    static scan of run/prep text refuses packs containing model-pull /
+    cache-write / second-runner patterns (ollama pull, snapshot_download,
+    pip install, ada-nest/cache, /queue/lease, runner.py). Seatbelt over
+    the PROCEDURE.md policy.
+  verify_before_mark: >-
+    artifacts globs (vs ada-nest/) must each match >=1 non-empty file
+    before gap-packs/<name>/done (FILE marker) is written.
+
+embedding_smoke_pack:
+  spec: 10 documents through RESIDENT nomic-embed-text via ollama
+    127.0.0.1:11434/api/embed; writes gap-packs/embedding-smoke/out/
+    embedding-smoke.json; timeout_s 120; min_free_gpu_gb 1.
+  no_pull_guard: >-
+    checks /api/tags first; exits nonzero (failed marker, no embed call)
+    when ollama is down or the model is not resident — installs/pulls are
+    forbidden in gap packs.
+  production_mutation: none — writes only under gap-packs/<name>/out.
+
+verification_evidence:
+  sandbox: >-
+    tests/colab/test_gap_runner.py — real runner module against a temp
+    ada-nest tree, stub nvidia-smi on PATH, mock ollama on :11434.
+    9/9 pass: stale-hb block, run-phase block, VRAM block, foreign-lease
+    block, forbidden-pattern skip, no-pull guard (0 embed calls, failed
+    marker), end-to-end DONE (10 docs, 768 dims, artifact+done, lease
+    released, claim cleaned, second pass idles), prep-wait window,
+    mid-run abort (<20s of a sleep-30 pack, claim released for retry).
+  live: >-
+    none — no awake runtime during the session. First real fire needs a
+    Colab runtime with the main queue in prep/prep-wait and the
+    gap-launcher cell started once.
+
+how_to_fire_next_session:
+  - rclone copy scripts/colab/gap-runner.py gdrive:ada-nest/queue/  # if changed
+  - paste scripts/colab/gap-launcher-cell.py into a notebook cell (once)
+  - watch: rclone cat gdrive:ada-nest/queue/gap-runner.log
+           gdrive:ada-nest/queue/gap-heartbeat
+           gdrive:ada-nest/gap-packs/embedding-smoke/{done,out/}
+  - kill: kill -- -$(cat queue/gap-runner.pid)
+
+links:
+  - docs/ssot/kanban/cards/nest-gap-gpu-runner.yml
+  - docs/kb/colab-mcp-jobs.md          # batch-queue + pack conventions
+  - scripts/colab/queue-runner.py    # the main runner this shadows
+  - docs/ssot/jobs/nest/2026-10-25-ada-nest-real-job-seq.yml
