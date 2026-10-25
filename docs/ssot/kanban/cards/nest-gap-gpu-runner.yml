@@ -1,7 +1,7 @@
 id: nest-gap-gpu-runner
 title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
-column: backlog
-updated: 2026-10-25 19:13
+column: doing
+updated: 2026-10-25 19:33
 brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
   with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
 priority: high
@@ -27,6 +27,10 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 19:33
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
