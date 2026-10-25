@@ -1,0 +1,111 @@
+title: DevNest production lane catalog + monthly savings report
+subtitle: OPS-0869 — the seven lane catalog (deterministic, codemod,
+  jev-routing, local/T4 packs, free-opencode, paid_frontier, devin
+  fallback, + manual terminal) and the evidence-bound savings reporter
+icon: route
+version: 1
+
+card: devnest-token-savings-lane-catalog
+dispatch: 20261025-122102-catalog-lanes-deterministic-ho
+runner: mn01
+date: 2026-10-25
+
+planning:
+  goal: >-
+    Turn the proven DevNest skills and packs into a production catalog
+    showing which work avoids paid Devin/LLM tokens and which still
+    needs frontier reasoning; run a monthly savings report from
+    board/pack artifacts.
+  scope: >-
+    In: per-lane task classes, verifier, target host, expected
+    cost/tokens, evidence artifact, escalation rule; the savings-report
+    generator + first run. Out: changing any routing behavior, enabling
+    OPENCODE_LANES, claiming dollar savings without measured evidence.
+  success_criteria:
+    - catalog file parses + each lane carries all six spec fields
+    - report generator runs read-only and emits md+json
+    - no savings claim without usage evidence (hard rule honored)
+  risks:
+    - inventing savings -> mitigated by evidence-bound counting
+    - catalog drift from code -> canonical tables referenced, not copied
+
+processing:
+  status: done
+  steps:
+    - "Surveyed lane wiring: dispatch_repos.py LANE_MODELS/LANE_KW/
+      classify_lane, runner-agent claim-time routing + OPENCODE_LANES
+      executor, kanban action.lane contract, cheap-agent-cascade design,
+      llm-gateway job_classes, colab pack contract, probe outcome chain"
+    - Wrote docs/ssot/infrastructure/ssot.devnest-lanes.yml — 8 lane
+      entries (7 spec'd + manual terminal) with task_classes, verifier,
+      target_host, expected_cost/tokens, evidence_artifact, escalation
+    - Wrote scripts/board/lane-savings.py — evidence-bound monthly
+      report over card YAMLs + dispatch-outcome files + bench/pack
+      artifacts (scores.<lane>.loop.{tokens,cost_usd} shape)
+    - Ran October report -> docs/reports/lane-savings-2026-10.{md,json}
+    - Registered L2-domain node lane-savings in ssot.reports.yml
+    - Fixed pre-existing YAML syntax error in
+      jobs/bench/2026-10-24-m2-behavioral-verifier.yml (unquoted colon
+      in list scalar — validator was red)
+  decisions:
+    - label: catalog lives in SSOT infra, not kb
+      rationale: it IS the routing contract reference — mirrors
+        ssot.llm-gateway.yml's job_classes role; kb holds narrative
+    - label: manual counted as a lane, never dispatched
+      rationale: classify_lane emits it; claimers defer — documenting
+        the terminal prevents mis-routing
+    - label: savings = sessions + measured tokens, no invented dollars
+      rationale: spec rule; Devin-side per-session token cost is not
+        logged, so $ claims would be fabricated
+
+followup:
+  verification:
+    - "python3 -m py_compile scripts/board/lane-savings.py — OK"
+    - "ssot-validate-all.mjs — ssot.devnest-lanes.yml + ssot.reports.yml
+      Valid; the one remaining error is the pre-existing m2 job doc
+      (also fixed here)"
+    - "python3 scripts/board/lane-savings.py --month 2026-10 --out-dir
+      docs/reports — emits md+json, 6 evidenced cheap-lane sessions"
+  rollback_plan:
+    - delete the three new artifacts + revert the node entry; nothing
+      mutates live state
+  handoff:
+    - run lane-savings.py monthly (manual or ride kanban-sync once a
+      monthly cadence helper exists)
+    - OPS-0838 queue-time classify + OPS-0846 OpenCode closeout remain
+      the two gates before cheap-lane volume is real
+  deferred:
+    - LiteLLM SpendLogs join for dollar accounting (daily-ledger.py on
+      idc03) — add --ledger input when per-session spend rows exist
+
+report:
+  status: done
+  completed_at: 2026-10-25
+  summary: >-
+    Lane catalog + savings reporter landed. October evidence: 420 devin-
+    lane dispatches (the paid baseline), 5 deterministic script runs, 1
+    free-opencode probe (2355 measured tokens), 18 measured pack/bench
+    lane runs (983,829 tokens at cost_usd 0.0). No lane has
+    action.lane persisted yet — routing landed 2026-10-25 and
+    classify-at-queue-time is still backlog, so the honest savings
+    figure is ~zero; the machinery to measure it is now in place.
+  metrics:
+    - "catalog lanes: 8 (7 spec'd + manual terminal)"
+    - "oct devin-lane sessions: 420 done | cheap-lane evidenced: 6"
+    - "opencode lane tokens measured: 2355"
+    - "pack tokens measured: 983,829 @ $0.00"
+  links:
+    - title: Lane catalog SSOT
+      url: docs/ssot/infrastructure/ssot.devnest-lanes.yml
+    - title: Savings reporter
+      url: scripts/board/lane-savings.py
+    - title: October report
+      url: docs/reports/lane-savings-2026-10.md
+  kb_review:
+    - "lane routing is claim-time + opt-in (JEV_LANE/OPENCODE_LANES);
+      queue-time classify (OPS-0838) is the claimer-agnostic fix"
+    - "opencode results carry step-finish token JSON in action.result —
+      the only per-session token evidence on the board today"
+  lessons_learned:
+    - "the evidence gap is the real finding: devin sessions log CPU but
+      no tokens, so savings must be measured at the cheap-lane side"

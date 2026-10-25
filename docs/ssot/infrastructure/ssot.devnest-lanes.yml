@@ -1,0 +1,319 @@
+title: DevNest lane catalog — token-savings routing
+subtitle: Production catalog of execution lanes — which work avoids paid
+  Devin/LLM tokens and which still needs frontier reasoning. Card
+  devnest-token-savings-lane-catalog (OPS-0869); design base
+  docs/kb/cheap-agent-cascade.md (BEN-0811); delegation procedure
+  OPS-0823.
+icon: route
+version: 1
+updated: 2026-10-25
+
+# Routing model (the one rule that makes the math work)
+#
+# Entry-level prediction, NOT a bottom-up ladder: the router predicts the
+# cheapest lane expected to PASS and enters there; gate failure escalates
+# one lane and is logged. Blind L0->L3 escalation on a hard task costs
+# more than frontier-only (wasted cheap attempts + latency).
+#   entry = argmin_L cost(L) + P(fail|task,L) * E[cost of path above L]
+#
+# Two planes kept separate: the WORK plane produces output (lanes below);
+# the DECISION plane only routes/gates/verifies (jev-routing lane) and
+# never writes work product.
+#
+# Claim-time chain (jev-pilot Phase 2, probe-verified 2026-10-25):
+#   card action.lane -> LANE_MODELS -> DISPATCH_MODEL -> devin --model
+#   unset lane + JEV_LANE=1 -> dispatch_repos.classify_lane (keyword-first,
+#   jevos fallback, conf<0.5 or jevos down -> devin)
+# Canonical tables: scripts/board/dispatch_repos.py (LANE_MODELS,
+# LANE_EXECUTORS, LANE_KW, LANE_COMPARE, classify_lane) — imported by both
+# kanban-dispatch.py and runner-agent.py.
+
+routing:
+  classify_at: claim (per-claimer, JEV_LANE=1 opt-in) — queue-time classify
+    in board-api is the claimer-agnostic fix, card
+    dispatch-classify-at-queue-time (OPS-0838) still backlog
+  lane_field: action.lane on the card; explicit action.model always wins
+  env_gates:
+    JEV_LANE: "1 = classify unset lanes at claim (off by default — a
+      wrong paid_frontier classification spends paid tokens)"
+    OPENCODE_LANES: "1 = model lanes execute via opencode instead of
+      devin (runner-agent only; gated on OPS-0846 closeout)"
+    JEVOS_URL: "jevos /v1/systemone endpoint; default 127.0.0.1:8017,
+      idc02 serves http://idc02.taila0626a.ts.net:8777"
+    JEV_LANE_MIN_CONF: "min jevos confidence, default 0.5"
+  never_dispatched: manual (Tony's hands — hardware, spend, accounts)
+
+lanes:
+
+  deterministic:
+    label: Deterministic scripts — host assessment / report / Education
+    status: live
+    plane: work
+    executor: >-
+      Pure scripts, no LLM in the work plane. devnest-host-assessment
+      skill (skill.md + assess.py + verify.py, ~/DevNest) runs read-only
+      SSH assessments; publish_education.py upserts the WP lesson CPT via
+      board-api /lesson. Same class as report-distill.py, kanban-stats.py.
+    task_classes:
+      - read-only host assessment (uptime/load/free/df/failed units/nvidia-smi)
+      - fleet snapshot + audit/inventory reports
+      - Education lesson upserts of verified deterministic facts
+      - deterministic transforms/distills (report-distill.py shape)
+    verifier: >-
+      verify.py gate: JSON artifact exists, target_host explicit,
+      read_only=true, no mutating command ran. Reports: artifact-exists +
+      schema check. Education: post id returned + re-fetch confirms.
+      Proven 2026-10-25: 6/6 hosts passed verifier, zero SSH errors.
+    target_host: >-
+      any tailnet host over SSH (read-only verbs only); Education writes
+      via board-api https://idc03.taila0626a.ts.net:10000/lesson — agents
+      never hold WP creds
+    expected_cost: "$0 — no tokens"
+    expected_tokens: 0
+    evidence_artifact: >-
+      evals/results/devnest-host-<host>.json; WP lesson post id (e.g.
+      post 2426 / topic devnest-host-assessment); reports/*.md
+    escalation: >-
+      any remediation/mutation implied by findings -> devin or manual;
+      verifier fail -> rerun once then escalate; host unreachable ->
+      record unreachable, do not fail the batch
+
+  codemod:
+    label: L0 deterministic codemod — pattern library
+    status: live
+    plane: work
+    executor: >-
+      scripts/pattern-lib/router.py — task prompt -> mddb vector-search
+      over `code-patterns` -> hit>=thr + registered codemod ->
+      deterministic fix; hit without codemod -> hint arm (pattern injected
+      into the agent prompt); no hit -> plain agent lane.
+    task_classes:
+      - "known-transform changes: config bump/retire/remove, flag flip,
+        rename with a registered codemod"
+      - pattern-library-backed fixes (t1 predicate class proven 7/7)
+    verifier: >-
+      held-out tests / task score.py gate; leak-guard hard rule — a
+      pattern whose meta.commit is the task's own fix is dropped before
+      the decision (never mine benchmark-task commits)
+    target_host: any runner or the evals harness — needs repo + python3 only
+    expected_cost: "$0"
+    expected_tokens: 0
+    measured: "t1: 7/7 in 0.7s — beat every model lane including fable-5.1 (60s)"
+    evidence_artifact: diff + gate verdict + pattern id in the cascade outcome log
+    escalation: >-
+      pattern miss or gate fail -> free_lane (hint arm carries the
+      pattern into the prompt) or paid_frontier; never blind-retry the
+      same pattern
+
+  jev-routing:
+    label: JEV decision plane — classify / Choice / Noul gates
+    status: live (keyword classifier); jevos fallback live; real Jev API needs key
+    plane: decision
+    executor: >-
+      dispatch_repos.classify_lane — LANE_KW keyword tables first, then
+      jevos POST /v1/systemone Choice/Noul fallback. jev-student
+      (DistilBERT, idc03:8778) is in-domain-Noul ONLY: choice head dead,
+      zero OOD generalization (composer probes v2-v4). Real Jev API
+      ($0.042/MTok, ~100ms) reserved for choice/grading once keyed
+      (KNB-0822).
+    task_classes:
+      - card -> lane classification (claim-time today; queue-time pending OPS-0838)
+      - Noul pre-action gates on destructive ops
+      - stagnation gates (CONTINUE/REPLAN/HALT, BEN-0824)
+      - Choice over shortlisted constructs/templates/libraries (jev-code-decision)
+    verifier: >-
+      keyword layer validated on the lane corpus (evals/results/jev);
+      jevos answers gated at JEV_LANE_MIN_CONF; end-to-end chain verified
+      by jev-model-chain-probe cards (card action.lane persisted + unit
+      env DEVIN_MODEL set)
+    target_host: "runs inside the claimer process; jevos on
+      idc02.taila0626a.ts.net:8777; jev-student on idc03:8778"
+    expected_cost: "~$0 local; real Jev ~$0.042/MTok when keyed"
+    expected_tokens: "<1k per decision"
+    evidence_artifact: >-
+      persisted action.lane/action.model on the card + spawned unit env
+      (systemctl --user show devin-task-* -p Environment)
+    escalation: >-
+      conf<0.5 or jevos unreachable -> devin lane (safe multi-step
+      default, never None); classified-manual fails loudly and is never
+      dispatched
+
+  local-gpu-packs:
+    label: Local / Colab-T4 GPU packs — ada-nest queue
+    status: live
+    plane: work
+    executor: >-
+      scripts/colab/packs/*/pack.yml units (prep + run + declared
+      artifacts + needs.gpu_gb/disk_gb) executed by the ada-nest queue on
+      egress-only Colab T4 workers (reverse-SSH colabtun@idc03; Drive
+      staging; ollama cache restore). Local legs: idc02 ollama
+      (qwen2.5:7b chat-local, OLLAMA_NUM_PARALLEL=2), omen GTX1650,
+      colab-gemma3 chained into LiteLLM job_classes.
+    task_classes:
+      - "batch/async GPU work: bench lanes, embeddings, image gen, ASR, i2v"
+      - "edu-agent sweep fixture (13 tasks: capture/dedupe/sched/recall/draft)"
+      - "chat-local: EN summarize/classify where local-7B quality suffices
+        (never Thai-facing prose)"
+    verifier: >-
+      declared artifacts must exist (pack contract); bench fixture
+      subscores with fixed flash-lite judge; >=3 reps mandatory — single
+      cheap-lane runs are noise (same fixture F1 1.0 omen-CPU vs 0.889
+      T4)
+    target_host: >-
+      Colab T4 worker for heavy pulls (gpt-oss:20b MXFP4 ~13GB fully
+      resident); idc02 ollama off-prod for chat-local; omen for small GPU
+    expected_cost: "$0 — Colab free tier (quota-bound) / fleet electricity"
+    expected_tokens: "measured per run — edu 13-task sweep: 41.5k in / 6.9k out"
+    measured: "gpt-oss:20b T4 p50 14.7s vs 78.3s omen-CPU — latency gap was hardware"
+    evidence_artifact: >-
+      pack out/ artifacts (packs/<name>/out/*) + reports/bench-*.json
+      (loop.tokens_in/out, loop.cost_usd, per-task scores) + job doc
+      measured table
+    escalation: >-
+      capability fail -> paid_frontier; CPU-latency-bound -> batch/async
+      only, never interactive; dead lane -> callers keep deterministic
+      or gemini fallback so a job never stalls (chat-local lesson)
+
+  free-opencode:
+    label: Free OpenCode executor lane — post-closeout
+    status: gated — supervised probes only until OPS-0846 (branch/
+      worktree/verify/merge closeout) lands; then OPENCODE_LANES=1 per runner
+    plane: work
+    executor: >-
+      runner-agent start_opencode_lane: dispatch/<tid> worktree +
+      meta.json matching devin-dispatch so the normal closeout/merge gate
+      applies; opencode runs against LiteLLM free models
+      (free_lane -> litellm/gemini-3.5-flash-lite; Zen free brains
+      deepseek-v4.1-flash-free / glm-5.3-flash-free benched 4/4
+      alternates).
+    task_classes:
+      - 'single-step verifiable chores: probe/write/report, markers,
+        small installs, fixture runs, "write the doc"'
+      - NOT multi-step remote diagnosis (flash-lite loses the thread —
+        OPS-0823 pilot #1), NOT Thai-quality prose
+    verifier: >-
+      declared gate artifact must exist (verdict.json / marker) —
+      missing artifact = fail, not false-done; write-then-fill prompt
+      order beats search-then-write for flash-lite early-stop;
+      merge-sweep evidence checks on close
+    target_host: runners with opencode installed + OPENCODE_LANES=1
+      (idc02 proven; mn01/omen pending)
+    expected_cost: "~$0 (flash-lite free tier / Zen free promo via LiteLLM)"
+    expected_tokens: "~2-12k per chore (probe measured 2355 total)"
+    evidence_artifact: >-
+      action.result step-finish token JSON + the gate artifact + card
+      comms
+    escalation: >-
+      missing artifact or thread-loss -> paid_frontier (contained) or
+      devin (multi-step); never the only path to a gate
+
+  paid_frontier:
+    label: Paid frontier model lane
+    status: live
+    plane: work
+    executor: >-
+      lane paid_frontier -> litellm/or-claude-fable-5.1 via the OR
+      weekly-capped key; alternates gemini paid leg, Anthropic native
+      (needs ANTHROPIC_API_KEY). Runs through the devin or opencode
+      executor — it is a model lane, not a separate executor.
+    task_classes:
+      - 'contained code tasks needing strong reasoning (t1-class semantic
+        fixes: 7/7 in 60s — fastest lane and the only one that explains
+        its fix)'
+      - comparisons/design calls (LANE_COMPARE regex routes here),
+        productionize/hardening, benchmark reference arms
+    verifier: >-
+      held-out tests + behavioral verifiers — graduated scoring, not
+      internal-field coupling (m1 lesson: verifier must measure partial
+      progress or every lane "fails" while producing real fixes)
+    target_host: any dispatch runner (model lanes need no host labels)
+    expected_cost: "fable ~$10/$50 per Mtok in/out; typical contained task
+      $0.05-0.30; OR key cap $10/wk (burned once — quota check is part
+      of the router)"
+    expected_tokens: "~50-200k per contained task"
+    evidence_artifact: >-
+      LiteLLM SpendLogs rows (daily-ledger.py -> llm-gateway-spend-ledger
+      CMS page) + action.result + gate verdict
+    escalation: >-
+      OR cap/quota out -> devin fallback or stop-and-card (spend gate);
+      verifier fail after 2 attempts -> devin (multi-step) or manual
+
+  devin:
+    label: Devin default — fallback + heavy lane
+    status: live (the baseline every cheaper lane buys down)
+    plane: work
+    executor: >-
+      devin-dispatch systemd-run unit, model from
+      ~/.config/devin/config.json (swe-2-high today) unless
+      action.model overrides; full tool surface, subagents, long horizon.
+    task_classes:
+      - multi-step engineering, multi-repo work, remote diagnosis
+      - end-to-end pipelines, ambiguous or no-gate work
+      - anything a cheaper lane attempted and failed its gate on
+    verifier: >-
+      card's own done-condition + the merge guard (board-api blocks
+      review->done while session commits are non-ancestors of the
+      default branch) + merge-sweep verified auto-close
+    target_host: "all dispatch runners (repos.conf whitelist: chaba,
+      ada-voice, sunsynk-card, mddb-fork, gods-eye-view)"
+    expected_cost: "paid Devin plan tokens — the reference cost;
+      typically 100s of k tokens/session"
+    expected_tokens: session-scale
+    evidence_artifact: >-
+      dispatch-outcome-<task>.md (repo root, merged) + action.result
+      (exit, CPU/mem) + the merged dispatch branch
+    escalation: >-
+      manual — Tony's hands: hardware, purchases, accounts, physical
+      access; per field-ownership rules producers never stomp workflow
+      fields
+
+  manual:
+    label: Tony's hands — terminal lane
+    status: live
+    plane: work
+    executor: none — never claimed, never dispatched
+    task_classes:
+      - hardware purchases/installs, physical access, spend decisions,
+        account/rotation/rekey ops, macbook restore/enroll
+    verifier: Tony's own evidence + card close
+    target_host: n/a
+    expected_cost: "$0 tokens"
+    expected_tokens: 0
+    evidence_artifact: card comms / requests resolution
+    escalation: n/a — terminal; classify_lane emits 'manual' and
+      claimers defer
+
+reporting:
+  monthly_savings: >-
+    scripts/board/lane-savings.py — scans the card YAMLs, merged
+    dispatch-outcome files, and pack/bench artifacts; emits
+    docs/reports/lane-savings-<YYYY-MM>.{md,json}. Hard rule (card spec):
+    never claim savings without usage evidence — a lane use counts only
+    with a completed action + evidence (result string, token JSON,
+    artifact, or comms measurement); unevidenced lanes are reported as
+    counts, never dollars.
+  node: reports/lane-savings (L2-domain, ssot.reports.yml)
+
+open_gaps:
+  - OPS-0838 dispatch-classify-at-queue-time — classify inside board-api
+    queue verb so every claimer sees action.lane/model (whack-a-mole fix
+    for unpatched runners)
+  - OPS-0846 OpenCode closeout — gates OPENCODE_LANES=1 fleet-wide
+  - KNB-0822 real Jev API key — unlocks jev-routing Choice/grading
+  - behavioral verifiers for the dev family (m1-behavioral built; m2, t2
+    outstanding) — gates are the cascade bottleneck, not models
+  - JEV_LANE=1 not yet set in any runner-agent unit env — unset-lane
+    cards still run the devin default until queue-time classify lands
+
+references:
+  - docs/kb/cheap-agent-cascade.md
+  - docs/kb/jev-code-decision.md
+  - docs/ssot/infrastructure/ssot.llm-gateway.yml
+  - docs/ssot/infrastructure/ssot.reports.yml
+  - docs/ssot/kanban/ssot.kanban.yml (action.lane contract)
+  - docs/ssot/jobs/bench/2026-10-24-cheap-agent-cascade-design.yml
+  - docs/ssot/jobs/kanban/2026-10-25-runner-agent-lane-model-chain.yml
+  - scripts/board/dispatch_repos.py (LANE_MODELS / LANE_KW / classify_lane)
+  - scripts/board/runner-agent.py (start_opencode_lane, claim-time routing)
+  - scripts/pattern-lib/router.py (codemod arm)
+  - scripts/colab/packs/*/pack.yml (GPU pack contract)

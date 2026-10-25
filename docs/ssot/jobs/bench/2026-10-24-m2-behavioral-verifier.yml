@@ -30,11 +30,11 @@ design:
     a sibling page. Result: file OPENS cleanly but FAILS tx.Check() — the
     exact seam between open-only proof and full invariant walk.
   tests:
-    - TestZzBehavSnapshotInstallUsesOpenOnlyProof: rc.replaceDatabase(bad)
-      must SUCCEED (trusted snapshot = open-only). Fails at parent = bug caught.
-    - TestZzBehavRestoreKeepsFullCheck: s.restoreFromBackup(bad) must FAIL
-      (untrusted restore keeps full check). Guards the over-broad fix.
-    - TestZzBehavHealthySnapshotStillInstalls: happy-path regression.
+    - "TestZzBehavSnapshotInstallUsesOpenOnlyProof: rc.replaceDatabase(bad)
+      must SUCCEED (trusted snapshot = open-only). Fails at parent = bug caught."
+    - "TestZzBehavRestoreKeepsFullCheck: s.restoreFromBackup(bad) must FAIL
+      (untrusted restore keeps full check). Guards the over-broad fix."
+    - "TestZzBehavHealthySnapshotStillInstalls: happy-path regression."
   coupling: >-
     Only parent-commit symbols (replaceDatabase, restoreFromBackup,
     withRestoreLock, verifyDatabase, newTestServer, corruptBranchPage) —
