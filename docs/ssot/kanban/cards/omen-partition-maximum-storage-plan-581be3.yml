@@ -156,6 +156,12 @@ comms:
 - at: 2026-10-25 14:46
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 14:46
+  from: tony
+  text: 'answered partition-edits-are-verified-from-the-re-6c7a16: Normal Omen OS is booted; please verify the mounts.'
+- at: 2026-10-25 14:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -226,11 +232,12 @@ requests:
   ask: Partition edits are verified from the rescue OS. Please remove the tony-usb rescue SD and boot the normal
     Omen OS from the internal NVMe. When it is back, tell me so I can verify /home and /data mount sizes and normal
     boot health.
-  status: open
+  status: answered
   at: 2026-10-25 14:33
   from: devin
   options:
   - Remove rescue SD and boot internal Omen now (recommended).
   - Keep rescue OS running; defer normal-boot verification.
   suggested: Remove rescue SD and boot internal Omen now (recommended).
+  answer: Normal Omen OS is booted; please verify the mounts.
 awaiting_action: true
