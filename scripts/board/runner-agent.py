@@ -886,17 +886,40 @@ def watchdog_pass(st: dict) -> bool:
 
 
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
-    """Run explicitly modelled lanes through OpenCode, not Devin."""
+    """Run a model-specific lane in a dispatch-compatible worktree."""
     model = LANE_MODELS[lane]
     if not shutil_which("opencode"):
         return "", "", "opencode is not installed on this runner"
-    repo = str((card.get("action") or {}).get("repo") or "chaba")
-    url = REPO_URLS.get(repo)
+    repo_name = str((card.get("action") or {}).get("repo") or "chaba")
+    dr = dr_module()
+    ent = (dr.repos().get(repo_name) if dr else None) or {}
+    root = Path(ent.get("path") or "")
+    if not root.is_dir():
+        return "", "", f"no dispatch repo checkout for {repo_name}"
+    tid = unit.removeprefix("runner-")
+    branch = f"dispatch/{tid}"
+    worktree = Path.home() / f"CascadeProjects/dispatch-wt-{tid}"
+    # Match devin-dispatch's task metadata so the existing closeout/merge
+    # gate can discover this OpenCode session after the unit exits.
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
-        path = sync_repo(repo, url, "master")
-    except RuntimeError as e:
-        return "", "", str(e)[:240]
-    workdir = str(path)
+        taskdir.mkdir(parents=True, exist_ok=True)
+        if worktree.exists():
+            return "", "", f"worktree already exists: {worktree}"
+        base = f"origin/{ent.get('default_branch') or 'master'}"
+        sh(["git", "-C", str(root), "fetch", "-q", "origin",
+            ent.get('default_branch') or 'master'], timeout=60)
+        r = sh(["git", "-C", str(root), "worktree", "add", "-B", branch,
+                str(worktree), base], timeout=120)
+        if r.returncode:
+            return "", "", (r.stderr or r.stdout).strip()[:240]
+        meta = {"repo": repo_name, "branch": branch,
+                "worktree": str(worktree),
+                "default_branch": ent.get('default_branch') or 'master',
+                "unit": unit, "task_id": tid}
+        (taskdir / "meta.json").write_text(json.dumps(meta, indent=1))
+    except Exception as e:
+        return "", "", f"OpenCode worktree setup: {e}"
     spec = (card.get("spec") or "").strip() or \
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
     task = spec + "\n\n" + RAILS.format(
@@ -905,17 +928,17 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
         ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
         "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
-        f"cd {shlex.quote(workdir)} && exec opencode run --format json "
-        f"--dir {shlex.quote(workdir)} --model {shlex.quote(model)} "
+        f"cd {shlex.quote(str(worktree))} && exec opencode run --format json "
+        f"--dir {shlex.quote(str(worktree))} --model {shlex.quote(model)} "
         f"--auto {shlex.quote(task)}"
     )
-    argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
+    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
              "--description", f"runner {card['id']} OpenCode {lane}"]
             + task_run_props() + ["bash", "-lc", shell])
     r = sh(argv, timeout=180)
     if r.returncode:
         return "", "", (r.stderr or r.stdout).strip()[:240]
-    return unit, unit, ""
+    return f"devin-task-{tid}", tid, ""
 
 
 def start_task(card: dict, typ: str) -> tuple:
