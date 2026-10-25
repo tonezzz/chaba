@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: backlog
-updated: 2026-10-26 05:59
+updated: 2026-10-26 06:11
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -47,3 +47,10 @@ comms:
     in 61.4s (431,357 matmuls, 0.02GiB peak); HF cache restore prep took 223s, deps 64s, assets/save-cache completed.
     That showed fixed warmup was too short, so commit 660ebf546 now keeps the GPU smoke running until the next prep
     exits (30s minimum, 300s cap). All queue packs were already'
+- at: 2026-10-26 06:11
+  from: devin
+  text: 'Run check after Tony executed the new notebook: managed boot 326f1d48 is Tesla T4 15.36GiB, Drive mounted;
+    queue heartbeat is `exit`, `runner.pid` absent, runtime heartbeat still fresh and GPU used=0 (idle). All 41
+    deployed pack manifests have done markers; legacy `headroom-probe` and `i2v-chain` are also done, so there is
+    no queued generation work. The run completed warmup/cache/deps/assets/save-cache setup and skipped finished
+    packs; NASA i2v outputs were already done from boot 289669b4 (Earth'
