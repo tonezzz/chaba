@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-10-25 15:50
+updated: 2026-10-25 15:51
 action:
   type: manual
 ref: SYS-0863
@@ -23,3 +23,10 @@ comms:
     at 15:33 local; its script only calls get_health_status, logs the global summary, and creates inbox findings.
     It does not invoke host-specific post_restart checks. This systemd timer is model-independent, so swe-high ->
     gpt-6 luna cannot suppress it. Full checklist invocation was ma
+- at: 2026-10-25 15:51
+  from: devin
+  text: 'Post-restart investigation complete: the existing mcp-health-snapshot.timer is active (OnBootSec=5min,
+    OnUnitActiveSec=15min) and did run after this Omen boot; its log has the 15:33 snapshot. It only records global
+    health and raises focus-inbox findings; it does not run the host-specific transition.post_restart checklist.
+    Devin model selection is unrelated to systemd timer execution. The Omen post-check found Tailscale/GPU/cpufreq/Ollama/sensor/GDrive
+    okay, but Barrier KVM degraded; GPU is busy '
