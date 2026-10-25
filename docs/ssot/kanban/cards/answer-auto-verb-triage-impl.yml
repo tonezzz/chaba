@@ -1,7 +1,7 @@
 id: answer-auto-verb-triage-impl
 title: Implement answer auto-verb triage — 90 answered board asks sit unactioned
 column: review
-updated: 2026-10-25 20:12
+updated: 2026-10-25 20:15
 brief: 'Board health check 2026-10-25: only 2 truly-open requests but ~90 requests with status=answered whose answers
   were never executed — each gets a ''needs triage'' comm and stalls. Tony already picked the policy on knb-answer-action-triage
   (2026-10-15): auto-verb — auto-execute known verbs (queue→dispatch, close→done, hold→parked) at sweep time. That
@@ -46,6 +46,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-131106-extend-the-sweep-answer-path-w,
     branch dispatch/20261025-131106-extend-the-sweep-answer-path-w'
+- at: 2026-10-25 20:15
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-131106-extend-the-sweep-answer-path-w on
+    mn01 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   status: done
