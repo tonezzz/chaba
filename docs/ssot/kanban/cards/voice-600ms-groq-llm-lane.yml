@@ -1,0 +1,26 @@
+id: voice-600ms-groq-llm-lane
+title: 'voice 600ms: Groq as online fast-path LLM vs local hermes3:8b — measure time-to-first-audio'
+column: backlog
+updated: 2026-10-25 12:38
+brief: 'On the voice-miniapp lane (ADA-0817, P0 streaming TTS + barge-in done), the LLM leg is hermes3:8b on local
+  ollama — likely the slowest hop in the 600ms budget. Groq free tier now measured at 192-363ms TTFT for voice-aux-sized
+  prompts (iter-1d2). Experiment: make the miniapp LLM selectable — groq-qwen3.8-27b via LiteLLM (online fast path)
+  vs hermes3:8b (offline path) — and bench time-to-first-audio both ways.'
+priority: high
+program: chaba-ci
+tags:
+- voice
+- 600ms
+- groq
+- litellm
+- latency
+spec: 'voice-miniapp /api/voice: add env/flag VOICE_LLM=litellm:groq-qwen3.8-27b|ollama:hermes3:8b (default keep
+  local). LiteLLM side: groq-qwen3.8-27b already deployed on idc03 (GROQ_API_KEY set); single-turn prompts sidestep
+  the reasoning_content bug. Bench: reuse card''s TTFA metric — whisper->LLM->Piper-first-chunk, N=10 turns each
+  path, report median+p95. Note Groq free ITPM 7000 — fine for short voice turns, NOT for long contexts; do not
+  use for multi-turn sessions.'
+ref: ADA-0817
+comms:
+- at: 2026-10-25 12:38
+  from: tony
+  text: card captured via board-api
