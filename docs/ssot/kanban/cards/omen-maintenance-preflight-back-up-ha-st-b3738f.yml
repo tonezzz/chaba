@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 11:02
+updated: 2026-10-25 16:25
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -85,3 +85,10 @@ comms:
     both as new ext4 p8 `/models` (~114GiB) and p9 `/data/overflow` (~40.7GiB), preserve p1-p7. Later, only after
     auditing consumers, migrate verified re-downloadable model/cache directories into these mounts to reduce /data
     pressure (currently 257/295GiB used). Repurposing p5 ubuntu-000 ad'
+- at: 2026-10-25 16:25
+  from: devin
+  text: 'Post-repartition verification 2026-10-25: Omen booted successfully; Tailscale online; HTTP 200 on Tony/Ada
+    HA, Whisper, Ollama, OpenJev 8777/8778, SD server; Drive mount active; no current-boot ext4/NVMe I/O errors.
+    Final layout: p3 /home 425GiB (188GiB free), p7 /data 405.6GiB (142GiB free), root 98GiB (60GiB free); p5 ubuntu-000
+    removed and its space consumed by p7 (old p5 data not backed up—treat unavailable). p1/p2/p4/p6 preserved. fstab
+    UUIDs still match; hibernate swap remains active with '
