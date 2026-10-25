@@ -1,7 +1,7 @@
 id: img-gen-bench-qwen-image-2-1-via-colibri-42f98f
 title: 'img-gen-bench: Qwen-Image-2.1 via Colibri on a fleet host'
 column: backlog
-updated: 2026-10-24 13:17
+updated: 2026-10-25 08:11
 brief: 'Tony ask 2026-10-24 — does Colibri-style disk streaming extend to image gen? Colibri ships Qwen-Image-2.1
   (33GB dl, 12-18GB RAM, one 768x512 pic in 2min40s on 8 Zen4 cores CPU). Test: install on a fleet host with >=18GB
   RAM + >=40GB disk, generate a small prompt set (doc-pilot scene styles + standard eval prompts), measure latency
@@ -22,3 +22,8 @@ comms:
 - at: 2026-10-24 13:17
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 08:11
+  from: devin
+  text: 'REAL JOB PLAN (T4 only, deferred until runtime): 10 prompts (doc-pilot scenes + standard controls), 2 samples/prompt,
+    fixed seed/settings; artifact JSON with latency p50/p95, VRAM, image paths, failures, and a contact sheet. Do
+    not pull the 33GB model on Omen: only 38G data free now.'
