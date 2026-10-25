@@ -1,7 +1,7 @@
 id: ai-workforce-eval
 title: AI workforce eval — surfaces×brains×classes (rainy-day lanes)
 column: done
-updated: 2026-10-25 05:36
+updated: 2026-10-25 08:07
 brief: Eval which (surface × brain × task class) lane carries real work cheapest with gate-passing quality, so capped/expensive
   lanes re-route instead of stalling.
 priority: high
@@ -254,6 +254,12 @@ comms:
     routing winner (correct lanes on obvious cards); student = noul-only. Report: evals/results/jev/ + card jev-pilot.
     (2) bench-verifier card closed (BEN-0832). (3) chaba-lessons-audit timer installed + first run verified (68
     lessons, 4 flagged). (4) tony-dell h3 push-race fixed overnight (OPS-0834).'
+- at: 2026-10-25 08:07
+  from: devin
+  text: 'Model-chain probe result: runner-agent now launches OpenCode with requested model (actual process showed
+    `opencode ... --model litellm/gemini-3.5-flash-lite`, LITELLM_KEY present). But OpenCode scratch execution finished
+    without dispatch-compatible branch/session metadata; closeout/merge could not find repo, so OPENCODE_LANES is
+    now gated OFF by default until branch closeout is wired. Card opencode-lane-branch-closeout created.'
 action:
   type: dispatch
   status: done
