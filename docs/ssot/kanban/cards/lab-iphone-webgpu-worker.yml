@@ -1,7 +1,7 @@
 id: lab-iphone-webgpu-worker
 title: 'Lab: iPhone-15 as opportunistic WebGPU inference worker'
 column: backlog
-updated: 2026-10-23 14:22
+updated: 2026-10-25 14:08
 brief: 'Hypothesis: iPhone 15 can contribute real GPU compute to the fleet via a WebGPU worker page in Safari (WebGPU
   default-on since iOS 26, maps to Metal). Pattern: PWA page on /apps polls a job queue, runs small-model inference
   (embeddings/whisper-tiny/classifiers), posts results — opportunistic worker while page is open on charger. Constraints:
@@ -66,3 +66,15 @@ comms:
     ~37 GFLOPS floor, MiniLM embeds 25-46ms. iOS 18.7 — WebGPU worked with no flag. Iteration 2 shipped: job.json
     now carries {key,text} docs; scripts/nest/webgpu-mddb-job.py generates real rerank jobs from the live mddb bank
     (job mddb-rerank-* staged). Lesson captured: ada-nest-iph'
+- at: 2026-10-25 14:08
+  from: devin
+  text: '[webgpu-bench]
+
+    ua: Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.0.1
+    Mobile/24
+
+    adapter: {"vendor":"apple","architecture":"apple","device":"apple","description":"apple"}
+
+    matmul: {"n256":{"ms":2,"gflops":16.8},"n512":{"ms":11,"gflops":24.4},"n1024":{"ms":61,"gflops":35.2}}
+
+    embed: null'
