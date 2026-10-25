@@ -1,7 +1,7 @@
 id: timer-alert-host-tony-omen
 title: Timer sweep cannot reach tony-omen
 column: backlog
-updated: 2026-10-25 14:47
+updated: 2026-10-25 19:13
 priority: high
 tags:
 - timer-alert
@@ -1367,6 +1367,12 @@ comms:
   text: Normal tony-omen OS is back after removing the tony-usb rescue SD. mcp_health and direct SSH succeeded;
     /home and /data mount the resized p3/p7 correctly. The Omen host is reachable again. Keep the timer-sweep card
     open until its next sweep confirms reachability from the sweep runner.
+- at: 2026-10-25 19:13
+  from: tony
+  text: 'answered do-you-want-to-boot-the-normal-tony-omen-9fc3b4: it''s running on internal ssd already.'
+- at: 2026-10-25 19:13
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 spec: The goal is to investigate and resolve why host tony-omen is unreachable during the 15-minute timer sweep,
   leaving its timers unobserved. The target host is tony-omen. Constraints are to check network connectivity, host
   status, and SSH access to determine if this is a host-down or ssh-fail issue rather than a timer failure. The
@@ -1398,11 +1404,12 @@ requests:
 - id: do-you-want-to-boot-the-normal-tony-omen-9fc3b4
   ask: Do you want to boot the normal tony-omen OS on the HP 15-BC so I can resume the Omen Ollama benchmark? The
     currently reachable tony-usb rescue environment has no Ollama/GPU runtime.
-  status: open
+  status: answered
   at: 2026-10-25 11:48
   from: devin
   options:
   - Boot normal tony-omen OS and have me retry SSH/Ollama health (recommended).
   - Keep tony-usb running; I will limit further work to non-Omen tasks.
   suggested: Boot normal tony-omen OS and have me retry SSH/Ollama health (recommended).
+  answer: it's running on internal ssd already.
 awaiting_action: true
