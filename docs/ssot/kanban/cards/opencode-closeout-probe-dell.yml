@@ -15,10 +15,11 @@ spec: Append one marker line to README.md, run OpenCode free_lane with flash-lit
 action:
   type: dispatch
   host: tony-dell
-  status: queued
+  status: running
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   result: 'start failed: opencode is not installed on this runner'
+  runner: tony-dell
 ref: OPS-0875
 comms:
 - at: 2026-10-25 20:15
@@ -36,3 +37,6 @@ comms:
 - at: 2026-10-25 20:21
   from: devin
   text: queued for processing
+- at: 2026-10-26 05:48
+  from: tony-dell
+  text: claimed
