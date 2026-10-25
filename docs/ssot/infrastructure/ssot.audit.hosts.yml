@@ -2231,6 +2231,15 @@ hosts:
         note: "audio.cpp Qwen3-ASR-0.6B CPU on :8914 (native, ~/audio-cpp-eval —
           migrated from idc02 2026-10-22; threads=4 — 8 thrashes shared vCPU.
           Needs libgomp1. Consumers: TG_WHISPER_URL in idc03 relay/ada envs."
+      - name: ollama.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Ollama embed-pool upstream (bge-m3, quadlet cloned from idc02
+          2026-10-25, MEM-0805) — binds 100.72.146.39:11434. Marginal racer:
+          ~10s/embed while colibri img-gen + mddbd follower contend — wins
+          only when those pause."
       - name: caddy-edge.service
         type: service
         scope: user
