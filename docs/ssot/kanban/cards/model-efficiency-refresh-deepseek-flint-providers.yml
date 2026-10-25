@@ -1,0 +1,17 @@
+id: model-efficiency-refresh-deepseek-flint-providers
+title: Refresh model efficiency scorecard across providers
+column: backlog
+updated: 2026-10-26 05:47
+spec: Run a fixed efficiency fixture across local Ollama, Colab burst, OpenRouter pinned free models, Gemini gateway/direct,
+  and DeepSeek API when credentials are available. Include warm/cold latency, tokens, error/429 rate, structured/tool
+  correctness, vision where supported, cost/quota, license/data policy, and hardware fit. Add DeepSeek V4.1 Flash
+  as deepseek-flash and pin Flint separately. Publish raw JSON + report, then update model routing only after verifier
+  review. No secret values in artifacts.
+note: 'Current evidence: Flint composite 85.0/p50 1.3s/0 errors; Nemotron Super-VL and Laguna-S 100 composite; Gemini
+  free direct currently 429; DeepSeek official V4.1 Flash is 1M-context multimodal/tool-capable and cheap but not
+  yet measured here.'
+ref: OPS-0878
+comms:
+- at: 2026-10-26 05:47
+  from: devin
+  text: card captured via board-api
