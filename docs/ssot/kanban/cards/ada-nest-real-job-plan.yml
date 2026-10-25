@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: backlog
-updated: 2026-10-25 14:24
+updated: 2026-10-25 16:20
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -46,3 +46,9 @@ comms:
   text: 'T4 EMBEDDING JOB COMPLETE: t4-embedding-bench done; nomic-embed-text, 100 docs, 768 dims, 9.809s batch,
     10.2 docs/s, 3 queries in 0.187s, Tesla T4 14.6/15.36GiB observed. No production index mutation. Colab queue
     is now flush-settle; this is the first clean GPU throughput artifact.'
+- at: 2026-10-25 16:20
+  from: devin
+  text: 'COLAB RUNTIME ONLINE: worker colab-289669b4-1902 epoch 16, caps GPU=15GB/disk=207GB. It discovered gaussian-splat-edu-smoke
+    and is currently restore-hf-cache prep. Gaussian pack has not claimed yet. Assessment: no need to duplicate
+    embedding (already done), voice packs (done), or coding-agent packs (capability verdict complete). Next useful
+    T4 job is Gaussian smoke; then only add a real-PLY follow-up after its MP4/VRAM report passes.'
