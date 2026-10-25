@@ -1,7 +1,7 @@
 id: devnest-token-savings-lane-catalog
 title: 'DevNest production lane catalog: quantify token savings and delegate low-urgency work'
 column: doing
-updated: 2026-10-25 19:24
+updated: 2026-10-25 19:32
 brief: Turn the proven DevNest skills and packs into a production catalog showing which work avoids paid Devin/LLM
   tokens and which still needs frontier reasoning.
 priority: high
@@ -39,6 +39,12 @@ comms:
   text: 'started on mn01 — surveyed lane routing (dispatch_repos.LANE_*/classify_lane), cheap-agent-cascade design,
     llm-gateway job_classes, colab packs, and board action evidence. Building: ssot.devnest-lanes.yml catalog +
     lane-savings monthly report generator + first October run (evidence-bound).'
+- at: 2026-10-25 19:32
+  from: devin
+  text: 'DONE (mn01): lane catalog landed at docs/ssot/infrastructure/ssot.devnest-lanes.yml — 8 lanes w/ task_classes/verifier/host/cost/evidence/escalation
+    per spec. scripts/board/lane-savings.py runs the monthly evidence-bound savings report; first run docs/reports/lane-savings-2026-10.{md,json}:
+    Oct = 420 devin-lane dispatches (paid baseline), 6 evidenced cheap-lane sessions, 984k measured pack tokens
+    @ $0. Honest finding: no card persists action.lane yet (OPS-0838 backlog), devin sessions log no tok'
 action:
   type: dispatch
   status: running
