@@ -1,7 +1,7 @@
 id: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0
 title: 'colibri-bench: Qwen3.6-35B on omen vs gpt-oss:20b lanes'
 column: backlog
-updated: 2026-10-24 12:44
+updated: 2026-10-25 08:11
 brief: 'Tony ask 2026-10-24. Colibri (JustVugg/colibri) runs MoE models with experts streamed from disk; Qwen3.6-35B-A3B
   fits omen (30GB RAM, 83GB free disk, CUDA 1650 build ~30 tok/s vs gpt-oss:20b''s 5 tok/s CPU). Test: install colibri
   + qwen36-35b on omen, run the edu-manage corpus through its OpenAI endpoint (:8000/v1), compare p50 latency +
@@ -22,3 +22,8 @@ comms:
 - at: 2026-10-24 12:44
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 08:11
+  from: devin
+  text: 'REAL JOB PLAN (Omen HOLD): currently unsafe — /data has only 38G free vs the card''s ~83G requirement.
+    First reclaim/expand data tier or lower the model artifact; do not start the pull. When unblocked: same edu-manage
+    corpus, p50/p95, tok/s, RAM, quality gate.'
