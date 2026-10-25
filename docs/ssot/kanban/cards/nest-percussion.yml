@@ -4,11 +4,12 @@ column: backlog
 priority: medium
 created: 2026-10-09
 updated: 2026-10-10 19:22
-note: 'Tony ask: continuous generative percussion driven by ops state — audible "what''s going on". Heavy timbres
-  for big hosts, light for light hosts; tempo from event rate, pitch/accents from health. v1: /apps/percussion WebAudio
-  page (no samples, synthesized drums), state.json fed by ops-percussion-sync timer. iPad-first (tap-to-start for
-  AudioContext). Cast lane later: same page on vcast = TV speaker. AQ: page loads on kk-ipad over tailnet, audible
-  groove reflects live state (verify by toggling a check), state.json < 60s stale.
+note: 'Tony ask: continuous generative percussion driven by ops state — audible "what''s going on". Heavy
+  timbres for big hosts, light for light hosts; tempo from event rate, pitch/accents from health. v1:
+  /apps/percussion WebAudio page (no samples, synthesized drums), state.json fed by ops-percussion-sync
+  timer. iPad-first (tap-to-start for AudioContext). Cast lane later: same page on vcast = TV speaker.
+  AQ: page loads on kk-ipad over tailnet, audible groove reflects live state (verify by toggling a check),
+  state.json < 60s stale.
 
   '
 links:
@@ -17,8 +18,18 @@ links:
 comms:
 - at: 2026-10-10 19:22
   from: devin
-  text: 'doing→backlog: stale claim (no action block, no session) — needs proper arm/dispatch or it just sat here.'
+  text: 'doing→backlog: stale claim (no action block, no session) — needs proper arm/dispatch or it just
+    sat here.'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0381'
+- at: 2026-10-25 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 ref: OPS-0381
+spec: Build a browser-playable WebAudio percussion page at /apps/percussion with synthesized drums, driven
+  by state.json fed via ops-percussion-sync timer on tony-dell. Heavy timbres represent big hosts, light
+  timbres for light hosts, with tempo from event rate and pitch/accents from health. The page must be
+  iPad-first with a tap-to-start mechanism for the AudioContext, supporting eventual casting via vcast.
+  The verifiable done-condition is that the page loads over the tailnet, state.json is less than 60 seconds
+  stale, and an audible groove reflects live state verified by toggling a check.
