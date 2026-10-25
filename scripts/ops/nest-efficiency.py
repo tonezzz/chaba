@@ -21,9 +21,15 @@ RCLONE = (shutil.which('rclone') if False else None)  # placeholder; resolved be
 import shutil
 RCLONE = shutil.which('rclone') or os.path.expanduser('~/.local/bin/rclone')
 
-def rc(*a, check=True, **kw):
-    r = subprocess.run([RCLONE] + list(a), capture_output=True,
-                       text=True, timeout=300)
+def rc(*a, check=True, timeout=45, **kw):
+    try:
+        r = subprocess.run([RCLONE] + list(a), capture_output=True,
+                           text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        if check:
+            raise RuntimeError(f"rclone timeout after {timeout}s: {a[:3]}")
+        return subprocess.CompletedProcess([RCLONE] + list(a), 124, "",
+                                           f"timeout after {timeout}s")
     if check and r.returncode != 0:
         raise RuntimeError(r.stderr.strip()[:300])
     return r
