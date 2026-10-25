@@ -1,0 +1,22 @@
+id: nest-gap-gpu-runner
+title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
+column: backlog
+updated: 2026-10-25 13:36
+brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
+  with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
+priority: high
+program: ai-workforce
+tags:
+- nest
+- colab
+- gpu
+- gap-jobs
+- queue
+spec: 'Implement and use ada-nest/queue/gap-runner.py + gap-packs. Allowed only when fresh queue heartbeat phase
+  is prep/prep-wait, VRAM gate passes, and no gap lease exists. Forbidden: model pulls, HF/Drive cache writes, production
+  indexes, long agent loops. First gap pack: embedding-smoke, 10 documents, no production mutation.'
+ref: OPS-0854
+comms:
+- at: 2026-10-25 13:36
+  from: devin
+  text: card captured via board-api
