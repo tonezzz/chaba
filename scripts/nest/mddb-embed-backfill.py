@@ -7,6 +7,11 @@ Resume-safe: skips keys already present on the target. Runs on any host
 that can reach both endpoints — designed for idc03 (same-host hops).
 
 Usage: mddb-embed-backfill.py [--collection ada-ha-bank-devin-tony]
+                              [--force]
+
+--force re-adds every source doc instead of skipping existing keys —
+repairs docs stored without vectors (write-embed timeout drops) by
+pushing them back through the target's embed queue.
 """
 import ast
 import json
@@ -40,9 +45,10 @@ def main():
     if "--collection" in sys.argv:
         coll = sys.argv[sys.argv.index("--collection") + 1]
 
+    force = "--force" in sys.argv
     have = {d.get("key") for d in docs(DST, False)}
     src = docs(SRC, True)
-    todo = [d for d in src if d.get("key") not in have
+    todo = [d for d in src if (force or d.get("key") not in have)
             and d.get("contentMd")]
     print(f"source {len(src)} docs | already on target {len(have)} | "
           f"to copy {len(todo)}", flush=True)
