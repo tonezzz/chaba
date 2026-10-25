@@ -59,8 +59,8 @@ run: |
       right = torch.nn.functional.normalize(torch.linalg.cross(forward, up), dim=0)
       true_up = torch.linalg.cross(right, forward)
       view = torch.eye(4, device=device)
-  # gsplat's pinhole projection uses positive camera-space z for depth.
-  view[:3, :3] = torch.stack((right, true_up, forward))
+      # gsplat's pinhole projection uses positive camera-space z for depth.
+      view[:3, :3] = torch.stack((right, true_up, forward))
       view[:3, 3] = -view[:3, :3] @ eye
       return view
 
