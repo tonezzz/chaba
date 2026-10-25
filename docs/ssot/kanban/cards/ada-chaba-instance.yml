@@ -1,7 +1,7 @@
 id: ada-chaba-instance
 title: Provision ada-chaba backend :8008 — the tony-ha lane presence for LINE group
 column: done
-updated: 2026-10-25 19:13
+updated: 2026-10-25 19:14
 priority: medium
 spec: 'Provision the chaba persona backend on idc03, answering "chaba" mentions in the shared LINE group (spec v3
   on line-multihome-group). Per ha-ada-isolation.md pattern: (1) ada-chaba.service on :8008 cloned from ada-ha-*
@@ -70,6 +70,9 @@ comms:
 - at: 2026-10-25 19:13
   from: tony
   text: closed by tony
+- at: 2026-10-25 19:14
+  from: tony
+  text: 'answered ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac: keep the paid assignement, I''ll fix it all later.'
 action:
   type: dispatch
   status: done
@@ -84,12 +87,13 @@ requests:
   ask: 'ada-chaba is on GEMINI_API_KEY_PAID as its own pool (spec: own key, not the shared tony one) — but that
     key is also litellm paid upstream, so a chaba storm could hit fleet REST. Mint a dedicated GEMINI_API_KEY_CHABA
     in GCP console (like kk-gemini-key), or keep the PAID assignment?'
-  status: open
+  status: answered
   at: 2026-10-24 20:49
   from: devin
   options:
   - proceed
   - hold
   escalated_at: 2026-10-25 09:01
+  answer: keep the paid assignement, I'll fix it all later.
 review_kind: verify
 claim: {}
