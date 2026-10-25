@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-10-25 17:46
+updated: 2026-10-25 19:16
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -19,6 +19,13 @@ comms:
 - at: 2026-10-25 17:46
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-25 19:16
+  from: tony
+  text: 'answered the-v2-installer-requires-a-re-e1c6d2: ★ Share the existing /enroll contract from the stick-announce
+    unit for the installer POST endpoint and provision a new DNS-capable Cloudflare token for app.surf-thailand.com.'
+- at: 2026-10-25 19:16
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -29,7 +36,10 @@ requests:
   - ★ Share the existing /enroll contract from the stick-announce unit for the installer POST endpoint and provision
     a new DNS-capable Cloudflare token for app.surf-thailand.com.
   - Implement a separate distinct endpoint for the installer instead of sharing the stick-announce /enroll contract.
-  status: open
+  status: answered
   at: 2026-10-25 05:33
   from: backlog-spec-enrich
   escalated_at: 2026-10-25 17:46
+  answer: ★ Share the existing /enroll contract from the stick-announce unit for the installer POST endpoint and
+    provision a new DNS-capable Cloudflare token for app.surf-thailand.com.
+awaiting_action: true
