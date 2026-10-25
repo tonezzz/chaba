@@ -1,7 +1,7 @@
 id: eval-ide-openhands-gui
 title: 'eval: launch OpenHands web GUI on the LiteLLM free lane'
 column: backlog
-updated: 2026-10-25 14:43
+updated: 2026-10-25 19:50
 brief: OpenHands GUI = watch-an-agent-work web surface, closest analog to Devin web sessions. CLI already installed
   via uv.
 priority: medium
@@ -25,3 +25,10 @@ comms:
   from: devin
   text: 'NEXT UI comparison: run OpenHands Web against /home/tony/devnest-sample with a no-push/no-deploy prompt;
     compare supervision and artifacts with OpenCode Web.'
+- at: 2026-10-25 19:50
+  from: devin
+  text: 'RUN on tony-dell vs ~/devnest-sample (dispatch wt, no push/deploy): `openhands --override-with-envs web
+    --host 127.0.0.1 --port 3100` serves the textual-web GUI (HTTP 200). GOTCHA: bare LLM_* env is ignored — `--override-with-envs`
+    (top-level flag, before the subcommand) is required. Agent loop verified headless with identical env (LLM_MODEL=litellm_proxy/bench,
+    LLM_BASE_URL=litellm-chaba.env): 11 agent messages, added Architecture section to README.md, `node test.js`
+    still passes, zero git ops '
