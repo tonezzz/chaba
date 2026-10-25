@@ -1,7 +1,7 @@
 id: inference-provider-watch
 title: Inference-provider market watch — iterate the living research + eval new brains on the dev-AI fleet
 column: backlog
-updated: 2026-10-25 10:25
+updated: 2026-10-25 11:50
 brief: 'Living doc: devin-kb/docs/tools/inference-provider-market.md (iter 1, 2026-10-25). Each iteration: refresh
   prices/free tiers, add providers, and — per Tony — try candidates on the dev-AI fleet itself: eval-bed (new LiteLLM
   model group + config.<name>.yaml + cli-compare run vs bench baseline) AND live-task trials (route real chores/dispatch
@@ -37,3 +37,10 @@ comms:
     bench lanes did ZERO research → generic memory answers. DeepSeek output filed as education lesson 2369 (self-hosted-llm-inference-homelab).
     Finding: for research/education generation, tool-use depth is the differentiator — zen free brains beat flash-lite
     on this class too.'
+- at: 2026-10-25 11:50
+  from: devin
+  text: 'Iter-1d Groq free tier: wired into LiteLLM on idc03 (groq-gpt-oss-120b, groq-gpt-oss-20b, groq-qwen3.8-27b
+    + opencode allowlist). Bench config.devnest-groq.yaml: bench 3/4, gpt-oss-120b 1/4, qwen3.8-27b 0/4. Root causes
+    measured: free TPM caps (8k/7k ITPM) sit BELOW one mid-session opencode request (~7.7-11.9k tokens) — hard fail,
+    not throttle; litellm bug #47931 (reasoning_content echoed to Groq turn2+ → 400); qwen3.8 max_tokens cap 16384.
+    Verdict: groq-free is for small-prompt latency-critical'
