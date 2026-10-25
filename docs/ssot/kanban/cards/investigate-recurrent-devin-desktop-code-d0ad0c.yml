@@ -1,0 +1,18 @@
+id: investigate-recurrent-devin-desktop-code-d0ad0c
+title: Investigate recurrent Devin Desktop CodeWindow hang on tony-dell
+column: backlog
+updated: 2026-10-25 11:08
+action:
+  type: manual
+ref: DEV-0851
+comms:
+- at: 2026-10-25 11:08
+  from: devin
+  text: 'Current incident 2026-10-25: Dell is reachable over SSH/MCP and chrome-remote-desktop@tony.service is active,
+    but Devin main.log repeatedly reports CodeWindow detected unresponsive from 10:26 through 11:03. One Devin Desktop
+    instance is running; its renderer is ~23% CPU and ~8.7% RAM. Host has ~5.5GiB available, load ~1, swap ~6.7GiB
+    used. Prior card DEV-0424 disabled duplicate autostart and is done, so this appears recurrent despite one instance.
+    Diagnose logs/renderer/CRD consumer surface read'
+- at: 2026-10-25 11:08
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
