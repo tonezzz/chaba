@@ -1,0 +1,27 @@
+id: hugging-face-pro-cost-benefit-for-colab-b22c9e
+title: Hugging Face Pro cost-benefit for Colab and DevNest
+column: backlog
+updated: 2026-10-26 06:28
+brief: Evaluate whether a Hugging Face Pro subscription adds value beyond the existing Drive-backed Colab cache;
+  do not purchase without Tony’s explicit approval.
+priority: medium
+program: ai-workforce
+tags:
+- huggingface
+- colab
+- devnest
+- cost
+- decision
+spec: 'Official HF pages checked 2026-10-25: Pro is $9/month; includes 1TB private Hub storage, up to 10TB public
+  storage, $2 monthly compute/inference credits, 8x ZeroGPU quota (40 min/day, highest queue priority), and up to
+  10 hosted ZeroGPU Spaces. HF Jobs hardware is usage-billed; T4-small is $0.40/hour, so $2 credits cover at most
+  about five T4-small hours if spent only there. Hub local cache remains runtime-local unless explicitly persisted;
+  Pro does not make Colab /root/.cache persistent. Compare one bounded DevNest assessment on HF Jobs/ZeroGPU against
+  Colab, measure cold-cache/download time and artifact landing, and calculate monthly utilization before deciding.
+  Keep Drive as queue/control-plane SSOT; use HF Hub for pinned private artifacts/checkpoints only where useful.
+  No subscription or pay-as-you-go job until approved.'
+ref: OPS-0881
+comms:
+- at: 2026-10-26 06:28
+  from: tony
+  text: card captured via board-api
