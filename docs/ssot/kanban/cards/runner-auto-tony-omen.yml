@@ -7,21 +7,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: runner-agent installed but no repo push-capable (no push:<repo> label,
-  every probe fails) — this host can only strand dispatch branches. Info: chaba origin
-  is fetch-only (by design — no push creds); merge-sweep salvage path verified; ada-voice:
-  push probe fails (fatal: could not read Username for ''https://github.com'': No
-  ) — ada-voice dispatches defer to a pushable host; stranded work relays via board-api;
-  sunsynk-card: push probe fails (fatal: could not read Username for ''https://github.com'':
-  No ) — sunsynk-card dispatches defer to a pushable host; stranded work relays via
-  board-api; no mddb-fork checkout — host can''t take action.repo=mddb-fork cards;
-  no gods-eye-view checkout — host can''t take action.repo=gods-eye-view cards; devin:
-  /home/tony/.local/bin/devin (devin 3000.11.205 (6dea39440ae3)).'
+note: 'Failing: probe failed: Command ''[''ssh'', ''-o'', ''BatchMode=yes'', ''-o'',
+  ''ConnectTimeout=8'', ''tony-omen'', ''python3'', ''-'']'' timed out after 120 seconds.'
 help: 'Per-check fixes:
 
-  - no-push-creds: A dispatch runner that can''t push ANY repo only strands branches
-  (relay salvages them, but the host is a liability). Give it a push-capable deploy
-  key per repo and declare push:<repo> in RUNNER_LABELS, or drop it from the fleet.'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
+  Check tailscale + sshd + the key on the host.'
 updated: '2026-10-24'
 review_kind: triage
 action:
