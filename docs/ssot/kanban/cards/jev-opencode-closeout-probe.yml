@@ -1,7 +1,7 @@
 id: jev-opencode-closeout-probe
 title: 'OpenCode closeout probe: append marker and merge via worktree'
-column: doing
-updated: 2026-10-25 18:05
+column: review
+updated: 2026-10-25 18:07
 brief: Small free-lane marker job to prove the new dispatch-compatible OpenCode worktree and auto-merge closeout.
 priority: low
 program: chaba-ci
@@ -14,8 +14,11 @@ spec: 'Append a single line to README.md and commit it. Expected: runner creates
   OpenCode runs with flash-lite, close_out_merge verifies and merges, card done. No deploy.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0  devin-task-20261025-110557-append-a-single-line-to-readme.service: Failed with result ''exit-code''.
+    | devin-task-20261025-110557-append-a-single-line-to-readme.service: Consumed 376ms CPU time over 627ms wall
+    clock time, 104.9M memory peak.'
 ref: OPS-0868
 comms:
 - at: 2026-10-25 18:03
@@ -34,3 +37,9 @@ comms:
 - at: 2026-10-25 18:05
   from: chaba
   text: started devin-task-20261025-110557-append-a-single-line-to-readme on mn01 (dispatch)
+- at: 2026-10-25 18:07
+  from: mn01
+  text: 'finished (ok): exit=0  devin-task-20261025-110557-append-a-single-line-to-readme.service: Failed with result
+    ''exit-code''. | devin-task-'
+review_kind: verify
+claim: {}
