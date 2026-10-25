@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:18
+updated: 2026-10-25 12:22
 action:
   type: manual
 ref: OPS-0853
@@ -20,6 +20,13 @@ comms:
   from: devin
   text: 'raised request which-storage-target-should-the-omen-par-dd9b61: Which storage target should the Omen partition
     plan optimize? No disk changes will run until you select an option and ba'
+- at: 2026-10-25 12:22
+  from: devin
+  text: 'Tony confirmed nvme0n1p5 (64.9GiB old Ubuntu root) is disposable. Current read-only layout: /home p3 is
+    310.6GiB and last recorded 98% full; /data p7 is 300GiB and 68% full; 114.5GiB unallocated immediately before
+    p3; 40.7GiB unallocated immediately after p7, then p5. GDrive contains the raw GPT metadata backup (17,920B)
+    and the text inventory, but not a verified full filesystem/data backup. Deleting p5 plus growing p7 could add
+    ~105.6GiB to /data but does not directly enlarge /home. Expanding /'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
