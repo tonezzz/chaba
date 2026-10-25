@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:36
+updated: 2026-10-25 12:42
 action:
   type: manual
 ref: OPS-0853
@@ -48,11 +48,18 @@ comms:
     a blank SD. Do not format while booted from it; doing so would erase the active root and end this session. It
     is too small for full /home+/data backup (~483GB used). Keep it as the offline recovery/partition-work environment
     through Option 3; consider repurposing only after booting n'
+- at: 2026-10-25 12:42
+  from: tony
+  text: 'answered which-storage-target-should-the-omen-par-dd9b61: Option 3: expand both /home and /data; p5 contents
+    are disposable.'
+- at: 2026-10-25 12:42
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
     option and backup gates are satisfied.
-  status: open
+  status: answered
   at: 2026-10-25 12:18
   from: devin
   options:
@@ -65,3 +72,5 @@ requests:
   - No partition edits; keep layout and manage storage by moving caches/data to /data.
   suggested: Expand /home p3 into the adjacent ~114.5GiB free gap; preserve p5 (recommended because /home is 98%
     full). Requires a verified full backup and offline filesystem move plan.
+  answer: 'Option 3: expand both /home and /data; p5 contents are disposable.'
+awaiting_action: true
