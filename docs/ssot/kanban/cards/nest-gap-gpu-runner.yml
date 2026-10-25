@@ -1,7 +1,7 @@
 id: nest-gap-gpu-runner
 title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
-column: doing
-updated: 2026-10-25 19:39
+column: review
+updated: 2026-10-25 19:41
 brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
   with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
 priority: high
@@ -46,7 +46,16 @@ comms:
     (fresh-hb prep/prep-wait gate + VRAM floor + exclusive gap-lease + 10s window watchdog w/ process-group kill
     + verify-before-mark + forbidden-pattern scan), gap-packs/embedding-smoke/pack.json (10 docs via RESIDENT nomic-embed-text,
     /api/tags no-pull guard, out/ only), PROCEDURE.md,'
+- at: 2026-10-25 19:41
+  from: mn01
+  text: 'finished (ok): exit=0 anch, full detail in `dispatch-outcome-20261025-123310-implement-and-use-ada-nest-que.md`.
+    | devin-task-20261025-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 anch, full detail in `dispatch-outcome-20261025-123310-implement-and-use-ada-nest-que.md`. | devin-task-20261025-123310-implement-and-use-ada-nest-que.service:
+    Consumed 14.128s CPU time over 6min 36.481s wall clock time, 209.2M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
