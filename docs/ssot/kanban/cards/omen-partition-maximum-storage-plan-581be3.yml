@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 13:27
+updated: 2026-10-25 14:33
 action:
   type: manual
 ref: OPS-0853
@@ -133,6 +133,13 @@ comms:
     to consume 114.44GiB gap and grow 310.56->425.00GiB; preserve end and neighboring p1/p2/p4/p6/p7. At ~5min,
     e2image had copied 33.25/216.90GiB, ETA ~28min. AC connected; p3 unmounted; no filesystem data backup per Tony
     risk acceptance. P5 deletion/p7 expansion already verified; do not interrupt power or the rescue session.'
+- at: 2026-10-25 14:33
+  from: devin
+  text: Option 3 partition edits completed 2026-10-25. p5 deleted; p7 extended to 405.6GiB; p3 moved left and extended
+    to 425.0GiB. p1 EFI, p2 MSR, p4 NTFS and p6 root preserved. sgdisk -v reports no GPT problems; read-only e2fsck
+    returns 0 for p3 and p7; filesystem UUIDs are unchanged. GParted reports all operations successfully completed.
+    Rescue OS remains running from /dev/sda2; internal NVMe partitions are still unmounted. No file-level backup
+    was created per Tony risk acceptance; GPT backup is on G
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
