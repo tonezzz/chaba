@@ -1,7 +1,7 @@
 id: ada-nest-drive-store-hardening-stale-cla-558c90
 title: 'ada-nest drive-store hardening: stale-claim release + packs-index'
 column: backlog
-updated: 2026-10-25 07:53
+updated: 2026-10-25 08:10
 brief: 'Drive-FUSE lessons from 2026-10-23 cost hours (3 runner self-exits from lease read-back, lost-race claim
   poisoning, slow fleet scans). Ranked fixes:'
 tags:
@@ -40,3 +40,9 @@ comms:
     renew per-pack claim heartbeat and stale only after timeout+grace; declare/scan queue roots (doc-pilot-v2 is
     Omen-only, invisible to default Colab/watch); add dependency edges and strict fetch/publish validation. Core
     boundary: Drive is durable artifact bus, not transactional sc'
+- at: 2026-10-25 08:10
+  from: devin
+  text: 'Live validation 2026-10-25 08:09 BKK: nasa-embeds-ss1 claim tony-omen-259431 was 16m old, no corresponding
+    nest-worker process, no done marker, zero embeds/archive files. Default stale-claim TTL is 60m, so this dead
+    claim blocks recovery for ~44m. Colab runner is also stopped. Strong evidence for the claim-heartbeat/timeout-aware
+    reclaim item. I did not manually delete the claim.'
