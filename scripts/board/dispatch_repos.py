@@ -851,6 +851,43 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
             "failed": failed[:8] or tail or ["pytest exited nonzero"]}
 
 
+def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
+    """Do not blame a change for a failure already present on base.
+
+    A branch is still rejected when it introduces a new failing test or
+    changes the failure set. The baseline run is isolated in a temporary
+    detached worktree and removed after the comparison.
+    """
+    branch = run_test_gate(wt, repo_name)
+    if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    root = _repo_root(Path(wt))
+    if root is None:
+        return branch
+    base_wt = Path(tempfile.mkdtemp(prefix="dispatch-baseline-"))
+    try:
+        r = sh(["git", "-C", str(root), "worktree", "add", "--detach",
+                str(base_wt), base_ref], timeout=120)
+        if r.returncode:
+            return branch
+        base = run_test_gate(base_wt, repo_name)
+    finally:
+        sh(["git", "-C", str(root), "worktree", "remove", "--force",
+            str(base_wt)], timeout=60)
+        try:
+            base_wt.rmdir()
+        except OSError:
+            pass
+    branch_failed = set(branch.get("failed") or [])
+    base_failed = set(base.get("failed") or [])
+    if branch.get("ran") and base.get("ran") and not base.get("ok") \
+            and branch_failed and branch_failed == base_failed:
+        branch = dict(branch)
+        branch.update(ok=True, baseline_failed=sorted(base_failed),
+                      skipped="pre-existing baseline test failure")
+    return branch
+
+
 # ---------------------------------------------------------- shadow guard
 #
 # Pre-merge guard (card dispatch-gitignore-shadow-guard — the 2026-10-10
@@ -982,7 +1019,7 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     shadows = shadow_paths(mwt, base, "HEAD")
     if shadows:
         return False, [], "", {}, shadows
-    tests = run_test_gate(mwt, repo_name)
+    tests = baseline_aware_test_gate(mwt, repo_name, s["base_ref"])
     if not tests.get("ok"):
         return False, [], "", tests, []
     return True, [], "", tests, []
