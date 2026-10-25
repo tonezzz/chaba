@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: backlog
-updated: 2026-10-25 19:48
+updated: 2026-10-25 20:38
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -26,3 +26,10 @@ comms:
 - at: 2026-10-25 19:48
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 20:38
+  from: devin
+  text: 'Phase 1 implementation complete in local branch `fix/colab-session-control`: canonical Drive notebook `ada-nest/queue/ada-nest-job-console.ipynb`
+    (instructions + two code cells), runtime preflight/heartbeat guard, safe lease-aware launcher, and `t4-session-warmup`
+    first in JOBS so cache restore prep overlaps GPU smoke. Queue runner writes per-boot runner identity and no
+    longer removes a foreign runner PID. Session detection is managed-notebook-only; no auto-stop. Tests: 3 runtime-registry
+    + 7 mc'
