@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 14:33
+updated: 2026-10-25 14:37
 action:
   type: manual
 ref: OPS-0853
@@ -144,6 +144,11 @@ comms:
   from: devin
   text: 'raised request partition-edits-are-verified-from-the-re-6c7a16: Partition edits are verified from the rescue
     OS. Please remove the tony-usb rescue SD and boot the normal Omen OS from t'
+- at: 2026-10-25 14:37
+  from: devin
+  text: Tony requested shutdown so he can remove the rescue SD. Verified host tony-usb root was /dev/sda2, zero
+    GParted/e2image/e2fsck/resize2fs workers remained; ran sudo systemctl poweroff. SSH port first refused, then
+    timed out after 10s, consistent with shutdown. Awaiting Tony to boot normal Omen OS for post-change mount verification.
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
