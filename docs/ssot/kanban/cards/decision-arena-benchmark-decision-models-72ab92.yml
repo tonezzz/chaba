@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: backlog
-updated: 2026-10-25 08:11
+updated: 2026-10-25 08:16
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -22,3 +22,9 @@ comms:
   text: 'REAL JOB PLAN (idc03 CPU, immediately safe): expand from 27 to 50 labeled cases; run jevos, Laya, jev-student
     with identical /v1/systemone inputs; report accuracy by noul/choice/stagnation, calibration/ECE, warm latency,
     and disagreements. This is the next JEV improvement before more auto-routing.'
+- at: 2026-10-25 08:16
+  from: devin
+  text: 'MORNING RUN: existing decision-arena harness executed on idc03 CPU. jev-student 0.481 acc / 0.632 noul
+    / 0.125 choice (13/27); jevos 0.667 acc / 0.579 noul / 0.875 choice (18/27), warm p50 345ms. Laya unavailable
+    on this host (No module named laya). Next real job: expand corpus to 50 with human labels; install/run Laya
+    only in a declared environment.'
