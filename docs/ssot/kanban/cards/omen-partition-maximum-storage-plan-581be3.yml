@@ -86,6 +86,10 @@ comms:
     p1-p7 unmounted, no swap active; sudo is NOPASSWD; /dev/sda2 remains the live rescue root and will not be formatted.
     GDrive raw GPT backup is available. Tool gap: gparted and partclone.ext4 are absent; GNU parted 3.6 has no partition-start
     move operation, so it cannot safely perform the p3 start relocation. No partition writes performed.'
+- at: 2026-10-25 12:45
+  from: devin
+  text: 'raised request option-3-requires-moving-the-start-of-ex-fce57c: Option 3 requires moving the start of ext4
+    p3. The current live USB has parted/e2fsck/resize2fs but no GParted; I will n'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -123,4 +127,17 @@ requests:
   answer: Proceed with Option 3 without a full data backup; I accept that /home and /data may become unrecoverable
     if the move/resize fails, and authorize root partition commands on the tony-usb live environment. Do not format
     the SD.
+- id: option-3-requires-moving-the-start-of-ex-fce57c
+  ask: Option 3 requires moving the start of ext4 p3. The current live USB has parted/e2fsck/resize2fs but no GParted;
+    I will not improvise a raw block move. Which route do you approve?
+  status: open
+  at: 2026-10-25 12:45
+  from: devin
+  options:
+  - Approve apt/network install of GParted in the tony-usb live environment (writes only to the rescue SD; then
+    I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
+  - Use separate GParted Live media instead; keep current tony-usb unchanged.
+  - Pause Option 3; do not alter NVMe until GParted media/tool is available.
+  suggested: Approve apt/network install of GParted in the tony-usb live environment (writes only to the rescue
+    SD; then I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
 awaiting_action: true
