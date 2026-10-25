@@ -1,7 +1,7 @@
 id: timer-alert-host-tony-omen
 title: Timer sweep cannot reach tony-omen
 column: backlog
-updated: 2026-10-25 11:42
+updated: 2026-10-25 11:48
 priority: high
 tags:
 - timer-alert
@@ -1340,6 +1340,12 @@ comms:
   from: devin
   text: 'raised request which-exact-command-or-ssh-alias-and-sou-a5fdbc: Which exact command or SSH alias and source
     machine reaches Omen for you? Please provide the target/route and where you '
+- at: 2026-10-25 11:48
+  from: tony
+  text: 'answered which-exact-command-or-ssh-alias-and-sou-a5fdbc: From tony-macbook, SSH to 192.168.2.86 works.'
+- at: 2026-10-25 11:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 spec: The goal is to investigate and resolve why host tony-omen is unreachable during the 15-minute timer sweep,
   leaving its timers unobserved. The target host is tony-omen. Constraints are to check network connectivity, host
   status, and SSH access to determine if this is a host-down or ssh-fail issue rather than a timer failure. The
@@ -1361,10 +1367,11 @@ requests:
   ask: Which exact command or SSH alias and source machine reaches Omen for you? Please provide the target/route
     and where you run it (MacBook Terminal, Dell CRD, or another host); do not paste credentials. This will let
     me resume Omen work through the same reachable route.
-  status: open
+  status: answered
   at: 2026-10-25 11:42
   from: devin
   options:
   - proceed
   - hold
+  answer: From tony-macbook, SSH to 192.168.2.86 works.
 awaiting_action: true
