@@ -1,7 +1,7 @@
 id: jev-opencode-free-probe
 title: 'JEV OpenCode free-lane probe: append marker to README'
-column: doing
-updated: 2026-10-25 08:00
+column: review
+updated: 2026-10-25 08:03
 brief: 'Small verified chore: append a single line to README.md and commit. Expected free_lane -> OpenCode with
   LiteLLM Gemini Flash Lite.'
 priority: low
@@ -15,10 +15,14 @@ spec: 'Probe the OpenCode lane executor after da71c8070. Expected: runner classi
   uses litellm/gemini-3.5-flash-lite, commits marker.'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
   sweep:
     stale_running: 2026-10-25 08:00
+    no_repo: 2026-10-25 08:00
+  result: 'exit=0 ":"step-finish","tokens":{"total":2355,"input":2050,"output":305,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | runner-jev-opencode-free-probe-1792889850.service: Consumed 14.813s CPU time, 555.8M memory peak, 0B memory
+    swap peak.'
 ref: OPS-0845
 comms:
 - at: 2026-10-25 07:57
@@ -47,3 +51,8 @@ comms:
 - at: 2026-10-25 08:00
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-runner-jev-opencode-free-probe-1792889850'
+- at: 2026-10-25 08:03
+  from: idc02
+  text: 'finished (ok): exit=0 ":"step-finish","tokens":{"total":2355,"input":2050,"output":305,"reasoning":0,"cache":{"write":0,"read":0}},"cos'
+review_kind: verify
+claim: {}
