@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: backlog
-updated: 2026-10-25 15:51
+updated: 2026-10-25 16:10
 action:
   type: manual
 ref: OPS-0864
@@ -26,11 +26,19 @@ comms:
   from: devin
   text: 'raised request omen-barriers-service-expects-x0-but-onl-e0cc66: Omen barriers.service expects X0 but only
     X20 exists after boot. Which display should the Barrier server use?'
+- at: 2026-10-25 16:10
+  from: tony
+  text: 'answered omen-barriers-service-expects-x0-but-onl-e0cc66: Retire the Barrier KVM server/client and its
+    enforcement/watchdog. I do not need Barrier while working on MacBook. Preserve unrelated Xfce/CRD physical-seat
+    support.'
+- at: 2026-10-25 16:10
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
     use?
-  status: open
+  status: answered
   at: 2026-10-25 15:51
   from: devin
   options:
@@ -40,3 +48,6 @@ requests:
   - Barrier is not needed on Omen; disable this role through the normal repo/service procedure.
   suggested: 'Keep the physical-screen design: provision/restore X0 for Barrier on Omen (recommended if using Omen
     as the physical Barrier server).'
+  answer: Retire the Barrier KVM server/client and its enforcement/watchdog. I do not need Barrier while working
+    on MacBook. Preserve unrelated Xfce/CRD physical-seat support.
+awaiting_action: true
