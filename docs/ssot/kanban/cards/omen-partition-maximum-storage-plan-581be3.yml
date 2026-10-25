@@ -27,6 +27,13 @@ comms:
     p3; 40.7GiB unallocated immediately after p7, then p5. GDrive contains the raw GPT metadata backup (17,920B)
     and the text inventory, but not a verified full filesystem/data backup. Deleting p5 plus growing p7 could add
     ~105.6GiB to /data but does not directly enlarge /home. Expanding /'
+- at: 2026-10-25 12:22
+  from: devin
+  text: Tony confirms nvme0n1p5 (64.9GiB old Ubuntu) contents may be deleted. This authorizes disposal of p5 data,
+    but does not select whether to extend p7 only or also move/extend p3; no partition edits run. Current p5+following-to-p7
+    gap is ~105.6GiB, available to p7 after deletion. A separate ~114.5GiB gap before p3 could grow /home, but requires
+    moving p3 start offline. GDrive raw GPT backup is present; it is metadata-only, not a filesystem backup. Await
+    exact target choice and full data-backup gate
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
