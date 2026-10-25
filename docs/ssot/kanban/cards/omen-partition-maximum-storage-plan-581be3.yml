@@ -140,6 +140,10 @@ comms:
     returns 0 for p3 and p7; filesystem UUIDs are unchanged. GParted reports all operations successfully completed.
     Rescue OS remains running from /dev/sda2; internal NVMe partitions are still unmounted. No file-level backup
     was created per Tony risk acceptance; GPT backup is on G
+- at: 2026-10-25 14:33
+  from: devin
+  text: 'raised request partition-edits-are-verified-from-the-re-6c7a16: Partition edits are verified from the rescue
+    OS. Please remove the tony-usb rescue SD and boot the normal Omen OS from t'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
@@ -205,4 +209,15 @@ requests:
     service and access scope.
   suggested: I can access the Omen screen now; keep GParted open and guide me through the exact queued operations
     (recommended).
+- id: partition-edits-are-verified-from-the-re-6c7a16
+  ask: Partition edits are verified from the rescue OS. Please remove the tony-usb rescue SD and boot the normal
+    Omen OS from the internal NVMe. When it is back, tell me so I can verify /home and /data mount sizes and normal
+    boot health.
+  status: open
+  at: 2026-10-25 14:33
+  from: devin
+  options:
+  - Remove rescue SD and boot internal Omen now (recommended).
+  - Keep rescue OS running; defer normal-boot verification.
+  suggested: Remove rescue SD and boot internal Omen now (recommended).
 awaiting_action: true
