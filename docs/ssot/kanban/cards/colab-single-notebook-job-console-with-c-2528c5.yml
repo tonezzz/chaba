@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: backlog
-updated: 2026-10-25 20:41
+updated: 2026-10-26 05:59
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -40,3 +40,10 @@ comms:
     and needs safe rebase before any push. Runtime files are already deployed to Drive and checksum-verified; queue
     heartbeat is stale and no runner PID is present. Education post 2231 (`colab-gpu-worker`) was updated in place.
     The new `colab_session_status`/pack-s'
+- at: 2026-10-26 05:59
+  from: devin
+  text: 'First live run verified 2026-10-25: new runtime boot 326f1d48 was T4 (15.36GiB), Drive mounted, preflight
+    registry active; queue runner drained cleanly (exit heartbeat, runner.pid absent). Per-boot warmup completed
+    in 61.4s (431,357 matmuls, 0.02GiB peak); HF cache restore prep took 223s, deps 64s, assets/save-cache completed.
+    That showed fixed warmup was too short, so commit 660ebf546 now keeps the GPU smoke running until the next prep
+    exits (30s minimum, 300s cap). All queue packs were already'
