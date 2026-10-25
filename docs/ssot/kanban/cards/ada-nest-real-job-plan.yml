@@ -1,7 +1,7 @@
 id: ada-nest-real-job-plan
 title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
 column: backlog
-updated: 2026-10-25 13:36
+updated: 2026-10-25 14:24
 brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
   GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
 priority: high
@@ -41,3 +41,8 @@ comms:
     gate, and never starts a second main runner or mutates cache/index. Launch cell: `nohup bash -lc "while true;
     do python3 /content/drive/MyDrive/ada-nest/queue/gap-runner.py; sleep 20; done" > /content/drive/MyDrive/ada-nest/queue/gap-runner.log
     2>'
+- at: 2026-10-25 14:24
+  from: devin
+  text: 'T4 EMBEDDING JOB COMPLETE: t4-embedding-bench done; nomic-embed-text, 100 docs, 768 dims, 9.809s batch,
+    10.2 docs/s, 3 queries in 0.187s, Tesla T4 14.6/15.36GiB observed. No production index mutation. Colab queue
+    is now flush-settle; this is the first clean GPU throughput artifact.'
