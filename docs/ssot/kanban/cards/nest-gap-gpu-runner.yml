@@ -1,7 +1,7 @@
 id: nest-gap-gpu-runner
 title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
-column: review
-updated: 2026-10-25 19:41
+column: done
+updated: 2026-10-25 19:45
 brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
   with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
 priority: high
@@ -63,6 +63,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-123310-implement-and-use-ada-nest-que,
     branch dispatch/20261025-123310-implement-and-use-ada-nest-que'
+- at: 2026-10-25 19:45
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -72,3 +75,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 19:45
+  note: verified — evidence checks green, closing itself
