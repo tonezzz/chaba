@@ -1,7 +1,7 @@
 id: nest-efficiency-session-level-drive-gpu-bf7681
 title: 'nest-efficiency: session-level Drive/GPU efficiency report'
 column: backlog
-updated: 2026-10-25 08:11
+updated: 2026-10-25 08:16
 brief: 'Measure whether the Drive-store improvements (ADA-0806, 10-23/24) actually pay. Parses queue/run-*.out.log
   + done markers + heartbeat to emit per-session metrics: wall_min, gpu_min (from gpu% in DONE lines), idle_min,
   packs_done, failures, cold_start_min, and estimated $/pack.'
@@ -24,3 +24,8 @@ comms:
   text: 'REAL JOB PLAN (CPU/idc03, no GPU): run the efficiency report against the completed queue history first.
     Artifact fields: wall_min, gpu_min, idle_min, packs_done, failures, cold_start_min, estimated cost/pack. This
     tells us whether another T4 session is worth starting before spending runtime.'
+- at: 2026-10-25 08:16
+  from: devin
+  text: Attempted safe CPU report run on idc03; nest-efficiency.py --json hung while reading Drive/queue history
+    and was stopped (no data mutation). Needs timeout/DriveFS-read guards before retry. This is a useful reliability
+    fix before using it as a scheduling gate.
