@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 13:06
+updated: 2026-10-25 13:27
 action:
   type: manual
 ref: OPS-0853
@@ -127,6 +127,12 @@ comms:
     GDrive to rescue SD and SHA-256 verified. p3 remains unchanged. No CRD/xrdp/VNC service is active on tony-usb;
     GParted is GUI-only, so p3 start relocation awaits authorized interactive screen access or a temporary remote
     GUI plan. No SD format or other NVMe edits.'
+- at: 2026-10-25 13:27
+  from: devin
+  text: 'Option 3 p3 phase running in GParted on tony-usb, one queued operation only: move nvme0n1p3 start left
+    to consume 114.44GiB gap and grow 310.56->425.00GiB; preserve end and neighboring p1/p2/p4/p6/p7. At ~5min,
+    e2image had copied 33.25/216.90GiB, ETA ~28min. AC connected; p3 unmounted; no filesystem data backup per Tony
+    risk acceptance. P5 deletion/p7 expansion already verified; do not interrupt power or the rescue session.'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
