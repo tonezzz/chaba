@@ -1,7 +1,7 @@
 id: voice-600ms-groq-llm-lane
 title: 'voice 600ms: Groq as online fast-path LLM vs local hermes3:8b — measure time-to-first-audio'
 column: backlog
-updated: 2026-10-25 12:38
+updated: 2026-10-25 12:43
 brief: 'On the voice-miniapp lane (ADA-0817, P0 streaming TTS + barge-in done), the LLM leg is hermes3:8b on local
   ollama — likely the slowest hop in the 600ms budget. Groq free tier now measured at 192-363ms TTFT for voice-aux-sized
   prompts (iter-1d2). Experiment: make the miniapp LLM selectable — groq-qwen3.8-27b via LiteLLM (online fast path)
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-25 12:38
   from: tony
   text: card captured via board-api
+- at: 2026-10-25 12:43
+  from: devin
+  text: 'IN PROGRESS — code side done, deploy blocked on omen (offline for reboot prep). Patched /tmp/voice-miniapp/server.py:
+    VOICE_LLM env switch (ollama:MODEL | litellm:MODEL), litellm→ollama auto-fallback, X-LLM response header, LITELLM_URL
+    normalized (env file ships base /v1 — bug found+fixed in test). Unit-tested on dell: litellm path ok, bogus-key→ollama
+    fallback ok, plain ollama ok. LLM-leg bench (voice-sized prompts, full reply): groq-qwen3.8-27b 220-800ms median~248ms
+    vs local llama3.2:3b 1.4-4'
