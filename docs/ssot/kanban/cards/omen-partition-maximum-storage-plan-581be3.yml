@@ -1,7 +1,7 @@
 id: omen-partition-maximum-storage-plan-581be3
 title: Omen partition maximum-storage plan
 column: backlog
-updated: 2026-10-25 12:44
+updated: 2026-10-25 12:45
 action:
   type: manual
 ref: OPS-0853
@@ -80,6 +80,12 @@ comms:
     tony-usb live environment; SD formatting remains prohibited. Proceeding with read-only preflight only first:
     verify AC power, tool availability, mount/swap state, exact device and GPT backup. No partition writes until
     preflight is clean.'
+- at: 2026-10-25 12:45
+  from: devin
+  text: 'Risk acceptance recorded. Read-only preflight on tony-usb: AC online, battery 93%; internal NVMe partitions
+    p1-p7 unmounted, no swap active; sudo is NOPASSWD; /dev/sda2 remains the live rescue root and will not be formatted.
+    GDrive raw GPT backup is available. Tool gap: gparted and partclone.ext4 are absent; GNU parted 3.6 has no partition-start
+    move operation, so it cannot safely perform the p3 start relocation. No partition writes performed.'
 requests:
 - id: which-storage-target-should-the-omen-par-dd9b61
   ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
