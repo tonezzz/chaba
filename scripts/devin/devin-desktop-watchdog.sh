@@ -115,28 +115,63 @@ notify() {
     return 0
 }
 
-# Main GUI process = cmdline starting with $BIN but not a child type
-# (--type=renderer/gpu/utility/...), not the cli.js launcher, not crashpad.
-# Deliberately NOT anchored at end: a GUI launched with flags (e.g.
-# --no-sandbox) still counts as the main process.
+# True only for the Electron GUI entry point. Extension server workers
+# also execute $BIN but append paths such as serverWorkerMain and must not
+# be mistaken for the process that owns the window.
+is_main_cmdline() {
+    local args="$1"
+    case "$args" in
+        "$BIN"|"$BIN "*) ;;
+        *) return 1 ;;
+    esac
+    case "$args" in
+        *--type=*|*cli.js*|*crashpad*|*serverWorkerMain*) return 1 ;;
+    esac
+    return 0
+}
+
 main_pid() {
-    local p args
+    local p args lock="$HOME/.config/Devin/code.lock"
+    # Devin's single-instance lock names the GUI PID; prefer it to pgrep's
+    # process order, which may list a same-binary extension worker first.
+    if [ -f "$lock" ]; then
+        p=$(cat "$lock" 2>/dev/null)
+        case "$p" in ''|*[!0-9]*) p="" ;; esac
+        if [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then
+            args=$(tr '\0' ' ' <"/proc/$p/cmdline" 2>/dev/null) || args=""
+            if is_main_cmdline "$args"; then
+                echo "$p"
+                return 0
+            fi
+        fi
+    fi
     for p in $(pgrep -f "^${BIN}" 2>/dev/null); do
         args=$(tr '\0' ' ' <"/proc/$p/cmdline" 2>/dev/null) || continue
-        case "$args" in
-            *--type=*|*cli.js*|*crashpad*) continue ;;
-        esac
-        echo "$p"
-        return 0
+        if is_main_cmdline "$args"; then
+            echo "$p"
+            return 0
+        fi
     done
-    # Fallback: Devin's own single-instance lock holds the GUI main PID.
-    if [ -f "$HOME/.config/Devin/code.lock" ]; then
-        p=$(cat "$HOME/.config/Devin/code.lock" 2>/dev/null)
-        case "$p" in ''|*[!0-9]*) return 1 ;; esac
-        kill -0 "$p" 2>/dev/null && { echo "$p"; return 0; }
-    fi
     return 1
 }
+
+if [ "${1:-}" = "--selftest-main-pid" ]; then
+    is_main_cmdline "$BIN" || exit 1
+    is_main_cmdline "$BIN --no-sandbox" || exit 1
+    for args in \
+        "$BIN --type=renderer" \
+        "$BIN --type=gpu-process" \
+        "$BIN /usr/share/devin-desktop/resources/app/extensions/markdown-language-features/dist/serverWorkerMain --node-ipc" \
+        "$BIN /usr/share/devin-desktop/resources/app/cli.js" \
+        "$BIN --crashpad-handler"; do
+        if is_main_cmdline "$args"; then
+            printf 'selftest failed: child accepted as main: %s\n' "$args" >&2
+            exit 1
+        fi
+    done
+    echo "devin watchdog main-pid selftest: ok"
+    exit 0
+fi
 
 # Find Electron's modal "The window is not responding" dialog: a window
 # named exactly "Devin" carrying _NET_WM_STATE_MODAL. Prints the window id

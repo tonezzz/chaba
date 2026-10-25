@@ -5,22 +5,32 @@
 #      Electron sandbox -> renderer SIGTRAP crashes).
 #   2. devin-desktop-watchdog.sh -> ~/.local/bin + cron every 10 min.
 #
-# Usage: bash scripts/devin/install-devin-host.sh
+# Usage: bash scripts/devin/install-devin-host.sh [--watchdog-only]
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WATCHDOG_ONLY=0
+case "${1:-}" in
+    "") ;;
+    --watchdog-only) WATCHDOG_ONLY=1 ;;
+    *) echo "Usage: $0 [--watchdog-only]" >&2; exit 2 ;;
+esac
 
 # --- AppArmor profile ---------------------------------------------------------
-restrict="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)"
-if [ "$restrict" = "1" ]; then
-    if command -v apparmor_parser >/dev/null 2>&1; then
-        sudo install -m 0644 "$DIR/apparmor-devin-desktop" /etc/apparmor.d/devin-desktop
-        sudo apparmor_parser -r /etc/apparmor.d/devin-desktop
-        echo "apparmor: devin-desktop userns profile installed and loaded"
-    else
-        echo "apparmor: apparmor_parser not found; skipping (install apparmor first)" >&2
-    fi
+if [ "$WATCHDOG_ONLY" = "1" ]; then
+    echo "apparmor: unchanged (--watchdog-only)"
 else
-    echo "apparmor: unprivileged userns restriction is off; profile not needed"
+    restrict="$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)"
+    if [ "$restrict" = "1" ]; then
+        if command -v apparmor_parser >/dev/null 2>&1; then
+            sudo install -m 0644 "$DIR/apparmor-devin-desktop" /etc/apparmor.d/devin-desktop
+            sudo apparmor_parser -r /etc/apparmor.d/devin-desktop
+            echo "apparmor: devin-desktop userns profile installed and loaded"
+        else
+            echo "apparmor: apparmor_parser not found; skipping (install apparmor first)" >&2
+        fi
+    else
+        echo "apparmor: unprivileged userns restriction is off; profile not needed"
+    fi
 fi
 
 # --- Watchdog -----------------------------------------------------------------
