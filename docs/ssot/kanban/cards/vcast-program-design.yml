@@ -1,7 +1,7 @@
 id: vcast-program-design
 title: vcast program — lane map, drain order, dispatch plan
 brief: Tracker card that maps all the TV-casting work and the order to do it in. For orientation — no action needed.
-column: backlog
+column: doing
 priority: high
 note: 'Design/tracker for the vcast-* family (program: vcast). Repo lanes: chaba {vcast-app, vcast-cast-lane, vcast-ha-screens,
   vcast-health-loop, vcast-input-bridge}; ada-pi {vcast-scenarios}. Drain order: (1) vcast-health-loop + vcast-cast-lane
@@ -9,7 +9,7 @@ note: 'Design/tracker for the vcast-* family (program: vcast). Repo lanes: chaba
   vcast-app, vcast-ha-screens; (3) vcast-scenarios LAST — regression gate. Constraints: vcast-ha-screens verification
   touches tony-ha — promotion to live hosts needs explicit Tony approval; a dispatched session must stage and verify
   on michael-dev only. cast-browser rides the tony-omen GPU — record the single-point in SSOT when auditing.'
-updated: 2026-10-25 20:10
+updated: 2026-10-25 20:13
 comms:
 - at: '2026-10-05'
   from: devin
@@ -37,6 +37,9 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 20:13
+  from: mn01
+  text: claimed
 ref: MED-0425
 spec: Design the vcast program lane map, drain order, and dispatch plan for the vcast-* family across the chaba
   and ada-pi repos. Follow the strict drain order starting with vcast-health-loop and vcast-cast-lane (documenting
@@ -47,4 +50,5 @@ spec: Design the vcast program lane map, drain order, and dispatch plan for the 
   specified repo lanes, drain phases, and constraints.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
