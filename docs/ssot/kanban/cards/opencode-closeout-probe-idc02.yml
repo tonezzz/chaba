@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-idc02
 title: OpenCode closeout probe pinned to idc02
-column: doing
-updated: 2026-10-25 20:44
+column: review
+updated: 2026-10-25 20:45
 brief: Validate dispatch-compatible worktree and automatic merge using the OpenCode free lane on idc02.
 priority: low
 program: chaba-ci
@@ -16,8 +16,11 @@ spec: Append exactly one line `OpenCode closeout probe` to README.md, run no dep
 action:
   type: dispatch
   host: idc02
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-204416-append-exactly-one-line-openco.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261025-204416-append-exactly-one-line-openco.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0870
 comms:
 - at: 2026-10-25 18:56
@@ -32,3 +35,9 @@ comms:
 - at: 2026-10-25 20:44
   from: chaba
   text: started devin-task-20261025-204416-append-exactly-one-line-openco on idc02 (dispatch)
+- at: 2026-10-25 20:45
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261025-204416-append-exactly-one-line-openco.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
