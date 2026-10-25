@@ -1,17 +1,19 @@
 id: logs-auto-idc03-silent
 title: logs `idc03` never shipped state
-column: done
+column: review
 generated: logs-kanban
 program: logs-digest
-priority: medium
-note: 'Auto-recovered 2026-10-08: `idc03-silent` condition cleared — shipper healthy again.'
-help: Run `log-shipper.py --hosts idc03 --dry-run` from tony-omen; if the ssh probe fails, check tailscale auth
-  (browser link).
-updated: '2026-10-08'
-brief: 'The log digest flagged something worth a look: logs `idc03` never shipped state. Read the note, then fix
-  it or close the card.'
+priority: high
+note: idc03 is in the shipper's host list but has no host-logs-state doc — the shipper
+  never reported (added to fleet but not wired? ssh?)
+help: Run `log-shipper.py --hosts idc03 --dry-run` from tony-omen; if the ssh probe
+  fails, check tailscale auth (browser link).
+updated: '2026-10-25'
+brief: 'The log digest flagged something worth a look: logs `idc03` never shipped
+  state. Read the note, then fix it or close the card.'
 ref: OPS-0180
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0180'
+review_kind: triage

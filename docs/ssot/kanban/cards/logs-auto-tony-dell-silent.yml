@@ -1,19 +1,19 @@
 id: logs-auto-tony-dell-silent
-title: logs `tony-dell` silent 4h
-column: done
+title: logs `tony-dell` never shipped state
+column: review
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-20: `tony-dell-silent` condition cleared — shipper healthy
-  again.'
-help: Check ada-review-refresh.service on tony-omen and whether the host was removed
-  from --hosts.
-updated: '2026-10-20'
+note: tony-dell is in the shipper's host list but has no host-logs-state doc — the
+  shipper never reported (added to fleet but not wired? ssh?)
+help: Run `log-shipper.py --hosts tony-dell --dry-run` from tony-omen; if the ssh
+  probe fails, check tailscale auth (browser link).
+updated: '2026-10-25'
 ref: OPS-0086
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0086'
-brief: 'The log digest flagged something worth a look: logs `tony-dell` silent 4h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `tony-dell` never shipped
+  state. Read the note, then fix it or close the card.'
 review_kind: triage
