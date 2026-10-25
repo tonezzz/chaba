@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 10:06
+updated: 2026-10-25 10:12
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -52,3 +52,10 @@ comms:
     is NOT Omen booted from tony-usb; Omen remains offline/unreachable. No partition changes made. The verified
     5.2G HA-config+DB backup remains on MN01 at ~/backups/omen-partition-preflight-20261025. Do not run any partition
     editor against this MN01 /dev/sda; target Omen hardware must '
+- at: 2026-10-25 10:12
+  from: devin
+  text: '2026-10-25 reboot identity check: tony-omen Tailscale node 100.75.102.88 is offline (last seen ~12m). LAN
+    192.168.2.86 responds, but its neighbor MAC 0a:f0:bc:ad:3c:59 does not match Omen DHCP-reserved MAC b0:22:7a:f0:73:cd;
+    SSH host-key verification also failed. Therefore I did NOT trust/connect to .86 or run partition commands. Confirm
+    identity locally on the booted machine (hostnamectl, DMI product, lsblk model, nvidia-smi) before continuing.
+    MN01 is separately verified at 192.168.2.75 / Tail'
