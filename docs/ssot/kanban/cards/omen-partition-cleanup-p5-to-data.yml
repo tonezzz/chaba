@@ -1,7 +1,7 @@
 id: omen-partition-cleanup-p5-to-data
 title: 'Omen partition cleanup: verify old p5, then extend ubuntu-data safely'
 column: backlog
-updated: 2026-10-25 18:48
+updated: 2026-10-25 18:54
 brief: Omen NVMe p5 (64.9GiB ubuntu-000) is unmounted and separated from p7 ubuntu-data by ~40.7GiB unallocated
   space. Deleting p5 and extending p7 would add ~105.6GiB to /data, but deletion is irreversible without a verified
   restore path.
@@ -53,6 +53,12 @@ comms:
   from: devin
   text: 'raised request final-omen-storage-gate-p5-is-gone-and-p-e3c7ba: Final Omen storage gate: p5 is gone and
     p7 is now 405.6G; remove the 32G /data/hibernate.swap and disable hibernate/resu'
+- at: 2026-10-25 18:54
+  from: devin
+  text: 'HIBERNATION CLEANUP COMPLETE: backups made; removed /data/hibernate.swap after reboot, disabled hibernate/suspend-then-hibernate/hybrid-sleep
+    policy, removed resume config, rebuilt initramfs+GRUB. Verified after reboot: only 16G /swapfile active with
+    0 used; /data now 57% used, 174G free; /home 55%, 181G free. p5 deletion/p7 expansion already complete. No user
+    response needed.'
 requests:
 - id: final-omen-storage-gate-p5-is-gone-and-p-e3c7ba
   ask: 'Final Omen storage gate: p5 is gone and p7 is now 405.6G; remove the 32G /data/hibernate.swap and disable
