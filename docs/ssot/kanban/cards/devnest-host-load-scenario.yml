@@ -1,0 +1,21 @@
+id: devnest-host-load-scenario
+title: 'DevNest scenario: read-only host-load assessment through OpenCode UI'
+column: backlog
+updated: 2026-10-25 15:26
+brief: Run a supervised OpenCode scenario that assesses a declared target host load without changing anything.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- scenario
+- host-health
+- read-only
+spec: 'target_host must be explicit. Read-only commands only: hostname, uptime, /proc/loadavg, free -h, df -h, systemctl
+  --failed --user, nvidia-smi if present. Return a compact report with load/core ratio, memory, disk pressure, failed
+  units, GPU state, evidence timestamps, and recommendations. No restart, kill, install, sudo mutation, git push,
+  or deployment. Gate: human reviews the report before any remediation.'
+ref: SYS-0860
+comms:
+- at: 2026-10-25 15:26
+  from: devin
+  text: card captured via board-api
