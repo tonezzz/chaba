@@ -678,6 +678,18 @@ def do_claim(card: dict, body: dict) -> str:
     pinned = a.get("host")
     if pinned and pinned != host:
         raise ValueError(f"card is pinned to {pinned}")
+    # Claim-time JEV routing metadata is written atomically with the
+    # first-wins claim, so every remote claimer preserves the lane/model.
+    lane = str(body.get("lane") or "").strip()
+    model = str(body.get("model") or "").strip()
+    if lane:
+        if lane not in {"codemod", "free_lane", "paid_frontier", "devin", "manual"}:
+            raise ValueError("invalid action lane")
+        a["lane"] = lane
+    if model:
+        if not re.fullmatch(r"[a-zA-Z0-9._/-]{1,80}", model):
+            raise ValueError("invalid action model")
+        a["model"] = model
     a["runner"] = host
     a["status"] = "running"  # claimed = running from the board's view;
     # the runner's finish call (or a sweeper) is the only way out
