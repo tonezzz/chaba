@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-10-25 15:49
+updated: 2026-10-25 15:50
 action:
   type: manual
 ref: SYS-0863
@@ -16,3 +16,10 @@ comms:
 - at: 2026-10-25 15:49
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-25 15:50
+  from: devin
+  text: Verified the current gap. host-reboot-verification.md and ssot.operations.yml#transition.post_restart define
+    the manual checklist. mcp-health-snapshot.timer is active with OnBootSec=5min/OnUnitActiveSec=15min and ran
+    at 15:33 local; its script only calls get_health_status, logs the global summary, and creates inbox findings.
+    It does not invoke host-specific post_restart checks. This systemd timer is model-independent, so swe-high ->
+    gpt-6 luna cannot suppress it. Full checklist invocation was ma
