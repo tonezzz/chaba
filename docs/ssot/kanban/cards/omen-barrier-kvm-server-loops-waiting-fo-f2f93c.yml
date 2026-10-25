@@ -1,0 +1,18 @@
+id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
+title: Omen Barrier KVM server loops waiting for X0 after boot
+column: backlog
+updated: 2026-10-25 15:49
+action:
+  type: manual
+ref: OPS-0864
+comms:
+- at: 2026-10-25 15:49
+  from: devin
+  text: Post-restart check on 2026-10-25 found barriers.service in a repeated activating(start-pre) loop (restart
+    counter 54), no listener on TCP/24800, and its ExecStartPre waits for /tmp/.X11-unix/X0. The normal Omen session
+    currently exposes only X20; Omen host health reports Barrier KVM Server degraded. Do not blindly change DISPLAY
+    or restart the unit; determine whether Barrier should bind to the physical X0 seat or the CRD X20 session, then
+    update the declared unit/runbook and verify a connected D
+- at: 2026-10-25 15:49
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
