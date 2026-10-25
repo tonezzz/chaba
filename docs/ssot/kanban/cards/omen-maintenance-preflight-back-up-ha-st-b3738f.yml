@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 10:15
+updated: 2026-10-25 10:26
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -65,3 +65,10 @@ comms:
     SNV2S1000G` 931.5G — this is Omen hardware booted from tony-usb, not MN01. `nvidia-smi` missing is expected
     in the live USB (driver/tools absent), not evidence of no GPU. No partition changes yet. Tailscale/SSH key changed
     due live USB; use local console for read-only GPT dump and partition work until host key is verified.'
+- at: 2026-10-25 10:26
+  from: devin
+  text: 'Partition backup/automation status: the MN01 backup now contains the verified HA config+DB snapshots (5.2G).
+    The manually-created GPT/sfdisk backups are still only in tony-usb /tmp unless Tony copies them off-host. I
+    verified .2.86 host key against the previously trusted fingerprint, but SSH auth from the agent is denied (publickey,password);
+    I cannot supply an interactive password or sudo. No partition changes executed. Next required local operator
+    step: copy /tmp/omen-nvme0n1.sfdisk and /tmp/o'
