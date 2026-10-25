@@ -1,7 +1,7 @@
 id: omen-maintenance-preflight-back-up-ha-st-b3738f
 title: 'Omen maintenance preflight: back up HA state + reconcile host drift'
 column: backlog
-updated: 2026-10-25 09:57
+updated: 2026-10-25 10:06
 brief: 'Read-only scan 2026-10-25. Omen online, 8 key endpoints HTTP 200; 81GB /home free. Report: gdrive:ada-nest/queue/omen-maintenance-preflight-2026-10-25.md;
   host audit: reports/audit-hosts/tony-omen-20261025-085345.yml.'
 tags:
@@ -45,3 +45,10 @@ comms:
   text: 'Record correction: MN01 backup-manifest now reflects ~1.2GB/19GB partial data/backups mirror (not the earlier
     ~942MB estimate), explicitly marked INCOMPLETE_DO_NOT_RESTORE. Core HA config + both SQLite snapshots remain
     verified; no partition changes made.'
+- at: 2026-10-25 10:06
+  from: devin
+  text: 'Post-reboot verification 2026-10-25: SSH alias mn01 resolves to actual hardware MN01 (hostname mn01, Fujitsu
+    ESPRIMO Q556/2, i5-7400T, SATA Micron 1100 238.5G, no NVIDIA GPU, Tailscale 100.106.196.22). Therefore this
+    is NOT Omen booted from tony-usb; Omen remains offline/unreachable. No partition changes made. The verified
+    5.2G HA-config+DB backup remains on MN01 at ~/backups/omen-partition-preflight-20261025. Do not run any partition
+    editor against this MN01 /dev/sda; target Omen hardware must '
