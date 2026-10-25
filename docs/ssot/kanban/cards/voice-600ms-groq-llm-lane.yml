@@ -54,7 +54,18 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261025-131543-voice-miniapp-api-voice-add-en no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-10-25 20:16
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-25 20:16
+  from: chaba
+  text: pushed dispatch/20261025-131543-voice-miniapp-api-voice-add-en to origin
 action:
   type: dispatch
-  status: running
-  runner: mn01
+  status: queued
+  sweep:
+    stale_running: 2026-10-25 20:16
+  verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
+claim: {}
