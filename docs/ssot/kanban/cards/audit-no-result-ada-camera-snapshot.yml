@@ -1,7 +1,7 @@
 id: audit-no-result-ada-camera-snapshot
 title: 'Ada session audit: no_result:ada_camera_snapshot (2d seen)'
-column: doing
-updated: 2026-10-26 17:44
+column: review
+updated: 2026-10-26 17:45
 brief: 'Recurring session-audit signature ''no_result:ada_camera_snapshot'': ada_camera_snapshot call got no result
   in-window — 1x on 2026-10-14, seen on 2 day(s).'
 priority: medium
@@ -50,7 +50,17 @@ comms:
     receive loop, so teardown cancels the await and no result line can ever be written. The tool itself is well-bounded
     (45s cap + stale-frame fallback). FIX landed in this dispatch worktree: session-audit.py now joins pwa_server''s
     ''session=<sid> closed'' line - a no_result <=90s befor'
+- at: 2026-10-26 17:45
+  from: idc02
+  text: 'finished (ok): exit=0 card carries the verdict comment — deploy note: the fix goes live on tony-dell via
+    `install-session-audit.sh` (no'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 card carries the verdict comment — deploy note: the fix goes live on tony-dell via `install-session-audit.sh`
+    (not deployed per dispatch scope). | devin-task-20261026-173622-investigate-ada-session-audit-.service: Consumed
+    28.959s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
