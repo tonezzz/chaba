@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:39
+updated: 2026-10-26 19:41
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -69,3 +69,10 @@ comms:
     as (a) explicit proceed already staged, (b) owner clarification still needed, or (c) answer-only/no action intended.
     The sole safe automated path is exact supported verbs; preserve human choices. For the 31 review/action-done
     set, 8 verified=true triage cards include some still-failing'
+- at: 2026-10-26 19:41
+  from: devin
+  text: 'Source-of-truth cross-check on idc03 served checkout confirms four action.verified=true triage cards still
+    have column=review. Three have explicit recovered/close evidence in comms (`runner-auto-mn01` says doubly verified
+    and review was restored by autostash; `vcast-auto-flap` auto-recovered/closed; `logs-auto-idc02-severe-spike`
+    auto-recovered/closed) and are candidates for owner-approved column normalization. `disk-auto-tony-dell-root`
+    is NOT a close candidate: its note still reports 75% and g'
