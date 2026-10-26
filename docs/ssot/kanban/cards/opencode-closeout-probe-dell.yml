@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-dell
 title: OpenCode closeout probe pinned to tony-dell
-column: review
-updated: 2026-10-26 06:59
+column: done
+updated: 2026-10-26 07:01
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-dell runner.
 priority: low
 program: chaba-ci
@@ -74,5 +74,12 @@ comms:
   from: tony-dell
   text: 'finished (ok): OpenCode worktree/branch closeout verified; pre-existing test failure matched baseline;
     marker merged to origin/master.'
+- at: 2026-10-26 07:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 07:01
+  note: verified — evidence checks green, closing itself
