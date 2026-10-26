@@ -44,3 +44,22 @@ comms:
     pack status/submit/result, tunnel and model probes; `colab_session_status` exists in source but is absent from
     the live tool list. The notebook starts the detached shared queue inside an already-running Colab VM; Cell 2
     drains JOBS.py + all eligible packs, not one selected jo'
+- at: 2026-10-26 14:17
+  from: devin
+  text: 'raised request which-control-boundary-do-you-want-for-t-3ffc0d: Which control boundary do you want for
+    the next step? Full runtime auto-start/stop needs an officially supported API and'
+requests:
+- id: which-control-boundary-do-you-want-for-t-3ffc0d
+  ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
+    API and an explicit compute time/budget cap.
+  status: open
+  at: 2026-10-26 14:17
+  from: devin
+  options:
+  - Keep T4 runtime start manual; improve MCP queue, status, results, and safe preflight only (recommended; no new
+    compute spend).
+  - Investigate officially supported runtime auto-start/stop; only control a managed runtime and require a max session
+    duration/budget before any live start/stop.
+  - Consider moving the queue to an always-on/self-managed GPU worker instead of Colab.
+  suggested: Keep T4 runtime start manual; improve MCP queue, status, results, and safe preflight only (recommended;
+    no new compute spend).
