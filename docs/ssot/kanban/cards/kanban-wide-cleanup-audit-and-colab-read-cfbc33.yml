@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:41
+updated: 2026-10-27 05:43
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -76,3 +76,10 @@ comms:
     and review was restored by autostash; `vcast-auto-flap` auto-recovered/closed; `logs-auto-idc02-severe-spike`
     auto-recovered/closed) and are candidates for owner-approved column normalization. `disk-auto-tony-dell-root`
     is NOT a close candidate: its note still reports 75% and g'
+- at: 2026-10-27 05:43
+  from: devin
+  text: 'Closure-safety subpass: `merge-sweep: no session/worktree found ... if work was never pushed it may be
+    gone` is a warning to verify durability, not proof of loss or proof of completion. Open Review cards with this
+    warning are NOT safe to close from that message alone: `devnest-fl-pilot-doc` was pushed but test gate held
+    the merge; `devnest-fl-pilot-code` merged but verifier remains false/withheld; `update-cast-subs-standard-procedure`
+    and several OpenCode/storage/lesson/cache cards have failed r'
