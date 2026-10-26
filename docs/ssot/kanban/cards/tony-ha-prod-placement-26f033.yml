@@ -1,7 +1,7 @@
 id: tony-ha-prod-placement-26f033
 title: tony-ha-prod-placement
-column: doing
-updated: 2026-10-26 17:34
+column: review
+updated: 2026-10-26 17:35
 priority: high
 spec: 'DECISION for Tony: where should prod tony-ha live? Context: omen (current) is a laptop that may sleep + going
   through maintenance; dell is slated to become a minimal spare box per approved 2026-10-21 drain plan; mn01 is
@@ -42,10 +42,18 @@ comms:
     SSOT+history show mn01 was off-net ~Oct14-17 (3d) + unreachable Oct16 — always-on is a posture decision, not
     yet a record. Omen: tony-ha 200 live, declared headless 24/7 since Oct23; pain = maintenance reboots (Oct25
     full outage). idc03 rejected (LAN control dies). Recommendatio'
+- at: 2026-10-26 17:35
+  from: mn01
+  text: 'finished (ok): exit=0 753-decision-for-tony-where-should.md`, commit c9a23fb0 on the dispatch branch —
+    not pushed. | devin-task-2026102'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 753-decision-for-tony-where-should.md`, commit c9a23fb0 on the dispatch branch — not pushed. |
+    devin-task-20261026-102753-decision-for-tony-where-should.service: Consumed 51.246s CPU time over 7min 18.223s
+    wall clock time, 1.4G memory peak.'
+  verified: true
 requests:
 - id: prod-tony-ha-host-a-mn01-recommended-if-bbf110
   ask: 'Prod tony-ha host? (a) ★mn01 — recommended IF you commit it always-on: verified live on 192.168.2.x (reaches
@@ -62,3 +70,5 @@ requests:
   - a) mn01 — always-on commit
   - b) keep omen + mn01 standby
   - c) idc03
+review_kind: verify
+claim: {}
