@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: done
-updated: 2026-10-26 16:32
+updated: 2026-10-26 17:31
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -120,6 +120,12 @@ comms:
     from canonical cells and tests pass. No Drive sync or queue/runtime action performed in this step. Drive sync
     remains gated on verifying no active runtime/runner; current live mcp-colab still lacks the source-defined colab_session_status
     tool.'
+- at: 2026-10-26 17:31
+  from: devin
+  text: 'Drive deployment completed 2026-10-26 after read-only queue check: heartbeat/lease were stale, runner.id
+    absent, and managed runtime registry records were past the 300s TTL. Copied only preflight-cell.py and ada-nest-job-console.ipynb;
+    the other four queue support files already matched repo hashes. Verified MD5s for both copied files. No queue
+    cell or job was run. Latest notebook preflight fix (peer check before registration/heartbeat) is included.'
 action:
   repo: chaba
   type: dispatch
