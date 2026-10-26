@@ -1,7 +1,7 @@
 id: dead-mcp-servers-triage-cd54fe
 title: dead-mcp-servers-triage
 column: doing
-updated: 2026-10-26 08:53
+updated: 2026-10-26 08:57
 priority: medium
 spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
   BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
@@ -34,6 +34,13 @@ comms:
     image missing so quadlet pulls localhost:443 forever). Verdicts: notebooklm=REPAIR by repoint wrappers+nlm->mn01
     (also fixes silent-failing nightly kb-sync on omen, ~22 errs/run); workflows=RETIRE (no unit/image/container
     anywhere, zero scheduled consumers, all 7 YAML are demo health c'
+- at: 2026-10-26 08:57
+  from: devin
+  text: 'DONE — decisions landed. notebooklm: REPAIRED — repointed to the live authed container on mn01 (mcp-notebooklm-ssh.sh
+    + mcp-notebooklm.sh + ~/.local/bin/nlm on omen+dell now ssh->mn01; verified initialize + `nlm notebook list`).
+    Dell crash-loop killed: notebooklm-mcp.service AND notebooklm-rest.service masked (they lived in migrated-off/
+    but quadlet scans subdirs — ~36k restarts each). Side-effect win: tonight kb-sync will actually work again (~22
+    silent errors/run before). workflows: RETIRED — '
 action:
   repo: chaba
   type: dispatch
