@@ -1,7 +1,7 @@
 id: devnest-free-pilot-doc
 title: 'DevNest free-lane pilot A: deterministic docs artifact'
-column: doing
-updated: 2026-10-26 15:51
+column: review
+updated: 2026-10-26 16:00
 brief: Produce a small docs-only artifact through OpenCode Flash Lite, then verify and merge it.
 priority: low
 program: ai-workforce
@@ -17,9 +17,13 @@ spec: 'Create docs/reports/devnest-free-lane-pilot-a.md containing: purpose, tar
 action:
   type: dispatch
   host: tony-dell
-  status: running
+  status: done
   lane: devin
   runner: tony-dell
+  result: 'exit=0 age.revision=822c87761f8587395b3e1a04b5386b2611252cd1, org.opencontainers.image.version=1.11.0)
+    | devin-task-20261026-155056-create-docs-reports-devnest-fr.service: Consumed 14.612s CPU time over 57.922s
+    wall clock time, 873.7M memory peak.'
+  verified: true
 ref: OPS-0895
 comms:
 - at: 2026-10-26 08:48
@@ -41,3 +45,9 @@ comms:
   from: devin
   text: 'done: docs/reports/devnest-free-lane-pilot-a.md created (purpose/free_lane/flash-lite/3-metric checklist/done-gate).
     awaiting closeout merge'
+- at: 2026-10-26 16:00
+  from: tony-dell
+  text: 'finished (ok): exit=0 age.revision=822c87761f8587395b3e1a04b5386b2611252cd1, org.opencontainers.image.version=1.11.0)
+    | devin-task-2026'
+review_kind: verify
+claim: {}
