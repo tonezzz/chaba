@@ -1,7 +1,7 @@
 id: opencode-mcp-debug-readonly-lane
 title: Stage MCP Debug read-only tools into OpenCode
-column: doing
-updated: 2026-10-26 09:38
+column: review
+updated: 2026-10-26 09:39
 brief: Add MCP Debug to OpenCode behind an explicit read-only allowlist, then graduate one safe real-job lane with
   measured token and verifier evidence.
 priority: high
@@ -25,8 +25,11 @@ spec: 'Build the staged OpenCode tool-expansion lane. Phase 1: expose the existi
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 e.yml`; rollback is deleting the OpenCode mcp entry + allowfile. | devin-task-20261026-092257-build-the-staged-opencode-tool.service:
+    Consumed 6min 6.094s CPU time over 16min 7.551s wall clock time, 1.3G memory peak, 56.7M memory swap peak.'
+  verified: true
 note: Filed from Tony's request after successful LiteLLM-backed OpenCode WebGPU inspection test. Continue existing
   background jobs; do not re-run completed tasks.
 ref: OPS-0902
@@ -71,3 +74,8 @@ comms:
     → JSON-RPC -32601, no passthrough; mcp_health(tony_dell) ok. Phase 2: real read-only report job ran (tony-dell-health-2026-10-26.md,
     6 MCP calls, verdict HEALTHY, verifier pass). Metrics: 2/2 pass, 0 retries, ~36-38k cumulative tokens/run (86-90%
     cache-read). Phase 3 gated pend'
+- at: 2026-10-26 09:39
+  from: tony-macbook
+  text: 'finished (ok): exit=0 e.yml`; rollback is deleting the OpenCode mcp entry + allowfile. | devin-task-20261026-092257-build-the-staged-op'
+review_kind: verify
+claim: {}
