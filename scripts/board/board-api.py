@@ -78,6 +78,19 @@ Endpoints (after prefix strip):
   POST /inbox    {label?, text, priority?, tags?, missing_info?,
                   session?, owner?} — focus-inbox YAML entry under the
                   card flock with the same immediate-commit discipline.
+  POST /publish  {canonical PublicationEvent} — provider-neutral
+                  publication door (card devnest-publication-adapter-layer,
+                  scripts/board/publication.py): one event fans out to
+                  sink adapters — nest_job (execution state), lesson CPT
+                  (Education), report dossier (ada-cms-pages), news CPT,
+                  telegram, card comms (audit), json ledger. Idempotent
+                  (idempotency_key), outbox-retried, noise-policed,
+                  private-first visibility. {op:"sinks"} returns the
+                  capability table; {op:"drain"} retries the outbox.
+                  The legacy /job /lesson /report /comment endpoints
+                  remain as compatibility adapters — /publish routes
+                  through the SAME writer functions, so WP is only one
+                  adapter and any second sink receives the same event.
   POST /card     {id?, title, column?, note?, help?, text?, from?,
                   spec?, report?, action?, queue?, brief?, priority?,
                   tags?, program?, blocked_by?, on_exists?}
@@ -147,6 +160,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
 import board_notify as bn
+import publication as pub
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -1349,7 +1363,18 @@ INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
-REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report"}
+REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish"}
+
+# --- publication layer (devnest-publication-adapter-layer) ------------------
+# State lives off-repo on the service host; tests redirect via env.
+PUB_STATE_DIR = Path(os.environ.get(
+    "BOARD_API_PUB_STATE",
+    str(Path.home() / ".local/state/board-api-publish")))
+PUB_TG_URL = os.environ.get("PUB_TELEGRAM_URL",
+                            "http://127.0.0.1:8919/send")
+PUB_PROGRESS_MIN_S = int(os.environ.get("PUB_PROGRESS_MIN_S", "900"))
+PUB_TG_MIN_S = int(os.environ.get("PUB_TG_MIN_S", "600"))
+PUB_ALERT_MIN_S = int(os.environ.get("PUB_ALERT_MIN_S", "60"))
 
 
 class UpstreamError(RuntimeError):
@@ -1657,7 +1682,7 @@ def do_lesson_topics() -> dict:
 JOB_STATUSES = {"queued", "claimed", "running", "done", "failed",
                 "stalled", "cancelled"}
 JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
-                 "result_ref", "error", "updated")
+                 "result_ref", "error", "updated", "event_id")
 JOB_COMMS_CAP = 200
 JOB_FROM_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,40}$")
 
@@ -1943,6 +1968,187 @@ def do_report(body: dict, frm: str) -> dict:
             "slug": r["slug"]}
 
 
+# --- /publish — provider-neutral publication door ---------------------------
+# One canonical PublicationEvent fans out to sink adapters (see
+# scripts/board/publication.py for schema/policy/outbox). Each adapter
+# below translates the event into the SAME writer call the compat
+# endpoint uses — WP (nest_job/lesson/news), mddb report dossier,
+# telegram relay, card comms audit, json ledger are peer adapters.
+
+
+def _pub_job_send(ev: dict, frm: str) -> dict:
+    """progress|milestone|alert -> nest_job live execution state."""
+    slug = ev["job"] or ev["project"] or ev["card"]
+    if not slug:
+        raise pub.Skip("job sink needs a job|project|card ref")
+    meta = ev.get("meta") or {}
+    status = str(meta.get("job_status") or
+                 {"progress": "running", "milestone": "done",
+                  "alert": "stalled"}.get(ev["kind"], ""))
+    body = {"slug": slug, "title": ev["title"],
+            "comms": ev["body"] or ev["title"],
+            "kind": str(meta.get("job_kind") or ev["kind"]),
+            "event_id": ev["event_id"]}
+    if status:
+        body["status"] = status
+    if ev["evidence"]:
+        body["result_ref"] = ev["evidence"][0]
+    if ev["kind"] == "alert":
+        body["error"] = ev["title"][:300]
+    if ev["parent"]:
+        body["parent"] = ev["parent"]
+    for k in ("host", "pack", "runner"):
+        if meta.get(k):
+            body[k] = str(meta[k])
+    r = do_job(body, frm)
+    return {"ref": f"nest_job:{r['slug']}", "post_id": r.get("post_id"),
+            "action": r["action"]}
+
+
+def _pub_lesson_send(ev: dict, frm: str) -> dict:
+    """lesson -> WP lesson CPT (Education — reusable knowledge)."""
+    meta = ev.get("meta") or {}
+    body = {"topic": str(meta.get("topic") or ev["title"]),
+            "content": ev["body"] or f"<p>{ev['title']}</p>"}
+    for k in ("level", "next_review", "status"):
+        if meta.get(k):
+            body[k] = str(meta[k])
+    if meta.get("lesson_source"):
+        body["source"] = str(meta["lesson_source"])
+    if meta.get("no_th"):
+        body["no_th"] = True
+    r = do_lesson(body, frm)
+    return {"ref": f"lesson:{r['slug']}", "post_id": r.get("post_id"),
+            "action": r["action"], "th": r.get("th")}
+
+
+def _pub_report_send(ev: dict, frm: str) -> dict:
+    """report|milestone -> project dossier (ada-cms-pages note)."""
+    slug = ev["project"] or str(
+        (ev.get("meta") or {}).get("report_slug") or "")
+    if not slug:
+        raise pub.Skip("report sink needs a project ref (dossier slug)")
+    line = ev["title"]
+    if ev["body"]:
+        line += f" — {ev['body'][:160]}"
+    line += f" [{ev['event_id']}]"
+    r = do_report({"slug": slug, "note": line}, frm)
+    return {"ref": f"report:{r['slug']}"}
+
+
+def _pub_news_send(ev: dict, frm: str) -> dict:
+    """news -> WP news CPT. Evidence rides inside content (news meta
+    keys aren't REST-registered); visibility maps to the post status —
+    members stays the private member surface, public flips to publish
+    (validation already required confidence=verified for that)."""
+    slug = "pub-" + ev["event_id"][4:]
+    links = "".join(f'<li><a href="{e}">{e}</a></li>'
+                    for e in ev["evidence"])
+    content = (
+        ev["body"] + "\n<h4>Evidence</h4><ul>" + links + "</ul>"
+        f"<p><small>confidence: {ev['confidence']} · "
+        f"source: {ev['source']} · event: {ev['event_id']}"
+        "</small></p>")
+    status = "publish" if ev["visibility"] == "public" else "private"
+    hits = wp_api(f"/wp/v2/news&slug={slug}&status=private,publish")
+    payload = {"title": ev["title"], "slug": slug, "status": status,
+               "content": content}
+    if isinstance(hits, list) and hits:
+        r = wp_api(f"/wp/v2/news/{hits[0]['id']}", payload)
+        action = "updated"
+    else:
+        r = wp_api("/wp/v2/news", payload)
+        action = "created"
+    return {"ref": f"news:{slug}", "post_id": r.get("id"),
+            "action": action, "wp_status": status}
+
+
+def _pub_board_send(ev: dict, frm: str) -> dict:
+    """any kind -> card comms (operational audit trail)."""
+    cid = ev["card"]
+    if not cid:
+        raise pub.Skip("board sink needs a card ref")
+    global _pending_label
+    _pending_label = f"publish {ev['event_id']}"
+    # lock order WP_LOCK -> LOCK; no path takes LOCK then WP_LOCK, so
+    # this nested take cannot deadlock.
+    with LOCK.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            p = card_path(cid)
+        except ValueError as e:
+            raise pub.Skip(str(e))
+        card = load(p)
+        text = f"pub {ev['kind']}: {ev['title']}"
+        if ev["body"]:
+            text += f" — {ev['body'][:160]}"
+        text += f" [{ev['event_id']}]"
+        comms_add(card, frm, text)
+        card["updated"] = now()
+        save(p, card)
+    return {"ref": f"card:{cid}"}
+
+
+def _pub_sinks(frm: str) -> dict:
+    """The adapter registry — WP is only one adapter among peers; the
+    'json' ledger proves a second sink receives the same event."""
+    return {
+        "job": pub.FuncSink(
+            "job", surface="members",
+            kinds=("progress", "milestone", "alert"),
+            send=lambda ev: _pub_job_send(ev, frm)),
+        "lesson": pub.FuncSink(
+            "lesson", surface="members", kinds=("lesson",),
+            send=lambda ev: _pub_lesson_send(ev, frm)),
+        "report": pub.FuncSink(
+            "report", surface="members",
+            kinds=("report", "milestone"),
+            send=lambda ev: _pub_report_send(ev, frm)),
+        "news": pub.FuncSink(
+            "news", surface="members", kinds=("news",),
+            evidence_required=True,
+            send=lambda ev: _pub_news_send(ev, frm)),
+        "board": pub.FuncSink(
+            "board", surface="private", kinds=pub.KINDS,
+            send=lambda ev: _pub_board_send(ev, frm)),
+        "telegram": pub.TelegramSink(PUB_TG_URL),
+        "json": pub.JsonSink(PUB_STATE_DIR / "published.jsonl"),
+    }
+
+
+def do_publish(body: dict, frm: str) -> dict:
+    """POST /publish — canonical event in, per-sink receipts out.
+    {op:"sinks"} reports the capability table, {op:"drain"} retries
+    the outbox on demand. A real event validates, dedupes on
+    idempotency_key, routes by kind (or explicit sinks), and delivers;
+    a failed sink queues to the outbox instead of failing the call."""
+    box = pub.Outbox(PUB_STATE_DIR)
+    noise = pub.NoisePolicy(
+        PUB_STATE_DIR / "noise.json",
+        progress_min_s=PUB_PROGRESS_MIN_S,
+        alert_min_s=PUB_ALERT_MIN_S,
+        telegram_min_s=PUB_TG_MIN_S)
+    op = str(body.get("op") or "").strip()
+    if op == "sinks":
+        sinks = _pub_sinks(frm)
+        return {"message": f"{len(sinks)} sinks registered",
+                "sinks": {n: s.capabilities()
+                          for n, s in sinks.items()},
+                "pending": box.pending_count()}
+    if op == "drain":
+        res = box.drain(_pub_sinks(frm))
+        return {"message": f"drained: {len(res['delivered'])} delivered, "
+                           f"{res['retrying']} retrying, "
+                           f"{res['dead']} dead, {res['pending']} pending",
+                **res}
+    sinks = _pub_sinks(frm)
+    drained = box.drain(sinks)   # piggyback retry on every publish
+    res = pub.publish_event(body, sinks, box, noise, frm)
+    if drained["delivered"] or drained["dead"]:
+        res["drained"] = drained
+    return res
+
+
 _render_flag = threading.Event()
 _render_worker_started = False
 
@@ -2030,7 +2236,8 @@ class H(BaseHTTPRequestHandler):
         # needed (cards.json untouched)
         if path in REMOTE_WRITE_PATHS:
             try:
-                frm = (job_actor(body, ident) if path == "/job"
+                frm = (job_actor(body, ident)
+                       if path in ("/job", "/publish")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -2040,6 +2247,11 @@ class H(BaseHTTPRequestHandler):
                                else do_lesson(body, frm))
                     elif path == "/job":
                         res = do_job(body, frm)
+                    elif path == "/publish":
+                        res = do_publish(body, frm)
+                        if (res.get("receipts") or {}).get(
+                                "board", {}).get("status") == "delivered":
+                            render_async()   # board audit -> cards.json
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
@@ -2766,11 +2978,88 @@ def _selftest() -> None:
         assert res["slug"] == "new-report"
         assert adds[0][0] == "add" and adds[0][1]["key"] == "new-report"
         assert adds[0][1]["meta"]["subject"] == ["new-report"]
+
+        # /publish — provider-neutral door (devnest-publication-adapter-layer)
+        pstate = tmp / "pub-state"
+        globals()["PUB_STATE_DIR"] = pstate
+        real_tg_url = PUB_TG_URL
+        # closed port -> telegram deliveries deterministically queue
+        globals()["PUB_TG_URL"] = "http://127.0.0.1:1/send"
+        # validation — bad kind, news needs evidence, public needs verified
+        rejects(lambda: do_publish({"kind": "heartbeat", "title": "t",
+                                    "source": "devin"}, "devin"),
+                "kind must be one of")
+        rejects(lambda: do_publish({"kind": "news", "title": "t",
+                                    "body": "b", "source": "devin"},
+                                   "devin"), "news requires")
+        rejects(lambda: do_publish(
+            {"kind": "news", "title": "t", "body": "b", "source": "devin",
+             "evidence": ["http://x"], "visibility": "public",
+             "confidence": "observed"}, "devin"),
+            "public news requires")
+        # capability report — the registry is visible to callers
+        res = do_publish({"op": "sinks"}, "devin")
+        assert "job" in res["sinks"] and "json" in res["sinks"]
+        assert res["sinks"]["telegram"]["surface"] == "members"
+        # progress event to members -> job (WP) + json both receive the
+        # SAME canonical event — WP is only one adapter
+        wp4 = FakeWP()
+        globals()["wp_api"] = wp4
+        res = do_publish(
+            {"kind": "progress", "title": "Pack thonburian-bench 50%",
+             "job": "thonburian-bench", "source": "queue-mgr",
+             "visibility": "members", "confidence": "measured",
+             "sinks": ["job", "json"]}, "queue-mgr")
+        assert res["receipts"]["job"]["status"] == "delivered"
+        assert res["receipts"]["json"]["status"] == "delivered"
+        route, payload = wp4.posts[-1]
+        assert route == "/wp/v2/nest_job"
+        assert payload["slug"] == "thonburian-bench"
+        assert payload["meta"]["status"] == "running"
+        assert payload["meta"]["event_id"] == res["event_id"]
+        jlines = (pstate / "published.jsonl").read_text().splitlines()
+        jev = json.loads(jlines[-1])["event"]
+        assert jev["event_id"] == res["event_id"]
+        assert jev["kind"] == "progress" and jev["job"] == "thonburian-bench"
+        # retry of the same logical event dedupes — no second WP post
+        res2 = do_publish(
+            {"kind": "progress", "title": "Pack thonburian-bench 50%",
+             "job": "thonburian-bench", "source": "queue-mgr",
+             "visibility": "members", "confidence": "measured",
+             "sinks": ["job", "json"]}, "queue-mgr")
+        assert res2["deduped"] is True
+        assert res2["idempotency_key"] == res["idempotency_key"]
+        assert len([p for p in wp4.posts if p[0] == "/wp/v2/nest_job"]) == 1
+        # private visibility gates members surfaces — job skipped,
+        # json (private surface) still delivers
+        res3 = do_publish(
+            {"kind": "progress", "title": "private note", "job": "j1",
+             "source": "devin", "sinks": ["job", "json"]}, "devin")
+        assert res3["receipts"]["job"]["status"] == "skipped"
+        assert "visibility" in res3["receipts"]["job"]["reason"]
+        assert res3["receipts"]["json"]["status"] == "delivered"
+        # unknown sink is a 400, not a silent drop
+        rejects(lambda: do_publish(
+            {"kind": "alert", "title": "t", "source": "devin",
+             "sinks": ["carrier-pigeon"]}, "devin"), "unknown sink")
+        # outbox: a sink that throws queues for retry, drain delivers
+        res4 = do_publish(
+            {"kind": "milestone", "title": "m1", "job": "j1",
+             "source": "devin", "visibility": "members",
+             "sinks": ["telegram"]}, "devin")
+        assert res4["receipts"]["telegram"]["status"] == "queued"
+        assert (pstate / "outbox.jsonl").exists()
+        res5 = do_publish({"op": "drain"}, "devin")
+        assert res5["pending"] == 1     # not yet due (30s base delay)
     finally:
         globals()["wp_api"] = real_wp
         globals()["_gemini_thai"] = real_th
         globals()["_mddb_post"] = real_mddb
         globals()["_crn"] = real_crn
+        globals()["PUB_TG_URL"] = real_tg_url
+        globals()["PUB_STATE_DIR"] = Path(os.environ.get(
+            "BOARD_API_PUB_STATE",
+            str(Path.home() / ".local/state/board-api-publish")))
         globals()["INBOX_DIR"] = REPO / "docs/ssot/focus-inbox"
 
     print("selftest ok")
