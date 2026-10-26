@@ -76,7 +76,8 @@ post_types:
   # repo-pending (folded into 0.7.x next deploy): saved_by meta on asset/expense/
   # contact/reminder (+ 'By' admin column) — cpt_post attributes each
   # LINE save to a member. Card line-cpt-writer-router.
-  # v0.8.0 (repo, pending deploy 2026-10-23): activity CPT — durable
+  # v0.8.0 (DEPLOYED 2026-10-26 via deploy-plugin-zip.sh on tony-omen,
+  # folded into the 0.9.0 zip): activity CPT — durable
   # tool-execution records (card wp-activity-cpt-timeline-links, ADA-0650).
   # Hierarchical like news: parent = session/turn (kind=session), children =
   # one per tool call (kind=tool); has_archive /wp/activity/. status
@@ -89,7 +90,9 @@ post_types:
   # Writer: scripts/ada/activity-posts.py (activity-posts job, idc03).
   # Timeline dedupe: line-chat-timeline.py links these posts via
   # artifact_url/event_id instead of re-inlining media.
-  # v0.9.0 (repo, pending deploy): nest_job CPT — the ada-nest offload
+  # v0.9.0 (DEPLOYED 2026-10-26 via deploy-plugin-zip.sh on tony-omen,
+  # Tony gate 'proceed' on card repair-wp-nest-job-cpt-drift): nest_job
+  # CPT — the ada-nest offload
   # queue mirrored to the member surface (card
   # nest-api-unified-mutation-service). Hierarchical like activity —
   # parent jobs own child jobs/packs (job trees); has_archive
@@ -98,13 +101,18 @@ post_types:
   # error/comms(JSON append log [{at,from,text}])/updated. ONLY writer:
   # board-api POST /job on idc03 (queue-mgr on dell mirrors Drive
   # queue/packs state -> CPT through the door).
-  # DRIFT FOUND 2026-10-26 (card repair-wp-nest-job-cpt-drift): live
-  # plugin is ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity both 404
-  # rest_no_route; v0.8.0/v0.9.0 deploys never ran. Repair zip staged:
-  # integrations/wp-boards/dist/chaba-boards-0.9.0.zip, deploy via
-  # scripts/wp-boards/deploy-plugin-zip.sh on tony-omen after Tony gate;
-  # verify with scripts/wp-boards/verify-nest-job.sh. Regression probes:
-  # wp-nest-job-cpt + wp-activity-cpt in ssot.health.home.web.yml.
+  # DRIFT FOUND+REPAIRED 2026-10-26 (card repair-wp-nest-job-cpt-drift):
+  # live plugin was ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity both
+  # 404 rest_no_route; the v0.8.0/v0.9.0 deploys had never run (not a
+  # revert — KNB-0659 verified v0.3.3, predating both CPTs). Repaired by
+  # deploying integrations/wp-boards/dist/chaba-boards-0.9.0.zip via
+  # deploy-plugin-zip.sh on tony-omen after Tony's 'proceed' gate.
+  # Verified live: both CPTs in /wp/v2/types (31 types), anon GET
+  # /wp/v2/nest_job 200 [] (private model intact), board-api /job
+  # parent/child upsert + meta merge round-trip (posts 2603-2606).
+  # Regression probes: wp-nest-job-cpt + wp-activity-cpt in
+  # ssot.health.home.web.yml; re-verify any time with
+  # scripts/wp-boards/verify-nest-job.sh.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
