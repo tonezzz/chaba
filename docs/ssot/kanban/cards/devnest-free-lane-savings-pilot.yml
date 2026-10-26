@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
-column: doing
-updated: 2026-10-26 17:42
+column: done
+updated: 2026-10-26 17:47
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -105,9 +105,12 @@ comms:
   text: 'SUPERVISED RUN STARTED: all 3 pilot cards queued; tony-dell runner-agent (manual, JEV_LANE=0 OPENCODE_LANES=1
     — pinned lanes survive) claimed devnest-fl-pilot-code + devnest-fl-pilot-doc, OpenCode free_lane units running.
     report claims when a CAP slot frees.'
+- at: 2026-10-26 17:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
   result: 'exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing pushed or
     queued. | devin-task-20261026-164611-pilot-classes-1-docs-config-ch.service: Consumed 46.102s CPU time, 143.1M
@@ -133,5 +136,5 @@ review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
-  at: 2026-10-26 17:16
+  at: 2026-10-26 17:47
   note: verified — evidence checks green, closing itself
