@@ -1,0 +1,70 @@
+title: ip_cam_65 RTSP credential rotation (OPS-0858)
+date: 2026-10-26
+card: rotate-omen-rtsp-credential-exposed-in-d-596eaa
+status: blocked-on-camera-power
+
+trigger:
+  what: A read-only process-list diagnostic on tony-omen exposed the RTSP
+    credential in an ffmpeg exec argument. The same value was also stored in
+    plaintext in docs/ssot/infrastructure/ssot.ip-camera.yml.
+  approval: Tony approved rotation + secret update + end-to-end verification
+    (board request a-diagnostic-output-included-an-rtsp-cre-7678ba).
+
+target:
+  camera: VStarcam C7824WIP (ip_cam_65), 192.168.2.71:10554,
+    MAC d4:9e:3b:6a:94:90, user "admin"
+  feed: go2rtc streams ip_cam_65 / ip_cam_65_hd / ip_cam_65_low
+
+done:
+  - >-
+    Consumer side restructured on tony-omen AND tony-dell: go2rtc.yaml no
+    longer contains the credential; the three ip_cam_65_* sources are
+    exec: wrappers that source ~/.config/secrets/ipcam65.env (chmod 600).
+    go2rtc does not expand env vars in exec: lines — wrapper scripts are
+    required (verified: argv passed literally, no shell).
+  - go2rtc restarted (user go2rtc.service + system go2rtc-omen.service);
+    all 12 streams registered; exec spawn verified.
+  - scripts/rotate-ipcam65-credential.sh committed and deployed to
+    ~/.config/go2rtc/rotate-ipcam65.sh on tony-omen.
+  - SSOT scrubbed: ssot.ip-camera.yml no longer carries the password.
+
+pending:
+  - >-
+    Camera is OFF THE NETWORK (absent from full-subnet ARP scan; MAC not
+    seen; 10554 closed everywhere). The camera-side password change and
+    the new-accepted/old-rejected verification cannot run until it is
+    powered back on.
+  - >-
+    Once reachable, run on tony-omen:
+    ~/.config/go2rtc/rotate-ipcam65.sh
+    (probes camera, sets new password via Hi3510 CGI on :81/:80, updates
+    ipcam65.env, restarts both go2rtc units, verifies new cred accepted
+    and old cred rejected). Until then the env file holds the old
+    credential so the stream self-recovers if the camera returns first.
+  - Then update ~/.config/secrets/ipcam65.env on tony-dell with the same
+    new value (copy file over) — its go2rtc is not running but the config
+    is maintained.
+
+residual_risks:
+  - >-
+    The password still appears in ffmpeg argv while streaming (same
+    exposure vector as the original leak). Hiding it entirely needs the
+    URL read from a file (ffmpeg concat playlist) — worth a follow-up
+    card; not changed here because it could not be verified with the
+    camera down.
+  - >-
+    Old backup configs (~/.config/go2rtc/go2rtc.yaml.bak-* on both hosts)
+    still contain the old credential — dead after rotation, but restoring
+    one would silently re-break auth.
+  - >-
+    Credential reuse: the same admin/tonytony password is configured for a
+    DIFFERENT VStarcam at 192.168.1.41 (michael-home) in frigate/config.yml
+    and stacks/web/public/cameras.json. Out of this card's scope but the
+    same exposure logic applies — candidate for its own rotation card.
+  - >-
+    camera-monitor.service is gone from omen/mn01 and inactive on dell —
+    the documented auto-restart monitoring no longer runs anywhere.
+
+verify:
+  - ssh tony@tony-omen '~/.config/go2rtc/rotate-ipcam65.sh --status'
+  - curl http://127.0.0.1:1984/api/frame.jpeg?src=ip_cam_65_low on tony-omen
