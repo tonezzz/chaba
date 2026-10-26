@@ -1,7 +1,7 @@
 id: answer-auto-verb-triage-impl
 title: Implement answer auto-verb triage — 90 answered board asks sit unactioned
-column: backlog
-updated: 2026-10-26 07:18
+column: doing
+updated: 2026-10-26 07:19
 brief: 'Board health check 2026-10-25: only 2 truly-open requests but ~90 requests with status=answered whose answers
   were never executed — each gets a ''needs triage'' comm and stalls. Tony already picked the policy on knb-answer-action-triage
   (2026-10-15): auto-verb — auto-execute known verbs (queue→dispatch, close→done, hold→parked) at sweep time. That
@@ -57,13 +57,17 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 07:19
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-131106-extend-the-sweep-answer-path-w.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261025-131106-extend-the-sweep-answer-path-w.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-25 20:15
+  runner: tony-macbook
 review_kind: verify
 claim: {}
