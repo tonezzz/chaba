@@ -65,6 +65,11 @@ instances:
       CMS category views (iframe → public /cms/ edge with ?tab= deep-link);
       `monitor` iframes the L3 system report app
       (/apps/system-report/ — public mirror: monitor.surf-thailand.com).
+      Since 2026-10-26 the app leads with a live "Host loads" table
+      (sys-mon, card sys-mon-system-monitor-de88ff): the page fetches
+      data/host-loads.yml — written every 5 min by chaba-host-loads.timer
+      on idc02 straight into the web edge data dir — falling back to the
+      host_loads block embedded in system-report.yml (daily cadence).
       `agents` (2026-10-20) iframes /apps/roster/ — contacts-rail console
       mounting one <ada-webchat-card> per ada lane (chaba/kaewta/kraut/dev)
       over the idc03 tailnet mounts, member=tony → chat_id web-tony;

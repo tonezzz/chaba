@@ -79,6 +79,18 @@
     #report pre { white-space: pre-wrap; background: #020617; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
     .err-text { color: var(--fail); }
     a { color: var(--link); }
+    table.hosts { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 0.4rem 0 0.8rem; }
+    table.hosts th { color: var(--muted); text-align: left; padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap; }
+    table.hosts td { padding: 0.38rem 0.6rem; border-bottom: 1px solid #1e293b; }
+    table.hosts tr:hover td { background: #17203a; }
+    table.hosts td.host { font-family: ui-monospace, monospace; font-size: 0.8rem; }
+    .bar { display: inline-block; height: 0.55rem; border-radius: 0.2rem; background: var(--link);
+           vertical-align: middle; margin-right: 0.45rem; min-width: 2px; }
+    .bar.hot { background: var(--fail); } .bar.warm { background: var(--warn); }
+    #hosts-note { color: var(--muted); font-size: 0.78rem; margin-left: 0.6rem; }
+    h2.section { font-size: 0.95rem; color: var(--muted); font-weight: 600;
+      margin: 1.1rem 0 0.2rem; text-transform: uppercase; letter-spacing: 0.05em; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -95,6 +107,13 @@
   <div class="wrap">
     <div class="meta" id="meta">Loading…</div>
     <div class="summary" id="summary"></div>
+    <h2 class="section">Host loads <span id="hosts-note">—</span></h2>
+    <table class="hosts">
+      <thead><tr>
+        <th>Host</th><th>Load 1/5/15m</th><th>Mem</th><th>Disk</th><th>Sampled</th>
+      </tr></thead>
+      <tbody id="hosts"></tbody>
+    </table>
     <div class="toolbar">
       <input type="search" id="filter" placeholder="Filter nodes… (id, summary, status)" />
       <span class="hint" id="shown-hint"></span>
@@ -110,6 +129,6 @@
       <div id="report"></div>
     </details>
   </div>
-  <script src="app.js?v=8"></script>
+  <script src="app.js?v=9"></script>
 </body>
 </html>
