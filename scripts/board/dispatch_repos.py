@@ -117,7 +117,7 @@ LANE_KW = {
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
     "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "docs-only", "documentation", "docs/", "checklist", "plan",
+                  "docs-only", "documentation", "docs/", "checklist", "testable", "unit test", "python helper", "small code", "plan",
                   "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
