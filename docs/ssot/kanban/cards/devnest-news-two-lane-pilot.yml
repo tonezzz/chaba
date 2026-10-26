@@ -1,0 +1,34 @@
+id: devnest-news-two-lane-pilot
+title: News reporter A/B pilot — Devin vs DevNest
+column: backlog
+updated: 2026-10-26 08:58
+brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
+  gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
+  leaves. This is an evaluation plan, not permission to publish or run paid models.
+priority: medium
+program: ai-workforce
+tags:
+- news
+- devnest
+- benchmark
+- research
+- privacy
+spec: 'Existing WP CPT `news` is already hierarchical and public; do not register a duplicate. Pilot design: baseline
+  = current news-fetch/news-digest plus deterministic root assembly; candidate = DevNest deterministic collection/schema
+  checks + explicitly pinned free/local summary lane + independent deterministic verifier. Same frozen 24-30 item
+  corpus, same cutoff/schema, with public external items plus sanitized internal fixtures. Each lane outputs a private
+  root-summary, identical branches (edge-ai; research/products/benchmarks; internal project/HA), and linked evidence
+  leaves; keep source_class/visibility on every node. Score coverage, source/citation traceability, factuality,
+  classification, duplicate clustering, tree integrity, privacy, idempotence, latency and cost. Draft gates: zero
+  privacy leaks/unsupported critical claims/broken links; no duplicate on rerun; >=90% precision and >=85% recall
+  on a hand-labeled set; 3 clean shadow snapshots. Use explicit lane assignments; JEV routes only; no paid_frontier,
+  public WP writes, or real internal event ingestion until privacy model and source set are approved. DevNest deterministic
+  lane is live, but free-opencode is gated (OPS-0846), queue-time JEV classification is open (OPS-0838), and there
+  is no News-specific verifier or L2/L3 roll-up yet. Related existing work: AI news morning brief (OPS-0877), news
+  situation summaries (OPS-0706). Review brief: gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v1.md;
+  Education post 2476.'
+ref: BEN-0898
+comms:
+- at: 2026-10-26 08:58
+  from: devin
+  text: card captured via board-api
