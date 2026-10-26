@@ -1,7 +1,7 @@
 id: dead-mcp-servers-triage-cd54fe
 title: dead-mcp-servers-triage
-column: doing
-updated: 2026-10-26 08:57
+column: review
+updated: 2026-10-26 08:58
 priority: medium
 spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
   BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
@@ -41,8 +41,18 @@ comms:
     Dell crash-loop killed: notebooklm-mcp.service AND notebooklm-rest.service masked (they lived in migrated-off/
     but quadlet scans subdirs — ~36k restarts each). Side-effect win: tonight kb-sync will actually work again (~22
     silent errors/run before). workflows: RETIRED — '
+- at: 2026-10-26 08:58
+  from: idc02
+  text: 'finished (ok): exit=0 rything is committed on the dispatch branch (no push), and the board card has progress
+    + final comments. | devin-'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 rything is committed on the dispatch branch (no push), and the board card has progress + final
+    comments. | devin-task-20261026-084608-decide-repair-vs-retire-for-th.service: Consumed 45.059s CPU time, 75.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
