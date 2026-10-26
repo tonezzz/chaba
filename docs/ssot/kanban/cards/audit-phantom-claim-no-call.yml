@@ -1,7 +1,7 @@
 id: audit-phantom-claim-no-call
 title: 'Ada session audit: phantom:claim-no-call (4d seen)'
-column: review
-updated: 2026-10-26 08:48
+column: done
+updated: 2026-10-26 09:01
 brief: 'Recurring session-audit signature ''phantom:claim-no-call'': action claimed with no tool call in the window
   — 17x on 2026-10-13, seen on 4 day(s).'
 priority: medium
@@ -63,6 +63,9 @@ comms:
 - at: 2026-10-26 08:48
   from: chaba
   text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
@@ -73,3 +76,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself
