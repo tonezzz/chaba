@@ -1,7 +1,7 @@
 id: devnest-topic-project-routing
 title: Route DevNest Supergroup topics to projects and lanes
 column: doing
-updated: 2026-10-26 19:14
+updated: 2026-10-26 19:23
 brief: Use Telegram forum topics as the human follow-up surface for multiple DevNest projects without making Telegram
   the source of truth.
 priority: high
@@ -41,6 +41,13 @@ comms:
   from: devin
   text: claimed by dispatch on idc02 — implementing durable topic registry in devnest-tg-relay.py (permanent topics,
     PRJ naming, thread->project binding, quarantine, milestone mirror) + tests
+- at: 2026-10-26 19:23
+  from: devin
+  text: 'DONE in worktree, commit 111c3586b (not pushed — dispatch cannot push). devnest-tg-relay.py now keeps durable
+    topics.json registry: permanent topics + PRJ <id> — <title> convention, thread_id->project/card/lane/visibility
+    bindings, forum_topic_* events self-register, unknown threads quarantined, PDF intake creates+binds project
+    topic (manual-instruction fallback), same-topic PDF attaches to bound project, /send routes by project/card
+    and mirrors only milestones to General, deleteForumTopic hard-'
 action:
   type: dispatch
   status: running
