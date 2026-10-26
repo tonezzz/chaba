@@ -1,19 +1,15 @@
 id: doc-pilot-short-film
 title: doc-pilot — first AI short documentary end-to-end
 column: backlog
-updated: 2026-10-26 06:23
+updated: 2026-10-26 07:05
 priority: medium
 tags:
 - ada-nest
 - video
 - pipeline
 - education
-spec: 'Run the 7-stage doc pipeline (Education post 2157) end-to-end on one real topic: premise -> script -> storyboard
-  -> LTX clips (Colab T4) -> VYNCX cloned VO -> ffmpeg assembly -> publish to boards WP + surf-thailand.com CMS
-  + making-of lesson. Each stage is a durable artifact (premise.md/script.yml/storyboard.yml/shots/vo/final.mp4)
-  regenerable independently. Constraints: LTX ceiling ~73f 640x384 40steps per shot (~3s), VO-first timing, split
-  long TTS sentences at clause boundaries. Pending Tony: topic, language (EN+TH dub vs TH-first), narrator (Tony-clone
-  vs Ada).'
+spec: Shorten the Thai narration line per Tony answer (shorten-line). Find the doc-pilot script/storyboard assets,
+  tighten the narration, keep the cut. Done when the shortened narration is committed.
 ref: OPS-0793
 comms:
 - at: 2026-10-23 16:34
@@ -231,6 +227,12 @@ comms:
   from: devin
   text: 'raised request review-hybrid-v6-for-kk: Please review hybrid v6 in private Education post 2157 with the
     Thai subtitles. Is the NASA still treatment for Earth/Sa'
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
+- at: 2026-10-26 07:05
+  from: tony
+  text: queued for processing
 requests:
 - id: where-should-tony-see-doc-post
   ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
@@ -332,4 +334,7 @@ requests:
   - id: hold-for-kk
     label: Hold until KK can review the private cut
   suggested: hold-for-kk
-awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
