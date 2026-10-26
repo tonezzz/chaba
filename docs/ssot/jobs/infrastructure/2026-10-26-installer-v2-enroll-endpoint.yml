@@ -1,0 +1,82 @@
+title: installer v2 — keyless /enroll endpoint sharing the stick-announce contract
+subtitle: input-bridge POST /enroll -> node registry + ada-ha-events ops feed; public via caddy-edge
+icon: dispatch
+
+card: fleet-installer-v2
+runner: idc02
+
+processing:
+  status: completed-pending-dns
+  started_at: "2026-10-26T07:10:00+07:00"
+  goal: >
+    v2 of the fleet one-liner: the installer reports itself back to the
+    fleet — POST hostname/lan_ip/tailnet_ip to a public keyless edge
+    endpoint that lands in the node registry + ops feed, sharing the
+    /enroll contract the stick-announce unit already uses (Tony-approved
+    path 2026-10-25). Also provision a DNS-capable Cloudflare token so
+    app.surf-thailand.com can finally get its A record.
+  contract: >
+    The "existing /enroll contract" = the doc stick-announce.sh writes:
+    POST to the ops feed producing kind=ops-event type=host_online in
+    MDDB collection ada-ha-events-tony with meta
+    {instance:tony, host, lan_ip, tailnet_ip, ts, written_by}
+    (live copy on tony-macbook /usr/local/bin/stick-announce.sh;
+    docs/kb/mn01-stick-standard.md). /enroll emits the identical shape
+    with written_by=input-bridge-enroll so consumers keyed on
+    type=host_online see installer enrolls indistinguishably.
+  changes:
+    - "stacks/web/input-bridge/server.mjs: POST /enroll + GET /nodes +
+      nodes.json registry (~/.local/share/input-bridge/nodes.json on the
+      container's /data mount). Emits the stick-announce host_online doc
+      to MDDB /v1/add (ENROLL_MDDB_URL, default the mddb primary
+      100.102.134.91:11023/v1). Validation: hostname charset, IPv4
+      shapes; dedupe host+tailnet 5min; 30 posts/IP/hour cap."
+    - "idc03 caddy-edge Caddyfile: 'handle /enroll* -> reverse_proxy
+      127.0.0.1:3010' on api.surf-thailand.com AND app.surf-thailand.com
+      (the app. site was also restructured into handle blocks — the old
+      flat block's 'respond @notinstall 404' would have 404'd /install;
+      backup at ~/.config/caddy/Caddyfile.bak-20261026)."
+    - "stacks/web/public/install: v2 report-back — after tailscale up it
+      POSTs {hostname,lan_ip,tailnet_ip,role?} to api.surf-thailand.com
+      /enroll (ENROLL_URL override; failure is a warn, never fatal).
+      Deployed live to idc03 ~/.config/containers/caddy/data/install."
+    - "scripts/ops/cf-dns-upsert.sh (new): idempotent DNS record
+      create/update for the pending app.surf-thailand.com A record —
+      runs the moment a DNS-capable CF_API_TOKEN exists in a
+      cloudflare.env slot."
+  decisions:
+    - "Enroll lives on input-bridge (per card title): co-located with
+      the MDDB primary on idc03, already exposed at the public edge, and
+      nodes.json gives a queryable registry the ops feed alone lacks."
+    - "Live input-bridge deployed as 205b2212+enroll, NOT repo HEAD —
+      HEAD carries the unverified 2026-10-22 vcast UX-flow redesign;
+      enroll was kept surgical (repo HEAD has the same block, so the
+      next real deploy keeps it). Live backup:
+      server.mjs.bak-20261026."
+    - "Keyless by design: the installer reports before/without tailnet
+      creds. Abuse surface is bounded — hard input validation, dedupe,
+      per-IP cap, small body; a spam POST can only forge ops-event
+      lines, never write cards/SSOT."
+    - "peer_ip is the leftmost X-Forwarded-For; behind CF that is the
+      edge egress IP — informational only."
+  limits:
+    - "CF token provisioning is NOT done — impossible unattended.
+      cfat_ is dead on all slots (verify=Invalid API Token; identical
+      fingerprint in every secrets-backup bundle), cfut_ is Workers-only,
+      wrangler OAuth can't write DNS, and Cloudflare mints new tokens
+      dashboard-only (no POST /user/tokens, no account tokens — 9109).
+      Board request need-a-new-dns-capable-cloudflare-token-15edf9 asks
+      Tony to mint: Zone > DNS > Edit on surf-thailand.com. Then
+      scripts/ops/cf-dns-upsert.sh creates A app -> 157.85.102.125
+      (proxied) and the already-wired app. site block goes live."
+    - "app.surf-thailand.com/enroll is configured but unroutable until
+      that DNS record exists; api.surf-thailand.com/enroll serves today."
+    - "GET /nodes is intentionally tailnet-only (no public route added —
+      it exposes enrolled IPs)."
+  verification:
+    - "POST https://api.surf-thailand.com/enroll {hostname,lan_ip,
+      tailnet_ip,role} -> 200 {ok,event:true} (verified live 2026-10-26)"
+    - "MDDB ada-ha-events-tony holds ops-host-enroll-* docs with the
+      stick-announce meta shape (verified)"
+    - "GET https://api.surf-thailand.com/install serves the v2 script"
+    - "idc03: cat ~/.local/share/input-bridge/nodes.json"

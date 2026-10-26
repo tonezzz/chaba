@@ -66,6 +66,12 @@ edges:
   # api.surf-thailand.com public edge (idc03 caddy-edge) also serves:
   #   /apps/ha/ada-tony/* -> 127.0.0.1:8002 — public redeem + Ada voice PWA
   #   (single-use bearer redeem; mint endpoint stays tailnet-only) 2026-10-08
+  #   /install -> /data/install static (fleet one-liner) 2026-10-10
+  #   /enroll* -> 127.0.0.1:3010 input-bridge — keyless fleet report-back;
+  #   same host_online ops-event contract as stick-announce (2026-10-26,
+  #   card fleet-installer-v2). app.surf-thailand.com carries the same
+  #   /install+/enroll handles — pending its DNS A record (needs new
+  #   DNS-capable CF token; cfat_ died, request on the card).
   # ada-ha.surf-thailand.com edge (idc02 caddy) also serves — same-origin Ada
   # lane so voice cards dial THIS host/path and the network can move underneath:
   #   /ada-ws/tony/*    -> rewrite /apps/ha/ada-tony{uri}    -> https://idc03.taila0626a.ts.net
