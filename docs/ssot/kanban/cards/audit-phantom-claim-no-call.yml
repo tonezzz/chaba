@@ -1,7 +1,7 @@
 id: audit-phantom-claim-no-call
 title: 'Ada session audit: phantom:claim-no-call (4d seen)'
-column: doing
-updated: 2026-10-26 08:46
+column: review
+updated: 2026-10-26 08:48
 brief: 'Recurring session-audit signature ''phantom:claim-no-call'': action claimed with no tool call in the window
   — 17x on 2026-10-13, seen on 4 day(s).'
 priority: medium
@@ -49,8 +49,17 @@ comms:
     inner journal ts (host-local +07) while transcript turns are UTC → every call landed +7h off → every claim flagged
     (248 corpus rows/8+ days). The ok:true was itself fabricated (ghost entity — real plug switch.plakkaaaef_local):
     that part alr'
+- at: 2026-10-26 08:48
+  from: mn01
+  text: 'finished (ok): exit=0 t.sh` must rerun on tony-dell since the timer executes the self-contained installed
+    copy. | devin-task-20261026-0'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 t.sh` must rerun on tony-dell since the timer executes the self-contained installed copy. | devin-task-20261026-012956-investigate-ada-session-audit-.service:
+    Consumed 17.143s CPU time over 17min 32.815s wall clock time, 180.3M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
