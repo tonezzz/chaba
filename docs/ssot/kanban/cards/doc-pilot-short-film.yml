@@ -347,6 +347,10 @@ comms:
     at 07:10. This dispatch was a re-queue no-op: answer-sweep re-queued the card on the newer answers (revise-v6,
     approve-proposed-scope) but the spec field still carries the old shorten-line text. No repo changes needed;
     cut unchanged. Note: revise-v6 says "I have revisions" b'
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'raised request you-answered-revise-v6-what-are-the-revi-3f64dc: You answered revise-v6 — what are the revisions
+    for hybrid v6? No detail was recorded, so the next pass has nothing to a'
 requests:
 - id: where-should-tony-see-doc-post
   ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
@@ -467,6 +471,21 @@ requests:
   suggested: approve-proposed-scope
   answer: approve-proposed-scope — Approve this scope and ship viewpoint for v3 development
   executed: 2026-10-26 queue
+- id: you-answered-revise-v6-what-are-the-revi-3f64dc
+  ask: 'You answered revise-v6 — what are the revisions for hybrid v6? No detail was recorded, so the next pass
+    has nothing to act on. List the changes (shots/timing/lines), or pick: (a) v6-is-final — skip revisions, treat
+    v6 as the KK review cut; (b) go-v3 — skip v6 polish, put effort into the approved v3 tourist-ship script instead.'
+  status: open
+  at: 2026-10-26 08:55
+  from: devin
+  options:
+  - id: v6-is-final
+    label: Skip revisions; v6 is the KK review cut
+  - id: go-v3
+    label: Skip v6 polish; develop approved v3 tourist script
+  - id: list-revisions
+    label: I will list the v6 revisions in my answer
+  suggested: list-revisions
 action:
   type: dispatch
   repo: chaba
