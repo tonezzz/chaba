@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: done
-updated: 2026-10-26 13:25
+updated: 2026-10-26 16:32
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -114,6 +114,12 @@ comms:
     matches this source. Read-only colab_pack_status currently shows doc-vo-v3 CLAIMED and decision-arena + jev-triage
     queued; cell 2 launches the shared queue, not a single selected pack. Also the current cell-1 source starts
     its heartbeat before checking for a fresh peer, so a refused p'
+- at: 2026-10-26 16:32
+  from: devin
+  text: 'Follow-up improvement: preflight heartbeat-on-refusal fixed and committed as edb3ecd10; notebook regenerated
+    from canonical cells and tests pass. No Drive sync or queue/runtime action performed in this step. Drive sync
+    remains gated on verifying no active runtime/runner; current live mcp-colab still lacks the source-defined colab_session_status
+    tool.'
 action:
   repo: chaba
   type: dispatch
