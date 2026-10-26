@@ -98,6 +98,13 @@ post_types:
   # error/comms(JSON append log [{at,from,text}])/updated. ONLY writer:
   # board-api POST /job on idc03 (queue-mgr on dell mirrors Drive
   # queue/packs state -> CPT through the door).
+  # DRIFT FOUND 2026-10-26 (card repair-wp-nest-job-cpt-drift): live
+  # plugin is ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity both 404
+  # rest_no_route; v0.8.0/v0.9.0 deploys never ran. Repair zip staged:
+  # integrations/wp-boards/dist/chaba-boards-0.9.0.zip, deploy via
+  # scripts/wp-boards/deploy-plugin-zip.sh on tony-omen after Tony gate;
+  # verify with scripts/wp-boards/verify-nest-job.sh. Regression probes:
+  # wp-nest-job-cpt + wp-activity-cpt in ssot.health.home.web.yml.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
