@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: done
-updated: 2026-10-26 11:35
+updated: 2026-10-26 11:37
 action:
   type: manual
   status: done
@@ -55,6 +55,12 @@ comms:
   from: devin
   text: 'raised request approve-removing-the-unused-omen-ufw-all-13ebf8: Approve removing the unused Omen UFW allow
     rule for TCP/24800 (IPv4 and IPv6)? No service is listening now; removing the'
+- at: 2026-10-26 11:37
+  from: devin
+  text: 'Runtime retirement verified after 9c559fced: no Barrier KVM units, processes, autostart entries, or TCP/24800
+    listeners on Omen/Dell. Dell barrier-pin-vt.timer remains active only for its Xorg physical seat. The separate
+    Omen UFW allow rule still exists; request approve-removing-the-unused-omen-ufw-all-13ebf8 is open because removing
+    it requires sudo.'
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
