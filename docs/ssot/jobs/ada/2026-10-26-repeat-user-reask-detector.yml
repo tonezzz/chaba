@@ -1,0 +1,88 @@
+# SSOT Job: session-audit repeat:user-reask false-positive fix
+# Kanban card audit-repeat-user-reask (ref ADA-0626): signature filed
+# 2026-10-14 after 7x on 2026-10-13, seen 4 days (10-10..10-13; history
+# also shows 10-16 x1, 10-17 x14 — the carding window dedupes on date).
+
+title: session-audit repeat:user-reask — detector FP fix
+subtitle: LINE-relay wrapper + ack tokens + capture-path dups normalized out of re-ask similarity
+status: repo-fixed (installed copy on tony-dell pending install-session-audit.sh after merge)
+project: chaba
+owner: devin-dispatch
+started: "2026-10-26"
+completed: "2026-10-26"
+
+context: |
+  `scripts/ada/session-audit.py` flags `repeat:user-reask` when two
+  consecutive user turns (surviving intervening Ada turns) score
+  difflib similarity >= 0.78. Investigation of the 2026-10-13 report
+  (MDDB ada-ha-scenario-reports key audit/session-2026-10-13, fixture
+  replay of all 29 transcripts) shows ALL 7 findings were artifacts,
+  in three classes:
+
+  1) Ack-token replies — "[LINE group from Tonezzz] ยืนยัน" (sim 1.00).
+     Tony confirming two DIFFERENT confirm-gates (calendar save, memory
+     save, card save) is not a re-ask; it is the reply vocabulary of
+     the confirm gate. The 28-char "[LINE group from Tonezzz] " prefix
+     makes ANY two short relayed messages similar — "ยืนยัน" vs
+     "บันทึก" (different words!) scored 0.88, and
+     "เพิ่มลงไปให้ครบเลย" vs "เพิ่มทั้งหมดลงในรายงาน" scored 0.783
+     with prefix vs 0.50 without.
+  2) Media-relay boilerplate — 4x "[image received NB] [via LINE
+     group ...] The user sent this photo — describe it and respond
+     naturally." at sim 0.97; only the byte count differed. Five
+     different ticket photos, zero re-asks.
+  3) (found while verifying on 10-11 x23 and 10-17 x14) Capture-path
+     duplicates — dual listeners ([via voice] + untagged) and STT
+     echo ("von vorher" Whisper noise-hallucination pairs) log one
+     utterance twice back-to-back, ada_between=False, gap 0-10s.
+
+  The one near-real pair on 10-13 (เพิ่มลงไปให้ครบเลย /
+  เพิ่มทั้งหมดลงในรายงาน — user rephrasing after a failed save)
+  only crossed the bar because of the shared prefix; the underlying
+  friction is already covered by confirm/fail findings.
+
+verdict: |
+  Detector bug (audit-tool side), not an Ada tool bug, not a
+  schema-description issue, not correct-by-design friction. The
+  heuristic measured raw transcript text including transport
+  boilerplate instead of the ask payload. Fixed in
+  scripts/ada/session-audit.py:
+
+  - _norm_user_ask(): strips leading [relay] tags, drops media/doc
+    stubs (RE_MEDIA_TURN) and bare ack/confirm tokens (RE_ACK_TURN
+    fused Thai forms + ACK_WORDS/ACK_PARTICLES word sets); similarity
+    is computed on the normalized payload.
+  - REPEAT_DUP_S=12: near-identical consecutive asks with no Ada turn
+    between and gap <=12s are treated as capture-path duplicates, not
+    re-asks (a no-answer re-ask needs gap >12s; observed dup max 10s).
+  - detail now reports real turn distance + gap (was the literal
+    placeholder string "turns apart").
+
+  Fixture verification (session-audit.py --transcripts-dir --dry-run):
+    2026-10-13: 7 -> 0 repeats (all artifacts)
+    2026-10-11: 23 -> 4 repeats (remaining are genuine: percussion cast
+      fail re-ask, plug actuation re-ask, car-photo re-ask 139s, lights
+      query re-ask)
+    2026-10-17: 14 -> 0 repeats ("von vorher" STT-echo pairs)
+    --selftest PASS (synthetic real re-ask still detected)
+
+residual_signal: |
+  The real friction underneath 10-13 is the confirm-gate loop in
+  ac854e41f9 (Tony confirmed 3x; Ada re-planned, re-asked, then "can't
+  do it now") and the save failure that needed a third try — that
+  class is reported by the confirm/fail signatures, not repeat.
+
+followup: |
+  Deploy: after merge, refresh the installed copy —
+    scripts/ada/install-session-audit.sh tony-dell
+  (the audit runs self-contained from
+  ~/.local/share/session-audit/session-audit.py, mtime 2026-10-10 —
+  deliberately not the repo checkout).
+  Then next daily run re-scores the window; repeat:user-reask should
+  only recur on genuine re-prompts.
+
+verify:
+  - python3 scripts/ada/session-audit.py --selftest  # PASS
+  - fixture replay of 2026-10-13 transcripts: repeat count 0
+  - tony-dell: ~/.local/share/session-audit/session-audit.py contains
+    _norm_user_ask (md5 changes after install-session-audit.sh)

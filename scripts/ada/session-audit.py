@@ -24,7 +24,13 @@ Findings per session (skill checklist):
   degraded — ok:True but degraded/quota_exhausted/delivered:0
   phantom  — Ada's reply asserts a completed action but no function_call
              was received for that session inside the turn window
-  repeat   — consecutive near-identical user asks (re-prompting)
+  repeat   — consecutive near-identical user asks (re-prompting);
+             LINE-relay wrapper tags, media/doc boilerplate and bare
+             ack tokens (ยืนยัน/ok/yes/…) are normalized out first, and
+             same-second capture-path duplicates (dual-listener or STT
+             echo, no Ada turn between, gap <= REPEAT_DUP_S) are
+             suppressed — a confirm reply or a double-logged utterance
+             is not a re-ask (audit-repeat-user-reask, 2026-10-26)
   latency  — user->ada gap > LATENCY_FLAG_S
   no_result— function_call received with no result inside the window
 
@@ -121,6 +127,39 @@ SSH_TIMEOUT = int(os.environ.get("AUDIT_SSH_TIMEOUT", "90"))
 LATENCY_FLAG_S = float(os.environ.get("AUDIT_LATENCY_S", "8"))
 REPEAT_RATIO = 0.78          # consecutive user asks above this = re-prompt
 REPEAT_MIN_CHARS = 6         # ignore tiny turns ("yes", "ok")
+# Re-ask false-positive guards (audit-repeat-user-reask, 2026-10-13):
+# transcript user text carries relay transport (`[LINE group from
+# Tonezzz] `, `[image received 77573B] [via …] <boilerplate>`). The
+# shared 28-char prefix alone lifts short Thai asks past REPEAT_RATIO,
+# and image/doc stubs differ only by byte count — both read as
+# "user repeated the same ask" when neither is one.
+RE_LEAD_TAGS = re.compile(r"^(?:\[[^\]\n]{0,300}\]\s*)+")
+RE_MEDIA_TURN = re.compile(
+    r"the user sent this (photo|file|video|sticker|audio)|"
+    r"doc_read can extract|describe it and respond naturally", re.I)
+ACK_WORDS = {
+    "ยืนยัน", "โอเค", "อืม", "อื้ม", "เออ", "ใช่", "ตกลง", "เอาเลย",
+    "จัดเลย", "ทำเลย", "ทำได้เลย", "เซฟเลย", "บันทึกเลย", "บันทึก",
+    "ได้เลย", "ดีมาก", "ดี",
+    "เลย", "ok", "okay", "yes", "yeah", "yep", "yup", "sure", "confirm",
+    "confirmed", "go", "ahead", "do", "it", "sounds", "good", "y", "k",
+    "kk"}
+ACK_PARTICLES = {"ครับ", "ค่ะ", "คะ", "จ้ะ", "จ้า", "นะ", "ครับผม", "ฮะ",
+                 "จ๊ะ"}
+# capture-path duplicates: two listeners ([via voice] + untagged, or
+# STT-hallucination repeats like "von vorher") log one utterance twice
+# back-to-back (0-10s, no Ada turn between). A re-ask needs an Ada turn
+# between the pair or a gap past this window — observed dups max 10s.
+REPEAT_DUP_S = 12
+# fused Thai confirm forms — particles don't space-separate
+# ("ยืนยันเลย", "ยืนยันครับ", "บันทึกเลยนะ")
+RE_ACK_TURN = re.compile(
+    r"^(?:ยืนยัน|โอเค|อืม|อื้ม|เออ|ใช่|ตกลง|เอาเลย|จัดเลย|ทำเลย|ทำได้เลย|"
+    r"เซฟเลย|บันทึกเลย|บันทึก|ได้เลย|ดีมาก|ดี|เลย|"
+    r"ok+ay*|yes|yeah|yep|yup|sure|confirm(?:ed)?|go ahead|do it|"
+    r"sounds good|y|kk?)"
+    r"(?:ครับผม|ครับ|ค่ะ|คะ|จ้ะ|จ้า|นะ|ฮะ|จ๊ะ|เลย|มาก|ๆ|สิ|ซิ|หน่อย)*"
+    r"[\s!.?]*$", re.I)
 SURFACE_MIN = 3              # occs in window before a low-sev sig surfaces
 SURFACE_CAP = 15             # max inbox entries per run — overflow stays on
                              # the page (never swallowed) + one cap note
@@ -194,6 +233,23 @@ RE_CLAIM = re.compile(
     r"เรียบร้อย|จัดการแล้ว|ตั้งไว้แล้ว|บันทึก[^ ]*แล้ว|ให้แล้ว|"
     r"เบาลง[^ ]*แล้ว|ดังขึ้น[^ ]*แล้ว|เปิด[^ ]*แล้ว|ปิด[^ ]*แล้ว",
     re.I)
+
+
+def _norm_user_ask(text: str) -> str | None:
+    """Normalize a user turn for re-ask comparison. Returns the cleaned
+    payload, or None when the turn isn't an ask at all: relay media/doc
+    stubs, and bare ack/confirm tokens answering Ada's own confirm-gates
+    (ยืนยัน twice for two different pending actions is not a re-ask)."""
+    t = RE_LEAD_TAGS.sub("", text).strip()
+    if not t or RE_MEDIA_TURN.search(t):
+        return None
+    t = " ".join(t.lower().split())
+    if len(t) < REPEAT_MIN_CHARS or RE_ACK_TURN.match(t):
+        return None
+    words = [w.strip("!.,?") for w in t.split()]
+    if words and all(w in ACK_WORDS or w in ACK_PARTICLES for w in words):
+        return None
+    return t
 
 
 # --- shell / net helpers ----------------------------------------------------
@@ -508,21 +564,39 @@ def analyze_session(sess: dict, calls: list[dict], no_result: list[dict],
     prev_user = None
     prev_user_txt = ""
     last_user_txt = ""   # survives ada turns — repeat-ask detection
+    last_user_i = -1
+    last_user_sec = None
     for i, t in enumerate(turns):
         if t["role"] == "user":
-            if last_user_txt:
-                a = " ".join(last_user_txt.lower().split())
-                b = " ".join(t["text"].lower().split())
-                if len(a) >= REPEAT_MIN_CHARS and len(b) >= REPEAT_MIN_CHARS:
-                    ratio = difflib.SequenceMatcher(None, a, b).ratio()
-                    if a == b or ratio >= REPEAT_RATIO:
+            ask = _norm_user_ask(t["text"])
+            if ask is not None:
+                if last_user_txt:
+                    ratio = difflib.SequenceMatcher(
+                        None, last_user_txt, ask).ratio()
+                    gap = None
+                    if t["sec"] is not None and last_user_sec is not None:
+                        gap = t["sec"] - last_user_sec
+                        if gap < 0:
+                            gap += 86400
+                    ada_between = any(
+                        x["role"] == "ada"
+                        for x in turns[last_user_i + 1:i])
+                    dup = (not ada_between and gap is not None
+                           and gap <= REPEAT_DUP_S)
+                    if ratio >= REPEAT_RATIO and not dup:
                         findings.append({
                             "kind": "repeat", "severity": "medium",
                             "sig": "repeat:user-reask",
                             "title": "user repeated the same ask",
-                            "evidence": _clip(b),
-                            "detail": f"turns apart, sim={ratio:.2f}"})
-            last_user_txt = t["text"]
+                            "evidence": _clip(t["text"]),
+                            "detail": (
+                                f"{i - last_user_i} turns apart, "
+                                f"sim={ratio:.2f}"
+                                + (f", gap={gap:.0f}s"
+                                   if gap is not None else ""))})
+                last_user_txt = ask
+                last_user_i = i
+                last_user_sec = t["sec"]
             prev_user = t
             prev_user_txt = t["text"]
             continue
