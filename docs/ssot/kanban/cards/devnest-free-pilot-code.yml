@@ -1,0 +1,25 @@
+id: devnest-free-pilot-code
+title: 'DevNest free-lane pilot B: small testable Python helper'
+column: backlog
+updated: 2026-10-26 08:48
+brief: Add a tiny deterministic helper plus unit test through OpenCode Flash Lite.
+priority: low
+program: ai-workforce
+tags:
+- devnest
+- opencode
+- free_lane
+- pilot
+- savings
+spec: 'Add scripts/ops/devnest_lane_label.py with a pure function lane_label(text) that returns codemod for text
+  containing purge or config, manual for physical or hardware, and devin otherwise. Add tests/ops/test_devnest_lane_label.py
+  covering all three cases. Do not touch unrelated files or deploy. Done gate: pytest tests/ops/test_devnest_lane_label.py
+  passes and auto-merge succeeds.'
+action:
+  type: dispatch
+  host: tony-dell
+ref: OPS-0896
+comms:
+- at: 2026-10-26 08:48
+  from: devin
+  text: card captured via board-api
