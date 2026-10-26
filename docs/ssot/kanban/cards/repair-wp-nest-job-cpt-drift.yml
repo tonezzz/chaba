@@ -1,6 +1,6 @@
 id: repair-wp-nest-job-cpt-drift
 title: Repair live WP nest_job CPT/API drift
-column: backlog
+column: doing
 updated: 2026-10-26 18:59
 brief: Restore the WP nest_job CPT/API required for DevNest and Colab job publishing without breaking existing CPTs.
 priority: high
@@ -22,7 +22,8 @@ spec: 'Investigate and repair the live WordPress chaba-boards drift discovered d
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0916
 comms:
 - at: 2026-10-26 18:58
@@ -32,3 +33,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 18:59
+  from: idc02
+  text: claimed
