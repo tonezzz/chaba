@@ -1,7 +1,7 @@
 id: sys-mon-system-monitor-de88ff
 title: sys-mon (system monitor)
 column: backlog
-updated: 2026-10-26 07:18
+updated: 2026-10-26 07:24
 note: User wants to insert a live dashboard tab (host loads) using an iframe into the board.
 comms:
 - at: 2026-10-10 15:36
@@ -38,6 +38,13 @@ comms:
 - at: 2026-10-26 07:11
   from: devin
   text: dispatch started on idc02 — assessing sys-mon artifacts and chaba-admin monitor surface
+- at: 2026-10-26 07:24
+  from: devin
+  text: 'done: monitor tab now shows live sys-mon data. Assessment: pipeline already existed (host-loads.py -> reports/host-loads.yml
+    -> system-report Host loads section -> monitor iframe) but the sampler died with the dell drain (last sample
+    10-23) and the page only had the daily static table. Shipped: (1) live Host loads table at top of /apps/system-report/
+    fetching data/host-loads.yml every 60s w/ daily-report fallback; (2) new chaba-host-loads.timer on idc02 — 5-min
+    sampler + publishes yml into the w'
 ref: OPS-0369
 requests:
 - id: the-user-wants-to-insert-a-liv-cd3c2e
