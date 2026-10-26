@@ -18,11 +18,22 @@
 #
 # Nothing here stops or kills another session — ever. Unknown/uninstrumented
 # sessions are Google's UI problem, not ours.
-import os, sys, time, threading
+import contextlib
+import glob
+import io
+import json
+import os
+import runpy
+import sys
+import threading
+import time
+import uuid
 
 Q = os.environ.get('NEST_QUEUE', '/content/drive/MyDrive/ada-nest/queue')
 ALLOW_SECOND_RUNTIME = False        # deliberate dual-VM escape hatch only
 HB_S = 60                            # registry refresh cadence
+CONTROL_POLL_S = 5
+CONTROL_TTL_S = 300
 
 
 def mount_drive():
@@ -40,6 +51,99 @@ def heartbeat_loop(rr):
             rr.register()
         except Exception:
             pass
+
+
+def _write_control_ack(q, request_id, target_boot_id, status, message):
+    ack_dir = os.path.join(q, 'control', 'acks')
+    os.makedirs(ack_dir, exist_ok=True)
+    ack_path = os.path.join(ack_dir, f'{request_id}.json')
+    tmp = f'{ack_path}.{uuid.uuid4().hex}.tmp'
+    with open(tmp, 'w') as f:
+        json.dump({
+            'request_id': request_id,
+            'target_boot_id': target_boot_id,
+            'status': status,
+            'message': str(message)[-2000:],
+            'handled_at': time.time(),
+        }, f)
+        f.write('\n')
+    os.replace(tmp, ack_path)
+    return ack_path
+
+
+def process_control_request(request_path, boot_id, queue_dir=None,
+                            launcher_main=None):
+    """Handle one managed-runtime command; foreign requests are left alone."""
+    q = queue_dir or Q
+    request_id = os.path.basename(request_path).removesuffix('.json')
+    ack_path = os.path.join(q, 'control', 'acks', f'{request_id}.json')
+    if os.path.exists(ack_path):
+        return {'status': 'already-acked', 'request_id': request_id}
+
+    try:
+        with open(request_path) as f:
+            request = json.load(f)
+    except Exception as exc:
+        return {'status': 'unreadable', 'request_id': request_id,
+                'message': str(exc)}
+    target = str(request.get('target_boot_id') or '')
+    if target != boot_id:
+        return {'status': 'not-targeted', 'request_id': request_id}
+    if request.get('request_id') != request_id:
+        return {'status': 'invalid', 'request_id': request_id,
+                'message': 'request id does not match filename'}
+    if request.get('confirmed') is not True:
+        _write_control_ack(q, request_id, target, 'rejected',
+                           'explicit MCP confirmation is required')
+        return {'status': 'rejected', 'request_id': request_id}
+    try:
+        age = time.time() - float(request.get('created_at') or 0)
+    except (TypeError, ValueError):
+        _write_control_ack(q, request_id, target, 'rejected',
+                           'request created_at is invalid')
+        return {'status': 'rejected', 'request_id': request_id}
+    if age > CONTROL_TTL_S:
+        _write_control_ack(q, request_id, target, 'expired',
+                           f'request expired ({age:.0f}s old)')
+        return {'status': 'expired', 'request_id': request_id}
+    if request.get('command') != 'start_queue':
+        _write_control_ack(q, request_id, target, 'rejected',
+                           f"unsupported command: {request.get('command')!r}")
+        return {'status': 'rejected', 'request_id': request_id}
+
+    output = io.StringIO()
+    try:
+        if launcher_main is None:
+            launcher = runpy.run_path(
+                os.path.join(q, 'queue-launcher-cell.py'),
+                run_name='mcp_queue_launcher')
+            launcher_main = launcher['main']
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            launcher_main()
+        message = output.getvalue()
+        status = ('already-running' if 'queue already running' in message
+                  else 'started')
+    except SystemExit as exc:
+        message = output.getvalue() + str(exc)
+        status = 'refused'
+    except Exception as exc:
+        message = output.getvalue() + repr(exc)
+        status = 'error'
+
+    _write_control_ack(q, request_id, target, status, message)
+    return {'status': status, 'request_id': request_id, 'message': message}
+
+
+def control_watcher_loop(queue_dir, boot_id):
+    """Listen for MCP requests directed at this already-running runtime."""
+    requests = os.path.join(queue_dir, 'control', 'requests')
+    while True:
+        for path in sorted(glob.glob(os.path.join(requests, '*.json'))):
+            try:
+                process_control_request(path, boot_id, queue_dir=queue_dir)
+            except Exception:
+                continue
+        time.sleep(CONTROL_POLL_S)
 
 
 def main():
@@ -62,6 +166,15 @@ def main():
     print(f"registered -> {Q}/runtime-sessions/{rec['boot_id']}.json"
           f"  (heartbeat every {HB_S}s, ttl {rr.ttl_s():.0f}s)")
     threading.Thread(target=heartbeat_loop, args=(rr,), daemon=True).start()
+    if not os.environ.get('NEST_ROOT'):
+        control_boot = rec['boot_id']
+        started = globals().setdefault('_NEST_CONTROL_WATCHERS', set())
+        if control_boot not in started:
+            started.add(control_boot)
+            threading.Thread(
+                target=control_watcher_loop, args=(Q, control_boot),
+                daemon=True).start()
+            print('MCP queue-start control ready for this runtime.')
 
     if fresh:
         print('NOTE: proceeding alongside fresh peer(s) '

@@ -21,12 +21,22 @@ workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
   (boot_id, GPU model/VRAM, RAM, Drive state), registers this VM at
   `queue/runtime-sessions/<boot_id>.json`, and refreshes it on a 60 s
   background heartbeat. A refused duplicate does not register or leave a
-  heartbeat. Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and
-  re-run; the queue lease then arbitrates writers.
+  heartbeat. After successful registration, it starts a runtime-local
+  watcher for `mcp-colab` queue-start requests targeted at this boot ID.
+  Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and re-run; the
+  queue lease then arbitrates writers.
 - **Cell 2 — launch once** (`scripts/colab/queue-launcher-cell.py`):
   gates on Drive-mounted, GPU present (CPU runtimes refuse — the queue
   exists to fill a T4), and no fresh peer runtime, then starts
-  `queue/runner.py` detached. Rerun-safe.
+  `queue/runner.py` detached. It remains the manual fallback if the MCP
+  command path is unavailable.
+- **MCP launch** — after cell 1 registers a fresh T4, call
+  `mcp-colab.colab_queue_start(boot_id, confirm=True)`. It writes a
+  boot-targeted request to Drive; only that runtime's watcher can invoke
+  the same gated launcher. The tool cannot create or stop a Colab runtime,
+  and requires explicit confirmation because queue work consumes the
+  active runtime's quota and can write cache/artifact files. If the runtime
+  is disconnected, the watcher cannot run the request.
 - **Managed-session detection is registry-scoped.** The registry sees
   only VMs that ran cell 1. Uninstrumented notebooks are invisible to it
   — Google *Runtime > Manage Sessions* stays authoritative, and nothing

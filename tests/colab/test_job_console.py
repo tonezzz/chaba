@@ -139,6 +139,82 @@ class TestPreflightCell(ConsoleSandbox):
             "a refused preflight must not leave a fresh runtime heartbeat")
 
 
+class TestControlRequests(ConsoleSandbox):
+    def write_control_request(self, request_id, target_boot_id, age_s=0,
+                              command="start_queue", confirmed=True):
+        request_dir = self.q / "control" / "requests"
+        request_dir.mkdir(parents=True, exist_ok=True)
+        path = request_dir / f"{request_id}.json"
+        path.write_text(json.dumps({
+            "request_id": request_id,
+            "target_boot_id": target_boot_id,
+            "command": command,
+            "confirmed": confirmed,
+            "created_at": time.time() - age_s,
+        }))
+        return path
+
+    def test_matching_start_request_launches_once_and_acks(self):
+        pc = load_module(PREFLIGHT, "preflight_control")
+        calls = []
+
+        def launch():
+            calls.append("start")
+            print("queue pid 123")
+
+        req = self.write_control_request("req-a1", boot_id())
+        result = pc.process_control_request(
+            str(req), boot_id(), queue_dir=str(self.q),
+            launcher_main=launch)
+        self.assertEqual(result["status"], "started")
+        self.assertEqual(calls, ["start"])
+        ack = json.loads(
+            (self.q / "control" / "acks" / "req-a1.json").read_text())
+        self.assertEqual(ack["status"], "started")
+
+        again = pc.process_control_request(
+            str(req), boot_id(), queue_dir=str(self.q),
+            launcher_main=launch)
+        self.assertEqual(again["status"], "already-acked")
+        self.assertEqual(calls, ["start"])
+
+    def test_foreign_boot_request_is_not_consumed(self):
+        pc = load_module(PREFLIGHT, "preflight_control")
+        req = self.write_control_request("req-b2", "another-boot")
+        calls = []
+        result = pc.process_control_request(
+            str(req), boot_id(), queue_dir=str(self.q),
+            launcher_main=lambda: calls.append("start"))
+        self.assertEqual(result["status"], "not-targeted")
+        self.assertEqual(calls, [])
+        self.assertFalse((self.q / "control" / "acks" / "req-b2.json").exists())
+
+    def test_expired_request_is_acked_without_launch(self):
+        pc = load_module(PREFLIGHT, "preflight_control")
+        req = self.write_control_request(
+            "req-c3", boot_id(), age_s=pc.CONTROL_TTL_S + 1)
+        calls = []
+        result = pc.process_control_request(
+            str(req), boot_id(), queue_dir=str(self.q),
+            launcher_main=lambda: calls.append("start"))
+        self.assertEqual(result["status"], "expired")
+        self.assertEqual(calls, [])
+        ack = json.loads(
+            (self.q / "control" / "acks" / "req-c3.json").read_text())
+        self.assertEqual(ack["status"], "expired")
+
+    def test_unconfirmed_request_is_rejected(self):
+        pc = load_module(PREFLIGHT, "preflight_control")
+        req = self.write_control_request(
+            "req-d4", boot_id(), confirmed=False)
+        calls = []
+        result = pc.process_control_request(
+            str(req), boot_id(), queue_dir=str(self.q),
+            launcher_main=lambda: calls.append("start"))
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(calls, [])
+
+
 class TestLaunchGate(ConsoleSandbox):
     def test_fresh_t4_passes_and_spawns(self):
         spawned = []

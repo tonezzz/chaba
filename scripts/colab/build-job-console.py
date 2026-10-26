@@ -22,20 +22,21 @@ MD_INTRO = """\
 All GPU workloads run as **queue jobs + packs** on Drive
 (`ada-nest/queue/JOBS.py` + `ada-nest/packs/<name>/pack.yml`) — never as
 hand-run per-job cells. This notebook is only the operator surface:
-two cells, run once each, top to bottom.
+run cell 1 once, then start the shared queue through `mcp-colab` or use
+cell 2 as a manual fallback.
 
 ## How to run a session
 
-1. **Runtime → Change runtime type → T4.** The queue exists to fill a GPU;
+1. **Runtime → Change runtime type → T4.** Consumer Colab runtime
+   provisioning remains a manual UI action; this controller does not create
+   or stop account runtimes.
+2. **Run cell 1** — mounts Drive, prints this VM's identity, checks for a
+   managed peer before registering, and starts a small Drive-command watcher.
+   After `PREFLIGHT-OK`, `mcp-colab` can start the shared queue for this exact
+   boot ID without requiring cell 2.
+3. **Optional fallback — run cell 2** to start the shared queue manually if
+   the MCP command path is unavailable. The queue exists to fill a GPU;
    cell 2 refuses to start on a CPU runtime.
-2. **Run cell 1** — mounts Drive, prints this VM's identity (boot id, GPU,
-   RAM), registers it in `queue/runtime-sessions/`, and refuses if *another* managed
-   runtime is still fresh (ambiguous duplicate). If you genuinely want two
-   VMs, set `ALLOW_SECOND_RUNTIME = True` in the cell and re-run — the
-   queue lease then arbitrates writers.
-3. **Run cell 2** — starts the detached shared queue **once**. Safe to
-   re-run: a live runner is reported, a stale same-VM zombie is reaped, a
-   fresh heartbeat from another VM refuses.
 
 The queue then drains `JOBS.py` (per-runtime warmup → HF-cache restore →
 deps → assets → cache save) and every un-done `packs/<name>` — voice,
@@ -55,16 +56,20 @@ video, DevNest, eval packs all ride the same runner in the same VM.
 """
 
 MD_CELL1 = """\
-### Cell 1 — mount Drive + preflight this managed runtime
+### Cell 1 — mount Drive + register this managed runtime
 
 Checks for a fresh peer before registering this VM. If a peer is present,
 the cell refuses without leaving a heartbeat record. Otherwise it writes
 `queue/runtime-sessions/<boot_id>.json` and refreshes it on a background
-heartbeat. Resolve peers in Runtime > Manage Sessions.
+heartbeat, then starts a watcher for MCP queue-start requests targeted at
+this boot ID. Resolve peers in Runtime > Manage Sessions.
 """
 
 MD_CELL2 = """\
-### Cell 2 — start the shared queue once
+### Cell 2 — manual fallback to start the shared queue
+
+Prefer `mcp-colab` `colab_queue_start(boot_id)` after cell 1. Use this cell
+only when the MCP control path is unavailable.
 
 Runs the full gate before spawning: Drive mounted, GPU present, no fresh
 peer runtime, and runner liveness is **boot-scoped** (`queue/runner.id`

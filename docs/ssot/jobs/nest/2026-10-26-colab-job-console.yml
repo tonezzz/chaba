@@ -25,7 +25,7 @@ deliverables:
     registry: scripts/colab/runtime_registry.py
     runner: scripts/colab/queue-runner.py
     manifest: scripts/colab/JOBS.py
-  mcp: mcp-servers/mcp-colab/server.py  # +colab_session_status, pack_status fix
+  mcp: mcp-servers/mcp-colab/server.py  # session status + managed queue-start request
   procedure: docs/kb/colab-mcp-jobs.md  # job-console section + warmup rule
   lesson: colab-gpu-worker (post 2231, updated in place via board-api /lesson)
 
@@ -36,8 +36,10 @@ session_guard:
   rules:
     - 'cell 1 registers + heartbeats this VM; refuses while another managed runtime record is fresh (ambiguous duplicate)'
     - 'cell 2 refuses on: Drive unmounted, no GPU, fresh peer runtime, or a fresh queue heartbeat owned by another boot'
+    - 'cell 1 starts a Drive command watcher; mcp-colab can request queue start for the exact managed boot_id after explicit confirm'
     - 'deliberate dual-VM: ALLOW_SECOND_RUNTIME = True; queue lease remains the final writer arbiter'
     - 'never auto-stops anything; Google Runtime > Manage Sessions is authoritative for uninstrumented notebooks'
+    - 'consumer Colab runtime start/stop remains manual; no account upgrade or Enterprise runtime API is assumed'
   pid_safety:
     - 'queue/runner.id {pid,boot_id,worker,epoch,ts} is the only signalable identity; legacy runner.pid is never os.kill''d (PID numbers are per-VM on a shared Drive file)'
     - 'same-VM zombie (live pid + stale heartbeat) is reaped; foreign records untouched; runner removes its marks only while they still name it'
@@ -55,14 +57,19 @@ warmup_contract:
 
 tests:
   files: [tests/colab/test_runtime_registry.py,
-          tests/colab/test_job_console.py]
-  count: 21 (5 registry + 16 console/warmup/integration)
+          tests/colab/test_job_console.py,
+          tests/colab/test_mcp_colab_control.py]
+  count: 30 (5 registry + 20 console/warmup/control integration + 5 MCP control)
   covers:
     - CPU runtime + missing Drive -> queue start refused
     - fresh T4 + empty registry -> preflight + launch pass
     - fresh peer record -> launch blocked, peer boot_id named
+    - refused preflight leaves no heartbeat; targeted queue-start requests are acked and idempotent
+    - control watcher rejects requests without the explicit-confirmation bit
+    - mcp queue-start requires confirm, a fresh managed T4, no live runner, and reports its ack
     - foreign runner.id pid never signaled (PID collision); same-VM
       zombie reaped; foreign runner.id survives our runner's exit
+    - mcp-colab rejects stale sessions or a present runner identity and formats legacy registry records safely
     - warmup waits for pending prep, honors min floor + max cap
     - 'end-to-end runner drain: env jobs then packs in one VM'
   env_overrides_for_sandbox:
@@ -79,11 +86,15 @@ followups:
     runner.id was absent, and managed runtime records were older than the
     300s TTL; no queue markers or packs were changed.
   - >-
-    Live mcp-colab still does not expose source-defined colab_session_status.
-    Its configured Dell checkout is dirty; reconcile it or install from a
-    clean declared path before redeploying MCP tools. Full runtime
-    create/stop remains gated on official API support, GCP project, and a
-    user-approved time/budget cap.
+    Consumer-only lifecycle boundary: a user still starts/stops the Colab
+    runtime in Google UI; mcp-colab controls only fresh, instrumented
+    sessions and the shared queue. Uninstrumented account sessions remain
+    visible only in Runtime > Manage Sessions.
+  - >-
+    Deploy the MCP command path from Dell's exec checkout and reload the
+    client so the live tool list exposes colab_session_status and
+    colab_queue_start; do not use the dirty frozen mirror.
 verify: >-
   python3 -m unittest tests.colab.test_runtime_registry
-  tests.colab.test_job_console  (21 tests OK on mn01, 2026-10-26)
+  tests.colab.test_job_console tests.colab.test_mcp_colab_control
+  (30 tests OK, consumer-only MCP queue start, 2026-10-26)

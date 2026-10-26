@@ -452,17 +452,21 @@ servers:
 '
   mcp-colab:
     name: Colab Pack Control Plane
-    description: Submit/status/result for Drive-pack jobs on the Colab T4 worker + tunnel/model probes
-    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-colab/server.py
-    wrapper: mcp-single-instance.sh
+    description: Submit/status/result and managed-session queue control for an already-started consumer Colab T4; no runtime provisioning
+    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-colab/server.py
+    wrapper: none
     pattern: mcp-colab/server.py
     filter: none
-    single_instance: true
+    single_instance: false
     status: operational
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'Added to SSOT 2026-10-26 (AUD-0886) - was live in mcp_config.json but unregistered.
+    notes: 'Uses the Dell exec checkout, not the frozen served mirror. Concurrent instances
+      are safe: submissions refuse overwrite, and queue-start requests are unique/idempotent
+      against the queue lease. Consumer Colab runtime start/stop remains UI-only; this MCP
+      controls only managed Drive sessions and cannot enumerate uninstrumented account
+      sessions. No Colab Enterprise/GCP runtime provisioning.
 
       '
   google-home-lan:
