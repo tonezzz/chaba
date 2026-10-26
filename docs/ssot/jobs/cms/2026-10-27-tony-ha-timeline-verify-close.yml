@@ -1,0 +1,65 @@
+title: tony-ha LINE timeline — verified already-live, card closed
+subtitle: >-
+  HOM-0647 (create tony-ha timeline tracking report/feed) was fulfilled
+  live on 2026-10-14 within ~1 min of the LINE-group ask; the card sat
+  in backlog 13 days. Verified by surface + producer, closed done.
+id: 2026-10-27-tony-ha-timeline-verify-close
+status: done
+owner: devin-dispatch
+project: chaba
+card: create-tony-ha-timeline-10bf18
+branch: dispatch/20261027-053429-create-tony-ha-timeline-tony-r
+started: "2026-10-27"
+
+context:
+  user_request: >
+    Tony requested in a LINE group (2026-10-14 14:46 ICT, captured by ada)
+    to create a "tony-ha timeline" tracking report/feed.
+
+finding:
+  interpretation: >
+    The ask was answered live on 2026-10-14: the tony-ha LINE chat lane got
+    a WP timeline page + timeline_block under the boards chat>line tree,
+    synced from the LINE journal. WP page 71 is literally titled
+    "tony-ha timeline", modified 2026-10-14T07:47:25Z — one minute after
+    the request. The multi-lane line-chat-timeline.py commit followed at
+    14:48 (kk-ha + tony-ha lanes), ada-ha wired 14:51 (ADA-0648).
+  artifacts:
+    surface: >
+      WP page 71 "tony-ha timeline" — private, slug tony-ha, parent 33
+      (chat>line tree), https://boards.surf-thailand.com/wp/chat/line/tony-ha/
+      (per-lane private visibility — unauthenticated REST returns 401, not 404).
+    feed: >
+      timeline_block post 69 "tony-ha LINE chat" (slug chat-tony-ha,
+      private) — modified 2026-10-26T22:37:23, still being rebuilt.
+    producer: >
+      line-chat-timeline.timer on idc03, 5-min cadence — last fired
+      2026-10-27 05:37 ICT; state file wp-timeline-state.json touched at
+      same minute. LANES map: tony-ha -> chat C4fb0ce548a58e2d758335b7e21ce3411,
+      block 69 (scripts/ada/line-chat-timeline.py).
+    source: >
+      LINE journal dir ~/.local/share/ada/line-media/C4fb0ce.../ on idc03 —
+      newest journal 2026-10-17 (group idle since, not a pipeline break).
+
+verify:
+  done_in_session:
+    - "WP REST /wp/v2/timeline_block/69 -> exists (401 unauth on public edge; via app-password on idc03: status private, modified 2026-10-26)"
+    - "WP REST /wp/v2/pages/71 -> 'tony-ha timeline', private, parent 33"
+    - "ssh idc03: line-chat-timeline.timer active, LAST=05:37 today; state.json mtime matches"
+    - "journal-2026-10-17.jsonl tail shows in/out chaba persona messages"
+  consumer_and_producer: >
+    Verified by surface, not just service — both the WP posts (consumer
+    surface) and the timer/journal (producer) are fresh.
+
+actions:
+  - "card comment posted with evidence; /action do:close -> moved to done"
+  - "follow-up filed: house-timeline-orphaned-feed-repoint (HOM-0918) — the
+     OTHER tony-ha-adjacent timeline (house-timeline family in ada-cms-pages)
+     is orphaned: house-timeline.timer gone with the tony-dell drain, pages
+     frozen 2026-10-13; kind=events docs in ada-ha-events-tony stalled
+     2026-10-23 (ops-event stream still flows). Needs a new timer home +
+     events collector repoint to the current HA URL."
+
+no_new_infra: >
+  No code/config changes needed — the requested artifact exists and is
+  live. This record is the trail for the verification + closure only.
