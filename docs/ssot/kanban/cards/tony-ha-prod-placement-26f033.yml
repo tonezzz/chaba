@@ -1,7 +1,7 @@
 id: tony-ha-prod-placement-26f033
 title: tony-ha-prod-placement
 column: doing
-updated: 2026-10-26 17:28
+updated: 2026-10-26 17:34
 priority: high
 spec: 'DECISION for Tony: where should prod tony-ha live? Context: omen (current) is a laptop that may sleep + going
   through maintenance; dell is slated to become a minimal spare box per approved 2026-10-21 drain plan; mn01 is
@@ -31,7 +31,27 @@ comms:
   from: devin
   text: 'Dispatch started: verifying tony-ha deployment type, LAN device dependencies, and mn01 capacity; will produce
     decision doc + request.'
+- at: 2026-10-26 17:34
+  from: devin
+  text: 'raised request prod-tony-ha-host-a-mn01-recommended-if-bbf110: Prod tony-ha host? (a) ★mn01 — recommended
+    IF you commit it always-on: verified live on 192.168.2.x (reaches TONY-TV/cam'
 action:
   type: dispatch
   status: running
   runner: mn01
+requests:
+- id: prod-tony-ha-host-a-mn01-recommended-if-bbf110
+  ask: 'Prod tony-ha host? (a) ★mn01 — recommended IF you commit it always-on: verified live on 192.168.2.x (reaches
+    TONY-TV/cams direct), already the home-cam/cast box, HA keeps working locally even if WAN/tailnet drops; needs
+    ~1G on its 7G (fits). Caveat: mn01 was intermittently OFF-net mid-Oct (3d outage Oct14-17, unreachable Oct16)
+    — the always-on role is being assumed, not yet proven; BIOS AC-restore + leave-powered closes it. (b) keep omen
+    — declared lan-hub, headless 24/7 since Oct23, zero migration, but every maintenance reboot kills home control
+    (Oct25 outage); mn01 then becomes the HOM-0855 cold standby. (c) idc03 — REJECTED: kills LAN control (cast/RTSP/esphome/LAN
+    plugs). Full research: docs/ssot/jobs/home-assistant/2026-10-26-tony-ha-prod-placement-decision.yml'
+  status: open
+  at: 2026-10-26 17:34
+  from: devin
+  options:
+  - a) mn01 — always-on commit
+  - b) keep omen + mn01 standby
+  - c) idc03
