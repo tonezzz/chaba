@@ -1,7 +1,7 @@
 id: devnest-news-two-lane-pilot
 title: News reporter A/B pilot — Devin vs DevNest
 column: backlog
-updated: 2026-10-26 11:34
+updated: 2026-10-27 05:34
 brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
   gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
   leaves. This is an evaluation plan, not permission to publish or run paid models.
@@ -105,6 +105,9 @@ comms:
 - at: 2026-10-26 11:34
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
 requests:
 - id: choose-news-visibility-architecture
   ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
@@ -146,4 +149,6 @@ requests:
   suggested: deterministic-only-shadow
   answer: 'deterministic-only-shadow — Recommended: build/run a private deterministic-only tree smoke on a frozen
     public corpus; validates source links, branches, privacy and idempotency, but not LLM summary quality'
-awaiting_action: true
+action:
+  type: dispatch
+  status: queued
