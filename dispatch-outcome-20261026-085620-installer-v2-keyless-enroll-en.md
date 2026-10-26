@@ -29,18 +29,21 @@ board request `need-a-new-dns-capable-cloudflare-token-15edf9` is moot.**
 - Verified: `https://app.surf-thailand.com/install` → 200 (v2 script);
   `/` → 302 → /install; `POST /enroll` → 200 + node registry write.
 
-### 3. `/enroll` contract re-verified on both edges
+### 3. `/enroll` contract re-verified end-to-end on both edges
 
-- `POST https://api.surf-thailand.com/enroll` → 200, node upserted into
-  `nodes.json` (input-bridge registry).
-- `POST https://app.surf-thailand.com/enroll` → 200, same.
-- The ops-event emit (`host_online` doc → `ada-ha-events-tony`, the
-  stick-announce contract) briefly returned `event_error:"fetch failed"`
-  during this session because **primary mddb on idc03 was stopped 08:46
+- `POST https://api.surf-thailand.com/enroll` → `200 {ok,event:true}` —
+  node upserted into `nodes.json` **and** the `host_online` ops-event doc
+  landed in `ada-ha-events-tony` (verified via `filterMeta
+  written_by=input-bridge-enroll`).
+- `POST https://app.surf-thailand.com/enroll` → `200 {ok,event:true}`,
+  same doc shape (`ops-host-enroll-*`, stick-announce meta).
+- During the session the emit briefly returned `event_error:"fetch
+  failed"` because **primary mddb on idc03 was stopped 08:46
   mid-compaction** (card mddb-storage-reduction-retention-relocation;
   `mddb-compact.db` finished 08:56 but nobody swapped/restarted for ~16
-  min, consumers failing). Restarted `mddb.service` at 09:02 on the
-  cleanly-shutdown `mddb.db`; compact file left staged — heads-up posted
+  min and consumers were failing). Restarted `mddb.service` at 09:02 on
+  the cleanly-shutdown `mddb.db`; back to `200` at ~09:07 after the
+  normal ~5.5-min cold load. Compact file left staged — heads-up posted
   on the storage card.
 
 ### SSOT trail
