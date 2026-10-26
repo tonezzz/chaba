@@ -1,7 +1,7 @@
 id: audit-phantom-claim-no-call
 title: 'Ada session audit: phantom:claim-no-call (4d seen)'
 column: doing
-updated: 2026-10-26 08:30
+updated: 2026-10-26 08:46
 brief: 'Recurring session-audit signature ''phantom:claim-no-call'': action claimed with no tool call in the window
   — 17x on 2026-10-13, seen on 4 day(s).'
 priority: medium
@@ -42,6 +42,13 @@ comms:
   from: devin
   text: 'investigating phantom:claim-no-call — evidence: "ปิด coffee plug ให้แล้ว" (session-2026-10-13). Pulling
     audit report + transcript/journal to classify.'
+- at: 2026-10-26 08:46
+  from: devin
+  text: 'VERDICT: audit-detector bug, not an Ada tool bug. Session 183e9c8d7e call-log proves Ada DID call control_entity(switch.coffee_plug,turn_off)->ok:true
+    at 16:17:28Z, 4s before the claim — inside the window. Root cause: audit keyed call positions off the app''s
+    inner journal ts (host-local +07) while transcript turns are UTC → every call landed +7h off → every claim flagged
+    (248 corpus rows/8+ days). The ok:true was itself fabricated (ghost entity — real plug switch.plakkaaaef_local):
+    that part alr'
 action:
   repo: chaba
   type: dispatch
