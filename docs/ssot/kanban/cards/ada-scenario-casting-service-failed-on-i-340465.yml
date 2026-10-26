@@ -1,39 +1,48 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: backlog
-updated: 2026-10-12 22:30
+updated: 2026-10-26 08:21
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
   from: devin
-  text: 'Found in board sweep 2026-10-12: unit is in failed state on idc03. Gated by ada-bench-casting
-    preflight — check journalctl -u ada-scenario-casting for the actual error before rerun.'
+  text: 'Found in board sweep 2026-10-12: unit is in failed state on idc03. Gated by ada-bench-casting preflight
+    — check journalctl -u ada-scenario-casting for the actual error before rerun.'
 - at: 2026-10-12 17:28
   from: devin
-  text: 'root cause found: NOT a code bug — scenario lock :8199 held >30min by a concurrent run (02:00-02:30
-    10-12), suite timed out waiting and exited 1. Lock is free now; rerun should pass. Watch: if the nightly
-    fires while another suite holds the lock, this recurs — consider serialize-by-timer or stagger.'
+  text: 'root cause found: NOT a code bug — scenario lock :8199 held >30min by a concurrent run (02:00-02:30 10-12),
+    suite timed out waiting and exited 1. Lock is free now; rerun should pass. Watch: if the nightly fires while
+    another suite holds the lock, this recurs — consider serialize-by-timer or stagger.'
 - at: 2026-10-12 22:30
   from: devin
-  text: 'Still failed; next weekly run Fri 2026-10-16. Broader: smoke suite now failing auto-report-worthy
-    + cms_public_url_lane + cms-translate (new card).'
+  text: 'Still failed; next weekly run Fri 2026-10-16. Broader: smoke suite now failing auto-report-worthy + cms_public_url_lane
+    + cms-translate (new card).'
 - at: 2026-10-26 07:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-26 08:21
+  from: tony
+  text: 'answered the-weekly-ada-scenario-castin-b86681: ★ Implement serialize-by-timer or stagger for the nightly
+    suites to prevent lock :8199 contention and investigate the new smoke/cms failures.'
+- at: 2026-10-26 08:21
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
-  ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over
-    30 minutes by a concurrent run, and though the lock was freed, a rerun still failed and broader suite
-    failures have emerged (smoke suite, cms_public_url_lane, cms-translate). We need owner direction on
-    how to handle the broader suite failures and whether to implement a serialization or stagger mechanism
-    to prevent recurring lock contention.
+  ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
+    by a concurrent run, and though the lock was freed, a rerun still failed and broader suite failures have emerged
+    (smoke suite, cms_public_url_lane, cms-translate). We need owner direction on how to handle the broader suite
+    failures and whether to implement a serialization or stagger mechanism to prevent recurring lock contention.
   options:
-  - ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention
-    and investigate the new smoke/cms failures.
-  - Rerun the casting benchmark manually on idc03 now that the lock is free and ignore the broader suite
-    failures for this card.
-  - Defer this card until the next scheduled weekly run on Fri 2026-10-16 while focusing solely on the
-    newly created cms-translate card.
-  status: open
+  - ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention and investigate
+    the new smoke/cms failures.
+  - Rerun the casting benchmark manually on idc03 now that the lock is free and ignore the broader suite failures
+    for this card.
+  - Defer this card until the next scheduled weekly run on Fri 2026-10-16 while focusing solely on the newly created
+    cms-translate card.
+  status: answered
   at: 2026-10-26 07:20
   from: backlog-spec-enrich
+  answer: ★ Implement serialize-by-timer or stagger for the nightly suites to prevent lock :8199 contention and
+    investigate the new smoke/cms failures.
+awaiting_action: true
