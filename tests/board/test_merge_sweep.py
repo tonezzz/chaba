@@ -337,7 +337,9 @@ class Case(unittest.TestCase):
     def test_verified_stale_running_drains(self):
         # the observed stuck state: merged+verified but status still
         # 'running' and column 'doing' — the already-merged path runs
-        # the same close decision and flips both.
+        # the same close decision and flips both. Post-2026-10-26:
+        # verified+running is a field regression, not a stale session —
+        # NO stale_running flag/noise on a delivered card.
         card = self.write_card(
             column="doing",
             action={"type": "dispatch", "status": "running",
@@ -346,8 +348,75 @@ class Case(unittest.TestCase):
         c = self.read_card()
         self.assertEqual(c["column"], "done")
         self.assertEqual(c["action"]["status"], "done")
-        self.assertTrue((c["action"].get("sweep") or {})
-                        .get("stale_running"))
+        self.assertNotIn("stale_running",
+                         c["action"].get("sweep") or {})
+
+    def test_verified_session_gone_drains_not_flags(self):
+        # the 2026-10-26 nest-node-hardware resurrection: auto-merged +
+        # auto-closed at 07:16, then a union-merge/stale-write
+        # regression flipped the file back to doing+running while the
+        # runner's worktree was already GC'd. The sweep must re-close
+        # the card — never stamp stale_running/session_gone on a
+        # delivered one (merge-sweep-resurrects-closed-cards).
+        self._kill_session()
+        card = self.write_card(
+            column="doing",
+            auto_close={"by": "merge-sweep", "at": "2026-10-26 07:16",
+                        "note": "verified — closing itself"},
+            comms=[{"at": "2026-10-26 07:16", "from": "chaba",
+                    "text": "merge-sweep: verified — auto-closed "
+                            "(column -> done)"}],
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "done")
+        sweep = c["action"].get("sweep") or {}
+        self.assertNotIn("stale_running", sweep)
+        self.assertNotIn("session_gone", sweep)
+        self.assertFalse(any("may be gone" in m.get("text", "")
+                             for m in c.get("comms") or []), c["comms"])
+        # healed — the next pass leaves it alone
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+
+    def test_terminal_column_never_touched(self):
+        # a done card is out of scope even when action.status regressed
+        # to running — the sweep must not stamp, comment, or rewrite
+        # workflow fields on a card it did not open.
+        self.write_card(
+            column="done",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba"})
+        before = (self.cards / "test-card.yml").read_text()
+        card = self.read_card()
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        self.assertEqual((self.cards / "test-card.yml").read_text(),
+                         before)
+
+    def test_deliberate_reopen_not_redrained(self):
+        # a verified card reopened on purpose — the lifecycle guard's
+        # '[lifecycle] bounced done->doing' (or a human 'moved done
+        # ->') — owns its workflow fields; the drain must not fight it.
+        self._kill_session()
+        card = self.write_card(
+            column="doing",
+            auto_close={"by": "merge-sweep", "at": "2026-10-26 07:16",
+                        "note": "verified — closing itself"},
+            comms=[
+                {"at": "2026-10-26 07:16", "from": "chaba",
+                 "text": "merge-sweep: verified — auto-closed "
+                         "(column -> done)"},
+                {"at": "2026-10-26 08:49", "from": "chaba",
+                 "text": "[lifecycle] bounced done->doing — card "
+                         "declares a `verify:` criterion but closed "
+                         "with no evidence comms."}],
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "doing")
+        self.assertNotIn("session_gone", c["action"].get("sweep") or {})
 
     def test_verified_decide_card_holds_in_review(self):
         # review_kind:decide is Tony's call — verified but never
