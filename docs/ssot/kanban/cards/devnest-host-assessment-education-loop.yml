@@ -1,7 +1,7 @@
 id: devnest-host-assessment-education-loop
 title: DevNest skill -> Education post loop for host assessments
 column: doing
-updated: 2026-10-27 05:40
+updated: 2026-10-27 05:41
 brief: After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot
   and evidence policy.
 priority: medium
@@ -41,6 +41,11 @@ comms:
   from: devin
   text: skill found on tony-dell at ~/evals/tasks/devnest-host-assessment/; lesson baseline=lesson-00750611bace
     next_review=2026-11-01; running assess.py for the 6 fleet targets
+- at: 2026-10-27 05:41
+  from: devin
+  text: 'DONE: re-ran the loop on tony-dell — 6/6 targets assessed (0 SSH errors, read-only), verify.py 6/6 passed,
+    lesson post 2426 updated in place (next_review kept 2026-11-01, learned_at preserved). Also fixed ssot.devnest-lanes.yml:
+    skill is at ~/evals/tasks/devnest-host-assessment/, not ~/DevNest. Run record: docs/ssot/jobs/devnest/2026-10-27-host-assessment-education-loop-rerun.yml'
 action:
   type: dispatch
   status: running
