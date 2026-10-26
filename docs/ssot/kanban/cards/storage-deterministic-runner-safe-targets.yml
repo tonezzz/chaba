@@ -1,7 +1,7 @@
 id: storage-deterministic-runner-safe-targets
 title: Implement deterministic storage dry-run and guarded safe-cache cleanup
-column: backlog
-updated: 2026-10-26 13:15
+column: doing
+updated: 2026-10-26 13:16
 brief: Turn the verified OpenCode storage dry-run into a deterministic report/apply runner; start with safe OpenCode
   cache targets only.
 priority: high
@@ -27,7 +27,8 @@ action:
   type: dispatch
   repo: chaba
   host: tony-macbook
-  status: queued
+  status: running
+  runner: tony-macbook
 note: 'OpenCode dry-run already classified 99 candidates: only OpenCode caches/Trash were automatic_ok; no deletion
   occurred. Prior KNB-0903 dispatch lost its artifact, so this is a narrowed rerun with explicit files/tests and
   host pinning.'
@@ -36,3 +37,6 @@ comms:
 - at: 2026-10-26 13:15
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 13:16
+  from: tony-macbook
+  text: claimed
