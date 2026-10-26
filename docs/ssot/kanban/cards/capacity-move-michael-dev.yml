@@ -43,6 +43,13 @@ comms:
   from: devin
   text: 'Phase1 sweep done: consumers = idc02 caddy (surf + :8124 shadow), mha-state-push.svc, mcp_config idc03:9585,
     repo scripts, SSOT. Config+secrets already staged on idc02, image pulled, quadlet installed. Cutting over now.'
+- at: 2026-10-26 18:00
+  from: devin
+  text: 'DONE — michael-dev live on idc02. Verified: :8124 200 local+tailnet (https://idc02...:8124), ws auth_ok,
+    MCP :9585 initialize->ha-mcp 8.7.0, surf URL ->302 CF, /apps/ha/michael-dev->idc02, mha-state-push mirroring
+    60 ids. idc03 unit masked+stopped (24h rollback), serve :8124 removed. Repointed: caddy-edge surf+shadow, web
+    origin, mn01 caddy, mcp_config x3, scripts, 19 SSOT files + job trail 2026-10-26-michael-dev-idc02-move.yml.
+    Found+fixed: internal_url was still stale tony-dell since the 10-09'
 action:
   type: dispatch
   status: running
