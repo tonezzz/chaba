@@ -1,9 +1,9 @@
 id: fleet-installer-v2
 title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node registry)'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-26 08:33
+updated: 2026-10-26 08:56
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -95,6 +95,9 @@ comms:
 - at: 2026-10-26 08:33
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-26 08:56
+  from: idc02
+  text: claimed
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -131,7 +134,7 @@ spec: 'Installer v2 keyless enroll endpoint: share the existing /enroll contract
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   runner: idc02
   result: 'exit=0 ice: No such file or directory | devin-task-20261026-070642-installer-v2-keyless-enroll-en.service:
     Failed to open /run/user/1000/systemd/transient/devin-task-20261026-070642-installer-v2-keyless-enroll-en.service:
@@ -139,7 +142,6 @@ action:
   verified: true
   sweep:
     close_held: 2026-10-26 07:31
-awaiting_action: true
 review_kind: verify
 claim: {}
 auto_close:
