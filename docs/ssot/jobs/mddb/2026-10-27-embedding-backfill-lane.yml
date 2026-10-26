@@ -80,9 +80,11 @@ jobs:
       Ops-routed collections (recall-summary, scenario-reports)
       intentionally absent — keyword-ranked, no vectors needed.
     refresh: dispatcher every 1d on idc02 (driver off idc03).
-    seed: "2026-10-27: full-surface backfill in progress from idc02 —
-      ~6.9K docs todo across 23 collections (devin-tony bank was
-      already 2561/2561 from MEM-0805)."
+    seed: "2026-10-27: full-surface backfill delivered from idc02 —
+      7179 docs copied across 23 collections, 0 failed, 0 queue drops
+      (devin-tony bank was already 2561/2561 from MEM-0805; instance
+      totals 9740 docs). Embedding drains async through the pool —
+      ~7K embedded within the hour, tail finishes unattended."
 
 store_format: |
   One JSON object per line:
