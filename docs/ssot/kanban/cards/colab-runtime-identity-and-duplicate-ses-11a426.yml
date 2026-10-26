@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: doing
-updated: 2026-10-26 19:03
+updated: 2026-10-26 19:35
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -132,6 +132,13 @@ comms:
     Scope is managed-session visibility and hands-off queue control after a user manually starts a T4. Runtime start/stop
     and uninstrumented sessions remain Google UI responsibilities. Proceeding with the no-upgrade implementation;
     no jobs will auto-launch without an explicit queue-start action.'
+- at: 2026-10-26 19:35
+  from: devin
+  text: 'Consumer-only control implemented (no Colab Enterprise/GCP upgrade): cell 1 now registers a managed runtime
+    and runs a Drive command watcher; live mcp-colab tool list exposes colab_session_status, colab_queue_start (exact
+    boot_id + confirm=true), and colab_queue_request_status. Start is refused for stale/non-T4/non-Drive sessions
+    or when runner.id/heartbeat/lease indicates an active queue. Runtime create/stop and uninstrumented consumer
+    sessions remain Google-UI-only. The new preflight/notebook '
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
