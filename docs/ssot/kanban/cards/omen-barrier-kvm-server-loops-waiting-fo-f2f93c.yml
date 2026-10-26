@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: done
-updated: 2026-10-25 16:31
+updated: 2026-10-26 11:35
 action:
   type: manual
   status: done
@@ -44,6 +44,13 @@ comms:
 - at: 2026-10-25 16:31
   from: chaba
   text: 'answer-sweep: executed ''Retire the Barrier KVM server/client and its enforcement/wat'' -> moved to done'
+- at: 2026-10-26 11:35
+  from: devin
+  text: Barrier KVM retirement deployed from commit 9c559fced. On Omen, barriers.service and the stale barrier-client
+    unit are disabled/removed; on Dell, barrier-client, enforce-LAN and watchdog units/timers, legacy barrierc.service,
+    and the autostart entry are removed. No barrierd/barrierc processes or TCP/24800 listeners remain. barrier-pin-vt.timer
+    remains only for the physical Xorg/CRD seat; clipboard pollers remain independent. UFW still allows 24800 on
+    Omen; I did not use sudo without approval.
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
