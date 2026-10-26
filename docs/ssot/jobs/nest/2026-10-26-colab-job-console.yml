@@ -76,24 +76,22 @@ tests:
     NEST_ROOT, NEST_QUEUE, NEST_RUNTIME_TTL_S, NEST_QUEUE_SETTLE_S,
     WARMUP_MIN_S, WARMUP_MAX_S, PATH (nvidia-smi stub)
 
-followups:
-  - >-
-    Drive sync completed 2026-10-26 from the landed repo: runtime_registry.py,
-    preflight-cell.py, queue-launcher-cell.py, JOBS.py, runner.py, and
-    ada-nest-job-console.ipynb are checksum-verified against
-    gdrive:ada-nest/queue/. Only preflight-cell.py and the notebook differed
-    and were copied. Before sync, the queue heartbeat and lease were stale,
-    runner.id was absent, and managed runtime records were older than the
-    300s TTL; no queue markers or packs were changed.
-  - >-
-    Consumer-only lifecycle boundary: a user still starts/stops the Colab
-    runtime in Google UI; mcp-colab controls only fresh, instrumented
-    sessions and the shared queue. Uninstrumented account sessions remain
-    visible only in Runtime > Manage Sessions.
-  - >-
-    Deploy the MCP command path from Dell's exec checkout and reload the
-    client so the live tool list exposes colab_session_status and
-    colab_queue_start; do not use the dirty frozen mirror.
+deployment:
+  drive_sync: >-
+    Verified 2026-10-26: runtime_registry.py, preflight-cell.py,
+    queue-launcher-cell.py, JOBS.py, runner.py, and
+    ada-nest-job-console.ipynb match gdrive:ada-nest/queue/. Only
+    preflight-cell.py and the notebook differed and were copied. Before sync,
+    the queue heartbeat and lease were stale, runner.id was absent, and
+    managed runtime records were beyond the 300s TTL; no queue markers or
+    packs were changed.
+  mcp_server: >-
+    MCP config uses Dell's exec checkout; live tools verified:
+    colab_session_status, colab_queue_start, colab_queue_request_status.
+  queue_run: none; no queue command was issued during deployment.
+limitations:
+  - Consumer Colab runtime creation and stopping remain manual UI actions.
+  - Only runtimes registered by notebook cell 1 are visible to mcp-colab; uninstrumented sessions remain in Google Runtime > Manage Sessions.
 verify: >-
   python3 -m unittest tests.colab.test_runtime_registry
   tests.colab.test_job_console tests.colab.test_mcp_colab_control
