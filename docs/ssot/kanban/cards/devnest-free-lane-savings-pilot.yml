@@ -81,15 +81,20 @@ comms:
 - at: 2026-10-26 17:06
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 17:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 - at: 2026-10-26 17:18
   from: chaba
   text: 'answer-sweep: executed ''queue all three on tony-dell now — I am watching'' -> queued for processing'
 action:
   type: dispatch
   status: queued
+  runner: idc02
   result: 'exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing pushed or
     queued. | devin-task-20261026-164611-pilot-classes-1-docs-config-ch.service: Consumed 46.102s CPU time, 143.1M
     memory peak, 0B memory swap peak.'
+  verified: true
   sweep:
     close_held: 2026-10-26 17:01
 requests:
@@ -108,3 +113,8 @@ requests:
   executed: 2026-10-26 queue
 review_kind: verify
 claim: {}
+awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 17:16
+  note: verified — evidence checks green, closing itself
