@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:21
+updated: 2026-10-26 19:35
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -48,3 +48,10 @@ comms:
   text: 'Related existing card: `nest-efficiency-session-level-drive-gpu-bf7681` already plans per-session Drive/GPU
     metrics, but it is not a Kanban-wide cleanup audit and its previous report attempt hung on DriveFS reads. KNB-0909
     should consume that report when the timeout/Drive-read guard is fixed rather than duplicate its metrics.'
+- at: 2026-10-26 19:35
+  from: devin
+  text: 'Refresh (live cards.json generated 2026-10-26 19:32; supersedes the earlier 19:17 counts): 1,015 total;
+    170 open (128 backlog, 36 review, 4 doing, 2 lab). Open action states: 136 idle, 31 done-in-review, 3 queued,
+    0 running. The 31 review/done-action cards split into 17 verify + 14 triage; `action.verified` is true on 8,
+    false on 5, unset on 18, so none should be bulk-closed. 24 open cards have answered requests but no active action.
+    Two requests remain open: (1) PWA document intake missing targ'
