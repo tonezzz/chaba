@@ -1,7 +1,7 @@
 id: devnest-telegram-team-channel
 title: Connect DevNest household AI team to Telegram group
 column: backlog
-updated: 2026-10-26 10:19
+updated: 2026-10-26 13:28
 brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
   as a team.
 priority: high
@@ -31,3 +31,10 @@ comms:
 - at: 2026-10-26 10:19
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-26 13:28
+  from: devin
+  text: 'Assessment: a dedicated TonyDvnstBot is the right direction, but do not put all TG keys or conversation
+    data inside the DevNest HA container. Keep the bot token in host-only ~/.config/secrets/telegram-devnest-bot.env
+    (prefer this canonical name over tg-tony-devnest-bot.env), with TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_IDS,
+    TELEGRAM_USER_CALLERS, TELEGRAM_MODE, TG_WEBHOOK_LISTEN, TG_PERSONA_NAME. Run a dedicated devnest-tg-relay.service
+    on an unused loopback port, not the parked devnest-ha con'
