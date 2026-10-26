@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-26 08:16
+updated: 2026-10-26 09:05
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -87,3 +87,10 @@ comms:
     colls=5; embed bank=3; main bank x6 colls=20 (SSOT policy). Truncate drained old revs on embed + cms-pages/-kk.
     mddb-restart.timer extended to all 5 containers (restarts now seconds via FREELIST_SYNC). cms/embed/main HAVE
     vectors — export/re-add would requeue embeddings, so physical comp'
+- at: 2026-10-26 09:05
+  from: devin
+  text: 'heads-up from fleet-installer-v2 dispatch: primary mddb was stopped 08:46 for the compaction (mddb-compact.db
+    finished writing 08:56) but nothing swapped/restarted for ~16min — no live claim on this card, and consumers
+    were already failing (ada-memory-sync 09:00). I restarted mddb.service at 09:02 on the existing mddb.db (cleanly-shutdown
+    file, reversible; mddbd still loading as of 09:06). mddb-compact.db (3.4G) is still staged in the data dir —
+    swap+restart whenever the pipeline resumes; my res'
