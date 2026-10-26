@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-26 16:32
+updated: 2026-10-26 16:45
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -97,6 +97,13 @@ comms:
     in the console preflight, so a refused duplicate does not leave a fresh managed-runtime record. Regression test
     added; 21 Colab unittest cases pass. This does not create/manage Google runtimes; full lifecycle still needs
     an approved runtime platform, budget cap, and deployment of the current MCP server.'
+- at: 2026-10-26 16:45
+  from: tony
+  text: 'answered what-hard-runtime-limit-should-any-futur-4feda6: Auto-start/stop only with a hard cap; specify
+    max hours and compute budget.'
+- at: 2026-10-26 16:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
@@ -117,13 +124,14 @@ requests:
 - id: what-hard-runtime-limit-should-any-futur-4feda6
   ask: What hard runtime limit should any future automatic Colab lifecycle control enforce? Please specify maximum
     hours and whether paid compute is allowed.
-  status: open
+  status: answered
   at: 2026-10-26 15:24
   from: devin
   options:
   - Manual T4 start only (no automatic runtime creation or stop).
   - Auto-start/stop only with a hard cap; specify max hours and compute budget.
   - Prefer a self-managed GPU worker instead of Colab.
+  answer: Auto-start/stop only with a hard cap; specify max hours and compute budget.
 - id: which-platform-should-the-hands-off-cont-860ab1
   ask: Which platform should the hands-off controller target? Colab Enterprise enables official runtime APIs but
     is billable and project-scoped; consumer Colab stays UI-started.
