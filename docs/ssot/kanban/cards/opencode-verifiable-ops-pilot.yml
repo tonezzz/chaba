@@ -1,0 +1,35 @@
+id: opencode-verifiable-ops-pilot
+title: Run five OpenCode read-only ops reports with Devin verification
+column: backlog
+updated: 2026-10-26 14:57
+brief: Delegate a small set of real read-only ops reports to OpenCode and have Devin independently verify every
+  artifact.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- devin
+- verification
+- read-only
+- ops-pilot
+spec: 'Run a minimum delegation pilot using fresh OpenCode sessions and the verified mcp-debug-readonly profile.
+  Jobs: (1) host health snapshot, (2) storage dry-run candidate report, (3) dispatch worktree/task safety audit,
+  (4) service/config drift report, (5) backup/log retention status. Each job must have target_host, exact JSON artifact
+  schema, read-only tool allowlist, no mutation, and deterministic verifier. OpenCode produces the report; Devin
+  independently verifies the artifact/evidence and marks pass/fail, without trusting OpenCode''s narrative. Record
+  input/cache/output tokens, wall time, retries, denied tools, artifact validity, Devin verification, and escalation.
+  Send one Telegram summary only after all five results are verified. No production changes, cleanup apply, deployments,
+  secrets, or broad MCP tools. Acceptance: 5 artifacts landed, 5 independent Devin verifications, 0 mutations, 0
+  unverified completion claims; failures remain review with evidence.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'Minimum useful next step: prove OpenCode can delegate recurring read-only work while Devin serves as independent
+  verifier. Existing host health and storage dry-run evidence seed the pilot; the remaining jobs are deliberately
+  low-risk.'
+ref: DEV-0908
+comms:
+- at: 2026-10-26 14:57
+  from: tony
+  text: card captured via board-api
