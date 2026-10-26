@@ -1,9 +1,9 @@
 id: devnest-fl-pilot-doc
 title: 'DevNest free-lane pilot 1/3: docs/config change on OpenCode flash-lite'
 column: backlog
-updated: 2026-10-26 16:51
-brief: Supervised pilot job — write a small deterministic docs artifact on
-  the free OpenCode lane; matched against devin-lane run devnest-free-pilot-doc.
+updated: 2026-10-26 17:42
+brief: Supervised pilot job — write a small deterministic docs artifact on the free OpenCode lane; matched against
+  devin-lane run devnest-free-pilot-doc.
 priority: medium
 program: ai-workforce
 tags:
@@ -12,48 +12,42 @@ tags:
 - free_lane
 - savings
 - pilot
-spec: 'Create docs/reports/devnest-fl-pilot-1-doc.md containing exactly these
-  headings: Purpose, Target lane, Model, Pilot metrics checklist, Done gate.
-  Purpose: pilot job 1 of devnest-free-lane-savings-pilot (OPS-0885) — prove
-  a docs/config-class chore runs end-to-end on the free OpenCode lane.
-  Target lane: free_lane via OpenCode executor, model
-  litellm/gemini-3.5-flash-lite. Pilot metrics checklist: cost per passed
-  gate; gate + merge success; human intervention minutes. Write the file
-  first, then verify the headings exist. Do not modify any other file, do
-  not run tests, do not push manually — the runner closeout commits, pushes,
-  gates, and merges.
-  PILOT DECLARATIONS: target_host=tony-dell; base_ref=origin/master;
-  verifier=file exists at docs/reports/devnest-fl-pilot-1-doc.md with all
-  five headings + branch auto-merges via runner closeout;
-  expected_artifact=docs/reports/devnest-fl-pilot-1-doc.md;
-  stop_condition=halt and mark failed if the file cannot be written after
-  one retry or if any path outside docs/reports/ is touched; this run does
-  not count as a free-lane datapoint unless the executor is opencode
-  (meta.json executor starts with opencode:).'
+spec: 'Create docs/reports/devnest-fl-pilot-1-doc.md containing exactly these headings: Purpose, Target lane, Model,
+  Pilot metrics checklist, Done gate. Purpose: pilot job 1 of devnest-free-lane-savings-pilot (OPS-0885) — prove
+  a docs/config-class chore runs end-to-end on the free OpenCode lane. Target lane: free_lane via OpenCode executor,
+  model litellm/gemini-3.5-flash-lite. Pilot metrics checklist: cost per passed gate; gate + merge success; human
+  intervention minutes. Write the file first, then verify the headings exist. Do not modify any other file, do not
+  run tests, do not push manually — the runner closeout commits, pushes, gates, and merges. PILOT DECLARATIONS:
+  target_host=tony-dell; base_ref=origin/master; verifier=file exists at docs/reports/devnest-fl-pilot-1-doc.md
+  with all five headings + branch auto-merges via runner closeout; expected_artifact=docs/reports/devnest-fl-pilot-1-doc.md;
+  stop_condition=halt and mark failed if the file cannot be written after one retry or if any path outside docs/reports/
+  is touched; this run does not count as a free-lane datapoint unless the executor is opencode (meta.json executor
+  starts with opencode:).'
 pilot:
   class: docs-config-change
   target_host: tony-dell
   base_ref: origin/master
-  verifier: docs/reports/devnest-fl-pilot-1-doc.md exists with headings
-    Purpose/Target lane/Model/Pilot metrics checklist/Done gate; branch
-    auto-merges
+  verifier: docs/reports/devnest-fl-pilot-1-doc.md exists with headings Purpose/Target lane/Model/Pilot metrics
+    checklist/Done gate; branch auto-merges
   expected_artifact: docs/reports/devnest-fl-pilot-1-doc.md
-  stop_condition: fail after one retry; no writes outside docs/reports/;
-    executor must be opencode to count as free-lane datapoint
+  stop_condition: fail after one retry; no writes outside docs/reports/; executor must be opencode to count as free-lane
+    datapoint
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   baseline_pair: devnest-free-pilot-doc (devin lane, wall 57.9s, merged)
-  run_record: docs/ssot/jobs/devnest/pilot-runs/<date>-devnest-fl-pilot-doc.yml
-    per docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+  run_record: docs/ssot/jobs/devnest/pilot-runs/<date>-devnest-fl-pilot-doc.yml per docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
 action:
   type: dispatch
   repo: chaba
   host: tony-dell
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
+  status: queued
 comms:
 - at: 2026-10-26 16:51
   from: devin
-  text: 'pilot card defined per OPS-0885 contract — backlog, not queued;
-    supervisor queues after confirming OPENCODE_LANES=1 on tony-dell.
-    Job doc: docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml'
+  text: 'pilot card defined per OPS-0885 contract — backlog, not queued; supervisor queues after confirming OPENCODE_LANES=1
+    on tony-dell. Job doc: docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml'
+- at: 2026-10-26 17:42
+  from: devin
+  text: queued for processing
