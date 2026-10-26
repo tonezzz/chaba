@@ -36,6 +36,9 @@ Env:
     GEMINI_API_KEY   or the secrets files above
     NEWS_DIGEST_LLM  chat-local (default; any LiteLLM alias) | gemini
     LITELLM_URL/LITELLM_KEY  else read from mddb-gemini.env
+    NEWS_VEC_CACHE   embed-lane news-nomic.jsonl — precomputed title
+                     vectors (card embedding-backfill-lanes); hits skip
+                     the embed call, misses append back to the store
 """
 import argparse
 import base64
@@ -44,6 +47,7 @@ import html
 import json
 import os
 import re
+import struct
 import sys
 import urllib.parse
 import urllib.request
@@ -153,16 +157,85 @@ def _load_litellm():
     return env.get("LITELLM_URL"), env.get("LITELLM_KEY")
 
 
-def embed(texts, url, key):
-    """OpenAI-style embeddings via LiteLLM (ollama-nomic-embed — local, free)."""
-    req = urllib.request.Request(
-        url.rstrip("/") + "/embeddings",
-        data=json.dumps({"model": "ollama-nomic-embed",
-                         "input": texts}).encode(),
-        headers={"Authorization": f"Bearer {key}",
-                 "Content-Type": "application/json"})
-    d = json.loads(urllib.request.urlopen(req, timeout=120).read())
-    return [x["embedding"] for x in d["data"]]
+def _embed_cache():
+    """Precomputed title vectors from the embed-lane (card
+    embedding-backfill-lanes). NEWS_VEC_CACHE points at the
+    news-nomic.jsonl store; rows match embed-lane.py's format —
+    {key, hash, v(b64 f32)} where hash = sha1(norm(title))[:16]."""
+    path = os.environ.get(
+        "NEWS_VEC_CACHE",
+        os.path.expanduser(
+            "~/.local/share/embed-lane/news-nomic.jsonl"))
+    if not os.path.exists(path):
+        return {}
+    cache = {}
+    try:
+        for line in open(path):
+            try:
+                r = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if r.get("space") == "nomic-embed-text" and r.get("v"):
+                cache[r["hash"]] = r["v"]
+    except OSError:
+        return {}
+    return cache
+
+
+def _thash(text):
+    return hashlib.sha1(text.encode()).hexdigest()[:16]
+
+
+def _b64d(s):
+    return list(struct.unpack(
+        f"<{len(base64.b64decode(s)) // 4}f", base64.b64decode(s)))
+
+
+def _b64e(v):
+    return base64.b64encode(struct.pack(f"<{len(v)}f", *v)).decode()
+
+
+def embed(texts, url, key, slugs=None):
+    """OpenAI-style embeddings via LiteLLM (ollama-nomic-embed — local,
+    free). Reuses NEWS_VEC_CACHE vectors where the normalized title is
+    unchanged; fresh embeds append back to the cache so the digest also
+    keeps the store warm."""
+    cache = _embed_cache()
+    out, miss = [None] * len(texts), []
+    for i, t in enumerate(texts):
+        v = cache.get(_thash(t))
+        if v:
+            out[i] = _b64d(v)
+        else:
+            miss.append(i)
+    if miss:
+        req = urllib.request.Request(
+            url.rstrip("/") + "/embeddings",
+            data=json.dumps({"model": "ollama-nomic-embed",
+                             "input": [texts[i] for i in miss]}).encode(),
+            headers={"Authorization": f"Bearer {key}",
+                     "Content-Type": "application/json"})
+        d = json.loads(urllib.request.urlopen(req, timeout=120).read())
+        for i, x in zip(miss, d["data"]):
+            out[i] = x["embedding"]
+        path = os.environ.get("NEWS_VEC_CACHE")
+        if path:
+            try:
+                with open(path, "a") as f:
+                    for i in miss:
+                        f.write(json.dumps({
+                            "key": (slugs or {}).get(i) or _thash(texts[i]),
+                            "space": "nomic-embed-text",
+                            "model": "ollama-nomic-embed",
+                            "prefix": "", "hash": _thash(texts[i]),
+                            "text": texts[i][:400], "meta": {},
+                            "v": _b64e(out[i])},
+                            ensure_ascii=False) + "\n")
+            except OSError:
+                pass
+    if cache:
+        print(f"embed cache: {len(texts)-len(miss)}/{len(texts)} hits")
+    return out
 
 
 def cos(a, b):
@@ -178,7 +251,8 @@ def cluster(items, threshold):
     texts = [norm(p["title"]["rendered"]) for p in items]
     try:
         url, key = _load_litellm()
-        embs = embed(texts, url, key)
+        slugs = {i: p.get("slug") for i, p in enumerate(items)}
+        embs = embed(texts, url, key, slugs=slugs)
         sim = lambda a, b: cos(embs[a], embs[b])
     except Exception as e:
         print(f"warn: embeddings unavailable ({e}) — ngram fallback",

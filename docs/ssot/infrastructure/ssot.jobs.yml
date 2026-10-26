@@ -319,6 +319,57 @@ jobs:
     via mddb-vector-reindex.service(.d) — lost with that host 2026-10-12;
     declared here 2026-10-22 (OPS-0763). Same script stays wired to
     mddb.service ExecStartPost + mddb-embed-probe on idc03.
+- id: embed-lane-news
+  name: Embed lane — news title vectors (nomic) refresh
+  host: idc03
+  dispatch: dispatcher
+  every: 1h
+  timeout: 5m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py news --dir %h/.local/share/embed-lane --hours 26
+  env_file: '%h/.config/secrets/litellm-chaba.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/embed/embed-lane.py'
+  note: 'card embedding-backfill-lanes — keeps ~/.local/share/embed-lane/
+    news-nomic.jsonl warm: nomic vectors (ollama-nomic-embed via LiteLLM,
+    LB idc02+idc03) over published news titles, normalized exactly like
+    news-digest.py so the :20 hourly digest run reuses them via its
+    NEWS_VEC_CACHE default path instead of re-embedding every window.
+    Resume-safe (sha1 of norm(title)); 26h window covers the 36h digest
+    horizon with slack. Fresh misses inside news-digest append back to
+    the same file, so the store self-heals between refreshes.'
+- id: embed-lane-lessons
+  name: Embed lane — lesson CPT vectors (nomic) refresh
+  host: idc03
+  dispatch: dispatcher
+  every: 1d
+  timeout: 10m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py lessons --dir %h/.local/share/embed-lane
+  env_file: '%h/.config/secrets/litellm-chaba.env'
+  condition_path: '%h/CascadeProjects/chaba/scripts/embed/embed-lane.py'
+  note: 'card embedding-backfill-lanes — keeps ~/.local/share/embed-lane/
+    lessons-nomic.jsonl current: every WP lesson CPT post (via board-api
+    /lesson op=list+get — no WP creds on the host) chunked ~1500c and
+    embedded in the nomic space for edu-review recall
+    (embed-lane.py recall --store lessons). Resume-safe on content hash;
+    changed lessons re-embed only their chunks. Daily cadence — lessons
+    change rarely.'
+- id: embed-lane-banks
+  name: Embed lane — MDDB bank sync into mddb-embed (bge-m3)
+  host: idc02
+  dispatch: dispatcher
+  every: 1d
+  timeout: 45m
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py banks
+  condition_path: '%h/CascadeProjects/chaba/scripts/embed/embed-lane.py'
+  note: 'card embedding-backfill-lanes — keeps the self-owned local bank
+    (mddb-embed :11028, bge-m3 space via embed-pool-shim, MEM-0788/0805)
+    in sync with the 24 vector-searched leader+CMS collections
+    (BANK_COLLS). /add copies are cheap; vectors land through the target
+    embed queue racing idle ollama cores. Queue-depth throttled (pauses
+    at 3000/4000) and resume-safe, so a daily run only copies the delta.
+    Driver on idc02 to keep it off idc03; embed work is fleet-pooled.'
 - id: device-telemetry
   name: Device telemetry beacon (lost-device locate)
   host: tony_omen
