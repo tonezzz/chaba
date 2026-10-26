@@ -1,7 +1,7 @@
 id: vcast-program-design
 title: vcast program — lane map, drain order, dispatch plan
 brief: Tracker card that maps all the TV-casting work and the order to do it in. For orientation — no action needed.
-column: doing
+column: review
 priority: high
 note: 'Design/tracker for the vcast-* family (program: vcast). Repo lanes: chaba {vcast-app, vcast-cast-lane, vcast-ha-screens,
   vcast-health-loop, vcast-input-bridge}; ada-pi {vcast-scenarios}. Drain order: (1) vcast-health-loop + vcast-cast-lane
@@ -9,7 +9,7 @@ note: 'Design/tracker for the vcast-* family (program: vcast). Repo lanes: chaba
   vcast-app, vcast-ha-screens; (3) vcast-scenarios LAST — regression gate. Constraints: vcast-ha-screens verification
   touches tony-ha — promotion to live hosts needs explicit Tony approval; a dispatched session must stage and verify
   on michael-dev only. cast-browser rides the tony-omen GPU — record the single-point in SSOT when auditing.'
-updated: 2026-10-26 07:19
+updated: 2026-10-26 07:20
 comms:
 - at: '2026-10-05'
   from: devin
@@ -71,6 +71,10 @@ comms:
 - at: 2026-10-26 07:19
   from: chaba
   text: started devin-task-20261026-071943-design-the-vcast-program-lane- on tony-macbook (dispatch)
+- at: 2026-10-26 07:20
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-071943-design-the-vcast-program-lane-.service: Failed with result
+    ''exit-code''. | devin-task-2'
 ref: MED-0425
 spec: Design the vcast program lane map, drain order, and dispatch plan for the vcast-* family across the chaba
   and ada-pi repos. Follow the strict drain order starting with vcast-health-loop and vcast-cast-lane (documenting
@@ -81,12 +85,13 @@ spec: Design the vcast program lane map, drain order, and dispatch plan for the 
   specified repo lanes, drain phases, and constraints.
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-131322-design-the-vcast-program-lane-.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261025-131322-design-the-vcast-program-lane-.service:
-    Failed with result ''exit-code''.'
+  status: done
+  result: 'exit=0 devin-task-20261026-071943-design-the-vcast-program-lane-.service: Failed with result ''exit-code''.
+    | devin-task-20261026-071943-design-the-vcast-program-lane-.service: Consumed 2.778s CPU time over 1.330s wall
+    clock time, 29.3M memory peak.'
   sweep:
     session_gone: 2026-10-25 20:16
   runner: tony-macbook
+  verified: true
 review_kind: verify
 claim: {}
