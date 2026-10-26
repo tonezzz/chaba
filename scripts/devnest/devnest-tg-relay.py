@@ -25,6 +25,8 @@ import os
 import re
 import threading
 import time
+import hashlib
+import tempfile
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -51,6 +53,12 @@ STATE_DIR = Path(os.environ.get(
     "DEVNEST_TELEGRAM_STATE",
     str(Path.home() / ".local/share/devnest/telegram"),
 ))
+PROJECTS_DIR = Path(os.environ.get(
+    "DEVNEST_PROJECTS_DIR",
+    str(Path.home() / ".local/share/devnest/projects"),
+))
+MAX_DOCUMENT_BYTES = int(os.environ.get(
+    "DEVNEST_MAX_DOCUMENT_BYTES", str(20 * 1024 * 1024)))
 OFFSET_FILE = STATE_DIR / "state.json"
 UPDATES_FILE = STATE_DIR / "updates.jsonl"
 AUDIT_FILE = STATE_DIR / "audit.jsonl"
@@ -144,6 +152,167 @@ def _send_text(chat_id: int, text: str, thread_id: int | None = None) -> None:
     _api("sendMessage", params)
 
 
+def _safe_filename(name: str) -> str:
+    """Keep uploaded names useful without allowing path traversal."""
+    base = Path(name or "telegram-document").name
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", base).strip(".-")
+    return (base or "telegram-document")[:180]
+
+
+def _download_document(document: dict) -> tuple[Path, str, int]:
+    """Download one bounded Telegram document and return path, hash, bytes."""
+    size = int(document.get("file_size") or 0)
+    if size > MAX_DOCUMENT_BYTES:
+        raise ValueError(
+            f"document is {size} bytes; limit is {MAX_DOCUMENT_BYTES}")
+    file_info = _api("getFile", {"file_id": document["file_id"]})
+    file_path = str((file_info.get("result") or {}).get("file_path") or "")
+    if not file_path or ".." in Path(file_path).parts:
+        raise ValueError("Telegram returned an unsafe file path")
+    url = f"{API_BASE}/file/bot{BOT_TOKEN}/{file_path}"
+    name = _safe_filename(document.get("file_name") or file_path)
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(
+        prefix=".telegram-", suffix=".part", dir=PROJECTS_DIR)
+    digest = hashlib.sha256()
+    count = 0
+    try:
+        with os.fdopen(fd, "wb") as out, urlopen(url, timeout=60) as source:
+            while True:
+                chunk = source.read(1024 * 1024)
+                if not chunk:
+                    break
+                count += len(chunk)
+                if count > MAX_DOCUMENT_BYTES:
+                    raise ValueError(
+                        f"document exceeded {MAX_DOCUMENT_BYTES} bytes")
+                digest.update(chunk)
+                out.write(chunk)
+        sha = digest.hexdigest()
+        project_dir = PROJECTS_DIR / f"kk-video-{sha[:12]}"
+        (project_dir / "source").mkdir(parents=True, exist_ok=True)
+        destination = project_dir / "source" / name
+        Path(temp_name).replace(destination)
+        manifest = {
+            "project_id": project_dir.name,
+            "source": {
+                "filename": name,
+                "sha256": sha,
+                "bytes": count,
+                "telegram_file_size": size or count,
+            },
+            "status": "intake_downloaded",
+            "next": "requirements_extraction",
+            "at": _now(),
+        }
+        (project_dir / "project.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+        return destination, sha, count
+    except Exception:
+        try:
+            Path(temp_name).unlink()
+        except FileNotFoundError:
+            pass
+        raise
+
+
+def _ensure_project_card(project_id: str, source_name: str, sha: str,
+                         caption: str) -> dict:
+    """Create one private board project per source hash, idempotently."""
+    for card in (_board_get("/cards").get("cards") or []):
+        if str(card.get("id") or "") == project_id:
+            return card
+    return _board_post("/card", {
+        "id": project_id,
+        "title": f"KK short movie — {source_name}",
+        "column": "backlog",
+        "priority": "high",
+        "program": "devnest",
+        "tags": ["kk", "video", "devnest", "project"],
+        "brief": (
+            f"KK short-video intake from {source_name}; "
+            f"source sha256={sha}. Requirements extraction and planning pending."
+        ),
+        "spec": (
+            "Assess the attached KK source material for a short movie. "
+            "Preserve page/source provenance, extract requirements, identify "
+            "rights/consent risks, and prepare a creative brief, story beats, "
+            "script, storyboard, shot list, asset matrix, preview plan, and "
+            "QC plan before asking Tony. Telegram caption: " + caption[:500]
+        ),
+        "on_exists": "error",
+    })
+
+
+def _document_is_pdf(document: dict) -> bool:
+    name = str(document.get("file_name") or "").lower()
+    mime = str(document.get("mime_type") or "").lower()
+    return mime == "application/pdf" or name.endswith(".pdf")
+
+
+def _handle_document(update: dict, msg: dict, chat_id: int,
+                     thread_id: int | None) -> None:
+    document = msg.get("document") or {}
+    if not _document_is_pdf(document):
+        _audit({
+            "update_id": update.get("update_id"),
+            "message_id": msg.get("message_id"),
+            "chat_id": chat_id,
+            "result": "refused",
+            "detail": "only PDF documents are accepted",
+        })
+        _send_text(chat_id, f"[{SPEAKER}] intake refused: send a PDF document",
+                   thread_id)
+        return
+    try:
+        destination, sha, count = _download_document(document)
+        project_id = destination.parents[1].name
+        card = _ensure_project_card(
+            project_id,
+            str(document.get("file_name") or destination.name),
+            sha,
+            str(msg.get("caption") or ""),
+        )
+        manifest_path = destination.parents[1] / "project.json"
+        manifest = json.loads(manifest_path.read_text())
+        manifest["card_id"] = card.get("id") or project_id
+        manifest["card_ref"] = card.get("ref")
+        manifest["caption"] = str(msg.get("caption") or "")[:1000]
+        manifest["status"] = "intake_ready"
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
+        _audit({
+            "update_id": update.get("update_id"),
+            "message_id": msg.get("message_id"),
+            "chat_id": chat_id,
+            "result": "document_downloaded",
+            "project_id": project_id,
+            "card_id": card.get("id") or project_id,
+            "card_ref": card.get("ref"),
+            "sha256": sha,
+            "bytes": count,
+        })
+        _send_text(
+            chat_id,
+            f"[{SPEAKER}] INTAKE downloaded\n"
+            f"project={project_id}\nsha256={sha[:12]}\n"
+            f"card={card.get('ref') or card.get('id')}\n"
+            "next=requirements extraction",
+            thread_id,
+        )
+    except Exception as exc:
+        LOG.warning("document intake failed: %s", exc)
+        _audit({
+            "update_id": update.get("update_id"),
+            "message_id": msg.get("message_id"),
+            "chat_id": chat_id,
+            "result": "document_failed",
+            "detail": str(exc)[:240],
+        })
+        _send_text(chat_id, f"[{SPEAKER}] INTAKE failed: {str(exc)[:240]}",
+                   thread_id)
+
+
 def _record(update: dict, msg: dict, chat: dict, sender: dict,
             topic: str, thread_id: int | None, lane: str,
             authorized: bool) -> None:
@@ -167,6 +336,14 @@ def _record(update: dict, msg: dict, chat: dict, sender: dict,
     }
     if authorized and TEXT_POLICY != "metadata-only":
         event["text"] = text
+    document = msg.get("document")
+    if document:
+        event["document"] = {
+            "filename": _safe_filename(document.get("file_name") or ""),
+            "mime_type": document.get("mime_type"),
+            "bytes": document.get("file_size"),
+            "file_id_present": bool(document.get("file_id")),
+        }
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     with UPDATES_FILE.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(event, ensure_ascii=False) + "\n")
@@ -476,6 +653,9 @@ def handle_update(update: dict) -> None:
             )
         return
     if handle_command(update, msg, chat_id, sender, topic, thread_id):
+        return
+    if msg.get("document"):
+        _handle_document(update, msg, chat_id, thread_id)
         return
     message_id = msg.get("message_id")
     LOG.info("captured update=%s chat=%s sender=%s topic=%s lane=%s",
