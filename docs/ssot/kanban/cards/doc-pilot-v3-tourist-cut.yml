@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-26 19:05
+updated: 2026-10-26 19:13
 priority: medium
 tags:
 - ada-nest
@@ -138,6 +138,12 @@ comms:
   from: devin
   text: 'raised request doc-v3-ltx-next-path: Read-only checks found no host with the 13GiB free RAM required for
     T5-XXL embeddings for LTX shots 8-9. No embedding jo'
+- at: 2026-10-26 19:13
+  from: tony
+  text: 'answered doc-v3-ltx-next-path: static-only-while-waiting'
+- at: 2026-10-26 19:13
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -174,7 +180,7 @@ requests:
 - id: doc-v3-ltx-next-path
   ask: Read-only checks found no host with the 13GiB free RAM required for T5-XXL embeddings for LTX shots 8-9.
     No embedding job has run. Which safe path should I take?
-  status: open
+  status: answered
   at: 2026-10-26 19:05
   from: devin
   options:
@@ -187,4 +193,5 @@ requests:
   - id: wait-for-memory-node
     label: Pause LTX work until a host with at least 13GiB free RAM is available
   suggested: static-only-while-waiting
+  answer: static-only-while-waiting
 awaiting_action: true
