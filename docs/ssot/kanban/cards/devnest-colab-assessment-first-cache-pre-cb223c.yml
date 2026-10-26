@@ -1,7 +1,7 @@
 id: devnest-colab-assessment-first-cache-pre-cb223c
 title: DevNest Colab assessment-first cache preparation
 column: doing
-updated: 2026-10-26 11:36
+updated: 2026-10-26 11:42
 brief: Define and stage a cache-independent DevNest assessment that runs in the same T4 queue window while the next
   package’s model cache is prepared.
 priority: high
@@ -74,6 +74,13 @@ comms:
 - at: 2026-10-26 11:36
   from: chaba
   text: started devin-task-20261026-043602-standard-sequence-stage-all-jo on mn01 (dispatch)
+- at: 2026-10-26 11:42
+  from: devin
+  text: 'Dispatch started on mn01. Drive audit: 45 pack dirs, only doc-vo-v3 queued (undone) — that is the T4 package.
+    Drive JOBS.py is stale rev9 (inline GPU jobs) vs canonical lean manifest; runner.py predates runner.id/QUEUE_PENDING;
+    notebook is old thin-cell build. Plan: define cache-independent held-out assessment as a JOBS entry just before
+    save-hf-cache (hides the multi-minute cache repack under GPU work), back-port 2 Drive-side pack.yml live patches
+    (doc-vo-ss1 v6 beats, nasa-embeds fetch fields)'
 action:
   type: dispatch
   status: running
