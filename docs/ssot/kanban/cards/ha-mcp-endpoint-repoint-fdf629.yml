@@ -1,0 +1,16 @@
+id: ha-mcp-endpoint-repoint-fdf629
+title: ha-mcp-endpoint-repoint
+column: backlog
+updated: 2026-10-26 07:43
+priority: high
+spec: 'Repoint 3 dead HA MCP bridges found by AUD-0886: (1) home-assistant tony-dell:9584 -> tony-omen:9584 once
+  omen is back (tony-ha container was evacuated there 2026-10-19/20); (2) michael-dev tony-dell:9585 -> idc03:9585
+  (container migrated to idc03 2026-10-09, URL never updated); (3) michael-ha tony-dell:19584 -> restart michael-ha-mcp-tunnel.service
+  on dell OR point URL directly at the michael-ha host (100.80.105.88, alive/idle on tailnet). Update ~/.config/devin/mcp_config.json
+  + ssot.mcp.yml + ssot.home-assistant.mcp.yml.'
+note: Verify each with mcp_list_tools after repoint.
+ref: HOM-0887
+comms:
+- at: 2026-10-26 07:43
+  from: tony
+  text: card captured via board-api
