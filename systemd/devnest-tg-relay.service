@@ -1,0 +1,20 @@
+[Unit]
+Description=DevNest Telegram capture relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/secrets/telegram-devnest-bot.env
+Environment=DEVNEST_TELEGRAM_STATE=%h/.local/share/devnest/telegram
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest-tg-relay.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ReadWritePaths=%h/.local/share/devnest/telegram
+ProtectHome=read-only
+
+[Install]
+WantedBy=default.target
