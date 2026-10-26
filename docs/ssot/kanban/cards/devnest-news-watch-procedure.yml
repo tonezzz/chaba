@@ -1,7 +1,7 @@
 id: devnest-news-watch-procedure
 title: 'DevNest news watch: detect milestones and update news reports'
-column: doing
-updated: 2026-10-27 05:36
+column: review
+updated: 2026-10-27 05:37
 brief: Keep DevNest news reports current as the system advances, without turning every routine run into a news item.
 priority: medium
 program: ai-workforce
@@ -35,7 +35,16 @@ comms:
 - at: 2026-10-27 05:36
   from: chaba
   text: started devin-task-20261026-223603-daily-weekly-scan-sources-boar on mn01 (dispatch)
+- at: 2026-10-27 05:37
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
+    Main process exited, cod'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
