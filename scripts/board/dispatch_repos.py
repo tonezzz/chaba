@@ -851,15 +851,108 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
             "failed": failed[:8] or tail or ["pytest exited nonzero"]}
 
 
-def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
-    """Do not blame a change for a failure already present on base.
+def _gate_failfast_strip(cmd: str) -> str:
+    """The gate command without -x/--exitfast so a red suite enumerates
+    EVERY failure, not just the first. -rf is appended when the command
+    carries no -r summary flag — without it pytest may not print the
+    FAILED nodeid lines the parser reads."""
+    parts = [p for p in shlex.split(cmd)
+             if p not in ("-x", "--exitfirst")]
+    if not any(re.fullmatch(r"-r[A-Za-z]*", p) for p in parts):
+        parts.append("-rf")
+    return " ".join(shlex.quote(p) for p in parts)
 
-    A branch is still rejected when it introduces a new failing test or
-    changes the failure set. The baseline run is isolated in a temporary
-    detached worktree and removed after the comparison.
+
+def _gate_failures(wt: Path, repo_name: str) -> tuple:
+    """Complete failing-nodeid set under the repo's gate command
+    (failfast stripped). (set, meta) — set() only when the run actually
+    proved emptiness (suite green); None when it can't prove anything
+    (timeout, pytest missing, infra) and the caller must keep the hold.
+    """
+    cfg = test_gate_config(repo_name)
+    cmd = cfg.get("command")
+    if not cmd:
+        return None, {"skipped": "no test config"}
+    if not _PY_LEAD_RE.match(cmd):
+        # enumeration is pytest-shaped — a make/npm/custom gate gets no
+        # baseline compare; the branch result stands
+        return None, {"command": cmd, "skipped": "non-pytest gate"}
+    cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
+    cmd = _gate_failfast_strip(cmd)
+    try:
+        r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
+                           capture_output=True, text=True,
+                           timeout=int(cfg["timeout"]))
+    except subprocess.TimeoutExpired:
+        return None, {"command": cmd,
+                      "error": f"enumeration timed out after "
+                               f"{cfg['timeout']}s"}
+    out = f"{r.stdout or ''}\n{r.stderr or ''}"
+    if r.returncode != 0 and re.search(
+            r"No module named .?pytest|command not found", out):
+        return None, {"command": cmd, "skipped": "pytest unavailable"}
+    return set(_FAILED_SUMMARY_RE.findall(out)), {
+        "command": cmd, "python": py or "python3", "rc": r.returncode}
+
+
+def _baseline_failures(base_wt: Path, repo_name: str,
+                       nodeids: list) -> "set | None":
+    """Which of the branch's failing `nodeids` also fail on the
+    baseline tree — the same focused failures run against base. A
+    nodeid pytest can't collect there (new test file, renamed case) is
+    absent from the result and therefore counts as NEW. None = can't
+    prove (timeout / pytest missing) — the hold must stand."""
+    if not nodeids:
+        return set()
+    cfg = test_gate_config(repo_name)
+    if not cfg.get("command") or \
+            not _PY_LEAD_RE.match(cfg["command"]):
+        return None
+    _, py = _resolve_gate_cmd(cfg["command"], base_wt, repo_name, cfg)
+    interp = py or "python3"
+    # nodeids run ONE PER pytest call: a single missing pathspec (a
+    # branch-only test file) makes pytest exit 4 and run nothing,
+    # which would misclassify every pre-existing failure as new.
+    failed = set()
+    deadline = time.time() + int(cfg["timeout"])
+    for nodeid in nodeids[:48]:      # beyond this the suite is red
+        if time.time() > deadline:   # enough that no compare is safe
+            return None
+        cmd = " ".join([shlex.quote(interp), "-m", "pytest", "-q",
+                        "-rf", "--tb=no", shlex.quote(nodeid)])
+        try:
+            r = subprocess.run(["bash", "-c", cmd], cwd=str(base_wt),
+                               capture_output=True, text=True,
+                               timeout=120)
+        except subprocess.TimeoutExpired:
+            return None
+        out = f"{r.stdout or ''}\n{r.stderr or ''}"
+        if r.returncode != 0 and re.search(
+                r"No module named .?pytest|command not found", out):
+            return None
+        if nodeid in _FAILED_SUMMARY_RE.findall(out):
+            failed.add(nodeid)
+    return failed
+
+
+def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
+    """Do not blame a change for failures already present on base —
+    and never let a pre-existing failure hide a new one.
+
+    The -x gate reports only the FIRST failure, so a red branch run is
+    re-enumerated without failfast (a new failure sorting after a
+    pre-existing one would otherwise ride in unseen — the 2026-10-26
+    OpenCode README-marker incident class). The same focused nodeids
+    then run on a detached baseline worktree: failures identical to
+    base are classified pre-existing; anything absent on base still
+    holds the merge. Any comparison step that can't prove its set
+    leaves the hold in place — suppression needs evidence, not doubt.
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    enum, meta = _gate_failures(wt, repo_name)
+    if not enum:
         return branch
     root = _repo_root(Path(wt))
     if root is None:
@@ -870,7 +963,8 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
                 str(base_wt), base_ref], timeout=120)
         if r.returncode:
             return branch
-        base = run_test_gate(base_wt, repo_name)
+        base_failed = _baseline_failures(base_wt, repo_name,
+                                         sorted(enum))
     finally:
         sh(["git", "-C", str(root), "worktree", "remove", "--force",
             str(base_wt)], timeout=60)
@@ -878,14 +972,20 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
             base_wt.rmdir()
         except OSError:
             pass
-    branch_failed = set(branch.get("failed") or [])
-    base_failed = set(base.get("failed") or [])
-    if branch.get("ran") and base.get("ran") and not base.get("ok") \
-            and branch_failed and branch_failed == base_failed:
-        branch = dict(branch)
-        branch.update(ok=True, baseline_failed=sorted(base_failed),
-                      skipped="pre-existing baseline test failure")
-    return branch
+    if base_failed is None:
+        return branch
+    new = sorted(enum - base_failed)
+    out = dict(branch)
+    out.update(command=meta.get("command") or branch.get("command"),
+               baseline_failed=sorted(enum & base_failed))
+    if new:
+        out["failed"] = new[:8]
+        out["error"] = (f"{len(new)} new failure(s) vs base "
+                        f"({len(enum & base_failed)} pre-existing)")
+    else:
+        out.update(ok=True,
+                   skipped="pre-existing baseline test failure")
+    return out
 
 
 # ---------------------------------------------------------- shadow guard
@@ -1197,17 +1297,24 @@ def close_out_notes(res: dict) -> list:
                      + ", ".join(res["conflicts"][:8])
                      + " — card stays in review for manual resolution")
         return notes
+    tests = res.get("tests") or {}
     if res.get("test_failures"):
         # names ride this note into action.last_failure via the caller —
         # the retry session starts knowing exactly what broke
         names = ", ".join(str(f) for f in res["test_failures"][:6])
-        notes.append(f"test gate failed — merge held: {names}")
+        pre = len(tests.get("baseline_failed") or [])
+        notes.append(f"test gate failed — merge held: {names}"
+                     + (f" (+{pre} pre-existing baseline failure(s))"
+                        if pre else ""))
         return notes
-    tests = res.get("tests") or {}
     if tests.get("skipped"):
         notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
-        if tests.get("ran"):
+        if tests.get("baseline_failed"):
+            notes.append("test gate: failure(s) identical to base "
+                         "(pre-existing) — not blocking: "
+                         + ", ".join(tests["baseline_failed"][:6]))
+        elif tests.get("ran"):
             notes.append(f"test gate passed ({tests['command']}, "
                          f"{tests.get('elapsed', '?')}s)")
         notes.append(res.get("note") or "auto-merged")

@@ -1,0 +1,74 @@
+title: Baseline-aware merge test gate — pre-existing failures classified, never suppressed
+subtitle: enumerate the full failure set (no -x), re-run the same focused nodeids on base, hold only for failures absent on base
+icon: shield
+date: 2026-10-26
+card: dispatch-test-baseline-awareness
+status: done
+project: chaba
+program: chaba-ci
+ref: OPS-0879
+
+summary:
+  - |
+    The 2026-10-26 incident: an OpenCode closeout probe whose only diff
+    was a README marker was held at merge because
+    `tests/ada/test_tg_forward_provenance.py::TestHandleTurns::
+    test_forwarded_document_described` went red in the merged
+    worktree — the identical `UnboundLocalError(turn_ok)` @
+    tg_relay.py:1216 already fails on origin/master. A same-day first
+    pass (010af8dc5) compared the branch's `-x` first-failure against a
+    full baseline suite run with equality. This dispatch reproduced the
+    incident and found the remaining gaps:
+
+    1. **The -x blind spot (a suppression hole).** The gate command is
+       `pytest tests -x -q` — failfast reports only the FIRST failure.
+       A new failure sorting AFTER a pre-existing one never entered the
+       compared set, so branch {pre-existing} == base {pre-existing}
+       passed while a brand-new failure rode in — exactly what the gate
+       exists to stop.
+    2. **Equality was over-strict.** A branch that fixed one of two
+       red tests produced a different set and was held despite adding
+       no new failure.
+    3. **Baseline ran the whole suite again** — ~3min on chaba, and a
+       baseline-side timeout silently kept the hold.
+
+  - |
+    `baseline_aware_test_gate` now:
+
+    - runs the branch gate as before (`-x` fast path for green merges);
+    - on red, re-enumerates WITHOUT failfast (`-x`/`--exitfirst`
+      stripped, `-rf` appended so FAILED nodeid lines always print) —
+      the complete branch failure set;
+    - creates a detached baseline worktree at the merge base and runs
+      the same focused nodeids there ONE PER pytest call (a single
+      missing pathspec — a branch-only test file — makes pytest exit 4
+      and run nothing, which would misclassify every pre-existing
+      failure as new);
+    - classifies: failures identical to base → `baseline_failed`
+      (pre-existing); anything absent on base → `failed` and the merge
+      holds. Collection-error "names" are file paths and re-run as
+      file pathspecs, so identical import crashes on base also
+      classify correctly.
+    - Conservative on doubt: timeout / pytest-missing / unparseable /
+      non-pytest gate commands leave the hold standing — suppression
+      needs evidence, not the benefit of the doubt.
+
+  - |
+    Validated live on a sandbox clone of origin/master (9e70ccc):
+
+    - **OpenCode README-marker probe**: merged tree red on 5 tests, all
+      5 identical on base → `ok: true`, classified pre-existing, merge
+      allowed — the incident no longer holds.
+    - **Source-changing regression probe** (1-line break in
+      scripts/bench-edu-rejudge.py): the new failure sorts AFTER the
+      pre-existing set, invisible to -x — enumeration caught it;
+      `ok: false`, `failed` names only the new test, `baseline_failed`
+      lists the 5 pre-existing. New failures are never suppressed.
+
+verify: |
+  - tests/board/test_dispatch_close_out.py — 4 new baseline tests
+    (identical-failure merges, new failure holds, late-sorting new
+    failure not suppressed, branch-only nodeid is new); 195/195
+    tests/board green.
+  - `python3 .probe/drive.py <merged-wt> <base-ref>` driver output in
+    dispatch-outcome-20261026-082932-reproduce-tests-ada-test-tg-fo.md.
