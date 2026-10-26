@@ -80,6 +80,10 @@ comms:
     sessions. Enterprise needs a GCP project, runtime template, IAM permissions, billing, and charges for VM/GPU
     plus disks (even stopped runtimes retain disk charges); docs specify idle shutdown and automatic deletion defaults.
     Consumer Colab remains UI-started; no supported account-wid'
+- at: 2026-10-26 16:26
+  from: devin
+  text: 'raised request which-platform-should-the-hands-off-cont-860ab1: Which platform should the hands-off controller
+    target? Colab Enterprise enables official runtime APIs but is billable an'
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
@@ -107,4 +111,16 @@ requests:
   - Manual T4 start only (no automatic runtime creation or stop).
   - Auto-start/stop only with a hard cap; specify max hours and compute budget.
   - Prefer a self-managed GPU worker instead of Colab.
+- id: which-platform-should-the-hands-off-cont-860ab1
+  ask: Which platform should the hands-off controller target? Colab Enterprise enables official runtime APIs but
+    is billable and project-scoped; consumer Colab stays UI-started.
+  status: open
+  at: 2026-10-26 16:26
+  from: devin
+  options:
+  - 'Keep consumer Colab: manual T4 start, automate queue/status only (no new GCP billing).'
+  - 'Evaluate Colab Enterprise: project-level runtime create/list/start/stop, with explicit GCP project/region and
+    compute cap.'
+  - Use a self-managed GPU worker instead of Colab.
+  suggested: 'Keep consumer Colab: manual T4 start, automate queue/status only (no new GCP billing).'
 awaiting_action: true
