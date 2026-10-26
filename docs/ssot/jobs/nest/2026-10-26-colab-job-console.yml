@@ -70,13 +70,20 @@ tests:
     WARMUP_MIN_S, WARMUP_MAX_S, PATH (nvidia-smi stub)
 
 followups:
-  - rclone-deploy scripts/colab/{runtime_registry,preflight-cell,
-    queue-launcher-cell}.py + JOBS.py + ada-nest-job-console.ipynb to
-    gdrive:ada-nest/queue/ — Drive tree currently runs the equivalent
-    prior-session build; land repo first, then sync (needs push creds;
-    branch not pushed per dispatch rules)
-  - Drive copy and repo may differ in details — diff on next rclone sync
-    and keep the repo copy canonical going forward
+  - >-
+    Drive sync completed 2026-10-26 from the landed repo: runtime_registry.py,
+    preflight-cell.py, queue-launcher-cell.py, JOBS.py, runner.py, and
+    ada-nest-job-console.ipynb are checksum-verified against
+    gdrive:ada-nest/queue/. Only preflight-cell.py and the notebook differed
+    and were copied. Before sync, the queue heartbeat and lease were stale,
+    runner.id was absent, and managed runtime records were older than the
+    300s TTL; no queue markers or packs were changed.
+  - >-
+    Live mcp-colab still does not expose source-defined colab_session_status.
+    Its configured Dell checkout is dirty; reconcile it or install from a
+    clean declared path before redeploying MCP tools. Full runtime
+    create/stop remains gated on official API support, GCP project, and a
+    user-approved time/budget cap.
 verify: >-
   python3 -m unittest tests.colab.test_runtime_registry
   tests.colab.test_job_console  (21 tests OK on mn01, 2026-10-26)
