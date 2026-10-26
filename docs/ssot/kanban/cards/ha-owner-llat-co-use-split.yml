@@ -1,7 +1,7 @@
 id: ha-owner-llat-co-use-split
 title: Split shared Tony owner LLAT off chaba-guest / nodered / home-assistant-token.env, then revoke
-column: backlog
-updated: 2026-10-27 06:47
+column: doing
+updated: 2026-10-27 06:56
 brief: 'Found during ha-ada-isolation Phase B (2026-10-15): the Tony OWNER LLAT that Ada lanes used is still shared
   by three non-Ada consumers on tony-dell — chaba-guest.env (HOME_ASSISTANT_TOKEN), nodered-ha.env (HASS_TOKEN),
   home-assistant-token.env (HA_LONG_LIVED_TOKEN). Ada lanes moved to svc-ada already; revoking the owner token now
@@ -26,6 +26,10 @@ comms:
 - at: 2026-10-27 06:47
   from: tony
   text: queued for processing
+- at: 2026-10-27 06:56
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
