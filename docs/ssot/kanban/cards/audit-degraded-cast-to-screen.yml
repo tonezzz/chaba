@@ -1,7 +1,7 @@
 id: audit-degraded-cast-to-screen
 title: 'Ada session audit: degraded:cast_to_screen (4d seen)'
 column: doing
-updated: 2026-10-26 17:39
+updated: 2026-10-26 17:45
 brief: 'Recurring session-audit signature ''degraded:cast_to_screen'': cast_to_screen -> degraded — 2x on 2026-10-14,
   seen on 4 day(s).'
 priority: medium
@@ -39,6 +39,13 @@ comms:
 - at: 2026-10-26 17:39
   from: chaba
   text: started devin-task-20261026-173945-investigate-ada-session-audit- on tony-macbook (dispatch)
+- at: 2026-10-26 17:45
+  from: devin
+  text: 'VERDICT: tool bug — already diagnosed+fixed (staged) under ADA-0684 drop 10. cast_to_screen returns relay
+    /pub ACK verbatim: ok:true+delivered:0 (display offline) narrated as success. Live occurrences: 4x 10-10, 2x
+    10-14 (session 4029a6447f), 1x 10-17; ZERO since — quiet because the offline-screen path hasnt been hit, NOT
+    because fixed. Verified live idc03 ada-voice @59562cf: no _pub_truth, none of drop 10 deployed. Staged screens.delivered-zero.patch
+    still applies cleanly (3/3 hunks vs main). A'
 action:
   type: dispatch
   status: running
