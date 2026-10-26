@@ -1,7 +1,7 @@
 id: devnest-news-two-lane-pilot
 title: News reporter A/B pilot — Devin vs DevNest
 column: backlog
-updated: 2026-10-26 08:58
+updated: 2026-10-26 08:59
 brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
   gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
   leaves. This is an evaluation plan, not permission to publish or run paid models.
@@ -32,3 +32,27 @@ comms:
 - at: 2026-10-26 08:58
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 08:59
+  from: devin
+  text: 'raised request choose-news-visibility-architecture: For internal DevNest/AdaNest/*-HA updates, which privacy
+    boundary should the News hierarchy use? The existing news CPT i'
+requests:
+- id: choose-news-visibility-architecture
+  ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
+    news CPT is public and its current digest writer publishes parents, so internal facts must not be mixed into
+    the public digest without a guard.
+  status: open
+  at: 2026-10-26 08:59
+  from: devin
+  options:
+  - id: single-cpt-status-partition
+    label: 'Recommended for one inspectable tree: reuse the existing news CPT; external items publish, internal
+      items stay private, and every parent inherits the most restrictive child visibility. Requires privacy-filter
+      tests before ingestion.'
+  - id: separate-private-project-news
+    label: Keep existing public News for external stories and add a separate private project_news CPT for DevNest/AdaNest/HA/internal
+      experiments.
+  - id: external-only-first
+    label: Run the pilot on public external news only; use sanitized internal fixtures and defer internal ingestion/CPT
+      choice.
+  suggested: single-cpt-status-partition
