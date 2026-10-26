@@ -107,6 +107,10 @@ comms:
     (non-cloned), 4 beats timed to the 7-shot arc; gentle synthesized surf ambience sidechain-ducked; Thai burned
     captions + EN/TH title + Ada Nest credit; original full_story.mp4 untouched. QC: video-qc.py all green + manual
     rubric (motion continuity'
+- at: 2026-10-26 17:43
+  from: devin
+  text: 'raised request final-cut-v1-is-on-gdrive-ada-nest-rende-c7d96a: Final cut v1 is on gdrive:ada-nest/renders/golden-hour-catch-final/
+    (teaser mp4 + manifest + caption/VO sources). Please'
 requests:
 - id: choose-golden-hour-catch-final-length
   ask: What target should we finish Golden Hour Catch to? The existing assembled cut is 14.292s, 7 shots, and silent.
@@ -141,6 +145,21 @@ requests:
     label: Write a brief in-character line for fisherman Kaow instead of a narrator
   suggested: neutral-thai-narrator
   answer: 'neutral-thai-narrator — Recommended: concise neutral Thai narrator with light ambience'
+- id: final-cut-v1-is-on-gdrive-ada-nest-rende-c7d96a
+  ask: 'Final cut v1 is on gdrive:ada-nest/renders/golden-hour-catch-final/ (teaser mp4 + manifest + caption/VO
+    sources). Please review the rendered file and pick the close-out: approve as final, list fixes, or approve +
+    also publish to WP media (note: uploads URLs are anonymous-fetchable).'
+  status: open
+  at: 2026-10-26 17:43
+  from: devin
+  options:
+  - id: approve-final
+    label: 'Recommended: approve v1 as the final 14s teaser; card closes, no WP publish'
+  - id: approve-and-wp
+    label: Approve v1 AND upload to WP media so it is linkable/embeddable like the original (public-fetchable)
+  - id: needs-fixes
+    label: List fixes in comms (VO pacing, caption text, ambience level, credit line, etc.) — I will cut v2
+  suggested: approve-final
 action:
   type: dispatch
   status: running
