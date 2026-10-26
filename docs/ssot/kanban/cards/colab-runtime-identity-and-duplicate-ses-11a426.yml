@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-26 16:27
+updated: 2026-10-26 16:32
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -91,6 +91,12 @@ comms:
     region, runtime template and IAM permissions. Runtimes are billable for VM/GPU and storage; official docs show
     default idle shutdown (180 min) and auto-delete (18 h), with disk charges while stopped. This is the supported
     route for hands-off runtime lifecycle, but it does not manage c'
+- at: 2026-10-26 16:32
+  from: devin
+  text: 'Local safety improvement landed: commit edb3ecd10 moves peer detection ahead of registration/heartbeat
+    in the console preflight, so a refused duplicate does not leave a fresh managed-runtime record. Regression test
+    added; 21 Colab unittest cases pass. This does not create/manage Google runtimes; full lifecycle still needs
+    an approved runtime platform, budget cap, and deployment of the current MCP server.'
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
