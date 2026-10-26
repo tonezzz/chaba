@@ -1,7 +1,7 @@
 id: embedding-backfill-lanes
 title: Embedding backfill lane — nomic re-embed MDDB banks/lessons/news on idle hosts
 column: doing
-updated: 2026-10-27 05:37
+updated: 2026-10-27 05:40
 priority: medium
 note: 'Bursty CPU+embed work for idle idc cores. edu-embed-migration already in flight (education-store card review);
   extend pattern: nomic via litellm ollama-nomic-embed on idc02 (once #chat-local up) or existing idc03 ollama.
@@ -30,6 +30,13 @@ comms:
 - at: 2026-10-27 05:37
   from: chaba
   text: started devin-task-20261027-053659-embedding-backfill-lane-nomic- on idc02 (dispatch)
+- at: 2026-10-27 05:40
+  from: devin
+  text: '[dispatch idc02] picked up. Lane live: litellm ollama-nomic-embed answers from idc02 (768d). Plan: (1)
+    nomic-space store builder — lessons via board-api /lesson op=list+get, news titles via public WP REST; (2) MDDB
+    bank reindex rides the realized local lane = mddb-embed :11028 (bge-m3 via embed-pool, per MEM-0805 — bank space
+    settled on bge-m3, not nomic; nomic stays for lessons/news/digest-clustering). Building embed-lane.py + wiring
+    news-digest cache.'
 action:
   type: dispatch
   status: running
