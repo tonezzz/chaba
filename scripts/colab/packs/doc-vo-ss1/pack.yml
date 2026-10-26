@@ -1,10 +1,6 @@
 # doc-vo-ss1 — narration for the solar-system doc pilot (OPS-0793).
 # 18 TH beats from gdrive:ada-nest/doc-pilot/script.yml, Tony-clone ref
-# (8s, the clean bench ref). BEATS below are the v6-canonical lines:
-# NASA fact-check edits on shots 6/7 (approved 2026-10-24) and shot 15
-# shortened to fit one ~4s shot (Tony: shorten-line, kuiper-shot15-pacing-v5;
-# 6.60s -> 3.51s, end-frame hold 3.56s -> 0.47s). Guards from
-# ada-nest-tts-eval (2133):
+# (8s, the clean bench ref). Guards from ada-nest-tts-eval (2133):
 # ~9s on-topic ref; on deterministic silence (peak<0.01) split the beat
 # at the middle space and join halves with a 250ms gap.
 # EN track deferred — f5-tts-th is a Thai-only lane; EN clone needs the
@@ -33,16 +29,15 @@ run: |
   from f5_tts_th.tts import TTS
   IN = f'{PACK_DIR}/inputs'
   OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
-  # shots 1-18 from doc-pilot/script.yml (v1-fact-checked + shot-15
-  # shortened for v6; matches Education post 2157 Thai script table)
+  # shots 1-18 from doc-pilot/script.yml (v0-draft, tony-approved)
   BEATS = [
    "นี่คือบ้านของเรา โลกสีฟ้าใบเล็ก",
    "แต่โลกเป็นเพียงจุดหนึ่ง ในครอบครัวที่ยิ่งใหญ่กว่านี้",
    "ศูนย์กลางของทุกสิ่ง คือดวงอาทิตย์",
    "ดาวฤกษ์ที่ให้แสงสว่าง และความอบอุ่นแก่เราทุกคน",
    "ดาวพุธ ดาวเคราะห์ที่อยู่ใกล้ดวงอาทิตย์ที่สุด",
-   "ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ ใต้เมฆกรดซัลฟิวริกหนาทึบ",
-   "โลกคือที่เดียวในระบบสุริยะที่เราพบสิ่งมีชีวิต",
+   "ดาวศุกร์ โลกที่ถูกห่อหุ้มด้วยเมฆพิษ ร้อนที่สุดในระบบ",
+   "และนี่คือโลกของเรา ดาวเคราะห์เพียงดวงเดียวที่มีชีวิต",
    "ดาวอังคาร โลกสีแดงที่มนุษย์ฝันจะไปเยือน",
    "ดาวพฤหัสบดี ยักษ์ใหญ่แห่งระบบสุริยะ",
    "พายุหมุนอันยิ่งใหญ่ ใหญ่กว่าโลกทั้งใบ",
@@ -50,7 +45,7 @@ run: |
    "วงแหวนของน้ำแข็งและหิน นับล้านชิ้น",
    "ดาวยูเรนัส ดาวเคราะห์น้ำแข็งที่หมุนตะแคงข้าง",
    "ดาวเนปจูน ไกลและหนาวเย็นที่สุด ลมแรงกว่าพายุใดๆ",
-   "ไกลออกไปคือแถบไคเปอร์ แหล่งรวมวัตถุน้ำแข็ง",
+   "และไกลออกไป ยังมีดาวเคราะห์แคระ และเศษน้ำแข็งนับล้าน",
    "ทั้งหมดหมุนรอบดวงอาทิตย์ ในจังหวะที่สมบูรณ์แบบ",
    "จากที่ไกลแสนไกล โลกกลายเป็นเพียงจุดสีฟ้าจางๆ",
    "บ้านหลังเดียวของเรา ในจักรวาลอันกว้างใหญ่",
