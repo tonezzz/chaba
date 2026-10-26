@@ -1,7 +1,7 @@
 id: bot-domain-internal-routing-design
 title: Evaluate bot.surf-thailand.com as Telegram ingress and routing gateway
 column: backlog
-updated: 2026-10-26 16:57
+updated: 2026-10-26 19:08
 brief: Decide whether a dedicated bot.surf-thailand.com edge should front Telegram webhook ingress without exposing
   internal relay controls.
 priority: medium
@@ -21,6 +21,7 @@ spec: 'Assess bot.surf-thailand.com as a dedicated Telegram bot ingress/routing 
   it later. No DNS, webhook, Caddy, or production changes in the design phase.'
 action:
   type: manual
+  status: queued
 note: 'Current verified state: api.surf-thailand.com already fronts Ada public API/webhook; Ada/KK/MN loopback relays
   are live on idc03; DevNest relay is not yet deployed. Need design before adding a second public ingress.'
 ref: SEC-0910
@@ -29,5 +30,11 @@ comms:
   from: tony
   text: card captured via board-api
 - at: 2026-10-26 16:57
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-26 19:08
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 19:08
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
