@@ -1,0 +1,65 @@
+title: cms-page-standard defined + house-timeline family aligned
+subtitle: >-
+  docs/kb/cms-page-standard.md promoted from draft to defined, now
+  explicitly carrying the house-timeline parent/leaf/qc contract;
+  generator patched to match (qc parent, index parity).
+id: 2026-10-26-cms-page-standard-house-timeline
+status: staged
+owner: devin-dispatch
+project: chaba
+card: cms-page-standard-house-timeline-family-6b7c77
+branch: dispatch/20261026-184108-define-the-standard-anatomy-me
+started: "2026-10-26"
+
+context:
+  user_request: >
+    Card spec (backlog-spec-enrich, reviewed against KNB-0562): define the
+    standard anatomy, meta contract, quality bar, parent/leaf/qc family
+    pattern, publish gate, and review checklist in
+    docs/kb/cms-page-standard.md, aligned with the house-timeline family —
+    25 device leaves + rollup + qc from ada-ha-events-tony, external leaves
+    via meta.parent=house-timeline, reports-index parity on writes.
+    Host tony-dell, repo chaba.
+
+decisions:
+  qc_parent: >
+    qc pages carry parent=<family rollup> (not reports-index) — the
+    member set of a family is uniformly meta.parent=<rollup slug> for
+    leaves AND qc. Matches trip-calendar (newest) and timer-timeline
+    (parent-wise). media-inbox-update.py still stamps qc
+    parent=reports-index — known divergence, normalize on next touch.
+  domain_source: >
+    §2 domain row corrected: values come from ssot.cms.yml
+    meta.domain.canonical, not the nav section list (the draft conflated
+    them). `home` is canonical and renders as its own auto-section.
+  qc_role: >
+    report_role=qc is the standard role for family self-check pages;
+    timer-timeline's role=leaf predates it (normalize on next touch).
+
+built:
+  doc: >
+    docs/kb/cms-page-standard.md — status draft→defined; §2 meta contract
+    (domain canonical-source fix, parent/report_role family semantics);
+    §4 rewritten as parent/leaf/qc pattern with adoption rule +
+    "The house-timeline family contract" subsection (keys, source→sink
+    ada-ha-events-tony :11023 → ada-cms-pages :11027, 72h window, ≥3-event
+    ≥1 leaf / 25-leaf cap, domain home|meta, external-leaf adoption,
+    index parity); §5 publish gate named + index-parity-on-write; §6
+    checklist extended (report_role, adoption, regen, qc items).
+  script: >
+    scripts/ada/house-timeline-update.py v1.1.0 — qc page meta.parent now
+    house-timeline (was reports-index); rollup footer links the qc page;
+    added regen_reports_index(MDDB_CMS, written_by=GENERATOR) after writes
+    (dry-run guarded) — it was the only producer missing index parity.
+
+verify:
+  done_in_session:
+    - "python3 -m py_compile scripts/ada/house-timeline-update.py — clean"
+    - "house-timeline-update.py --dry-run (live mddb :11023): renders rollup + qc; 0 in-window events (newest events doc 2026-10-13 — producer may be stale, worth a look), 25 pre-existing leaves correctly adopted as external, qc counts them"
+    - "meta.parent change verified in publish(); regen call guarded by --dry-run"
+  notes: >
+    Live publish not run (dispatch worktree — no deploy). The 25 adopted
+    external leaves in the dry run are the family's own 2026-10-13 leaves
+    gone stale (devices below LEAF_MIN this window) — adoption works as
+    designed; the underlying ada-ha-events-tony feed freshness is a
+    separate operational question.

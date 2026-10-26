@@ -1,9 +1,15 @@
 # CMS page & report standard
 
-**Status:** draft for Tony's review (card KNB-0562)
+**Status:** defined (card `cms-page-standard-house-timeline-family-6b7c77` /
+KNB-0562)
 **Applies to:** every doc written to `ada-cms-pages*` / `chaba-*` / `kb-*`
 collections on the chaba content plane (`mddb-cms` :11027), whether written by
 a generator script, an Ada tool call, or a human.
+**Related:** identity/grouping fields live in
+`docs/ssot/infrastructure/ssot.cms.yml`; extended report-provenance fields
+(`children`, `confidence`, `timeline`, auto-block rules) in
+`docs/ssot/apps/ssot.apps.cms-reports.yml`. This file is the human-readable
+contract they both serve.
 
 The CMS is the household's report surface. Pages that look like they were
 written by different systems — different shapes, missing freshness, no links —
@@ -50,7 +56,7 @@ not content. Missing meta = invisible page.
 | Field | Values | Required |
 |---|---|---|
 | `kind` | `report` \| `page` | yes — `report` → Reports section |
-| `domain` | one of the nav domains (ssot.cms.yml): `digests reports cameras flood news bench ops research projects personal docs meta` | yes |
+| `domain` | one canonical value from `ssot.cms.yml` → `meta.domain.canonical` (`cctv`, `ops`, `home`, `meta`, …) — nav sections are *derived* from domain, never from the slug | yes |
 | `slug` | the URL/key slug, kebab-case | yes |
 | `title` | human title | yes |
 | `summary` | ≤80 chars — this is what the index shows | yes |
@@ -59,8 +65,8 @@ not content. Missing meta = invisible page.
 | `status` | `active` \| `superseded` \| `archived` \| `retracted` \| `expired` | yes — non-active pages are hidden |
 | `written_by` | generator id or person | yes |
 | `generated_by` | script filename (generated pages) | generated pages |
-| `parent` | parent slug — leaf pages point at their rollup; rollups point at `reports-index` | family pages |
-| `report_role` | `rollup` \| `leaf` \| `qc` \| `digest` | family pages |
+| `parent` | family membership slug — leaves **and qc pages** point at their family rollup; rollups point at `reports-index`. An external page joins a family by pointing `parent` at its rollup slug (§4) | family pages |
+| `report_role` | `rollup` \| `leaf` \| `qc` \| `digest` — `qc` is the family's self-check page | family pages |
 | `sources` | where the data came from (commands, collections, files) | generated pages |
 | `public` | `true` to publish to `surf-thailand.com/<tenant>/` — see §5 | opt-in only |
 | `instance` | `tony` \| `kk` \| `michael` | lane-scoped pages |
@@ -89,44 +95,97 @@ not content. Missing meta = invisible page.
 8. **En canonical, `th` optional.** The index lists `en` only; Thai mirrors
    are welcome but carry their own `summary`.
 
-## 4. Page families (parent/leaf pattern)
+## 4. Page families (parent/leaf/qc pattern)
 
-Canonical example: `timer-timeline` — rollup `timer-timeline`, leaves
-`timer-timeline-<host>`, QC leaf `timer-timeline-qc`.
+Canonical examples: `timer-timeline` — rollup `timer-timeline`, leaves
+`timer-timeline-<host>`, QC `timer-timeline-qc` — and `house-timeline`
+(contract below). Same shape, different sources.
 
-- **Rollup** (`report_role: rollup`): one row per leaf — name, key metric,
-  last-updated, freshness flag — plus a merged "recent across the family"
-  section. The rollup *queries its leaves* (collection scan by
-  `meta.parent`), so any conforming leaf is picked up automatically —
-  including leaves written by other generators.
+- **Rollup** (`report_role: rollup`, `parent: reports-index`): one row per
+  leaf — name, key metric, last-updated, freshness flag — plus a merged
+  "recent across the family" section and a link down to the qc page.
 - **Leaf** (`report_role: leaf`, `parent: <rollup>`): deep detail for one
   subject — event log, tables, media.
-- **QC** (`report_role: qc`): the family's self-check — source coverage,
-  parse failures, leaves past `fresh_for`, leaves missing mandatory meta.
-  Every generated family ships one; it's how a broken generator gets
-  noticed instead of silently serving last week's data.
+- **QC** (`report_role: qc`, `parent: <rollup>`, `domain: meta`): the
+  family's self-check — source coverage, parse failures, leaves past
+  `fresh_for`, leaves missing mandatory meta, count of external leaves
+  adopted. Every generated family ships one; it's how a broken generator
+  gets noticed instead of silently serving last week's data.
+  (`timer-timeline` predates the `qc` role and stamps `leaf` — normalize
+  on next touch.)
+
+**Adoption rule:** the family's member set is `meta.parent=<rollup slug>`.
+The rollup collects leaves by collection scan on that field, so *any*
+conforming leaf is picked up automatically — including leaves written by
+other generators. One parent per leaf: a leaf belongs to exactly one
+family, though any other page may *reference* it. The rollup must list
+adopted external leaves distinctly (they have no generator-rendered
+"events" numbers) and the qc page must count them.
+
+### The `house-timeline` family contract
+
+Reference implementation: `scripts/ada/house-timeline-update.py`, run by
+`house-timeline.timer` on **tony-dell**.
+
+```
+house-timeline            rollup — one row per active device + merged feed
+house-timeline-<entity>   leaf   — per-device event log (≤25, by activity)
+house-timeline-qc         qc     — coverage/parse/self-checks (domain=meta)
+```
+
+- **Source → sink:** reads `ada-ha-events-tony` on the mddb primary
+  (`:11023`, memory plane, read-only) and publishes to `ada-cms-pages` on
+  `mddb-cms` (`:11027`). Rendered window: 72h.
+- **Leaf eligibility:** a device earns a leaf at ≥3 events in-window;
+  leaves are capped at 25, ranked by activity. Devices under the
+  threshold still appear in the rollup table with `—` in the leaf column.
+- **Meta:** rollup + leaves carry `domain=home`, `report_role=rollup|leaf`,
+  `fresh_for=1h`; qc carries `domain=meta`, `report_role=qc`. All carry
+  `generated_by=house-timeline-update.py`,
+  `sources=ada-ha-events-tony collection (mddb :11023)`, `parent` per the
+  §2 rule (`home` is a canonical domain — it renders as its own
+  auto-section until/unless `nav.domain_map` folds it in).
+- **External leaves:** the run scans `ada-cms-pages` for docs with
+  `meta.parent=house-timeline` that it did not write and appends them to
+  the rollup's device table; the qc page reports
+  `external leaves adopted`. Any generator joins the family by stamping
+  `parent: [house-timeline]` on its leaf — no registration step.
+- **Index parity:** after its writes the run calls
+  `lib/cms_index.regen_reports_index(MDDB_CMS, written_by=GENERATOR)` —
+  parity on write, like every conforming producer (§5).
 
 ## 5. Publishing & visibility
 
 - Default is **tailnet-only** (CMS app + HA dashboard iframes).
 - `meta.public: true` opts a page into `cms-publish-site.py` → static HTML
   at `surf-thailand.com/<tenant>/<slug>.html` (15-min timer on idc02).
-  *The personal-data gate applies — no names, addresses, phone numbers,
-  or internal topology on public pages.* `reports-index` itself stays
+  **Publish gate:** `public` is opt-in per page and only after an explicit
+  ask — the personal-data gate applies (no names, addresses, phone
+  numbers, message senders, booking refs, archive URLs, or internal
+  topology on public pages). Family-internal leaves (receipts, qc,
+  event logs) are never public; if a family wants a public surface it
+  ships a sanitized derivative rollup. `reports-index` itself stays
   internal: it enumerates every page name, which is itself a map of the
   household.
-- After any content write, the writer calls
+- **Index parity on write:** after any content write, the writer calls
   `lib/cms_index.regen_reports_index(MDDB_CMS, written_by=<gen>)` so the
-  index reflects the new page immediately.
+  index reflects the new page immediately — every generator does this at
+  the end of its run, not on a schedule.
 
 ## 6. Review checklist for a new page/generator
 
 - [ ] Meta complete per §2 (spot-check `slug`, `summary`, `fresh_for`,
-      `status`, `parent`)
+      `status`, `parent`, `report_role`)
 - [ ] Lede ≤2 sentences; tables have a verdict column
-- [ ] Links: leaf→parent, parent→leaves, index→page
+- [ ] Links: leaf→parent, parent→leaves (+ external leaves), rollup→qc,
+      index→page
 - [ ] `--dry-run` output reviewed before first live write
-- [ ] QC page exists for the family
-- [ ] Domain is one of the nav domains (new domains = ssot.cms.yml edit +
-      `cms_index.DOMAIN_SECTION` sync)
-- [ ] If public: personal-data gate passed
+- [ ] QC page exists for the family (`report_role=qc`, `domain=meta`,
+      counts external leaves adopted)
+- [ ] Rollup adopts leaves by `meta.parent` scan — external leaves appear
+      without a code change
+- [ ] `regen_reports_index` called after writes (index parity, §5)
+- [ ] Domain is a canonical value in `ssot.cms.yml` (new domains = SSOT
+      edit + `cms_index.DOMAIN_SECTION` sync — unmapped domains still
+      render as an auto-section)
+- [ ] If public: publish gate passed (explicit ask + personal-data gate)
