@@ -1,0 +1,36 @@
+id: devnest-kk-video-project-intake
+title: Add KK PDF to DevNest video-project intake
+column: backlog
+updated: 2026-10-26 17:54
+brief: Let KK send a PDF plus a short request in TG/DevNestHA and receive a tracked, batched short-video project
+  plan.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- kk
+- video
+- colab
+- project-intake
+spec: Implement the default KK-to-DevNest short-video intake. Extend the live DevNest Telegram relay to accept authorized
+  Telegram document/PDF messages with a caption, download the file using Telegram getFile, hash and store it in
+  a project-specific artifact area outside devnest-ha, and create or link a board project/card through board-api.
+  Return a [devnestha] intake acknowledgement with project/card ID, source hash, extracted-text status, and next
+  batch. Create a project manifest and durable folder contract for source, ingest, brief, story, shots, assets,
+  packs, renders, and qc. Run deterministic PDF text extraction/OCR where available; then route assessment/planning
+  to the appropriate DevNest/JEV lane. Batch extraction, assessment, brief, story beats, script, storyboard, shot
+  list, prompt pack, asset inventory, preview renders, captions, and QC before asking Tony. Use Colab only through
+  the canonical ada-nest queue/packs; no hand-run cells. Ask Tony only for rights/consent, spend, publication, ambiguous
+  creative choices, or final approval. Add tests for authorized PDF intake, sender/chat/topic provenance, hash,
+  no secret leakage, malformed/oversized files, and no direct HA/Telegram-token mount. Link procedure lesson post
+  2581. Do not auto-publish or spend.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-0912
+comms:
+- at: 2026-10-26 17:54
+  from: tony
+  text: card captured via board-api
