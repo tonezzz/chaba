@@ -239,6 +239,62 @@ def test_explain_by_slug_id(monkeypatch, tmp_path):
     assert "OPS-0905" in sent[0]["text"]
 
 
+def test_pdf_document_intake_creates_idempotent_project_card(
+        monkeypatch, tmp_path):
+    project_dir = tmp_path / "kk-video-abc123456789"
+    source_dir = project_dir / "source"
+    source_dir.mkdir(parents=True)
+    (source_dir / "materials.pdf").write_bytes(b"%PDF-test")
+    (project_dir / "project.json").write_text(
+        '{"project_id":"kk-video-abc123456789","status":"intake_downloaded"}')
+    posts = []
+    sent = []
+    monkeypatch.setattr(relay, "AUDIT_FILE", tmp_path / "audit.jsonl")
+    monkeypatch.setattr(relay, "_download_document",
+                        lambda document: (
+                            source_dir / "materials.pdf",
+                            "abc123456789",
+                            9,
+                        ))
+    monkeypatch.setattr(relay, "_board_get", lambda path: {"cards": []})
+    monkeypatch.setattr(
+        relay, "_board_post",
+        lambda path, body: posts.append((path, body)) or {
+            "id": body["id"], "ref": "OPS-0999",
+        })
+    monkeypatch.setattr(
+        relay, "_send_text",
+        lambda chat, text, thread=None: sent.append(text))
+    relay._handle_document(
+        {"update_id": 99},
+        {
+            "message_id": 7,
+            "document": {
+                "file_name": "materials.pdf",
+                "mime_type": "application/pdf",
+                "file_id": "not-persisted-in-audit",
+            },
+            "caption": "Please assess these materials.",
+        },
+        CHAT,
+        12,
+    )
+    assert posts[0][0] == "/card"
+    assert posts[0][1]["id"] == "kk-video-abc123456789"
+    assert "OPS-0999" in sent[0]
+    manifest = json.loads((project_dir / "project.json").read_text())
+    assert manifest["status"] == "intake_ready"
+    assert manifest["card_ref"] == "OPS-0999"
+
+
+def test_pdf_only_document_policy():
+    assert relay._document_is_pdf({
+        "file_name": "materials.pdf", "mime_type": "application/octet-stream"})
+    assert not relay._document_is_pdf({
+        "file_name": "materials.docx",
+        "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"})
+
+
 # --- topic-preserving replies ------------------------------------------------
 
 
