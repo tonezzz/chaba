@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-26 09:05
+updated: 2026-10-26 17:42
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -94,3 +94,10 @@ comms:
     were already failing (ada-memory-sync 09:00). I restarted mddb.service at 09:02 on the existing mddb.db (cleanly-shutdown
     file, reversible; mddbd still loading as of 09:06). mddb-compact.db (3.4G) is still staged in the data dir —
     swap+restart whenever the pipeline resumes; my res'
+- at: 2026-10-26 17:42
+  from: devin
+  text: '[2026-10-26 17:45 ICT] MAIN BANK COMPACTED: 8.84G -> 3.43G via offline bbolt page-compact (golang container
+    + bbolt@v1.4.3 CLI — preserves vectors, verified: 17,164 docs + scored vector-search hits post-swap). Learned
+    the hard way: /v1/backup and /v1/restore are FILE-level copies — they do NOT compact; the only physical-shrink
+    paths are (a) export->re-add on a fresh db (drops vectors, telemetry-only) as done for ops, or (b) offline bbolt
+    compact (vector-safe) as done for main. ~10-15min downtime'
