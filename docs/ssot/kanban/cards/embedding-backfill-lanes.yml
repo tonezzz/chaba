@@ -1,7 +1,7 @@
 id: embedding-backfill-lanes
 title: Embedding backfill lane — nomic re-embed MDDB banks/lessons/news on idle hosts
 column: doing
-updated: 2026-10-27 05:40
+updated: 2026-10-27 05:58
 priority: medium
 note: 'Bursty CPU+embed work for idle idc cores. edu-embed-migration already in flight (education-store card review);
   extend pattern: nomic via litellm ollama-nomic-embed on idc02 (once #chat-local up) or existing idc03 ollama.
@@ -37,6 +37,13 @@ comms:
     bank reindex rides the realized local lane = mddb-embed :11028 (bge-m3 via embed-pool, per MEM-0805 — bank space
     settled on bge-m3, not nomic; nomic stays for lessons/news/digest-clustering). Building embed-lane.py + wiring
     news-digest cache.'
+- at: 2026-10-27 05:58
+  from: devin
+  text: '[dispatch idc02] shipped scripts/embed/embed-lane.py (lessons|news|banks|recall|stats). DONE in-session:
+    lessons = 89 posts -> 506 chunks embedded nomic (search_document: prefix) -> lessons-nomic.jsonl (2.5MB); news
+    = 1657 titles embedded unprefixed exactly like news-digest norm() -> news-nomic.jsonl (7.5MB). Stores placed
+    on idc03 ~/.local/share/embed-lane/ where digest+edu consumers run. news-digest.py now reuses the store (NEWS_VEC_CACHE,
+    default path auto-picked; 3/4-hit smoke ok, misses app'
 action:
   type: dispatch
   status: running
