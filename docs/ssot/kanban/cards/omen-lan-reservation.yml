@@ -2,13 +2,29 @@ id: omen-lan-reservation
 title: tony-omen LAN IP needs DHCP reservation (or dynamic refs)
 column: backlog
 updated: 2026-10-12 22:27
-brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference (cast-browser-proxy
-  target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof, but MEDIA_BASE=http://192.168.2.84:8090
-  must stay a LAN IP (Chromecast cannot reach tailnet) — it will break again on the next renumber. Fix: pin a DHCP
-  reservation for omen on the router (needs Tony), or make MEDIA_BASE resolve at service start. See docs/ssot/jobs/vcast/2026-10-12-omen-lan-ip-drift-cast-proxy.yml.'
+brief: 'Omen DHCP drifted 192.168.2.86->.84 on 2026-10-12 and silently broke every hardcoded LAN reference
+  (cast-browser-proxy target, cast-shots-http bind, MEDIA_BASE, barrier scripts). Proxy+shots now DHCP-proof,
+  but MEDIA_BASE=http://192.168.2.84:8090 must stay a LAN IP (Chromecast cannot reach tailnet) — it will
+  break again on the next renumber. Fix: pin a DHCP reservation for omen on the router (needs Tony), or
+  make MEDIA_BASE resolve at service start. See docs/ssot/jobs/vcast/2026-10-12-omen-lan-ip-drift-cast-proxy.yml.'
 priority: medium
 ref: OPS-0522
 comms:
 - at: 2026-10-12 22:27
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-card-notes-that-the-tony-o-1dbcf8
+  ask: The card notes that the tony-omen LAN IP needs a DHCP reservation or dynamic refs, but does not
+    specify the target IP address, MAC address, or whether this should be configured via the router's
+    DHCP reservation table or through local network configuration on the host.
+  options:
+  - ★ Configure a static DHCP reservation on the network router for tony-omen once the MAC address and
+    desired IP are provided by the owner.
+  - Configure dynamic host resolution or mDNS locally on tony-omen without router-level DHCP changes.
+  status: open
+  at: 2026-10-26 07:20
+  from: backlog-spec-enrich
