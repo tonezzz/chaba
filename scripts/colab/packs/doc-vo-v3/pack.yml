@@ -1,0 +1,106 @@
+# doc-vo-v3 — v3 tourist-ship narration for the doc pilot
+# (card doc-pilot-short-film, OPS-0793). 18 TH beats from the approved
+# v3 script (inputs/script-v3-tourist.yml; scope approved via board
+# request review-tourist-script-v3 -> approve-proposed-scope 2026-10-26,
+# production ordered by Tony's go-v3 answer the same day). Viewpoint:
+# KK rides a small fictional tour ship; data lives in on-screen callouts
+# so spoken lines stay short (est 3-4s per beat). Same VYNCX v2 +
+# tony-ref-8s as doc-vo-ss1. Adds the non-finite-sample guard the ss1
+# pass missed (NaN peaks on shots 4/8 compared false vs <0.01 and were
+# reported as passing): any non-finite sample OR peak<0.01 triggers the
+# split-and-regen path. EN track still deferred (Thai-only lane, ADA-0510).
+name: doc-vo-v3
+needs:
+  gpu_gb: 3
+  disk_gb: 4
+venv: true
+timeout_s: 3000
+artifacts:
+  - packs/doc-vo-v3/out/v3-vo-*.wav
+  - packs/doc-vo-v3/vo-report.md
+publish:
+  out: doc-pilot/vo-v3        # fleet-side copy; Colab writes land direct
+prep: |
+  pip install -q torch
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile librosa matplotlib transformers audioop-lts torchcodec
+  pip install -q --no-deps 'numpy>=2'
+run: |
+  import time, os
+  import numpy as np
+  import torch
+  import soundfile as sf
+  from f5_tts_th.tts import TTS
+  IN = f'{PACK_DIR}/inputs'
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  # shots 1-18 from script-v3-tourist.yml (approved scope; th lines
+  # copied verbatim — do not re-word without a card comment)
+  BEATS = [
+   "เคเค ขอต้อนรับขึ้นยานท่องเที่ยวลำเล็กของเรา",
+   "นี่คือโลก บ้านของเรา ใบเล็กแต่เต็มไปด้วยชีวิต",
+   "ดวงจันทร์คือเพื่อนบ้านที่โคจรรอบโลก",
+   "ดวงอาทิตย์คือดาวฤกษ์ที่เป็นศูนย์กลางของครอบครัวเรา",
+   "ดาวพุธ อยู่ใกล้ดวงอาทิตย์ที่สุด",
+   "ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ ใต้เมฆกรดซัลฟิวริกหนาทึบ",
+   "ดาวอังคาร โลกสีแดงที่มนุษย์ฝันจะไปเยือน",
+   "ดาวพฤหัสบดี ยักษ์ใหญ่แห่งระบบสุริยะ",
+   "พายุยักษ์ใหญ่กว้างกว่าโลก และยังเปลี่ยนแปลงอยู่",
+   "ดาวเสาร์กับวงแหวนอันงดงาม",
+   "วงแหวนประกอบด้วยชิ้นน้ำแข็งและหินนับไม่ถ้วน",
+   "ดาวยูเรนัส หมุนเอียงราวกับกลิ้งไปตามวงโคจร",
+   "ดาวเนปจูน ดาวเคราะห์ที่ไกลที่สุดในแปดดวง",
+   "พลูโต ดาวเคราะห์แคระ ณ ชายขอบการเดินทางของเรา",
+   "ไกลออกไปคือแถบไคเปอร์ แหล่งรวมวัตถุน้ำแข็ง",
+   "ตัวเลขบอกระยะเฉลี่ย แต่ภาพนี้ไม่ได้วาดตามสเกล",
+   "มองกลับจากไกลแสนไกล โลกก็เหลือเพียงจุดสีฟ้า",
+   "การเดินทางของเราจบลงที่บ้านหลังเดิม โลกของเรา",
+  ]
+  t0 = time.time()
+  tts = TTS(model='v2')
+  print('vyncx loaded %.0fs gpu=%.1fGB' % (time.time()-t0,
+        torch.cuda.memory_allocated()/1e9), flush=True)
+  rt = open(f'{IN}/ref_text_tony.txt', encoding='utf-8').read().strip()
+  REF = f'{IN}/tony-ref-8s.wav'
+
+  def gen(text):
+      w = tts.infer(ref_audio=REF, ref_text=rt, gen_text=text,
+                    step=32, cfg=2.0, speed=1.0)
+      return np.asarray(w, dtype='float32')
+
+  def bad(w):
+      return (not np.isfinite(w).all()) or \
+             (float(np.abs(w).max()) if len(w) else 0.0) < 0.01
+
+  rep = ['# doc-vo-v3 vo-report', '',
+         '| shot | dur_s | peak | note |', '|---|---|---|---|']
+  fails = []
+  for i, text in enumerate(BEATS, 1):
+      out = f'{OUT}/v3-vo-{i:02d}.wav'
+      if os.path.exists(out) and os.path.getsize(out) > 0:
+          w, _ = sf.read(out)
+          p = float(np.abs(w).max())
+          note = '' if np.isfinite(w).all() and p >= 0.01 else 'CACHED-BAD'
+          if note:
+              fails.append(i)
+          rep.append(f'| {i} | {len(w)/24000:.2f} | {p:.3f} | {note} |')
+          continue
+      t0 = time.time()
+      note = ''
+      w = gen(text)
+      if bad(w):        # silence/NaN guard: split at the middle space,
+          ws = text.split(' ')              # join halves with 250ms gap
+          mid = len(ws) // 2 or 1
+          a, b = ' '.join(ws[:mid]), ' '.join(ws[mid:])
+          wa, wb = gen(a), gen(b)
+          w = np.concatenate([wa, np.zeros(6000, 'float32'), wb])
+          note = f'split@{mid} (silent/non-finite full-gen)'
+      sf.write(out, w.astype('float32'), 24000)
+      p = float(np.abs(w).max())
+      if bad(w):
+          fails.append(i); note += ' STILL-BAD'
+      rep.append(f'| {i} | {len(w)/24000:.2f} | {p:.3f} | {note} |')
+      print(f'vo{i} dur={len(w)/24000:.2f}s peak={p:.3f} '
+            f'({time.time()-t0:.0f}s) {note}', flush=True)
+  rep += ['', f'fails: {fails or "none"}']
+  open(f'{PACK_DIR}/vo-report.md', 'w').write('\n'.join(rep) + '\n')
+  print('doc-vo-v3 complete fails=%s' % fails, flush=True)

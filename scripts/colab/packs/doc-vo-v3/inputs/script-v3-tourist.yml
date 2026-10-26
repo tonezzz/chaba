@@ -1,0 +1,238 @@
+doc: solar-system-kk-tourist-v3
+version: v3-space-tourist-review
+status: approved-scope-2026-10-26
+# scope+viewpoint approved by Tony (board request review-tourist-script-v3,
+# answer approve-proposed-scope 2026-10-26 08:21); production ordered by
+# go-v3 answer 2026-10-26 09:23. Source: gdrive:ada-nest/doc-pilot/review/
+# script-v3-tourist-review.yml (copied verbatim except this status block).
+audience: KK
+language_primary: th
+language_parallel: en
+narrator: tony-clone-vyncx
+estimated_runtime_s: 72-82
+scope:
+  included: [Sun, Earth's Moon, eight planets, Pluto, Kuiper Belt region]
+  excluded: [other dwarf planets, other moons, asteroids, comets]
+  note: "Short-cut scope: major stops only, not a catalog of every Solar System body."
+viewpoint:
+  role: "KK is a tourist aboard a small fictional ship; Tony is the guide."
+  ship: "One reusable, logo-free shuttle silhouette as a foreground layer, with occasional window POV."
+  scale: "Cinematic pictures are not to scale; factual values appear in Thai callouts."
+  safety: "Tour route is illustrative; do not imply actual travel times or a close approach to the Sun."
+data_rules:
+  distance_planets: "Mean orbital distance from Sun, shown as AU and rounded million km."
+  distance_moon: "Average distance from Earth, not the Sun."
+  size: "Approximate equatorial diameter in km."
+  au: "1 AU is about 149.6 million km."
+  references:
+    - https://nssdc.gsfc.nasa.gov/planetary/factsheet/
+    - https://nssdc.gsfc.nasa.gov/planetary/factsheet/planetfact_notes.html
+    - https://science.nasa.gov/moon/facts/
+    - https://science.nasa.gov/sun/facts/
+    - https://science.nasa.gov/dwarf-planets/pluto/facts/
+    - https://science.nasa.gov/solar-system/kuiper-belt/facts/
+objects:
+  sun:
+    kind: star
+    diameter_km: 1390000
+    distance: "Central reference; no orbital-distance label."
+  mercury:
+    kind: planet
+    mean_distance_au: 0.387
+    mean_distance_million_km: 57.9
+    equatorial_diameter_km: 4879
+  venus:
+    kind: planet
+    mean_distance_au: 0.723
+    mean_distance_million_km: 108.2
+    equatorial_diameter_km: 12104
+  earth:
+    kind: planet
+    mean_distance_au: 1.0
+    mean_distance_million_km: 149.6
+    equatorial_diameter_km: 12756
+    life_note: "Only place in the Solar System where life has been found so far."
+  moon:
+    kind: natural_satellite_of_earth
+    mean_distance_from_earth_km: 384400
+    diameter_km: 3475
+  mars:
+    kind: planet
+    mean_distance_au: 1.524
+    mean_distance_million_km: 228.0
+    equatorial_diameter_km: 6792
+  jupiter:
+    kind: planet
+    mean_distance_au: 5.203
+    mean_distance_million_km: 778.5
+    equatorial_diameter_km: 142984
+  saturn:
+    kind: planet
+    mean_distance_au: 9.58
+    mean_distance_million_km: 1432.0
+    equatorial_diameter_km: 120536
+  uranus:
+    kind: planet
+    mean_distance_au: 19.2
+    mean_distance_million_km: 2867.0
+    equatorial_diameter_km: 51118
+  neptune:
+    kind: planet
+    mean_distance_au: 30.2
+    mean_distance_million_km: 4515.0
+    equatorial_diameter_km: 49528
+  pluto:
+    kind: dwarf_planet
+    mean_distance_au: 39.5
+    mean_distance_million_km: 5906.4
+    diameter_km: 2377
+  kuiper_belt:
+    kind: region
+    main_belt_extent_au: "30-50"
+    population_note: "The main belt is about 30-50 AU; the associated scattered disk extends much farther. Millions of icy bodies are estimated; the region has no single diameter."
+shots:
+  - shot: 1
+    beat: board_the_ship
+    visual_method: hybrid_composite
+    ship_layer: "Establish the same fictional shuttle and a cockpit-window edge."
+    th: "เคเค ขอต้อนรับขึ้นยานท่องเที่ยวลำเล็กของเรา"
+    en: "Welcome aboard our little tour ship, KK."
+    est_s: 3
+  - shot: 2
+    beat: earth_home
+    object: earth
+    visual_method: NASA_2p5d_candidate
+    fact_callout_th: "จากดวงอาทิตย์เฉลี่ย 1.00 AU (149.6 ล้าน กม.) | เส้นผ่านศูนย์กลาง 12,756 กม."
+    th: "นี่คือโลก บ้านของเรา ใบเล็กแต่เต็มไปด้วยชีวิต"
+    en: "This is Earth, our small home, alive with life."
+    est_s: 4
+  - shot: 3
+    beat: moon_flyby
+    object: moon
+    visual_method: NASA_asset_candidate_rights_check
+    fact_callout_th: "ห่างจากโลกเฉลี่ย 384,400 กม. | เส้นผ่านศูนย์กลาง 3,475 กม."
+    th: "ดวงจันทร์คือเพื่อนบ้านที่โคจรรอบโลก"
+    en: "The Moon is Earth's close neighbor, orbiting our planet."
+    est_s: 3
+  - shot: 4
+    beat: sun_map
+    object: sun
+    visual_method: LTX_or_layered_map
+    fact_callout_th: "ดาวฤกษ์ศูนย์กลาง | เส้นผ่านศูนย์กลางประมาณ 1.39 ล้าน กม."
+    th: "ดวงอาทิตย์คือดาวฤกษ์ที่เป็นศูนย์กลางของครอบครัวเรา"
+    en: "The Sun is the star at the center of our Solar System."
+    est_s: 4
+  - shot: 5
+    beat: mercury
+    object: mercury
+    visual_method: NASA_asset_candidate_or_LTX
+    fact_callout_th: "0.387 AU (57.9 ล้าน กม.) | เส้นผ่านศูนย์กลาง 4,879 กม."
+    th: "ดาวพุธ อยู่ใกล้ดวงอาทิตย์ที่สุด"
+    en: "Mercury is the closest planet to the Sun."
+    est_s: 3
+  - shot: 6
+    beat: venus
+    object: venus
+    visual_method: NASA_asset_candidate_or_LTX
+    fact_callout_th: "0.723 AU (108.2 ล้าน กม.) | เส้นผ่านศูนย์กลาง 12,104 กม."
+    th: "ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ ใต้เมฆกรดซัลฟิวริกหนาทึบ"
+    en: "Venus is the hottest planet, beneath dense sulfuric-acid clouds."
+    est_s: 4
+  - shot: 7
+    beat: mars
+    object: mars
+    visual_method: NASA_asset_candidate_or_LTX
+    fact_callout_th: "1.524 AU (228.0 ล้าน กม.) | เส้นผ่านศูนย์กลาง 6,792 กม."
+    th: "ดาวอังคาร โลกสีแดงที่มนุษย์ฝันจะไปเยือน"
+    en: "Mars, the red world humans dream of visiting."
+    est_s: 4
+  - shot: 8
+    beat: jupiter
+    object: jupiter
+    visual_method: LTX_dynamic
+    fact_callout_th: "5.203 AU (778.5 ล้าน กม.) | เส้นผ่านศูนย์กลาง 142,984 กม."
+    th: "ดาวพฤหัสบดี ยักษ์ใหญ่แห่งระบบสุริยะ"
+    en: "Jupiter, the giant of the Solar System."
+    est_s: 3
+  - shot: 9
+    beat: great_red_spot
+    object: jupiter
+    visual_method: LTX_dynamic
+    fact_callout_th: "จุดแดงใหญ่ยังกว้างกว่าโลก แต่มีขนาดและรูปร่างเปลี่ยนแปลง"
+    th: "พายุยักษ์ใหญ่กว้างกว่าโลก และยังเปลี่ยนแปลงอยู่"
+    en: "The giant storm is wider than Earth, and it continues to change."
+    est_s: 4
+  - shot: 10
+    beat: saturn
+    object: saturn
+    visual_method: NASA_2p5d_candidate
+    fact_callout_th: "9.58 AU (1,432 ล้าน กม.) | เส้นผ่านศูนย์กลาง 120,536 กม."
+    th: "ดาวเสาร์กับวงแหวนอันงดงาม"
+    en: "Saturn and its magnificent rings."
+    est_s: 3
+  - shot: 11
+    beat: saturn_rings
+    object: saturn
+    visual_method: NASA_2p5d_or_LTX_closeup
+    fact_callout_th: "วงแหวนประกอบด้วยอนุภาคน้ำแข็งและหิน"
+    th: "วงแหวนประกอบด้วยชิ้นน้ำแข็งและหินนับไม่ถ้วน"
+    en: "The rings are made of countless pieces of ice and rock."
+    est_s: 3
+  - shot: 12
+    beat: uranus
+    object: uranus
+    visual_method: NASA_asset_candidate_or_LTX
+    fact_callout_th: "19.2 AU (2,867 ล้าน กม.) | เส้นผ่านศูนย์กลาง 51,118 กม."
+    th: "ดาวยูเรนัส หมุนเอียงราวกับกลิ้งไปตามวงโคจร"
+    en: "Uranus rolls along its orbit, tilted on its side."
+    est_s: 4
+  - shot: 13
+    beat: neptune
+    object: neptune
+    visual_method: NASA_asset_candidate_or_LTX
+    fact_callout_th: "30.2 AU (4,515 ล้าน กม.) | เส้นผ่านศูนย์กลาง 49,528 กม."
+    th: "ดาวเนปจูน ดาวเคราะห์ที่ไกลที่สุดในแปดดวง"
+    en: "Neptune is the farthest of the eight planets."
+    est_s: 4
+  - shot: 14
+    beat: pluto
+    object: pluto
+    visual_method: NASA_asset_candidate_rights_check_or_LTX
+    fact_callout_th: "ดาวเคราะห์แคระ | 39.5 AU (5,906 ล้าน กม.) | เส้นผ่านศูนย์กลางประมาณ 2,377 กม."
+    th: "พลูโต ดาวเคราะห์แคระ ณ ชายขอบการเดินทางของเรา"
+    en: "Pluto, a dwarf planet near the edge of our tour."
+    est_s: 4
+  - shot: 15
+    beat: kuiper_belt
+    object: kuiper_belt
+    visual_method: NASA_asset_candidate_rights_check_or_layered_map
+    fact_callout_th: "แถบหลักราว 30-50 AU | คาดว่ามีวัตถุน้ำแข็งนับล้าน"
+    th: "ไกลออกไปคือแถบไคเปอร์ แหล่งรวมวัตถุน้ำแข็ง"
+    en: "Farther out lies the Kuiper Belt, home to icy bodies."
+    est_s: 4
+  - shot: 16
+    beat: scale_map
+    visual_method: 2d_scale_map
+    fact_callout_th: "ระยะเฉลี่ยบอกสเกล; ภาพแผนที่ไม่ได้วาดตามสเกล"
+    th: "ตัวเลขบอกระยะเฉลี่ย แต่ภาพนี้ไม่ได้วาดตามสเกล"
+    en: "The numbers show mean distances; this map is not to scale."
+    est_s: 4
+  - shot: 17
+    beat: pale_blue_dot
+    visual_method: NASA_asset_candidate_rights_check_or_LTX
+    ship_layer: cockpit-window edge, Earth recedes to a dot
+    th: "มองกลับจากไกลแสนไกล โลกก็เหลือเพียงจุดสีฟ้า"
+    en: "From far away, Earth becomes a pale blue dot."
+    est_s: 4
+  - shot: 18
+    beat: return_home
+    visual_method: hybrid_composite
+    ship_layer: same craft returns to Earth's sunrise
+    th: "การเดินทางของเราจบลงที่บ้านหลังเดิม โลกของเรา"
+    en: "Our tour ends at the same home where it began: Earth."
+    est_s: 4
+review_notes:
+  - "Data labels are approximate and shown on screen so Thai narration stays simple."
+  - "The tour craft is fictional, logo-free, and not assigned a real-world size."
+  - "NASA stills/rights are per asset; use the asset manifest and exact credits."
+  - "This is a review draft; do not replace the approved v4/v6 cut until Tony signs off."
