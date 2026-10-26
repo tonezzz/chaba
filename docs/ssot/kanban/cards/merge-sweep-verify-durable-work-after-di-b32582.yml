@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
 column: backlog
-updated: 2026-10-27 06:37
+updated: 2026-10-27 06:38
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -29,3 +29,8 @@ comms:
 - at: 2026-10-27 06:37
   from: tony
   text: card captured via board-api
+- at: 2026-10-27 06:38
+  from: devin
+  text: 'Reference correction: this follow-up card is related to KNB-0909, but its unique card ID is `merge-sweep-verify-durable-work-after-di-b32582`.
+    The `ref` field was inadvertently set to KNB-0909 at creation, duplicating that display reference; do not confuse
+    this card with the all-Kanban audit. No workflow/status change was made.'
