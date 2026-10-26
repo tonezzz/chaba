@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: doing
-updated: 2026-10-26 19:39
+updated: 2026-10-26 19:41
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -146,6 +146,13 @@ comms:
     colab_queue_start (requires exact boot UUID + confirm=true), and colab_queue_request_status. Dell exec checkout
     is the configured MCP source; no Enterprise/GCP runtime provisioning or auto-stop is enabled. Notebook/preflight
     MD5s match Drive; 30 Colab tests pass. Current runtime '
+- at: 2026-10-26 19:41
+  from: devin
+  text: 'No-upgrade consumer path is implemented and live-verified (2026-10-26): Dell MCP now exposes colab_session_status,
+    colab_queue_start, and colab_queue_request_status; queue start requires a fresh managed boot_id and confirm=true,
+    and cell 1 runs the matching-boot Drive watcher. The notebook/preflight were re-synced to Drive and MD5-verified.
+    30 Colab tests pass. No runtime or queue was started. Remaining live test: reconnect a consumer T4, run cell
+    1, then explicitly invoke colab_queue_start; con'
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
