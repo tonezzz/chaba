@@ -1,0 +1,16 @@
+id: devnest-cache-tokenization-bench
+title: Measure DevNest prefix cache and tokenization performance
+column: backlog
+updated: 2026-10-26 07:25
+spec: Benchmark stable-prefix/cache reuse versus rebuilt prompts across DevNest providers. Measure TTFT, input/output/cache
+  tokens, tokenizer CPU time, payload bytes, warm/cold latency, verifier pass rate, and cost per successful task.
+  Add content-addressed caches for repository maps, AST/index results, embeddings, research pages, prompt embeds,
+  and model artifacts. Pre-tokenize only fixed repeated corpora and key by model/tokenizer revision + normalization
+  + content SHA256. Publish raw JSON and an Education update; never cache secrets or mutable cards.
+note: 'Current research: Zen DeepSeek V4.1 Flash free 4/4 @15.8s; GLM 4/4 @19.9s; bench 4/4 @27s; local qwen3:8b
+  0/4 timeouts. Cache-aware pricing is more important than headline price for prefill-heavy agent sessions.'
+ref: BEN-0884
+comms:
+- at: 2026-10-26 07:25
+  from: devin
+  text: card captured via board-api
