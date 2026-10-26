@@ -1,16 +1,16 @@
 id: lab-gold-thb-causality
 title: 'Lab: gold/THB/USD causality model'
-brief: An experiment collecting gold, baht, and dollar prices to see which moves first.
-  Data is still gathering — a keep-or-close decision is due 2026-10-18.
+brief: An experiment collecting gold, baht, and dollar prices to see which moves first. Data is still gathering
+  — a keep-or-close decision is due 2026-10-18.
 column: lab
 lab:
-  hypothesis: THB strength tracks gold price strongly enough to predict direction
-    — a small causality model beats gut-feel timing on conversions
+  hypothesis: THB strength tracks gold price strongly enough to predict direction — a small causality model beats
+    gut-feel timing on conversions
   metric: out-of-sample directional accuracy > 60% over 30 daily predictions
   review_by: '2026-11-01'
-note: 'Experiment dir: experiments/gold-thb-usd-causality. Data collection running;
-  needs the first scored window before the review date.'
-updated: 2026-10-22 20:16
+note: 'Experiment dir: experiments/gold-thb-usd-causality. Data collection running; needs the first scored window
+  before the review date.'
+updated: 2026-10-27 05:39
 comms:
 - at: 2026-10-05 09:45
   from: tony
@@ -29,15 +29,16 @@ comms:
   text: 'answered lab-review: extend — extend 2w — set a new lab.review_by (+14d)'
 - at: 2026-10-22 19:21
   from: chaba
-  text: answer recorded but no active action — card needs triage (queue it, or spec+arm
-    an action)
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-22 19:58
   from: devin
-  text: 'lab decision executed early by devin (sweep parity): extend — review_by 2026-10-18
-    -> 2026-11-01'
+  text: 'lab decision executed early by devin (sweep parity): extend — review_by 2026-10-18 -> 2026-11-01'
 - ts: '2026-10-23T13:06:51'
   from: chaba
   text: 'lab decision executed: extend — extend 2w — set a new lab.review_by (+14d)'
+- at: 2026-10-27 05:39
+  from: tony
+  text: queued for processing
 ref: OPS-0046
 requests:
 - id: lab-review
@@ -53,3 +54,6 @@ requests:
   escalated_at: 2026-10-22 10:11
   answer: extend — extend 2w — set a new lab.review_by (+14d)
   executed: '2026-10-23'
+action:
+  type: dispatch
+  status: queued
