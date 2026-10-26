@@ -1,0 +1,71 @@
+title: DevNest host-load scenario — read-only assessment of tony-macbook
+job: devnest-host-load-scenario
+card: devnest-host-load-scenario
+ref: SYS-0860
+ran_at: 2026-10-26T23:48:03Z
+runner: tony-macbook
+dispatch_unit: devin-task-20261027-064712-target-host-must-be-explicit-r
+
+target_host: tony-macbook
+target_host_basis: >-
+  Explicit by declaration. The card spec required "target_host must be
+  explicit" but named no remote target, so the dispatch runner was declared
+  and verified via `hostname` (= tony-macbook). No other host was probed.
+  If a remote target is intended, the spec must name it as
+  devnest-host-assessment-tony-dell did (target_host=tony-dell).
+
+read_only: true
+commands_run:
+  - hostname
+  - nproc
+  - uptime
+  - cat /proc/loadavg
+  - free -h
+  - df -h
+  - systemctl --failed --user
+  - systemctl --failed          # list-only
+  - command -v nvidia-smi
+mutations: none                 # no restart/kill/install/sudo/push/deploy
+
+evidence:
+  collected_at: 2026-10-26T23:48:03Z   # 06:48 local, host up 2d 1h32m
+  hostname: tony-macbook
+  cores: 8
+  loadavg: [7.50, 4.68, 3.14]          # 1m/5m/15m; 4/2075 runnable/total
+  load_per_core: [0.94, 0.59, 0.39]    # rising trend, 1m near saturation
+  memory:
+    total: 15Gi
+    used: 12Gi
+    available: 2.4Gi
+    swap_total: 26Gi
+    swap_used: 6.2Gi                   # memory pressure is likely load driver
+  disk:
+    root_use_pct: 25                   # / 55G of 228G, 163G avail — no pressure
+    tmp_use_pct: 22
+  failed_units:
+    user: []
+    system: [apport-autoreport.service] # crash-reporting unit; benign, may
+                                        # indicate a recent app crash
+  gpu: nvidia-smi not present          # no NVIDIA telemetry
+
+recommendations:
+  - >-
+    Follow-up read-only pass to name top memory/CPU consumers (ps/top by RSS,
+    swapon --show, recent journal errors) — outside this scenario's command
+    whitelist; needs a declared next step.
+  - >-
+    Watch item: if 1m load stays >=1.0/core, remediation is a which-process
+    decision — gated on human review per card.
+  - >-
+    apport-autoreport.service: review recent crash reports when convenient;
+    resetting it is a mutation, out of scope.
+  - >-
+    If a remote target was intended, card spec must declare target_host=
+    explicitly before rerun.
+
+gate: human reviews this report before any remediation — none performed.
+verdict: pass                           # evidence collected, report delivered
+artifacts:
+  - reports/2026-10-27-devnest-host-load-tony-macbook.md   # gitignored local copy
+  - docs/ssot/jobs/devnest/2026-10-27-host-load-tony-macbook.yml
+board: progress + result posted via board-api /comment
