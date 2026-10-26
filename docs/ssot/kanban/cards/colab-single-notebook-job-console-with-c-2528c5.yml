@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: doing
-updated: 2026-10-26 08:50
+updated: 2026-10-26 09:01
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -72,6 +72,12 @@ comms:
   text: 'mn01 dispatch picked up card. Prior commits 3f4dcabbb/660ebf546/20c89df3a are not in this repo (never pushed)
     — re-implementing Phase 1 in this worktree: console notebook, runtime registry/preflight, lease-aware launcher,
     t4-session-warmup, runner per-boot identity, tests, kb+lesson updates.'
+- at: 2026-10-26 09:01
+  from: devin
+  text: 'Phase 1 re-landed in this worktree (prior branch never pushed): ada-nest-job-console.ipynb + generator,
+    runtime_registry.py (queue/runtime-sessions/), gated preflight + boot-scoped runner.id launcher, t4-session-warmup
+    w/ QUEUE_PENDING overlap, runner own-marks cleanup, JOBS.py manifest, mcp-colab colab_session_status + pack_status
+    fix, kb+lesson 2231 updated. 21 sandbox tests green incl end-to-end drain.'
 action:
   repo: chaba
   type: dispatch
