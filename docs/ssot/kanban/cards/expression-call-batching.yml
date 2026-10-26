@@ -1,7 +1,7 @@
 id: expression-call-batching
 title: Batch/defer set_facial_expression — cosmetic calls re-bill full context per round
 column: doing
-updated: 2026-10-26 08:47
+updated: 2026-10-26 08:52
 priority: medium
 tags:
 - ada
@@ -31,6 +31,12 @@ comms:
 - at: 2026-10-26 08:47
   from: chaba
   text: started devin-task-20261026-084719-parent-live-session-token-diet on idc02 (dispatch)
+- at: 2026-10-26 08:52
+  from: devin
+  text: 'Explored: option (a) inline text markers infeasible on native-audio voice — reply text only exists as speech
+    transcription, markers would be spoken aloud. Implementing (b): per-turn + per-minute expression budget extending
+    ADA_TOOL_CALL_BUDGET semantics, plus instruction diet (once-per-reply -> on-change-only) since routine cadence
+    is the real cost (17k calls/7d).'
 action:
   repo: ada-voice
   type: dispatch
