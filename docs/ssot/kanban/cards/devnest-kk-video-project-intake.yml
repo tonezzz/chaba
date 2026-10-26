@@ -1,7 +1,7 @@
 id: devnest-kk-video-project-intake
 title: Add KK PDF to DevNest video-project intake
 column: review
-updated: 2026-10-26 17:58
+updated: 2026-10-26 18:00
 brief: Let KK send a PDF plus a short request in TG/DevNestHA and receive a tracked, batched short-video project
   plan.
 priority: high
@@ -68,5 +68,11 @@ comms:
     review after the dispatch process exited failure, and document/PDF ingestion has not been deployed/verified.
     Required next gate: inspect/fix branch, deploy relay, then live PDF intake smoke. Once live, send the PDF with
     a project caption in the Inbox topic.'
+- at: 2026-10-26 18:00
+  from: devin
+  text: Telegram update 954573593 arrived in DevNestHA General with caption "KK's short movie materials." The current
+    relay captured only the text/caption; no document/file_id was persisted, so no project was created and the PDF
+    has not entered DevNest storage. Do not claim intake success. Resend is required after the document-ingestion
+    fix is deployed; then verify source hash, project card, extracted text, and [devnestha] INTAKE response.
 review_kind: verify
 claim: {}
