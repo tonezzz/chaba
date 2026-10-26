@@ -1,7 +1,7 @@
 id: expression-call-batching
 title: Batch/defer set_facial_expression — cosmetic calls re-bill full context per round
 column: doing
-updated: 2026-10-26 08:52
+updated: 2026-10-26 09:02
 priority: medium
 tags:
 - ada
@@ -37,6 +37,13 @@ comms:
     transcription, markers would be spoken aloud. Implementing (b): per-turn + per-minute expression budget extending
     ADA_TOOL_CALL_BUDGET semantics, plus instruction diet (once-per-reply -> on-change-only) since routine cadence
     is the real cost (17k calls/7d).'
+- at: 2026-10-26 09:02
+  from: devin
+  text: 'Done (b): ADA_EXPRESSION_TURN_BUDGET=2 + ADA_EXPRESSION_MINUTE_BUDGET=4 on applied calls; over-cap gets
+    soft ok result + no face change + expression_throttled ops event. Instruction diet: once-per-reply -> on-material-tone-change.
+    (a) infeasible on native-audio voice — no non-spoken text channel. Focused tests + tool-lint clean; job doc
+    at docs/ssot/jobs/ada/2026-10-26-expression-call-batching.yml. Measure via call-logs (calls/day) + usage.jsonl
+    (in/turn) after deploy.'
 action:
   repo: ada-voice
   type: dispatch
