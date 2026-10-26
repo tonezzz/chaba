@@ -1,33 +1,35 @@
 id: runner-auto-queue
 title: 1 queued card(s) unsatisfiable by the live runner fleet
-brief: action.labels/action.host are hard requirements — a queued card nothing satisfies
-  starves silently. Fix the card's requirements or teach a host the label (RUNNER_LABELS
-  in runner-agent.service + mirror in ssot.kanban.yml runner_fleet).
-column: review
+brief: action.labels/action.host are hard requirements — a queued card nothing satisfies starves silently. Fix the
+  card's requirements or teach a host the label (RUNNER_LABELS in runner-agent.service + mirror in ssot.kanban.yml
+  runner_fleet).
+column: done
 review_kind: triage
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
 note: '- opencode-closeout-probe-omen: pinned to tony-omen not in live fleet'
-updated: '2026-10-26'
+updated: 2026-10-26 07:18
 comms:
 - at: 2026-10-13 07:23
   from: devin
-  text: '2026-10-13 sweep: STALE — all 4 flagged cards already dispatched+done on
-    idc03 (ada-chat-text-lane verified deploy, ada-gemini-quota-breaker done, guard-card-yaml
-    verified=True, lab-review-sweep done). idc03 advertises ada,cpu,small,ssd,always-on.
-    No live unsatisfiable queue.'
+  text: '2026-10-13 sweep: STALE — all 4 flagged cards already dispatched+done on idc03 (ada-chat-text-lane verified
+    deploy, ada-gemini-quota-breaker done, guard-card-yaml verified=True, lab-review-sweep done). idc03 advertises
+    ada,cpu,small,ssd,always-on. No live unsatisfiable queue.'
 - at: 2026-10-13 07:23
   from: tony
   text: closed by tony
 - at: 2026-10-13 10:52
   from: chaba
-  text: 'auto-reconciled runner-auto-queue.yml.local-conflict-20261013-105211: note:
-    ''Auto-recovered 2026-10-13: every queued card is claimable.'' -> "- ada-chat-text-lane-provider-reconnects-c-8ad4bc:
-    labels [''ada''] satisfied by no live runner (fleet advertises [])\n- ada-gemini-quota-breaker:
-    labels [''ada''] satisfied by no live runner (fleet advertises [])\n- guard-card-yaml-syntax-validation-at-wri-a39362:
-    labels [''cpu'', ''small''] satisfied by no live runner (fleet advertises [])\n-
-    lab-review-sweep-bli'
+  text: 'auto-reconciled runner-auto-queue.yml.local-conflict-20261013-105211: note: ''Auto-recovered 2026-10-13:
+    every queued card is claimable.'' -> "- ada-chat-text-lane-provider-reconnects-c-8ad4bc: labels [''ada''] satisfied
+    by no live runner (fleet advertises [])\n- ada-gemini-quota-breaker: labels [''ada''] satisfied by no live runner
+    (fleet advertises [])\n- guard-card-yaml-syntax-validation-at-wri-a39362: labels [''cpu'', ''small''] satisfied
+    by no live runner (fleet advertises [])\n- lab-review-sweep-bli'
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
 action:
   status: done
+claim: {}
