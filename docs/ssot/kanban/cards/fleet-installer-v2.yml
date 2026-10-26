@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-26 09:00
+updated: 2026-10-26 09:01
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -105,6 +105,10 @@ comms:
   from: chaba
   text: 'cf-dns-upsert ran on idc02 via the armed watcher: created: A app.surf-thailand.com -> 157.85.102.125 (proxied=true)
     — app.surf-thailand.com A record -> 157.85.102.125 (proxied). Watcher self-disabled.'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-070642-installer-v2-keyless-enroll-en no longer active on idc02 but card
+    still says running — sweeping its branch'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
