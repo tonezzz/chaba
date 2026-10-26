@@ -164,6 +164,8 @@ PAGE = r"""<!doctype html>
 
   <div id="needs-you" class="px-3 pt-2"></div>
 
+  <div id="projects" class="px-3"></div>
+
   <div id="board" class="d-normal"></div>
 
   <div id="overlay"><div id="modal">
@@ -213,9 +215,18 @@ function cardsFor(t) {
   if (t === 'lab') return DATA.cards.filter(isLab).sort((a,b) => String((a.lab||{}).review_by||'~').localeCompare((b.lab||{}).review_by||'~'));
   return DATA.cards.filter(c => (c.column||'backlog') === t);
 }
+// normalized tag+project tokens for filtering — `project: foo` and
+// `project:foo` both reduce to `project:foo`, so a filter token matches
+// either spelling (board-project-rollup)
+function normTags(c) {
+  const t = (c.tags || []).map(x => String(x));
+  const p = c.project ? (Array.isArray(c.project) ? c.project : [c.project]) : [];
+  return t.concat(p.map(x => 'project:' + x))
+    .map(x => x.replace(/\s*:\s*/, ':')).join(' ');
+}
 function matchQ(c, qq) {
   if (!qq) return true;
-  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
+  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')+' '+normTags(c)).toLowerCase();
   return qq.toLowerCase().split(/\s+/).every(w => hay.includes(w));
 }
 // card-level ask — one standing decision per card, schema
@@ -323,8 +334,72 @@ function renderColMenu() {
   ).join('');
 }
 
+// per-project rollup band — `project: <slug>` tags (or the project:
+// field) group cards; the band is a filter switcher (click a slug to
+// scope the board, click again to clear) plus a per-project card list,
+// stage chip and next-action line. Stage comes from the linked CMS
+// page when board-api enriched it, else derived from member columns.
+let projCollapsed = false;
+try { projCollapsed = localStorage.getItem('b2-proj-collapsed') === '1'; } catch (e) {}
+const PCOLCLS = {backlog:'bg-slate-700/70 text-slate-300', doing:'bg-sky-800/80 text-sky-100',
+  review:'bg-violet-800/70 text-violet-100', done:'bg-emerald-900/70 text-emerald-200',
+  lab:'bg-fuchsia-900/60 text-fuchsia-200'};
+function renderProjects() {
+  const el = document.getElementById('projects');
+  const projs = (DATA && DATA.projects) || [];
+  if (!projs.length) { el.innerHTML = ''; return; }
+  let h = '<div class="bg-card border border-slate-700 rounded-lg px-3 py-2 mb-1">' +
+    `<button id="proj-tog" class="text-[10px] uppercase tracking-wide text-slate-500 hover:text-slate-300">${projCollapsed ? '▸' : '▾'} 📁 Projects (${projs.length})</button>`;
+  if (!projCollapsed) {
+    h += '<div class="flex gap-3 mt-2 overflow-x-auto pb-1">';
+    for (const p of projs) {
+      const chips = Object.entries(p.by_column || {}).map(([col, n]) =>
+        `<span class="badge ${PCOLCLS[col] || PCOLCLS.backlog}">${esc(col)} ${n}</span>`).join(' ');
+      const rows = (p.cards || []).slice(0, 8).map(cc =>
+        `<div class="pcard flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-slate-800 cursor-pointer" data-id="${esc(cc.id)}">` +
+        `<span class="badge ${PCOLCLS[cc.column] || PCOLCLS.backlog} shrink-0">${esc(cc.column)}</span>` +
+        `<span class="text-[11px] text-slate-300 truncate">${esc(cc.title)}</span>` +
+        (cc.needs_you ? `<span class="badge bg-amber-800/80 text-amber-100 shrink-0">❓${cc.needs_you}</span>` : '') +
+        '</div>').join('');
+      const more = (p.cards || []).length > 8
+        ? `<div class="text-[10px] text-slate-500 px-1.5">+${p.cards.length - 8} more — filter to see all</div>` : '';
+      const na = p.next_action;
+      const naTxt = na ? (na.kind === 'ask' ? '❓ ' : na.kind === 'running' ? '⚙ ' : na.kind === 'queued' ? '⏳ ' : '▶ ') + na.text : '✔ all cards done';
+      const active = q === 'project:' + p.slug;
+      h += `<div class="pj shrink-0 rounded border ${active ? 'border-sky-500' : 'border-slate-700/60'} p-2" style="min-width:250px;max-width:320px">` +
+        '<div class="flex items-center gap-1.5 flex-wrap">' +
+          `<button class="pj-filter text-[13px] font-medium text-teal-300 hover:text-teal-200" data-slug="${esc(p.slug)}" title="${active ? 'clear the project filter' : 'filter the board to this project'}">📁 ${esc(p.slug)}</button>` +
+          `<a class="text-[10px] text-slate-500 hover:text-teal-300" href="https://idc03.taila0626a.ts.net/cms/#/${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="project page — stage is owned by the CMS doc">page ↗</a>` +
+          `<span class="badge bg-sky-800/60 text-sky-200">${esc(p.stage)}${p.stage_source === 'cms' ? ' · cms' : ''}</span>` +
+          `<span class="text-[10px] text-slate-500 ml-auto">${p.n}</span>` +
+        '</div>' +
+        `<div class="flex gap-1 flex-wrap mt-1">${chips}</div>` +
+        `<div class="mt-1">${rows}${more}</div>` +
+        `<div class="text-[11px] text-slate-400 mt-1 border-t border-slate-700/50 pt-1">next: ${esc(naTxt)}</div>` +
+      '</div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h + '</div>';
+  const tog = document.getElementById('proj-tog');
+  if (tog) tog.onclick = () => {
+    projCollapsed = !projCollapsed;
+    try { localStorage.setItem('b2-proj-collapsed', projCollapsed ? '1' : '0'); } catch (e) {}
+    renderProjects();
+  };
+  el.querySelectorAll('.pcard').forEach(r =>
+    r.onclick = () => openModal(r.dataset.id));
+  el.querySelectorAll('.pj-filter').forEach(b => b.onclick = () => {
+    const v = 'project:' + b.dataset.slug;
+    q = (q === v) ? '' : v;
+    localStorage.setItem('b2-q', q);
+    renderBoard();
+  });
+}
+
 function renderBoard() {
   if (document.getElementById('q').value !== q) document.getElementById('q').value = q;
+  renderProjects();
   const visCols = COLS.filter(c => !hiddenCols.has(c.id));
   document.getElementById('board').innerHTML = visCols.map(colHtml).join('')
     || '<div class="text-slate-500 text-sm p-4 italic">all columns hidden — use the ▦ columns menu</div>';
@@ -870,6 +945,7 @@ def main():
         "columns": man["columns"],
         "doing_limit": limit,
         "cards": cards,
+        "projects": _rb.project_rollup(cards),
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     json_path = out_path.with_name("cards.json")

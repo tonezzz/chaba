@@ -26,6 +26,9 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lib.projects import project_rollup  # noqa: E402
+
 MANIFEST = REPO / "docs/ssot/kanban/ssot.kanban.yml"
 STATE = REPO / "docs/ssot/kanban/.render-state"
 POLL_SECONDS = 30
@@ -332,6 +335,7 @@ def main():
     <main class="flex-1 min-w-0 board-main">
       <div id="needs-you"></div>
       <div id="wip-warn"></div>
+      <div id="projects-band" class="mb-4"></div>
       <div id="board-cols" class="board-cols pb-4"></div>
       <p id="gen-note" class="text-xs text-slate-500 italic"></p>
     </main>
@@ -494,6 +498,64 @@ function commsList(c) {{
   return h + '</div>';
 }}
 
+// normalized tag+project tokens for filtering — `project: foo` and
+// `project:foo` both reduce to `project:foo`, so the filter token
+// matches either spelling (board-project-rollup)
+function normTags(c) {{
+  const t = (c.tags || []).map(x => String(x));
+  const p = c.project ? (Array.isArray(c.project) ? c.project : [c.project]) : [];
+  return t.concat(p.map(x => 'project:' + x))
+    .map(x => x.replace(/\\s*:\\s*/, ':')).join(' ');
+}}
+
+const PROJ_COLCLS = {{backlog:'bg-slate-700/70 text-slate-300', doing:'bg-sky-800/80 text-sky-100',
+                review:'bg-violet-800/70 text-violet-100', done:'bg-emerald-900/70 text-emerald-200',
+                lab:'bg-fuchsia-900/60 text-fuchsia-200'}};
+
+function renderProjects() {{
+  const el = document.getElementById('projects-band');
+  const projs = (DATA && DATA.projects) || [];
+  if (!projs.length) {{ el.innerHTML = ''; return; }}
+  let h = '<div class="bg-card border border-slate-700 rounded-lg p-3">' +
+    '<div class="text-[10px] uppercase tracking-wide text-slate-500 mb-2">📁 Projects (' + projs.length + ')</div>' +
+    '<div class="space-y-2">';
+  for (const p of projs) {{
+    const colChips = Object.entries(p.by_column || {{}}).map(([col, n]) =>
+      `<span class="text-[10px] ${{PROJ_COLCLS[col] || PROJ_COLCLS.backlog}} rounded px-1.5 py-0.5">${{esc(col)}} ${{n}}</span>`).join(' ');
+    const rows = (p.cards || []).map(cc =>
+      `<div class="proj-card flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-800 cursor-pointer" data-id="${{esc(cc.id)}}" data-text="${{esc(((cc.title||'')+' '+cc.id+' project:'+p.slug).toLowerCase())}}">` +
+      `<span class="text-[10px] ${{PROJ_COLCLS[cc.column] || PROJ_COLCLS.backlog}} rounded px-1.5 py-0.5 shrink-0">${{esc(cc.column)}}</span>` +
+      `<span class="text-xs text-slate-300 truncate">${{esc(cc.title)}}</span>` +
+      (cc.needs_you ? `<span class="text-[10px] bg-amber-800/80 text-amber-100 rounded px-1.5 py-0.5 shrink-0">❓${{cc.needs_you}}</span>` : '') +
+      `</div>`).join('');
+    const na = p.next_action;
+    const naTxt = na ? (na.kind === 'ask' ? '❓ ' : na.kind === 'running' ? '⚙ ' : na.kind === 'queued' ? '⏳ ' : '▶ ') + na.text : '✔ all cards done';
+    h += `<div class="proj border border-slate-700/60 rounded p-2" data-slug="${{esc(p.slug)}}">` +
+      `<div class="flex items-center gap-2 flex-wrap">` +
+        `<a class="text-sm font-medium text-teal-300 hover:text-teal-200" href="https://idc03.taila0626a.ts.net/cms/#/${{encodeURIComponent(p.slug)}}" target="_blank" rel="noopener" title="project page — stage is owned by the CMS doc">📁 ${{esc(p.slug)}}</a>` +
+        `<button class="proj-filter text-[10px] bg-slate-700 hover:bg-slate-600 rounded px-1.5 py-0.5" data-slug="${{esc(p.slug)}}" title="filter the board to this project">filter</button>` +
+        `<span class="text-[10px] bg-sky-800/60 text-sky-200 rounded px-1.5 py-0.5">${{esc(p.stage)}}${{p.stage_source === 'cms' ? ' · cms' : ''}}</span>` +
+        colChips +
+        `<span class="text-[10px] text-slate-500 ml-auto">${{p.n}} card${{p.n === 1 ? '' : 's'}}</span>` +
+      `</div>` +
+      `<div class="mt-1.5">${{rows}}</div>` +
+      `<div class="text-xs text-slate-400 mt-1.5">next: ${{esc(naTxt)}}</div>` +
+    `</div>`;
+  }}
+  el.innerHTML = h + '</div></div>';
+  el.querySelectorAll('.proj-card').forEach(r =>
+    r.onclick = () => {{ scrollToCard(r.dataset.id); showCard(r.dataset.id); }});
+  el.querySelectorAll('.proj-filter').forEach(b =>
+    b.onclick = e => {{
+      e.stopPropagation();
+      const f = document.getElementById('card-filter');
+      const v = 'project:' + b.dataset.slug;
+      f.value = (filter_q === v) ? '' : v;
+      filter_q = f.value;
+      applyFilter();
+    }});
+}}
+
 function cardHtml(c) {{
   const claim = c.claim || {{}};
   let badges = '';
@@ -542,7 +604,7 @@ function cardHtml(c) {{
     badges += `<span class="text-xs ${{cls}} rounded px-1.5 py-0.5" title="${{esc(k.how || '')}}">${{mark}} ${{esc(k.k)}}</span> `;
   }}
 
-  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.ref||'')).toLowerCase())}}">` +
+  return `<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2 cursor-pointer hover:border-slate-500" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+(c.ref||'')+' '+normTags(c)).toLowerCase())}}">` +
     `<div class="font-medium text-sm">${{esc(c.title || c.id)}}</div>` +
     (badges ? `<div class="mt-1.5 flex flex-wrap gap-1">${{badges}}</div>` : '') +
     `<div class="text-xs text-slate-400 mt-1.5">${{esc(c.note || '')}}</div>` +
@@ -730,7 +792,7 @@ function render() {{
     let any = false;
     for (const c of DATA.cards) if ((c.column || 'backlog') === col.id) {{
       any = true;
-      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300 truncate" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
+      list += `<div class="side-card px-2 py-1.5 rounded hover:bg-slate-800 cursor-pointer text-slate-300 truncate" data-id="${{esc(c.id)}}" data-text="${{esc(((c.title||'')+' '+c.id+' '+normTags(c)).toLowerCase())}}">${{esc(c.title || c.id)}}</div>`;
     }}
     if (!any) list += '<div class="text-slate-600 text-xs px-2">—</div>';
   }}
@@ -742,6 +804,7 @@ function render() {{
   document.getElementById('gen-note').textContent =
     `Rendered ${{DATA.generated}} — cards in docs/ssot/kanban/cards/ · live (polls ${{POLL_SECONDS}}s) · v${{BUILT}}`;
 
+  renderProjects();
   wire();
   setLang(lang);
   applyFilter();
@@ -927,9 +990,22 @@ function applyFilter() {{
       !document.querySelector(`.board-card[data-id="${{CSS.escape(c.id)}}"]`));
     if (hit) {{ render(); return; }}
   }}
-  document.querySelectorAll('.board-card,.side-card').forEach(el => {{
+  document.querySelectorAll('.board-card,.side-card,.proj-card').forEach(el => {{
     el.style.display = el.dataset.text.includes(q) ? '' : 'none';
   }});
+  // project blocks follow the same filter — a block with no visible
+  // member rows collapses; the band itself hides when nothing matches
+  let anyProj = false;
+  document.querySelectorAll('#projects-band .proj').forEach(el => {{
+    let vis = 0;
+    el.querySelectorAll('.proj-card').forEach(r => {{ if (r.style.display !== 'none') vis++; }});
+    const show = !q || vis > 0;
+    el.style.display = show ? '' : 'none';
+    if (show) anyProj = true;
+  }});
+  const band = document.getElementById('projects-band');
+  if (band.firstElementChild)
+    band.firstElementChild.style.display = (!q || anyProj) ? '' : 'none';
 }}
 
 async function load() {{
@@ -1013,6 +1089,7 @@ setInterval(load, POLL_MS);
         "doing_limit": limit,
         "over_limit": over,
         "cards": cards,
+        "projects": project_rollup(cards),
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     json_path = out_path.with_name("cards.json")

@@ -149,6 +149,11 @@ import dispatch_repos as dr
 import board_notify as bn
 
 REPO = Path(__file__).resolve().parent.parent.parent
+# repo scripts/ on the path for scripts/lib/* shared helpers — also the
+# import root the in-function `from lib.cms_index` calls already assumed
+sys.path.insert(0, str(REPO / "scripts"))
+from lib.projects import card_projects, project_rollup  # noqa: E402
+
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
@@ -1156,6 +1161,16 @@ def do_create(body: dict, frm: str) -> dict:
         v = str(body.get(key) or "").strip()
         if v:
             card[key] = v[:120]
+    # dedicated project field (board-project-rollup) — str or list; the
+    # `project: <slug>` tag remains the canonical mechanism, both union
+    proj = body.get("project")
+    if proj is not None:
+        if isinstance(proj, list):
+            proj = [str(x).strip().lower() for x in proj if str(x).strip()]
+            if proj:
+                card["project"] = proj[:10]
+        elif str(proj).strip():
+            card["project"] = str(proj).strip().lower()[:60]
     if tags:
         card["tags"] = [str(t)[:40] for t in tags][:20]
     spec = str(body.get("spec") or "").strip()
@@ -1943,6 +1958,72 @@ def do_report(body: dict, frm: str) -> dict:
             "slug": r["slug"]}
 
 
+def cms_project_stage(slug: str):
+    """Best-effort stage from the project's ada-cms-pages doc — the page
+    slug IS the project slug (ssot.project-lifecycle.yml). None on any
+    miss so the caller keeps the column-derived stage; GET /cards stays
+    fast even while MDDB is down."""
+    try:
+        doc = _mddb_post("get", {"collection": MDDB_PAGES, "key": slug,
+                                 "lang": "en"}, timeout=4)
+    except Exception:
+        return None
+    if not isinstance(doc, dict):
+        return None
+    st = _meta_first(doc.get("meta") or {}, "stage").strip()
+    if st:
+        return st
+    body = doc.get("contentMd") or doc.get("content_md") or ""
+    m = re.search(r"(?im)^\s*stage\s*:\s*([a-z][a-z0-9-]{0,30})\s*$",
+                  str(body))
+    return m.group(1) if m else None
+
+
+def _enrich_stage(row: dict) -> dict:
+    st = cms_project_stage(row["slug"])
+    if st:
+        row["stage"] = st
+        row["stage_source"] = "cms"
+    return row
+
+
+def cards_project_view(payload: dict, qs: dict):
+    """GET /cards query views (board-project-rollup) — (code, obj):
+
+      ?projects              all project rollups, CMS-stage enriched
+      ?project=<slug>        that project's rollup + member cards
+                             (404 + known slugs when nothing matches)
+      ?project=<slug>&cards=0   the rollup only, member cards omitted
+
+    Rollups come from the rendered payload (`projects` key, written by
+    render-board.py) when present and are recomputed from `cards`
+    otherwise, so a pre-feature cards.json still answers."""
+    cards = payload.get("cards") or []
+    projs = payload.get("projects")
+    if not isinstance(projs, list):
+        projs = project_rollup(cards)
+    else:
+        projs = [dict(p) for p in projs]
+    if qs.get("project"):
+        slug = qs["project"][0].strip().lower()
+        row = next((p for p in projs if p.get("slug") == slug), None)
+        if row is None:
+            return 404, {"error": f"no project {slug!r}", "project": slug,
+                         "known": [p.get("slug") for p in projs]}
+        _enrich_stage(row)
+        out = {"generated": payload.get("generated"), "project": row}
+        if qs.get("cards", ["1"])[0] not in ("0", "false", "no"):
+            out["cards"] = [c for c in cards
+                            if slug in card_projects(c)]
+        return 200, out
+    # ?projects — fan-out is bounded: CMS enrichment stops after the
+    # first few rows so a dead MDDB can't turn a poll into a wait
+    for p in projs[:8]:
+        _enrich_stage(p)
+    return 200, {"generated": payload.get("generated"),
+                 "projects": projs}
+
+
 _render_flag = threading.Event()
 _render_worker_started = False
 
@@ -1998,14 +2079,20 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write("board-api %s\n" % (fmt % args))
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        u = urlparse(self.path)
+        path = u.path
         if path == "/health":
             return self._send(200, {"ok": True})
         if path == "/cards":
             j = REPO / "stacks/web/public/apps/board/cards.json"
-            if j.exists():
-                return self._send(200, json.loads(j.read_text()))
-            return self._send(404, {"error": "no cards.json yet"})
+            if not j.exists():
+                return self._send(404, {"error": "no cards.json yet"})
+            payload = json.loads(j.read_text())
+            qs = urllib.parse.parse_qs(u.query, keep_blank_values=True)
+            if "project" in qs or "projects" in qs:
+                code, obj = cards_project_view(payload, qs)
+                return self._send(code, obj)
+            return self._send(200, payload)
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -2500,6 +2587,42 @@ def _selftest() -> None:
     assert c4["column"] == "backlog"
     assert any("re-spawned from report page" in m["text"]
                for m in c4["comms"])
+
+    # dedicated project field + GET /cards?project view
+    # (board-project-rollup) — str|list stored lowercased; the tag form
+    # unions with it in card_projects()
+    do_create({"title": "t", "id": "spawn-pj", "project": "Demo-Proj",
+               "tags": ["project: tagged-proj"]}, "devin")
+    cpj = mkfile("spawn-pj")
+    assert cpj["project"] == "demo-proj"
+    do_create({"title": "t", "id": "spawn-pj2",
+               "project": ["a", "b"]}, "devin")
+    assert mkfile("spawn-pj2")["project"] == ["a", "b"]
+    real_mddb0 = _mddb_post
+    try:
+        globals()["_mddb_post"] = lambda *a, **k: {
+            "contentMd": "goal: x\nstage: beta\nnext: y"}
+        pay = {"cards": [cpj,
+                         {"id": "x1", "title": "t",
+                          "tags": ["project:demo-proj"]}]}
+        code, obj = cards_project_view(pay, {"project": ["demo-proj"]})
+        assert code == 200 and obj["project"]["slug"] == "demo-proj"
+        assert obj["project"]["stage"] == "beta"
+        assert obj["project"]["stage_source"] == "cms"
+        assert len(obj["cards"]) == 2
+        code, obj = cards_project_view(pay, {"project": ["Demo-Proj"]})
+        assert code == 200          # slugs normalize to lowercase
+        code, obj = cards_project_view(pay, {"project": ["nope"]})
+        assert code == 404 and "demo-proj" in obj["known"]
+        code, obj = cards_project_view(pay, {"projects": [""]})
+        assert code == 200 and any(
+            p["slug"] == "demo-proj" for p in obj["projects"])
+        # dead MDDB degrades to the column-derived stage, never an error
+        globals()["_mddb_post"] = lambda *a, **k: 1 / 0
+        code, obj = cards_project_view(pay, {"project": ["demo-proj"]})
+        assert code == 200 and obj["project"]["stage_source"] == "columns"
+    finally:
+        globals()["_mddb_post"] = real_mddb0
     globals()["CARD_DIR"] = REPO / "docs/ssot/kanban/cards"
 
     # save()/load() round-trip guard — a card body whose dump doesn't

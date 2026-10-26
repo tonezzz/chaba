@@ -1,0 +1,47 @@
+title: Board project rollup — `project:` tag filter + per-project band
+card: board-project-rollup
+date: 2026-10-26
+status: done
+
+what: |
+  Cards are grouped into projects via the `project: <slug>` tag (the
+  canonical mechanism per ssot.project-lifecycle.yml — "page slug = card
+  tag value") or a dedicated `project:` field (str|list); both sources
+  union and normalize to lowercase.
+
+  - scripts/lib/projects.py (new): card_projects() extraction +
+    project_rollup() — per-project slug, member count, by_column
+    tallies, stage, open ask/request count, next_action line, and the
+    member card list (id/title/column/priority/needs_you).
+  - render-board.py + render-board2.py write `projects` into
+    cards.json; both board pages render a collapsible "📁 Projects"
+    band (stage chip, column chips, member rows -> card modal, next
+    line). Clicking a project slug sets the filter to `project:<slug>`
+    (click again to clear); both views' filter haystacks now include
+    tags + project with `x: y` -> `x:y` normalization.
+  - board-api GET /cards query params: ?project=<slug> returns that
+    project's rollup + member cards (404 + `known` slugs on a miss,
+    &cards=0 omits members); ?projects returns all rollups. Stage is
+    read from the linked ada-cms-pages doc (meta.stage or a
+    `stage: <word>` line, 4s timeout, bounded to 8 projects in the list
+    view) and falls back to a column-derived stage — dead MDDB never
+    breaks the endpoint.
+  - POST /card accepts `project` (str|list, stored lowercased).
+  - card_schema documents `tags` and `project`; write_path documents
+    the query params.
+
+notes: |
+  board2 is the live default view (classic index.html is a redirect
+  stub), so the band exists in both but board2 is where Tony sees it.
+  The classic page stays feature-parity for the "one git revert away"
+  path.
+
+  Side fix: board-api now puts repo scripts/ on sys.path — the
+  pre-existing in-function `from lib.cms_index import` (report-create
+  index regen) was silently ImportError-ing on every call.
+
+verify: |
+  python3 -m unittest tests.board.test_project_rollup   (19 tests)
+  python3 scripts/board/board-api.py --selftest
+  curl 'http://127.0.0.1:8787/cards?projects'           (on idc03)
+  curl 'http://127.0.0.1:8787/cards?project=<slug>'
