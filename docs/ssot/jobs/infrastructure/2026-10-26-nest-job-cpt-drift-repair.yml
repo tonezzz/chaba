@@ -2,7 +2,7 @@ title: nest_job CPT drift — live chaba-boards plugin behind repo (v0.7.x vs v0
 date: 2026-10-26
 card: repair-wp-nest-job-cpt-drift
 domain: wp-boards / board-api
-status: awaiting-deploy-gate
+status: deployed-verified
 
 summary: >
   board-api POST /job fails upstream with WP REST 404 rest_no_route on
@@ -46,13 +46,22 @@ repair:
     - "rollback: redeploy any older dist zip the same way; or wp-admin
        Plugins -> deactivate chaba-boards (CPTs vanish, data stays)"
 
-verify_after_deploy:
-  - "bash scripts/wp-boards/verify-nest-job.sh  # types + anon privacy +
-     /job parent/child upsert round-trip through board-api"
-  - "expect: nest_job+activity in /wp/v2/types; anon GET = 200 [];
-     /job create/update return ok+post_id"
-  - "flip ssot.wp-boards.yml v0.8.0/v0.9.0 'pending deploy' -> DEPLOYED
-     with date"
+post_deploy_verified:
+  at: "2026-10-26 19:26 (dispatch 20261026-192455)"
+  checks:
+  - "/wp/v2/plugins (authed, idc03 creds): chaba-boards 0.9.0, status
+     active — repo and live plugin now match"
+  - "/wp/v2/types: 31 types, nest_job + activity present"
+  - "anon GET /wp/v2/nest_job + /wp/v2/activity -> 200 [] (private
+     posts invisible — privacy model intact)"
+  - "verify-nest-job.sh PASS: parent repair-verify-202610261925-parent
+     (post 2605), child -child (post 2606, parent=2605 via slug
+     resolution), parent update action=updated"
+  - "authed meta read-back: post 2605 meta status=done,
+     result_ref=probe://verify-ok, comms JSON log has both appended
+     entries — write+meta merge+read round-trip complete"
+  - "both health probes (wp-nest-job-cpt, wp-activity-cpt) answer 200"
+  - "ssot.wp-boards.yml v0.8.0/v0.9.0 flipped to DEPLOYED 2026-10-26"
 
 regression_probe:
   - "docs/ssot/infrastructure/ssot.health.home.web.yml gained
@@ -62,8 +71,9 @@ regression_probe:
      DevNest job needs /job."
 
 followups:
-  - "activity-posts.timer on idc03 should start succeeding after deploy —
-     spot-check its journal for the first 201s"
+  - "activity-posts.timer on idc03 is disabled+inactive (checked
+     2026-10-26) — enabling it is a separate decision; the activity CPT
+     now exists so its POSTs would succeed"
   - "consider adding board-api /job read op (or /wp/v2 read proxy) so
      meta round-trip can be verified without WP creds — today only the
      writer path is exercised end-to-end"
