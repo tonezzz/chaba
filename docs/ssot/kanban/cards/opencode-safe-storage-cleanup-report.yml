@@ -1,0 +1,39 @@
+id: opencode-safe-storage-cleanup-report
+title: Safe periodic storage cleanup with OpenCode report and Telegram alert
+column: backlog
+updated: 2026-10-26 09:31
+brief: Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy
+  checks and Telegram report.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- storage
+- cleanup
+- telegram
+- safety
+spec: 'Verify and operationalize storage cleanup safely. Do not let OpenCode invent rm commands or delete arbitrary
+  paths. Build a deterministic, allowlisted cleanup runner plus read-only report: capture df, root/home top-level
+  usage, target sizes, active writers/locks, Devin DB quick_check and session locks, dispatch worktree/task terminal
+  state, protected paths, and candidate list. First automatic targets may include only policy-approved rebuildable
+  caches/log retention and Devin session pruning through the existing precleanup/prune path; never delete model-archive,
+  backups, git worktrees, dispatch tasks, secrets, active databases, containers/volumes, or the ada-ha stale clone
+  without explicit review. Add dry-run by default, an explicit guarded apply mode, post-cleanup verification, freed-space/skipped-items
+  report, and Telegram delivery through existing board_notify BOARD_NOTIFY_CHANNEL=tg relay. Run a read-only OpenCode
+  review of the candidate report before apply; apply must be deterministic and refuse if preflight, DB integrity,
+  locks, backup/summary preservation, or verifier checks fail. Rollback/disable is the systemd timer kill switch.
+  Validate first on tony-dell only, then consider tony-omen/macbook. Acceptance: dry-run report, no mutation in
+  dry-run, JSON/Markdown artifact, TG report delivery smoke, apply mode deletes only declared automatic_ok targets,
+  and post-check confirms services/DBs healthy.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'OpenCode''s recent storage answer found only 53G free but missed the real largest consumers: model-archive
+  43G, ~/.cache 27G, ~/.config 17G, ~/.local 16G, and Devin DB/WAL ~5.8G. It also suggested unsafe generic rm/sudo
+  actions. This card makes the LLM read/report only and moves deletion behind deterministic policy gates.'
+ref: KNB-0903
+comms:
+- at: 2026-10-26 09:31
+  from: tony
+  text: card captured via board-api
