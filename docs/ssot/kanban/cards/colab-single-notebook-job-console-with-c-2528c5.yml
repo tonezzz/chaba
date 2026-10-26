@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: doing
-updated: 2026-10-26 09:01
+updated: 2026-10-26 09:02
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -78,6 +78,13 @@ comms:
     runtime_registry.py (queue/runtime-sessions/), gated preflight + boot-scoped runner.id launcher, t4-session-warmup
     w/ QUEUE_PENDING overlap, runner own-marks cleanup, JOBS.py manifest, mcp-colab colab_session_status + pack_status
     fix, kb+lesson 2231 updated. 21 sandbox tests green incl end-to-end drain.'
+- at: 2026-10-26 09:02
+  from: devin
+  text: 'Done in dispatch aa349421 (12 files): console notebook+generator, runtime_registry (queue/runtime-sessions/),
+    gated preflight+launcher with boot-scoped runner.id (PID-collision safe), t4-session-warmup overlapping pending
+    preps via QUEUE_PENDING, JOBS.py, mcp-colab colab_session_status + pack_status fix, kb + lesson 2231 updated,
+    job record yml. 30/30 colab tests pass incl end-to-end drain. NOT pushed (dispatch rules) — merge-sweep lands
+    the branch; then rclone-deploy the queue files to Drive (D'
 action:
   repo: chaba
   type: dispatch
