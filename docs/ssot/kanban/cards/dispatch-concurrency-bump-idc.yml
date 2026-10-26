@@ -1,7 +1,7 @@
 id: dispatch-concurrency-bump-idc
 title: Raise kanban-dispatch parallelism on idc02/idc03 runner-agents
 column: doing
-updated: 2026-10-27 05:36
+updated: 2026-10-27 05:37
 priority: medium
 note: 'Hosts idle (4 cores, ~10G free ea). Check per-host dispatch cap in kanban-dispatch/runner-agent config; bump
   to allow 2 concurrent card tasks/host where memory allows. Compounds w/ chat-local: cheap turns + more runners
@@ -24,6 +24,9 @@ comms:
 - at: 2026-10-27 05:36
   from: chaba
   text: started devin-task-20261027-053657-raise-kanban-dispatch-parallel on idc02 (dispatch)
+- at: 2026-10-27 05:37
+  from: devin
+  text: picked up on idc02 — reading runner-cap procedure + checking live caps/gates on idc02+idc03
 action:
   type: dispatch
   status: running
