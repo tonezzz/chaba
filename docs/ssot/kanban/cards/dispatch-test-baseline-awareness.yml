@@ -1,6 +1,6 @@
 id: dispatch-test-baseline-awareness
 title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
-column: backlog
+column: doing
 updated: 2026-10-26 08:29
 brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
   gate compare base vs branch or support explicit docs-only expected goals.
@@ -27,7 +27,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:29
+  from: tony-macbook
+  text: claimed
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
