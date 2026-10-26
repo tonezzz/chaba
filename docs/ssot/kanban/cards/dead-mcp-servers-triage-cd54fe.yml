@@ -1,7 +1,7 @@
 id: dead-mcp-servers-triage-cd54fe
 title: dead-mcp-servers-triage
 column: backlog
-updated: 2026-10-26 08:28
+updated: 2026-10-26 08:29
 priority: medium
 spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
   BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
@@ -17,6 +17,10 @@ comms:
 - at: 2026-10-26 08:28
   from: tony
   text: queued for processing
+- at: 2026-10-26 08:29
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   repo: chaba
   type: dispatch
