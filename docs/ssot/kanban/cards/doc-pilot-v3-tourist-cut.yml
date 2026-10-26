@@ -134,6 +134,10 @@ comms:
     8.2GiB (CPU cap 2GHz), tony-dell 4.3GiB, idc03 5.5GiB, idc02 4.0GiB, mn01 2.5GiB, current tony-macbook 1.4GiB.
     None is safe for this embedding job; no T5 process started. Colab T4 is the render stage, not a substitute for
     the missing T5 embedding memory. New path decision needed before any workaround.'
+- at: 2026-10-26 19:05
+  from: devin
+  text: 'raised request doc-v3-ltx-next-path: Read-only checks found no host with the 13GiB free RAM required for
+    T5-XXL embeddings for LTX shots 8-9. No embedding jo'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -167,4 +171,20 @@ requests:
   suggested: check-alternate-cpu-host
   answer: 'check-alternate-cpu-host — Recommended: authorize read-only RAM/thermal checks on candidate CPU hosts;
     report first and do not run anything until a safe host is confirmed'
+- id: doc-v3-ltx-next-path
+  ask: Read-only checks found no host with the 13GiB free RAM required for T5-XXL embeddings for LTX shots 8-9.
+    No embedding job has run. Which safe path should I take?
+  status: open
+  at: 2026-10-26 19:05
+  from: devin
+  options:
+  - id: static-only-while-waiting
+    label: 'Recommended: continue CPU-only NASA/private-proof plates, original ship and scale-map layers; keep Jupiter/Red
+      Spot as animatic placeholders until a larger-memory node is available'
+  - id: research-smaller-encoder
+    label: Research a smaller compatible prompt-embedding path offline; do not run a generation or change services
+      yet
+  - id: wait-for-memory-node
+    label: Pause LTX work until a host with at least 13GiB free RAM is available
+  suggested: static-only-while-waiting
 awaiting_action: true
