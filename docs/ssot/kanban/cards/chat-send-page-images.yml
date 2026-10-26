@@ -1,7 +1,7 @@
 id: chat-send-page-images
 title: chat_send page= mode — attach all CMS page images server-side
-column: doing
-updated: 2026-10-26 19:07
+column: review
+updated: 2026-10-26 19:09
 brief: 'Prod probe 2026-10-12: Kaewta nondeterministically handles photo asks — sometimes cms_read+image_url+deliver,
   sometimes invents URLs (surf-thailand.com/kk/..., unsplash → all 404), sometimes text-only phantom sends naming
   the page. Instruction-level fixes (identity rules, tool-doc verbatim clause, page self-instructions) help but
@@ -45,7 +45,16 @@ comms:
     turns each URL into its own bubble, chunks >5-msg pushes (kills the msgs[:5] silent tail-drop), reports images:[{url,ok,status}]
     per asset -> note says sent N/M + failed urls. tg gets same contract (send_photo returns bool), web loops per-asset,
     image_url untouched. Verified: new'
+- at: 2026-10-26 19:09
+  from: mn01
+  text: 'finished (ok): exit=0 obs/ada/2026-10-26-chat-send-page-images.yml`; board card updated with status comments.
+    | devin-task-20261026-114'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 obs/ada/2026-10-26-chat-send-page-images.yml`; board card updated with status comments. | devin-task-20261026-114100-chat-send-page-sa-beach-photos.service:
+    Consumed 1min 8.928s CPU time over 27min 27.807s wall clock time, 1.1G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
