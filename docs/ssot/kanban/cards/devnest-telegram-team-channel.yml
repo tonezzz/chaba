@@ -1,0 +1,33 @@
+id: devnest-telegram-team-channel
+title: Connect DevNest household AI team to Telegram group
+column: backlog
+updated: 2026-10-26 10:19
+brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
+  as a team.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- household-ai
+- team-channel
+spec: 'Establish a dedicated DevNest Telegram channel using the messaging-lane standard: one bot/lane token, speaker
+  tag, allowed group chat id, caller identity mapping, dedicated relay port, backend send URL, and start/finish
+  job notifications. Prefer a dedicated DevNest bot/lane rather than reusing Ada/KK/MN tokens. Keep tokens in idc03
+  ~/.config/secrets/telegram-devnest-bot.env via secret-drop; never put tokens in chat or repo. After Tony creates
+  the BotFather bot and group, discover the numeric group chat_id from a first message, configure TELEGRAM_ALLOWED_CHAT_IDS
+  and TELEGRAM_USER_CALLERS, choose an unused TG_WEBHOOK_LISTEN port, enable the relay, send a tagged smoke test,
+  then wire board/DevNest job start and finish events. Define household AI identities/tags and a notification policy
+  before enabling proactive reports.'
+action:
+  type: manual
+note: Tony will prepare the Telegram bot/group. Need a single focused handoff with required values and a safe secret
+  delivery path.
+ref: OPS-0905
+comms:
+- at: 2026-10-26 10:19
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 10:19
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
