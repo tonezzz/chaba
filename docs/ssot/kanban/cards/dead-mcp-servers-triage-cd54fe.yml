@@ -1,0 +1,16 @@
+id: dead-mcp-servers-triage-cd54fe
+title: dead-mcp-servers-triage
+column: backlog
+updated: 2026-10-26 07:43
+priority: medium
+spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
+  BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
+  (2) workflows — podman down, check if any YAML runbook still runs vs board-api queue verbs; (3) docs — chaba docs-mcp
+  fails, mddb + ssot-search cover the corpus (retire candidate). Also check mcp-focus last-use vs the board-api
+  focus flow — retire if superseded.'
+note: Each decision should land as config removal + SSOT status, or a repair.
+ref: OPS-0891
+comms:
+- at: 2026-10-26 07:43
+  from: tony
+  text: card captured via board-api
