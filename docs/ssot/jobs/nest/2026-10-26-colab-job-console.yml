@@ -1,0 +1,82 @@
+id: jobs/nest/2026-10-26-colab-job-console
+title: >-
+  Colab job console — canonical notebook + session guard + warmup,
+  landed in chaba repo
+card: colab-single-notebook-job-console-with-c-2528c5   # OPS-0874
+date: 2026-10-26
+runner: mn01 (dispatch worktree — repo landing only, no Drive/host mutations)
+status: delivered
+
+# Re-implementation of the never-pushed fix/colab-session-control work
+# (commits 3f4dcabbb/660ebf546/20c89df3a lived only on an idc03 checkout).
+# Naming matches the already-deployed Drive tree + lesson 2231:
+# queue/runtime-sessions/, ada-nest-job-console.ipynb, t4-session-warmup.
+
+deliverables:
+  notebook:
+    path: scripts/colab/ada-nest-job-console.ipynb
+    built_by: scripts/colab/build-job-console.py
+    deploy_to: gdrive:ada-nest/queue/ada-nest-job-console.ipynb
+    shape: instruction markdown + 2 code cells, no per-job cells
+  cells:
+    preflight: scripts/colab/preflight-cell.py      # cell 1
+    launcher: scripts/colab/queue-launcher-cell.py  # cell 2
+  shared:
+    registry: scripts/colab/runtime_registry.py
+    runner: scripts/colab/queue-runner.py
+    manifest: scripts/colab/JOBS.py
+  mcp: mcp-servers/mcp-colab/server.py  # +colab_session_status, pack_status fix
+  procedure: docs/kb/colab-mcp-jobs.md  # job-console section + warmup rule
+  lesson: colab-gpu-worker (post 2231, updated in place via board-api /lesson)
+
+session_guard:
+  registry_file: queue/runtime-sessions/<boot_id>.json
+  registry_fields: '{gpu, gpu_gb, ram_gb, drive_mounted, ts, runner}'
+  ttl_s: '300 (NEST_RUNTIME_TTL_S)'
+  rules:
+    - 'cell 1 registers + heartbeats this VM; refuses while another managed runtime record is fresh (ambiguous duplicate)'
+    - 'cell 2 refuses on: Drive unmounted, no GPU, fresh peer runtime, or a fresh queue heartbeat owned by another boot'
+    - 'deliberate dual-VM: ALLOW_SECOND_RUNTIME = True; queue lease remains the final writer arbiter'
+    - 'never auto-stops anything; Google Runtime > Manage Sessions is authoritative for uninstrumented notebooks'
+  pid_safety:
+    - 'queue/runner.id {pid,boot_id,worker,epoch,ts} is the only signalable identity; legacy runner.pid is never os.kill''d (PID numbers are per-VM on a shared Drive file)'
+    - 'same-VM zombie (live pid + stale heartbeat) is reaped; foreign records untouched; runner removes its marks only while they still name it'
+
+warmup_contract:
+  job: t4-session-warmup (JOBS[0], scope env)
+  behavior: >-
+    GPU matmul smoke (CPU-spin fallback) runs >=WARMUP_MIN_S (30) and
+    until the next job's bg prep exits, capped at WARMUP_MAX_S (300) —
+    the runner injects QUEUE_PENDING (name,log,Popen) so run code polls
+    the pending restore-hf-cache extract. Stats -> queue/warmup/<boot>.json,
+    gated via artifacts glob {boot_id} expansion.
+  live_numbers_2026-10-25: warmup 61.4s / 431k matmuls / 0.02GiB peak,
+    overlapped a 223s hf-cache restore on boot 326f1d48
+
+tests:
+  files: [tests/colab/test_runtime_registry.py,
+          tests/colab/test_job_console.py]
+  count: 21 (5 registry + 16 console/warmup/integration)
+  covers:
+    - CPU runtime + missing Drive -> queue start refused
+    - fresh T4 + empty registry -> preflight + launch pass
+    - fresh peer record -> launch blocked, peer boot_id named
+    - foreign runner.id pid never signaled (PID collision); same-VM
+      zombie reaped; foreign runner.id survives our runner's exit
+    - warmup waits for pending prep, honors min floor + max cap
+    - 'end-to-end runner drain: env jobs then packs in one VM'
+  env_overrides_for_sandbox:
+    NEST_ROOT, NEST_QUEUE, NEST_RUNTIME_TTL_S, NEST_QUEUE_SETTLE_S,
+    WARMUP_MIN_S, WARMUP_MAX_S, PATH (nvidia-smi stub)
+
+followups:
+  - rclone-deploy scripts/colab/{runtime_registry,preflight-cell,
+    queue-launcher-cell}.py + JOBS.py + ada-nest-job-console.ipynb to
+    gdrive:ada-nest/queue/ — Drive tree currently runs the equivalent
+    prior-session build; land repo first, then sync (needs push creds;
+    branch not pushed per dispatch rules)
+  - Drive copy and repo may differ in details — diff on next rclone sync
+    and keep the repo copy canonical going forward
+verify: >-
+  python3 -m unittest tests.colab.test_runtime_registry
+  tests.colab.test_job_console  (21 tests OK on mn01, 2026-10-26)

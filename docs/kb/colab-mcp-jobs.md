@@ -7,6 +7,50 @@ The publish step is **part of the job**, not a follow-up — a job is not
 done until its output has a durable home (artifact-landing rule,
 `ssot.procedures.yml`).
 
+## Job-console notebook — the canonical operator surface (OPS-0874)
+
+For queue work the operator surface is ONE notebook —
+`ada-nest/queue/ada-nest-job-console.ipynb` on Drive (canonical source
+`scripts/colab/ada-nest-job-console.ipynb`, regenerated from the cell
+sources by `scripts/colab/build-job-console.py`). It is instruction
+markdown + exactly two code cells; there are **no per-job cells** — all
+workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
+
+- **Cell 1 — preflight** (`scripts/colab/preflight-cell.py`): mounts
+  Drive, prints identity (boot_id, GPU model/VRAM, RAM, Drive state),
+  registers the VM at `queue/runtime-sessions/<boot_id>.json` and refreshes it on
+  a 60 s background heartbeat. If ANOTHER managed runtime's record is
+  still fresh (`NEST_RUNTIME_TTL_S`, default 300 s) the cell refuses —
+  a second console is ambiguous: it might be about to launch its own
+  queue. Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and
+  re-run; the queue lease then arbitrates writers.
+- **Cell 2 — launch once** (`scripts/colab/queue-launcher-cell.py`):
+  gates on Drive-mounted, GPU present (CPU runtimes refuse — the queue
+  exists to fill a T4), and no fresh peer runtime, then starts
+  `queue/runner.py` detached. Rerun-safe.
+- **Managed-session detection is registry-scoped.** The registry sees
+  only VMs that ran cell 1. Uninstrumented notebooks are invisible to it
+  — Google *Runtime > Manage Sessions* stays authoritative, and nothing
+  ever auto-stops a session (OPS-0872).
+- **Runner identity is boot-scoped** (PID-collision fix): the runner
+  writes `queue/runner.id` `{pid,boot_id,worker,epoch,ts}` beside the
+  legacy `runner.pid`. A Drive-visible PID is never a process handle on
+  another VM — the launcher only signals a pid when runner.id's boot_id
+  equals this VM's `/proc` boot_id. Same-VM zombies (alive pid + stale
+  heartbeat) are reaped; foreign/stale records are left untouched and a
+  fresh heartbeat from another boot refuses the launch. On exit the
+  runner removes its identity files only when they still name it, so a
+  fenced-out generation can't strip a live runner's marks.
+- **Registry/state layout**: `queue/runtime-sessions/<boot_id>.json` (managed
+  VMs), `queue/runner.id`, `queue/heartbeat`, `queue/lease`,
+  `queue/warmup/<boot_id>.json` (per-boot warmup stats). Fleet-side read:
+  `mcp-colab` tool `colab_session_status`.
+- **Snapshot constraint**: the runner imports `JOBS.py` and scans
+  `packs/` ONCE at launch, runs all JOBS before the (name-sorted) packs,
+  and overlaps only the *next* job's `prep` under the current `run`.
+  Stage every pack before starting cell 2 — mid-run uploads are not
+  picked up until the next launch.
+
 ## Steps
 
 1. **Attach** — `open_colab_browser_connection` → user connects in browser →
@@ -123,12 +167,14 @@ of staging cells per job:
   in the marker; a fleet-side rclone check remains the server-side
   truth. Runner also settles 120 s after drain so big uploads land
   before the VM idles.
-- **Detached mode (2026-10-23)** — prefer `queue-launcher-cell.py`: it
+- **Detached mode (2026-10-23; hardened 2026-10-26)** — the launch path
+  is cell 2 of the job-console notebook (`queue-launcher-cell.py`): it
   starts `queue/runner.py` as a session-detached process (output →
-  `queue/run-<ts>.out.log`, pid → `queue/runner.pid`, `queue/heartbeat`
-  rewritten every 15 s). The kernel stays free for diagnostics mid-run,
-  and the queue survives a kernel restart. Blocking in-kernel mode is
-  only for interactive debugging.
+  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, `queue/heartbeat`
+  rewritten every 15 s) after the session gate described above. The
+  kernel stays free for diagnostics mid-run, and the queue survives a
+  kernel restart. Blocking in-kernel mode is only for interactive
+  debugging.
 - **Interrupts don't propagate into `subprocess.run`** — a cell stop
   button may leave a hung prep/running job alive; only
   Runtime → Interrupt execution reliably kills it (MCP has no interrupt
@@ -163,10 +209,20 @@ of staging cells per job:
   becomes a fast no-op validator when the cache is warm. Keep the
   `snapshot_download` preps regardless — they self-heal when the tar is
   missing or stale.
-- **The first GPU job's prep is the one un-hideable window** — nothing
-  runs before it. Minimize it: cache-restore first, and order the queue
-  so the job needing the *least* new download runs first; every later
-  prep hides under a GPU run.
+- **The first GPU job's prep is the one un-hideable window** — unless you
+  put the warmup first. Canonical `JOBS.py`
+  (`scripts/colab/JOBS.py`) opens with `t4-session-warmup` (scope `env`):
+  a small GPU smoke that keeps running until the *next* job's background
+  prep exits (`WARMUP_MIN_S` 30 s floor, `WARMUP_MAX_S` 300 s cap), so the
+  ~4-min `restore-hf-cache` extract hides under useful GPU work instead of
+  idling the T4. Verified 2026-10-25 on boot 326f1d48: warmup 61 s/
+  431 k matmuls while the cache restore ran 223 s. The runner injects
+  `QUEUE_PENDING` ((name, log, Popen) of the bg prep) + `BOOT_ID` into
+  every job's run namespace — that is how the warmup knows when the prep
+  exits. Warmup stats land at `queue/warmup/<boot_id>.json` and are the
+  job's `artifacts` gate (`{boot_id}` expands in artifact globs).
+  Remaining order rule: cache-restore second, least-new-download work
+  early, every later prep hides under a GPU run.
 
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
 
