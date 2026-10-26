@@ -1,0 +1,44 @@
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 063f59b..0431e75 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -1384,9 +1384,9 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+             "name": "chat_send",
+             "description": (
+                 "Send a LINE/Telegram/webchat message in the background — 'queued' returns "
+-                "first, the outcome lands later as a system note. camera=/image_url= "
+-                "attach an image; photo=/doc= run the picker/upload flows; say= sends "
+-                "a voice message (LINE and Telegram)."
++                "first, the outcome lands later as a system note. camera=/image_url= attach "
++                "an image; page= sends a CMS page's images; photo=/doc= run the "
++                "picker/upload flows; say= sends a voice message (LINE and Telegram)."
+             ),
+             "parameters_json_schema": {
+                 "type": "object",
+@@ -1407,8 +1407,8 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                         "type": "string",
+                         "description": ("URL of an existing image to send (camwall thumb, a cast_url "
+                         "you already produced, or a Drive link — drive.google.com share links "
+-                        "and drive_get media_url resolve server-side). For CMS page images, cms_read the page "
+-                        "first and copy the asset URL verbatim — never construct or "
++                        "and drive_get media_url resolve server-side). For a CMS page's "
++                        "images use page=<slug> instead — never construct or "
+                         "guess a URL; a guessed URL fetches 404 and the image is dropped."),
+                     },
+                     "video_url": {
+@@ -1417,6 +1417,15 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                         "(LINE videoMessage / Telegram sendVideo) — e.g. a render result's "
+                         "video_url. Never construct or guess a URL."),
+                     },
++                    "page": {
++                        "type": "string",
++                        "description": ("CMS page slug — reads the page server-side and sends "
++                        "EVERY image it embeds in one batch (markdown and img-tag assets, "
++                        "site-relative paths resolved for you). THE way to send a page's "
++                        "photos: one call, no URLs to copy, the note reports sent/failed "
++                        "per asset. Never invent or guess image URLs — with page= you "
++                        "don't need any."),
++                    },
+                     "to": {
+                         "type": "string",
+                         "description": "Optional explicit LINE userId, Telegram chat_id, or webchat chat_id (web-<member>); default = the chat this turn came from, else owner.",

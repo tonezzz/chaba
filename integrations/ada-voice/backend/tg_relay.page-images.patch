@@ -1,0 +1,85 @@
+diff --git a/backend/tg_relay.py b/backend/tg_relay.py
+index 2559886..16f5254 100644
+--- a/backend/tg_relay.py
++++ b/backend/tg_relay.py
+@@ -710,8 +710,11 @@ class TgRelay:
+             await self.tg("sendMessage",
+                           **{**params, "text": text[i:i + REPLY_CHUNK]})
+ 
+-    async def send_photo(self, chat_id: int, url: str, caption: str) -> None:
+-        """Fetch image bytes (tailnet-reachable) and sendPhoto them."""
++    async def send_photo(self, chat_id: int, url: str, caption: str
++                         ) -> bool:
++        """Fetch image bytes (tailnet-reachable) and sendPhoto them.
++        Returns delivery success — /send's image_urls batch reports
++        per-URL status off it; failures also land a text fallback."""
+         assert self.http is not None
+         try:
+             r = await self.http.get(url, timeout=120)
+@@ -725,9 +728,11 @@ class TgRelay:
+                 files={"photo": (f"cam{ext}", r.content, ct)})
+             if not resp.json().get("ok"):
+                 raise RuntimeError(str(resp.json()))
++            return True
+         except Exception as exc:
+             logger.warning("chat %s photo %s failed: %s", chat_id, url, exc)
+             await self.send_text(chat_id, f"(image failed: {caption or url})")
++            return False
+ 
+     async def send_video(self, chat_id: int, url: str, caption: str
+                          ) -> None:
+@@ -1206,9 +1211,11 @@ class TgRelay:
+     def _send_endpoint(self):
+         """The loopback /send contract shared by webhook and polling
+         modes — chat_send's path. Accepts {chat_id?, text?,
+-        photo_url|image_url?, video_url?, audio_b64?, audio_mime?,
+-        caption?, duration_ms?}; audio_b64 is WAV bytes that get
+-        converted to OGG/Opus and pushed as a native voice bubble.
++        photo_url|image_url?, image_urls?, video_url?, audio_b64?,
++        audio_mime?, caption?, duration_ms?}; audio_b64 is WAV bytes
++        that get converted to OGG/Opus and pushed as a native voice
++        bubble. image_urls (chat_send page=) sends each asset as its
++        own photo and reports per-URL status in 'images'.
+         TG_PUSH_DENY refuses listed chats with 403 — replies inside a
+         real inbound turn don't come through here."""
+         from starlette.responses import JSONResponse
+@@ -1234,9 +1241,12 @@ class TgRelay:
+                                     status_code=403)
+             # chat_send posts image_url; keep photo_url as the legacy alias.
+             photo = body.get("photo_url") or body.get("image_url")
++            photos = [str(u).strip() for u in body.get("image_urls") or []
++                      if str(u).strip()]
+             video = str(body.get("video_url") or "")
+             audio_b64 = str(body.get("audio_b64") or "")
+-            if not (body.get("text") or photo or video or audio_b64):
++            if not (body.get("text") or photo or photos or video
++                    or audio_b64):
+                 return JSONResponse({"ok": False,
+                                      "error": "nothing to send"},
+                                     status_code=400)
+@@ -1246,6 +1256,13 @@ class TgRelay:
+                 if photo:
+                     await self.send_photo(cid, str(photo),
+                                           str(body.get("caption") or ""))
++                # chat_send page= batch — one photo per asset, per-URL
++                # status reported back so the note can say 'sent 3/5'.
++                img_res = [{"url": u,
++                            "ok": await self.send_photo(cid, u, ""),
++                            } for u in photos]
++                for r in img_res:
++                    r["status"] = "delivered" if r["ok"] else "failed"
+                 if video:
+                     await self.send_video(cid, video,
+                                           str(body.get("caption") or ""))
+@@ -1255,7 +1272,10 @@ class TgRelay:
+                     await self.send_voice(
+                         cid, ogg, str(body.get("caption") or ""),
+                         int(body.get("duration_ms") or 0))
+-                return JSONResponse({"ok": True, "chat_id": cid})
++                out = {"ok": True, "chat_id": cid}
++                if img_res:
++                    out["images"] = img_res
++                return JSONResponse(out)
+             except Exception as exc:
+                 return JSONResponse({"ok": False, "error": str(exc)},
+                                     status_code=502)
