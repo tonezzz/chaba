@@ -73,10 +73,9 @@ curl -s -o /dev/null -w '%{http_code}\n' https://tony-dell.taila0626a.ts.net:844
 #    and previously-"unknown" items (e.g. Helm Dashboard, Trade API,
 #    MDDB stats endpoints) are back or accounted for.
 
-# 5. Physical display + barrier (monitor is on iGPU DP-2, not the AMD card)
+# 5. Physical display (monitor is on iGPU DP-2, not the AMD card)
 ssh tony-dell 'pgrep -a Xorg'                       # expect ":1 vt7" (xorg-seat.service)
-ssh tony-dell 'systemctl --user is-active lxqt-seat.service barrier-client.service'
-ssh tony-dell 'journalctl --user -u barrier-client -n 3 --no-pager'  # "connected to server"
+ssh tony-dell 'systemctl --user is-active xfce-seat.service barrier-pin-vt.timer'
 ssh tony-dell 'cat /sys/class/drm/card1-DP-2/status' # expect connected (else check cable)
 ```
 
@@ -89,19 +88,18 @@ ssh tony-dell 'cat /sys/class/drm/card1-DP-2/status' # expect connected (else ch
 ## tony-omen — pre-shutdown
 
 tony-omen is the interactive/GPU primary: ollama, imagen2, playlive(d),
-gpu-queue, barrier-server, sensor-reader, caddy web, bserver.
+gpu-queue, sensor-reader, caddy web, bserver.
 
 - [ ] Save interactive/Devin session state; GPU work cannot migrate.
 - [ ] Checkpoint or stop GPU jobs (ollama/imagen2/txt2vid).
-- [ ] Barrier client on tony-dell will disconnect — expected.
 - [ ] Baseline `mcp-health` snapshot saved (Phase 0).
 
 ## tony-omen — post-reboot
 
 ```bash
 uptime && tailscale status                       # online as 100.75.102.88
-nvidia-smi                                        # GPU present, only Xorg
-systemctl --user status barriers.service weaviate-index.timer
+nvidia-smi                                        # GPU present
+systemctl --user status weaviate-index.timer
 systemctl status cpufreq-limit.service
 curl -s http://100.75.102.88:8001/health          # sensor-reader
 mount | grep -i gdrive                            # Google Drive mounted
@@ -114,6 +112,10 @@ ping -c 2 tony-dell
 ---
 
 ## Lessons from the 2026-09-07 tony-dell reboot
+
+Barrier KVM was retired on 2026-10-25. The historical Barrier recovery notes
+below document the former setup only; do not reinstall its server/client or
+open port 24800. `barrier-pin-vt.timer` remains as a physical-seat helper.
 
 Evidence: `2026-09-07 tony-dell reboot: 42/52 healthy after remediation; 1 error (ha-live, pre-existing), 2 unknown (check-config).`
 

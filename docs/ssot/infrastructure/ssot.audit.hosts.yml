@@ -75,7 +75,6 @@ hosts:
       services_disabled_20261020: [openvpn, wpa_supplicant, ModemManager, bluetooth, cloud-init]
     tags:
       - headless-primary
-      - barrier-client
       - testing
     expected_services:
       - name: app-devin-desktop
@@ -138,34 +137,19 @@ hosts:
         scope: system
         expected_state: active
         critical: true
-        note: Root Xorg :1 on vt7 — the physical seat display that barrier controls
+        note: Root Xorg :1 on vt7 — the physical desktop seat
       - name: xfce-seat.service
         type: service
         scope: user
         expected_state: active
         critical: true
-        note: dbus-run-session xfce4-session on DISPLAY=:1 (vt7) — the seat barrier controls; replaced lxqt-seat 2026-09-18
-      - name: barrier-client.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-        note: ExecStart runs ~/.local/bin/barrier-client-run.sh — LAN-first
-          (192.168.2.86) on home net, Tailscale (100.75.102.88) fallback
-      - name: barrier-enforce-lan.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Every 30s; restarts barrier-client.service if it is connected via
-          the wrong address for the current network
+        note: dbus-run-session xfce4-session on DISPLAY=:1 (vt7) — physical desktop seat; replaced lxqt-seat 2026-09-18
       - name: barrier-pin-vt.timer
         type: timer
         scope: user
         expected_state: active
         critical: false
-        note: Every 15s; chvt 7 when lxqt-seat is up but another VT is in front
-          (greeter/getty). Never steals a real user graphical session
+        note: Physical-seat helper; every 15s restores vt7 when the desktop is up. Not a Barrier KVM service.
       - name: mddb.service
         type: service
         scope: user
@@ -244,7 +228,6 @@ hosts:
       - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: ada-market-report.timer, type: timer, scope: user}
       - {name: audit-cast.timer, type: timer, scope: user}
-      - {name: barrier-client-watchdog.timer, type: timer, scope: user}
       - {name: cam-frame-refresh.timer, type: timer, scope: user}
       - {name: cam-wall-cms.timer, type: timer, scope: user}
       - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
@@ -496,7 +479,6 @@ hosts:
         - ptyxis-spawn-c2d6c09f-91f1-435b-aef8-4b134c014073.scope
         - ada-pi-pwa.service
         - at-spi-dbus-bus.service
-        - barrier-client.service
         - bserver.service
         - caddy-tony-dell.service
         - cam-frame-refresh.service
@@ -789,7 +771,6 @@ hosts:
     tags:
       - primary
       - web-server
-      - barrier-server
     expected_services:
       - name: arp-inventory-scan.service
         type: service
@@ -876,7 +857,7 @@ hosts:
         expected_state: active
         critical: false
         note: Polls tony-dell clipboard (text + image/*) every 1s into :0 —
-          Barrier 2.4.0 relays text only. Runs ~/.local/bin/clip-sync tony-dell
+          independent of Barrier KVM. Runs ~/.local/bin/clip-sync tony-dell
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
       - {name: cast-browser.service, type: service, scope: user}
@@ -969,8 +950,6 @@ hosts:
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
           copy disabled 2026-10-12 (container running since 2026-07-28)
-    allowed_running:
-      - barriers.service        # workstation KVM — flaps activating, not fleet
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -1042,7 +1021,6 @@ hosts:
         - ptyxis-spawn-77558506-ec8b-4474-9da6-471a8d84e482.scope
         - arp-inventory-scan.service
         - at-spi-dbus-bus.service
-        - barriers.service
         - cast-desktop@0.service
         - clip-sync-dell.service
         - cookie-bridge.service

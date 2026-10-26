@@ -16,26 +16,16 @@ category: operations
 
 **New Category Added:**
 
-- **Purpose**: Monitor workstation-level services like Barrier client and cron jobs
+- **Purpose**: Monitor workstation-level services and cron jobs
 - **Check Type**: Local process monitoring using `ps -ef | grep <process> | grep -v grep`
-- **Services Monitored**:
-  - **Barrier Client**: Input sharing between tony-omen and tony-dell workstations
-    - Binary: `~/.local/bin/barrierc` (`/usr/bin/barrierc` not installed)
-    - Startup: `nohup "$HOME/.local/bin/barrierc" --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &`
-    - Autostart: `~/.config/autostart/barrierc.desktop` (or `health-monitor.sh` every 10 min)
-    - Health check: `ps -ef | grep barrierc` and `tail -n 5 /tmp/barrier-client.log` should contain `connected to server`
-    - Autofix: `pkill -x barrierc; nohup "$HOME/.local/bin/barrierc" ... 100.75.102.88 >/dev/null 2>&1 &`
-  - **Barrier Server**: Barrier KVM server on tony-omen
-    - Systemd: `systemctl --user status barriers.service`
-    - Log: `/tmp/barrier-server.log`
-    - Autofix: `systemctl --user restart barriers.service`
-  - **Screen Timeout Cron**: Power management automation
-    - Check: `crontab -l | grep screen-timeout`
-    - Scripts: `/home/tony/scripts/screen-timeout-night.sh`, `/home/tony/scripts/screen-timeout-day.sh`
+- **Retired**: Barrier KVM server/client and recovery actions were removed on 2026-10-25. The `barrier-pin-vt` timer is a physical-seat helper, not a Barrier KVM service.
+- **Screen Timeout Cron**: Power management automation
+  - Check: `crontab -l | grep screen-timeout`
+  - Scripts: `/home/tony/scripts/screen-timeout-night.sh`, `/home/tony/scripts/screen-timeout-day.sh`
 
 **Configuration:**
 
-- SSOT: `docs/ssot/infrastructure/ssot.health.yml` (server, `barrier-server`), `docs/ssot/ssot.mysystem.home.yml` (client commands), `docs/overview/hosts.tony-dell.yml` (client)
+- SSOT: `docs/ssot/infrastructure/ssot.health.home.system.yml` and `docs/ssot/infrastructure/ssot.health.home.tony-dell.yml`; retired Barrier KVM is no longer monitored.
 - Workflow: `workflows/monitoring/home-profile-health-check.yml`
 - Recovery commands provided in health check output
 

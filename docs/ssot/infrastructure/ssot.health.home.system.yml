@@ -104,29 +104,6 @@ services:
   - 'Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
   - 'Check thermal throttling: watch -n 1 ''cat /sys/class/thermal/thermal_zone*/temp'''
   host: tony_omen
-- id: barrier-server
-  name: Barrier KVM Server
-  type: systemd
-  service: barriers.service
-  host: tony_omen
-  expected_state: active
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  note: tony-omen only; currently active.
-  verification:
-  - 'Check service: systemctl --user status barriers.service'
-  - 'Check port: ss -tlnp | grep 24800'
-  - 'Check server log: tail -n 20 /tmp/barrier-server.log'
-  - 'Check connected client: tail -n 20 /tmp/barrier-client.log'
-  recovery_actions:
-  - 'Restart server: systemctl --user restart barriers.service'
-  - 'Check log: journalctl --user -u barriers.service -n 50'
-  - 'Check client: ssh -o ConnectTimeout=3 tony@tony-dell ''pgrep -a barrierc'''
-  - 'Restart client: ssh -o ConnectTimeout=3 tony@tony-dell ''pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc
-    --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'''
 - id: gdrive-backup
   name: Google Drive Backup
   type: mount
