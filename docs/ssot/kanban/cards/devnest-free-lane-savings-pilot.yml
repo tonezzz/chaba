@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
 column: done
-updated: 2026-10-26 17:47
+updated: 2026-10-26 18:07
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -108,6 +108,13 @@ comms:
 - at: 2026-10-26 17:47
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 18:07
+  from: devin
+  text: 'PILOT COMPLETE (supervised, tony-dell, manual runner-agent JEV_LANE=0 OPENCODE_LANES=1): all 3 jobs ran
+    opencode:free_lane/flash-lite, 0 intervention, 0 escalation. doc 36s merged 8ea5303d; code 46s merged b9ede30a
+    (pytest 3/3 on master); report 38s pushed 874a9924 — merge pending next sweep (found+fixed TASK_ID_RE gap that
+    hid opencode tids from the sweep). LiteLLM list-price delta $0.0700/3 gates=$0.0233/gate; vs devin baseline
+    wall 57.9/66.1s — 30-38% faster, same merge path. Also fixed claim'
 action:
   type: dispatch
   status: done
