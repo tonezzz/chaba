@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-10-25 15:53
+updated: 2026-10-26 11:35
 action:
   type: manual
 ref: SYS-0863
@@ -36,3 +36,8 @@ comms:
     live approved service is 2.00GHz (2000000 kHz); update that reference in the automation work. Post-boot mcp-health
     snapshot ran, but full transition.post_restart remains manual. Current Omen-only exception is Barrier KVM waiting
     for missing X0; global quick-health failures are Playlived/GPU Queue on Dell, not Omen.'
+- at: 2026-10-26 11:35
+  from: devin
+  text: 'Follow-up: Barrier KVM has now been retired on Omen/Dell; the future post-restart checklist should not
+    expect barriers.service/barrier-client or port 24800. Keep only barrier-pin-vt as a physical-seat helper if
+    that remains in the display profile.'
