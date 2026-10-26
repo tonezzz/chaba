@@ -42,3 +42,22 @@ comms:
     (HTTP 500); the gateway''s `colab-qwen3` probe could not connect to its Ollama backend on :11434. No pack run,
     model switch, paid call, or service/config change made. CPU-only storyboard and per-asset rights prep can continue
     while waiting.'
+- at: 2026-10-26 13:16
+  from: devin
+  text: 'raised request doc-v3-colab-gpu-next-step: The approved v3 VO pack is queued but Colab tunnel verification
+    failed (HTTP 500, colab-qwen3 cannot reach Ollama :11434'
+requests:
+- id: doc-v3-colab-gpu-next-step
+  ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
+    Ollama :11434). How should I proceed with the GPU gate?
+  status: open
+  at: 2026-10-26 13:16
+  from: devin
+  options:
+  - id: reconnect-colab
+    label: 'Recommended: reconnect the Colab T4; then I will verify the tunnel and let the queued VO pack run'
+  - id: readonly-diagnose
+    label: Authorize read-only diagnosis of the Colab/LiteLLM tunnel path before retry; no config or service changes
+  - id: cpu-prep-only
+    label: Keep doing CPU-only storyboard/asset-rights prep and leave VO queued
+  suggested: reconnect-colab
