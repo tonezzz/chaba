@@ -1,7 +1,7 @@
 id: repair-wp-nest-job-cpt-drift
 title: Repair live WP nest_job CPT/API drift
-column: doing
-updated: 2026-10-26 19:28
+column: review
+updated: 2026-10-26 19:30
 brief: Restore the WP nest_job CPT/API required for DevNest and Colab job publishing without breaking existing CPTs.
 priority: high
 program: devnest
@@ -22,11 +22,11 @@ spec: 'Investigate and repair the live WordPress chaba-boards drift discovered d
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
-  result: 'exit=0 ift-repair.yml` — all committed on the dispatch branch; session paused awaiting the deploy-gate
-    answer. | devin-task-20261026-185925-investigate-and-repair-the-liv.service: Consumed 34.759s CPU time, 189.1M
-    memory peak, 0B memory swap peak.'
+  result: 'exit=0 nch (no push). One follow-up for Tony: `activity-posts.timer` on idc03 is disabled — enabling
+    it is a separate decision now that the CPT exists. | devin-task-20261026-192455-investigate-and-repair-the-liv.service:
+    Consumed 10.717s CPU time.'
   verified: true
 ref: OPS-0916
 comms:
@@ -116,6 +116,10 @@ comms:
     — parent post 2605 / child 2606 via slug parent, meta merge+comms append confirmed by authed read-back (status=done,
     result_ref=probe://verify-ok). Health probes wp-nest-job-cpt/wp-activity-cpt return 200. SSOT flipped to DEPLOYED
     2026-10-26; trail doc updated. Follow-up: activity-pos'
+- at: 2026-10-26 19:30
+  from: idc02
+  text: 'finished (ok): exit=0 nch (no push). One follow-up for Tony: `activity-posts.timer` on idc03 is disabled
+    — enabling it is a separate de'
 requests:
 - id: live-chaba-boards-plugin-is-v0-7-x-wp-v2-0dc69c
   ask: 'Live chaba-boards plugin is ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity 404 (v0.8.0+v0.9.0 never deployed;
