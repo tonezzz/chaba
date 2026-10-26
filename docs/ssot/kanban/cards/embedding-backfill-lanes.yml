@@ -1,7 +1,7 @@
 id: embedding-backfill-lanes
 title: Embedding backfill lane — nomic re-embed MDDB banks/lessons/news on idle hosts
-column: backlog
-updated: 2026-10-27 05:35
+column: doing
+updated: 2026-10-27 05:36
 priority: medium
 note: 'Bursty CPU+embed work for idle idc cores. edu-embed-migration already in flight (education-store card review);
   extend pattern: nomic via litellm ollama-nomic-embed on idc02 (once #chat-local up) or existing idc03 ollama.
@@ -24,6 +24,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 05:36
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
