@@ -1,7 +1,7 @@
 id: ada-chat-card-cannot-receive-pushed-medi-099b01
 title: ada-chat-card cannot receive pushed media (no chat_id bind, no chat_push render)
 column: doing
-updated: 2026-10-26 17:36
+updated: 2026-10-26 17:51
 brief: 'tony-ha/mn-ha ChatUI (ada-chat-card.js) connects ws with only ?device_id&api_key — no channel/chat_id binding
   — and _handleControl has no chat_push case. webchat_deliver only reaches channel=web sessions (boards widget web-<member>).
   Result: nothing can push text/image/video into a household ChatUI lane; chat_send channel=web misses it entirely.
@@ -29,6 +29,13 @@ comms:
 - at: 2026-10-26 17:36
   from: chaba
   text: started devin-task-20261026-173619-1-bind-the-card-session-add-ch on idc02 (dispatch)
+- at: 2026-10-26 17:51
+  from: devin
+  text: 'Done in dispatch worktree (committed, not pushed). ada-chat-card.js x2 (tony-ha + ada-ha canonical copies):
+    ws URL now binds channel=web&chat_id=web-<member-or-device> — member resolves config.member → lane key name
+    via /api/auth/status → HA login person.<slug> → instance → device8. chat_push renders as Ada bubble with <img>/<video
+    controls>; 4403 gets a readable message. Verified: 17-check DOM harness + live lane on idc02 (delivered=1 live,
+    parked offline, flushed on reconnect). Needs deploy to'
 action:
   type: dispatch
   status: running
