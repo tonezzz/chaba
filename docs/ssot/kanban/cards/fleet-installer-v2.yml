@@ -1,6 +1,6 @@
 id: fleet-installer-v2
 title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node registry)'
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-10
 updated: 2026-10-26 07:06
@@ -36,6 +36,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 07:06
+  from: idc02
+  text: claimed
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -58,4 +61,5 @@ spec: 'Installer v2 keyless enroll endpoint: share the existing /enroll contract
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: idc02
