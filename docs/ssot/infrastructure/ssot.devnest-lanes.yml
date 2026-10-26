@@ -6,7 +6,7 @@ subtitle: Production catalog of execution lanes — which work avoids paid
   OPS-0823.
 icon: route
 version: 1
-updated: 2026-10-25
+updated: 2026-10-26
 
 # Routing model (the one rule that makes the math work)
 #
@@ -176,8 +176,12 @@ lanes:
 
   free-opencode:
     label: Free OpenCode executor lane — post-closeout
-    status: gated — supervised probes only until OPS-0846 (branch/
-      worktree/verify/merge closeout) lands; then OPENCODE_LANES=1 per runner
+    status: >-
+      gated — supervised pilot only; OPS-0846 proven 2026-10-26 (Dell
+      closeout probe landed dispatch worktree + branch + flash-lite +
+      push + baseline-aware gate + auto-merge). OPENCODE_LANES=1 per
+      supervised push-capable runner; pilot cards devnest-fl-pilot-*
+      (job doc docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml)
     plane: work
     executor: >-
       runner-agent start_opencode_lane: dispatch/<tid> worktree +
@@ -298,7 +302,10 @@ open_gaps:
   - OPS-0838 dispatch-classify-at-queue-time — classify inside board-api
     queue verb so every claimer sees action.lane/model (whack-a-mole fix
     for unpatched runners)
-  - OPS-0846 OpenCode closeout — gates OPENCODE_LANES=1 fleet-wide
+  - OPENCODE_LANES=1 enablement beyond the supervised pilot host —
+    OPS-0846 closeout proven 2026-10-26 (tony-dell probe); fleet-wide
+    still pending the three-job savings pilot (card
+    devnest-free-lane-savings-pilot)
   - KNB-0822 real Jev API key — unlocks jev-routing Choice/grading
   - behavioral verifiers for the dev family (m1-behavioral built; m2, t2
     outstanding) — gates are the cascade bottleneck, not models
@@ -313,6 +320,8 @@ references:
   - docs/ssot/kanban/ssot.kanban.yml (action.lane contract)
   - docs/ssot/jobs/bench/2026-10-24-cheap-agent-cascade-design.yml
   - docs/ssot/jobs/kanban/2026-10-25-runner-agent-lane-model-chain.yml
+  - docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+    (pilot classes, card contract, run-record schema, Devin baseline)
   - scripts/board/dispatch_repos.py (LANE_MODELS / LANE_KW / classify_lane)
   - scripts/board/runner-agent.py (start_opencode_lane, claim-time routing)
   - scripts/pattern-lib/router.py (codemod arm)
