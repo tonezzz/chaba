@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: done
-updated: 2026-10-26 11:37
+updated: 2026-10-26 13:28
 action:
   type: manual
   status: done
@@ -66,6 +66,10 @@ comms:
   text: 'Correction to the previous note: I left the separate clip-sync definitions untouched, but live checks show
     both clip-sync units are currently inactive/not installed on Omen and Dell. No clipboard sync is currently running;
     that is separate from the Barrier KVM retirement.'
+- at: 2026-10-26 13:28
+  from: tony
+  text: 'answered approve-removing-the-unused-omen-ufw-all-13ebf8: Approve the elevated UFW rule removal on Omen
+    (recommended).'
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
@@ -86,11 +90,12 @@ requests:
 - id: approve-removing-the-unused-omen-ufw-all-13ebf8
   ask: Approve removing the unused Omen UFW allow rule for TCP/24800 (IPv4 and IPv6)? No service is listening now;
     removing the rule prevents future exposure if Barrier is accidentally restored.
-  status: open
+  status: answered
   at: 2026-10-26 11:35
   from: devin
   options:
   - Approve the elevated UFW rule removal on Omen (recommended).
   - Leave the rule for now; no listener is active.
   suggested: Approve the elevated UFW rule removal on Omen (recommended).
+  answer: Approve the elevated UFW rule removal on Omen (recommended).
 claim: {}
