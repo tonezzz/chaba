@@ -93,6 +93,10 @@ comms:
     chat-local; idc03''s configured chat-local request timed out at 120s. A direct idc02 Ollama check also found
     no `ollama` CLI and localhost:11434 refused. No output, WP write, or paid fallback occurred. Stop here until
     a fallback/diagnosis choice is recorded.'
+- at: 2026-10-26 10:35
+  from: devin
+  text: 'raised request news-chat-local-timeout-next-step: The first DevNest candidate call through the documented
+    chat-local lane timed out and produced no root. How should I con'
 requests:
 - id: choose-news-visibility-architecture
   ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
@@ -116,4 +120,20 @@ requests:
   answer: 'single-cpt-status-partition — Recommended for one inspectable tree: reuse the existing news CPT; external
     items publish, internal items stay private, and every parent inherits the most restrictive child visibility.
     Requires privacy-filter tests before ingestion.'
+- id: news-chat-local-timeout-next-step
+  ask: The first DevNest candidate call through the documented chat-local lane timed out and produced no root. How
+    should I continue the pilot without silently switching lanes?
+  status: open
+  at: 2026-10-26 10:35
+  from: devin
+  options:
+  - id: deterministic-only-shadow
+    label: 'Recommended: build/run a private deterministic-only tree smoke on a frozen public corpus; validates
+      source links, branches, privacy and idempotency, but not LLM summary quality'
+  - id: readonly-lane-diagnosis
+    label: Allow read-only diagnosis of the idc03 chat-local route and idc02 local model before retry; no service/config
+      changes
+  - id: pause-until-chat-local
+    label: Pause the A/B test until chat-local is healthy; no fallback
+  suggested: deterministic-only-shadow
 awaiting_action: true
