@@ -111,6 +111,10 @@ comms:
     pressure. The T4 renders LTX from embeddings but cannot safely replace the CPU T5 stage. Direct JPL Photojournal
     `.jpg` probes returned HTML, not image bytes; no new assets were downloaded. The full animatic remains usable
     for pacing review.'
+- at: 2026-10-26 15:49
+  from: devin
+  text: 'raised request doc-v3-ltx-embed-host: For the two planned LTX shots (Jupiter and Great Red Spot), the current
+    Omen T5 embedding lane has only 8.2GiB available'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -127,4 +131,19 @@ requests:
     label: Keep doing CPU-only storyboard/asset-rights prep and leave VO queued
   suggested: reconnect-colab
   answer: please proceed
+- id: doc-v3-ltx-embed-host
+  ask: For the two planned LTX shots (Jupiter and Great Red Spot), the current Omen T5 embedding lane has only 8.2GiB
+    available vs the 13GiB pack requirement. How should I proceed without switching hosts or methods silently?
+  status: open
+  at: 2026-10-26 15:49
+  from: devin
+  options:
+  - id: check-alternate-cpu-host
+    label: 'Recommended: authorize read-only RAM/thermal checks on candidate CPU hosts; report first and do not
+      run anything until a safe host is confirmed'
+  - id: wait-for-omen-headroom
+    label: Keep the LTX shots queued until Omen has at least 13GiB available; continue CPU-only work
+  - id: static-only-defer-ltx
+    label: Finish the cut with static/approved plates and keep Jupiter/Red Spot schematic placeholders; defer LTX
+  suggested: check-alternate-cpu-host
 awaiting_action: true
