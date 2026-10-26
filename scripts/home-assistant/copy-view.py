@@ -7,7 +7,7 @@ Usage:
 Example (dev -> ha, pfg2 as first tab):
     export SRC_TOKEN=$(grep HASS_TOKEN ~/.config/secrets/ha-michael-dev.env | cut -d= -f2)
     export DST_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)
-    copy-view.py https://tony-dell.taila0626a.ts.net:8124 http://michael-ha:8123 pfg2 --first
+    copy-view.py https://idc02.taila0626a.ts.net:8124 http://michael-ha:8123 pfg2 --first
 
 Notes:
 - On michael-ha the visionos theme injects a frosted-glass ha-card::before; this

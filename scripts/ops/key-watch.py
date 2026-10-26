@@ -136,10 +136,10 @@ WATCHLIST = [
      "url": "http://michael-ha.taila0626a.ts.net:8123"},  # michael-ha is its own tailnet host
     {"id": "ha-mdev-dell", "kind": "ha", "host": "tony-dell",
      "file": "~/.config/secrets/ha-michael-dev.env", "var": "HASS_TOKEN",
-     "url": "https://idc03.taila0626a.ts.net:8124"},
+     "url": "https://idc02.taila0626a.ts.net:8124"},
     {"id": "ha-mdev-omen", "kind": "ha", "host": "tony-omen",
      "file": "~/.config/secrets/ha-michael-dev.env", "var": "HASS_TOKEN",
-     "url": "https://idc03.taila0626a.ts.net:8124"},
+     "url": "https://idc02.taila0626a.ts.net:8124"},
     {"id": "ha-mlive-dell", "kind": "ha", "host": "tony-dell",
      "file": "~/.config/secrets/ha-michael-live.env", "var": "HASS_TOKEN",
      "url": "http://michael-ha.taila0626a.ts.net:8123"},

@@ -1,9 +1,9 @@
 title: Michael Home Assistant Dev Staging Flow
-subtitle: Local development and test flow on idc03 (migrated from tony-dell 2026-10-09) before deploying to the live michael-ha instance
+subtitle: Local development and test flow on idc02 (migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26) before deploying to the live michael-ha instance
 icon: beaker
 
 overview:
-  purpose: Provide a safe, reproducible dev/test Home Assistant instance on idc03 for editing packages, dashboards, and automations before applying them to the live michael-ha Nabu Casa instance.
+  purpose: Provide a safe, reproducible dev/test Home Assistant instance on idc02 for editing packages, dashboards, and automations before applying them to the live michael-ha Nabu Casa instance.
   live_instance: docs/ssot/infrastructure/ssot.home-assistant.michael.yml
   instances_ssot: docs/ssot/infrastructure/ssot.home-assistant.instances.yml
   target_use_cases:
@@ -16,14 +16,14 @@ overview:
 
 environments:
   dev:
-    host: idc03   # migrated tony-dell -> idc03 2026-10-09
+    host: idc02   # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
     network: podman (was host-net on tony-dell)
     port: 8124
     host_port: 127.0.0.1:8124
-    published_ports: 127.0.0.1:8124 (UI), 127.0.0.1:9585 + 100.102.134.91:9585 (ha_mcp_tools, tailnet-only) — published 2026-10-26
+    published_ports: 127.0.0.1:8124 (UI), 127.0.0.1:9585 + 100.123.163.11:9585 (ha_mcp_tools, tailnet-only) — 9585 published 2026-10-26; moved to idc02 same day
     quadlet:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
@@ -34,10 +34,10 @@ environments:
       note: Not used — Tailscale serve provides HTTPS on port 8124. HA UI absolute redirects require internal_url to match the Tailnet HTTPS URL.
     https:
       provider: tailscale_serve
-      tailnet_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+      tailnet_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
       proxy_target: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
       note: tailscale serve --https=8124 http://127.0.0.1:8124 (must run as root or via sudo).
-    health_check: 'ssh idc03 curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/ >/dev/null'
+    health_check: 'ssh idc02 curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/ >/dev/null'
     mcp:
       server: ha_mcp_tools in-process
       status: active
@@ -48,12 +48,12 @@ environments:
       secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw'
-      tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw'
-      note: HA-MCP Server runs inside the dev container, published on idc03 tailnet IP + loopback port 9585 since 2026-10-26. Use the ha_reload_core tool to reload packages/helpers without a full container restart.
+      tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw'
+      note: HA-MCP Server runs inside the dev container, published on idc02 tailnet IP + loopback port 9585 since 2026-10-26 (moved from idc03 same day). Use the ha_reload_core tool to reload packages/helpers without a full container restart.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
-      internal_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+      internal_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
       note: Required so the frontend OAuth client_id and absolute redirects match the Tailnet HTTPS URL.
     auth:
       provider: homeassistant
@@ -76,7 +76,7 @@ environments:
         and HA-MCP, but not for browser OAuth login due to the redirect-URI issue.
     access:
       local: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
-      tailscale: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+      tailscale: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
   live:
     host: michael-ha
     type: nabu_casa
@@ -137,8 +137,8 @@ full_flow:
     action: Copy live michael-ha:/config/.storage/lovelace_dashboards and lovelace.tony_test to the dev .storage directory.
     note: "The dev configuration.yaml must not contain a lovelace: block. If present after deploy, remove it so the copied .storage dashboards are used."
   - step: 3
-    label: Test on idc03
-    action: Open https://idc03.taila0626a.ts.net:8124 or https://michael-dev.surf-thailand.com or http://127.0.0.1:8124 locally and verify UI, cards, and automation traces.
+    label: Test on idc02
+    action: Open https://idc02.taila0626a.ts.net:8124 or https://michael-dev.surf-thailand.com or http://127.0.0.1:8124 locally and verify UI, cards, and automation traces.
   - step: 4
     label: Deploy to live
     action: Run scripts/home-assistant/deploy-michael.sh
@@ -150,7 +150,7 @@ full_flow:
 scripts:
   deploy_dev:
     path: scripts/home-assistant/deploy-michael-dev.sh
-    description: Rsync repo config to the idc03 dev instance and reload core config via HA-MCP without a full container restart.
+    description: Rsync repo config to the idc02 dev instance and reload core config via HA-MCP without a full container restart.
     env:
       - name: MICHAEL_DEV_CONFIG
         default: ~/.config/michael-dev
@@ -168,7 +168,7 @@ custom_components:
     - sunsynk-power-flow-card fork deployed to /config/www/ for dev testing
 
 entity_mocks:
-  purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on the dev host (idc03). Use dev-only mocks to test automation logic.
+  purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on the dev host (idc02). Use dev-only mocks to test automation logic.
   repo_source: docs/home-assistant/dev/dev-mocks.yaml
   deployed_to: /home/tony/.config/michael-dev/packages/a_dev_mocks.yaml
   note: >-
@@ -195,7 +195,7 @@ entity_mocks:
     binary_sensor.michael_ha_reachable (curl probe, 300s) — scan_interval
     is 86400 and the mha_mirror_refresh automation calls
     homeassistant.update_entity every 30s only while reachable, so
-    off-LAN replicas (idc03, tony-omen) fail quiet instead of spamming
+    off-LAN replicas (idc02, tony-omen) fail quiet instead of spamming
     ~1.5-2.1k timeout/UndefinedError lines/day. Deploy per host:
     deploy-michael-dev.sh (or rsync the package + ha_reload_core).
 
@@ -203,7 +203,7 @@ verification:
   dev:
     - systemctl --user status michael-dev.service
     - 'curl -sf http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/'
-    - 'curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc03.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/'
+    - 'curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.idc02.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/'
     - 'python3 scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core'
     - 'ss -tlnp | grep ${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
     - 'ss -tlnp | grep ${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}'

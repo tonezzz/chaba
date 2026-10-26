@@ -26,10 +26,10 @@ servers:
   michael_dev:
     name: michael-dev
     instance_ssot: ssot.home-assistant.michael.dev.yml
-    endpoint: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
+    endpoint: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
     server_port: 9585
     local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-    tailnet_url: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
+    tailnet_url: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
     webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
     custom_component: ha_mcp_tools
     status: active
@@ -38,7 +38,7 @@ servers:
       Container migrated tony-dell -> idc03 2026-10-09; MCP URL stayed on
       tony-dell:9585 (dead) until repointed 2026-10-26. Quadlet on idc03
       (~/.config/containers/systemd/michael-dev.container) publishes
-      127.0.0.1:9585 and 100.102.134.91:9585 (tailnet-only). Same ha_mcp_tools
+      127.0.0.1:9585 and 100.123.163.11:9585 (tailnet-only; moved idc03 -> idc02 2026-10-26). Same ha_mcp_tools
       timeout patch as tony-ha applied to
       ~/.config/michael-dev/custom_components/ha_mcp_tools/embedded_server.py
       (_READY_STALL_TIMEOUT_SECONDS=300s, _READY_TOTAL_CAP_SECONDS=900s).

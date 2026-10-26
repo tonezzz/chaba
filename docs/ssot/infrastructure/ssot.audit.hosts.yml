@@ -1950,7 +1950,8 @@ hosts:
       - {name: litellm.service, type: service, scope: user}
       - {name: litellm-db.service, type: service, scope: user}
       - {name: michael-dev.service, type: service, scope: user, critical: true,
-         note: real instance — migrated from dell 2026-10-09, serves :8124}
+         expected_state: inactive,
+         note: PARKED 2026-10-26 — moved to idc02 (capacity-move-michael-dev); masked+stopped 24h rollback window. Quadlet file kept. Unmask+start to restore.}
       - {name: nest-mgr.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
       - {name: ada-memory-distill.timer, type: timer, scope: user}
@@ -1980,7 +1981,8 @@ hosts:
       - {name: kanban-dispatch.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: kanban-sync.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: merge-sweep.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
-      - {name: mha-state-push.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: mha-state-push.service, type: service, scope: user, expected_state: inactive,
+         note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b); moved idc03 -> idc02 2026-10-26 with michael-dev (follows the dev instance it feeds); disabled on idc03"}
       - {name: overnight-assessment.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: qc-scoreboard.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: redis.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2112,7 +2114,11 @@ hosts:
           every repo-exec job on the host (audit finding)
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: ada-lab.service, type: service, scope: user}
-      - {name: caddy-edge.service, type: service, scope: user}
+      - {name: caddy-edge.service, type: service, scope: user, note: "michael-dev.surf-thailand.com + /apps/ha/michael-dev* now upstream https://idc02...:8124 (local); http://:8124 tailnet-IP shadow block removed 2026-10-26 — tailscale serve owns :8124"}
+      - {name: michael-dev.service, type: service, scope: user, critical: true,
+         note: "real instance — moved idc03 -> idc02 2026-10-26 (capacity-move-michael-dev), serves :8124 + MCP :9585 tailnet; quadlet stacks/idc02/michael-dev/"}
+      - {name: mha-state-push.service, type: service, scope: user,
+         note: "moved idc03 -> idc02 2026-10-26 with the dev instance it feeds (live michael-ha states -> michael-dev /api/states)"}
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
