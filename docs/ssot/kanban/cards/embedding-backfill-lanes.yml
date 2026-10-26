@@ -1,7 +1,7 @@
 id: embedding-backfill-lanes
 title: Embedding backfill lane — nomic re-embed MDDB banks/lessons/news on idle hosts
-column: doing
-updated: 2026-10-27 06:49
+column: review
+updated: 2026-10-27 06:50
 priority: medium
 note: 'Bursty CPU+embed work for idle idc cores. edu-embed-migration already in flight (education-store card review);
   extend pattern: nomic via litellm ollama-nomic-embed on idc02 (once #chat-local up) or existing idc03 ollama.
@@ -51,7 +51,17 @@ comms:
     news-nomic.jsonl byte-matched to digest norm(); news-digest.py reuses it via NEWS_VEC_CACHE default path (hits
     skip embed, misses self-heal). banks: 7179 docs copied into mddb-embed :11028 (bge-m3 via pool — bank space
     settled on bge-m3 in MEM-0805, nomic kept for sidecars), 0 fai'
+- at: 2026-10-27 06:50
+  from: idc02
+  text: 'finished (ok): exit=0 iew recall *consumer* surface, since the lessons space + probe exist but nothing
+    queries them yet. | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 iew recall *consumer* surface, since the lessons space + probe exist but nothing queries them
+    yet. | devin-task-20261027-053659-embedding-backfill-lane-nomic-.service: Consumed 1min 21.506s CPU time, 654.7M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
