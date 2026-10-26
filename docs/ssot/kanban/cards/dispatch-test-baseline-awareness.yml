@@ -1,7 +1,7 @@
 id: dispatch-test-baseline-awareness
 title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
-column: doing
-updated: 2026-10-26 08:56
+column: review
+updated: 2026-10-26 08:57
 brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
   gate compare base vs branch or support explicit docs-only expected goals.
 priority: high
@@ -46,8 +46,16 @@ comms:
     detached baseline wt one-per-pytest-call, holds only for failures absent on base. Marker probe: ok+classified
     pre-existing → merge allowed. Source-break probe (bench-edu-rejudge, late-sorting): held, named only the new
     test — the -x blind spot that would have suppressed it i'
+- at: 2026-10-26 08:57
+  from: tony-macbook
+  text: 'finished (ok): exit=0 e real `turn_ok` bug: `tg-relay-turn-ok-unbound` (OPS-0897). | devin-task-20261026-082932-reproduce-tests-ada-tes'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 e real `turn_ok` bug: `tg-relay-turn-ok-unbound` (OPS-0897). | devin-task-20261026-082932-reproduce-tests-ada-test-tg-fo.service:
+    Consumed 17min 49.597s CPU time over 27min 32.258s wall clock time, 1.4G memory peak, 400.1M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
