@@ -1,7 +1,7 @@
 id: capacity-move-michael-dev
 title: 'capacity: move michael-dev HA node idc03 -> idc02'
 column: doing
-updated: 2026-10-26 17:40
+updated: 2026-10-26 17:46
 brief: 'Next move under capacity-adjust procedure. idc03 co-locates two HA nodes with Ada backends+MDDB; member/dev
   nodes without LAN deps prefer idc02/idc03 per placement policy — idc02 has 11.9G/220G free and is the designated
   relief valve. michael-dev chosen before kk-ha: dev lane, lower blast radius. Stateful move: HA config dir + .storage,
@@ -39,6 +39,10 @@ comms:
   from: devin
   text: 'starting move idc03:8124 -> idc02:8124. Phase0: config 1.4G on idc03; idc02 has 168G disk/9G mem free.
     Now ref-sweep.'
+- at: 2026-10-26 17:46
+  from: devin
+  text: 'Phase1 sweep done: consumers = idc02 caddy (surf + :8124 shadow), mha-state-push.svc, mcp_config idc03:9585,
+    repo scripts, SSOT. Config+secrets already staged on idc02, image pulled, quadlet installed. Cutting over now.'
 action:
   type: dispatch
   status: running
