@@ -1,0 +1,40 @@
+id: jobs/nest/2026-10-26-golden-hour-catch-final-cut
+title: Golden Hour Catch — 14s teaser final cut (audio+captions+QC)
+card: ada-nest-fishing-final-cut
+ref: ADA-0892
+date: 2026-10-26
+host: mn01
+session: dispatch-wt-20261026-103612-use-lesson-ada-nest-video-as-t
+status: delivered-awaiting-tony-review
+
+inputs:
+  - gdrive:ada-nest/renders/golden-hour-catch-reference/full_story-original_20261026.mp4
+    (sha256 0dd82cc2…c544d — verified, untouched)
+  - board answers: 14s-teaser + neutral-thai-narrator (card requests, 2026-10-26)
+
+decisions:
+  target: 14s teaser (Tony, 08:21)
+  voice: neutral Thai narrator, non-cloned -> edge-tts th-TH-NiwatNeural rate -8%
+  ambience: synthesized surf bed (no stock asset existed) sidechain-ducked under VO
+  captions: Thai burned via libass/Noto Sans Thai + EN/TH title + Ada Nest credit
+  delivery: gdrive:ada-nest/renders/golden-hour-catch-final/ — same sharing tree as
+    reference; WP media publish left to Tony (uploads URLs are anonymous-fetchable)
+
+output:
+  file: gdrive:ada-nest/renders/golden-hour-catch-final/golden-hour-catch-teaser-v1.mp4
+  sha256: 4e06a67f681b099bcd0e17efa07e54c27587a6456a9556d4af9dae46e5a3581e
+  spec: H.264 640x384@24fps, 343f, 14.292s + AAC 48kHz mono, 2,352,026 B
+  sources: final-manifest.md, captions.ass, subs-th.srt, vo-lines.txt (same gdrive dir)
+
+qc:
+  tool: scripts/ops/video-qc.py (feat/ops-0882-p0, 661b8e373) — all checks pass
+  manual_rubric: "T2V-CompBench/VBench-style: clean 2.04s cuts, motion continuity good;
+    i2v wardrobe drift between shots noted (known LTX limitation, acceptable for teaser)"
+  levels: VO ~-17dB mean, ambience gaps ~-27..-34dB, loudnorm -16 LUFS, max -1.4dB
+
+runner_notes:
+  - mn01 has no ffmpeg -> static ffmpeg-7.0.2-amd64 (johnvansickle) + edge-tts venv
+    inside worktree media/golden-hour-catch/ (gitignored, 237M scratch)
+  - static build lacks drawtext -> use libass 'ass' filter for all text overlays
+  - lesson ada-nest-video (post 1914) updated in place with final-cut section
+  - open request on card: approve-final / approve-and-wp / needs-fixes
