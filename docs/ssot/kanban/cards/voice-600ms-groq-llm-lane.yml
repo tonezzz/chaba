@@ -1,6 +1,6 @@
 id: voice-600ms-groq-llm-lane
 title: 'voice 600ms: Groq as online fast-path LLM vs local hermes3:8b — measure time-to-first-audio'
-column: doing
+column: review
 updated: 2026-10-26 07:20
 brief: 'On the voice-miniapp lane (ADA-0817, P0 streaming TTS + barge-in done), the LLM leg is hermes3:8b on local
   ollama — likely the slowest hop in the 600ms budget. Groq free tier now measured at 192-363ms TTFT for voice-aux-sized
@@ -99,15 +99,19 @@ comms:
 - at: 2026-10-26 07:20
   from: chaba
   text: started devin-task-20261026-072000-voice-miniapp-api-voice-add-en on idc02 (dispatch)
+- at: 2026-10-26 07:20
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-072000-voice-miniapp-api-voice-add-en.service:
+    Main process exited, cod'
 action:
   type: dispatch
-  status: running
+  status: done
   sweep:
     stale_running: 2026-10-25 20:16
     session_gone: 2026-10-25 20:30
   last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-131712-voice-miniapp-api-voice-add-en.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261025-131712-voice-miniapp-api-voice-add-en.service:
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-072000-voice-miniapp-api-voice-add-en.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-072000-voice-miniapp-api-voice-add-en.service:
     Failed with result ''exit-code''.'
   runner: idc02
 claim: {}
