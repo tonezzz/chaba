@@ -1,7 +1,7 @@
 id: opencode-ssot-safety-eval-system
 title: Build OpenCode SSOT profiles, safety gates, and benchmark harness
-column: doing
-updated: 2026-10-26 10:45
+column: review
+updated: 2026-10-26 10:46
 brief: Give OpenCode a compact task-scoped SSOT and graduated safety/evaluation system instead of one long mixed
   session.
 priority: high
@@ -29,8 +29,11 @@ spec: 'Design and implement an OpenCode operating system for many focuses. Add a
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-034507-design-and-implement-an-openco.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-034507-design-and-implement-an-openco.service:
+    Failed with result ''exit-code''.'
 note: Recent OpenCode session mixed 31 messages across unrelated focuses and hallucinated a host-status commit;
   use fresh task-scoped sessions and independent verification. Existing AI lane and continuous-improvement procedures
   provide the baseline.
@@ -45,3 +48,9 @@ comms:
 - at: 2026-10-26 10:45
   from: chaba
   text: started devin-task-20261026-034507-design-and-implement-an-openco on mn01 (dispatch)
+- at: 2026-10-26 10:46
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-034507-design-and-implement-an-openco.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
