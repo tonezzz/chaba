@@ -60,17 +60,18 @@ processing:
     - "peer_ip is the leftmost X-Forwarded-For; behind CF that is the
       edge egress IP — informational only."
   limits:
-    - "CF token provisioning is NOT done — impossible unattended.
-      cfat_ is dead on all slots (verify=Invalid API Token; identical
-      fingerprint in every secrets-backup bundle), cfut_ is Workers-only,
-      wrangler OAuth can't write DNS, and Cloudflare mints new tokens
-      dashboard-only (no POST /user/tokens, no account tokens — 9109).
-      Board request need-a-new-dns-capable-cloudflare-token-15edf9 asks
-      Tony to mint: Zone > DNS > Edit on surf-thailand.com. Then
-      scripts/ops/cf-dns-upsert.sh creates A app -> 157.85.102.125
-      (proxied) and the already-wired app. site block goes live."
-    - "app.surf-thailand.com/enroll is configured but unroutable until
-      that DNS record exists; api.surf-thailand.com/enroll serves today."
+    - "RESOLVED 2026-10-26 09:00 (follow-up dispatch): cfat_ was never
+      dead — /user/tokens/verify rejects this account/zone-scoped token
+      (verify only validates user tokens), which read as 'Invalid API
+      Token'. A real zone read proved it works; the A record was created
+      with the existing token. No dashboard mint needed. Gate
+      CF-capability checks on zone reads, not verify."
+    - "cf-dns-upsert-when-ready.sh + cf-dns-upsert.path were installed on
+      idc02 as a token-drop watcher; it fired on the first env touch,
+      created the record, self-disabled; units removed after success.
+      Kept in repo for future token-drop handoffs."
+    - "app.surf-thailand.com/enroll serves since 09:02 (cert issued via
+      http-01 through the CF proxy on caddy-edge restart)."
     - "GET /nodes is intentionally tailnet-only (no public route added —
       it exposes enrolled IPs)."
   verification:
