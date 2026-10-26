@@ -1,7 +1,7 @@
 id: ada-chat-card-cannot-receive-pushed-medi-099b01
 title: ada-chat-card cannot receive pushed media (no chat_id bind, no chat_push render)
-column: review
-updated: 2026-10-26 17:53
+column: done
+updated: 2026-10-26 18:01
 brief: 'tony-ha/mn-ha ChatUI (ada-chat-card.js) connects ws with only ?device_id&api_key — no channel/chat_id binding
   — and _handleControl has no chat_push case. webchat_deliver only reaches channel=web sessions (boards widget web-<member>).
   Result: nothing can push text/image/video into a household ChatUI lane; chat_send channel=web misses it entirely.
@@ -53,6 +53,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-173619-1-bind-the-card-session-add-ch,
     branch dispatch/20261026-173619-1-bind-the-card-session-add-ch'
+- at: 2026-10-26 18:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -63,3 +66,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 18:01
+  note: verified — evidence checks green, closing itself
