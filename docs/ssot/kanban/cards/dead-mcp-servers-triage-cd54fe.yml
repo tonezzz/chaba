@@ -1,7 +1,7 @@
 id: dead-mcp-servers-triage-cd54fe
 title: dead-mcp-servers-triage
-column: review
-updated: 2026-10-26 08:58
+column: done
+updated: 2026-10-26 09:01
 priority: medium
 spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
   BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
@@ -58,6 +58,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-084608-decide-repair-vs-retire-for-th,
     branch dispatch/20261026-084608-decide-repair-vs-retire-for-th'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
@@ -69,3 +72,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself
