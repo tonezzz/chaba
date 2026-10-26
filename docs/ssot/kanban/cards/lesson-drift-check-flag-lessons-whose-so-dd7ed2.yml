@@ -1,7 +1,7 @@
 id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
 title: 'Lesson drift-check: flag lessons whose source docs changed'
-column: doing
-updated: 2026-10-26 09:01
+column: review
+updated: 2026-10-26 15:50
 brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
   docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
   is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
@@ -57,12 +57,22 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261026-084906-topics-trade-map-hub-trade-arc on tony-dell still dirty
     — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-26 15:50
+  from: tony-dell
+  text: 'finished (ok): exit=0  lists the job as due, so it self-activates once the branch lands and the exec checkout
+    syncs. | devin-task-20261'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   runner: tony-dell
   sweep:
     stale_running: 2026-10-26 09:01
     dirty: 4
+  result: 'exit=0  lists the job as due, so it self-activates once the branch lands and the exec checkout syncs.
+    | devin-task-20261026-084906-topics-trade-map-hub-trade-arc.service: Consumed 35.313s CPU time over 3min 38.308s
+    wall clock time, 1G memory peak.'
+  verified: false
+review_kind: verify
+claim: {}
