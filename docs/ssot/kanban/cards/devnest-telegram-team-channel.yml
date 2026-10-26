@@ -1,7 +1,7 @@
 id: devnest-telegram-team-channel
 title: Connect DevNest household AI team to Telegram group
 column: done
-updated: 2026-10-26 16:51
+updated: 2026-10-26 17:03
 brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
   as a team.
 priority: high
@@ -74,3 +74,10 @@ comms:
   text: 'PR opened: https://github.com/tonezzz/chaba/pull/37. Worktree tests: 4 passed, py_compile/systemd-analyze
     pass, live Telegram API allowlist/health smoke passed. Remaining gates: Tony secure secret-drop to idc03, merge/sync
     PR into execution checkout, enable devnest-tg-relay.service, then persistent same-topic smoke.'
+- at: 2026-10-26 17:03
+  from: devin
+  text: 'Capture phase deployed and verified on idc03. devnest-tg-relay.service is enabled/active; loopback /health=200
+    on 127.0.0.1:8919. Live consumer proof: captured Telegram update 954573586 from chat -1003998821809 / sender
+    8960073266 in General, persisted updates.jsonl + conversations/-1003998821809/general.jsonl, advanced state
+    offset to 954573587, and issued same-topic acknowledgement. Card remains doing: board-api job routing and start/finish
+    notifications are the next phase.'
