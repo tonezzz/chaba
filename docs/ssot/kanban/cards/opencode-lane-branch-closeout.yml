@@ -1,7 +1,7 @@
 id: opencode-lane-branch-closeout
 title: Complete OpenCode lane executor branch commit + auto-merge closeout
 column: review
-updated: 2026-10-26 06:08
+updated: 2026-10-26 07:00
 brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
   but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
   with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
@@ -84,6 +84,13 @@ comms:
     Re-ran the exact test on origin/master baseline: SAME UnboundLocalError(turn_ok). This is a pre-existing baseline
     failure, not OpenCode regression. Next fix: make closeout test gate baseline-aware (or explicit expected-goal
     for docs-only marker), then rerun; do not bypass globally.'
+- at: 2026-10-26 07:00
+  from: devin
+  text: 'CLOSEOUT PROBE VERIFIED: Dell-pinned OpenCode marker job created dispatch-compatible worktree/branch, ran
+    OpenCode with Flash Lite, pushed branch, baseline-aware gate compared the pre-existing tg_forward_provenance
+    failure (same failure on origin/master), and merged marker to origin/master. Card opencode-closeout-probe-dell
+    is review with verified=true. OPS-0846 implementation is now proven; keep broad OPENCODE_LANES gated until one
+    supervised real code task passes, but free-lane executor is no '
 action:
   type: dispatch
   status: done
