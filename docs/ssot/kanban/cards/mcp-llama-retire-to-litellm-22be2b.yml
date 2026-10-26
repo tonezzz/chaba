@@ -1,0 +1,14 @@
+id: mcp-llama-retire-to-litellm-22be2b
+title: mcp-llama-retire-to-litellm
+column: backlog
+updated: 2026-10-26 07:43
+priority: low
+spec: mcp-llama chat/complete/tokenize/models/status points at omen llama-server (down for maintenance) and is superseded
+  by the LiteLLM gateway on idc03 (routing + fallbacks + spend ledger). Remove from ~/.config/devin/mcp_config.json,
+  or repoint LLAMA_URL to LiteLLM /v1 if a dedicated MCP is wanted for tokenize(). Update ssot.mcp.yml status.
+note: AUD-0886 — also removes a schema block from every session.
+ref: OPS-0890
+comms:
+- at: 2026-10-26 07:43
+  from: tony
+  text: card captured via board-api
