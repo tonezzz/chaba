@@ -1,0 +1,20 @@
+id: scr-calibrate-t1-thresholds-on-real-tg-v-8ca63e
+title: 'SCR: calibrate T1 thresholds on real TG voice corpus'
+column: backlog
+updated: 2026-10-27 05:42
+priority: medium
+spec: 'Context: research doc docs/kb/short-command-recognition-research.md, prototype docs/prototypes/short-command/
+  (stdlib, host-agnostic). Work: (1) build a corpus.jsonl from the TG voice refs labeling short-command vs non-command
+  utterances, (2) run eval/run_eval.py --sweep against it, (3) recommend accept/gray thresholds + which surface
+  (tg_relay vs ada-pi command_lane) integrates first. Done: threshold recommendation grounded in real transcripts
+  written to the research doc; wrong-fire rate measured on real data.'
+note: Follow-up of devin-research-short-command-recognition-d948ed. The docs/prototypes/short-command recognizer
+  is calibrated on a 51-item synthetic corpus (100% correct, 0 wrong-fires, 88% deflection) — a floor, not a measurement.
+  Run its eval path against the real TG voice corpus refs on idc03 (~/.local/share/ada-voice-corpus/tg/, refs already
+  exist from the STT lane eval) and report per-tier accuracy + where the T1 accept/gray thresholds should sit on
+  qwen3-asr output, which transliterates EN loan
+ref: OPS-0919
+comms:
+- at: 2026-10-27 05:42
+  from: devin
+  text: card captured via board-api
