@@ -1,7 +1,7 @@
 id: tony-ha-prod-placement-26f033
 title: tony-ha-prod-placement
 column: review
-updated: 2026-10-26 17:47
+updated: 2026-10-26 18:39
 priority: high
 spec: 'DECISION for Tony: where should prod tony-ha live? Context: omen (current) is a laptop that may sleep + going
   through maintenance; dell is slated to become a minimal spare box per approved 2026-10-21 drain plan; mn01 is
@@ -65,6 +65,12 @@ comms:
 - at: 2026-10-26 17:47
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''prod-tony-ha-host-a-mn01-recom''] block close)'
+- at: 2026-10-26 18:39
+  from: tony
+  text: 'answered prod-tony-ha-host-a-mn01-recommended-if-bbf110: a) mn01 — always-on commit'
+- at: 2026-10-26 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -84,12 +90,14 @@ requests:
     — declared lan-hub, headless 24/7 since Oct23, zero migration, but every maintenance reboot kills home control
     (Oct25 outage); mn01 then becomes the HOM-0855 cold standby. (c) idc03 — REJECTED: kills LAN control (cast/RTSP/esphome/LAN
     plugs). Full research: docs/ssot/jobs/home-assistant/2026-10-26-tony-ha-prod-placement-decision.yml'
-  status: open
+  status: answered
   at: 2026-10-26 17:34
   from: devin
   options:
   - a) mn01 — always-on commit
   - b) keep omen + mn01 standby
   - c) idc03
+  answer: a) mn01 — always-on commit
 review_kind: verify
 claim: {}
+awaiting_action: true
