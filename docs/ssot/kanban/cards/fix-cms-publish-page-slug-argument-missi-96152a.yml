@@ -28,6 +28,12 @@ comms:
 - at: 2026-10-27 06:48
   from: chaba
   text: started devin-task-20261027-064822-fix-cms-publish-page-slug-argu on tony-macbook (dispatch)
+- at: 2026-10-27 06:57
+  from: devin
+  text: 'FIXED (staged as ada-voice Drop 16): root cause = schema required slug while the model sends title+content
+    — SchemaError killed the call pre-confirm. cms_publish_page now derives slug from title (_cms_slugify), pending-confirm
+    key matches the derivation, slug out of required. Patch integrations/ada-voice/backend/cms-slug-derivation.patch
+    applies clean on ada-voice main@56c67c1; unit tests staged. Needs apply+deploy on tony-dell to close.'
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
