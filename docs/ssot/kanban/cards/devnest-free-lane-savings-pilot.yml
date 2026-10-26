@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
-column: doing
-updated: 2026-10-26 16:55
+column: review
+updated: 2026-10-26 16:56
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -55,10 +55,18 @@ comms:
   from: devin
   text: 'raised request supervised-pilot-queue: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report,
     pinned host=tony-dell, lane=free_lane). Queue them'
+- at: 2026-10-26 16:56
+  from: idc02
+  text: 'finished (ok): exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing
+    pushed or queued. | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing pushed or
+    queued. | devin-task-20261026-164611-pilot-classes-1-docs-config-ch.service: Consumed 46.102s CPU time, 143.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
 requests:
 - id: supervised-pilot-queue
   ask: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report, pinned host=tony-dell, lane=free_lane).
@@ -71,3 +79,5 @@ requests:
   - queue doc first, then the others after it passes
   - hold — enable later
   suggested: queue all three on tony-dell now — I am watching
+review_kind: verify
+claim: {}
