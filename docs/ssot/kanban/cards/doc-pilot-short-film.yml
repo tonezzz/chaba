@@ -1,7 +1,7 @@
 id: doc-pilot-short-film
 title: doc-pilot — first AI short documentary end-to-end
 column: done
-updated: 2026-10-26 09:48
+updated: 2026-10-26 10:34
 priority: medium
 tags:
 - ada-nest
@@ -423,6 +423,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-094110-shorten-the-thai-narration-lin,
     branch dispatch/20261026-094110-shorten-the-thai-narration-lin'
+- at: 2026-10-26 10:34
+  from: devin
+  text: 'Current Drive queue scan 2026-10-26: `doc-vo-v3` is the sole unclaimed/uncompleted pack. It needs gpu_gb=3
+    and disk_gb=4; T4 satisfies it. It contains 18 Thai beats and ref inputs; its prep installs dependencies, while
+    `TTS(model="v2")` may fetch model weights during run (no explicit model prefetch currently). The local `07-doc-vo-kuiper-v5`
+    and `08-doc-hybrid-v6` files seen in the dispatch worktree are not deployed to Drive, so they are not queueable
+    yet. T4 runtime/runner is stale/exited; no j'
 requests:
 - id: where-should-tony-see-doc-post
   ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
