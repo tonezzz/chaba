@@ -1,7 +1,7 @@
 id: repair-wp-nest-job-cpt-drift
 title: Repair live WP nest_job CPT/API drift
 column: doing
-updated: 2026-10-26 19:24
+updated: 2026-10-26 19:25
 brief: Restore the WP nest_job CPT/API required for DevNest and Colab job publishing without breaking existing CPTs.
 priority: high
 program: devnest
@@ -105,6 +105,10 @@ comms:
 - at: 2026-10-26 19:24
   from: chaba
   text: started devin-task-20261026-192455-investigate-and-repair-the-liv on idc02 (dispatch)
+- at: 2026-10-26 19:25
+  from: devin
+  text: '[re-dispatch] Verifying the 19:07 deploy holds: checking live /wp/v2/types, anon privacy, nest_job round-trip,
+    health probes, and SSOT DEPLOYED flag.'
 requests:
 - id: live-chaba-boards-plugin-is-v0-7-x-wp-v2-0dc69c
   ask: 'Live chaba-boards plugin is ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity 404 (v0.8.0+v0.9.0 never deployed;
