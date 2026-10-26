@@ -2,7 +2,7 @@ id: lab-gold-thb-causality
 title: 'Lab: gold/THB/USD causality model'
 brief: An experiment collecting gold, baht, and dollar prices to see which moves first. Data is still gathering
   — a keep-or-close decision is due 2026-10-18.
-column: lab
+column: review
 lab:
   hypothesis: THB strength tracks gold price strongly enough to predict direction — a small causality model beats
     gut-feel timing on conversions
@@ -10,7 +10,7 @@ lab:
   review_by: '2026-11-01'
 note: 'Experiment dir: experiments/gold-thb-usd-causality. Data collection running; needs the first scored window
   before the review date.'
-updated: 2026-10-27 05:45
+updated: 2026-10-27 05:47
 comms:
 - at: 2026-10-05 09:45
   from: tony
@@ -64,6 +64,9 @@ comms:
   from: devin
   text: 'raised request first-scored-window-is-in-threshold-70-a-4453c3: First scored window is in (threshold 70%,
     always 66.7% — metric met but edge vs naive always-up is not significant). How'
+- at: 2026-10-27 05:47
+  from: idc02
+  text: 'finished (ok): exit=0 /ssot/jobs/experiments/2026-10-27-gold-thb-usd-scored-window.yml`, and `dispatch-outcome-20261027-054102-lab-gold'
 ref: OPS-0046
 requests:
 - id: lab-review
@@ -92,5 +95,10 @@ requests:
   - hold
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 /ssot/jobs/experiments/2026-10-27-gold-thb-usd-scored-window.yml`, and `dispatch-outcome-20261027-054102-lab-gold-thb-usd-causality-mod.md`.
+    | devin-task-20261027-054102-lab-gold-thb-usd-causality-mod.service: Consumed 1min 8.444s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
