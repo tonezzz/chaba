@@ -43,6 +43,13 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261026-071519-per-tony-implement-a-synchrono no longer active on tony-macbook
     but card still says running — sweeping its branch'
+- at: 2026-10-26 07:16
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-26 07:16
+  from: chaba
+  text: pushed dispatch/20261026-071519-per-tony-implement-a-synchrono to origin
 ref: MED-0251
 requests:
 - id: tony-omen-requires-a-confirmat-a516b1
@@ -69,5 +76,10 @@ action:
   type: dispatch
   repo: ada-voice
   status: queued
+  sweep:
+    stale_running: 2026-10-26 07:16
+  verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
   runner: tony-macbook
+claim: {}
 awaiting_action: true
