@@ -1,7 +1,7 @@
 id: devnest-colab-assessment-first-cache-pre-cb223c
 title: DevNest Colab assessment-first cache preparation
 column: backlog
-updated: 2026-10-26 08:13
+updated: 2026-10-26 08:24
 brief: Define and stage a cache-independent DevNest assessment that runs in the same T4 queue window while the next
   package’s model cache is prepared.
 priority: high
@@ -50,3 +50,9 @@ comms:
     is currently staged. A new notebook run will therefore do only per-runtime setup and skip completed generation
     until a new assessment/next-T4 package is uploaded before launch. T4 runtime boot 326f1d48 heartbeat is stale
     by >70min; queue heartbeat says exit and runn'
+- at: 2026-10-26 08:24
+  from: devin
+  text: Procedure is now in `docs/kb/colab-mcp-jobs.md` and Education post 2231. Commit 20c89df3a documents the
+    staged-assessment + single-prep overlap pattern and the queue snapshot constraint. The DevNest replay fixtures
+    are still not frozen, so no assessment pack has been run; host assessments remain fleet CPU work. Request remains
+    open for which assessment to stage first.
