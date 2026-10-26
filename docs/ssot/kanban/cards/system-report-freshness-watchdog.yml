@@ -1,13 +1,14 @@
 id: system-report-freshness-watchdog
 title: System-report freshness watchdog — alert when generated_at goes stale
-column: review
-updated: 2026-10-23 14:24
+column: done
+updated: 2026-10-26 07:18
 spec: 'The Oct 19 freeze proved the monitor politely displays a corpse: whole chain down = page shows 3-day-old
   data with zero alerting. Add an independent watchdog (NOT part of the report pipeline it watches): timer on a
   non-idc02 host that reads api/status generated_at from idc02 and, when older than ~26h or unreachable, files a
   focus-inbox entry via board-api /inbox so it surfaces in the daily brief + focus inbox.'
 action:
   type: manual
+  status: done
 ref: KNB-0786
 comms:
 - at: 2026-10-23 14:09
@@ -25,4 +26,8 @@ comms:
 - at: 2026-10-23 14:24
   from: tony
   text: moved doing -> review
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
 review_kind: verify
+claim: {}
