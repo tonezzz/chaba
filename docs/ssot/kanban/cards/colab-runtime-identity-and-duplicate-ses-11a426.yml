@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-26 15:00
+updated: 2026-10-26 15:14
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -62,11 +62,18 @@ comms:
     account-wide sessions. `mcp-colab` can submit/list packs, read results, and probe the tunnel/model; the live
     tool list still lacks source-defined colab_session_status. The notebook queue launcher runs all eligible JOBS/packs
     inside an already-running VM, not a selected job. Full life'
+- at: 2026-10-26 15:14
+  from: tony
+  text: 'answered which-control-boundary-do-you-want-for-t-3ffc0d: Investigate officially supported runtime auto-start/stop;
+    only control a managed runtime and require a max session duration/budget before any live start/stop.'
+- at: 2026-10-26 15:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
     API and an explicit compute time/budget cap.
-  status: open
+  status: answered
   at: 2026-10-26 14:17
   from: devin
   options:
@@ -77,3 +84,6 @@ requests:
   - Consider moving the queue to an always-on/self-managed GPU worker instead of Colab.
   suggested: Keep T4 runtime start manual; improve MCP queue, status, results, and safe preflight only (recommended;
     no new compute spend).
+  answer: Investigate officially supported runtime auto-start/stop; only control a managed runtime and require a
+    max session duration/budget before any live start/stop.
+awaiting_action: true
