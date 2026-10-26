@@ -1,7 +1,7 @@
 id: opencode-mcp-debug-readonly-lane
 title: Stage MCP Debug read-only tools into OpenCode
 column: doing
-updated: 2026-10-26 09:35
+updated: 2026-10-26 09:38
 brief: Add MCP Debug to OpenCode behind an explicit read-only allowlist, then graduate one safe real-job lane with
   measured token and verifier evidence.
 priority: high
@@ -64,3 +64,10 @@ comms:
     all return JSON-RPC -32601 (blocked at proxy); mcp_health(tony_dell) ok:true. OpenCode 1.19.4 installed (npm
     -g, user-level) + run1: flash-lite did write-then-fill health-report.json via 3 MCP calls, verdict PASS, ~36k
     tokens (32.6k cache-read). Phase 2 real report job running now.'
+- at: 2026-10-26 09:38
+  from: devin
+  text: 'DONE (dispatch, tony-macbook). Phase 1 verified end-to-end: OpenCode 1.19.4 user-level config + allowfile
+    → proxy serves exactly 8 read-only tools; 7 denied tools incl. mcp_raw/put_file/remediate/ssot_append/clipboard_set
+    → JSON-RPC -32601, no passthrough; mcp_health(tony_dell) ok. Phase 2: real read-only report job ran (tony-dell-health-2026-10-26.md,
+    6 MCP calls, verdict HEALTHY, verifier pass). Metrics: 2/2 pass, 0 retries, ~36-38k cumulative tokens/run (86-90%
+    cache-read). Phase 3 gated pend'
