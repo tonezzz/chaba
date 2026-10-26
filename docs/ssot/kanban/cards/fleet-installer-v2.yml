@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-26 09:01
+updated: 2026-10-26 09:05
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -113,6 +113,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261026-070642-installer-v2-keyless-enroll-en on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-26 09:05
+  from: devin
+  text: 'CORRECTION + DONE: cfat_ was never dead — /user/tokens/verify rejects this account/zone-scoped token (verify
+    only validates user tokens), which read as Invalid API Token on both dispatches. Gated on a real zone read instead:
+    token works -> created A app.surf-thailand.com -> 157.85.102.125 (proxied) at 09:00 via cf-dns-upsert-when-ready.path
+    (armed watcher, fired on env touch, self-disabled). caddy-edge restart minted the LE cert via http-01 through
+    the proxy; https://app.surf-thailand.com/{insta'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -158,6 +165,7 @@ action:
   sweep:
     close_held: 2026-10-26 07:31
     stale_running: 2026-10-26 09:01
+    session_gone: 2026-10-26 09:01
 review_kind: verify
 claim: {}
 auto_close:
