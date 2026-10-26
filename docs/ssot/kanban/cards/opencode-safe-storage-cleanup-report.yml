@@ -1,7 +1,7 @@
 id: opencode-safe-storage-cleanup-report
 title: Safe periodic storage cleanup with OpenCode report and Telegram alert
 column: review
-updated: 2026-10-26 10:11
+updated: 2026-10-26 10:49
 brief: Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy
   checks and Telegram report.
 priority: high
@@ -80,5 +80,12 @@ comms:
   text: 'CORRECTION: KNB-0903 is not verified. The dispatched service failed (`Failed with result exit-code`), no
     outcome artifact/cleanup runner is present, and no deletion occurred. Keep this in review. Next safe step is
     a dry-run-only implementation with tests; do not enable a timer or apply cleanup from the current card result.'
+- at: 2026-10-26 10:49
+  from: tony
+  text: 'REAL DRY-RUN NOW VERIFIED: fresh OpenCode session on tony-macbook used mcp_health + mcp_get_file only to
+    review deterministic inventory /tmp/opencode-storage-inventory.7w83a801.json from tony_dell. Candidate report:
+    /tmp/opencode-storage-review.K9uZ8b/candidate-report.json; 99 candidates, 3 automatic_ok (only OpenCode caches,
+    local Trash), 59 manual_review, 37 protected; independent check found zero protected paths marked automatic_ok.
+    No deletion. Telegram dry-run report sent successfully. Appl'
 review_kind: verify
 claim: {}
