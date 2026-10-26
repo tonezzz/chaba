@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:38
+updated: 2026-10-26 19:39
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -62,3 +62,10 @@ comms:
     have failing notes. Possible column-normalization candidates for evidence recheck (not moved): logs-auto-idc02-severe-spike
     and vcast-auto-flap have auto-recovered/closed comms; runner-auto-mn01 explicitly says doubly verified and review
     was restored by autostash. Other runner-auto ca'
+- at: 2026-10-26 19:39
+  from: devin
+  text: 'Next pass on the 24 answered/no-active-action cards: all 24 answers are free-text/decision answers rather
+    than an unambiguous queue/close/hold/retry/dispatch verb. Therefore no safe bulk auto-action; classify each
+    as (a) explicit proceed already staged, (b) owner clarification still needed, or (c) answer-only/no action intended.
+    The sole safe automated path is exact supported verbs; preserve human choices. For the 31 review/action-done
+    set, 8 verified=true triage cards include some still-failing'
