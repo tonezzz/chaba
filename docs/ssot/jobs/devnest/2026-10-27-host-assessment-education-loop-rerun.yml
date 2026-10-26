@@ -1,0 +1,51 @@
+# DevNest host-assessment -> Education loop — re-run record (card
+# devnest-host-assessment-education-loop / DEV-0865)
+#
+# Second end-to-end run of the deterministic lane: assess.py over explicit
+# targets -> verify.py JSON gate -> publish_education.py upsert of the WP
+# lesson. Confirms the loop is repeatable (first run 2026-10-25/26).
+job: devnest-host-assessment-education-loop-rerun
+date: 2026-10-27
+host: tony-dell   # skill + artifacts live here; runner was idc02
+card: devnest-host-assessment-education-loop
+ref: DEV-0865
+
+skill:
+  # SSOT correction 2026-10-27: lane doc said ~/DevNest — that dir is an
+  # unrelated web app. Real location (untracked, tony-dell only):
+  path: ~/evals/tasks/devnest-host-assessment/
+  files: skill.md, assess.py, verify.py, publish_education.py
+  contract: >-
+    explicit --target-host per run; read-only SSH checks only
+    (identity/loadavg, free -b, df, failed user units, nvidia-smi);
+    artifact JSON with target_host/observed_at/read_only=true/errors/
+    evidence/recommendation. No remediation, ever.
+  artifact_glob: ~/evals/results/devnest-host-<host>.json   # on tony-dell
+
+run_2026-10-27:
+  targets: [idc02, idc03, mn01, tony-dell, tony-macbook, tony-omen]
+  verify: "6/6 passed — read_only=true, explicit target_host, 0 SSH errors"
+  load_per_cpu:
+    idc02: 0.4725
+    idc03: 0.4375
+    mn01: 0.4225
+    tony-dell: 0.11625
+    tony-macbook: 0.61875
+    tony-omen: 0.2967
+  gpu: "tony-omen available; all others unavailable"
+  publish: >-
+    publish_education.py --glob 'devnest-host-*.json' -> board-api /lesson
+    upsert: post 2426 / lesson-00750611bace, action=updated; re-fetch
+    confirmed new generated timestamp + fresh table.
+  review_state: >-
+    next_review kept at 2026-11-01 (publish script passes it explicitly as
+    an override); learned_at preserved 2026-10-25; meta.updated bumped to
+    2026-10-27. Slug is hash-based: lesson- + md5(topic.lower())[:12] —
+    op=get needs 'lesson-00750611bace', NOT the topic name.
+  remediation: none — observations only
+
+open_note: >-
+  Skill is a loose ~/evals/tasks dir on tony-dell, not in git — if
+  tony-dell dies the loop dies. Candidate follow-up: commit the four files
+  into the repo (scripts/ or a packs-style layout) so any runner can host
+  the loop. Not done here (scope = re-run only).
