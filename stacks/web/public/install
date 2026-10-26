@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # chaba fleet installer — curl https://api.surf-thailand.com/install -fsS | bash
-# v1: tailscale + openssh-server + join tailnet + announce.
+# v1: tailscale + openssh-server + join tailnet.
+# v2: + keyless report-back — POSTs hostname/lan/tailnet to /enroll, which
+#     lands the node in the registry + ops feed (stick-announce contract).
 # Optional env:
 #   TS_AUTHKEY=tskey-...   zero-touch tailnet join (pre-auth key)
-#   NODE_ROLE=label        tag printed in the summary (e.g. shaker)
+#   NODE_ROLE=label        tag printed in the summary + enroll meta (e.g. shaker)
+#   ENROLL_URL=...         override report-back endpoint (default api./enroll)
 set -e
 
 log() { printf '\033[36m[fleet]\033[0m %s\n' "$*"; }
@@ -43,6 +46,19 @@ fi
 
 IP=$(tailscale ip -4 2>/dev/null | head -1)
 HOST=$(hostname -f 2>/dev/null || hostname)
+
+# --- report back (keyless /enroll — same ops-event contract as stick-announce) ---
+LAN=$(ip -4 -br addr show scope global 2>/dev/null | awk '/UP/{print $3}' | head -1 | cut -d/ -f1)
+ENROLL_URL="${ENROLL_URL:-https://api.surf-thailand.com/enroll}"
+ENROLL_BODY=$(printf '{"hostname":"%s","lan_ip":"%s","tailnet_ip":"%s"%s}' \
+  "$HOST" "$LAN" "$IP" "${NODE_ROLE:+,\"role\":\"$NODE_ROLE\"}")
+if curl -fsSm 15 -X POST "$ENROLL_URL" \
+    -H 'Content-Type: application/json' -d "$ENROLL_BODY" >/dev/null 2>&1; then
+  log "enrolled: $HOST reported to the fleet registry + ops feed"
+else
+  log "warn: enroll POST failed — node still works, ops just won't see it yet"
+fi
+
 log "on tailnet: $HOST = $IP ${NODE_ROLE:+ (role: $NODE_ROLE)}"
 log "next: tell the fleet 'macbook is up' — it gets wired into monitoring,"
 log "host-loads, and the percussion board gets a new voice."

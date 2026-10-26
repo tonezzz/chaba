@@ -481,6 +481,79 @@ function readBody(req, limit = 65536) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Fleet node enroll — POST /enroll, keyless by design (the installer reports
+// before/without tailnet creds; routed publicly as api./app.surf-thailand.com
+// /enroll by caddy-edge). Shares the stick-announce contract: the stick's
+// /usr/local/bin/stick-announce.sh posts {host, lan_ip, tailnet_ip} as a
+// kind=ops-event type=host_online doc into ada-ha-events-tony — we emit the
+// same doc shape so the ops feed/digest sees installer enrolls identically
+// (docs/kb/mn01-stick-standard.md). The node also lands in NODES_FILE — the
+// queryable "node registry" half of enroll -> registry + ops feed.
+// ---------------------------------------------------------------------------
+const NODES_FILE = process.env.ENROLL_REGISTRY ||
+  path.join(path.dirname(REGISTRY_FILE), "nodes.json");
+const ENROLL_MDDB = (process.env.ENROLL_MDDB_URL ||
+  "http://100.102.134.91:11023/v1").replace(/\/+$/, "");
+const ENROLL_COLLECTION =
+  process.env.ENROLL_COLLECTION || "ada-ha-events-tony";
+// Re-posts of the same host+tailnet inside this window update the registry
+// but don't re-emit the ops event — boot/retry loops stay quiet.
+const ENROLL_DEDUPE_MS =
+  parseInt(process.env.ENROLL_DEDUPE_MS || "300000", 10);
+const ENROLL_IP_CAP =
+  parseInt(process.env.ENROLL_IP_CAP || "30", 10); // posts/IP/hour
+const nodes = {};
+function loadNodes() {
+  try {
+    const d = JSON.parse(fs.readFileSync(NODES_FILE, "utf8"));
+    if (d && typeof d.nodes === "object") Object.assign(nodes, d.nodes);
+  } catch (e) { /* fresh registry */ }
+}
+function saveNodes() {
+  try {
+    fs.mkdirSync(path.dirname(NODES_FILE), { recursive: true });
+    fs.writeFileSync(NODES_FILE, JSON.stringify({ nodes }, null, 2));
+  } catch (e) {
+    console.error("[input-bridge] nodes save failed:", e.message);
+  }
+}
+loadNodes();
+const enrollDedupe = new Map(); // "host|tailnet_ip" -> last emit ts
+const enrollHits = new Map();   // client ip -> [ts, ...] rolling hour
+
+function enrollIp(v) {
+  const m = String(v || "").replace(/^::ffff:/, "")
+    .match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  return m && m.slice(1).every((o) => +o <= 255) ? m[0] : "";
+}
+
+async function emitHostOnline(n, at) {
+  // Same doc shape as stick-announce.sh — type stays host_online so
+  // consumers keying on the existing contract need no change.
+  const meta = {
+    kind: ["ops-event"], type: ["host_online"], instance: ["tony"],
+    host: [n.hostname], ts: [at], written_by: ["input-bridge-enroll"],
+  };
+  if (n.lan_ip) meta.lan_ip = [n.lan_ip];
+  if (n.tailnet_ip) meta.tailnet_ip = [n.tailnet_ip];
+  if (n.role) meta.role = [n.role];
+  const r = await fetch(`${ENROLL_MDDB}/add`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      collection: ENROLL_COLLECTION,
+      key: `ops-host-enroll-${n.hostname}-${Date.parse(at)}`,
+      lang: "en",
+      contentMd: `host online: ${n.hostname} lan=${n.lan_ip || "-"} ` +
+        `tailnet=${n.tailnet_ip || "-"} at ${at}`,
+      meta,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!r.ok) throw new Error(`mddb ${r.status}`);
+}
+
 function displaysSnapshot() {
   pendingCleanup();
   const now = Date.now();
@@ -572,10 +645,70 @@ const server = http.createServer(async (req, res) => {
       rooms: rooms.size,
       screens: Object.keys(registry.screens).length,
       tombstones: Object.keys(registry.tombstones).length,
+      nodes: Object.keys(nodes).length,
       ada_auth: !!ADA_AUTH_URL,
       events: events.length,
       ...flapStats(),
     });
+  }
+
+  if (req.method === "GET" && url.pathname === "/nodes") {
+    return json(res, 200, { nodes });
+  }
+
+  // Fleet enroll — contract block above readBody. Keyless + public: input
+  // is validated hard (hostname charset, IPv4 shapes) and deduped so a
+  // noisy client can't flood the ops feed or the registry.
+  if (req.method === "POST" && url.pathname === "/enroll") {
+    let body;
+    try {
+      body = await readBody(req, 4096);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const hostname = String(body.hostname || body.host || "")
+      .trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{0,62}$/.test(hostname))
+      return json(res, 400, { error: "hostname required" });
+    const ip = clientIp(req);
+    const now = Date.now(), hourAgo = now - 3600e3;
+    for (const [k, ts] of enrollDedupe)
+      if (ts < hourAgo) enrollDedupe.delete(k);
+    const hits = (enrollHits.get(ip) || []).filter((t) => t > hourAgo);
+    if (hits.length >= ENROLL_IP_CAP)
+      return json(res, 429, { error: "rate limited" });
+    hits.push(now);
+    enrollHits.set(ip, hits);
+    const at = new Date().toISOString();
+    const prev = nodes[hostname];
+    const n = nodes[hostname] = {
+      hostname,
+      lan_ip: enrollIp(body.lan_ip) || prev?.lan_ip || "",
+      tailnet_ip: enrollIp(body.tailnet_ip) || prev?.tailnet_ip || "",
+      role: String(body.role || prev?.role || "").slice(0, 40),
+      first_seen: prev?.first_seen || at,
+      last_seen: at,
+      enrolls: (prev?.enrolls || 0) + 1,
+      peer_ip: ip,
+    };
+    saveNodes();
+    const dkey = `${hostname}|${n.tailnet_ip}`;
+    let event = false, event_error = null;
+    const deduped = enrollDedupe.has(dkey);
+    if (!deduped) {
+      try {
+        await emitHostOnline(n, at);
+        event = true;
+        enrollDedupe.set(dkey, now);
+      } catch (e) {
+        event_error = e.message;
+      }
+    }
+    console.log(`[input-bridge] enroll ${hostname} lan=${n.lan_ip} ` +
+      `ts=${n.tailnet_ip} event=${event} deduped=${deduped}` +
+      (event_error ? ` err=${event_error}` : ""));
+    return json(res, 200,
+      { ok: true, node: n, event, deduped, event_error });
   }
 
   if (req.method === "GET" && url.pathname === "/displays") {
@@ -1655,6 +1788,7 @@ server.listen(PORT, BIND, () => {
   console.log(`[input-bridge] http+ws listening on ${BIND}:${PORT}`);
   console.log(`[input-bridge] rooms: default; join via {type:"join", room:"..."}`);
   console.log(`[input-bridge] vcast: GET /displays POST /pub POST /claim GET /pair-info`);
+  console.log(`[input-bridge] enroll: POST /enroll GET /nodes -> ${NODES_FILE} + ${ENROLL_MDDB}`);
   console.log(`[input-bridge] registry: ${REGISTRY_FILE}`);
   console.log(`[input-bridge] ada auth: ${ADA_AUTH_URL || "(disabled)"}`);
 });
