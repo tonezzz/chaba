@@ -1,7 +1,7 @@
 id: standardize-devin-workflows-error-handli-e19df2
 title: Standardize Devin workflows & error handling
 column: backlog
-updated: 2026-10-25 19:16
+updated: 2026-10-26 08:29
 note: Standard work practice, from Tony.
 comms:
 - at: 2026-10-09 17:00
@@ -18,22 +18,25 @@ comms:
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 - at: 2026-10-25 19:16
   from: tony
-  text: 'answered the-card-requests-standardizin-648105: ★ Clarify the target repositories and specific
-    error handling patterns Devin should adopt'
+  text: 'answered the-card-requests-standardizin-648105: ★ Clarify the target repositories and specific error handling
+    patterns Devin should adopt'
 - at: 2026-10-25 19:16
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-23 17:45
   from: devin
-  text: 'audit: the picked option was a meta-option (re-asks a question, no new info) - needs a real decision
-    or a drafted spec; enrich prompt fixed so future options are actionable'
+  text: 'audit: the picked option was a meta-option (re-asks a question, no new info) - needs a real decision or
+    a drafted spec; enrich prompt fixed so future options are actionable'
+- at: 2026-10-26 08:29
+  from: tony
+  text: 'raised request standardize-devin-error-handling-scope-n-492d72: Standardize Devin error handling — scope
+    needed. What does ''standard'' mean concretely here?'
 ref: DEV-0253
 requests:
 - id: the-card-requests-standardizin-648105
-  ask: The card requests standardizing Devin workflows and error handling based on standard work practice
-    from Tony, but lacks specific details on which repositories, error handling patterns, or Devin configurations
-    to modify. Please clarify the exact scope and requirements for this standardization effort across
-    the infrastructure.
+  ask: The card requests standardizing Devin workflows and error handling based on standard work practice from Tony,
+    but lacks specific details on which repositories, error handling patterns, or Devin configurations to modify.
+    Please clarify the exact scope and requirements for this standardization effort across the infrastructure.
   options:
   - ★ Clarify the target repositories and specific error handling patterns Devin should adopt
   - Apply standard error handling across all repos associated with Devin without further input
@@ -43,4 +46,15 @@ requests:
   from: backlog-spec-enrich
   escalated_at: 2026-10-25 15:01
   answer: ★ Clarify the target repositories and specific error handling patterns Devin should adopt
+- id: standardize-devin-error-handling-scope-n-492d72
+  ask: Standardize Devin error handling — scope needed. What does 'standard' mean concretely here?
+  status: open
+  at: 2026-10-26 08:29
+  from: tony
+  options:
+  - chaba — audit current error-handling patterns across lanes, write ssot.procedures entries + AGENTS.md rule
+  - chaba — just document the existing practice in procedures, no audit
+  - close — too vague to action
+  suggested: chaba — audit current error-handling patterns across lanes, write ssot.procedures entries + AGENTS.md
+    rule
 awaiting_action: true
