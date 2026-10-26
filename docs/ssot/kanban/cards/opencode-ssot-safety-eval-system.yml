@@ -34,6 +34,8 @@ action:
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-034507-design-and-implement-an-openco.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261026-034507-design-and-implement-an-openco.service:
     Failed with result ''exit-code''.'
+  sweep:
+    stale_running: 2026-10-26 10:46
 note: Recent OpenCode session mixed 31 messages across unrelated focuses and hallucinated a host-status commit;
   use fresh task-scoped sessions and independent verification. Existing AI lane and continuous-improvement procedures
   provide the baseline.
@@ -63,5 +65,9 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261026-034507-design-and-implement-an-openco no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-10-26 10:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-034507-design-and-implement-an-openco on
+    mn01 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
