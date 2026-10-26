@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
 column: doing
-updated: 2026-10-26 17:36
+updated: 2026-10-26 17:40
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -93,6 +93,13 @@ comms:
 - at: 2026-10-26 17:36
   from: chaba
   text: started devin-task-20261026-173617-pilot-classes-1-docs-config-ch on idc02 (dispatch)
+- at: 2026-10-26 17:40
+  from: devin
+  text: 'Executing Tony answer (queue all three on tony-dell). Preflight: tony-dell has NO runner-agent unit — only
+    a drop-in from the 05:48 OPS-0846 proof, so supervised queueing = queue via board-api + manual runner-agent
+    runs on dell (same as OPS-0846). Found bug: runner-agent claim_pass re-classifies lane under JEV_LANE=1 and
+    would clobber pinned free_lane (doc->codemod, code->paid_frontier). Fixing + queueing with JEV_LANE=0 supervised
+    run.'
 action:
   type: dispatch
   status: running
