@@ -1,0 +1,26 @@
+id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
+title: Kanban-wide cleanup audit and Colab-ready work queue
+column: backlog
+updated: 2026-10-26 16:01
+brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
+  a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
+priority: medium
+program: chaba-ci
+tags:
+- kanban
+- hygiene
+- colab
+- queue-efficiency
+- triage
+spec: 'Scan cards across backlog/doing/review/queued and classify each as: ready now; needs a small spec/fixture;
+  blocked on Tony/external; likely done with evidence; duplicate/overlapping; or not dispatchable. Also identify
+  cache-independent small assessments and Colab T4-ready work, listing needs (GPU/RAM/disk), prep/model-cache cost,
+  expected runtime, artifacts, and verifier. Reconcile with existing cards rather than duplicating them (e.g. answer-auto-verb-triage-impl,
+  kanban-act-loop, boards-migration-cleanup, OPS-0880 DevNest Colab assessment, OPS-0881 HF Pro decision). Output
+  a concise ranked queue and suggested card actions. Read-only by default: do not delete cards, move workflow columns,
+  close, or auto-dispatch; use board-api comments for findings and ask before consequential card state changes.'
+ref: KNB-0909
+comms:
+- at: 2026-10-26 16:01
+  from: tony
+  text: card captured via board-api
