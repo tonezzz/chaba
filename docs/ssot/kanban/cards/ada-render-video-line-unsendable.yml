@@ -1,7 +1,7 @@
 id: ada-render-video-line-unsendable
 title: ada_render_video output is unsendable on LINE lanes — tailnet URL + no video message type
-column: doing
-updated: 2026-10-26 07:18
+column: review
+updated: 2026-10-26 07:19
 brief: 'Audit 2026-10-12 (session 7a2f02b3db): KK asked for an easy-to-read trip summary image; Kaewta ran ada_render_video
   — ok:true but video_url is https://tony-dell.taila0626a.ts.net/api/input-bridge/frame?... — a tailnet-only URL
   LINE can never fetch, and even if public the relay only sends imageMessages (jpeg) — video needs videoMessage
@@ -59,6 +59,10 @@ comms:
   text: 'implemented hybrid delivery: line_relay video_url -> poster jpeg (nonce lane) + playable link; tailnet-only
     sources (*.ts.net/loopback/CGNAT) re-hosted under durable /relay-img/arch/video/. tg_relay already sendVideos
     the file — locked with new tests. 1701 tests green, tool-lint clean.'
+- at: 2026-10-26 07:19
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261026-070636-hybrid-delivery-per-tony-line-.service:
+    Failed to ope'
 requests:
 - id: video-delivery-to-line-lanes-234cd4
   ask: Video delivery to LINE lanes?
@@ -74,6 +78,12 @@ requests:
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261026-070636-hybrid-delivery-per-tony-line-.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261026-070636-hybrid-delivery-per-tony-line-.service:
+    No such file or directory'
+  verified: true
+review_kind: verify
+claim: {}
 awaiting_action: true
