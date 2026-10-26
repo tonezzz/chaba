@@ -1,0 +1,32 @@
+id: devnest-tg-command-router
+title: Add DevNest Telegram card-explain and approval routing
+column: backlog
+updated: 2026-10-26 17:18
+brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
+  through board-api.'
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- board-api
+- jev
+- verification
+spec: Implement the next OPS-0905 slice in the chaba repo. The DevNest Telegram relay must normalize messages such
+  as 'explain 0905' to OPS-0905, fetch the live card through board-api GET, and return a deterministic same-topic
+  summary containing status, current phase, verified evidence, next step, and open ask. Add explicit APPROVE <card/ref>
+  and REJECT <card/ref> parsing only for the allowlisted Tony sender; resolve an exact card/ref and use board-api's
+  sanctioned /respond or approval path, never direct YAML or shell execution. Unknown or ambiguous refs must be
+  refused and audited. Preserve chat_id/message_thread_id routing. Add unit tests for normalization, read-only explanation,
+  approval authorization, unknown ref, and topic-preserving reply. Verify with pytest, then deploy/restart the idc03
+  relay under the existing EnvironmentFile and run a real Telegram smoke test for 'explain 0905' plus a harmless
+  approval fixture. Do not add Ada credentials or direct devnest-ha control.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-0911
+comms:
+- at: 2026-10-26 17:18
+  from: tony
+  text: card captured via board-api
