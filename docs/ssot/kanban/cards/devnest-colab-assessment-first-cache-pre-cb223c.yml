@@ -1,7 +1,7 @@
 id: devnest-colab-assessment-first-cache-pre-cb223c
 title: DevNest Colab assessment-first cache preparation
 column: doing
-updated: 2026-10-26 11:42
+updated: 2026-10-26 11:47
 brief: Define and stage a cache-independent DevNest assessment that runs in the same T4 queue window while the next
   package’s model cache is prepared.
 priority: high
@@ -81,6 +81,13 @@ comms:
     notebook is old thin-cell build. Plan: define cache-independent held-out assessment as a JOBS entry just before
     save-hf-cache (hides the multi-minute cache repack under GPU work), back-port 2 Drive-side pack.yml live patches
     (doc-vo-ss1 v6 beats, nasa-embeds fetch fields)'
+- at: 2026-10-26 11:47
+  from: devin
+  text: 'STAGED on Drive (all md5-verified): canonical JOBS.py now carries devnest-heldout-assessment (scope env)
+    between assets-stage and save-hf-cache — fixed fp16/bf16 TFLOPs + H2D/D2H battery + production-log overlap audit,
+    zero pulls, artifacts gate queue/assessments/devnest-heldout-<boot>.{json,md}. Also deployed: runner.py (gains
+    runner.id/QUEUE_PENDING), runtime_registry.py (was missing — cells import it), both console cells, new job-console
+    ipynb, nest-worker/nest-efficiency; queue/__pycache__ p'
 action:
   type: dispatch
   status: running
