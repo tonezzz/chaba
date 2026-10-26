@@ -1,7 +1,7 @@
 id: ai-news-tg-tony-ha-projection
 title: Project morning AI/news brief to Telegram and Tony-HA
 column: backlog
-updated: 2026-10-26 07:25
+updated: 2026-10-26 07:35
 spec: Extend the existing wp-news-fetch -> wp-news-digest -> wp-news-situation flow with a private morning AI/news
   brief projection. Reuse News CPT as source of truth and board_notify/ada-tg-relay as delivery. Target configured
   group -5410424865 (verify it is Tony/ada-ha before enabling). Include a dry-run mode, delivery acknowledgement/consumer
@@ -14,3 +14,9 @@ comms:
 - at: 2026-10-26 07:25
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 07:35
+  from: devin
+  text: 'Telegram verification 2026-10-26: idc03 ada-tg-relay active; webhook URL healthy, pending_update_count=0,
+    no webhook error; telegram-bot.env allows chat IDs 8960073266 and -5410424865. I could not prove the exact text
+    event from relay logs because text content is not logged and no recent group event line appeared. Destination
+    is configured and ready; morning-news projection still needs dry-run/consumer acknowledgement before enabling.'
