@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
 column: backlog
-updated: 2026-10-26 07:35
+updated: 2026-10-26 16:08
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -28,3 +28,10 @@ comms:
     probe is a valid first free_lane data point: flash-lite model selected, dispatch worktree/branch, commit/push,
     baseline-aware verifier, auto-merge all passed. Treat it as pilot job 0; remaining pilot jobs should be one
     docs/config task + one small testable code task with usage/time/intervention capture.'
+- at: 2026-10-26 16:08
+  from: devin
+  text: 'PILOT UPDATE: docs pilot has not produced a valid free-lane result yet. Code pilot was claimed and produced
+    `devnest_lane_label.py` + tests 6/6, but action lane was `devin` (classifier missed the small-testable-code
+    vocabulary), so it is NOT a savings datapoint. Added classifier terms testable/unit test/python helper/small
+    code; rerun is needed after the deploy race settles. Real savings number remains unclaimed until a job actually
+    runs OpenCode+Flash Lite and merge/verifier passes.'
