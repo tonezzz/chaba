@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:20
+updated: 2026-10-26 19:21
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -43,3 +43,8 @@ comms:
     running and 3 queued. Only one request remains status=open: merge-sweep conflict on dispatch-empty-closeout-verification-gap
     (scripts/board/merge-sweep.py + tests/board/test_runner_agent_lane.py). With conservative age thresholds, no
     doing card is >7d, no review card >21d, n'
+- at: 2026-10-26 19:21
+  from: devin
+  text: 'Related existing card: `nest-efficiency-session-level-drive-gpu-bf7681` already plans per-session Drive/GPU
+    metrics, but it is not a Kanban-wide cleanup audit and its previous report attempt hung on DriveFS reads. KNB-0909
+    should consume that report when the timeout/Drive-read guard is fixed rather than duplicate its metrics.'
