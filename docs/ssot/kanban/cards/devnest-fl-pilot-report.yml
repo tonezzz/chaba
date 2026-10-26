@@ -1,9 +1,9 @@
 id: devnest-fl-pilot-report
 title: 'DevNest free-lane pilot 3/3: read-only report update on OpenCode flash-lite'
 column: backlog
-updated: 2026-10-26 16:51
-brief: Supervised pilot job — read the lane catalog + pilot cards and
-  write a read-only status report artifact on the free OpenCode lane.
+updated: 2026-10-26 17:42
+brief: Supervised pilot job — read the lane catalog + pilot cards and write a read-only status report artifact on
+  the free OpenCode lane.
 priority: medium
 program: ai-workforce
 tags:
@@ -12,50 +12,42 @@ tags:
 - free_lane
 - savings
 - pilot
-spec: 'Read docs/ssot/infrastructure/ssot.devnest-lanes.yml (the seven
-  lane ids under `lanes:`) and the three pilot cards
-  docs/ssot/kanban/cards/devnest-fl-pilot-{doc,code,report}.yml. Then
-  write docs/reports/devnest-fl-pilot-3-report.md containing: a title;
-  a Lane status section with a markdown table listing all seven lane ids
-  (deterministic, codemod, jev-routing, local-gpu-packs, free-opencode,
-  paid_frontier, devin) and each lane''s status field; and a Pilot status
-  section listing the three pilot card ids with their column values.
-  Read-only: do not modify any file other than
-  docs/reports/devnest-fl-pilot-3-report.md, do not run tests, do not
-  push manually — the runner closeout commits, pushes, gates, and merges.
-  PILOT DECLARATIONS: target_host=tony-dell; base_ref=origin/master;
-  verifier=file exists and contains all seven lane ids and the string
-  free_lane + branch auto-merges via runner closeout;
-  expected_artifact=docs/reports/devnest-fl-pilot-3-report.md;
-  stop_condition=halt and mark failed if the artifact is missing any lane
-  id after one retry or if any other file is touched; this run does not
-  count as a free-lane datapoint unless the executor is opencode
-  (meta.json executor starts with opencode:).'
+spec: 'Read docs/ssot/infrastructure/ssot.devnest-lanes.yml (the seven lane ids under `lanes:`) and the three pilot
+  cards docs/ssot/kanban/cards/devnest-fl-pilot-{doc,code,report}.yml. Then write docs/reports/devnest-fl-pilot-3-report.md
+  containing: a title; a Lane status section with a markdown table listing all seven lane ids (deterministic, codemod,
+  jev-routing, local-gpu-packs, free-opencode, paid_frontier, devin) and each lane''s status field; and a Pilot
+  status section listing the three pilot card ids with their column values. Read-only: do not modify any file other
+  than docs/reports/devnest-fl-pilot-3-report.md, do not run tests, do not push manually — the runner closeout commits,
+  pushes, gates, and merges. PILOT DECLARATIONS: target_host=tony-dell; base_ref=origin/master; verifier=file exists
+  and contains all seven lane ids and the string free_lane + branch auto-merges via runner closeout; expected_artifact=docs/reports/devnest-fl-pilot-3-report.md;
+  stop_condition=halt and mark failed if the artifact is missing any lane id after one retry or if any other file
+  is touched; this run does not count as a free-lane datapoint unless the executor is opencode (meta.json executor
+  starts with opencode:).'
 pilot:
   class: readonly-report-lesson-update
   target_host: tony-dell
   base_ref: origin/master
-  verifier: docs/reports/devnest-fl-pilot-3-report.md contains all seven
-    lane ids + "free_lane"; branch auto-merges
+  verifier: docs/reports/devnest-fl-pilot-3-report.md contains all seven lane ids + "free_lane"; branch auto-merges
   expected_artifact: docs/reports/devnest-fl-pilot-3-report.md
-  stop_condition: fail after one retry if a lane id is missing; no
-    writes outside the named artifact; executor must be opencode to
-    count as free-lane datapoint
+  stop_condition: fail after one retry if a lane id is missing; no writes outside the named artifact; executor must
+    be opencode to count as free-lane datapoint
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
-  baseline_pair: none — first run of this class (devin baseline = a
-    matched dispatch-outcome session selected at assembly time)
-  run_record: docs/ssot/jobs/devnest/pilot-runs/<date>-devnest-fl-pilot-report.yml
-    per docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+  baseline_pair: none — first run of this class (devin baseline = a matched dispatch-outcome session selected at
+    assembly time)
+  run_record: docs/ssot/jobs/devnest/pilot-runs/<date>-devnest-fl-pilot-report.yml per docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
 action:
   type: dispatch
   repo: chaba
   host: tony-dell
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
+  status: queued
 comms:
 - at: 2026-10-26 16:51
   from: devin
-  text: 'pilot card defined per OPS-0885 contract — backlog, not queued;
-    supervisor queues after confirming OPENCODE_LANES=1 on tony-dell.
-    Job doc: docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml'
+  text: 'pilot card defined per OPS-0885 contract — backlog, not queued; supervisor queues after confirming OPENCODE_LANES=1
+    on tony-dell. Job doc: docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml'
+- at: 2026-10-26 17:42
+  from: devin
+  text: queued for processing
