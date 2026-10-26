@@ -1,7 +1,7 @@
 id: ada-text-lane-metering-gap
 title: 'Text-relay turns are unmetered: usage.jsonl + journal-report miss LINE/TG text-mode token cost'
 column: backlog
-updated: 2026-10-20 15:44
+updated: 2026-10-26 08:28
 brief: 'LINE_TEXT_MODE=1 means the main messaging lane runs OpenRouterTextProvider via gemini_pool.generate — which
   never calls usage_ledger.record and emits no "usage turn in=" log line. All 76k records in data/usage.jsonl are
   source=live. Result: the actual chat lanes token/day is invisible to journal-report and the usage endpoint; only
@@ -18,3 +18,10 @@ comms:
 - at: 2026-10-20 15:44
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 08:28
+  from: tony
+  text: queued for processing
+action:
+  repo: ada-voice
+  type: dispatch
+  status: queued
