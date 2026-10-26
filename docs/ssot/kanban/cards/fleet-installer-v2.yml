@@ -13,6 +13,9 @@ note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds th
 links:
 - docs/ssot/kanban/cards/fleet-installer.yml
 comms:
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
 - at: 2026-10-25 05:33
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
@@ -26,9 +29,6 @@ comms:
 - at: 2026-10-25 19:16
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
-- at: 2026-10-23 17:45
-  from: devin
-  text: spec written from your answered request - queued for dispatch
 - at: 2026-10-26 07:05
   from: tony
   text: queued for processing
@@ -42,6 +42,13 @@ comms:
 - at: 2026-10-26 07:06
   from: chaba
   text: started devin-task-20261026-070642-installer-v2-keyless-enroll-en on idc02 (dispatch)
+- at: 2026-10-26 07:15
+  from: devin
+  text: 'dispatch on idc02: contract recovered — stick-announce POSTs MDDB /v1/add {kind:ops-event,type:host_online,host,lan_ip,tailnet_ip}
+    to ada-ha-events-tony. Building POST /enroll into input-bridge (nodes.json registry + same ops-event emit),
+    edge routes on api.+app. site blocks. Note: cfat_ DNS token is DEAD on all hosts (verify=Invalid API Token,
+    backups same fp) — cfut_ alive but Workers-only; new token is a dashboard/Tony step, request incoming. Endpoint
+    goes live on api.surf-thailand.com regard'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
