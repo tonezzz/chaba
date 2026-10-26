@@ -1,7 +1,7 @@
 id: ada-text-lane-metering-gap
 title: 'Text-relay turns are unmetered: usage.jsonl + journal-report miss LINE/TG text-mode token cost'
-column: doing
-updated: 2026-10-26 08:58
+column: review
+updated: 2026-10-26 08:59
 brief: 'LINE_TEXT_MODE=1 means the main messaging lane runs OpenRouterTextProvider via gemini_pool.generate — which
   never calls usage_ledger.record and emits no "usage turn in=" log line. All 76k records in data/usage.jsonl are
   source=live. Result: the actual chat lanes token/day is invisible to journal-report and the usage endpoint; only
@@ -31,8 +31,17 @@ comms:
 - at: 2026-10-26 08:58
   from: chaba
   text: started devin-task-20261026-085845-add-usage-recording-to-the-tex on tony-macbook (dispatch)
+- at: 2026-10-26 08:59
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Failed with result
+    ''exit-code''. | devin-task-2'
 action:
   repo: ada-voice
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Failed with result ''exit-code''.
+    | devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Consumed 2.390s CPU time over 1.460s wall
+    clock time, 42.1M memory peak.'
+review_kind: verify
+claim: {}
