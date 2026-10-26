@@ -1,7 +1,7 @@
 id: devnest-kk-video-project-intake
 title: Add KK PDF to DevNest video-project intake
-column: doing
-updated: 2026-10-26 17:54
+column: review
+updated: 2026-10-26 17:56
 brief: Let KK send a PDF plus a short request in TG/DevNestHA and receive a tracked, batched short-video project
   plan.
 priority: high
@@ -28,8 +28,11 @@ spec: Implement the default KK-to-DevNest short-video intake. Extend the live De
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-105452-implement-the-default-kk-to-de.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-105452-implement-the-default-kk-to-de.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0912
 comms:
 - at: 2026-10-26 17:54
@@ -48,3 +51,9 @@ comms:
 - at: 2026-10-26 17:54
   from: chaba
   text: started devin-task-20261026-105452-implement-the-default-kk-to-de on mn01 (dispatch)
+- at: 2026-10-26 17:56
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-105452-implement-the-default-kk-to-de.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
