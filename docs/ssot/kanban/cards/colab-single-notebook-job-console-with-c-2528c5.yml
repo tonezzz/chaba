@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: done
-updated: 2026-10-26 17:32
+updated: 2026-10-26 18:46
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -132,6 +132,13 @@ comms:
     both MD5s against the repo. JOBS.py, runner.py, runtime_registry.py, and queue-launcher-cell.py already matched.
     Before writing, Drive showed a >4h-stale heartbeat/lease, no runner.id, and only stale managed-runtime records;
     no queue markers or packs were modified and I did not launch a job. The corrected notebook is at gdrive:ada-nest/queue/ada-nest-job-console.ipynb.'
+- at: 2026-10-26 18:46
+  from: devin
+  text: 'Cell-1 test verified 2026-10-26: managed runtime boot e115005b reported Tesla T4 15GB and Drive mounted;
+    its heartbeat refreshed once. Tony then disconnected the runtime. No runner.id or env-done markers for that
+    boot; queue heartbeat/lease remain stale, so Cell 2 did not run. All 41 valid pack manifests have done markers;
+    decision-arena and jev-triage have no pack.yml and are not runnable. The e115 registry record remains within
+    the 300s TTL for a short cooldown after disconnect.'
 action:
   repo: chaba
   type: dispatch
