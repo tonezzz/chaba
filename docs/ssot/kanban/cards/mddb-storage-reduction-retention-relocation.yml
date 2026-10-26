@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-26 06:07
+updated: 2026-10-26 08:16
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -80,3 +80,10 @@ comms:
     all 3 colls (9,489 docs) -> fresh scratch mddbd -> /v1/add x9489 (0 fail) -> stop ops, swap db file, restart
     (~2min downtime, freelist-synced open = seconds). Shipper write path re-verified: con01 manual run shipped 6
     docs post-swap. Guards now armed: maxRevisions host-logs=3, '
+- at: 2026-10-26 08:16
+  from: devin
+  text: '[2026-10-26 08:20 ICT] Guards + remaining-bank plan: prune-old-docs.py confirmed to cover OPS host-logs
+    (OPS_COLLECTIONS routes it) + leader copy. maxRevisions set: ops host-logs=3/state=10/heartbeats=5; cms x17
+    colls=5; embed bank=3; main bank x6 colls=20 (SSOT policy). Truncate drained old revs on embed + cms-pages/-kk.
+    mddb-restart.timer extended to all 5 containers (restarts now seconds via FREELIST_SYNC). cms/embed/main HAVE
+    vectors — export/re-add would requeue embeddings, so physical comp'
