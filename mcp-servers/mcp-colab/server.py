@@ -6,11 +6,12 @@ Wraps the Drive-based nest-pack queue (ada-nest/packs) + the Colab tunnel
 without poking Drive manually.
 
 Tools:
-  colab_pack_status  — list packs with claim/done state
-  colab_pack_submit  — copy a local pack (pack.yml + inputs/) to Drive
-  colab_pack_result  — read a pack's out/*.json results
-  colab_tunnel_check — probe the Colab tunnel (idc03 loopback / proxy alias)
-  colab_model_probe  — 1-token chat through the LiteLLM gateway
+  colab_pack_status    — list packs with claim/done state
+  colab_session_status — managed-runtime registry + queue liveness
+  colab_pack_submit    — copy a local pack (pack.yml + inputs/) to Drive
+  colab_pack_result    — read a pack's out/*.json results
+  colab_tunnel_check   — probe the Colab tunnel (idc03 loopback / proxy alias)
+  colab_model_probe    — 1-token chat through the LiteLLM gateway
 
 Env:
   GDRIVE_REMOTE   rclone remote+path for the nest root (default gdrive:ada-nest)
@@ -64,22 +65,100 @@ def _pack_dir(name: str) -> str:
 
 @mcp.tool()
 def colab_pack_status() -> str:
-    """List nest packs with claim/done/result state (read-only)."""
+    """List nest packs with claim/done/result state (read-only).
+    A dir only counts as a pack when it contains pack.yml — stray report
+    dirs under packs/ are listed separately instead of showing 'queued'.
+    CLAIMED requires a non-empty claim/ dir (the dir can linger empty
+    after a worker released its claim)."""
     rc, out = _rclone("lsf", PACKS, "--dirs-only")
     if rc != 0:
         return f"ERROR listing packs: {out.strip()}"
     names = [l.strip().strip("/") for l in out.splitlines() if l.strip()]
-    lines = []
+    lines, not_packs = [], []
     for n in sorted(names):
         # default lsf lists files AND dirs (dirs end "/"); --files-only would
         # hide claim/ and out/ so CLAIMED/OUT could never display.
         entries = _rclone("lsf", _pack_dir(n))[1].splitlines()
-        has_claim = any(e.strip() == "claim/" for e in entries)
-        has_done = any(e.strip() == "done" for e in entries)
-        has_out = any(e.strip() == "out/" for e in entries)
-        state = "DONE" if has_done else ("CLAIMED" if has_claim else ("OUT" if has_out else "queued"))
+        entries = [e.strip() for e in entries]
+        if "pack.yml" not in entries:
+            not_packs.append(n)
+            continue
+        has_done = "done" in entries
+        has_out = "out/" in entries
+        claimed = False
+        if "claim/" in entries:
+            claims = _rclone("lsf", f"{_pack_dir(n)}/claim", "--files-only")[1]
+            claimed = any(l.strip() for l in claims.splitlines())
+        state = "DONE" if has_done else ("CLAIMED" if claimed else ("OUT" if has_out else "queued"))
         lines.append(f"{n:<28} {state}")
+    if not_packs:
+        lines.append("")
+        lines.append("not packs (no pack.yml): " + ", ".join(not_packs))
     return "\n".join(lines) or "(no packs)"
+
+
+@mcp.tool()
+def colab_session_status() -> str:
+    """Managed-runtime registry + queue liveness (read-only).
+
+    Reports every record under queue/runtime-sessions/ (boot_id, GPU, RAM, record
+    age) with fresh/stale marking, plus queue/heartbeat, queue/lease and
+    queue/runner.id — the same state the console notebook's session guard
+    reads. Cannot see uninstrumented Colab sessions; Google Runtime >
+    Manage Sessions remains authoritative for those."""
+    import time
+    lines = []
+    rc, out = _rclone("lsf", f"{NEST}/queue/runtime-sessions", "--files-only")
+    recs = []
+    if rc == 0:
+        for f in sorted(out.splitlines()):
+            f = f.strip()
+            if not f.endswith(".json"):
+                continue
+            _, data = _rclone("cat", f"{NEST}/queue/runtime-sessions/{f}")
+            try:
+                recs.append(json.loads(data))
+            except Exception:
+                recs.append({"boot_id": f, "unparseable": True})
+    now = time.time()
+    if recs:
+        lines.append("managed runtimes (ttl 300s):")
+        for r in recs:
+            if r.get("unparseable"):
+                lines.append(f"  {r['boot_id']}  UNPARSEABLE record")
+                continue
+            age = now - float(r.get("ts") or 0)
+            mark = "fresh" if age <= 300 else f"STALE {age/60:.0f}min"
+            runner = r.get("runner") or {}
+            rbit = f" runner={runner.get('worker')}" if runner.get("worker") else ""
+            lines.append(
+                f"  {str(r.get('boot_id'))[:8]}  {r.get('gpu') or 'cpu'} "
+                f"{r.get('gpu_gb') or 0}GB  ram {r.get('ram_gb')}GB  "
+                f"{mark}{rbit}")
+    else:
+        lines.append("managed runtimes: none registered")
+    _, hb = _rclone("cat", f"{NEST}/queue/heartbeat")
+    try:
+        ts, job, phase = hb.split()
+        lines.append(f"queue heartbeat: {job}/{phase} "
+                     f"{now - float(ts):.0f}s ago")
+    except Exception:
+        lines.append("queue heartbeat: absent")
+    _, lease = _rclone("cat", f"{NEST}/queue/lease")
+    try:
+        d = json.loads(lease)
+        lines.append(f"queue lease: {d.get('worker')} epoch {d.get('epoch')} "
+                     f"({now - float(d.get('ts') or 0):.0f}s ago)")
+    except Exception:
+        lines.append("queue lease: absent")
+    _, rid = _rclone("cat", f"{NEST}/queue/runner.id")
+    try:
+        d = json.loads(rid)
+        lines.append(f"runner.id: pid {d.get('pid')} boot "
+                     f"{str(d.get('boot_id'))[:8]} {d.get('worker')}")
+    except Exception:
+        lines.append("runner.id: absent")
+    return "\n".join(lines)
 
 
 @mcp.tool()
