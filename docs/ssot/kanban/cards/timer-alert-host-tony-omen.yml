@@ -1,7 +1,7 @@
 id: timer-alert-host-tony-omen
 title: Timer sweep cannot reach tony-omen
 column: backlog
-updated: 2026-10-25 19:13
+updated: 2026-10-26 07:06
 priority: high
 tags:
 - timer-alert
@@ -1373,6 +1373,9 @@ comms:
 - at: 2026-10-25 19:13
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 07:06
+  from: tony
+  text: queued for processing
 spec: The goal is to investigate and resolve why host tony-omen is unreachable during the 15-minute timer sweep,
   leaving its timers unobserved. The target host is tony-omen. Constraints are to check network connectivity, host
   status, and SSH access to determine if this is a host-down or ssh-fail issue rather than a timer failure. The
@@ -1412,4 +1415,6 @@ requests:
   - Keep tony-usb running; I will limit further work to non-Omen tasks.
   suggested: Boot normal tony-omen OS and have me retry SSH/Ollama health (recommended).
   answer: it's running on internal ssd already.
-awaiting_action: true
+action:
+  type: dispatch
+  status: queued
