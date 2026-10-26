@@ -1,7 +1,7 @@
 id: board-api-lesson-delete-op
 title: 'board-api: add /lesson delete op (guarded) — junk probes can''t be removed via the door'
 column: backlog
-updated: 2026-10-24 18:37
+updated: 2026-10-26 08:28
 brief: The /lesson door supports upsert/touch/list/get but NOT delete. Two junk probe lessons (id 2259, 2261) can't
   be removed via the door; direct WP DELETE is blocked by Cloudflare (403 code 1010).
 priority: medium
@@ -21,3 +21,10 @@ comms:
 - at: 2026-10-24 18:37
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 08:28
+  from: tony
+  text: queued for processing
+action:
+  repo: chaba
+  type: dispatch
+  status: queued
