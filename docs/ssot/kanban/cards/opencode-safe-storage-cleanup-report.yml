@@ -1,7 +1,7 @@
 id: opencode-safe-storage-cleanup-report
 title: Safe periodic storage cleanup with OpenCode report and Telegram alert
-column: backlog
-updated: 2026-10-26 09:31
+column: doing
+updated: 2026-10-26 09:32
 brief: Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy
   checks and Telegram report.
 priority: high
@@ -28,7 +28,8 @@ spec: 'Verify and operationalize storage cleanup safely. Do not let OpenCode inv
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 note: 'OpenCode''s recent storage answer found only 53G free but missed the real largest consumers: model-archive
   43G, ~/.cache 27G, ~/.config 17G, ~/.local 16G, and Devin DB/WAL ~5.8G. It also suggested unsafe generic rm/sudo
   actions. This card makes the LLM read/report only and moves deletion behind deterministic policy gates.'
@@ -48,3 +49,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 09:32
+  from: tony-macbook
+  text: claimed
