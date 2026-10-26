@@ -1,7 +1,7 @@
 id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
 title: 'Lesson drift-check: flag lessons whose source docs changed'
 column: doing
-updated: 2026-10-26 08:51
+updated: 2026-10-26 08:52
 brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
   docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
   is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
@@ -43,6 +43,12 @@ comms:
   text: 'claimed on tony-dell. Design settled: dispatcher job every:1d reads trade/.docs-mcp/documents.json lastModified
     (+file mtimes) vs WP lesson modified via board-api /lesson op:list; deduped flag to focus-inbox via /inbox.
     Coverage map declared in scripts/lesson-drift-map.yml. Flag-only per spec.'
+- at: 2026-10-26 08:52
+  from: devin
+  text: 'done (flag-only, per spec recommendation). scripts/lesson-drift-check.py + lesson-drift-map.yml coverage
+    map; ssot.jobs.yml entry: dispatcher job every:1d on tony_dell (trade docs + .docs-mcp index live there); runbook
+    docs/ssot/jobs/education/2026-10-26-lesson-drift-check.yml. Verified live: 5/5 lessons, 21/21 pages, 0 stale
+    today, deduped /inbox filing on fingerprint change. Job self-activates on exec-checkout sync after merge.'
 action:
   repo: chaba
   type: dispatch
