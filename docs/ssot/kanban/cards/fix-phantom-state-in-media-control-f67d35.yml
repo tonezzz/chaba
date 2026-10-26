@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
 column: backlog
-updated: 2026-10-25 20:09
+updated: 2026-10-26 08:29
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -13,27 +13,42 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-10-25 20:09
   from: tony
-  text: 'answered the-card-notes-a-fix-is-needed-a30c2c: ★ Ask the owner to clarify which repository and
-    host handle the media_player verification protocol, along with details on the phantom state.'
+  text: 'answered the-card-notes-a-fix-is-needed-a30c2c: ★ Ask the owner to clarify which repository and host handle
+    the media_player verification protocol, along with details on the phantom state.'
 - at: 2026-10-25 20:09
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-23 17:45
   from: devin
-  text: 'audit: the picked option was a meta-option (re-asks a question, no new info) - needs a real decision
-    or a drafted spec; enrich prompt fixed so future options are actionable'
+  text: 'audit: the picked option was a meta-option (re-asks a question, no new info) - needs a real decision or
+    a drafted spec; enrich prompt fixed so future options are actionable'
+- at: 2026-10-26 08:29
+  from: tony
+  text: 'raised request phantom-state-in-media-control-the-media-1e22a2: Phantom state in media control: the media_player
+    call reports success but HA state does not change (or lags). Which laye'
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
-  ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on
-    the target repository, host, and exact nature of the phantom state. Without conversation context or
-    a designated codebase, a concrete verification protocol cannot be safely determined.
+  ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
+    repository, host, and exact nature of the phantom state. Without conversation context or a designated codebase,
+    a concrete verification protocol cannot be safely determined.
   options:
-  - ★ Ask the owner to clarify which repository and host handle the media_player verification protocol,
-    along with details on the phantom state.
+  - ★ Ask the owner to clarify which repository and host handle the media_player verification protocol, along with
+    details on the phantom state.
   - Move the card to skip as obsolete due to insufficient actionable context.
   status: answered
   at: 2026-10-25 19:20
   from: backlog-spec-enrich
-  answer: ★ Ask the owner to clarify which repository and host handle the media_player verification protocol,
-    along with details on the phantom state.
+  answer: ★ Ask the owner to clarify which repository and host handle the media_player verification protocol, along
+    with details on the phantom state.
+- id: phantom-state-in-media-control-the-media-1e22a2
+  ask: 'Phantom state in media control: the media_player call reports success but HA state does not change (or lags).
+    Which layer owns the verify-after-call fix?'
+  status: open
+  at: 2026-10-26 08:29
+  from: tony
+  options:
+  - ada-voice — media tool must verify media_player state after the call, on idc03
+  - chaba — verification belongs in the HA-side protocol/dashboard layer
+  - close — no longer reproduces
+  suggested: ada-voice — media tool must verify media_player state after the call, on idc03
 awaiting_action: true
