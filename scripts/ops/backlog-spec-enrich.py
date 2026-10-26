@@ -72,7 +72,11 @@ Decide ONE:
   hostnames, paths, or decisions.
 - "ask"   — a materially different direction needs the owner. Write a
   short ask (one paragraph, current-state context) plus 2-4 options with
-  a ★ on the recommended one.
+  a ★ on the recommended one. Options must be ACTIONABLE OUTCOMES the
+  owner picks between ("use repo X on host Y", "postpone", "split per
+  member") — never meta-requests like "clarify the repo" or "specify
+  the host": an option that just re-asks the question is a failed ask
+  (observed 2026-10-23: 4 cards got circular answers this way).
 - "skip"  — the card looks obsolete, already-done, or a duplicate.
   Give one sentence why.
 
