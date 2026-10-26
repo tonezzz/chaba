@@ -486,7 +486,7 @@ tony-dell:
     container: tony-ha
     image: docker.io/homeassistant/home-assistant:stable
     runtime: rootless podman
-    host: tony_dell
+    host: tony_omen   # evacuated tony-dell -> tony-omen 2026-10-19/20 (OPS-0754); entry kept here for anchor stability
     network: host
     port: 8123
     host_port: 127.0.0.1:8123
@@ -505,8 +505,8 @@ tony-dell:
       bind_host: 0.0.0.0
       secret_path: /private_CtYuVkJEl28cp8qA8yXNCQ
       webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
-      local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-      tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      local_url: http://127.0.0.1:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      tailnet_url: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
       host_path: /apps/ha/tony-ha/
@@ -514,15 +514,16 @@ tony-dell:
       backend: 100.68.142.13
       caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
       note: 'Planned paths — not yet routed in the Caddyfile (verified 2026-09-18). HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-omen.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (evacuated dell->omen 2026-10-20, OPS-0754) (decision: tony-ha-tailscale-only-access).'
-    health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
+    health_check: ssh tony-omen curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
-    status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-omen.taila0626a.ts.net:8123 only (loopback bind, no LAN listener; evacuated dell->omen 2026-10-20, OPS-0754). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
+    status: 'mcp server active on tony-omen (verified 2026-10-26)'
+    note: 'Container rootless podman, evacuated to tony-omen 2026-10-19/20. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-omen.taila0626a.ts.net:8123 only (loopback bind, no LAN listener; evacuated dell->omen 2026-10-20, OPS-0754). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration (entry 01M1PBMNRENWNDC93N205E0VZA, endpoint apigw-sg.iotbing.com) is stale for ALL its devices, not just the bedside plug — verified 2026-09-24: Tuya entities are should_poll=False and update only via the sharing MQ push channel (m1-sg.iotbing.com:8883); the cloud delivers zero messages on that link (proven by standalone subscriber receiving nothing even during a forced plug toggle), so entities freeze at the config-entry-setup REST snapshot and only refresh on HA restart/reload. Devices themselves are online and reporting current data to Tuya cloud (e.g. Nobito pm25 17 cloud vs 72.0 frozen in HA). Fix needs either Tuya-side push (re-auth / device-status-notification service) or an external poller writing states.'
   michael-dev:
     container: michael-dev
-    image: docker.io/homeassistant/home-assistant:stable
+    image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
-    network: host
+    host: idc03   # migrated tony-dell -> idc03 2026-10-09; entry kept here for anchor stability
+    network: podman bridge (PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.102.134.91:9585)
     port: 8124
     host_port: 127.0.0.1:8124
     quadlet:
@@ -541,13 +542,13 @@ tony-dell:
       secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-      tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+      tailnet_url: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
     caddy:
       note: Not used — HA UI uses absolute redirects that break a path-prefixed reverse proxy. Direct port 8124 is used.
-    health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+    health_check: ssh idc03 curl -sf http://127.0.0.1:8124/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
-    note: "Dev staging container for michael-ha. Runs on tony-dell host network at port 8124 to avoid conflict with tony-ha on 8123."
+    note: "Dev staging container for michael-ha. Runs on idc03 podman bridge; UI 127.0.0.1:8124 (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF), MCP 9585 on tailnet IP + loopback (published 2026-10-26)."
   go2rtc:
     service: go2rtc.service
     host: tony_dell
@@ -736,7 +737,7 @@ tony-omen:
         creds: "~/.config/secrets/line-bot.env synced from the VPS secrets dir (token+secret+allowed-user-ids); plugins.entries.line.enabled=true set"
     mcp_servers:
       mddb: "streamable-http http://100.102.134.91:9000/mcp + X-API-Key (same key as devin mcp_config)"
-      home-assistant: "streamable-http tony-dell:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
+      home-assistant: "streamable-http tony-omen:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
       opennb: "REMOVED 2026-10-04 — ONB retired; server kept in repo at mcp-servers/mcp-opennb/server.py for revive"
     cron:
       nightly-digest: "0 8 * * * Asia/Bangkok, command job → announce telegram to 8960073266; id 02680285-5b7a-4e21-a784-6e2bd030dcdf; deterministic — runs scripts/ops-digest.py (mddb /v1/search on ada-ha-events-tony, 24h), no LLM tool-calls (free-model schema errors made the agent variant flaky)"
@@ -938,6 +939,7 @@ michael:
       fqdn: michael-ha.taila0626a.ts.net
       ip: 100.80.105.88
       ha_url: http://michael-ha:8123/
+      mcp_url: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g  # direct since 2026-10-26; dell:19584 tunnel retired
       status: active
       derp_relay: sin
       direct_connection: false

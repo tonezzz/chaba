@@ -343,47 +343,57 @@ servers:
       '
   home-assistant:
     name: Home Assistant Main
-    description: Main Home Assistant MCP bridge on tony-dell
-    implementation: http://tony-dell:9584/<PRIVATE_TOKEN>
+    description: Main Home Assistant MCP bridge on tony-omen (evacuated tony-dell
+      -> omen 2026-10-19/20)
+    implementation: http://tony-omen:9584/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:9584/<PRIVATE_TOKEN>
+    url: http://tony-omen:9584/<PRIVATE_TOKEN>
     single_instance: false
-    status: down-2026-10-26
+    status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell -> tony-omen 2026-10-26 (card ha-mcp-endpoint-repoint);
+      verified mcp_list_tools.
 
       '
   michael-dev:
     name: Michael Dev Home Assistant
-    description: Development Home Assistant instance MCP bridge
-    implementation: http://tony-dell:9585/<PRIVATE_TOKEN>
+    description: Development Home Assistant instance MCP bridge on idc03 (container
+      migrated tony-dell -> idc03 2026-10-09)
+    implementation: http://idc03:9585/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:9585/<PRIVATE_TOKEN>
+    url: http://idc03:9585/<PRIVATE_TOKEN>
     single_instance: false
-    status: down-2026-10-26
+    status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell -> idc03 2026-10-26 (card ha-mcp-endpoint-repoint); port
+      9585 published on idc03 tailnet IP + loopback via michael-dev quadlet.
 
       '
   michael-ha:
     name: Michael Home Assistant
-    description: Michael production Home Assistant MCP bridge
-    implementation: http://tony-dell:19584/<PRIVATE_TOKEN>
+    description: Michael production Home Assistant MCP bridge, direct on michael-ha
+      host (100.80.105.88)
+    implementation: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:19584/<PRIVATE_TOKEN>
+    url: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     single_instance: false
-    status: down-2026-10-26
+    status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell:19584 ssh-tunnel -> direct http://100.80.105.88:9584
+      2026-10-26 (card ha-mcp-endpoint-repoint); tunnel no longer required.
+      A secondary forward also answers at tony-omen:19584.
 
       '
   notebooklm:

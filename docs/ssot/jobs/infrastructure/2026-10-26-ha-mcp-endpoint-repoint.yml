@@ -1,0 +1,73 @@
+id: 2026-10-26-ha-mcp-endpoint-repoint
+title: Repoint 3 dead HA MCP bridges found by AUD-0886
+date: 2026-10-26
+card: ha-mcp-endpoint-repoint-fdf629
+dispatch: dispatch-wt-20261026-082943-repoint-3-dead-ha-mcp-bridges-
+
+summary: >
+  All three HA MCP bridges that were dead on tony-dell (AUD-0886) are repointed
+  and verified serving MCP (initialize -> ha-mcp 8.7.0): home-assistant now
+  tony-omen:9584 (evacuated container was already up; mcp_config.json on
+  tony-macbook already pointed there), michael-dev now idc03:9585 (quadlet was
+  missing the 9585 publish — added PublishPort 127.0.0.1:9585 and
+  100.102.134.91:9585, tailnet-only, then recreated), and michael-ha now direct
+  at 100.80.105.88:9584 (ha_mcp_tools binds 0.0.0.0 on the michael-ha host, so
+  the ssh tunnel hop was never needed).
+
+endpoints:
+  home-assistant: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+  michael-dev: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
+  michael-ha: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
+
+host_changes:
+  idc03:
+    - "quadlet ~/.config/containers/systemd/michael-dev.container gained
+      PublishPort=127.0.0.1:9585:9585 and PublishPort=100.102.134.91:9585:9585
+      (backup .bak-20261026); systemctl --user daemon-reload + restart
+      michael-dev.service — container recreated, health=healthy, UI :8124=200,
+      MCP :9585 answers initialize"
+    - rollback: restore the .bak file, daemon-reload, restart michael-dev.service
+  tony-omen:
+    - "no change needed — tony-ha quadlet already publishes :9584; verified"
+    - "michael-ha-mcp-tunnel.service RUNS HERE (not on dell — dell has no such
+      unit): ssh -L 0.0.0.0:19584 -> homeassistant:9584. Still live as a
+      secondary alias for michael-ha MCP; can be retired when nothing else
+      consumes tony-omen:19584 (mcp_config on tony-macbook pointed at it until
+      this repoint)"
+
+config_changes:
+  "~/.config/devin/mcp_config.json (tony-macbook)":
+    - "home-assistant: already tony-omen:9584 — unchanged"
+    - "michael-dev: re-added (was dropped in the 2026-10-22 dead-server cleanup)
+      -> http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw"
+    - "michael-ha: tony-omen:19584 -> http://100.80.105.88:9584/private_...
+      (backup mcp_config.json.bak-20261026)"
+    - "note: entries take effect on next devin session start; endpoints were
+      verified via direct JSON-RPC initialize POSTs instead"
+
+ssot_updates:
+  - docs/ssot/infrastructure/ssot.mcp.yml — three entries repointed, status operational
+  - docs/ssot/infrastructure/ssot.home-assistant.mcp.yml — endpoint/tailnet/local urls, tunnel marked superseded
+  - docs/ssot/infrastructure/ssot.services.yml — tony-ha + michael-dev service blocks updated in place (anchors kept), michael.tailscale.mcp_url added
+  - docs/ssot/infrastructure/ssot.home-assistant.michael.yml — tailnet_url direct, tunnel superseded
+  - docs/ssot/infrastructure/ssot.home-assistant.michael-ha.topology.yml — tailnet_url direct, tunnel superseded
+  - docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml — host/urls/health_check -> idc03
+  - docs/ssot/infrastructure/ssot.home-assistant.yml — mcp urls -> tony-omen / 127.0.0.1
+  - docs/ssot/infrastructure/ssot.home-assistant.howto.yml — runbooks now ssh idc03
+  - docs/ssot/infrastructure/ssot.operations.yml — verify steps reference new hosts
+  - docs/ssot/infrastructure/ssot.security.tony-dell.yml — dell listeners 9584/9585/19584 marked RETIRED
+
+verification:
+  - "curl initialize POST -> all three endpoints return ha-mcp 8.7.0 result"
+  - "mcp_list_tools home-assistant + michael-ha OK (live session bindings)"
+  - "idc03: podman health michael-dev = healthy; ss shows 127.0.0.1:9585 and
+    100.102.134.91:9585 listening"
+  - "all edited SSOT YAMLs parse clean"
+
+followups:
+  - "retire michael-ha-mcp-tunnel.service on tony-omen once no consumer needs
+    tony-omen:19584 (grep consumer artifacts first, per host-migration audit rule)"
+  - "michael-dev-parity.service on tony-omen is failed — pre-existing, likely
+    stale after the idc03 move; worth a look"
+  - "other hosts' ~/.config/devin/mcp_config.json copies may still carry
+    tony-dell:9584/9585/19584 — same repoint applies"

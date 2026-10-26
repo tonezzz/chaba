@@ -36,13 +36,14 @@ topology:
       bind_host: 0.0.0.0
       secret_path: /private_oBVC604-FnxgBDP00t1L9g
       local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
+      tailnet_url: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
       tunnel:
         type: ssh
         host: tony-dell
         local_port: 19584
         remote: homeassistant:9584
         via: root@michael-ha
-        status: active
+        status: superseded-2026-10-26 (direct tailnet :9584 now canonical)
 
   addons:
     core_ssh:
@@ -88,6 +89,6 @@ tests:
   ha_ping: curl -sf http://michael-ha:8123/
 
 status:
-  last_updated: "2026-09-05"
-  last_verified: "2026-09-16"
+  last_updated: "2026-10-26"
+  last_verified: "2026-10-26"
   health: active

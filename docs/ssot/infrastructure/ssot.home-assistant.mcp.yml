@@ -5,36 +5,41 @@ servers:
   tony_ha:
     name: tony-ha
     instance_ssot: ssot.home-assistant.yml
-    endpoint: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    endpoint: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
     server_port: 9584
-    local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-    tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    local_url: http://127.0.0.1:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    tailnet_url: http://tony-omen:9584/private_CtYuVkJEl28cp8qA8yXNCQ
     webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
     custom_component: ha_mcp_tools
     status: active
-    verified_at: '2026-09-09'
+    verified_at: '2026-10-26'
     notes: |
-      HA core container is healthy and the UI returns HTTP 200. After a
-      container restart the ha_mcp_tools MCP server came up on port 9584
-      (startup took several minutes while tony-dell CPU load was high). The
-      embedded_server.py timeout constants were increased to
-      _READY_STALL_TIMEOUT_SECONDS=300s and _READY_TOTAL_CAP_SECONDS=900s to
-      prevent the default 90s stall budget from killing the in-process server
-      during slow imports. Verified 2026-09-09.
+      HA core container evacuated tony-dell -> tony-omen 2026-10-19/20 (OPS-0754);
+      MCP endpoint repointed to tony-omen:9584 2026-10-26 and verified live via
+      mcp_list_tools. Earlier notes: after a container restart the ha_mcp_tools
+      MCP server came up on port 9584 (startup took several minutes while
+      tony-dell CPU load was high). The embedded_server.py timeout constants were
+      increased to _READY_STALL_TIMEOUT_SECONDS=300s and
+      _READY_TOTAL_CAP_SECONDS=900s to prevent the default 90s stall budget from
+      killing the in-process server during slow imports. Verified 2026-09-09.
 
   michael_dev:
     name: michael-dev
     instance_ssot: ssot.home-assistant.michael.dev.yml
-    endpoint: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    endpoint: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
     server_port: 9585
     local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-    tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    tailnet_url: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
     webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
     custom_component: ha_mcp_tools
     status: active
-    verified_at: '2026-09-09'
+    verified_at: '2026-10-26'
     notes: |
-      Same ha_mcp_tools timeout patch as tony-ha applied to
+      Container migrated tony-dell -> idc03 2026-10-09; MCP URL stayed on
+      tony-dell:9585 (dead) until repointed 2026-10-26. Quadlet on idc03
+      (~/.config/containers/systemd/michael-dev.container) publishes
+      127.0.0.1:9585 and 100.102.134.91:9585 (tailnet-only). Same ha_mcp_tools
+      timeout patch as tony-ha applied to
       ~/.config/michael-dev/custom_components/ha_mcp_tools/embedded_server.py
       (_READY_STALL_TIMEOUT_SECONDS=300s, _READY_TOTAL_CAP_SECONDS=900s).
       Without this the MCP server timed out after 90s during slow imports on
@@ -49,18 +54,24 @@ servers:
   michael_live:
     name: michael-ha (live)
     instance_ssot: ssot.home-assistant.michael.yml
-    endpoint: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
+    endpoint: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
     server_port: 9584
     local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
-    tailnet_url: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
+    tailnet_url: http://michael-ha:9584/private_oBVC604-FnxgBDP00t1L9g
     mcp_path: /private_oBVC604-FnxgBDP00t1L9g
     tunnel:
       type: ssh
       host: tony-dell
       remote: homeassistant:9584
       via: root@michael-ha
-      note: TCP forward via core_ssh on michael-ha. 'homeassistant' is the HA core container hostname on the hassio Docker network.
+      status: superseded-2026-10-26
+      note: 'TCP forward via core_ssh on michael-ha — no longer required: the
+        ha_mcp_tools port 9584 binds 0.0.0.0 on the michael-ha host, so the
+        endpoint is reachable directly at 100.80.105.88:9584 / michael-ha:9584.
+        A secondary forward also answers at tony-omen:19584. dell
+        michael-ha-mcp-tunnel.service can be retired.'
     status: active
+    verified_at: '2026-10-26'
 
 auth:
   token_files:
@@ -86,4 +97,6 @@ auth:
 notes:
   - These are HA-MCP webhook endpoints served by the ha_mcp_tools custom component.
   - A HASS_TOKEN is used for REST / Playlive / external API automation; the MCP path is for MCP client connections.
-  - The michael-live endpoint is reached through an SSH tunnel from tony-dell to the michael-ha HA core container.
+  - The michael-live endpoint is reached directly over tailnet at 100.80.105.88:9584
+    (michael-ha:9584); the former SSH tunnel via tony-dell:19584 was retired
+    2026-10-26.
