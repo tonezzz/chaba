@@ -1,7 +1,7 @@
 id: devnest-cache-tokenization-bench
 title: Measure DevNest prefix cache and tokenization performance
-column: doing
-updated: 2026-10-26 10:06
+column: review
+updated: 2026-10-26 10:07
 spec: Benchmark stable-prefix/cache reuse versus rebuilt prompts across DevNest providers. Measure TTFT, input/output/cache
   tokens, tokenizer CPU time, payload bytes, warm/cold latency, verifier pass rate, and cost per successful task.
   Add content-addressed caches for repository maps, AST/index results, embeddings, research pages, prompt embeds,
@@ -23,7 +23,16 @@ comms:
 - at: 2026-10-26 10:06
   from: chaba
   text: started devin-task-20261026-100641-benchmark-stable-prefix-cache- on idc02 (dispatch)
+- at: 2026-10-26 10:07
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-100641-benchmark-stable-prefix-cache-.service:
+    Main process exited, cod'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-100641-benchmark-stable-prefix-cache-.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-100641-benchmark-stable-prefix-cache-.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
