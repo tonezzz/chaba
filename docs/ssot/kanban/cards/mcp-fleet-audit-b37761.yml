@@ -1,7 +1,7 @@
 id: mcp-fleet-audit-b37761
 title: mcp-fleet-audit
 column: doing
-updated: 2026-10-26 07:36
+updated: 2026-10-26 07:40
 priority: medium
 spec: 'Thorough assessment of the ~20 configured MCP servers (mcp-debug, mcp-llama, mcp-gpu, mcp-health, mddb, mcp-weaviate,
   playlive, mcp-colab, mcp-focus, yomi, workflows, docs, docs-trade, notebooklm, alphavantage, postgres, github,
@@ -16,3 +16,14 @@ comms:
 - at: 2026-10-26 07:36
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 07:40
+  from: devin
+  text: 'AUDIT COMPLETE — all 19 configured servers + 4 SSOT-only probed live.
+
+
+    Liveness: 14 alive / 6 dead. Dead: home-assistant(9584), michael-ha(19584), michael-dev(9585) [all HA bridges
+    dark on dell — ports return 000], workflows (podman down), docs, notebooklm (service crash-looping).
+
+
+    Key findings: (1) alphavantage injects ~5.6k lines/~15k tokens of schema every session — allowlist or profile
+    it; (2) mcp-llama superseded by LiteLLM gateway; (3) SSOT drift fixed — mddb now idc03 streamable-HTTP, mcp'
