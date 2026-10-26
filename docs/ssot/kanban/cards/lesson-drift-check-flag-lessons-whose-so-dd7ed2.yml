@@ -1,7 +1,7 @@
 id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
 title: 'Lesson drift-check: flag lessons whose source docs changed'
-column: review
-updated: 2026-10-26 15:50
+column: done
+updated: 2026-10-26 16:01
 brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
   docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
   is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
@@ -74,6 +74,11 @@ comms:
 - at: 2026-10-26 15:50
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep: merged edbeaf19 (dispatch/20261026-084906-topics-trade-map-hub-trade-arc from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261026-084906-topics-trade-map-hub-trade-arc.md)
+    — auto-closed'
 action:
   repo: chaba
   type: dispatch
@@ -86,6 +91,10 @@ action:
   result: 'exit=0  lists the job as due, so it self-activates once the branch lands and the exec checkout syncs.
     | devin-task-20261026-084906-topics-trade-map-hub-trade-arc.service: Consumed 35.313s CPU time over 3min 38.308s
     wall clock time, 1G memory peak.'
-  verified: false
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 16:01
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261026-084906-topics-trade-map-hub-trade-arc.md
