@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: done
-updated: 2026-10-26 17:31
+updated: 2026-10-26 17:32
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -126,6 +126,12 @@ comms:
     absent, and managed runtime registry records were past the 300s TTL. Copied only preflight-cell.py and ada-nest-job-console.ipynb;
     the other four queue support files already matched repo hashes. Verified MD5s for both copied files. No queue
     cell or job was run. Latest notebook preflight fix (peer check before registration/heartbeat) is included.'
+- at: 2026-10-26 17:32
+  from: devin
+  text: 'Drive deployment completed 2026-10-26: copied preflight-cell.py and ada-nest-job-console.ipynb; verified
+    both MD5s against the repo. JOBS.py, runner.py, runtime_registry.py, and queue-launcher-cell.py already matched.
+    Before writing, Drive showed a >4h-stale heartbeat/lease, no runner.id, and only stale managed-runtime records;
+    no queue markers or packs were modified and I did not launch a job. The corrected notebook is at gdrive:ada-nest/queue/ada-nest-job-console.ipynb.'
 action:
   repo: chaba
   type: dispatch
