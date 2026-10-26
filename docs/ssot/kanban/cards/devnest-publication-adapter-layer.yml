@@ -1,0 +1,29 @@
+id: devnest-publication-adapter-layer
+title: Define DevNest publication adapter layer
+column: backlog
+updated: 2026-10-26 18:08
+brief: Create one evidence-based publication API above board, WP CPTs, Telegram, and future sinks.
+priority: high
+program: devnest
+tags:
+- devnest
+- publishing
+- wordpress
+- education
+- news
+- api
+spec: Design a provider-neutral DevNest publication layer. Define a canonical PublicationEvent with event_id/idempotency_key,
+  project/job/card refs, kind (progress|milestone|report|lesson|news|alert), title, body, evidence links, confidence
+  (observed|measured|verified), visibility (private|members|public), audience, occurred_at, source, parent, and
+  media/artifact refs. Add a board-api /publish route or equivalent adapter door; agents never call WordPress REST
+  or hold WP credentials. Preserve current /job, /lesson, /report, /comment endpoints as compatibility adapters.
+  Map nest_job to live execution state, report to project dossier, lesson/Education to reusable knowledge, news
+  to meaningful milestones, Telegram to concise same-topic notifications, and board comments to operational audit.
+  Add idempotency, outbox/retry, sink capability checks, rate/noise policy, private-first visibility, evidence requirement
+  for news, and tests with a mock sink. Do not publish every heartbeat. Verify WP is only one adapter and a second
+  mock/JSON sink can receive the same event.
+ref: OPS-0913
+comms:
+- at: 2026-10-26 18:08
+  from: tony
+  text: card captured via board-api
