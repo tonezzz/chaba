@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-26 15:24
+updated: 2026-10-26 16:26
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -73,6 +73,13 @@ comms:
   from: devin
   text: 'raised request what-hard-runtime-limit-should-any-futur-4feda6: What hard runtime limit should any future
     automatic Colab lifecycle control enforce? Please specify maximum hours and wh'
+- at: 2026-10-26 16:26
+  from: devin
+  text: 'Official API research (2026-10-26): Google documents `gcloud colab runtimes create/list/start/stop/delete`
+    and REST runtime APIs for Colab Enterprise. These manage project/region runtimes, not consumer Colab account
+    sessions. Enterprise needs a GCP project, runtime template, IAM permissions, billing, and charges for VM/GPU
+    plus disks (even stopped runtimes retain disk charges); docs specify idle shutdown and automatic deletion defaults.
+    Consumer Colab remains UI-started; no supported account-wid'
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
