@@ -23,9 +23,11 @@ action:
   type: dispatch
   repo: chaba
   status: queued
+  runner: idc02
   result: 'exit=0 ift-repair.yml` — all committed on the dispatch branch; session paused awaiting the deploy-gate
     answer. | devin-task-20261026-185925-investigate-and-repair-the-liv.service: Consumed 34.759s CPU time, 189.1M
     memory peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0916
 comms:
 - at: 2026-10-26 18:58
@@ -91,6 +93,9 @@ comms:
     exited 1 after overwrite confirmation while checking an optional activation link, but the live /job round-trip
     proves the CPT/API is active. OPS-0916 needs final verification/closeout; no destructive or public publish action
     performed.'
+- at: 2026-10-26 19:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 - at: 2026-10-26 19:18
   from: chaba
   text: 'answer-sweep: executed ''proceed'' -> queued for processing'
@@ -110,3 +115,7 @@ requests:
   executed: 2026-10-26 queue
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 19:16
+  note: verified — evidence checks green, closing itself
