@@ -1,7 +1,7 @@
 id: ada-render-video-line-unsendable
 title: ada_render_video output is unsendable on LINE lanes — tailnet URL + no video message type
 column: backlog
-updated: 2026-10-15 13:49
+updated: 2026-10-26 07:05
 brief: 'Audit 2026-10-12 (session 7a2f02b3db): KK asked for an easy-to-read trip summary image; Kaewta ran ada_render_video
   — ok:true but video_url is https://tony-dell.taila0626a.ts.net/api/input-bridge/frame?... — a tailnet-only URL
   LINE can never fetch, and even if public the relay only sends imageMessages (jpeg) — video needs videoMessage
@@ -13,10 +13,9 @@ tags:
 - ada
 - line
 - render
-spec: 'Options: (1) add videoMessage support to line_relay + host render output publicly (IMG_CACHE_DIR lane or
-  doc-store asset), (2) emit a poster jpeg + video link in text, (3) mark render tools video-unsupported on LINE-only
-  lanes in tool_guide so she says so upfront instead of producing unsendable output. Recommended (2) cheap + honest
-  now, (1) when video delivery is actually wanted.'
+spec: 'Hybrid delivery per Tony: LINE lanes get a poster jpeg + tailnet link, TG lanes get the video file itself.
+  line_relay gains a video/link output path (host render output publicly - IMG_CACHE_DIR lane or doc-store asset);
+  tg_relay sends the file via sendVideo. Done when ada_render_video output lands playable on both lanes.'
 ref: ADA-0512
 comms:
 - at: 2026-10-12 17:33
@@ -36,6 +35,12 @@ comms:
   text: 'Decision recorded: split delivery — LINE lanes send the render link (no size cap, original quality), TG
     lanes push the mp4 file. Implementation note for whoever picks this up: line_relay already has a working [video,text]
     path but link-first is the cheaper default; tg-relay keeps file push.'
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
+- at: 2026-10-26 07:05
+  from: tony
+  text: queued for processing
 requests:
 - id: video-delivery-to-line-lanes-234cd4
   ask: Video delivery to LINE lanes?
@@ -48,4 +53,7 @@ requests:
   - TG lanes only
   suggested: send link instead of file ★
   answer: 'hybrid: LINE lanes get the link, TG lanes get the file'
-awaiting_action: true
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
