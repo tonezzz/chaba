@@ -1,7 +1,7 @@
 id: devnest-telegram-team-channel
 title: Connect DevNest household AI team to Telegram group
 column: done
-updated: 2026-10-26 17:03
+updated: 2026-10-26 17:07
 brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
   as a team.
 priority: high
@@ -81,3 +81,9 @@ comms:
     8960073266 in General, persisted updates.jsonl + conversations/-1003998821809/general.jsonl, advanced state
     offset to 954573587, and issued same-topic acknowledgement. Card remains doing: board-api job routing and start/finish
     notifications are the next phase.'
+- at: 2026-10-26 17:07
+  from: devin
+  text: 'Observed Telegram approval test update 954573587: "APPROVE OPS-0912". Capture relay recorded and acknowledged
+    it, but did not execute approval yet: current phase is capture-only and no board card ref OPS-0912 exists. Next
+    integration must parse APPROVE <card/ref>, resolve exact card, call board-api /respond or approved action path,
+    and post an audit result in the same topic; reject missing/ambiguous cards.'
