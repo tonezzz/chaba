@@ -99,7 +99,7 @@ runbooks:
   reload_core_config:
     purpose: Reload michael-dev core config via HA-MCP without a full container restart.
     steps:
-    - Ensure michael-dev.service is active on tony-dell
+    - Ensure michael-dev.service is active on idc03 (migrated from tony-dell 2026-10-09)
     - Run scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
       --tool ha_reload_core
     - Wait for http://127.0.0.1:8124/ to respond with HTTP 200
@@ -138,7 +138,7 @@ runbooks:
     purpose: Restart the michael-dev Home Assistant instance. Use only when HA-MCP
       reload is not sufficient (e.g. container upgrades or integration installs).
     steps:
-    - ssh tony-dell
+    - ssh idc03
     - systemctl --user restart michael-dev.service
     - Wait for the service to be active and http://127.0.0.1:8124 to respond
     service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit

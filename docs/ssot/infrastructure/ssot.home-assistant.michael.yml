@@ -136,7 +136,7 @@ mcp:
   secret_path: /private_oBVC604-FnxgBDP00t1L9g
   webhook_id: mcp_b7f1f8bbc01e5363d70e556bcf09c0f1
   local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
-  tailnet_url: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
+  tailnet_url: http://100.80.105.88:9584/private_oBVC604-FnxgBDP00t1L9g
   mcp_path: /private_oBVC604-FnxgBDP00t1L9g
   tunnel:
     type: ssh
@@ -144,15 +144,16 @@ mcp:
     local_port: 19584
     remote: homeassistant:9584
     via: root@michael-ha
-    status: active
+    status: superseded-2026-10-26
     verified_at: "2026-09-08"
     note: TCP forward via core_ssh (tcp_forwarding enabled). 'homeassistant'
       is the Home Assistant core container hostname on the hassio Docker
       network (canonical value in ssot.values.yml hosts.michael_ha.hassio_network_host).
-      The tony-dell tunnel service uses the same remote target. Systemd user
-      service is enabled and running; a raw GET to the MCP path returns 405,
-      a valid MCP POST returns 200.
-  note: ha_mcp_tools loaded; MCP endpoint reachable over the tailnet via tony-dell
+      Retired 2026-10-26 — MCP port 9584 binds 0.0.0.0 on the michael-ha host
+      and is reachable directly over tailnet; no forward needed. A secondary
+      forward still answers at tony-omen:19584.
+  note: ha_mcp_tools loaded; MCP endpoint reachable directly over tailnet at
+    100.80.105.88:9584 (michael-ha:9584) since 2026-10-26
 
 packages:
   - docs/home-assistant/configuration/packages/batteries_sankey.yaml
