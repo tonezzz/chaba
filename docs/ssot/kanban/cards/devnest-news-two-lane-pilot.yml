@@ -1,7 +1,7 @@
 id: devnest-news-two-lane-pilot
 title: News reporter A/B pilot — Devin vs DevNest
 column: backlog
-updated: 2026-10-26 09:07
+updated: 2026-10-26 09:08
 brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
   gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
   leaves. This is an evaluation plan, not permission to publish or run paid models.
@@ -59,6 +59,13 @@ comms:
   from: devin
   text: 'Correction: the final reviewed proposal is v3, Drive file ID `19meXDucAFZT0uN0uN2MoHQiuR6um_bYD` (not the
     v2 ID in the immediately previous comment).'
+- at: 2026-10-26 09:08
+  from: devin
+  text: 'V3 recommendation: keep the existing `news` CPT as the unified tree, publish external leaves, keep internal
+    project leaves and both reporter roots private, and never let a parent be more public than its most restricted
+    child. Because the current digest writer publishes parents, add status/sensitivity filters and leak tests before
+    internal ingestion; split to `project_news` only if this cannot be proven. Current review file: gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v3.md
+    (ID 19m'
 requests:
 - id: choose-news-visibility-architecture
   ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
