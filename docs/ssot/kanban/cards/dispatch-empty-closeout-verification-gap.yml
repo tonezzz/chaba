@@ -1,0 +1,20 @@
+id: dispatch-empty-closeout-verification-gap
+title: dispatch close-out reports ok + auto-closes on zero-commit sessions
+column: backlog
+updated: 2026-10-26 08:31
+spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
+  the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
+  merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
+  vcast-program-design (mn01 then tony-macbook), voice-600ms (mn01 then idc02 — tony closed by hand). So `ok` means
+  the wrapper exited, not that work landed. Fix in chaba dispatch close-out/merge-sweep: (1) a session whose service
+  ends `Failed with result` is NOT ok; (2) before auto-close/verified, require branch head has ≥1 commit ahead of
+  merge-base with origin/master (empty push = failed dispatch, keep card open); (3) surface zero-commit dispatches
+  in the QC scoreboard. Related: KNB-0893 merge-sweep resurrects done cards — same file likely.'
+action:
+  type: dispatch
+  repo: chaba
+ref: OPS-0894
+comms:
+- at: 2026-10-26 08:31
+  from: tony
+  text: card captured via board-api
