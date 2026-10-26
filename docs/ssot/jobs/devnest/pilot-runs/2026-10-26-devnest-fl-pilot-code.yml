@@ -1,0 +1,29 @@
+run_record: pilot job 2/3 — small testable code fix on the free OpenCode lane
+card_id: devnest-fl-pilot-code
+pilot_class: small-testable-code-fix
+executor: opencode  # meta.json executor: opencode:free_lane — valid free-lane datapoint
+model: litellm/gemini-3.5-flash-lite
+prompt_at: '2026-10-26T10:42:37Z'  # taskdir meta.json started_at
+session_start: '2026-10-26T17:42:37+07:00'
+session_end: '2026-10-26T17:43:23+07:00'
+wall_time_s: 46
+tokens_in: 80999    # sum of opencode step-finish input (6 steps)
+tokens_out: 816
+tokens_cache_read: 102116
+litellm_spend_delta_usd: null  # shared window — see note
+litellm_note: code+doc windows overlapped; combined SpendLogs delta
+  10:42:30-10:44:00Z = $0.032993 (gemini/gemini-3.5-flash-lite) +
+  $0.011686 (openrouter/google/gemini-3.5-flash-lite) = $0.044679,
+  321,831 total tokens — list-price equivalent, not billed amount
+gate_result: pass  # pytest tests/ops/test_pilot_metrics.py 3/3 on merged
+  # content (scripts/ops/pilot_metrics.py cost_per_passed_gate per spec)
+merge_success: merged b9ede30a -> origin/master (merge-sweep, after
+  test-gate hold on pre-existing baseline failures)
+human_intervention_min: 0
+escalation: none
+baseline_pair: devnest-free-pilot-code  # devin lane, wall 66.1s, merged
+  # after one baseline-gate hold, 0 intervention
+baseline_delta: wall 46s vs 66.1s (-30%); identical merge trajectory
+  # (baseline-gate hold then merge-sweep merge)
+verified_note: merge-sweep withheld verified stamp; supervisor re-ran the
+  declared verifier (3/3 pass) on merged content manually

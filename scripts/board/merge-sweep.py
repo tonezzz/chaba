@@ -166,7 +166,14 @@ SWEEP_HOSTS = [h.strip() for h in os.environ.get(
 
 ZOMBIE_AGE_S = float(os.environ.get("ZOMBIE_AGE_H", "6")) * 3600
 ZOMBIE_IDLE_S = float(os.environ.get("ZOMBIE_IDLE_MIN", "60")) * 60
-TASK_ID_RE = re.compile(r"devin-task-([0-9]{8}-[0-9]{6}[a-z0-9-]*)")
+# devin-dispatch tids look like 20261026-173617-<slug>; runner-agent's
+# OpenCode lanes name them <card-id>-<epoch> (e.g.
+# devnest-fl-pilot-report-1793011692) — accept either or a held opencode
+# merge can never resolve its session once finish_pass consumed
+# state.json (the 2026-10-26 devnest-fl-pilot-report stranded branch).
+TASK_ID_RE = re.compile(
+    r"devin-task-((?:[0-9]{8}-[0-9]{6}|[a-z0-9][a-z0-9-]*?[0-9]{9,})"
+    r"[a-z0-9-]*)")
 
 # Terminal columns — the sweep never rewrites workflow fields on a card
 # that already closed (the 2026-10-26 nest-node-hardware resurrection:

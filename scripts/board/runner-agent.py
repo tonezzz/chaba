@@ -1155,12 +1155,18 @@ def claim_pass(st: dict) -> bool:
         # not write action fields back to the board and remote runners lost
         # the model chain (OPS-0836..0844).
         if typ == "dispatch" and os.environ.get("JEV_LANE", "0") == "1":
-            lane = classify_lane(card)
+            a = card.setdefault("action", {})
+            # An explicit action.lane (pinned in the card YAML, e.g. the
+            # OPS-0885 pilot cards) wins over claim-time classification —
+            # re-classifying here clobbered pinned free_lane cards into
+            # codemod/paid_frontier lanes (OPS-0885 miss class).
+            lane = str(a.get("lane") or "")
+            if not lane:
+                lane = classify_lane(card)
             if lane == "manual":
                 continue
-            a = card.setdefault("action", {})
             a["lane"] = lane
-            if lane in LANE_MODELS:
+            if lane in LANE_MODELS and not a.get("model"):
                 a["model"] = LANE_MODELS[lane]
             claim_body["lane"] = lane
             claim_body["model"] = a.get("model", "")

@@ -1,0 +1,26 @@
+run_record: pilot job 3/3 — read-only report/lesson update on the free
+  OpenCode lane
+card_id: devnest-fl-pilot-report
+pilot_class: readonly-report-lesson-update
+executor: opencode  # meta.json executor: opencode:free_lane — valid free-lane datapoint
+model: litellm/gemini-3.5-flash-lite
+prompt_at: '2026-10-26T10:48:14Z'  # taskdir meta.json started_at
+session_start: '2026-10-26T17:48:15+07:00'
+session_end: '2026-10-26T17:48:53+07:00'
+wall_time_s: 38
+tokens_in: 56656    # sum of opencode step-finish input (6 steps)
+tokens_out: 826
+tokens_cache_read: 196017
+litellm_spend_delta_usd: 0.025313  # SpendLogs window 10:48:00-10:50:00Z,
+  # gemini/gemini-3.5-flash-lite only, 254,675 tokens — list-price
+  # equivalent, not billed amount
+gate_result: pass  # artifact contains all 7 lane ids + "free_lane"
+  # (verified on the kept worktree's artifact content)
+merge_success: pushed 874a9924; merge held on pre-existing baseline
+  # failures at 17:52 — merge-sweep next-tick (~18:01) expected to land it
+  # same as code/doc
+human_intervention_min: 0
+escalation: none
+baseline_pair: none — first run of this class
+verified_note: merge-sweep withheld verified stamp; verifier confirmed
+  on artifact content pre-merge

@@ -141,6 +141,26 @@ run0: |
   free-lane datapoint. Its run record should be assembled retroactively
   from the opencode-closeout-probe-dell card + unit journal.
 
+pilot_results: |
+  Executed 2026-10-26 17:42–17:52 +07 under supervision (Tony answered
+  "queue all three on tony-dell now — I am watching"; runner-agent run
+  manually on tony-dell with JEV_LANE=0 OPENCODE_LANES=1 — JEV_LANE=0
+  avoided a claim_pass bug that re-classified pinned lanes; fixed this
+  dispatch). All three jobs: executor opencode:free_lane, model
+  litellm/gemini-3.5-flash-lite, 0 human-intervention minutes, 0
+  escalations.
+    doc    wall 36s  tok_in 35,070  tok_out 409   merged 8ea5303d
+    code   wall 46s  tok_in 80,999  tok_out 816   merged b9ede30a
+    report wall 38s  tok_in 56,656  tok_out 826   pushed 874a9924
+  LiteLLM SpendLogs delta (list-price equivalent, not billed):
+  doc+code shared window $0.0447 (321,831 tok), report $0.0253
+  (254,675 tok) → $0.0700 total / 3 passed gates = $0.0233 per gate.
+  Devin baseline (matched shapes, same day): doc 57.9s, code 66.1s —
+  free lane was 30–38% faster on wall time with identical merge
+  trajectory. Devin sessions are allowance-priced, so per the
+  lane-savings hard rule the honest claim is tokens+wall+intervention,
+  not dollars. Run records: docs/ssot/jobs/devnest/pilot-runs/2026-10-26-*.yml
+
 deliverables:
   - docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml (this file)
   - docs/ssot/kanban/cards/devnest-fl-pilot-doc.yml (class 1, backlog, supervised-only)
@@ -155,12 +175,36 @@ verify:
   - "action.status absent on all three cards — nothing auto-claims on merge"
 
 gaps_remaining: |
-  - OPENCODE_LANES=1 confirmation on tony-dell runner-agent env (proof
-    implies set; verify `systemctl --user show runner-agent -p
-    Environment` before queueing).
+  - RESOLVED 2026-10-26: OPENCODE_LANES=1 confirmed on tony-dell — but as
+    a drop-in (runner-agent.service.d/jev-lane.conf) for a unit that
+    DOESN'T EXIST. tony-dell has no runner-agent.service/timer and
+    kanban-dispatch is parked (2026-10-04): claims there only happen when
+    a supervisor runs runner-agent.py by hand. That IS the supervised
+    model — but the orphan drop-in is a host-hygiene flag, and a real
+    runner-agent unit (or an ssot.jobs dispatcher job) would let queued
+    cards pinned to tony-dell drain unattended. Decide: declare a unit,
+    or declare dell a manual-only runner.
+  - RESOLVED 2026-10-26 (this dispatch): runner-agent claim_pass
+    re-classified lanes unconditionally under JEV_LANE=1, clobbering
+    pinned action.lane — the doc card would have gone codemod, the code
+    card paid_frontier (real spend). Fixed: explicit lane wins. The
+    supervised run additionally ran with JEV_LANE=0 as a guard since
+    dell's checkout carried the pre-fix code at run time.
+  - RESOLVED 2026-10-26 (this dispatch): merge-sweep TASK_ID_RE only
+    matched devin-dispatch tids (YYYYMMDD-HHMMSS-*); OpenCode-lane tids
+    (<card-id>-<epoch>) never resolve from comms, so once finish_pass
+    consumes runner state.json a held opencode merge is invisible to the
+    sweep — devnest-fl-pilot-report's branch sat pushed-but-unmerged
+    past a sweep tick. Fixed: regex accepts both shapes.
   - Run-record assembly is manual per the field->source table; a small
     assembler (cards + meta.json + unit journal + SpendLogs) is natural
     follow-up work — the class-2 helper lands the metric function.
-  - LiteLLM SpendLogs attribution assumes the opencode lane key is
-    distinguishable per-model in logs (litellm/gemini-3.5-flash-lite);
-    if keys are shared, attribute by model+window.
+  - LiteLLM SpendLogs attribution: calls log under the shared gateway
+    key; attribute by model+time window (works — done in pilot-runs).
+    Note SpendLogs spend is LIST-PRICE compute, not billed amount —
+    Gemini free-tier billing is not visible in the proxy.
+  - merge-sweep withheld `verified` on all three pilot cards (work
+    present vs base but exit-evidence tier undecidable) — cards hold in
+    review; verifiers were re-run manually and passed. Worth
+    understanding why the opencode closeout doesn't carry the exit
+    evidence tier the gate prefers (taskdir exit_code).

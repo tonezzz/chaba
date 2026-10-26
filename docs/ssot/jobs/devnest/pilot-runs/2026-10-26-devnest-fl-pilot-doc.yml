@@ -1,0 +1,27 @@
+run_record: pilot job 1/3 — docs/config change on the free OpenCode lane
+card_id: devnest-fl-pilot-doc
+pilot_class: docs-config-change
+executor: opencode  # meta.json executor: opencode:free_lane — valid free-lane datapoint
+model: litellm/gemini-3.5-flash-lite
+prompt_at: '2026-10-26T10:42:45Z'  # taskdir meta.json started_at
+session_start: '2026-10-26T17:42:45+07:00'  # unit start (journal)
+session_end: '2026-10-26T17:43:21+07:00'    # unit exit (journal)
+wall_time_s: 36
+tokens_in: 35070    # sum of opencode step-finish input (5 steps)
+tokens_out: 409
+tokens_cache_read: 100068
+litellm_spend_delta_usd: null  # shared window — code+doc ran concurrently;
+  # combined window 10:42:30-10:44:00Z = $0.044679 (see code run record)
+litellm_note: list-price spend computed by the gateway; actual billed
+  amount depends on provider free-tier quota — record as measured list
+gate_result: pass  # artifact docs/reports/devnest-fl-pilot-1-doc.md on
+  # origin/master with all 5 required headings (verified on merged content)
+merge_success: merged 8ea5303d -> origin/master (merge-sweep, after
+  test-gate hold on pre-existing baseline failures)
+human_intervention_min: 0
+escalation: none
+baseline_pair: devnest-free-pilot-doc  # devin lane, wall 57.9s, merged,
+  # 0 intervention — free lane was FASTER on wall time
+baseline_delta: wall 36s vs 57.9s (-38%); both merged 0-intervention
+verified_note: merge-sweep withheld verified stamp (work present vs
+  base); supervisor verified artifact content on origin/master manually
