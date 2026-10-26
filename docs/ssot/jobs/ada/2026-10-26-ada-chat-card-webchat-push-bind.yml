@@ -1,0 +1,93 @@
+title: ada-chat-card webchat push bind — channel=web&chat_id on the ws URL + chat_push rendering
+id: 2026-10-26-ada-chat-card-webchat-push-bind
+card: ada-chat-card-cannot-receive-pushed-medi-099b01
+ref: ADA-0743
+date: 2026-10-26
+status: implemented-in-worktree (committed on dispatch branch, not pushed; live only after deploy to HA www)
+
+summary: |
+  The HA ChatUI card (ada-chat-card.js, canonical copies at
+  stacks/tony-dell/{tony-ha,ada-ha}/www/) connected to /ws with only
+  device_id+api_key — no channel/chat_id binding — and had no chat_push
+  case in _handleControl. webchat_deliver (chat_send channel=web, POST
+  /api/webchat/send) only reaches channel=web sessions bound to the
+  target chat_id, so nothing could push text/image/video into a
+  household ChatUI lane (surfaced 2026-10-18 when a cast-to-tony-ha ask
+  had no reachable surface).
+
+change:
+  ws_bind: |
+    `_connect()` now appends `&channel=web&chat_id=web-<member-or-device>`
+    to the ws URL. `web` is NOT in ADA_TEXT_ONLY_CHANNELS, so the session
+    keeps the Gemini Live provider exactly as before — the binding only
+    adds SESSION_CHAT registration (push delivery), parked-flush on
+    reconnect, and web-channel turn journaling.
+  member_resolution: |
+    `_pushChatId()` resolves the `web-<member>` half in order:
+    1. `member:` card config (explicit pin)
+    2. `GET {api_base}/api/auth/status?device_id=<id>` (X-API-Key) — the
+       lane's caller name for this key; member/invite keys carry the
+       member's name. ha-<dev8> device-key names and 'admin' are not
+       members and fall through. 4s AbortSignal timeout, failures skip.
+    3. The logged-in HA user's linked person.<slug> (hass.states
+       person.* entity with attributes.user_id === hass.user.id)
+    4. `instance:` config — the lane's own member (tony|michael|kk|dev)
+    5. web-<device8> — per-device thread fallback
+    On tony-ha this yields web-tony (person.tony or instance); on mn-ha
+    web-michael — the same thread ids the boards webchat and
+    chat_send to=web-<member> use, so the card joins the member's real
+    push thread instead of an unreachable device thread.
+  chat_push_render: |
+    `_handleControl` case "chat_push" → `_chatPush(ev)`: an Ada bubble
+    (`acc-bubble acc-bubble-ada`), text via _fillBubble (link/image-url
+    inline rendering like normal turns), image_url → <img class=acc-media>
+    (click opens full size), video_url → <video controls muted
+    playsinline>. Non-http(s) media urls ignored; fully empty pushes
+    drop quietly.
+  close_4403: |
+    ws close 4403 (key lacks the 'chat' capability — view-only keys
+    can't open a chat lane) now renders a readable system line instead
+    of a bare code.
+
+verification:
+  harness: |
+    DOM-stub node harness (17 checks, all pass): member resolution tiers
+    (config/key-name/person/instance/device), ws URL contains
+    channel=web&chat_id=web-tony&device_id, chat_push renders bubble +
+    img + video controls, text-only/media-only pushes, empty and
+    non-http pushes dropped.
+  live_lane: |
+    Throwaway ada-voice lane on idc02 (uvicorn pwa_server:app :8013,
+    latest main, own ADA_INSTANCE_ID/keys file): ws bound
+    ?api_key&device_id&channel=web&chat_id=web-verify<N>&mode=text →
+    POST /api/webchat/send {text,image_url} returned delivered=1 and the
+    socket received the chat_push frame verbatim; a second send with no
+    session returned parked:true/parked_count=1; a fresh bound ws got
+    ready then the parked chat_push flushed. mode=text was used for the
+    verify connect because BOTH fleet Gemini projects are spend-capped
+    (latched until 2026-11-01) — Live connect 1011s; the bind/flush path
+    is provider-agnostic. Noted: live delivery works even pre-ready
+    (session registers before provider connect).
+  prod: |
+    POST /api/webchat/send on all four prod lanes (ada-tony, ada-michael,
+    ada-kk, ada-dev) returns 401 — endpoint exists and is key-gated
+    (not 404); the webchat backend is deployed fleet-wide.
+
+gaps:
+  - "Browser-level test on a real HA dashboard still open — the card
+    self-mints its key via script.ada_voice_key (HA websocket), not
+    reproducible outside HA. After merge + push-dashboard/www deploy,
+    open Chat tab on tony-ha and POST /api/webchat/send chat_id=web-tony
+    to watch the bubble land."
+  - "ada-voice pwa/cards/ada-chat-card.js (the PWA variant) is a separate
+    file in the ada-voice repo — same gap exists there if PWA push is
+    wanted; out of this card's scope."
+  - "Roster/member name slugs — person.<slug> is the member id everywhere
+    (speaker_id, key ha_person), but lanes tag kk/kaewta inconsistently;
+    `member:` config pins it where it matters."
+
+deploy_notes: |
+  Canonical copies are stacks/tony-dell/{tony-ha,ada-ha}/www/
+  ada-chat-card.js (kept byte-identical). Live files are HA's
+  /config/www/ + dashboard resource URL `/local/ada-chat-card.js?v=N` —
+  bump the v= on push-dashboard.py so browsers drop cache.
