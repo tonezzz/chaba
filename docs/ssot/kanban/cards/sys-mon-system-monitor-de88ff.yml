@@ -1,7 +1,7 @@
 id: sys-mon-system-monitor-de88ff
 title: sys-mon (system monitor)
 column: doing
-updated: 2026-10-26 07:46
+updated: 2026-10-26 07:48
 note: User wants to insert a live dashboard tab (host loads) using an iframe into the board.
 comms:
 - at: 2026-10-10 15:36
@@ -67,6 +67,12 @@ comms:
 - at: 2026-10-26 07:46
   from: devin
   text: 'Dispatch started: assessing sys-mon work + existing chaba-admin surface, target /chaba-admin/monitor'
+- at: 2026-10-26 07:48
+  from: devin
+  text: 'verify pass (dispatch 074629 — dup of 071051, fired because card was still queued): c1df3a61 in origin/master;
+    idc02 edge serves host-loads.yml fresh (generated 07:43, HTTP 200); index.html has live Host loads table (app.js?v=9);
+    chaba-host-loads.timer active on idc02 (5min, last 07:43:19); chaba-admin monitor view iframes /apps/system-report/?v=7.
+    Done-condition already met — no new code.'
 ref: OPS-0369
 requests:
 - id: the-user-wants-to-insert-a-liv-cd3c2e
