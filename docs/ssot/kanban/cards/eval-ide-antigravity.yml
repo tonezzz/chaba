@@ -1,7 +1,7 @@
 id: eval-ide-antigravity
 title: 'eval: install Antigravity + Google login + first free-tier task'
 column: doing
-updated: 2026-10-27 06:18
+updated: 2026-10-27 06:21
 brief: 'Only true agent-first IDE on the list; free weekly quota. Blocked on Tony: needs his Google login.'
 priority: medium
 program: chaba-ci
@@ -45,6 +45,10 @@ comms:
     not the IDE). BUT the agy CLI sign-in uses a REMOTE callback (antigravity.google/oauth-callback), so you can
     complete it on ANY device. Tony: open this URL in a browser where you are signed into Google, approve, done:
     https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com&code_challenge=G2fo4QU66nGT'
+- at: 2026-10-27 06:21
+  from: devin
+  text: 'raised request tony-to-finish-antigravity-sign-in-works-a0382a: Tony — to finish Antigravity sign-in (works
+    from any browser, mn01 Chrome is broken): 1) Open the OAuth URL from my comm'
 action:
   type: dispatch
   status: running
@@ -56,6 +60,17 @@ requests:
     Reply here once signed in, or tell me to use a different account.'
   status: open
   at: 2026-10-27 05:41
+  from: devin
+  options:
+  - proceed
+  - hold
+- id: tony-to-finish-antigravity-sign-in-works-a0382a
+  ask: 'Tony — to finish Antigravity sign-in (works from any browser, mn01 Chrome is broken): 1) Open the OAuth
+    URL from my comment below on any device where you are signed into Google. 2) Approve the consent. 3) The antigravity.google/oauth-callback
+    page will show an authorization code — reply to this request with that code and I will complete the login. CLI
+    is waiting for it.'
+  status: open
+  at: 2026-10-27 06:21
   from: devin
   options:
   - proceed
