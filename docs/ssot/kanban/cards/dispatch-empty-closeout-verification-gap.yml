@@ -1,7 +1,7 @@
 id: dispatch-empty-closeout-verification-gap
 title: dispatch close-out reports ok + auto-closes on zero-commit sessions
 column: review
-updated: 2026-10-26 16:01
+updated: 2026-10-26 17:06
 spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
   the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
   merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
@@ -85,6 +85,12 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
     2 commit(s) conflict with origin/master '
+- at: 2026-10-26 17:06
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-26 17:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 review_kind: verify
 claim: {}
 requests:
@@ -92,7 +98,7 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
     origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-26 16:01
   from: chaba
   options:
@@ -100,3 +106,5 @@ requests:
   - drop this dispatch — re-dispatch fresh from current main
   - hold the card
   suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+awaiting_action: true
