@@ -1,7 +1,7 @@
 id: dispatch-concurrency-bump-idc
 title: Raise kanban-dispatch parallelism on idc02/idc03 runner-agents
-column: doing
-updated: 2026-10-27 05:38
+column: review
+updated: 2026-10-27 05:39
 priority: medium
 note: 'Hosts idle (4 cores, ~10G free ea). Check per-host dispatch cap in kanban-dispatch/runner-agent config; bump
   to allow 2 concurrent card tasks/host where memory allows. Compounds w/ chat-local: cheap turns + more runners
@@ -32,7 +32,15 @@ comms:
   text: 'audit done: idc02 base-unit RUNNER_CAP=3, idc03 cap.conf drop-in cap=3+gate 0.85 — already >2 target. Cap
     4 refused (~5G avail on idc3). Fixed SSOT drift (fleet said idc03 cap 2) + runner-cap.sh local-host path. Runbook:
     docs/ssot/jobs/kanban/2026-10-27-runner-cap-audit-idc.yml'
+- at: 2026-10-27 05:39
+  from: idc02
+  text: 'finished (ok): exit=0 ps; board comment posted, runner-agent unit tests pass, outcome written to `dispatch-outcome-20261027-053657-rais'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ps; board comment posted, runner-agent unit tests pass, outcome written to `dispatch-outcome-20261027-053657-raise-kanban-dispatch-parallel.md`.
+    | devin-task-20261027-053657-raise-kanban-dispatch-parallel.service: Consumed 10.149s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
