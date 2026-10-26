@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-doc
 title: 'DevNest free-lane pilot 1/3: docs/config change on OpenCode flash-lite'
-column: doing
-updated: 2026-10-26 17:47
+column: review
+updated: 2026-10-26 17:48
 brief: Supervised pilot job — write a small deterministic docs artifact on the free OpenCode lane; matched against
   devin-lane run devnest-free-pilot-doc.
 priority: medium
@@ -42,11 +42,15 @@ action:
   host: tony-dell
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
-  status: running
+  status: done
   runner: tony-dell
   sweep:
     stale_running: 2026-10-26 17:46
     verify_hold: 2026-10-26 17:46
+  result: 'exit=0 :"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-doc-1793011363.service: Consumed 13.326s CPU time over 36.012s wall clock time,
+    542.1M memory peak.'
+  verified: false
 comms:
 - at: 2026-10-26 16:51
   from: devin
@@ -77,3 +81,9 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-doc-1793011363,
     branch dispatch/devnest-fl-pilot-doc-1793011363 on tony-dell'
+- at: 2026-10-26 17:48
+  from: tony-dell
+  text: 'finished (ok): exit=0 :"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | '
+review_kind: verify
+claim: {}
