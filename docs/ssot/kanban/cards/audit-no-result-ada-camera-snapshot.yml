@@ -1,7 +1,7 @@
 id: audit-no-result-ada-camera-snapshot
 title: 'Ada session audit: no_result:ada_camera_snapshot (2d seen)'
-column: backlog
-updated: 2026-10-26 17:28
+column: doing
+updated: 2026-10-26 17:36
 brief: 'Recurring session-audit signature ''no_result:ada_camera_snapshot'': ada_camera_snapshot call got no result
   in-window — 1x on 2026-10-14, seen on 2 day(s).'
 priority: medium
@@ -33,6 +33,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:36
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
