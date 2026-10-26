@@ -1,0 +1,90 @@
+# DevNest publication adapter layer (card devnest-publication-adapter-layer / OPS-0913)
+#
+# Provider-neutral publication layer over board-api: one canonical
+# PublicationEvent fans out to sink adapters. WP is only one adapter —
+# the legacy endpoints are compatibility surfaces onto the same writers,
+# and a second sink (json ledger / mock) receives the same event.
+job: devnest-publication-adapter-layer
+date: 2026-10-26
+host: idc03 (board-api); layer is host-agnostic — state dir is portable
+unit: chaba-board-api.service
+source: scripts/board/publication.py + scripts/board/board-api.py (/publish)
+card: devnest-publication-adapter-layer
+
+event_schema:
+  required: [kind, title, source]
+  kind: progress|milestone|report|lesson|news|alert
+  refs: [project, job, card, parent]        # slugs, all optional
+  body: required for lesson|report|news
+  evidence: [links]                          # REQUIRED for news
+  confidence: observed|measured|verified     # public news needs verified
+  visibility: private|members|public         # private-first default
+  audience: [list]
+  media: [artifact refs]
+  occurred_at: ISO-8601 (default now)
+  event_id: evt-<sha1> (default derived)
+  idempotency_key: explicit or deterministic (same logical event dedupes)
+  sinks: explicit subset or kind defaults
+  force: bypass noise policy (never visibility)
+  meta: provider extras (job_status, topic, level, report_slug,
+    tg_thread_id, host, pack, runner, lesson_source, no_th)
+
+kind_to_sinks:
+  progress: [job, board]                # heartbeat-class: throttled, never TG
+  milestone: [job, board, telegram]
+  report: [report, board]               # project dossier (ada-cms note)
+  lesson: [lesson]                      # Education CPT — reusable knowledge
+  news: [news, board, telegram]         # WP news CPT; members=private post,
+                                        # public=publish status
+  alert: [telegram, board, job]
+
+sink_surfaces:
+  # eligibility: rank(event.visibility) >= rank(sink.surface)
+  job: members       # nest_job — live execution state (via do_job)
+  lesson: members    # WP lesson CPT (via do_lesson, auto-Thai)
+  report: members    # ada-cms-pages dossier note (via do_report)
+  news: members      # WP news CPT; escalates to publish only when the
+                     # event asks public AND confidence=verified
+  telegram: members  # devnest-tg-relay /send — concise same-topic notes
+  board: private     # card comms — operational audit (needs card ref)
+  json: private      # JSONL ledger — second-sink proof / spool
+
+guards:
+  idempotency: delivered.json keyed by idempotency_key; a retried POST
+    returns stored receipts with deduped:true, no re-delivery
+  outbox: outbox.jsonl retry 30s*2^n <=30m, dead-letter after 5 attempts;
+    piggyback drain on every /publish + {op:"drain"}
+  capability: per-sink surface/kinds/evidence gates; {op:"sinks"} reports
+  noise: progress 15m per (sink,topic); telegram 10m/topic floor;
+    identical alert 60s — 'do not publish every heartbeat'
+  visibility: private events only reach private surfaces (board+json);
+    members adds WP-private/TG; public adds publish-status surfaces
+
+compatibility: >-
+  /job /lesson /report /comment unchanged — they ARE the compatibility
+  adapters: /publish routes the canonical event through the same
+  do_job/do_lesson/do_report functions, so provider logic exists once.
+  nest_job meta gained an allowlisted event_id key for traceability.
+
+locks: >-
+  /publish serializes under WP_LOCK with the other remote endpoints;
+  the board sink takes the card LOCK nested inside (order is always
+  WP_LOCK->LOCK, never reversed, so no deadlock cycle).
+
+state_dir: ~/.local/state/board-api-publish/ ($BOARD_API_PUB_STATE)
+  files: [delivered.json, events.jsonl, outbox.jsonl, dead.jsonl,
+    noise.json, published.jsonl]
+env: [PUB_TELEGRAM_URL, PUB_PROGRESS_MIN_S, PUB_TG_MIN_S, PUB_ALERT_MIN_S]
+
+tests: tests/board/test_publication.py  # 29 tests incl. mock sink parity
+selftest: python3 scripts/board/board-api.py --selftest  # /publish block
+verification:
+  - unittest 29/29 (schema, routing, visibility, idempotency, outbox,
+    noise, board-api wiring incl. wp+json parity on the same event)
+  - selftest ok — progress event -> FakeWP /wp/v2/nest_job AND
+    published.jsonl carrying the identical canonical event
+  - private event -> job sink skipped 'visibility', json delivered
+  - dead telegram relay -> receipt queued + outbox.jsonl entry
+deploy_note: >-
+  Lands with the normal served-checkout sync + unit restart on idc03 —
+  no WP plugin bump needed (all CPTs it touches already exist).
