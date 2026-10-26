@@ -1,6 +1,6 @@
 id: merge-sweep-resurrects-closed-cards
 title: merge-sweep rewrites done cards back to doing (field-ownership violation)
-column: doing
+column: review
 updated: 2026-10-26 09:09
 spec: 'Observed 2026-10-26 on nest-node-hardware: auto-merged + auto-closed at 07:16, then the 07:31 stale-session
   merge-sweep pass rewrote column=doing, action.status=running with a session_gone sweep note. The work was verified
@@ -11,8 +11,12 @@ spec: 'Observed 2026-10-26 on nest-node-hardware: auto-merged + auto-closed at 0
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261026-085822-observed-2026-10-26-on-nest-no.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261026-085822-observed-2026-10-26-on-nest-no.service:
+    No such file or directory'
+  verified: true
 ref: KNB-0893
 comms:
 - at: 2026-10-26 08:29
@@ -42,3 +46,9 @@ comms:
     is expected post-delivery, they route to drain_verified which now also respects deliberate reopen markers (moved
     done->, lifecycle bounce) so it repairs only UNMARKED union-merge/stale-write regressions; (3) sweep stamps
     no longer bump `updated` (touch=False) so a bookkeeping write can'
+- at: 2026-10-26 09:09
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261026-085822-observed-2026-10-26-on-nest-no.service:
+    Failed to ope'
+review_kind: verify
+claim: {}
