@@ -1,7 +1,7 @@
 id: devnest-tg-command-router
 title: Add DevNest Telegram card-explain and approval routing
-column: review
-updated: 2026-10-26 18:39
+column: done
+updated: 2026-10-26 18:46
 brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
   through board-api.'
 priority: high
@@ -96,6 +96,9 @@ comms:
 - at: 2026-10-26 18:39
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: tg-live-smoke
   ask: 'Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA group please send: explain
@@ -112,3 +115,7 @@ requests:
 review_kind: verify
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 18:46
+  note: verified — evidence checks green, closing itself
