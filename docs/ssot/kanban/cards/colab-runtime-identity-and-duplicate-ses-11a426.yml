@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-26 15:14
+updated: 2026-10-26 15:24
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -69,6 +69,10 @@ comms:
 - at: 2026-10-26 15:14
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 15:24
+  from: devin
+  text: 'raised request what-hard-runtime-limit-should-any-futur-4feda6: What hard runtime limit should any future
+    automatic Colab lifecycle control enforce? Please specify maximum hours and wh'
 requests:
 - id: which-control-boundary-do-you-want-for-t-3ffc0d
   ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
@@ -86,4 +90,14 @@ requests:
     no new compute spend).
   answer: Investigate officially supported runtime auto-start/stop; only control a managed runtime and require a
     max session duration/budget before any live start/stop.
+- id: what-hard-runtime-limit-should-any-futur-4feda6
+  ask: What hard runtime limit should any future automatic Colab lifecycle control enforce? Please specify maximum
+    hours and whether paid compute is allowed.
+  status: open
+  at: 2026-10-26 15:24
+  from: devin
+  options:
+  - Manual T4 start only (no automatic runtime creation or stop).
+  - Auto-start/stop only with a hard cap; specify max hours and compute budget.
+  - Prefer a self-managed GPU worker instead of Colab.
 awaiting_action: true
