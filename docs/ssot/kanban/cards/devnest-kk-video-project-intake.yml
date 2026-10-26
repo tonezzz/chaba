@@ -146,6 +146,10 @@ comms:
   text: 'AUDIO GATE ANSWERED: Thai narration + Thai and English subtitles. Preview pack prepared at `packs/preview-plan.yml`;
     nest_job post 2648 created. Planned outputs: private 60–90s teaser MP4, Thai SRT, English SRT, technical/continuity
     QC report. No GPU launch or public publishing yet; next gate is pack review then private Colab preview.'
+- at: 2026-10-27 06:49
+  from: devin
+  text: 'raised request launch-private-preview: The private teaser pack is ready. May the Nest queue the Colab preview
+    (Thai narration + Thai/English subtitles) for int'
 review_kind: verify
 claim: {}
 requests:
@@ -184,3 +188,13 @@ requests:
   - Bilingual Thai/English narration + subtitles
   suggested: Thai narration + Thai and English subtitles
   answer: Thai narration + Thai and English subtitles
+- id: launch-private-preview
+  ask: The private teaser pack is ready. May the Nest queue the Colab preview (Thai narration + Thai/English subtitles)
+    for internal review? No public publishing; stop before final generation if rights/technical checks fail.
+  status: open
+  at: 2026-10-27 06:49
+  from: devin
+  options:
+  - proceed with private preview
+  - hold for further plan review
+  suggested: proceed with private preview
