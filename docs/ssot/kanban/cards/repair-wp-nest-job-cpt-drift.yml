@@ -1,7 +1,7 @@
 id: repair-wp-nest-job-cpt-drift
 title: Repair live WP nest_job CPT/API drift
 column: doing
-updated: 2026-10-26 18:59
+updated: 2026-10-26 19:02
 brief: Restore the WP nest_job CPT/API required for DevNest and Colab job publishing without breaking existing CPTs.
 priority: high
 program: devnest
@@ -43,3 +43,19 @@ comms:
   from: devin
   text: 'Dispatch started: investigating nest_job REST 404 drift — will compare live /wp/v2/types vs integrations/wp-boards/chaba-boards.php
     and board-api /job contract.'
+- at: 2026-10-26 19:02
+  from: devin
+  text: 'raised request live-chaba-boards-plugin-is-v0-7-x-wp-v2-0dc69c: Live chaba-boards plugin is ~v0.7.x — /wp/v2/nest_job
+    AND /wp/v2/activity 404 (v0.8.0+v0.9.0 never deployed; KNB-0659 ve'
+requests:
+- id: live-chaba-boards-plugin-is-v0-7-x-wp-v2-0dc69c
+  ask: 'Live chaba-boards plugin is ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity 404 (v0.8.0+v0.9.0 never deployed;
+    KNB-0659 verified v0.3.3 only). Repair zip ready: integrations/wp-boards/dist/chaba-boards-0.9.0.zip (adds activity+nest_job
+    CPTs, preserves all existing CPTs/private model, flush_rewrite_rules on version bump only). Deploy to live WP?'
+  status: open
+  at: 2026-10-26 19:02
+  from: devin
+  options:
+  - proceed — run deploy-plugin-zip.sh from omen now ★
+  - I will upload the zip via wp-admin/Plesk myself
+  - hold — do not deploy yet
