@@ -37,8 +37,10 @@ wrappers:
   type: stdio
   target_host: tony_dell
   description: SSH bridge to mcp-focus server on tony-dell
-  status: active
+  status: retired
   server: mcp-focus
+  note: Retired 2026-10-26 (dead-mcp-servers-triage) — superseded by board-api /inbox
+    intake; the same mcp_focus tool is still served by mcp-debug.
 - name: mcp-workflows-podman-ssh
   file: ~/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
   type: stdio
@@ -47,8 +49,10 @@ wrappers:
   container: workflows-mcp
   podman_service: workflows-mcp.service
   description: SSH bridge to the persistent workflows-mcp container on tony-dell; connects via podman exec
-  status: active
+  status: retired
   server: workflows
+  note: Retired 2026-10-26 (dead-mcp-servers-triage) — container/image/unit gone on
+    all hosts; zero consumers.
 - name: mcp-single-instance
   file: ~/.config/devin/mcp-scripts/mcp-single-instance.sh
   type: supervisor
@@ -103,23 +107,35 @@ wrappers:
   target_host: local
   description: Switches Devin MCP profile between home and mobile
   status: active
+- name: mcp-docs-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-docs-ssh.sh
+  type: stdio
+  target_host: local
+  description: Local @arabold/docs-mcp-server stdio launcher (chaba docs index)
+  status: retired
+  server: docs
+  note: Retired 2026-10-26 (dead-mcp-servers-triage) — crashes on Playwright
+    auto-install; mddb + ssot-search cover the corpus.
 - name: mcp-notebooklm-ssh
   file: ~/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
   type: stdio
-  target_host: tony_dell
+  target_host: mn01
   persistent: true
   container: notebooklm-mcp
   podman_service: notebooklm-mcp.service
-  description: SSH bridge to the persistent notebooklm-mcp container on tony-dell; connects via podman exec
+  description: SSH bridge to the persistent notebooklm-mcp container on mn01; connects via podman exec
   status: active
   server: notebooklm
+  note: Repointed tony-dell -> mn01 2026-10-26 (dead-mcp-servers-triage); the dell
+    quadlets (notebooklm-mcp, notebooklm-rest) were masked — they lived in
+    migrated-off/ but the quadlet generator still scanned them and crash-looped.
 - name: mcp-notebooklm
   file: ~/.config/devin/mcp-scripts/mcp-notebooklm.sh
   type: stdio
-  target_host: tony_dell
+  target_host: mn01
   persistent: true
   container: notebooklm-mcp
   podman_service: notebooklm-mcp.service
-  description: Local podman exec bridge to the notebooklm-mcp container on tony-dell
+  description: NotebookLM bridge; content ssh-execs to mn01 (container only exists there)
   status: active
   server: notebooklm
