@@ -109,6 +109,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261026-070642-installer-v2-keyless-enroll-en no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-070642-installer-v2-keyless-enroll-en on
+    idc02 — if the work was never pushed it may be gone'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -153,6 +157,7 @@ action:
   verified: true
   sweep:
     close_held: 2026-10-26 07:31
+    stale_running: 2026-10-26 09:01
 review_kind: verify
 claim: {}
 auto_close:
