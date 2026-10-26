@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
 column: review
-updated: 2026-10-26 17:01
+updated: 2026-10-26 17:06
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -75,6 +75,12 @@ comms:
 - at: 2026-10-26 17:01
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''supervised-pilot-queue''] block close)'
+- at: 2026-10-26 17:06
+  from: tony
+  text: 'answered supervised-pilot-queue: queue all three on tony-dell now — I am watching'
+- at: 2026-10-26 17:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -83,11 +89,13 @@ action:
     queued. | devin-task-20261026-164611-pilot-classes-1-docs-config-ch.service: Consumed 46.102s CPU time, 143.1M
     memory peak, 0B memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-10-26 17:01
 requests:
 - id: supervised-pilot-queue
   ask: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report, pinned host=tony-dell, lane=free_lane).
     Queue them now under supervision, or hold?
-  status: open
+  status: answered
   at: 2026-10-26 16:55
   from: devin
   options:
@@ -95,5 +103,7 @@ requests:
   - queue doc first, then the others after it passes
   - hold — enable later
   suggested: queue all three on tony-dell now — I am watching
+  answer: queue all three on tony-dell now — I am watching
 review_kind: verify
 claim: {}
+awaiting_action: true
