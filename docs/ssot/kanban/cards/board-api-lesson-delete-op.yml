@@ -1,7 +1,7 @@
 id: board-api-lesson-delete-op
 title: 'board-api: add /lesson delete op (guarded) — junk probes can''t be removed via the door'
-column: backlog
-updated: 2026-10-26 08:29
+column: doing
+updated: 2026-10-26 08:46
 brief: The /lesson door supports upsert/touch/list/get but NOT delete. Two junk probe lessons (id 2259, 2261) can't
   be removed via the door; direct WP DELETE is blocked by Cloudflare (403 code 1010).
 priority: medium
@@ -28,7 +28,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:46
+  from: idc02
+  text: claimed
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
