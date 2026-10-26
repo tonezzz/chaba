@@ -1,7 +1,7 @@
 id: devnest-topic-project-routing
 title: Route DevNest Supergroup topics to projects and lanes
-column: doing
-updated: 2026-10-26 19:23
+column: review
+updated: 2026-10-26 19:24
 brief: Use Telegram forum topics as the human follow-up surface for multiple DevNest projects without making Telegram
   the source of truth.
 priority: high
@@ -48,7 +48,17 @@ comms:
     bindings, forum_topic_* events self-register, unknown threads quarantined, PDF intake creates+binds project
     topic (manual-instruction fallback), same-topic PDF attaches to bound project, /send routes by project/card
     and mirrors only milestones to General, deleteForumTopic hard-'
+- at: 2026-10-26 19:24
+  from: idc02
+  text: 'finished (ok): exit=0  restart `devnest-tg-relay.service`, create/rename the permanent topics, and resend
+    the KK PDF in Inbox. | devin-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0  restart `devnest-tg-relay.service`, create/rename the permanent topics, and resend the KK PDF
+    in Inbox. | devin-task-20261026-190844-add-a-durable-topic-registry-f.service: Consumed 37.311s CPU time, 91.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
