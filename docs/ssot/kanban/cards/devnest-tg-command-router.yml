@@ -1,7 +1,7 @@
 id: devnest-tg-command-router
 title: Add DevNest Telegram card-explain and approval routing
 column: doing
-updated: 2026-10-26 17:29
+updated: 2026-10-26 17:32
 brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
   through board-api.'
 priority: high
@@ -50,6 +50,13 @@ comms:
   from: devin
   text: 'raised request tg-live-smoke: Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA
     group please send: explain 0905 (expect s'
+- at: 2026-10-26 17:32
+  from: devin
+  text: 'DONE + DEPLOYED on idc03. devnest-tg-relay now routes board commands: explain|status <ref|id> -> deterministic
+    summary (status/phase/verified/next/ask) via board-api GET /cards; APPROVE/REJECT gated to TELEGRAM_APPROVER_IDS
+    -> /respond (open ask/1 request) or /action close|hold (review). Unknown/ambiguous refs refused + audit.jsonl.
+    Verified: pytest 19/19; organic live proof — your explain 0905 (update 954573590) answered in-group at 17:30;
+    harmless fixture APPROVE OPS-0912 refused+audited. Bran'
 requests:
 - id: tg-live-smoke
   ask: 'Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA group please send: explain
