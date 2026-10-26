@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: doing
 priority: medium
 created: 2026-10-10
-updated: 2026-10-26 07:18
+updated: 2026-10-26 07:24
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -53,6 +53,13 @@ comms:
   from: devin
   text: 'raised request need-a-new-dns-capable-cloudflare-token-15edf9: Need a new DNS-capable Cloudflare token
     — the cfat_ token is dead on all hosts (verify=Invalid API Token; same fingerpri'
+- at: 2026-10-26 07:24
+  from: devin
+  text: 'LIVE+verified: POST https://api.surf-thailand.com/enroll {hostname,lan_ip,tailnet_ip,role} -> 200 + host_online
+    ops-event in ada-ha-events-tony (stick-announce contract) + nodes.json registry on idc03 input-bridge. Installer
+    script v2 report-backs post-tailscale (deployed to edge /data). app. site block also wired (308 redirects OK)
+    — only the A record is missing: board request needs a dashboard-minted DNS token (cfat_ dead everywhere). Then
+    scripts/ops/cf-dns-upsert.sh finishes it.'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
