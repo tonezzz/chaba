@@ -1,7 +1,7 @@
 id: gaussian-splatting-nest-video-poc
 title: Prototype Gaussian splat scene render for Ada Nest video lane
 column: backlog
-updated: 2026-10-25 17:11
+updated: 2026-10-26 11:19
 spec: Research and prototype the smallest useful Gaussian-splatting lane for Ada Nest video generation. First render
   a known small PLY scene; then run one photo/video reconstruction on Colab using the existing nest-pack contract.
   Publish a PLY plus orbit MP4 and timing/VRAM report to durable Drive storage. Evaluate whether the rendered scene
@@ -32,3 +32,9 @@ comms:
     fix and corrected report formatting; commit 8eb6bc254, queued as gaussian-splat-edu-smoke-v2. No competing code
     edit detected in this worktree; other gaussian entries are board/API history, while this branch owns the pack
     files.'
+- at: 2026-10-26 11:19
+  from: devin
+  text: '[status 2026-10-26] Colab `gaussian-splat-edu-smoke-v2` has a viewable synthetic Gaussian shell PNG and
+    48-frame 640x384 MP4; report: 4.57s render, 0.02GB peak CUDA. This validates the smoke renderer only, not the
+    planned real PLY/photo reconstruction or LTX scene plate. The real-scene step still needs a Colab window and
+    should stay behind its declared stop/spend gate.'
