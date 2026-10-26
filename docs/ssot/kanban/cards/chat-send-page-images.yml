@@ -1,7 +1,7 @@
 id: chat-send-page-images
 title: chat_send page= mode — attach all CMS page images server-side
 column: doing
-updated: 2026-10-26 18:45
+updated: 2026-10-26 19:07
 brief: 'Prod probe 2026-10-12: Kaewta nondeterministically handles photo asks — sometimes cms_read+image_url+deliver,
   sometimes invents URLs (surf-thailand.com/kk/..., unsplash → all 404), sometimes text-only phantom sends naming
   the page. Instruction-level fixes (identity rules, tool-doc verbatim clause, page self-instructions) help but
@@ -38,6 +38,13 @@ comms:
     + relay /send paths. Design: page= on chat_send → cms_get_page → extract ![]() + img src urls → resolve vs LINE_URL_BASE
     → batch image_urls[] on relay /send (chunked 5-msg pushes) w/ per-URL sent/failed report; tg gets image_urls
     loop, web loops per-URL. Building now.'
+- at: 2026-10-26 19:07
+  from: devin
+  text: 'staged as ada-voice drop 15 (base main@56c67c1): chat_send page=<slug> -> cms_get_page -> _page_image_urls
+    (md + <img>, site-relative vs LINE_URL_BASE, cap ADA_CHAT_PAGE_IMG_MAX=10) -> POST /send image_urls batch; relay
+    turns each URL into its own bubble, chunks >5-msg pushes (kills the msgs[:5] silent tail-drop), reports images:[{url,ok,status}]
+    per asset -> note says sent N/M + failed urls. tg gets same contract (send_photo returns bool), web loops per-asset,
+    image_url untouched. Verified: new'
 action:
   type: dispatch
   status: running
