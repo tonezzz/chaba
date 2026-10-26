@@ -1,7 +1,7 @@
 id: dispatch-test-baseline-awareness
 title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
 column: doing
-updated: 2026-10-26 08:29
+updated: 2026-10-26 08:36
 brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
   gate compare base vs branch or support explicit docs-only expected goals.
 priority: high
@@ -33,6 +33,12 @@ comms:
 - at: 2026-10-26 08:29
   from: chaba
   text: started devin-task-20261026-082932-reproduce-tests-ada-test-tg-fo on tony-macbook (dispatch)
+- at: 2026-10-26 08:36
+  from: devin
+  text: 'reproduced: test_forwarded_document_described fails with identical UnboundLocalError(turn_ok) @ tg_relay.py:1216
+    on origin/master (9e70ccc) and on a README-marker merged tree. Found gate gap: -x failfast + equality compare
+    suppresses NEW failures that sort after a pre-existing one — implementing enumerated-failure + focused-baseline
+    compare.'
 action:
   repo: chaba
   type: dispatch
