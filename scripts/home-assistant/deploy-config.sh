@@ -25,7 +25,7 @@ while [ $# -gt 0 ]; do
 done
 [ -n "$HOST" ] || { echo "usage: deploy-config.sh --host dev|ha|all [--check]"; exit 2; }
 
-DEV_CONFIG_SSH='tony-dell:/home/tony/.config/michael-dev/'
+DEV_CONFIG_SSH='idc02:/home/tony/.config/michael-dev/'
 HA_CONFIG_SSH='michael-ha:/config/'
 # dev is reached over ssh because this script may run from any host
 

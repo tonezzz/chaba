@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
-DEV_URL="https://tony-dell.taila0626a.ts.net:8124"
+DEV_URL="https://idc02.taila0626a.ts.net:8124"
 HA_URL="http://michael-ha:8123"
 DASH="tony-test"
 VIEW="${1:?usage: promote-view.sh <view> [--map ...] [--first|--after <path>] [--no-commit]}"

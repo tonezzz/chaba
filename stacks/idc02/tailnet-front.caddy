@@ -13,7 +13,8 @@
 #   shadow ports — bound to the tailnet IP only, SAME port numbers as dell
 #           so consumers change just the hostname (http on wireguard is
 #           already encrypted; upstreams stay https). 8123=tony-ha,
-#           8124=tony-test, 8125=ada-ha, 8444/8446=serve mounts
+#           8124=REMOVED 2026-10-26 (michael-dev moved to idc02 — tailscale
+#           serve owns :8124 now), 8125=ada-ha, 8444/8446=serve mounts
 #           (:9005/:9101), 9230=input-bridge, 3002=monitoring-dashboard.
 
 http://:8088 {
@@ -45,13 +46,9 @@ http://:8123 {
 	}
 }
 
-http://:8124 {
-	bind 100.123.163.11
-	# michael-dev on idc03 (migrated 2026-10-09; was tony-test on dell)
-	reverse_proxy https://idc03.taila0626a.ts.net:8124 {
-		header_up Host idc03.taila0626a.ts.net
-	}
-}
+# http://:8124 shadow removed 2026-10-26 — michael-dev moved to idc02;
+# tailscale serve --https=8124 on idc02 fronts 127.0.0.1:8124 (would
+# conflict with this bind).
 
 http://:8125 {
 	bind 100.123.163.11

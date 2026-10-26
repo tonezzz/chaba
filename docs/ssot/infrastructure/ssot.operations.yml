@@ -80,7 +80,7 @@ checklists:
         must: true
       - id: mcp.devin
         label: Verify Devin MCP tools
-        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc03:9585) does not list tools, restart the HA container on that host and retry.
+        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc02:9585) does not list tools, restart the HA container on that host and retry.
         ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
         must: true
       - id: services.start
@@ -392,7 +392,7 @@ host_notes:
       - Re-run mcp-health; compare against pre_shutdown snapshot.
       - >-
         Verify Devin MCP server endpoints; mcp_list_tools for tony-ha (tony-omen:9584),
-        michael-dev (idc03:9585), michael-ha (100.80.105.88:9584), and all other servers.
+        michael-dev (idc02:9585), michael-ha (100.80.105.88:9584), and all other servers.
         Restart the HA container on its current host if the MCP port is not listening.
     refs:
       - docs/ssot/infrastructure/ssot.tony-dell-failover.yml

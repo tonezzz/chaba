@@ -15,7 +15,7 @@ runbooks:
     - Insert a new view object with title and path in the desired order
     - Set the new tab at index 0 if it should be the first tab
     - Restart Home Assistant or reload Lovelace if needed
-    - Verify at https://tony-dell.taila0626a.ts.net:8124/tony-test/<path>
+    - Verify at https://idc02.taila0626a.ts.net:8124/tony-test/<path>
     snapshot_when_done: copy the updated .storage file to docs/home-assistant/dashboards/tony-test-current.json
   copy_card_to_tab:
     purpose: Copy an existing card configuration into another tab.
@@ -45,7 +45,7 @@ runbooks:
       (the file exports HASS_TOKEN)'
     - Write a small mutate script defining mutate(config) that edits the views/cards
       dict in place
-    - Run python3 scripts/home-assistant/push-dashboard.py https://tony-dell.taila0626a.ts.net:8124
+    - Run python3 scripts/home-assistant/push-dashboard.py https://idc02.taila0626a.ts.net:8124
       tony-test --mutate /tmp/mutate.py
     - The script fetches lovelace/config, applies mutate(), and calls lovelace/config/save;
       the frontend refreshes automatically
@@ -292,7 +292,7 @@ runbooks:
       token for michael-ha REST+websocket
     - ~/.local/share/home-assistant-michael/ha-token went stale 2026-09-08 (auth_invalid)
       — prefer ha-michael-live.env; regenerate if both fail
-    - ~/.config/secrets/ha-michael-dev.env (HASS_TOKEN) works for michael-dev on https://tony-dell.taila0626a.ts.net:8124
+    - ~/.config/secrets/ha-michael-dev.env (HASS_TOKEN) works for michael-dev on https://idc02.taila0626a.ts.net:8124
   bundle_parity_worktrees:
     purpose: Avoid deploying a main build that is OLDER than a host's live bundle.
     steps:
@@ -488,14 +488,14 @@ runbooks:
       0.0.0.0 --directory /tmp'
     - Write /tmp/creds.js with window.__HA_CREDS = {u:'nakva', p:'<PASSWORD>'}; use
       the password from credentials.json
-    - Create a playlive headless session and navigate to https://tony-dell.taila0626a.ts.net:8124/tony-test/wide
+    - Create a playlive headless session and navigate to https://idc02.taila0626a.ts.net:8124/tony-test/wide
     - 'Inject the creds script: document.head.appendChild(document.createElement(''script'')).src
       = ''http://<lan-ip>:8898/creds.js'''
     - Fill username/password using native HTMLInputElement value setter, dispatch
       input/change, then click the 'Log in' ha-button
     - Set input[type='checkbox'].checked = true (Keep me logged in) before clicking
       Log in
-    - Wait for the page to load; the Wide view renders at https://tony-dell.taila0626a.ts.net:8124/tony-test/wide
+    - Wait for the page to load; the Wide view renders at https://idc02.taila0626a.ts.net:8124/tony-test/wide
     - Use playlive_screenshot to capture the viewport; scroll with window.scrollTo(0,N)
       for lower content
     - Stop the http server and delete /tmp/creds.js immediately after

@@ -522,8 +522,8 @@ tony-dell:
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
-    host: idc03   # migrated tony-dell -> idc03 2026-10-09; entry kept here for anchor stability
-    network: podman bridge (PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.102.134.91:9585)
+    host: idc02   # migrated tony-dell -> idc03 2026-10-09 -> idc02 2026-10-26; entry kept here for anchor stability
+    network: podman bridge (PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.123.163.11:9585)
     port: 8124
     host_port: 127.0.0.1:8124
     quadlet:
@@ -542,13 +542,13 @@ tony-dell:
       secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-      tailnet_url: http://idc03:9585/private_B3WMIAChoseTpDS7fwgwRw
+      tailnet_url: http://idc02:9585/private_B3WMIAChoseTpDS7fwgwRw
     caddy:
       note: Not used — HA UI uses absolute redirects that break a path-prefixed reverse proxy. Direct port 8124 is used.
-    health_check: ssh idc03 curl -sf http://127.0.0.1:8124/ >/dev/null
+    health_check: ssh idc02 curl -sf http://127.0.0.1:8124/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
-    note: "Dev staging container for michael-ha. Runs on idc03 podman bridge; UI 127.0.0.1:8124 (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF), MCP 9585 on tailnet IP + loopback (published 2026-10-26)."
+    note: "Dev staging container for michael-ha. Runs on idc02 podman bridge (moved from idc03 2026-10-26, capacity-move-michael-dev); UI 127.0.0.1:8124 (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF), MCP 9585 on tailnet IP + loopback."
   go2rtc:
     service: go2rtc.service
     host: tony_dell
