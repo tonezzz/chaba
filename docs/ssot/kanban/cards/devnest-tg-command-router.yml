@@ -1,7 +1,7 @@
 id: devnest-tg-command-router
 title: Add DevNest Telegram card-explain and approval routing
-column: doing
-updated: 2026-10-26 17:32
+column: review
+updated: 2026-10-26 17:34
 brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
   through board-api.'
 priority: high
@@ -24,8 +24,12 @@ spec: Implement the next OPS-0905 slice in the chaba repo. The DevNest Telegram 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 sh-safe until merge, and card request `tg-live-smoke` stays open for Tony''s organic APPROVE confirmation.
+    | devin-task-20261026-171856-implement-the-next-ops-0905-sl.service: Consumed 41.551s CPU time, 1.6G memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0911
 comms:
 - at: 2026-10-26 17:18
@@ -57,6 +61,10 @@ comms:
     -> /respond (open ask/1 request) or /action close|hold (review). Unknown/ambiguous refs refused + audit.jsonl.
     Verified: pytest 19/19; organic live proof — your explain 0905 (update 954573590) answered in-group at 17:30;
     harmless fixture APPROVE OPS-0912 refused+audited. Bran'
+- at: 2026-10-26 17:34
+  from: idc02
+  text: 'finished (ok): exit=0 sh-safe until merge, and card request `tg-live-smoke` stays open for Tony''s organic
+    APPROVE confirmation. | devin'
 requests:
 - id: tg-live-smoke
   ask: 'Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA group please send: explain
@@ -69,3 +77,5 @@ requests:
   - confirmed — replies arrived
   - something looks wrong
   - send later
+review_kind: verify
+claim: {}
