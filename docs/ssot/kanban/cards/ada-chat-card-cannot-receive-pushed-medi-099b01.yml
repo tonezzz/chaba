@@ -1,7 +1,7 @@
 id: ada-chat-card-cannot-receive-pushed-medi-099b01
 title: ada-chat-card cannot receive pushed media (no chat_id bind, no chat_push render)
 column: backlog
-updated: 2026-10-18 21:28
+updated: 2026-10-26 17:27
 brief: 'tony-ha/mn-ha ChatUI (ada-chat-card.js) connects ws with only ?device_id&api_key — no channel/chat_id binding
   — and _handleControl has no chat_push case. webchat_deliver only reaches channel=web sessions (boards widget web-<member>).
   Result: nothing can push text/image/video into a household ChatUI lane; chat_send channel=web misses it entirely.
@@ -16,3 +16,9 @@ comms:
 - at: 2026-10-18 21:28
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 17:27
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
