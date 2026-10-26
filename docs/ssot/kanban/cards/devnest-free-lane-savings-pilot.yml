@@ -51,7 +51,23 @@ comms:
     with field->source map (LiteLLM spend delta, tokens, wall, gate, intervention min, merge, escalation), Devin-baseline
     comparison. 3 cards created in BACKLOG not queued: devnest-fl-pilot-{doc,code,report}, action.host=tony-dell,
     action.lane+model pinned in YAML (cla'
+- at: 2026-10-26 16:55
+  from: devin
+  text: 'raised request supervised-pilot-queue: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report,
+    pinned host=tony-dell, lane=free_lane). Queue them'
 action:
   type: dispatch
   status: running
   runner: idc02
+requests:
+- id: supervised-pilot-queue
+  ask: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report, pinned host=tony-dell, lane=free_lane).
+    Queue them now under supervision, or hold?
+  status: open
+  at: 2026-10-26 16:55
+  from: devin
+  options:
+  - queue all three on tony-dell now — I am watching
+  - queue doc first, then the others after it passes
+  - hold — enable later
+  suggested: queue all three on tony-dell now — I am watching
