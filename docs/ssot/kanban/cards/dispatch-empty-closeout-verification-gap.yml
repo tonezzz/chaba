@@ -1,7 +1,7 @@
 id: dispatch-empty-closeout-verification-gap
 title: dispatch close-out reports ok + auto-closes on zero-commit sessions
 column: doing
-updated: 2026-10-26 09:01
+updated: 2026-10-26 09:16
 spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
   the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
   merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
@@ -47,3 +47,7 @@ comms:
     merged-but-failed/unproven withholds verified. (2) close_out treats on_first_parent heads as noop+empty_session
     — a zero-commit head can no longer stamp verified/auto-close; merge-sweep fail_attempt stamps action.sweep.zero_commit
     and requeues. (3) qc-scoreboard gained a Zero-com'
+- at: 2026-10-26 09:16
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-084910-proven-twice-on-the-same-cards no longer active on tony-dell but
+    card still says running — sweeping its branch'
