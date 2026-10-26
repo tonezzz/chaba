@@ -1,7 +1,7 @@
 id: merge-sweep-resurrects-closed-cards
 title: merge-sweep rewrites done cards back to doing (field-ownership violation)
 column: backlog
-updated: 2026-10-26 08:30
+updated: 2026-10-26 08:36
 spec: 'Observed 2026-10-26 on nest-node-hardware: auto-merged + auto-closed at 07:16, then the 07:31 stale-session
   merge-sweep pass rewrote column=doing, action.status=running with a session_gone sweep note. The work was verified
   merged — the sweep resurrected a closed card. Fix: the stale-running/session_gone sweep path must skip cards already
@@ -20,3 +20,7 @@ comms:
 - at: 2026-10-26 08:30
   from: tony
   text: queued for processing
+- at: 2026-10-26 08:36
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
