@@ -1,0 +1,26 @@
+id: devnest-topic-project-routing
+title: Route DevNest Supergroup topics to projects and lanes
+column: backlog
+updated: 2026-10-26 18:52
+brief: Use Telegram forum topics as the human follow-up surface for multiple DevNest projects without making Telegram
+  the source of truth.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- topics
+- project-routing
+spec: 'Add a durable topic registry for TG/DevNestHA. Permanent topics: General, Inbox, Control, Ops, Research,
+  Education, Archive. Project topics use `PRJ <project-id> — <short title>`. Persist message_thread_id -> project_id/card_ref/lane/visibility;
+  never infer identity from display title alone. On successful PDF intake, create a project topic via Telegram createForumTopic
+  or return a manual topic setup instruction, bind the topic to the project manifest and board card, and route all
+  project replies/notifications to that thread. Mirror only milestone summaries to General. Unknown topics are quarantined.
+  Add topic-aware tests, same-topic PDF intake, project handoff from Inbox to project topic, milestone mirror, restart
+  persistence, and rollback/no topic deletion. Keep board/project artifacts as source of truth; Telegram topics
+  are the human collaboration surface.'
+ref: OPS-0915
+comms:
+- at: 2026-10-26 18:52
+  from: tony
+  text: card captured via board-api
