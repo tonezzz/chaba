@@ -3,7 +3,7 @@ title: 'installer v2: keyless enroll endpoint (input-bridge /enroll -> node regi
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-10-26 07:05
+updated: 2026-10-26 07:06
 note: 'v1 (script at api.surf-thailand.com/install) is live+verified. v2 adds the report-back endpoint: installer
   POSTs hostname/lan/tailnet IP to a public edge endpoint -> lands in the node registry/ops feed. Same transport
   the stick-announce unit uses — could share the /enroll contract. Also: DNS record for app.surf-thailand.com needs
@@ -32,6 +32,10 @@ comms:
 - at: 2026-10-26 07:05
   from: tony
   text: queued for processing
+- at: 2026-10-26 07:06
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
