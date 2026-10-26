@@ -1,0 +1,77 @@
+title: Antigravity IDE eval — install + Google sign-in + first free-tier task (mn01)
+subtitle: kanban card eval-ide-antigravity — dispatch session 20261026-223955
+icon: target
+
+planning:
+  goal: |
+    Card spec: ~30min + Google login. 1) Download from antigravity.google, install.
+    2) Sign in with Google. 3) Run one free-tier task (small bugfix prompt on a repo).
+    4) Note quota consumption. Accept: first agent task completes + quota visible.
+    Card note: also check the `agy` CLI for headless runs (cost-bench has a native
+    agy runner). Part of OPS-0792 / ref OPS-0798.
+
+processing:
+  status: in-progress
+  last_updated: "2026-10-26"
+
+findings:
+  install:
+    ide: |
+      antigravity.google/download serves a plain tar.gz (no .deb/.rpm) for linux-x64,
+      v2.5.5-4923483625488384, ~240MB. Electron/VS Code-family build (Windsurf lineage).
+      Runs fine from an unpacked dir; binary `antigravity-ide`. Config at
+      ~/.config/Antigravity IDE/, state at ~/.antigravity-ide/ and
+      ~/.gemini/antigravity-ide/.
+    cli: |
+      https://antigravity.google/cli/install.sh installs `agy` v1.4.7 to ~/.local/bin.
+      Full-featured agent CLI: --print/--output-format stream-json, --mode, --model,
+      --dangerously-skip-permissions, --add-dir, mcp/plugin/remote-control subcommands.
+      Suitable for headless cost-bench runs.
+  signin:
+    ide_flow: |
+      "Continue with Google" -> xdg-open browser -> Google OAuth
+      (client_id 1071006060591-...googleusercontent.com, scope cloud-platform +
+      userinfo + cclog + experimentsandconfigs, redirect http://localhost:PORT/oauth-callback
+      on an ephemeral port the IDE listens on).
+    cli_flow: |
+      `agy` TUI login uses redirect_uri=https://antigravity.google/oauth-callback —
+      a REMOTE callback. The OAuth URL can be opened on ANY device; the callback
+      page returns an authorization code to paste into the CLI. Works without a
+      working browser on the host. PKCE-bound to the CLI session.
+    token_dirs: |
+      CLI: ~/.gemini/antigravity-cli/ ; IDE: ~/.gemini/antigravity-ide/ —
+      separate auth stores, so agy login does not automatically sign in the IDE.
+  quota: |
+    agy ships a quota_manager (FetchQuotaStatus -> QuotaSummaryGroup/QuotaInfo);
+    refreshes only once logged in. Quota is per-account free weekly quota on the
+    consumer tier.
+  host_blocker_mn01_chrome: |
+    google-chrome 150.0.7871.128 on mn01 (kernel 7.0.0-38, Ubuntu 26.04) cannot
+    render ANY web page: every renderer crashes instantly ("Aw, Snap! error 15",
+    crash-loop even on data: URLs). Reproduced with --no-sandbox,
+    --disable-seccomp-filter-sandbox, --disable-gpu, --single-process,
+    fresh --user-data-dir. Network/curl fine; not proxy, not QUIC, not /dev/shm.
+    Suspected kernel-7.0/Chrome-150 incompatibility (V8/sandbox). Pre-existing
+    host issue — worth its own card; Chrome Remote Desktop viewing itself works
+    (session chrome is old-session tabs only).
+    Also: ~/.config/google-chrome SingletonLock was stale from host 'tony-usb'
+    (Sep 14) — removed; profile is a synced copy with Tony's Google cookies.
+  x11_automation: |
+    No xdotool/wmctrl/xclip on mn01. python-xlib (pip --user) + XTEST worked for
+    clicks/keys; XWD + small Python parser worked for screenshots on the CRD
+    XFCE session (display :20, xauth ~/.Xauthority).
+
+status:
+  done:
+    - downloaded + installed IDE v2.5.5 and agy CLI v1.4.7
+    - IDE launched on CRD display :20, onboarding reaches Google sign-in
+    - OAuth URL extracted and posted to card; remote-callback flow identified
+    - demo repo with seeded bug prepared for the free-tier task
+  blocked_on:
+    - "Tony: open posted OAuth URL on any signed-in device, paste back the
+       authorization code (board request raised)"
+  todo:
+    - paste code into agy TUI -> verify login
+    - run agy free-tier bugfix task on demo repo
+    - read quota before/after; check IDE picks up or needs own sign-in
+    - file host card for mn01 Chrome renderer crash (pre-existing)
