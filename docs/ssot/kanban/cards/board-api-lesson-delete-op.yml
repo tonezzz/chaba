@@ -1,7 +1,7 @@
 id: board-api-lesson-delete-op
 title: 'board-api: add /lesson delete op (guarded) — junk probes can''t be removed via the door'
-column: doing
-updated: 2026-10-26 08:46
+column: review
+updated: 2026-10-26 08:47
 brief: The /lesson door supports upsert/touch/list/get but NOT delete. Two junk probe lessons (id 2259, 2261) can't
   be removed via the door; direct WP DELETE is blocked by Cloudflare (403 code 1010).
 priority: medium
@@ -34,8 +34,17 @@ comms:
 - at: 2026-10-26 08:46
   from: chaba
   text: started devin-task-20261026-084604-add-op-delete-to-do-lesson-gua on idc02 (dispatch)
+- at: 2026-10-26 08:47
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-084604-add-op-delete-to-do-lesson-gua.service:
+    Main process exited, cod'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-084604-add-op-delete-to-do-lesson-gua.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-084604-add-op-delete-to-do-lesson-gua.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
