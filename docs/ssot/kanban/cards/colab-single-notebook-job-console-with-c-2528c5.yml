@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
-column: doing
-updated: 2026-10-26 09:02
+column: review
+updated: 2026-10-26 09:04
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -85,8 +85,17 @@ comms:
     preps via QUEUE_PENDING, JOBS.py, mcp-colab colab_session_status + pack_status fix, kb + lesson 2231 updated,
     job record yml. 30/30 colab tests pass incl end-to-end drain. NOT pushed (dispatch rules) — merge-sweep lands
     the branch; then rclone-deploy the queue files to Drive (D'
+- at: 2026-10-26 09:04
+  from: mn01
+  text: 'finished (ok): exit=0 : `python3 -m unittest discover -s tests/colab`, then run cell 1 → cell 2 on a fresh
+    T4). | devin-task-20261026-0'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 : `python3 -m unittest discover -s tests/colab`, then run cell 1 → cell 2 on a fresh T4). | devin-task-20261026-014845-deliver-a-canonical-colab-note.service:
+    Consumed 39.090s CPU time over 13min 37.813s wall clock time, 202.5M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
