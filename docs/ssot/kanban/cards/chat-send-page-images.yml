@@ -1,7 +1,7 @@
 id: chat-send-page-images
 title: chat_send page= mode — attach all CMS page images server-side
 column: doing
-updated: 2026-10-26 18:41
+updated: 2026-10-26 18:45
 brief: 'Prod probe 2026-10-12: Kaewta nondeterministically handles photo asks — sometimes cms_read+image_url+deliver,
   sometimes invents URLs (surf-thailand.com/kk/..., unsplash → all 404), sometimes text-only phantom sends naming
   the page. Instruction-level fixes (identity rules, tool-doc verbatim clause, page self-instructions) help but
@@ -32,6 +32,12 @@ comms:
 - at: 2026-10-26 18:41
   from: chaba
   text: started devin-task-20261026-114100-chat-send-page-sa-beach-photos on mn01 (dispatch)
+- at: 2026-10-26 18:45
+  from: devin
+  text: 'dispatch picked up — cloned ada-voice main @56c67c1 into worktree scratch, mapped chat_send/_chat_send_run
+    + relay /send paths. Design: page= on chat_send → cms_get_page → extract ![]() + img src urls → resolve vs LINE_URL_BASE
+    → batch image_urls[] on relay /send (chunked 5-msg pushes) w/ per-URL sent/failed report; tg gets image_urls
+    loop, web loops per-URL. Building now.'
 action:
   type: dispatch
   status: running
