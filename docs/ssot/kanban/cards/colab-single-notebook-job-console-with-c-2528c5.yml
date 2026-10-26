@@ -1,7 +1,7 @@
 id: colab-single-notebook-job-console-with-c-2528c5
 title: Colab single-notebook job console with cache warmup
 column: done
-updated: 2026-10-26 18:46
+updated: 2026-10-26 19:35
 brief: 'Make Colab the one operator surface for DevNest, voice/video, eval and GPU jobs: one canonical notebook,
   clear instructions, safe runtime/session preflight, and standard cache-warmup scheduling.'
 tags:
@@ -139,6 +139,12 @@ comms:
     boot; queue heartbeat/lease remain stale, so Cell 2 did not run. All 41 valid pack manifests have done markers;
     decision-arena and jev-triage have no pack.yml and are not runnable. The e115 registry record remains within
     the 300s TTL for a short cooldown after disconnect.'
+- at: 2026-10-26 19:35
+  from: devin
+  text: 'Consumer-account improvement deployed 2026-10-26: latest preflight-cell.py + notebook are on Drive and
+    MD5-verified. Cell 1 registers the T4 and enables a boot-targeted MCP queue-start watcher; mcp-colab now offers
+    queue-start + request-status. Cell 2 remains a manual fallback. Runtime creation/stop remains manual; no queue
+    was started during deployment.'
 action:
   repo: chaba
   type: dispatch
