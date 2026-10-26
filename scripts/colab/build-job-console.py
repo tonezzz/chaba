@@ -55,13 +55,12 @@ video, DevNest, eval packs all ride the same runner in the same VM.
 """
 
 MD_CELL1 = """\
-### Cell 1 — mount Drive + register this managed runtime
+### Cell 1 — mount Drive + preflight this managed runtime
 
-Prints identity, writes/refreshes `queue/runtime-sessions/<boot_id>.json` on a
-background heartbeat, and **refuses to continue while another managed
-runtime's record is fresh** — a second console is ambiguous (it might be
-about to launch its own queue). Resolve in Runtime > Manage Sessions, or
-wait ~5 min for the peer's record to go stale.
+Checks for a fresh peer before registering this VM. If a peer is present,
+the cell refuses without leaving a heartbeat record. Otherwise it writes
+`queue/runtime-sessions/<boot_id>.json` and refreshes it on a background
+heartbeat. Resolve peers in Runtime > Manage Sessions.
 """
 
 MD_CELL2 = """\

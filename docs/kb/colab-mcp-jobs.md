@@ -17,12 +17,11 @@ markdown + exactly two code cells; there are **no per-job cells** — all
 workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
 
 - **Cell 1 — preflight** (`scripts/colab/preflight-cell.py`): mounts
-  Drive, prints identity (boot_id, GPU model/VRAM, RAM, Drive state),
-  registers the VM at `queue/runtime-sessions/<boot_id>.json` and refreshes it on
-  a 60 s background heartbeat. If ANOTHER managed runtime's record is
-  still fresh (`NEST_RUNTIME_TTL_S`, default 300 s) the cell refuses —
-  a second console is ambiguous: it might be about to launch its own
-  queue. Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and
+  Drive, checks for another fresh managed runtime, then prints identity
+  (boot_id, GPU model/VRAM, RAM, Drive state), registers this VM at
+  `queue/runtime-sessions/<boot_id>.json`, and refreshes it on a 60 s
+  background heartbeat. A refused duplicate does not register or leave a
+  heartbeat. Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and
   re-run; the queue lease then arbitrates writers.
 - **Cell 2 — launch once** (`scripts/colab/queue-launcher-cell.py`):
   gates on Drive-mounted, GPU present (CPU runtimes refuse — the queue

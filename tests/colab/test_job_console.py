@@ -134,6 +134,9 @@ class TestPreflightCell(ConsoleSandbox):
         with self.assertRaises(SystemExit) as cm:
             pc.main()
         self.assertIn("peer-other-d2d2"[:8], str(cm.exception))
+        self.assertFalse(
+            (self.q / "runtime-sessions" / f"{boot_id()}.json").exists(),
+            "a refused preflight must not leave a fresh runtime heartbeat")
 
 
 class TestLaunchGate(ConsoleSandbox):

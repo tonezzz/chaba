@@ -46,14 +46,6 @@ def main():
     print(mount_drive())
     sys.path.insert(0, Q)
     import runtime_registry as rr
-    rec = rr.register()
-    print(f"runtime: boot {rec['boot_id'][:8]}  gpu "
-          f"{rec['gpu'] or 'NONE'} {rec['gpu_gb']:.1f}GB  ram {rec['ram_gb']}GB"
-          f"  drive_mounted={rec['drive_mounted']}")
-    print(f"registered -> {Q}/runtime-sessions/{rec['boot_id']}.json"
-          f"  (heartbeat every {HB_S}s, ttl {rr.ttl_s():.0f}s)")
-    threading.Thread(target=heartbeat_loop, args=(rr,), daemon=True).start()
-
     fresh = rr.peers()
     if fresh and not ALLOW_SECOND_RUNTIME:
         names = '; '.join(rr.fmt_runtime(p) for p in fresh)
@@ -62,6 +54,15 @@ def main():
             ' — ambiguous duplicate launch. Check Runtime > Manage Sessions; '
             'to run a second VM deliberately set ALLOW_SECOND_RUNTIME = True '
             'in this cell and re-run.')
+
+    rec = rr.register()
+    print(f"runtime: boot {rec['boot_id'][:8]}  gpu "
+          f"{rec['gpu'] or 'NONE'} {rec['gpu_gb']:.1f}GB  ram {rec['ram_gb']}GB"
+          f"  drive_mounted={rec['drive_mounted']}")
+    print(f"registered -> {Q}/runtime-sessions/{rec['boot_id']}.json"
+          f"  (heartbeat every {HB_S}s, ttl {rr.ttl_s():.0f}s)")
+    threading.Thread(target=heartbeat_loop, args=(rr,), daemon=True).start()
+
     if fresh:
         print('NOTE: proceeding alongside fresh peer(s) '
               '(ALLOW_SECOND_RUNTIME): ' +
