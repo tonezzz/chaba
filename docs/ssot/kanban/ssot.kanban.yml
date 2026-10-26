@@ -457,10 +457,13 @@ execution:
                cap: pin cards via action.host or match labels —
                unpinned queued cards already flow to any host under cap
                and under its load gate."
-    runner_fleet: "as of 2026-10-10 — tony-dell: kanban-dispatch local cap 3
+    runner_fleet: "as of 2026-10-10 (idc caps re-audited live 2026-10-27,
+               card dispatch-concurrency-bump-idc — both already at 3;
+               4 refused: ~3.5GB/session vs ~5G available on idc03) —
+               tony-dell: kanban-dispatch local cap 3
                (dispatch); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
                +container+script); idc02: cap 3 labels ssd,always-on,cpu,small (dispatch
-               +container+script); idc03: cap 2 gate 0.85 labels
+               +container+script); idc03: cap 3 gate 0.85 labels
                ssd,always-on,ada,cpu,small (dispatch+container+script);
                mn01: cap 1
                labels low-mem,edge,small (dispatch+container+script — devin CLI

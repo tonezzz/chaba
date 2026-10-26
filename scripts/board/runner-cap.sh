@@ -25,7 +25,15 @@ HOST="${1:?host required}"; shift
 ACTION="${1:-show}"
 GATE="${2:-}"
 
-remote() { ssh -o ConnectTimeout=8 "$HOST" "$@"; }
+remote() {
+  # Self-ssh is often not provisioned (publickey fails on e.g. idc02);
+  # targeting the local host runs the command through bash instead.
+  if [ "$HOST" = "$(uname -n)" ] || [ "$HOST" = "localhost" ]; then
+    bash -c "$*"
+  else
+    ssh -o ConnectTimeout=8 "$HOST" "$@"
+  fi
+}
 
 if [ "$ACTION" = "show" ]; then
   remote 'systemctl --user cat runner-agent.service 2>/dev/null | grep -E "^(Environment|ExecStart)" ; awk "/MemTotal/{printf \"mem_total_gb=%.1f\n\", \$2/1048576}" /proc/meminfo; awk "{printf \"load5=%.2f ncpu=%d\n\", \$2, $(getconf _NPROCESSORS_ONLN)}" /proc/loadavg' 2>/dev/null || true

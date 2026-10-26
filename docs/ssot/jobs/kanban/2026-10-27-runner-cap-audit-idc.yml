@@ -1,0 +1,83 @@
+title: Runner-cap audit idc02/idc03 — already at 3, SSOT drift fixed
+subtitle: card asked to allow 2 concurrent card tasks/host; live caps were
+  already 3 on both; ceiling 4 refused on memory; runner-cap.sh gained a
+  local-host path
+icon: gauge
+
+context:
+  card: dispatch-concurrency-bump-idc
+  ref: OPS-0709
+  ask: "Hosts idle (4 cores, ~10G free ea). Check per-host dispatch cap in
+    kanban-dispatch/runner-agent config; bump to allow 2 concurrent card
+    tasks/host where memory allows."
+  where_caps_live: "runner-agent.py reads RUNNER_CAP (default 2) from the
+    per-host systemd user unit; overrides live in
+    ~/.config/systemd/user/runner-agent.service.d/cap.conf. Adjust via
+    scripts/board/runner-cap.sh, never hand-edit."
+
+audit_2026_10_27:
+  idc02:
+    cap: 3
+    gate: "none (RUNNER_MAX_LOAD_PC unset, default 1.0)"
+    where: "base unit Environment=RUNNER_CAP=3"
+    labels: "ssd,always-on,cpu,small"
+    mem: "15.6G total / ~8G available; load5 ~0.4-0.5 per core idle"
+  idc03:
+    cap: 3
+    gate: 0.85
+    where: "cap.conf drop-in (2026-10-09) over base RUNNER_CAP=2 — the
+      bump already existed; ssot.kanban.yml runner_fleet still said
+      'cap 2' — doc drift, fixed"
+    labels: "ssd,always-on,ada,cpu,small"
+    mem: "15.6G total / only ~5G available (board-api, ada, kanban-commit
+      co-resident); load5 ~0.4 per core idle"
+  timers: "runner-agent.timer active on both hosts (~60s cadence);
+    service is oneshot so 'inactive' between passes is normal"
+
+decision:
+  keep_cap_3: "Both hosts already exceed the card's target (2). Bump to 4
+    refused: the ~3.5GB/session rule gives a total-RAM ceiling of
+    floor(15.6/3.5)=4, but available memory is the real budget — idc03
+    has ~5G available, so a 4th session (~3.5GB) leaves ~1.5G for every
+    co-resident service. Cap 3 (~10.5G worst case) is the safe ceiling
+    on both; revisit only if idc03's resident footprint shrinks."
+  gate: "idc03's 0.85 load gate already yields the queue to idc02 when
+    loaded; idc02 ungated is fine at observed loads — its cap is the
+    limiter, which is what we want."
+
+shipped:
+  ssot_fix: "runner_fleet in ssot.kanban.yml now records idc03 cap 3
+    (was 'cap 2 gate 0.85') and the 2026-10-27 audit note."
+  runner_cap_local: "runner-cap.sh remote() now short-circuits to
+    `bash -c` when HOST is the local nodename — self-ssh is not
+    provisioned on idc02 (publickey denied), so `runner-cap.sh idc02
+    show` run on idc02 silently printed nothing before (the `|| true`
+    swallowed the error). Same code path serves `localhost`."
+
+ops:
+  adjust: "scripts/board/runner-cap.sh <host> <cap> [max-load-pc] —
+    writes the cap.conf drop-in, daemon-reloads, restarts the timer;
+    `show` prints effective env + mem + load. --force overrides the
+    floor(mem_total/3.5) ceiling. Mirror changes in runner_fleet."
+  ceiling_rule: "Ceiling is floor(mem_total_gb/3.5) but ALSO bounded by
+    available memory: cap * 3.5GB must fit inside MemAvailable with
+    headroom for co-resident services. Check `free -g` first — idc03
+    runs the board-api writer and should stay at 3."
+
+verification:
+  - "bash scripts/board/runner-cap.sh idc02 show (on idc02) — prints
+    RUNNER_CAP=3 + labels; works from both remote ssh and the host
+    itself after the local-host fix."
+  - "ssh idc03 'systemctl --user cat runner-agent.service | grep
+    Environment' — RUNNER_CAP=3 via cap.conf, RUNNER_MAX_LOAD_PC=0.85."
+  - "systemctl --user list-timers runner-agent.timer on both hosts —
+    active, ~60s cadence."
+
+lessons:
+  - "Audit live units before writing SSOT: the idc03 cap.conf existed
+    since 2026-10-09 but runner_fleet still said cap 2 — the doc
+    drifts whenever a cap is applied without the mirror step."
+  - "Total RAM overstates headroom on multi-service hosts; gate cap
+    decisions on MemAvailable, not MemTotal."
+  - "Self-ssh is not provisioned on idc hosts; ops scripts that ssh to
+    a host arg need a local-host short-circuit or they fail silently."
