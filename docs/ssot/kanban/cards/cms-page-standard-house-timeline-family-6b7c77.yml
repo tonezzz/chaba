@@ -2,11 +2,12 @@ id: cms-page-standard-house-timeline-family-6b7c77
 title: cms-page-standard + house-timeline family
 column: backlog
 updated: 2026-10-13 09:00
-brief: 'Standard CMS page/report structure for the household + house-timeline parent page aggregating per-device
-  timeline leaves. Spec (Tony 2026-10-13): report index on tony-ha at kaewta parity; documented standard for page
-  anatomy (text/media/diagram) + report quality bar; house timeline page querying lesser per-device timeline pages.
-  Deliverables: docs/kb/cms-page-standard.md, scripts/ada/house-timeline-update.py (parent house-timeline + leaf
-  house-timeline-<device> + qc leaf, mirroring timer-timeline conventions), reports-index regen.'
+brief: 'Standard CMS page/report structure for the household + house-timeline parent page aggregating
+  per-device timeline leaves. Spec (Tony 2026-10-13): report index on tony-ha at kaewta parity; documented
+  standard for page anatomy (text/media/diagram) + report quality bar; house timeline page querying lesser
+  per-device timeline pages. Deliverables: docs/kb/cms-page-standard.md, scripts/ada/house-timeline-update.py
+  (parent house-timeline + leaf house-timeline-<device> + qc leaf, mirroring timer-timeline conventions),
+  reports-index regen.'
 priority: medium
 ref: KNB-0562
 comms:
@@ -18,10 +19,20 @@ comms:
   text: 'exec+evidence 2026-10-13 — draft for review
 
 
-    1. docs/kb/cms-page-standard.md — anatomy, meta contract, quality bar, parent/leaf/qc family pattern, publish
-    gate, review checklist.
+    1. docs/kb/cms-page-standard.md — anatomy, meta contract, quality bar, parent/leaf/qc family pattern,
+    publish gate, review checklist.
 
     2. house-timeline-update.py live: 25 device leaves + rollup + qc from ada-ha-events-tony (710 events/72h/61
     docs, 0 parse failures). Pages: #/house-timeline in the CMS app; external leaves can join via meta.parent=house-timeline.
 
     3. reports-index parity: tony already has reports-index regenerating on every write — kaewt'
+- at: 2026-10-26 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Define the standard anatomy, meta contract, quality bar, parent/leaf/qc family pattern, publish
+  gate, and review checklist for cms-page-standard in docs/kb/cms-page-standard.md. Ensure alignment with
+  the house-timeline family where 25 device leaves, rollups, and qc run from ada-ha-events-tony, supporting
+  external leaves via meta.parent=house-timeline and reports-index parity on writes. Host is tony-dell
+  and repo is chaba. The done-condition is verified when docs/kb/cms-page-standard.md exists in the chaba
+  repository, explicitly documenting the standard page anatomy and the house-timeline family integration
+  contract.
