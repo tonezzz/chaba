@@ -1,7 +1,7 @@
 title: ip_cam_65 RTSP credential rotation (OPS-0858)
 date: 2026-10-26
 card: rotate-omen-rtsp-credential-exposed-in-d-596eaa
-status: blocked-on-camera-power
+status: staged-auto-finish-armed
 
 trigger:
   what: A read-only process-list diagnostic on tony-omen exposed the RTSP
@@ -30,20 +30,29 @@ done:
 
 pending:
   - >-
-    Camera is OFF THE NETWORK (absent from full-subnet ARP scan; MAC not
-    seen; 10554 closed everywhere). The camera-side password change and
-    the new-accepted/old-rejected verification cannot run until it is
+    Camera is OFF THE NETWORK (re-verified 2026-10-26 09:05 +07 after
+    Tony's "proceed": absent from fresh ARP scan of 192.168.2.0/24, MAC
+    not seen, and no host on the subnet has :10554/:81/:80 open — so it
+    did not merely change IP). The camera-side password change and the
+    new-accepted/old-rejected verification cannot run until it is
     powered back on.
   - >-
-    Once reachable, run on tony-omen:
+    AUTO-FINISHER ARMED on tony-omen: user timer
+    ipcam65-rotate-finish.timer (every 3 min, linger on) runs
+    ~/.config/go2rtc/ipcam65-rotate-finisher.sh — when :10554 answers it
+    executes the approved rotation, syncs ipcam65.env to tony-dell,
+    posts the result to the card, and disables itself. Definitive
+    failures (rc 3/4/5/6) also disable + report; expiry after 14 days.
+    Manual equivalent remains:
     ~/.config/go2rtc/rotate-ipcam65.sh
     (probes camera, sets new password via Hi3510 CGI on :81/:80, updates
     ipcam65.env, restarts both go2rtc units, verifies new cred accepted
     and old cred rejected). Until then the env file holds the old
     credential so the stream self-recovers if the camera returns first.
-  - Then update ~/.config/secrets/ipcam65.env on tony-dell with the same
-    new value (copy file over) — its go2rtc is not running but the config
-    is maintained.
+  - >-
+    If run manually instead, update ~/.config/secrets/ipcam65.env on
+    tony-dell with the same new value (copy file over) — its go2rtc is
+    not running but the config is maintained.
 
 residual_risks:
   - >-
