@@ -1,7 +1,7 @@
 id: devnest-tg-command-router
 title: Add DevNest Telegram card-explain and approval routing
 column: review
-updated: 2026-10-26 17:47
+updated: 2026-10-26 18:39
 brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
   through board-api.'
 priority: high
@@ -90,17 +90,25 @@ comms:
 - at: 2026-10-26 17:47
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''tg-live-smoke''] block close)'
+- at: 2026-10-26 18:39
+  from: tony
+  text: 'answered tg-live-smoke: confirmed — replies arrived'
+- at: 2026-10-26 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: tg-live-smoke
   ask: 'Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA group please send: explain
     0905 (expect status/phase/verified/next/ask summary) and APPROVE OPS-0912 (expect refusal, no such card). Confirm
     replies landed?'
-  status: open
+  status: answered
   at: 2026-10-26 17:29
   from: devin
   options:
   - confirmed — replies arrived
   - something looks wrong
   - send later
+  answer: confirmed — replies arrived
 review_kind: verify
 claim: {}
+awaiting_action: true
