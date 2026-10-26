@@ -1,7 +1,7 @@
 id: devnest-news-two-lane-pilot
 title: News reporter A/B pilot — Devin vs DevNest
 column: backlog
-updated: 2026-10-26 09:17
+updated: 2026-10-26 09:22
 brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
   gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
   leaves. This is an evaluation plan, not permission to publish or run paid models.
@@ -79,12 +79,20 @@ comms:
     `~/DevNest`: it is currently a browser task-triage demo, not a news reporter; the actual DevNest lane catalog
     is available but no News adapter/verifier has been built. No honest DevNest output can be claimed until that
     adapter runs. BEN-0898 remains backlog with the visibility request open; no public News writes or paid calls.'
+- at: 2026-10-26 09:22
+  from: tony
+  text: 'answered choose-news-visibility-architecture: single-cpt-status-partition — Recommended for one inspectable
+    tree: reuse the existing news CPT; external items publish, internal items stay private, and every parent inherits
+    the most restrictive chi'
+- at: 2026-10-26 09:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: choose-news-visibility-architecture
   ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
     news CPT is public and its current digest writer publishes parents, so internal facts must not be mixed into
     the public digest without a guard.
-  status: open
+  status: answered
   at: 2026-10-26 08:59
   from: devin
   options:
@@ -99,3 +107,7 @@ requests:
     label: Run the pilot on public external news only; use sanitized internal fixtures and defer internal ingestion/CPT
       choice.
   suggested: single-cpt-status-partition
+  answer: 'single-cpt-status-partition — Recommended for one inspectable tree: reuse the existing news CPT; external
+    items publish, internal items stay private, and every parent inherits the most restrictive child visibility.
+    Requires privacy-filter tests before ingestion.'
+awaiting_action: true
