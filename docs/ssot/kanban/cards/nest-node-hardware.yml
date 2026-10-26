@@ -6,27 +6,16 @@ column: backlog
 program: chaba-nest
 priority: medium
 created: 2026-10-10
-updated: 2026-10-16 05:16
+updated: 2026-10-26 07:06
 autonomy: t2
 links:
 - chaba-nest
 - nest-edge-vision
 - nest-micro-training
 - nest-io-fabric
-spec: 'Hardware tiers (see report for full matrix):
-
-  1. Vision node: Luckfox Pico Ultra W (~$35-45, RV1106G3, WiFi6, 0.5-1 TOPS NPU, CSI cam, mic, PoE option, Linux+RKNN)
-  — on-device YOLO + RTSP; luckfox-frigate-cam proves the HA path.
-
-  2. MCU vision node: ESP32-P4-EYE (~$30) — TFLite-Micro person-detect 73ms, camera+mic+display; lowest-power tier,
-  aligns with our ESP32 fleet.
-
-  3. Compute node (federation-capable): Orange Pi Zero 2W / Radxa Zero 3W — quad-A64, WiFi, Flower client + ONNX.
-
-  4. USB-cam tier for spare PCs: Logitech C920-class or Arducam IMX500 UVC AI cam (on-sensor inference) — zero new
-  host hardware, onnxruntime/opencv on the PC.
-
-  Feed-only fallback: OpenIPC/Thingino reflash on cheap T31 cams (RTSP/ONVIF, fully local).'
+spec: 'Hardware chosen per Tony: Luckfox Pico Ultra W + ESP32-P4-EYE (~$75 total) - one vision node + one MCU node.
+  Produce the order checklist + provisioning runbook (enroll path, first-boot steps, cam/mic wiring for the vision
+  node) as a doc - no purchase inside the dispatch. Done when the plan doc lands.'
 metric: One vision node + one MCU node ordered, flashed, registered to HA/Frigate + reporting a first micro-AI detection
   into Chaba (ops event or MDDB note).
 verify: Detection object from the Luckfox NPU lands in MDDB/Frigate events via tailnet; ESP32-P4 emits a person-detect
@@ -65,5 +54,14 @@ comms:
 - at: 2026-10-15 13:05
   from: tony
   text: moved doing -> backlog
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
+- at: 2026-10-26 07:06
+  from: tony
+  text: queued for processing
 ref: OPS-0437
-awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
