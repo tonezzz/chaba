@@ -1,7 +1,7 @@
 id: dispatch-test-baseline-awareness
 title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
-column: review
-updated: 2026-10-26 08:57
+column: done
+updated: 2026-10-26 09:01
 brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
   gate compare base vs branch or support explicit docs-only expected goals.
 priority: high
@@ -65,6 +65,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-082932-reproduce-tests-ada-test-tg-fo,
     branch dispatch/20261026-082932-reproduce-tests-ada-test-tg-fo'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
@@ -75,3 +78,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself
