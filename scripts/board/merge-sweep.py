@@ -529,9 +529,17 @@ def api_post(path: str, body: dict) -> dict:
         return {"error": f"{type(e).__name__}: {e}"}
 
 
-def locked_edit(cid: str, fn) -> bool:
+def locked_edit(cid: str, fn, touch: bool = True) -> bool:
     """Locked card-YAML mutation — the sweep fallback/mutation channel
-    (board-api holds the same flock for its own writes)."""
+    (board-api holds the same flock for its own writes).
+
+    touch=True bumps `updated` — use it ONLY for writes that change the
+    card's workflow state (fail_attempt, drain_verified, a request).
+    Bookkeeping writes (sweep stamps, comms) pass touch=False: on a
+    stale checkout a fabricated-newer `updated` makes this card win the
+    card-union merge driver's scalar resolution, resurrecting upstream's
+    newer column/status on the next pull (KNB-0893 — a readonly mirror's
+    session_gone stamp rewrote a done card back to doing)."""
     p = CARD_DIR / f"{cid}.yml"
     if not p.exists():
         return False
@@ -542,7 +550,8 @@ def locked_edit(cid: str, fn) -> bool:
             return False
         if fn(card) is False:
             return False
-        card["updated"] = now()
+        if touch:
+            card["updated"] = now()
         p.write_text(yaml.safe_dump(card, allow_unicode=True,
                                     sort_keys=False, width=110))
         return True
@@ -560,7 +569,7 @@ def card_note(cid: str, text: str, dry: bool) -> None:
     def add(c):
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba", "text": text[:500]})
-    locked_edit(cid, add)
+    locked_edit(cid, add, touch=False)
 
 
 def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
@@ -599,7 +608,7 @@ def stamp(cid: str, key: str, val, dry: bool) -> None:
     def add(c):
         a = c.setdefault("action", {})
         a.setdefault("sweep", {})[key] = val
-    locked_edit(cid, add)
+    locked_edit(cid, add, touch=False)
 
 
 def open_conflict_req(card: dict) -> bool:
@@ -802,7 +811,7 @@ def verify_gate(card: dict, probe: dict, repo: Path, head: str,
     ok_b, why_b = produced_work(repo, head, base_tip, m, tid)
     ok_a, why_a = unit_exit(probe, card)
     if ok_b is False:
-        return {"fail": True,
+        return {"fail": True, "zero_commit": True,
                 "why": f"no delivered work — {why_b}; unit: {why_a}"}
     if ok_a is False and not m["ancestor"]:
         return {"fail": True,
@@ -827,10 +836,13 @@ def verify_gate(card: dict, probe: dict, repo: Path, head: str,
             "why": f"{why_a}; {why_b}" + (f"; {why_c}" if why_c else "")}
 
 
-def fail_attempt(card: dict, why: str, dry: bool) -> bool:
+def fail_attempt(card: dict, why: str, dry: bool,
+                 zero_commit: bool = False) -> bool:
     """verified-gate failure: verified=False + requeue on the same
     path kanban-dispatch's merge step uses (attempts/max_attempts cap,
-    last_failure carries the evidence into the next run's RETRY_RAILS)."""
+    last_failure carries the evidence into the next run's RETRY_RAILS).
+    zero_commit stamps action.sweep.zero_commit — the QC scoreboard's
+    empty-dispatch counter reads it."""
     cid = card.get("id") or "?"
     if dry:
         print(f"  [dry] {cid}: verified gate failed — {why[:110]}")
@@ -840,6 +852,8 @@ def fail_attempt(card: dict, why: str, dry: bool) -> bool:
         a = c.setdefault("action", {})
         a["verified"] = False  # checked, and NOT verified
         a["last_failure"] = why[:280]
+        if zero_commit:
+            a.setdefault("sweep", {})["zero_commit"] = now()
         c.setdefault("claim", {}).pop("session", None)
         # attempts is counted at claim time (mark_start) — a gate failure
         # requeues while attempts_used < max_attempts (max_attempts =
@@ -1174,6 +1188,12 @@ def sweep_card(card: dict, active: dict, dry: bool,
     a = card.get("action") or {}
     cid = card.get("id") or "?"
     st = a.get("status")
+    if card.get("column") not in ("doing", "review"):
+        # terminal/out-of-scope — a closed card is never re-touched
+        # (KNB-0893: the stale-session path rewrote a done card's
+        # workflow fields; even scope-filter changes must not re-open
+        # the door)
+        return False
     if st in ("queued", "starting"):
         return False
     if st == "done" and a.get("verified") is True:
@@ -1294,7 +1314,8 @@ def sweep_card(card: dict, active: dict, dry: bool,
     g = verify_gate(card, probe, repo, head, base_tip, m, tid,
                     by_id or {cid: card})
     if g.get("fail"):
-        return fail_attempt(card, g["why"], dry)
+        return fail_attempt(card, g["why"], dry,
+                            bool(g.get("zero_commit")))
 
     def stamp_gate_result(merged_txt: str) -> bool:
         """Apply the gate verdict after a merge/already-merged check."""
@@ -1445,8 +1466,32 @@ def sweep_zombies(host_units: dict, cards_by_tid: dict,
     return flagged
 
 
+def checkout_role(repo: Path) -> str:
+    """<gitdir>/chaba-role (install-hooks.sh --role) — '' when unset."""
+    r = sh(["git", "-C", str(repo), "rev-parse", "--absolute-git-dir"],
+           timeout=15)
+    if r.returncode != 0 or not r.stdout.strip():
+        return ""
+    try:
+        return (Path(r.stdout.strip()) / "chaba-role").read_text().strip()
+    except OSError:
+        return ""
+
+
 def main() -> int:
     dry = "--dry-run" in sys.argv
+    role = checkout_role(CHABA_REPO)
+    if role and role != "served":
+        # KNB-0893: on a non-writer checkout (readonly mirror, exec/job
+        # tree) the board lags up to a sync cycle — every card decision
+        # here would be on stale state and its writes race upstream's
+        # through the card-union driver. Only the served checkout may
+        # sweep. No role file = an unstamped checkout we can't prove
+        # stale — proceed as before.
+        print(f"merge-sweep: {CHABA_REPO} is chaba-role={role}, not the "
+              "writer — refusing to sweep a stale board "
+              "(merge-sweep-resurrects-closed-cards)")
+        return 0
     card_files = sorted(CARD_DIR.glob("*.yml"))
     if not card_files:
         print(f"merge-sweep: no cards in {CARD_DIR}")

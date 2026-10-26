@@ -211,6 +211,61 @@ class Case(unittest.TestCase):
              "master"], capture_output=True, text=True).stdout.strip()
         self.assertEqual(before, after)
 
+    def test_empty_session_on_moved_base_fails_and_stamps(self):
+        # the exact 2026-10-25/26 burn (dispatch-empty-closeout-
+        # verification-gap): zero commits, origin/master moved on after
+        # the worktree was cut — the head is an old base commit on the
+        # first-parent chain, NOT delivered work. The gate fails the
+        # attempt, requeues, and stamps sweep.zero_commit for the QC
+        # scoreboard.
+        commit(self.served, "moved.txt", "upstream moved\n", "upstream")
+        r = git(self.served, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+        card = self.write_card()  # wt head == old base commit
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        a = c["action"]
+        self.assertIs(a.get("verified"), False)
+        self.assertEqual(a.get("status"), "queued")
+        self.assertTrue((a.get("sweep") or {}).get("zero_commit"),
+                        a.get("sweep"))
+        self.assertIn("nothing committed",
+                      str(a.get("last_failure") or ""))
+
+    def test_terminal_column_never_touched(self):
+        # KNB-0893: a card already in done is terminal — the sweep must
+        # not rewrite its workflow fields even when action.status
+        # disagrees (a stale checkout shows exactly this shape).
+        card = self.write_card(
+            column="done",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba"})
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "running")
+
+    def test_bookkeeping_write_preserves_updated(self):
+        # KNB-0893 vector: a stamp/comms write must NOT fabricate a
+        # newer `updated` — on a stale checkout that stamp then wins
+        # the card-union scalar merge and resurrects upstream's newer
+        # column/status. Workflow mutations (fail_attempt) still bump.
+        card = self.write_card(
+            column="done",
+            updated="2026-10-20 00:00",
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba"})
+        ms.stamp("test-card", "probe_flag", "x", dry=False)
+        c = self.read_card()
+        self.assertEqual(c.get("updated"), "2026-10-20 00:00")
+        self.assertEqual((c["action"].get("sweep") or {})
+                         .get("probe_flag"), "x")
+        # a real workflow mutation still touches updated
+        self.assertTrue(ms.fail_attempt(card, "gate evidence", dry=False))
+        c = self.read_card()
+        self.assertNotEqual(c.get("updated"), "2026-10-20 00:00")
+        self.assertIs(c["action"].get("verified"), False)
+
     def test_failed_unit_work_not_merged_requeued(self):
         # unit crashed after committing — unmerged partial work is not
         # auto-merged; the card requeues with the exit evidence.

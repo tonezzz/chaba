@@ -158,13 +158,63 @@ class Case(unittest.TestCase):
 
     def test_noop_run_skips_silently(self):
         # branch exists but produced nothing — head == base tip is NOT
-        # merged work (a 'merged' stamp would false-positive verified)
+        # merged work (a 'merged' stamp would false-positive verified).
+        # The only notes are push/checkpoint + the plain empty-session
+        # line — no 'auto-merge not done' noise.
         res = dr.close_out(self.card)
         self.assertFalse(res["merged"])
         self.assertTrue(res["noop"])
-        self.assertEqual(dr.close_out_notes(res),
-                         [n for n in dr.close_out_notes(res)
-                          if "pushed" in n or "checkpoint" in n])
+        self.assertTrue(res.get("empty_session"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("produced no commits" in n for n in notes),
+                        notes)
+        self.assertEqual(
+            notes, [n for n in notes
+                    if "pushed" in n or "checkpoint" in n
+                    or "produced no commits" in n])
+
+    def test_empty_session_on_moved_base_is_noop_not_merged(self):
+        # THE 2026-10-25/26 bug (dispatch-empty-closeout-verification-
+        # gap): a zero-commit session head == the base the worktree was
+        # cut from; once origin/master advances, that head is still an
+        # ancestor — an OLD base commit, not delivered work. close_out
+        # must NOT report merged (a 'merged' result stamps verified and
+        # merge-sweep auto-closes the card).
+        commit(self.main, "moved.txt", "upstream moved\n", "upstream")
+        r = git(self.main, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        res = dr.close_out(self.card)
+        self.assertFalse(res.get("merged"), res)
+        self.assertTrue(res["noop"], res)
+        self.assertTrue(res.get("empty_session"), res)
+        self.assertTrue(any("produced no commits" in n
+                            for n in dr.close_out_notes(res)))
+        # sanity: the pushed branch head really is just an old base
+        # commit — zero commits ahead of merge-base
+        mb = git(self.main, "merge-base", "origin/master",
+                 head).stdout.strip()
+        self.assertEqual(mb, head)
+
+    def test_ancestor_via_real_merge_still_reports_merged(self):
+        # the counterpart: a session head that DID produce work and
+        # reached base through a --no-ff merge's second parent is not on
+        # first-parent — close_out still reports it as merged (verified
+        # stays reachable for the already-landed case).
+        commit(self.wt, "landed.py", "x=1\n", "work")
+        head = git(self.wt, "rev-parse", "HEAD").stdout.strip()
+        r = git(self.main, "fetch", "-q", str(self.wt), "HEAD")
+        assert r.returncode == 0, r.stderr
+        r = git(self.main, "merge", "--no-ff", "--no-edit", "-m", "m",
+                "FETCH_HEAD")
+        assert r.returncode == 0, r.stderr
+        r = git(self.main, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+        res = dr.close_out(self.card)
+        self.assertTrue(res.get("merged"), res)
+        self.assertTrue(res.get("noop"), res)
+        self.assertFalse(res.get("empty_session"), res)
+        self.assertIn("already in", res.get("note") or "")
 
     def test_real_conflict_reports_paths(self):
         commit(self.wt, "file.txt", "session\n", "session change")
@@ -710,14 +760,92 @@ class MergeRetryTest(unittest.TestCase):
             "id: ok-card\ncolumn: review\n"
             "action: {type: dispatch, status: done, task_id: t-ok}\n")
         res = {"merged": True, "noop": True,
+               "session": {"task_id": "t-ok"},
                "note": "dispatch/t-ok already in origin/master"}
         with mock.patch.object(dr, "close_out", return_value=res), \
+                mock.patch.object(dr, "unit_exit_evidence",
+                                  return_value=(True, "exit_code=0")), \
                 mock.patch.object(mod, "session_end_notes",
                                   return_value=[]):
             out = mod.merge_pending_one(path)
         self.assertEqual(out, "noop")
         card = yaml.safe_load(path.read_text())
         self.assertIs(card["action"]["verified"], True)
+
+    def _finish_card(self, state: str, evidence: tuple) -> dict:
+        mod = self.mod
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        path = Path(td.name) / "fin-card.yml"
+        path.write_text(
+            "id: fin-card\ncolumn: doing\n"
+            "action: {type: dispatch, status: running, task_id: t-fin, "
+            "runner: tony-dell}\n")
+        card = mod.load_card(path)
+        with mock.patch.object(mod, "unit_state", return_value=state), \
+                mock.patch.object(dr, "unit_exit_evidence",
+                                  return_value=evidence):
+            msg = mod.finish_one(path, card)
+        return card, msg
+
+    def test_finish_marks_done_on_clean_exit(self):
+        card, msg = self._finish_card("inactive", (True, "exit_code=0"))
+        self.assertEqual(msg, "finished")
+        self.assertEqual(card["action"]["status"], "done")
+        self.assertEqual(card["column"], "review")
+        self.assertTrue(card["action"].get("merge_pending"))
+
+    def test_finish_fails_on_failed_evidence(self):
+        # dispatch-empty-closeout-verification-gap: --collect hides
+        # Result=exit-code from is-active — the exit_code file is the
+        # truth and a failed service is NOT 'finished (ok)'.
+        card, msg = self._finish_card("unknown", (False, "exit_code=1"))
+        self.assertEqual(msg, "failed")
+        self.assertEqual(card["action"]["status"], "failed")
+        self.assertNotEqual(card.get("column"), "review")
+        self.assertFalse(card["action"].get("merge_pending"))
+        self.assertIn("exit_code=1", card["action"]["result"])
+        self.assertTrue(any("run failed" in c.get("text", "")
+                            for c in card.get("comms") or []))
+
+    def test_finish_unproven_exit_still_finishes_but_notes(self):
+        # no usable record anywhere: finish to review (a killed session
+        # can leave real work) but the trail says unproven — the
+        # verified stamp stays withheld downstream.
+        card, msg = self._finish_card("inactive", (None, "no exit record"))
+        self.assertEqual(msg, "finished")
+        self.assertEqual(card["action"]["status"], "done")
+        self.assertTrue(any("no exit record" in c.get("text", "")
+                            for c in card.get("comms") or []))
+
+    def test_merge_with_failed_unit_withholds_verified(self):
+        # dispatch-empty-closeout-verification-gap: a merge whose unit
+        # FAILED or is unproven must not stamp verified — merge-sweep's
+        # gate then holds it for a human instead of auto-closing.
+        mod = self.mod
+        for evidence in ((False, "exit_code=1"),
+                         (None, "no exit record")):
+            td = tempfile.TemporaryDirectory()
+            self.addCleanup(td.cleanup)
+            path = Path(td.name) / "bad-card.yml"
+            path.write_text(
+                "id: bad-card\ncolumn: review\n"
+                "action: {type: dispatch, status: done, task_id: t-x}\n")
+            res = {"merged": True, "session": {"task_id": "t-x"},
+                   "note": "auto-merged abc12345 (dispatch/t-x) "
+                           "→ origin/master"}
+            with mock.patch.object(dr, "close_out", return_value=res), \
+                    mock.patch.object(dr, "unit_exit_evidence",
+                                      return_value=evidence), \
+                    mock.patch.object(mod, "session_end_notes",
+                                      return_value=[]):
+                mod.merge_pending_one(path)
+            card = yaml.safe_load(path.read_text())
+            self.assertNotEqual(card["action"].get("verified"), True,
+                                evidence)
+            self.assertTrue(any("verified withheld" in c.get("text", "")
+                                for c in card.get("comms") or []),
+                            (evidence, card.get("comms")))
 
 
 if __name__ == "__main__":

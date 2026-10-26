@@ -10,6 +10,8 @@ claim with UnboundLocalError (card stayed claimed, no unit started).
 from __future__ import annotations
 
 import importlib.util
+import os
+import tempfile
 import types
 import unittest
 from pathlib import Path
@@ -116,6 +118,104 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertIn("manual", err)
         self.assertFalse(self.calls)  # no devin-dispatch spawn
         self.assertNotIn("lane", card["action"])  # manual never persisted
+
+
+class CollectTest(unittest.TestCase):
+    """runner-agent.collect — the 'finished (ok)' lie
+    (dispatch-empty-closeout-verification-gap): systemd-run --collect
+    unloads the unit at exit, and `systemctl show` on a not-loaded unit
+    reports ExecMainStatus=0/Result=success DEFAULTS. collect() must
+    read real evidence instead: task-dir exit_code > loaded-unit fields
+    > journal Succeeded/Failed lines; no record -> NOT ok."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._sh = m.sh
+        self._home = None
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self._home_old = os.environ.get("HOME")
+        os.environ["HOME"] = self.td.name
+        self.addCleanup(self._restore_home)
+        self.unit = "devin-task-20260101-000000-t"
+        self.tdir = (Path(self.td.name) / ".local/share/devin-dispatch"
+                     "/tasks/20260101-000000-t")
+        self.tdir.mkdir(parents=True)
+
+    def _restore_home(self):
+        if self._home_old is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = self._home_old
+
+    def tearDown(self):
+        self.mod.sh = self._sh
+
+    def _stub(self, loadstate="not-found", result="success",
+              exec_status="0", journal=""):
+        """collected unit defaults vs real evidence per scenario."""
+        def fake_sh(argv, **kw):
+            if argv[:3] == ["systemctl", "--user", "show"]:
+                return _proc(0, f"ExecMainStatus={exec_status}\n"
+                                f"Result={result}\n"
+                                f"LoadState={loadstate}\n")
+            if argv[0] == "journalctl":
+                return _proc(0, journal)
+            return _proc(0)
+        self.mod.sh = fake_sh
+
+    def test_collected_unit_defaults_are_not_ok(self):
+        """THE burn: unit collected after 'Failed with result' — the
+        defaults read as success before; now exit_code=1 wins."""
+        (self.tdir / "exit_code").write_text("1\n")
+        self._stub(loadstate="not-found",
+                   journal="devin-task-x.service: Failed with result "
+                           "'exit-code'.\n")
+        ok, res = self.mod.collect(self.unit)
+        self.assertFalse(ok)
+        self.assertIn("exit=1", res)
+
+    def test_exit_code_zero_is_ok(self):
+        (self.tdir / "exit_code").write_text("0\n")
+        self._stub(loadstate="not-found")
+        ok, res = self.mod.collect(self.unit)
+        self.assertTrue(ok)
+        self.assertIn("exit=0", res)
+
+    def test_loaded_unit_fields_used(self):
+        # a failed unit still loaded (pre-collect) tells the truth
+        self._stub(loadstate="loaded", result="exit-code",
+                   exec_status="1")
+        ok, res = self.mod.collect(self.unit)
+        self.assertFalse(ok)
+        self.assertIn("exit=1", res)
+
+    def test_journal_failed_when_unit_gone(self):
+        self._stub(loadstate="not-found",
+                   journal="devin-task-x.service: Failed with result "
+                           "'exit-code'.\n")
+        ok, res = self.mod.collect(self.unit)
+        self.assertFalse(ok)
+        self.assertIn("journal=exit-code", res)
+
+    def test_journal_succeeded_when_unit_gone(self):
+        self._stub(loadstate="not-found",
+                   journal="devin-task-x.service: Succeeded.\n")
+        ok, res = self.mod.collect(self.unit)
+        self.assertTrue(ok)
+        self.assertIn("journal=success", res)
+
+    def test_no_record_is_unproven_not_ok(self):
+        # runner-* units have no task dir; a collected unit + rotated
+        # journal leaves nothing — must NOT report ok.
+        self._stub(loadstate="not-found")
+        ok, res = self.mod.collect("runner-c1-1700000000")
+        self.assertFalse(ok)
+        self.assertIn("no exit record", res)
 
 
 if __name__ == "__main__":

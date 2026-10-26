@@ -142,6 +142,25 @@ def open_requests(cards: list[dict]) -> dict:
     return {"open": n}
 
 
+ZERO_COMMIT_RE = re.compile(
+    r"nothing committed|no changed files|no delivered work", re.I)
+
+
+def zero_commit_dispatches(cards: list[dict]) -> dict:
+    """Empty dispatches — sessions that finished but produced zero
+    commits (dispatch-empty-closeout-verification-gap: 'ok' used to mean
+    'the wrapper exited'). merge-sweep's verified gate stamps
+    action.sweep.zero_commit on the failed attempt; last_failure text is
+    the fallback signal for failures recorded before the stamp existed."""
+    ids = []
+    for c in cards:
+        a = c.get("action") or {}
+        if (a.get("sweep") or {}).get("zero_commit") \
+                or ZERO_COMMIT_RE.search(str(a.get("last_failure") or "")):
+            ids.append(str(c.get("id") or "?"))
+    return {"count": len(ids), "ids": sorted(ids)[:15]}
+
+
 def reopen_events(cards: list[dict]) -> dict:
     """Detect column resurrections: a card that moved backwards (esp. out
     of done/verified) since the last run = a stomped close. Writes a fresh
@@ -220,6 +239,10 @@ def render_md(m: dict) -> str:
         lines.append(
             f"| Column reopens (backward moves) | {re_.get('count', 0)} "
             "since last run | qc-scoreboard snapshot diff |")
+    zc = m.get("zero_commit_dispatches") or {}
+    lines.append(
+        f"| Zero-commit dispatches | {zc.get('count', 0)} | "
+        "action.sweep.zero_commit / last_failure |")
     lines += ["", "## Open repeat-ask topics", ""]
     for t in ra.get("open_ids", []):
         lines.append(f"- `{t}`")
@@ -231,6 +254,9 @@ def render_md(m: dict) -> str:
     if re_.get("events"):
         lines += ["", "## Column reopen events (stomped closes)", ""]
         lines += [f"- `{e}`" for e in re_["events"]]
+    if zc.get("ids"):
+        lines += ["", "## Zero-commit dispatches (empty sessions)", ""]
+        lines += [f"- `{i}`" for i in zc["ids"]]
     return "\n".join(lines) + "\n"
 
 
@@ -309,6 +335,7 @@ def main() -> int:
         "open_requests": open_requests(cards),
         "opt_warnings": optimize_warnings(),
         "reopen_events": reopen_events(cards),
+        "zero_commit_dispatches": zero_commit_dispatches(cards),
     }
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -326,6 +353,9 @@ def main() -> int:
         parts.append(f"{rj['broken']}/{rj['total']} broken renders")
     if m["reopen_events"].get("count"):
         parts.append(f"{m['reopen_events']['count']} column reopens")
+    if m["zero_commit_dispatches"].get("count"):
+        parts.append(f"{m['zero_commit_dispatches']['count']} "
+                     "zero-commit dispatches")
     summary = "; ".join(parts)
     status = "ok" if (ra.get("open", 0) == 0 and ac["open"] == 0
                       and rj.get("broken", 0) == 0) else "delta"
