@@ -1,7 +1,7 @@
 id: dispatch-empty-closeout-verification-gap
 title: dispatch close-out reports ok + auto-closes on zero-commit sessions
 column: review
-updated: 2026-10-26 15:50
+updated: 2026-10-26 16:01
 spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
   the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
   merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
@@ -77,5 +77,9 @@ comms:
 - at: 2026-10-26 15:50
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py
+    — merge aborted, card stays for human resolution'
 review_kind: verify
 claim: {}
