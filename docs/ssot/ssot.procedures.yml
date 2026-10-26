@@ -56,6 +56,7 @@ procedures:
   - {id: bank-assign,   where: "scripts/ada/render-memory-banks.py + ssot.apps.ada-memory-banks.yml", trigger: "giving an instance/identity memory banks", status: verified, last_run: 2026-10-09}
   - {id: persona-lane-ci, where: "docs/ssot/apps/ssot.apps.ada-persona-lanes.yml", trigger: "promoting any change to a persona lane (dev twin -> prod)", status: defined, last_run: 2026-10-11}
   - {id: mddb-backup,   where: "docs/kb/mddb-backup-binlog-2026-10-03.md",                     trigger: "MDDB backup/restore/replication",       status: verified}
+  - {id: mddb-prune-compact, where: "docs/kb/mddb-prune-compact.md + MEM-0871", trigger: "any 'mddb is too big / reduce storage / distill or compact' work — storage layers model, guard stack (prune timer, maxRevisions, restart timer, freelist sync), sweep vs delete-collection vs export-rebuild vs offline bbolt compact paths + all gotchas (backup/restore are file-level NOT compacting, stats timeouts, podman unshare file ops)", status: verified, last_run: 2026-10-26}
   # --- work management ---
   - {id: idea-intake,   where: "ssot.windsurf.common.md#Request-to-Focus + Procedure Quick Map", trigger: "any new idea/request",              status: verified, last_run: 2026-10-09}
   - {id: where-things-go, where: "docs/kb/where-things-go.md + ssot.windsurf.common.md#Interrupt-Handling rule 5", trigger: "'where did my idea go', 'how do I find X later', or any capture — destinations map + recall ritual + announce-the-landing-spot rule", status: verified, last_run: 2026-10-12}
