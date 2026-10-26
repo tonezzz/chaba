@@ -200,7 +200,7 @@ servers:
     filter: none
     args: []
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -249,7 +249,7 @@ servers:
       WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba-tony-dell/workflows
       WORKFLOWS_LOG_LEVEL: INFO
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -257,7 +257,7 @@ servers:
     name: MDDB Knowledge Base
     description: Personal Knowledge Base system with document management and semantic
       search
-    implementation: docker chaba/mddb-page-tools:latest (container mddb)
+    implementation: streamable-HTTP mddbd on idc03 (previously docker chaba/mddb-page-tools on tony-dell)
     wrapper: /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
     filter: bridge
     filtered_tools:
@@ -267,7 +267,7 @@ servers:
     - get_stats
     - aggregate
     - semantic_search
-    url: http://100.68.142.13:9000/mcp
+    url: http://100.102.134.91:9000/mcp
     single_instance: false
     status: operational
     config_files:
@@ -275,7 +275,8 @@ servers:
     - windsurf: false
     notes: 'MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
 
-      Container on tony-dell uses host networking and listens on port 9000
+      mddbd serves streamable-HTTP on idc03:9000/mcp (X-API-Key in runtime config);
+      moved off tony-dell container + stdio bridge per AUD-0886 (2026-10-26).
 
       Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
 
@@ -348,7 +349,7 @@ servers:
     filter: none
     url: http://tony-dell:9584/<PRIVATE_TOKEN>
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -363,7 +364,7 @@ servers:
     filter: none
     url: http://tony-dell:9585/<PRIVATE_TOKEN>
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -378,7 +379,7 @@ servers:
     filter: none
     url: http://tony-dell:19584/<PRIVATE_TOKEN>
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -392,7 +393,7 @@ servers:
     wrapper: podman-ssh
     filter: none
     single_instance: false
-    status: operational
+    status: down-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
@@ -407,6 +408,21 @@ servers:
         implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
       tony_dell:
         implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm.sh
+  mcp-colab:
+    name: Colab Pack Control Plane
+    description: Submit/status/result for Drive-pack jobs on the Colab T4 worker + tunnel/model probes
+    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-colab/server.py
+    wrapper: mcp-single-instance.sh
+    pattern: mcp-colab/server.py
+    filter: none
+    single_instance: true
+    status: operational
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Added to SSOT 2026-10-26 (AUD-0886) - was live in mcp_config.json but unregistered.
+
+      '
   google-home-lan:
     name: Google Home LAN
     description: Local-network control of Google Cast devices (Chromecast, Android
@@ -473,6 +489,15 @@ scripts:
   utilities:
     switch-profile: switch-profile.sh
 decisions:
+  fleet_audit_2026_10_26:
+    card: AUD-0886
+    report: devin-kb docs/tools/mcp-fleet-audit.md
+    findings:
+    - 'dead at probe: home-assistant(9584), michael-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
+    - 'mcp-llama superseded by LiteLLM gateway (retire/repoint recommended)'
+    - 'alphavantage schema ~5.6k lines - allowlist or per-session profile recommended'
+    - 'mddb moved to idc03 streamable-HTTP + X-API-Key'
+    - 'mcp-colab added to this registry'
   mcp_filter_disabled:
     date: 2026-08-07
     reason: Compatibility issues with mcp-filter implementation
