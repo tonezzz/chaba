@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 16:07
+updated: 2026-10-26 19:20
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -29,3 +29,10 @@ comms:
   text: 'Tony clarified scope: assess the full Kanban (all open cards), then separately surface Colab/fleet-ready
     work to reduce paid-T4 idle time. Keep the pass read-only; recommend cleanup/moves but do not execute column
     changes or closures without evidence and approval.'
+- at: 2026-10-26 19:20
+  from: devin
+  text: 'Read-only audit against live cards.json (generated 2026-10-26 19:17): 1,014 cards total; 843 done; 171
+    open (127 backlog, 35 review, 7 doing, 2 lab). Open action status: 135 idle, 30 action=done but still in an
+    open column, 3 running, 3 queued. There are 263 answered requests and 1 truly open request; 24 open cards have
+    an answered request but no active queued/running/done action. Conservative age scan found 0 doing>7d, 0 review>21d,
+    0 backlog>120d; exact normalized duplicate-title groups=0. Thi'
