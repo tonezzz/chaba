@@ -1,7 +1,7 @@
 id: dispatch-empty-closeout-verification-gap
 title: dispatch close-out reports ok + auto-closes on zero-commit sessions
 column: doing
-updated: 2026-10-26 08:49
+updated: 2026-10-26 08:55
 spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
   the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
   merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
@@ -34,3 +34,9 @@ comms:
 - at: 2026-10-26 08:49
   from: chaba
   text: started devin-task-20261026-084910-proven-twice-on-the-same-cards on tony-dell (dispatch)
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'root-caused: (1) runner-agent.collect + kanban-dispatch.finish_one read systemctl on --collect units →
+    defaults read as ok; (2) close_out returns merged=True for an old base-commit head once base moves on → verified
+    stamped on a zero-commit push; (3) KNB-0893: locked_edit bumps updated on bookkeeping writes → stale checkout
+    wins card-union scalars. Fixing all three + QC zero_commit counter.'
