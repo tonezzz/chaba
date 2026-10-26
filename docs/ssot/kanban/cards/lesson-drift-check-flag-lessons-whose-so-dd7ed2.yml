@@ -1,7 +1,7 @@
 id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
 title: 'Lesson drift-check: flag lessons whose source docs changed'
-column: backlog
-updated: 2026-10-26 08:29
+column: doing
+updated: 2026-10-26 08:49
 brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
   docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
   is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
@@ -32,7 +32,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:49
+  from: tony-dell
+  text: claimed
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: running
+  lane: codemod
+  runner: tony-dell
