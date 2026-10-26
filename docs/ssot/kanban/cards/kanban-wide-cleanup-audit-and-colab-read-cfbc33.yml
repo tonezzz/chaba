@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
 column: backlog
-updated: 2026-10-26 19:35
+updated: 2026-10-26 19:38
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -55,3 +55,10 @@ comms:
     0 running. The 31 review/done-action cards split into 17 verify + 14 triage; `action.verified` is true on 8,
     false on 5, unset on 18, so none should be bulk-closed. 24 open cards have answered requests but no active action.
     Two requests remain open: (1) PWA document intake missing targ'
+- at: 2026-10-26 19:38
+  from: devin
+  text: 'Next read-only pass on the 31 review/action-done cards: 17 are verify, 14 triage; verification field is
+    true=8, false=5, unset=18. Do NOT equate action.verified=true with issue resolved: several runner alerts still
+    have failing notes. Possible column-normalization candidates for evidence recheck (not moved): logs-auto-idc02-severe-spike
+    and vcast-auto-flap have auto-recovered/closed comms; runner-auto-mn01 explicitly says doubly verified and review
+    was restored by autostash. Other runner-auto ca'
