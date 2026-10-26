@@ -1,7 +1,7 @@
 id: devnest-news-two-lane-pilot
 title: News reporter A/B pilot — Devin vs DevNest
-column: doing
-updated: 2026-10-27 05:35
+column: review
+updated: 2026-10-27 05:36
 brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
   gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
   leaves. This is an evaluation plan, not permission to publish or run paid models.
@@ -118,6 +118,10 @@ comms:
 - at: 2026-10-27 05:35
   from: chaba
   text: started devin-task-20261027-053546-existing-wp-cpt-news-is-alread on idc02 (dispatch)
+- at: 2026-10-27 05:36
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service:
+    Main process exited, cod'
 requests:
 - id: choose-news-visibility-architecture
   ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
@@ -161,5 +165,10 @@ requests:
     public corpus; validates source links, branches, privacy and idempotency, but not LLM summary quality'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
