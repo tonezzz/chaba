@@ -1,7 +1,7 @@
 id: ada-text-lane-metering-gap
 title: 'Text-relay turns are unmetered: usage.jsonl + journal-report miss LINE/TG text-mode token cost'
 column: review
-updated: 2026-10-26 08:59
+updated: 2026-10-26 09:01
 brief: 'LINE_TEXT_MODE=1 means the main messaging lane runs OpenRouterTextProvider via gemini_pool.generate — which
   never calls usage_ledger.record and emits no "usage turn in=" log line. All 76k records in data/usage.jsonl are
   source=live. Result: the actual chat lanes token/day is invisible to journal-report and the usage endpoint; only
@@ -42,6 +42,10 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-085845-add-usage-recording-to-the-tex,
     branch dispatch/20261026-085845-add-usage-recording-to-the-tex'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-085845-add-usage-recording-to-the-tex on
+    tony-macbook — if the work was never pushed it may be gone'
 action:
   repo: ada-voice
   type: dispatch
