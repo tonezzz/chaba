@@ -52,8 +52,9 @@ META_OPT = re.compile(r"clarif|specify|ask the owner|which repos|"
                       r"which host|more context|define the", re.I)
 
 
-def _load() -> tuple[list[tuple[Path, dict]], set[str]]:
-    backlog, done_ids = [], set()
+def _load() -> tuple[dict[str, list], set[str]]:
+    cols: dict[str, list] = {}
+    done_ids: set[str] = set()
     for p in sorted(CARD_DIR.glob("*.yml")):
         try:
             c = yaml.safe_load(open(p))
@@ -61,13 +62,13 @@ def _load() -> tuple[list[tuple[Path, dict]], set[str]]:
             continue
         if not isinstance(c, dict):
             continue
-        if c.get("column") == "done":
+        col = c.get("column") or "backlog"
+        if col == "done":
             done_ids.add(c.get("id") or p.stem)
             # also index done titles for dup sniffing
             done_ids.add(str(c.get("title") or "").lower()[:40])
-        elif c.get("column") == "backlog":
-            backlog.append((p, c))
-    return backlog, done_ids
+        cols.setdefault(col, []).append((p, c))
+    return cols, done_ids
 
 
 def _answer_shape(ans: str) -> str:
@@ -82,14 +83,48 @@ def _answer_shape(ans: str) -> str:
     return "queue"
 
 
+VERIFIED = re.compile(r"verified|merged|deployed|landed|pushed|fixed",
+                      re.I)
+FAILED = re.compile(r"verified.?false|merge conflict|merge failed|"
+                    r"gate fail|timed? ?out|crashed|killed", re.I)
+
+
+def audit_review(cards: list[tuple[Path, dict]]) -> dict:
+    """Review-column buckets: review means a dispatch finished and a
+    human verdict is pending — find the ones the evidence already
+    decides."""
+    out: dict[str, list] = {k: [] for k in
+                            ("done-candidate", "failed-signal",
+                             "answered", "waiting-human")}
+    for p, c in cards:
+        cid = c.get("id") or p.stem
+        comms = [str(m.get("text") or "") for m in (c.get("comms") or [])
+                 if isinstance(m, dict)]
+        tail = " ".join(comms[-3:])
+        answered = [r for r in (c.get("requests") or [])
+                    if isinstance(r, dict)
+                    and r.get("status") == "answered" and r.get("answer")]
+        if answered:
+            out["answered"].append(cid)
+            continue
+        if FAILED.search(tail):
+            out["failed-signal"].append(cid)
+            continue
+        if VERIFIED.search(tail):
+            out["done-candidate"].append(cid)
+            continue
+        out["waiting-human"].append(cid)
+    return out
+
+
 def audit() -> dict:
-    backlog, done_ids = _load()
+    cols, done_ids = _load()
     out: dict[str, list] = {k: [] for k in
                             ("answered-close", "answered-queue",
                              "answered-circular", "answered-hold",
                              "done-candidate", "obsolete-signal",
                              "thin", "valid")}
-    for p, c in backlog:
+    for p, c in cols.get("backlog", []):
         cid = c.get("id") or p.stem
         a = c.get("action") or {}
         if a.get("status") in ("queued", "running"):
@@ -123,17 +158,26 @@ def audit() -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--column", default="backlog",
+                    choices=("backlog", "review", "all"))
     args = ap.parse_args()
-    res = audit()
+    cols, done_ids = _load()
+    sections: dict[str, dict] = {}
+    if args.column in ("backlog", "all"):
+        sections["backlog"] = audit()
+    if args.column in ("review", "all"):
+        sections["review"] = audit_review(cols.get("review", []))
     if args.json:
-        print(json.dumps(res, indent=1))
+        print(json.dumps(sections, indent=1))
         return 0
-    total = sum(len(v) for v in res.values())
-    print(f"{total} backlog cards assessed")
-    for k, v in res.items():
-        print(f"\n== {k} ({len(v)})")
-        for cid in v:
-            print(" ", cid)
+    for col, res in sections.items():
+        total = sum(len(v) for v in res.values())
+        print(f"{total} {col} cards assessed")
+        for k, v in res.items():
+            print(f"\n== {k} ({len(v)})")
+            for cid in v:
+                print(" ", cid)
+        print()
     return 0
 
 
