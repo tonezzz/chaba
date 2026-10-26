@@ -798,5 +798,40 @@ class Case(unittest.TestCase):
         self.assertEqual(n, 0)
 
 
+class TaskIdReTest(unittest.TestCase):
+    """TASK_ID_RE must resolve both tid shapes from comms: devin-dispatch
+    20261026-173617-<slug> AND runner-agent OpenCode lanes
+    <card-id>-<epoch> (the 2026-10-26 devnest-fl-pilot-report stranded
+    branch — finish consumed state.json before the sweep merged, and the
+    comms fallback couldn't parse the opencode tid)."""
+
+    def _hit(self, text):
+        m = ms.TASK_ID_RE.search(text)
+        return m.group(1) if m else None
+
+    def test_devin_dispatch_tid(self):
+        self.assertEqual(
+            self._hit("started devin-task-20261026-173617-pilot-classes-1"
+                      "-docs-config-ch on idc02 (dispatch)"),
+            "20261026-173617-pilot-classes-1-docs-config-ch")
+
+    def test_opencode_lane_tid(self):
+        self.assertEqual(
+            self._hit("started devin-task-devnest-fl-pilot-report-"
+                      "1793011692 on tony-dell (dispatch)"),
+            "devnest-fl-pilot-report-1793011692")
+
+    def test_opencode_probe_tid(self):
+        self.assertEqual(
+            self._hit("devin-task-opencode-closeout-probe-dell-"
+                      "1792968507"),
+            "opencode-closeout-probe-dell-1792968507")
+
+    def test_no_false_positives(self):
+        for s in ("devin-task-short-123", "devin-task-abc",
+                  "no unit here", "devin-task-123"):
+            self.assertIsNone(self._hit(s))
+
+
 if __name__ == "__main__":
     unittest.main()

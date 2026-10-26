@@ -1,0 +1,28 @@
+run_record: pilot job 0 (retroactive) — OPS-0846 proof run, Dell OpenCode
+  closeout probe
+card_id: opencode-closeout-probe-dell
+pilot_class: pre-pilot proof (marker write + branch closeout)
+executor: opencode  # opencode:free_lane
+model: litellm/gemini-3.5-flash-lite
+prompt_at: '2026-10-26T05:48:29+07:00'  # unit start
+session_start: '2026-10-26T05:48:29+07:00'
+session_end: '2026-10-26T05:51:00+07:00'  # finished (ok) comms 05:51
+wall_time_s: 151  # ~2.5 min incl. marker write + commit + push
+tokens_in: 33275  # first step-finish; subsequent steps modest — journal
+  # truncated; capture as lower bound
+tokens_out: null
+litellm_spend_delta_usd: null  # not reconstructed — window predates the
+  # measurement convention; flash-lite calls that morning show in
+  # SpendLogs under key 3e79193c… but window attribution is ambiguous
+gate_result: pass  # marker merged to origin/master; pre-existing test
+  # failure matched baseline (baseline-aware gate)
+merge_success: merged (merge-sweep verified 07:01, auto-closed done)
+human_intervention_min: 0  # supervised OPS-0846 proof — Tony watching,
+  # no mid-run fixes
+escalation: none
+note: this run established OPS-0846 (opencode lane branch closeout works
+  end-to-end on a supervised push-capable host). The manual runner-agent
+  invocation that claimed it is the same supervised model used for the
+  three pilot jobs — tony-dell has NO runner-agent.service unit (only the
+  drop-in created during this proof); claims there are deliberate, not
+  fleet-automatic.
