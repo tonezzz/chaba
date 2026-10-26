@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-26 15:46
+updated: 2026-10-26 15:49
 priority: medium
 tags:
 - ada-nest
@@ -104,6 +104,13 @@ comms:
     so I will not alter/reuse the v6 cut or v0/v1 story assets. The v3 storyboard now contains fresh Jupiter/Red
     Spot background prompts for a new two-shot LTX probe; embeddings must be prepared on the safe CPU lane first,
     then T4 can render.'
+- at: 2026-10-26 15:49
+  from: devin
+  text: '[LTX embedding resource gate 2026-10-26] Omen read-only check: CPU max 2.0GHz, 8.2GiB RAM available (T5-XXL
+    embed pack declares 13GiB RAM), package ~60C and PCH ~69C. I did not start T5 embedding to avoid memory/thermal
+    pressure. The T4 renders LTX from embeddings but cannot safely replace the CPU T5 stage. Direct JPL Photojournal
+    `.jpg` probes returned HTML, not image bytes; no new assets were downloaded. The full animatic remains usable
+    for pacing review.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
