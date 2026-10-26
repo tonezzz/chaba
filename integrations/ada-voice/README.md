@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Fourteen drops live here:
+chaba dispatches. Fifteen drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -39,6 +39,8 @@ chaba dispatches. Fourteen drops live here:
     2026-10-17)
 14. tg forward provenance gaps — hidden-origin flagging + forwarded
     other-media turns — card `tg-forward-provenance` (2026-10-17)
+15. `chat_send` page= — a CMS page's images attached server-side in one
+    batch — card `chat-send-page-images` (ADA-0511, 2026-10-26)
 
 ---
 
@@ -1130,3 +1132,98 @@ drop closes the remaining card-spec gaps on top of that base:
 - Full TG document ingest (download + archive + doc_read parity with
   LINE's `file-doc-ingest` drop) is a separate card — this drop only
   guarantees a forwarded doc is acknowledged with provenance.
+
+---
+
+## Drop 15 — chat_send page= (CMS page images, attached server-side)
+
+Card `chat-send-page-images` (Tony 2026-10-12, ADA-0511): a probe showed
+Kaewta handles "send me the <page> photos" asks nondeterministically —
+sometimes cms_read + image_url + deliver, sometimes invented URLs
+(`surf-thailand.com/kk/…`, unsplash → all 404), sometimes text-only
+phantom sends naming the page. Instruction fixes helped but can't
+enforce; this is the structural fix: `chat_send(page='<slug>')` reads
+the CMS doc server-side, extracts every embedded image, and attaches
+the batch in one tool call — the model never touches a URL, so the
+whole invent/404/phantom failure class is gone. `image_url=` stays for
+ad-hoc URLs.
+
+### Files
+
+- `backend/tool_runner.page-images.patch` — `chat_send` gains
+  `page: str = ""`; a page call short-circuits to
+  `_chat_send_page`/`_chat_send_page_run` (same 'queued' contract —
+  the mddb read + delivery run in the background job). Module helper
+  `_page_image_urls` extracts markdown `![..](..)` + HTML `<img src>`
+  in document order, dedupes, resolves site-relative and bare paths
+  against `LINE_URL_BASE` (same default `http://100.102.134.91:11023`
+  the relay resolves against), caps at `ADA_CHAT_PAGE_IMG_MAX`
+  (default 10). The job posts `{text, image_urls:[...]}` to the lane
+  relay; the response's `images` list drives a per-asset sent/failed
+  summary note. `say=` voice notes ride the same payload; `web`
+  channel delivers per-asset via `_chat_send_web`. The say/notify
+  tails of `_chat_send_run` are factored into shared
+  `_chat_say_audio`/`_chat_notify` helpers — no behaviour change on
+  the plain path.
+- `backend/line_relay.page-images.patch` — `/send` accepts
+  `image_urls: [...]`; each URL becomes its own image bubble
+  (`_image_msgs`, failures keep the honest `(image failed)` text
+  bubble), `image_url` still works. Delivery now chunks into
+  consecutive ≤5-msg pushes — the old `msgs[:5]` truncate silently
+  dropped the tail (stacked payloads, not just batches). Bulk-class
+  parks the full list (`_parked_add`/`_merge_msgs` already re-chunk).
+  Response gains `images: [{url, ok, status}]` — status per asset:
+  `delivered` | `parked` | `failed` | `fetch-failed`.
+- `backend/tg_relay.page-images.patch` — `/send` accepts `image_urls`
+  → one `send_photo` per asset (same `images` report shape);
+  `send_photo` now returns delivery bool (callers ignore it).
+- `backend/realtime_provider.page-images.patch` — `page` added to the
+  chat_send declaration (required — `additionalProperties: false`
+  would reject the arg); `image_url` description now points CMS image
+  asks at `page=`.
+- `backend/tool_guide.page-images.patch` — chat_send guide entry
+  documents `page='<cms slug>'`.
+- `tests/test_chat_send_page.py` — ada-voice suite: extraction order/
+  dedupe/resolution/cap, the page job (payload, per-asset note,
+  missing/empty page honesty, legacy-relay degrade), the relay batch
+  (chunked pushes, per-URL report, fetch-failure honesty), the tg
+  batch.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && for p in tool_runner line_relay tg_relay realtime_provider tool_guide; do git apply <chaba>/integrations/ada-voice/backend/$p.page-images.patch; done`
+   — base `main` @ `56c67c1`; if a hunk rots, re-dispatch the card
+   rather than hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/test_chat_send_page.py tests/`
+3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes +
+   `ada-line-relay` / `ada-tg-relay` (the relay contract changed).
+   Restart order note: a lane running new chat.py against an old relay
+   still works — the relay just returns no `images` report and the
+   note degrades to 'delivered (no per-asset report)'.
+
+### Contract
+
+- `chat_send(page='<slug>', to=?, text=?, channel=?, say=?)` →
+  `{'status': 'queued', 'page': <slug>}`; the system note reports
+  e.g. `line: 4/5 images delivered; failed <url> (fetch-failed)` or
+  `page '<slug>': no page … — nothing sent`.
+- page= is a plain send for gates: not secondary-blocked, not in the
+  Drive bank scope (the `photo`/`doc` carve-outs already exempt the
+  non-picker path).
+- Relay `/send` `image_urls` is additive — old callers unaffected;
+  `image_url` also gains an `images` report entry for free.
+
+### Verified
+
+- ada-voice `main` @ `56c67c1` + patches (clone under chaba worktree
+  `.scratch/`): new `tests/test_chat_send_page.py` 17/17; neighbouring
+  suites `test_tool_runner` `test_line_relay_group` `test_line_relay_quota`
+  `test_line_reply_context` `test_tg_relay_*` — 361 passed;
+  `tool-lint` clean.
+- Chaba side: `pytest tests/ada/test_chat_send_page.py` — 6 pass, 2
+  skipped (no ada-voice checkout on the mn01 runner; the apply-gate
+  tests exercise on hosts that carry one).
+- NOT verified live: no real LINE push — first `page=sa-beach-photos`
+  send after deploy is the smoke (check the relay log `send: inst=
+  … msgs=N` + the note's per-asset count).

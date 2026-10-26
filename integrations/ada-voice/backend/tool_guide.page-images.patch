@@ -1,0 +1,17 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 7c57834..4927e5b 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -158,6 +158,12 @@ chat_send: >-
+   hosted photo asset like the cam-snap URLs) OR a Drive link
+   (drive.google.com/file/… or a drive_get media_url — the relay resolves
+   those server-side to real bytes) — NEVER a page URL.
++  page='<cms slug>' sends a page's photos: the page is read server-side
++  and every image it embeds is attached in one batch — no URLs to
++  copy, nothing to invent, and the result note says sent/failed per
++  asset so report that count honestly. For "send me the <name> photos"
++  asks, ONE chat_send page= call is the whole job — never narrate a
++  send you didn't call.
+   view_url/cast_url/public_url from CMS results are web PAGES, not
+   images: to share a page, put the link in 'text'; to show it on a
+   display, cast_to_screen. 'to' defaults to the room you're replying
