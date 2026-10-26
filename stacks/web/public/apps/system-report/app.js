@@ -89,6 +89,68 @@ function renderFreshness() {
   el.className = ageCls(g) || "ok";
 }
 
+// ── Host loads (sys-mon) ─────────────────────────────────────────────────
+// Live path: data/host-loads.yml — written by the 5-min chaba-host-loads
+// sampler on idc02 straight into this app's webroot. Fallback: the
+// `host_loads` block embedded in system-report.yml (daily report cadence).
+function _mbHuman(mb) {
+  if (mb === null || mb === undefined) return "—";
+  return mb >= 1024 ? `${(mb / 1024).toFixed(1)}Gi` : `${Math.round(mb)}Mi`;
+}
+function _loadBar(v) {
+  if (v === null || v === undefined) return "";
+  const w = Math.min(72, Math.max(2, v * 9));
+  const cls = v >= 8 ? "hot" : v >= 4 ? "warm" : "";
+  return `<span class="bar ${cls}" style="width:${w}px" title="1m load ${v}"></span>`;
+}
+function renderHosts(rows, note, live) {
+  const tb = document.getElementById("hosts");
+  const noteEl = document.getElementById("hosts-note");
+  if (!rows.length) {
+    tb.innerHTML = `<tr><td colspan="5" class="muted">no host-load data yet</td></tr>`;
+    noteEl.textContent = note;
+    return;
+  }
+  tb.innerHTML = rows.map((r) => {
+    if (r.unreachable) return `<tr>
+      <td class="host">${esc(r.host)}</td><td colspan="3">${pill("unreachable")}</td>
+      <td class="age ${ageCls(r.ts)}">${fmtAge(r.ts)}</td></tr>`;
+    const memPct = r.mem_total_mb ? Math.round(100 * (r.mem_used_mb || 0) / r.mem_total_mb) : null;
+    const memTxt = r.mem_total_mb !== undefined
+      ? `${_mbHuman(r.mem_used_mb)} / ${_mbHuman(r.mem_total_mb)}${memPct === null ? "" : ` (${memPct}%)`}`
+      : [r.mem_used, r.mem_avail].filter(Boolean).join(" used / ") || "—";
+    const l = r.load || {};
+    return `<tr>
+      <td class="host">${esc(r.host)}</td>
+      <td>${_loadBar(l["1m"])}${[l["1m"], l["5m"], l["15m"]].map((v) => v ?? "—").join(" / ")}</td>
+      <td>${memTxt}</td>
+      <td class="${(r.disk_pct ?? 0) >= 90 ? "fail" : (r.disk_pct ?? 0) >= 80 ? "warn" : ""}">${r.disk_pct ?? "—"}%</td>
+      <td class="age ${ageCls(r.ts)}">${fmtAge(r.ts)}</td>
+    </tr>`;
+  }).join("");
+  noteEl.textContent = `${note} — ${rows.filter((r) => !r.unreachable).length}/${rows.length} up` +
+    (live ? "" : " (daily snapshot)");
+}
+async function loadHosts() {
+  try {
+    const r = await fetch("data/host-loads.yml", { cache: "no-store" });
+    if (r.ok) {
+      const doc = jsyaml.load(await r.text()) || {};
+      const rows = (doc.hosts || []).slice()
+        .sort((a, b) => String(a.host).localeCompare(String(b.host)));
+      renderHosts(rows, `live · sampled ${fmtAge(doc.generated_at)} ago`, true);
+      return;
+    }
+  } catch (e) { /* fall through to the embedded daily block */ }
+  const daily = (state.doc?.host_loads || []).map((r) => ({
+    host: r.host, unreachable: r.unreachable, ts: r.snapshot_ts,
+    load: { "1m": r.load_1m, "5m": r.load_5m, "15m": r.load_15m },
+    disk_pct: r.disk_pct,
+    mem_used: r.mem_used, mem_avail: r.mem_avail,  // human strings (no raw mb)
+  }));
+  renderHosts(daily, "daily report");
+}
+
 async function load() {
   const meta = document.getElementById("meta");
   try {
@@ -110,6 +172,7 @@ async function load() {
   } catch (e) {
     meta.textContent = `summary unavailable: ${e.message}`;
   }
+  loadHosts(); // independent of the registry fetch — live sampler data
 
   try {
     const r = await fetch("data/SYSTEM-REPORT.md", { cache: "no-store" });

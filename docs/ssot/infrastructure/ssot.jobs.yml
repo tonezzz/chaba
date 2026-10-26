@@ -133,6 +133,24 @@ jobs:
     --consolidate; /usr/bin/python3 scripts/report-system.py'
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran bash chain, not the nonexistent
     .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
+- id: chaba-host-loads
+  name: Host-loads sampler (fleet load/mem/disk -> system-report monitor page)
+  host: idc02
+  dispatch: systemd
+  every: 5min
+  timeout: 2m
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/host-loads.py
+    - /bin/bash -c 'install -m644 %h/CascadeProjects/chaba/reports/host-loads/host-loads.yml
+      %h/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/host-loads.yml
+      && install -m644 %h/CascadeProjects/chaba/reports/host-loads/host-loads.yml
+      %h/web-srv/public/apps/system-report/data/host-loads.yml'
+  note: 're-homed off tony-dell-monitor.service 2026-10-26 (dell drained; sampler dark since
+    2026-10-23 — card sys-mon-system-monitor-de88ff). First step refreshes
+    reports/host-loads/{host-loads,meta.host-loads}.yml (the system-report Host loads
+    section + node freshness); second publishes the yml into the idc02 web edge data
+    dir so chaba-admin/monitor renders live 5-min host loads without waiting for the
+    daily report. Second ExecStart assumes the idc02 web-srv layout.'
 - id: chaba-cached-videos
   name: yt-live media cache -> CMS cached-videos-report
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
