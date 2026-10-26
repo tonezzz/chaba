@@ -1,0 +1,58 @@
+title: 'no_result:ada_camera_snapshot — session-teardown casualty, not a tool bug'
+subtitle: Audit signature fired when a call was cancelled mid-flight by session close; session-audit now classifies it 'teardown'
+icon: 🔬
+context:
+  trigger: "kanban audit-no-result-ada-camera-snapshot: no_result:ada_camera_snapshot seen 2026-10-10 + 2026-10-14"
+  units: "ada-ha-tony (idc03), realtime_provider tool dispatch, session-audit signature generator"
+
+finding:
+  evidence_2026_10_14: "session 4029a6447f — ada_camera_snapshot received 23:26:01 +07 (16:26:01 UTC), 4s after the last transcript turn (16:25:57Z); transcript file mtime 16:26Z. Session was already unstable ('the connection hiccupped' at 16:25:40Z) and ended there."
+  evidence_2026_10_10: "session 8d798faca2 — ada_camera_snapshot received 18:08:14 +07 while a traffic-cam ask was in flight; transcript cuts off mid-sentence (final Ada turn ends 'ต้องการ ให้ลอง อะไร—')."
+  mechanism: >
+    Tool dispatch runs INLINE in the provider receive loop
+    (realtime_provider.py ~L5427: `for call in tool_call.function_calls:
+    ... result = await self._camera_snapshot(...)`). When the browser
+    websocket drops or the session ends, main.py's finally block cancels
+    the provider_to_browser task; the CancelledError lands inside the
+    tool await, so the `function_call result` log line (and the
+    FunctionResponse back to Gemini) is never reached. pwa_server logs
+    `session=<sid> closed` at every teardown. Result: a `received` with
+    no `result` — which the audit flags as no_result.
+  bounded: >
+    _camera_snapshot itself is well-bounded (45s asyncio.wait_for cap on
+    the vms-snap shim -> stale-frame honest fallback; 15s stale lookup;
+    10s relay publish). The missing result is not a hang — a dead session
+    cannot consume a FunctionResponse, so nothing is owed.
+
+verdict:
+  class: correct-by-design friction + audit observability gap
+  detail: >
+    The tool did nothing wrong; the signature conflated 'call cancelled
+    by session teardown' (expected) with 'call wedged' (the real bug
+    class). Gemini never gets the response either way — there is nothing
+    to repair in the tool or its schema.
+
+fix:
+  where: scripts/ada/session-audit.py (this worktree; deploy via install-session-audit.sh on tony-dell)
+  changes:
+    - "fetch_journal grep now also captures `session=<sid> closed` lines (pwa_server teardown marker)"
+    - "parse_journal records per-session closed_ts (latest close line)"
+    - "analyze_session: a no_result whose session closed <=90s after the call is reclassified kind=teardown (severity info, sig teardown:<tool>) — kept on the page/corpus as telemetry"
+    - "surfacing() skips kind teardown (like ok) — never surfaces to inbox, never cards; no_result keeps teeth for calls dropped while the session lived on (gap >90s or no close line at all)"
+    - "selftest fixture: added tail call_7 ada_camera_snapshot + `session=... closed` line; expect teardown:1 — PASS"
+  not_done: >
+    ada-voice itself still logs nothing when a call is abandoned —
+    realtime_provider.close() could log `function_call cancelled
+    id=<cid> name=<name>` for in-flight calls (a per-call pending set
+    alongside _tools_in_flight). Nice-to-have; lives in the ada-voice
+    repo, outside this worktree's scope.
+
+evidence:
+  - cmd: "mddb ada-ha-scenario-reports audit/session-2026-10-14"
+    observed: "NORESULT ada_camera_snapshot 23:26:01 inside session 4029a6447f (17 findings — the GEV/casting-friction session)"
+  - cmd: "ssh idc03 cat ~/.local/share/ada/transcripts/2026-10-14-4029a6447f.md"
+    observed: "last turn 16:25:57Z; file mtime 16:26Z — call lands at session end"
+  - cmd: "ssh idc03 journalctl --user -u ada-ha-tony --since 2026-10-20 | grep ' closed'"
+    observed: "INFO pwa_server: session=<sid> closed — teardown marker present on every session close"
+  - cmd: "python3 scripts/ada/session-audit.py --selftest"
+    observed: "PASS — kinds include teardown:1, no_result:1 (mid-session drop still flagged)"
