@@ -49,6 +49,10 @@ comms:
     edge routes on api.+app. site blocks. Note: cfat_ DNS token is DEAD on all hosts (verify=Invalid API Token,
     backups same fp) — cfut_ alive but Workers-only; new token is a dashboard/Tony step, request incoming. Endpoint
     goes live on api.surf-thailand.com regard'
+- at: 2026-10-26 07:17
+  from: devin
+  text: 'raised request need-a-new-dns-capable-cloudflare-token-15edf9: Need a new DNS-capable Cloudflare token
+    — the cfat_ token is dead on all hosts (verify=Invalid API Token; same fingerpri'
 requests:
 - id: the-v2-installer-requires-a-re-e1c6d2
   ask: The v2 installer requires a report-back endpoint for keyless enrollment via POST request to land in the node
@@ -65,6 +69,18 @@ requests:
   escalated_at: 2026-10-25 17:46
   answer: ★ Share the existing /enroll contract from the stick-announce unit for the installer POST endpoint and
     provision a new DNS-capable Cloudflare token for app.surf-thailand.com.
+- id: need-a-new-dns-capable-cloudflare-token-15edf9
+  ask: 'Need a new DNS-capable Cloudflare token — the cfat_ token is dead on all hosts (verify=Invalid API Token;
+    same fingerprint in all backups) and token creation is dashboard-only. Please mint at dash.cloudflare.com/profile/api-tokens:
+    name e.g. chaba-dns, permission Zone > DNS > Edit, zone resources Include > Specific zone > surf-thailand.com.
+    Then either paste the token here or drop it as CF_API_TOKEN in ~/.config/secrets/cloudflare.env on idc02 (CF_API_ACCOUNT_ID
+    already there). I will then create A record app.surf-thailand.com -> 157.85.102.125 (proxied, same as api) myself.'
+  status: open
+  at: 2026-10-26 07:17
+  from: devin
+  options:
+  - proceed
+  - hold
 spec: 'Installer v2 keyless enroll endpoint: share the existing /enroll contract from the stick-announce unit for
   the installer POST endpoint, and provision a new DNS-capable Cloudflare token for it (Tony-approved path). Done
   when the endpoint serves an enroll POST per the existing contract.'
