@@ -1,7 +1,7 @@
 id: capacity-move-michael-dev
 title: 'capacity: move michael-dev HA node idc03 -> idc02'
 column: backlog
-updated: 2026-10-26 17:27
+updated: 2026-10-26 17:28
 brief: 'Next move under capacity-adjust procedure. idc03 co-locates two HA nodes with Ada backends+MDDB; member/dev
   nodes without LAN deps prefer idc02/idc03 per placement policy — idc02 has 11.9G/220G free and is the designated
   relief valve. michael-dev chosen before kk-ha: dev lane, lower blast radius. Stateful move: HA config dir + .storage,
@@ -25,6 +25,10 @@ comms:
 - at: 2026-10-26 17:27
   from: tony
   text: queued for processing
+- at: 2026-10-26 17:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: queued
