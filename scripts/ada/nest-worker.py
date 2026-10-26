@@ -28,9 +28,9 @@ WORKER = None
 RCLONE = shutil.which('rclone') or os.path.expanduser('~/.local/bin/rclone')
 
 
-def rc(*args, check=True):
+def rc(*args, check=True, timeout=900):
     r = subprocess.run([RCLONE] + list(args), capture_output=True,
-                       text=True, timeout=300)
+                       text=True, timeout=timeout)
     if check and r.returncode != 0:
         raise RuntimeError(f'rclone {args[0]}: {r.stderr.strip()[:300]}')
     return r

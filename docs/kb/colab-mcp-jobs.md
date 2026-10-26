@@ -224,6 +224,43 @@ of staging cells per job:
   Remaining order rule: cache-restore second, least-new-download work
   early, every later prep hides under a GPU run.
 
+### Standard launch sequence — stage first, assessment before cache prep (OPS-0880, 2026-10-26)
+
+The launch order that keeps the T4 fed end-to-end:
+
+1. **Stage everything before launch.** The runner snapshots `JOBS.py`
+   and the `packs/` listing ONCE at startup — anything uploaded mid-run
+   waits for the next launch. Fleet-side staging is an rclone copy of the
+   canonical repo files (`scripts/colab/{JOBS,queue-runner→runner,
+   runtime_registry,preflight-cell,queue-launcher-cell,ada-nest-job-console}.py`
+   → `gdrive:ada-nest/queue/`, `scripts/colab/packs/` →
+   `gdrive:ada-nest/packs/`); purge `queue/__pycache__` after bumping
+   JOBS.py so a stale `.pyc` can't shadow the new manifest, and confirm
+   `rclone check` reports 0 diffs before any VM opens the console.
+2. **One cache-independent held-out assessment immediately before the
+   next model/cache prep.** Canonical slot: `devnest-heldout-assessment`
+   in JOBS.py between `assets-stage` and `save-hf-cache` — a fixed
+   fp16/bf16 TFLOPs + H2D/D2H battery plus a production-log overlap
+   audit, zero model/pulls (torch ships with the runtime image), so it
+   stays valid while `/root/.cache` mutates underneath. Its GPU run hides
+   the multi-minute `save-hf-cache` repack — the second un-hideable
+   window after the first job's prep (which the warmup covers). Reports:
+   `queue/assessments/devnest-heldout-<boot_id>.{json,md}`, env-scoped so
+   every boot writes fresh evidence.
+   - **Not a benchmark pass.** This is a worker/queue assessment. The
+     DevNest replay benchmark's five safe fixtures + held-out verifiers
+     are unfrozen — never report one as the other.
+   - If the assessment needs to precede a specific *pack's* model prep
+     instead, name/place it so it sorts just before that pack (packs run
+     alphabetical after JOBS) — the runner only ever overlaps the NEXT
+     undone job's prep under the current run; run stages stay serial.
+3. **After prep, the T4 package runs with durable-artifact gates.**
+   env `scope` jobs re-run per boot; packs claim → prep → run →
+   verify-before-mark (`artifacts` globs must hit ≥1 non-empty file) →
+   `packs/<name>/done`. The 120 s `NEST_QUEUE_SETTLE_S` drain window lets
+   DriveFS finish flushing before the VM idles; server-side truth is
+   `rclone lsf` from a fleet host.
+
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
 
 OPS-0759: work now ships as **packs**, not manifest jobs — a pack is a
