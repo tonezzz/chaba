@@ -1,7 +1,7 @@
 id: audit-degraded-cast-to-screen
 title: 'Ada session audit: degraded:cast_to_screen (4d seen)'
 column: doing
-updated: 2026-10-26 17:45
+updated: 2026-10-26 17:46
 brief: 'Recurring session-audit signature ''degraded:cast_to_screen'': cast_to_screen -> degraded — 2x on 2026-10-14,
   seen on 4 day(s).'
 priority: medium
@@ -46,7 +46,28 @@ comms:
     10-14 (session 4029a6447f), 1x 10-17; ZERO since — quiet because the offline-screen path hasnt been hit, NOT
     because fixed. Verified live idc03 ada-voice @59562cf: no _pub_truth, none of drop 10 deployed. Staged screens.delivered-zero.patch
     still applies cleanly (3/3 hunks vs main). A'
+- at: 2026-10-26 17:46
+  from: devin
+  text: 'raised request approve-deploying-ada-voice-drop-10-ada-e1fe9b: Approve deploying ada-voice drop 10 (ADA-0684,
+    staged 2026-10-15, never landed)? screens.delivered-zero converts deliver'
 action:
   type: dispatch
   status: running
   runner: tony-macbook
+requests:
+- id: approve-deploying-ada-voice-drop-10-ada-e1fe9b
+  ask: 'Approve deploying ada-voice drop 10 (ADA-0684, staged 2026-10-15, never landed)? screens.delivered-zero
+    converts delivered:0 phantom-success into honest fail; plus 5 sibling patches (unavailable-precheck, goal-loop
+    breaker, target-fidelity, cast-loop instructions). Verified: all hunks still apply to main@59562cf, 1467 tests
+    passed at staging. Install = apply at tony-dell edit point, push main, deploy-ada.sh idc03 --restart.'
+  status: open
+  at: 2026-10-26 17:46
+  from: devin
+  options:
+  - id: deploy
+    label: Deploy drop 10 — apply at tony-dell edit point + deploy-ada.sh idc03
+  - id: defer
+    label: Defer — sig is quiet since 10-17; revisit if delivered:0 recurs
+  - id: partial
+    label: Deploy only screens.delivered-zero (signature fix), hold the other 5
+  suggested: deploy
