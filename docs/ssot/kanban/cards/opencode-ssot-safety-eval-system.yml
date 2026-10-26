@@ -1,0 +1,40 @@
+id: opencode-ssot-safety-eval-system
+title: Build OpenCode SSOT profiles, safety gates, and benchmark harness
+column: backlog
+updated: 2026-10-26 10:44
+brief: Give OpenCode a compact task-scoped SSOT and graduated safety/evaluation system instead of one long mixed
+  session.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- ssot
+- safety
+- benchmark
+- devnest
+- mcp
+spec: 'Design and implement an OpenCode operating system for many focuses. Add a compact SSOT registry/procedure
+  for task profiles: focus id, objective, target host, risk level, allowed tools/MCP allowfile, allowed model, allowed
+  paths, artifact contract, deterministic verifier, escalation lane, rollback, and token budget. Define safety levels
+  S0 read-only local, S1 read-only remote, S2 scratch/artifact write, S3 branch/PR with verifier, S4 production/remediation
+  always human-gated. Keep OpenCode global MCP surface minimal; use per-focus allowlists and fresh sessions, never
+  a giant all-tools context. Add an evaluator with frozen fixtures and independent verifiers; record pass/fail,
+  artifact validity, tool denials, retries, wall time, input/cache/output tokens, human intervention minutes, escalation,
+  and combined Devin/OpenCode cost. Seed profiles from verified work: host assessment, mcp-debug read-only health
+  report, storage dry-run report, DevNest Telegram report (pending channel), SSOT/knowledge lookup. Add procedures
+  for session isolation, context handoff, evidence landing, failure escalation, and rollback. Keep OPENCODE_LANES
+  broad routing off until gates pass. Update Devin KB with the stable procedure only after verification. Acceptance:
+  SSOT validates, profiles can render an OpenCode prompt/config, denied-tool smoke passes, one profile runs end-to-end
+  with an artifact/verifier, benchmark report is reproducible, and no unverified model claim is treated as completion.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Recent OpenCode session mixed 31 messages across unrelated focuses and hallucinated a host-status commit;
+  use fresh task-scoped sessions and independent verification. Existing AI lane and continuous-improvement procedures
+  provide the baseline.
+ref: BEN-0906
+comms:
+- at: 2026-10-26 10:44
+  from: tony
+  text: card captured via board-api
