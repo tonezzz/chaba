@@ -6,7 +6,8 @@ note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
   Burn shape: 310 sessions, ~45.7M in / ~300K out. **~85% of input is TEXT, not audio** — context/system-prompt
-  replay on every turn, not speech. Median session 40s / 89K in-tok; reconnect churn re-primes ~16K text each connect.
+  replay on every turn, not speech. Median session 40s / 89K in-tok; reconnect churn re-primes ~16K text
+  each connect.
 
 
   Per-lane attribution (session_ids via journald):
@@ -19,3 +20,19 @@ comms:
 - at: 2026-10-14 06:16
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 01:21
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: overnight-usage-analysis-shows-928d43
+  ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%,
+    with ada-dev representing 63% of fleet input tokens and TEST-POLLUTION writing 4.7M to usage.jsonl),
+    but the card specifies no target host, repo, or mitigation strategy to address this reconnect churn
+    and test pollution.
+  options:
+  - ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
+  - Use repo ada-pi on host tony-omen to optimize system-prompt replay overhead
+  - Postpone mitigation until further usage data is gathered
+  status: open
+  at: 2026-10-27 01:21
+  from: backlog-spec-enrich
