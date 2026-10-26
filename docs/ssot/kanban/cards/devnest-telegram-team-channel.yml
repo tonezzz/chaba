@@ -1,7 +1,7 @@
 id: devnest-telegram-team-channel
 title: Connect DevNest household AI team to Telegram group
 column: done
-updated: 2026-10-26 17:07
+updated: 2026-10-26 17:09
 brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
   as a team.
 priority: high
@@ -87,3 +87,9 @@ comms:
     it, but did not execute approval yet: current phase is capture-only and no board card ref OPS-0912 exists. Next
     integration must parse APPROVE <card/ref>, resolve exact card, call board-api /respond or approved action path,
     and post an audit result in the same topic; reject missing/ambiguous cards.'
+- at: 2026-10-26 17:09
+  from: devin
+  text: 'Observed Telegram update 954573588: "explain 0905". Proposed route: normalize 0905→OPS-0905; classify as
+    read-only card_explain; fetch live card via board-api GET; answer deterministically first. If Tony asks for
+    deeper analysis, route the bounded card context to the free_lane/research brain; use paid_frontier/devin only
+    for cross-repo design or implementation. General is the surface, not the AI brain.'
