@@ -1,7 +1,7 @@
 id: storage-deterministic-runner-safe-targets
 title: Implement deterministic storage dry-run and guarded safe-cache cleanup
-column: doing
-updated: 2026-10-26 13:16
+column: review
+updated: 2026-10-26 13:17
 brief: Turn the verified OpenCode storage dry-run into a deterministic report/apply runner; start with safe OpenCode
   cache targets only.
 priority: high
@@ -27,8 +27,11 @@ action:
   type: dispatch
   repo: chaba
   host: tony-macbook
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Failed with result ''exit-code''.
+    | devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Consumed 2.964s CPU time over 1.892s wall
+    clock time, 48.1M memory peak.'
 note: 'OpenCode dry-run already classified 99 candidates: only OpenCode caches/Trash were automatic_ok; no deletion
   occurred. Prior KNB-0903 dispatch lost its artifact, so this is a narrowed rerun with explicit files/tests and
   host pinning.'
@@ -43,3 +46,9 @@ comms:
 - at: 2026-10-26 13:16
   from: chaba
   text: started devin-task-20261026-131621-implement-in-the-chaba-repo-a- on tony-macbook (dispatch)
+- at: 2026-10-26 13:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Failed with result
+    ''exit-code''. | devin-task-2'
+review_kind: verify
+claim: {}
