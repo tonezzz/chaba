@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
 column: backlog
-updated: 2026-10-25 20:38
+updated: 2026-10-26 14:17
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -37,3 +37,10 @@ comms:
     runtime/GPU/Drive, checks managed-session heartbeats and queue lease, and never stops or kills another runtime.
     Account-wide discovery/stop is still limited to Colab Runtime > Manage sessions; the optional stop-tool request
     remains an explicit follow-up decision.
+- at: 2026-10-26 14:17
+  from: devin
+  text: 'Capability check 2026-10-26: the live `colab` MCP can manipulate cells in an already attached browser notebook,
+    but has no tool to create/select a T4 runtime or enumerate/stop account-wide sessions. Live `mcp-colab` exposes
+    pack status/submit/result, tunnel and model probes; `colab_session_status` exists in source but is absent from
+    the live tool list. The notebook starts the detached shared queue inside an already-running Colab VM; Cell 2
+    drains JOBS.py + all eligible packs, not one selected jo'
