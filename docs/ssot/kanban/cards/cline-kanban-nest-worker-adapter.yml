@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 18:54
+updated: 2026-10-27 18:55
 priority: medium
 tags:
 - cline-kanban
@@ -154,6 +154,13 @@ comms:
     file docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml (commit 6c23b7a9a), not changed by this PR.
     I will not merge/deploy until the recorded syntax-fix/owner decision is resolved. The local qwen3:4b Cline path
     now returns HTTP 200 via /v1, but the manual turn'
+- at: 2026-10-27 18:55
+  from: devin
+  text: 'PR #45 is now open as a draft from infra/cline-kanban-nest-worker-publish. CI syntax passed; CI validate
+    is red only on the pre-existing origin/master syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml,
+    which is outside this PR. Per the approved flow, I am holding merge/deploy until that gate is resolved. Local
+    Cline/Ollama /v1 transport is fixed (HTTP 200), but the smoke turn was canceled before tools/files. LiteLLM
+    bench key is over cap; the separate Cline-key budget'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
