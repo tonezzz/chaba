@@ -1,0 +1,17 @@
+id: kk-video-devnest-topic-event-feed
+title: Route Sacred Father project activity to DevNestHA topic
+column: doing
+updated: 2026-10-27 12:33
+spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
+  preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
+  generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
+  to that thread. Keep messages concise and members/private; do not send raw source text or media binaries; suppress
+  per-heartbeat progress and do not mirror routine events to General. Ensure PublicationEvent/TelegramSink routes
+  by project or card reference through the relay''s project binding (not only a hard-coded tg_thread_id). Verify
+  project manifest + topic registry + active relay version, and use mocked/dry-run delivery first; do not post a
+  test message or change sharing permissions. Related: OPS-0915, OPS-0912, OPS-0914.'
+ref: OPS-0927
+comms:
+- at: 2026-10-27 12:33
+  from: devin
+  text: card captured via board-api
