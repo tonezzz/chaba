@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: doing
-updated: 2026-10-27 14:02
+updated: 2026-10-27 15:43
 priority: medium
 tags:
 - cline-kanban
@@ -29,3 +29,10 @@ comms:
     container against a localhost-only backend. The Tailnet proxy will enforce BasicAuth + exact Host/Origin. Use
     existing Omen Ollama qwen3:4b (tool-capable, already cached, no API key or download) for one disposable smoke
     task. This validates Nest queue -> one Cline execution host; it '
+- at: 2026-10-27 15:43
+  from: devin
+  text: '2026-10-27 implementation checkpoint: local branch infra/cline-kanban-nest-worker has commit f7fe5ce59.
+    Proxy/Nest adapter tests pass (7+7), pack schema dry-run is valid, SSOT validation has 0 errors, and stack preflight
+    passes against the current live service. The code is not pushed or deployed. Live testing requires PR publication/CI
+    plus a short con01 restart to split the proxy and Cline runtime into separate pod containers, change the login
+    to proxy Basic Auth, configure the local Omen qwen3'
