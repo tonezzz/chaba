@@ -63,6 +63,10 @@ comms:
   from: chaba
   text: 'merge-sweep: dispatch/20261027-140132-relay-is-reply-only-today-a-pe conflicts with origin/master: integrations/ada-voice/README.md
     — merge aborted, card stays for human resolution'
+- at: 2026-10-27 14:17
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261027-140132-relay-is-reply-only-today-a-pe:
+    1 commit(s) conflict with origin/master '
 action:
   type: dispatch
   status: done
@@ -75,3 +79,16 @@ action:
     stale_running: 2026-10-27 14:17
 review_kind: verify
 claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261027-140132-relay-is-reply-only-today-a-pe: 1 commit(s) conflict with
+    origin/master in chaba — conflicted paths: integrations/ada-voice/README.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261027-140132-relay-is-reply-only-today-a-pe
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-10-27 14:17
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
