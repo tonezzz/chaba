@@ -1,14 +1,19 @@
 # ada-nest JOB CONSOLE — CELL 1: mount Drive, identify + register this
-# managed runtime, refuse ambiguous duplicate launches. Run ONCE per session,
-# before CELL 2. Canonical source: scripts/colab/preflight-cell.py (chaba
-# repo); deployed copy lives at ada-nest/queue/preflight-cell.py.
+# managed runtime, report + validate the pinned release, refuse ambiguous
+# duplicate launches. Run ONCE per session, before CELL 2. Canonical
+# source: scripts/colab/preflight-cell.py (chaba repo); the pinned copy
+# lives at ada-nest/releases/<id>/queue/preflight-cell.py.
 #
 # What it does:
 #   1. mounts Google Drive at /content/drive
 #   2. prints this VM's identity: boot_id, GPU model/VRAM, RAM, Drive state
-#   3. registers the VM at queue/runtime-sessions/<boot_id>.json and refreshes it
-#      on a background heartbeat while this notebook stays open
-#   4. if ANOTHER managed runtime's record is still fresh (<TTL), refuses —
+#   3. reports and VALIDATES the pinned release — queue/ACTIVE_RELEASE.json
+#      resolves to releases/<id>/ whose release.json sha matches the
+#      pointer and whose every declared file verifies. RELEASE-BAD refuses;
+#      UNPINNED (no pointer yet) warns and continues in legacy mode.
+#   4. registers the VM at queue/runtime-sessions/<boot_id>.json and
+#      refreshes it on a background heartbeat while this notebook stays open
+#   5. if ANOTHER managed runtime's record is still fresh (<TTL), refuses —
 #      a second console session is ambiguous: it may be about to launch its
 #      own queue. Resolve via Google Runtime > Manage Sessions (authoritative
 #      for ALL sessions incl. uninstrumented notebooks) or re-run after the
@@ -29,11 +34,92 @@ import threading
 import time
 import uuid
 
-Q = os.environ.get('NEST_QUEUE', '/content/drive/MyDrive/ada-nest/queue')
+ROOT = os.environ.get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
+Q = os.environ.get('NEST_QUEUE', f'{ROOT}/queue')
 ALLOW_SECOND_RUNTIME = False        # deliberate dual-VM escape hatch only
 HB_S = 60                            # registry refresh cadence
 CONTROL_POLL_S = 5
 CONTROL_TTL_S = 300
+
+
+def _sha256(p):
+    import hashlib
+    h = hashlib.sha256()
+    try:
+        with open(p, 'rb') as f:
+            for b in iter(lambda: f.read(1 << 20), b''):
+                h.update(b)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _load_module(path, name):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def resolve_release():
+    """-> (status, info, rel_id, rel_dir, manifest, rl).
+    release_lib is imported ONLY after its own sha256 is proven against
+    the manifest — the verifier can never run unverified code."""
+    try:
+        ptr = json.loads(open(f'{Q}/ACTIVE_RELEASE.json').read())
+    except Exception as e:
+        if os.path.exists(f'{Q}/ACTIVE_RELEASE.json'):
+            return ('bad', [f'ACTIVE_RELEASE.json unreadable ({e})'],
+                    None, None, None, None)
+        return ('unpinned', [], None, None, None, None)
+    rel_id = str(ptr.get('release_id'))
+    rel_dir = f'{ROOT}/releases/{rel_id}'
+    try:
+        manifest = json.loads(open(f'{rel_dir}/release.json').read())
+    except Exception as e:
+        return ('bad', [f'{rel_id}: release.json unreadable ({e})'],
+                rel_id, rel_dir, None, None)
+    want_sha = str(ptr.get('release_sha256') or '')
+    got_sha = _sha256(f'{rel_dir}/release.json')
+    if want_sha and got_sha != want_sha:
+        return ('bad', [f'{rel_id}: release.json sha '
+                        f'{str(got_sha)[:12]} != pointer {want_sha[:12]}'],
+                rel_id, rel_dir, None, None)
+    want_lib = (manifest.get('files') or {}).get('queue/release_lib.py')
+    lib = f'{rel_dir}/queue/release_lib.py'
+    if not want_lib or _sha256(lib) != want_lib:
+        return ('bad', [f'{rel_id}: release_lib.py missing/tampered'],
+                rel_id, rel_dir, None, None)
+    try:
+        rl = _load_module(lib, 'nest_release_lib')
+    except Exception as e:
+        return ('bad', [f'{rel_id}: release_lib import failed ({e})'],
+                rel_id, rel_dir, None, None)
+    problems = rl.verify_release(ROOT, rel_id, manifest)
+    want_nb = (manifest.get('files') or {}).get(
+        'queue/ada-nest-job-console.ipynb')
+    if want_nb and _sha256(f'{Q}/ada-nest-job-console.ipynb') != want_nb:
+        problems.append('deployed queue/ada-nest-job-console.ipynb '
+                        '!= released notebook')
+    if problems:
+        return ('bad', problems, rel_id, rel_dir, manifest, rl)
+    return ('pinned', [], rel_id, rel_dir, manifest, rl)
+
+
+def launcher_path():
+    """The control watcher must invoke the PINNED launcher — resolve the
+    release fresh per request so a repoint is honored; falls back to the
+    legacy queue copy only when nothing is pinned (it then refuses)."""
+    try:
+        ptr = json.loads(open(f'{Q}/ACTIVE_RELEASE.json').read())
+        rel = str(ptr.get('release_id'))
+        p = f'{ROOT}/releases/{rel}/queue/queue-launcher-cell.py'
+        if os.path.isfile(p):
+            return p
+    except Exception:
+        pass
+    return os.path.join(Q, 'queue-launcher-cell.py')
 
 
 def mount_drive():
@@ -115,8 +201,7 @@ def process_control_request(request_path, boot_id, queue_dir=None,
     try:
         if launcher_main is None:
             launcher = runpy.run_path(
-                os.path.join(q, 'queue-launcher-cell.py'),
-                run_name='mcp_queue_launcher')
+                launcher_path(), run_name='mcp_queue_launcher')
             launcher_main = launcher['main']
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
             launcher_main()
@@ -148,8 +233,26 @@ def control_watcher_loop(queue_dir, boot_id):
 
 def main():
     print(mount_drive())
-    sys.path.insert(0, Q)
-    import runtime_registry as rr
+    status, info, rel_id, rel_dir, manifest, rl = resolve_release()
+    if status == 'bad':
+        raise SystemExit('RELEASE-BAD — refusing to register:\n - '
+                         + '\n - '.join(info))
+    if status == 'unpinned':
+        print('release: UNPINNED — no queue/ACTIVE_RELEASE.json yet; '
+              'cell 2 will refuse until a release is published')
+        code_q = Q
+    else:
+        nb = (manifest.get('files') or {})
+        print(f'release: RELEASE-OK {rel_id} '
+              f'commit {str(manifest.get("commit"))[:12]} '
+              f'generated {time.strftime("%Y-%m-%d %H:%M", time.gmtime(manifest.get("generated_at") or 0))} '
+              f'— {len(nb)} files verified')
+        code_q = f'{rel_dir}/queue'
+    sys.path.insert(0, code_q)
+    # load by path — a re-run after a repoint must not reuse a stale
+    # sys.modules entry from the previous release
+    rr = _load_module(f'{code_q}/runtime_registry.py',
+                      'nest_runtime_registry')
     fresh = rr.peers()
     if fresh and not ALLOW_SECOND_RUNTIME:
         names = '; '.join(rr.fmt_runtime(p) for p in fresh)

@@ -1260,6 +1260,23 @@ jobs:
     BOARD_NOTIFY_TG_CHAT_ID — /send otherwise defaults to Tony''s DM).
     OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
     (every tick exits silently), rm to resume — or pull this job entry.'
+- id: colab-release-publish
+  name: Colab release publisher — ada-nest pinned release to gdrive
+  host: idc02   # idc02 holds the gdrive: rclone remote; idc03 has none
+  dispatch: systemd
+  on_calendar: '*:7/15'   # 15-min cadence, offset behind chaba-repo-sync
+  persistent: true
+  timeout: 20m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/colab/publish-release.py --repo %h/CascadeProjects/chaba --remote gdrive:ada-nest
+  note: 'Hands-off Colab release flow (card devnest-colab-release-pinning,
+    2026-10-27). Builds an immutable bundle from origin/master
+    (git archive — never the working tree), uploads to
+    gdrive:ada-nest/releases/<id>/, verifies every remote artifact by
+    hash, then atomically flips queue/ACTIVE_RELEASE.json. No-ops when
+    scripts/colab is unchanged since the active release commit, so a
+    15-min cadence costs ~nothing after chaba-repo-sync pulls. Rollback:
+    publish-release.py --activate <release_id> on idc02.
+    OFF SWITCH: systemctl --user stop colab-release-publish.timer on idc02.'
 - id: ada-tg-webhook-watch
   name: Ada Telegram webhook registration monitor
   host: idc03

@@ -173,21 +173,25 @@ def fmt_runtime(r):
             f" ts {age:.0f}s ago{rbit})")
 
 
-def launch_gate(root=None, ttl=None, allow_second=False):
+def launch_gate(root=None, ttl=None, allow_second=False, runner_path=None):
     """Problems list for starting the shared queue on THIS VM.
     Empty list = go. Non-empty = refuse (print each to the operator).
       - Drive not mounted / runner.py absent
       - no GPU (CPU runtime — the queue exists to fill a T4)
       - another managed runtime fresh in the registry (ambiguous duplicate)
     allow_second bypasses ONLY the duplicate leg — the deliberate two-VM
-    case the queue lease then arbitrates."""
+    case the queue lease then arbitrates.
+    runner_path: under release pinning the runner is
+      releases/<id>/queue/runner.py — the launcher passes that path; the
+      legacy queue/runner.py check remains for unpinned trees."""
     root = root or nest_root()
     problems = []
     qd = queue_dir(root)
     if not drive_mounted(root):
         problems.append('Drive is not mounted — run cell 1 first')
-    if not (qd / 'runner.py').exists():
-        problems.append(f'{qd}/runner.py missing — deploy the queue files')
+    rp = Path(runner_path) if runner_path else qd / 'runner.py'
+    if not rp.exists():
+        problems.append(f'{rp} missing — deploy the queue files')
     name, gb = gpu_info()
     if gb <= 0:
         problems.append('no GPU detected — Runtime > Change runtime type > T4')

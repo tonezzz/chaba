@@ -32,6 +32,47 @@ REGISTRY = COLAB / "runtime_registry.py"
 RUNNER = COLAB / "queue-runner.py"
 JOBS_SRC = COLAB / "JOBS.py"
 BUILD_NB = COLAB / "build-job-console.py"
+RELEASE_LIB = COLAB / "release_lib.py"
+
+
+def _sha256_bytes(b):
+    import hashlib
+    return hashlib.sha256(b).hexdigest()
+
+
+def write_release(root, rel_id="rel-test-1"):
+    """Minimal verified release fixture: pointer + release dir whose
+    release.json hashes all match, plus the deployed notebook copy the
+    launch gate requires."""
+    rel_dir = root / "releases" / rel_id
+    files = {}
+    bundle = {
+        "queue/runner.py": RUNNER.read_bytes(),
+        "queue/JOBS.py": JOBS_SRC.read_bytes(),
+        "queue/runtime_registry.py": REGISTRY.read_bytes(),
+        "queue/release_lib.py": RELEASE_LIB.read_bytes(),
+        "queue/queue-launcher-cell.py": LAUNCHER.read_bytes(),
+        "queue/ada-nest-job-console.ipynb": b'{"cells":[],"nbformat":4}\n',
+    }
+    for rel, content in bundle.items():
+        p = rel_dir / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(content)
+        files[rel] = _sha256_bytes(content)
+    manifest = {"schema": 1, "release_id": rel_id,
+                "commit": "f00d" * 10, "generated_at": int(time.time()),
+                "files": files, "packs": {}, "gap_packs": {}}
+    mbytes = (json.dumps(manifest, indent=1) + "\n").encode()
+    (rel_dir / "release.json").write_bytes(mbytes)
+    q = root / "queue"
+    q.mkdir(parents=True, exist_ok=True)
+    (q / "ACTIVE_RELEASE.json").write_text(json.dumps({
+        "schema": 1, "release_id": rel_id,
+        "release_sha256": _sha256_bytes(mbytes),
+        "commit": manifest["commit"], "activated_at": int(time.time())}))
+    shutil.copy2(rel_dir / "queue/ada-nest-job-console.ipynb",
+                 q / "ada-nest-job-console.ipynb")
+    return manifest
 
 NVIDIA_SMI_STUB = """#!/bin/bash
 case "$*" in
@@ -84,6 +125,9 @@ class ConsoleSandbox(unittest.TestCase):
                   | stat.S_IXOTH)
         os.environ["PATH"] = f"{self.bindir}:{os.environ['PATH']}"
         self.launcher = load_module(LAUNCHER, "queue_launcher_cell")
+
+    def write_release_fixture(self):
+        return write_release(self.root)
 
     def tearDown(self):
         for k, v in self.old_env.items():
@@ -217,25 +261,35 @@ class TestControlRequests(ConsoleSandbox):
 
 class TestLaunchGate(ConsoleSandbox):
     def test_fresh_t4_passes_and_spawns(self):
+        self.write_release_fixture()
         spawned = []
-        self.launcher.spawn = lambda q: spawned.append(q)
+        self.launcher.spawn = lambda *a, **k: spawned.append(str(self.q))
         self.launcher.main()
         self.assertEqual(spawned, [str(self.q)])
 
+    def test_unpinned_refuses_queue_start(self):
+        """No ACTIVE_RELEASE -> the gate refuses to run unversioned code."""
+        with self.assertRaises(SystemExit) as cm:
+            self.launcher.main()
+        self.assertIn("REFUSED", str(cm.exception))
+        self.assertIn("publish", str(cm.exception))
+
     def test_duplicate_managed_runtime_blocks_with_identity(self):
+        self.write_release_fixture()
         self.write_peer("peer-dupe-e3e3", age_s=1)
         with self.assertRaises(SystemExit) as cm:
             self.launcher.main()
         self.assertIn("peer-dupe-e3e3"[:8], str(cm.exception))
 
     def test_same_vm_live_runner_reports_not_respawns(self):
+        self.write_release_fixture()
         sleeper = self.spawn_sleeper()
         self.write_runner_id(boot_id(), sleeper.pid)
         self.write_heartbeat(age_s=5)
         state, _ = self.launcher.runner_state(str(self.q))
         self.assertEqual(state, "alive-local")
         spawned = []
-        self.launcher.spawn = lambda q: spawned.append(q)
+        self.launcher.spawn = lambda *a, **k: spawned.append(str(self.q))
         self.launcher.main()
         self.assertEqual(spawned, [])
 
@@ -244,6 +298,7 @@ class TestPidCollisionSafety(ConsoleSandbox):
     """A Drive-visible pid is never a process handle for another VM."""
 
     def test_foreign_pid_never_signaled(self):
+        self.write_release_fixture()
         sleeper = self.spawn_sleeper()          # a REAL live local pid
         self.write_runner_id("foreign-boot-f4f4", sleeper.pid)
         # fresh heartbeat -> another VM's queue is alive -> refuse, no kill
@@ -278,13 +333,14 @@ class TestPidCollisionSafety(ConsoleSandbox):
         self.assertNotIn(424242, [p for p, _ in kills])
 
     def test_same_vm_zombie_reaped(self):
+        self.write_release_fixture()
         sleeper = self.spawn_sleeper()
         self.write_runner_id(boot_id(), sleeper.pid)
         self.write_heartbeat(age_s=9999)        # stale: kernel survived restart
         state, _ = self.launcher.runner_state(str(self.q))
         self.assertEqual(state, "zombie-local")
         spawned = []
-        self.launcher.spawn = lambda q: spawned.append(q)
+        self.launcher.spawn = lambda *a, **k: spawned.append(str(self.q))
         self.launcher.main()
         self.assertEqual(spawned, [str(self.q)])
         for _ in range(50):
@@ -307,6 +363,7 @@ class TestLaunchGateCpu(ConsoleSandbox):
     with_gpu = False
 
     def test_cpu_runtime_refuses_queue_start(self):
+        self.write_release_fixture()
         with self.assertRaises(SystemExit) as cm:
             self.launcher.main()
         self.assertIn("GPU", str(cm.exception))

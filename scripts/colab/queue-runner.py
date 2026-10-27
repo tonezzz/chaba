@@ -1,10 +1,26 @@
 #!/usr/bin/env python3
 # colab-batch-queue runner — DAEMON version.
-# Lives on Drive at ada-nest/queue/runner.py; launched detached by
-# queue-launcher-cell.py so the notebook kernel stays free for diagnostics
-# (nvidia-smi, df, py-spy) while the queue runs.
+# Lives on Drive at ada-nest/releases/<id>/queue/runner.py (pinned mode)
+# and is launched detached by queue-launcher-cell.py so the notebook kernel
+# stays free for diagnostics (nvidia-smi, df, py-spy) while the queue runs.
 #
-# Manifest: ada-nest/queue/JOBS.py — JOBS=[{name, scope, prep, run, artifacts}].
+# RELEASE PINNING (2026-10-27, card devnest-colab-release-pinning):
+#   At startup the runner resolves ONE verified release — env
+#   NEST_RELEASE_DIR (set by the launcher) or queue/ACTIVE_RELEASE.json —
+#   re-verifies every file hash against release.json, then imports JOBS +
+#   pack manifests from the release dir only. Pack CODE is materialized
+#   into the ada-nest/packs/<name>/ workspace at claim time; pack STATE
+#   (claim/done/failed/out/) stays in the workspace so artifact paths are
+#   unchanged. done/failed markers carry rel= + jh=/ph= tokens and are
+#   honored only when the recorded hash equals the code about to run —
+#   stale markers can never skip new code. Markers without a hash token
+#   (pre-pinning) are honored only when the workspace still holds
+#   byte-identical code and are upgraded in place.
+#   No ACTIVE_RELEASE.json at all => UNPINNED mode (sandbox/tests/first
+#   bootstrapping): legacy Q/JOBS.py + ROOT/packs, loudly logged.
+#
+# Manifest: releases/<id>/queue/JOBS.py — JOBS=[{name, scope, prep, run,
+# artifacts}].
 # prep = shell (CPU-bound fetch/install/extract); run = python source exec'd
 # in a shared namespace. Resumable: queue/done/<name>.done markers mean
 # restart this runner after any crash/recycle.
@@ -20,20 +36,21 @@
 #   "run returned but wrote nothing" — marker content records matched sizes
 #   so the fleet watchdog can spot-check server-side.
 #
-# PACKS (nest-pack v2): ada-nest/packs/<name>/ is a self-contained job
-# bundle — pack.yml {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run,
-# artifacts, scope, timeout_s} plus optional inputs/. Packs run AFTER the
-# JOBS manifest, are claimed optimistically (packs/<name>/claim/<worker>),
-# and mark done at packs/<name>/done — so ANY worker on ANY store can pick
-# them up. needs is a capability floor: this worker advertises gpu via
-# nvidia-smi, disk via statvfs, egress_only_ok=True always.
+# PACKS (nest-pack v2): releases/<id>/packs/<name>/pack.yml is the CODE
+# (verified); ada-nest/packs/<name>/ is the writable workspace — pack.yml
+# {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run, artifacts, scope,
+# timeout_s} plus optional inputs/. Packs run AFTER the JOBS manifest, are
+# claimed optimistically (packs/<name>/claim/<worker>), and mark done at
+# packs/<name>/done — so ANY worker on ANY store can pick them up. needs is
+# a capability floor: this worker advertises gpu via nvidia-smi, disk via
+# statvfs, egress_only_ok=True always.
 #
 # Observability (all on Drive, readable via rclone from fleet hosts):
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
 #   queue/prep-<name>.log    — per-job prep stdout/stderr
 #   queue/heartbeat          — rewritten every 15s: <epoch> <job> <phase>
 #   queue/runner.pid         — running pid, removed on clean exit (legacy)
-#   queue/runner.id          — JSON {pid,boot_id,worker,epoch,ts} — the
+#   queue/runner.id          — JSON {pid,boot_id,worker,epoch,release,ts} —
 #                            — boot-scoped identity; a pid on shared Drive is
 #                            — NOT a process handle on any other VM
 #   queue/done/<name>.done   — per-job completion markers (work scope)
@@ -50,26 +67,140 @@ except OSError:
 ENV_DONE = f'{Q}/env-done/{BOOT_ID}'
 os.makedirs(DONE, exist_ok=True)
 os.makedirs(ENV_DONE, exist_ok=True)
-sys.path.insert(0, Q)
 
+# --- release resolution --------------------------------------------------
+# The runner's own dir is where its sibling files live — in pinned mode
+# that IS releases/<id>/queue/. release_lib.py is hash-checked against the
+# manifest BEFORE it is imported (the verifier can't run unverified code).
+import hashlib as _hashlib
 import importlib
+import importlib.util as _ilu
+import json as _json
+
+SELF_DIR = os.path.dirname(os.path.abspath(__file__))
+REL_ID = os.environ.get('NEST_RELEASE_ID') or 'unpinned'
+REL_DIR = os.environ.get('NEST_RELEASE_DIR')
+REL_MANIFEST = None
+rl = None                                   # release_lib module or None
+
+
+def _sha256(p):
+    h = _hashlib.sha256()
+    try:
+        with open(p, 'rb') as f:
+            for b in iter(lambda: f.read(1 << 20), b''):
+                h.update(b)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _load_release_lib(path):
+    spec = _ilu.spec_from_file_location('nest_release_lib', path)
+    mod = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _load_manifest_pinned(rel_dir, rel_id):
+    """release.json -> verified (rel_dir, manifest). Exits on any chain
+    break — never silently run stale code."""
+    global REL_MANIFEST, rl
+    manifest_path = f'{rel_dir}/release.json'
+    try:
+        manifest = _json.loads(open(manifest_path).read())
+    except Exception as e:
+        sys.exit(f'release {rel_id}: release.json unreadable ({e})')
+    env_sha = os.environ.get('NEST_RELEASE_SHA')      # launcher's record
+    got_sha = _sha256(manifest_path)
+    if env_sha and env_sha != got_sha:
+        sys.exit(f'release {rel_id}: release.json sha '
+                 f'{str(got_sha)[:12]} != launcher-passed {env_sha[:12]}')
+    want_lib = (manifest.get('files') or {}).get('queue/release_lib.py')
+    lib = f'{rel_dir}/queue/release_lib.py'
+    if not want_lib or _sha256(lib) != want_lib:
+        sys.exit(f'release {rel_id}: release_lib.py missing/tampered')
+    want_self = (manifest.get('files') or {}).get('queue/runner.py')
+    if want_self and _sha256(os.path.abspath(__file__)) != want_self:
+        sys.exit(f'release {rel_id}: this runner.py is not the pinned one '
+                 f'(self-hash mismatch) — refusing to run unverified code')
+    rl = _load_release_lib(lib)
+    problems = rl.verify_release(ROOT, rel_id, manifest)
+    if problems:
+        sys.exit('release ' + rel_id + ' does not verify:\n - '
+                 + '\n - '.join(problems[:20]))
+    REL_MANIFEST = manifest
+    return manifest
+
+
+def _resolve_release():
+    """-> (mode, code_q, packs_src). Launcher env pins the snapshot that
+    was verified at launch; absent env the pointer is the source of truth."""
+    global REL_ID, REL_DIR
+    if REL_DIR:                              # launcher verified snapshot
+        _load_manifest_pinned(REL_DIR, REL_ID)
+        return 'pinned', f'{REL_DIR}/queue', f'{REL_DIR}/packs'
+    try:
+        ptr = _json.loads(open(f'{Q}/ACTIVE_RELEASE.json').read())
+    except Exception:
+        ptr = None
+    if ptr and ptr.get('release_id'):
+        REL_ID = str(ptr['release_id'])
+        REL_DIR = f'{ROOT}/releases/{REL_ID}'
+        manifest_path = f'{REL_DIR}/release.json'
+        want_sha = str(ptr.get('release_sha256') or '')
+        got_sha = _sha256(manifest_path)
+        if want_sha and got_sha != want_sha:
+            sys.exit(f'release {REL_ID}: release.json sha '
+                     f'{str(got_sha)[:12]} != pointer {want_sha[:12]}')
+        _load_manifest_pinned(REL_DIR, REL_ID)
+        return 'pinned', f'{REL_DIR}/queue', f'{REL_DIR}/packs'
+    if os.path.exists(f'{Q}/ACTIVE_RELEASE.json'):
+        sys.exit('queue/ACTIVE_RELEASE.json exists but is unreadable — '
+                 'refusing to run unpinned while a release was requested')
+    # unpinned legacy/sandbox mode — release_lib rides next to the runner
+    # when it exists (repo checkout); old Drive trees may not have it.
+    lib = f'{SELF_DIR}/release_lib.py'
+    if os.path.isfile(lib):
+        try:
+            rl = _load_release_lib(lib)
+        except Exception:
+            rl = None
+    REL_DIR = None
+    return 'unpinned', Q, f'{ROOT}/packs'
+
+
+MODE, CODE_Q, PACKS_SRC = _resolve_release()
+sys.path.insert(0, CODE_Q)
+sys.dont_write_bytecode = True
+# an uploaded/stale __pycache__ could otherwise shadow the pinned sources
+import shutil as _shutil
+_shutil.rmtree(f'{CODE_Q}/__pycache__', ignore_errors=True)
+_shutil.rmtree(f'{Q}/__pycache__', ignore_errors=True)
+
 import JOBS as jobs_mod
 importlib.reload(jobs_mod)          # pick up manifest edits without restart
 JOBS = jobs_mod.JOBS
+for _j in JOBS:
+    _j['_jh'] = rl.job_hash(_j) if rl else None
 
-PACKS = f'{ROOT}/packs'
+PACKS = f'{ROOT}/packs'                     # workspace (state), always
+
+
 def load_packs():
-    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts."""
+    """Discover pack.yml under the release packs/ dir (pinned) or the
+    ada-nest/packs/ workspace (unpinned) → normalized job dicts. _src is
+    the verified code dir; the workspace gets materialized at claim."""
     out = []
-    if not os.path.isdir(PACKS):
+    if not os.path.isdir(PACKS_SRC):
         return out
     try:
         import yaml
     except ImportError:
         print('packs/ present but pyyaml missing — run a deps job first')
         return out
-    for d in sorted(os.listdir(PACKS)):
-        py = f'{PACKS}/{d}/pack.yml'
+    for d in sorted(os.listdir(PACKS_SRC)):
+        py = f'{PACKS_SRC}/{d}/pack.yml'
         if not os.path.isfile(py):
             continue
         try:
@@ -79,6 +210,9 @@ def load_packs():
             continue
         spec.setdefault('name', d)
         spec['_pack'] = True
+        spec['_src'] = f'{PACKS_SRC}/{d}'
+        spec['_ph'] = (rl.manifest_pack_hash(REL_MANIFEST, 'packs', d)
+                       if rl and REL_MANIFEST else None)
         out.append(spec)
     return out
 
@@ -164,6 +298,8 @@ def fence_watch():
 WORKER = f'colab-{BOOT_ID[:8]}-{os.getpid()}'
 EPOCH = take_lease(WORKER)
 say(f'lease acquired: {WORKER} epoch {EPOCH}')
+say(f'release: {REL_ID} mode={MODE}'
+    + ('' if MODE == 'pinned' else ' — UNPINNED-MODE (no ACTIVE_RELEASE)'))
 # heartbeat thread starts only after WORKER/EPOCH exist — starting it
 # earlier raced the take_lease settle window and died on NameError
 # (observed 2026-10-23: heartbeat NameError: EPOCH -> no heartbeat ever)
@@ -178,6 +314,7 @@ def write_runner_id():
         with open(f'{Q}/runner.id', 'w') as f:
             f.write(json.dumps({'pid': os.getpid(), 'boot_id': BOOT_ID,
                                 'worker': WORKER, 'epoch': EPOCH,
+                                'release': REL_ID,
                                 'ts': int(time.time())}) + '\n')
     except OSError:
         pass
@@ -281,6 +418,55 @@ def markpath(job):
     d = ENV_DONE if job.get('scope') == 'env' else DONE
     return f"{d}/{job['name']}.done"
 
+
+def marker_key(job):
+    return 'ph' if job.get('_pack') else 'jh'
+
+
+def marker_sha(job):
+    if job.get('_pack'):
+        return job.get('_ph')
+    return job.get('_jh')
+
+
+def marker_ok(job):
+    """(fresh, why). A done marker skips this job only when it records the
+    same code hash as what's about to run — stale markers can never skip
+    new code. Legacy markers (no hash token) get ONE rescue: pack code in
+    the workspace already byte-identical to the release (ws_pack_matches);
+    everything else re-runs once under pinned hashing."""
+    path = markpath(job)
+    if not os.path.exists(path):
+        return False, 'absent'
+    key, sha = marker_key(job), marker_sha(job)
+    if not rl:
+        return True, 'legacy-mode'             # pre-release_lib fallback
+    if not sha:
+        # unpinned packs have nothing to compare to (legacy semantics);
+        # a pinned pack with no manifest hash must never marker-skip
+        if MODE != 'pinned':
+            return True, 'legacy-mode'
+        return False, 'no-hash-available'
+    fresh, why = rl.marker_fresh(path, key, sha)
+    if fresh:
+        return True, why
+    if why.startswith('legacy') and job.get('_pack') and REL_MANIFEST:
+        ws = f"{PACKS}/{job['name']}"
+        if rl.ws_pack_matches(ws, REL_MANIFEST, f"packs/{job['name']}"):
+            rl.upgrade_marker(path, 'ph', sha, REL_ID)
+            return True, 'legacy-rescued (ws code identical)'
+    return False, why
+
+
+def stamp_done(job, seconds, info):
+    path = markpath(job)
+    if rl:
+        return rl.stamp_marker(path, seconds, BOOT_ID, EPOCH, REL_ID,
+                               marker_key(job), marker_sha(job) or '', info)
+    open(path, 'w').write(
+        f'{seconds:.0f}s boot={BOOT_ID} ep={EPOCH} {info}\n')
+    return ''
+
 def release_claim(name):
     """Delete our own claim file — a failed/dead worker must not leave a
     claim that poisons the pack for the stale-claim window (2026-10-23)."""
@@ -301,16 +487,29 @@ def touch_index(name, state, info=''):
 def claim(job):
     """Optimistic first-writer-wins on packs/<name>/claim/. Drive dir-listing
     lag means this is best-effort for >1 simultaneous worker — fine at our
-    scale; the watchdog arbitrates real conflicts."""
+    scale; the watchdog arbitrates real conflicts. In pinned mode the claim
+    also materializes the verified pack code into the workspace so run/prep
+    resolve PACK_DIR/inputs against reviewed bytes."""
     if fenced_out(EPOCH, WORKER):
         sys.exit('fenced — lost lease before claim')
-    cdir = f"{PACKS}/{job['name']}/claim"
+    ws = f"{PACKS}/{job['name']}"
+    cdir = f'{ws}/claim'
     os.makedirs(cdir, exist_ok=True)
     if os.listdir(cdir):
         return False
     open(f'{cdir}/{WORKER}', 'w').write(f'{time.time():.0f} ep={EPOCH}\n')
     time.sleep(2)                       # let a racing claim surface
-    return sorted(os.listdir(cdir))[0] == WORKER
+    if sorted(os.listdir(cdir))[0] != WORKER:
+        return False
+    if MODE == 'pinned' and rl and job.get('_src'):
+        try:
+            n = rl.materialize_pack(job['_src'], ws, REL_ID)
+            say(f'   materialized {len(n)} file(s) from release {REL_ID}')
+        except Exception as e:
+            say(f'   materialize failed ({e}) — refusing to run '
+                'unverified code')
+            return False
+    return True
 
 def verify_artifacts(job, timeout=180):
     """Every declared glob must match ≥1 non-empty file. Local stat is the
@@ -355,8 +554,9 @@ try:
     for i, job in enumerate(queue):
         name = job['name']
         state.update(job=name, phase='check')
-        if os.path.exists(markpath(job)):
-            say(f'== {name}: SKIP (done marker)')
+        fresh, mwhy = marker_ok(job)
+        if fresh:
+            say(f'== {name}: SKIP (done marker {mwhy})')
             continue
         if job.get('_pack'):
             why = fits(job)
@@ -384,7 +584,7 @@ try:
         if pending is None:         # one bg slot — hide next prep under this run
             nxt = next((j for j in queue[i+1:]
                         if j.get('prep')
-                        and not os.path.exists(markpath(j))),
+                        and not marker_ok(j)[0]),
                        None)
             if nxt:
                 say(f'   (bg) prepping {nxt["name"]} (see prep-{nxt["name"]}.log)')
@@ -421,7 +621,7 @@ try:
                 continue
             if fenced_out(EPOCH, WORKER):
                 sys.exit('fenced — lost lease before done-mark')
-            open(markpath(job), 'w').write(f'{dt:.0f}s boot={BOOT_ID} ep={EPOCH} {info}\n')
+            stamp_done(job, dt, info)
             if job.get('_pack'): touch_index(name, 'done', info)
             say(f'== {name}: DONE {dt:.0f}s {info} (gpu {gpu_note()})')
         except Exception:

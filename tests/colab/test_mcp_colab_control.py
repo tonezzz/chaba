@@ -143,6 +143,7 @@ class TestColabQueueStart(unittest.TestCase):
                                          "ts": time.time() - 3600})
                 if path.endswith("/runner.id"):
                     return 3, "not found"
+                return 3, "not found"   # ACTIVE_RELEASE.json etc.
             raise AssertionError(f"unexpected rclone operation: {args}")
 
         with patch.object(

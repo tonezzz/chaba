@@ -14,9 +14,17 @@
 #   2. heartbeat phase is 'prep' or 'prep-wait'
 #   3. nvidia-smi reports >= pack.min_free_gpu_gb free VRAM
 #   4. queue/gap-lease is free, stale, or already ours (one gap runner)
-#   5. pack is unclaimed, has no done/failed marker, is not disabled
+#   5. pack is unclaimed, has no FRESH done/failed marker, is not disabled
 #
-# Pack contract — gap-packs/<name>/pack.json (stdlib json; no yaml dep):
+# RELEASE PINNING (2026-10-27): when queue/ACTIVE_RELEASE.json exists the
+# pack CODE comes from releases/<id>/gap-packs/<name>/ (hash-checked per
+# pass against release.json); the workspace ada-nest/gap-packs/<name>/
+# keeps only STATE. done/failed markers carry gh=<pack hash> + rel= and
+# are honored only while the recorded hash equals the pinned pack hash —
+# stale markers can never skip new code; hash-less legacy markers are
+# honored once when the workspace pack code is already byte-identical.
+#
+# Pack contract — releases/<id>/gap-packs/<name>/pack.json (stdlib json):
 #   {"name": "...", "run": "<shell string>", "timeout_s": 120,
 #    "min_free_gpu_gb": 1, "artifacts": ["gap-packs/<name>/out/*.json"],
 #    "disabled": false}
@@ -29,9 +37,10 @@
 # State (all inside gap-packs/ + queue/, never the main pack space):
 #   gap-packs/<name>/claim/<worker>  first-writer-wins; claims older than
 #                                    GAP_CLAIM_TTL (1h) are reapable
-#   gap-packs/<name>/done            FILE marker (same shape as packs/)
+#   gap-packs/<name>/done            FILE marker (JSON, gh=/rel= aware)
 #   gap-packs/<name>/failed          pack exited nonzero / artifacts missing;
-#                                    skipped until an operator deletes it
+#                                    skipped until an operator deletes it —
+#                                    or a new pack hash lands (auto-retried)
 #   gap-packs/<name>/out/gap.log     pack stdout+stderr
 #   gap-packs/<name>/out/aborted.txt last window-abort reason (retries allowed)
 #   queue/gap-lease                  {worker, pid, ts} — mutual exclusion
@@ -57,9 +66,80 @@ from pathlib import Path
 
 ROOT = Path(os.environ.get('NEST_ROOT', '/content/drive/MyDrive/ada-nest'))
 Q = ROOT / 'queue'
-PACKS = ROOT / 'gap-packs'
+PACKS = ROOT / 'gap-packs'                     # workspace (state)
 GAP_LEASE = Q / 'gap-lease'
 GAP_HB = Q / 'gap-heartbeat'
+
+# --- release resolution (per pass; cheap — pointer + manifest + the one
+# release_lib file whose sha is proven before it is ever imported) -------
+SELF_DIR = Path(os.path.dirname(os.path.abspath(__file__)))
+MODE = 'unpinned'
+REL_ID = 'unpinned'
+REL_DIR = None
+REL_MANIFEST = None
+PACKS_SRC = PACKS
+rl = None
+
+
+def _sha256(p):
+    import hashlib
+    h = hashlib.sha256()
+    try:
+        with open(p, 'rb') as f:
+            for b in iter(lambda: f.read(1 << 20), b''):
+                h.update(b)
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def _resolve():
+    global MODE, REL_ID, REL_DIR, REL_MANIFEST, PACKS_SRC, rl
+    try:
+        ptr = json.loads((Q / 'ACTIVE_RELEASE.json').read_text())
+    except Exception:
+        ptr = None
+    if not ptr or not ptr.get('release_id'):
+        if (Q / 'ACTIVE_RELEASE.json').exists():
+            say('ACTIVE_RELEASE.json unreadable — pass (pinning requested '
+                'but pointer is broken)')
+            return False
+        return True                               # legacy unpinned
+    REL_ID = str(ptr['release_id'])
+    REL_DIR = ROOT / 'releases' / REL_ID
+    try:
+        REL_MANIFEST = json.loads((REL_DIR / 'release.json').read_text())
+    except Exception as e:
+        say(f'release {REL_ID}: release.json unreadable ({e}) — pass')
+        return False
+    want_sha = str(ptr.get('release_sha256') or '')
+    got_sha = _sha256(REL_DIR / 'release.json')
+    if want_sha and got_sha != want_sha:
+        say(f'release {REL_ID}: release.json sha mismatch vs pointer — pass')
+        return False
+    lib = REL_DIR / 'queue' / 'release_lib.py'
+    want_lib = (REL_MANIFEST.get('files') or {}).get('queue/release_lib.py')
+    if not want_lib or _sha256(lib) != want_lib:
+        say(f'release {REL_ID}: release_lib.py missing/tampered — pass')
+        return False
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'nest_release_lib', str(lib))
+        rl = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rl)
+    except Exception as e:
+        say(f'release {REL_ID}: release_lib import failed ({e}) — pass')
+        return False
+    # self-check: this gap-runner must be the pinned file — same rule as
+    # the main runner (refuse to run unverified code)
+    want_self = (REL_MANIFEST.get('files') or {}).get('queue/gap-runner.py')
+    if want_self and _sha256(SELF_DIR / 'gap-runner.py') != want_self:
+        say(f'release {REL_ID}: this gap-runner.py != pinned copy — pass')
+        return False
+    MODE = 'pinned'
+    PACKS_SRC = REL_DIR / 'gap-packs'
+    return True
 
 STALE_S = float(os.environ.get('GAP_STALE_S', '60'))
 LEASE_TTL = float(os.environ.get('GAP_LEASE_TTL', '180'))
@@ -175,7 +255,9 @@ def beat_gap(state, pack='-'):
         pass
 
 
-def load_spec(d):
+def load_spec(code_dir, name):
+    """Read pack code from the (possibly release-pinned) code dir."""
+    d = code_dir
     for cand in (d / 'pack.json', d / 'pack.yml'):
         if not cand.exists():
             continue
@@ -186,14 +268,67 @@ def load_spec(d):
                 import yaml
                 spec = yaml.safe_load(cand.read_text())
         except Exception as e:
-            say(f'== {d.name}: SKIP bad {cand.name} ({e})')
+            say(f'== {name}: SKIP bad {cand.name} ({e})')
             return None
         if isinstance(spec, dict) and spec.get('run'):
-            spec.setdefault('name', d.name)
+            spec.setdefault('name', name)
             return spec
-        say(f'== {d.name}: SKIP {cand.name} missing run')
+        say(f'== {name}: SKIP {cand.name} missing run')
         return None
     return None
+
+
+def pack_hash(name):
+    """Pinned: manifest-declared gap-pack content hash. Unpinned: ''."""
+    if MODE == 'pinned' and rl:
+        return rl.manifest_pack_hash(REL_MANIFEST, 'gap_packs', name) or ''
+    return ''
+
+
+def pack_code_ok(name):
+    """Pinned mode: every manifest-declared file under gap-packs/<name>/
+    must still hash-match — a tampered pack dir refuses to run."""
+    if MODE != 'pinned' or not rl:
+        return True
+    files = rl.pack_file_set(REL_MANIFEST, f'gap-packs/{name}')
+    if not files:
+        return True
+    for rel, want in files.items():
+        if _sha256(PACKS_SRC / name / rel) != want:
+            say(f'== {name}: SKIP code hash mismatch {rel} '
+                f'(release {REL_ID})')
+            return False
+    return True
+
+
+def marker_state(d, name):
+    """(skip, why): done/failed markers gate only while they record the
+    code hash about to run. Legacy markers get the ws-identical rescue."""
+    gh = pack_hash(name)
+    for mark in ('done', 'failed'):
+        p = d / mark
+        if not p.exists():
+            continue
+        if not rl or not gh:
+            return True, f'{mark} marker'
+        rec = rl.marker_json(p) or {}
+        got = str(rec.get('gh') or '')
+        if got == gh[:12]:
+            return True, f'{mark} marker gh match'
+        if not got:
+            if rl.ws_pack_matches(str(d), REL_MANIFEST,
+                                  f'gap-packs/{name}'):
+                rec['gh'] = gh[:12]
+                rec['rel'] = REL_ID
+                rec['upgrade'] = 'legacy-ws-match'
+                rl.stamp_marker_json(str(p), **rec)
+                return True, f'{mark} marker legacy-rescued'
+            say(f'== {name}: {mark} marker stale (no gh) — re-running')
+            return False, 'stale'
+        say(f'== {name}: {mark} marker stale gh={got} -> {gh[:12]} — '
+            're-running')
+        return False, 'stale'
+    return False, 'no-marker'
 
 
 def claim(d):
@@ -302,8 +437,10 @@ def verify_artifacts(spec, timeout=60):
 
 
 def main():
-    if not PACKS.is_dir():
-        say(f'no {PACKS} — nothing to do')
+    if not _resolve():
+        return
+    if not PACKS_SRC.is_dir():
+        say(f'no {PACKS_SRC} — nothing to do')
         return
     why = window_open()
     if why:
@@ -313,19 +450,23 @@ def main():
         return
     beat_gap('scan')
     try:
-        for d in sorted(PACKS.glob('*/')):
+        for src_d in sorted(PACKS_SRC.glob('*/')):
             why = window_open() or ('gap-lease lost' if lease_lost() else '')
             if why:
                 say(f'window closed ({why}) — stopping')
                 break
-            spec = load_spec(d)
+            name = src_d.name
+            d = src_d if MODE != 'pinned' else (PACKS / name)
+            spec = load_spec(src_d, name)
             if spec is None:
-                continue
-            name = spec['name']
-            if (d / 'done').exists() or (d / 'failed').exists():
                 continue
             if spec.get('disabled'):
                 say(f'== {name}: SKIP disabled')
+                continue
+            skip, _why = marker_state(d, name)
+            if skip:
+                continue
+            if not pack_code_ok(name):
                 continue
             bad = FORBIDDEN_RE.search(
                 f"{spec.get('run', '')}\n{spec.get('prep', '')}")
@@ -337,10 +478,16 @@ def main():
             if free < need:
                 say(f'== {name}: SKIP vram {free:.1f}GB < {need}GB')
                 continue
+            if MODE == 'pinned' and rl:
+                try:
+                    rl.materialize_pack(str(src_d), str(d), REL_ID)
+                except Exception as e:
+                    say(f'== {name}: SKIP materialize failed ({e})')
+                    continue
             if not claim(d):
                 say(f'== {name}: SKIP claimed')
                 continue
-            say(f'== {name}: run (free vram {free:.1f}GB)')
+            say(f'== {name}: run (free vram {free:.1f}GB rel {REL_ID})')
             t0 = time.time()
             state, rc = run_pack(d, spec)
             dt = time.time() - t0
@@ -355,21 +502,28 @@ def main():
                 if 'lease' not in state:
                     break                          # window closing -> stop
                 return                           # lease lost -> nothing is ours
+            gh = pack_hash(name)
             if rc != 0:
                 say(f'== {name}: FAIL rc={rc} after {dt:.0f}s')
-                (d / 'failed').write_text(json.dumps(
-                    {'rc': rc, 'at': time.time(), 'worker': WORKER}))
+                _stamp = {'rc': rc, 'at': time.time(), 'worker': WORKER}
+                if gh:
+                    _stamp.update(gh=gh[:12], rel=REL_ID)
+                (d / 'failed').write_text(json.dumps(_stamp))
                 continue
             ok, info = verify_artifacts(spec)
             if not ok:
                 say(f'== {name}: FAIL artifacts missing: {info}')
-                (d / 'failed').write_text(json.dumps(
-                    {'err': f'artifacts missing: {info}',
-                     'at': time.time(), 'worker': WORKER}))
+                _stamp = {'err': f'artifacts missing: {info}',
+                          'at': time.time(), 'worker': WORKER}
+                if gh:
+                    _stamp.update(gh=gh[:12], rel=REL_ID)
+                (d / 'failed').write_text(json.dumps(_stamp))
                 continue
-            (d / 'done').write_text(json.dumps(
-                {'at': time.time(), 'worker': WORKER,
-                 'seconds': round(dt, 1), 'artifacts': info}))
+            _stamp = {'at': time.time(), 'worker': WORKER,
+                      'seconds': round(dt, 1), 'artifacts': info}
+            if gh:
+                _stamp.update(gh=gh[:12], rel=REL_ID)
+            (d / 'done').write_text(json.dumps(_stamp))
             say(f'== {name}: DONE {dt:.0f}s {info}')
     finally:
         beat_gap('exit')

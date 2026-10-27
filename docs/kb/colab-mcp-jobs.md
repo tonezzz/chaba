@@ -16,6 +16,54 @@ sources by `scripts/colab/build-job-console.py`). It is instruction
 markdown + exactly two code cells; there are **no per-job cells** — all
 workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
 
+### Pinned releases — the hands-off code path (2026-10-27)
+
+The queue no longer runs hand-uploaded Drive files. Everything the VM
+executes comes from one **immutable release bundle**:
+
+- `ada-nest/releases/<release_id>/` — built by
+  `scripts/colab/publish-release.py` from `git archive origin/master`
+  (never the working tree): `release.json` {schema, commit, generated_at,
+  files{path:sha256}, packs{name:{sha256,files}}, gap_packs{}},
+  `queue/{runner.py,JOBS.py,runtime_registry.py,cells,release_lib.py,
+  ada-nest-job-console.ipynb}`, `packs/<name>/` (code+inputs only),
+  `gap-packs/<name>/`.
+- `ada-nest/queue/ACTIVE_RELEASE.json` — the pointer
+  `{release_id, release_sha256, commit, activated_at, previous}`. Flipped
+  atomically (tmp upload + server-side moveto) only after `rclone
+  hashsum --download` verifies every remote artifact byte-for-byte.
+- `ada-nest/packs/<name>/` and `ada-nest/gap-packs/<name>/` become
+  **state-only workspaces** (claim/done/failed/out/model). The runner
+  materializes verified code into the workspace at claim time, so
+  `PACK_DIR` paths and artifact globs are unchanged.
+- **done/failed markers are hash-aware**: markers carry `rel=` +
+  `jh=` (JOBS), `ph=` (packs), `gh=` (gap-packs) and gate only while the
+  recorded hash equals the pinned code hash — a stale marker can never
+  skip new code. Pre-pinning markers are honored once when the workspace
+  code is already byte-identical (rescue + in-place upgrade); everything
+  else re-runs once.
+- **Cell 1** prints `RELEASE-OK <id> commit <sha>` (or `RELEASE-BAD` +
+  refuses); **cell 2** refuses on pointer/hash/notebook/runner/pack
+  mismatch and spawns `releases/<id>/queue/runner.py`, which re-verifies
+  at startup (self-hash included) — snapshot semantics: the release that
+  was verified is the release that runs.
+- **Publisher** runs on idc02 (`colab-release-publish.timer`, 15-min —
+  the only host with the `gdrive:` remote); it fetches `origin/master`,
+  no-ops when `scripts/colab` is unchanged since the active commit, and
+  purges the legacy unversioned `queue/*.py` copies after first
+  activation so stale code paths fail loudly.
+- **Rollback** = repoint:
+  `publish-release.py --activate <release_id>` on idc02 (re-verifies the
+  old release remotely first). The pointer records `previous` chains.
+- `--verify <release_id>` re-checks a remote bundle; `--list` shows
+  releases + active pointer; `--dry-run` prints the full plan.
+
+Live verification procedure (post-merge): after the idc02 timer
+publishes, open the console on a fresh T4 → cell 1 must print
+`RELEASE-OK` → `colab_queue_start(boot_id)` →
+`queue/runner.id` records `release: rel-<commit>-<ts>` → done markers
+gain `rel=`/`ph=` tokens → `colab_pack_status` lists release packs.
+
 - **Cell 1 — preflight** (`scripts/colab/preflight-cell.py`): mounts
   Drive, checks for another fresh managed runtime, then prints identity
   (boot_id, GPU model/VRAM, RAM, Drive state), registers this VM at
@@ -237,15 +285,15 @@ of staging cells per job:
 
 The launch order that keeps the T4 fed end-to-end:
 
-1. **Stage everything before launch.** The runner snapshots `JOBS.py`
-   and the `packs/` listing ONCE at startup — anything uploaded mid-run
-   waits for the next launch. Fleet-side staging is an rclone copy of the
-   canonical repo files (`scripts/colab/{JOBS,queue-runner→runner,
-   runtime_registry,preflight-cell,queue-launcher-cell,ada-nest-job-console}.py`
-   → `gdrive:ada-nest/queue/`, `scripts/colab/packs/` →
-   `gdrive:ada-nest/packs/`); purge `queue/__pycache__` after bumping
-   JOBS.py so a stale `.pyc` can't shadow the new manifest, and confirm
-   `rclone check` reports 0 diffs before any VM opens the console.
+1. **Stage = publish a release.** Since 2026-10-27 staging is the
+   release flow above, not a manual `rclone copy`: commit the change to
+   master, let `colab-release-publish.timer` (idc02) cut the bundle —
+   or run `publish-release.py` by hand for an urgent publish. The runner
+   snapshots ONE verified release at startup — anything published
+   mid-run waits for the next launch. (Legacy note: the old manual
+   staging path — rclone copies into `queue/` + `packs/` — is purged by
+   the publisher after first activation; pack.yml files left in the
+   workspace are ignored residue, code comes only from the release.)
 2. **One cache-independent held-out assessment immediately before the
    next model/cache prep.** Canonical slot: `devnest-heldout-assessment`
    in JOBS.py between `assets-stage` and `save-hf-cache` — a fixed

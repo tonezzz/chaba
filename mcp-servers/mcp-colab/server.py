@@ -62,6 +62,25 @@ def _pack_dir(name: str) -> str:
     return f"{PACKS}/{name}"
 
 
+def _active_release() -> tuple[dict, dict]:
+    """-> (pointer, manifest). Under release pinning the pack CODE lives at
+    releases/<id>/packs/; ada-nest/packs/<name>/ is state-only workspace."""
+    rc, data = _rclone("cat", f"{NEST}/queue/ACTIVE_RELEASE.json")
+    try:
+        ptr = json.loads(data) if rc == 0 else None
+    except Exception:
+        ptr = None
+    if not ptr or not ptr.get("release_id"):
+        return {}, {}
+    rc, data = _rclone(
+        "cat", f"{NEST}/releases/{ptr['release_id']}/release.json")
+    try:
+        manifest = json.loads(data) if rc == 0 else {}
+    except Exception:
+        manifest = {}
+    return ptr, manifest
+
+
 def _runtime_records() -> tuple[list[dict], str]:
     """Read only runtime records written by our managed notebook preflight."""
     root = f"{NEST}/queue/runtime-sessions"
@@ -92,23 +111,30 @@ def _runtime_records() -> tuple[list[dict], str]:
 @mcp.tool()
 def colab_pack_status() -> str:
     """List nest packs with claim/done/result state (read-only).
-    A dir only counts as a pack when it contains pack.yml — stray report
-    dirs under packs/ are listed separately instead of showing 'queued'.
-    CLAIMED requires a non-empty claim/ dir (the dir can linger empty
-    after a worker released its claim)."""
-    rc, out = _rclone("lsf", PACKS, "--dirs-only")
-    if rc != 0:
-        return f"ERROR listing packs: {out.strip()}"
-    names = [l.strip().strip("/") for l in out.splitlines() if l.strip()]
-    lines, not_packs = [], []
-    for n in sorted(names):
-        # default lsf lists files AND dirs (dirs end "/"); --files-only would
-        # hide claim/ and out/ so CLAIMED/OUT could never display.
+    Pack names come from the pinned release manifest
+    (queue/ACTIVE_RELEASE.json -> releases/<id>/release.json packs{} —
+    the verified code set). ada-nest/packs/<name>/ is the state workspace:
+    done/claim/out. Without a pointer the legacy workspace listing is
+    used and flagged unpinned."""
+    ptr, manifest = _active_release()
+    names = sorted((manifest.get("packs") or {}).keys())
+    pinned = bool(names)
+    if not pinned:
+        rc, out = _rclone("lsf", PACKS, "--dirs-only")
+        if rc != 0:
+            return f"ERROR listing packs: {out.strip()}"
+        names = [l.strip().strip("/") for l in out.splitlines() if l.strip()]
+    lines = []
+    if ptr.get("release_id"):
+        lines.append(f"release: {ptr['release_id']} "
+                     f"commit {str(ptr.get('commit'))[:12]}"
+                     + ("" if pinned else " (no packs in manifest)"))
+    else:
+        lines.append("release: UNPINNED — workspace listing, not "
+                     "verified code")
+    for n in names:
         entries = _rclone("lsf", _pack_dir(n))[1].splitlines()
         entries = [e.strip() for e in entries]
-        if "pack.yml" not in entries:
-            not_packs.append(n)
-            continue
         has_done = "done" in entries
         has_out = "out/" in entries
         claimed = False
@@ -117,9 +143,6 @@ def colab_pack_status() -> str:
             claimed = any(l.strip() for l in claims.splitlines())
         state = "DONE" if has_done else ("CLAIMED" if claimed else ("OUT" if has_out else "queued"))
         lines.append(f"{n:<28} {state}")
-    if not_packs:
-        lines.append("")
-        lines.append("not packs (no pack.yml): " + ", ".join(not_packs))
     return "\n".join(lines) or "(no packs)"
 
 
@@ -186,9 +209,16 @@ def colab_session_status() -> str:
     try:
         d = json.loads(rid)
         lines.append(f"runner.id: pid {d.get('pid')} boot "
-                     f"{str(d.get('boot_id'))[:8]} {d.get('worker')}")
+                     f"{str(d.get('boot_id'))[:8]} {d.get('worker')} "
+                     f"rel {d.get('release') or '?'}")
     except Exception:
         lines.append("runner.id: absent")
+    ptr, _manifest = _active_release()
+    if ptr.get("release_id"):
+        lines.append(f"active release: {ptr['release_id']} "
+                     f"commit {str(ptr.get('commit'))[:12]}")
+    else:
+        lines.append("active release: UNPINNED (no ACTIVE_RELEASE.json)")
     return "\n".join(lines)
 
 
@@ -357,7 +387,19 @@ def colab_pack_result(pack: str) -> str:
 def colab_pack_submit(local_dir: str, pack_name: str) -> str:
     """Submit a local pack dir (containing pack.yml + optional inputs/) to
     ada-nest/packs/<pack_name>. Local dir is on the host running this MCP.
-    Refuses to overwrite an existing pack."""
+    Refuses to overwrite an existing pack.
+
+    Under release pinning (queue/ACTIVE_RELEASE.json present) this always
+    refuses: pack code ships only through reviewed commits published by
+    scripts/colab/publish-release.py — a direct upload is unversioned
+    code the pinned runner would never execute anyway."""
+    ptr, _manifest = _active_release()
+    if ptr.get("release_id"):
+        return ("REFUSED: releases are pinned "
+                f"({ptr['release_id']}). Commit the pack under "
+                "scripts/colab/packs/ in chaba and let the release "
+                "publisher ship it — ada-nest/packs/ is a state-only "
+                "workspace now.")
     src = Path(local_dir).expanduser()
     yml = src / "pack.yml"
     if not yml.exists():
