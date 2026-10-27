@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: backlog
-updated: 2026-10-27 16:54
+updated: 2026-10-27 16:57
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -32,3 +32,10 @@ comms:
     and no GPU is required. Keep it rootless/loopback-only initially; add a Tailscale-authenticated route only after
     isolation tests. Consider idc02 later for always-on hosting. Do not use idc03 control-plane or devnest-ha sandbox.
     Education lesson filed as WP post 2737.'
+- at: 2026-10-27 16:57
+  from: devin
+  text: 'Ingress recommendation: idc02 already has tailnet-only Tailscale Serve at `https://idc02.taila0626a.ts.net`
+    -> Caddy. After the isolated container is built, expose it behind a dedicated path such as `/apps/opencode-jack/`
+    with a Caddy upstream to the loopback OpenCode port. Target URL: `https://idc02.taila0626a.ts.net/apps/opencode-jack/`,
+    tailnet-only. No public port or direct container port. If Jack is not a member of the tailnet, use a Tailscale
+    share/ACL or an authenticated access layer befo'
