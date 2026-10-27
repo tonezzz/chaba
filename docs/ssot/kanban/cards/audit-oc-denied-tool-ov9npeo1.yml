@@ -22,11 +22,15 @@ comms:
 - at: 2026-10-27 20:49
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-card-notes-an-opencode-aud-fb14b7
-  ask: The card notes an OpenCode audit event for a denied tool call (OV9npEO1), but lacks a target host, repository,
-    and investigation boundaries. Since no specific host or repository is mentioned in the card or recent communications,
-    I need the owner to select the appropriate context and target for this audit investigation.
+  ask: The card notes an OpenCode audit event for a denied tool call (OV9npEO1), but lacks a target host,
+    repository, and investigation boundaries. Since no specific host or repository is mentioned in the
+    card or recent communications, I need the owner to select the appropriate context and target for this
+    audit investigation.
   options:
   - ★ investigate in chaba repo on tony-dell
   - investigate in ada-voice repo on tony-macbook
@@ -36,3 +40,7 @@ requests:
   from: backlog-spec-enrich
   answer: ★ investigate in chaba repo on tony-dell
 awaiting_action: true
+spec: Investigate the OpenCode audit denied_tool event referenced by ID OV9npEO1 within the chaba repository
+  on host tony-dell. Ensure all constraints and context from the card notes are respected during the inspection.
+  The done-condition is verified when the investigation results are fully documented and recorded within
+  the chaba repository.
