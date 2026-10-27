@@ -1,7 +1,7 @@
 id: map-embed-tool
 title: map_embed tool — Google Maps POI+route on CMS pages
-column: backlog
-updated: 2026-10-27 16:03
+column: doing
+updated: 2026-10-27 16:09
 priority: medium
 tags:
 - ada-pi
@@ -91,15 +91,23 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261027-140229-tony-2026-10-13-wants-map-tool on tony-macbook still
     dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 16:09
+  from: devin
+  text: '2nd dispatch executing the proceed answer. Key probe done on tony-dell (status codes only, value never
+    printed): the gev GOOGLE_MAPS_API_KEY (AQ.Ab8…, same newer key shape as the Gemini keys) is REJECTED by every
+    Maps Platform endpoint — Embed 403, Static 403, Geocode REQUEST_DENIED, Routes 401, with and without a GEV referer.
+    Cant tell externally if the key is dead or its project lacks the APIs; either way no existing key works and
+    no host has gcloud/GCP creds, so mint-or-enable is a Tony conso'
 action:
   type: dispatch
-  status: queued
+  status: running
   runner: tony-macbook
   result: 'exit=0 ard for the key decision (reuse the gev key vs new ada-lane key). | devin-task-20261027-140229-tony-2026-10-13-wants-map-tool.service:
     Consumed 48.648s CPU time over 10min 18.148s wall clock time, 301.2M memory peak, 28.8M memory swap peak.'
   verified: true
   sweep:
     close_held: 2026-10-27 14:17
+    dirty: 1
 requests:
 - id: google-maps-api-key-gate-for-ada-lanes-r-025db9
   ask: 'GOOGLE_MAPS_API_KEY gate for ada lanes: reuse the gev key (~/.config/secrets/gev-google-maps.env on tony-dell)
