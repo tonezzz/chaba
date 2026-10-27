@@ -2171,7 +2171,8 @@ hosts:
       retired idc01's tier — card idc04-contabo-vps8-provision (OPS-0763).
       Roles live: mddb-follower #2 (snapshot+replicating), standby caddy-edge,
       ada-stt migrated off idc02 (native service, not container),
-      secrets-backup target. Pending: offload timers, runner lane."
+      secrets-backup target; Cline Kanban pilot (tailnet-only :3484) added
+      2026-10-27. Pending: offload timers, runner lane."
     role: public-vps
     tags:
       - public
@@ -2242,6 +2243,14 @@ hosts:
           stacks/con01/mddb-follower, 100.72.146.39:11123/:11124,
           localhost/mddb:2.15.4-lsn) — warm-DR promote target replacing
           retired idc01 (OPS-0763)"
+      - name: cline-kanban.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Disposable Cline Kanban v0.1.70 pilot via rootless Quadlet
+          stacks/con01/cline-kanban; published only on tailnet
+          100.72.146.39:3484. No production repo or provider secret mounted."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
