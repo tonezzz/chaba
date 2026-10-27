@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Sixteen drops live here:
+chaba dispatches. Seventeen drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -44,6 +44,8 @@ chaba dispatches. Sixteen drops live here:
 16. `cms_publish_page` slug derivation — `slug=` optional, derived from
     the title — card `fix-cms-publish-page-slug-argument-missi-96152a`
     (KNB-0624, 2026-10-27)
+17. `map_embed` — Google Maps POI pins + routes as CMS-ready snippets —
+    card `map-embed-tool` (2026-10-27)
 
 ---
 
@@ -1282,3 +1284,78 @@ derives instead of rejecting.
   `pool-notes-2026`); explicit `slug` still wins verbatim.
 - The two-step confirm handshake is untouched — register, ask, resubmit
   `confirmed=true`.
+
+## Drop 17 — map_embed tool (POI pins + routes as CMS-ready snippets)
+
+Card `map-embed-tool` (Tony 2026-10-13): trip/report pages need real maps —
+POIs and a route (the southafrica trip pages). `place_report` covers the
+single-place case; this is the multi-POI + route builder. The tool writes
+nothing itself: it composes the map URL and returns snippet artifacts
+(`markdown`, `iframe_html`, `image_url`, `open_url`) that the model hands
+to `cms_publish_page`/`cms_edit` or sends in chat.
+
+### Files
+
+- `backend/tools.d/map_embed.py` — the tool.
+- `backend/tools.d/manifest.map_embed.yml` — merge under `tools:`.
+- `backend/tool_guide.map_embed.yml` — append to `tool_guide.yml`.
+- `tests/scenarios-live/map_embed.yaml` — smoke scenario (lint bars new
+  tools without a scenario reference).
+- `docs/ssot/ssot.tool-surface.map_embed.patch` — count_cap 112→113
+  (must land in the same ada-voice commit — the ratchet).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/map_embed.py
+   backend/tools.d/map_embed.py`
+2. Merge `manifest.map_embed.yml`'s `map_embed:` block into
+   `backend/tools.d/manifest.yml` under `tools:`.
+3. Append `backend/tool_guide.map_embed.yml` to `backend/tool_guide.yml`.
+4. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/map_embed.yaml
+   tests/scenarios-live/`
+5. `git apply <chaba>/integrations/ada-voice/docs/ssot/ssot.tool-surface.map_embed.patch`
+   — base count_cap 112; if it no longer applies (another drop landed
+   first), bump `count_cap` by one in the same commit instead.
+6. Tool profiles already updated in this repo —
+   `docs/ssot/apps/ssot.apps.ada-persons.yml` adds `map_embed` to
+   `persons.tony.tools.include` and the `kk-cms-only` bench profile
+   (persons.kk/kk-parity skip it — that lane has no cms_* writers to
+   consume the snippet; adding it there later is one line each).
+   Re-run `scripts/ada/render-tool-profiles.py` for `ada-kk-dev.env` /
+   tony lane env **after** the ada-voice deploy.
+7. Env: `GOOGLE_MAPS_API_KEY` in the lane's env enables interactive
+   embeds + Google static + Routes API polylines (the tony-dell gev key
+   in `~/.config/secrets/gev-google-maps.env` is a candidate — confirm
+   the GCP project has Maps Embed + Maps Static + Routes APIs enabled).
+   The tool is still useful without it: `kind=static` falls back to an
+   OpenStreetMap multi-pin image (Nominatim geocoding), `open_url`
+   always works, and `kind=interactive` returns an honest `needs_key`
+   error rather than a dead iframe.
+8. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes.
+
+### Contract
+
+- `map_embed(places?, route?, kind?, chain?, title?, center?, zoom?,
+  size?, maptype?)` — `places` are `{name, lat?, lon?}` (bare strings
+  tolerated); `route` is `{origin, destination, waypoints[], mode}`.
+- `kind=interactive` → `embed_url` + `iframe_html` (Embed API:
+  directions / place / chained-directions / view). Several places with
+  no route chain into a directions map — the only way the embed API
+  shows them all (warning flags it). Needs `GOOGLE_MAPS_API_KEY`; the
+  no-key return is `ok:false` + `needs_key` + `open_url` +
+  `static_fallback`, never a dead iframe.
+- `kind=static` → `image_url`. With the key: Maps Static API — lettered
+  markers + a Routes API road-route polyline (straight-line fallback is
+  flagged in `warnings`). Without: OSM staticmap pins (name-only
+  entries geocoded via Nominatim; no route line — flagged).
+- `open_url` always returns — a keyless maps/dir or maps/search link
+  for the live map; `markdown` is the ready block for the CMS call.
+- Route calls also return `distance_km` / `duration_min` when the
+  Routes API answered.
+- Verified in-worktree by `tests/ada/test_map_embed_drop.py` (chaba
+  side): normalization, all URL builders, both env forks, Routes API +
+  Nominatim fakes, and the registry fragments — 21 passed.
+- NOT verified live: no real Google key exercised — first
+  `kind=interactive`/`kind=static`+route call after deploy + env is the
+  smoke; the OSM path is keyless and covered by the unit suite.
