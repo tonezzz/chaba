@@ -1,0 +1,146 @@
+# Job: jack-opencode-enrollment-gateway (OPS-0951)
+title: Jack OpenCode one-time enrollment gateway
+subtitle: VCAST-style single-use code -> scoped session cookie -> session-gated OpenCode proxy on idc02
+icon: target
+
+planning:
+  goal: >-
+    Stand up a stable HTTPS /enroll surface for the isolated Jack OpenCode
+    Podman IDE on idc02: single-use short-lived code, hashed+consumed
+    server-side, Secure/HttpOnly/SameSite session cookie, session proxy
+    (HTTP+WS/SSE) in front of the opencode route, revoke/health/TTL/audit/
+    reset, tests. Tailnet edge first; CF Access only after smoke.
+  scope: >-
+    In: enroll gateway service, jack-opencode pod (minimal isolated IDE so the
+    gate has a real upstream), quadlets, admin CLI, tests, tailnet edge,
+    docs. Out: public Cloudflare Access path (gated on isolation smoke +
+    Tony sign-off), dedicated jack-scoped LiteLLM virtual key (needs proxy
+    admin), full IDE hardening = parent card jack-opencode-podman-ide.
+  success_criteria:
+    - one-time code burn + replay rejection verified
+    - code + session TTL expiry verified
+    - re-mint revokes prior session (re-registration)
+    - unauthenticated requests denied; forged cookie denied
+    - upstream reachable only through the gateway (no published port)
+    - workspace-only boundary (/etc/passwd denied, /workspace served)
+    - OpenCode SPA loads through https://idc02.taila0626a.ts.net:8448
+    - no credential reaches browser JS (config, page, cookie)
+  risks:
+    - opencode /config leaks resolved provider apiKey -> mitigated: key in
+      auth.json credential store, not opencode.json (verified clean)
+    - rootless uid mapping on bind mounts -> mitigated: UserNS=keep-id
+  resources:
+    - idc02 rootless podman + systemd --user quadlets
+    - tailscale serve (sudo) for tailnet TLS + identity headers
+    - LiteLLM gateway 100.102.134.91:4000 via litellm-chaba.env key
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: devnest jack IDE
+      file: docs/ssot/kanban/cards/jack-opencode-podman-ide.yml
+
+processing:
+  status: completed
+  started_at: "2026-10-27T17:06+07:00"
+  steps:
+    - id: 1
+      label: gateway + stack
+      status: done
+      notes: stacks/idc02/jack-ide/ — enroll-gw (node stdlib server.mjs),
+        opencode Containerfile (opencode-ai 1.19.4 + git + ripgrep),
+        jack-ide.network, 2 quadlets, CLI, manifest, README
+    - id: 2
+      label: tests
+      status: done
+      notes: 17/17 node:test green — burn, replay, expiry, re-register,
+        unauth, boundary, cookie flags, WS tunnel, hash-only state, audit
+    - id: 3
+      label: deploy idc02
+      status: done
+      notes: images built; quadlets installed w/ UserNS=keep-id; secrets in
+        ~/.config/secrets/jack-{ide,enroll}.env (600); auth.json seeded;
+        workspace scratch repo seeded; services active+healthy
+    - id: 4
+      label: tailnet edge
+      status: done
+      notes: sudo tailscale serve --bg --https=8448 http://127.0.0.1:8377;
+        Tailscale-User-Login injected (gateway also requires it)
+    - id: 5
+      label: e2e smoke
+      status: done
+      notes: mint->enroll->SPA->API->SSE verified over tailnet URL; replay
+        code_used; re-mint killed old session; model call PONG via auth.json
+  decisions:
+    - label: dedicated tailnet origin (:8448), not path-prefix on :443
+      rationale: opencode SPA uses root-absolute asset/API paths; a subpath
+        mount would break it. :8448 gives a clean dedicated origin where / is
+        the IDE, and tailscale serve still does TLS + tailnet auth.
+      alternatives_considered: caddy /ide/* handle_path on :8088 (rejected —
+        SPA prefix breakage, plus / is already the web-origin passthrough)
+    - label: LiteLLM key in opencode auth.json, not opencode.json apiKey
+      rationale: /config returns resolved options incl. apiKey — leaked
+        sk-... to any enrolled browser (found in smoke). auth.json is a
+        server-side credential store; /config then carries no secret.
+      alternatives_considered: response scrubbing in proxy (rejected —
+        fragile across SSE/JSON endpoints)
+    - label: exclusive mint default (re-registration revokes prior session)
+      rationale: card spec — single Jack seat; fresh code = fresh session.
+      alternatives_considered: multi-session codes (available via
+        exclusive:false / `jack-enroll mint --shared`)
+    - label: LITELLM_KEY reuse instead of dedicated virtual key
+      rationale: /key/generate needs LiteLLM proxy admin which this host's
+        virtual key lacks. Follow-up carded on parent.
+      alternatives_considered: none available in-session
+  changes:
+    - stacks/idc02/jack-ide/* (new stack)
+    - ~/.config/containers/systemd/jack-{ide.network,enroll.container,opencode.container}
+    - ~/.config/secrets/jack-{ide,enroll}.env (600)
+    - ~/.config/jack-ide/opencode.json; ~/.local/share/jack-ide/{state,workspace,opencode-home}
+    - tailscaled serve config: https:8448 -> 127.0.0.1:8377
+    - ~/.local/bin/jack-enroll admin CLI
+
+followup:
+  - action: mint a dedicated jack-scoped LiteLLM virtual key (spend-capped)
+    owner: litellm proxy admin (idc03)
+    note: shared key is a placeholder; carded on jack-opencode-podman-ide
+  - action: public CF Access path (jack.surf-thailand.com block in
+      ~/.config/caddy/Caddyfile + Access policy for Jack's email)
+    gate: Tony sign-off after isolation smoke — NOT deployed
+  - action: hand Jack the first code via `jack-enroll mint` output (redeem
+      URL is one-click/QR-able)
+
+report:
+  summary: >-
+    VCAST-style enrollment gateway is live and verified on idc02.
+    https://idc02.taila0626a.ts.net:8448/enroll serves the enroll page behind
+    the tailnet edge (TLS + tailnet identity). Single-use JCK- codes are
+    sha256-stored, TTL'd (900s default), burned on use; sessions are opaque
+    Secure/HttpOnly/SameSite=Lax cookies (12h TTL) checked server-side.
+    Re-mint revokes the prior session. The gateway session-gates every other
+    path to the isolated jack-opencode container (private podnet, no
+    published ports, basic-auth upstream, workspace+disposable-home mounts
+    only). SSE streams through the edge; WS upgrade tunneling is implemented
+    and unit-tested. 17/17 tests green. One real defect found+fixed in
+    smoke: opencode /config echoed the LiteLLM apiKey — key moved to
+    auth.json.
+  evidence:
+    - enroll flow: POST /enroll -> 303 / + cookie flags verified live
+    - replay: {"error":"code_used"}; forged code -> 401 invalid_code
+    - re-register: old cookie -> 401 after new mint
+    - unauth: /global/health 401 (no cookie + forged); /admin 401
+    - boundary: /file/content?path=/etc/passwd denied; /workspace/* served;
+      direct :4096 unreachable from host
+    - UI: OpenCode SPA 200 via tailnet URL; SSE server.connected event live
+    - model: podman exec opencode run -> "PONG" through LiteLLM (auth.json)
+    - audit: mint_reregister/enroll_ok/enroll_code_used/ws/boot events in
+      state/audit.jsonl with client IP via X-Forwarded-For
+  how_to_verify: |
+    jack-enroll mint                 # prints code + redeem URL
+    open https://idc02.taila0626a.ts.net:8448/enroll  -> paste code -> IDE
+    jack-enroll status|audit|revoke|reset
+    node --test stacks/idc02/jack-ide/tests/
+  rollback: |
+    sudo tailscale serve --https=8448 off
+    systemctl --user stop jack-enroll jack-opencode jack-ide-network
+    rm ~/.config/containers/systemd/jack-*; systemctl --user daemon-reload
+    (state dirs + secrets files can stay or be removed)
