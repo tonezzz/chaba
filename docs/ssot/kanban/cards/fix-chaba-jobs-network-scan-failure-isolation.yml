@@ -1,7 +1,7 @@
 id: fix-chaba-jobs-network-scan-failure-isolation
 title: Make chaba-jobs isolate network-scan failures and back off
-column: backlog
-updated: 2026-10-27 14:31
+column: doing
+updated: 2026-10-27 14:32
 brief: Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and
   evidence.
 priority: high
@@ -24,7 +24,8 @@ spec: 'Fix the chaba job dispatcher efficiency/reliability issue. Current tony_d
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 note: 'High-value prerequisite for hands-off Nest processing: current service failure is caused by network-scan
   push, while other dispatcher jobs can succeed. Existing OPS-0698 received root-cause evidence; this focused card
   makes the fix executable.'
@@ -33,3 +34,6 @@ comms:
 - at: 2026-10-27 14:31
   from: tony
   text: card captured via board-api
+- at: 2026-10-27 14:32
+  from: tony-macbook
+  text: claimed
