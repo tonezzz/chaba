@@ -1,7 +1,7 @@
 id: line-proactive-persona
 title: 'LINE relay: persona-initiated outbound to group members (proactive turns)'
 column: doing
-updated: 2026-10-27 14:01
+updated: 2026-10-27 14:07
 priority: medium
 spec: 'Relay is reply-only today — a persona can answer but cannot INITIATE a conversation with a member (e.g. Kaewta
   asks Nhong about kk car after serving a photo). Needed: (1) outbound path — backend tool/intent -> relay push
@@ -29,6 +29,12 @@ comms:
 - at: 2026-10-27 14:01
   from: chaba
   text: started devin-task-20261027-140132-relay-is-reply-only-today-a-pe on idc02 (dispatch)
+- at: 2026-10-27 14:07
+  from: devin
+  text: 'in-progress: building proactive-send path as ada-voice drop-in — relay /send gains mention= (LINE mention
+    object, member resolution via label cache + callers + aliases + persisted member dir + mddb registry scan) and
+    intent=proactive policy gate (LINE_PROACTIVE_ALLOW + per-chat/member debounce + day cap); chat_send gains mention/intent
+    args + secondary-turn block. Testing in a scratch copy of ada-voice@56c67c1.'
 action:
   type: dispatch
   status: running
