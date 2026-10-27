@@ -1,7 +1,7 @@
 id: kk-video-preview-torchao-import-fix
 title: Fix Sacred Father LTX preview Diffusers/TorchAO import failure
 column: doing
-updated: 2026-10-27 14:42
+updated: 2026-10-27 14:44
 spec: 'Diagnose and fix the Sacred Father preview pack failure from Colab run-20261027-0454. Evidence: the T5 embeddings
   pack completed with 10 shot*.pt artifacts; preview pack failed before pipeline/model loading with `ImportError:
   cannot import name FqnToConfig from torchao.quantization` during Diffusers import. Determine compatible pinned
@@ -30,3 +30,9 @@ comms:
     FqnToConfig and both LTX pipeline classes while logging versions. Static YAML/shell/Python syntax checks pass;
     previous pack.yml preserved in Drive as `pack.failed-20261027.yml`; updated pack staged and MD5 readback matches
     source (d261c4e2...). The queue is disconnected, so this can'
+- at: 2026-10-27 14:44
+  from: devin
+  text: 'FIX IMPLEMENTED + STAGED: PR #44 merged; preview pack prep now removes incompatible optional TorchAO and
+    runs an LTX import preflight before the render. Updated pack.yml uploaded to Drive; failed marker cleared. Completed
+    embeddings remain reusable. Next gate: start a fresh managed T4 runtime and rerun the preview pack only; no
+    public output.'
