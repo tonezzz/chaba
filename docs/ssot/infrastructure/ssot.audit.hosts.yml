@@ -2249,8 +2249,15 @@ hosts:
         expected_state: active
         critical: false
         note: "Disposable Cline Kanban v0.1.70 pilot via rootless Quadlet
-          stacks/con01/cline-kanban; published only on tailnet
-          100.72.146.39:3484. No production repo or provider secret mounted."
+          stacks/con01/cline-kanban; strict-origin proxy published only on
+          tailnet 100.72.146.39:3484. No production repo or provider secret."
+      - name: cline-kanban-network.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Dedicated rootless bridge network for the Cline Kanban pilot;
+          keeps the backend port private to its container network."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}

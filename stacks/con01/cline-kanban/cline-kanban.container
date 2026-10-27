@@ -6,11 +6,11 @@ After=network-online.target
 [Container]
 Image=localhost/cline-kanban:0.1.70
 ContainerName=cline-kanban
+Network=cline-kanban.network
 PublishPort=100.72.146.39:3484:3484/tcp
 Volume=%h/.local/share/cline-kanban/data:/root/.cline
 Volume=%h/cline-kanban-pilot/workspace:/workspace
 WorkingDir=/workspace
-Exec=--host 0.0.0.0 --port 3484 --no-open
 
 [Service]
 Restart=on-failure

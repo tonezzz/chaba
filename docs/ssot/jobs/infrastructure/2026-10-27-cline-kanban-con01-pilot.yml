@@ -16,13 +16,13 @@ planning:
   success_criteria:
     - The service is declared in stacks and the con01 host audit expectations.
     - Only con01's tailnet address publishes TCP port 3484; no public route is added.
-    - The board UI responds over the tailnet and persists only disposable pilot state.
+    - The board UI responds over the tailnet with strict external Host/Origin validation.
     - Startup and idle memory/resource impact are recorded.
     - Any agent execution requiring provider spend is gated on Tony's choice/approval.
   risks:
     - Cline Kanban is a research preview and exposes repository/terminal capabilities to authenticated users.
     - con01 has limited current available memory while running DR, STT, and embedding services.
-    - Remote access can fail if the app rejects forwarded Host/Origin or WebSocket requests.
+    - Cline rejects a reverse-proxy Host/Origin mismatch; the proxy must validate the external origin before rewriting it.
   resources:
     - con01 rootless Podman and Quadlet
     - Node.js 22 container image and pinned kanban npm package v0.1.70
@@ -62,8 +62,13 @@ processing:
       notes: ''
     - id: verify
       label: Verify producer health and the tailnet browser surface
-      status: not_started
-      notes: ''
+      status: in_progress
+      notes: >-
+        First bridge+port-publish deployment returned HTTP 403 "Host not
+        allowed"; Cline's v0.1.66+ middleware compares Host and Origin to the
+        configured bind host. Confirmed a request with the expected internal
+        Host/Origin reaches the UI (HTTP 200). Reworking to an exact-origin
+        proxy; no host networking and no model calls.
     - id: publish
       label: Record resource evidence and update the pilot card
       status: not_started
@@ -73,10 +78,13 @@ processing:
       rationale: >-
         Cline Kanban grants authenticated users repository and terminal access.
         Binding the host port only to Tailscale avoids a public listener and
-        leaves the existing Caddy/DR edge untouched.
+        leaves the existing Caddy/DR edge untouched. A dedicated rootless
+        bridge keeps the Kanban backend port away from other containers.
       alternatives_considered: >-
-        Public domain/path proxy was rejected: it is unnecessary for the pilot
-        and adds origin, WebSocket, and public-access risk.
+        Host networking was rejected because it would expose con01 loopback
+        services to an agent container. A proxy that blindly rewrites origin
+        headers was rejected; the chosen proxy first enforces an exact
+        tailnet Host/Origin allowlist.
     - label: Defer agent execution until a provider is selected
       rationale: >-
         con01 has no generation model loaded and its only Ollama model is
@@ -96,6 +104,10 @@ processing:
       summary: Added the service manifest and HTTP verification command.
     - file: docs/ssot/infrastructure/ssot.audit.hosts.yml
       summary: Declared cline-kanban.service in con01's expected user services.
+    - file: stacks/con01/cline-kanban/proxy.mjs
+      summary: Added a strict external Host/Origin gate and internal header rewrite for Cline.
+    - file: stacks/con01/cline-kanban/cline-kanban.network
+      summary: Added a dedicated bridge network for the Cline service container.
 
 followup:
   verification:
