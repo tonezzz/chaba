@@ -1,7 +1,7 @@
 id: fix-chaba-jobs-network-scan-failure-isolation
 title: Make chaba-jobs isolate network-scan failures and back off
 column: doing
-updated: 2026-10-27 14:35
+updated: 2026-10-27 14:40
 brief: Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and
   evidence.
 priority: high
@@ -48,3 +48,10 @@ comms:
   from: devin
   text: in progress — implementing per-job failure isolation + exponential backoff + per-episode /inbox alert in
     scripts/job-dispatcher.py; critical:false default policy in ssot.jobs.yml; tests to follow
+- at: 2026-10-27 14:40
+  from: devin
+  text: done — job-dispatcher.py now isolates per-job failures (try/except per job), persists last_success/last_failure/failure_count/next_retry
+    with exponential backoff (interval*2^(n-1), floored at interval, capped 4h via config.failure_policy), alerts
+    once per episode via board-api /inbox with local focus-inbox fallback that self-heals on recovery, and exits
+    nonzero only for critical:true jobs. network-scan-tony annotated critical:false — keeps 15m cadence, not disabled.
+    12 new tests in tests/ops/tes
