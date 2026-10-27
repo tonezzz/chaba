@@ -1,0 +1,98 @@
+{
+ "mode": "offline",
+ "at": "2026-10-27T06:47:24.111426+00:00",
+ "host": "tony-macbook",
+ "probe": {
+  "host": "tony-macbook",
+  "at": "2026-10-27T06:47:24.081678+00:00",
+  "simulated": "offline",
+  "tools": {
+   "opencode": true,
+   "devin": true,
+   "ollama": false,
+   "git": true,
+   "python3": true
+  },
+  "net": {
+   "litellm": false,
+   "ollama_idc02": false,
+   "ollama_idc03": false,
+   "tailnet": false,
+   "wan": false,
+   "devin_cloud": false,
+   "ollama_local": false
+  },
+  "secrets": {
+   "litellm_keys_env": true,
+   "litellm_chaba_env": false
+  },
+  "models": {}
+ },
+ "routing": [
+  {
+   "task": "backup-freshness",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "host-health",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "mcp-safety",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "storage-dryrun",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "worktree-safety",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "[synthetic] summarize the kanban backlog",
+   "rung": "MANUAL",
+   "executor": "manual",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "[synthetic] read-only health check of this host",
+   "rung": "L0",
+   "executor": "l0",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "[synthetic] refactor the dispatch pipeline across three repos",
+   "rung": "MANUAL",
+   "executor": "manual",
+   "needs_network": false,
+   "needs_secrets": false
+  },
+  {
+   "task": "[synthetic] buy a new nvme stick for omen",
+   "rung": "MANUAL",
+   "executor": "manual",
+   "needs_network": false,
+   "needs_secrets": false
+  }
+ ],
+ "violations": [],
+ "verdict": "pass"
+}
