@@ -36,3 +36,24 @@ comms:
     passes against the current live service. The code is not pushed or deployed. Live testing requires PR publication/CI
     plus a short con01 restart to split the proxy and Cline runtime into separate pod containers, change the login
     to proxy Basic Auth, configure the local Omen qwen3'
+- at: 2026-10-27 15:43
+  from: devin
+  text: 'raised request may-i-publish-this-local-implementation-1f84ca: May I publish this local implementation
+    branch, open a PR, and after CI deploy it to con01 for one free local-model smok'
+requests:
+- id: may-i-publish-this-local-implementation-1f84ca
+  ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
+    smoke task? Deployment restarts Cline Kanban and replaces the current generated passcode form with proxy Basic
+    Auth (username cline); the secret stays in ~/.config/secrets/cline-kanban.env and is not mounted into the agent
+    container. The test uses cached Omen qwen3:4b, no model download or API charge.
+  status: open
+  at: 2026-10-27 15:43
+  from: devin
+  options:
+  - id: approve-live-test
+    label: Approve PR, con01 restart, and one local qwen3:4b smoke task
+  - id: pr-only
+    label: Approve PR/CI only; wait before deploying
+  - id: local-only
+    label: Keep the implementation branch local for now
+  suggested: approve-live-test
