@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-10-27 12:57
+updated: 2026-10-27 13:03
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -47,12 +47,19 @@ comms:
     `a5b46e72c`. Live board-api `/publish` returns 404; the served checkout is dirty/divergent, so I did not restart
     it or bypass the event door. No Telegram status message was sent. Request `live-publication-route` asks how
     to proceed; recommended: wait for served-checkout reconciliatio'
+- at: 2026-10-27 13:03
+  from: tony
+  text: 'answered live-publication-route: wait-clean-deploy — fix the live board-api through the standard deployment
+    after the served checkout is reconciled; do not use direct /send as a workaround.'
+- at: 2026-10-27 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
     is dirty and 5 commits ahead/1 behind origin, so I did not restart or promote it. How should I enable generated/status
     notifications to the topic?
-  status: open
+  status: answered
   at: 2026-10-27 12:56
   from: devin
   options:
@@ -65,3 +72,6 @@ requests:
   - id: pause-notifications
     label: Keep the thread bound for intake, but defer generated/status notifications until /publish is live
   suggested: wait-clean-deploy
+  answer: wait-clean-deploy — fix the live board-api through the standard deployment after the served checkout is
+    reconciled; do not use direct /send as a workaround.
+awaiting_action: true
