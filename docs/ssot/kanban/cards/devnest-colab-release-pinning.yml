@@ -1,0 +1,31 @@
+id: devnest-colab-release-pinning
+title: Make Colab queue use verified latest DevNest release
+column: backlog
+updated: 2026-10-27 15:14
+brief: Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.
+priority: high
+program: devnest
+tags:
+- devnest
+- colab
+- release
+- reproducibility
+- hands-off
+spec: Define a hands-off Colab release flow. Build a release bundle from the canonical chaba origin/master commit;
+  include release.json with commit, generated_at, file hashes, pack hashes, and schema version. Upload all files
+  to a versioned Drive release directory, then atomically update queue/ACTIVE_RELEASE.json only after every artifact
+  verifies. Cell 1 must report and validate the active release; Cell 2 must refuse to launch when the release pointer,
+  hashes, notebook, JOBS.py, runner, or pack manifests mismatch. Queue runner must snapshot one verified release
+  at startup, and done/failed markers must be release/pack-hash aware so stale markers cannot skip new code. Keep
+  rollback as changing the active pointer to a previously verified release. Add a release publisher timer after
+  chaba-repo-sync, dry-run/hash tests, and a live fresh-T4 verification. Never pull unreviewed working-tree files
+  or silently run stale code.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-0935
+comms:
+- at: 2026-10-27 15:14
+  from: tony
+  text: card captured via board-api
