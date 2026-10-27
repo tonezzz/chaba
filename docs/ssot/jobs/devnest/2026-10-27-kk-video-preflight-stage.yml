@@ -1,0 +1,97 @@
+title: KK video queue-release preflight stage (Sacred Father)
+date: 2026-10-27
+card: kk-video-preflight-stage
+session: dispatch-wt-20261027-152625-add-a-lightweight-preflight-st (tony-macbook)
+
+what:
+  validator: scripts/colab/pack-preflight.py  # canonical, stdlib+pyyaml
+  pack: scripts/colab/packs/kk-video-c9f99fee6146-preflight/
+        #{pack.yml, policy.yml, pack-preflight.py (byte-copy, drift-tested)}
+  gate: "pack.yml `requires: [pack-names]` — claim gate in BOTH
+        scripts/colab/queue-runner.py and scripts/ada/nest-worker.py"
+  ordering: "queue-runner load_packs() emits discovered packs
+            requires-first (Kahn), so CPU preflight drains before its
+            GPU dependents inside one launch"
+  tests: tests/colab/test_pack_preflight.py (36 tests)
+  contract_doc: docs/kb/colab-mcp-jobs.md (pack section, `requires:`)
+
+checks_emitted:        # deterministic order; check ids are stable API
+  project_manifest:    "project.json parses; project_id == policy id"
+  source_provenance:   "sources[] sha256 format + filename + bytes; project-id
+                       sha12 suffix binds a source hash; materialized
+                       source/<file> is rehashed (absent => warn)"
+  planning_files:      "brief/creative-brief.md, story/scene-plan.md,
+                       shots/prompt-pack-v1.md, assets/rights-matrix.md,
+                       qc/preflight.md, packs/preview-plan.yml >= min_bytes"
+  fact_dream_labels:   "evidence files carry both `fact` and `dream` labels"
+  identity_policy:     "rights-matrix carries `symbolic`; any manifest
+                       identity/likeness value must be in allowed_values
+                       {symbolic, mixed}"
+  audio_subtitle_decision: "Thai-narration regex + th&en subtitle regexes
+                       across declared evidence files"
+  pack:<name>:syntax:  "name==dir, needs-key allowlist, exactly one of
+                       run/run_sh, artifacts/fetch/requires list types,
+                       publish map, timeout_s int, scope enum, venv bool"
+  pack:<name>:needs:   "gpu_gb+disk_gb numeric, ram_gb if set, timeout_s
+                       int in (0,86400]"
+  pack:<name>:artifacts: "non-empty globs under allowed prefixes; packs/
+                       globs stay inside the pack's own dir"
+  pack:<name>:output_privacy: "no artifact/publish/fetch path hits
+                       public/www/web/stacks/, schemes, abs paths, or ..;
+                       publish dests stay under store prefixes or the
+                       project's own <project_id>/ tree"
+  pack:<name>:banned_flags: "alnum-boundary token scan (youtube, tiktok,
+                       stripe, paid, kling, sora, veo, ...) over the
+                       serialized spec + project.json + project packs/;
+                       exact banned keys (public, paid, spend, ...)"
+
+verdict_semantics:
+  - "verdict = fail iff any check fails; warn if only warns; else pass"
+  - "exit 0 on pass|warn, exit 2 on fail (pack run_sh => no done marker)"
+  - "claim gate per requirement R: packs/R/done must exist; when R ends
+     -preflight its preflight.json must parse and verdict in {pass,warn};
+     a stale done + fail verdict still blocks; verdict file missing on a
+     *-preflight requirement blocks (fail closed)"
+  - "non-preflight requirements need only the done marker (chain:
+     preview requires [preflight, embeds])"
+
+hash_reference:        # release hash = sha256 over staged inputs only
+  scope: "pack.yml + policy.yml + pack-preflight.py + inputs/** —
+         runtime outputs (claim/, done, out/, embeds/, shots/,
+         preflight.json/.md) never hashed => stable across runs"
+  computed_2026-10-27:
+    kk-video-c9f99fee6146-embeds:    cbedc925959a1f6b828565fed044a68af4824f2b0cb3a24319e94df3eddc86eb
+    kk-video-c9f99fee6146-preflight: 6e120e440af0c674c452a550ec9710e9c8757c301a16c89274f921df4fea1c11
+    kk-video-c9f99fee6146-preview:   b9fa585f5ff761ad843b76bf542eed0e32d15b422a758d008cd94b3c222868fb
+    release_sha256:                  b6e97c9f186a0cdec45c5662ba973060d77adfe73ccd72bc4f1ddaf2608eebb7
+
+next_release_procedure:                 # what staging must do — NOT done
+                                        # by this session (no live writes)
+  - "mirror ~/.local/share/devnest/projects/kk-video-c9f99fee6146/
+    {project.json,brief/,story/,shots/,assets/,qc/,packs/,source/} to
+    gdrive:ada-nest/projects/kk-video-c9f99fee6146/ (private store;
+    source/ optional — enables full re-hash, else provenance warns)"
+  - "re-stage the three packs to ada-nest/packs/ via nest-pack-submit or
+    rclone copy — the existing Drive -preview pack.yml predates
+    `requires:` and stays as-is for any already-launched queue"
+  - "launch the queue AFTER staging — runners discover packs once at
+    start; the preflight pack (gpu_gb:0) is claimed first and gates the
+    GPU packs' claims"
+
+invariants:
+  - "CPU-safe: preflight needs.gpu_gb=0, ~stdlib only, timeout 600s"
+  - "idempotent + deterministic: same inputs => byte-identical
+    preflight.json/.md (atomic tmp+replace writes, no wall-clock fields)"
+  - "not injected into a running queue snapshot: pack discovery is
+    launch-time only; requires-gated packs staged mid-run stay
+    invisible until next launch by design"
+  - "failed preflight => no done marker => every requires-dependent is
+    SKIPped ('requires unmet') before claim on Colab AND fleet workers"
+
+verified:
+  - "python3 -m unittest tests.colab.test_pack_preflight — 36 OK"
+  - "python3 -m unittest tests.colab.test_job_console
+    tests.colab.test_runtime_registry tests.colab.test_gap_runner
+    tests.colab.test_mcp_colab_control — 39 OK (no regressions)"
+  - "e2e sandbox: runner emits preflight before alphabetically-earlier
+    dependents; fail verdict blocks claims; stale done+fail still blocks"

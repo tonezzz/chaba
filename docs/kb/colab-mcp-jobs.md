@@ -280,6 +280,7 @@ same bundle runs on Colab today and a fleet host tomorrow.
   ```yaml
   name: my-job
   needs: {gpu_gb: 3, disk_gb: 4, ram_gb: 8, egress_only_ok: true}   # capability floor
+  requires: [my-release-preflight]  # claim gate — wait for done marker(s)
   timeout_s: 1200     # runner-side SIGALRM around the whole run
   artifacts:          # globs vs ada-nest/ root — verify-before-mark gate
     - packs/my-job/out/*.wav
@@ -303,8 +304,30 @@ same bundle runs on Colab today and a fleet host tomorrow.
 - **Packs run AFTER the whole JOBS manifest** — so keep env/bootstrap
   (cache restore, deps, asset extract) in JOBS.py and everything else as
   packs. A pack can depend on env jobs' outputs (`/tmp/vbench` etc.) but
-  must not assume other packs ran — order is `sorted(os.listdir)` and
-  claims are independent.
+  must not assume other packs ran — claims are otherwise independent.
+- **`requires:` is a claim gate, not just ordering** (2026-10-27,
+  kk-video-preflight-stage): a pack may declare
+  `requires: [pack-name, ...]`. Both workers (Colab `queue-runner.py`,
+  fleet `nest-worker.py`) refuse the claim until every required pack's
+  `done` marker exists; a requirement whose name ends `-preflight` must
+  also show a readable `preflight.json` with verdict `pass` or `warn` —
+  that is what makes a failed release preflight block its embed/render
+  dependents. `load_packs` emits discovered packs requires-first
+  (Kahn over the staged set), so a CPU-only `*-preflight` pack drains
+  before its GPU dependents inside one launch. Stage the whole release —
+  preflight pack + dependents — BEFORE cell 2; pack discovery still
+  happens once at runner start, so the stage never retro-fits a running
+  queue snapshot.
+- **Release preflight pack** — `scripts/colab/pack-preflight.py` is the
+  canonical deterministic validator (manifest/provenance, planning docs,
+  fact-vs-dream, identity policy, audio/subtitle decision, pack.yml
+  contract, artifact globs, output privacy, needs/timeout declarations,
+  no paid/public-publish flags). A `*-preflight` pack carries it plus a
+  `policy.yml` (see `packs/kk-video-c9f99fee6146-preflight/`): project
+  docs resolve from `$NEST_ROOT/projects/<id>/` or the pack's
+  `inputs/<id>/`. Outputs `preflight.json` + `preflight.md` are
+  byte-deterministic (hashes, no timestamps) and carry a per-pack +
+  `release_sha256` hash reference.
 - **PACK_DIR** — `ada-nest/packs/<name>` absolute path, injected into the
   run namespace; write outputs under `PACK_DIR/` so the pack stays
   self-contained and the artifacts globs stay inside the pack.
