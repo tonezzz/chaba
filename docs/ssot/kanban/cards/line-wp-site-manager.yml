@@ -1,7 +1,7 @@
 id: line-wp-site-manager
 title: LINE-driven WordPress site maintenance (customer via LINE chat)
 column: review
-updated: 2026-10-27 14:32
+updated: 2026-10-27 15:37
 brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
   drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
   WP itself not serving yet — Plesk default page).'
@@ -884,6 +884,12 @@ comms:
 - at: 2026-10-27 14:32
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''open-q-from-spec-when-a-real-c''] block close)'
+- at: 2026-10-27 15:37
+  from: tony
+  text: 'answered open-q-from-spec-when-a-real-customer-si-952fee: proceed'
+- at: 2026-10-27 15:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -899,11 +905,13 @@ requests:
     lane tools reused, or a dedicated per-customer lane? And does the customer get a dedicated LINE group per site?
     Default proposal: dedicated LINE group per customer-site, routed through the existing tony/kk-style lane pattern
     with a per-site wp-<customer>.env app password (Option A identity map). Reply or edit card.'
-  status: open
+  status: answered
   at: 2026-10-27 14:17
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
 claim: {}
+awaiting_action: true
