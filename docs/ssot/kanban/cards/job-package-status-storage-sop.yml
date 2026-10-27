@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-27 09:56
+updated: 2026-10-27 09:58
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -28,3 +28,10 @@ comms:
     records this work. YAML parses; full validator confirms the new SSOT file valid, with 8 unrelated pre-existing
     validation errors elsewhere. Correction to initial card spec: the verified DevNest project root is idc03 `DEVNEST_PROJECTS_DIR`
     (default `~/.local/share/dev'
+- at: 2026-10-27 09:58
+  from: devin
+  text: '[validation/landing 2026-10-27] SOP draft validated and committed locally as `docs/job-package-status-storage-sop`
+    commit `5fdd24105` (docs KB + procedure index + SSOT lifecycle record). Pre-commit YAML, full SSOT validation,
+    and SSOT optimization checks passed; the validator reports 8 pre-existing errors in the separate exec checkout,
+    but this branch validation passed. Not pushed or merged: this worktree is 459 commits behind origin/master and
+    no promotion was requested. Sacred Father project s'
