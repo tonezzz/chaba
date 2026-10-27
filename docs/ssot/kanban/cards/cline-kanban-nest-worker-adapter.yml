@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: doing
-updated: 2026-10-27 16:35
+updated: 2026-10-27 16:36
 priority: medium
 tags:
 - cline-kanban
@@ -51,13 +51,20 @@ comms:
   from: devin
   text: 'raised request how-should-i-enable-openrouter-models-fo-e879f4: How should I enable OpenRouter models for
     Cline without storing a provider key in the agent-readable Cline data volume? '
+- at: 2026-10-27 16:36
+  from: tony
+  text: 'answered may-i-publish-this-local-implementation-1f84ca: approve-live-test — Approve PR, con01 restart,
+    and one local qwen3:4b smoke task'
+- at: 2026-10-27 16:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
     smoke task? Deployment restarts Cline Kanban and replaces the current generated passcode form with proxy Basic
     Auth (username cline); the secret stays in ~/.config/secrets/cline-kanban.env and is not mounted into the agent
     container. The test uses cached Omen qwen3:4b, no model download or API charge.
-  status: open
+  status: answered
   at: 2026-10-27 15:43
   from: devin
   options:
@@ -68,6 +75,7 @@ requests:
   - id: local-only
     label: Keep the implementation branch local for now
   suggested: approve-live-test
+  answer: approve-live-test — Approve PR, con01 restart, and one local qwen3:4b smoke task
 - id: how-should-i-enable-openrouter-models-fo-e879f4
   ask: 'How should I enable OpenRouter models for Cline without storing a provider key in the agent-readable Cline
     data volume? The existing LiteLLM gateway has a benchmark virtual key capped at $2/30d. Recommended: a separate
@@ -84,3 +92,4 @@ requests:
   - id: paid-reference
     label: Also authorize one paid OpenRouter reference within the existing $2/30d benchmark cap
   suggested: or-free-gateway
+awaiting_action: true
