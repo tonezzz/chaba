@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
 column: doing
-updated: 2026-10-27 16:39
+updated: 2026-10-27 16:55
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -49,3 +49,10 @@ comms:
   text: 'audit in progress: mapped 20 opencode sessions in ~/.local/share/opencode/opencode.db (S1 canary x3 @/tmp,
     S0 lane x5, shadow-bench x5, older x7). Lane state dir (metrics.jsonl) lived only in now-deleted dispatch worktrees
     — reconciling ledger vs benchmark from session DB + committed reports.'
+- at: 2026-10-27 16:55
+  from: devin
+  text: 'done: scripts/devnest/opencode_session_audit.py + 12 unittests. Audited all 20 sessions (S1 x3, S0 x5,
+    shadow-bench x5, ops0902 x3, tmp x4). Reconciled ledger-vs-benchmark: two independent executions, flash-lite
+    non-deterministic — no ledger error; per-fixture evidence in evals/opencode-lane/reports/2026-10-27-session-audit.{md,json}.
+    8 cards filed: unsafe_classification (CascadeProjects+.devin auto_ok), denied_tool, sequence_anomaly (S1 ran
+    pre-promote), lane_state_missing (metrics.jsonl lost w'
