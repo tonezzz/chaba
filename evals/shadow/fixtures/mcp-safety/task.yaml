@@ -1,0 +1,28 @@
+id: mcp-safety
+title: MCP tool-safety matrix for shadow mode
+class: read_only
+needs_llm: false
+timeout_s: 420
+artifact: mcp-safety.json
+description: >-
+  Audit the frozen MCP config in inputs/mcp-config.json and emit a
+  tool-safety matrix: which tools are safe to call in shadow mode.
+contract:
+  required_fields:
+    host: "hostname"
+    collected_at: "ISO-8601"
+    servers: "list of {name, tools: [{name, classification}], server_class}"
+    summary: "{total_tools, read_only, write, delete, unknown}"
+    shadow_safe: "list of server.tool names safe under shadow policy"
+    read_only: "must be true"
+  rules:
+    - every server and every tool in inputs must appear in the matrix
+    - classification one of: read-only | write | delete | unknown
+    - 'unknown' NEVER counts as shadow-safe (conservative rule)
+    - declared_mode=unknown server tools default to 'unknown', not read-only
+l0:
+  script: l0.py
+arms:
+  - l0
+  - opencode
+  - devin

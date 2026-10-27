@@ -1,0 +1,14 @@
+{
+ "roots": [
+  {"path": ".", "label": "repo-worktree", "scan": "df"},
+  {"path": "/tmp", "label": "tmp", "scan": "df"}
+ ],
+ "candidate_scan": {
+  "root": ".",
+  "kinds": {
+   "pycache": {"match": "dir:__pycache__", "reason": "python bytecode cache — safe to regenerate"},
+   "pyc": {"match": "file:*.pyc", "reason": "stale bytecode file"}
+  },
+  "max_entries": 5000
+ }
+}
