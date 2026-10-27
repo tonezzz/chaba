@@ -1,7 +1,7 @@
 id: fix-chaba-jobs-network-scan-failure-isolation
 title: Make chaba-jobs isolate network-scan failures and back off
-column: doing
-updated: 2026-10-27 14:40
+column: review
+updated: 2026-10-27 14:41
 brief: Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and
   evidence.
 priority: high
@@ -24,8 +24,11 @@ spec: 'Fix the chaba job dispatcher efficiency/reliability issue. Current tony_d
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 d-lane-news` on idc03 declares a litellm env file that never loads). | devin-task-20261027-143207-fix-the-chaba-job-dispatcher-e.service:
+    Consumed 58.242s CPU time over 8min 15.256s wall clock time, 424.2M memory peak, 53M memory swap peak.'
+  verified: true
 note: 'High-value prerequisite for hands-off Nest processing: current service failure is caused by network-scan
   push, while other dispatcher jobs can succeed. Existing OPS-0698 received root-cause evidence; this focused card
   makes the fix executable.'
@@ -55,3 +58,8 @@ comms:
     once per episode via board-api /inbox with local focus-inbox fallback that self-heals on recovery, and exits
     nonzero only for critical:true jobs. network-scan-tony annotated critical:false — keeps 15m cadence, not disabled.
     12 new tests in tests/ops/tes
+- at: 2026-10-27 14:41
+  from: tony-macbook
+  text: 'finished (ok): exit=0 d-lane-news` on idc03 declares a litellm env file that never loads). | devin-task-20261027-143207-fix-the-chaba-j'
+review_kind: verify
+claim: {}
