@@ -1,0 +1,38 @@
+id: devnest-rainy-day-parallel-eval
+title: 'Rainy-day DevNest fallback: parallel OpenCode vs Devin evaluation'
+column: backlog
+updated: 2026-10-27 13:28
+brief: Run identical safe jobs through OpenCode and Devin in isolated worktrees, then build an offline fallback
+  ladder for internet outages.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- opencode
+- devin
+- offline
+- benchmark
+- fallback
+spec: 'Build a shadow/evaluation mode for DevNest where selected safe jobs run in parallel through OpenCode and
+  Devin on frozen identical fixtures, isolated worktrees, and no production side effects. Compare independently
+  verified artifacts, correctness, tokens/cache, wall time, retries, human intervention, and escalation. Start with
+  read-only host health, storage dry-run, MCP safety, worktree safety, and backup freshness. Add a rainy-day fallback
+  ladder: L0 deterministic local scripts; L1 local OpenCode/Ollama only for small prompts; L2 LAN/tailnet LiteLLM
+  if reachable; L3 remote LiteLLM/OpenCode; L4 Devin cloud; Tony/manual gate. Detect connectivity/model availability
+  before routing. Pre-stage local model/config/profile/fixtures and ensure no secrets or remote-only operations
+  are attempted offline. Produce a capability matrix with PASS/DEGRADED/BLOCKED and a reproducible benchmark report.
+  Never let parallel workers write the same worktree or merge automatically from shadow mode. Acceptance: 5 paired
+  task fixtures, independent verifier results, offline simulation report, fallback selection test, no mutations,
+  and clear list of work that remains impossible without network/Devin.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Devin is currently the senior reviewer; this card tests whether OpenCode/DevNest can perform the same safe
+  work in parallel and what remains possible during a full internet outage. Local CPU models are known to be weak
+  for long agent loops, so do not claim full replacement without evidence.
+ref: DEV-0931
+comms:
+- at: 2026-10-27 13:28
+  from: tony
+  text: card captured via board-api
