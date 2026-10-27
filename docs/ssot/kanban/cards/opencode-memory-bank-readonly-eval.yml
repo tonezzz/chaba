@@ -1,0 +1,36 @@
+id: opencode-memory-bank-readonly-eval
+title: Evaluate staged read-only memory access for OpenCode
+column: backlog
+updated: 2026-10-27 18:53
+brief: Give OpenCode incremental read-only memory access with retrieval benchmarks, provenance, privacy gates, and
+  token measurement.
+priority: high
+program: ai-workforce
+tags:
+- opencode
+- memory
+- mddb
+- ssot
+- privacy
+- benchmark
+spec: 'Design and evaluate staged OpenCode memory access. Phase 0: frozen golden recall fixtures from past verified
+  jobs, no live memory. Phase 1: read-only curated Chaba/DevNest SSOT and public procedure documents through a scoped
+  memory profile; no raw filesystem, private Ada banks, secrets, or arbitrary collection access. Phase 2: read-only
+  MDDB/lesson retrieval with explicit collection allowlist, result limits, source IDs, modified timestamps, redaction,
+  and prompt-injection filtering. Phase 3: memory-assisted report jobs with independent verifier. Phase 4: write
+  proposals only (board/lesson/inbox draft), human approval required; no autonomous memory writes. Benchmark no-memory
+  vs memory arms on frozen questions: recall@k, precision/citation correctness, stale-source detection, contradiction
+  handling, sensitive-data leakage, tool denials, latency, context tokens, cache tokens, and human correction minutes.
+  Audit every retrieval and record memory sources in artifacts. Acceptance: privacy/allowlist tests, held-out recall
+  benchmark, token delta report, durable JSON/Markdown report, and rollback by disabling the memory profile.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: OpenCode already has a verified read-only MCP profile. Memory should be added incrementally as a scoped retrieval
+  capability, not by exposing all MDDB/Ada banks or putting the entire knowledge base in every prompt.
+ref: MEM-0953
+comms:
+- at: 2026-10-27 18:53
+  from: tony
+  text: card captured via board-api
