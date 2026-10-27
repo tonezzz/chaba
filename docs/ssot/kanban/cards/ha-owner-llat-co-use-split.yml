@@ -1,7 +1,7 @@
 id: ha-owner-llat-co-use-split
 title: Split shared Tony owner LLAT off chaba-guest / nodered / home-assistant-token.env, then revoke
-column: doing
-updated: 2026-10-27 07:09
+column: review
+updated: 2026-10-27 07:10
 brief: 'Found during ha-ada-isolation Phase B (2026-10-15): the Tony OWNER LLAT that Ada lanes used is still shared
   by three non-Ada consumers on tony-dell — chaba-guest.env (HOME_ASSISTANT_TOKEN), nodered-ha.env (HASS_TOKEN),
   home-assistant-token.env (HA_LONG_LIVED_TOKEN). Ada lanes moved to svc-ada already; revoking the owner token now
@@ -42,7 +42,16 @@ comms:
     dedicated non-admin svc tokens: svc-chaba-guest, svc-nodered (per-host lanes), svc-chaba-scripts (per-host lanes),
     svc-ada standby lanes for the mn01/dell ada envs. Consumers restarted+verified: node-red omen+dell :1880 200,
     chaba-guest enabled+started on omen :8014 200, ha-liv'
+- at: 2026-10-27 07:10
+  from: tony-macbook
+  text: 'finished (ok): exit=0 s SSOT updated, both commits on the dispatch branch, outcome file written, board
+    updated. | devin-task-20261027-0'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 s SSOT updated, both commits on the dispatch branch, outcome file written, board updated. | devin-task-20261027-065635-for-each-consumer-chaba-guest-.service:
+    Consumed 57.291s CPU time over 12min 45.217s wall clock time, 296.6M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
