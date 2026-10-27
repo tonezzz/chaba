@@ -1,0 +1,100 @@
+# Job trail: LINE relay proactive persona sends
+# Card: line-proactive-persona (OPS-0468)
+# Dispatch: 20261027-140132-relay-is-reply-only-today-a-pe (runner idc02)
+
+title: Persona-initiated LINE sends — member DM + in-group @mention
+card: line-proactive-persona
+repo: ada-voice
+base: main @ 56c67c1
+delivery: drop-in patches under integrations/ada-voice/ (drop 17) —
+  not applied/deployed from this worktree; install steps in the drop
+  README section.
+
+scenario_driver: |
+  Tony asks kaewta for the kk-car photo -> kaewta serves it ->
+  kaewta engages nhong about it herself (memory bank context). Until
+  this change the relay was reply-only: a persona could answer a
+  mention-routed turn but had no way to start a conversation with a
+  member.
+
+decision: |
+  The outbound path already existed (/send endpoint + chat_send) —
+  the real gaps were addressing, policy, and durable member naming:
+
+  - intent='proactive' is a DECLARED contract: the relay can't infer
+    turn semantics, so the backend marks persona-initiated sends and
+    the relay enforces policy only on declared ones. Undeclared sends
+    keep today's behavior — the gate only restricts, never re-routes.
+  - mention= builds a real LINE mention object (mention.mentionees
+    with UTF-16 index/length — len() undercounts emoji/Thai); display
+    name via the per-member group/room profile endpoint, per the card.
+    Unknown member names abort the send (400) instead of silently
+    dropping the ping.
+  - Policy lives in the relay (single enforcement point for all
+    backends): LINE_PROACTIVE_ALLOW instance allowlist (empty =
+    deny-all), per (instance,chat) AND per (instance,member) debounce
+    LINE_PROACTIVE_DEBOUNCE_S=600, day cap LINE_PROACTIVE_DAY_CAP=8.
+    State write-through to LINE_PROACTIVE_STATE so restarts don't
+    reset. Ops trail: proactive_sent/denied/debounced +
+    mention_failed events, proactive_msgs in the ledger rollup.
+  - Owner-tier on the tool side: secondary (identified guest) turns
+    can't pass mention=, intent='proactive', or to=<other chat> —
+    PermissionError. A guest can converse; they can't make a persona
+    ping someone.
+  - Member-name resolution extended: label cache -> LINE_USER_CALLERS
+    -> LINE_PERSON_ALIASES -> persisted MEMBERS_FILE (learned from
+    profile fetches + registry writes) -> throttled mddb
+    line-user-registry scan. Fixes to=<name> for members who spoke
+    before the process came up.
+
+changes:
+  backend/line_relay.py:
+    - Env doc block + constants LINE_PROACTIVE_ALLOW/DEBOUNCE_S/
+      DAY_CAP/STATE, MEMBERS_FILE, LINE_REGISTRY_LOOKUP_TTL_S.
+    - _member_uid(), _registry_scan(), _member_note()/_member_dir_load();
+      _member_note hooked into _fetch_profile_name + _register_member.
+    - _mention_wrap() (UTF-16 mentionee offsets, group profile display
+      names, ValueError on unresolvable member).
+    - _proactive_gate() + load/save; /send parses mention=/intent=,
+      runs the gate after target resolution before media fetch.
+    - proactive_msgs added to the send_rollup ledger keys.
+  backend/tool_runner/chat.py:
+    - chat_send(mention=, intent=) plumbed through _chat_send_queue /
+      _chat_send_run and the photo=/doc= sub-flows; LINE-only payload
+      fields (tg sends note the drop).
+  backend/tool_runner/__init__.py:
+    - Secondary-turn block extends to chat_reach_out (mention /
+      intent='proactive' / to= != bound session chat).
+  backend/realtime_provider.py:
+    - chat_send declaration gains mention + intent params.
+  backend/tool_guide.yml:
+    - chat_send entry documents the proactive contract (denied/
+      debounced = say it, don't retry-loop, don't narrate as sent).
+  docs/kb/msg-lane-multihome-routing.md:
+    - New 'Proactive sends' section + LINE_PROACTIVE_ALLOW in the ops
+      checklist.
+  tests/test_line_proactive.py:
+    - 20 tests: member-uid chain, mention object + UTF-16 offsets,
+      gate allowlist/debounce/cap/restart-persistence, runner
+      owner-tier gate, payload plumbing.
+
+verify:
+  - python -m unittest tests.test_line_proactive -> 20 OK (also ran
+    test_line_relay_group/parked/quota/user_registry/reply_context +
+    test_tool_runner: only pre-existing CalendarPlanMergeAlias
+    failures = ADA_INSTANCE_ID unset on this host, same on base).
+  - All six patches git-apply --check clean vs 56c67c1.
+
+deploy_needs:
+  - LINE_PROACTIVE_ALLOW=ada,kaewta on ada-line-relay (idc03) — unset
+    denies every proactive send by design.
+  - Restart ada-line-relay + persona backends after apply.
+  - Ordering note: drop 15 (chat_send page=) also touches
+    tool_runner/chat.py — apply order matters; re-dispatch on rot.
+
+limits:
+  - Proactive is LINE-only this drop; tg/web channels note the drop.
+  - mention= needs a group/room target; member DM is plain to=<name>.
+  - The member registry only knows speakers seen since first-seen
+    landed + persisted names — a member who never spoke still can't be
+    addressed until bound in LINE_USER_CALLERS or seen once.

@@ -1,0 +1,150 @@
+diff --git a/backend/tool_runner/chat.py b/backend/tool_runner/chat.py
+index fc7f8eb..a0ba3b0 100644
+--- a/backend/tool_runner/chat.py
++++ b/backend/tool_runner/chat.py
+@@ -21,7 +21,9 @@ class ChatMixin:
+                         to: str = "", photo: str = "", doc: str = "",
+                         key: str = "", op: str = "",
+                         session_id: str = "", screen: int = 0,
+-                        show: bool = True, say: str = "") -> dict[str, Any]:
++                        show: bool = True, say: str = "",
++                        mention: str = "", intent: str = ""
++                        ) -> dict[str, Any]:
+         """Queue an outbound LINE/Telegram message in the background and
+         return immediately. camera names a VMS channel (snapped on the
+         shim); image_url is any fetchable image (camwall thumb, cast_url).
+@@ -37,7 +39,15 @@ class ChatMixin:
+         process_document_upload / doc_upload_card_action — key= names a
+         held /api/documents/intake key (default: newest), op= carries a
+         card button ('archive'/'print' re-dispatch through execute() so
+-        the ada_doc_* confirm gates still apply)."""
++        the ada_doc_* confirm gates still apply).
++
++        line-proactive-persona: mention='<member name>' @-pings the
++        member inside the group with a real LINE mention (to= stays the
++        room; a bare send + mention lands in the chat this turn came
++        from). intent='proactive' declares a persona-initiated contact
++        — relay-side LINE_PROACTIVE_* policy applies and the runner
++        blocks it on secondary turns; to=<member name> without mention
++        goes to that member's DM."""
+         photo = str(photo or "").strip().lower()
+         doc = str(doc or "").strip().lower()
+         if doc.startswith("doc/"):
+@@ -48,25 +58,30 @@ class ChatMixin:
+             return await self._chat_send_photo(
+                 photo, channel=channel, text=text, to=to,
+                 session_id=str(session_id or ""), screen=int(screen or 0),
+-                show=bool(show))
++                show=bool(show), mention=mention, intent=intent)
+         if doc:
+             return await self._chat_send_doc(
+                 doc, channel=channel, text=text, to=to,
+-                key=str(key or ""), op=str(op or ""))
++                key=str(key or ""), op=str(op or ""),
++                mention=mention, intent=intent)
+         return await self._chat_send_queue(
+             channel=channel, text=text, image_url=image_url,
+-            video_url=video_url, camera=camera, to=to, say=say)
++            video_url=video_url, camera=camera, to=to, say=say,
++            mention=mention, intent=intent)
+ 
+     async def _chat_send_queue(self, channel: str, text: str,
+                                image_url: str, video_url: str,
+                                camera: str,
+-                               to: str, say: str = "") -> dict[str, Any]:
++                               to: str, say: str = "",
++                               mention: str = "",
++                               intent: str = "") -> dict[str, Any]:
+         import asyncio
+         import secrets
+         job_id = "chat-" + secrets.token_hex(4)
+         asyncio.create_task(self._chat_send_run(
+             job_id, channel=channel, text=text, image_url=image_url,
+-            video_url=video_url, camera=camera, to=to, say=say))
++            video_url=video_url, camera=camera, to=to, say=say,
++            mention=mention, intent=intent))
+         return {"status": "queued", "job_id": job_id, "channel": channel,
+                 "note": "Running in the background. Tell the user the "
+                         "message is being sent — a system note will report "
+@@ -74,7 +89,9 @@ class ChatMixin:
+ 
+     async def _chat_send_photo(self, action: str, *, channel: str,
+                                text: str, to: str, session_id: str,
+-                               screen: int, show: bool) -> dict[str, Any]:
++                               screen: int, show: bool,
++                               mention: str = "",
++                               intent: str = "") -> dict[str, Any]:
+         """photo= sub-flows — absorbed photos_pick / photos_picked keep
+         their picker semantics; chat_send additionally delivers results
+         to the named channel."""
+@@ -86,7 +103,8 @@ class ChatMixin:
+                     text or "").strip() else "") + uri
+                 out["send"] = await self._chat_send_queue(
+                     channel=channel, text=send_text,
+-                    image_url="", video_url="", camera="", to=to)
++                    image_url="", video_url="", camera="", to=to,
++                    mention=mention, intent=intent)
+             return out
+         if action == "picked":
+             if not session_id:
+@@ -102,14 +120,16 @@ class ChatMixin:
+                               else "=w2048")
+                 out["send"] = await self._chat_send_queue(
+                     channel=channel, text=text, image_url=url,
+-                    video_url="", camera="", to=to)
++                    video_url="", camera="", to=to,
++                    mention=mention, intent=intent)
+             return out
+         raise ValueError(
+             f"invalid photo action {action!r}: expected pick|picked")
+ 
+     async def _chat_send_doc(self, action: str, *, channel: str,
+                              text: str, to: str, key: str,
+-                             op: str) -> dict[str, Any]:
++                             op: str, mention: str = "",
++                             intent: str = "") -> dict[str, Any]:
+         """doc= sub-flows — the doc-upload card actions absorbed from the
+         chaba side: 'show' posts the held upload's summary to the
+         channel, 'process' returns the held intake assessment, 'card'
+@@ -160,7 +180,8 @@ class ChatMixin:
+         if str(channel or "").strip():
+             out["send"] = await self._chat_send_queue(
+                 channel=channel, text=text or summary,
+-                image_url="", video_url="", camera="", to=to)
++                image_url="", video_url="", camera="", to=to,
++                mention=mention, intent=intent)
+         return out
+ 
+     async def _chat_send_web(self, chat_id: str, *, text: str,
+@@ -201,7 +222,8 @@ class ChatMixin:
+ 
+     async def _chat_send_run(self, job_id: str, channel: str, text: str,
+                              image_url: str, video_url: str, camera: str,
+-                             to: str, say: str = "") -> None:
++                             to: str, say: str = "",
++                             mention: str = "", intent: str = "") -> None:
+         """Background worker: resolve the image (VMS snap or direct URL),
+         POST to the relay /send endpoints, then surface the result to the
+         live session via /api/notify."""
+@@ -305,6 +327,21 @@ class ChatMixin:
+                        "chat_id": to_eff,
+                        "instance": os.environ.get(
+                            "ADA_INSTANCE_ID", "")}
++            # LINE-only /send fields (card line-proactive-persona):
++            # mention= -> real LINE mention object on room targets;
++            # intent='proactive' -> relay LINE_PROACTIVE_* gate. The tg
++            # relay ignores unknown keys but dropping them here keeps a
++            # proactive lane's audit honest — a tg send can't evade the
++            # LINE debounce by channel choice, it just isn't one.
++            if svc == "line":
++                if str(mention or "").strip():
++                    payload["mention"] = str(mention).strip()
++                if str(intent or "").strip():
++                    payload["intent"] = str(intent).strip().lower()
++            elif str(mention or "").strip() or \
++                    str(intent or "").strip().lower() == "proactive":
++                summary_bits.append(
++                    f"{svc}: mention/intent are LINE-only — dropped")
+             if audio_b64 and svc in ("line", "telegram", "tg"):
+                 payload.update({"audio_b64": audio_b64,
+                                 "audio_mime": "audio/wav",

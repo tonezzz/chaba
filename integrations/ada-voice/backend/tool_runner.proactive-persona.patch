@@ -1,0 +1,35 @@
+diff --git a/backend/tool_runner/__init__.py b/backend/tool_runner/__init__.py
+index f383627..aa2f298 100644
+--- a/backend/tool_runner/__init__.py
++++ b/backend/tool_runner/__init__.py
+@@ -446,6 +446,20 @@ class ToolRunner(
+             tasks_list_read = name == "tasks" and action == "list"
+             chat_doc_flow = name == "chat_send" and (
+                 call_args.get("photo") or call_args.get("doc"))
++            # line-proactive-persona: reaching OUT to a member — a DM via
++            # to=<other chat/member>, an in-group mention= ping, or a
++            # declared intent='proactive' — is owner-tier. A guest turn
++            # can converse but can't make a persona ping someone; the
++            # relay's LINE_PROACTIVE_* policy gates the declared intent
++            # regardless of who asked.
++            chat_reach_out = name == "chat_send" and (
++                call_args.get("mention")
++                or str(call_args.get("intent") or "").strip().lower()
++                    == "proactive"
++                or (str(call_args.get("to") or "").strip()
++                    and str(call_args.get("to") or "").strip()
++                    != session_chat_id(self, str(
++                        call_args.get("channel") or "line"))))
+             # ada_enroll_speaker is exempt here — its own check is smarter:
+             # the owner can re-enroll even while a secondary voice is
+             # identified, as long as the buffer voice isn't the secondary's
+@@ -459,7 +473,8 @@ class ToolRunner(
+                     and not cast_ungated
+                     and not ops_read
+                     and not tasks_list_read
+-                    and (name != "chat_send" or chat_doc_flow)) or (
++                    and (name != "chat_send" or chat_doc_flow
++                         or chat_reach_out)) or (
+                 name == "ada_persona" and "persona_write" in blocked
+                 # *_voice actions absorbed ada_set_voice — that tool was
+                 # never runner-side secondary-blocked (the provider gate
