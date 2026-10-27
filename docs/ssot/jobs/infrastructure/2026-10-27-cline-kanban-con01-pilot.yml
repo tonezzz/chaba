@@ -9,10 +9,11 @@ planning:
     unapproved model-provider call.
   scope: >-
     Pin Cline Kanban v0.1.70 in a rootless Podman Quadlet, bind its published
-    port only to con01's Tailscale IPv4 address, use an empty disposable Git
-    workspace, and verify the UI, static assets, and WebSocket/origin behavior.
-    No auto-commit, auto-PR, provider credentials, large model download, or
-    distributed Nest worker integration in this pilot.
+    port only to con01's Tailscale IPv4 address through a strict Host/Origin
+    validating proxy, use an empty disposable Git workspace, and verify the
+    UI, static assets, and WebSocket behavior. No auto-commit, auto-PR,
+    provider credentials, large model download, or distributed Nest worker
+    integration in this pilot.
   success_criteria:
     - The service is declared in stacks and the con01 host audit expectations.
     - Only con01's tailnet address publishes TCP port 3484; no public route is added.
@@ -22,7 +23,7 @@ planning:
   risks:
     - Cline Kanban is a research preview and exposes repository/terminal capabilities to authenticated users.
     - con01 has limited current available memory while running DR, STT, and embedding services.
-    - Cline rejects a reverse-proxy Host/Origin mismatch; the proxy must validate the external origin before rewriting it.
+    - Cline rejects a reverse-proxy Host/Origin mismatch; the proxy must validate the exact external origin before rewriting it.
   resources:
     - con01 rootless Podman and Quadlet
     - Node.js 22 container image and pinned kanban npm package v0.1.70
@@ -58,21 +59,31 @@ processing:
         were created; TCP 3484 was free.
     - id: deploy
       label: Build pinned image and start the rootless Quadlet
-      status: in_progress
-      notes: ''
+      status: done
+      notes: >-
+        Built localhost/cline-kanban:0.1.70 from Node 22.20.0 and npm
+        kanban@0.1.70. Rootless Quadlet is active on con01; a dedicated bridge
+        isolates the backend, and only 100.72.146.39:3484 is published.
     - id: verify
       label: Verify producer health and the tailnet browser surface
-      status: in_progress
+      status: done
       notes: >-
-        First bridge+port-publish deployment returned HTTP 403 "Host not
-        allowed"; Cline's v0.1.66+ middleware compares Host and Origin to the
-        configured bind host. Confirmed a request with the expected internal
-        Host/Origin reaches the UI (HTTP 200). Reworking to an exact-origin
-        proxy; no host networking and no model calls.
+        Initial direct port-publish returned HTTP 403 because Cline validates
+        Host and Origin against its bind host. Added an isolated proxy that
+        rejects other Hosts/Origins before forwarding approved requests to
+        the internal Cline listener. Verified by headless Chrome: passcode
+        login succeeds, the workspace board loads, and /api/runtime/ws
+        completes HTTP 101. Root returns HTTP 200 from con01 and the MacBook
+        over Tailscale. stack-preflight --apply-verify passes; no model call.
     - id: publish
       label: Record resource evidence and update the pilot card
-      status: not_started
-      notes: ''
+      status: done
+      notes: >-
+        Host after startup: 6.3 GiB available RAM, 224 GiB free disk, load
+        1.20/1.16/1.17; Cline service cgroup uses about 291 MiB. Host audit
+        found no Cline-related delta; six unrelated existing failed units
+        remain in the audit output. Updated the existing Education lesson
+        (post 2675) and raised a provider-selection request on KNB-0925.
   decisions:
     - label: Use a tailnet-only rootless container for the pilot
       rationale: >-
@@ -108,37 +119,77 @@ processing:
       summary: Added a strict external Host/Origin gate and internal header rewrite for Cline.
     - file: stacks/con01/cline-kanban/cline-kanban.network
       summary: Added a dedicated bridge network for the Cline service container.
+    - file: docs/ssot/infrastructure/ssot.host-capacity.yml
+      summary: Refreshed con01's measured available RAM, disk, load, and pilot footprint.
+    - file: WP lesson-bf6ce090216d (post 2675)
+      summary: Added verified con01 setup, proxy behavior, UI/WebSocket result, and provider gate.
 
 followup:
   verification:
-    - Run scripts/stack-preflight.py stacks/con01/cline-kanban/stack.yml before installation.
-    - Run scripts/stack-preflight.py stacks/con01/cline-kanban/stack.yml --apply-verify after start.
-    - Run scripts/audit-hosts.py --host con01 after the service is installed.
-    - Fetch the actual UI from the tailnet address and verify its browser WebSocket session.
-    - Remeasure memory, load, and disk after startup; do not test an agent until the provider gate is cleared.
+    - "PASS: stack-preflight.py stacks/con01/cline-kanban/stack.yml --apply-verify"
+    - "PASS: HTTP root 200; service active; listener bound only to 100.72.146.39:3484"
+    - "PASS: Chrome authenticated using generated passcode; runtime WebSocket handshake 101"
+    - "PASS: audit-hosts.py con01 listed no Cline service/network discrepancy"
+    - "Measured after startup: 291 MiB service memory; 6.3 GiB host RAM available; 224 GiB disk free"
+    - "No provider call or agent task; Cline UI reports no agent configured"
   rollback_plan:
     - Disable and stop cline-kanban.service, then remove its declared Quadlet through the normal repo sync path.
     - Retain the disposable workspace and app data for inspection; do not delete them without separate approval.
     - Remove the local pilot image only after confirming no service references it.
   handoff:
-    - Tony reviews the tailnet-only UI and decides whether to authorize one provider-backed task.
+    - >-
+      Tony reviews http://100.72.146.39:3484/ on Tailscale and answers pilot
+      request the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5 to choose an
+      agent/provider before the first agent task.
   deferred:
     - Nest-style worker distribution and Nest queue integration.
     - Public domain or Caddy routing.
     - External model-provider configuration and any paid inference.
 
-report:
-  status: in_progress
-  completed_at: null
-  summary: Pilot implementation is in progress; no agent task or model call has run.
-  metrics: []
+  report:
+  status: completed
+  completed_at: '2026-10-27'
+  summary: >-
+    Deployed and verified a tailnet-only Cline Kanban v0.1.70 pilot on con01.
+    The UI and WebSocket path work through a strict Host/Origin proxy; no
+    provider call or agent task has run because no agent is configured.
+  metrics:
+    - metric: UI root HTTP
+      value: 200
+    - metric: runtime WebSocket handshake
+      value: 101
+    - metric: host port binding
+      value: 100.72.146.39:3484 only
+    - metric: Cline service cgroup memory
+      value: about 291 MiB idle
+    - metric: con01 available memory after startup
+      value: 6.3 GiB
+    - metric: con01 disk free after image build
+      value: 224 GiB
+    - metric: provider calls
+      value: 0
+    - metric: agent tasks
+      value: 0
   links:
     - title: Pilot kanban card
       url: https://idc03.taila0626a.ts.net/apps/board2/?card=cline-kanban-con01-pilot
     - title: con01 Cline Kanban stack
       url: stacks/con01/cline-kanban/stack.yml
-  kb_review: []
-  lessons_learned: []
+    - title: Initial pilot deployment
+      url: https://github.com/tonezzz/chaba/pull/41
+    - title: Tailnet origin guard and isolated proxy
+      url: https://github.com/tonezzz/chaba/pull/42
+  kb_review:
+    - >-
+      Updated WP Education lesson "Cline Kanban vs WordPress board apps"
+      (post 2675, lesson-bf6ce090216d) with the verified con01 pilot and the
+      Host/Origin proxy finding.
+  lessons_learned:
+    - >-
+      Cline v0.1.70 validates Host and Origin for remote access. A bridge
+      port mapping changes Host, so use a proxy that enforces the exact
+      Tailnet Host/Origin before rewriting headers to the backend. Do not
+      switch the agent container to host networking as a shortcut.
 
 config:
   version: 1
