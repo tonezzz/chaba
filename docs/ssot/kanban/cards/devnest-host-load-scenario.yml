@@ -1,7 +1,7 @@
 id: devnest-host-load-scenario
 title: 'DevNest scenario: read-only host-load assessment through OpenCode UI'
-column: backlog
-updated: 2026-10-25 15:26
+column: review
+updated: 2026-10-27 06:50
 brief: Run a supervised OpenCode scenario that assesses a declared target host load without changing anything.
 priority: medium
 program: ai-workforce
@@ -19,3 +19,51 @@ comms:
 - at: 2026-10-25 15:26
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 06:46
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 06:47
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 06:47
+  from: chaba
+  text: started devin-task-20261027-064712-target-host-must-be-explicit-r on tony-macbook (dispatch)
+- at: 2026-10-27 06:48
+  from: devin
+  text: scenario started. spec declares no remote target; declaring explicit target_host=tony-macbook (this dispatch
+    runner, verified via hostname). read-only evidence collection only; no remediation.
+- at: 2026-10-27 06:48
+  from: devin
+  text: 'DONE (read-only). target_host=tony-macbook (runner, explicit; spec named no remote target). 8c load 7.50/4.68/3.14
+    = 0.94/0.59/0.39 per-core rising; mem 2.4G avail, 6.2G swap used; disk / 25%; user units clean, apport-autoreport.service
+    failed (benign); no nvidia-smi. Report: reports/2026-10-27-devnest-host-load-tony-macbook.md. No remediation
+    — human gate per spec.'
+- at: 2026-10-27 06:50
+  from: tony-macbook
+  text: 'finished (ok): exit=0 7-064712-target-host-must-be-explicit-r.md`; board start/done comments posted to
+    the card. | devin-task-20261027-'
+- at: 2026-10-27 06:50
+  from: chaba
+  text: 'session-end checkpoint 719f2083: 1 leftover file(s) committed'
+- at: 2026-10-27 06:50
+  from: chaba
+  text: pushed dispatch/20261027-064712-target-host-must-be-explicit-r to origin
+- at: 2026-10-27 06:50
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 06:50
+  from: chaba
+  text: auto-merged dd6ef1ba (dispatch/20261027-064712-target-host-must-be-explicit-r) → origin/master
+- at: 2026-10-27 06:50
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-064712-target-host-must-be-explicit-r,
+    branch dispatch/20261027-064712-target-host-must-be-explicit-r'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 7-064712-target-host-must-be-explicit-r.md`; board start/done comments posted to the card. | devin-task-20261027-064712-target-host-must-be-explicit-r.service:
+    Consumed 32.334s CPU time over 1min 50.145s wall clock time, 453.5M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}

@@ -1,7 +1,7 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
-column: backlog
-updated: 2026-10-27 05:32
+column: doing
+updated: 2026-10-27 07:03
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
 ref: KNB-0624
@@ -19,6 +19,15 @@ comms:
 - at: 2026-10-27 05:32
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 06:46
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 06:48
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 06:48
+  from: chaba
+  text: started devin-task-20261027-064822-fix-cms-publish-page-slug-argu on tony-macbook (dispatch)
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -31,4 +40,8 @@ requests:
   at: 2026-10-27 01:21
   from: backlog-spec-enrich
   answer: ★ Use repo chaba on host tony-dell to debug and fix the cms_publish_page slug argument error.
+action:
+  type: dispatch
+  status: running
+  runner: tony-macbook
 awaiting_action: true

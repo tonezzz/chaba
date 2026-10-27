@@ -1,7 +1,7 @@
 id: devnest-kk-video-project-intake
 title: Add KK PDF to DevNest video-project intake
 column: done
-updated: 2026-10-27 06:34
+updated: 2026-10-27 06:49
 brief: Let KK send a PDF plus a short request in TG/DevNestHA and receive a tracked, batched short-video project
   plan.
 priority: high
@@ -128,6 +128,28 @@ comms:
     completed on idc03: creative brief, factual/dream-separated 10-scene plan, 60–90s teaser map, and asset/rights
     matrix. Nest job post 2646 created; private report updated. No GPU generation/publication started. Next gate:
     confirm Thai/English audio/subtitle treatment and review the plan before preview generation.'
+- at: 2026-10-27 06:44
+  from: devin
+  text: 'CONTINUED: no-GPU planning advanced. Stored `shots/prompt-pack-v1.md` (10 scene templates + teaser assembly)
+    and `qc/preflight.md` (rights/identity/fact-vs-dream/technical gates). Project manifest now `preview_preflight_ready`.
+    No media generation or public publication started; only the audio/subtitle choice remains before the preview
+    pack gate.'
+- at: 2026-10-27 06:44
+  from: devin
+  text: 'raised request audio-subtitle-treatment: Which audio/subtitle treatment should the Nest use for the teaser
+    and master?'
+- at: 2026-10-27 06:48
+  from: tony
+  text: 'answered audio-subtitle-treatment: Thai narration + Thai and English subtitles'
+- at: 2026-10-27 06:49
+  from: devin
+  text: 'AUDIO GATE ANSWERED: Thai narration + Thai and English subtitles. Preview pack prepared at `packs/preview-plan.yml`;
+    nest_job post 2648 created. Planned outputs: private 60–90s teaser MP4, Thai SRT, English SRT, technical/continuity
+    QC report. No GPU launch or public publishing yet; next gate is pack review then private Colab preview.'
+- at: 2026-10-27 06:49
+  from: devin
+  text: 'raised request launch-private-preview: The private teaser pack is ready. May the Nest queue the Colab preview
+    (Thai narration + Thai/English subtitles) for int'
 review_kind: verify
 claim: {}
 requests:
@@ -154,3 +176,25 @@ requests:
   - 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'
   suggested: 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'
   answer: 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'
+- id: audio-subtitle-treatment
+  ask: Which audio/subtitle treatment should the Nest use for the teaser and master?
+  status: answered
+  at: 2026-10-27 06:44
+  from: devin
+  options:
+  - Thai narration + Thai subtitles
+  - Thai narration + English subtitles
+  - Thai narration + Thai and English subtitles
+  - Bilingual Thai/English narration + subtitles
+  suggested: Thai narration + Thai and English subtitles
+  answer: Thai narration + Thai and English subtitles
+- id: launch-private-preview
+  ask: The private teaser pack is ready. May the Nest queue the Colab preview (Thai narration + Thai/English subtitles)
+    for internal review? No public publishing; stop before final generation if rights/technical checks fail.
+  status: open
+  at: 2026-10-27 06:49
+  from: devin
+  options:
+  - proceed with private preview
+  - hold for further plan review
+  suggested: proceed with private preview

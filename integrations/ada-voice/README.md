@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Fifteen drops live here:
+chaba dispatches. Sixteen drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -41,6 +41,9 @@ chaba dispatches. Fifteen drops live here:
     other-media turns — card `tg-forward-provenance` (2026-10-17)
 15. `chat_send` page= — a CMS page's images attached server-side in one
     batch — card `chat-send-page-images` (ADA-0511, 2026-10-26)
+16. `cms_publish_page` slug derivation — `slug=` optional, derived from
+    the title — card `fix-cms-publish-page-slug-argument-missi-96152a`
+    (KNB-0624, 2026-10-27)
 
 ---
 
@@ -1227,3 +1230,55 @@ ad-hoc URLs.
 - NOT verified live: no real LINE push — first `page=sa-beach-photos`
   send after deploy is the smoke (check the relay log `send: inst=
   … msgs=N` + the note's per-asset count).
+
+## Drop 16 — cms_publish_page slug derivation
+
+Card `fix-cms-publish-page-slug-argument-missi-96152a` (KNB-0624): the
+session audit kept flagging `fail:cms_publish_page` — the model sends
+`title`+`content` and no `slug`, the lazy-schema gate answers
+`SchemaError: missing required 'slug'`, and the publish dies before the
+confirm handshake. The title already implies the id, so the call now
+derives instead of rejecting.
+
+### Files
+
+- `backend/cms-slug-derivation.patch` — one patch, five files:
+  - `backend/tool_runner/cms.py` — new `CmsMixin._cms_slugify` derives a
+    hyphenated `_SLUG_RE`-legal slug from free text (accent strip,
+    60-char word-cut); `cms_publish_page`'s `slug`/`title`/`content`
+    params gain `""` defaults and an empty slug falls back to the
+    title-derived one — a title with no Latin letters/digits still
+    raises a plain `ValueError` naming the fix.
+  - `backend/tool_runner/__init__.py` — the pending-confirm key uses
+    the same derivation (`slug or slugify(title)`), so a no-slug
+    register call and its confirmed resubmit share the key — no
+    'confirmed without pending' mismatch.
+  - `backend/realtime_provider.py` — `slug` leaves the declaration's
+    `required` list; its description and the tool blurb say "omit to
+    derive from the title".
+  - `backend/tool_guide.yml` — guide entry leads with the optional slug.
+  - `tests/test_cms_slug_derivation.py` — ada-voice suite: slugify
+    shapes (basic/accents/Thai-empty/60-char word cut), publish with no
+    slug deriving + pending-key match, explicit slug still winning,
+    Thai-only title erroring plainly.
+- `tests/test_cms_slug_derivation.py` — repo-of-record copy of the
+  ada-voice test file above.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/cms-slug-derivation.patch`
+   — base `main` @ `56c67c1`; if a hunk rots, re-dispatch the card
+   rather than hand-merging.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes
+   (backend-only change — relays untouched).
+
+### Contract
+
+- `cms_publish_page(slug?, title, content, summary, domain, fresh_for,
+  confidence, …)` — `required` loses only `slug`; the report meta
+  contract is unchanged.
+- No slug → derived from `title` (e.g. `'Pool Notes 2026!'` →
+  `pool-notes-2026`); explicit `slug` still wins verbatim.
+- The two-step confirm handshake is untouched — register, ask, resubmit
+  `confirmed=true`.
