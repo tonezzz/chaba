@@ -1,7 +1,7 @@
 id: kk-video-c9f99fee6146
 title: KK short movie — OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf
 column: done
-updated: 2026-10-27 12:15
+updated: 2026-10-27 12:53
 brief: KK short-video intake from OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf; source sha256=c9f99fee6146867d141a7061bdfdc71c6b15d3a617308db9420b57d67efa7cd6.
   Requirements extraction and planning pending.
 priority: high
@@ -94,6 +94,12 @@ comms:
     files are visible, but no pack `done` marker yet—the T5 archive shard write is still in progress. Preview prep
     is queued in the same runner; it has not claimed or produced an MP4 yet. This supersedes the earlier “no pack
     in Drive” note; the project.json still'
+- at: 2026-10-27 12:53
+  from: devin
+  text: '[preview run result 2026-10-27] The embeddings pack completed: all 10 shot `.pt` files and the T5 archive
+    were saved. The staged preview pack then failed before generating frames with `ImportError: cannot import name
+    FqnToConfig from torchao.quantization`; no MP4/subtitles were produced. I recorded the dependency fix on OPS-0929.
+    The Colab queue drained; no further preview render is active.'
 action:
   type: dispatch
   status: done
