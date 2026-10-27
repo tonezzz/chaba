@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: review
-updated: 2026-10-27 18:17
+updated: 2026-10-27 19:00
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -105,6 +105,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261027-181224-create-a-rootless-podman-quadl on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-27 19:00
+  from: devin
+  text: 'State correction: live idc02 stack is already healthy despite failed dispatch closeout. jack-opencode and
+    jack-enroll containers are running/healthy on private jack-ide.network; local gateway /health=200 and upstream=up;
+    tailnet serve is configured on :8448. Remaining work is external access only: Cloudflare Access/public hostname
+    plus dedicated Jack-scoped LiteLLM key. Need Jack email/identity and final hostname/policy before configuring
+    CF; no public route should be opened by assumption.'
 action:
   type: dispatch
   status: done
