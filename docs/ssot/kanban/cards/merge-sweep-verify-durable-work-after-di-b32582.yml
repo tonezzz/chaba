@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
 column: done
-updated: 2026-10-27 14:23
+updated: 2026-10-27 14:28
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -61,6 +61,12 @@ comms:
 - at: 2026-10-27 14:23
   from: tony
   text: closed by tony
+- at: 2026-10-27 14:28
+  from: tony
+  text: 'HIGH-VALUE NEXT JOB: this is the prerequisite for scaling OpenCode/DevNest. Latest dispatch attempt failed
+    before durable verification; keep review/held. Do not requeue blindly. First make the closeout tests pass for:
+    pushed branch after worker GC, failed/unknown exit, outcome-only artifact, no evidence, and zero-commit push.
+    Only after this gate is verified should we increase unattended delegation.'
 action:
   type: dispatch
   status: done
