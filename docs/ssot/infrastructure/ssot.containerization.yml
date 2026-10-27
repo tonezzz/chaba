@@ -15,16 +15,15 @@ sections:
     layout: list
     items:
       - label: Host System Services (systemd --user)
-        text: "Total: 30 running services (after containerization)
+        text: "Containerization snapshot: 30 running services before Barrier KVM retirement (2026-10-25)
 
           **Containerized (3):**
           - yomi-api.service → yomi-api container
           - gpu-queue.service → gpu-queue container
           - gpu-queue-processor.service → gpu-queue-processor container
 
-          **Retained on host (4):**
+          **Retained on host (3):**
           - playlived - Shared browser session daemon (Playwright complexity, systemd service for reliability)
-          - barriers.service - Barrier KVM server (input device access)
           - clip-sync-dell.service - Clipboard sync (X11 dependencies)
           - rclone-gdrive.service - Google Drive mount (FUSE requirements)
 

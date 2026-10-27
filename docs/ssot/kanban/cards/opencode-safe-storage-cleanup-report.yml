@@ -1,0 +1,91 @@
+id: opencode-safe-storage-cleanup-report
+title: Safe periodic storage cleanup with OpenCode report and Telegram alert
+column: review
+updated: 2026-10-26 10:49
+brief: Use OpenCode for read-only storage triage and reporting; deterministic allowlisted cleanup only after policy
+  checks and Telegram report.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- storage
+- cleanup
+- telegram
+- safety
+spec: 'Verify and operationalize storage cleanup safely. Do not let OpenCode invent rm commands or delete arbitrary
+  paths. Build a deterministic, allowlisted cleanup runner plus read-only report: capture df, root/home top-level
+  usage, target sizes, active writers/locks, Devin DB quick_check and session locks, dispatch worktree/task terminal
+  state, protected paths, and candidate list. First automatic targets may include only policy-approved rebuildable
+  caches/log retention and Devin session pruning through the existing precleanup/prune path; never delete model-archive,
+  backups, git worktrees, dispatch tasks, secrets, active databases, containers/volumes, or the ada-ha stale clone
+  without explicit review. Add dry-run by default, an explicit guarded apply mode, post-cleanup verification, freed-space/skipped-items
+  report, and Telegram delivery through existing board_notify BOARD_NOTIFY_CHANNEL=tg relay. Run a read-only OpenCode
+  review of the candidate report before apply; apply must be deterministic and refuse if preflight, DB integrity,
+  locks, backup/summary preservation, or verifier checks fail. Rollback/disable is the systemd timer kill switch.
+  Validate first on tony-dell only, then consider tony-omen/macbook. Acceptance: dry-run report, no mutation in
+  dry-run, JSON/Markdown artifact, TG report delivery smoke, apply mode deletes only declared automatic_ok targets,
+  and post-check confirms services/DBs healthy.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-093226-verify-and-operationalize-stor.service: Failed with result ''exit-code''.
+    | devin-task-20261026-093226-verify-and-operationalize-stor.service: Consumed 3.035s CPU time over 2.054s wall
+    clock time, 34.5M memory peak.'
+  sweep:
+    session_gone: 2026-10-26 09:46
+note: 'OpenCode''s recent storage answer found only 53G free but missed the real largest consumers: model-archive
+  43G, ~/.cache 27G, ~/.config 17G, ~/.local 16G, and Devin DB/WAL ~5.8G. It also suggested unsafe generic rm/sudo
+  actions. This card makes the LLM read/report only and moves deletion behind deterministic policy gates.'
+ref: KNB-0903
+comms:
+- at: 2026-10-26 09:31
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 09:31
+  from: tony
+  text: 'Verified OpenCode storage answer: disk is 75% used with 53G free, but its report missed largest consumers.
+    Current read-only scan: ~/model-archive 43G (HF 27G + packed 17G), ~/.cache 27G (nest-worker 13G, uv 3.4G, pip
+    3.4G, go-build 3.1G), ~/.config 17G (containers 8.3G, Devin 2.9G), ~/.local 16G (share 14G), Devin sessions.db
+    4.1G + WAL 1.7G; DB quick_check=ok, 118 sessions, active writers present. Do not delete yet. Build dry-run +
+    allowlisted deterministic apply + post-check + TG report; Open'
+- at: 2026-10-26 09:31
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 09:32
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 09:32
+  from: chaba
+  text: started devin-task-20261026-093226-verify-and-operationalize-stor on tony-macbook (dispatch)
+- at: 2026-10-26 09:33
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-093226-verify-and-operationalize-stor.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-26 09:33
+  from: chaba
+  text: pushed dispatch/20261026-093226-verify-and-operationalize-stor to origin
+- at: 2026-10-26 09:33
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-093226-verify-and-operationalize-stor,
+    branch dispatch/20261026-093226-verify-and-operationalize-stor'
+- at: 2026-10-26 09:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-093226-verify-and-operationalize-stor on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-26 10:11
+  from: tony
+  text: 'CORRECTION: KNB-0903 is not verified. The dispatched service failed (`Failed with result exit-code`), no
+    outcome artifact/cleanup runner is present, and no deletion occurred. Keep this in review. Next safe step is
+    a dry-run-only implementation with tests; do not enable a timer or apply cleanup from the current card result.'
+- at: 2026-10-26 10:49
+  from: tony
+  text: 'REAL DRY-RUN NOW VERIFIED: fresh OpenCode session on tony-macbook used mcp_health + mcp_get_file only to
+    review deterministic inventory /tmp/opencode-storage-inventory.7w83a801.json from tony_dell. Candidate report:
+    /tmp/opencode-storage-review.K9uZ8b/candidate-report.json; 99 candidates, 3 automatic_ok (only OpenCode caches,
+    local Trash), 59 manual_review, 37 protected; independent check found zero protected paths marked automatic_ok.
+    No deletion. Telegram dry-run report sent successfully. Appl'
+review_kind: verify
+claim: {}

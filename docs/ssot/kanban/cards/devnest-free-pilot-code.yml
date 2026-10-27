@@ -1,0 +1,76 @@
+id: devnest-free-pilot-code
+title: 'DevNest free-lane pilot B: small testable Python helper'
+column: done
+updated: 2026-10-26 16:16
+brief: Add a tiny deterministic helper plus unit test through OpenCode Flash Lite.
+priority: low
+program: ai-workforce
+tags:
+- devnest
+- opencode
+- free_lane
+- pilot
+- savings
+spec: 'Add scripts/ops/devnest_lane_label.py with a pure function lane_label(text) that returns codemod for text
+  containing purge or config, manual for physical or hardware, and devin otherwise. Add tests/ops/test_devnest_lane_label.py
+  covering all three cases. Do not touch unrelated files or deploy. Done gate: pytest tests/ops/test_devnest_lane_label.py
+  passes and auto-merge succeeds.'
+action:
+  type: dispatch
+  host: tony-dell
+  status: done
+  lane: devin
+  runner: tony-dell
+  result: 'exit=0 =github-mcp-server, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server) |
+    devin-task-20261026-160310-add-scripts-ops-devnest-lane-l.service: Consumed 13.596s CPU time over 1min 6.056s
+    wall clock time, 766.1M memory peak.'
+  verified: true
+ref: OPS-0896
+comms:
+- at: 2026-10-26 08:48
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 16:01
+  from: devin
+  text: queued for processing
+- at: 2026-10-26 16:03
+  from: tony-dell
+  text: claimed
+- at: 2026-10-26 16:03
+  from: chaba
+  text: started devin-task-20261026-160310-add-scripts-ops-devnest-lane-l on tony-dell (dispatch)
+- at: 2026-10-26 16:03
+  from: devin
+  text: devnest_lane_label.py + tests added; pytest 6/6 pass. Committing for closeout merge.
+- at: 2026-10-26 16:08
+  from: tony-dell
+  text: 'finished (ok): exit=0 =github-mcp-server, io.modelcontextprotocol.server.name=io.github.github/github-mcp-server)
+    | devin-task-20261026'
+- at: 2026-10-26 16:08
+  from: chaba
+  text: 'session-end checkpoint 00b60144: 1 leftover file(s) committed'
+- at: 2026-10-26 16:08
+  from: chaba
+  text: pushed dispatch/20261026-160310-add-scripts-ops-devnest-lane-l to origin
+- at: 2026-10-26 16:08
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed
+    (+3 pre-existing baseline failure(s))'
+- at: 2026-10-26 16:08
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 16:16
+  from: chaba
+  text: 'merge-sweep: merged 2dbfb5ed (dispatch/20261026-160310-add-scripts-ops-devnest-lane-l from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261026-160310-add-scripts-ops-devnest-lane-l.md)
+    — auto-closed'
+- at: 2026-10-26 16:16
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-160310-add-scripts-ops-devnest-lane-l,
+    branch dispatch/20261026-160310-add-scripts-ops-devnest-lane-l on tony-dell'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 16:16
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261026-160310-add-scripts-ops-devnest-lane-l.md

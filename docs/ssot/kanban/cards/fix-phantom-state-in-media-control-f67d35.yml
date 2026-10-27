@@ -1,7 +1,7 @@
 id: fix-phantom-state-in-media-control-f67d35
 title: Fix phantom state in media control
 column: backlog
-updated: 2026-10-26 08:29
+updated: 2026-10-26 09:22
 note: Fix needed on media_player verification protocol.
 ref: MED-0493
 comms:
@@ -26,6 +26,13 @@ comms:
   from: tony
   text: 'raised request phantom-state-in-media-control-the-media-1e22a2: Phantom state in media control: the media_player
     call reports success but HA state does not change (or lags). Which laye'
+- at: 2026-10-26 09:22
+  from: tony
+  text: 'answered phantom-state-in-media-control-the-media-1e22a2: ada-voice — media tool must verify media_player
+    state after the call, on idc03'
+- at: 2026-10-26 09:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-card-notes-a-fix-is-needed-a30c2c
   ask: The card notes a fix is needed on the media_player verification protocol, but lacks specifics on the target
@@ -43,7 +50,7 @@ requests:
 - id: phantom-state-in-media-control-the-media-1e22a2
   ask: 'Phantom state in media control: the media_player call reports success but HA state does not change (or lags).
     Which layer owns the verify-after-call fix?'
-  status: open
+  status: answered
   at: 2026-10-26 08:29
   from: tony
   options:
@@ -51,4 +58,5 @@ requests:
   - chaba — verification belongs in the HA-side protocol/dashboard layer
   - close — no longer reproduces
   suggested: ada-voice — media tool must verify media_player state after the call, on idc03
+  answer: ada-voice — media tool must verify media_player state after the call, on idc03
 awaiting_action: true

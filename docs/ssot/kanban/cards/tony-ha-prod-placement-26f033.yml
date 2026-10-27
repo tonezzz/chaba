@@ -1,7 +1,7 @@
 id: tony-ha-prod-placement-26f033
 title: tony-ha-prod-placement
-column: backlog
-updated: 2026-10-26 07:43
+column: done
+updated: 2026-10-26 19:03
 priority: high
 spec: 'DECISION for Tony: where should prod tony-ha live? Context: omen (current) is a laptop that may sleep + going
   through maintenance; dell is slated to become a minimal spare box per approved 2026-10-21 drain plan; mn01 is
@@ -14,3 +14,96 @@ comms:
 - at: 2026-10-26 07:43
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 17:26
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 17:27
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:27
+  from: mn01
+  text: claimed
+- at: 2026-10-26 17:27
+  from: chaba
+  text: started devin-task-20261026-102753-decision-for-tony-where-should on mn01 (dispatch)
+- at: 2026-10-26 17:28
+  from: devin
+  text: 'Dispatch started: verifying tony-ha deployment type, LAN device dependencies, and mn01 capacity; will produce
+    decision doc + request.'
+- at: 2026-10-26 17:34
+  from: devin
+  text: 'raised request prod-tony-ha-host-a-mn01-recommended-if-bbf110: Prod tony-ha host? (a) ★mn01 — recommended
+    IF you commit it always-on: verified live on 192.168.2.x (reaches TONY-TV/cam'
+- at: 2026-10-26 17:34
+  from: devin
+  text: 'Research done, request raised. Key live-verified facts: mn01 IS on 192.168.2.0/24 (.75 eth/.81 wifi — values.yml
+    mn-home note stale), reaches TONY-TV :8008 direct, 6d uptime since Oct20 boot, GNOME wont auto-suspend. BUT
+    SSOT+history show mn01 was off-net ~Oct14-17 (3d) + unreachable Oct16 — always-on is a posture decision, not
+    yet a record. Omen: tony-ha 200 live, declared headless 24/7 since Oct23; pain = maintenance reboots (Oct25
+    full outage). idc03 rejected (LAN control dies). Recommendatio'
+- at: 2026-10-26 17:35
+  from: mn01
+  text: 'finished (ok): exit=0 753-decision-for-tony-where-should.md`, commit c9a23fb0 on the dispatch branch —
+    not pushed. | devin-task-2026102'
+- at: 2026-10-26 17:35
+  from: chaba
+  text: 'session-end checkpoint 158d37b8: 1 leftover file(s) committed'
+- at: 2026-10-26 17:35
+  from: chaba
+  text: pushed dispatch/20261026-102753-decision-for-tony-where-should to origin
+- at: 2026-10-26 17:35
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 17:35
+  from: chaba
+  text: auto-merged fb073bee (dispatch/20261026-102753-decision-for-tony-where-should) → origin/master
+- at: 2026-10-26 17:35
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-102753-decision-for-tony-where-should,
+    branch dispatch/20261026-102753-decision-for-tony-where-should'
+- at: 2026-10-26 17:47
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''prod-tony-ha-host-a-mn01-recom''] block close)'
+- at: 2026-10-26 18:39
+  from: tony
+  text: 'answered prod-tony-ha-host-a-mn01-recommended-if-bbf110: a) mn01 — always-on commit'
+- at: 2026-10-26 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 753-decision-for-tony-where-should.md`, commit c9a23fb0 on the dispatch branch — not pushed. |
+    devin-task-20261026-102753-decision-for-tony-where-should.service: Consumed 51.246s CPU time over 7min 18.223s
+    wall clock time, 1.4G memory peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-26 17:47
+requests:
+- id: prod-tony-ha-host-a-mn01-recommended-if-bbf110
+  ask: 'Prod tony-ha host? (a) ★mn01 — recommended IF you commit it always-on: verified live on 192.168.2.x (reaches
+    TONY-TV/cams direct), already the home-cam/cast box, HA keeps working locally even if WAN/tailnet drops; needs
+    ~1G on its 7G (fits). Caveat: mn01 was intermittently OFF-net mid-Oct (3d outage Oct14-17, unreachable Oct16)
+    — the always-on role is being assumed, not yet proven; BIOS AC-restore + leave-powered closes it. (b) keep omen
+    — declared lan-hub, headless 24/7 since Oct23, zero migration, but every maintenance reboot kills home control
+    (Oct25 outage); mn01 then becomes the HOM-0855 cold standby. (c) idc03 — REJECTED: kills LAN control (cast/RTSP/esphome/LAN
+    plugs). Full research: docs/ssot/jobs/home-assistant/2026-10-26-tony-ha-prod-placement-decision.yml'
+  status: answered
+  at: 2026-10-26 17:34
+  from: devin
+  options:
+  - a) mn01 — always-on commit
+  - b) keep omen + mn01 standby
+  - c) idc03
+  answer: a) mn01 — always-on commit
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 18:46
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,94 @@
+id: 2026-10-26-michael-dev-idc02-move
+title: Move michael-dev HA instance idc03:8124 -> idc02:8124
+date: 2026-10-26
+card: capacity-move-michael-dev
+dispatch: dispatch-wt-20261026-173929-move-michael-dev-ha-instance-i
+procedure: docs/kb/capacity-adjust.md (same QA plan as OPS-0524/OPS-0529)
+
+summary: >
+  michael-dev (Michael HA dev staging, container michael-dev, :8124 UI +
+  :9585 ha_mcp_tools) moved from idc03 to idc02 under the capacity-adjust
+  procedure — idc03 carries all Ada backends + MDDB leader and was tight on
+  memory; idc02 had 168G disk / ~9G mem free and is the designated relief
+  valve for member/dev nodes. Stateful move: config dir + .storage rsynced
+  whole; idc03 unit masked+stopped, parked 24h for rollback.
+
+phase0_snapshot:
+  config_dir: /home/tony/.config/michael-dev = 1.4G on idc03
+  idc03_capacity: "disk 130G free (56%), mem 15G total / ~5G available — tight (all Ada backends + mddb leader)"
+  idc02_capacity: "disk 168G free (43%), mem 15G total / ~9G available — headroom confirmed"
+
+phase1_ref_sweep:
+  pattern: ":8124 / 100.102.134.91:8124 / 9585 / michael-dev"
+  consumers_found:
+    - "idc02 caddy-edge (~/.config/caddy/Caddyfile): michael-dev.surf-thailand.com -> https://idc03...:8124; http://:8124 tailnet-IP shadow -> idc03:8124"
+    - "idc02 web.service (~/web-srv/caddy/Caddyfile): /apps/ha/michael-dev* 308 -> idc03:8124; static apps/{lab,ha/michael-dev}/index.html + routes.json links"
+    - "mn01 caddy-mn01 (~/.config/caddy/Caddyfile.mn01 + public/): same 308 redir + static links"
+    - "idc03 mha-state-push.service: pushes live michael-ha states -> 127.0.0.1:8124 (moved to idc02 with the instance; script lives inside the config dir)"
+    - "~/.config/devin/mcp_config.json on tony-macbook (idc03:9585), tony-omen + tony-dell (stale tony-dell:9585)"
+    - "repo scripts: deploy-card.sh, deploy-config.sh, mirror-sweep.py, key-watch.py, ha-events-report.py, copy-view.py, apply-tpl.py, promote-view.sh, assess-device.py"
+    - "idc03 tailscale serve :8124 -> 127.0.0.1:8124"
+  negative_findings:
+    - "NO ada backend HASS_URL points at :8124 — ada-ha-michael was renamed ada-ai-kraut 2026-10-16 and targets LIVE michael-ha; no lane consumes the dev instance"
+    - "podman bridge subnet identical on both hosts (10.88.0.0/16) — trusted_proxies carried over unchanged"
+    - "internal_url in .storage/core.config was STILL stale tony-dell:8124 (drift from the dell era) — patched to idc02 during the move"
+
+phase2_execute:
+  idc02:
+    - "podman pull homeassistant:2026.9.0"
+    - "rsync -a idc03:.config/michael-dev/ ~/.config/michael-dev/ (bulk while running, then --delete-after final delta after source stop)"
+    - "copied secrets: ~/.config/secrets/ha-michael-dev.env, ~/.local/share/home-assistant-michael/ha-token, unit mha-state-push.service; created ~/.venvs/mha-push (websockets 17.3)"
+    - "installed quadlet ~/.config/containers/systemd/michael-dev.container (stacks/idc02/michael-dev/) — PublishPort 127.0.0.1:8124, 127.0.0.1:9585, 100.123.163.11:9585"
+    - "patched .storage/core.config internal_url -> https://idc02.taila0626a.ts.net:8124"
+    - "systemctl --user start michael-dev.service -> active; :8124 200; MCP :9585 initialize -> ha-mcp 8.7.0; websocket auth_required -> auth_ok with existing HASS_TOKEN"
+  cutover:
+    - "idc03: stop mha-state-push + michael-dev -> final rsync delta -> start idc02"
+    - "idc02 caddy-edge: surf block upstream -> https://idc02...:8124; http://:8124 shadow block REMOVED (port conflict — tailscale serve owns :8124 now)"
+    - "idc02: sudo tailscale serve --https=8124 http://127.0.0.1:8124 -> https://idc02...:8124 200"
+    - "idc03: tailscale serve :8124 removed; michael-dev.service masked (park); mha-state-push disabled"
+    - "idc02: mha-state-push enable --now -> active, 'subscribed to state_changed, mirroring 60 entity ids'"
+
+phase3_repoint:
+  - "mcp_config.json: tony-macbook idc03:9585 -> idc02:9585; tony-omen + tony-dell stale tony-dell:9585 -> idc02:9585 (backups .bak-mdev-move-20261026)"
+  - "idc02 web.service Caddyfile /apps/ha/michael-dev* -> idc02 (NOTE: sed -i breaks single-file bind mounts — needed systemctl --user restart web.service, not just caddy reload)"
+  - "idc02 + mn01 static apps pages (lab/ha/michael-dev index.html, routes.json) -> idc02; mn01 Caddyfile.mn01 same redir; caddy-mn01 reloaded"
+  - "repo scripts repointed (see git diff)"
+  - "SSOT: values (idc02 host entry added), instances, michael.dev, services, routes, system-map, lanes, audit.hosts, host-capacity, mcp, ha.mcp, operations, migrated-units, dashboards, secrets, cards, design, howto, michael — plus stale tony-dell:8124 leftovers swept to idc02"
+
+verification:
+  - "curl https://idc02.taila0626a.ts.net:8124/api/ + HASS_TOKEN -> 200; /api/config internal_url=https://idc02...:8124, location_name=บ้าน, version 2026.9.0"
+  - "websocket: auth_required -> auth_ok (existing LLAT still valid — same .storage)"
+  - "MCP: POST http://idc02:9585/private_... initialize -> ha-mcp 8.7.0 (loopback + tailnet IP)"
+  - "public edge: https://michael-dev.surf-thailand.com -> 302 CF Access; edge-local --resolve:45.136.236.190 -> 200"
+  - "/apps/ha/michael-dev -> 308 https://idc02...:8124/ (web origin + tailnet front)"
+  - "idc03 parked: michael-dev masked+inactive, mha-state-push disabled+inactive, serve :8124 gone"
+
+phase4_audit:
+  command: "python3 scripts/audit-hosts.py --host idc03 --host idc02"
+  result: >
+    Intended delta only: idc03 shows michael-dev.service + mha-state-push.service
+    inactive/masked as declared; idc02 shows both active as declared. Remaining
+    deltas in the reports are PRE-EXISTING baseline drift (missing timers,
+    ada-pi-pwa/ada-ha-michael rename leftovers, undeclared running services on
+    both hosts) — untouched by this move; baseline reconciliation is a
+    separate sweep.
+  reports:
+    - reports/audit-hosts/idc02-20261026-175342.yml
+    - reports/audit-hosts/idc03-20261026-175355.yml
+
+rollback:
+  window: 24h (until ~2026-10-27 17:50 UTC+7)
+  steps:
+    - "idc03: systemctl --user unmask michael-dev.service && systemctl --user start michael-dev.service"
+    - "idc03: sudo tailscale serve --https=8124 http://127.0.0.1:8124"
+    - "idc02: systemctl --user stop michael-dev.service mha-state-push.service"
+    - "idc02 caddy-edge: restore ~/.config/caddy/Caddyfile.bak-michaeldev-move-20261026 + podman exec caddy-edge caddy reload"
+    - "idc02 web: restore ~/web-srv/caddy/Caddyfile.bak-mdev-move-20261026 + restart web.service"
+    - "mn01: restore ~/.config/caddy/Caddyfile.mn01.bak-mdev-20261026 + reload caddy-mn01"
+    - "revert mcp_config.json backups (.bak-mdev-move-20261026) on macbook/omen/dell"
+
+followups:
+  - "unpark decision ~24h: delete idc03 quadlet + config dir (or keep as cold standby); unmask+remove if confirmed good"
+  - "ssot.audit.hosts baseline is drifted beyond this move (pre-existing) — separate drift-reconcile sweep warranted"
+  - "24h soak: host-loads sampler on idc02 stays under thresholds; idc03 mem should relax"
+  - "mn-ha lane naming: michael-dev vs mn-ha-dev rename (card mn-dev-rename) still open"

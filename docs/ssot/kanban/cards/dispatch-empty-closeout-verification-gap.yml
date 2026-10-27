@@ -1,7 +1,7 @@
 id: dispatch-empty-closeout-verification-gap
 title: dispatch close-out reports ok + auto-closes on zero-commit sessions
-column: backlog
-updated: 2026-10-26 08:36
+column: review
+updated: 2026-10-27 06:39
 spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `service: Failed with result exit-code`,
   the branch push lands a head EQUAL to master base (zero commits), yet the pipeline records `finished (ok)` and
   merge-sweep writes `verified — auto-closed`. Cards burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
@@ -13,7 +13,15 @@ spec: 'Proven twice on the same cards (2026-10-25/26): sessions exit with `servi
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
+  lane: devin
+  runner: tony-dell
+  sweep:
+    stale_running: 2026-10-26 09:16
+    dirty: 2
+  result: 'exit=0 -outcome-20261026-084910-proven-twice-on-the-same-cards.md`; card updated via board-api. | devin-task-20261026-084910-proven-twice-on-the-same-cards.service:
+    Consumed 1min 52.943s CPU time over 12min 55.826s wall clock time, 1G memory peak.'
+  verified: false
 ref: OPS-0894
 comms:
 - at: 2026-10-26 08:31
@@ -26,3 +34,215 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:49
+  from: tony-dell
+  text: claimed
+- at: 2026-10-26 08:49
+  from: chaba
+  text: started devin-task-20261026-084910-proven-twice-on-the-same-cards on tony-dell (dispatch)
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'root-caused: (1) runner-agent.collect + kanban-dispatch.finish_one read systemctl on --collect units →
+    defaults read as ok; (2) close_out returns merged=True for an old base-commit head once base moves on → verified
+    stamped on a zero-commit push; (3) KNB-0893: locked_edit bumps updated on bookkeeping writes → stale checkout
+    wins card-union scalars. Fixing all three + QC zero_commit counter.'
+- at: 2026-10-26 09:01
+  from: devin
+  text: 'done: (1) exit evidence now checked everywhere — dr.unit_exit_evidence (exit_code > meta.result > loaded-unit
+    fields > journal); runner-agent.collect + kanban-dispatch.finish_one no longer read --collect defaults as ok;
+    merged-but-failed/unproven withholds verified. (2) close_out treats on_first_parent heads as noop+empty_session
+    — a zero-commit head can no longer stamp verified/auto-close; merge-sweep fail_attempt stamps action.sweep.zero_commit
+    and requeues. (3) qc-scoreboard gained a Zero-com'
+- at: 2026-10-26 09:16
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-084910-proven-twice-on-the-same-cards no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-10-26 09:16
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261026-084910-proven-twice-on-the-same-cards on tony-dell still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-26 15:50
+  from: tony-dell
+  text: 'finished (ok): exit=0 -outcome-20261026-084910-proven-twice-on-the-same-cards.md`; card updated via board-api.
+    | devin-task-20261026-08'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'session-end checkpoint eb88e98c: 2 leftover file(s) committed'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: pushed dispatch/20261026-084910-proven-twice-on-the-same-cards to origin
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/merge-sweep.py — card stays in review for manual resolution'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-26 17:06
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-26 17:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 17:16
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-10-26 17:16
+  from: chaba
+  text: 'raised request merge-conflict-2: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-26 18:40
+  from: tony
+  text: 'answered merge-conflict-2: let devin resolve the conflict and land it ★'
+- at: 2026-10-26 18:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py,
+    tests/board/test_runner_agent_lane.py — merge aborted, card stays for human resolution'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'raised request merge-conflict-3: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-26 19:07
+  from: tony
+  text: 'answered merge-conflict-3: let devin resolve the conflict and land it ★'
+- at: 2026-10-26 19:07
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 19:16
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py,
+    tests/board/test_runner_agent_lane.py — merge aborted, card stays for human resolution'
+- at: 2026-10-26 19:16
+  from: chaba
+  text: 'raised request merge-conflict-4: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-27 05:33
+  from: tony
+  text: 'answered merge-conflict-4: let devin resolve the conflict and land it ★'
+- at: 2026-10-27 05:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py,
+    tests/board/test_runner_agent_lane.py — merge aborted, card stays for human resolution'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'raised request merge-conflict-5: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-27 06:30
+  from: tony
+  text: 'answered merge-conflict-5: let devin resolve the conflict and land it ★'
+- at: 2026-10-27 06:30
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 06:31
+  from: chaba
+  text: 'merge-sweep: dispatch/20261026-084910-proven-twice-on-the-same-cards conflicts with origin/master: scripts/board/merge-sweep.py,
+    tests/board/test_runner_agent_lane.py — merge aborted, card stays for human resolution'
+- at: 2026-10-27 06:31
+  from: chaba
+  text: 'raised request merge-conflict-6: merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards:
+    2 commit(s) conflict with origin/master '
+- at: 2026-10-27 06:39
+  from: devin
+  text: 'Related follow-up: inspect durable branch/artifact evidence when the worker session and patch relay are
+    gone. Existing verified gate handles a discovered head; session_gone currently warns and returns for unverified
+    cards. Follow-up card ID: `merge-sweep-verify-durable-work-after-di-b32582`. Keep this separate from the current
+    zero-commit/failed-exit conflict fix unless you prefer to combine them.'
+review_kind: verify
+claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-26 16:01
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-2
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-10-26 17:16
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-3
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py, tests/board/test_runner_agent_lane.py.
+    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards by hand,
+    or retry/abandon the card.'
+  status: answered
+  at: 2026-10-26 18:46
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-4
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py, tests/board/test_runner_agent_lane.py.
+    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards by hand,
+    or retry/abandon the card.'
+  status: answered
+  at: 2026-10-26 19:16
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-5
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py, tests/board/test_runner_agent_lane.py.
+    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards by hand,
+    or retry/abandon the card.'
+  status: answered
+  at: 2026-10-27 05:46
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-6
+  ask: 'merge-sweep can''t land dispatch/20261026-084910-proven-twice-on-the-same-cards: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/merge-sweep.py, tests/board/test_runner_agent_lane.py.
+    Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261026-084910-proven-twice-on-the-same-cards by hand,
+    or retry/abandon the card.'
+  status: open
+  at: 2026-10-27 06:31
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+awaiting_action: true

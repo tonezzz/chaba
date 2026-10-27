@@ -32,13 +32,16 @@
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
 #   queue/prep-<name>.log    — per-job prep stdout/stderr
 #   queue/heartbeat          — rewritten every 15s: <epoch> <job> <phase>
-#   queue/runner.pid         — running pid, removed on clean exit
+#   queue/runner.pid         — running pid, removed on clean exit (legacy)
+#   queue/runner.id          — JSON {pid,boot_id,worker,epoch,ts} — the
+#                            — boot-scoped identity; a pid on shared Drive is
+#                            — NOT a process handle on any other VM
 #   queue/done/<name>.done   — per-job completion markers (work scope)
 #   queue/env-done/<boot>/   — env markers, scoped to this VM's boot_id
 import os, sys, time, subprocess, traceback, threading, signal, glob
 
-Q = '/content/drive/MyDrive/ada-nest/queue'
-ROOT = '/content/drive/MyDrive/ada-nest'
+ROOT = os.environ.get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
+Q = os.environ.get('NEST_QUEUE', f'{ROOT}/queue')
 DONE = f'{Q}/done'
 try:
     BOOT_ID = open('/proc/sys/kernel/random/boot_id').read().strip()
@@ -119,6 +122,17 @@ def fenced_out(my_epoch, worker):
 
 # heartbeat: lets fleet-side checks flag a stall without any notebook access
 state = {'job': 'boot', 'phase': 'boot'}
+
+def _registry_refresh():
+    """Keep this VM's managed-runtime record fresh while the queue runs —
+    the console's duplicate-session gate reads queue/runtime-sessions/. Best-effort:
+    runtime_registry.py may be absent on older Drive trees."""
+    try:
+        import runtime_registry as rr
+        rr.register()
+    except Exception:
+        pass
+
 def heartbeat():
     while True:
         try:
@@ -131,6 +145,7 @@ def heartbeat():
                     f.write(json.dumps(
                         {'worker': WORKER, 'epoch': EPOCH,
                          'ts': int(time.time())}))
+            _registry_refresh()
         except OSError:
             pass
         time.sleep(15)
@@ -155,10 +170,38 @@ say(f'lease acquired: {WORKER} epoch {EPOCH}')
 threading.Thread(target=heartbeat, daemon=True).start()
 threading.Thread(target=fence_watch, daemon=True).start()
 
+# runner.id — boot-scoped identity. runner.pid is kept for fleet tooling but
+# is attribution-free; anything that wants to SIGNAL a runner must match
+# runner.id's boot_id to its own /proc boot_id first (PID-collision lesson).
+def write_runner_id():
+    try:
+        with open(f'{Q}/runner.id', 'w') as f:
+            f.write(json.dumps({'pid': os.getpid(), 'boot_id': BOOT_ID,
+                                'worker': WORKER, 'epoch': EPOCH,
+                                'ts': int(time.time())}) + '\n')
+    except OSError:
+        pass
+
+write_runner_id()
 open(f'{Q}/runner.pid', 'w').write(str(os.getpid()))
+
+def remove_own_runner_marks():
+    """Delete our identity files only when they still name US — a fenced-out
+    zombie must not strip the identity of the runner that beat it."""
+    try:
+        if open(f'{Q}/runner.pid').read().strip() == str(os.getpid()):
+            os.unlink(f'{Q}/runner.pid')
+    except OSError:
+        pass
+    try:
+        d = json.loads(open(f'{Q}/runner.id').read())
+        if d.get('pid') == os.getpid() and d.get('boot_id') == BOOT_ID:
+            os.unlink(f'{Q}/runner.id')
+    except Exception:
+        pass
+
 def bye(*a):
-    try: os.unlink(f'{Q}/runner.pid')
-    except OSError: pass
+    remove_own_runner_marks()
     sys.exit(1)
 signal.signal(signal.SIGTERM, bye)
 signal.signal(signal.SIGINT, bye)
@@ -274,7 +317,9 @@ def verify_artifacts(job, timeout=180):
     best in-VM signal (server-side truth is the fleet watchdog's job), but it
     still catches run-returned-but-wrote-nothing — the failure that made a
     false save-hf-cache.done while the tar never landed (2026-10-23)."""
-    pats = job.get('artifacts') or []
+    # {boot_id} expands so env-scope jobs can declare boot-scoped artifacts
+    pats = [p.replace('{boot_id}', BOOT_ID)
+            for p in (job.get('artifacts') or [])]
     if not pats:
         return True, ''
     deadline = time.time() + timeout
@@ -359,6 +404,12 @@ try:
                 else:
                     ns['PACK_DIR'] = pack_dir
                     ns['NEST_ROOT'] = ROOT
+                    ns['BOOT_ID'] = BOOT_ID
+                    # (name, logfile, Popen) of the next job's bg prep — lets
+                    # a run (e.g. t4-session-warmup) keep the GPU busy exactly
+                    # until that prep exits. None when nothing is pending.
+                    ns['QUEUE_PENDING'] = pending
+                    ns['QUEUE_STATE'] = state
                     exec(compile(job['run'], f'<{name}>', 'exec'), ns)
             finally:
                 signal.alarm(0)
@@ -385,11 +436,11 @@ try:
     # before the VM idles/recycles. Marker content already recorded sizes so
     # a fleet-side rclone check can confirm.
     state['phase'] = 'flush-settle'
-    say('QUEUE-DRAINED — settling 120s for DriveFS flush')
-    time.sleep(120)
+    settle = float(os.environ.get('NEST_QUEUE_SETTLE_S', '120'))
+    say(f'QUEUE-DRAINED — settling {settle:.0f}s for DriveFS flush')
+    time.sleep(settle)
 finally:
     state['job'] = 'exit'; state['phase'] = 'exit'
     if current:
         release_claim(current)      # died mid-pack — don't poison the pack
-    try: os.unlink(f'{Q}/runner.pid')
-    except OSError: pass
+    remove_own_runner_marks()

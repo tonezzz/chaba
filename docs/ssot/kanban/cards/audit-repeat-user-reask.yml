@@ -1,7 +1,7 @@
 id: audit-repeat-user-reask
 title: 'Ada session audit: repeat:user-reask (4d seen)'
-column: backlog
-updated: 2026-10-26 08:29
+column: done
+updated: 2026-10-26 09:01
 brief: 'Recurring session-audit signature ''repeat:user-reask'': user repeated the same ask — 7x on 2026-10-13,
   seen on 4 day(s).'
 priority: medium
@@ -32,7 +32,55 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:45
+  from: idc02
+  text: claimed
+- at: 2026-10-26 08:45
+  from: chaba
+  text: started devin-task-20261026-084556-investigate-ada-session-audit- on idc02 (dispatch)
+- at: 2026-10-26 08:46
+  from: devin
+  text: 'investigating: pulling audit/session-2026-10-13 report + transcripts to classify repeat:user-reask evidence
+    (ยืนยัน re-asks)'
+- at: 2026-10-26 08:53
+  from: devin
+  text: 'VERDICT: detector bug (audit-side), fixed. All 7 findings on 10-13 were artifacts: LINE-relay prefix [LINE
+    group from Tonezzz] (28 chars) inflates similarity — ยืนยัน vs บันทึก scored 0.88 — plus image/doc boilerplate
+    stubs (sim 0.97, only byte count differs) and confirm-token replies to Ada''s own confirm-gates. Also found
+    on 10-11/10-17: capture-path dups (dual listeners [via voice]+untagged, and von vorher STT echo pairs) — same
+    utterance logged twice, no Ada turn between, gap ≤10s. Fix in ses'
+- at: 2026-10-26 08:54
+  from: idc02
+  text: 'finished (ok): exit=0  was cleanly stopped at 08:46 for an in-flight `bbolt compact` — deliberate maintenance,
+    not an outage. | devin-t'
+- at: 2026-10-26 08:54
+  from: chaba
+  text: pushed dispatch/20261026-084556-investigate-ada-session-audit- to origin
+- at: 2026-10-26 08:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 08:54
+  from: chaba
+  text: auto-merged 4e75fcdd (dispatch/20261026-084556-investigate-ada-session-audit-) → origin/master
+- at: 2026-10-26 08:54
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-084556-investigate-ada-session-audit-,
+    branch dispatch/20261026-084556-investigate-ada-session-audit-'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: done
+  runner: idc02
+  result: 'exit=0  was cleanly stopped at 08:46 for an in-flight `bbolt compact` — deliberate maintenance, not an
+    outage. | devin-task-20261026-084556-investigate-ada-session-audit-.service: Consumed 32.594s CPU time, 188.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,36 @@
+id: merge-sweep-verify-durable-work-after-di-b32582
+title: 'Merge-sweep: verify durable work after dispatch session disappears'
+column: backlog
+updated: 2026-10-27 06:38
+brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
+  head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
+  inspection so cards are held accurately and never closed on absence of a session alone.
+priority: high
+program: chaba-ci
+tags:
+- dispatch
+- merge-sweep
+- verification
+- durability
+- kanban
+spec: 'Extend scripts/board/merge-sweep.py session_gone handling, building on the existing merge-sweep-verified-gate
+  (unit exit evidence + produced work/outcome doc + auto_done_when + provable origin). At dispatch start, persist
+  an exact branch_ref/base_ref/task_id and any declared durable artifact refs in card action/meta or the durable
+  dispatch record. If session/worktree is unavailable and patch relay has no head, perform a bounded lookup of that
+  exact ref and declared outcome/artifacts; if a branch is found, re-enter the existing merge/verify path. A pushed
+  branch/artifact with missing or nonzero exit evidence must remain review/held with a precise reason, never verified
+  by presence alone. If no durable evidence is found, mark delivery UNPROVEN/NEEDS_HUMAN and leave the card open;
+  do not claim work was lost and do not auto-close. Add tests for: pushed branch after worker GC; merged branch
+  with task exit 0; pushed branch with exit unknown/nonzero; outcome artifact only; no branch/relay/artifact; zero-commit
+  push. Keep lookup time-bounded and avoid broad branch scans. Related: merge-sweep-verified-gate (done), dispatch-empty-closeout-verification-gap
+  / OPS-0894 (current merge conflict), merge-sweep-resurrects-closed-cards / KNB-0893.'
+ref: KNB-0909
+comms:
+- at: 2026-10-27 06:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 06:38
+  from: devin
+  text: 'Reference correction: this follow-up card is related to KNB-0909, but its unique card ID is `merge-sweep-verify-durable-work-after-di-b32582`.
+    The `ref` field was inadvertently set to KNB-0909 at creation, duplicating that display reference; do not confuse
+    this card with the all-Kanban audit. No workflow/status change was made.'

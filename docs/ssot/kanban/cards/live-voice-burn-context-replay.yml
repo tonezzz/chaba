@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: backlog
-updated: 2026-10-14 06:16
+updated: 2026-10-27 05:33
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -19,3 +19,27 @@ comms:
 - at: 2026-10-14 06:16
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 01:21
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-10-27 05:33
+  from: tony
+  text: 'answered overnight-usage-analysis-shows-928d43: ★ Use repo ada-voice on host tony-dell to implement prompt-caching
+    and fix TEST-POLLUTION usage logging'
+- at: 2026-10-27 05:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: overnight-usage-analysis-shows-928d43
+  ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
+    ada-dev representing 63% of fleet input tokens and TEST-POLLUTION writing 4.7M to usage.jsonl), but the card
+    specifies no target host, repo, or mitigation strategy to address this reconnect churn and test pollution.
+  options:
+  - ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
+  - Use repo ada-pi on host tony-omen to optimize system-prompt replay overhead
+  - Postpone mitigation until further usage data is gathered
+  status: answered
+  at: 2026-10-27 01:21
+  from: backlog-spec-enrich
+  answer: ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
+awaiting_action: true

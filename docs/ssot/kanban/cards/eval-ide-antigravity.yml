@@ -1,7 +1,7 @@
 id: eval-ide-antigravity
 title: 'eval: install Antigravity + Google login + first free-tier task'
-column: backlog
-updated: 2026-10-23 17:09
+column: doing
+updated: 2026-10-27 06:35
 brief: 'Only true agent-first IDE on the list; free weekly quota. Blocked on Tony: needs his Google login.'
 priority: medium
 program: chaba-ci
@@ -18,3 +18,72 @@ comms:
 - at: 2026-10-23 17:09
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 05:38
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:39
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 05:39
+  from: mn01
+  text: claimed
+- at: 2026-10-27 05:39
+  from: chaba
+  text: started devin-task-20261026-223955-30min-google-login-1-download- on mn01 (dispatch)
+- at: 2026-10-27 05:40
+  from: devin
+  text: dispatch started on mn01 — checking env, will download Antigravity installer next. Google login likely needs
+    Tony; will raise a request when the sign-in window is up.
+- at: 2026-10-27 05:41
+  from: devin
+  text: 'raised request tony-antigravity-ide-is-installed-on-mn0-95495f: Tony: Antigravity IDE is installed on mn01
+    and I am launching it on display :0 now. It will open a browser for Google si'
+- at: 2026-10-27 06:18
+  from: devin
+  text: 'UPDATE: Chrome on mn01 is broken (renderer crash-loops, error 15, all pages white — pre-existing host issue,
+    not the IDE). BUT the agy CLI sign-in uses a REMOTE callback (antigravity.google/oauth-callback), so you can
+    complete it on ANY device. Tony: open this URL in a browser where you are signed into Google, approve, done:
+    https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com&code_challenge=G2fo4QU66nGT'
+- at: 2026-10-27 06:21
+  from: devin
+  text: 'raised request tony-to-finish-antigravity-sign-in-works-a0382a: Tony — to finish Antigravity sign-in (works
+    from any browser, mn01 Chrome is broken): 1) Open the OAuth URL from my comm'
+- at: 2026-10-27 06:30
+  from: tony
+  text: 'answered tony-antigravity-ide-is-installed-on-mn0-95495f: proceed'
+- at: 2026-10-27 06:30
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-27 06:35
+  from: devin
+  text: 'status: install done (IDE 2.5.5 + agy 1.4.7), demo repo staged, quota mechanism confirmed. Found host bug:
+    Chrome on mn01 crash-loops every renderer (error 15, kernel 7.0 incompat — pre-existing). agy sign-in is waiting
+    on the auth code per request above — remote URL works from any device.'
+action:
+  type: dispatch
+  status: running
+  runner: mn01
+requests:
+- id: tony-antigravity-ide-is-installed-on-mn0-95495f
+  ask: 'Tony: Antigravity IDE is installed on mn01 and I am launching it on display :0 now. It will open a browser
+    for Google sign-in — please complete the login via chrome-remote-desktop (or locally). agy CLI v1.4.7 also installed.
+    Reply here once signed in, or tell me to use a different account.'
+  status: answered
+  at: 2026-10-27 05:41
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+- id: tony-to-finish-antigravity-sign-in-works-a0382a
+  ask: 'Tony — to finish Antigravity sign-in (works from any browser, mn01 Chrome is broken): 1) Open the OAuth
+    URL from my comment below on any device where you are signed into Google. 2) Approve the consent. 3) The antigravity.google/oauth-callback
+    page will show an authorization code — reply to this request with that code and I will complete the login. CLI
+    is waiting for it.'
+  status: open
+  at: 2026-10-27 06:21
+  from: devin
+  options:
+  - proceed
+  - hold

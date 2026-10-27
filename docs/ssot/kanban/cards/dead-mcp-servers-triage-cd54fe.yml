@@ -1,7 +1,7 @@
 id: dead-mcp-servers-triage-cd54fe
 title: dead-mcp-servers-triage
-column: backlog
-updated: 2026-10-26 08:29
+column: done
+updated: 2026-10-26 09:01
 priority: medium
 spec: 'Decide repair-vs-retire for the 3 non-HA dead MCPs from AUD-0886: (1) notebooklm — dell unit crash-loops
   BUT the actual container runs on mn01 (podman ps shows notebooklm-mcp) — likely just a stale dell-side unit/wrapper;
@@ -21,7 +21,58 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:46
+  from: idc02
+  text: claimed
+- at: 2026-10-26 08:46
+  from: chaba
+  text: started devin-task-20261026-084608-decide-repair-vs-retire-for-th on idc02 (dispatch)
+- at: 2026-10-26 08:53
+  from: devin
+  text: 'triage in progress. Verified live: notebooklm-mcp container healthy+authed on mn01 (nlm notebook list OK)
+    — dell has TWO crash-looping migrated-off quadlets (notebooklm-mcp + notebooklm-rest, ~35.8k restarts each;
+    image missing so quadlet pulls localhost:443 forever). Verdicts: notebooklm=REPAIR by repoint wrappers+nlm->mn01
+    (also fixes silent-failing nightly kb-sync on omen, ~22 errs/run); workflows=RETIRE (no unit/image/container
+    anywhere, zero scheduled consumers, all 7 YAML are demo health c'
+- at: 2026-10-26 08:57
+  from: devin
+  text: 'DONE — decisions landed. notebooklm: REPAIRED — repointed to the live authed container on mn01 (mcp-notebooklm-ssh.sh
+    + mcp-notebooklm.sh + ~/.local/bin/nlm on omen+dell now ssh->mn01; verified initialize + `nlm notebook list`).
+    Dell crash-loop killed: notebooklm-mcp.service AND notebooklm-rest.service masked (they lived in migrated-off/
+    but quadlet scans subdirs — ~36k restarts each). Side-effect win: tonight kb-sync will actually work again (~22
+    silent errors/run before). workflows: RETIRED — '
+- at: 2026-10-26 08:58
+  from: idc02
+  text: 'finished (ok): exit=0 rything is committed on the dispatch branch (no push), and the board card has progress
+    + final comments. | devin-'
+- at: 2026-10-26 08:58
+  from: chaba
+  text: pushed dispatch/20261026-084608-decide-repair-vs-retire-for-th to origin
+- at: 2026-10-26 08:58
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 08:58
+  from: chaba
+  text: auto-merged 4961e3d8 (dispatch/20261026-084608-decide-repair-vs-retire-for-th) → origin/master
+- at: 2026-10-26 08:58
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-084608-decide-repair-vs-retire-for-th,
+    branch dispatch/20261026-084608-decide-repair-vs-retire-for-th'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: done
+  runner: idc02
+  result: 'exit=0 rything is committed on the dispatch branch (no push), and the board card has progress + final
+    comments. | devin-task-20261026-084608-decide-repair-vs-retire-for-th.service: Consumed 45.059s CPU time, 75.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself

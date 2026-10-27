@@ -7,6 +7,59 @@ The publish step is **part of the job**, not a follow-up — a job is not
 done until its output has a durable home (artifact-landing rule,
 `ssot.procedures.yml`).
 
+## Job-console notebook — the canonical operator surface (OPS-0874)
+
+For queue work the operator surface is ONE notebook —
+`ada-nest/queue/ada-nest-job-console.ipynb` on Drive (canonical source
+`scripts/colab/ada-nest-job-console.ipynb`, regenerated from the cell
+sources by `scripts/colab/build-job-console.py`). It is instruction
+markdown + exactly two code cells; there are **no per-job cells** — all
+workloads are queue jobs/packs (`JOBS.py` + `packs/<name>/pack.yml`).
+
+- **Cell 1 — preflight** (`scripts/colab/preflight-cell.py`): mounts
+  Drive, checks for another fresh managed runtime, then prints identity
+  (boot_id, GPU model/VRAM, RAM, Drive state), registers this VM at
+  `queue/runtime-sessions/<boot_id>.json`, and refreshes it on a 60 s
+  background heartbeat. A refused duplicate does not register or leave a
+  heartbeat. After successful registration, it starts a runtime-local
+  watcher for `mcp-colab` queue-start requests targeted at this boot ID.
+  Deliberate two-VM ops set `ALLOW_SECOND_RUNTIME = True` and re-run; the
+  queue lease then arbitrates writers.
+- **Cell 2 — launch once** (`scripts/colab/queue-launcher-cell.py`):
+  gates on Drive-mounted, GPU present (CPU runtimes refuse — the queue
+  exists to fill a T4), and no fresh peer runtime, then starts
+  `queue/runner.py` detached. It remains the manual fallback if the MCP
+  command path is unavailable.
+- **MCP launch** — after cell 1 registers a fresh T4, call
+  `mcp-colab.colab_queue_start(boot_id, confirm=True)`. It writes a
+  boot-targeted request to Drive; only that runtime's watcher can invoke
+  the same gated launcher. The tool cannot create or stop a Colab runtime,
+  and requires explicit confirmation because queue work consumes the
+  active runtime's quota and can write cache/artifact files. If the runtime
+  is disconnected, the watcher cannot run the request.
+- **Managed-session detection is registry-scoped.** The registry sees
+  only VMs that ran cell 1. Uninstrumented notebooks are invisible to it
+  — Google *Runtime > Manage Sessions* stays authoritative, and nothing
+  ever auto-stops a session (OPS-0872).
+- **Runner identity is boot-scoped** (PID-collision fix): the runner
+  writes `queue/runner.id` `{pid,boot_id,worker,epoch,ts}` beside the
+  legacy `runner.pid`. A Drive-visible PID is never a process handle on
+  another VM — the launcher only signals a pid when runner.id's boot_id
+  equals this VM's `/proc` boot_id. Same-VM zombies (alive pid + stale
+  heartbeat) are reaped; foreign/stale records are left untouched and a
+  fresh heartbeat from another boot refuses the launch. On exit the
+  runner removes its identity files only when they still name it, so a
+  fenced-out generation can't strip a live runner's marks.
+- **Registry/state layout**: `queue/runtime-sessions/<boot_id>.json` (managed
+  VMs), `queue/runner.id`, `queue/heartbeat`, `queue/lease`,
+  `queue/warmup/<boot_id>.json` (per-boot warmup stats). Fleet-side read:
+  `mcp-colab` tool `colab_session_status`.
+- **Snapshot constraint**: the runner imports `JOBS.py` and scans
+  `packs/` ONCE at launch, runs all JOBS before the (name-sorted) packs,
+  and overlaps only the *next* job's `prep` under the current `run`.
+  Stage every pack before starting cell 2 — mid-run uploads are not
+  picked up until the next launch.
+
 ## Steps
 
 1. **Attach** — `open_colab_browser_connection` → user connects in browser →
@@ -123,12 +176,14 @@ of staging cells per job:
   in the marker; a fleet-side rclone check remains the server-side
   truth. Runner also settles 120 s after drain so big uploads land
   before the VM idles.
-- **Detached mode (2026-10-23)** — prefer `queue-launcher-cell.py`: it
+- **Detached mode (2026-10-23; hardened 2026-10-26)** — the launch path
+  is cell 2 of the job-console notebook (`queue-launcher-cell.py`): it
   starts `queue/runner.py` as a session-detached process (output →
-  `queue/run-<ts>.out.log`, pid → `queue/runner.pid`, `queue/heartbeat`
-  rewritten every 15 s). The kernel stays free for diagnostics mid-run,
-  and the queue survives a kernel restart. Blocking in-kernel mode is
-  only for interactive debugging.
+  `queue/run-<ts>.out.log`, identity → `queue/runner.id`, `queue/heartbeat`
+  rewritten every 15 s) after the session gate described above. The
+  kernel stays free for diagnostics mid-run, and the queue survives a
+  kernel restart. Blocking in-kernel mode is only for interactive
+  debugging.
 - **Interrupts don't propagate into `subprocess.run`** — a cell stop
   button may leave a hung prep/running job alive; only
   Runtime → Interrupt execution reliably kills it (MCP has no interrupt
@@ -163,10 +218,57 @@ of staging cells per job:
   becomes a fast no-op validator when the cache is warm. Keep the
   `snapshot_download` preps regardless — they self-heal when the tar is
   missing or stale.
-- **The first GPU job's prep is the one un-hideable window** — nothing
-  runs before it. Minimize it: cache-restore first, and order the queue
-  so the job needing the *least* new download runs first; every later
-  prep hides under a GPU run.
+- **The first GPU job's prep is the one un-hideable window** — unless you
+  put the warmup first. Canonical `JOBS.py`
+  (`scripts/colab/JOBS.py`) opens with `t4-session-warmup` (scope `env`):
+  a small GPU smoke that keeps running until the *next* job's background
+  prep exits (`WARMUP_MIN_S` 30 s floor, `WARMUP_MAX_S` 300 s cap), so the
+  ~4-min `restore-hf-cache` extract hides under useful GPU work instead of
+  idling the T4. Verified 2026-10-25 on boot 326f1d48: warmup 61 s/
+  431 k matmuls while the cache restore ran 223 s. The runner injects
+  `QUEUE_PENDING` ((name, log, Popen) of the bg prep) + `BOOT_ID` into
+  every job's run namespace — that is how the warmup knows when the prep
+  exits. Warmup stats land at `queue/warmup/<boot_id>.json` and are the
+  job's `artifacts` gate (`{boot_id}` expands in artifact globs).
+  Remaining order rule: cache-restore second, least-new-download work
+  early, every later prep hides under a GPU run.
+
+### Standard launch sequence — stage first, assessment before cache prep (OPS-0880, 2026-10-26)
+
+The launch order that keeps the T4 fed end-to-end:
+
+1. **Stage everything before launch.** The runner snapshots `JOBS.py`
+   and the `packs/` listing ONCE at startup — anything uploaded mid-run
+   waits for the next launch. Fleet-side staging is an rclone copy of the
+   canonical repo files (`scripts/colab/{JOBS,queue-runner→runner,
+   runtime_registry,preflight-cell,queue-launcher-cell,ada-nest-job-console}.py`
+   → `gdrive:ada-nest/queue/`, `scripts/colab/packs/` →
+   `gdrive:ada-nest/packs/`); purge `queue/__pycache__` after bumping
+   JOBS.py so a stale `.pyc` can't shadow the new manifest, and confirm
+   `rclone check` reports 0 diffs before any VM opens the console.
+2. **One cache-independent held-out assessment immediately before the
+   next model/cache prep.** Canonical slot: `devnest-heldout-assessment`
+   in JOBS.py between `assets-stage` and `save-hf-cache` — a fixed
+   fp16/bf16 TFLOPs + H2D/D2H battery plus a production-log overlap
+   audit, zero model/pulls (torch ships with the runtime image), so it
+   stays valid while `/root/.cache` mutates underneath. Its GPU run hides
+   the multi-minute `save-hf-cache` repack — the second un-hideable
+   window after the first job's prep (which the warmup covers). Reports:
+   `queue/assessments/devnest-heldout-<boot_id>.{json,md}`, env-scoped so
+   every boot writes fresh evidence.
+   - **Not a benchmark pass.** This is a worker/queue assessment. The
+     DevNest replay benchmark's five safe fixtures + held-out verifiers
+     are unfrozen — never report one as the other.
+   - If the assessment needs to precede a specific *pack's* model prep
+     instead, name/place it so it sorts just before that pack (packs run
+     alphabetical after JOBS) — the runner only ever overlaps the NEXT
+     undone job's prep under the current run; run stages stay serial.
+3. **After prep, the T4 package runs with durable-artifact gates.**
+   env `scope` jobs re-run per boot; packs claim → prep → run →
+   verify-before-mark (`artifacts` globs must hit ≥1 non-empty file) →
+   `packs/<name>/done`. The 120 s `NEST_QUEUE_SETTLE_S` drain window lets
+   DriveFS finish flushing before the VM idles; server-side truth is
+   `rclone lsf` from a fleet host.
 
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
 

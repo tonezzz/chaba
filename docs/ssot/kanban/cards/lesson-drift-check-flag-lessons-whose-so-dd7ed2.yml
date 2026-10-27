@@ -1,7 +1,7 @@
 id: lesson-drift-check-flag-lessons-whose-so-dd7ed2
 title: 'Lesson drift-check: flag lessons whose source docs changed'
-column: backlog
-updated: 2026-10-26 08:29
+column: done
+updated: 2026-10-26 16:01
 brief: Education lessons summarize external corpora (docs-trade 62 pages, ada-nest packs, repo docs). Each trade
   docs page carries a Last-Updated date; when a covered page is newer than the lesson that summarizes it, the lesson
   is silently stale. A periodic check should compare doc mtimes vs lesson updated_at and either flag (card comms
@@ -32,7 +32,73 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:49
+  from: tony-dell
+  text: claimed
+- at: 2026-10-26 08:49
+  from: chaba
+  text: started devin-task-20261026-084906-topics-trade-map-hub-trade-arc on tony-dell (dispatch)
+- at: 2026-10-26 08:51
+  from: devin
+  text: 'claimed on tony-dell. Design settled: dispatcher job every:1d reads trade/.docs-mcp/documents.json lastModified
+    (+file mtimes) vs WP lesson modified via board-api /lesson op:list; deduped flag to focus-inbox via /inbox.
+    Coverage map declared in scripts/lesson-drift-map.yml. Flag-only per spec.'
+- at: 2026-10-26 08:52
+  from: devin
+  text: 'done (flag-only, per spec recommendation). scripts/lesson-drift-check.py + lesson-drift-map.yml coverage
+    map; ssot.jobs.yml entry: dispatcher job every:1d on tony_dell (trade docs + .docs-mcp index live there); runbook
+    docs/ssot/jobs/education/2026-10-26-lesson-drift-check.yml. Verified live: 5/5 lessons, 21/21 pages, 0 stale
+    today, deduped /inbox filing on fingerprint change. Job self-activates on exec-checkout sync after merge.'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-084906-topics-trade-map-hub-trade-arc no longer active on tony-dell but
+    card still says running — sweeping its branch'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261026-084906-topics-trade-map-hub-trade-arc on tony-dell still dirty
+    — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-26 15:50
+  from: tony-dell
+  text: 'finished (ok): exit=0  lists the job as due, so it self-activates once the branch lands and the exec checkout
+    syncs. | devin-task-20261'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'session-end checkpoint 9ea00035: 4 leftover file(s) committed'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: pushed dispatch/20261026-084906-topics-trade-map-hub-trade-arc to origin
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed
+    (+3 pre-existing baseline failure(s))'
+- at: 2026-10-26 15:50
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep: merged edbeaf19 (dispatch/20261026-084906-topics-trade-map-hub-trade-arc from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261026-084906-topics-trade-map-hub-trade-arc.md)
+    — auto-closed'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-084906-topics-trade-map-hub-trade-arc,
+    branch dispatch/20261026-084906-topics-trade-map-hub-trade-arc on tony-dell'
 action:
   repo: chaba
   type: dispatch
-  status: queued
+  status: done
+  lane: codemod
+  runner: tony-dell
+  sweep:
+    stale_running: 2026-10-26 09:01
+    dirty: 4
+  result: 'exit=0  lists the job as due, so it self-activates once the branch lands and the exec checkout syncs.
+    | devin-task-20261026-084906-topics-trade-map-hub-trade-arc.service: Consumed 35.313s CPU time over 3min 38.308s
+    wall clock time, 1G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 16:01
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261026-084906-topics-trade-map-hub-trade-arc.md

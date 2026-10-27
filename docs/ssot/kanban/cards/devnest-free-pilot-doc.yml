@@ -1,0 +1,81 @@
+id: devnest-free-pilot-doc
+title: 'DevNest free-lane pilot A: deterministic docs artifact'
+column: done
+updated: 2026-10-26 16:01
+brief: Produce a small docs-only artifact through OpenCode Flash Lite, then verify and merge it.
+priority: low
+program: ai-workforce
+tags:
+- devnest
+- opencode
+- free_lane
+- pilot
+- savings
+spec: 'Create docs/reports/devnest-free-lane-pilot-a.md containing: purpose, target lane free_lane, model flash-lite,
+  and a checklist of the three pilot metrics. Do not modify code, deploy, or push manually; runner closeout handles
+  commit/push. Done gate: file exists with all required headings and branch auto-merges.'
+action:
+  type: dispatch
+  host: tony-dell
+  status: done
+  lane: devin
+  runner: tony-dell
+  result: 'exit=0 age.revision=822c87761f8587395b3e1a04b5386b2611252cd1, org.opencontainers.image.version=1.11.0)
+    | devin-task-20261026-155056-create-docs-reports-devnest-fr.service: Consumed 14.612s CPU time over 57.922s
+    wall clock time, 873.7M memory peak.'
+  verified: true
+ref: OPS-0895
+comms:
+- at: 2026-10-26 08:48
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 08:48
+  from: devin
+  text: queued for processing
+- at: 2026-10-26 15:50
+  from: tony-dell
+  text: claimed
+- at: 2026-10-26 15:50
+  from: chaba
+  text: started devin-task-20261026-155056-create-docs-reports-devnest-fr on tony-dell (dispatch)
+- at: 2026-10-26 15:51
+  from: devin
+  text: writing docs/reports/devnest-free-lane-pilot-a.md — purpose/free_lane/flash-lite + 3-metric checklist
+- at: 2026-10-26 15:51
+  from: devin
+  text: 'done: docs/reports/devnest-free-lane-pilot-a.md created (purpose/free_lane/flash-lite/3-metric checklist/done-gate).
+    awaiting closeout merge'
+- at: 2026-10-26 16:00
+  from: tony-dell
+  text: 'finished (ok): exit=0 age.revision=822c87761f8587395b3e1a04b5386b2611252cd1, org.opencontainers.image.version=1.11.0)
+    | devin-task-2026'
+- at: 2026-10-26 16:00
+  from: chaba
+  text: 'session-end checkpoint e58edaf8: 2 leftover file(s) committed'
+- at: 2026-10-26 16:00
+  from: chaba
+  text: pushed dispatch/20261026-155056-create-docs-reports-devnest-fr to origin
+- at: 2026-10-26 16:00
+  from: chaba
+  text: 'test gate skipped: pre-existing baseline test failure'
+- at: 2026-10-26 16:00
+  from: chaba
+  text: 'test gate: failure(s) identical to base (pre-existing) — not blocking: tests/ada/test_tg_forward_provenance.py::TestHandleTurns::test_forwarded_document_described,
+    tests/ada/test_tg_forward_provenance.py::TestHandleTurns::test_forwarded_sticker_described, tests/ada/test_write_fidelity_drop.py::test_patch_state_vs_checkout,
+    tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed'
+- at: 2026-10-26 16:00
+  from: chaba
+  text: auto-merged abfef6bc (dispatch/20261026-155056-create-docs-reports-devnest-fr) → origin/master
+- at: 2026-10-26 16:00
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-155056-create-docs-reports-devnest-fr,
+    branch dispatch/20261026-155056-create-docs-reports-devnest-fr'
+- at: 2026-10-26 16:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 16:01
+  note: verified — evidence checks green, closing itself

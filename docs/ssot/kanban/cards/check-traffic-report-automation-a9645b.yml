@@ -1,7 +1,7 @@
 id: check-traffic-report-automation-a9645b
 title: Check traffic report automation
-column: backlog
-updated: 2026-10-15 11:00
+column: done
+updated: 2026-10-26 19:01
 priority: medium
 note: Tony forwarded traffic alert in conversation. Is the traffic report generation working?
 comms:
@@ -10,8 +10,8 @@ comms:
   text: Tony forwarded traffic alert in conversation. Is the traffic report generation working?
 - at: 2026-10-10 10:20
   from: devin
-  text: 'checked 2026-10-10: no traffic-report automation exists in scripts/, stacks/, or timers on any
-    host. If you want one, this becomes a feature card (source: forward alerts → digest job).'
+  text: 'checked 2026-10-10: no traffic-report automation exists in scripts/, stacks/, or timers on any host. If
+    you want one, this becomes a feature card (source: forward alerts → digest job).'
 - at: 2026-10-11 06:59
   from: tony
   text: moved backlog -> doing
@@ -20,8 +20,8 @@ comms:
   text: 'ref assigned: KNB-0429'
 - at: 2026-10-11 17:09
   from: tony
-  text: 'raised request verified-10-10-no-traffic-report-automat-05454f: Verified 10-10: no traffic-report
-    automation exists anywhere. Nothing to check — build the feature (forward alerts -> di'
+  text: 'raised request verified-10-10-no-traffic-report-automat-05454f: Verified 10-10: no traffic-report automation
+    exists anywhere. Nothing to check — build the feature (forward alerts -> di'
 - at: 2026-10-11 17:09
   from: tony
   text: moved doing -> review
@@ -39,19 +39,54 @@ comms:
   text: moved doing -> backlog
 - at: 2026-10-12 23:30
   from: devin
-  text: moved doing -> backlog per Tony's answer (backlog as feature) — awaiting_action flag cleared by
-    triage
+  text: moved doing -> backlog per Tony's answer (backlog as feature) — awaiting_action flag cleared by triage
 - at: 2026-10-15 11:00
   from: chaba
   text: 'answer-sweep: executed ''backlog — back to backlog as feature'' -> put on hold'
 - at: 2026-10-23 17:45
   from: devin
   text: answer recorded - parked correctly (keep-as-is/hold), no dispatch needed
+- at: 2026-10-26 18:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 18:41
+  from: idc02
+  text: claimed
+- at: 2026-10-26 18:41
+  from: chaba
+  text: started devin-task-20261026-184105-check-traffic-report-automatio on idc02 (dispatch)
+- at: 2026-10-26 18:46
+  from: devin
+  text: 're-check 2026-10-26: traffic REPORT generation is working — cam-wall-pull-vps.timer ticking 30s on idc02+idc03
+    (last run seconds ago, Result=success), cam-wall-cms-vps.timer 15min on idc03 (last 18:32, success). Consumer
+    proof: camwall-traffic page updated 18:32 today; https://tony-dell.../apps/camwall/?zone=traffic + montage both
+    200. BUT upstream feeds are degraded: ~8/43 traffic cams live (traffic 3-4/11, rama9 2/6, burapha 2/11, chonburi
+    0/9, dohweb 0/6). DOH Wowza 180.180.242.207:1935 retur'
+- at: 2026-10-26 18:48
+  from: idc02
+  text: 'finished (ok): exit=0 eck.yml` and `dispatch-outcome-20261026-184105-check-traffic-report-automatio.md`;
+    card comment posted. | devin-t'
+- at: 2026-10-26 18:48
+  from: chaba
+  text: pushed dispatch/20261026-184105-check-traffic-report-automatio to origin
+- at: 2026-10-26 18:48
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 18:48
+  from: chaba
+  text: auto-merged 8f9d9c53 (dispatch/20261026-184105-check-traffic-report-automatio) → origin/master
+- at: 2026-10-26 18:48
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-184105-check-traffic-report-automatio,
+    branch dispatch/20261026-184105-check-traffic-report-automatio'
+- at: 2026-10-26 19:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 ref: KNB-0429
 requests:
 - id: verified-10-10-no-traffic-report-automat-05454f
-  ask: 'Verified 10-10: no traffic-report automation exists anywhere. Nothing to check — build the feature
-    (forward alerts -> digest job) or back to backlog?'
+  ask: 'Verified 10-10: no traffic-report automation exists anywhere. Nothing to check — build the feature (forward
+    alerts -> digest job) or back to backlog?'
   status: answered
   at: 2026-10-11 17:09
   from: tony
@@ -64,5 +99,16 @@ requests:
   answer: backlog — back to backlog as feature
   executed: 2026-10-15 hold
 action:
-  status: idle
+  status: done
+  type: dispatch
+  runner: idc02
+  result: 'exit=0 eck.yml` and `dispatch-outcome-20261026-184105-check-traffic-report-automatio.md`; card comment
+    posted. | devin-task-20261026-184105-check-traffic-report-automatio.service: Consumed 22.740s CPU time, 345.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
 claim: {}
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 19:01
+  note: verified — evidence checks green, closing itself

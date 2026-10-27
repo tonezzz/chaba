@@ -1,0 +1,63 @@
+id: devnest-news-watch-procedure
+title: 'DevNest news watch: detect milestones and update news reports'
+column: review
+updated: 2026-10-27 05:46
+brief: Keep DevNest news reports current as the system advances, without turning every routine run into a news item.
+priority: medium
+program: ai-workforce
+tags:
+- devnest
+- news
+- report
+- education
+- procedure
+spec: 'Daily/weekly scan sources: board comments/status, git commits, pack artifacts, benchmark results, lessons,
+  audit reports, and cost/usage. Publish/update only on newsworthy triggers: first production milestone, verified
+  benchmark delta, real savings, new capability, important failure/root cause, or user-visible interface. Every
+  item needs evidence link, date, impact, before/after, confidence, and next step. Integrate with existing news-digest
+  clustering; update an existing story when it is the same evolving thread, otherwise create a new parent. Link
+  news -> Education for depth and SSOT for decision state. No secrets, speculation, or unverified savings.'
+ref: OPS-0900
+comms:
+- at: 2026-10-26 09:07
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 05:36
+  from: mn01
+  text: claimed
+- at: 2026-10-27 05:36
+  from: chaba
+  text: started devin-task-20261026-223603-daily-weekly-scan-sources-boar on mn01 (dispatch)
+- at: 2026-10-27 05:37
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
+    Main process exited, cod'
+- at: 2026-10-27 05:37
+  from: chaba
+  text: pushed dispatch/20261026-223603-daily-weekly-scan-sources-boar to origin
+- at: 2026-10-27 05:37
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-223603-daily-weekly-scan-sources-boar,
+    branch dispatch/20261026-223603-daily-weekly-scan-sources-boar'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-223603-daily-weekly-scan-sources-boar on
+    mn01 — if the work was never pushed it may be gone'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-223603-daily-weekly-scan-sources-boar.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-27 05:46
+review_kind: verify
+claim: {}

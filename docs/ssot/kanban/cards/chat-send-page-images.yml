@@ -1,7 +1,7 @@
 id: chat-send-page-images
 title: chat_send page= mode — attach all CMS page images server-side
-column: backlog
-updated: 2026-10-12 17:18
+column: done
+updated: 2026-10-26 19:16
 brief: 'Prod probe 2026-10-12: Kaewta nondeterministically handles photo asks — sometimes cms_read+image_url+deliver,
   sometimes invents URLs (surf-thailand.com/kk/..., unsplash → all 404), sometimes text-only phantom sends naming
   the page. Instruction-level fixes (identity rules, tool-doc verbatim clause, page self-instructions) help but
@@ -23,3 +23,60 @@ comms:
 - at: 2026-10-12 17:18
   from: tony
   text: card captured via board-api
+- at: 2026-10-26 18:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 18:40
+  from: mn01
+  text: claimed
+- at: 2026-10-26 18:41
+  from: chaba
+  text: started devin-task-20261026-114100-chat-send-page-sa-beach-photos on mn01 (dispatch)
+- at: 2026-10-26 18:45
+  from: devin
+  text: 'dispatch picked up — cloned ada-voice main @56c67c1 into worktree scratch, mapped chat_send/_chat_send_run
+    + relay /send paths. Design: page= on chat_send → cms_get_page → extract ![]() + img src urls → resolve vs LINE_URL_BASE
+    → batch image_urls[] on relay /send (chunked 5-msg pushes) w/ per-URL sent/failed report; tg gets image_urls
+    loop, web loops per-URL. Building now.'
+- at: 2026-10-26 19:07
+  from: devin
+  text: 'staged as ada-voice drop 15 (base main@56c67c1): chat_send page=<slug> -> cms_get_page -> _page_image_urls
+    (md + <img>, site-relative vs LINE_URL_BASE, cap ADA_CHAT_PAGE_IMG_MAX=10) -> POST /send image_urls batch; relay
+    turns each URL into its own bubble, chunks >5-msg pushes (kills the msgs[:5] silent tail-drop), reports images:[{url,ok,status}]
+    per asset -> note says sent N/M + failed urls. tg gets same contract (send_photo returns bool), web loops per-asset,
+    image_url untouched. Verified: new'
+- at: 2026-10-26 19:09
+  from: mn01
+  text: 'finished (ok): exit=0 obs/ada/2026-10-26-chat-send-page-images.yml`; board card updated with status comments.
+    | devin-task-20261026-114'
+- at: 2026-10-26 19:09
+  from: chaba
+  text: 'session-end checkpoint 8130054a: 1 leftover file(s) committed'
+- at: 2026-10-26 19:09
+  from: chaba
+  text: pushed dispatch/20261026-114100-chat-send-page-sa-beach-photos to origin
+- at: 2026-10-26 19:09
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 19:09
+  from: chaba
+  text: auto-merged 43fae585 (dispatch/20261026-114100-chat-send-page-sa-beach-photos) → origin/master
+- at: 2026-10-26 19:09
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-26 19:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 obs/ada/2026-10-26-chat-send-page-images.yml`; board card updated with status comments. | devin-task-20261026-114100-chat-send-page-sa-beach-photos.service:
+    Consumed 1min 8.928s CPU time over 27min 27.807s wall clock time, 1.1G memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 19:16
+  note: verified — evidence checks green, closing itself

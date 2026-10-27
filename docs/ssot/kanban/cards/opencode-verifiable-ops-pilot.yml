@@ -1,0 +1,75 @@
+id: opencode-verifiable-ops-pilot
+title: Run five OpenCode read-only ops reports with Devin verification
+column: review
+updated: 2026-10-26 16:30
+brief: Delegate a small set of real read-only ops reports to OpenCode and have Devin independently verify every
+  artifact.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- devin
+- verification
+- read-only
+- ops-pilot
+spec: 'Run a minimum delegation pilot using fresh OpenCode sessions and the verified mcp-debug-readonly profile.
+  Jobs: (1) host health snapshot, (2) storage dry-run candidate report, (3) dispatch worktree/task safety audit,
+  (4) service/config drift report, (5) backup/log retention status. Each job must have target_host, exact JSON artifact
+  schema, read-only tool allowlist, no mutation, and deterministic verifier. OpenCode produces the report; Devin
+  independently verifies the artifact/evidence and marks pass/fail, without trusting OpenCode''s narrative. Record
+  input/cache/output tokens, wall time, retries, denied tools, artifact validity, Devin verification, and escalation.
+  Send one Telegram summary only after all five results are verified. No production changes, cleanup apply, deployments,
+  secrets, or broad MCP tools. Acceptance: 5 artifacts landed, 5 independent Devin verifications, 0 mutations, 0
+  unverified completion claims; failures remain review with evidence.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-145840-run-a-minimum-delegation-pilot.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-145840-run-a-minimum-delegation-pilot.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-26 15:01
+note: 'Minimum useful next step: prove OpenCode can delegate recurring read-only work while Devin serves as independent
+  verifier. Existing host health and storage dry-run evidence seed the pilot; the remaining jobs are deliberately
+  low-risk.'
+ref: DEV-0908
+comms:
+- at: 2026-10-26 14:57
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 14:58
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 14:58
+  from: idc02
+  text: claimed
+- at: 2026-10-26 14:58
+  from: chaba
+  text: started devin-task-20261026-145840-run-a-minimum-delegation-pilot on idc02 (dispatch)
+- at: 2026-10-26 14:59
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-145840-run-a-minimum-delegation-pilot.service:
+    Main process exited, cod'
+- at: 2026-10-26 14:59
+  from: chaba
+  text: pushed dispatch/20261026-145840-run-a-minimum-delegation-pilot to origin
+- at: 2026-10-26 14:59
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-145840-run-a-minimum-delegation-pilot,
+    branch dispatch/20261026-145840-run-a-minimum-delegation-pilot'
+- at: 2026-10-26 15:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-145840-run-a-minimum-delegation-pilot on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-26 16:30
+  from: tony
+  text: 'Suggested eval expansion from recent successes: add scenario fixtures for (1) host health with stale/wrong
+    host trap, (2) storage report with protected model archive/active Devin DB trap, (3) MCP tool-surface deny test,
+    (4) dirty/committed dispatch worktree audit, (5) service drift report with baseline mismatch, (6) backup freshness
+    report, (7) Telegram start/finish notification artifact. Each fixture gets a gold evidence file, independent
+    verifier, expected escalation, and token/wall/retry metr'
+review_kind: verify
+claim: {}

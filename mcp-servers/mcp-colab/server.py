@@ -6,11 +6,14 @@ Wraps the Drive-based nest-pack queue (ada-nest/packs) + the Colab tunnel
 without poking Drive manually.
 
 Tools:
-  colab_pack_status  — list packs with claim/done state
-  colab_pack_submit  — copy a local pack (pack.yml + inputs/) to Drive
-  colab_pack_result  — read a pack's out/*.json results
-  colab_tunnel_check — probe the Colab tunnel (idc03 loopback / proxy alias)
-  colab_model_probe  — 1-token chat through the LiteLLM gateway
+  colab_pack_status    — list packs with claim/done state
+  colab_session_status — managed-runtime registry + queue liveness
+  colab_queue_start    — request queue start on one confirmed managed runtime
+  colab_queue_request_status — read a queue-start request acknowledgement
+  colab_pack_submit    — copy a local pack (pack.yml + inputs/) to Drive
+  colab_pack_result    — read a pack's out/*.json results
+  colab_tunnel_check   — probe the Colab tunnel (idc03 loopback / proxy alias)
+  colab_model_probe    — 1-token chat through the LiteLLM gateway
 
 Env:
   GDRIVE_REMOTE   rclone remote+path for the nest root (default gdrive:ada-nest)
@@ -24,6 +27,8 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
+import uuid
 from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
@@ -50,11 +55,33 @@ def _api_key() -> str:
 
 def _rclone(*args: str, timeout: int = 120) -> tuple[int, str]:
     r = subprocess.run(["rclone", *args], capture_output=True, text=True, timeout=timeout)
-    return r.returncode, r.stdout
+    return r.returncode, r.stdout if r.returncode == 0 else (r.stderr or r.stdout)
 
 
 def _pack_dir(name: str) -> str:
     return f"{PACKS}/{name}"
+
+
+def _runtime_records() -> tuple[list[dict], str]:
+    """Read only runtime records written by our managed notebook preflight."""
+    root = f"{NEST}/queue/runtime-sessions"
+    rc, out = _rclone("lsf", root, "--files-only")
+    if rc != 0:
+        return [], out.strip() or "runtime registry unavailable"
+    records = []
+    for name in sorted(out.splitlines()):
+        name = name.strip()
+        if not name.endswith(".json"):
+            continue
+        rc, data = _rclone("cat", f"{root}/{name}")
+        if rc != 0:
+            records.append({"boot_id": name, "unparseable": True})
+            continue
+        try:
+            records.append(json.loads(data))
+        except Exception:
+            records.append({"boot_id": name, "unparseable": True})
+    return records, ""
 
 
 # ---------------------------------------------------------------------------
@@ -64,22 +91,246 @@ def _pack_dir(name: str) -> str:
 
 @mcp.tool()
 def colab_pack_status() -> str:
-    """List nest packs with claim/done/result state (read-only)."""
+    """List nest packs with claim/done/result state (read-only).
+    A dir only counts as a pack when it contains pack.yml — stray report
+    dirs under packs/ are listed separately instead of showing 'queued'.
+    CLAIMED requires a non-empty claim/ dir (the dir can linger empty
+    after a worker released its claim)."""
     rc, out = _rclone("lsf", PACKS, "--dirs-only")
     if rc != 0:
         return f"ERROR listing packs: {out.strip()}"
     names = [l.strip().strip("/") for l in out.splitlines() if l.strip()]
-    lines = []
+    lines, not_packs = [], []
     for n in sorted(names):
         # default lsf lists files AND dirs (dirs end "/"); --files-only would
         # hide claim/ and out/ so CLAIMED/OUT could never display.
         entries = _rclone("lsf", _pack_dir(n))[1].splitlines()
-        has_claim = any(e.strip() == "claim/" for e in entries)
-        has_done = any(e.strip() == "done" for e in entries)
-        has_out = any(e.strip() == "out/" for e in entries)
-        state = "DONE" if has_done else ("CLAIMED" if has_claim else ("OUT" if has_out else "queued"))
+        entries = [e.strip() for e in entries]
+        if "pack.yml" not in entries:
+            not_packs.append(n)
+            continue
+        has_done = "done" in entries
+        has_out = "out/" in entries
+        claimed = False
+        if "claim/" in entries:
+            claims = _rclone("lsf", f"{_pack_dir(n)}/claim", "--files-only")[1]
+            claimed = any(l.strip() for l in claims.splitlines())
+        state = "DONE" if has_done else ("CLAIMED" if claimed else ("OUT" if has_out else "queued"))
         lines.append(f"{n:<28} {state}")
+    if not_packs:
+        lines.append("")
+        lines.append("not packs (no pack.yml): " + ", ".join(not_packs))
     return "\n".join(lines) or "(no packs)"
+
+
+@mcp.tool()
+def colab_session_status() -> str:
+    """Managed-runtime registry + queue liveness (read-only).
+
+    Reports every record under queue/runtime-sessions/ (boot_id, GPU, RAM, record
+    age) with fresh/stale marking, plus queue/heartbeat, queue/lease and
+    queue/runner.id — the same state the console notebook's session guard
+    reads. Cannot see uninstrumented Colab sessions; Google Runtime >
+    Manage Sessions remains authoritative for those."""
+    lines = []
+    recs, registry_error = _runtime_records()
+    now = time.time()
+    if recs:
+        lines.append("managed runtimes (ttl 300s):")
+        for r in recs:
+            if r.get("unparseable"):
+                lines.append(f"  {r['boot_id']}  UNPARSEABLE record")
+                continue
+            try:
+                stamp = float(r.get("ts") or r.get("last_seen"))
+                age = now - stamp
+                mark = ("fresh" if age <= 300 else f"STALE {age/60:.0f}min")
+            except (TypeError, ValueError):
+                age = None
+                mark = "age unknown"
+            gpu = r.get("gpu") or "cpu"
+            gpu_gb = r.get("gpu_gb")
+            if isinstance(gpu, dict):
+                gpu_gb = gpu_gb or (
+                    float(gpu.get("memory_mib") or 0) / 1024)
+                gpu = gpu.get("name") or "gpu"
+            gpu_size = f"{float(gpu_gb):.1f}GB" if gpu_gb else "VRAM unknown"
+            ram = f"{r['ram_gb']}GB" if r.get("ram_gb") is not None else "RAM unknown"
+            drive = ("Drive mounted" if r.get("drive_mounted") else
+                     "Drive not mounted" if r.get("drive_mounted") is False
+                     else "Drive state unknown")
+            runner = r.get("runner") or {}
+            rbit = f" runner={runner.get('worker')}" if runner.get("worker") else ""
+            lines.append(
+                f"  {r.get('boot_id')}  {gpu} {gpu_size}, "
+                f"{ram}, {drive}, {mark}{rbit}")
+    else:
+        lines.append("managed runtimes: " + (
+            f"unavailable ({registry_error})" if registry_error
+            else "none registered"))
+    _, hb = _rclone("cat", f"{NEST}/queue/heartbeat")
+    try:
+        ts, job, phase = hb.split()
+        lines.append(f"queue heartbeat: {job}/{phase} "
+                     f"{now - float(ts):.0f}s ago")
+    except Exception:
+        lines.append("queue heartbeat: absent")
+    _, lease = _rclone("cat", f"{NEST}/queue/lease")
+    try:
+        d = json.loads(lease)
+        lines.append(f"queue lease: {d.get('worker')} epoch {d.get('epoch')} "
+                     f"({now - float(d.get('ts') or 0):.0f}s ago)")
+    except Exception:
+        lines.append("queue lease: absent")
+    _, rid = _rclone("cat", f"{NEST}/queue/runner.id")
+    try:
+        d = json.loads(rid)
+        lines.append(f"runner.id: pid {d.get('pid')} boot "
+                     f"{str(d.get('boot_id'))[:8]} {d.get('worker')}")
+    except Exception:
+        lines.append("runner.id: absent")
+    return "\n".join(lines)
+
+
+@mcp.tool()
+def colab_queue_start(boot_id: str, confirm: bool) -> str:
+    """Request the shared queue to start on one already-running managed runtime.
+
+    This does not create or stop a Colab runtime. The target runtime must have
+    mounted Drive and run console cell 1; `confirm=True` is required because
+    starting the queue consumes that runtime's compute quota and may write
+    cache/artifact files to Drive.
+    """
+    if not confirm:
+        return "REFUSED: set confirm=true only when you intend to start the shared queue."
+    try:
+        target = str(uuid.UUID(boot_id))
+    except (ValueError, TypeError, AttributeError):
+        return "ERROR: boot_id must be the full UUID printed by console cell 1."
+
+    records, error = _runtime_records()
+    if error:
+        return f"ERROR reading managed runtime registry: {error}"
+    now = time.time()
+    runtime = next((r for r in records
+                    if not r.get("unparseable")
+                    and str(r.get("boot_id")) == target), None)
+    if not runtime:
+        return f"REFUSED: managed runtime {target[:8]} is not registered."
+    if runtime.get("kind") != "managed-notebook":
+        return f"REFUSED: runtime {target[:8]} is not a console-managed notebook."
+    age = now - float(runtime.get("ts") or runtime.get("last_seen") or 0)
+    ttl = float(os.environ.get("NEST_RUNTIME_TTL_S", "300"))
+    if age > ttl:
+        return f"REFUSED: runtime {target[:8]} is stale ({age:.0f}s; ttl {ttl:.0f}s)."
+    if not runtime.get("drive_mounted"):
+        return f"REFUSED: runtime {target[:8]} reports Drive not mounted."
+    if not runtime.get("gpu") or float(runtime.get("gpu_gb") or 0) <= 0:
+        return f"REFUSED: runtime {target[:8]} has no GPU."
+
+    rc, runner_id = _rclone("cat", f"{NEST}/queue/runner.id")
+    if rc == 0 and runner_id.strip():
+        return ("REFUSED: queue/runner.id is present; inspect "
+                "colab_session_status before launching another runner.")
+
+    rc, heartbeat = _rclone("cat", f"{NEST}/queue/heartbeat")
+    try:
+        heartbeat_age = now - float(heartbeat.split()[0])
+    except (ValueError, IndexError):
+        heartbeat_age = float("inf")
+    if heartbeat_age <= 90:
+        return (f"REFUSED: queue heartbeat is fresh ({heartbeat_age:.0f}s); "
+                "the shared queue appears to be running.")
+    rc, lease = _rclone("cat", f"{NEST}/queue/lease")
+    try:
+        lease_data = json.loads(lease)
+        lease_age = now - float(lease_data.get("ts") or 0)
+    except (TypeError, ValueError, json.JSONDecodeError):
+        lease_age = float("inf")
+    if lease_age <= 90:
+        return (f"REFUSED: queue lease is fresh ({lease_age:.0f}s); "
+                "the shared queue may be running.")
+
+    request_id = uuid.uuid4().hex
+    request = {
+        "request_id": request_id,
+        "command": "start_queue",
+        "confirmed": True,
+        "target_boot_id": target,
+        "created_at": now,
+    }
+    for directory in (
+            f"{NEST}/queue/control/requests",
+            f"{NEST}/queue/control/acks"):
+        rc, out = _rclone("mkdir", directory)
+        if rc != 0:
+            return f"ERROR preparing control queue: {out.strip()[:240]}"
+    request_path = ""
+    try:
+        with tempfile.NamedTemporaryFile(
+                mode="w", encoding="utf-8", suffix=".json", delete=False) as f:
+            json.dump(request, f)
+            f.write("\n")
+            request_path = f.name
+        remote = f"{NEST}/queue/control/requests/{request_id}.json"
+        rc, out = _rclone("copyto", request_path, remote)
+        if rc != 0:
+            return f"ERROR publishing queue request: {out.strip()[:240]}"
+    finally:
+        if request_path:
+            try:
+                os.unlink(request_path)
+            except OSError:
+                pass
+
+    ack_path = f"{NEST}/queue/control/acks/{request_id}.json"
+    deadline = time.monotonic() + 45
+    while time.monotonic() < deadline:
+        rc, data = _rclone("cat", ack_path)
+        if rc == 0 and data:
+            try:
+                ack = json.loads(data)
+                status = ack.get("status", "unknown")
+                message = str(ack.get("message") or "").strip()
+                return (f"{status}: boot {target[:8]}, request {request_id}"
+                        + (f" — {message}" if message else ""))
+            except Exception:
+                pass
+        time.sleep(2)
+    return (f"QUEUED: request {request_id} targets boot {target[:8]}, "
+            "but no notebook watcher acknowledged it within 45s. "
+            "Ensure cell 1 is active and check colab_session_status.")
+
+
+@mcp.tool()
+def colab_queue_request_status(request_id: str) -> str:
+    """Read status for a prior colab_queue_start request; does not change Drive."""
+    try:
+        request_id = uuid.UUID(hex=request_id).hex
+    except (ValueError, TypeError, AttributeError):
+        return "ERROR: request_id must be the hex id returned by colab_queue_start."
+    ack_path = f"{NEST}/queue/control/acks/{request_id}.json"
+    rc, data = _rclone("cat", ack_path)
+    if rc == 0:
+        try:
+            ack = json.loads(data)
+            return (f"{ack.get('status', 'unknown')}: "
+                    f"boot {str(ack.get('target_boot_id') or '')[:8]} "
+                    f"{str(ack.get('message') or '')[:500]}")
+        except Exception:
+            return "ERROR: control acknowledgement is unreadable."
+    req_path = f"{NEST}/queue/control/requests/{request_id}.json"
+    rc, data = _rclone("cat", req_path)
+    if rc == 0:
+        try:
+            req = json.loads(data)
+            age = time.time() - float(req.get("created_at") or 0)
+            return (f"PENDING: {req.get('command')} for boot "
+                    f"{str(req.get('target_boot_id') or '')[:8]} "
+                    f"({age:.0f}s old)")
+        except Exception:
+            return "ERROR: control request is unreadable."
+    return "NOT FOUND: no request or acknowledgement exists."
 
 
 @mcp.tool()

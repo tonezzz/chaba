@@ -1,0 +1,67 @@
+id: storage-deterministic-runner-safe-targets
+title: Implement deterministic storage dry-run and guarded safe-cache cleanup
+column: review
+updated: 2026-10-26 13:31
+brief: Turn the verified OpenCode storage dry-run into a deterministic report/apply runner; start with safe OpenCode
+  cache targets only.
+priority: high
+program: chaba-ci
+tags:
+- storage
+- cleanup
+- safety
+- opencode
+- telegram
+spec: Implement in the chaba repo a deterministic storage cleanup runner for tony-dell. Do not let an LLM delete
+  files. Default mode must be dry-run and produce JSON + Markdown with df, target sizes, active writers/locks, protected-path
+  checks, candidates, blockers, and verifier status. First apply-capable targets are exact paths ~/.cache/opencode
+  and ~/.local/share/opencode only; do not include model-archive, ~/.cache subtrees, Devin sessions.db/WAL, containers,
+  backups, worktrees, dispatch tasks, secrets, or Trash without a separate explicit policy approval. Apply mode
+  must require --apply --confirm-cleanup, refuse when opencode processes are active, refuse symlink/path escapes,
+  refuse protected paths, and report before/after/freed bytes/skipped items. Add tests for dry-run immutability,
+  protected-path refusal, active-process refusal, and path containment. Add optional Telegram notification through
+  existing board_notify tg channel, but do not send credentials or add a timer in this card. Run the dry-run on
+  tony-dell, verify the artifact independently, and leave apply disabled until a human-reviewed report exists. Record
+  rollback/disable instructions and link docs/ssot/infrastructure/ssot.cleanup.yml.
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-macbook
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Failed with result ''exit-code''.
+    | devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Consumed 2.964s CPU time over 1.892s wall
+    clock time, 48.1M memory peak.'
+  sweep:
+    session_gone: 2026-10-26 13:31
+note: 'OpenCode dry-run already classified 99 candidates: only OpenCode caches/Trash were automatic_ok; no deletion
+  occurred. Prior KNB-0903 dispatch lost its artifact, so this is a narrowed rerun with explicit files/tests and
+  host pinning.'
+ref: OPS-0907
+comms:
+- at: 2026-10-26 13:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 13:16
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 13:16
+  from: chaba
+  text: started devin-task-20261026-131621-implement-in-the-chaba-repo-a- on tony-macbook (dispatch)
+- at: 2026-10-26 13:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-131621-implement-in-the-chaba-repo-a-.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-26 13:17
+  from: chaba
+  text: pushed dispatch/20261026-131621-implement-in-the-chaba-repo-a- to origin
+- at: 2026-10-26 13:17
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-131621-implement-in-the-chaba-repo-a-,
+    branch dispatch/20261026-131621-implement-in-the-chaba-repo-a-'
+- at: 2026-10-26 13:31
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-131621-implement-in-the-chaba-repo-a- on
+    tony-macbook — if the work was never pushed it may be gone'
+review_kind: verify
+claim: {}

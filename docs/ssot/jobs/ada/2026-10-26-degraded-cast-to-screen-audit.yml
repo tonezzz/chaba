@@ -1,0 +1,90 @@
+id: degraded-cast-to-screen-audit
+title: "Audit signature degraded:cast_to_screen — verdict: tool bug, fix staged (drop 10), deploy pending"
+date: 2026-10-26
+card: audit-degraded-cast-to-screen
+ref: ADA-0685
+runner: tony-macbook
+dispatch: dispatch-wt-20261026-173945-investigate-ada-session-audit-
+status: investigated + documented (deploy gate raised to Tony)
+
+verdict: >
+  TOOL BUG — already diagnosed and fixed (staged) under ADA-0684
+  (ada-cast-wrong-target-verbose-loop, 2026-10-15). cast_to_screen's
+  /pub call sites return the relay ACK verbatim: ok:true +
+  delivered:0 (no display received the frame) passes through as
+  success, so Ada narrated phantom "opened on screen 1" while nothing
+  showed. The audit classifier (session-audit.py classify_result)
+  correctly flags ok:true+delivered:0 as 'degraded' — the signature is
+  real signal, not a display-side artifact.
+
+evidence:
+  occurrences: >
+    Live occurrences (not replays): 4x on 2026-10-10 (the outage day —
+    same window as the fail:cast_to_screen storm), 2x on 2026-10-14
+    (session 4029a6447f — Tony's "send GEV to the TV" wrong-target
+    loop; screen 1 was offline), 1x on 2026-10-17 (session 5d307ab1b4).
+    ZERO live occurrences after 2026-10-17 (audit reports through
+    2026-10-25 clean of cast_to_screen degraded lines).
+  report_replay_artifact: >
+    The audit/session-2026-10-20 report (marker catch-up, 229
+    sessions) reprocessed the 10-14/10-17 transcripts, so the same
+    delivered:0 findings appear a second time and inflate the sig's
+    days_seen. Days-seen counts audit-run days, not distinct incident
+    days — a known property of the marker-window design, documented
+    here rather than treated as new evidence.
+  live_state_2026-10-26: >
+    idc03 ~/CascadeProjects/ada-voice HEAD 59562cf (= origin/main;
+    ada-ha-tony restarted 2026-10-23 13:15 +07). screens.py has NO
+    _pub_truth and none of the drop-10 patches — every /pub call site
+    (nav ~L1554, say/vcast_say ~L1924, background ~L1557) still
+    returns ok:true+delivered:0 unchanged. No GOAL_LOOP_ASK /
+    stop_and_ask in tool_runner, no TARGET FIDELITY / FRUSTRATION
+    BUDGET in realtime_provider. Drop 10 was staged 2026-10-15 and
+    never deployed — the deploy needs explicit Tony approval per
+    ada-voice AGENTS.md, and no request was ever raised for it.
+
+fix_status:
+  staged: >
+    integrations/ada-voice drop 10 (6 patches + scenario), staged
+    2026-10-15 under ADA-0684. The signature-specific patch is
+    backend/screens.delivered-zero.patch: _pub_truth flips any
+    cast_to_screen /pub result with ok:true+delivered:0 to ok:false
+    ("screen N is not connected … Do NOT claim it showed"), so the
+    miss narrates honestly and counts toward the breakers; absent
+    'delivered' (older relay) passes through.
+  still_applies: >
+    Verified 2026-10-26: all 3 hunks apply cleanly (`patch --dry-run`)
+    to live main@59562cf (offsets +24/+24/+26 lines).
+  effect_after_deploy: >
+    Future delivered:0 casts classify as fail:cast_to_screen (honest
+    failure), not degraded — the sig changes shape rather than
+    disappearing when a screen is genuinely offline.
+  why_signature_quiet: >
+    No live occurrences since 10-17 is NOT proof of fix — the deploy
+    never happened; the offline-screen path just hasn't been hit
+    again. It will recur if Ada casts to a disconnected display.
+
+decision_flow:
+  - tool bug — confirmed (not schema/desc, not display-side, not
+    correct-by-design). Root cause = relay ACK treated as delivery.
+  - fix written + verified under ADA-0684; still applies to main.
+  - deploy is a real declared gate (Tony approval + ada-voice edit
+    point on tony-dell + deploy-ada.sh idc03) — outside dispatch
+    rails, so a board request was raised instead of deploying.
+
+residual:
+  - >
+    Deploy request pending (board request on this card). Once
+    approved: apply drop 10 at the tony-dell edit point per
+    integrations/ada-voice/README.md drop-10 install steps, push
+    ada-voice main, deploy-ada.sh idc03 --restart.
+  - >
+    Audit-side improvement candidate (not done here): catch-up runs
+    re-emit historical findings; a per-session finding key
+    (session_id + tool + class) would stop days_seen inflation.
+    Low value — card dedup already absorbs it.
+  - >
+    Other drop-10 fixes ride along on the same deploy: ha
+    unavailable-precheck, goal-loop stop_and_ask breaker,
+    tool_guide target-fidelity, realtime_provider cast-loop
+    instructions. All equally un-deployed.

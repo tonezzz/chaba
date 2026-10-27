@@ -986,6 +986,22 @@ jobs:
     over threshold should queue the Fable polish pass. Runs 10 min after the
     lessons-due refresh so both education surfaces are current. Requires
     scripts/lessons-audit.py in the served checkout.'
+- id: lesson-drift-check
+  name: Lesson drift check — trade docs mtime vs lesson modified
+  host: tony_dell
+  dispatch: dispatcher
+  every: 1d
+  timeout: 90s
+  cwd: '%h/CascadeProjects/chaba'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/lesson-drift-check.py
+  note: 'card lesson-drift-check-flag-lessons-whose-so-dd7ed2 (OPS-0794) —
+    flag-only drift detector: compares trade docs-mcp lastModified (+ real
+    file mtimes) against WP lesson modified via board-api /lesson op:list;
+    files ONE deduped focus-inbox entry via /inbox when the stale set
+    changes (fingerprint in ~/var/chaba/jobs/lesson-drift-check.json).
+    Coverage map: scripts/lesson-drift-map.yml. On tony_dell because the
+    trade docs + .docs-mcp index live there. No auto-regen — flag-only is
+    the spec decision (auto-regen writes worse prose than a re-learn).'
 - id: ops-error-posts
   name: Ada tool/stream errors -> WP ops_error posts
   host: idc03

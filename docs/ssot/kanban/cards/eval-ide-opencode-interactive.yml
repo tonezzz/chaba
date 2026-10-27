@@ -1,7 +1,7 @@
 id: eval-ide-opencode-interactive
 title: 'eval: try opencode interactive (TUI + optional desktop app)'
-column: backlog
-updated: 2026-10-25 14:43
+column: review
+updated: 2026-10-27 05:46
 brief: Hands-on test of the free-lane interactive surface. opencode 1.19.4 already installed on dell + idc02.
 priority: medium
 program: chaba-ci
@@ -23,3 +23,38 @@ comms:
   text: 'VERIFIED: OpenCode Web is running on Dell; empty /home/tony/DevNest session successfully created the Task
     Triage sample in /home/tony/devnest-sample. Browser app + npm test both pass. Interactive surface is ready;
     unattended executor remains separately gated under OPS-0846.'
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:35
+  from: idc02
+  text: claimed
+- at: 2026-10-27 05:35
+  from: chaba
+  text: started devin-task-20261027-053544-10min-cd-cascadeprojects-terro on idc02 (dispatch)
+- at: 2026-10-27 05:36
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-053544-10min-cd-cascadeprojects-terro.service:
+    Main process exited, cod'
+- at: 2026-10-27 05:36
+  from: chaba
+  text: pushed dispatch/20261027-053544-10min-cd-cascadeprojects-terro to origin
+- at: 2026-10-27 05:36
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-053544-10min-cd-cascadeprojects-terro,
+    branch dispatch/20261027-053544-10min-cd-cascadeprojects-terro'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-053544-10min-cd-cascadeprojects-terro on
+    idc02 — if the work was never pushed it may be gone'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-053544-10min-cd-cascadeprojects-terro.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-053544-10min-cd-cascadeprojects-terro.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-27 05:46
+review_kind: verify
+claim: {}

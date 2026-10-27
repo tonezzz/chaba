@@ -1,0 +1,165 @@
+id: 2026-10-26-tony-ha-prod-placement-decision
+title: prod tony-ha host placement — decision research (mn01 recommended, conditional)
+date: 2026-10-26
+hosts: [tony-omen, mn01, idc03, idc02]
+card: tony-ha-prod-placement-26f033
+dispatch: dispatch-wt-20261026-102753-decision-for-tony-where-should
+status: decision-presented   # awaiting Tony answer on board request
+
+summary: >
+  Researched where prod tony-ha should live. Verified live on mn01 (the
+  runner): it IS on the 192.168.2.0/24 home LAN (enp1s0=192.168.2.75,
+  wifi=192.168.2.81 — the ssot.values.yml "mn-home 192.168.1.0/24" note is
+  stale) and reaches the LAN devices directly (TONY-TV 192.168.2.85 eureka
+  :8008 answered live). tony-ha on omen is up right now
+  (https://tony-omen.taila0626a.ts.net:8123 = 200; idc02 shadow front =
+  200). Recommendation: (a) mn01 — CONDITIONAL on Tony committing mn01 as
+  the always-on appliance, because its observed availability history
+  contradicts "always-on" as recently as mid-October.
+
+verdict:
+  recommendation: a-mn01
+  condition: >-
+    Tony commits mn01 to always-on duty (BIOS AC-power-restore + it stays
+    powered). Without that commitment option (b) keep-omen is the honest
+    fallback, with mn01 demoted to the already-carded cold standby
+    (HOM-0855).
+  rejected: c-idc03 — kills LAN device control (see evidence.lan_deps)
+
+evidence:
+  live_mn01:
+    - "On 192.168.2.0/24: enp1s0=192.168.2.75 (ethernet, DHCP — not reserved),
+      wlx881100c50a2c=192.168.2.81; tailscale0=100.106.196.22."
+    - "Reaches LAN devices: 192.168.2.85:8008 (TONY-TV cast eureka) OPEN.
+      Cams .71/.65 did not answer :8008 (RTSP cams, expected; .71 was already
+      flagged physically offline on tony-ha-mn01-dead-refs)."
+    - "Capacity now: 4 cores, 7.1G RAM (~2.9G avail, ~4.2G used), 157G disk
+      free. Load 11.45/4.67/3.30 — spike is xmeye-vms-vnc (Wine VMS.exe ~41%
+      CPU, 11h old) + vms-snap + yolo; transient viewing session, but the
+      box is warm, not idle."
+    - "Already the home-vision anchor: google-home-mcp (:8004, cast control of
+      TONY-TV), yolo-xiaomi (:8780), weaviate-embedding (:5000), xmeye-vms +
+      vms-snap + yolo-ipad-1/2, mcp-link-monitor, notebooklm-mcp, caddy-mn01
+      funnel edge. tony-ha + go2rtc belongs to this same workload family."
+    - "Will NOT auto-sleep: GNOME sleep-inactive-ac-type='nothing'; hibernate
+      restricted by kernel lockdown. Up 6 days (last boot Oct 20 08:01)."
+    - "No /dev/video* — quadlet's AddDevice=/dev/video0/1 lines must drop.
+      Not a loss: SSOT says those webcams are still attached to powered-down
+      dell; tony-ha already runs without them since ph5."
+  tony_ha_current:
+    - "Running on tony-omen (evacuated dell->omen 2026-10-19/20 ph5);
+      https://tony-omen.taila0626a.ts.net:8123 -> 200 live."
+    - "idc02 stable front http://idc02.taila0626a.ts.net:8123 -> 200
+      (reverse-proxies omen:8123 — built by OPS-0725 ph1 exactly so backend
+      host moves are a one-line upstream repoint)."
+    - "Outage history: fully down during omen maintenance 2026-10-25
+      (HOM-0855 card); omen reboot 10-19 also killed open-jev for days —
+      maintenance host = maintenance blast radius."
+  lan_deps:
+    - "LAN-bound integrations/devices: TONY-TV cast (.85), ip_cam_65 + xiaomi
+      cams via go2rtc RTSP (co-located service on the HA host, 12 streams),
+      esphome, sonoff/cozylife LAN plugs, mDNS/SSDP discovery. Cloud-only:
+      tuya. On idc03 every LAN path dies — option (c) only works if the home
+      is emptied of IP devices; it is not."
+    - "Host-coupled config (moves WITH ~/.config/home-assistant but assumes
+      host context): command_line switch usb_test_hub ssh's
+      tony@127.0.0.1 uhubctl every 30s (probe already disabled — no hub
+      anywhere, 2026-10-22 job), update-cam-frame.sh, ha-live bridge
+      (:9005), go2rtc 127.0.0.1:8554/1984 refs (if go2rtc stays on omen
+      these repoint to its LAN IP; if it moves, nothing changes)."
+  mn01_reliability_flag:
+    - "ssot.host-capacity.yml: 'Unreachable at 2026-10-16 probe (off-net is
+      normal for it)'. Unreachable via ssh during 2026-10-14 ada-voice
+      rename. 'mn01 tailnet-offline 3d' broke tony-ha->Ada calls ~Oct 14-17
+      (card tony-ha-mn01-dead-refs). Pattern: multi-day power-off/off-net
+      windows until ~Oct 20; up 6 days since."
+    - "Counter-signal: drain plan approved 2026-10-21 calls mn01 'always-on
+      home box — best host for home-net watchdogs' (wan-failover +
+      network-scan-tony destined there); Tony's card text calls it
+      'always-on'. The role is being assigned faster than the observed
+      record supports — the always-on commitment is the gap to close."
+    - "Graceful-degradation asymmetry: if mn01 stays powered but loses
+      tailnet/WAN, HA automations + local LAN control keep working (only
+      remote/app access dies) — the same failure on idc03-hosted HA kills
+      control entirely, and omen-sleep kills both."
+  omen_context:
+    - "Role is declared lan-hub + nest-gpu-lane; formalized 24/7 headless
+      2026-10-23 (omen-dedicate-nest: multi-user.target, gdm off, JEV
+      scorers 24/7). 'Laptop that may sleep' is partially stale — the
+      residual risks are maintenance reboots, travel, and GPU/nest churn,
+      not daily suspend."
+    - "placement_policy already says 'LAN-bound services -> tony-omen (same
+      LAN segment)' — keeping tony-ha there is the declared architecture;
+      moving it to mn01 is a deliberate policy change that should be
+      recorded here + in ssot.host-capacity.yml."
+    - "omen is the busiest maintained host (98G disk/59G free, ~5G avail RAM
+      with JEV lanes) — prod home control rides the host most likely to be
+      fiddled with."
+
+options:
+  a_mn01:
+    verdict: recommended (conditional — see verdict.condition)
+    what_it_means: >-
+      tony-ha becomes a resident of the home-utility box it already orbits
+      (cams/cast/vision). Home control keeps working through omen
+      maintenance, omen reboots, and WAN/tailnet loss for local control.
+    move_sketch: >-
+      rsync omen:~/.config/home-assistant -> mn01; install quadlet at
+      stacks/mn01/tony-ha/ (drop AddDevice /dev/video0/1 — absent);
+      tailscale serve :8123 on mn01; repoint idc02 shadow upstream
+      omen->mn01 (one line, stacks/idc02/tailnet-front.caddy); repoint the
+      two direct consumers (ada-ha-tony + ada-pi-pwa HOME_ASSISTANT_URL on
+      idc03) to the idc02 stable front — completes OPS-0725's intent;
+      go2rtc either moves with HA (recommended eventually — it is cam work
+      on the cam box) or stays on omen with 127.0.0.1:8554 refs repointed
+      to omen's LAN IP (interim); freeze omen's config+unit as instant
+      rollback for a soak window.
+    costs: >-
+      ~1G RAM on a 4-core/7G box that is already warm; DHCP reservation
+      needed for mn01's wired IP (.75 currently floats); mn01 LAN-IP and
+      service-list SSOT updates; HOM-0855 cold-standby retargeted
+      (mn01->omen or idc02).
+  b_keep_omen:
+    verdict: viable fallback — declared architecture, zero migration
+    what_it_means: >-
+      Placement policy stays as written (LAN-bound -> omen). Pain stays
+      too: every omen maintenance/reboot is a home-control outage (10-25
+      demonstrated). Mitigation = implement HOM-0855 cold standby on mn01
+      (config rsync + promote runbook) instead of making it primary.
+    choose_when: >-
+      Tony cannot commit mn01 to always-on (keeps powering it off /
+      moving it), or wants zero churn while omen maintenance is active.
+  c_idc03:
+    verdict: rejected
+    what_it_means: >-
+      Remote VPS. All LAN paths die (cast, RTSP cams, esphome, LAN plugs,
+      discovery) and idc03 is under a declared saturation watch — do not
+      grow it. Only viable in a future where every device is cloud-managed.
+
+decision_pending:
+  ask: >-
+    Prod tony-ha host? (a) mn01 — recommended IF you commit it to
+    always-on (it is already the home-cam/cast box; verified same LAN as
+    the devices). (b) keep omen — declared lan-hub, 24/7 since Oct 23,
+    but every maintenance reboot takes home control down (happened Oct
+    25); mn01 becomes the cold standby instead. (c) idc03 — breaks LAN
+    control, not recommended.
+  default: a-mn01
+  board_request: tony-ha-prod-placement-26f033 (raised this dispatch)
+
+followups:
+  - "If (a): create the migration card (move_sketch above) + update
+    ssot.host-capacity.yml roles/placement_policy + ssot.values.yml mn01
+    note (stale 'mn-home 192.168.1.0/24' — mn01 is on 192.168.2.0/24)."
+  - "mn01 wired NIC needs a DHCP reservation on the router (.75 floats;
+    registry still thinks .75 is the printer — registry stale itself)."
+  - "Whichever host wins: HOM-0855 cold-standby rsync + promote runbook
+    stays valid — retarget to the loser."
+  - "If go2rtc stays on omen interim, HA camera/go2rtc config refs repoint
+    127.0.0.1:8554/1984 -> omen LAN IP (same segment)."
+
+related:
+  - docs/ssot/kanban/cards/tony-ha-cold-standby-config-sync-promote-d12293.yml  (HOM-0855 — cold standby spec, complementary either way)
+  - docs/ssot/infrastructure/tony-dell-drain-plan.md  (mn01 = home-anchor per approved plan)
+  - docs/ssot/infrastructure/ssot.host-capacity.yml  (placement_policy — LAN-bound -> omen today)
+  - stacks/idc02/tailnet-front.caddy  (the one-line backend repoint on move)

@@ -1,0 +1,156 @@
+id: devnest-kk-video-project-intake
+title: Add KK PDF to DevNest video-project intake
+column: done
+updated: 2026-10-27 06:34
+brief: Let KK send a PDF plus a short request in TG/DevNestHA and receive a tracked, batched short-video project
+  plan.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- kk
+- video
+- colab
+- project-intake
+spec: Implement the default KK-to-DevNest short-video intake. Extend the live DevNest Telegram relay to accept authorized
+  Telegram document/PDF messages with a caption, download the file using Telegram getFile, hash and store it in
+  a project-specific artifact area outside devnest-ha, and create or link a board project/card through board-api.
+  Return a [devnestha] intake acknowledgement with project/card ID, source hash, extracted-text status, and next
+  batch. Create a project manifest and durable folder contract for source, ingest, brief, story, shots, assets,
+  packs, renders, and qc. Run deterministic PDF text extraction/OCR where available; then route assessment/planning
+  to the appropriate DevNest/JEV lane. Batch extraction, assessment, brief, story beats, script, storyboard, shot
+  list, prompt pack, asset inventory, preview renders, captions, and QC before asking Tony. Use Colab only through
+  the canonical ada-nest queue/packs; no hand-run cells. Ask Tony only for rights/consent, spend, publication, ambiguous
+  creative choices, or final approval. Add tests for authorized PDF intake, sender/chat/topic provenance, hash,
+  no secret leakage, malformed/oversized files, and no direct HA/Telegram-token mount. Link procedure lesson post
+  2581. Do not auto-publish or spend.
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261026-105452-implement-the-default-kk-to-de.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261026-105452-implement-the-default-kk-to-de.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-26 18:01
+ref: OPS-0912
+comms:
+- at: 2026-10-26 17:54
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 17:54
+  from: devin
+  text: 'Default KK→DevNest short-video procedure filed as WordPress lesson post 2581 (lesson-dd409f633687). Recommended
+    flow: Telegram PDF+caption → hash/extract/OCR → project manifest/card → batch assessment/brief/story/shot/assets/preview/QC
+    jobs → ask Tony only at rights/spend/publication/creative gates → final export + QC report. Project intake feature
+    card is queued as OPS-0912; current relay is text-command complete but PDF/document ingestion is the next implementation
+    gap.'
+- at: 2026-10-26 17:54
+  from: mn01
+  text: claimed
+- at: 2026-10-26 17:54
+  from: chaba
+  text: started devin-task-20261026-105452-implement-the-default-kk-to-de on mn01 (dispatch)
+- at: 2026-10-26 17:56
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261026-105452-implement-the-default-kk-to-de.service:
+    Main process exited, cod'
+- at: 2026-10-26 17:56
+  from: chaba
+  text: pushed dispatch/20261026-105452-implement-the-default-kk-to-de to origin
+- at: 2026-10-26 17:56
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-105452-implement-the-default-kk-to-de,
+    branch dispatch/20261026-105452-implement-the-default-kk-to-de'
+- at: 2026-10-26 17:58
+  from: devin
+  text: 'Tony has the KK PDF ready, but do not instruct him to send it for automated intake yet: OPS-0912 is in
+    review after the dispatch process exited failure, and document/PDF ingestion has not been deployed/verified.
+    Required next gate: inspect/fix branch, deploy relay, then live PDF intake smoke. Once live, send the PDF with
+    a project caption in the Inbox topic.'
+- at: 2026-10-26 18:00
+  from: devin
+  text: Telegram update 954573593 arrived in DevNestHA General with caption "KK's short movie materials." The current
+    relay captured only the text/caption; no document/file_id was persisted, so no project was created and the PDF
+    has not entered DevNest storage. Do not claim intake success. Resend is required after the document-ingestion
+    fix is deployed; then verify source hash, project card, extracted text, and [devnestha] INTAKE response.
+- at: 2026-10-26 18:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-105452-implement-the-default-kk-to-de on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-26 18:48
+  from: devin
+  text: 'REPAIR DEPLOYED: PR #38 merged as dd0c50c4; idc03 synced and devnest-tg-relay.service restarted active
+    with bounded PDF intake + project-card bootstrap. Tests: 21 relay tests passed, py_compile and systemd-analyze
+    verify passed. Gate remaining: Tony must resend the PDF for organic live smoke; verify file download/hash, project
+    card, manifest, and [devnestha] INTAKE response before closing OPS-0912.'
+- at: 2026-10-26 18:54
+  from: devin
+  text: 'raised request video-deliverable-format: Which first deliverable should the Nest plan for? The source says
+    approximately 10 minutes and 9:16/Facebook Reels, whic'
+- at: 2026-10-26 18:54
+  from: devin
+  text: 'raised request likeness-voice-policy: What identity policy should the Nest use for the father/family in
+    generated media?'
+- at: 2026-10-26 18:54
+  from: devin
+  text: 'PLANNING STARTED: PDF intake verified. Project `kk-video-c9f99fee6146`; source 39 pages, SHA-256 c9f99fee6146...,
+    extracted text stored at `ingest/requirements.md`; private report created at `kk-short-movie-c9f99fee6146`.
+    Requirements summary: 10-scene AI cinematic short, ~10 minutes, 9:16 target, Thai source, real memories separated
+    from dream interpretation, no invented life events. Two Tony gates raised: deliverable format (teaser/full/both)
+    and likeness/voice policy. WordPress nest_job mirro'
+- at: 2026-10-26 19:07
+  from: tony
+  text: 'answered video-deliverable-format: Both: teaser for early review plus 10-minute master'
+- at: 2026-10-26 19:07
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 19:07
+  from: tony
+  text: 'answered likeness-voice-policy: Mixed: real likeness only where explicitly approved, symbolic elsewhere'
+- at: 2026-10-26 19:07
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 19:07
+  from: devin
+  text: 'CONTINUED: WordPress nest_job CPT drift repaired with chaba-boards 0.9.0; board-api /job now creates parent
+    post 2603 and child requirements post 2604. Project manifest now links nest_job/report/requirements artifacts.
+    Planning remains paused only on two Tony choices: deliverable format and likeness/voice policy; no GPU generation
+    or public publishing started.'
+- at: 2026-10-27 05:36
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 06:34
+  from: devin
+  text: 'DECISIONS RECORDED: both teaser + approximately 10-minute master; mixed identity policy. Planning package
+    completed on idc03: creative brief, factual/dream-separated 10-scene plan, 60–90s teaser map, and asset/rights
+    matrix. Nest job post 2646 created; private report updated. No GPU generation/publication started. Next gate:
+    confirm Thai/English audio/subtitle treatment and review the plan before preview generation.'
+review_kind: verify
+claim: {}
+requests:
+- id: video-deliverable-format
+  ask: Which first deliverable should the Nest plan for? The source says approximately 10 minutes and 9:16/Facebook
+    Reels, which may need a platform-format check.
+  status: answered
+  at: 2026-10-26 18:54
+  from: devin
+  options:
+  - 10-minute 9:16 master film
+  - 60–90 second vertical teaser first, then full film
+  - 'Both: teaser for early review plus 10-minute master'
+  suggested: 'Both: teaser for early review plus 10-minute master'
+  answer: 'Both: teaser for early review plus 10-minute master'
+- id: likeness-voice-policy
+  ask: What identity policy should the Nest use for the father/family in generated media?
+  status: answered
+  at: 2026-10-26 18:54
+  from: devin
+  options:
+  - Approved real likeness/voice references
+  - Symbolic, non-identifying characters and synthetic voice
+  - 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'
+  suggested: 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'
+  answer: 'Mixed: real likeness only where explicitly approved, symbolic elsewhere'

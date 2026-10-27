@@ -21,7 +21,7 @@ sections:
       - label: tailnet-only
         text: Bound to the host's 100.x tailscale IP or published via `tailscale serve`. Default for anything cross-host. Examples —MDDB on idc01, serve :5432 on tony-dell.
       - label: lan
-        text: Bound to a LAN interface or 0.0.0.0 but only reachable on the home LAN. Acceptable for LAN conveniences; must be listed in the posture file. Examples —XMEye VNC on 192.168.2.67:5900, barrier :24800.
+        text: Bound to a LAN interface or 0.0.0.0 but only reachable on the home LAN. Acceptable for LAN conveniences; must be listed in the posture file. Example — XMEye VNC on 192.168.2.67:5900.
       - label: funnel
         text: Public via Tailscale Funnel ingress. Every funnel path must be declared — funnel puts the service on the open internet. Examples —mn01 /apps/ha/ada-*, tony-dell /.
       - label: public-ip
@@ -124,7 +124,7 @@ sections:
     layout: list
     items:
       - label: tony-dell
-        text: ssot.security.tony-dell.yml — funnel edge (public / + /apps/home-assistant/), lan services (VNC, xrdp, barrier), tailnet serve. Funnel / exposes bserver dashboard — declared, flagged.
+        text: ssot.security.tony-dell.yml — funnel edge (public / + /apps/home-assistant/), LAN services (VNC, xrdp), tailnet serve. Funnel / exposes bserver dashboard — declared, flagged.
       - label: tony-omen
         text: ssot.security.tony-omen.yml — primary workstation; lan + tailnet only, no public edge.
       - label: mn01

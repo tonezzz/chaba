@@ -1,0 +1,84 @@
+title: merge-sweep terminal-state guard — the sweep never resurrects closed cards
+subtitle: verified+auto_closed cards skip stale_running/session_gone and re-drain instead; bookkeeping stamps stop crowning stale workflow fields
+icon: shield
+date: 2026-10-26
+card: merge-sweep-resurrects-closed-cards
+status: done
+project: chaba
+program: chaba-ci
+ref: KNB-0893
+
+summary:
+  - |
+    Incident (2026-10-26, nest-node-hardware): the dispatch auto-merged
+    and merge-sweep auto-closed the card at 07:16 (column=done,
+    auto_close stamped). A concurrent card write still carrying
+    doing/running arrived with a NEWER `updated` (07:18) — the
+    card-union merge driver resolves board scalars
+    (column, action.* per-key) to the side with the later `updated`,
+    so the merge produced a hybrid file: column=doing, status=running,
+    auto_close present, verified=true.
+
+    The 07:31 stale-session pass then read that resurrected state
+    literally: `stale_running` ("card still says running — sweeping
+    its branch") and `session_gone` ("if the work was never pushed it
+    may be gone") flags on a card whose work was provably delivered,
+    and the stamp writes bumped `updated` to 07:31 — crowning the
+    regressed scalars for every later union merge. Tony found the card
+    back in doing at 08:29 and re-closed it; the lifecycle guard
+    bounced it again at 08:49 on a separate verify-evidence rule.
+
+  - |
+    Fixes in scripts/board/merge-sweep.py:
+
+    - TERMINAL_COLUMNS (done/verified/parked): sweep_card returns
+      immediately on a terminal column — the sweep never rewrites
+      workflow fields on a card it did not open. flag_once and stamp
+      re-check terminality under the board flock (mid-pass closes).
+    - verified routing: a card with action.verified=true never draws
+      stale_running/session_gone/no_repo noise — a gone session is the
+      EXPECTED post-delivery state. Verified cards with unreachable
+      sessions go straight to drain_verified (self-healing: an
+      unmarked field regression is re-closed on the next pass).
+      Reachable sessions keep the existing verified path incl. the
+      verified_unmerged anomaly flag and runner worktree GC.
+    - drain_verified is reopen-aware: reopened_after_close() looks for
+      a deliberate-reopen comms marker after the last close
+      ('moved done ->', '[lifecycle] bounced done->', 'reopen*'). A
+      marked reopen owns the workflow fields — the drain stands down,
+      so the sweep can't fight the lifecycle guard or a human move.
+    - stamp() writes no longer bump `updated` (touch=False): under
+      card-union's newer-updated scalar rule a bookkeeping stamp on a
+      stale file would otherwise crown whatever column/status it
+      carried.
+    - fail_attempt() and the fresh-verify mark() refuse under the lock
+      on terminal or deliberately-reopened cards.
+
+  - |
+    Earlier occurrences checked per the card spec: ~50 cards carry
+    stale_running/session_gone stamps alongside verified/auto_close,
+    but for most the stamps PREDATE the close (normal stale-then-land
+    flow). Post-close sweep noise with no human reopen marker —
+    the resurrection signature — appears on news-situation-summaries
+    (closed 10-15 16:29, noise 20:29) and guard-card-yaml-syntax-
+    validation (closed 10-12, noise 10-22) in addition to
+    nest-node-hardware. openclaw-bench showed a done->backlog->doing
+    backward move on 10-23 but it traces to a board-api requeue
+    (status done->queued), a different path. The qc-scoreboard
+    column-snapshot.json lives only on the served host
+    (reports/qc-scoreboard/, not committed), so the scoreboard counter
+    itself can't be diffed from a worktree — the git-history signature
+    is the available evidence. Residual: the union-merge driver can
+    still regress scalars when a stale write carries a newer `updated`
+    (clock-skewed writer) — mitigated on the consumer side by the
+    re-drain; a driver-side terminal-stickiness rule would need its
+    own card since legitimate reopens exist.
+
+verify: |
+  python3 tests/board/test_merge_sweep.py — 34 tests green, incl. new
+  test_verified_session_gone_drains_not_flags (the incident repro:
+  verified+running+auto_close+gone session -> re-closes, no
+  stale/session_gone stamps), test_terminal_column_never_touched,
+  test_deliberate_reopen_not_redrained, and the updated
+  test_verified_stale_running_drains (no stale_running flag on a
+  verified card).

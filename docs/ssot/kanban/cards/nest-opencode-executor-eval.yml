@@ -1,0 +1,24 @@
+id: nest-opencode-executor-eval
+title: 'Nest executor eval: opencode as a coding-agent worker'
+column: backlog
+updated: 2026-10-26 19:23
+note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
+  Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
+  mddb prune/compact sequence — every step is checkable, making it an ideal eval template.'
+ref: OPS-0917
+comms:
+- at: 2026-10-26 19:22
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 19:23
+  from: devin
+  text: 'EVAL PLAN (proposed by devin 2026-10-26):
+
+
+    WHAT OPENCODE CAN DO: full agentic coding loop in a single binary — read/edit files, run shell, plan/execute,
+    headless `opencode run "<task>"` non-interactive. Backend-agnostic: points at any OpenAI-compatible endpoint,
+    so our LiteLLM gateway (idc02, qwen2.5 free lane) or OR/Gemini paid both work. Needs CPU+network only — runs
+    on con01/mn01/idle member nodes. CANNOT auth itself (tailnet/ssh/secrets stay outside; worker injects env).
+
+
+    WHY MEM-0871 IS THE'

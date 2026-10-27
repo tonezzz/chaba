@@ -1,0 +1,101 @@
+id: opencode-mcp-debug-readonly-lane
+title: Stage MCP Debug read-only tools into OpenCode
+column: done
+updated: 2026-10-26 09:46
+brief: Add MCP Debug to OpenCode behind an explicit read-only allowlist, then graduate one safe real-job lane with
+  measured token and verifier evidence.
+priority: high
+program: chaba-ci
+tags:
+- opencode
+- mcp-debug
+- readonly
+- ai-lane
+- token-savings
+spec: 'Build the staged OpenCode tool-expansion lane. Phase 1: expose the existing mcp-debug server to OpenCode
+  through the existing MCP allowlist proxy, allowing only read-only tools: mcp_debug (registered compact debug commands
+  only), mcp_health, mcp_get_file, mcp_read_ssot, mcp_search_ssot, mcp_ssot_query, mcp_ssot_get, and mcp_mddb_doc.
+  Explicitly deny mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append, clipboard writes, and any write/deploy
+  tool. Use a reversible user-level OpenCode MCP config; do not modify Devin MCP config. Verify tools/list contains
+  only the allowlist, denied tools return a JSON-RPC error, mcp_health works on tony_dell, and an OpenCode read-only
+  health/report task completes with usage metrics and a verifier artifact. Phase 2: supervised real read-only report
+  job on one host. Phase 3: consider additional tools only after pass-rate, retry-rate, verifier, and token measurements.
+  Keep OPENCODE_LANES gated for broad work; no deployment or production mutation in this card. Rollback is removing
+  the OpenCode MCP entry/allowfile.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 e.yml`; rollback is deleting the OpenCode mcp entry + allowfile. | devin-task-20261026-092257-build-the-staged-opencode-tool.service:
+    Consumed 6min 6.094s CPU time over 16min 7.551s wall clock time, 1.3G memory peak, 56.7M memory swap peak.'
+  verified: true
+note: Filed from Tony's request after successful LiteLLM-backed OpenCode WebGPU inspection test. Continue existing
+  background jobs; do not re-run completed tasks.
+ref: OPS-0902
+comms:
+- at: 2026-10-26 09:22
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 09:22
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 09:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 09:23
+  from: chaba
+  text: started devin-task-20261026-092257-build-the-staged-opencode-tool on tony-macbook (dispatch)
+- at: 2026-10-26 09:23
+  from: tony
+  text: 'Pushed to doing via board-api. First stage is allowlist-proxied mcp-debug read-only tools only; deny raw/write/remediate/clipboard
+    writes. Existing OpenCode evidence: WebGPU inspection completed with LiteLLM Gemini Flash Lite (49,701 input,
+    145,040 cache-read, 902 output). Next gate: tools/list + denied-call smoke, then one supervised read-only health/report
+    job with usage.json and verifier.'
+- at: 2026-10-26 09:23
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-10-26 09:28
+  from: devin
+  text: 'Phase 1 in progress on tony-macbook: mcp-allowlist.py proxy + mcp-debug-ssh.sh confirmed present; building
+    allowfile (8 read-only tools) + user-level ~/.config/opencode/opencode.json; opencode binary missing on this
+    runner — installing via npm (user-level, reversible).'
+- at: 2026-10-26 09:35
+  from: devin
+  text: 'Phase 1 VERIFY PASS on tony-macbook: proxy tools/list = exactly 8 allowed tools; mcp_raw/put_file/remediate/ssot_append/clipboard_set/eget/screenshot
+    all return JSON-RPC -32601 (blocked at proxy); mcp_health(tony_dell) ok:true. OpenCode 1.19.4 installed (npm
+    -g, user-level) + run1: flash-lite did write-then-fill health-report.json via 3 MCP calls, verdict PASS, ~36k
+    tokens (32.6k cache-read). Phase 2 real report job running now.'
+- at: 2026-10-26 09:38
+  from: devin
+  text: 'DONE (dispatch, tony-macbook). Phase 1 verified end-to-end: OpenCode 1.19.4 user-level config + allowfile
+    → proxy serves exactly 8 read-only tools; 7 denied tools incl. mcp_raw/put_file/remediate/ssot_append/clipboard_set
+    → JSON-RPC -32601, no passthrough; mcp_health(tony_dell) ok. Phase 2: real read-only report job ran (tony-dell-health-2026-10-26.md,
+    6 MCP calls, verdict HEALTHY, verifier pass). Metrics: 2/2 pass, 0 retries, ~36-38k cumulative tokens/run (86-90%
+    cache-read). Phase 3 gated pend'
+- at: 2026-10-26 09:39
+  from: tony-macbook
+  text: 'finished (ok): exit=0 e.yml`; rollback is deleting the OpenCode mcp entry + allowfile. | devin-task-20261026-092257-build-the-staged-op'
+- at: 2026-10-26 09:39
+  from: chaba
+  text: pushed dispatch/20261026-092257-build-the-staged-opencode-tool to origin
+- at: 2026-10-26 09:40
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 09:40
+  from: chaba
+  text: auto-merged f662cab5 (dispatch/20261026-092257-build-the-staged-opencode-tool) → origin/master
+- at: 2026-10-26 09:40
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-092257-build-the-staged-opencode-tool,
+    branch dispatch/20261026-092257-build-the-staged-opencode-tool'
+- at: 2026-10-26 09:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:46
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: devnest-host-assessment-education-loop
 title: DevNest skill -> Education post loop for host assessments
-column: backlog
-updated: 2026-10-25 16:15
+column: done
+updated: 2026-10-27 05:46
 brief: After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot
   and evidence policy.
 priority: medium
@@ -25,3 +25,61 @@ comms:
   text: 'IMPLEMENTED ONCE: publish_education.py created and post 2426 updated from six verified host artifacts.
     Remaining scope is scheduling/re-running the deterministic skill, not another agent task. Avoid duplicating
     the one-off assessment card.'
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:34
+  from: idc02
+  text: claimed
+- at: 2026-10-27 05:34
+  from: chaba
+  text: started devin-task-20261027-053444-run-devnest-host-assessment-as on idc02 (dispatch)
+- at: 2026-10-27 05:34
+  from: devin
+  text: 'session started: locating assess.py + publish_education.py'
+- at: 2026-10-27 05:40
+  from: devin
+  text: skill found on tony-dell at ~/evals/tasks/devnest-host-assessment/; lesson baseline=lesson-00750611bace
+    next_review=2026-11-01; running assess.py for the 6 fleet targets
+- at: 2026-10-27 05:41
+  from: devin
+  text: 'DONE: re-ran the loop on tony-dell — 6/6 targets assessed (0 SSH errors, read-only), verify.py 6/6 passed,
+    lesson post 2426 updated in place (next_review kept 2026-11-01, learned_at preserved). Also fixed ssot.devnest-lanes.yml:
+    skill is at ~/evals/tasks/devnest-host-assessment/, not ~/DevNest. Run record: docs/ssot/jobs/devnest/2026-10-27-host-assessment-education-loop-rerun.yml'
+- at: 2026-10-27 05:42
+  from: idc02
+  text: 'finished (ok): exit=0 sessment-as.md`, with one noted follow-up: the skill is an untracked directory on
+    a single host and is a candidat'
+- at: 2026-10-27 05:42
+  from: chaba
+  text: 'session-end checkpoint f29aa50e: 3 leftover file(s) committed'
+- at: 2026-10-27 05:42
+  from: chaba
+  text: pushed dispatch/20261027-053444-run-devnest-host-assessment-as to origin
+- at: 2026-10-27 05:42
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 05:42
+  from: chaba
+  text: auto-merged afbb92fd (dispatch/20261027-053444-run-devnest-host-assessment-as) → origin/master
+- at: 2026-10-27 05:42
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-053444-run-devnest-host-assessment-as,
+    branch dispatch/20261027-053444-run-devnest-host-assessment-as'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 sessment-as.md`, with one noted follow-up: the skill is an untracked directory on a single host
+    and is a candidate for committing into the repo. | devin-task-20261027-053444-run-devnest-host-assessment-as.service:
+    Consumed 23.443s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 05:46
+  note: verified — evidence checks green, closing itself

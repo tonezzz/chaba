@@ -2,18 +2,19 @@ id: vcast-auto-flap
 title: vcast flap events in last 24h
 brief: 'An automated health check flagged: vcast flap events in last 24h. Read the
   note, fix it, then close the card.'
-column: done
+column: review
 generated: vcast-auto-health
 program: vcast
 area: monitoring
 priority: high
-note: 'Auto-recovered 2026-10-23: `flap` check passing again.'
+note: 12 abnormal flap events in 24h (s6:6,s7:6; 3 clean closes ignored; thresholds
+  5/screen, 12 total)
 help: 'Counts ABNORMAL display closes in the idc03 input-bridge journal: ''superseded
   by new socket'' + ''ws closed code='' other than 1000/1001/1005 (thresholds: >=5
   on one screen or >=12 total). Clean 1001 closes are normal browser lifecycle — a
   human''s vcast tab reload/sleep is not a defect. A supersede = a display re-registered
   over a live socket — investigate which device flapped and why it reconnected.'
-updated: '2026-10-23'
+updated: '2026-10-26'
 action:
   status: done
   verified: true

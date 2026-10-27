@@ -1,0 +1,109 @@
+id: devnest-fl-pilot-code
+title: 'DevNest free-lane pilot 2/3: small testable code fix on OpenCode flash-lite'
+column: review
+updated: 2026-10-26 18:16
+brief: Supervised pilot job — tiny pure helper + unit test on the free OpenCode lane; matched against devin-lane
+  run devnest-free-pilot-code.
+priority: medium
+program: ai-workforce
+tags:
+- devnest
+- opencode
+- free_lane
+- savings
+- pilot
+spec: 'Add scripts/ops/pilot_metrics.py with a pure function cost_per_passed_gate(cost_usd: float, gates_passed:
+  int) that returns cost_usd / gates_passed as a float, returns 0.0 when cost_usd is 0 and gates_passed > 0, and
+  returns None when gates_passed <= 0. Add tests/ops/test_pilot_metrics.py (unittest style, matching tests/ops/test_devnest_lane_label.py
+  conventions) covering: free-lane case (0 spend, 1 gate -> 0.0), a paid sample (0.30 spend, 2 gates -> 0.15), and
+  the zero-gate case (-> None). Write both files first, then run python3 -m pytest tests/ops/test_pilot_metrics.py
+  -x -q and confirm it passes. Do not touch any other file, do not deploy, do not push manually — the runner closeout
+  commits, pushes, gates, and merges. PILOT DECLARATIONS: target_host=tony-dell; base_ref=origin/master; verifier=pytest
+  tests/ops/test_pilot_metrics.py all pass + branch auto-merges via runner closeout; expected_artifact=scripts/ops/pilot_metrics.py
+  + tests/ops/test_pilot_metrics.py; stop_condition=halt and mark failed if pytest fails after one fix attempt or
+  if any file outside the two named paths is modified; this run does not count as a free-lane datapoint unless the
+  executor is opencode (meta.json executor starts with opencode:).'
+pilot:
+  class: small-testable-code-fix
+  target_host: tony-dell
+  base_ref: origin/master
+  verifier: python3 -m pytest tests/ops/test_pilot_metrics.py passes; branch auto-merges
+  expected_artifact: scripts/ops/pilot_metrics.py + tests/ops/test_pilot_metrics.py
+  stop_condition: fail after one fix attempt on pytest failure; no writes outside the two named files; executor
+    must be opencode to count as free-lane datapoint
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  baseline_pair: devnest-free-pilot-code (devin lane, wall 66.1s, merged)
+  run_record: docs/ssot/jobs/devnest/pilot-runs/<date>-devnest-fl-pilot-code.yml per docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  status: done
+  runner: tony-dell
+  result: 'exit=0 ":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-code-1793011355.service: Consumed 14.031s CPU time over 45.409s wall clock time,
+    524M memory peak.'
+  verified: false
+  sweep:
+    stale_running: 2026-10-26 17:46
+    verify_hold: 2026-10-26 17:46
+    session_gone: 2026-10-26 18:16
+comms:
+- at: 2026-10-26 16:51
+  from: devin
+  text: 'pilot card defined per OPS-0885 contract — backlog, not queued; supervisor queues after confirming OPENCODE_LANES=1
+    on tony-dell. Job doc: docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml'
+- at: 2026-10-26 17:42
+  from: devin
+  text: queued for processing
+- at: 2026-10-26 17:42
+  from: tony-dell
+  text: claimed
+- at: 2026-10-26 17:42
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-code-1793011355 on tony-dell (dispatch)
+- at: 2026-10-26 17:46
+  from: tony-dell
+  text: 'finished (ok): exit=0 ":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    |'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'session-end checkpoint 8eddf49a: 2 leftover file(s) committed'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-code-1793011355 to origin
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed
+    (+3 pre-existing baseline failure(s))'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'merge-sweep: devin-task-devnest-fl-pilot-code-1793011355 no longer active on tony-dell but card still says
+    running — sweeping its branch'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'merge-sweep: merged b9ede30a (dispatch/devnest-fl-pilot-code-1793011355 from tony-dell) -> origin/master
+    but verified withheld — work present (2 file(s) changed vs base) but the unit exit is unverifiable (no exit
+    record)'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-code-1793011355,
+    branch dispatch/devnest-fl-pilot-code-1793011355 on tony-dell'
+- at: 2026-10-26 18:05
+  from: devin
+  text: 'SUPERVISOR VERIFY: executor=opencode:free_lane (meta.json), model litellm/gemini-3.5-flash-lite, 0 intervention
+    min, no escalation. Declared verifier re-checked manually — passed (doc: 5 headings on origin/master; code:
+    pytest 3/3 on merged content; report: all 7 lane ids + free_lane in artifact). merge-sweep withheld verified
+    stamp — pilot run record: docs/ssot/jobs/devnest/pilot-runs/2026-10-26-devnest-fl-pilot-code.yml'
+- at: 2026-10-26 18:16
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-devnest-fl-pilot-code-1793011355 on tony-dell — if
+    the work was never pushed it may be gone'
+review_kind: verify
+claim: {}

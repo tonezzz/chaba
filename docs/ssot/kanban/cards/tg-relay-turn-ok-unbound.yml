@@ -1,0 +1,21 @@
+id: tg-relay-turn-ok-unbound
+title: 'tg_relay forwarded-media path: UnboundLocalError(turn_ok) reds 2 chaba tests on master'
+column: backlog
+updated: 2026-10-26 08:56
+priority: medium
+program: chaba-ci
+tags:
+- ada-voice
+- tg-relay
+- pre-existing-failure
+spec: 'Reproduced on origin/master 9e70ccc (dispatch-test-baseline-awareness): tests/ada/test_tg_forward_provenance.py
+  TestHandleTurns test_forwarded_document_described + test_forwarded_sticker_described both fail with UnboundLocalError:
+  turn_ok @ tg_relay.py:1216 — the forwarded-media-without-renderer path sends the reply but never binds turn_ok
+  before `if turn_ok:`. Fix in the staged drop integrations/ada-voice/backend/tg_relay.forward-provenance.patch
+  or upstream ada-voice tg_relay.py (bind turn_ok=False before the media-send block / set it in the send path like
+  the photo branch). Verify: pytest tests/ada/test_tg_forward_provenance.py -q green.'
+ref: OPS-0897
+comms:
+- at: 2026-10-26 08:56
+  from: devin
+  text: card captured via board-api

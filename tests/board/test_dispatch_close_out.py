@@ -663,6 +663,106 @@ class Case(unittest.TestCase):
                             for f in res["test_failures"]),
                         res["test_failures"])
 
+    # ------------------------------------------ baseline-aware gate
+    # Card dispatch-test-baseline-awareness (OPS-0879 — the 2026-10-26
+    # OpenCode README-marker incident): a docs-only merge was held by a
+    # failure that was already red on origin/master. The gate
+    # enumerates the merged tree's full failure set (-x alone reports
+    # only the first, so a new failure sorting AFTER a pre-existing
+    # one would ride in unseen), re-runs the same focused nodeids on a
+    # detached baseline worktree, and holds only for failures absent
+    # on base — pre-existing failures are classified, never a veto;
+    # new failures are never suppressed.
+
+    def _seed_master_failure(self, name="test_aaa_preexisting"):
+        """Push a failing test onto origin/master — the merged tree
+        inherits it though the branch never touched it."""
+        commit(self.main, f"tests/{name}.py",
+               f"def {name}():\n    assert False\n",
+               "pre-existing red")
+        r = git(self.main, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_gate_baseline_identical_failure_merges(self):
+        """The incident itself: only a README-marker-class change, the
+        same failure red on base — the merge must land."""
+        self._seed_master_failure()
+        commit(self.wt, "feature.py", "x=1\n", "marker work")
+        res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        self.assertTrue(res["tests"]["ok"], res)
+        self.assertIn("pre-existing",
+                      res["tests"].get("skipped") or "", res["tests"])
+        self.assertIn("test_aaa_preexisting",
+                      str(res["tests"].get("baseline_failed")))
+        self.assertTrue(self.remote_has("master", "feature.py"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("pre-existing" in n for n in notes), notes)
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_gate_baseline_new_failure_holds(self):
+        """A failure absent on base still vetoes — and the hold names
+        the NEW test, not the pre-existing one."""
+        self._seed_master_failure()
+        commit(self.wt, "tests/test_newregress.py",
+               "def test_newregress():\n    assert False\n",
+               "new red")
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertEqual(res["test_failures"],
+                         ["tests/test_newregress.py::test_newregress"],
+                         res["test_failures"])
+        self.assertIn("test_aaa_preexisting",
+                      str(res["tests"].get("baseline_failed")))
+        self.assertFalse(self.remote_has("master",
+                                         "tests/test_newregress.py"))
+        notes = dr.close_out_notes(res)
+        self.assertTrue(any("test_newregress" in n and
+                            "pre-existing" in n for n in notes), notes)
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_gate_baseline_late_new_failure_not_suppressed(self):
+        """The -x blind spot, closed: the pre-existing failure sorts
+        FIRST (test_aaa_*), so failfast never reaches the branch's new
+        failure (test_zzz_*). An equality compare of first-failures
+        would have let it merge — enumeration must catch it."""
+        self._seed_master_failure("test_aaa_preexisting")
+        commit(self.wt, "tests/test_zzz_newregress.py",
+               "def test_zzz_new():\n    assert False\n",
+               "late new red")
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertEqual(res["test_failures"],
+                         ["tests/test_zzz_newregress.py::test_zzz_new"],
+                         res["test_failures"])
+
+    @unittest.skipUnless(
+        subprocess.run(["python3", "-c", "import pytest"],
+                       capture_output=True).returncode == 0,
+        "pytest not installed")
+    def test_gate_baseline_missing_nodeid_is_new(self):
+        """A branch-only failing test can't run on base at all — it is
+        new by construction and must hold."""
+        self._seed_master_failure()
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        commit(self.wt, "tests/test_branch_only.py",
+               "def test_branch_only():\n    assert False\n",
+               "branch-only red")
+        res = dr.close_out(self.card)
+        self.assertFalse(res["merged"], res)
+        self.assertIn("test_branch_only",
+                      str(res["test_failures"]))
+
 
 class MergeRetryTest(unittest.TestCase):
     """kanban-dispatch merge_pending_one: a close_out test-gate failure

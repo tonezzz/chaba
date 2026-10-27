@@ -1,7 +1,7 @@
 id: devnest-colab-assessment-first-cache-pre-cb223c
 title: DevNest Colab assessment-first cache preparation
-column: backlog
-updated: 2026-10-26 08:24
+column: done
+updated: 2026-10-26 12:01
 brief: Define and stage a cache-independent DevNest assessment that runs in the same T4 queue window while the next
   package’s model cache is prepared.
 priority: high
@@ -56,3 +56,70 @@ comms:
     staged-assessment + single-prep overlap pattern and the queue snapshot constraint. The DevNest replay fixtures
     are still not frozen, so no assessment pack has been run; host assessments remain fleet CPU work. Request remains
     open for which assessment to stage first.
+- at: 2026-10-26 10:34
+  from: devin
+  text: 'Drive now has 41 pack manifests: 40 done and exactly one queued (`doc-vo-v3`), not a DevNest assessment
+    pack. There is no active queue runner; the last T4 session record is stale. A real DevNest assessment still
+    needs fixture selection/freeze before it can be staged.'
+- at: 2026-10-26 11:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 11:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 11:35
+  from: mn01
+  text: claimed
+- at: 2026-10-26 11:36
+  from: chaba
+  text: started devin-task-20261026-043602-standard-sequence-stage-all-jo on mn01 (dispatch)
+- at: 2026-10-26 11:42
+  from: devin
+  text: 'Dispatch started on mn01. Drive audit: 45 pack dirs, only doc-vo-v3 queued (undone) — that is the T4 package.
+    Drive JOBS.py is stale rev9 (inline GPU jobs) vs canonical lean manifest; runner.py predates runner.id/QUEUE_PENDING;
+    notebook is old thin-cell build. Plan: define cache-independent held-out assessment as a JOBS entry just before
+    save-hf-cache (hides the multi-minute cache repack under GPU work), back-port 2 Drive-side pack.yml live patches
+    (doc-vo-ss1 v6 beats, nasa-embeds fetch fields)'
+- at: 2026-10-26 11:47
+  from: devin
+  text: 'STAGED on Drive (all md5-verified): canonical JOBS.py now carries devnest-heldout-assessment (scope env)
+    between assets-stage and save-hf-cache — fixed fp16/bf16 TFLOPs + H2D/D2H battery + production-log overlap audit,
+    zero pulls, artifacts gate queue/assessments/devnest-heldout-<boot>.{json,md}. Also deployed: runner.py (gains
+    runner.id/QUEUE_PENDING), runtime_registry.py (was missing — cells import it), both console cells, new job-console
+    ipynb, nest-worker/nest-efficiency; queue/__pycache__ p'
+- at: 2026-10-26 11:49
+  from: mn01
+  text: 'finished (ok): exit=0 lay-benchmark pass, since those fixtures remain unfrozen; no git push, no runtime
+    launch. | devin-task-20261026-0'
+- at: 2026-10-26 11:49
+  from: chaba
+  text: 'session-end checkpoint fb0ff6ba: 2 leftover file(s) committed'
+- at: 2026-10-26 11:49
+  from: chaba
+  text: pushed dispatch/20261026-043602-standard-sequence-stage-all-jo to origin
+- at: 2026-10-26 11:49
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 11:49
+  from: chaba
+  text: auto-merged 381ff5a8 (dispatch/20261026-043602-standard-sequence-stage-all-jo) → origin/master
+- at: 2026-10-26 11:49
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-26 12:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 lay-benchmark pass, since those fixtures remain unfrozen; no git push, no runtime launch. | devin-task-20261026-043602-standard-sequence-stage-all-jo.service:
+    Consumed 45.781s CPU time over 12min 44.236s wall clock time, 197.5M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 12:01
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: dispatch-test-baseline-awareness
 title: 'Dispatch merge gate: distinguish pre-existing test failures from agent regressions'
-column: doing
-updated: 2026-10-26 08:36
+column: done
+updated: 2026-10-26 09:01
 brief: OpenCode closeout probe changed only README but was blocked by an identical baseline test failure. Make merge
   gate compare base vs branch or support explicit docs-only expected goals.
 priority: high
@@ -39,8 +39,46 @@ comms:
     on origin/master (9e70ccc) and on a README-marker merged tree. Found gate gap: -x failfast + equality compare
     suppresses NEW failures that sort after a pre-existing one — implementing enumerated-failure + focused-baseline
     compare.'
+- at: 2026-10-26 08:56
+  from: devin
+  text: 'done — gate rebuilt + validated. Reproduced identical UnboundLocalError(turn_ok) @tg_relay.py:1216 on origin/master
+    & marker tree (5 pre-existing reds total). Gate now enumerates ALL failures w/o -x, reruns them focused on a
+    detached baseline wt one-per-pytest-call, holds only for failures absent on base. Marker probe: ok+classified
+    pre-existing → merge allowed. Source-break probe (bench-edu-rejudge, late-sorting): held, named only the new
+    test — the -x blind spot that would have suppressed it i'
+- at: 2026-10-26 08:57
+  from: tony-macbook
+  text: 'finished (ok): exit=0 e real `turn_ok` bug: `tg-relay-turn-ok-unbound` (OPS-0897). | devin-task-20261026-082932-reproduce-tests-ada-tes'
+- at: 2026-10-26 08:57
+  from: chaba
+  text: 'session-end checkpoint 7a80d574: 1 leftover file(s) committed'
+- at: 2026-10-26 08:57
+  from: chaba
+  text: pushed dispatch/20261026-082932-reproduce-tests-ada-test-tg-fo to origin
+- at: 2026-10-26 08:57
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 08:57
+  from: chaba
+  text: auto-merged 10fb2f8f (dispatch/20261026-082932-reproduce-tests-ada-test-tg-fo) → origin/master
+- at: 2026-10-26 08:57
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-082932-reproduce-tests-ada-test-tg-fo,
+    branch dispatch/20261026-082932-reproduce-tests-ada-test-tg-fo'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   repo: chaba
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 e real `turn_ok` bug: `tg-relay-turn-ok-unbound` (OPS-0897). | devin-task-20261026-082932-reproduce-tests-ada-test-tg-fo.service:
+    Consumed 17min 49.597s CPU time over 27min 32.258s wall clock time, 1.4G memory peak, 400.1M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:01
+  note: verified — evidence checks green, closing itself

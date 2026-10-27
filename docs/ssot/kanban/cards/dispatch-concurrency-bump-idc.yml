@@ -1,7 +1,7 @@
 id: dispatch-concurrency-bump-idc
 title: Raise kanban-dispatch parallelism on idc02/idc03 runner-agents
-column: backlog
-updated: 2026-10-15 19:58
+column: done
+updated: 2026-10-27 05:46
 priority: medium
 note: 'Hosts idle (4 cores, ~10G free ea). Check per-host dispatch cap in kanban-dispatch/runner-agent config; bump
   to allow 2 concurrent card tasks/host where memory allows. Compounds w/ chat-local: cheap turns + more runners
@@ -11,3 +11,56 @@ comms:
 - at: 2026-10-15 19:58
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 05:36
+  from: idc02
+  text: claimed
+- at: 2026-10-27 05:36
+  from: chaba
+  text: started devin-task-20261027-053657-raise-kanban-dispatch-parallel on idc02 (dispatch)
+- at: 2026-10-27 05:37
+  from: devin
+  text: picked up on idc02 — reading runner-cap procedure + checking live caps/gates on idc02+idc03
+- at: 2026-10-27 05:38
+  from: devin
+  text: 'audit done: idc02 base-unit RUNNER_CAP=3, idc03 cap.conf drop-in cap=3+gate 0.85 — already >2 target. Cap
+    4 refused (~5G avail on idc3). Fixed SSOT drift (fleet said idc03 cap 2) + runner-cap.sh local-host path. Runbook:
+    docs/ssot/jobs/kanban/2026-10-27-runner-cap-audit-idc.yml'
+- at: 2026-10-27 05:39
+  from: idc02
+  text: 'finished (ok): exit=0 ps; board comment posted, runner-agent unit tests pass, outcome written to `dispatch-outcome-20261027-053657-rais'
+- at: 2026-10-27 05:39
+  from: chaba
+  text: pushed dispatch/20261027-053657-raise-kanban-dispatch-parallel to origin
+- at: 2026-10-27 05:39
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 05:39
+  from: chaba
+  text: auto-merged 259d1c8c (dispatch/20261027-053657-raise-kanban-dispatch-parallel) → origin/master
+- at: 2026-10-27 05:39
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-053657-raise-kanban-dispatch-parallel,
+    branch dispatch/20261027-053657-raise-kanban-dispatch-parallel'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 ps; board comment posted, runner-agent unit tests pass, outcome written to `dispatch-outcome-20261027-053657-raise-kanban-dispatch-parallel.md`.
+    | devin-task-20261027-053657-raise-kanban-dispatch-parallel.service: Consumed 10.149s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 05:46
+  note: verified — evidence checks green, closing itself

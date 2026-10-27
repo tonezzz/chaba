@@ -135,7 +135,6 @@ class CollectTest(unittest.TestCase):
     def setUp(self):
         m = self.mod
         self._sh = m.sh
-        self._home = None
         self.td = tempfile.TemporaryDirectory()
         self.addCleanup(self.td.cleanup)
         self._home_old = os.environ.get("HOME")
@@ -157,7 +156,7 @@ class CollectTest(unittest.TestCase):
 
     def _stub(self, loadstate="not-found", result="success",
               exec_status="0", journal=""):
-        """collected unit defaults vs real evidence per scenario."""
+        """Collected-unit defaults are not evidence of successful exit."""
         def fake_sh(argv, **kw):
             if argv[:3] == ["systemctl", "--user", "show"]:
                 return _proc(0, f"ExecMainStatus={exec_status}\n"
@@ -169,8 +168,6 @@ class CollectTest(unittest.TestCase):
         self.mod.sh = fake_sh
 
     def test_collected_unit_defaults_are_not_ok(self):
-        """THE burn: unit collected after 'Failed with result' — the
-        defaults read as success before; now exit_code=1 wins."""
         (self.tdir / "exit_code").write_text("1\n")
         self._stub(loadstate="not-found",
                    journal="devin-task-x.service: Failed with result "
@@ -187,7 +184,6 @@ class CollectTest(unittest.TestCase):
         self.assertIn("exit=0", res)
 
     def test_loaded_unit_fields_used(self):
-        # a failed unit still loaded (pre-collect) tells the truth
         self._stub(loadstate="loaded", result="exit-code",
                    exec_status="1")
         ok, res = self.mod.collect(self.unit)
@@ -210,12 +206,94 @@ class CollectTest(unittest.TestCase):
         self.assertIn("journal=success", res)
 
     def test_no_record_is_unproven_not_ok(self):
-        # runner-* units have no task dir; a collected unit + rotated
-        # journal leaves nothing — must NOT report ok.
         self._stub(loadstate="not-found")
         ok, res = self.mod.collect("runner-c1-1700000000")
         self.assertFalse(ok)
         self.assertIn("no exit record", res)
+
+
+class ClaimPassLaneTest(unittest.TestCase):
+    """OPS-0885: an explicit action.lane pinned in the card YAML must
+    survive claim_pass. Under JEV_LANE=1 the pre-fix code re-classified
+    unconditionally and clobbered pinned free_lane cards into
+    codemod/paid_frontier lanes (doc card -> codemod, code card ->
+    paid_frontier spend) — the exact miss the pilot pins against."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._saved_env = os.environ.get("JEV_LANE")
+        os.environ["JEV_LANE"] = "1"
+        self._saved = {k: getattr(m, k) for k in
+                       ("DISPATCH",)}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("api", "start_task", "push_capable",
+                           "gpu_preflight", "classify_lane", "dr_module",
+                           "overloaded", "note_defer")}
+        m.DISPATCH = str(SCRIPT)  # exists -> dispatch executor present
+        m.dr_module = lambda: None
+        m.push_capable = lambda repo: True
+        m.gpu_preflight = lambda card: ""
+        m.overloaded = lambda: False
+        m.note_defer = lambda *a, **k: None
+        m.start_task = lambda card, typ: ("devin-task-t", "t", "")
+        self.posts = []
+        self.cards = []
+        self.classified = []
+
+        def fake_api(path, body=None):
+            if path == "/cards":
+                return {"cards": self.cards}
+            self.posts.append((path, dict(body or {})))
+            return {}
+        m.api = fake_api
+        m.classify_lane = lambda card: (
+            self.classified.append(card.get("id")) or "paid_frontier")
+
+    def tearDown(self):
+        m = self.mod
+        if self._saved_env is None:
+            os.environ.pop("JEV_LANE", None)
+        else:
+            os.environ["JEV_LANE"] = self._saved_env
+        for k, v in self._saved.items():
+            setattr(m, k, v)
+        for k, v in self._saved_fn.items():
+            setattr(m, k, v)
+
+    def _claim_bodies(self):
+        return [b for p, b in self.posts
+                if p == "/action" and b.get("do") == "claim"]
+
+    def test_pinned_lane_survives_claim_classification(self):
+        self.cards = [_card(lane="free_lane",
+                            model="litellm/gemini-3.5-flash-lite")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(len(bodies), 1)
+        self.assertEqual(bodies[0]["lane"], "free_lane")
+        self.assertEqual(bodies[0]["model"],
+                         "litellm/gemini-3.5-flash-lite")
+        self.assertEqual(self.classified, [])  # never consulted
+
+    def test_pinned_lane_gets_lane_model_when_unset(self):
+        self.cards = [_card(lane="free_lane")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(bodies[0]["model"],
+                         "litellm/gemini-3.5-flash-lite")
+
+    def test_unset_lane_still_classifies_at_claim(self):
+        self.cards = [_card()]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(bodies[0]["lane"], "paid_frontier")
+        self.assertEqual(bodies[0]["model"],
+                         "litellm/or-claude-fable-5.1")
+        self.assertEqual(self.classified, ["lane-card"])
 
 
 if __name__ == "__main__":

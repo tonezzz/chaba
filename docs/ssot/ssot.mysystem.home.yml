@@ -4,7 +4,7 @@ icon: 🏠
 
 ideas:
   - Central hub for development and testing work
-  - Two workstations with shared input via Barrier
+  - Two workstations with remote desktop access; Barrier KVM retired 2026-10-25
   - Multiple services and apps deployed across machines
   - Local network with .local hostname resolution
   - Profile switching capability from mobile networks
@@ -30,10 +30,10 @@ sections:
     items:
       - label: tony-omen
         text: Primary workstation and headless fallback (tailnet tony-omen / 100.75.102.88). See docs/ssot/infrastructure/ssot.host-roles.yml.
-        tags: [primary, server, barrier-server]
+        tags: [primary, server]
       - label: tony-dell
         text: Secondary workstation and headless primary (tailnet tony-dell / 100.68.142.13). See docs/ssot/infrastructure/ssot.host-roles.yml.
-        tags: [secondary, testing, barrier-client]
+        tags: [secondary, testing]
       - label: macbook
         text: Portable Linux dev/lab laptop — MacBookPro13,3 running Ubuntu since 2026-10-10 (was macOS; LAN 192.168.2.88, tailnet 100.77.76.112). See docs/ssot/infrastructure/ssot.host-roles.yml and docs/ssot/ssot.mysystem.macbook.yml.
         tags: [macos, laptop, remote-access, verify]
@@ -94,42 +94,14 @@ sections:
       - label: tony-dell
         text: Secondary workstation; tailnet tony-dell (100.68.142.13). Current LAN/WiFi IP is recorded in the health snapshot.
 
-  - title: Input Sharing (Barrier)
-    icon: 🖱️
+  - title: Omen-Dell Clipboard Sync
+    icon: clipboard
     layout: list
     items:
-      - label: Barrier Server
-        text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
-      - label: Barrier Client
-        text: Runs on tony-dell as systemd user unit (barrier-client.service); ExecStart calls ~/.local/bin/barrier-client-run.sh which picks the server address per network
-      - label: Server Address Policy
-        text: LAN-first — on home net (local IP in 192.168.2.0/24 AND 192.168.2.86:24800 reachable) the client connects to 192.168.2.86:24800; otherwise falls back to 100.75.102.88:24800 (Tailscale). Avoids stale /etc/hosts and tailnet blips (DERP/rekey drops with heartbeat=1000)
-      - label: LAN Enforcement
-        text: barrier-enforce-lan.timer (user, every 30s) runs ~/.local/bin/barrier-enforce-lan.sh; if the client is established to the wrong address for the current network it restarts barrier-client.service, which re-probes via the wrapper
-      - label: VT Pinning
-        text: barrier-pin-vt.timer (user, every 15s) runs ~/.local/bin/barrier-pin-vt.sh; while lxqt-seat is up it chvt 7s whenever another VT is in front (GDM Wayland greeter on tty1, gettys). Skips if a real user graphical/tty session holds the foreground VT
-      - label: Greeter Limitation
-        text: GDM login greeter is Wayland-only (WaylandEnable=false is ignored); barrierc cannot inject into it — the seat desktop lives on vt7 and the pin-vt timer keeps it in front
-      - label: Client Display
-        text: DISPLAY=:1 (physical monitor), XAUTHORITY=/run/user/1000/gdm/Xauthority, LD_PRELOAD=/home/tony/.local/lib/nodelay.so
-      - label: Client Binary
-        text: /home/tony/.local/bin/barrierc (actual path; /usr/bin/barrierc not installed)
-      - label: Start Command
-        text: systemctl --user start barrier-client.service
-      - label: Manual Fallback
-        text: nohup /home/tony/.local/bin/barrier-client-run.sh >/dev/null 2>&1 & (the wrapper picks LAN or Tailscale; pass the raw barrierc + address only to force a specific path)
-      - label: Health Check
-        text: systemctl --user is-active barrier-client.service && ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
-      - label: Autofix
-        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; systemctl --user daemon-reload && systemctl --user restart barrier-client.service'
-      - label: Server Autofix
-        text: systemctl --user restart barriers.service
-      - label: Logs
-        text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
-      - label: Image clipboard workaround
-        text: Barrier 2.4.0 relays only text. clip-sync pollers mirror image/* payloads over ssh+xclip in both directions — clip-sync-dell.service on omen (dell→omen, remote :1) and clip-sync-omen.service on dell (omen→dell, remote :0), both running ~/.local/bin/clip-sync. Repo copies scripts/barrier/clip-sync.sh + systemd/clip-sync-*.service. Runbook docs/ssot/jobs/infrastructure/2026-10-04-barrier-image-clipboard.yml
-      - label: clip-sync caveat
-        text: Barrier grabs each clipboard on change and on screen crossing and caches text only, so a copied image can be clobbered locally; the opposite poller restores it within ~1s while either side still holds the bytes. Copy→cross in under ~1s may lose the image — copy again after the crossing settles.
+      - label: Independent pollers
+        text: clip-sync-dell.service on Omen and clip-sync-omen.service on Dell poll clipboard content over SSH/X11. They remain independent of the retired Barrier KVM.
+      - label: Image clipboard history
+        text: The pollers were added to mirror image/* payloads that Barrier 2.4.0 did not relay. See docs/ssot/jobs/infrastructure/2026-10-04-barrier-image-clipboard.yml for the historical implementation record.
 
   - title: Physical Display (tony-dell)
     icon: 🖥️
@@ -149,10 +121,10 @@ sections:
         text: User unit lxqt-seat.service runs startlxqt on DISPLAY=:1; it needs XAUTHORITY=/run/user/1000/gdm/Xauthority to connect to the root Xorg; repo copy in systemd/lxqt-seat.service
       - label: Install LXQt user unit
         text: cp systemd/lxqt-seat.service ~/.config/systemd/user/lxqt-seat.service && systemctl --user daemon-reload && systemctl --user enable --now lxqt-seat.service
-      - label: Barrier target
-        text: barrier-client.service uses DISPLAY=:1 and XAUTHORITY=/run/user/1000/gdm/Xauthority after X1 is up (both lxqt-seat and barrier share the same gdm cookie)
+      - label: Physical-seat VT pin
+        text: barrier-pin-vt.timer retains its legacy name but only keeps the Xorg/LXQt physical seat on vt7; it does not run Barrier KVM.
       - label: Check
-        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr should show DP-2 connected and primary, and systemctl --user is-active lxqt-seat barrier-client should be active
+        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr should show DP-2 connected and primary, and systemctl --user is-active xfce-seat barrier-pin-vt.timer should be active
 
   - title: Web (tony-dell)
     icon: 🌐

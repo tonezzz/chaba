@@ -1,0 +1,188 @@
+id: devnest-news-two-lane-pilot
+title: News reporter A/B pilot — Devin vs DevNest
+column: review
+updated: 2026-10-27 06:03
+brief: Review a shadow A/B test of the existing News fetch/digest baseline versus a DevNest reporter. Each lane
+  gets identical frozen inputs and produces one inspectable root summary with domain/project branches and source
+  leaves. This is an evaluation plan, not permission to publish or run paid models.
+priority: medium
+program: ai-workforce
+tags:
+- news
+- devnest
+- benchmark
+- research
+- privacy
+spec: 'Existing WP CPT `news` is already hierarchical and public; do not register a duplicate. Pilot design: baseline
+  = current news-fetch/news-digest plus deterministic root assembly; candidate = DevNest deterministic collection/schema
+  checks + explicitly pinned free/local summary lane + independent deterministic verifier. Same frozen 24-30 item
+  corpus, same cutoff/schema, with public external items plus sanitized internal fixtures. Each lane outputs a private
+  root-summary, identical branches (edge-ai; research/products/benchmarks; internal project/HA), and linked evidence
+  leaves; keep source_class/visibility on every node. Score coverage, source/citation traceability, factuality,
+  classification, duplicate clustering, tree integrity, privacy, idempotence, latency and cost. Draft gates: zero
+  privacy leaks/unsupported critical claims/broken links; no duplicate on rerun; >=90% precision and >=85% recall
+  on a hand-labeled set; 3 clean shadow snapshots. Use explicit lane assignments; JEV routes only; no paid_frontier,
+  public WP writes, or real internal event ingestion until privacy model and source set are approved. DevNest deterministic
+  lane is live, but free-opencode is gated (OPS-0846), queue-time JEV classification is open (OPS-0838), and there
+  is no News-specific verifier or L2/L3 roll-up yet. Related existing work: AI news morning brief (OPS-0877), news
+  situation summaries (OPS-0706). Review brief: gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v1.md;
+  Education post 2476.'
+ref: BEN-0898
+comms:
+- at: 2026-10-26 08:58
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 08:59
+  from: devin
+  text: 'raised request choose-news-visibility-architecture: For internal DevNest/AdaNest/*-HA updates, which privacy
+    boundary should the News hierarchy use? The existing news CPT i'
+- at: 2026-10-26 09:00
+  from: devin
+  text: Review artifact is in the existing Education lesson `AI model efficiency and morning news procedure` (post
+    2476) and full proposal `gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v1.md`. Tony's two-root
+    concept is specified as private `/news/devin` (baseline) and `/news/devnest` (candidate), each with the same
+    branches/leaves and source packet; compare first passes, then one feedback round. Current News CPT already exists;
+    no CPT/feed changes or test run made. Visibility choice is op
+- at: 2026-10-26 09:03
+  from: devin
+  text: 'Reporter UX refinement added to proposal v2: identical newsroom-style layout for both roots (lead/top changes,
+    why it matters, branch summaries, dated/source-attributed event timeline, corrections/uncertainty, evidence-linked
+    leaves). Full v2: gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v2.md (Drive file 1aB2xWHB3Q9lvSh0dyYXMkYUpAXzrk3n6);
+    Education post 2476 updated in place. No CPT or test run yet.'
+- at: 2026-10-26 09:07
+  from: devin
+  text: 'Source discovery refined in proposal v3: official Colibri releases, arXiv RSS/API, Home Assistant Core
+    releases, NVIDIA RSS index, and Qualcomm AI Hub release notes; Fable remains an internal lane with no verified
+    external publisher feed. Candidate sources are not yet configured. Updated private Education post 2476 and Drive
+    spec 1aB2xWHB3Q9lvSh0dyYXMkYUpAXzrk3n6. Pilot remains unrun pending visibility choice.'
+- at: 2026-10-26 09:07
+  from: devin
+  text: 'Correction: the final reviewed proposal is v3, Drive file ID `19meXDucAFZT0uN0uN2MoHQiuR6um_bYD` (not the
+    v2 ID in the immediately previous comment).'
+- at: 2026-10-26 09:08
+  from: devin
+  text: 'V3 recommendation: keep the existing `news` CPT as the unified tree, publish external leaves, keep internal
+    project leaves and both reporter roots private, and never let a parent be more public than its most restricted
+    child. Because the current digest writer publishes parents, add status/sensitivity filters and leak tests before
+    internal ingestion; split to `project_news` only if this cannot be proven. Current review file: gdrive:ada-nest/reports/news-intelligence-hierarchy-review-v3.md
+    (ID 19m'
+- at: 2026-10-26 09:16
+  from: devin
+  text: 'Progress check: 0 paired root reports generated so far. Readiness review found `~/DevNest` on tony-dell
+    is currently a browser task-triage demo, not a News reporter; the production lane catalog is real, but no News
+    adapter/verifier exists. Free-OpenCode remains gated. The design/review is in Education post 2476 and GDrive
+    proposal v4 (ID 15dNdK1Snyo1R1t18zeMGnsMII8d89XZf). Next: privacy choice, freeze corpus, build the News task/verifier,
+    then run private Devin/DevNest shadow roots.'
+- at: 2026-10-26 09:17
+  from: devin
+  text: 'Execution checkpoint: the first `/news/devin` and `/news/devnest` roots do not exist yet. I checked tony-dell
+    `~/DevNest`: it is currently a browser task-triage demo, not a news reporter; the actual DevNest lane catalog
+    is available but no News adapter/verifier has been built. No honest DevNest output can be claimed until that
+    adapter runs. BEN-0898 remains backlog with the visibility request open; no public News writes or paid calls.'
+- at: 2026-10-26 09:22
+  from: tony
+  text: 'answered choose-news-visibility-architecture: single-cpt-status-partition — Recommended for one inspectable
+    tree: reuse the existing news CPT; external items publish, internal items stay private, and every parent inherits
+    the most restrictive chi'
+- at: 2026-10-26 09:22
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 10:35
+  from: devin
+  text: 'First candidate-lane probe failed before producing a root: tony-dell had no `LITELLM_URL/LITELLM_KEY` for
+    chat-local; idc03''s configured chat-local request timed out at 120s. A direct idc02 Ollama check also found
+    no `ollama` CLI and localhost:11434 refused. No output, WP write, or paid fallback occurred. Stop here until
+    a fallback/diagnosis choice is recorded.'
+- at: 2026-10-26 10:35
+  from: devin
+  text: 'raised request news-chat-local-timeout-next-step: The first DevNest candidate call through the documented
+    chat-local lane timed out and produced no root. How should I con'
+- at: 2026-10-26 11:34
+  from: tony
+  text: 'answered news-chat-local-timeout-next-step: deterministic-only-shadow — Recommended: build/run a private
+    deterministic-only tree smoke on a frozen public corpus; validates source links, branches, privacy and idempotency,
+    but not LLM summary qua'
+- at: 2026-10-26 11:34
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 05:35
+  from: idc02
+  text: claimed
+- at: 2026-10-27 05:35
+  from: chaba
+  text: started devin-task-20261027-053546-existing-wp-cpt-news-is-alread on idc02 (dispatch)
+- at: 2026-10-27 05:36
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service:
+    Main process exited, cod'
+- at: 2026-10-27 05:36
+  from: chaba
+  text: pushed dispatch/20261027-053546-existing-wp-cpt-news-is-alread to origin
+- at: 2026-10-27 05:36
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-053546-existing-wp-cpt-news-is-alread,
+    branch dispatch/20261027-053546-existing-wp-cpt-news-is-alread'
+- at: 2026-10-27 05:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-053546-existing-wp-cpt-news-is-alread on
+    idc02 — if the work was never pushed it may be gone'
+requests:
+- id: choose-news-visibility-architecture
+  ask: For internal DevNest/AdaNest/*-HA updates, which privacy boundary should the News hierarchy use? The existing
+    news CPT is public and its current digest writer publishes parents, so internal facts must not be mixed into
+    the public digest without a guard.
+  status: answered
+  at: 2026-10-26 08:59
+  from: devin
+  options:
+  - id: single-cpt-status-partition
+    label: 'Recommended for one inspectable tree: reuse the existing news CPT; external items publish, internal
+      items stay private, and every parent inherits the most restrictive child visibility. Requires privacy-filter
+      tests before ingestion.'
+  - id: separate-private-project-news
+    label: Keep existing public News for external stories and add a separate private project_news CPT for DevNest/AdaNest/HA/internal
+      experiments.
+  - id: external-only-first
+    label: Run the pilot on public external news only; use sanitized internal fixtures and defer internal ingestion/CPT
+      choice.
+  suggested: single-cpt-status-partition
+  answer: 'single-cpt-status-partition — Recommended for one inspectable tree: reuse the existing news CPT; external
+    items publish, internal items stay private, and every parent inherits the most restrictive child visibility.
+    Requires privacy-filter tests before ingestion.'
+- id: news-chat-local-timeout-next-step
+  ask: The first DevNest candidate call through the documented chat-local lane timed out and produced no root. How
+    should I continue the pilot without silently switching lanes?
+  status: answered
+  at: 2026-10-26 10:35
+  from: devin
+  options:
+  - id: deterministic-only-shadow
+    label: 'Recommended: build/run a private deterministic-only tree smoke on a frozen public corpus; validates
+      source links, branches, privacy and idempotency, but not LLM summary quality'
+  - id: readonly-lane-diagnosis
+    label: Allow read-only diagnosis of the idc03 chat-local route and idc02 local model before retry; no service/config
+      changes
+  - id: pause-until-chat-local
+    label: Pause the A/B test until chat-local is healthy; no fallback
+  suggested: deterministic-only-shadow
+  answer: 'deterministic-only-shadow — Recommended: build/run a private deterministic-only tree smoke on a frozen
+    public corpus; validates source links, branches, privacy and idempotency, but not LLM summary quality'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-053546-existing-wp-cpt-news-is-alread.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-27 05:46
+review_kind: verify
+claim: {}
+awaiting_action: true

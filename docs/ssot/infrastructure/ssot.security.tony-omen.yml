@@ -2,7 +2,7 @@ title: Security Posture — tony-omen
 subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-06"
+last_updated: "2026-10-25"
 maintainer: tony
 
 host: tony-omen
@@ -14,7 +14,6 @@ expected_exposure:
   - { listener: "0.0.0.0:9443",  class: lan, service: caddy, note: "live caddy edge (verified 2026-09-24)" }
   - { listener: "0.0.0.0:8080",  class: lan, service: caddy, optional: true, note: "web preview — not bound at first audit" }
   - { listener: "0.0.0.0:8081",  class: lan, service: caddy, optional: true, note: "chaba-h3 parity preview — not bound at first audit" }
-  - { listener: "0.0.0.0:24800", class: lan, service: barrier, note: "barrier server" }
   - { listener: "100.75.102.88:11434", class: tailnet, service: ollama, note: "rebound 2026-09-28 (was 0.0.0.0 LAN) — travel-laptop hardening; no production consumers, ONB/mcp-llama moved to the VPS ollama (now idc03:11434)" }
   - { listener: "0.0.0.0:3000",  class: lan, service: yomi-api }
   - { listener: "0.0.0.0:3002",  class: lan, service: weaviate-api, note: "chaba scripts/weaviate/api.mjs" }
@@ -35,7 +34,7 @@ expected_exposure:
 remote_access:
   sshd: { port: 22, bind: "0.0.0.0", password_auth: "off — key-only (drop-in 00-no-password.conf, 2026-10-06)" }
   tailscale_ssh: needs-verification
-  recovery: { physical: "console workstation", note: "barrier-server seat" }
+  recovery: { physical: "console workstation", note: "local console recovery" }
 
 firewall:
   tool: ufw
@@ -44,7 +43,6 @@ firewall:
     - "allow in on tailscale0 (all traffic — tailnet)"
     - "allow 22/tcp (ssh — key-only)"
     - "allow 3389/tcp (xrdp — pre-existing rule kept)"
-    - "allow 24800/tcp (barrier — LAN by design)"
     - "allow 19999/tcp (netdata — LAN dashboards)"
     - "allow 8090/tcp (cast-shots http.server — LAN-bound on purpose)"
     - "allow 8799/tcp (cast-browser-server — LAN cast devices)"
@@ -57,7 +55,7 @@ tailscale:
   ip: "100.75.102.88"
   serve: []                  # declare any `tailscale serve status` output on first audit
   funnel: []                 # none expected — verify
-  role: [primary-workstation, barrier-server]
+  role: [primary-workstation]
 
 egress:
   warp: { enabled: false }

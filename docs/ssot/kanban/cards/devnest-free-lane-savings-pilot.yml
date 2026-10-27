@@ -1,7 +1,7 @@
 id: devnest-free-lane-savings-pilot
 title: DevNest free-lane supervised pilot + token savings measurement
-column: backlog
-updated: 2026-10-26 07:35
+column: done
+updated: 2026-10-26 18:08
 brief: Run three small verified jobs through OpenCode + Gemini Flash Lite and compare against matched Devin historical
   work.
 priority: high
@@ -28,3 +28,133 @@ comms:
     probe is a valid first free_lane data point: flash-lite model selected, dispatch worktree/branch, commit/push,
     baseline-aware verifier, auto-merge all passed. Treat it as pilot job 0; remaining pilot jobs should be one
     docs/config task + one small testable code task with usage/time/intervention capture.'
+- at: 2026-10-26 16:08
+  from: devin
+  text: 'PILOT UPDATE: docs pilot has not produced a valid free-lane result yet. Code pilot was claimed and produced
+    `devnest_lane_label.py` + tests 6/6, but action lane was `devin` (classifier missed the small-testable-code
+    vocabulary), so it is NOT a savings datapoint. Added classifier terms testable/unit test/python helper/small
+    code; rerun is needed after the deploy race settles. Real savings number remains unclaimed until a job actually
+    runs OpenCode+Flash Lite and merge/verifier passes.'
+- at: 2026-10-26 16:45
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 16:46
+  from: idc02
+  text: claimed
+- at: 2026-10-26 16:46
+  from: chaba
+  text: started devin-task-20261026-164611-pilot-classes-1-docs-config-ch on idc02 (dispatch)
+- at: 2026-10-26 16:55
+  from: devin
+  text: 'PILOT DEFINED (dispatch 20261026-164611, devin lane): job doc docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml
+    — 3 classes, card contract (target_host/base_ref/verifier/expected_artifact/stop_condition), run-record schema
+    with field->source map (LiteLLM spend delta, tokens, wall, gate, intervention min, merge, escalation), Devin-baseline
+    comparison. 3 cards created in BACKLOG not queued: devnest-fl-pilot-{doc,code,report}, action.host=tony-dell,
+    action.lane+model pinned in YAML (cla'
+- at: 2026-10-26 16:55
+  from: devin
+  text: 'raised request supervised-pilot-queue: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report,
+    pinned host=tony-dell, lane=free_lane). Queue them'
+- at: 2026-10-26 16:56
+  from: idc02
+  text: 'finished (ok): exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing
+    pushed or queued. | devin-t'
+- at: 2026-10-26 16:56
+  from: chaba
+  text: pushed dispatch/20261026-164611-pilot-classes-1-docs-config-ch to origin
+- at: 2026-10-26 16:56
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 16:56
+  from: chaba
+  text: auto-merged f893667f (dispatch/20261026-164611-pilot-classes-1-docs-config-ch) → origin/master
+- at: 2026-10-26 16:56
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-164611-pilot-classes-1-docs-config-ch,
+    branch dispatch/20261026-164611-pilot-classes-1-docs-config-ch'
+- at: 2026-10-26 17:01
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''supervised-pilot-queue''] block close)'
+- at: 2026-10-26 17:06
+  from: tony
+  text: 'answered supervised-pilot-queue: queue all three on tony-dell now — I am watching'
+- at: 2026-10-26 17:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 17:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 17:18
+  from: chaba
+  text: 'answer-sweep: executed ''queue all three on tony-dell now — I am watching'' -> queued for processing'
+- at: 2026-10-26 17:36
+  from: idc02
+  text: claimed
+- at: 2026-10-26 17:36
+  from: chaba
+  text: started devin-task-20261026-173617-pilot-classes-1-docs-config-ch on idc02 (dispatch)
+- at: 2026-10-26 17:40
+  from: devin
+  text: 'Executing Tony answer (queue all three on tony-dell). Preflight: tony-dell has NO runner-agent unit — only
+    a drop-in from the 05:48 OPS-0846 proof, so supervised queueing = queue via board-api + manual runner-agent
+    runs on dell (same as OPS-0846). Found bug: runner-agent claim_pass re-classifies lane under JEV_LANE=1 and
+    would clobber pinned free_lane (doc->codemod, code->paid_frontier). Fixing + queueing with JEV_LANE=0 supervised
+    run.'
+- at: 2026-10-26 17:42
+  from: devin
+  text: 'SUPERVISED RUN STARTED: all 3 pilot cards queued; tony-dell runner-agent (manual, JEV_LANE=0 OPENCODE_LANES=1
+    — pinned lanes survive) claimed devnest-fl-pilot-code + devnest-fl-pilot-doc, OpenCode free_lane units running.
+    report claims when a CAP slot frees.'
+- at: 2026-10-26 17:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 18:07
+  from: devin
+  text: 'PILOT COMPLETE (supervised, tony-dell, manual runner-agent JEV_LANE=0 OPENCODE_LANES=1): all 3 jobs ran
+    opencode:free_lane/flash-lite, 0 intervention, 0 escalation. doc 36s merged 8ea5303d; code 46s merged b9ede30a
+    (pytest 3/3 on master); report 38s pushed 874a9924 — merge pending next sweep (found+fixed TASK_ID_RE gap that
+    hid opencode tids from the sweep). LiteLLM list-price delta $0.0700/3 gates=$0.0233/gate; vs devin baseline
+    wall 57.9/66.1s — 30-38% faster, same merge path. Also fixed claim'
+- at: 2026-10-26 18:08
+  from: chaba
+  text: pushed dispatch/20261026-173617-pilot-classes-1-docs-config-ch to origin
+- at: 2026-10-26 18:08
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 18:08
+  from: chaba
+  text: auto-merged eeddac85 (dispatch/20261026-173617-pilot-classes-1-docs-config-ch) → origin/master
+- at: 2026-10-26 18:08
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-173617-pilot-classes-1-docs-config-ch,
+    branch dispatch/20261026-173617-pilot-classes-1-docs-config-ch'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 er supervision — all YAML validates, commits are on the dispatch branch only, nothing pushed or
+    queued. | devin-task-20261026-164611-pilot-classes-1-docs-config-ch.service: Consumed 46.102s CPU time, 143.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-26 17:01
+requests:
+- id: supervised-pilot-queue
+  ask: 3 pilot cards are ready in backlog (devnest-fl-pilot-doc/code/report, pinned host=tony-dell, lane=free_lane).
+    Queue them now under supervision, or hold?
+  status: answered
+  at: 2026-10-26 16:55
+  from: devin
+  options:
+  - queue all three on tony-dell now — I am watching
+  - queue doc first, then the others after it passes
+  - hold — enable later
+  suggested: queue all three on tony-dell now — I am watching
+  answer: queue all three on tony-dell now — I am watching
+  executed: 2026-10-26 queue
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 17:47
+  note: verified — evidence checks green, closing itself

@@ -26,7 +26,7 @@ USER_SESSION_NOISE = re.compile(
     r"kdeconnect.*|gnome-remote.*|rygel.*|systemd-.*|dconf\.service|"
     r"localsearch.*|xfce4-notifyd.*|xfconfd.*|gnome-session-.*|"
     r"chrome-remote-desktop-environment.*|podman-user-wait.*|"
-    r"screen-timeout-daemon.*|barriers\.service|devin-task-.*|"
+    r"screen-timeout-daemon.*|devin-task-.*|"
     r"[0-9a-f]{40,64}(-[0-9a-f]{8,20})?\.service)$")
 
 # Podman/systemd hash-named transient units — a 40-64 hex name is never a

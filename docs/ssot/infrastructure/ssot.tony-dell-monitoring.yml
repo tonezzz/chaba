@@ -30,7 +30,7 @@ sections:
       - label: mcp-health schedule group
         text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
       - label: Cross-host checks
-        text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc03 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125, barrier-client). Retired checks: caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082, idc01 mddb leader (masked — warm-DR only; follower health rides the binlog canary).'
+        text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc03 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125). Retired checks: Barrier KVM, caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082, idc01 mddb leader (masked — warm-DR only; follower health rides the binlog canary).'
       - label: mddb binlog canary
         text: 'scripts/mddb-binlog-canary.py runs inside the monitor loop (2-min timer): GET idc03 :11023/v1/replication/status, flags binlog_size_bytes > 1GiB or (current_lsn - binlog_oldest_lsn) > 5M or followers[].status != healthy (covers both idc02 and idc01:11123 followers). A breach must persist >10min (state: ~/var/chaba/health/mddb-binlog-state.json) before one focus-inbox item is written per episode. Lives here rather than in mcp-health because the mcp-health server only supports http-status/container/systemd/mount checks, not JSON-threshold checks.'
       - label: ssh canary (inbound)
@@ -38,7 +38,7 @@ sections:
       - label: remote-access protection
         text: 'systemd drop-in /etc/systemd/system/{ssh.service,ssh@.service,tailscaled.service}.d/chaba-remote-protect.conf on tony-dell: OOMScoreAdjust=-900, MemoryMin=32M, CPUWeight/IOWeight=5000, Restart=always. Applied 2026-10-05 after repeated SSH banner timeouts under I/O pressure (installer: scripts/ops/install-ssh-protect.sh).'
       - label: Recovery policy
-        text: observe-only for 1 week, then allow safe restarts (barrierc, playlived, yomi timers, caddy only after confirmation)
+        text: observe-only for 1 week, then allow safe restarts (playlived, yomi timers, caddy only after confirmation)
       - label: Notifications
         text: failures and recoveries are appended to /home/tony/var/chaba/health/tony-dell-monitor.log; optional yomi/api push
       - label: Log retention
@@ -57,7 +57,7 @@ sections:
       - label: tony-omen playlive
         text: http://tony-omen:9230/sessions
       - label: tony-dell local
-        text: barrier-client process, Funnel port 8082; disk and memory are already covered by health-snapshot.sh
+        text: Funnel port 8082; disk and memory are already covered by health-snapshot.sh
 
   - title: Phased Plan
     icon: 🗓️
@@ -81,7 +81,7 @@ sections:
     layout: list
     items:
       - label: Allowed manual/semi-auto restarts
-        text: barrierc, playlived, yomi-update timers, caddy only after operator confirmation, llama-server only if GPU queue is idle
+        text: playlived, yomi-update timers, caddy only after operator confirmation, llama-server only if GPU queue is idle
       - label: Never auto-restart
         text: postgres, weaviate, redis, mddb container, caddy (unless an explicit human confirms)
       - label: Escalation
@@ -91,14 +91,6 @@ sections:
     icon: 🛠
     layout: list
     items:
-      - label: barrier-client
-        text: Restart the Barrier KVM client on tony-dell. Safe because it is non-critical and reconnects automatically.
-        host: tony_dell
-        trigger: 2 consecutive failures of the barrier-client process check
-        precheck: pgrep -a barrierc || echo missing
-        command: pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log tony-omen >/dev/null 2>&1 &
-        verify: pgrep -a barrierc
-
       - label: playlived
         text: Restart the PlayLive daemon on tony-dell. Safe because it is stateless and re-scans sessions on start.
         host: tony_dell
@@ -166,8 +158,8 @@ sections:
         text: scripts/ops/ssh-canary.sh + systemd/ssh-canary.{service,timer} (repo); runs on tony-omen as user timer, log ~/var/chaba/health/ssh-canary.log
       - label: remote-protect drop-in
         text: systemd/dropins/chaba-remote-protect.conf + scripts/ops/install-ssh-protect.sh (installs to /etc/systemd/system/<unit>.d/ on the target host)
-      - label: screen blank/wake + barrier watchdog
-        text: 'X screen saver 900s on both seats (autostart screen-blank-15min.desktop on tony-omen:0 and tony-dell:1); wake-screens.timer on tony-omen polls xprintidle every 20s (scripts/ops/wake-screens-on-activity.sh): return from >=60s idle -> xset s reset on tony-dell:1, 45s cooldown. barrier-client-watchdog.timer on tony-dell every 60s (scripts/ops/barrier-client-watchdog.sh): restarts barrier-client.service when the :24800 socket is CLOSE-WAIT (barrierc never re-dials a half-closed connection — observed dead 2026-10-06) or unestablished for 3 checks; log ~/.local/state/barrier-watchdog/.'
+      - label: screen blank/wake + physical seat pin
+        text: 'X screen saver 900s on both seats (autostart screen-blank-15min.desktop on tony-omen:0 and tony-dell:1); wake-screens.timer on tony-omen polls xprintidle every 20s (scripts/ops/wake-screens-on-activity.sh): return from >=60s idle -> xset s reset on tony-dell:1, 45s cooldown. barrier-pin-vt.timer retains its legacy name but only pins the Dell physical desktop seat; Barrier KVM watchdog/enforcement are retired.'
 
   - title: Verification
     icon: 🧪

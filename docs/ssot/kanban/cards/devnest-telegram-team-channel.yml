@@ -1,0 +1,95 @@
+id: devnest-telegram-team-channel
+title: Connect DevNest household AI team to Telegram group
+column: done
+updated: 2026-10-26 17:09
+brief: Create a dedicated Telegram DevNest group/lane where household AIs report job start/finish and coordinate
+  as a team.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- household-ai
+- team-channel
+spec: 'Establish a dedicated DevNest Telegram channel using the messaging-lane standard: one bot/lane token, speaker
+  tag, allowed group chat id, caller identity mapping, dedicated relay port, backend send URL, and start/finish
+  job notifications. Prefer a dedicated DevNest bot/lane rather than reusing Ada/KK/MN tokens. Keep tokens in idc03
+  ~/.config/secrets/telegram-devnest-bot.env via secret-drop; never put tokens in chat or repo. After Tony creates
+  the BotFather bot and group, discover the numeric group chat_id from a first message, configure TELEGRAM_ALLOWED_CHAT_IDS
+  and TELEGRAM_USER_CALLERS, choose an unused TG_WEBHOOK_LISTEN port, enable the relay, send a tagged smoke test,
+  then wire board/DevNest job start and finish events. Define household AI identities/tags and a notification policy
+  before enabling proactive reports.'
+action:
+  type: manual
+  status: done
+note: Tony will prepare the Telegram bot/group. Need a single focused handoff with required values and a safe secret
+  delivery path.
+ref: OPS-0905
+comms:
+- at: 2026-10-26 10:19
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 10:19
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-26 13:28
+  from: devin
+  text: 'Assessment: a dedicated TonyDvnstBot is the right direction, but do not put all TG keys or conversation
+    data inside the DevNest HA container. Keep the bot token in host-only ~/.config/secrets/telegram-devnest-bot.env
+    (prefer this canonical name over tg-tony-devnest-bot.env), with TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_CHAT_IDS,
+    TELEGRAM_USER_CALLERS, TELEGRAM_MODE, TG_WEBHOOK_LISTEN, TG_PERSONA_NAME. Run a dedicated devnest-tg-relay.service
+    on an unused loopback port, not the parked devnest-ha con'
+- at: 2026-10-26 15:17
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 15:17
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-26 16:00
+  from: devin
+  text: 'Processing OPS-0905. Verified 2026-10-26: @TonyDvnsBot is valid; DevNestHA is a Telegram supergroup/forum
+    (chat_id -1003998821809); Tony sender_id 8960073266; probe captured via getUpdates; local host copy of telegram-devnest-bot.env
+    is mode 600. Starting with capture-only topic-aware relay: polling, offset/state persistence, sender/chat/topic
+    identification, same-topic acknowledgement, then board-api integration. No Ada credentials and no devnest-ha
+    token in relay.'
+- at: 2026-10-26 16:00
+  from: tony
+  text: moved backlog -> doing
+- at: 2026-10-26 16:02
+  from: devin
+  text: 'Implementation started and pushed as dispatch/20261026-devnest-tg-capture (commit a7fe8b44). Added capture-only
+    Python relay + systemd unit + 4 tests. Verified: py_compile, pytest 4 passed, systemd-analyze verify, live Telegram
+    API /health with chat allowlist. Relay currently not installed/enabled on idc03; next gate is deploy unit/source
+    and run persistent same-topic smoke test.'
+- at: 2026-10-26 16:46
+  from: tony
+  text: closed by tony
+- at: 2026-10-26 16:49
+  from: tony
+  text: 'VERIFICATION: OPS-0905 is NOT done yet. On idc03, devnest-tg-relay.service is not found/inactive, no telegram-devnest-bot.env
+    exists, no :8919 listener, and no DevNest relay state directory exists. The implementation branch/tests exist,
+    but deployment + persistent smoke test are still pending. Keep card open.'
+- at: 2026-10-26 16:51
+  from: tony
+  text: 'PR opened: https://github.com/tonezzz/chaba/pull/37. Worktree tests: 4 passed, py_compile/systemd-analyze
+    pass, live Telegram API allowlist/health smoke passed. Remaining gates: Tony secure secret-drop to idc03, merge/sync
+    PR into execution checkout, enable devnest-tg-relay.service, then persistent same-topic smoke.'
+- at: 2026-10-26 17:03
+  from: devin
+  text: 'Capture phase deployed and verified on idc03. devnest-tg-relay.service is enabled/active; loopback /health=200
+    on 127.0.0.1:8919. Live consumer proof: captured Telegram update 954573586 from chat -1003998821809 / sender
+    8960073266 in General, persisted updates.jsonl + conversations/-1003998821809/general.jsonl, advanced state
+    offset to 954573587, and issued same-topic acknowledgement. Card remains doing: board-api job routing and start/finish
+    notifications are the next phase.'
+- at: 2026-10-26 17:07
+  from: devin
+  text: 'Observed Telegram approval test update 954573587: "APPROVE OPS-0912". Capture relay recorded and acknowledged
+    it, but did not execute approval yet: current phase is capture-only and no board card ref OPS-0912 exists. Next
+    integration must parse APPROVE <card/ref>, resolve exact card, call board-api /respond or approved action path,
+    and post an audit result in the same topic; reject missing/ambiguous cards.'
+- at: 2026-10-26 17:09
+  from: devin
+  text: 'Observed Telegram update 954573588: "explain 0905". Proposed route: normalize 0905→OPS-0905; classify as
+    read-only card_explain; fetch live card via board-api GET; answer deterministically first. If Tony asks for
+    deeper analysis, route the bounded card context to the free_lane/research brain; use paid_frontier/devin only
+    for cross-repo design or implementation. General is the surface, not the AI brain.'

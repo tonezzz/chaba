@@ -80,7 +80,7 @@ checklists:
         must: true
       - id: mcp.devin
         label: Verify Devin MCP tools
-        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc03:9585) does not list tools, restart the HA container on that host and retry.
+        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (tony-omen:9584) or michael-dev (idc02:9585) does not list tools, restart the HA container on that host and retry.
         ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
         must: true
       - id: services.start
@@ -392,7 +392,7 @@ host_notes:
       - Re-run mcp-health; compare against pre_shutdown snapshot.
       - >-
         Verify Devin MCP server endpoints; mcp_list_tools for tony-ha (tony-omen:9584),
-        michael-dev (idc03:9585), michael-ha (100.80.105.88:9584), and all other servers.
+        michael-dev (idc02:9585), michael-ha (100.80.105.88:9584), and all other servers.
         Restart the HA container on its current host if the MCP port is not listening.
     refs:
       - docs/ssot/infrastructure/ssot.tony-dell-failover.yml
@@ -405,7 +405,6 @@ host_notes:
         tailnet-IP ports at boot; any 0.0.0.0 container bind on the same port
         gets EADDRINUSE. Policy: containers bind 127.0.0.1, serve handles
         tailnet (decided 2026-09-07; see runbook).
-      - barrierc requires DISPLAY=:20 (CRD Xorg) in barrier-client.service.
       - mddb takes ~4-8 min to bind ports after start; wait before restarting.
       - >-
         Physical monitor is on the Intel iGPU (card1-DP-2), NOT the AMD card
@@ -413,52 +412,32 @@ host_notes:
         (reason unresolved; greeter is Wayland despite WaylandEnable=false).
         Working seat path since 2026-09-07: system unit xorg-seat.service
         (root Xorg :1 on vt7) + user unit lxqt-seat.service (startlxqt,
-        waits for /tmp/.X11-unix/X1, chvt 7) + barrier-client.service with
-        DISPLAY=:1 (waits for X1 socket). GDM greeter remains on tty1.
-      - barrier-client.service now targets DISPLAY=:1 (physical seat), not :20.
-        The CRD session :20 no longer has barrier input by design.
+        waits for /tmp/.X11-unix/X1, chvt 7). GDM greeter remains on tty1.
   tony_omen:
     reboot_role: interactive primary and GPU host
     pre_shutdown:
       - Save interactive/Devin session state; GPU jobs cannot migrate.
-      - Barrier clients (tony-dell barrierc) will disconnect.
       - Stop or checkpoint GPU workloads (ollama models, imagen2, txt2vid).
     post_restart:
       - nvidia-smi shows the GPU with only Xorg attached.
       - tailscale status online as 100.75.102.88 with direct path to tony-dell.
       - >-
-        systemd units: barriers.service (user), cpufreq-limit.service (system),
+        systemd units: cpufreq-limit.service (system),
         weaviate-index.timer, arp-inventory-scan.timer.
       - >-
-        Verify CPU frequency cap: `cpupower frequency-info` reports a 2.20 GHz
+        Verify CPU frequency cap: `cpupower frequency-info` reports a 2.00 GHz
         upper limit and `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
-        returns 2200000. If the cap is wrong, restart `cpufreq-limit.service`.
+        returns 2000000. If the cap is wrong, restart `cpufreq-limit.service`.
       - >-
         Verify monitoring data sources: `curl -s -o /dev/null -w '%{http_code}'
         http://100.75.102.88:8001/health` returns 200 and `http://100.75.102.88:8001/api/sensors`
         returns valid JSON with `host.temperatures` and `host.cpu_freq`.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
-      - >-
-        Barrier: confirm `barriers.service` is listening on 24800 and has accepted
-        the tony-dell client (`ss -tlnp | grep 24800`). If the log repeats
-        "primary screen unavailable: unable to open screen", the X display was not
-        ready when the unit started; restart with `systemctl --user restart
-        barriers.service` once the seat is up.
     refs:
       - docs/ssot/infrastructure/ssot.health.home.system.yml
       - docs/ssot/infrastructure/ssot.gpu.yml
       - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
-    known_issues:
-      - >-
-        `barriers.service` can start before the GDM/Xauthority on DISPLAY :0 is
-        ready, leaving it alive but unable to open the screen and not listening on
-        port 24800. Applied fix: add an `ExecStartPre` that waits up to 60 s for
-        `/tmp/.X11-unix/X0` and `/run/user/1000/gdm/Xauthority`, move
-        `StartLimitIntervalSec=0` from `[Service]` to `[Unit]`, then
-        `systemctl --user daemon-reload` and restart. The unit now starts reliably
-        after the X display is ready.
-
 metadata:
   created: "2026-09-07"
   last_updated: "2026-09-11"

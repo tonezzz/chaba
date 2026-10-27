@@ -1,0 +1,66 @@
+# DevNest Telegram command router (card devnest-tg-command-router / OPS-0911)
+#
+# The devnest-tg-relay.service on idc03 now answers whole-message board
+# commands in the DevNestHA supergroup, on top of its capture role.
+title: DevNest Telegram whole-message command router
+job: devnest-tg-command-router
+date: 2026-10-26
+host: idc03
+unit: devnest-tg-relay.service
+source: scripts/devnest/devnest-tg-relay.py
+card: devnest-tg-command-router
+
+commands:
+  # Anchored whole-message forms only — "please explain 0905" is not a
+  # command. Replies always go back to the same chat + message_thread_id.
+  - form: "explain|status <ref|card-id>"
+    effect: >-
+      read-only. Normalizes the operand (0905 -> OPS-0905, 'ops 0905'/
+      'OPS-0905' -> OPS-0905, else exact card slug), fetches the live card
+      via board-api GET /cards, and replies with a deterministic summary:
+      status / phase / verified / next / ask.
+  - form: "APPROVE <ref|card-id>"
+    effect: >-
+      TELEGRAM_APPROVER_IDS senders only (default: callers labelled
+      *tony). One open request -> board-api /respond {request_id,
+      answer:'approve via devnest-tg', from:tony}; open card ask ->
+      /respond; review column with nothing pending -> /action do=close.
+      Anything else is refused.
+  - form: "REJECT <ref|card-id>"
+    effect: >-
+      same gate; open question -> /respond 'reject via devnest-tg',
+      review column -> /action do=hold (back to backlog).
+
+refusals:
+  unknown_ref: operand resolves to no card -> refused, audited, replied
+  ambiguous_ref: >-
+    operand matches >1 card, or >1 open request on the card -> refused,
+    audited, replied
+  unparseable: operand fails normalize -> usage hint, audited
+  unauthorized: APPROVE/REJECT from non-approver -> refused, audited
+audit: ~/.local/share/devnest/telegram/audit.jsonl  # one JSON line per command
+
+invariants:
+  - all board mutations go through board-api HTTP (loopback :8787,
+    identity 'local'); no card-YAML edits, no shell execution
+  - explain never writes (tests assert zero board POSTs)
+  - answers carry 'approve|reject via devnest-tg' so answer-sweep's verb
+    table still applies ('approve' -> queue) and provenance is visible
+  - a poison update is logged and skipped — offset still advances
+env:
+  BOARD_API_BASE: http://127.0.0.1:8787        # in telegram-devnest-bot.env
+  TELEGRAM_APPROVER_IDS: "8960073266"          # in telegram-devnest-bot.env
+tests: tests/test_devnest_tg_relay.py  # 19 tests, pytest
+verification:
+  - pytest 19/19 on dispatch branch 4c62a1bcf
+  - >-
+    harness on idc03: explain 0905 -> explained; APPROVE OPS-0912 ->
+    refused+audited; marker sendMessage message_id 20
+  - >-
+    organic: Tony's 'explain 0905' (update 954573590, msg 21) processed by
+    the running service -> 'explained' audit + summary in group
+  - open card request tg-live-smoke tracks Tony's reply-side confirmation
+deploy_note: >-
+  Worktree cannot push; the script was scp'd into the idc03 exec checkout
+  (git-safe-pull autostash tolerates the dirty file until the branch
+  merges — content then matches upstream).
