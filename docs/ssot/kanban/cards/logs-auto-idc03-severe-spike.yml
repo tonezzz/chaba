@@ -1,25 +1,22 @@
 id: logs-auto-idc03-severe-spike
 title: logs `idc03` 1749 severe/24h
-brief: 'The log digest flagged something worth a look: logs `idc03` 1749 severe/24h.
-  Read the note, then fix it or close the card.'
-column: review
+brief: 'The log digest flagged something worth a look: logs `idc03` 1749 severe/24h. Read the note, then fix it
+  or close the card.'
+column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
 note: 1749 severe lines (oom/panic/failed) in the last 24h (limit 40)
-help: Read the digest's repeat-offender lines for idc03; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-10-26'
+help: Read the digest's repeat-offender lines for idc03; this is a real incident signal, not pipeline breakage.
+updated: 2026-10-27 16:43
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'DIAGNOSED (25.5k severe/24h): (a) 21k = mddb writing INFO logs to stderr
-    → journald maps stderr=err — artifact, needs mddb log-target or digest fix; (b)
-    728 = runner-agent.service crash-loop from stale binary — FIXED this session (sha
-    synced); (c) 1.5k = michael-dev REST sensors timing out on http://michael-ha:8123
-    — real: LAN hostname unreachable from VPS post-migration, mirrors need the nabu-casa
-    URL or disabling. Keeping open for (a)+(c).'
+  text: 'DIAGNOSED (25.5k severe/24h): (a) 21k = mddb writing INFO logs to stderr → journald maps stderr=err — artifact,
+    needs mddb log-target or digest fix; (b) 728 = runner-agent.service crash-loop from stale binary — FIXED this
+    session (sha synced); (c) 1.5k = michael-dev REST sensors timing out on http://michael-ha:8123 — real: LAN hostname
+    unreachable from VPS post-migration, mirrors need the nabu-casa URL or disabling. Keeping open for (a)+(c).'
 - at: 2026-10-11 06:18
   from: tony
   text: verified
@@ -32,6 +29,9 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0433'
+- at: 2026-10-27 16:43
+  from: tony
+  text: moved review -> done
 action:
   status: done
 claim: {}
