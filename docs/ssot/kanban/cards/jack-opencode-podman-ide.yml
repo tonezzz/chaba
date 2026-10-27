@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: backlog
-updated: 2026-10-27 17:03
+updated: 2026-10-27 17:22
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -60,3 +60,10 @@ comms:
     `/enroll` + `/redeem` gateway on idc02: paste code/URL in Chrome, single-use short-TTL token exchanges for a
     Jack-scoped session cookie/ticket, browser saves the session, proxy gates the Podman OpenCode route. Do not
     put the LiteLLM/MCP/host credentials in localStorage; only the s'
+- at: 2026-10-27 17:22
+  from: devin
+  text: 'Dependency landed: jack-ide stack on idc02 now includes a minimal isolated opencode pod (rootless, private
+    podnet, workspace+disposable-home mounts only, mcp:{}, 2G/200% caps) because the enrollment card needed a real
+    upstream. Remaining IDE hardening for this card: (1) dedicated jack-scoped spend-capped LiteLLM virtual key
+    — shared litellm-chaba key is a placeholder, /key/generate needs proxy admin on idc03; (2) seeded sample-repo
+    polish + teardown/rollback runbook refinement; (3) public CF Acc'
