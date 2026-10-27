@@ -232,7 +232,7 @@ class Case(unittest.TestCase):
         self.assertIn("nothing committed",
                       str(a.get("last_failure") or ""))
 
-    def test_terminal_column_never_touched(self):
+    def test_terminal_column_preserves_action_state(self):
         # KNB-0893: a card already in done is terminal — the sweep must
         # not rewrite its workflow fields even when action.status
         # disagrees (a stale checkout shows exactly this shape).
