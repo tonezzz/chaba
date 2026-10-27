@@ -1,0 +1,107 @@
+id: jobs/nest/2026-10-27-colab-release-pinning
+title: >-
+  Hands-off Colab release flow — versioned Drive bundles + atomic
+  ACTIVE_RELEASE pointer + hash-aware markers
+card: devnest-colab-release-pinning
+date: 2026-10-27
+runner: tony-macbook (dispatch worktree — repo landing only; Drive publish
+  verified end-to-end against a throwaway gdrive remote on idc02)
+status: delivered
+
+# Every byte a Colab VM executes now comes from one immutable release:
+#   ada-nest/releases/<release_id>/   (built from git archive origin/master)
+#   ada-nest/queue/ACTIVE_RELEASE.json (the only mutable pointer)
+# ada-nest/packs|gap-packs/<name>/ are state-only workspaces; code is
+# materialized into them from the verified release at claim time.
+
+deliverables:
+  release_lib: scripts/colab/release_lib.py
+    # sha/verify/marker/materialize helpers — ships INSIDE the release;
+    # cells hash-check it alone before importing (verifier can't run
+    # unverified code)
+  publisher: scripts/colab/publish-release.py
+    # --repo/--remote/--ref/--no-fetch/--dry-run/--force/--activate id
+    # /--verify id/--list/--keep-legacy/--no-notebook-deploy
+  runner: scripts/colab/queue-runner.py     # deploys as queue/runner.py
+  cells:
+    cell1: scripts/colab/preflight-cell.py      # RELEASE-OK/BAD + watcher
+    cell2: scripts/colab/queue-launcher-cell.py # full gate + verified spawn
+    debug: scripts/colab/queue-runner-cell.py
+    gap:   scripts/colab/gap-launcher-cell.py
+  gap_runner: scripts/colab/gap-runner.py       # pinned + gh-aware markers
+  mcp: mcp-servers/mcp-colab/server.py
+    # pack_status reads release manifest; pack_submit refuses under
+    # pinning; session_status reports the active release
+  timer: ssot.jobs.yml entry colab-release-publish (host idc02,
+    on_calendar *:7/15) -> systemd/generated/idc02/
+  notebook: scripts/colab/ada-nest-job-console.ipynb (regenerated)
+  tests: tests/colab/test_release_pinning.py (+ updates to
+    test_job_console.py, test_mcp_colab_control.py)
+  kb: docs/kb/colab-mcp-jobs.md (pinned-release section + launch seq)
+
+drive_layout:
+  pointer: queue/ACTIVE_RELEASE.json {schema, release_id, release_sha256,
+    commit, activated_at, activated_by, previous}
+  release: |
+    releases/<id>/release.json {schema:1, release_id, commit, ref,
+    generated_at, generated_by, files{relpath:sha256},
+    packs{name:{sha256,files}}, gap_packs{name:{sha256,files}}}
+    releases/<id>/queue/   runner.py JOBS.py runtime_registry.py cells
+                           release_lib.py build-job-console.py img_gen.py
+                           ada-nest-job-console.ipynb
+    releases/<id>/packs|gap-packs/<name>/  code+inputs only
+  workspaces: |
+    packs/<name>/, gap-packs/<name>/ — claim/ done failed out/ model/
+    .release-src.json (materialization ledger) — PACK_DIR unchanged
+
+trust_chain:
+  - 'ACTIVE_RELEASE.release_sha256 anchors release.json'
+  - 'release.json files{} anchors every file byte (sha256)'
+  - 'cells verify release_lib.py hash alone, then it verifies the rest'
+  - 'cell 2 additionally requires deployed queue/ada-nest-job-console.ipynb
+    == released notebook'
+  - 'runner re-verifies at startup incl. its own __file__ hash'
+  - 'rclone hashsum --download verifies remote bytes (gdrive has no
+    sha256 metadata) before the pointer flips'
+
+marker_semantics:
+  - 'queue/done|env-done markers: rel=<id> jh=<job sha12>'
+  - 'packs/<name>/done: rel=<id> ph=<pack sha12>'
+  - 'gap-packs/<name>/done|failed JSON: gh=<pack sha12> + rel'
+  - 'skip iff recorded hash == code about to run; hash-less markers get
+    one rescue when workspace code is byte-identical (ws_pack_matches) —
+    upgraded in place with upgrade=legacy-ws-match; all others re-run'
+  - 'pack code materializes into workspace at claim; prunes files dropped
+    from the release (never a residue pile)'
+
+publisher_timer:
+  job: 'colab-release-publish (ssot.jobs.yml) on idc02 — the only host
+    holding the gdrive: rclone remote'
+  cadence: '*:7/15 — cheap: fetches origin/master, diffs scripts/colab vs
+    active commit, no-ops on no change'
+  sequence: 'runs behind chaba-repo-sync cadence; the fetch makes the
+    canonical ref current regardless of local sync lag'
+
+rollback: publish-release.py --activate <release_id> on idc02 —
+  re-verifies the target remotely, then repoints + redeploys notebook;
+  previous chain recorded in the pointer
+
+verification:
+  sandbox: 'python3 -m unittest tests.colab.test_release_pinning
+    tests.colab.test_job_console tests.colab.test_gap_runner
+    tests.colab.test_mcp_colab_control tests.colab.test_runtime_registry
+    — 69 tests OK (manifest, verify tamper/missing/extra, marker
+    hash/rescue/stale, materialize, launcher gate, pinned E2E drain,
+    publisher dry-run + full publish + rollback on local remote)'
+  real_drive: >-
+    publish-release.py ran on idc02 against throwaway remote
+    gdrive:ada-nest-release-e2e-test (purged after): 60 files/27 packs/1
+    gap-pack uploaded, sha256 --download verify clean, atomic pointer
+    flip, notebook deploy hash-verified, --verify/--list/--activate all
+    exercised. Discovered + fixed: gdrive lacks sha256 metadata so
+    hashsum requires --download.
+  live_t4_pending: >-
+    Requires the merged code on origin/master (bundle source) + an
+    operator-opened fresh T4 — procedure in docs/kb/colab-mcp-jobs.md
+    §Pinned releases. Post-merge: timer publishes, cell 1 RELEASE-OK,
+    queue starts, runner.id.release set, markers gain rel=/ph=.
