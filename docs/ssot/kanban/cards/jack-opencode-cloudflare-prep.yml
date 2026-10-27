@@ -1,0 +1,28 @@
+id: jack-opencode-cloudflare-prep
+title: Prepare Cloudflare route config for Jack OpenCode via OpenCode lane
+column: backlog
+updated: 2026-10-27 19:37
+brief: Use OpenCode for bounded config/test preparation; no live DNS, Access, secrets, or reload changes.
+priority: high
+program: devnest
+tags:
+- jack
+- opencode
+- cloudflare
+- free-lane
+- safety
+spec: 'Run this as an OpenCode free_lane task on tony-dell with a fresh worktree. Prepare, do not deploy: Caddy
+  site block for opencode-jack.surf-thailand.com -> 127.0.0.1:8377 with WebSocket support; gateway edge-header validation
+  design for Cloudflare Access email javkster@gmail.com; DNS/Access API request templates with secrets omitted;
+  rollback steps; deterministic config/tests. Inspect existing jack-ide README/server and current idc02 Caddy conventions.
+  Do not call Cloudflare APIs, read secrets, reload Caddy, or expose a public route. Deliver a patch/report plus
+  verifier evidence. If the task cannot produce artifacts, mark failed; do not claim completion.'
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+ref: OPS-0954
+comms:
+- at: 2026-10-27 19:37
+  from: tony
+  text: card captured via board-api
