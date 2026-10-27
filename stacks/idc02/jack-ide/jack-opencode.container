@@ -1,0 +1,36 @@
+# jack-opencode — isolated OpenCode Web IDE for Jack (rootless podman).
+# No published ports: reachable ONLY through jack-enroll on the jack-ide
+# podnet. Upstream itself is basic-auth'd (OPENCODE_SERVER_PASSWORD) as
+# defense-in-depth — the gateway injects it server-side; browsers never see it.
+# Only /workspace (scratch repo) + a disposable HOME are mounted. No host
+# home, ~/.config/secrets, SSH keys, Ada/Devin state, /dev, or host network.
+[Unit]
+Description=Jack isolated OpenCode IDE (rootless podman)
+After=jack-ide-network.service
+Requires=jack-ide-network.service
+
+[Container]
+Image=localhost/jack-opencode:latest
+ContainerName=jack-opencode
+Network=jack-ide.network
+UserNS=keep-id
+Environment=HOME=/home/opencode
+EnvironmentFile=%h/.config/secrets/jack-ide.env
+Volume=%h/.local/share/jack-ide/workspace:/workspace:Z
+Volume=%h/.local/share/jack-ide/opencode-home:/home/opencode:Z
+Volume=%h/.config/jack-ide/opencode.json:/home/opencode/.config/opencode/opencode.json:ro,Z
+HealthCmd=/usr/local/bin/node -e "fetch('http://127.0.0.1:4096/global/health',{headers:{authorization:'Basic '+Buffer.from('opencode:'+process.env.OPENCODE_SERVER_PASSWORD).toString('base64')}}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=60s
+
+[Service]
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+MemoryMax=2G
+CPUQuota=200%
+
+[Install]
+WantedBy=default.target

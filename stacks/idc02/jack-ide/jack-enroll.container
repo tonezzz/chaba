@@ -1,0 +1,36 @@
+# jack-enroll — VCAST-style enrollment + session proxy in front of
+# jack-opencode. Sole external surface: loopback :8377 (tailscale serve
+# fronts it at https://idc02.taila0626a.ts.net:8448 with tailnet identity).
+[Unit]
+Description=Jack IDE enrollment gateway + session proxy (rootless podman)
+After=jack-ide-network.service jack-opencode.service
+Requires=jack-ide-network.service
+
+[Container]
+Image=localhost/jack-enroll:latest
+ContainerName=jack-enroll
+Network=jack-ide.network
+UserNS=keep-id
+PublishPort=127.0.0.1:8377:8080
+Environment=LISTEN_PORT=8080
+Environment=UPSTREAM_URL=http://jack-opencode:4096
+Environment=UPSTREAM_USER=opencode
+Environment=STATE_DIR=/state
+Environment=CODE_TTL_S=900
+Environment=SESSION_TTL_S=43200
+Environment=REQUIRE_EDGE_HEADER=1
+Environment=COOKIE_SECURE=1
+EnvironmentFile=%h/.config/secrets/jack-enroll.env
+Volume=%h/.local/share/jack-ide/state:/state:Z
+HealthCmd=/usr/local/bin/node -e "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
