@@ -1,7 +1,7 @@
 id: kk-video-preflight-stage
 title: Add lightweight KK video preflight pack before GPU work
-column: doing
-updated: 2026-10-27 15:40
+column: review
+updated: 2026-10-27 15:41
 brief: Validate KK project inputs and preview-pack policy before expensive GPU work, without consuming the active
   runtime snapshot.
 priority: medium
@@ -22,8 +22,11 @@ spec: Add a lightweight preflight stage to the KK video queue release. Validate 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 ct docs to `ada-nest/projects/` and re-submit the three packs. | devin-task-20261027-152625-add-a-lightweight-preflight-st.service:
+    Consumed 1min 244ms CPU time over 14min 13.202s wall clock time, 421.1M memory peak, 62.9M memory swap peak.'
+  verified: true
 ref: OPS-0936
 comms:
 - at: 2026-10-27 15:25
@@ -51,3 +54,8 @@ comms:
     flags) + kk-video-c9f99fee6146-preflight pack (gpu_gb:0) + requires: claim gate in queue-runner.py AND nest-worker.py
     (fail closed; *-preflight needs verdict pass|warn) + requires-first ordering so CPU gate drains before GPU packs
     in one launch. embeds->preflight, preview->[pr'
+- at: 2026-10-27 15:41
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ct docs to `ada-nest/projects/` and re-submit the three packs. | devin-task-20261027-152625-add-a-lightweight-pre'
+review_kind: verify
+claim: {}
