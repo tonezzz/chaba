@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-27 17:25
+updated: 2026-10-27 18:01
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -19,3 +19,10 @@ comms:
 - at: 2026-10-27 17:25
   from: devin
   text: moved backlog -> doing
+- at: 2026-10-27 18:01
+  from: devin
+  text: '[fix staged + retry launched 2026-10-27] Pack now validates each MP4 with ffprobe, full decode, and near-total-black
+    detection instead of a 50KB size cutoff; narration is generated from the existing four Thai SRT cues in 15s-aligned
+    segments, with return-code/nonempty checks; final teaser is decoded/metadata-checked before done. Staged the
+    updated preview, requires-aware queue runner, preflight pack, and private project metadata (source PDF intentionally
+    omitted; preflight gives 0 failures/1 all'
