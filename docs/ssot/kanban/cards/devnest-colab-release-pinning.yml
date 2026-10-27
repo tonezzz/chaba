@@ -1,7 +1,7 @@
 id: devnest-colab-release-pinning
 title: Make Colab queue use verified latest DevNest release
-column: doing
-updated: 2026-10-27 15:53
+column: review
+updated: 2026-10-27 15:54
 brief: Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.
 priority: high
 program: devnest
@@ -23,8 +23,11 @@ spec: Define a hands-off Colab release flow. Build a release bundle from the can
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 t-merge step since the bundle must come from merged master. | devin-task-20261027-151516-define-a-hands-off-colab-relea.service:
+    Consumed 2min 13.555s CPU time over 38min 18.002s wall clock time, 358.7M memory peak, 159.8M memory swap peak.'
+  verified: false
 ref: OPS-0935
 comms:
 - at: 2026-10-27 15:14
@@ -53,3 +56,8 @@ comms:
     atomically only after rclone hashsum --download verifies all remote bytes. Cell1 RELEASE-OK/BAD, cell2 refuses
     on any pointer/hash/notebook/JOBS/runner/pack mismatch, runner re-verifies+self-hashes at startup, markers hash-aware
     (rel=+jh/ph/gh) with one-shot legacy rescue; rollback = '
+- at: 2026-10-27 15:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 t-merge step since the bundle must come from merged master. | devin-task-20261027-151516-define-a-hands-off-colab'
+review_kind: verify
+claim: {}
