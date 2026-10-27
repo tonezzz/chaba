@@ -1,7 +1,7 @@
 title: WP Boards — Member Info Surface
 subtitle: boards.surf-thailand.com — post types, taxonomy axes, title standard, watchdog topology
 version: 1
-last_updated: "2026-10-15"
+last_updated: "2026-10-27"
 
 # ssot.wp-boards — WordPress member-info surface (boards.surf-thailand.com)
 #
@@ -22,6 +22,54 @@ site:
   # index.php — clicks land clean via the edge bounce.
   rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost; /wp/wp-json/* is edge-rewritten to index.php and also works
   app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
+
+sites:
+  # Registry of LINE-managed WP sites — one entry per site the lanes
+  # can maintain. Customer sites append here per the onboarding
+  # runbook (docs/kb/wp-customer-site-onboarding.md); the model was
+  # approved 2026-10-27 (Tony "proceed" on the card's lane/group open
+  # question). Preflight before registering:
+  #   python3 scripts/wp-boards/site-preflight.py <url> [--env-file ...]
+  boards:
+    public_base: https://boards.surf-thailand.com/wp
+    origin_base: https://boards.h3.gizmo-thailand.com/wp
+    env_file: wp-boards.env        # under ~/.config/secrets/ on writer hosts
+    lanes: [tony, kk]              # ada lanes whose env carries these creds
+    person_tags: [tony, kk, nhong] # post_tag person axis for this site
+    line_groups: [kk-ha shared multihome, tony-ha]   # ssot.line-groups.yml
+  # customer template — copy and fill at onboarding:
+  # <slug>:                      # short site key, also the env suffix
+  #   public_base / origin_base / rest_route_style
+  #   env_file: wp-<slug>.env    # per-site app password (Option A)
+  #   lane: ada-<slug>           # dedicated lane instance (kk-clone)
+  #   line_group: <group-id>     # dedicated customer group, pinned persona
+  #   owner_person: <persons.yml key>
+
+customer_onboarding:
+  # Approved model (2026-10-27, card line-wp-site-manager): dedicated
+  # LINE group per customer-site, routed through the existing
+  # tony/kk-style lane pattern, backend holds a per-site revocable WP
+  # Application Password — Option A identity map. The customer never
+  # sees credentials; nothing goes into LINE where it persists in
+  # history/Yomi. Rejected: split-creds-across-chats (both halves end
+  # up indexed), per-chat passwords, WP admin password.
+  isolation: |
+    wp tools are single-site by construction — backend/wp_client reads
+    WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD from the lane's process env,
+    so a lane can only reach the one site its env file names. There is
+    no `site` parameter for the model to aim at another customer's
+    creds. Fleet scripts pin a site the same way via WP_BOARDS_ENV
+    (env file path), so per-site writes stay explicit.
+  lane_shape: |
+    Customer lane = ada-kk clone (ssot.apps.ada-persona-lanes.yml):
+    own instance/port/env_file/keys_file/bank, NO ha_upstream (customer
+    sites have no HA), tool profile = member-site set — wp_read +
+    wp_update (confirm-gated publish) + wp_post + chat_send + core
+    memory/search; no home-control, no internal ops tools. The LINE
+    group hard-pins to the lane persona via LINE_GROUP_PERSONA
+    (ssot.line-groups.yml); the customer's LINE userId gets a
+    LINE_USER_CALLERS entry.
+  runbook: docs/kb/wp-customer-site-onboarding.md
 
 post_types:
   post:          member posts from LINE asks (wp_post) — free-form human titles
