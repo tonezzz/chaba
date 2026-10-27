@@ -1,0 +1,56 @@
+title: map_embed key gate — gev credential probed dead, mint/enable is a Tony console step
+id: 2026-10-27-map-embed-key-gate
+card: map-embed-tool
+ref: DEV-0571
+date: 2026-10-27
+status: gated-on-tony   # drop staged on master; GOOGLE_MAPS_API_KEY needs a GCP console action
+summary: |
+  Second dispatch on card map-embed-tool. Drop 17 (tools.d map_embed +
+  manifest/tool_guide fragments + smoke scenario + count_cap 112->113
+  patch + persons.tony/kk-cms-only include lines) merged to chaba
+  master at 14:13; this run executed Tony's "proceed" answer to the
+  key-reuse request.
+
+  Key probe (tony-dell, sourced from ~/.config/secrets/gev-google-maps.env;
+  value never printed — status codes only):
+  - Maps Embed API  -> 403 "The provided API key is invalid"
+    (same with and without a /apps/gev referer)
+  - Maps Static API -> 403 same message
+  - Geocode API     -> REQUEST_DENIED same message
+  - Routes API      -> 401 UNAUTHENTICATED
+  - Maps JS bootstrap returns its loader unconditionally — not a
+    validity signal.
+  Key shape AQ.Ab8… (53 chars) matches the AI Studio Gemini key format
+  in gemini-keys.env (also probed — same rejections); cannot tell from
+  outside whether the gev key is dead or its project just lacks the
+  APIs. Either way NO existing key works for Embed/Static/Routes and no
+  gcloud/GCP creds exist on tony-dell, idc03, or tony-omen — minting or
+  enabling is a Tony-in-GCP-console step.
+
+  Side finding: the same value lives in ~/gods-eye-view/.env on
+  tony-dell (fingerprint-verified identical) — if it is dead for the
+  Maps JS API too, GEV Google layers are on the keyless Esri fallback
+  its .env doc describes. Worth a glance next GEV session.
+
+verify: |
+  - tests/ada/test_map_embed_drop.py: 21 passed (uv venv on
+    tony-macbook — httpx/pytest/pyyaml).
+  - ada-voice origin/main @ 56c67c1 still carries count_cap:112 —
+    ssot.tool-surface.map_embed.patch applies; manifest has no
+    wp_read/wp_update/map_embed yet.
+  - Pending ada-voice landings queue behind this one: drop 16
+    (cms-slug-derivation.patch), wp_read/wp_update drop, drop 17 —
+    land together on tony-dell (ff-pull first: local main is 12
+    behind origin/main), the second count_cap bump goes 113->114,
+    then deploy-ada.sh idc03.
+
+next: |
+  - Tony: GCP console -> enable Maps Embed API + Maps Static API +
+    Routes API on a billing-backed project -> create a key restricted
+    to those APIs -> drop GOOGLE_MAPS_API_KEY=… into
+    ~/.config/secrets/tony-ha/backend.env on idc03 ->
+    systemctl --user restart ada-ha-tony.
+  - Then land drops on ada-voice (steps above) — map_embed works
+    keyless (OSM static + open_url) the moment it lands; the key only
+    unlocks interactive iframes, Google basemaps and road polylines.
+  - Board request raised on the card carrying these steps.

@@ -1324,9 +1324,14 @@ to `cms_publish_page`/`cms_edit` or sends in chat.
    Re-run `scripts/ada/render-tool-profiles.py` for `ada-kk-dev.env` /
    tony lane env **after** the ada-voice deploy.
 7. Env: `GOOGLE_MAPS_API_KEY` in the lane's env enables interactive
-   embeds + Google static + Routes API polylines (the tony-dell gev key
-   in `~/.config/secrets/gev-google-maps.env` is a candidate — confirm
-   the GCP project has Maps Embed + Maps Static + Routes APIs enabled).
+   embeds + Google static + Routes API polylines. The tony-dell gev key
+   in `~/.config/secrets/gev-google-maps.env` was probed 2026-10-27 and
+   is NOT usable — Embed/Static/Geocode/Routes all return "The provided
+   API key is invalid" (dead key or APIs off on its project; ssot
+   secrets entry gev-google-maps). A fresh restricted key (or enabling
+   those APIs on a live project) is the gate — drop-in point is
+   `GOOGLE_MAPS_API_KEY=…` in `~/.config/secrets/tony-ha/backend.env`
+   on idc03 + `systemctl --user restart ada-ha-tony`.
    The tool is still useful without it: `kind=static` falls back to an
    OpenStreetMap multi-pin image (Nominatim geocoding), `open_url`
    always works, and `kind=interactive` returns an honest `needs_key`
