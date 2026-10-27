@@ -11,6 +11,9 @@ config:
   state_dir: '%h/var/chaba/jobs'
   results: '%h/var/chaba/reports/timeline.jsonl'
   generated_dir: systemd/generated
+  failure_policy:
+    backoff_factor: 2
+    backoff_cap: 4h
   repo:
     tony_dell: '%h/CascadeProjects/chaba'
     tony_omen: '%h/CascadeProjects/chaba'
@@ -40,6 +43,12 @@ conventions:
     '
   persistent: catch up runs missed while the unit was down.
   timeout: per-job hard cap (e.g. 30s, 20m, 1h).
+  critical: 'dispatcher jobs only — default false: a failing job is isolated
+    (results record + one focus-inbox alert per episode + exponential
+    backoff = interval * backoff_factor**(failures-1), floored at the
+    job''s own interval, capped at config.failure_policy.backoff_cap) and
+    never fails the chaba-jobs.service tick. true = the tick exits nonzero
+    when this job fails (systemd failure). Promote sparingly.'
   env: inline KEY=value map -> Environment= lines (units) / process env (dispatcher).
   result_record: 'Dispatcher jobs append {name, command, ok, exit_code, duration_ms, ts} to config.results per ssot.reports.yml
     conventions.
@@ -665,11 +674,16 @@ jobs:
   dispatch: dispatcher
   every: 15m
   timeout: 120s
+  critical: false
   exec: '%h/CascadeProjects/chaba/venv/bin/python3 scripts/network-scan.py --push'
   cwd: '%h/CascadeProjects/chaba'
   note: scans the LAN — stays on tony_dell. exec/cwd moved chaba-tony-dell (readonly
     mirror) -> chaba (exec checkout) 2026-10-23 (migration-stragglers-orphaned-units);
-    venv created on exec checkout with PyYAML==6.0.3 websockets==17.1
+    venv created on exec checkout with PyYAML==6.0.3 websockets==17.1.
+    critical:false made explicit 2026-10-27 (card
+    fix-chaba-jobs-network-scan-failure-isolation) — a --push subprocess
+    crash must back off + alert, not fail the chaba-jobs.service tick or
+    starve mcp-debug-h3-sync / tony-dell-health-snapshot.
 - id: ada-flood-news
   name: Flood news CMS refresh
   host: con01

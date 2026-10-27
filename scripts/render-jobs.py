@@ -68,6 +68,10 @@ def validate(man):
             errs.append(f"{jid}: host {j.get('host')!r} not in config.repo")
         if j.get("dispatch") not in ("systemd", "dispatcher"):
             errs.append(f"{jid}: dispatch must be systemd|dispatcher")
+        if "critical" in j and not isinstance(j["critical"], bool):
+            errs.append(f"{jid}: critical must be a bool")
+        if j.get("critical") and j.get("dispatch") != "dispatcher":
+            errs.append(f"{jid}: critical only applies to dispatch: dispatcher")
         if j.get("dispatch") == "dispatcher":
             if "every" not in j:
                 errs.append(f"{jid}: dispatcher jobs need every: (no on_calendar)")
