@@ -89,6 +89,12 @@ persons:
         - trip_calendar
         - doc_read
         - place_report
+        # map_embed (2026-10-27, card map-embed-tool): POI pins + route
+        # -> embed iframe / static image + open_url snippet for the trip
+        # pages this lane builds (southafrica family). Needs the ada-voice
+        # drop installed first + GOOGLE_MAPS_API_KEY in the lane env for
+        # interactive/Google-static output (keyless OSM path works without).
+        - map_embed
         # wp_post (2026-10-14): LINE ask -> boards.surf-thailand.com post —
         # the public member surface; tony keeps cms writers alongside for
         # internal reports (unlike persons.kk where they were removed).
@@ -481,6 +487,10 @@ bench_profiles:
       # public place page; exercises the publish path the bench cares
       # about. Needs the ada-voice drop installed on the lane.
       - place_report
+      # map_embed (2026-10-27, card map-embed-tool): map snippet builder
+      # for the cms writers this profile exercises. Needs the ada-voice
+      # drop installed on the lane first.
+      - map_embed
     exclude:
       - ada_memory_search
       - ada_remember

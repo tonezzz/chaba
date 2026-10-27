@@ -1,0 +1,20 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# map_embed (2026-10-27, chaba card map-embed-tool): Google Maps POI pins
+# + routes as CMS-ready snippets — an interactive embed iframe or a
+# frozen static image, plus an always-keyless open-in-Maps link. Pure
+# builder: the tool writes nothing — the model hands the returned
+# markdown to cms_publish_page/cms_edit. Interactive + Google static
+# need GOOGLE_MAPS_API_KEY in the backend env; without it kind=static
+# falls back to an OpenStreetMap multi-pin image (Nominatim geocodes
+# name-only entries; no route line) and kind=interactive returns an
+# honest needs_key error. read policy: read-only external calls
+# (Routes API / Nominatim), no state write. 60s — Routes API plus up
+# to a handful of Nominatim lookups on the keyless path.
+tools:
+  map_embed:
+    module: map_embed
+    policy: read
+    secondary_allowed: true
+    timeout_s: 60
