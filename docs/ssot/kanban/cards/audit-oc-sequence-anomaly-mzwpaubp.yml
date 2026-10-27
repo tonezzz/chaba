@@ -1,6 +1,6 @@
 id: audit-oc-sequence-anomaly-mzwpaubp
 title: 'OpenCode audit: sequence_anomaly (mzwpaubp)'
-column: backlog
+column: doing
 updated: 2026-10-28 05:59
 brief: S1-labeled run predates promote decision — executed before the stage was open (un-gated)
 priority: high
@@ -28,6 +28,9 @@ comms:
 - at: 2026-10-28 05:59
   from: tony
   text: queued for processing
+- at: 2026-10-28 05:59
+  from: tony-macbook
+  text: claimed
 requests:
 - id: the-card-requests-an-audit-for-ce1c84
   ask: The card requests an audit for 'sequence_anomaly' under the OpenCode tags, but provides no repository, host,
@@ -47,4 +50,5 @@ spec: Conduct an audit for sequence_anomaly in the chaba repo on host tony-dell,
   for sequence_anomaly in the chaba repo on tony-dell, posted as a comment or logged without errors.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
