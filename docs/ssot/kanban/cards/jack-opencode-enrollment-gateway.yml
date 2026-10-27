@@ -1,7 +1,7 @@
 id: jack-opencode-enrollment-gateway
 title: Build VCAST-style one-time enrollment for Jack OpenCode
 column: doing
-updated: 2026-10-27 17:06
+updated: 2026-10-27 17:13
 brief: Let Jack paste a single-use browser enrollment code/URL and persist a scoped IDE session without exposing
   host/API keys.
 priority: high
@@ -39,3 +39,10 @@ comms:
 - at: 2026-10-27 17:06
   from: chaba
   text: started devin-task-20261027-170645-implement-the-vcast-style-enro on idc02 (dispatch)
+- at: 2026-10-27 17:13
+  from: devin
+  text: 'Design settled: dedicated tailnet origin via `tailscale serve --https=8448 -> 127.0.0.1:8377` (opencode
+    SPA needs root, so no path-prefix mount); Node stdlib enroll gateway on private podnet jack-ide session-gates
+    everything to the opencode container; codes+sessions sha256-hashed in /state JSON, audit JSONL; re-mint revokes
+    prior session (exclusive default). LiteLLM key reuse from litellm-chaba.env container-side only — dedicated
+    jack virtual key needs proxy admin, follow-up on parent card. Buil'
