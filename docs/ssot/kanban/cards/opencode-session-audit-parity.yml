@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
-column: backlog
-updated: 2026-10-27 16:36
+column: doing
+updated: 2026-10-27 16:37
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -24,7 +24,8 @@ spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice tr
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -37,3 +38,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 16:37
+  from: tony-macbook
+  text: claimed
