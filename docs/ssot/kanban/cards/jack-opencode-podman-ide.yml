@@ -1,0 +1,28 @@
+id: jack-opencode-podman-ide
+title: Create isolated Podman OpenCode IDE for Jack
+column: backlog
+updated: 2026-10-27 16:51
+brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
+  production paths.
+priority: high
+program: devnest
+tags:
+- opencode
+- podman
+- jack
+- ide
+- isolation
+- devnest
+spec: Create a rootless Podman/Quadlet OpenCode IDE sandbox for Jack. Use a dedicated image/runtime, a dedicated
+  scratch Git workspace or seeded sample repo, loopback-only host binding initially, and a separate optional tailnet-authenticated
+  browser route only after the local smoke passes. Mount only the Jack workspace read/write; no host home, ~/.config/secrets,
+  SSH keys, Devin sessions, Ada MDDB, Chaba credentials, /dev devices, or Network=host. Give it a scoped LiteLLM
+  key through a host-only EnvironmentFile, no MCP by default, and a disposable OpenCode session/config directory.
+  Add health/readiness, resource caps, teardown/rollback, workspace reset, and an evidence report. Verify Jack can
+  open the UI, run a read-only explanation task, make a scratch edit, run tests, and cannot access a sentinel secret
+  or outside workspace. Keep devnest-ha separate and inactive.
+ref: OPS-0942
+comms:
+- at: 2026-10-27 16:51
+  from: tony
+  text: card captured via board-api
