@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 19:24
+updated: 2026-10-27 19:25
 priority: medium
 tags:
 - cline-kanban
@@ -167,6 +167,13 @@ comms:
 - at: 2026-10-27 19:24
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 19:25
+  from: tony
+  text: 'answered pr-45-validation-is-blocked-by-an-existi-df1d28: syntax-fix — Make a minimal syntax-only repair
+    in a separate follow-up PR (recommended)'
+- at: 2026-10-27 19:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -241,7 +248,7 @@ requests:
     (origin/master commit 6c23b7a9a, lines 30-31); this file is not changed by the Cline PR. To complete the approved
     Cline deploy, may I make a syntax-only repair in a separate commit/PR, or should I leave it to the Jack gateway
     owner and keep PR #45 draft? I will not merge/deploy while the required SSOT check is red.'
-  status: open
+  status: answered
   at: 2026-10-27 18:53
   from: devin
   options:
@@ -250,6 +257,7 @@ requests:
   - id: hold-owner
     label: 'Leave it to the Jack gateway owner; keep Cline PR #45 draft and hold deploy'
   suggested: syntax-fix
+  answer: syntax-fix — Make a minimal syntax-only repair in a separate follow-up PR (recommended)
 action:
   type: dispatch
   status: done
