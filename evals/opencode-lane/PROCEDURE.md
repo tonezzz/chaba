@@ -8,8 +8,12 @@ the first pilot passing, per the card).
 Implementation: `scripts/devnest/lane_gate.py` (this doc lives at `evals/opencode-lane/PROCEDURE.md`) on top of
 `scripts/devnest/shadow_eval.py`. Envelopes live in
 `evals/opencode-lane/jobs/`, per-host state in
-`evals/opencode-lane/state/` (gitignored), review reports in
-`evals/opencode-lane/reports/`.
+`${XDG_STATE_HOME:-~/.local/state}/opencode-lane/` (stable across
+checkouts; `$OPENCODE_LANE_STATE` overrides — moved out of the repo
+after AUD-0950 showed in-worktree state dies with dispatch cleanup),
+review reports in `evals/opencode-lane/reports/` — each review JSON
+embeds the stage ledger so the aggregate stays re-derivable even if
+state is lost again.
 
 ## The rule in one line
 
@@ -55,7 +59,7 @@ mcp-debug tools; anything else is `denied_tool`.
 
 | reason | trigger |
 |---|---|
-| `kill_switch` | `evals/opencode-lane/state/KILLED` exists or `OPENCODE_LANE_KILL` set |
+| `kill_switch` | `KILLED` exists in the lane state dir or `OPENCODE_LANE_KILL` set |
 | `missing_envelope_field` | any required envelope key absent |
 | `denied_class` | production/destructive/etc. — any stage |
 | `wrong_stage` / `class_not_in_stage` | envelope stage ≠ lane stage, or class not permitted at this stage |
@@ -76,7 +80,7 @@ verifier did not pass), `tool_denial`, `timeout`, `executor_error`.
 
 ## Metrics
 
-Per job appended to `state/metrics.jsonl`: executor, model, provider,
+Per job appended to `<state>/metrics.jsonl`: executor, model, provider,
 input/cache-read/cache-write/output tokens, provider cost (price
 table), wall time, queue time, retries, tool denials, human minutes,
 verifier pass, artifact landed, escalated, combined cost (provider +
@@ -91,7 +95,7 @@ failure-reason histogram, per-stage breakdown.
 
 ## Kill switch & rollback
 
-- `lane_gate.py kill --reason "..."` — writes `state/KILLED`; every
+- `lane_gate.py kill --reason "..."` — writes `<state>/KILLED`; every
   subsequent `admit` denies with `kill_switch:<reason>` until
   `resume`. Env var `OPENCODE_LANE_KILL=1` is equivalent for
   callers that can't reach the state dir.
@@ -105,11 +109,33 @@ failure-reason histogram, per-stage breakdown.
 
 `lane_gate.py review` — run weekly (calendar cadence; `review_due` is
 stamped +7d in `stage.json`). Emits `promote | hold | rollback` with
-reasons and writes `evals/opencode-lane/reports/<date>-promotion-review.{md,json}`.
+reasons and writes `evals/opencode-lane/reports/<date>-promotion-review.{md,json}` —
+the JSON embeds the stage's lane-arm ledger records (`ledger:` key) so
+the aggregate is re-derivable from the committed artifact alone.
 `promote` applies a promote decision only — it re-runs the review and
 refuses otherwise. Telegram summaries begin at S3 (the stage where the
 lane touches production reads); S0–S2 report through board comms +
 review docs.
+
+## State-dir loss & recovery (AUD-0950)
+
+Until 2026-10-27 the state dir lived at `evals/opencode-lane/state/`
+inside the checkout — dispatch worktree deletion destroyed the S0
+ledger, and every fresh worktree silently re-initialised at S0. The
+state dir is now host-stable (`${XDG_STATE_HOME:-~/.local/state}/opencode-lane`,
+override `$OPENCODE_LANE_STATE`); a surviving legacy in-repo dir is
+migrated once on first use. If state is lost anyway, rebuild the stage
+file from committed review evidence:
+
+```bash
+python3 scripts/devnest/lane_gate.py restore S1 \
+    --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json
+```
+
+`restore` refuses unless the review's decision is `promote` to the
+requested stage, and records the restore in stage history. The pre-loss
+`metrics.jsonl` itself is not recreated — the review's embedded
+`ledger:` is the durable per-job record.
 
 ## Isolation
 
@@ -117,9 +143,10 @@ Shadow runs are full-stop isolated from production: per-arm
 `shadow/<run>-<arm>-<fixture>` worktree+branch, fixtures
 sparse-checkout-excluded so verifiers are held out for real, event logs
 audited for verifier peeks + mutating commands, scope check on exit,
-`shadow/*` never merged. The lane state dir is host-local and
-gitignored; committed artifacts are envelopes, reports, and the ledger
-schema — never secrets or live data.
+`shadow/*` never merged. The lane state dir is host-local under the
+user's XDG state home (outside any checkout); committed artifacts are
+envelopes, reports (with the embedded ledger), and the ledger schema —
+never secrets or live data.
 
 ## Evidence so far (pre-pilot)
 

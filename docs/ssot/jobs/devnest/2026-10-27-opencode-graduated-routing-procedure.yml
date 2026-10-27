@@ -8,7 +8,7 @@ what:
   gate: "scripts/devnest/lane_gate.py — fail-closed admission + stage machine + metrics ledger + kill switch + weekly review"
   harness: "scripts/devnest/shadow_eval.py — reused: isolated worktrees, held-out verifiers, arm executor"
   envelopes: "evals/opencode-lane/jobs/s0-*.yaml — 5 committed S0 fixture envelopes"
-  state: "evals/opencode-lane/state/ — gitignored: stage.json, metrics.jsonl, KILLED, inflight/, heartbeats"
+  state: "${XDG_STATE_HOME:-~/.local/state}/opencode-lane/ (moved out of the checkout 2026-10-27, AUD-0950 — was evals/opencode-lane/state/, lost with dispatch worktree): stage.json, metrics.jsonl, KILLED, inflight/, heartbeats"
   reports: "evals/opencode-lane/reports/ — committed: promotion reviews"
   procedure_doc: "evals/opencode-lane/PROCEDURE.md — committed pre-pilot draft, NOT KB/SSOT doctrine yet"
   tests: "tests/devnest/test_lane_gate.py — 34 tests; 54 total incl. shadow_eval"
@@ -62,7 +62,7 @@ s0_result_2026-10-27:
       storage-dryrun: "missing_artifact — early stop, no artifact (46k tok, 59s)"
   safety: "0 mutating commands, 0 scope violations, 0 verifier peeks, 0 tool denials across all 10 arm runs"
   review: "promote -> S1 (gate: >=5 jobs, >=60% verified, 0 denials)"
-  ledger: "evals/opencode-lane/state/metrics.jsonl (10 records)"
+  ledger: "state/metrics.jsonl (10 records) — S0 ledger LOST with the dispatch worktree (AUD-0950); review JSON now embeds the stage ledger"
   report: "evals/opencode-lane/reports/2026-10-27-promotion-review.{md,json}"
 
 kill_switch:
