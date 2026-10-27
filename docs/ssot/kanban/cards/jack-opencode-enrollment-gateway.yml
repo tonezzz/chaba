@@ -1,7 +1,7 @@
 id: jack-opencode-enrollment-gateway
 title: Build VCAST-style one-time enrollment for Jack OpenCode
-column: doing
-updated: 2026-10-27 17:22
+column: review
+updated: 2026-10-27 17:24
 brief: Let Jack paste a single-use browser enrollment code/URL and persist a scoped IDE session without exposing
   host/API keys.
 priority: high
@@ -26,8 +26,12 @@ action:
   type: dispatch
   repo: chaba
   host: idc02
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    No such file or directory'
+  verified: true
 ref: OPS-0951
 comms:
 - at: 2026-10-27 17:05
@@ -53,3 +57,9 @@ comms:
     burn (replay=code_used), TTL expiry, forged-code 401, re-mint revokes prior session, unauth 401 (no+forged cookie),
     /admin token-gated, /etc/passwd denied vs /workspace served, direct :4096 unreachable from host, SPA 200 + SSE
     live over tailnet URL, model call PONG via LiteLLM. F'
+- at: 2026-10-27 17:24
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    Failed to ope'
+review_kind: verify
+claim: {}
