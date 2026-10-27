@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 17:23
+updated: 2026-10-27 17:46
 priority: medium
 tags:
 - cline-kanban
@@ -100,6 +100,13 @@ comms:
     access session is unchanged. Restarting now would only interrupt the session/rotate the generated passcode;
     it would not deploy the local Nest adapter or OpenRouter proxy. The UI settings can be refreshed to see Ollama
     qwen3:4b.'
+- at: 2026-10-27 17:46
+  from: devin
+  text: '404 RCA 2026-10-27: Omen Ollama logged three POST /chat/completions 404s from con01 (16:26, 16:43, 17:19).
+    A GET /v1/models from the Cline container returns 200 and includes qwen3:4b. The saved Ollama Base URL is still
+    http://100.75.102.88:11434; this Kanban client sends /chat/completions at the root, so the URL needs the /v1
+    suffix. Restarted cline-kanban.service per Tony request; it is active, the disposable main workspace remains
+    clean, and both Assess host resources test cards are in Trash. '
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
