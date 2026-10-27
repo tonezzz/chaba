@@ -1,7 +1,7 @@
 id: map-embed-tool
 title: map_embed tool — Google Maps POI+route on CMS pages
 column: review
-updated: 2026-10-27 16:11
+updated: 2026-10-27 18:15
 priority: medium
 tags:
 - ada-pi
@@ -120,6 +120,13 @@ comms:
 - at: 2026-10-27 16:11
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 18:15
+  from: tony
+  text: 'answered google-maps-api-key-needs-a-mint-gev-key-ee1fc7: key-in-env-idc03 — minted and dropped into tony-ha/backend.env
+    on idc03 myself'
+- at: 2026-10-27 18:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -152,7 +159,7 @@ requests:
     on idc03, then I restart ada-ha-tony. If instead the gev keys project is alive, enabling those 3 APIs on it
     revives reuse — pick enabled-gev-project and I will retest. Until then drop 17 works keyless the moment it lands
     on ada-voice (OSM static image + open-in-Maps link).'
-  status: open
+  status: answered
   at: 2026-10-27 16:09
   from: devin
   options:
@@ -160,9 +167,11 @@ requests:
   - enabled-gev-project — enabled the 3 APIs on the gev keys project, retest it
   - hold — leave keyless for now
   suggested: key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
+  answer: key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
   at: 2026-10-27 15:47
   note: verified — evidence checks green, closing itself
+awaiting_action: true
