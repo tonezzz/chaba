@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-10-27 13:46
+updated: 2026-10-27 14:29
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -77,9 +77,27 @@ comms:
 - at: 2026-10-27 13:46
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-27 14:29
+  from: devin
+  text: 'raised request education-report-schedule-notifications-20261027: Live check: the consolidated Education
+    report produced a verified latest artifact, but chaba-education-report.timer/serv'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
   at: 2026-10-27 13:46
   note: verified — evidence checks green, closing itself
+requests:
+- id: education-report-schedule-notifications-20261027
+  ask: 'Live check: the consolidated Education report produced a verified latest artifact, but chaba-education-report.timer/service
+    are not installed on idc03 (systemd reports not-found; only generated unit files exist). Choose whether to activate
+    the recurring report. Current manifest would post to Board and Telegram; no timer will be installed until this
+    choice because recurring notifications are an external side effect.'
+  status: open
+  at: 2026-10-27 14:29
+  from: devin
+  options:
+  - keep on-demand; leave timer disabled
+  - daily 07:50; report artifact plus Board only (recommended)
+  - daily 07:50; Board plus Telegram (current manifest)
+  suggested: daily 07:50; report artifact plus Board only (recommended)
