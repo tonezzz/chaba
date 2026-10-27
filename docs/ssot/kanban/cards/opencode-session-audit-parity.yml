@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
-column: doing
-updated: 2026-10-27 16:55
+column: review
+updated: 2026-10-27 16:56
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -24,8 +24,11 @@ spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice tr
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 d audit section — all read-only, nothing pushed or deployed. | devin-task-20261027-163705-build-a-read-only-opencode-ses.service:
+    Consumed 1min 16.136s CPU time over 18min 28.946s wall clock time, 528.7M memory peak, 39.1M memory swap peak.'
+  verified: true
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -56,3 +59,8 @@ comms:
     non-deterministic — no ledger error; per-fixture evidence in evals/opencode-lane/reports/2026-10-27-session-audit.{md,json}.
     8 cards filed: unsafe_classification (CascadeProjects+.devin auto_ok), denied_tool, sequence_anomaly (S1 ran
     pre-promote), lane_state_missing (metrics.jsonl lost w'
+- at: 2026-10-27 16:56
+  from: tony-macbook
+  text: 'finished (ok): exit=0 d audit section — all read-only, nothing pushed or deployed. | devin-task-20261027-163705-build-a-read-only-openc'
+review_kind: verify
+claim: {}
