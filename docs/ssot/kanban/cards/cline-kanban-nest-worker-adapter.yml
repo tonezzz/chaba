@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 18:53
+updated: 2026-10-27 18:54
 priority: medium
 tags:
 - cline-kanban
@@ -147,6 +147,13 @@ comms:
   from: devin
   text: 'raised request pr-45-validation-is-blocked-by-an-existi-df1d28: PR #45 validation is blocked by an existing
     YAML syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gatew'
+- at: 2026-10-27 18:54
+  from: devin
+  text: 'PR #45 is open as a draft from infra/cline-kanban-nest-worker-publish. Node proxy tests 7/7, adapter tests
+    7/7, and SSOT cross-refs pass. GitHub syntax check passed; the full SSOT validator failed on the unrelated origin/master
+    file docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml (commit 6c23b7a9a), not changed by this PR.
+    I will not merge/deploy until the recorded syntax-fix/owner decision is resolved. The local qwen3:4b Cline path
+    now returns HTTP 200 via /v1, but the manual turn'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
