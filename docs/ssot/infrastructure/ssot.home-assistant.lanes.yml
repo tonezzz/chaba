@@ -59,9 +59,9 @@ instances:
     container: tony-dev
     planned: true                           # card ha-dev-instances, blocked
     auth: {kind: env, file: /home/tony/.config/secrets/home-assistant-token.env, var: HA_LONG_LIVED_TOKEN,
-           note: stage-clone copies .storage/auth so the prod long-lived
-           token is valid on the twin; re-mint + update here if provisioning
-           invalidates it}
+           note: stage-clone copies .storage/auth so a prod LLAT is valid
+           on the twin; file now holds a svc-chaba-scripts token (owner
+           LLATs revoked 2026-10-27) — mint a twin lane if it is stood up}
 
   ada-ha:
     ssh: local

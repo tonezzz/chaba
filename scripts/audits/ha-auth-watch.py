@@ -48,6 +48,14 @@ FAIL_RE = re.compile(
     r"invalid authentication from (?P<src>\S+?)(?:\s+\(\S+\))?\.\s"
     r"*Requested URL", re.IGNORECASE)
 
+# http-login persistent-notification wording (no "Requested URL" tail):
+# "Login attempt or request with invalid authentication from <src>. See
+# the log for details." Used when the token is a non-admin svc user and
+# system_log/list is refused (owner LLAT split, ha-owner-llat-co-use-split).
+PN_FAIL_RE = re.compile(
+    r"invalid authentication from (?P<src>\S+?)(?:\s+\(\S+\))?\.",
+    re.IGNORECASE)
+
 
 def load_token(path):
     try:
@@ -82,6 +90,27 @@ async def fetch_failures(name, base, token):
                 return None
             await ws.send(json.dumps({"id": 1, "type": "system_log/list"}))
             resp = json.loads(await ws.recv())
+            if not resp.get("success"):
+                # Non-admin svc token — system_log/list is admin-gated.
+                # Fall back to the http-login persistent notification,
+                # which carries the same invalid-auth text (latest attempt).
+                await ws.send(json.dumps(
+                    {"id": 2, "type": "persistent_notification/get"}))
+                pn = json.loads(await ws.recv())
+                if not pn.get("success"):
+                    print(f"warn: {name} system_log + persistent_notification "
+                          f"both refused", file=sys.stderr)
+                    return None
+                out = []
+                for n in pn.get("result") or []:
+                    text = " ".join(str(x) for x in
+                                    (n.get("title"), n.get("message")) if x)
+                    m = PN_FAIL_RE.search(text)
+                    if m:
+                        out.append((m.group("src"),
+                                    str(n.get("created_at") or ""),
+                                    text[:300]))
+                return out
     except Exception as e:
         print(f"warn: {name} ws poll failed: {e}", file=sys.stderr)
         return None

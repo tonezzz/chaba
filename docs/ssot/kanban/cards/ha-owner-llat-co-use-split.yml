@@ -1,7 +1,7 @@
 id: ha-owner-llat-co-use-split
 title: Split shared Tony owner LLAT off chaba-guest / nodered / home-assistant-token.env, then revoke
-column: backlog
-updated: 2026-10-27 06:47
+column: review
+updated: 2026-10-27 07:10
 brief: 'Found during ha-ada-isolation Phase B (2026-10-15): the Tony OWNER LLAT that Ada lanes used is still shared
   by three non-Ada consumers on tony-dell — chaba-guest.env (HOME_ASSISTANT_TOKEN), nodered-ha.env (HASS_TOKEN),
   home-assistant-token.env (HA_LONG_LIVED_TOKEN). Ada lanes moved to svc-ada already; revoking the owner token now
@@ -26,6 +26,45 @@ comms:
 - at: 2026-10-27 06:47
   from: tony
   text: queued for processing
+- at: 2026-10-27 06:56
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 06:56
+  from: chaba
+  text: started devin-task-20261027-065635-for-each-consumer-chaba-guest- on tony-macbook (dispatch)
+- at: 2026-10-27 06:56
+  from: devin
+  text: 'dispatch started: reading ha-ada-isolation kb + ha-svc-user.py, enumerating owner-token consumers'
+- at: 2026-10-27 07:09
+  from: devin
+  text: 'DONE. Found 3 distinct Tony OWNER tokens in the wild (8d1a7d29a3 shared, 6e6553888f omen, 0362b97704 tony-devin
+    idc03/mn01) — all revoked via auth/delete_refresh_token (B was already dead). 9 env slots on 4 hosts now hold
+    dedicated non-admin svc tokens: svc-chaba-guest, svc-nodered (per-host lanes), svc-chaba-scripts (per-host lanes),
+    svc-ada standby lanes for the mn01/dell ada envs. Consumers restarted+verified: node-red omen+dell :1880 200,
+    chaba-guest enabled+started on omen :8014 200, ha-liv'
+- at: 2026-10-27 07:10
+  from: tony-macbook
+  text: 'finished (ok): exit=0 s SSOT updated, both commits on the dispatch branch, outcome file written, board
+    updated. | devin-task-20261027-0'
+- at: 2026-10-27 07:10
+  from: chaba
+  text: pushed dispatch/20261027-065635-for-each-consumer-chaba-guest- to origin
+- at: 2026-10-27 07:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 07:10
+  from: chaba
+  text: auto-merged 60056808 (dispatch/20261027-065635-for-each-consumer-chaba-guest-) → origin/master
+- at: 2026-10-27 07:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-065635-for-each-consumer-chaba-guest-,
+    branch dispatch/20261027-065635-for-each-consumer-chaba-guest-'
 action:
   type: dispatch
-  status: queued
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 s SSOT updated, both commits on the dispatch branch, outcome file written, board updated. | devin-task-20261027-065635-for-each-consumer-chaba-guest-.service:
+    Consumed 57.291s CPU time over 12min 45.217s wall clock time, 296.6M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
