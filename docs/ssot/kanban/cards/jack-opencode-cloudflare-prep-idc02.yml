@@ -1,0 +1,27 @@
+id: jack-opencode-cloudflare-prep-idc02
+title: Prepare Jack Cloudflare route with OpenCode on idc02
+column: backlog
+updated: 2026-10-27 19:39
+brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
+priority: high
+program: devnest
+tags:
+- jack
+- opencode
+- cloudflare
+- free-lane
+- safety
+spec: 'Run as OpenCode free_lane on idc02 in a fresh worktree. Prepare only: Caddy site block for opencode-jack.surf-thailand.com
+  -> 127.0.0.1:8377 with WebSocket support; Cloudflare Access identity-header validation design for javkster@gmail.com;
+  DNS/Access request templates without secrets; rollback and browser smoke tests. Do not call Cloudflare APIs, read
+  secrets, reload Caddy, or expose a public route. Deliver committed patch/report and verifier evidence; fail closed
+  on missing artifacts.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+ref: OPS-0955
+comms:
+- at: 2026-10-27 19:39
+  from: tony
+  text: card captured via board-api
