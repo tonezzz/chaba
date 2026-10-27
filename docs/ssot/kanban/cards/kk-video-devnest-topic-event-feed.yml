@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-10-27 12:56
+updated: 2026-10-27 12:57
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -40,6 +40,13 @@ comms:
     to the relay (explicit tg_thread_id still overrides). It is not deployed because live board-api `/publish` is
     404 and the served checkout is dirty/divergent. The single deployment/fallback decision is now recorded as request
     `live-publication-r'
+- at: 2026-10-27 12:57
+  from: devin
+  text: '[handoff checkpoint 2026-10-27] Thread 33 is bound and relay restart verified. The project-ref TelegramSink
+    patch is locally committed (`8742eba6e`, tests 31/31) and the deployment blocker is recorded in SSOT commit
+    `a5b46e72c`. Live board-api `/publish` returns 404; the served checkout is dirty/divergent, so I did not restart
+    it or bypass the event door. No Telegram status message was sent. Request `live-publication-route` asks how
+    to proceed; recommended: wait for served-checkout reconciliatio'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
