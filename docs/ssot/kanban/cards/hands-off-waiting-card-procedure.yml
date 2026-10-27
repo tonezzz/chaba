@@ -1,0 +1,40 @@
+id: hands-off-waiting-card-procedure
+title: Standardize hands-off processing for safe waiting cards
+column: backlog
+updated: 2026-10-27 12:37
+brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
+  gates, and Telegram reporting.
+priority: high
+program: chaba-ci
+tags:
+- kanban
+- unattended
+- safety
+- backup
+- devnest
+- procedure
+spec: 'Define and implement the hands-off waiting-card procedure. Separate queue execution from auto-close: runners
+  may process only eligible action.type=dispatch/script/container cards with explicit target_host, autonomy envelope,
+  artifact, verifier, escalation, and no open request. Add recoverability classes: R0 rebuildable caches/reports;
+  R1 git-tracked worktree with clean/merged proof; R2 stateful DB/service data requiring backup+integrity+no active
+  writer; R3 secrets/identity/external accounts never autonomous; R4 production/destructive/deploy human-gated.
+  Preflight must verify runner/timer health, queue capacity, host reachability, push credentials, disk headroom,
+  backup freshness, and no conflicting locks. Stop safely on stale heartbeat, missing artifact, verifier failure,
+  wrong host, dirty/unmerged worktree, spend cap, or open Tony request. Require deterministic verifier and independent
+  review for model reports; auto-close only review cards with auto_done_when/verified evidence. Send start/finish/fail/stalled
+  summaries via Telegram. Add dry-run mode, daily unattended report, rollback/kill switch, and a 1/2/3-day readiness
+  checklist. Update existing kanban-act-loop/DevNest procedures rather than inventing a parallel queue. Validate
+  with five read-only pilot cards and record evidence/metrics.'
+action:
+  type: manual
+note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
+  is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
+  or human deployment decisions.'
+ref: KNB-0928
+comms:
+- at: 2026-10-27 12:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 12:37
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
