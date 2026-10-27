@@ -13,14 +13,16 @@ except ImportError:
 REPO = Path(__file__).resolve().parent.parent
 SSOT_DIRS = [REPO / "docs" / "ssot"]
 
-# Key suffixes treated as references
-REF_SUFFIXES = ("_ref", "ref", "source_ref")
+# Git revision selectors are not documentation paths.
+NON_FILE_REF_KEYS = {"base_ref"}
 
 
 def is_ref_key(key):
     if not isinstance(key, str):
         return False
-    return key == "ref" or key.endswith("_ref")
+    return key == "ref" or (
+        key.endswith("_ref") and key not in NON_FILE_REF_KEYS
+    )
 
 
 def all_ssot_files():
