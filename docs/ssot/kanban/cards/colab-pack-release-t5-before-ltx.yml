@@ -1,0 +1,15 @@
+id: colab-pack-release-t5-before-ltx
+title: Release T5 embedding state before follow-on LTX pack runs
+column: backlog
+updated: 2026-10-27 12:13
+spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
+  to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
+  the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
+  globals, move encoder to CPU, empty cache) or isolate pack namespaces. Add a T4 regression test or resource check
+  showing the LTX preview can load after embeddings. Do not interrupt or mutate the current Colab runtime; no paid
+  fallback. Current runtime status is tracked in project card kk-video-c9f99fee6146.
+ref: OPS-0926
+comms:
+- at: 2026-10-27 12:13
+  from: devin
+  text: card captured via board-api
