@@ -10,8 +10,23 @@ comms:
   text: card captured via board-api
 - at: 2026-10-15 08:12
   from: devin
-  text: 'SPEC (Tony 2026-10-15): hybrid, not migration. Local hosts keep hot/working data (Ada render scratch, DBs,
-    secrets, repos — apps need disk speed). R2 becomes the durable archive + link layer for: renders, LINE media
-    archive, cam captures, WP uploads, backups. S3-upgrade-ready design, minimal effort: (1) all writers go through
-    one helper media_store.py — backend=local|r2|s3 is a config flag, not code; (2) records store canonical URLs
-    not host paths; (3) bucket layout media/<kind>/<yyyy-mm>/; (4) '
+  text: 'SPEC (Tony 2026-10-15): hybrid, not migration. Local hosts keep hot/working data (Ada render
+    scratch, DBs, secrets, repos — apps need disk speed). R2 becomes the durable archive + link layer
+    for: renders, LINE media archive, cam captures, WP uploads, backups. S3-upgrade-ready design, minimal
+    effort: (1) all writers go through one helper media_store.py — backend=local|r2|s3 is a config flag,
+    not code; (2) records store canonical URLs not host paths; (3) bucket layout media/<kind>/<yyyy-mm>/;
+    (4) '
+- at: 2026-10-27 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-card-defines-a-hybrid-medi-8c6e53
+  ask: The card defines a hybrid media store using `media_store.py` with a config flag and canonical URLs,
+    but does not specify which repository or host this helper should be implemented in.
+  options:
+  - ★ Implement `media_store.py` in the chaba repository for use across infrastructure services.
+  - Implement `media_store.py` in an application-specific repository first, such as ada-voice or gods-eye-view.
+  - Postpone implementation until a specific host and consuming service are designated.
+  status: open
+  at: 2026-10-27 07:20
+  from: backlog-spec-enrich
