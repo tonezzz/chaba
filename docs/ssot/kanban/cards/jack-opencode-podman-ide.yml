@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: backlog
-updated: 2026-10-27 16:57
+updated: 2026-10-27 16:59
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -39,3 +39,10 @@ comms:
     with a Caddy upstream to the loopback OpenCode port. Target URL: `https://idc02.taila0626a.ts.net/apps/opencode-jack/`,
     tailnet-only. No public port or direct container port. If Jack is not a member of the tailnet, use a Tailscale
     share/ACL or an authenticated access layer befo'
+- at: 2026-10-27 16:59
+  from: devin
+  text: 'Access decision: if Jack cannot use Tailscale, use a public HTTPS hostname behind Cloudflare Access/Zero
+    Trust with email one-time PIN or allowlisted identity, reverse-proxying WebSockets to the isolated container.
+    Candidate URL: https://opencode-jack.surf-thailand.com/ (not live yet). A one-time registration link may enroll
+    Jack, but it must be HTTPS, short-lived, single-use, random, and exchange for a session/cookie; never put a
+    permanent bearer token in a bookmark/query URL. Fast fallback is '
