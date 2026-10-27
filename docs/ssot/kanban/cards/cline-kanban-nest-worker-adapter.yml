@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 17:46
+updated: 2026-10-27 18:14
 priority: medium
 tags:
 - cline-kanban
@@ -111,6 +111,13 @@ comms:
   from: devin
   text: 'raised request the-restart-rotated-the-cline-passcode-m-480261: The restart rotated the Cline passcode;
     my headless session could not re-authenticate, so I could not change the saved O'
+- at: 2026-10-27 18:14
+  from: tony
+  text: 'answered how-should-i-enable-openrouter-models-fo-e879f4: or-free-gateway — Use LiteLLM benchmark key for
+    pinned OpenRouter :free models only; keep paid blocked'
+- at: 2026-10-27 18:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -135,7 +142,7 @@ requests:
     data volume? The existing LiteLLM gateway has a benchmark virtual key capped at $2/30d. Recommended: a separate
     secret-backed proxy with a pinned :free-model allowlist first; paid model IDs stay blocked until you explicitly
     approve a budget. OpenRouter free still sends prompts/code to an external provider and has rate limits.'
-  status: open
+  status: answered
   at: 2026-10-27 16:35
   from: devin
   options:
@@ -146,6 +153,7 @@ requests:
   - id: paid-reference
     label: Also authorize one paid OpenRouter reference within the existing $2/30d benchmark cap
   suggested: or-free-gateway
+  answer: or-free-gateway — Use LiteLLM benchmark key for pinned OpenRouter :free models only; keep paid blocked
 - id: the-restart-rotated-the-cline-passcode-m-480261
   ask: The restart rotated the Cline passcode; my headless session could not re-authenticate, so I could not change
     the saved Ollama Base URL. Please log in locally and set Settings > Cline > Base URL to http://100.75.102.88:11434/v1,
@@ -171,3 +179,4 @@ action:
     session_gone: 2026-10-27 17:16
 review_kind: verify
 claim: {}
+awaiting_action: true
