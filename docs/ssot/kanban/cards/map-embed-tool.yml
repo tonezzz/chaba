@@ -1,7 +1,7 @@
 id: map-embed-tool
 title: map_embed tool — Google Maps POI+route on CMS pages
 column: review
-updated: 2026-10-27 14:17
+updated: 2026-10-27 15:38
 priority: medium
 tags:
 - ada-pi
@@ -69,6 +69,12 @@ comms:
 - at: 2026-10-27 14:17
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''google-maps-api-key-gate-for-a''] block close)'
+- at: 2026-10-27 15:38
+  from: tony
+  text: 'answered google-maps-api-key-gate-for-ada-lanes-r-025db9: proceed'
+- at: 2026-10-27 15:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -84,11 +90,13 @@ requests:
     if its GCP project has Maps Embed + Maps Static + Routes APIs enabled, or mint a new restricted key for the
     ada backend env on idc03? The tool ships useful without it (OSM static images + keyless open-in-Maps links work
     today); the key unlocks interactive iframes, Google basemaps, and road-route polylines.'
-  status: open
+  status: answered
   at: 2026-10-27 14:12
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
 claim: {}
+awaiting_action: true
