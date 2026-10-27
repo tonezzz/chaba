@@ -1,0 +1,21 @@
+[Unit]
+Description=Cline Kanban authenticated Tailnet proxy (con01)
+Wants=network-online.target
+After=network-online.target
+Requires=cline-kanban.service
+After=cline-kanban.service
+
+[Container]
+Image=localhost/cline-kanban:0.1.70
+ContainerName=cline-kanban-proxy
+Pod=cline-kanban.pod
+Environment=CLINE_ROLE=proxy
+EnvironmentFile=%h/.config/secrets/cline-kanban.env
+
+[Service]
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

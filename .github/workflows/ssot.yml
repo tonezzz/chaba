@@ -9,6 +9,10 @@ on:
       - "scripts/ssot-*.py"
       - "scripts/ssot-validate-refs.py"
       - "reports/SSOT_OPTIMIZATION_*.json"
+      - "stacks/con01/cline-kanban/**"
+      - "scripts/colab/packs/cline-kanban-nest-bridge/**"
+      - "tests/test_cline_kanban_proxy.mjs"
+      - "tests/ada/test_cline_kanban_nest_bridge.py"
   pull_request:
     branches: [master, main]
     paths:
@@ -16,6 +20,10 @@ on:
       - "scripts/ssot-*.mjs"
       - "scripts/ssot-*.py"
       - "scripts/ssot-validate-refs.py"
+      - "stacks/con01/cline-kanban/**"
+      - "scripts/colab/packs/cline-kanban-nest-bridge/**"
+      - "tests/test_cline_kanban_proxy.mjs"
+      - "tests/ada/test_cline_kanban_nest_bridge.py"
 
 jobs:
   validate:
@@ -30,6 +38,10 @@ jobs:
         run: node scripts/ssot-validate-all.mjs
       - name: Validate SSOT cross-references
         run: python3 scripts/ssot-validate-refs.py
+      - name: Test Cline Kanban proxy and Nest adapter
+        run: |
+          node --test tests/test_cline_kanban_proxy.mjs
+          python3 -m unittest tests.ada.test_cline_kanban_nest_bridge
       - name: Smoke test mcp-debug server wiring
         run: |
           pip install pyyaml

@@ -10,6 +10,8 @@ RUN apt-get update \
 
 RUN npm install --global --no-audit --no-fund kanban@0.1.70
 
-COPY proxy.mjs proxy-policy.mjs /opt/cline-kanban/
+COPY entrypoint.sh proxy.mjs proxy-policy.mjs /opt/cline-kanban/
 
-ENTRYPOINT ["node", "/opt/cline-kanban/proxy.mjs"]
+RUN chmod 0755 /opt/cline-kanban/entrypoint.sh
+
+ENTRYPOINT ["/opt/cline-kanban/entrypoint.sh"]
