@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-10-27 13:03
+updated: 2026-10-27 13:11
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -54,6 +54,13 @@ comms:
 - at: 2026-10-27 13:03
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 13:11
+  from: devin
+  text: '[board-api fix 2026-10-27] Reconciled the served checkout with `scripts/git-safe-pull.sh` (autostash GC
+    disabled), then restarted `chaba-board-api.service` using the existing /publish code. Tailnet POST /publish
+    {op:sinks,from:devin} now returns 200 with 7 sinks. Published the verified Sacred Father preview failure alert
+    to thread 33; receipts: Telegram delivered `tg:33`, board delivered, nest_job updated `kk-video-c9f99fee6146-preview`
+    (post 2648). No direct /send fallback. The additional proje'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
