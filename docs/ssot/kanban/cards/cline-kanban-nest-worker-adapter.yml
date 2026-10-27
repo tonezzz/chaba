@@ -107,6 +107,10 @@ comms:
     http://100.75.102.88:11434; this Kanban client sends /chat/completions at the root, so the URL needs the /v1
     suffix. Restarted cline-kanban.service per Tony request; it is active, the disposable main workspace remains
     clean, and both Assess host resources test cards are in Trash. '
+- at: 2026-10-27 17:46
+  from: devin
+  text: 'raised request the-restart-rotated-the-cline-passcode-m-480261: The restart rotated the Cline passcode;
+    my headless session could not re-authenticate, so I could not change the saved O'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -142,6 +146,20 @@ requests:
   - id: paid-reference
     label: Also authorize one paid OpenRouter reference within the existing $2/30d benchmark cap
   suggested: or-free-gateway
+- id: the-restart-rotated-the-cline-passcode-m-480261
+  ask: The restart rotated the Cline passcode; my headless session could not re-authenticate, so I could not change
+    the saved Ollama Base URL. Please log in locally and set Settings > Cline > Base URL to http://100.75.102.88:11434/v1,
+    keep model qwen3:4b, save/refresh, then reply. Do not send the passcode in chat. After that I can verify the
+    404 fix and run a small free task.
+  status: open
+  at: 2026-10-27 17:46
+  from: devin
+  options:
+  - id: update-baseurl
+    label: I will set the /v1 Base URL and reply when saved
+  - id: hold
+    label: Hold here; do not run more tasks
+  suggested: update-baseurl
 action:
   type: dispatch
   status: done
