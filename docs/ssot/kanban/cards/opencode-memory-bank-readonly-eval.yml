@@ -1,7 +1,7 @@
 id: opencode-memory-bank-readonly-eval
 title: Evaluate staged read-only memory access for OpenCode
-column: doing
-updated: 2026-10-27 18:54
+column: review
+updated: 2026-10-27 18:55
 brief: Give OpenCode incremental read-only memory access with retrieval benchmarks, provenance, privacy gates, and
   token measurement.
 priority: high
@@ -26,8 +26,11 @@ spec: 'Design and evaluate staged OpenCode memory access. Phase 0: frozen golden
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-185419-design-and-evaluate-staged-ope.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-185419-design-and-evaluate-staged-ope.service:
+    Failed with result ''exit-code''.'
 note: OpenCode already has a verified read-only MCP profile. Memory should be added incrementally as a scoped retrieval
   capability, not by exposing all MDDB/Ada banks or putting the entire knowledge base in every prompt.
 ref: MEM-0953
@@ -41,3 +44,9 @@ comms:
 - at: 2026-10-27 18:54
   from: chaba
   text: started devin-task-20261027-185419-design-and-evaluate-staged-ope on idc02 (dispatch)
+- at: 2026-10-27 18:55
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-185419-design-and-evaluate-staged-ope.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
