@@ -24,13 +24,14 @@ spec: 'Build a runnable ada-nest pack for project kk-video-c9f99fee6146 using th
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   sweep:
     session_gone: 2026-10-27 08:16
   last_failure: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-080158-build-a-runnable-ada-nest-pack.service:
     Main process exited, code=exited, status=1/FAILURE | devin-task-20261027-080158-build-a-runnable-ada-nest-pack.service:
     Failed with result ''exit-code''.'
   attempts: 1
+  runner: tony-macbook
 ref: OPS-0920
 comms:
 - at: 2026-10-27 08:01
@@ -69,5 +70,8 @@ comms:
   text: 'RETRY: previous OPS-0920 dispatch exited failure without delivering a runnable pack. Re-queued for a clean
     implementation. Required output is a real pack.yml + inputs + run/prep contract, unit/dry-run verifier, and
     a clear Colab launch decision; do not mark done on a plan-only artifact.'
+- at: 2026-10-27 08:28
+  from: tony-macbook
+  text: claimed
 review_kind: verify
 claim: {}
