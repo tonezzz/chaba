@@ -44,6 +44,19 @@ class WP:
         return json.loads(urllib.request.urlopen(req, timeout=45).read())
 
 
+def review_bucket(meta: dict, today: str) -> str:
+    """-> 'learned' | 'due' | 'upcoming' for one lesson's meta.
+    Extracted so scripts/education-report.py buckets door-fetched rows
+    with the identical rule (card
+    education-maintenance-consolidated-report). NB: a lesson with no
+    next_review lands in 'upcoming' — the audit's R1:no-next-review
+    flag is what marks it broken, not this queue."""
+    if meta.get("status") == "learned":
+        return "learned"
+    nr = meta.get("next_review") or ""
+    return "due" if (nr and nr <= today) else "upcoming"
+
+
 def main():
     dry = "--dry-run" in sys.argv
     wp = WP()
@@ -52,13 +65,14 @@ def main():
     due, upcoming = [], []
     for p in lessons:
         m = p.get("meta", {})
-        if m.get("status") == "learned":
+        bucket = review_bucket(m, today)
+        if bucket == "learned":
             continue
         nr = m.get("next_review") or ""
         link = p.get("link", "")
         title = p.get("title", {}).get("rendered", "")
         row = (nr, title, link, m.get("level", ""), p.get("slug", ""))
-        (due if nr and nr <= today else upcoming).append(row)
+        (due if bucket == "due" else upcoming).append(row)
 
     due.sort()
     lis = "".join(

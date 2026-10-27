@@ -82,15 +82,12 @@ def lesson_date(lesson: dict) -> str:
     return str(lesson.get("modified") or "")[:10]
 
 
-def audit_lesson(repo: Path, slug: str, lesson: dict, ldate: str) -> dict:
-    content = ""
-    try:
-        g = api({"op": "get", "slug": slug})
-        content = g.get("content") or ""
-    except Exception as e:
-        return {"slug": slug, "topic": lesson.get("topic", ""),
-                "lesson_date": ldate, "flags": [f"get-failed:{e}"],
-                "sources": []}
+def audit_content(repo: Path, slug: str, lesson: dict, ldate: str,
+                  content: str) -> dict:
+    """Flag build on already-fetched content — the pure half of
+    audit_lesson, split out so the consolidated education-report can
+    reuse it on one shared fetch (card
+    education-maintenance-consolidated-report)."""
     refs = source_refs(content)
     srcs, flags = [], []
     for rel in refs:
@@ -107,6 +104,17 @@ def audit_lesson(repo: Path, slug: str, lesson: dict, ldate: str) -> dict:
     return {"slug": slug, "topic": lesson.get("topic", ""),
             "level": lesson.get("level", ""), "lesson_date": ldate,
             "flags": flags, "sources": srcs}
+
+
+def audit_lesson(repo: Path, slug: str, lesson: dict, ldate: str) -> dict:
+    try:
+        g = api({"op": "get", "slug": slug})
+        content = g.get("content") or ""
+    except Exception as e:
+        return {"slug": slug, "topic": lesson.get("topic", ""),
+                "lesson_date": ldate, "flags": [f"get-failed:{e}"],
+                "sources": []}
+    return audit_content(repo, slug, lesson, ldate, content)
 
 
 def main() -> int:
