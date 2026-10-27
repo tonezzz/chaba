@@ -1,7 +1,7 @@
 id: host-hardening-residuals
 title: host-hardening residuals — macbook sshd/sysctl (sudo-gated) + lan-class f2b/qemu decision
 column: review
-updated: 2026-10-27 10:46
+updated: 2026-10-27 11:26
 brief: 'Leftovers from the 2026-10-22 fleet hardening sweep against docs/kb/host-hardening-baseline.md. (1) tony-macbook:
   stock sshd (PasswordAuthentication defaults on) + no /etc/sysctl.d/90-tuning.conf — sudo needs a password so it
   could not be applied remotely; Tony runs one paste-block OR grants the session sudo. (2) tony-omen + mn01: fail2ban
@@ -77,6 +77,12 @@ comms:
 - at: 2026-10-27 10:46
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''run-the-sshd-sysctl-paste-bloc''] block close)'
+- at: 2026-10-27 11:26
+  from: tony
+  text: 'answered run-the-sshd-sysctl-paste-block-in-the-c-bb73ed: proceed'
+- at: 2026-10-27 11:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -90,11 +96,13 @@ requests:
 - id: run-the-sshd-sysctl-paste-block-in-the-c-bb73ed
   ask: Run the sshd+sysctl paste-block (in the comment above) on tony-macbook — needs your sudo password, session
     can't sudo. Reply 'done' or paste output.
-  status: open
+  status: answered
   at: 2026-10-27 10:33
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
 claim: {}
+awaiting_action: true
