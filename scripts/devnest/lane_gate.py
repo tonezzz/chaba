@@ -89,6 +89,8 @@ REPO = Path(__file__).resolve().parents[2]
 LANE = REPO / "evals" / "opencode-lane"
 JOBS = LANE / "jobs"
 REPORTS = LANE / "reports"
+PROFILES = LANE / "profiles"    # task-scoped agent profiles
+                                # (opencode-task-agent-profiles)
 LEGACY_STATE = LANE / "state"   # pre-AUD-0950 per-checkout location
 
 
@@ -391,6 +393,8 @@ def lint_envelope(env: dict) -> list:
         errs.append(f"bad_value:task_class={env.get('task_class')}")
     if env.get("stage") not in STAGES:
         errs.append(f"bad_value:stage={env.get('stage')}")
+    if "profile" in env and not isinstance(env.get("profile"), str):
+        errs.append("bad_value:profile must be a profile id string")
     if not isinstance(env.get("mcp_allowlist"), list):
         errs.append("bad_value:mcp_allowlist must be a list")
     if not isinstance(env.get("allowed_paths"), list) or \
@@ -500,6 +504,28 @@ def admit(env: dict, probe: dict = None, host: str = "",
     elif cls not in stage["classes"]:
         reasons.append(f"class_not_in_stage:{cls}")
 
+    # task-scoped profiles (opencode-task-agent-profiles): an opencode
+    # job outside the frozen S0 shadow corpus must name a profile —
+    # the generic build agent is never an unattended executor. Deep
+    # envelope<->profile consistency (tool/path/model/verifier/rollback
+    # ceilings) is checked by opencode_profiles.check_envelope.
+    if env.get("executor") == "opencode" and cls != "shadow_replay":
+        pid = env.get("profile")
+        if not pid:
+            reasons.append(
+                "missing_profile:unattended opencode jobs must name "
+                "a task profile")
+        elif not (PROFILES / pid / "profile.yml").is_file():
+            reasons.append(f"unknown_profile:{pid}")
+        else:
+            pdata = _load_yaml_min(PROFILES / pid / "profile.yml")
+            if isinstance(pdata, dict):
+                if pdata.get("status") != "enabled":
+                    reasons.append(f"profile_disabled:{pid}")
+                if pdata.get("unattended") is False and \
+                        env.get("unattended", True) is not False:
+                    reasons.append(f"profile_not_unattended:{pid}")
+
     h = host or os.uname().nodename
     if env["target_host"] != h:
         reasons.append(
@@ -575,7 +601,8 @@ def admit(env: dict, probe: dict = None, host: str = "",
 # -------------------------------------------------------------- metrics
 
 METRIC_FIELDS = [
-    "job_id", "card", "stage", "task_class", "executor", "model",
+    "job_id", "card", "stage", "task_class", "executor", "profile",
+    "model",
     "provider", "input_tokens", "cache_read_tokens", "cache_write_tokens",
     "output_tokens", "provider_cost_usd", "wall_s", "queue_s", "retries",
     "tool_denials", "human_minutes", "verifier_pass", "artifact_landed",
@@ -593,7 +620,8 @@ def new_metric(env: dict, executor: str) -> dict:
     m = {k: None for k in METRIC_FIELDS}
     m.update({"job_id": env.get("id"), "card": env.get("card"),
               "stage": env.get("stage"), "task_class": env.get("task_class"),
-              "executor": executor, "model": env.get("model", ""),
+              "executor": executor, "profile": env.get("profile"),
+              "model": env.get("model", ""),
               "provider": env.get("provider", ""), "at": now_iso(),
               "input_tokens": 0, "cache_read_tokens": 0,
               "cache_write_tokens": 0, "output_tokens": 0,

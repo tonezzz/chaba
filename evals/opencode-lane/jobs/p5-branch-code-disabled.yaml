@@ -1,0 +1,33 @@
+# S5 envelope — branch-code profile, DEFINED BUT NOT ENABLED (card
+# opencode-task-agent-profiles: "do not enable branch-code"). Exists so
+# the envelope+profile pair validates end-to-end; every admission path
+# denies it: profile_disabled at the lane gate, profile_not_unattended
+# for any unattended run, and wrong_stage below S5.
+id: p5-branch-code-disabled
+card: opencode-task-agent-profiles
+task_class: branch_code
+stage: S5
+target_host: idc02
+executor: opencode
+profile: branch-code
+model: litellm/claude-fable-5.1
+provider: litellm
+unattended: true
+mcp_allowlist: [mcp_read_ssot]
+allowed_paths: [scripts/, tests/]
+artifact:
+  path: evals/opencode-lane/out/p5-branch-code-report.json
+  schema: >-
+    evals/opencode-lane/profiles/branch-code/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: independent_devin
+  ref: evals/opencode-lane/profiles/branch-code/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 0
+rollback:
+  kind: worktree-drop
+  ref: profile/<job> worktree+branch dropped after review
+heartbeat:
+  required: false
