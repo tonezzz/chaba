@@ -22,11 +22,18 @@
 #
 # PACKS (nest-pack v2): ada-nest/packs/<name>/ is a self-contained job
 # bundle — pack.yml {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run,
-# artifacts, scope, timeout_s} plus optional inputs/. Packs run AFTER the
-# JOBS manifest, are claimed optimistically (packs/<name>/claim/<worker>),
-# and mark done at packs/<name>/done — so ANY worker on ANY store can pick
-# them up. needs is a capability floor: this worker advertises gpu via
-# nvidia-smi, disk via statvfs, egress_only_ok=True always.
+# artifacts, scope, timeout_s, requires} plus optional inputs/. Packs run
+# AFTER the JOBS manifest, are claimed optimistically (packs/<name>/claim/
+# <worker>), and mark done at packs/<name>/done — so ANY worker on ANY
+# store can pick them up. needs is a capability floor: this worker
+# advertises gpu via nvidia-smi, disk via statvfs, egress_only_ok=True
+# always. requires: [pack-names] is a CLAIM GATE (2026-10-27,
+# kk-video-preflight-stage): dependents can't claim until each required
+# pack's done marker exists, and a *-preflight requirement must also show
+# a readable preflight.json verdict pass|warn. Discovered packs are
+# emitted requires-first so a CPU preflight lands before its GPU
+# dependents inside one launch — stage the whole release before launch;
+# mid-run uploads were never picked up anyway.
 #
 # Observability (all on Drive, readable via rclone from fleet hosts):
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
@@ -58,8 +65,45 @@ importlib.reload(jobs_mod)          # pick up manifest edits without restart
 JOBS = jobs_mod.JOBS
 
 PACKS = f'{ROOT}/packs'
+
+def norm_requires(job):
+    """requires: pack names this pack may not claim ahead of. Accepts a
+    single string or a list; anything else is treated as none — the
+    pack-side validator (pack-preflight) flags bad types at release."""
+    reqs = job.get('requires')
+    if isinstance(reqs, str):
+        return [reqs]
+    if isinstance(reqs, (list, tuple)):
+        return [r for r in reqs if isinstance(r, str)]
+    return []
+
+def order_packs(specs):
+    """Deterministic requires-first ordering (Kahn over the discovered
+    set): a pack always sorts after every SAME-RELEASE pack it requires,
+    so a CPU preflight gate lands before its GPU dependents in one pass.
+    Requires on absent/foreign packs change nothing here — the claim-time
+    gate (requires_unmet) arbitrates those."""
+    names = {s['name'] for s in specs}
+    emitted = []
+    emitted_names = set()
+    held = list(specs)                    # already name-sorted
+    while held:
+        progressed = False
+        for s in list(held):
+            reqs = [r for r in norm_requires(s) if r in names]
+            if all(r in emitted_names for r in reqs):
+                emitted.append(s)
+                emitted_names.add(s['name'])
+                held.remove(s)
+                progressed = True
+        if not progressed:
+            emitted.extend(held)          # dependency cycle — keep sort
+            break                         # order; the gate still blocks
+    return emitted
+
 def load_packs():
-    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts."""
+    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts,
+    dependency-ordered (see order_packs)."""
     out = []
     if not os.path.isdir(PACKS):
         return out
@@ -80,7 +124,7 @@ def load_packs():
         spec.setdefault('name', d)
         spec['_pack'] = True
         out.append(spec)
-    return out
+    return order_packs(out)
 
 log = open(f'{Q}/log-{time.strftime("%Y%m%d-%H%M")}.txt', 'a', buffering=1)
 def say(msg):
@@ -275,6 +319,32 @@ def fits(job):
             return f'{k} {CAPS.get(k,0):.1f} < {v}'
     return ''
 
+def requires_unmet(job):
+    """Claim gate for `requires:` — a dependent pack may not claim until
+    every required pack's done marker exists. A *-preflight requirement
+    additionally binds its verdict artifact: preflight.json must be
+    present, readable, and not verdict 'fail' — this is what makes a
+    failed release preflight block its embed/render dependents. Missing
+    verdict file on a *-preflight requirement = unmet (fail closed)."""
+    for req in norm_requires(job):
+        d = f'{PACKS}/{req}'
+        if not os.path.isfile(f'{d}/done'):
+            return f'requires {req}: not done'
+        pj = f'{d}/preflight.json'
+        if os.path.isfile(pj):
+            try:
+                verdict = json.load(open(pj)).get('verdict')
+            except Exception as e:
+                return f'requires {req}: preflight.json unreadable ({e})'
+            if req.endswith('-preflight'):
+                if verdict not in ('pass', 'warn'):
+                    return f'requires {req}: preflight verdict {verdict!r}'
+            elif verdict == 'fail':
+                return f'requires {req}: preflight verdict fail'
+        elif req.endswith('-preflight'):
+            return f'requires {req}: done but preflight.json missing'
+    return ''
+
 def markpath(job):
     if job.get('_pack'):
         return f"{PACKS}/{job['name']}/done"
@@ -359,6 +429,9 @@ try:
             say(f'== {name}: SKIP (done marker)')
             continue
         if job.get('_pack'):
+            why = requires_unmet(job)
+            if why:
+                say(f'== {name}: SKIP requires unmet ({why})'); continue
             why = fits(job)
             if why:
                 say(f'== {name}: SKIP needs unmet ({why})'); continue

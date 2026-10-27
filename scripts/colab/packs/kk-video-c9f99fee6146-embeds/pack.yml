@@ -7,6 +7,8 @@
 # model-archive/t5xxl/ as plain save_pretrained dirs — first run pulls
 # ~10GB from HF, later runs (and future docs) load straight from Drive.
 name: kk-video-c9f99fee6146-embeds
+requires:           # claim gate — wait for the release preflight verdict
+  - kk-video-c9f99fee6146-preflight
 needs:
   gpu_gb: 0       # cpu-ok: fits() treats 0 as no requirement
   ram_gb: 13       # T5-XXL bf16 load peaks ~12GB - OOM risk on 12GB hosts

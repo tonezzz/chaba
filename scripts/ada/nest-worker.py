@@ -82,6 +82,41 @@ def fits(needs):
     return ''
 
 
+def norm_requires(spec):
+    reqs = spec.get('requires')
+    if isinstance(reqs, str):
+        return [reqs]
+    if isinstance(reqs, (list, tuple)):
+        return [r for r in reqs if isinstance(r, str)]
+    return []
+
+
+def requires_unmet(spec, remote_root):
+    """Claim gate for `requires:` — same contract as the Colab
+    queue-runner: every required pack needs a done marker; a *-preflight
+    requirement also needs a readable preflight.json verdict pass|warn.
+    A failed release preflight therefore blocks dependents on fleet
+    workers exactly as on Colab."""
+    for req in norm_requires(spec):
+        entries = lsf(f'{remote_root}/packs/{req}')
+        if 'done' not in entries:
+            return f'requires {req}: not done'
+        if 'preflight.json' in entries:
+            pj = cat(f'{remote_root}/packs/{req}/preflight.json')
+            try:
+                verdict = json.loads(pj).get('verdict')
+            except Exception:
+                return f'requires {req}: preflight.json unreadable'
+            if req.endswith('-preflight'):
+                if verdict not in ('pass', 'warn'):
+                    return f'requires {req}: preflight verdict {verdict!r}'
+            elif verdict == 'fail':
+                return f'requires {req}: preflight verdict fail'
+        elif req.endswith('-preflight'):
+            return f'requires {req}: done but preflight.json missing'
+    return ''
+
+
 def say(msg):
     print(f'{time.strftime("%H:%M:%S")} {msg}', flush=True)
 
@@ -268,6 +303,10 @@ def main():
             say(f'{d}: bad pack.yml {e} — skip')
             continue
         spec.setdefault('name', d)
+        unmet = requires_unmet(spec, args.remote)
+        if unmet:
+            say(f'{d}: requires unmet ({unmet}) — skip')
+            continue
         why = fits(spec.get('needs'))
         if why:
             say(f'{d}: needs unmet ({why}) — skip')
