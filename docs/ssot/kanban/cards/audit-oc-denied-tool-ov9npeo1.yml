@@ -1,6 +1,6 @@
 id: audit-oc-denied-tool-ov9npeo1
 title: 'OpenCode audit: denied_tool (OV9npEO1)'
-column: backlog
+column: doing
 updated: 2026-10-28 06:00
 brief: 'read denied: The user rejected permission to use this specific tool call.'
 priority: high
@@ -32,6 +32,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 06:00
+  from: idc02
+  text: claimed
 requests:
 - id: the-card-notes-an-opencode-aud-fb14b7
   ask: The card notes an OpenCode audit event for a denied tool call (OV9npEO1), but lacks a target host, repository,
@@ -50,4 +53,5 @@ spec: Investigate the OpenCode audit denied_tool event referenced by ID OV9npEO1
   done-condition is verified when the investigation results are fully documented and recorded within the chaba repository.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
