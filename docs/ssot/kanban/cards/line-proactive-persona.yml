@@ -1,7 +1,7 @@
 id: line-proactive-persona
 title: 'LINE relay: persona-initiated outbound to group members (proactive turns)'
 column: review
-updated: 2026-10-27 14:17
+updated: 2026-10-27 15:37
 priority: medium
 spec: 'Relay is reply-only today — a persona can answer but cannot INITIATE a conversation with a member (e.g. Kaewta
   asks Nhong about kk car after serving a photo). Needed: (1) outbound path — backend tool/intent -> relay push
@@ -67,6 +67,12 @@ comms:
   from: chaba
   text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261027-140132-relay-is-reply-only-today-a-pe:
     1 commit(s) conflict with origin/master '
+- at: 2026-10-27 15:37
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-10-27 15:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -84,7 +90,7 @@ requests:
   ask: 'merge-sweep can''t land dispatch/20261027-140132-relay-is-reply-only-today-a-pe: 1 commit(s) conflict with
     origin/master in chaba — conflicted paths: integrations/ada-voice/README.md. Merge idc02:/home/tony/CascadeProjects/dispatch-wt-20261027-140132-relay-is-reply-only-today-a-pe
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-10-27 14:17
   from: chaba
   options:
@@ -92,3 +98,5 @@ requests:
   - drop this dispatch — re-dispatch fresh from current main
   - hold the card
   suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+awaiting_action: true
