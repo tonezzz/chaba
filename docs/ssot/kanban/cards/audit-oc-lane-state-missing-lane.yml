@@ -1,7 +1,7 @@
 id: audit-oc-lane-state-missing-lane
 title: 'OpenCode audit: lane_state_missing (lane)'
-column: doing
-updated: 2026-10-27 19:00
+column: review
+updated: 2026-10-27 19:01
 brief: promotion reviews exist but evals/opencode-lane/state/ (stage.json + metrics.jsonl ledger) is absent — the
   verified-job aggregate cannot be re-derived
 priority: high
@@ -33,7 +33,16 @@ comms:
     survives only in the committed review JSON. Fix: state dir moved to host-stable ${XDG_STATE_HOME:-~/.local/state}/opencode-lane
     (env override, legacy auto-migrates); review JSON now embeds the stage ledger; new restore subcommand rebuilds
     stage.json from committed review evidence. '
+- at: 2026-10-27 19:01
+  from: mn01
+  text: 'finished (ok): exit=0 py restore S1 --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json`.
+    | devin-task-20261027-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 py restore S1 --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json`. | devin-task-20261027-115440-opencode-audit-lane-state-miss.service:
+    Consumed 13.756s CPU time over 5min 56.368s wall clock time, 557.6M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
