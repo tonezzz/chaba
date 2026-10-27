@@ -1,7 +1,7 @@
 id: host-hardening-residuals
 title: host-hardening residuals — macbook sshd/sysctl (sudo-gated) + lan-class f2b/qemu decision
 column: doing
-updated: 2026-10-27 10:29
+updated: 2026-10-27 10:31
 brief: 'Leftovers from the 2026-10-22 fleet hardening sweep against docs/kb/host-hardening-baseline.md. (1) tony-macbook:
   stock sshd (PasswordAuthentication defaults on) + no /etc/sysctl.d/90-tuning.conf — sudo needs a password so it
   could not be applied remotely; Tony runs one paste-block OR grants the session sudo. (2) tony-omen + mn01: fail2ban
@@ -26,6 +26,12 @@ comms:
 - at: 2026-10-27 10:29
   from: chaba
   text: started devin-task-20261027-102931-host-hardening-residuals-macbo on tony-macbook (dispatch)
+- at: 2026-10-27 10:31
+  from: devin
+  text: '[dispatch] Verified live: macbook has no passwordless sudo (sshd/sysctl fixes need Tony paste-block — will
+    post it). tony-omen (bare metal HP 15-BC) + mn01 (bare metal FUJITSU ESPRIMO Q556/2): qemu-guest-agent N/A →
+    recording as declared exceptions. fail2ban: installing stock + LAN/tailnet ignoreip on both (additive, per baseline
+    apply-freely rule).'
 action:
   type: dispatch
   status: running
