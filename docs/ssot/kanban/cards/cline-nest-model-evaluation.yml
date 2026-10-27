@@ -1,0 +1,23 @@
+id: cline-nest-model-evaluation
+title: Evaluate Cline models through the Nest worker adapter
+column: backlog
+updated: 2026-10-27 16:43
+priority: medium
+tags:
+- cline-kanban
+- nest
+- model-evaluation
+- openrouter
+- ollama
+spec: 'After KNB-0932 is deployed and an OpenRouter route is approved, run a controlled Cline/Nest model comparison
+  on the same frozen disposable coding task. Arms: local Omen Ollama qwen3:4b and one pinned OpenRouter :free model
+  through the secret-backed LiteLLM gateway; paid reference only after explicit budget approval. Run at least 3
+  repetitions per model with isolated worktrees and an independent verifier; measure pass rate, tool-call correctness,
+  latency, retries/rate limits, and cost per successful task. Keep auto-commit/PR off and never merge the benchmark
+  branches. Do not use openrouter/free as the sole reproducible arm because it dynamically rotates models. Land
+  JSON/Markdown evidence under reports/model-bench/ and update Education after results.'
+ref: DEV-0939
+comms:
+- at: 2026-10-27 16:43
+  from: tony
+  text: card captured via board-api
