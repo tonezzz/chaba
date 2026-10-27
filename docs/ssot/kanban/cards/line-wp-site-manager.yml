@@ -890,14 +890,19 @@ comms:
 - at: 2026-10-27 15:37
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 15:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 - at: 2026-10-27 15:48
   from: chaba
   text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
   status: queued
+  runner: tony-macbook
   result: 'exit=0 est; the drops land on ada-voice via the normal drop-apply + deploy-ada.sh path on idc03. | devin-task-20261027-140223-p0-wp-live-on-plesk-boards-sit.service:
     Consumed 56.436s CPU time over 15min 50.391s wall clock time, 356.1M memory peak.'
+  verified: true
   sweep:
     close_held: 2026-10-27 14:32
 requests:
@@ -916,3 +921,8 @@ requests:
   executed: 2026-10-27 queue
 review_kind: verify
 claim: {}
+awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 15:47
+  note: verified — evidence checks green, closing itself
