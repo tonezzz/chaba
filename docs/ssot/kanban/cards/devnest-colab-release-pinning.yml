@@ -1,7 +1,7 @@
 id: devnest-colab-release-pinning
 title: Make Colab queue use verified latest DevNest release
 column: doing
-updated: 2026-10-27 15:21
+updated: 2026-10-27 15:53
 brief: Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.
 priority: high
 program: devnest
@@ -46,3 +46,10 @@ comms:
     ada-nest/releases/<id>/ immutable bundle from origin/master + queue/ACTIVE_RELEASE.json pointer flipped only
     after rclone hashsum verify; hash-aware done/failed markers; publisher timer on idc02 (holds gdrive: remote).
     Implementing release_lib + publisher + cell/runner changes + sandbox tests now.'
+- at: 2026-10-27 15:53
+  from: devin
+  text: '[dispatch] DONE: pinned-release flow landed on dispatch branch. releases/<id>/ immutable bundles from git
+    archive origin/master + release.json (commit/generated_at/file+pack sha256); queue/ACTIVE_RELEASE.json flips
+    atomically only after rclone hashsum --download verifies all remote bytes. Cell1 RELEASE-OK/BAD, cell2 refuses
+    on any pointer/hash/notebook/JOBS/runner/pack mismatch, runner re-verifies+self-hashes at startup, markers hash-aware
+    (rel=+jh/ph/gh) with one-shot legacy rescue; rollback = '
