@@ -2,7 +2,7 @@ title: Security Posture — mn01
 subtitle: Declared security state for the mn-home portable node; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-06"
+last_updated: "2026-10-27"
 maintainer: tony
 
 host: mn01
@@ -55,7 +55,11 @@ egress:
   warp: { enabled: false }
   transparent_proxy: { enabled: false }
 
-deviations: []
+baseline_applied:
+  - "fail2ban 1.1.0 installed+enabled 2026-10-27 — stock sshd jail + jail.local ignoreip (loopback, RFC1918, 100.64.0.0/10) so LAN/tailnet sources can never self-lockout; only non-local sources reaching sshd are bannable (tripwire for unexpected exposure; mn01 is tailnet-only reachable — no OOB console)"
+
+deviations:
+  - { item: "no qemu-guest-agent", reason: "bare metal — systemd-detect-virt reports none (FUJITSU ESPRIMO Q556/2); guest agent is n/a on non-QEMU hosts. Declared exception per lan-class policy decision 2026-10-27.", last_verified: "2026-10-27" }
 
 last_observed: {}
 deltas: []

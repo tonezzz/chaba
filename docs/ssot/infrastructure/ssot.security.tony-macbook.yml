@@ -2,7 +2,7 @@ title: Security Posture — tony-macbook
 subtitle: Declared security state for the MacBook (Ubuntu Linux); diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-11"
+last_updated: "2026-10-27"
 maintainer: tony
 
 host: tony-macbook          # tailnet name used by audit scripts: "macbook"
@@ -18,7 +18,7 @@ expected_exposure:
   - { listener: "127.0.0.54:53",  class: loopback, service: "systemd-resolved", optional: true }
 
 remote_access:
-  sshd: { port: 22, user: tony, password_auth: needs-verification, note: "OpenSSH on Ubuntu; fleet keys: omen id_ed25519_macbook, dell cascade + mcp-debug" }
+  sshd: { port: 22, user: tony, password_auth: "yes", note: "OpenSSH on Ubuntu; fleet keys: omen id_ed25519_macbook, dell cascade + mcp-debug. Verified 2026-10-27: stock sshd — no sshd_config.d dropins, PasswordAuthentication unset (default yes); hardening pending Tony paste-block, card host-hardening-residuals" }
   recovery: { physical: "laptop", tailscale_ssh: "not enabled" }
 
 firewall:
