@@ -1,7 +1,7 @@
 id: devnest-colab-release-pinning
 title: Make Colab queue use verified latest DevNest release
 column: doing
-updated: 2026-10-27 15:15
+updated: 2026-10-27 15:21
 brief: Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.
 priority: high
 program: devnest
@@ -40,3 +40,9 @@ comms:
 - at: 2026-10-27 15:15
   from: chaba
   text: started devin-task-20261027-151516-define-a-hands-off-colab-relea on tony-macbook (dispatch)
+- at: 2026-10-27 15:21
+  from: devin
+  text: '[dispatch] mapped the queue surface (queue-runner, launcher/preflight cells, gap-runner, packs). Design:
+    ada-nest/releases/<id>/ immutable bundle from origin/master + queue/ACTIVE_RELEASE.json pointer flipped only
+    after rclone hashsum verify; hash-aware done/failed markers; publisher timer on idc02 (holds gdrive: remote).
+    Implementing release_lib + publisher + cell/runner changes + sandbox tests now.'
