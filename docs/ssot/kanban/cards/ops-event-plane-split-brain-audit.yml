@@ -1,0 +1,19 @@
+id: ops-event-plane-split-brain-audit
+title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
+column: backlog
+updated: 2026-10-27 10:37
+priority: medium
+tags:
+- mddb
+- audit
+- ops-split
+note: 'Found during house-timeline-orphaned-feed-repoint (2026-10-27). Since the ada-voice ops split went live (ada-ha-tony
+  restart 2026-10-23T13:15 ICT), MddbClient routes ALL ada-ha-events-* writes — including kind=ops-event emits (lane_budget,
+  realtime_provider, etc.) — to mddb-ops http://100.123.163.11:11025. But chaba-side writers/readers still use MDDB_BASE_URL
+  :11023 (ops-error-posts.py, session-audit.py, host-loads _ops_event, key-watch, gemini_pool...). Result: ops-event
+  docs now land on BOTH '
+ref: MEM-0924
+comms:
+- at: 2026-10-27 10:37
+  from: devin
+  text: card captured via board-api
