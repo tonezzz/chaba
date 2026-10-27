@@ -1,7 +1,7 @@
 id: kk-video-preview-pack-idc02
 title: Build KK teaser preview pack on idc02
 column: review
-updated: 2026-10-27 10:36
+updated: 2026-10-27 11:40
 brief: Retry the private KK teaser pack on idc02, where the Devin executor is available; the MacBook attempt failed
   before producing artifacts.
 priority: high
@@ -66,5 +66,11 @@ comms:
     pack.yml/input manifests to gdrive:ada-nest/packs. Local validation: YAML parse + run-code compile + 21 relay
     tests. Colab queue has no fresh managed runtime (heartbeat/lease stale), so no GPU job has started. Tony action
     needed: launch the canonical ada-nest job console on a fresh T4; the queue should claim embeds first, then preview.'
+- at: 2026-10-27 11:40
+  from: devin
+  text: 'COLAB CHECK: latest managed runtime record c1567f2d is fresh but reports GPU="" / gpu_gb=0 and runner=null;
+    no queue heartbeat, claims, done markers, or preview outputs appeared. The notebook was run on a CPU runtime,
+    so the T4 preview did not start. Tony must disconnect/stop that CPU session via Colab Manage Sessions, start
+    a fresh T4, then run Cell 1 and Cell 2 again. Do not delete another runtime record manually.'
 review_kind: verify
 claim: {}
