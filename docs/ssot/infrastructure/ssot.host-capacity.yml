@@ -1,8 +1,9 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Re-measured 2026-10-20 post-phase-5 full dell evacuation (LAN cohort → tony-omen);
-  2026-10-19 post-constellation (pg+yomi+redis+trade→idc03). Refresh on each
+  Main fleet re-measured 2026-10-20 post-phase-5 full dell evacuation
+  (LAN cohort → tony-omen); idc03 post-constellation (pg+yomi+redis+trade).
+  con01 refreshed 2026-10-27 after the Cline Kanban pilot. Refresh on each
   service deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
 version: 1
@@ -91,8 +92,8 @@ hosts:
   con01:
     role: dr-absorber   # new 2026-10-22 — replaces retired idc01's DR tier (OPS-0763)
     cpu_cores: 8
-    mem_gb: 23        # 23GiB, ~22G avail — fresh box
-    disk_gb: {total: 290, free: 288}
+    mem_gb: 23        # 23GiB total; 6.3GiB available after Cline pilot (2026-10-27)
+    disk_gb: {total: 290, free: 224}  # measured after pinned Node/Kanban image build
     gpu: none
     note: >-
       Contabo Cloud VPS 8, EU (France) region — ~189ms from BKK, fine for
@@ -102,6 +103,9 @@ hosts:
       Roles per idc04-contabo-vps8-provision — live 2026-10-22: mddb-follower
       #2 (replaces idc01 DR), standby caddy-edge (cert-sync target), ada-stt
       migrated off idc02 (:8914, RTF~0.5), secrets-backup 3rd target.
+      Cline Kanban v0.1.70 tailnet-only UI pilot live 2026-10-27; idle
+      container about 291MiB, no provider calls. Post-start load
+      1.20/1.16/1.17 across 8 vCPU.
       Pending: offload timers (vector-reindex, doc-mirror, jev-bench), runner
       lane + lab sandbox. 3rd provider/geo failure domain
       (Contabo AS51167 vs Siamdata AS56309).
@@ -142,4 +146,4 @@ procedure:
 
 related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
 status: active
-updated: 2026-10-23
+updated: 2026-10-27
