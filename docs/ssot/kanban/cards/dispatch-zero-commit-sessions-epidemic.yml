@@ -14,8 +14,12 @@ spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close —
 action:
   type: dispatch
   repo: chaba
-  status: running
-  runner: tony-macbook
+  status: queued
+  sweep:
+    stale_running: 2026-10-27 16:47
+    zero_commit: 2026-10-27 16:47
+  verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
 ref: OPS-0941
 comms:
 - at: 2026-10-27 16:44
@@ -38,3 +42,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261027-164615-ops-0894-fixed-the-closeout-ga no longer active on tony-macbook
     but card still says running — sweeping its branch'
+- at: 2026-10-27 16:47
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-27 16:47
+  from: chaba
+  text: pushed dispatch/20261027-164615-ops-0894-fixed-the-closeout-ga to origin
+claim: {}
