@@ -1,0 +1,35 @@
+id: education-maintenance-consolidated-report
+title: Consolidate Education maintenance audit, drift, due review, and trend report
+column: backlog
+updated: 2026-10-27 13:21
+brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
+  recurring maintenance artifact.
+priority: medium
+program: chaba-ci
+tags:
+- education
+- lesson
+- audit
+- drift
+- review
+- devnest
+spec: 'Build the next safe improvement to the Education maintenance loop. Reuse scripts/lessons-audit.py, scripts/lessons-drift.py,
+  scripts/lessons-due.py, board-api /lesson read/write, and existing lesson-polish policy; do not create a parallel
+  system. Produce one machine-readable JSON and one concise Markdown report containing total lessons, policy flags
+  by dimension, source drift/source-gone rows, due/upcoming review counts, intentional no_th exceptions, human-review-pending
+  items, before/after compliance trend, and links/refs to the Education page/card. Default read-only; lesson fixes
+  remain a separate explicit /lesson upsert stage; deletion remains human-gated. Add deterministic verifier/tests,
+  recurring report schedule integration, and board/TG summary only after the report passes. Document failure/hold
+  conditions and keep the existing daily audit working. Acceptance: report reproducible, counts agree with component
+  scripts, no mutation in audit mode, flagged rows explainable, and a sample report lands durably.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Tony asked to card the improvements. Existing daily audit is live, but the maintenance surface is fragmented
+  across audit, drift, due-review, and polish reports. This card consolidates observability without weakening safety.
+ref: AUD-0930
+comms:
+- at: 2026-10-27 13:21
+  from: tony
+  text: card captured via board-api
