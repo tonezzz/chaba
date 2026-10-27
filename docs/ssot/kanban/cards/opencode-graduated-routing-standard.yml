@@ -1,7 +1,7 @@
 id: opencode-graduated-routing-standard
 title: Standardize graduated routing of safe jobs to OpenCode
-column: doing
-updated: 2026-10-27 14:54
+column: review
+updated: 2026-10-27 14:55
 brief: Define how OpenCode receives increasing job volume safely, with gates, canaries, rollback, and efficiency
   measurement.
 priority: high
@@ -29,8 +29,11 @@ spec: 'Define and implement the graduated OpenCode routing procedure. Stages: S0
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 octrine promotion correctly deferred until the S2 pilot passes. | devin-task-20261027-143512-define-and-implement-the-gradu.service:
+    Consumed 3min 23.667s CPU time over 19min 49.031s wall clock time, 2G memory peak, 158.7M memory swap peak.'
+  verified: true
 note: Current OpenCode read-only MCP lane is verified; broad routing remains gated. This card turns the existing
   AI-lane delegation and continuous-improvement rules into an explicit volume ramp with measurable efficiency gates.
 ref: BEN-0934
@@ -82,3 +85,8 @@ comms:
   text: 'done: lane_gate.py (fail-closed admit, S0-S5 stages, metrics ledger, kill switch, weekly review) + 5 S0
     envelopes + PROCEDURE.md + job doc + 34 tests. S0 executed: opencode 3/5 verified, 0 safety violations; review
     promoted lane to S1 (still human-watch gated). Committed on dispatch branch, no push.'
+- at: 2026-10-27 14:55
+  from: tony-macbook
+  text: 'finished (ok): exit=0 octrine promotion correctly deferred until the S2 pilot passes. | devin-task-20261027-143512-define-and-implement'
+review_kind: verify
+claim: {}
