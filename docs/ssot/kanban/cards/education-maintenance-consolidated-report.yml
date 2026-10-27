@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-10-27 14:29
+updated: 2026-10-27 14:32
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -81,6 +81,13 @@ comms:
   from: devin
   text: 'raised request education-report-schedule-notifications-20261027: Live check: the consolidated Education
     report produced a verified latest artifact, but chaba-education-report.timer/serv'
+- at: 2026-10-27 14:32
+  from: devin
+  text: 'Control-surface review (2026-10-27): keep storage split (Git SSOT for policy/evidence; WP lesson CPT for
+    lesson body/review state). Board-api /lesson is already the single machine write/read door. education-report.py
+    is the right unified operator status artifact (audit + source drift + due + exemptions + human queue + trend)
+    and latest.md verified pass, but its systemd timer/service are NOT installed on idc03; only generated units
+    exist. Open request education-report-schedule-notifications-20261'
 review_kind: verify
 claim: {}
 auto_close:
