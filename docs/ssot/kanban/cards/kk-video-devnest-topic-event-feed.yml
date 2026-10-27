@@ -33,6 +33,13 @@ comms:
   from: devin
   text: 'raised request live-publication-route: The Sacred Father topic is now bound, but the live board-api POST
     /publish returns 404. Its served checkout is dirty and'
+- at: 2026-10-27 12:56
+  from: devin
+  text: '[code checkpoint 2026-10-27] Project/card-aware TelegramSink routing is committed locally as `fix/telegram-project-event-routing`
+    commit `8742eba6e`; `tests.board.test_publication` passed 31/31 and SSOT validation passed. This forwards project_id/card_ref
+    to the relay (explicit tg_thread_id still overrides). It is not deployed because live board-api `/publish` is
+    404 and the served checkout is dirty/divergent. The single deployment/fallback decision is now recorded as request
+    `live-publication-r'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
