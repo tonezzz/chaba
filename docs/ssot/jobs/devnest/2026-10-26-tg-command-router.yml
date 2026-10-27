@@ -2,6 +2,7 @@
 #
 # The devnest-tg-relay.service on idc03 now answers whole-message board
 # commands in the DevNestHA supergroup, on top of its capture role.
+title: DevNest Telegram whole-message command router
 job: devnest-tg-command-router
 date: 2026-10-26
 host: idc03
@@ -52,9 +53,11 @@ env:
 tests: tests/test_devnest_tg_relay.py  # 19 tests, pytest
 verification:
   - pytest 19/19 on dispatch branch 4c62a1bcf
-  - harness on idc03: explain 0905 -> explained; APPROVE OPS-0912 ->
+  - >-
+    harness on idc03: explain 0905 -> explained; APPROVE OPS-0912 ->
     refused+audited; marker sendMessage message_id 20
-  - organic: Tony's 'explain 0905' (update 954573590, msg 21) processed by
+  - >-
+    organic: Tony's 'explain 0905' (update 954573590, msg 21) processed by
     the running service -> 'explained' audit + summary in group
   - open card request tg-live-smoke tracks Tony's reply-side confirmation
 deploy_note: >-

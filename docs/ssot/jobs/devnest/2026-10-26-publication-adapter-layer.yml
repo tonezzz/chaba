@@ -4,6 +4,7 @@
 # PublicationEvent fans out to sink adapters. WP is only one adapter —
 # the legacy endpoints are compatibility surfaces onto the same writers,
 # and a second sink (json ledger / mock) receives the same event.
+title: DevNest provider-neutral publication adapter layer
 job: devnest-publication-adapter-layer
 date: 2026-10-26
 host: idc03 (board-api); layer is host-agnostic — state dir is portable
@@ -72,8 +73,13 @@ locks: >-
   WP_LOCK->LOCK, never reversed, so no deadlock cycle).
 
 state_dir: ~/.local/state/board-api-publish/ ($BOARD_API_PUB_STATE)
-  files: [delivered.json, events.jsonl, outbox.jsonl, dead.jsonl,
-    noise.json, published.jsonl]
+state_files:
+  - delivered.json
+  - events.jsonl
+  - outbox.jsonl
+  - dead.jsonl
+  - noise.json
+  - published.jsonl
 env: [PUB_TELEGRAM_URL, PUB_PROGRESS_MIN_S, PUB_TG_MIN_S, PUB_ALERT_MIN_S]
 
 tests: tests/board/test_publication.py  # 29 tests incl. mock sink parity

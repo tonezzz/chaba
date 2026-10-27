@@ -317,6 +317,69 @@ def dirty_count(worktree: Path) -> int | None:
     return sum(1 for ln in r.stdout.splitlines() if ln.strip())
 
 
+def unit_exit_evidence(task_id: str) -> tuple:
+    """(True|False|None, detail) — did devin-task-<task_id> exit 0.
+
+    Evidence precedence (the same order merge-sweep's verified gate
+    uses; this is the local side — merge-sweep collects the same
+    fields over ssh in REMOTE_SESSION_PROBE):
+
+      1. <task_dir>/exit_code — written by the devin-dispatch wrapper
+         for every run incl. followups; survives systemd --collect GC
+      2. meta.json result — devin-dispatch-watch's stamp
+      3. the unit's ExecMainStatus/Result — ONLY while LoadState is
+         'loaded'. A --collect'ed or never-loaded unit reports
+         ExecMainStatus=0/Result=success defaults: reading those as
+         'ok' is exactly how 2026-10-25/26 'Failed with result
+         exit-code' sessions recorded 'finished (ok)'
+         (dispatch-empty-closeout-verification-gap)
+      4. journal Succeeded/Failed lines — outlive --collect, not
+         rotation
+
+    None = no usable record: unproven, NOT a success. Callers must
+    never treat it as ok — a session whose exit cannot be proven is a
+    human-look case, not a clean finish."""
+    if not task_id:
+        return None, "no task_id"
+    td = dispatch_dir() / "tasks" / task_id
+    try:
+        ecp = td / "exit_code"
+        if ecp.is_file():
+            ec = ecp.read_text().strip()
+            if ec:
+                return (ec == "0"), f"exit_code={ec}"
+    except Exception:
+        pass
+    meta = task_meta(task_id)
+    mres = str(meta.get("result") or "").strip()
+    if mres and mres != "unknown":
+        return (mres == "success"), f"meta.result={mres}"
+    unit = str(meta.get("unit") or f"devin-task-{task_id}")
+    if not unit.endswith(".service"):
+        unit += ".service"
+    r = sh(["systemctl", "--user", "show", unit,
+            "-p", "ExecMainStatus", "-p", "Result", "-p", "LoadState"],
+           timeout=15)
+    kv = dict(ln.split("=", 1) for ln in (r.stdout or "").splitlines()
+              if "=" in ln)
+    if kv.get("LoadState") == "loaded":
+        ok = kv.get("Result") == "success" \
+            and str(kv.get("ExecMainStatus")) == "0"
+        return ok, (f"unit ExecMainStatus={kv.get('ExecMainStatus') or '?'} "
+                    f"Result={kv.get('Result') or '?'}")
+    # journal covers the base unit AND followups (devin-task-<id>-fuN):
+    # --user-unit takes a unit-name glob
+    j = sh(["journalctl", "--user-unit", f"devin-task-{task_id}*",
+            "--no-pager", "-o", "cat"], timeout=20)
+    hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'",
+                      j.stdout or "")
+    if hits:
+        jr = ("success" if hits[-1] == "Succeeded."
+              else hits[-1].split("'")[1])
+        return (jr == "success"), f"journal={jr}"
+    return None, "no exit record"
+
+
 def guard(card: dict) -> dict:
     """review->done gate. {allowed, summary, note} — note is comms-worthy."""
     a = card.get("action") or {}
@@ -1177,10 +1240,18 @@ def close_out(card: dict) -> dict:
         out.update(skipped=m["error"])
         return out
     if m["ancestor"]:
-        if s["head"] == _rev_parse(repo, s["base_ref"]):
-            # head == base tip: the session produced no commits — that is
-            # NOT merged work; verify would stamp a false positive.
-            out.update(noop=True,
+        if m.get("on_first_parent"):
+            # head is ON the base's first-parent chain — the tip itself
+            # or an old base commit: zero commits ahead of merge-base,
+            # i.e. the session produced nothing (the branch push just
+            # re-recorded base). That is NOT merged work — returning
+            # merged=True here stamped verified on empty dispatches and
+            # auto-closed them (dispatch-empty-closeout-verification-
+            # gap, 2026-10-25/26: 'Failed with result exit-code' +
+            # head == master base still auto-closed). Only a head that
+            # entered base through a merge's non-first parent counts
+            # as landed work.
+            out.update(noop=True, empty_session=True,
                        skipped="session produced no commits")
             return out
         out.update(merged=True, noop=True,
@@ -1279,6 +1350,14 @@ def close_out_notes(res: dict) -> list:
     elif rl.get("error"):
         notes.append(f"push failed AND patch-relay failed: "
                      f"{rl['error']} — rescue the branch by hand")
+    if res.get("empty_session"):
+        # an EMPTY dispatch is not a silent no-op — it is the failure
+        # mode that used to auto-close invisible
+        # (dispatch-empty-closeout-verification-gap): say it plainly so
+        # the card trail shows the session delivered nothing.
+        notes.append("session produced no commits — the branch head is "
+                     "just an old base commit; NOT verified (merge-sweep "
+                     "counts this a failed dispatch attempt)")
     if res.get("noop"):
         return notes  # no commits to merge — silent per spec
     gate = res.get("gate") or {}

@@ -462,6 +462,31 @@ def finish_one(path: Path, card: dict) -> str:
         card.setdefault("claim", {}).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
         return "failed"
+    # Units run under systemd-run --collect: a failed unit is unloaded
+    # and is-active can no longer see Result=exit-code — so 'not active'
+    # alone is NOT proof of success (the 2026-10-25/26
+    # dispatch-empty-closeout-verification-gap burns: 'Failed with
+    # result' sessions still recorded 'finished (ok)'). Check the real
+    # exit evidence before calling anything finished.
+    ex_ok, ex_ev = (dr.unit_exit_evidence(tid) if tid
+                    else (None, "no task_id"))
+    if ex_ok is False:
+        a["status"] = "failed"
+        a["result"] = (f"{tid} FAILED ({ex_ev}) — see "
+                       f"`devin-dispatch logs {tid}`")
+        card.setdefault("claim", {}).pop("session", None)
+        comms_add(card, "chaba",
+                  f"run failed ({ex_ev}) — check logs, then retry")
+        return "failed"
+    if ex_ok is None:
+        # unproven exit — not 'ok', but not provably failed either:
+        # finish to review and let the close-out/merge-sweep verified
+        # gate weigh the deliverable (a killed session can still leave
+        # real, mergeable work; verified stays withheld either way —
+        # merge_pending_one requires a proven exit for the stamp).
+        comms_add(card, "chaba",
+                  f"run ended with no exit record ({ex_ev}) — the "
+                  "verified gate decides from the deliverable")
     # unit left the active state — treat as finished
     a["status"] = "done"
     a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
@@ -581,13 +606,28 @@ def merge_pending_one(path: Path) -> str:
     # the head is provably on origin (never dirty/unmerged; runs outside
     # the card lock like the merge itself)
     gc_notes = dr.gc_session(res)
+    # exit evidence for the verified stamp — probed OUTSIDE the lock
+    # (systemctl/journalctl are the slow part, same rule as the merge).
+    ex_ok, ex_ev = dr.unit_exit_evidence(
+        str(((res.get("session") or {}).get("task_id")) or ""))
 
     def apply():
         card = load_card(path)
         a = card.get("action") or {}
         a.pop("merge_pending", None)
         if res.get("merged"):
-            a["verified"] = True
+            # verified = "the dispatch delivered": a merge whose session
+            # FAILED or left no exit record still withholds the stamp —
+            # merge-sweep's gate then holds it for a human instead of
+            # auto-closing (dispatch-empty-closeout-verification-gap).
+            if ex_ok is True:
+                a["verified"] = True
+            else:
+                comms_add(
+                    card, "chaba",
+                    f"merged but verified withheld — unit exit "
+                    f"{'failed' if ex_ok is False else 'unproven'} "
+                    f"({ex_ev}); merge-sweep's gate will review")
         elif res.get("conflicts") or res.get("test_failures") \
                 or res.get("shadows") or (
                 res.get("gate") and not res["gate"]["ok"]):

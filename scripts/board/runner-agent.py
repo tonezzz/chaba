@@ -416,16 +416,52 @@ def unit_active(unit: str) -> bool:
 
 
 def collect(unit: str) -> tuple[bool, str]:
-    """(ok, result-text) from the finished unit's exit status + log tail."""
+    """(ok, result-text) from the finished unit's exit evidence.
+
+    Precedence (mirrors dispatch_repos.unit_exit_evidence and
+    merge-sweep's verified gate): the task dir's exit_code file (the
+    devin-dispatch wrapper writes it every run; survives systemd
+    --collect) > the unit's own fields while it is still loaded (a
+    --collect'ed unit reports ExecMainStatus=0/Result=success DEFAULTS
+    — the 2026-10-25/26 'Failed with result exit-code' sessions that
+    still reported 'finished (ok)') > journal Succeeded/Failed lines.
+    No usable record -> NOT ok: an unproven exit must never report
+    success, or dead sessions close as clean work again."""
     r = sh(["systemctl", "--user", "show", unit,
-            "-p", "ExecMainStatus", "-p", "Result"], timeout=15)
+            "-p", "ExecMainStatus", "-p", "Result", "-p", "LoadState"],
+           timeout=15)
     kv = dict(ln.split("=", 1) for ln in r.stdout.splitlines()
               if "=" in ln)
-    ok = kv.get("ExecMainStatus") == "0" and kv.get("Result") == "success"
-    j = sh(["journalctl", "--user", "-u", unit, "-n", "12",
+    j = sh(["journalctl", "--user", "-u", unit, "-n", "60",
             "--no-pager", "-o", "cat"], timeout=15)
-    tail = " | ".join(x for x in j.stdout.strip().splitlines() if x)[-240:]
-    return ok, f"exit={kv.get('ExecMainStatus', '?')} {tail}".strip()
+    jout = j.stdout or ""
+    tail = " | ".join(x for x in jout.strip().splitlines() if x)[-240:]
+    # task-dir exit_code — only devin-task-* units have a task dir
+    # (followups devin-task-<id>-fuN share the base task dir)
+    if unit.startswith("devin-task-"):
+        base = re.sub(r"-fu\d+$", "",
+                      unit.removeprefix("devin-task-")
+                      .removesuffix(".service"))
+        try:
+            ecp = (Path.home() / ".local/share/devin-dispatch/tasks"
+                   / base / "exit_code")
+            ec = ecp.read_text().strip() if ecp.is_file() else ""
+        except Exception:
+            ec = ""
+        if ec:
+            return ec == "0", f"exit={ec} {tail}".strip()
+    if kv.get("LoadState") == "loaded":
+        ok = (kv.get("ExecMainStatus") == "0"
+              and kv.get("Result") == "success")
+        return ok, f"exit={kv.get('ExecMainStatus', '?')} {tail}".strip()
+    hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'", jout)
+    if hits:
+        jr = ("success" if hits[-1] == "Succeeded."
+              else hits[-1].split("'")[1])
+        return jr == "success", f"journal={jr} {tail}".strip()
+    return False, (f"no exit record — unit {kv.get('LoadState') or 'gone'} "
+                   "reports collected defaults (unproven, not ok) "
+                   + tail).strip()
 
 
 _DR = None
@@ -933,9 +969,12 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
         ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
         "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
-        f"cd {shlex.quote(str(worktree))} && exec opencode run --format json "
+        f"cd {shlex.quote(str(worktree))} && opencode run --format json "
         f"--dir {shlex.quote(str(worktree))} --model {shlex.quote(model)} "
-        f"--auto {shlex.quote(task)}"
+        f"--auto {shlex.quote(task)}; "
+        "rc=$?; "
+        f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
+        "exit $rc"
     )
     argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
              "--description", f"runner {card['id']} OpenCode {lane}"]
