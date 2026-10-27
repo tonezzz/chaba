@@ -1,7 +1,7 @@
 id: line-proactive-persona
 title: 'LINE relay: persona-initiated outbound to group members (proactive turns)'
 column: doing
-updated: 2026-10-27 14:07
+updated: 2026-10-27 14:16
 priority: medium
 spec: 'Relay is reply-only today — a persona can answer but cannot INITIATE a conversation with a member (e.g. Kaewta
   asks Nhong about kk car after serving a photo). Needed: (1) outbound path — backend tool/intent -> relay push
@@ -35,6 +35,13 @@ comms:
     object, member resolution via label cache + callers + aliases + persisted member dir + mddb registry scan) and
     intent=proactive policy gate (LINE_PROACTIVE_ALLOW + per-chat/member debounce + day cap); chat_send gains mention/intent
     args + secondary-turn block. Testing in a scratch copy of ada-voice@56c67c1.'
+- at: 2026-10-27 14:16
+  from: devin
+  text: 'DONE (staged, not deployed). Ada-voice drop 17 in integrations/ada-voice/: (1) outbound — chat_send gains
+    intent=proactive + mention=, plumbed to relay /send; to=<member name> resolves via label cache->callers->aliases->persisted
+    LINE_MEMBER_NAMES dir->mddb registry scan. (2) in-group addressing — mention= builds real LINE mention objects
+    (@displayName via group member profile endpoint, UTF-16 offsets). (3) policy — relay gate LINE_PROACTIVE_ALLOW
+    + 600s per-lane AND per-member debounce + day ca'
 action:
   type: dispatch
   status: running
