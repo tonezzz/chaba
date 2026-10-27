@@ -1,0 +1,215 @@
+# KNB-0909 — kanban-wide cleanup audit + Colab-ready queue (2026-10-27)
+# Read-only triage of all open cards; board-api comments carry the same
+# findings on kanban-wide-cleanup-audit-and-colab-read-cfbc33.
+card: kanban-wide-cleanup-audit-and-colab-read-cfbc33
+date: 2026-10-27
+mode: "read-only (no column moves, closes, or dispatches executed)"
+scope: >-
+  160 open cards (114 backlog, 36 review, 9 doing, 1 lab; no queued column —
+  queue state lives in action.status)
+verification: "live Drive queue state via rclone gdrive: on idc02"
+
+board_findings:
+  review_done_actions: >-
+    30 of 36 review cards have action.status=done — ~14 verify candidates,
+    ~14 failed dispatches (unit exit=1), rest are autostash-resurrected
+    alerts Tony already closed
+  answered_requests_no_action: >-
+    ~21 open cards carry answered requests with no active action — need
+    arming, not more answers
+  manual_type_starving: >-
+    action.type=manual + status=queued starves in the dispatch queue (chaba
+    warns); affects automate-host-post-restart, hands-off-waiting-card-procedure,
+    line-lane-lock-retire, chaba-jobs-dispatcher-dead, con01-ada-lane-warm-standby
+
+colab_state:
+  queue: "DRAINED — last run 2026-10-27 04:54→05:42 ICT; 41/42 packs done"
+  only_undone: >-
+    kk-video-c9f99fee6146-preview (torchao FqnToConfig import — OPS-0929,
+    card kk-video-preview-torchao-import-fix)
+  runtime: "none live; nothing waits on T4 today"
+  t4_caps: "15GB VRAM, ~12.7GB system RAM (binding constraint), ~207GB disk"
+
+classification:
+  ready_now: >-
+    ~50 cards — incl. tg-relay-turn-ok-unbound,
+    kk-video-preview-torchao-import-fix, colab-pack-release-t5,
+    mcp-llama-retire, mcp-schema-allowlist, door-read-ops-lesson-list-get,
+    nest-job-done-evidence-gate, rk600-empty-sensors, michael-lane-context-window,
+    ops-event-split-brain, ada-nest-drive-store-hardening (branch ready),
+    ai-video-quality P0 (branch ready), plus armed answers: media-hybrid,
+    devin-tg-report, pwa-intake, live-voice-burn, fix-phantom-state,
+    standardize-workflows, or-key-expired, kk-places, ada-scenario-casting,
+    rebuild-gesture, kk-video-devnest-topic
+  needs_small_spec: >-
+    ~17 — ada-docs-search-drift, boards-member-theme, chaba-board-quadlet,
+    con01-warm-standby, dell-off residuals (one live hit: node-red iframe
+    to tony-dell on chaba-admin), idc02-ambient-stt, idle-qa, narrated-comms,
+    render-job-writer, support-german, wp-board-comments, map-embed routes,
+    nest-efficiency (timeout guard), lane-cms-content-model,
+    tony-ha-cold-standby
+  blocked_tony_external: >-
+    ~20 — flood-hub (Google waitlist), rk600-shutter (motor),
+    gemini-live-cap-rekey, omen-lan-reservation, idc01-teardown + lab-box,
+    hugging-face-pro (defer recommended), purge-retained-ada-ha,
+    kk-ha-degraded (open req), cline-kanban-con01 (open req),
+    pin-free-openrouter (429 retry), ssot-registry-split,
+    line-wp-site-manager (Plesk), jev-code-decision (Jev key),
+    bot-domain (Tony in doing), line-lane-lock-retire
+  likely_done_with_evidence: >-
+    ~35 — img-gen-bench + colibri-bench (Drive verdicts), decision-arena,
+    gaussian-splat-edu-smoke, lab-iphone-webgpu (CONFIRMED),
+    lesson-audit-scheduled, omen-maintenance-preflight, mcp-fleet-audit,
+    colab-runtime-identity, mddb-storage-reduction, job-package-sop,
+    fix-cms-publish-slug, persona-name-leaks, node-red p1, embed-pool,
+    devnest-fl-pilot-code/doc, timer-alert-mcp-debug-h3-sync,
+    timer-alert-chaba-jobs, speed-probe (junk), disk-auto + cms-auto
+    tony-dell (obsolete post dell-off), +12 autostash-resurrected
+    runner-auto/logs-auto
+  duplicate_overlapping: >-
+    ~8 groups — mn-dev-rename inside grand-rename; kk-video preview chain
+    (keep, torchao is blocker); news family order (devnest-news-pilot to
+    morning-brief to tg-projection); timer-alert-chaba-jobs vs
+    chaba-jobs-dispatcher-dead; consumer-canary hit belongs to
+    dell-off-repoint; embed-pool vs or-key-expired; map-embed vs
+    kk-places; ai-engine-lines vs persona-ab-lane
+  not_dispatchable: >-
+    ~8 — scenario-report-opinion (fixture), logs-digest-program,
+    colab-offload-queue, inference-provider-watch, ai-engine-lines
+    (epic keeps), washing-machine (log), tony-usb-own-nodekey (physical),
+    ada-text-model-promotion (gate), lab-meshtastic-th (parked to 11-01)
+  failed_dispatches_review: >-
+    14 — ada-text-lane-metering, board-api-lesson-delete,
+    context-recall-floor, devnest-cache-tokenization, devnest-news-two-lane,
+    devnest-news-watch, eval-ide x3, grand-rename, household-kanban (record
+    verdict "podman does not simplify" + close), merge-sweep-verify-durable,
+    update-cast-subs, vcast-auto-yt-live-api, ops-local-conflict-guard
+    (2 .local-conflict files on tony-macbook need manual reconcile)
+
+fleet_queue_ranked:
+  - kk-video-preview-torchao-import-fix (unblocks only undone pack + Sacred Father)
+  - tg-relay-turn-ok-unbound (master-red tests, tiny)
+  - nest-job-done-evidence-gate (hardens job contract)
+  - mcp-schema-allowlist + mcp-llama-retire (bundle; ~20k tok/session)
+  - "land branches: feat/ops-0882-p0, drive-store repair 977950b11"
+  - armed-answer batch (media-hybrid, devin-tg-report, pwa-intake,
+    fix-phantom, or-key-expired, ada-scenario-casting)
+  - nest-efficiency timeout guard + CPU run
+  - live-voice-burn-context-replay (largest savings)
+  - door-read-ops-lesson-list-get
+  - re-dispatch the 14 failed review dispatches
+
+colab_t4_queue:
+  items:
+  - work: kk-video-c9f99fee6146-preview re-run
+    needs: "gpu 14GB, disk 30GB"
+    prep: "LTX warm from hf-hub.tar.zst (~9GB, ~4min); T5 archive on Drive"
+    runtime: "<=2.5h (timeout_s 9000)"
+    artifacts: "teaser MP4, TH+EN SRT, QC report"
+    verifier: "artifacts globs + video-qc"
+    blocker: "torchao pin fix (fleet-side, no GPU)"
+  - work: "gaussian-splat real-scene reconstruction (new pack)"
+    needs: "gpu ~8-14GB"
+    prep: "gsplat/COLMAP ~10min, small weights"
+    runtime: "30-60min"
+    artifacts: "PLY + orbit MP4 + VRAM report"
+    verifier: "non-empty + viewable (camera +z lesson from v1 black frame)"
+  - work: "doc-pilot-v3 LTX shots 8-9 (Jupiter, GRS)"
+    needs: "gpu 14GB, ram ~13GB — feasible: kk embeds pack (ram_gb 13) ran on T4"
+    prep: "T5-XXL first-pull (cache after), LTX warm"
+    runtime: "1-2h"
+    artifacts: "2 shot plates + timings"
+    verifier: "artifact gates + shot QC"
+  - work: "thai-llm-finetune (Typhoon + WangchanX QLoRA)"
+    needs: "gpu 14GB (4-8B QLoRA), disk ~20GB"
+    prep: "base models ~8-16GB (pack into hf cache)"
+    runtime: "1-3h"
+    artifacts: "adapters + ThaiQA/XL-Sum table"
+    verifier: "side-by-side eval vs baseline"
+  - work: "img-gen-bench GPU variant"
+    needs: "gpu 14GB, disk 40GB"
+    prep: "Qwen-Image-2.1 ~33GB once (cache)"
+    runtime: "<30min"
+    artifacts: "PNGs + latency report"
+    verifier: "report + non-empty PNGs"
+  - work: "colibri CUDA bench variant"
+    needs: "gpu 3GB+ / T4"
+    prep: "colibri + qwen3.6-35b ~35GB"
+    runtime: "~1h"
+    artifacts: "verdict v2 (GPU lane)"
+    verifier: "edu-manage 13-task score"
+  - work: "model-efficiency-refresh Colab leg"
+    needs: "gpu 14GB"
+    runtime: "~30min"
+    artifacts: "scorecard JSON/MD"
+    verifier: "fixed fixture output"
+  cache_independent:
+    - "devnest-heldout-assessment — canonical in JOBS.py, runs per-boot (OPS-0880)"
+    - "pack-doctor sweep — pack.yml needs vs live caps + stale-claim scan, <2min CPU"
+    - "scr-calibrate eval — CPU, minutes (needs corpus.jsonl fixture)"
+    - "nest-efficiency — CPU/rclone; run fleet-side after timeout guard, not T4"
+  sequencing: >-
+    warmup to restore-hf-cache to preview while Thai/base pulls prep
+    underneath, then splat, benches, save-hf-cache last
+
+suggested_card_actions:
+  verify_close:
+    - img-gen-bench
+    - colibri-bench
+    - decision-arena
+    - gaussian-splat-edu-smoke
+    - lab-iphone-webgpu
+    - lesson-audit-scheduled
+    - omen-maintenance-preflight
+    - mcp-fleet-audit
+    - colab-runtime-identity
+    - mddb-storage-reduction
+    - job-package-sop
+    - fix-cms-publish-slug
+    - persona-name-leaks
+    - node-red-devnest phase-1
+    - embed-pool
+    - devnest-fl-pilot-code/doc
+    - timer-alert-mcp-debug-h3-sync
+    - timer-alert-chaba-jobs
+    - speed-probe
+    - disk-auto-tony-dell-root
+    - cms-auto-nest-tony-dell
+  normalize_review_to_done: "7x runner-auto-*, 5x logs-auto-* (autostash resurrected)"
+  redispatch: "14 failed-dispatch cards (see failed_dispatches_review)"
+  arm_answered:
+    - media-hybrid
+    - devin-tg-report
+    - pwa-intake
+    - live-voice-burn
+    - fix-phantom
+    - standardize-workflows
+    - or-key-expired
+    - kk-places
+    - ada-scenario-casting
+    - rebuild-gesture
+    - kk-video-devnest-topic
+  fix_action_type:
+    - automate-post-restart
+    - hands-off-procedure
+    - line-lane-lock
+    - chaba-jobs-dispatcher
+    - con01-warm-standby
+  merge_branches:
+    - feat/ops-0882-p0
+    - fix/nasa-embeds-tokenizer-cache + 977950b11
+    - devnest-fl-pilot-doc
+  close_duplicate:
+    - "mn-dev-rename -> grand-rename"
+  tony_decisions:
+    - "hf-pro (defer)"
+    - ssot-registry-split
+    - omen-lan MAC/IP
+    - kk-ha-degraded
+    - cline-agent
+    - idc01 console
+    - gemini rekey
+    - purge-retained
+    - line-wp-site-manager Plesk
+    - map-embed routes
+    - pin-free-OR retry
