@@ -1,0 +1,35 @@
+id: opencode-session-audit-parity
+title: Add OpenCode session audit parity with Chaba Voice audit
+column: backlog
+updated: 2026-10-27 16:36
+brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
+  and token metrics.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- audit
+- verifier
+- metrics
+- devnest
+spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice transcript audit. Use an audit marker
+  and inspect every OpenCode session/event file in the window, not only the newest. Report per session: prompt/task
+  turns, model/provider, tool calls, denied/error calls, write/delete/commit/push attempts, artifact paths and durable
+  landing, claims without evidence, context/cache/input/output tokens, wall/step latency, retries, mixed-focus/context
+  contamination, and safety flags. Cross-check session claims against filesystem/Git/board artifacts; never trust
+  final prose alone. Produce JSON + Markdown report, update marker only after successful audit, and file one Kanban
+  card per durable artifact miss or safety issue. Reuse evals/opencode-lane and evals/shadow artifacts where possible.
+  Acceptance: audit current S1/S2 OpenCode sessions, reconcile the promotion ledger vs shadow benchmark discrepancy,
+  report pass/fail evidence, and add a repeatable command/test. Read-only; no session deletion or model changes.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
+  Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
+  audit target.
+ref: AUD-0938
+comms:
+- at: 2026-10-27 16:36
+  from: tony
+  text: card captured via board-api
