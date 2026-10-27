@@ -1,0 +1,35 @@
+id: fix-chaba-jobs-network-scan-failure-isolation
+title: Make chaba-jobs isolate network-scan failures and back off
+column: backlog
+updated: 2026-10-27 14:31
+brief: Keep healthy dispatcher jobs running when the network-scan dashboard push fails; add per-job backoff and
+  evidence.
+priority: high
+program: chaba-ci
+tags:
+- timer
+- dispatcher
+- network-scan
+- reliability
+- unattended
+spec: 'Fix the chaba job dispatcher efficiency/reliability issue. Current tony_dell `chaba-jobs.service` runs healthy
+  jobs such as tony-dell-health-snapshot and mcp-debug-h3-sync, but `network-scan-tony` fails repeatedly in `scripts/network-scan.py
+  --push` at a subprocess with check=True, causing the whole dispatcher service to exit nonzero every tick and hammer
+  the failing job. Implement per-job failure isolation and backoff: a failing non-critical job must not prevent
+  other due jobs; persist last_success, last_failure, failure_count, and next_retry/backoff in dispatcher state;
+  keep results/timeline evidence; alert/report the failed job; reset backoff after success. Define a manifest failure
+  policy (critical vs noncritical) with network-scan noncritical unless explicitly promoted. Add tests for one job
+  failing while another runs, backoff, state persistence, and service exit policy. Run dry-run and focused tests;
+  do not disable network scanning silently and do not deploy unrelated changes.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'High-value prerequisite for hands-off Nest processing: current service failure is caused by network-scan
+  push, while other dispatcher jobs can succeed. Existing OPS-0698 received root-cause evidence; this focused card
+  makes the fix executable.'
+ref: SYS-0933
+comms:
+- at: 2026-10-27 14:31
+  from: tony
+  text: card captured via board-api
