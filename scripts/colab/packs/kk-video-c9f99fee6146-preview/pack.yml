@@ -31,6 +31,9 @@ prep: |
   [ -f "$TAR" ] || TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
   apt-get install -y -qq zstd ffmpeg >/dev/null 2>&1 || true
   pip install -q edge-tts >/dev/null 2>&1 || true
+  # LTX does not use TorchAO. A stale/incompatible optional TorchAO install
+  # makes modern Diffusers import fail before the pipeline is loaded.
+  pip uninstall -y -q torchao >/dev/null 2>&1 || true
   if [ -f "$TAR" ]; then
     tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
       && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
@@ -39,6 +42,7 @@ prep: |
       mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
     fi
   fi
+  python -c "from diffusers import LTXPipeline; print('LTX import ok')"
   # validate only what the pipeline reads — the 48-file snapshot list
   # includes variant files the slim cache never held (167s/it crawl
   # 2026-10-23); from_pretrained needs transformer/vae/scheduler only
