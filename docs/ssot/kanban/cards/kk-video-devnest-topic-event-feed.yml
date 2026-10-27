@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-10-27 12:53
+updated: 2026-10-27 12:56
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -29,3 +29,25 @@ comms:
     attempted the canonical /publish alert for the actual preview failure, but the live board-api returned 404,
     so no Telegram alert was delivered and I did not bypass it with direct /send. The isolated branch fix/telegram-project-event-routing
     forwards project/card refs;'
+- at: 2026-10-27 12:56
+  from: devin
+  text: 'raised request live-publication-route: The Sacred Father topic is now bound, but the live board-api POST
+    /publish returns 404. Its served checkout is dirty and'
+requests:
+- id: live-publication-route
+  ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
+    is dirty and 5 commits ahead/1 behind origin, so I did not restart or promote it. How should I enable generated/status
+    notifications to the topic?
+  status: open
+  at: 2026-10-27 12:56
+  from: devin
+  options:
+  - id: wait-clean-deploy
+    label: Wait for served checkout reconciliation, then use the standard board-api deploy (recommended; preserves
+      the canonical audited /publish path)
+  - id: direct-relay-interim
+    label: Approve a project-scoped direct DevNest relay /send path as an interim workaround (bypasses /publish
+      outbox/audit)
+  - id: pause-notifications
+    label: Keep the thread bound for intake, but defer generated/status notifications until /publish is live
+  suggested: wait-clean-deploy
