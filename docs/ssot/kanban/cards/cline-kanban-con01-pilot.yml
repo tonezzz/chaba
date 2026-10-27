@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-27 12:07
+updated: 2026-10-27 13:11
 priority: medium
 tags:
 - cline-kanban
@@ -24,3 +24,9 @@ comms:
     403: Cline v0.1.70 rejects the forwarded Host header. I am keeping the container bridge-isolated and adding
     a strict same-origin proxy (no host networking); the external listener remains tailnet-only. No agent task/model
     call has run.'
+- at: 2026-10-27 13:11
+  from: devin
+  text: '2026-10-27: Final UI smoke passed. con01 service is active; port 3484 listens only on 100.72.146.39. HTTP
+    root=200; Chrome passcode login loaded the workspace and /api/runtime/ws returned 101. stack-preflight --apply-verify
+    passed. audit-hosts found no Cline-specific delta; six unrelated existing failed units remain. UI currently
+    reports "No agent configured"; no model/provider call or coding-agent task has run.'
