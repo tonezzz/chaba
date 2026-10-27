@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
-column: backlog
-updated: 2026-10-27 10:28
+column: doing
+updated: 2026-10-27 10:29
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -37,6 +37,10 @@ comms:
 - at: 2026-10-27 10:28
   from: tony
   text: queued for processing
+- at: 2026-10-27 10:29
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
