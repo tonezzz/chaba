@@ -1,0 +1,39 @@
+id: opencode-graduated-routing-standard
+title: Standardize graduated routing of safe jobs to OpenCode
+column: backlog
+updated: 2026-10-27 14:34
+brief: Define how OpenCode receives increasing job volume safely, with gates, canaries, rollback, and efficiency
+  measurement.
+priority: high
+program: ai-workforce
+tags:
+- opencode
+- devnest
+- routing
+- benchmark
+- token-savings
+- safety
+spec: 'Define and implement the graduated OpenCode routing procedure. Stages: S0 shadow/replay on frozen fixtures;
+  S1 supervised read-only report canary on one runner with OPENCODE_LANES=1 and concurrency=1; S2 five-job read-only
+  pilot with Devin independent verification; S3 10-20 job sampled production-read-only lane with concurrency cap
+  and Telegram summaries; S4 expand to reversible artifact writes; S5 branch/code tasks only with stronger model/verifier;
+  production/destructive remains human/Devin gated. For every job require card, task class, target_host, model/provider,
+  scoped MCP allowlist, allowed paths, artifact schema, deterministic verifier, escalation, and rollback. Routing
+  must fail closed on missing verifier, wrong host, denied tool, stale heartbeat, failed provider, missing artifact,
+  or unverified exit. Measure per job: executor, model, input/cache/output tokens, provider cost, wall time, queue
+  time, retries, tool denials, human minutes, verifier pass, artifact landing, escalation, and combined cost. Report
+  aggregate metrics: independently verified success rate, cost/tokens per verified job, median/p95 time, retries,
+  intervention minutes, Devin tokens displaced, and failure reasons. Use matched Devin/OpenCode fixtures and keep
+  shadow runs isolated from production. Add a canary rollback/kill switch and a weekly promotion review. Update
+  SSOT/KB only after the procedure passes its first pilot.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Current OpenCode read-only MCP lane is verified; broad routing remains gated. This card turns the existing
+  AI-lane delegation and continuous-improvement rules into an explicit volume ramp with measurable efficiency gates.
+ref: BEN-0934
+comms:
+- at: 2026-10-27 14:34
+  from: tony
+  text: card captured via board-api
