@@ -1,0 +1,18 @@
+id: kk-video-preview-output-qc-assembly
+title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
+column: backlog
+updated: 2026-10-27 17:22
+spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
+  preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
+  `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
+  teaser assembly was skipped; `narration.mp3` is zero bytes. Do not lower the threshold blindly. Use ffprobe/full
+  decode and black-frame/quality checks to determine which small clips are valid; rerender only invalid shots using
+  the existing LTX method and embeddings. Fix Edge-TTS handling to check exit code, stderr, and non-empty audio;
+  keep the approved Thai voice. Assemble the 10-shot private teaser, retain Thai/English SRTs, run full MP4 decode/QC,
+  read back all declared artifacts from Drive, and mark the Nest job done only when every artifact glob is non-empty
+  and verified. Keep source/media private; no paid fallback or public sharing changes.'
+ref: OPS-0952
+comms:
+- at: 2026-10-27 17:22
+  from: devin
+  text: card captured via board-api
