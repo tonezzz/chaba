@@ -1,0 +1,16 @@
+id: nest-job-done-evidence-gate
+title: Enforce Nest job terminal-state evidence and stale-state reconciliation
+column: backlog
+updated: 2026-10-27 10:07
+spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
+  PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
+  evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
+  transitions, missing evidence, failed/stalled retries, and consistency between nest_job, pack done/claim markers,
+  packs-index, and live lease/heartbeat. Start with read-only reconciliation; do not auto-cancel, clear a live claim,
+  deploy, or mutate production status without a separate gate. Link docs/kb/colab-mcp-jobs.md#job-status-lifecycle-and-storage-map
+  and OPS-0922.
+ref: OPS-0923
+comms:
+- at: 2026-10-27 10:07
+  from: devin
+  text: card captured via board-api
