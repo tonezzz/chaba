@@ -46,6 +46,9 @@ chaba dispatches. Seventeen drops live here:
     (KNB-0624, 2026-10-27)
 17. `map_embed` — Google Maps POI pins + routes as CMS-ready snippets —
     card `map-embed-tool` (2026-10-27)
+18. LINE proactive persona sends — `chat_send` `intent='proactive'` +
+    `mention=` member pings — card `line-proactive-persona`
+    (2026-10-27)
 
 ---
 
@@ -1364,3 +1367,120 @@ to `cms_publish_page`/`cms_edit` or sends in chat.
 - NOT verified live: no real Google key exercised — first
   `kind=interactive`/`kind=static`+route call after deploy + env is the
   smoke; the OSM path is keyless and covered by the unit suite.
+---
+
+## Drop 18 — LINE proactive persona sends (card line-proactive-persona)
+
+The relay was reply-only: a persona could answer a routed turn but
+couldn't INITIATE contact with a member. This drop adds the outbound
+path end-to-end — backend tool -> relay /send -> LINE push — plus the
+two things that make it safe: in-group member addressing and a
+relay-owned rate policy.
+
+Scenario driver (from the card): Tony asks kaewta for the kk-car photo
+-> kaewta serves it -> kaewta then engages nhong about it herself,
+drawing on her own memory bank.
+
+### What changes
+
+- `chat_send` gains `mention='<member name>'` and
+  `intent='reply'|'proactive'`. `to=` still takes a member display
+  name (now resolved through a much longer chain). mention= pings the
+  member in the room the turn came from with a real LINE mention
+  object — their LINE notifies. `to='nhong'` (no mention) opens her
+  DM. `intent='proactive'` declares a persona-initiated contact.
+- Relay `/send`: `mention=` builds the mention object
+  (`@<displayName>` prefix + `mention.mentionees[]`, positions in
+  UTF-16 code units) — display name via the per-member group/room
+  profile endpoint, falling back to the label cache / member dir.
+  `intent='proactive'` runs the policy gate AFTER target resolution
+  but BEFORE any media fetch.
+- Member-name resolution (`_member_uid`): label cache ->
+  `LINE_USER_CALLERS` -> `LINE_PERSON_ALIASES` -> persisted
+  `MEMBERS_FILE` (learned from profile fetches + first-seen registry
+  writes — survives restarts) -> one throttled mddb
+  `line-user-registry` scan (`LINE_REGISTRY_LOOKUP_TTL_S`, 300s). This
+  also fixes `to=<name>` for members who spoke before the process came
+  up.
+- Policy (`_proactive_gate`): instance must sit in
+  `LINE_PROACTIVE_ALLOW` (empty = all proactive sends denied — the
+  backend-declared-intent gate); per (instance, chat) and per
+  (instance, member) debounce `LINE_PROACTIVE_DEBOUNCE_S` (600s
+  default); `LINE_PROACTIVE_DAY_CAP` (8) per (instance, chat). State
+  write-through to `LINE_PROACTIVE_STATE` — a restart can't reset the
+  limits. Decisions log `proactive_sent|denied|debounced` +
+  `mention_failed` ops events and `proactive_msgs` joins the
+  send-ledger rollup.
+- Owner-tier on the tool side: on a secondary (identified guest) turn,
+  `chat_send` with `mention=`, `intent='proactive'`, or `to=` other
+  than the bound chat raises PermissionError — a guest can converse
+  but can't make a persona ping someone. `LINE_LANE_ALLOW`/`LOCK`
+  still vet every resolved target regardless.
+
+### Files
+
+- `backend/line_relay.proactive-persona.patch` — `backend/line_relay.py`
+  (base `56c67c1`): env doc block, `LINE_PROACTIVE_*` + `MEMBERS_FILE`
+  constants, `_member_uid`/`_registry_scan`/`_member_note`/`_mention_wrap`
+  + `_proactive_*` methods, `/send` mention + intent handling, member
+  notes hooked into `_fetch_profile_name`/`_register_member`,
+  `proactive_msgs` in the ledger rollup.
+- `backend/tool_runner_chat.proactive-persona.patch` —
+  `backend/tool_runner/chat.py`: `chat_send(mention=, intent=)` plumbed
+  through the queue/photo/doc paths into the LINE /send payload
+  (LINE-only; tg sends note the drop).
+- `backend/tool_runner.proactive-persona.patch` —
+  `backend/tool_runner/__init__.py`: the secondary-turn carve-out
+  extends to `chat_reach_out` (mention / intent='proactive' / to= !=
+  bound chat).
+- `backend/realtime_provider.proactive-persona.patch` — `chat_send`
+  declaration gains `mention` + `intent` params.
+- `backend/tool_guide.proactive-persona.patch` — `chat_send` guide
+  entry documents the proactive contract (honest denial reporting, no
+  retry loops).
+- `docs/kb/msg-lane-multihome-routing.proactive-persona.patch` — the
+  multihome runbook gains the proactive-sends section +
+  `LINE_PROACTIVE_ALLOW` checklist entry.
+- `tests/test_line_proactive.py` — new ada-voice test file (20 tests:
+  member-uid chain, mention object + UTF-16 offsets, gate
+  allowlist/debounce/cap/persistence, runner-side owner-tier gate,
+  payload plumbing).
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && for p in line_relay realtime_provider tool_guide tool_runner tool_runner_chat; do git apply <chaba>/integrations/ada-voice/backend/$p.proactive-persona.patch; done && git apply <chaba>/integrations/ada-voice/docs/kb/msg-lane-multihome-routing.proactive-persona.patch`
+   — base `main` @ `56c67c1`. NOTE ordering: drop 15 (`page=`) also
+   touches `tool_runner/chat.py` — if it lands first and the chat.py
+   hunk rots, re-dispatch rather than hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/test_line_proactive.py <ada-voice>/tests/`
+3. Relay unit env (idc03 `ada-line-relay`): set
+   `LINE_PROACTIVE_ALLOW=ada,kaewta` (only lanes allowed proactive;
+   unset = deny-all). Optional: `LINE_PROACTIVE_DEBOUNCE_S`,
+   `LINE_PROACTIVE_DAY_CAP`, `LINE_PROACTIVE_STATE`,
+   `LINE_MEMBER_NAMES`, `LINE_REGISTRY_LOOKUP_TTL_S`.
+4. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q`, then restart `ada-line-relay` + the persona backends
+   (both sides change).
+
+### Verify
+
+- `python -m unittest tests.test_line_proactive` (20 tests).
+- Live: from an allowlisted persona, `chat_send(mention='nhong',
+  intent='proactive', text='...')` — nhong's LINE pings with a real
+  mention in the group; a repeat inside 600s comes back `debounced`;
+  `to='nhong', intent='proactive'` lands in her DM. Watch
+  `proactive_sent` in the ops ledger.
+
+### Contract notes / limits
+
+- The gate only restricts declared `intent='proactive'` — an
+  undeclared send to a member DM keeps today's rules (the runner's
+  owner-tier check still covers secondary turns). The relay can't see
+  turn semantics; declaration is the contract.
+- LINE `mention` objects need a group/room target and a resolvable
+  member — else 400. Proactive payloads stay class=urgent under the
+  quota scheme (they're user-facing, not bulk noise); a spent month
+  still parks them on 429 like any push.
+- `LINE_BULK_LANES`-demoted lanes CAN still send proactive (class is
+  orthogonal) — a lane that shouldn't speak proactively just stays out
+  of `LINE_PROACTIVE_ALLOW`.
