@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
-column: backlog
-updated: 2026-10-27 16:45
+column: doing
+updated: 2026-10-27 16:46
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -14,7 +14,8 @@ spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close —
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 ref: OPS-0941
 comms:
 - at: 2026-10-27 16:44
@@ -27,3 +28,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 16:46
+  from: tony-macbook
+  text: claimed
