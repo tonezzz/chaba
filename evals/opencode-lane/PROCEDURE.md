@@ -146,3 +146,30 @@ schema — never secrets or live data.
 3. Only after the first pilot (S2) passes: fold this doc into
    `docs/kb/` + SSOT routing doctrine, wire `review` into a weekly
    timer, and let dispatch claim eligible cards through the gate.
+
+## Session audit (added 2026-10-27, card opencode-session-audit-parity)
+
+`scripts/devnest/opencode_session_audit.py` is the read-only QC layer
+over every OpenCode session — parity with the Ada transcript audit and
+the Devin session audit. It reads `~/.local/share/opencode/opencode.db`
+(`mode=ro`), walks every session newer than
+`~/.local/share/devin/opencode-audit-marker`, and per session reports
+prompts, model/provider, tool calls + denials/errors, write/delete/
+commit/push attempts (incl. writes smuggled through `bash`/`python -c`
+that patch accounting misses), artifact durable-landing verdicts,
+claims without evidence, tokens, wall/step latency, retries,
+contamination signals, and safety flags. It reconciles session
+evidence against `evals/shadow` benchmark verdicts and the promotion
+reviews, and flags stage-labeled runs that predated their promote
+decision. Findings file to the board one card each (`--file-cards`);
+the marker moves only after a successful report write.
+
+```bash
+python3 scripts/devnest/opencode_session_audit.py            # since marker
+python3 scripts/devnest/opencode_session_audit.py --all      # full store
+python3 -m unittest tests.devnest.test_opencode_session_audit
+```
+
+First audit (2026-10-27): 20 sessions — see
+`evals/opencode-lane/reports/2026-10-27-session-audit.{md,json}` and
+`docs/ssot/jobs/devnest/2026-10-27-opencode-session-audit.yml`.
