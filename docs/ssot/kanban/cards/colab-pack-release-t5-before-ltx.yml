@@ -1,7 +1,7 @@
 id: colab-pack-release-t5-before-ltx
 title: Release T5 embedding state before follow-on LTX pack runs
 column: backlog
-updated: 2026-10-27 12:14
+updated: 2026-10-27 12:53
 spec: Investigate the active Sacred Father pipeline's shared queue-runner namespace. The T5 embeddings pack appears
   to leave `enc`/`tok` globals on CUDA; the following LTX preview pack clears only `model`/`pipe` before allocating
   the render pipeline. Verify the behavior with a non-production test, then make pack cleanup explicit (delete T5
@@ -19,3 +19,8 @@ comms:
     embeddings visible, no `done` marker yet, and is still saving the T5 archive. The preview pack is staged and
     prep is running but it has not claimed/rendered yet. I am not interrupting or hot-editing this queue; this card
     is to make the next preview attempt release T5 state before LTX loads.'
+- at: 2026-10-27 12:53
+  from: devin
+  text: '[run result correction 2026-10-27] The current Sacred Father preview did not reach LTX allocation; it failed
+    earlier on `ImportError: cannot import name FqnToConfig from torchao.quantization` (tracked separately as OPS-0929).
+    Thus the shared-namespace GPU-memory risk remains untested, not the observed failure cause.'
