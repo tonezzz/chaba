@@ -1,0 +1,21 @@
+[Unit]
+Description=Cline Kanban research-preview pilot (con01, tailnet-only)
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=localhost/cline-kanban:0.1.70
+ContainerName=cline-kanban
+PublishPort=100.72.146.39:3484:3484/tcp
+Volume=%h/.local/share/cline-kanban/data:/root/.cline
+Volume=%h/cline-kanban-pilot/workspace:/workspace
+WorkingDir=/workspace
+Exec=--host 0.0.0.0 --port 3484 --no-open
+
+[Service]
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

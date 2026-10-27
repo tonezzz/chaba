@@ -1,0 +1,138 @@
+title: Cline Kanban pilot on con01
+subtitle: Deploy a private, disposable Cline Kanban control surface and verify access without provider spend
+icon: experiment
+
+planning:
+  goal: >-
+    Let Tony evaluate the Cline Kanban UI and host behavior on con01 without
+    exposing it publicly, mounting live Chaba repositories, or making an
+    unapproved model-provider call.
+  scope: >-
+    Pin Cline Kanban v0.1.70 in a rootless Podman Quadlet, bind its published
+    port only to con01's Tailscale IPv4 address, use an empty disposable Git
+    workspace, and verify the UI, static assets, and WebSocket/origin behavior.
+    No auto-commit, auto-PR, provider credentials, large model download, or
+    distributed Nest worker integration in this pilot.
+  success_criteria:
+    - The service is declared in stacks and the con01 host audit expectations.
+    - Only con01's tailnet address publishes TCP port 3484; no public route is added.
+    - The board UI responds over the tailnet and persists only disposable pilot state.
+    - Startup and idle memory/resource impact are recorded.
+    - Any agent execution requiring provider spend is gated on Tony's choice/approval.
+  risks:
+    - Cline Kanban is a research preview and exposes repository/terminal capabilities to authenticated users.
+    - con01 has limited current available memory while running DR, STT, and embedding services.
+    - Remote access can fail if the app rejects forwarded Host/Origin or WebSocket requests.
+  resources:
+    - con01 rootless Podman and Quadlet
+    - Node.js 22 container image and pinned kanban npm package v0.1.70
+    - con01 Tailscale address 100.72.146.39, TCP port 3484
+    - No provider key; local Ollama currently has only bge-m3 embeddings
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Cline Kanban host pilot
+      file: docs/ssot/kanban/cards/cline-kanban-con01-pilot.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-10-27T11:00:00+07:00'
+  steps:
+    - id: preflight
+      label: Check con01 resources, network, and available runtimes
+      status: done
+      notes: >-
+        8 vCPU; 23 GiB RAM with 6.6 GiB available; 226 GiB disk free; load
+        average 1.21/1.18/1.12. Podman and Git are present; Node/npm are not.
+        Ollama exposes bge-m3 embedding only; no generation model is loaded.
+        Port 3484 is free. Pilot card KNB-0925 created.
+    - id: declare
+      label: Add lifecycle record, stack manifest, image recipe, and Quadlet
+      status: done
+      notes: Service declaration is tailnet-only; no secrets or provider calls.
+    - id: preflight-manifest
+      label: Pass stack-preflight before installing the Quadlet
+      status: done
+      notes: >-
+        PASS. Podman/Git and registry endpoints are available; state directories
+        were created; TCP 3484 was free.
+    - id: deploy
+      label: Build pinned image and start the rootless Quadlet
+      status: in_progress
+      notes: ''
+    - id: verify
+      label: Verify producer health and the tailnet browser surface
+      status: not_started
+      notes: ''
+    - id: publish
+      label: Record resource evidence and update the pilot card
+      status: not_started
+      notes: ''
+  decisions:
+    - label: Use a tailnet-only rootless container for the pilot
+      rationale: >-
+        Cline Kanban grants authenticated users repository and terminal access.
+        Binding the host port only to Tailscale avoids a public listener and
+        leaves the existing Caddy/DR edge untouched.
+      alternatives_considered: >-
+        Public domain/path proxy was rejected: it is unnecessary for the pilot
+        and adds origin, WebSocket, and public-access risk.
+    - label: Defer agent execution until a provider is selected
+      rationale: >-
+        con01 has no generation model loaded and its only Ollama model is
+        bge-m3 embeddings. A hosted provider call can incur spend; downloading
+        a coding model would consume disk, memory, and CPU on a shared DR host.
+      alternatives_considered: >-
+        No credential or large model is being copied/installed without Tony's
+        explicit choice.
+  changes:
+    - file: docs/ssot/jobs/infrastructure/2026-10-27-cline-kanban-con01-pilot.yml
+      summary: Created the pilot lifecycle record before service installation.
+    - file: stacks/con01/cline-kanban/Containerfile
+      summary: Added a Node 22 image recipe pinned to Cline Kanban v0.1.70.
+    - file: stacks/con01/cline-kanban/cline-kanban.container
+      summary: Declared a tailnet-only rootless Quadlet with a disposable workspace.
+    - file: stacks/con01/cline-kanban/stack.yml
+      summary: Added the service manifest and HTTP verification command.
+    - file: docs/ssot/infrastructure/ssot.audit.hosts.yml
+      summary: Declared cline-kanban.service in con01's expected user services.
+
+followup:
+  verification:
+    - Run scripts/stack-preflight.py stacks/con01/cline-kanban/stack.yml before installation.
+    - Run scripts/stack-preflight.py stacks/con01/cline-kanban/stack.yml --apply-verify after start.
+    - Run scripts/audit-hosts.py --host con01 after the service is installed.
+    - Fetch the actual UI from the tailnet address and verify its browser WebSocket session.
+    - Remeasure memory, load, and disk after startup; do not test an agent until the provider gate is cleared.
+  rollback_plan:
+    - Disable and stop cline-kanban.service, then remove its declared Quadlet through the normal repo sync path.
+    - Retain the disposable workspace and app data for inspection; do not delete them without separate approval.
+    - Remove the local pilot image only after confirming no service references it.
+  handoff:
+    - Tony reviews the tailnet-only UI and decides whether to authorize one provider-backed task.
+  deferred:
+    - Nest-style worker distribution and Nest queue integration.
+    - Public domain or Caddy routing.
+    - External model-provider configuration and any paid inference.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: Pilot implementation is in progress; no agent task or model call has run.
+  metrics: []
+  links:
+    - title: Pilot kanban card
+      url: https://idc03.taila0626a.ts.net/apps/board2/?card=cline-kanban-con01-pilot
+    - title: con01 Cline Kanban stack
+      url: stacks/con01/cline-kanban/stack.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-10-27'
+  last_updated: '2026-10-27'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/kb/host-hygiene-rules.md
