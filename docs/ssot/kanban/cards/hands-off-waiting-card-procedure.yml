@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: backlog
-updated: 2026-10-27 12:37
+updated: 2026-10-27 13:36
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -27,6 +27,7 @@ spec: 'Define and implement the hands-off waiting-card procedure. Separate queue
   with five read-only pilot cards and record evidence/metrics.'
 action:
   type: manual
+  status: queued
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -36,5 +37,11 @@ comms:
   from: tony
   text: card captured via board-api
 - at: 2026-10-27 12:37
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-27 13:36
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 13:36
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
