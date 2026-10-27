@@ -1,7 +1,7 @@
 id: audit-oc-sequence-anomaly-mzwpaubp
 title: 'OpenCode audit: sequence_anomaly (mzwpaubp)'
 column: backlog
-updated: 2026-10-27 16:54
+updated: 2026-10-27 20:49
 brief: S1-labeled run predates promote decision — executed before the stage was open (un-gated)
 priority: high
 tags:
@@ -16,15 +16,23 @@ comms:
 - at: 2026-10-27 19:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-27 20:49
+  from: tony
+  text: 'answered the-card-requests-an-audit-for-ce1c84: ★ Audit sequence_anomaly in the chaba repo on host tony-dell'
+- at: 2026-10-27 20:49
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-card-requests-an-audit-for-ce1c84
-  ask: The card requests an audit for 'sequence_anomaly' under the OpenCode tags, but provides no repository,
-    host, or specific anomaly definition. We need to know which codebase and system host to target before
-    running the audit.
+  ask: The card requests an audit for 'sequence_anomaly' under the OpenCode tags, but provides no repository, host,
+    or specific anomaly definition. We need to know which codebase and system host to target before running the
+    audit.
   options:
   - ★ Audit sequence_anomaly in the chaba repo on host tony-dell
   - Audit sequence_anomaly in the sunsynk-card repo on host tony-dell
   - Postpone this audit until more detailed anomaly criteria are provided
-  status: open
+  status: answered
   at: 2026-10-27 19:20
   from: backlog-spec-enrich
+  answer: ★ Audit sequence_anomaly in the chaba repo on host tony-dell
+awaiting_action: true
