@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-27 13:11
+updated: 2026-10-27 13:36
 priority: medium
 tags:
 - cline-kanban
@@ -34,13 +34,20 @@ comms:
   from: devin
   text: 'raised request the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5: The Cline host/UI is ready, but the UI
     says "No agent configured." con01 has only bge-m3 embeddings and 6.3 GiB RAM avai'
+- at: 2026-10-27 13:36
+  from: tony
+  text: 'answered the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5: nest-adapter — Design a Nest worker adapter before
+    running agents'
+- at: 2026-10-27 13:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
   ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3
     GiB RAM available. For one real smoke task, which route do you want? Hosted provider will make a small billable
     inference call; a local model download would compete with con01 DR/STT and is not recommended; a Nest adapter
     is extra development and still needs a generation model.
-  status: open
+  status: answered
   at: 2026-10-27 13:11
   from: devin
   options:
@@ -51,3 +58,5 @@ requests:
   - id: nest-adapter
     label: Design a Nest worker adapter before running agents
   suggested: hosted-smoke
+  answer: nest-adapter — Design a Nest worker adapter before running agents
+awaiting_action: true
