@@ -1,7 +1,7 @@
 id: host-hardening-residuals
 title: host-hardening residuals — macbook sshd/sysctl (sudo-gated) + lan-class f2b/qemu decision
-column: review
-updated: 2026-10-27 11:26
+column: done
+updated: 2026-10-27 11:31
 brief: 'Leftovers from the 2026-10-22 fleet hardening sweep against docs/kb/host-hardening-baseline.md. (1) tony-macbook:
   stock sshd (PasswordAuthentication defaults on) + no /etc/sysctl.d/90-tuning.conf — sudo needs a password so it
   could not be applied remotely; Tony runs one paste-block OR grants the session sudo. (2) tony-omen + mn01: fail2ban
@@ -83,6 +83,9 @@ comms:
 - at: 2026-10-27 11:26
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 11:31
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -106,3 +109,7 @@ requests:
 review_kind: verify
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 11:31
+  note: verified — evidence checks green, closing itself
