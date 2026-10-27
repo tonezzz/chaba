@@ -47,6 +47,10 @@ comms:
     auto-commit disabled. It can be started manually in Cline now. Caveat: its shell runs inside the isolated Cline
     container/worktree, so it is not an authoritative con01 host audit. Nest adapter remains local-only/unpublished
     and cannot yet evaluate Nest results.'
+- at: 2026-10-27 16:35
+  from: devin
+  text: 'raised request how-should-i-enable-openrouter-models-fo-e879f4: How should I enable OpenRouter models for
+    Cline without storing a provider key in the agent-readable Cline data volume? '
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -64,3 +68,19 @@ requests:
   - id: local-only
     label: Keep the implementation branch local for now
   suggested: approve-live-test
+- id: how-should-i-enable-openrouter-models-fo-e879f4
+  ask: 'How should I enable OpenRouter models for Cline without storing a provider key in the agent-readable Cline
+    data volume? The existing LiteLLM gateway has a benchmark virtual key capped at $2/30d. Recommended: a separate
+    secret-backed proxy with a pinned :free-model allowlist first; paid model IDs stay blocked until you explicitly
+    approve a budget. OpenRouter free still sends prompts/code to an external provider and has rate limits.'
+  status: open
+  at: 2026-10-27 16:35
+  from: devin
+  options:
+  - id: or-free-gateway
+    label: Use LiteLLM benchmark key for pinned OpenRouter :free models only; keep paid blocked
+  - id: local-only
+    label: Keep local qwen3:4b only and defer OpenRouter
+  - id: paid-reference
+    label: Also authorize one paid OpenRouter reference within the existing $2/30d benchmark cap
+  suggested: or-free-gateway
