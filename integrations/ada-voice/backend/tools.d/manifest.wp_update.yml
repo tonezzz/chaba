@@ -1,0 +1,19 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# wp_update (2026-10-27, chaba card line-wp-site-manager P3): mutate an
+# existing boards post/page — retitle, rewrite content, move status
+# (the confirm-before-publish half: wp_post publish=false -> wp_read
+# preview -> wp_update status=publish). policy:confirmed — the dispatch
+# gate enforces confirmed=true/confirm_token before the tool runs
+# (bound single-use tokens, audit-logged). secondary_allowed: members
+# maintain their own site — the confirm gate still applies to
+# secondary speakers. posts+pages only; CPT records stay with their
+# writer tools (cpt_post owns the slug/meta contract). 30s — one GET +
+# one POST.
+tools:
+  wp_update:
+    module: wp_update
+    policy: confirmed
+    secondary_allowed: true
+    timeout_s: 30

@@ -1,0 +1,16 @@
+# manifest.yml snippet — merge under tools: in
+# <ada-voice>/backend/tools.d/manifest.yml.
+#
+# wp_read (2026-10-27, chaba card line-wp-site-manager P2): read-only
+# browse of the boards WP site — action=list posts/pages/CPT rows,
+# action=get one entry (draft preview as text — members have no
+# wp-admin login). Reads through the same wp-boards.env app password
+# as wp_post, so private/draft records are visible. policy:read +
+# secondary_allowed like wp_post: GETs only, member-visible data on
+# their own board. 30s — up to 2 REST calls (tag lookup + list).
+tools:
+  wp_read:
+    module: wp_read
+    policy: read
+    secondary_allowed: true
+    timeout_s: 30

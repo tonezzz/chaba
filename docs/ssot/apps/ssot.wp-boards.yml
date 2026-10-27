@@ -239,6 +239,21 @@ writers:
                   lane's member. contact/asset upsert by slug
                   (<kind>-<name>), expense/reminder always create.
                   Needs wp_client slug patch (staged drop 11)."
+  wp_read:        "read-only browse (card line-wp-site-manager P2) —
+                  ada-voice tools.d/wp_read: action=list posts/pages/CPT
+                  (status/person-tag/search filters), action=get by id
+                  or slug returns title + body TEXT — the draft preview
+                  (members have no wp-admin login). Tag lookup is a GET,
+                  never ensure_tag."
+  wp_update:      "confirm-gated writes to posts/pages (card
+                  line-wp-site-manager P3) — tools.d/wp_update,
+                  manifest policy:confirmed (dispatch enforces
+                  confirmed=true/confirm_token). GET-then-POST:
+                  transition report 'draft -> publish'; posts+pages
+                  only — CPT records keep their writer tools'
+                  slug/meta contract. Confirm-before-publish flow:
+                  wp_post publish=false -> wp_read get -> wp_update
+                  status=publish."
   place_report:   place + person tag            # maps links / place names
   trip_calendar:  trip parent+children + person # --public flag
   line-chat-timeline.py: "timeline_block rebuilds (journal+ops-events);

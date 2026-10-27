@@ -104,6 +104,12 @@ persons:
         # reminder/asset). Needs ada-voice drop 11 installed first —
         # keep out of lanes that haven't applied it.
         - cpt_post
+        # wp_read/wp_update (2026-10-27, card line-wp-site-manager P2+P3):
+        # read-only browse + confirm-gated update/publish on the boards
+        # site. wp_update is manifest policy:confirmed — dispatch enforces
+        # confirmed=true before it runs. Needs the tools.d drop applied.
+        - wp_read
+        - wp_update
         # tony-lane additions — evidenced by ada-ha-tony function_call
         # logs (7d: get_rk600_weather ~1507, cast_to_screen ~814) plus the
         # admin/ops surface this lane's owner sessions exercise.
@@ -187,6 +193,11 @@ persons:
         # meta, private status, saved_by=kk on her lane (KK is boss of
         # kk-home). Needs ada-voice drop 11 installed on the lane first.
         - cpt_post
+        # wp_read/wp_update (2026-10-27, card line-wp-site-manager P2+P3):
+        # 'what is on my site' / 'publish that draft' — members maintain
+        # their own board; wp_update is confirm-gated server-side.
+        - wp_read
+        - wp_update
         - chat_send
         # Calendar/tasks un-excluded 2026-10-11: her own calendar-kk.json +
         # kk-ha task list are live (ADA_CALENDAR_FILE) — the cross-lane leak
