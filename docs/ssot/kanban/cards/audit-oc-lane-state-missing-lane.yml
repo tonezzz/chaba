@@ -1,7 +1,7 @@
 id: audit-oc-lane-state-missing-lane
 title: 'OpenCode audit: lane_state_missing (lane)'
 column: doing
-updated: 2026-10-27 18:54
+updated: 2026-10-27 19:00
 brief: promotion reviews exist but evals/opencode-lane/state/ (stage.json + metrics.jsonl ledger) is absent — the
   verified-job aggregate cannot be re-derived
 priority: high
@@ -26,6 +26,13 @@ comms:
 - at: 2026-10-27 18:54
   from: devin
   text: '[audit] started: checking evals/opencode-lane state dir + promotion review producers'
+- at: 2026-10-27 19:00
+  from: devin
+  text: '[audit] CONFIRMED + fixed in branch. Root cause: lane_gate.py resolved state/ inside the checkout — the
+    S0 ledger died with its dispatch worktree (gitignored, never committed); per-job records unrecoverable, aggregate
+    survives only in the committed review JSON. Fix: state dir moved to host-stable ${XDG_STATE_HOME:-~/.local/state}/opencode-lane
+    (env override, legacy auto-migrates); review JSON now embeds the stage ledger; new restore subcommand rebuilds
+    stage.json from committed review evidence. '
 action:
   type: dispatch
   status: running
