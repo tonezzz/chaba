@@ -1,0 +1,20 @@
+id: cline-kanban-con01-pilot
+title: Pilot Cline Kanban host on con01
+column: doing
+updated: 2026-10-27 10:55
+priority: medium
+tags:
+- cline-kanban
+- con01
+- pilot
+- nest
+spec: Stand up Cline Kanban v0.1.70 on con01 as an isolated rootless Podman/Quadlet service, bound only to con01
+  tailnet IPv4 and protected by its remote-access passcode. Use a disposable Git workspace and persistent app data;
+  do not mount live Chaba repos, copy secrets, or enable auto-commit/auto-PR. Verify HTTP/UI assets, WebSocket/origin
+  behavior, tailnet reachability, and host resource impact. No external-provider model calls or large model downloads
+  without Tony approval. Declare stack, service, health/audit expectations, and rollback.
+ref: KNB-0925
+comms:
+- at: 2026-10-27 10:55
+  from: tony
+  text: card captured via board-api
