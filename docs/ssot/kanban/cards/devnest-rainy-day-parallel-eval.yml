@@ -1,7 +1,7 @@
 id: devnest-rainy-day-parallel-eval
 title: 'Rainy-day DevNest fallback: parallel OpenCode vs Devin evaluation'
-column: doing
-updated: 2026-10-27 13:51
+column: review
+updated: 2026-10-27 13:52
 brief: Run identical safe jobs through OpenCode and Devin in isolated worktrees, then build an offline fallback
   ladder for internet outages.
 priority: high
@@ -27,8 +27,11 @@ spec: 'Build a shadow/evaluation mode for DevNest where selected safe jobs run i
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 ld be a twin dispatch session rather than a nested print run. | devin-task-20261027-132834-build-a-shadow-evaluation-mode.service:
+    Consumed 6min 35.188s CPU time over 23min 20.116s wall clock time, 2.2G memory peak, 387.9M memory swap peak.'
+  verified: true
 note: Devin is currently the senior reviewer; this card tests whether OpenCode/DevNest can perform the same safe
   work in parallel and what remains possible during a full internet outage. Local CPU models are known to be weak
   for long agent loops, so do not claim full replacement without evidence.
@@ -62,3 +65,8 @@ comms:
     misses — real signal), devin nested-print 5/5 (needs --permission-mode smart/dangerous). Capability matrix:
     L1 BLOCKED no local ollama; L2/L3/L4 PASS. Offline+airgap sims PASS (all fixtures->L0, llm-tasks->MANUAL, secrets
     loader refuses). 19 arm runs, zero mutations/peeks/scope violatio'
+- at: 2026-10-27 13:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ld be a twin dispatch session rather than a nested print run. | devin-task-20261027-132834-build-a-shadow-evaluat'
+review_kind: verify
+claim: {}
