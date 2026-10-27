@@ -2,7 +2,7 @@ title: Security Posture — tony-omen
 subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-10-25"
+last_updated: "2026-10-27"
 maintainer: tony
 
 host: tony-omen
@@ -62,7 +62,11 @@ egress:
   transparent_proxy: { enabled: false }
   note: "multi-WAN ECMP wired 1Gbps + iPhone USB tether — ssot.tony-omen-multi-wan.yml"
 
-deviations: []
+baseline_applied:
+  - "fail2ban 1.1.0 installed+enabled 2026-10-27 — stock sshd jail + jail.local ignoreip (loopback, RFC1918, 100.64.0.0/10) so LAN/tailnet sources can never self-lockout; only non-local sources reaching sshd are bannable (tripwire for unexpected exposure)"
+
+deviations:
+  - { item: "no qemu-guest-agent", reason: "bare metal — systemd-detect-virt reports none (HP 15-BC); guest agent is n/a on non-QEMU hosts. Declared exception per lan-class policy decision 2026-10-27.", last_verified: "2026-10-27" }
 
 last_observed: {}
 deltas: []

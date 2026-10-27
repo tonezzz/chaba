@@ -70,6 +70,11 @@ everything" — a blind `ufw deny-in` breaks the house.
 | C4 | tailscale up + funnel/serve ACLs minimal | `tailscale status`, `tailscale serve status` | remove stale serve/funnel entries |
 | C5 | ufw either inactive OR LAN-scoped allow-list — never half-configured | `ufw status` | if enabling: allow LAN CIDR + tailscale0 + explicit service ports first |
 
+Policy settled 2026-10-27 (`docs/ssot/jobs/infrastructure/2026-10-27-lan-class-f2b-qemu-decision.yml`):
+
+- **fail2ban: enabled** on home-lan hosts as a tripwire — `jail.local` MUST set `ignoreip` covering loopback + RFC1918 + `100.64.0.0/10` (tailnet) so local sources can never self-lockout; only non-local sources reaching sshd are bannable.
+- **qemu-guest-agent: n/a on bare metal** — check `systemd-detect-virt`; declare a `{item, reason, last_verified}` deviation in `ssot.security.<host>.yml` instead of installing.
+
 ## D. workstation (tony-macbook, kk-mac)
 
 | # | Check | Verify | Apply |
