@@ -125,7 +125,8 @@ adopted external leaves distinctly (they have no generator-rendered
 ### The `house-timeline` family contract
 
 Reference implementation: `scripts/ada/house-timeline-update.py`, run by
-`house-timeline.timer` on **tony-dell**.
+`house-timeline.timer` on **idc03** (declared in `ssot.jobs.yml`; re-homed
+from tony-dell 2026-10-27 when the host drained).
 
 ```
 house-timeline            rollup — one row per active device + merged feed
@@ -133,16 +134,17 @@ house-timeline-<entity>   leaf   — per-device event log (≤25, by activity)
 house-timeline-qc         qc     — coverage/parse/self-checks (domain=meta)
 ```
 
-- **Source → sink:** reads `ada-ha-events-tony` on the mddb primary
-  (`:11023`, memory plane, read-only) and publishes to `ada-cms-pages` on
-  `mddb-cms` (`:11027`). Rendered window: 72h.
+- **Source → sink:** reads `ada-ha-events-tony` on **mddb-ops**
+  (`:11025`, ops plane, read-only — `ada-ha-events-*` moved off the
+  leader in the ops split, `docs/kb/mddb-ops-split.md`) and publishes to
+  `ada-cms-pages` on `mddb-cms` (`:11027`). Rendered window: 72h.
 - **Leaf eligibility:** a device earns a leaf at ≥3 events in-window;
   leaves are capped at 25, ranked by activity. Devices under the
   threshold still appear in the rollup table with `—` in the leaf column.
 - **Meta:** rollup + leaves carry `domain=home`, `report_role=rollup|leaf`,
   `fresh_for=1h`; qc carries `domain=meta`, `report_role=qc`. All carry
   `generated_by=house-timeline-update.py`,
-  `sources=ada-ha-events-tony collection (mddb :11023)`, `parent` per the
+  `sources=ada-ha-events-tony collection (mddb-ops :11025)`, `parent` per the
   §2 rule (`home` is a canonical domain — it renders as its own
   auto-section until/unless `nav.domain_map` folds it in).
 - **External leaves:** the run scans `ada-cms-pages` for docs with

@@ -1008,10 +1008,10 @@ mn01:
       ADA_PWA_NAME="Chaba AI" set; LINE personas ada+chaba both route here
     status: active
     tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-tony/"
-    env_file: "~/.config/secrets/ada-ha-tony.env"
+    env_file: "~/.config/secrets/tony-ha/backend.env"
     edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "https://tony-omen.taila0626a.ts.net:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and a dedicated svc-ada non-admin LLAT (ha-ada-isolation Phase B, 2026-10-15 — replaced the Tony owner token). Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
+    note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-omen.taila0626a.ts.net:8123/ and a dedicated svc-ada non-admin LLAT (ha-ada-isolation Phase B, 2026-10-15 — replaced the Tony owner token). Runs on idc03 :8002 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-tony/ — per-instance store model 2026-10-13: lane secrets owned by tony-ha at idc03:~/.config/secrets/tony-ha/ (own admin key + keys.json; legacy mn01 ada-ha-tony.{env,keys.json} migrate in). Supersedes the old same-admin-keys + synced issued-keys shared pool. idc01 keeps a masked warm-standby unit."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: idc03
@@ -1020,7 +1020,7 @@ mn01:
     purpose: Ada HA Michael instance (voice PWA for michael-ha)
     status: active
     tailnet_url: "https://idc03.taila0626a.ts.net/apps/ha/ada-michael/"
-    env_file: "~/.config/secrets/ada-ha-michael.env"
+    env_file: "~/.config/secrets/michael-ha/backend.env"
     edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc03; mn01 Caddy reverse-proxies the same paths to the VPS edge as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
     note: "Backend is /home/tony/CascadeProjects/ada-voice/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. Runs on idc03 :8003 (loopback) exposed at https://idc03.taila0626a.ts.net/apps/ha/ada-michael/ — per-instance store model 2026-10-13: lane secrets owned by michael-ha at idc03:~/.config/secrets/michael-ha/ (own admin key + keys.json; legacy mn01 ada-ha-michael.{env,keys.json} migrate in). idc03 reaches michael-ha directly over tailnet. idc01 keeps a masked warm-standby unit."
