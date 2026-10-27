@@ -1,7 +1,7 @@
 id: jack-opencode-enrollment-gateway
 title: Build VCAST-style one-time enrollment for Jack OpenCode
 column: doing
-updated: 2026-10-27 17:13
+updated: 2026-10-27 17:22
 brief: Let Jack paste a single-use browser enrollment code/URL and persist a scoped IDE session without exposing
   host/API keys.
 priority: high
@@ -46,3 +46,10 @@ comms:
     everything to the opencode container; codes+sessions sha256-hashed in /state JSON, audit JSONL; re-mint revokes
     prior session (exclusive default). LiteLLM key reuse from litellm-chaba.env container-side only — dedicated
     jack virtual key needs proxy admin, follow-up on parent card. Buil'
+- at: 2026-10-27 17:22
+  from: devin
+  text: 'DEPLOYED + VERIFIED on idc02. Live: https://idc02.taila0626a.ts.net:8448/enroll (tailscale serve -> jack-enroll
+    gw :8377 -> session-gated proxy -> jack-opencode on private podnet, no published ports). Verified: one-time
+    burn (replay=code_used), TTL expiry, forged-code 401, re-mint revokes prior session, unauth 401 (no+forged cookie),
+    /admin token-gated, /etc/passwd denied vs /workspace served, direct :4096 unreachable from host, SPA 200 + SSE
+    live over tailnet URL, model call PONG via LiteLLM. F'
