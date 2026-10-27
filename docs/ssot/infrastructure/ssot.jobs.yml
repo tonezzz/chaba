@@ -1056,7 +1056,31 @@ jobs:
     pointers, R4 series hubs). Prints + persists an audit JSON; a violation
     over threshold should queue the Fable polish pass. Runs 10 min after the
     lessons-due refresh so both education surfaces are current. Requires
-    scripts/lessons-audit.py in the served checkout.'
+    scripts/lessons-audit.py in the served checkout. Kept running alongside
+    chaba-education-report (2026-10-27) — the consolidated report is the
+    observability layer, this stays the standalone component + its control.'
+- id: chaba-education-report
+  name: Education consolidated maintenance report (audit+drift+due+trend)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 07:50:00'
+  persistent: true
+  timeout: 15m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  condition_path: '%h/CascadeProjects/chaba-tony-dell/scripts/education-report.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/education-report.py --post board,tg
+  note: 'card education-maintenance-consolidated-report — ONE JSON+MD report
+    reusing lessons-audit/lessons-drift/lessons-due internals on a single
+    /lesson fetch: policy flags, source drift/gone, due+upcoming reviews,
+    no_th exemptions, human-review queue, compliance trend. Writes
+    docs/reports/education-maintenance/{latest.json,latest.md,history.jsonl}
+    in the served checkout (kanban-commit sweeps the dir). --post board,tg
+    fires ONLY after verify passes with no holds — a failed or degraded
+    report lands on disk silently. Read-only: never writes /lesson; fixes
+    remain the explicit upsert stage, deletion human-gated. Runs after
+    chaba-lessons-audit so both the standalone component and the
+    consolidated view stay fresh. Runbook:
+    docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml'
 - id: lesson-drift-check
   name: Lesson drift check — trade docs mtime vs lesson modified
   host: tony_dell

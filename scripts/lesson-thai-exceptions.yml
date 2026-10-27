@@ -1,0 +1,51 @@
+# Intentional no_th exceptions for the Education store (card
+# education-maintenance-consolidated-report).
+#
+# The audit's R5 flag fires on every lesson with no Thai text. Some
+# lessons are DELIBERATELY Thai-free — filed with --no-th, or kept
+# English-only on purpose. This file is the curated list of those
+# exceptions; board-api also persists meta.no_th on new writes, and
+# the consolidated report treats (meta.no_th UNION this file) as the
+# exemption set.
+#
+# Seed rationale (2026-10-27): these were the Thai-free lessons left
+# standing after the 2026-10-24 lesson-polish pass, which treated the
+# remaining soft-Thai set as legit --no-th. The two speed-probe junk
+# posts are intentionally NOT here — they stay flagged as
+# thin/delete candidates (deletion is human-gated, KNB-0830).
+#
+# Remove a slug to un-exempt it (the next report will flag it R5
+# again). Add a slug when a lesson is filed Thai-free on purpose and
+# the write predates meta.no_th persistence.
+
+exceptions:
+  lesson-395598f2d76d:
+    topic: SSOT and WordPress lesson CPT relationship
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-5fcc4a0a6015:
+    topic: devnest-layered-reports
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-fa3704d7af02:
+    topic: devnest-news-watch-procedure
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-d5f4ea8e2f2d:
+    topic: devnest-continuous-improvement-standard
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-57b4db08c3a2:
+    topic: ada-nest-golden-hour-catch
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-8afd171c8dd5:
+    topic: groq-free-tier-fit
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-dd11e3146f15:
+    topic: node-red-devnest-visual-map
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-00750611bace:
+    topic: devnest-host-assessment
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-8d451125b029:
+    topic: devnest-devin-replay-benchmark
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass
+  lesson-1e4c0dfd3d5c:
+    topic: devnest-opencode-web-sample
+    reason: baseline-2026-10-27 Thai-free; treated as legit no_th by the polish pass

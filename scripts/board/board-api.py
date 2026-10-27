@@ -1542,7 +1542,8 @@ def _read_lessons(body: dict, frm: str) -> dict:
                             "level": m.get("level", ""),
                             "modified": h.get("modified"),
                             "next_review": m.get("next_review", ""),
-                            "status": m.get("status", "")})
+                            "status": m.get("status", ""),
+                            "no_th": bool(m.get("no_th"))})
         return {"lessons": out, "count": len(out), "via": frm,
                 "message": f"listed {len(out)} lessons"}
     slug = str(body.get("slug") or "").strip()
@@ -1623,6 +1624,16 @@ def do_lesson(body: dict, frm: str) -> dict:
             or str(date.today() + timedelta(days=7)),
             "status": str(body.get("status") or "open").strip()[:40],
             "updated": today}
+    # Persist intentional no-Thai (card
+    # education-maintenance-consolidated-report; the lesson-polish job's
+    # documented gap): meta.no_th marks a Thai-free lesson filed on
+    # purpose, so audits tell '--no-th intent' from 'missing
+    # translation'. Only when the write both skips Thai AND lands
+    # Thai-free — polish passes set no_th to preserve an existing Thai
+    # section and must not mark the lesson exempt.
+    thai_free = not re.search(r"[\u0e00-\u0e7f]", content)
+    if body.get("no_th") and thai_free:
+        meta["no_th"] = True
     payload = {"title": f"Education — {topic}"[:160], "slug": slug,
                "status": "private", "content": content, "meta": meta}
     hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
@@ -1638,6 +1649,11 @@ def do_lesson(body: dict, frm: str) -> dict:
                 meta[k] = override_review
             elif old_meta.get(k):
                 meta[k] = old_meta[k]
+        # a re-file that lands Thai-free again keeps a prior exemption
+        # even when this write didn't ask for no_th (e.g. a Thai
+        # backfill attempt whose translation failed upstream)
+        if thai_free and old_meta.get("no_th"):
+            meta["no_th"] = True
         # explicit modified bump — WP only auto-updates it when content
         # bytes change; re-filed lessons with identical content kept the
         # ORIGINAL date, so admin sort-by-last-modified was useless
@@ -2873,6 +2889,27 @@ def _selftest() -> None:
         assert payload["meta"]["next_review"] == "2026-01-08"
         assert payload["meta"]["status"] == "learned"
         assert "ไทย" not in payload["content"]
+        # Thai-free --no-th write records the exemption (meta.no_th)
+        assert payload["meta"]["no_th"] is True
+        # re-file carrying Thai clears the exemption marker
+        wp2b = FakeWP([{"id": 42, "meta": {"no_th": True}}])
+        globals()["wp_api"] = wp2b
+        globals()["_gemini_thai"] = lambda h: "<p>แปล</p>"
+        do_lesson({"topic": "Object Storage", "content": "<p>v3</p>"},
+                  "devin")
+        _, payload = wp2b.posts[-1]
+        assert "ไทย" in payload["content"]
+        assert "no_th" not in payload["meta"]
+        # re-file landing Thai-free keeps a prior exemption even when
+        # this write didn't ask for no_th (translation failed upstream)
+        wp2c = FakeWP([{"id": 42, "meta": {"no_th": True}}])
+        globals()["wp_api"] = wp2c
+        globals()["_gemini_thai"] = lambda h: ""
+        do_lesson({"topic": "Object Storage", "content": "<p>v4</p>"},
+                  "devin")
+        _, payload = wp2c.posts[-1]
+        assert "ไทย" not in payload["content"]
+        assert payload["meta"]["no_th"] is True
 
         # /job — validation + create/update + comms log + parent
         assert job_actor({}, "local") == "local"
