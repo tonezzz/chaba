@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: review
-updated: 2026-10-27 19:00
+updated: 2026-10-27 19:14
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -112,6 +112,13 @@ comms:
     tailnet serve is configured on :8448. Remaining work is external access only: Cloudflare Access/public hostname
     plus dedicated Jack-scoped LiteLLM key. Need Jack email/identity and final hostname/policy before configuring
     CF; no public route should be opened by assumption.'
+- at: 2026-10-27 19:14
+  from: devin
+  text: 'Cloudflare route completion plan: DNS/proxied hostname `opencode-jack.surf-thailand.com`; Caddy edge block
+    -> loopback :8377 with WebSocket support; Cloudflare Access self-hosted app + allow policy for javkster@gmail.com;
+    gateway must validate CF identity header in addition to tailnet mode; then browser/redeem/replay/WebSocket smoke.
+    OpenCode can prepare the config/tests in an isolated worktree, but final CF DNS/Access and host reload remain
+    a Tony-gated production operation. Dedicated Jack Lite'
 action:
   type: dispatch
   status: done
