@@ -1,7 +1,7 @@
 id: line-wp-site-manager
 title: LINE-driven WordPress site maintenance (customer via LINE chat)
-column: doing
-updated: 2026-10-27 14:17
+column: review
+updated: 2026-10-27 14:19
 brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
   drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
   WP itself not serving yet — Plesk default page).'
@@ -862,10 +862,17 @@ comms:
     not self-asserted). Publish flow: wp_post publish=false -> wp_read preview -> member yes -> wp_update publish.
     18 drop tests green; tony+kk includes + writers SSOT updated; design doc docs/ssot/jobs/ada/2026-10-27-wp-read-update-tools.yml.
     On branch d0c6034c3 — NOT deployed: nee'
+- at: 2026-10-27 14:19
+  from: tony-macbook
+  text: 'finished (ok): exit=0 est; the drops land on ada-voice via the normal drop-apply + deploy-ada.sh path on
+    idc03. | devin-task-20261027-1'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 est; the drops land on ada-voice via the normal drop-apply + deploy-ada.sh path on idc03. | devin-task-20261027-140223-p0-wp-live-on-plesk-boards-sit.service:
+    Consumed 56.436s CPU time over 15min 50.391s wall clock time, 356.1M memory peak.'
+  verified: true
 requests:
 - id: open-q-from-spec-when-a-real-customer-si-952fee
   ask: 'Open Q from spec: when a real CUSTOMER site onboards (not kk/nhong testbed), which lane fronts it — tony
@@ -878,3 +885,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
