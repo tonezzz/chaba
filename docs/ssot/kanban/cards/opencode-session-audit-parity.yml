@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
 column: done
-updated: 2026-10-27 17:02
+updated: 2026-10-27 17:14
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -81,6 +81,12 @@ comms:
 - at: 2026-10-27 17:02
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-27 17:14
+  from: tony
+  text: 'AUDIT STATUS CORRECTION: dispatch marked verified, but independent local check finds only 27 lines added
+    to evals/opencode-lane/PROCEDURE.md; audit script/report/job artifacts are not present in the served checkout,
+    and the dispatch worktree was kept dirty (7 files). Treat AUD-0938 as evidence-incomplete until the audit script
+    + JSON/Markdown report + tests land durably and the fail-open test gate is fixed.'
 review_kind: verify
 claim: {}
 auto_close:
