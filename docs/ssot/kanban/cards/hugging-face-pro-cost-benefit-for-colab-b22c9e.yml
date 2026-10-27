@@ -66,7 +66,23 @@ comms:
     equivalent HF Jobs PAYG $6-12/mo vs Pro $16-21/mo — Pro is >=$7/mo worse than PAYG at ANY usage on Jobs spend
     alone (its $2 credits ≈ 5 T4h). ZeroGPU cannot run the pack runner (Gradio-Spaces calls only); Hub cache is
     ephemeral per job anyway. Probes: HF CDN anon 40.8MB/s vs Drive '
+- at: 2026-10-27 13:44
+  from: devin
+  text: 'raised request hf-pro-decision-after-measured-assessmen-0dd468: HF Pro decision after measured assessment
+    — pick one: (a) DEFER Pro, no live HF probe — verdict stands on measured utili'
 action:
   type: dispatch
   status: running
   runner: idc02
+requests:
+- id: hf-pro-decision-after-measured-assessmen-0dd468
+  ask: 'HF Pro decision after measured assessment — pick one: (a) DEFER Pro, no live HF probe — verdict stands on
+    measured utilization ~15-30 T4h/mo (recommended ★); (b) approve bounded PAYG probe ≤$1 — one t4-small HF Job
+    running the devnest-heldout battery (~$0.07) + HF token in ~/.config/secrets; (c) approve a free HF account/token
+    only — enables free-tier ZeroGPU/Hub probes with zero spend, no paid jobs'
+  status: open
+  at: 2026-10-27 13:44
+  from: devin
+  options:
+  - proceed
+  - hold
