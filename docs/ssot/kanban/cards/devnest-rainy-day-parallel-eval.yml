@@ -1,6 +1,6 @@
 id: devnest-rainy-day-parallel-eval
 title: 'Rainy-day DevNest fallback: parallel OpenCode vs Devin evaluation'
-column: backlog
+column: doing
 updated: 2026-10-27 13:28
 brief: Run identical safe jobs through OpenCode and Devin in isolated worktrees, then build an offline fallback
   ladder for internet outages.
@@ -27,7 +27,8 @@ spec: 'Build a shadow/evaluation mode for DevNest where selected safe jobs run i
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 note: Devin is currently the senior reviewer; this card tests whether OpenCode/DevNest can perform the same safe
   work in parallel and what remains possible during a full internet outage. Local CPU models are known to be weak
   for long agent loops, so do not claim full replacement without evidence.
@@ -36,3 +37,6 @@ comms:
 - at: 2026-10-27 13:28
   from: tony
   text: card captured via board-api
+- at: 2026-10-27 13:28
+  from: tony-macbook
+  text: claimed
