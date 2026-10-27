@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 18:25
+updated: 2026-10-27 18:29
 priority: medium
 tags:
 - cline-kanban
@@ -136,6 +136,13 @@ comms:
   from: devin
   text: 'raised request openrouter-free-only-route-was-approved-293f91: OpenRouter free-only route was approved,
     but the existing LITELLM_KEY_BENCH cannot serve it: LiteLLM returns 422 budget_'
+- at: 2026-10-27 18:29
+  from: devin
+  text: 'Follow-up after Tony selected approve-live-test and or-free-gateway: Cline Ollama Base URL is fixed to
+    /v1; a local Cline completion returned HTTP 200 after 6m33s, but the smoke turn was canceled before shell tools
+    and no files changed. The approved OpenRouter path is currently blocked: LiteLLM returned 422 budget_exceeded
+    for LITELLM_KEY_BENCH (current cost $2.00844621 / cap $2.00); no OpenRouter inference was made. A separate request
+    asks whether to mint a dedicated Cline-only key with a free-'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
