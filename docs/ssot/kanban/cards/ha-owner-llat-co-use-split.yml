@@ -1,7 +1,7 @@
 id: ha-owner-llat-co-use-split
 title: Split shared Tony owner LLAT off chaba-guest / nodered / home-assistant-token.env, then revoke
 column: doing
-updated: 2026-10-27 06:56
+updated: 2026-10-27 07:09
 brief: 'Found during ha-ada-isolation Phase B (2026-10-15): the Tony OWNER LLAT that Ada lanes used is still shared
   by three non-Ada consumers on tony-dell — chaba-guest.env (HOME_ASSISTANT_TOKEN), nodered-ha.env (HASS_TOKEN),
   home-assistant-token.env (HA_LONG_LIVED_TOKEN). Ada lanes moved to svc-ada already; revoking the owner token now
@@ -35,6 +35,13 @@ comms:
 - at: 2026-10-27 06:56
   from: devin
   text: 'dispatch started: reading ha-ada-isolation kb + ha-svc-user.py, enumerating owner-token consumers'
+- at: 2026-10-27 07:09
+  from: devin
+  text: 'DONE. Found 3 distinct Tony OWNER tokens in the wild (8d1a7d29a3 shared, 6e6553888f omen, 0362b97704 tony-devin
+    idc03/mn01) — all revoked via auth/delete_refresh_token (B was already dead). 9 env slots on 4 hosts now hold
+    dedicated non-admin svc tokens: svc-chaba-guest, svc-nodered (per-host lanes), svc-chaba-scripts (per-host lanes),
+    svc-ada standby lanes for the mn01/dell ada envs. Consumers restarted+verified: node-red omen+dell :1880 200,
+    chaba-guest enabled+started on omen :8014 200, ha-liv'
 action:
   type: dispatch
   status: running
