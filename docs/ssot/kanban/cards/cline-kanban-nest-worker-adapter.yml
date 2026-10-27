@@ -132,6 +132,10 @@ comms:
     6m33s. The read-only smoke turn was canceled before shell tools, with no workspace changes/commits. UI now shows
     2 earlier failed tests in Done and one new smoke in Progress with Turn canceled. The approved queue dispatch
     on tony-macbook failed before execution because its Devin'
+- at: 2026-10-27 18:25
+  from: devin
+  text: 'raised request openrouter-free-only-route-was-approved-293f91: OpenRouter free-only route was approved,
+    but the existing LITELLM_KEY_BENCH cannot serve it: LiteLLM returns 422 budget_'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -183,6 +187,23 @@ requests:
     label: Hold here; do not run more tasks
   suggested: update-baseurl
   answer: update-baseurl — I will set the /v1 Base URL and reply when saved
+- id: openrouter-free-only-route-was-approved-293f91
+  ask: 'OpenRouter free-only route was approved, but the existing LITELLM_KEY_BENCH cannot serve it: LiteLLM returns
+    422 budget_exceeded at $2.00844621 against its $2.00/30d cap. The existing key was not used for inference. To
+    enable pinned :free models through the secret-backed proxy, should I mint a separate Cline-only virtual key
+    and allowlist only those free model aliases? That creates a new possible spend ceiling; paid model IDs would
+    remain blocked.'
+  status: open
+  at: 2026-10-27 18:25
+  from: devin
+  options:
+  - id: new-cline-free-key
+    label: Mint a dedicated Cline virtual key with a $2/30d cap and only pinned :free models allowed
+  - id: local-only
+    label: Keep local qwen3:4b only; defer OpenRouter until the existing key budget resets
+  - id: new-lower-cap
+    label: Mint a dedicated Cline key with a lower cap; specify the cap in a reply
+  suggested: new-cline-free-key
 action:
   type: dispatch
   status: done
