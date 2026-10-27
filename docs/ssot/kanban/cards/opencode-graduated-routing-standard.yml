@@ -1,7 +1,7 @@
 id: opencode-graduated-routing-standard
 title: Standardize graduated routing of safe jobs to OpenCode
 column: doing
-updated: 2026-10-27 14:37
+updated: 2026-10-27 14:40
 brief: Define how OpenCode receives increasing job volume safely, with gates, canaries, rollback, and efficiency
   measurement.
 priority: high
@@ -62,3 +62,13 @@ comms:
   from: devin
   text: 'started: building lane_gate.py (envelope schema + fail-closed admit + stage machine S0-S5 + metrics ledger
     + kill switch) on top of shadow_eval harness; will run S0 on the 5 frozen fixtures'
+- at: 2026-10-27 14:40
+  from: tony
+  text: 'S1 canary executed on tony-macbook with 3 fresh sessions, concurrency=1. Host-health PASS; MCP-safety PASS
+    (health ok, no denied tools/mutations); storage-dry-run FAIL independent verifier because OpenCode marked unsafe
+    project/data paths automatic_ok (CascadeProjects, evals, go, gods-eye-view, sunsynk). No mutation occurred.
+    This is a useful gate failure: strengthen storage path policy/verifier before promotion; keep broad routing
+    OFF.'
+- at: 2026-10-27 14:40
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
