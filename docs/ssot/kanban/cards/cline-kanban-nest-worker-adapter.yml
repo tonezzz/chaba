@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: doing
-updated: 2026-10-27 13:54
+updated: 2026-10-27 14:02
 priority: medium
 tags:
 - cline-kanban
@@ -22,3 +22,10 @@ comms:
 - at: 2026-10-27 13:54
   from: tony
   text: card captured via board-api
+- at: 2026-10-27 14:02
+  from: devin
+  text: '2026-10-27 design decision: Cline Kanban task CLI uses its local runtime endpoint; remote-mode CLI calls
+    are unreliable (#494). v1 will run the Nest pack on con01 and invoke kanban task create/start inside the Cline
+    container against a localhost-only backend. The Tailnet proxy will enforce BasicAuth + exact Host/Origin. Use
+    existing Omen Ollama qwen3:4b (tool-capable, already cached, no API key or download) for one disposable smoke
+    task. This validates Nest queue -> one Cline execution host; it '
