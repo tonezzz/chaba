@@ -1,6 +1,6 @@
 id: line-proactive-persona
 title: 'LINE relay: persona-initiated outbound to group members (proactive turns)'
-column: doing
+column: review
 updated: 2026-10-27 14:16
 priority: medium
 spec: 'Relay is reply-only today — a persona can answer but cannot INITIATE a conversation with a member (e.g. Kaewta
@@ -42,7 +42,17 @@ comms:
     LINE_MEMBER_NAMES dir->mddb registry scan. (2) in-group addressing — mention= builds real LINE mention objects
     (@displayName via group member profile endpoint, UTF-16 offsets). (3) policy — relay gate LINE_PROACTIVE_ALLOW
     + 600s per-lane AND per-member debounce + day ca'
+- at: 2026-10-27 14:16
+  from: idc02
+  text: 'finished (ok): exit=0 rop-17 README section and job trail at `docs/ssot/jobs/ada/2026-10-27-line-proactive-persona.yml`.
+    | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 rop-17 README section and job trail at `docs/ssot/jobs/ada/2026-10-27-line-proactive-persona.yml`.
+    | devin-task-20261027-140132-relay-is-reply-only-today-a-pe.service: Consumed 1min 50.102s CPU time, 169.5M
+    memory peak, 0B memory swap peak.'
+  verified: false
+review_kind: verify
+claim: {}
