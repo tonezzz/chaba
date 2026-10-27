@@ -1,7 +1,7 @@
 id: opencode-task-agent-profiles
 title: Add scoped OpenCode agents for ops, SSOT research, storage, and branch work
-column: doing
-updated: 2026-10-27 20:41
+column: review
+updated: 2026-10-27 20:43
 brief: Replace generic build behavior with task-scoped OpenCode agent profiles and independent safety/verifier contracts.
 priority: high
 program: ai-workforce
@@ -23,8 +23,12 @@ spec: 'Add task-scoped OpenCode agent profiles, keeping the generic build agent 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 vnest/2026-10-27-opencode-task-agent-profiles.yml`; committed on the dispatch branch, not pushed.
+    | devin-task-20261027-194243-add-task-scoped-opencode-agent.service: Consumed 4min 30.663s CPU time, 1002.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
 note: OpenCode has successfully used generic build for read-only jobs, but a scoped agent profile is the next safety
   and efficiency improvement before increasing volume.
 ref: OPS-0956
@@ -51,3 +55,9 @@ comms:
     agent out of unattended routing: lane_gate missing/unknown/disabled profile denials; runner-agent reaches opencode
     only via resolved profile (action.profile else LANE_PROFILES free_lane->ops-readonly), else Devin path. Rendered
     run-local opencode.json disables build/plan/gen'
+- at: 2026-10-27 20:43
+  from: idc02
+  text: 'finished (ok): exit=0 vnest/2026-10-27-opencode-task-agent-profiles.yml`; committed on the dispatch branch,
+    not pushed. | devin-task-20'
+review_kind: verify
+claim: {}
