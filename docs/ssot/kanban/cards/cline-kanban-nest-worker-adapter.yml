@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 17:16
+updated: 2026-10-27 17:23
 priority: medium
 tags:
 - cline-kanban
@@ -93,6 +93,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261027-171254-implement-and-test-a-nest-pack on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-27 17:23
+  from: devin
+  text: '2026-10-27: No service restart is needed for the Ollama provider setting; it was saved through Cline Settings
+    and remains in persistent app state. cline-kanban.service is still active since its prior start, so the current
+    access session is unchanged. Restarting now would only interrupt the session/rotate the generated passcode;
+    it would not deploy the local Nest adapter or OpenRouter proxy. The UI settings can be refreshed to see Ollama
+    qwen3:4b.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -135,5 +142,7 @@ action:
   result: 'exit=0 | devin-task-20261027-171254-implement-and-test-a-nest-pack.service: Failed with result ''exit-code''.
     | devin-task-20261027-171254-implement-and-test-a-nest-pack.service: Consumed 716ms CPU time over 595ms wall
     clock time, 67.6M memory peak.'
+  sweep:
+    session_gone: 2026-10-27 17:16
 review_kind: verify
 claim: {}
