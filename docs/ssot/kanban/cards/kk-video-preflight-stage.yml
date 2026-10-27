@@ -1,7 +1,7 @@
 id: kk-video-preflight-stage
 title: Add lightweight KK video preflight pack before GPU work
 column: doing
-updated: 2026-10-27 15:32
+updated: 2026-10-27 15:40
 brief: Validate KK project inputs and preview-pack policy before expensive GPU work, without consuming the active
   runtime snapshot.
 priority: medium
@@ -45,3 +45,9 @@ comms:
     (2) new pack kk-video-c9f99fee6146-preflight (gpu_gb:0) staged with the release; (3) queue-runner + nest-worker
     gain a requires: claim gate (done marker + verdict!=fail); (4) embeds+preview packs declare requires on it;
     (5) tests + hash reference. no live Drive writes — staging is a documented release step.'
+- at: 2026-10-27 15:40
+  from: devin
+  text: 'DONE (worktree): pack-preflight.py validator (manifest/sha256-provenance/brief-scene-prompt-rights/fact-vs-dream/symbolic-identity/thai-narration+th-en-subtitles/pack.yml/artifact-globs/privacy/needs+timeout/no-paid-public
+    flags) + kk-video-c9f99fee6146-preflight pack (gpu_gb:0) + requires: claim gate in queue-runner.py AND nest-worker.py
+    (fail closed; *-preflight needs verdict pass|warn) + requires-first ordering so CPU gate drains before GPU packs
+    in one launch. embeds->preflight, preview->[pr'
