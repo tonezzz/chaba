@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: backlog
-updated: 2026-10-27 10:07
+updated: 2026-10-27 10:11
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -14,3 +14,10 @@ comms:
 - at: 2026-10-27 10:07
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 10:11
+  from: devin
+  text: '[priority recommendation] Do the terminal-evidence guard first. Current do_job validates only that status
+    is in the enum; it does not enforce transitions or require result_ref. _pub_job_send defaults any milestone
+    to job_status=done, while evidence is optional and result_ref is only copied when evidence exists. Make done
+    explicit (no implicit milestone->done) and reject it without a verified artifact/result_ref receipt; cover both
+    /publish and legacy /job with tests. Then add stale-claim reconci'
