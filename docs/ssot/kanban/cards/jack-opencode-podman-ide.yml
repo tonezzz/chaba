@@ -1,7 +1,7 @@
 id: jack-opencode-podman-ide
 title: Create isolated Podman OpenCode IDE for Jack
 column: backlog
-updated: 2026-10-27 16:59
+updated: 2026-10-27 17:01
 brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
   production paths.
 priority: high
@@ -46,3 +46,10 @@ comms:
     Candidate URL: https://opencode-jack.surf-thailand.com/ (not live yet). A one-time registration link may enroll
     Jack, but it must be HTTPS, short-lived, single-use, random, and exchange for a session/cookie; never put a
     permanent bearer token in a bookmark/query URL. Fast fallback is '
+- at: 2026-10-27 17:01
+  from: devin
+  text: 'Clarification: support a human-pasted one-time pairing code in Chrome. Flow: Jack opens stable /enroll
+    URL, pastes a short random code, server verifies hashed single-use code with short TTL, consumes it, then issues
+    a Secure/HttpOnly/SameSite session cookie or Cloudflare Access enrollment session. Never send LLM/API/MCP access
+    keys to browser JS/localStorage; scoped LiteLLM credentials remain server/container-side. Jack bookmarks the
+    normal IDE URL after enrollment; Tony can revoke the session/c'
