@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
-column: doing
-updated: 2026-10-27 13:44
+column: review
+updated: 2026-10-27 13:45
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -25,8 +25,11 @@ spec: 'Build the next safe improvement to the Education maintenance loop. Reuse 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 `/lesson` upsert is the deliberate next stage, not this card. | devin-task-20261027-132225-build-the-next-safe-improvemen.service:
+    Consumed 1min 37.430s CPU time over 22min 18.202s wall clock time, 418M memory peak, 145.6M memory swap peak.'
+  verified: true
 note: Tony asked to card the improvements. Existing daily audit is live, but the maintenance surface is fragmented
   across audit, drift, due-review, and polish reports. This card consolidates observability without weakening safety.
 ref: AUD-0930
@@ -53,3 +56,8 @@ comms:
     idc03 (condition_path until merge), kanban-commit sweeps docs/reports/education-maintenance/. Sample report
     verified live: 92 lessons, 26 flagged, compliance 0.9643, drift 3/gone 40, due 14 — counts parity-checked vs
     standalone lessons-audit.py. Door patch: meta.no_th now persisted (cl'
+- at: 2026-10-27 13:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 `/lesson` upsert is the deliberate next stage, not this card. | devin-task-20261027-132225-build-the-next-safe-im'
+review_kind: verify
+claim: {}
