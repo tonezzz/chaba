@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
-column: doing
-updated: 2026-10-27 13:11
+column: backlog
+updated: 2026-10-27 13:18
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -61,6 +61,9 @@ comms:
     {op:sinks,from:devin} now returns 200 with 7 sinks. Published the verified Sacred Father preview failure alert
     to thread 33; receipts: Telegram delivered `tg:33`, board delivered, nest_job updated `kk-video-c9f99fee6146-preview`
     (post 2648). No direct /send fallback. The additional proje'
+- at: 2026-10-27 13:18
+  from: chaba
+  text: 'answer-sweep: executed ''wait-clean-deploy — fix the live board-api through the stand'' -> put on hold'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
@@ -81,4 +84,6 @@ requests:
   suggested: wait-clean-deploy
   answer: wait-clean-deploy — fix the live board-api through the standard deployment after the served checkout is
     reconciled; do not use direct /send as a workaround.
-awaiting_action: true
+  executed: 2026-10-27 hold
+action:
+  status: idle
