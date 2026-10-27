@@ -1,0 +1,96 @@
+title: house-timeline family re-homed — timer on idc03, events read from mddb-ops
+subtitle: >-
+  Card claimed the ada-ha-events feed had stalled. It hadn't: the ops
+  split moved ada-ha-events-* writes to mddb-ops :11025 — only the
+  reader (house-timeline-update.py) still queried the leader :11023,
+  and its timer died with the tony-dell drain.
+id: 2026-10-27-house-timeline-repoint
+status: done
+owner: devin-dispatch
+project: chaba
+card: house-timeline-orphaned-feed-repoint
+branch: dispatch/20261027-102955-house-timeline-family-orphaned
+started: "2026-10-27"
+
+diagnosis:
+  card_premise: >
+    (1) house-timeline.timer gone with tony-dell drain — TRUE (ad-hoc
+    unit, never declared in ssot.jobs.yml; unit not-found after drain).
+    (2) kind=events docs in ada-ha-events-tony stalled 2026-10-23
+    needing a collector repoint to the current HA URL — WRONG.
+  real_cause: >
+    The feed never stalled. ada-ha-tony's event_recorder (idc03:8002,
+    env ~/.config/secrets/tony-ha/backend.env) already points at
+    HOME_ASSISTANT_URL=https://tony-omen.taila0626a.ts.net:8123 — the
+    omen evacuation was done 10-19/20. Since the 2026-10-23T13:15 ICT
+    service restart, MddbClient ops routing (OPS_COLLECTION_PREFIXES +
+    MDDB_OPS_URL, docs/kb/mddb-ops-split.md) sends ada-ha-events-*
+    writes to mddb-ops http://100.123.163.11:11025 (idc2 — no-embed
+    telemetry store). Newest kind=events doc there:
+    events-tony-20261027021042131487 (period_end 2026-10-27T02:10Z).
+    The leader :11023 copy simply stopped growing — read-only residue,
+    per plan. Only the house-timeline reader still scanned :11023.
+  evidence:
+    - "GET :8002/api/home-assistant/event-recorder -> running:true,
+      subscribed, 175 buffered, last_connected 2026-10-26T20:01Z"
+    - "journal ada-ha-tony: zero POST /v1/add to :11023 since restart;
+      POST :11025/v1/add 200s present"
+    - "mddb-ops :11025 ada-ha-events-tony kind=events: 1348 docs, newest
+      today; leader :11023 newest events-tony-* key 2026-10-23"
+    - "dell HA https://tony-dell...:8123/api -> 000 (drained); omen
+      -> 401 (alive, auth required)"
+
+changes:
+  - scripts/ada/house-timeline-update.py:
+      desc: >
+        events source MDDB_BASE_URL(:11023) -> MDDB_OPS_URL(:11025);
+        docstring, footer, qc + sources meta now say mddb-ops;
+        VERSION 1.1.0 -> 1.2.0.
+  - docs/ssot/infrastructure/ssot.jobs.yml:
+      desc: >
+        new job `house-timeline` — host idc03, systemd, every 1h,
+        persistent, timeout 5m. env pins MDDB_OPS_URL + MDDB_CMS_URL,
+        plus MDDB_BASE_URL->ops as a transitional pin so the
+        pre-repoint script build on the idc03 checkout also reads the
+        right plane until this merge reaches it.
+  - systemd/generated/idc03/:
+      desc: >
+        rendered via render-jobs.py --host idc03 — house-timeline.{timer,
+        service} new; chaba-lessons-audit.* + kanban-notify.* were
+        manifest jobs missing from generated/ (drift resync);
+        chaba-jobs.service TimeoutStartSec 300->1260 (manifest drift).
+  - docs/kb/cms-page-standard.md:
+      desc: "§4 contract: timer host tony-dell -> idc03; source mddb primary :11023 -> mddb-ops :11025."
+  - docs/ssot/infrastructure/ssot.services.yml:
+      desc: "ada-ha-tony env_file -> ~/.config/secrets/tony-ha/backend.env (actual unit EnvironmentFile), note HOME_ASSISTANT_URL dell->omen; ada-ha-michael env_file -> michael-ha/backend.env."
+  - docs/ssot/apps/ssot.apps.ada_ha.yml:
+      desc: "unit env paths updated to per-instance backend.env files."
+
+live_changes:
+  - "idc03: installed rendered house-timeline.{timer,service} to
+    ~/.config/systemd/user/, daemon-reload, enable --now — same content
+    render-jobs.py --install produces; re-render post-merge is
+    byte-identical."
+
+verify:
+  producer: >
+    house-timeline.service ran 2026-10-27 10:36 ICT: '5 leaves +
+    rollup + qc (published; 151 events from 10 docs)' — the old 1.1.0
+    build on the idc03 checkout worked via the MDDB_BASE_URL->ops pin.
+  surface: >
+    ada-cms-pages :11027 — house-timeline rollup updated
+    2026-10-27T03:36:09Z (was frozen 2026-10-13T01:59:26Z); qc + leaf
+    pages same stamp; device table live (coffee plug 73 events etc).
+    sources meta still reads 'mddb :11023' until the new script lands
+    on the checkout — cosmetic, self-corrects on merge.
+
+followups:
+  - "ops-event docs are now split-brained: ada-voice emits them to
+    ada-ha-events-* on mddb-ops :11025, while chaba-side writers
+    (ops-error-posts.py et al. on MDDB_BASE_URL) still land on leader
+    :11023 — readers on either plane see a subset. Audit ada-ha-events-*
+    kind=ops-event consumers (session-audit, ops-error-posts,
+    house-distill, line-digest) and decide the canonical plane.
+    Carded: ops-event-plane-split-brain-audit."
+  - "ssot.services.yml still lists ada-ha-michael status:active on
+    idc03 but the user unit is not-found there — separate drift."

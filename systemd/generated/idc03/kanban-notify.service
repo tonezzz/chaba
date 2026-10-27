@@ -1,0 +1,9 @@
+[Unit]
+Description=Kanban watch — TG notify on card state changes (job:kanban-notify, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=90
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/kanban-notify.py
+Environment="BOARD_NOTIFY_CHANNEL=tg"
+Environment="BOARD_NOTIFY_TG_CHAT_ID=-5410424865"

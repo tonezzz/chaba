@@ -980,6 +980,26 @@ jobs:
     ada-cms-pages-kk. MEDIA_INBOX_CHATS = the family group (LINE_LANE_DEFAULT[kk])
     — files arriving there before the relay wrote persona land in her inbox;
     kaewta-persona lines land there by attribution.'
+- id: house-timeline
+  name: House timeline page family (rollup + leaves + qc)
+  host: idc03
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/house-timeline-update.py
+  env:
+    MDDB_OPS_URL: http://100.123.163.11:11025/v1
+    MDDB_BASE_URL: http://100.123.163.11:11025/v1
+    MDDB_CMS_URL: http://100.102.134.91:11027/v1
+  note: 'card house-timeline-orphaned-feed-repoint — re-homed 2026-10-27.
+    The old house-timeline.timer was an ad-hoc unit on tony-dell, never
+    declared here; it died with the drain. The feed itself never stalled:
+    since the mddb-ops split (docs/kb/mddb-ops-split.md) ada-ha-events-*
+    lands on mddb-ops :11025, so the reader moved off leader :11023.
+    MDDB_BASE_URL is pinned to the ops store too — transitional, so a
+    pre-repoint build of the script on the checkout still reads the right
+    plane until this repoint reaches it.'
 - id: voice-burn-ledger
   name: Voice burn ledger (all lanes)
   host: idc03
