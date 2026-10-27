@@ -1,7 +1,7 @@
 id: devnest-rainy-day-parallel-eval
 title: 'Rainy-day DevNest fallback: parallel OpenCode vs Devin evaluation'
 column: doing
-updated: 2026-10-27 13:45
+updated: 2026-10-27 13:51
 brief: Run identical safe jobs through OpenCode and Devin in isolated worktrees, then build an offline fallback
   ladder for internet outages.
 priority: high
@@ -55,3 +55,10 @@ comms:
     artifact-missing x2, used_pct float contract x1 — real signal). devin arm needs --permission-mode smart (print
     mode rejects writes); first pass host-health 32s. 20/20 ladder-selection tests green. Running remaining devin
     arms now.'
+- at: 2026-10-27 13:51
+  from: devin
+  text: 'DONE on tony-macbook: shadow_eval.py harness + 5 frozen fixtures + held-out verifiers + L0-L4 ladder all
+    committed (0c7e3c1b3). Real paired results: l0 5/5 (~6s,0tok), opencode flash-lite 2/5 (early-stop artifact
+    misses — real signal), devin nested-print 5/5 (needs --permission-mode smart/dangerous). Capability matrix:
+    L1 BLOCKED no local ollama; L2/L3/L4 PASS. Offline+airgap sims PASS (all fixtures->L0, llm-tasks->MANUAL, secrets
+    loader refuses). 19 arm runs, zero mutations/peeks/scope violatio'
