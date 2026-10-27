@@ -44,7 +44,21 @@ comms:
 
 
     sudo tee /etc/ssh/sshd_config.d/00-no'
+- at: 2026-10-27 10:33
+  from: devin
+  text: 'raised request run-the-sshd-sysctl-paste-block-in-the-c-bb73ed: Run the sshd+sysctl paste-block (in the
+    comment above) on tony-macbook — needs your sudo password, session can''t sudo. R'
 action:
   type: dispatch
   status: running
   runner: tony-macbook
+requests:
+- id: run-the-sshd-sysctl-paste-block-in-the-c-bb73ed
+  ask: Run the sshd+sysctl paste-block (in the comment above) on tony-macbook — needs your sudo password, session
+    can't sudo. Reply 'done' or paste output.
+  status: open
+  at: 2026-10-27 10:33
+  from: devin
+  options:
+  - proceed
+  - hold
