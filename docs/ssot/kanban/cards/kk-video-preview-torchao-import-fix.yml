@@ -1,7 +1,7 @@
 id: kk-video-preview-torchao-import-fix
 title: Fix Sacred Father LTX preview Diffusers/TorchAO import failure
 column: doing
-updated: 2026-10-27 14:44
+updated: 2026-10-27 15:27
 spec: 'Diagnose and fix the Sacred Father preview pack failure from Colab run-20261027-0454. Evidence: the T5 embeddings
   pack completed with 10 shot*.pt artifacts; preview pack failed before pipeline/model loading with `ImportError:
   cannot import name FqnToConfig from torchao.quantization` during Diffusers import. Determine compatible pinned
@@ -36,3 +36,10 @@ comms:
     runs an LTX import preflight before the render. Updated pack.yml uploaded to Drive; failed marker cleared. Completed
     embeddings remain reusable. Next gate: start a fresh managed T4 runtime and rerun the preview pack only; no
     public output.'
+- at: 2026-10-27 15:27
+  from: devin
+  text: '[Colab check 2026-10-27 08:24Z] Managed notebook is connected (Tesla T4 15GB, RAM 13.6GB, Drive mounted).
+    Queue acquired epoch 23 on `colab-8e078e8a-1618` at 08:16:31Z; warmup wrote its 30s artifact. But heartbeat/lease
+    stopped updating at 08:17:53Z, runner.id/pid and this boot''s env-done warmup marker are absent, and run-20261027-0816
+    log ends at warmup. No Sacred Father pack was claimed and no preview outputs changed. The background cache prep
+    logged `zstd: Cannot exec`; likely cache restore w'
