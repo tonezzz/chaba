@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 18:29
+updated: 2026-10-27 18:53
 priority: medium
 tags:
 - cline-kanban
@@ -143,6 +143,10 @@ comms:
     and no files changed. The approved OpenRouter path is currently blocked: LiteLLM returned 422 budget_exceeded
     for LITELLM_KEY_BENCH (current cost $2.00844621 / cap $2.00); no OpenRouter inference was made. A separate request
     asks whether to mint a dedicated Cline-only key with a free-'
+- at: 2026-10-27 18:53
+  from: devin
+  text: 'raised request pr-45-validation-is-blocked-by-an-existi-df1d28: PR #45 validation is blocked by an existing
+    YAML syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gatew'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -211,6 +215,20 @@ requests:
   - id: new-lower-cap
     label: Mint a dedicated Cline key with a lower cap; specify the cap in a reply
   suggested: new-cline-free-key
+- id: pr-45-validation-is-blocked-by-an-existi-df1d28
+  ask: 'PR #45 validation is blocked by an existing YAML syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml
+    (origin/master commit 6c23b7a9a, lines 30-31); this file is not changed by the Cline PR. To complete the approved
+    Cline deploy, may I make a syntax-only repair in a separate commit/PR, or should I leave it to the Jack gateway
+    owner and keep PR #45 draft? I will not merge/deploy while the required SSOT check is red.'
+  status: open
+  at: 2026-10-27 18:53
+  from: devin
+  options:
+  - id: syntax-fix
+    label: Make a minimal syntax-only repair in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: 'Leave it to the Jack gateway owner; keep Cline PR #45 draft and hold deploy'
+  suggested: syntax-fix
 action:
   type: dispatch
   status: done
