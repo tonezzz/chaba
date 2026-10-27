@@ -81,8 +81,12 @@ processing:
         remain pending.
     - id: configure-model
       label: Configure local Ollama provider/model without API credentials
-      status: not_started
-      notes: ''
+      status: done
+      notes: >-
+        Cline settings now use Ollama at http://100.75.102.88:11434 with
+        qwen3:4b; no API key is stored. Model catalog refresh succeeded.
+        No inference call was made, and the user's backlog task remains
+        unstarted with auto-commit disabled.
     - id: test
       label: Stage isolated pack, claim once, and verify task/patch artifacts
       status: not_started
@@ -156,7 +160,14 @@ followup:
     - Remove only the isolated gdrive:ada-nest-cline-pilot test root after separate approval.
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
-    - Tony reviews the Cline task card and patch; no auto-commit/PR is enabled.
+    - >-
+      Tony may start the existing Cline backlog task manually. For Nest test,
+      answer KNB-0932 request may-i-publish-this-local-implementation-1f84ca
+      before the adapter is pushed/deployed.
+    - >-
+      OpenRouter routing waits on KNB-0932 request
+      how-should-i-enable-openrouter-models-fo-e879f4; paid models remain
+      disabled until a budget route is explicitly approved.
   deferred:
     - Multi-host Cline execution pool and shared board/task synchronization.
     - Paid hosted-provider comparison.
@@ -165,8 +176,10 @@ followup:
   status: in_progress
   completed_at: null
   summary: >-
-    Adapter code and tests are written; the secure Podman topology, model
-    configuration, and one Nest-claimed free-model smoke task remain.
+    Adapter code and tests are written, and the live Cline UI now has the
+    local qwen3:4b provider configured. The secure Podman topology and Nest
+    pack are not deployed, OpenRouter is not connected, and no model call or
+    Nest-claimed task has run.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
@@ -178,12 +191,22 @@ followup:
       value: 3139 files, 0 errors
     - metric: SSOT optimizer warnings
       value: 44 baseline, including 2 unrelated new request-recommendation warnings
+    - metric: local model provider
+      value: Ollama qwen3:4b configured; no inference call
+    - metric: Nest pack claims
+      value: 0
+    - metric: user Cline task
+      value: Backlog; auto-commit disabled
   links:
     - title: Adapter card
       url: https://idc03.taila0626a.ts.net/apps/board2/?card=cline-kanban-nest-worker-adapter
     - title: Cline host pilot
       url: https://github.com/tonezzz/chaba/pull/41
-  kb_review: []
+  kb_review:
+    - >-
+      Updated WP Education lesson "Cline Kanban vs WordPress board apps"
+      (post 2675, lesson-bf6ce090216d) with local-model cost, OpenRouter
+      free-tier caveats, and the existing shadow-eval procedure.
   lessons_learned: []
 
 config:
