@@ -1,7 +1,7 @@
 id: kk-video-preview-pack-idc02
 title: Build KK teaser preview pack on idc02
-column: doing
-updated: 2026-10-27 09:31
+column: review
+updated: 2026-10-27 09:32
 brief: Retry the private KK teaser pack on idc02, where the Devin executor is available; the MacBook attempt failed
   before producing artifacts.
 priority: high
@@ -23,8 +23,11 @@ action:
   type: dispatch
   repo: chaba
   host: idc02
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-093135-retry-the-kk-video-c9f99fee614.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-093135-retry-the-kk-video-c9f99fee614.service:
+    Failed with result ''exit-code''.'
 ref: OPS-0921
 comms:
 - at: 2026-10-27 09:30
@@ -36,3 +39,9 @@ comms:
 - at: 2026-10-27 09:31
   from: chaba
   text: started devin-task-20261027-093135-retry-the-kk-video-c9f99fee614 on idc02 (dispatch)
+- at: 2026-10-27 09:32
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-093135-retry-the-kk-video-c9f99fee614.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
