@@ -83,10 +83,12 @@ processing:
       label: Configure local Ollama provider/model without API credentials
       status: done
       notes: >-
-        Cline settings now use Ollama at http://100.75.102.88:11434 with
-        qwen3:4b; no API key is stored. Model catalog refresh succeeded.
-        No inference call was made, and the user's backlog task remains
-        unstarted with auto-commit disabled.
+        Cline settings now use Ollama at http://100.75.102.88:11434/v1 with
+        qwen3:4b; no API key is stored. Model catalog refresh and /v1/models
+        both returned 200. The earlier root-path /chat/completions attempts
+        returned 404. After adding /v1, a Cline request to /v1/chat/completions
+        returned 200 in 6m33s; its turn was canceled before shell tools, with
+        no workspace files changed.
     - id: test
       label: Stage isolated pack, claim once, and verify task/patch artifacts
       status: not_started
@@ -161,13 +163,15 @@ followup:
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
     - >-
-      Tony may start the existing Cline backlog task manually. For Nest test,
-      answer KNB-0932 request may-i-publish-this-local-implementation-1f84ca
-      before the adapter is pushed/deployed.
+      KNB-0932 publish/deploy request was answered approve-live-test. The
+      queued attempt on tony-macbook failed before execution with unknown
+      Devin model litellm/or-claude-fable-5.1; continue through the approved
+      PR path using the local branch and supported validation.
     - >-
-      OpenRouter routing waits on KNB-0932 request
-      how-should-i-enable-openrouter-models-fo-e879f4; paid models remain
-      disabled until a budget route is explicitly approved.
+      OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
+      its $2/30d budget. Wait for KNB-0932 request
+      openrouter-free-only-route-was-approved-293f91 before minting a new
+      virtual key or expanding the budget; paid model IDs remain blocked.
   deferred:
     - Multi-host Cline execution pool and shared board/task synchronization.
     - Paid hosted-provider comparison.
@@ -176,10 +180,12 @@ followup:
   status: in_progress
   completed_at: null
   summary: >-
-    Adapter code and tests are written, and the live Cline UI now has the
-    local qwen3:4b provider configured. The secure Podman topology and Nest
-    pack are not deployed, OpenRouter is not connected, and no model call or
-    Nest-claimed task has run.
+    Adapter code and tests are written. After the requested restart, the
+    Ollama Base URL was corrected to /v1 and a local Cline request returned
+    HTTP 200 (6m33s); the smoke turn was canceled before shell tools and made
+    no workspace changes. The adapter remains unpublished and no Nest job
+    has been claimed. OpenRouter is still blocked by the exhausted benchmark
+    key budget.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
@@ -192,11 +198,19 @@ followup:
     - metric: SSOT optimizer warnings
       value: 44 baseline, including 2 unrelated new request-recommendation warnings
     - metric: local model provider
-      value: Ollama qwen3:4b configured; no inference call
+      value: Ollama qwen3:4b at /v1; /v1/models 200; chat completion 200 in 6m33s
+    - metric: OpenRouter key
+      value: LITELLM_KEY_BENCH returned 422 budget_exceeded at $2.00844621/$2.00; no inference call
+    - metric: dispatch attempt
+      value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
     - metric: Nest pack claims
       value: 0
     - metric: user Cline task
-      value: Backlog; auto-commit disabled
+      value: Two Done cards show 404; one smoke turn canceled; no workspace changes or commits
+    - metric: service after requested restart
+      value: Active; Tailnet root HTTP 200; listener remains 100.72.146.39:3484
+    - metric: host audit
+      value: New Cline pod/proxy units absent because local topology is not deployed; 6 unrelated failed units
   links:
     - title: Adapter card
       url: https://idc03.taila0626a.ts.net/apps/board2/?card=cline-kanban-nest-worker-adapter
@@ -206,7 +220,8 @@ followup:
     - >-
       Updated WP Education lesson "Cline Kanban vs WordPress board apps"
       (post 2675, lesson-bf6ce090216d) with local-model cost, OpenRouter
-      free-tier caveats, and the existing shadow-eval procedure.
+      free-tier caveats, the existing shadow-eval procedure, and the
+      observed Ollama /chat/completions 404 with the /v1 Base URL correction.
   lessons_learned: []
 
 config:
