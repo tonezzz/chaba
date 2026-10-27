@@ -1,0 +1,166 @@
+{
+ "at": "2026-10-27T13:24:15.944438+00:00",
+ "job": "p1-ssot-research-idc02",
+ "envelope": {
+  "id": "p1-ssot-research-idc02",
+  "card": "opencode-task-agent-profiles",
+  "task_class": "read_only",
+  "stage": "S1",
+  "target_host": "idc02",
+  "executor": "opencode",
+  "profile": "ssot-research",
+  "model": "litellm/gemini-3.5-flash-lite",
+  "provider": "litellm",
+  "unattended": true,
+  "task": "What is the standard write path for kanban card mutations from a non-writer host, and which mechanism converges card files that arrive via dispatch worktree merges? Cite the governing docs.",
+  "mcp_allowlist": [],
+  "allowed_paths": [
+   "evals/opencode-lane/out/"
+  ],
+  "artifact": {
+   "path": "evals/opencode-lane/out/p1-ssot-research-answer.json",
+   "schema": "evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ssot-research/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "max_retries": 1
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "heartbeat": {
+   "required": true,
+   "stale_s": 300
+  }
+ },
+ "profile": {
+  "id": "ssot-research",
+  "version": 1,
+  "status": "enabled",
+  "unattended": true,
+  "description": "Read-only SSOT/education retrieval. Answers a research question using only repo read tools and the SSOT subset of the mcp-debug read-only allowlist; every claim must carry a resolvable citation (file path, optionally line range) verified held-out.",
+  "task_classes": [
+   "read_only",
+   "report"
+  ],
+  "stages": [
+   "S1",
+   "S2",
+   "S3"
+  ],
+  "target_host": {
+   "required": true,
+   "allowed": []
+  },
+  "model": {
+   "tier": "cheap",
+   "default": "litellm/gemini-3.5-flash-lite",
+   "allowed": [
+    "litellm/gemini-3.5-flash-lite",
+    "litellm/gemini-3-flash"
+   ]
+  },
+  "providers": [
+   "litellm"
+  ],
+  "agent": {
+   "mode": "primary"
+  },
+  "tools": {
+   "read": true,
+   "grep": true,
+   "glob": true,
+   "list": true,
+   "todoread": true,
+   "todowrite": true,
+   "bash": false,
+   "write": false,
+   "edit": false,
+   "patch": false,
+   "task": false,
+   "webfetch": false
+  },
+  "permission": {
+   "edit": "deny",
+   "bash": "deny",
+   "webfetch": "deny",
+   "external_directory": "deny",
+   "doom_loop": "ask"
+  },
+  "mcp": {
+   "allowed": [
+    "mcp_read_ssot",
+    "mcp_search_ssot",
+    "mcp_ssot_query",
+    "mcp_ssot_get",
+    "mcp_mddb_doc"
+   ],
+   "denied": [
+    "mcp_raw",
+    "mcp_put_file",
+    "mcp_remediate",
+    "mcp_ssot_append",
+    "mcp_clipboard_set",
+    "mcp_clipboard_get",
+    "mcp_clipboard_image_get",
+    "mcp_eget",
+    "mcp_screenshot",
+    "mcp_window_list",
+    "mcp_preset_run",
+    "mcp_adaptive",
+    "mcp_debug",
+    "mcp_health",
+    "mcp_get_file"
+   ],
+   "upstream": {
+    "name": "mcp-debug-readonly",
+    "proxy": "~/.config/devin/mcp-scripts/mcp-allowlist.py",
+    "command": [
+     "/bin/bash",
+     "~/.config/devin/mcp-scripts/mcp-debug-ssh.sh"
+    ]
+   }
+  },
+  "allowed_paths": [],
+  "artifact": {
+   "mode": "message",
+   "format": "json",
+   "dirs": [
+    "evals/opencode-lane/out/",
+    "reports/"
+   ],
+   "schema": "evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ssot-research/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "allowed_on_fail": [
+    "manual",
+    "devin",
+    "retry_then_manual",
+    "hold"
+   ],
+   "max_retries": 1
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "rails": "You are the ssot-research profile agent. Answer ONLY from the repo's SSOT (docs/ssot/, AGENTS.md, docs/kb/) and SSOT MCP tools \u2014 never from memory. Every factual claim must cite a file path (with a line range when possible). If the sources do not contain the answer, say so in the answer field instead of guessing. You may not write, run shell commands, or read anything under ~/.config/secrets. Emit ONLY the JSON artifact as your final message."
+ },
+ "agent": "ssot-research",
+ "mcp_rendered": false,
+ "mcp_proxy_available": false,
+ "denied_builtin_agents": [
+  "build",
+  "plan",
+  "general"
+ ],
+ "config": "/home/tony/CascadeProjects/dispatch-wt-20261027-194243-add-task-scoped-opencode-agent/evals/opencode-lane/runs/p1-ssot-research-idc02-20261027-202415/opencode.json"
+}

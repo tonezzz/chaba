@@ -1,0 +1,108 @@
+# Task-scoped OpenCode agent profile — branch-code
+# (card opencode-task-agent-profiles).
+#
+# Isolated-worktree code agent for S5 branch/code tasks: strong-tier
+# model, isolated git worktree, tests + independent review REQUIRED.
+# DEFINED BUT NOT ENABLED in this card — status:disabled and
+# unattended:false mean every admission path denies it until a later
+# card deliberately turns it on (tests + review requirements first).
+id: branch-code
+version: 1
+status: disabled          # do NOT enable in this card
+unattended: false         # never serves unattended routing
+description: >-
+  Branch/code tasks only: an isolated worktree, a strong-tier model,
+  mandatory test execution, and an independent_devin verifier. The
+  profile exists so envelopes and renders can be validated end-to-end;
+  it cannot run until a later card sets status:enabled after the S5
+  gate criteria are met.
+task_classes: [branch_code]
+stages: [S5]
+target_host:
+  required: true
+  allowed: []             # when enabled, pin to declared runners
+model:
+  tier: strong            # envelope model must be in STRONG_MODELS
+  default: litellm/claude-fable-5.1
+  allowed: []             # any strong-tier model
+providers: [litellm, openrouter]
+agent:
+  mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  list: true
+  todoread: true
+  todowrite: true
+  bash: true
+  write: true             # confined to the isolated worktree
+  edit: true
+  patch: true
+  task: false
+  webfetch: false
+permission:
+  edit: allow             # worktree-confined writes
+  webfetch: deny
+  external_directory: deny
+  doom_loop: ask
+  bash:
+    "*": deny
+    # test/build surface only — no git mutation beyond add/commit in
+    # the worktree, no network, no services
+    "python3 *": allow
+    "python3": allow
+    "python -m unittest *": allow
+    "pytest *": allow
+    "make *": allow
+    "git status *": allow
+    "git status": allow
+    "git diff *": allow
+    "git diff": allow
+    "git log *": allow
+    "git add *": allow
+    "git commit *": allow
+    "ls": allow
+    "ls *": allow
+    "cat *": allow
+    "find *": allow
+mcp:
+  allowed: [mcp_read_ssot, mcp_search_ssot, mcp_ssot_query, mcp_ssot_get]
+  denied: [mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append,
+           mcp_clipboard_set, mcp_clipboard_get, mcp_clipboard_image_get,
+           mcp_eget, mcp_screenshot, mcp_window_list, mcp_preset_run,
+           mcp_adaptive, mcp_debug, mcp_health, mcp_mddb_doc]
+  upstream:
+    name: mcp-debug-readonly
+    proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
+    command: [/bin/bash, ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh]
+allowed_paths: [scripts/, tests/, docs/, evals/]
+isolation:
+  worktree: required      # runs in a profile/<job> worktree+branch,
+                          # never the live checkout
+artifact:
+  mode: file              # the agent writes real files in the worktree;
+                          # the artifact is the diff/test report
+  format: json
+  dirs: [evals/opencode-lane/out/, reports/]
+  schema: >-
+    evals/opencode-lane/profiles/branch-code/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: independent_devin # floor — branch/code never self-verifies
+  ref: evals/opencode-lane/profiles/branch-code/fixture/verify.py
+  require_tests: true     # artifact must record tests_run/test_passed
+  require_review: true    # artifact must carry a review_ref
+escalation:
+  on_fail: manual
+  allowed_on_fail: [manual, hold]
+  max_retries: 0
+rollback:
+  kind: worktree-drop     # floor — envelope may pick worktree-drop or
+                          # git-revert, never none/file-restore
+rails: >-
+  You are the branch-code profile agent inside an isolated worktree.
+  Implement the task, run the tests, and produce the declared JSON
+  artifact. You may not push, merge, touch other worktrees, or read
+  secrets. Tests must actually run — a skipped test run fails the
+  verifier.

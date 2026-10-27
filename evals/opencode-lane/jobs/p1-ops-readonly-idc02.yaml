@@ -1,0 +1,35 @@
+# S1 profile job — ops-readonly canary on idc02 (card
+# opencode-task-agent-profiles). First real read-only profile job:
+# health snapshot of THIS host via the bounded bash allowlist; the
+# agent emits the JSON as its final message and the runner writes it.
+# Supervised per S1 (heartbeat required, dispatch watches).
+id: p1-ops-readonly-idc02
+card: opencode-task-agent-profiles
+task_class: report
+stage: S1
+target_host: idc02
+executor: opencode
+profile: ops-readonly
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+mcp_allowlist: []           # idc02 has no mcp-allowlist proxy — bash
+                            # allowlist covers the collection; the
+                            # profile's MCP ceiling is still enforced
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/p1-ops-readonly-health.json
+  schema: >-
+    evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/ops-readonly/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: none
+heartbeat:
+  required: true
+  stale_s: 300

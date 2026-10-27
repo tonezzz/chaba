@@ -202,8 +202,57 @@ class Admit(unittest.TestCase):
         self.assertTrue(any(r.startswith("quota_exceeded")
                             for r in d["reasons"]))
 
-    def test_s5_branch_code_needs_strong_model(self):
+    def _enabled_profile_dir(self, pid="bc-test"):
+        """Temp PROFILES dir holding one enabled+unattended profile —
+        admit() reads profile.yml status/unattended only."""
+        td = tempfile.TemporaryDirectory()
+        d = Path(td.name) / pid
+        d.mkdir(parents=True)
+        (d / "profile.yml").write_text(
+            f"id: {pid}\nstatus: enabled\nunattended: true\n")
+        self.addCleanup(td.cleanup)
+        old = mod.PROFILES
+        mod.PROFILES = Path(td.name)
+        self.addCleanup(setattr, mod, "PROFILES", old)
+
+    def test_missing_profile_denied_for_unattended_opencode(self):
+        # opencode-task-agent-profiles: an opencode job outside S0
+        # shadow_replay MUST name a task profile — the generic build
+        # agent is never an unattended executor
+        env = mk_env(task_class="read_only", stage="S1")
+        d = admit(env, stage="S1")
+        self.assertFalse(d["admit"])
+        self.assertTrue(any(r.startswith("missing_profile")
+                            for r in d["reasons"]))
+        env["profile"] = "no-such-profile"
+        d = admit(env, stage="S1")
+        self.assertTrue(any(r.startswith("unknown_profile")
+                            for r in d["reasons"]))
+
+    def test_disabled_profile_denied(self):
+        # the committed branch-code profile is disabled — admitting
+        # its envelope must fail on profile_disabled /
+        # profile_not_unattended even at the right stage
         env = mk_env(task_class="branch_code", stage="S5",
+                     profile="branch-code",
+                     model="litellm/claude-fable-5.1",
+                     rollback={"kind": "worktree-drop", "ref": "wt"},
+                     verifier={"type": "independent_devin",
+                               "ref": "devin-review"},
+                     allowed_paths=["scripts/"])
+        d = mod.admit(env, probe=PROBE_OK, host="tony-macbook",
+                      stage_state=stage_state("S5"), inflight=0,
+                      env_get=lambda k, d=None:
+                      "1" if k == "OPENCODE_LANES" else d)
+        self.assertFalse(d["admit"])
+        self.assertIn("profile_disabled:branch-code", d["reasons"])
+        self.assertIn("profile_not_unattended:branch-code",
+                      d["reasons"])
+
+    def test_s5_branch_code_needs_strong_model(self):
+        self._enabled_profile_dir()
+        env = mk_env(task_class="branch_code", stage="S5",
+                     profile="bc-test",
                      model="litellm/gemini-3.5-flash-lite",
                      rollback={"kind": "git-revert", "ref": "HEAD"},
                      verifier={"type": "independent_devin",
@@ -314,6 +363,15 @@ class ReviewAndMetrics(unittest.TestCase):
                   "wall_s_p95", "queue_s_p95", "human_minutes_total",
                   "devin_tokens_displaced", "escalations", "by_stage"):
             self.assertIn(k, a)
+
+    def test_metric_carries_profile(self):
+        # opencode-task-agent-profiles: durable metrics must record the
+        # task profile identity alongside executor/model
+        env = mk_env(task_class="read_only", stage="S1",
+                     profile="ops-readonly")
+        m = mod.new_metric(env, "opencode")
+        self.assertIn("profile", mod.METRIC_FIELDS)
+        self.assertEqual(m["profile"], "ops-readonly")
 
     def test_devin_tokens_displaced(self):
         recs = [self._rec(devin_equiv_tokens=50000)]

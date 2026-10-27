@@ -126,6 +126,7 @@ same cleanup on this host over ssh when it salvaged the merge from
 dell's side.
 """
 
+import importlib.util
 import json
 import os
 import re
@@ -163,6 +164,16 @@ LANE_MODELS = {
     "paid_frontier": "litellm/or-claude-fable-5.1",
 }
 OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
+# lane -> task-scoped opencode profile (opencode-task-agent-profiles).
+# The generic build agent is NEVER an unattended executor: a lane only
+# reaches opencode when a profile resolves (action.profile wins, else
+# this map). Unmapped lanes keep the devin path. free_lane = cheap
+# single-step chores -> ops-readonly (read-only reports only; write-
+# needing work stays on devin). branch-code is deliberately unmapped —
+# it is disabled until its own card enables it.
+LANE_PROFILES = {
+    "free_lane": "ops-readonly",
+}
 LANE_KW = {
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend", "order the", "blocked on tony", "rotation", "rekey",
@@ -922,11 +933,37 @@ def watchdog_pass(st: dict) -> bool:
     return changed
 
 
+def oc_profiles_module():
+    """Import scripts/devnest/opencode_profiles.py from this checkout —
+    same lazy pattern as dr_module(); None when unavailable."""
+    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
+        "opencode_profiles.py"
+    if not p.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("opencode_profiles", p)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
-    """Run a model-specific lane in a dispatch-compatible worktree."""
+    """Run a profile-scoped opencode lane in a dispatch worktree.
+
+    The generic build agent is kept out of unattended routing
+    (opencode-task-agent-profiles): the lane must resolve a task-scoped
+    profile (card action.profile or LANE_PROFILES), which is rendered
+    into a worktree-local opencode config — custom agent + builtin
+    agents disabled + minimal MCP + permission rules — and the run
+    addresses it via --agent."""
     model = LANE_MODELS[lane]
     if not shutil_which("opencode"):
         return "", "", "opencode is not installed on this runner"
+    a = card.get("action") or {}
+    prof_id = str(a.get("profile") or LANE_PROFILES.get(lane) or "")
+    if not prof_id:
+        return "", "", f"no task profile for lane {lane} — opencode " \
+                       "lane requires action.profile (generic build " \
+                       "agent is not an unattended executor)"
     repo_name = str((card.get("action") or {}).get("repo") or "chaba")
     dr = dr_module()
     ent = (dr.repos().get(repo_name) if dr else None) or {}
@@ -955,7 +992,7 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
                 "worktree": str(worktree),
                 "default_branch": dbranch,
                 "base": f"origin/{dbranch}",
-                "executor": f"opencode:{lane}",
+                "executor": f"opencode:{lane}", "profile": prof_id,
                 "unit": unit, "task_id": tid,
                 "started_at": datetime.now(timezone.utc).isoformat()}
         (taskdir / "meta.json").write_text(json.dumps(meta, indent=1))
@@ -965,13 +1002,38 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
     task = spec + "\n\n" + RAILS.format(
         id=card["id"], host=HOST, api=API)
+    # Render the task-scoped profile into a worktree-local opencode
+    # config: profile agent only, builtin agents disabled, MCP surface
+    # minimal (proxy-only, only when present), permission rules from
+    # the profile. Render failure = the lane can't start.
+    confdir = worktree / ".opencode-profile"
+    try:
+        ocp = oc_profiles_module()
+        if ocp is None:
+            return "", "", "opencode_profiles.py missing in this " \
+                           "checkout — profile render impossible"
+        prof = ocp.load_profile(prof_id)
+        synth = {"id": tid, "card": card["id"], "target_host": HOST,
+                 "model": model, "mcp_allowlist":
+                     list((prof.get("mcp") or {}).get("allowed") or []),
+                 "artifact": {"path": "", "schema": ""}}
+        cfg = ocp.render_config(synth, prof)
+        cfg.pop("_allowfile", None)
+        confdir.mkdir(parents=True, exist_ok=True)
+        (confdir / "opencode.json").write_text(json.dumps(cfg, indent=1))
+    except SystemExit as e:
+        return "", "", f"profile {prof_id}: {e}"
+    except Exception as e:
+        return "", "", f"profile render: {e}"
     shell = (
         "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
         ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
         "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
+        f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && opencode run --format json "
         f"--dir {shlex.quote(str(worktree))} --model {shlex.quote(model)} "
-        f"--auto {shlex.quote(task)}; "
+        f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
+        f"{shlex.quote(task)}; "
         "rc=$?; "
         f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $rc"
@@ -1043,8 +1105,11 @@ def start_task(card: dict, typ: str) -> tuple:
                     a["model"] = LANE_MODELS[lane]
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
-        if lane in LANE_MODELS and OPENCODE_LANES:
+        if lane in LANE_MODELS and OPENCODE_LANES and \
+                (a.get("profile") or LANE_PROFILES.get(lane)):
             return start_opencode_lane(card, lane, unit)
+        # no resolvable task profile -> generic build agent stays out
+        # of unattended routing; the card takes the devin path
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)

@@ -1,0 +1,25 @@
+id: ops-readonly
+title: Read-only host health report
+class: read_only
+timeout_s: 420
+artifact: evals/opencode-lane/out/ops-readonly-health.json
+description: >-
+  Produce a read-only health snapshot of the envelope's target host.
+  The agent emits the JSON as its final message; the runner writes it.
+contract:
+  required_fields:
+    host: "hostname string — MUST equal the envelope target_host"
+    collected_at: "ISO-8601 timestamp"
+    uptime_seconds: "float >= 0"
+    load1: "float >= 0"
+    load5: "float >= 0"
+    load15: "float >= 0"
+    cpu_count: "int >= 1"
+    mem_total_mb: "int > 0"
+    mem_available_mb: "int >= 0 and <= mem_total_mb"
+    disk_root_pct: "int 0..100, used percent of the / filesystem"
+    failed_units: "list of failed systemd unit names (may be empty)"
+    read_only: "must be true"
+  tolerances:
+    disk_root_pct: 3
+    mem_total_mb_pct: 5

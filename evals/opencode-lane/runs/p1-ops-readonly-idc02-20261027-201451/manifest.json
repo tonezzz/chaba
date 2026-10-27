@@ -1,0 +1,203 @@
+{
+ "at": "2026-10-27T13:14:51.965368+00:00",
+ "job": "p1-ops-readonly-idc02",
+ "envelope": {
+  "id": "p1-ops-readonly-idc02",
+  "card": "opencode-task-agent-profiles",
+  "task_class": "report",
+  "stage": "S1",
+  "target_host": "idc02",
+  "executor": "opencode",
+  "profile": "ops-readonly",
+  "model": "litellm/gemini-3.5-flash-lite",
+  "provider": "litellm",
+  "unattended": true,
+  "mcp_allowlist": [],
+  "allowed_paths": [
+   "evals/opencode-lane/out/"
+  ],
+  "artifact": {
+   "path": "evals/opencode-lane/out/p1-ops-readonly-health.json",
+   "schema": "evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ops-readonly/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "max_retries": 1
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "heartbeat": {
+   "required": true,
+   "stale_s": 300
+  }
+ },
+ "profile": {
+  "id": "ops-readonly",
+  "version": 1,
+  "status": "enabled",
+  "unattended": true,
+  "description": "Read-only host and MCP ops reports. Collects declared host facts via a bounded bash allowlist (no mutating verbs) and/or the 8-tool mcp-debug read-only allowlist, then emits a JSON report artifact.",
+  "task_classes": [
+   "read_only",
+   "report"
+  ],
+  "stages": [
+   "S1",
+   "S2",
+   "S3"
+  ],
+  "target_host": {
+   "required": true,
+   "allowed": []
+  },
+  "model": {
+   "tier": "cheap",
+   "default": "litellm/gemini-3.5-flash-lite",
+   "allowed": [
+    "litellm/gemini-3.5-flash-lite",
+    "litellm/gemini-3-flash"
+   ]
+  },
+  "providers": [
+   "litellm"
+  ],
+  "agent": {
+   "mode": "primary"
+  },
+  "tools": {
+   "read": true,
+   "grep": true,
+   "glob": true,
+   "list": true,
+   "todoread": true,
+   "todowrite": true,
+   "bash": true,
+   "write": false,
+   "edit": false,
+   "patch": false,
+   "task": false,
+   "webfetch": false
+  },
+  "permission": {
+   "edit": "deny",
+   "webfetch": "deny",
+   "external_directory": "deny",
+   "doom_loop": "ask",
+   "bash": {
+    "*": "deny",
+    "hostname": "allow",
+    "hostname *": "allow",
+    "uname": "allow",
+    "uname *": "allow",
+    "whoami": "allow",
+    "date": "allow",
+    "date *": "allow",
+    "uptime": "allow",
+    "uptime *": "allow",
+    "nproc": "allow",
+    "nproc *": "allow",
+    "lscpu": "allow",
+    "lscpu *": "allow",
+    "df": "allow",
+    "df *": "allow",
+    "du *": "allow",
+    "free": "allow",
+    "free *": "allow",
+    "ls": "allow",
+    "ls *": "allow",
+    "stat *": "allow",
+    "ss *": "allow",
+    "ps *": "allow",
+    "journalctl *": "allow",
+    "systemctl list-units *": "allow",
+    "systemctl --user list-units *": "allow",
+    "systemctl list-timers *": "allow",
+    "systemctl --user list-timers *": "allow",
+    "systemctl status *": "allow",
+    "systemctl --user status *": "allow",
+    "systemctl is-active *": "allow",
+    "systemctl --user is-active *": "allow",
+    "systemctl is-enabled *": "allow",
+    "systemctl --user is-enabled *": "allow",
+    "systemctl show *": "allow",
+    "systemctl --user show *": "allow"
+   }
+  },
+  "mcp": {
+   "allowed": [
+    "mcp_debug",
+    "mcp_health",
+    "mcp_get_file",
+    "mcp_read_ssot",
+    "mcp_search_ssot",
+    "mcp_ssot_query",
+    "mcp_ssot_get",
+    "mcp_mddb_doc"
+   ],
+   "denied": [
+    "mcp_raw",
+    "mcp_put_file",
+    "mcp_remediate",
+    "mcp_ssot_append",
+    "mcp_clipboard_set",
+    "mcp_clipboard_get",
+    "mcp_clipboard_image_get",
+    "mcp_eget",
+    "mcp_screenshot",
+    "mcp_window_list",
+    "mcp_preset_run",
+    "mcp_adaptive"
+   ],
+   "upstream": {
+    "name": "mcp-debug-readonly",
+    "proxy": "~/.config/devin/mcp-scripts/mcp-allowlist.py",
+    "command": [
+     "/bin/bash",
+     "~/.config/devin/mcp-scripts/mcp-debug-ssh.sh"
+    ]
+   }
+  },
+  "allowed_paths": [],
+  "artifact": {
+   "mode": "message",
+   "format": "json",
+   "dirs": [
+    "evals/opencode-lane/out/",
+    "reports/"
+   ],
+   "schema": "evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields"
+  },
+  "verifier": {
+   "type": "held_out_py",
+   "ref": "evals/opencode-lane/profiles/ops-readonly/fixture/verify.py"
+  },
+  "escalation": {
+   "on_fail": "manual",
+   "allowed_on_fail": [
+    "manual",
+    "devin",
+    "retry_then_manual",
+    "hold"
+   ],
+   "max_retries": 1
+  },
+  "rollback": {
+   "kind": "none"
+  },
+  "rails": "You are the ops-readonly profile agent. You may READ the host and the repo; you may not write, edit, move, delete, install packages, or change services \u2014 denied tool calls are recorded and fail the job. Do not read anything under ~/.config/secrets. Your report is your final message: emit ONLY the artifact content, no prose around it."
+ },
+ "agent": "ops-readonly",
+ "mcp_rendered": false,
+ "mcp_proxy_available": false,
+ "denied_builtin_agents": [
+  "build",
+  "plan",
+  "general"
+ ],
+ "config": "/home/tony/CascadeProjects/dispatch-wt-20261027-194243-add-task-scoped-opencode-agent/evals/opencode-lane/runs/p1-ops-readonly-idc02-20261027-201451/opencode.json"
+}
