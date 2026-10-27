@@ -98,6 +98,10 @@ comms:
     Maps Platform endpoint — Embed 403, Static 403, Geocode REQUEST_DENIED, Routes 401, with and without a GEV referer.
     Cant tell externally if the key is dead or its project lacks the APIs; either way no existing key works and
     no host has gcloud/GCP creds, so mint-or-enable is a Tony conso'
+- at: 2026-10-27 16:09
+  from: devin
+  text: 'raised request google-maps-api-key-needs-a-mint-gev-key-ee1fc7: GOOGLE_MAPS_API_KEY needs a mint — gev
+    key verified dead/unsuitable, no GCP creds on any host, so this one is a console '
 action:
   type: dispatch
   status: running
@@ -122,6 +126,22 @@ requests:
   - hold
   answer: proceed
   executed: 2026-10-27 queue
+- id: google-maps-api-key-needs-a-mint-gev-key-ee1fc7
+  ask: 'GOOGLE_MAPS_API_KEY needs a mint — gev key verified dead/unsuitable, no GCP creds on any host, so this one
+    is a console step. Click-path: console.cloud.google.com -> project with billing -> APIs & Services -> enable
+    Maps Embed API + Maps Static API + Routes API -> Credentials -> Create API key -> restrict to those 3 APIs (server-side
+    use, no referrer restriction). Drop-in: add GOOGLE_MAPS_API_KEY=<key> to ~/.config/secrets/tony-ha/backend.env
+    on idc03, then I restart ada-ha-tony. If instead the gev keys project is alive, enabling those 3 APIs on it
+    revives reuse — pick enabled-gev-project and I will retest. Until then drop 17 works keyless the moment it lands
+    on ada-voice (OSM static image + open-in-Maps link).'
+  status: open
+  at: 2026-10-27 16:09
+  from: devin
+  options:
+  - key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
+  - enabled-gev-project — enabled the 3 APIs on the gev keys project, retest it
+  - hold — leave keyless for now
+  suggested: key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
 review_kind: verify
 claim: {}
 auto_close:
