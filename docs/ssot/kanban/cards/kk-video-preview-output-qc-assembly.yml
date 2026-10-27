@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-27 18:01
+updated: 2026-10-27 18:03
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -26,3 +26,10 @@ comms:
     segments, with return-code/nonempty checks; final teaser is decoded/metadata-checked before done. Staged the
     updated preview, requires-aware queue runner, preflight pack, and private project metadata (source PDF intentionally
     omitted; preflight gives 0 failures/1 all'
+- at: 2026-10-27 18:03
+  from: devin
+  text: '[resend status 2026-10-27 11:03Z] Release staging is now complete: project docs (no source PDF), preflight
+    pack, requires-aware queue runner, and revised preview pack are in Drive; local preflight returned warn/0 failures
+    due hash-only source provenance. Epoch 25 ran preflight and claimed preview, skipped the completed embeddings
+    pack, and is rerendering shot 04 after QC rejected it. Heartbeat is fresh. The progress /publish updated board+nested
+    job, but TG notification was suppressed by the 10-'
