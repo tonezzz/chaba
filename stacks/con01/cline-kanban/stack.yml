@@ -3,9 +3,9 @@ host: con01
 unit: cline-kanban.service
 description: >-
   Disposable Cline Kanban v0.1.70 research-preview pilot. Rootless Podman
-  service; HTTP/WebSocket port 3484 is published only on con01's Tailscale
-  IPv4 address. No public Caddy route, live Chaba repository, or provider
-  credential is included.
+  service behind a strict same-origin proxy; HTTP/WebSocket port 3484 is
+  published only on con01's Tailscale IPv4 address. No public Caddy route,
+  live Chaba repository, or provider credential is included.
 verify: >-
   curl -fsS -o /dev/null http://100.72.146.39:3484/
 secrets: []
@@ -18,13 +18,13 @@ state:
   - "~/.local/share/cline-kanban/data — disposable application/session state; no secrets or production work"
   - "~/cline-kanban-pilot/workspace — disposable empty Git smoke-test project"
 ports:
-  - "100.72.146.39:3484 — Cline UI and WebSocket; Tailscale address only"
+  - "100.72.146.39:3484 — strict-origin proxy for Cline UI/WebSocket; Tailscale only"
 restore: >-
   Rebuild localhost/cline-kanban:0.1.70 from this directory's Containerfile,
-  reinstall the declared Quadlet, and restart cline-kanban.service. Pilot
-  state is disposable and is not backed up. Rollback stops/disables the unit
-  and removes the Quadlet through the repository sync path; retain state for
-  inspection unless Tony separately approves cleanup.
+  reinstall the declared Quadlets, and restart cline-kanban.service.
+  Pilot state is disposable and is not backed up. Rollback stops the unit
+  and removes the Quadlets through the repository sync path; retain state
+  for inspection unless Tony separately approves cleanup.
 related_cards:
   - cline-kanban-con01-pilot
 status: deployed
