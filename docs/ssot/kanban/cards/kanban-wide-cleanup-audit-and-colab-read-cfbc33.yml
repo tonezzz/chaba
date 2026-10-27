@@ -1,7 +1,7 @@
 id: kanban-wide-cleanup-audit-and-colab-read-cfbc33
 title: Kanban-wide cleanup audit and Colab-ready work queue
-column: review
-updated: 2026-10-27 13:47
+column: done
+updated: 2026-10-27 14:02
 brief: Read-only assess all open Kanban work for stale, duplicate, blocked, verified-done, and runnable items; produce
   a clean, ranked Colab/fleet queue so paid T4 time is loaded before connecting.
 priority: medium
@@ -143,6 +143,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-133704-scan-cards-across-backlog-doin,
     branch dispatch/20261027-133704-scan-cards-across-backlog-doin'
+- at: 2026-10-27 14:02
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -153,3 +156,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 14:02
+  note: verified — evidence checks green, closing itself
