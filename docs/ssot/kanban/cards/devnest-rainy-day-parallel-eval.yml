@@ -1,7 +1,7 @@
 id: devnest-rainy-day-parallel-eval
 title: 'Rainy-day DevNest fallback: parallel OpenCode vs Devin evaluation'
 column: doing
-updated: 2026-10-27 13:31
+updated: 2026-10-27 13:45
 brief: Run identical safe jobs through OpenCode and Devin in isolated worktrees, then build an offline fallback
   ladder for internet outages.
 priority: high
@@ -48,3 +48,10 @@ comms:
   text: 'dispatch started on tony-macbook: building shadow-eval harness under evals/shadow + scripts/devnest — fixtures,
     isolated-worktree runner, held-out verifiers, L0-L4 rainy-day ladder with probe-based routing, offline simulation,
     capability matrix. Will run L0 legs + verifier live now; opencode/devin arms attempted where reachable.'
+- at: 2026-10-27 13:45
+  from: devin
+  text: 'shadow harness live: 5 fixtures frozen (host-health, storage-dryrun, mcp-safety, worktree-safety, backup-freshness),
+    isolated sparse worktrees hold out verifiers, L0 5/5 PASS in ~6s parallel. opencode flash-lite arm: 2/5 (early-stop
+    artifact-missing x2, used_pct float contract x1 — real signal). devin arm needs --permission-mode smart (print
+    mode rejects writes); first pass host-health 32s. 20/20 ladder-selection tests green. Running remaining devin
+    arms now.'
