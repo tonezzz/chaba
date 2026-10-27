@@ -56,6 +56,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261027-115440-opencode-audit-lane-state-miss no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-10-27 19:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261027-115440-opencode-audit-lane-state-miss on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: done
@@ -63,5 +67,7 @@ action:
   result: 'exit=0 py restore S1 --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json`. | devin-task-20261027-115440-opencode-audit-lane-state-miss.service:
     Consumed 13.756s CPU time over 5min 56.368s wall clock time, 557.6M memory peak.'
   verified: true
+  sweep:
+    stale_running: 2026-10-27 19:02
 review_kind: verify
 claim: {}
