@@ -1,7 +1,7 @@
 id: audit-oc-denied-tool-ov9npeo1
 title: 'OpenCode audit: denied_tool (OV9npEO1)'
-column: doing
-updated: 2026-10-28 06:04
+column: review
+updated: 2026-10-28 06:05
 brief: 'read denied: The user rejected permission to use this specific tool call.'
 priority: high
 tags:
@@ -47,6 +47,10 @@ comms:
     pass-with-caveat. Session-ID map shows it is a 5th distinct session; all committed event streams scanned — 0
     read-rejects, so the session lives only in tony-macbook opencode.db (S0/shadow/ops0902/tmp groups). Confirmed
     the AUD-0938 evidence gap: audit script/report/tests/job-doc never landed. Full record: docs/ssot/jobs/devnest/2026-10-28-opencode-denied-tool-ov9npeo1-audit.yml'
+- at: 2026-10-28 06:05
+  from: idc02
+  text: 'finished (ok): exit=0 and follow-ups noted (land the audit toolchain; query opencode.db on tony-macbook
+    for the denied path). | devin-t'
 requests:
 - id: the-card-notes-an-opencode-aud-fb14b7
   ask: The card notes an OpenCode audit event for a denied tool call (OV9npEO1), but lacks a target host, repository,
@@ -65,5 +69,11 @@ spec: Investigate the OpenCode audit denied_tool event referenced by ID OV9npEO1
   done-condition is verified when the investigation results are fully documented and recorded within the chaba repository.
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 and follow-ups noted (land the audit toolchain; query opencode.db on tony-macbook for the denied
+    path). | devin-task-20261028-060022-investigate-the-opencode-audit.service: Consumed 40.033s CPU time, 602.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
