@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: doing
-updated: 2026-10-27 12:33
+updated: 2026-10-27 12:50
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -15,3 +15,10 @@ comms:
 - at: 2026-10-27 12:33
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 12:50
+  from: devin
+  text: '[routing verification 2026-10-27] Found Tony''s DevNestHA thread_id 33 (chat -1003998821809); it was previously
+    recorded as `lane=unknown`. Bound that existing thread to `kk-video-c9f99fee6146` in the project manifest, preserved
+    its visible Telegram title, restarted `devnest-tg-relay.service`, and verified `/health` reports one topic plus
+    registry thread 33 -> project. No Telegram test message was sent. The isolated code branch now forwards PublicationEvent
+    `project`/`card` refs to the relay and '
