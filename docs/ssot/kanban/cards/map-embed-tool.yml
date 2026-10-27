@@ -1,7 +1,7 @@
 id: map-embed-tool
 title: map_embed tool — Google Maps POI+route on CMS pages
-column: doing
-updated: 2026-10-27 14:12
+column: review
+updated: 2026-10-27 14:13
 priority: medium
 tags:
 - ada-pi
@@ -48,10 +48,16 @@ comms:
   from: devin
   text: 'raised request google-maps-api-key-gate-for-ada-lanes-r-025db9: GOOGLE_MAPS_API_KEY gate for ada lanes:
     reuse the gev key (~/.config/secrets/gev-google-maps.env on tony-dell) if its GC'
+- at: 2026-10-27 14:13
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ard for the key decision (reuse the gev key vs new ada-lane key). | devin-task-20261027-140229-tony-2026-10-13-wa'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 ard for the key decision (reuse the gev key vs new ada-lane key). | devin-task-20261027-140229-tony-2026-10-13-wants-map-tool.service:
+    Consumed 48.648s CPU time over 10min 18.148s wall clock time, 301.2M memory peak, 28.8M memory swap peak.'
+  verified: true
 requests:
 - id: google-maps-api-key-gate-for-ada-lanes-r-025db9
   ask: 'GOOGLE_MAPS_API_KEY gate for ada lanes: reuse the gev key (~/.config/secrets/gev-google-maps.env on tony-dell)
@@ -64,3 +70,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
