@@ -1,7 +1,7 @@
 id: hugging-face-pro-cost-benefit-for-colab-b22c9e
 title: Hugging Face Pro cost-benefit for Colab and DevNest
 column: doing
-updated: 2026-10-27 13:37
+updated: 2026-10-27 13:44
 brief: Evaluate whether a Hugging Face Pro subscription adds value beyond the existing Drive-backed Colab cache;
   do not purchase without Tony’s explicit approval.
 priority: medium
@@ -59,6 +59,13 @@ comms:
   from: devin
   text: 'dispatch started on idc02: gathering DevNest/Colab context, will run bounded HF Hub/ZeroGPU probe (no paid
     Jobs, no subscription) and produce utilization math + recommendation'
+- at: 2026-10-27 13:44
+  from: devin
+  text: 'Assessment complete (no spend, no subscription). Measured: Colab heldout battery on real T4 boots = fp16
+    21.0 TFLOPs, 5-6s; queue did 4.62 GPU-job-hours Oct 23-27 across 42 pack completions → ~15-30 T4h/mo. Cost math:
+    equivalent HF Jobs PAYG $6-12/mo vs Pro $16-21/mo — Pro is >=$7/mo worse than PAYG at ANY usage on Jobs spend
+    alone (its $2 credits ≈ 5 T4h). ZeroGPU cannot run the pack runner (Gradio-Spaces calls only); Hub cache is
+    ephemeral per job anyway. Probes: HF CDN anon 40.8MB/s vs Drive '
 action:
   type: dispatch
   status: running
