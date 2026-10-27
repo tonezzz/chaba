@@ -1,0 +1,24 @@
+id: cline-kanban-nest-worker-adapter
+title: Build Nest worker adapter for Cline Kanban pilot
+column: doing
+updated: 2026-10-27 13:54
+priority: medium
+tags:
+- cline-kanban
+- nest
+- adapter
+- con01
+- pilot
+spec: Implement and test a Nest pack that translates a validated Nest task envelope into a Cline Kanban task on
+  con01, starts it only in the disposable pilot workspace, polls to review/completion, and publishes task state
+  plus a non-empty diff/result artifact through a dedicated Nest queue root. Use the existing free Ollama qwen3:4b
+  model on tony-omen via Tailnet (no API key, no hosted-model call). Keep auto-commit/PR off, never mount a live
+  Chaba repository, and make task submission idempotent. Add a strict proxy-authenticated local Cline backend so
+  the Nest worker CLI can use local runtime mode without exposing the backend port. The first version is a single
+  Cline execution host on con01; document that this is not a multi-host shared Cline board or a general Nest worker
+  pool. Verify the Nest claim/artifact/done flow and review the test task in the Cline UI.
+ref: KNB-0932
+comms:
+- at: 2026-10-27 13:54
+  from: tony
+  text: card captured via board-api
