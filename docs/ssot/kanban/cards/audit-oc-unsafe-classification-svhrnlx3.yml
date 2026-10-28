@@ -1,7 +1,7 @@
 id: audit-oc-unsafe-classification-svhrnlx3
 title: 'OpenCode audit: unsafe_classification (SvHrNlX3)'
 column: doing
-updated: 2026-10-28 13:15
+updated: 2026-10-28 13:16
 brief: /home/tony/CascadeProjects classified automatic_ok; /home/tony/.devin classified automatic_ok
 priority: high
 tags:
@@ -43,6 +43,12 @@ comms:
   text: 'audit done: classifier+verifier reviewed; gated path sound, but blacklist-only roots leave /home/tony/.devin
     (the literal incident path) + all non-scan paths automatic_ok-able; case-evasion on APFS; verifier self-references
     manifest policy. Writing report.'
+- at: 2026-10-28 13:16
+  from: devin
+  text: 'audit report committed: evals/opencode-lane/reports/2026-10-28-unsafe-classification-audit.md + docs/ssot/jobs/devnest/2026-10-28-opencode-unsafe-classification-audit.yml
+    (commit f1ff8a29a). Verdict PARTIALLY REMEDIATED: F1 high — /home/tony/.devin (literal incident path) still
+    classifies automatic_ok; blacklist needs whitelist + normalization + verifier floor. Fix follow-ups listed in
+    report.'
 requests:
 - id: the-card-opencode-audit-unsafe-59dd62
   ask: 'The card ''OpenCode audit: unsafe_classification (SvHrNlX3)'' requires an audit of an ''unsafe_classification''
