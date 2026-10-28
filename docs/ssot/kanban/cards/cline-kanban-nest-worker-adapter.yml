@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 14:45
+updated: 2026-10-28 16:04
 priority: medium
 tags:
 - cline-kanban
@@ -262,6 +262,12 @@ comms:
     -> 401 on all paths, authed -> 200. Three fixes landed on master to get here: (1) 97d1547e6 was already on master
     (Pod= unsupported on podman 4.9 -> bridge network); (2) entrypoint --no-passcode + Containerfile sed-patch —
     upstream kanban 0.1.70 bug: --no-passcode parses to o'
+- at: 2026-10-28 16:04
+  from: devin
+  text: 'Follow-through on the approved live-test request: branch infra/cline-kanban-nest-worker-publish was pushed
+    and PR #49 opened against master. Adapter/proxy tests pass 7+7; YAML parses; GitHub syntax+validate checks are
+    green so far. Waiting for mergeability and remaining CI before the approved con01 restart and free local qwen3:4b
+    smoke. No hosted call or model download.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
