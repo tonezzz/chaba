@@ -1,7 +1,7 @@
 id: opencode-explicit-executor-routing
 title: Make 'use OpenCode' an explicit executor contract in cards
-column: backlog
-updated: 2026-10-28 09:44
+column: doing
+updated: 2026-10-28 09:45
 brief: Ensure a request to use OpenCode is persisted, honored, audited, and never silently falls back to Devin.
 priority: high
 program: ai-workforce
@@ -22,7 +22,8 @@ spec: 'Add an explicit executor contract for delegated cards: action.executor=op
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: idc02
 note: Current runner routes by keywords and OPENCODE_LANES; a user phrase 'use OpenCode' is not yet a first-class
   persisted choice and can silently use Devin when the gate is off. This is the highest-value routing clarity fix.
 ref: OPS-0959
@@ -34,3 +35,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 09:45
+  from: idc02
+  text: claimed
