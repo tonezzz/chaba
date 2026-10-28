@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 20:41
+updated: 2026-10-28 21:27
 priority: medium
 tags:
 - cline-kanban
@@ -327,6 +327,11 @@ comms:
   text: 'Follow-up split to KNB-0968 (Resolve Cline shutdown-guard image build blocker). PR #52 is merged, but its
     image is not deployed because the offline build lacks cached kanban@0.1.70. KNB-0968 records the OpenCode executor/profile
     gate and the available safe choices; no task is queued until the executor/model path is approved.'
+- at: 2026-10-28 21:27
+  from: devin
+  text: 'PR #52 is deployed on con01. The app now starts with --skip-shutdown-cleanup; authenticated HTTP/WebSocket
+    and stack preflight pass. The image-build blocker was resolved by Tony-approved npm registry access. No OpenCode
+    task or Cline model run was started; fd918 remains in Trash and would need a new job key for any future smoke.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
