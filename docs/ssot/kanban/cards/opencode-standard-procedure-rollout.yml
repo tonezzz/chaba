@@ -1,7 +1,7 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
 column: backlog
-updated: 2026-10-28 15:16
+updated: 2026-10-28 15:44
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
 priority: medium
@@ -28,10 +28,18 @@ comms:
   from: devin
   text: 'raised request opencode-procedure-rollout-scope: What scope should the next OpenCode standard-procedure
     rollout use?'
+- at: 2026-10-28 15:44
+  from: tony
+  text: 'answered opencode-procedure-rollout-scope: supervised-s0-s2 — Use OpenCode only for bounded read-only/report/doc/small-test
+    procedures with isolated worktrees and independent verifiers; keep production actions human-gated and broad
+    OPENCODE_LA'
+- at: 2026-10-28 15:44
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
-  status: open
+  status: answered
   at: 2026-10-28 15:16
   from: devin
   options:
@@ -43,3 +51,6 @@ requests:
   - id: fleet-wide
     label: Enable OpenCode broadly across runners; requires separate risk/budget review and is not recommended yet.
   suggested: supervised-s0-s2
+  answer: supervised-s0-s2 — Use OpenCode only for bounded read-only/report/doc/small-test procedures with isolated
+    worktrees and independent verifiers; keep production actions human-gated and broad OPENCODE_LANES off.
+awaiting_action: true
