@@ -365,7 +365,7 @@ def handle_tools_list(id_):
                     "max_entries": {"type": "integer", "description": "Cap on returned entries", "default": 500},
                     "sort": {"type": "string", "enum": ["name", "size", "mtime", "kind"], "default": "name"},
                     "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
-                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects", "description": "rows = compact positional arrays + fields header (~60% smaller)"},
+                    "format": {"type": "string", "enum": ["rows", "objects"], "default": "rows", "description": "rows = compact positional arrays + fields header; objects is verbose report format"},
                 },
                 "required": ["host", "path"],
             },
@@ -378,7 +378,7 @@ def handle_tools_list(id_):
                 "properties": {
                     "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
                     "path": {"type": "string", "description": "Path inside an allowed root"},
-                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                    "format": {"type": "string", "enum": ["rows", "objects"], "default": "rows"},
                 },
                 "required": ["host", "path"],
             },
@@ -397,7 +397,7 @@ def handle_tools_list(id_):
                     "sort": {"type": "string", "enum": ["name", "size", "mtime", "kind"], "default": "name"},
                     "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
                     "kind": {"type": "string", "enum": ["any", "file", "dir", "symlink"], "default": "any"},
-                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                    "format": {"type": "string", "enum": ["rows", "objects"], "default": "rows"},
                 },
                 "required": ["host", "path", "pattern"],
             },
@@ -416,7 +416,7 @@ def handle_tools_list(id_):
                     "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
                     "kind": {"type": "string", "enum": ["any", "file", "dir", "symlink"], "default": "any"},
                     "pattern": {"type": "string", "description": "Optional fnmatch filter on entries (dirs still descend)"},
-                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                    "format": {"type": "string", "enum": ["rows", "objects"], "default": "rows"},
                 },
                 "required": ["host", "path"],
             },
@@ -796,14 +796,14 @@ def handle_tools_call(id_, params):
             max_entries=arguments.get("max_entries"),
             sort=arguments.get("sort", "name"),
             order=arguments.get("order", "asc"),
-            format=arguments.get("format", "objects"),
+            format=arguments.get("format", "rows"),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_files_stat":
         p = arguments.get("path")
         if not host or not p:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and path are required"}}
-        result = mcp_files_stat(host, p, format=arguments.get("format", "objects"))
+        result = mcp_files_stat(host, p, format=arguments.get("format", "rows"))
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_files_search":
         p = arguments.get("path")
@@ -817,7 +817,7 @@ def handle_tools_call(id_, params):
             sort=arguments.get("sort", "name"),
             order=arguments.get("order", "asc"),
             kind=arguments.get("kind", "any"),
-            format=arguments.get("format", "objects"),
+            format=arguments.get("format", "rows"),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_files_tree":
@@ -1040,4 +1040,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
