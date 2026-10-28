@@ -203,6 +203,10 @@ comms:
   from: devin
   text: 'raised request the-jack-job-now-parses-but-the-reposito-2b544d: The Jack job now parses, but the repository-wide
     SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kan'
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'raised request the-openrouter-key-answer-in-the-board-i-edf0aa: The OpenRouter-key answer in the board
+    is redacted/truncated, so it is not usable; I did not retrieve, transfer, or call'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -345,6 +349,20 @@ requests:
   - id: hold-owner
     label: Leave it to the job owner and keep Cline CI blocked
   suggested: add-title
+- id: the-openrouter-key-answer-in-the-board-i-edf0aa
+  ask: The OpenRouter-key answer in the board is redacted/truncated, so it is not usable; I did not retrieve, transfer,
+    or call it. Please do not post a key to a card or chat. If it was a real key, rotate it and put a fresh Cline-only
+    key in con01 ~/.config/secrets/cline-kanban.env as OPENROUTER_API_KEY_CLINE, then reply “stored”; I will keep
+    it proxy-only and enforce the pinned :free allowlist. Or choose local-only to defer OpenRouter.
+  status: open
+  at: 2026-10-28 07:05
+  from: devin
+  options:
+  - id: store-fresh-key
+    label: Store a rotated Cline-only key in the proxy secret file; allow pinned :free models only (recommended)
+  - id: local-only
+    label: Defer OpenRouter and continue local qwen3:4b only
+  suggested: store-fresh-key
 action:
   type: dispatch
   status: done
