@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-28 10:05
+updated: 2026-10-28 11:41
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -65,6 +65,13 @@ comms:
     release is revalidated. Static checks pass; local release preflight is warn/0-fail (source PDF intentionally
     not copied). Current Colab runtime registry is stale and no queue runner exists; retry waits for a fresh Cell
     1 registration. Private silent preview folder is linked in the user '
+- at: 2026-10-28 11:41
+  from: devin
+  text: '[Edge TTS diagnostic update 2026-10-28] R3 ran on a fresh T4 with edge-tts 7.3.1 and 3 serial retries.
+    All 10 shots passed QC and the silent teaser rebuilt, but narration still returned NoAudioReceived; no MP3/final
+    MP4 or preview done marker. A generic 7.3.1 Thai smoke succeeded on tony-dell, and one full cue succeeded once,
+    but subsequent cue probes were intermittent; tony-dell is now SSH-unreachable. This points to an unstable Edge
+    endpoint/egress path, not local GPU load. R4 source commit `6'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
