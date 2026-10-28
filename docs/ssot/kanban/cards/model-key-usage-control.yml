@@ -81,6 +81,13 @@ comms:
 - at: 2026-10-28 13:03
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:03
+  from: tony
+  text: 'answered litellm-key-cap-reconciliation: audit-first — Keep live limits unchanged and audit which callers/approval
+    changed them before reconciling (recommended).'
+- at: 2026-10-28 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -112,7 +119,7 @@ requests:
 - id: litellm-key-cap-reconciliation
   ask: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5 documented; Ada $30 and active vs $10/spare; Bench
     spend is slightly over its $2 cap). Which budget policy should we follow before changing caps?
-  status: open
+  status: answered
   at: 2026-10-28 12:59
   from: devin
   options:
@@ -123,4 +130,6 @@ requests:
   - id: ssot-values
     label: Treat SSOT limits as policy; plan correction after the Nov 1 reset, knowing Chaba may be quota-blocked.
   suggested: audit-first
+  answer: audit-first — Keep live limits unchanged and audit which callers/approval changed them before reconciling
+    (recommended).
 awaiting_action: true
