@@ -13,6 +13,8 @@ LiteLLM gateway on idc03 is a pure env change — no code:
   GEMINI_API_KEY   Google AI key for direct calls; a LITELLM_KEY_*
                    virtual key (e.g. LITELLM_KEY_CHABA) when BASE_URL
                    points at the gateway.
+  base_url_override  per-call gateway override for services that must not
+                     change the process-wide GEMINI_BASE_URL.
 
 Routing table / budgets: docs/ssot/infrastructure/ssot.llm-gateway.yml.
 """

@@ -43,6 +43,12 @@ WP app passwords or mddb credentials; only the service host has
   `learned_at`/`next_review`/`status` preserved on re-file, Thai section
   appended unless `no_th` (gemini flash-lite, best-effort — a translation
   failure returns EN-only, never a failed write).
+  The board-api Thai translation now uses the LiteLLM virtual key
+  `LITELLM_KEY_MDDB` and the explicit free-only deployment
+  `gemini-3.5-flash-lite-free`; it has no paid fallback. The Gemini REST
+  helper accepts a per-call gateway URL override so this path does not
+  depend on a process-global `GEMINI_BASE_URL`. Missing key, gateway error,
+  or free-tier quota exhaustion still degrades to an English-only lesson.
 - **`/report`** — the report-integration duty: `mode` optional, inferred
   from fields. `query` → candidate slugs; `slug+note` → session-log append
   (reuses `cms-report-note.py` logic — managed block + writer-contract
