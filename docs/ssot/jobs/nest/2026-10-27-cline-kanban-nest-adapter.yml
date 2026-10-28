@@ -116,7 +116,9 @@ processing:
         Fix the adapter to call `task start` for both backlog and in_progress
         tasks. The CLI start operation is idempotent when a session is already
         running and starts the session when the task was only moved to
-        in_progress.
+        in_progress. The approved task key is
+        `cline-nest-smoke-20261028-093509`; Cline task fd918 already carries
+        that marker, so resume it rather than creating another smoke task.
   decisions:
     - label: Resume an existing in-progress task through the idempotent CLI start operation
       rationale: >-
