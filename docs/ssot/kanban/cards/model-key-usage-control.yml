@@ -142,6 +142,10 @@ comms:
     opencode burns ~$27.5 via or-claude-fable-5.1 from tony-dell). (2) ada key is NOT spare — serves live opencode
     from tony-macbook. (3) keys ada/chaba/mddb/michael have models={} unrestricted. (4) Direct-Google bypasses still
     open: devin-bank-distill (chaba-paid.env PAID), a'
+- at: 2026-10-28 13:56
+  from: devin
+  text: 'raised request cap-policy-after-audit-live-chaba-20-30d-27f975: Cap policy after audit? Live: chaba $20/30d,
+    ada $30/30d (raised 10-24 during eval opencode burns; chaba currently 99%, '
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -187,6 +191,18 @@ requests:
   suggested: audit-first
   answer: audit-first — Keep live limits unchanged and audit which callers/approval changed them before reconciling
     (recommended).
+- id: cap-policy-after-audit-live-chaba-20-30d-27f975
+  ask: 'Cap policy after audit? Live: chaba $20/30d, ada $30/30d (raised 10-24 during eval opencode burns; chaba
+    currently 99%, bench already 422ing at $2). SSOT says chaba $5, ada $10. Options: (A) codify live into SSOT
+    — usage is real (ada tony-lane REST + evals) ★ recommended; (B) revert to $5/$10 after 2026-11-01 reset; (C)
+    other caps. Also ok to flip the 6 direct batch jobs (devin-bank-distill, memory-distill, lesson-miner, spec-enrich,
+    news-digest fallback legs, yomi-api) onto the gateway with virtual keys (env-only, no paid fallback)?'
+  status: open
+  at: 2026-10-28 13:56
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running
