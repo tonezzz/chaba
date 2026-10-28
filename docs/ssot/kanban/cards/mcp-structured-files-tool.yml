@@ -1,7 +1,7 @@
 id: mcp-structured-files-tool
 title: 'mcp-debug structured filesystem tools: list/stat/search instead of shell strings'
-column: doing
-updated: 2026-10-28 14:06
+column: review
+updated: 2026-10-28 14:08
 brief: Add typed read-only filesystem tools so agents request list/stat/search with parameters and receive stable
   JSON instead of generating shell commands like ls -la.
 priority: high
@@ -51,7 +51,17 @@ comms:
   text: 'committed on dispatch branch: files_agent.py+files.py+server wiring, ssot files: policy, lane_gate +4 tools,
     verify script (39/39), bench harness + reports/mcp-files-bench-2026-10-28.{md,json}, job record + outcome md.
     No push (dispatch flow). Tools go live on next mcp_debug reload.'
+- at: 2026-10-28 14:08
+  from: idc02
+  text: 'finished (ok): exit=0 28-135140-design-and-benchmark-mcp-files.md`. Tools go live on the next `mcp_debug`
+    server reload. | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 28-135140-design-and-benchmark-mcp-files.md`. Tools go live on the next `mcp_debug` server reload.
+    | devin-task-20261028-135140-design-and-benchmark-mcp-files.service: Consumed 1min 28.883s CPU time, 204.6M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
