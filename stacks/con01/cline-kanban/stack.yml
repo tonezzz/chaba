@@ -23,12 +23,12 @@ state:
 ports:
   - "100.72.146.39:3484 — Basic Auth and strict Host/Origin proxy for UI/WebSocket; Tailscale only"
 restore: >-
-  To revert to the pre-split pilot, restore the single-container Quadlet
-  files from revision 1c9420c88, retag the preserved
-  localhost/cline-kanban:0.1.70-pre-pr45 image as localhost/cline-kanban:0.1.70,
-  reload systemd, and restart cline-kanban.service. Keep the proxy password in
-  ~/.config/secrets/cline-kanban.env and retain all pilot state; do not remove
-  data or images without separate approval.
+  To roll back only the shutdown-cleanup guard, retag the preserved
+  localhost/cline-kanban:0.1.70-pre-shutdown-guard image as
+  localhost/cline-kanban:0.1.70, reload systemd, and restart the app and proxy
+  units while retaining the network topology. Preserve task worktrees and all
+  pilot state. The pre-pr45 image is a separate full rollback to the old
+  single-container topology; use it only with explicit approval.
 related_cards:
   - cline-kanban-con01-pilot
   - cline-kanban-nest-worker-adapter
