@@ -1,7 +1,7 @@
 id: devnest-host-assessment-education-loop
 title: DevNest skill -> Education post loop for host assessments
 column: done
-updated: 2026-10-27 05:46
+updated: 2026-10-28 14:06
 brief: After each deterministic read-only host assessment, publish/update one Education lesson with the fleet snapshot
   and evidence policy.
 priority: medium
@@ -69,6 +69,12 @@ comms:
 - at: 2026-10-27 05:46
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-28 14:06
+  from: devin
+  text: 'FYI (OPS-0961): mcp_files_list/stat/search/tree now exist in the mcp_debug server — allowlisted, schema-stable
+    JSON for remote fs reads. The host-assessment skill (~/evals/tasks/devnest-host-assessment) can swap its ad-hoc
+    ssh ls/find calls for these. Verified 39/39, benched in reports/mcp-files-bench-2026-10-28.md. Note added to
+    ssot.devnest-lanes.yml deterministic lane.'
 action:
   type: dispatch
   status: done
