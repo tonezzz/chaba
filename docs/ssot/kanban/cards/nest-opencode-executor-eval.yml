@@ -1,7 +1,7 @@
 id: nest-opencode-executor-eval
 title: 'Nest executor eval: opencode as a coding-agent worker'
 column: doing
-updated: 2026-10-28 12:44
+updated: 2026-10-28 12:55
 note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
   Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
   mddb prune/compact sequence — every step is checkable, making it an ideal eval template.'
@@ -34,6 +34,13 @@ comms:
 - at: 2026-10-28 12:44
   from: devin
   text: dispatch started on idc02 — scoping opencode executor eval vs prior opencode cards + MEM-0871 template
+- at: 2026-10-28 12:55
+  from: devin
+  text: 'EVAL DONE — verdict: opencode is a viable Nest executor for the verified read-only/planning tier today;
+    mutating classes stay correctly outside the lane. Shipped the MEM-0871 checkable-sequence template: profile
+    evals/opencode-lane/profiles/mddb-sequence/ + bounded probe scripts/devnest/mddb_probe.py + envelope jobs/p1-mddb-sequence-idc02.yaml
+    + held-out verifier (recomputes every claim vs live banks). Gated S1 runs on idc02: run1 missing_artifact (flash-lite
+    early-stop, correctly caught+escalat'
 action:
   type: dispatch
   status: running
