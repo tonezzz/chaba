@@ -1,0 +1,41 @@
+id: cline-kanban-offline-image-build
+title: Resolve Cline shutdown-guard image build blocker
+column: backlog
+updated: 2026-10-28 20:40
+brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
+  not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
+priority: high
+program: chaba-ci
+tags:
+- cline
+- opencode
+- container
+- offline-build
+spec: 'Context: PR #52 (fix(cline): preserve task worktrees on shutdown) merged with CI green. The con01 network-isolated
+  Cline app/proxy stack is healthy on the old image; the current image is preserved as localhost/cline-kanban:0.1.70-pre-shutdown-guard.
+  An offline podman build reached npm install kanban@0.1.70 and failed DNS (EAI_AGAIN). No restart or task run occurred.
+
+
+  Goal: determine whether the shutdown guard can be built/deployed reproducibly without an unapproved external fetch,
+  or document the exact minimum registry access needed. Tony requested OpenCode as the coding executor.
+
+
+  Safety: no Cline service restart, no task/worktree changes, no inference, no secrets, no external network calls,
+  no auto-merge/deploy. Preserve both image tags and the isolated pack output. Any code change must use an isolated
+  branch, tests, and independent review.
+
+
+  OpenCode gate: the free ops-readonly profile cannot edit code; branch-code is currently disabled and defaults
+  to a paid strong model. Do not silently fall back to Devin or a paid model. Get the executor/model authorization
+  recorded before arming a dispatch.
+
+
+  Acceptance: a tested offline/reproducible build path and diff, OR a verified explanation that a public npm fetch
+  is required plus the exact package/host needed; deployment remains a separate human-gated step.'
+note: Follow-up to KNB-0932. Existing Cline service and rollback image are intact. This card is deliberately unarmed
+  pending an approved OpenCode write profile/model or the direct registry-build decision.
+ref: KNB-0968
+comms:
+- at: 2026-10-28 20:40
+  from: devin
+  text: card captured via board-api
