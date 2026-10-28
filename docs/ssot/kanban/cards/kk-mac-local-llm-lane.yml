@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-28 21:32
+updated: 2026-10-28 21:38
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -64,6 +64,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-28 21:38
+  from: devin
+  text: 'DevNest Colab slot-prestage procedure is now documented in docs/kb/colab-mcp-jobs.md and submitted for
+    review as PR #54: https://github.com/tonezzz/chaba/pull/54. It defines a 30-minute default/60-minute gated model
+    slot, pre-stages the render pack before launch, overlaps only CPU/I/O prep, and keeps GPU runs serial. No model
+    pack was staged or launched yet; OPS-0966 replay fixtures/model choice remain the readiness gate.'
 action:
   type: dispatch
   status: done
@@ -71,5 +77,7 @@ action:
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib.service:
     Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-28 21:32
 review_kind: verify
 claim: {}
