@@ -1,0 +1,27 @@
+id: devnest-colab-t4-model-slot-adapter
+title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
+column: backlog
+updated: 2026-10-28 23:15
+brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
+  held-out battery and from the existing Mac local-LLM lane.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- colab
+- nest
+- model-evaluation
+spec: Build a reusable, local-only Colab T4 model-slot pack with a 30-minute default cap (60 minutes only after
+  a passing first slot). The five read-only S0 fixtures are frozen under evals/shadow/fixtures (DEV-0861), but scripts/devnest/shadow_eval.py
+  currently exercises L0/OpenCode/Devin; it has no Colab T4 local-model arm. Choose and implement either a model-only
+  inference arm with independent synthetic structured-output checks (report only throughput/format smoke, not replay
+  quality), or a full tool-using shadow_eval port that preserves the held-out verifier boundary. Pin model/revision
+  and only reuse pre-staged weights; no paid API, secrets, personal data, production mutation, or model download
+  during the paid slot. Stage the complete pack before queue launch, order it immediately before the render pack
+  so only CPU/I/O prep overlaps, and verify metrics/report artifacts remotely. Do not launch while the current render/prep
+  queue is active.
+ref: OPS-0971
+comms:
+- at: 2026-10-28 23:15
+  from: tony
+  text: card captured via board-api
