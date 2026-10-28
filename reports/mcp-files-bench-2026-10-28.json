@@ -1,0 +1,5403 @@
+{
+ "date": "2026-10-28",
+ "reps": 3,
+ "fixture": "systemd x30, logs x15, nodered x7, evals-results x6, repo x121, inbox x6 (fifo+symlinks incl 1 escape), wide x200, empty",
+ "aggregate": {
+  "structured": {
+   "prompt_tokens": 1156.8,
+   "tool_tokens": 18981.5,
+   "latency_ms_median": 41.7,
+   "latency_ms_mean": 43.3,
+   "parse_success": 1.0,
+   "error_rate": 0.033,
+   "interventions": 0,
+   "recall_mean": 1.0,
+   "fidelity_mean": 1.0
+  },
+  "raw": {
+   "prompt_tokens": 991.2,
+   "tool_tokens": 7392.0,
+   "latency_ms_median": 3.7,
+   "latency_ms_mean": 4.1,
+   "parse_success": 1.0,
+   "error_rate": 0.033,
+   "interventions": 0,
+   "recall_mean": 0.987,
+   "fidelity_mean": 0.666
+  },
+  "structured_rows": {
+   "tool_tokens": 12014.5
+  },
+  "delta": {
+   "rows_tool_tokens_vs_raw_pct": 62.5,
+   "rows_vs_objects_savings_pct": 36.7,
+   "prompt_tokens_saved_pct": -16.7,
+   "tool_tokens_saved_pct": -156.8,
+   "total_tokens_saved_pct": -140.2,
+   "recall_gain": 0.013,
+   "fidelity_gain": 0.334
+  }
+ },
+ "tasks": [
+  {
+   "id": "ha01",
+   "group": "host-assessment",
+   "op": "list",
+   "dir": "systemd",
+   "prompt": "List the user's systemd unit dir with kinds and sizes",
+   "structured": {
+    "request_chars": 137,
+    "output_chars": 4694,
+    "output_chars_rows": 2807,
+    "latency_ms": 46.81873321533203,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "chaba-job-00.service",
+      "relative_path": "chaba-job-00.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-00.timer",
+      "relative_path": "chaba-job-00.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.service",
+      "relative_path": "chaba-job-01.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.timer",
+      "relative_path": "chaba-job-01.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.service",
+      "relative_path": "chaba-job-02.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.timer",
+      "relative_path": "chaba-job-02.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.service",
+      "relative_path": "chaba-job-03.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.timer",
+      "relative_path": "chaba-job-03.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.service",
+      "relative_path": "chaba-job-04.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.timer",
+      "relative_path": "chaba-job-04.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.service",
+      "relative_path": "chaba-job-05.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.timer",
+      "relative_path": "chaba-job-05.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-06.service",
+      "relative_path": "chaba-job-06.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-07.service",
+      "relative_path": "chaba-job-07.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-08.service",
+      "relative_path": "chaba-job-08.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-09.service",
+      "relative_path": "chaba-job-09.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-10.service",
+      "relative_path": "chaba-job-10.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-11.service",
+      "relative_path": "chaba-job-11.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-12.service",
+      "relative_path": "chaba-job-12.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-13.service",
+      "relative_path": "chaba-job-13.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-14.service",
+      "relative_path": "chaba-job-14.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-15.service",
+      "relative_path": "chaba-job-15.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-16.service",
+      "relative_path": "chaba-job-16.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-17.service",
+      "relative_path": "chaba-job-17.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-18.service",
+      "relative_path": "chaba-job-18.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-19.service",
+      "relative_path": "chaba-job-19.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-20.service",
+      "relative_path": "chaba-job-20.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-21.service",
+      "relative_path": "chaba-job-21.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-22.service",
+      "relative_path": "chaba-job-22.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-23.service",
+      "relative_path": "chaba-job-23.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 115,
+    "output_chars": 1977,
+    "latency_ms": 5.754947662353516,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 30
+  },
+  {
+   "id": "ha02",
+   "group": "host-assessment",
+   "op": "search",
+   "dir": "systemd",
+   "prompt": "Find all .service unit files",
+   "structured": {
+    "request_chars": 161,
+    "output_chars": 3869,
+    "output_chars_rows": 2378,
+    "latency_ms": 39.55435752868652,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "chaba-job-00.service",
+      "relative_path": "chaba-job-00.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.service",
+      "relative_path": "chaba-job-01.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.service",
+      "relative_path": "chaba-job-02.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.service",
+      "relative_path": "chaba-job-03.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.service",
+      "relative_path": "chaba-job-04.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.service",
+      "relative_path": "chaba-job-05.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-06.service",
+      "relative_path": "chaba-job-06.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-07.service",
+      "relative_path": "chaba-job-07.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-08.service",
+      "relative_path": "chaba-job-08.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-09.service",
+      "relative_path": "chaba-job-09.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-10.service",
+      "relative_path": "chaba-job-10.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-11.service",
+      "relative_path": "chaba-job-11.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-12.service",
+      "relative_path": "chaba-job-12.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-13.service",
+      "relative_path": "chaba-job-13.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-14.service",
+      "relative_path": "chaba-job-14.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-15.service",
+      "relative_path": "chaba-job-15.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-16.service",
+      "relative_path": "chaba-job-16.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-17.service",
+      "relative_path": "chaba-job-17.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-18.service",
+      "relative_path": "chaba-job-18.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-19.service",
+      "relative_path": "chaba-job-19.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-20.service",
+      "relative_path": "chaba-job-20.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-21.service",
+      "relative_path": "chaba-job-21.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-22.service",
+      "relative_path": "chaba-job-22.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-23.service",
+      "relative_path": "chaba-job-23.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 131,
+    "output_chars": 1680,
+    "latency_ms": 4.3735504150390625,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 24
+  },
+  {
+   "id": "ha03",
+   "group": "host-assessment",
+   "op": "list",
+   "dir": "logs",
+   "prompt": "10 largest files under logs with sizes",
+   "structured": {
+    "request_chars": 186,
+    "output_chars": 1654,
+    "output_chars_rows": 1087,
+    "latency_ms": 37.66441345214844,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "big-2.log",
+      "relative_path": "big-2.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170258,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "big-1.log",
+      "relative_path": "big-1.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170318,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "big-0.log",
+      "relative_path": "big-0.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170378,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-11.log",
+      "relative_path": "app-11.log",
+      "kind": "file",
+      "size_bytes": 600,
+      "mtime": 1793170438,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-10.log",
+      "relative_path": "app-10.log",
+      "kind": "file",
+      "size_bytes": 550,
+      "mtime": 1793170498,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-09.log",
+      "relative_path": "app-09.log",
+      "kind": "file",
+      "size_bytes": 500,
+      "mtime": 1793170558,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-08.log",
+      "relative_path": "app-08.log",
+      "kind": "file",
+      "size_bytes": 450,
+      "mtime": 1793170618,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-07.log",
+      "relative_path": "app-07.log",
+      "kind": "file",
+      "size_bytes": 400,
+      "mtime": 1793170678,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-06.log",
+      "relative_path": "app-06.log",
+      "kind": "file",
+      "size_bytes": 350,
+      "mtime": 1793170738,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-05.log",
+      "relative_path": "app-05.log",
+      "kind": "file",
+      "size_bytes": 300,
+      "mtime": 1793170798,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 135,
+    "output_chars": 610,
+    "latency_ms": 4.17327880859375,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.5,
+   "n_expected": 10
+  },
+  {
+   "id": "ha04",
+   "group": "host-assessment",
+   "op": "list",
+   "dir": "logs",
+   "prompt": "5 newest files under logs",
+   "structured": {
+    "request_chars": 186,
+    "output_chars": 1031,
+    "output_chars_rows": 794,
+    "latency_ms": 44.872283935546875,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "app-00.log",
+      "relative_path": "app-00.log",
+      "kind": "file",
+      "size_bytes": 50,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-01.log",
+      "relative_path": "app-01.log",
+      "kind": "file",
+      "size_bytes": 100,
+      "mtime": 1793171038,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-02.log",
+      "relative_path": "app-02.log",
+      "kind": "file",
+      "size_bytes": 150,
+      "mtime": 1793170978,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-03.log",
+      "relative_path": "app-03.log",
+      "kind": "file",
+      "size_bytes": 200,
+      "mtime": 1793170918,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-04.log",
+      "relative_path": "app-04.log",
+      "kind": "file",
+      "size_bytes": 250,
+      "mtime": 1793170858,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 123,
+    "output_chars": 257,
+    "latency_ms": 6.53386116027832,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 0.6,
+   "fid_r": 0.5,
+   "n_expected": 5
+  },
+  {
+   "id": "ha05",
+   "group": "host-assessment",
+   "op": "tree",
+   "dir": "systemd",
+   "prompt": "Tree of the units dir, 2 levels",
+   "structured": {
+    "request_chars": 149,
+    "output_chars": 4694,
+    "output_chars_rows": 2807,
+    "latency_ms": 40.463924407958984,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "chaba-job-00.service",
+      "relative_path": "chaba-job-00.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-00.timer",
+      "relative_path": "chaba-job-00.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.service",
+      "relative_path": "chaba-job-01.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.timer",
+      "relative_path": "chaba-job-01.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.service",
+      "relative_path": "chaba-job-02.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.timer",
+      "relative_path": "chaba-job-02.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.service",
+      "relative_path": "chaba-job-03.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.timer",
+      "relative_path": "chaba-job-03.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.service",
+      "relative_path": "chaba-job-04.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.timer",
+      "relative_path": "chaba-job-04.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.service",
+      "relative_path": "chaba-job-05.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.timer",
+      "relative_path": "chaba-job-05.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-06.service",
+      "relative_path": "chaba-job-06.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-07.service",
+      "relative_path": "chaba-job-07.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-08.service",
+      "relative_path": "chaba-job-08.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-09.service",
+      "relative_path": "chaba-job-09.service",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-10.service",
+      "relative_path": "chaba-job-10.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-11.service",
+      "relative_path": "chaba-job-11.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-12.service",
+      "relative_path": "chaba-job-12.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-13.service",
+      "relative_path": "chaba-job-13.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-14.service",
+      "relative_path": "chaba-job-14.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-15.service",
+      "relative_path": "chaba-job-15.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-16.service",
+      "relative_path": "chaba-job-16.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-17.service",
+      "relative_path": "chaba-job-17.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-18.service",
+      "relative_path": "chaba-job-18.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-19.service",
+      "relative_path": "chaba-job-19.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-20.service",
+      "relative_path": "chaba-job-20.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-21.service",
+      "relative_path": "chaba-job-21.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-22.service",
+      "relative_path": "chaba-job-22.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-23.service",
+      "relative_path": "chaba-job-23.service",
+      "kind": "file",
+      "size_bytes": 15,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 156,
+    "output_chars": 2202,
+    "latency_ms": 3.6115646362304688,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 30
+  },
+  {
+   "id": "ha06",
+   "group": "host-assessment",
+   "op": "stat",
+   "dir": "logs/app-03.log",
+   "prompt": "Stat app-03.log (size, mode, mtime)",
+   "structured": {
+    "request_chars": 145,
+    "output_chars": 527,
+    "output_chars_rows": 554,
+    "latency_ms": 47.01042175292969,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "app-03.log",
+      "relative_path": ".",
+      "kind": "file",
+      "size_bytes": 200,
+      "mtime": 1793170918,
+      "mode": "0664"
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 141,
+    "output_chars": 89,
+    "latency_ms": 3.0286312103271484,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 1
+  },
+  {
+   "id": "ha07",
+   "group": "host-assessment",
+   "op": "search",
+   "dir": "systemd",
+   "prompt": "Find all .timer units",
+   "structured": {
+    "request_chars": 159,
+    "output_chars": 1244,
+    "output_chars_rows": 941,
+    "latency_ms": 39.267778396606445,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "chaba-job-00.timer",
+      "relative_path": "chaba-job-00.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-01.timer",
+      "relative_path": "chaba-job-01.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-02.timer",
+      "relative_path": "chaba-job-02.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-03.timer",
+      "relative_path": "chaba-job-03.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-04.timer",
+      "relative_path": "chaba-job-04.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "chaba-job-05.timer",
+      "relative_path": "chaba-job-05.timer",
+      "kind": "file",
+      "size_bytes": 8,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 129,
+    "output_chars": 408,
+    "latency_ms": 3.7484169006347656,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 6
+  },
+  {
+   "id": "ha08",
+   "group": "host-assessment",
+   "op": "list",
+   "dir": "evals-results",
+   "prompt": "List devnest assessment artifacts with metadata",
+   "structured": {
+    "request_chars": 143,
+    "output_chars": 1342,
+    "output_chars_rows": 1039,
+    "latency_ms": 45.03369331359863,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "devnest-host-idc02.json",
+      "relative_path": "devnest-host-idc02.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-idc03.json",
+      "relative_path": "devnest-host-idc03.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-mn01.json",
+      "relative_path": "devnest-host-mn01.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-dell.json",
+      "relative_path": "devnest-host-tony-dell.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-macbook.json",
+      "relative_path": "devnest-host-tony-macbook.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-omen.json",
+      "relative_path": "devnest-host-tony-omen.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 121,
+    "output_chars": 508,
+    "latency_ms": 3.5810470581054688,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 6
+  },
+  {
+   "id": "ha09",
+   "group": "host-assessment",
+   "op": "search",
+   "dir": "logs",
+   "prompt": "All .log files in logs dir",
+   "structured": {
+    "request_chars": 154,
+    "output_chars": 2274,
+    "output_chars_rows": 1377,
+    "latency_ms": 45.702219009399414,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "app-00.log",
+      "relative_path": "app-00.log",
+      "kind": "file",
+      "size_bytes": 50,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-01.log",
+      "relative_path": "app-01.log",
+      "kind": "file",
+      "size_bytes": 100,
+      "mtime": 1793171038,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-02.log",
+      "relative_path": "app-02.log",
+      "kind": "file",
+      "size_bytes": 150,
+      "mtime": 1793170978,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-03.log",
+      "relative_path": "app-03.log",
+      "kind": "file",
+      "size_bytes": 200,
+      "mtime": 1793170918,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-04.log",
+      "relative_path": "app-04.log",
+      "kind": "file",
+      "size_bytes": 250,
+      "mtime": 1793170858,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-05.log",
+      "relative_path": "app-05.log",
+      "kind": "file",
+      "size_bytes": 300,
+      "mtime": 1793170798,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-06.log",
+      "relative_path": "app-06.log",
+      "kind": "file",
+      "size_bytes": 350,
+      "mtime": 1793170738,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-07.log",
+      "relative_path": "app-07.log",
+      "kind": "file",
+      "size_bytes": 400,
+      "mtime": 1793170678,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-08.log",
+      "relative_path": "app-08.log",
+      "kind": "file",
+      "size_bytes": 450,
+      "mtime": 1793170618,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-09.log",
+      "relative_path": "app-09.log",
+      "kind": "file",
+      "size_bytes": 500,
+      "mtime": 1793170558,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-10.log",
+      "relative_path": "app-10.log",
+      "kind": "file",
+      "size_bytes": 550,
+      "mtime": 1793170498,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "app-11.log",
+      "relative_path": "app-11.log",
+      "kind": "file",
+      "size_bytes": 600,
+      "mtime": 1793170438,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "big-0.log",
+      "relative_path": "big-0.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170378,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "big-1.log",
+      "relative_path": "big-1.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170318,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "big-2.log",
+      "relative_path": "big-2.log",
+      "kind": "file",
+      "size_bytes": 8000,
+      "mtime": 1793170258,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 124,
+    "output_chars": 852,
+    "latency_ms": 5.612373352050781,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 15
+  },
+  {
+   "id": "ha10",
+   "group": "host-assessment",
+   "op": "list",
+   "dir": "repo",
+   "prompt": "List repo top level with kinds",
+   "structured": {
+    "request_chars": 134,
+    "output_chars": 864,
+    "output_chars_rows": 693,
+    "latency_ms": 39.86716270446777,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "docs",
+      "relative_path": "docs",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "README.md",
+      "relative_path": "README.md",
+      "kind": "file",
+      "size_bytes": 7,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "scripts",
+      "relative_path": "scripts",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "tests",
+      "relative_path": "tests",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 112,
+    "output_chars": 295,
+    "latency_ms": 6.027698516845703,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 4
+  },
+  {
+   "id": "nr01",
+   "group": "nodered-devnest",
+   "op": "search",
+   "dir": "nodered",
+   "prompt": "Find flows*.json under the Node-RED dir",
+   "structured": {
+    "request_chars": 163,
+    "output_chars": 671,
+    "output_chars_rows": 632,
+    "latency_ms": 37.34993934631348,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "flows.json",
+      "relative_path": "flows.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "flows_cred.json",
+      "relative_path": "flows_cred.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 133,
+    "output_chars": 125,
+    "latency_ms": 4.438877105712891,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 2
+  },
+  {
+   "id": "nr02",
+   "group": "nodered-devnest",
+   "op": "tree",
+   "dir": "nodered",
+   "prompt": "Tree of Node-RED workspace to depth 3",
+   "structured": {
+    "request_chars": 149,
+    "output_chars": 1590,
+    "output_chars_rows": 1089,
+    "latency_ms": 48.04849624633789,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": ".config.nodes.json",
+      "relative_path": ".config.nodes.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "flows.json",
+      "relative_path": "flows.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "flows_cred.json",
+      "relative_path": "flows_cred.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "node_modules",
+      "relative_path": "node_modules",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "settings.js",
+      "relative_path": "settings.js",
+      "kind": "file",
+      "size_bytes": 18,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "dep1",
+      "relative_path": "node_modules/dep1",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 2
+     },
+     {
+      "name": "index.js",
+      "relative_path": "node_modules/dep1/index.js",
+      "kind": "file",
+      "size_bytes": 6,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "lib",
+      "relative_path": "node_modules/dep1/lib",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 3
+     },
+     {
+      "name": "package.json",
+      "relative_path": "node_modules/dep1/package.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 156,
+    "output_chars": 594,
+    "latency_ms": 4.786014556884766,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 9
+  },
+  {
+   "id": "nr03",
+   "group": "nodered-devnest",
+   "op": "list",
+   "dir": "evals-results",
+   "prompt": "List only devnest-host-*.json artifacts",
+   "structured": {
+    "request_chars": 177,
+    "output_chars": 1359,
+    "output_chars_rows": 1056,
+    "latency_ms": 41.11886024475098,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "devnest-host-idc02.json",
+      "relative_path": "devnest-host-idc02.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-idc03.json",
+      "relative_path": "devnest-host-idc03.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-mn01.json",
+      "relative_path": "devnest-host-mn01.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-dell.json",
+      "relative_path": "devnest-host-tony-dell.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-macbook.json",
+      "relative_path": "devnest-host-tony-macbook.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "devnest-host-tony-omen.json",
+      "relative_path": "devnest-host-tony-omen.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 141,
+    "output_chars": 722,
+    "latency_ms": 5.362033843994141,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 6
+  },
+  {
+   "id": "nr04",
+   "group": "nodered-devnest",
+   "op": "search",
+   "dir": "nodered",
+   "prompt": "Find all .json files in the Node-RED dir",
+   "structured": {
+    "request_chars": 158,
+    "output_chars": 950,
+    "output_chars_rows": 779,
+    "latency_ms": 35.72583198547363,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": ".config.nodes.json",
+      "relative_path": ".config.nodes.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "flows.json",
+      "relative_path": "flows.json",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "flows_cred.json",
+      "relative_path": "flows_cred.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "package.json",
+      "relative_path": "node_modules/dep1/package.json",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 128,
+    "output_chars": 273,
+    "latency_ms": 5.654335021972656,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 4
+  },
+  {
+   "id": "nr05",
+   "group": "nodered-devnest",
+   "op": "list",
+   "dir": "nodered/node_modules",
+   "prompt": "List node_modules contents",
+   "structured": {
+    "request_chars": 150,
+    "output_chars": 541,
+    "output_chars_rows": 568,
+    "latency_ms": 37.151336669921875,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "dep1",
+      "relative_path": "dep1",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 128,
+    "output_chars": 142,
+    "latency_ms": 6.33549690246582,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 1
+  },
+  {
+   "id": "nr06",
+   "group": "nodered-devnest",
+   "op": "list",
+   "dir": "repo",
+   "prompt": "Which directories exist at repo top level",
+   "structured": {
+    "request_chars": 149,
+    "output_chars": 743,
+    "output_chars_rows": 638,
+    "latency_ms": 41.69607162475586,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "docs",
+      "relative_path": "docs",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "scripts",
+      "relative_path": "scripts",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "tests",
+      "relative_path": "tests",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 130,
+    "output_chars": 203,
+    "latency_ms": 2.8753280639648438,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 3
+  },
+  {
+   "id": "g01",
+   "group": "general",
+   "op": "search",
+   "dir": "repo",
+   "prompt": "Find .py files, at most 2 levels deep",
+   "structured": {
+    "request_chars": 165,
+    "output_chars": 8252,
+    "output_chars_rows": 4385,
+    "latency_ms": 40.218353271484375,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "tool-00.py",
+      "relative_path": "scripts/tool-00.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-01.py",
+      "relative_path": "scripts/tool-01.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-02.py",
+      "relative_path": "scripts/tool-02.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-03.py",
+      "relative_path": "scripts/tool-03.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-04.py",
+      "relative_path": "scripts/tool-04.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-05.py",
+      "relative_path": "scripts/tool-05.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-06.py",
+      "relative_path": "scripts/tool-06.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-07.py",
+      "relative_path": "scripts/tool-07.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-08.py",
+      "relative_path": "scripts/tool-08.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-09.py",
+      "relative_path": "scripts/tool-09.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-10.py",
+      "relative_path": "scripts/tool-10.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-11.py",
+      "relative_path": "scripts/tool-11.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-12.py",
+      "relative_path": "scripts/tool-12.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-13.py",
+      "relative_path": "scripts/tool-13.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-14.py",
+      "relative_path": "scripts/tool-14.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-15.py",
+      "relative_path": "scripts/tool-15.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-16.py",
+      "relative_path": "scripts/tool-16.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-17.py",
+      "relative_path": "scripts/tool-17.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-18.py",
+      "relative_path": "scripts/tool-18.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-19.py",
+      "relative_path": "scripts/tool-19.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-20.py",
+      "relative_path": "scripts/tool-20.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-21.py",
+      "relative_path": "scripts/tool-21.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-22.py",
+      "relative_path": "scripts/tool-22.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-23.py",
+      "relative_path": "scripts/tool-23.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-24.py",
+      "relative_path": "scripts/tool-24.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-25.py",
+      "relative_path": "scripts/tool-25.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-26.py",
+      "relative_path": "scripts/tool-26.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-27.py",
+      "relative_path": "scripts/tool-27.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-28.py",
+      "relative_path": "scripts/tool-28.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-29.py",
+      "relative_path": "scripts/tool-29.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-30.py",
+      "relative_path": "scripts/tool-30.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-31.py",
+      "relative_path": "scripts/tool-31.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-32.py",
+      "relative_path": "scripts/tool-32.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-33.py",
+      "relative_path": "scripts/tool-33.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-34.py",
+      "relative_path": "scripts/tool-34.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-35.py",
+      "relative_path": "scripts/tool-35.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-36.py",
+      "relative_path": "scripts/tool-36.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-37.py",
+      "relative_path": "scripts/tool-37.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-38.py",
+      "relative_path": "scripts/tool-38.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-39.py",
+      "relative_path": "scripts/tool-39.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_00.py",
+      "relative_path": "tests/test_00.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_01.py",
+      "relative_path": "tests/test_01.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_02.py",
+      "relative_path": "tests/test_02.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_03.py",
+      "relative_path": "tests/test_03.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_04.py",
+      "relative_path": "tests/test_04.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_05.py",
+      "relative_path": "tests/test_05.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_06.py",
+      "relative_path": "tests/test_06.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_07.py",
+      "relative_path": "tests/test_07.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_08.py",
+      "relative_path": "tests/test_08.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_09.py",
+      "relative_path": "tests/test_09.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_10.py",
+      "relative_path": "tests/test_10.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_11.py",
+      "relative_path": "tests/test_11.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_12.py",
+      "relative_path": "tests/test_12.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_13.py",
+      "relative_path": "tests/test_13.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_14.py",
+      "relative_path": "tests/test_14.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_15.py",
+      "relative_path": "tests/test_15.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_16.py",
+      "relative_path": "tests/test_16.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_17.py",
+      "relative_path": "tests/test_17.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_18.py",
+      "relative_path": "tests/test_18.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_19.py",
+      "relative_path": "tests/test_19.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 135,
+    "output_chars": 3860,
+    "latency_ms": 2.5157928466796875,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 60
+  },
+  {
+   "id": "g02",
+   "group": "general",
+   "op": "search",
+   "dir": "repo",
+   "prompt": "Find all .yml anywhere under repo",
+   "structured": {
+    "request_chars": 166,
+    "output_chars": 10184,
+    "output_chars_rows": 6317,
+    "latency_ms": 49.28135871887207,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "ssot-apps-00.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-00.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-01.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-01.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-02.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-02.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-03.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-03.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-04.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-04.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-05.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-05.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-06.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-06.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-07.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-07.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-08.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-08.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-09.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-09.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-10.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-10.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-11.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-11.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-12.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-12.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-13.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-13.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-14.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-14.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-15.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-15.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-16.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-16.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-17.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-17.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-18.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-18.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-apps-19.yml",
+      "relative_path": "docs/ssot/apps/ssot-apps-19.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-00.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-00.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-01.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-01.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-02.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-02.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-03.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-03.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-04.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-04.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-05.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-05.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-06.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-06.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-07.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-07.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-08.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-08.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-09.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-09.yml",
+      "kind": "file",
+      "size_bytes": 21,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-10.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-10.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-11.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-11.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-12.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-12.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-13.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-13.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-14.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-14.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-15.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-15.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-16.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-16.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-17.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-17.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-18.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-18.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-infrastructure-19.yml",
+      "relative_path": "docs/ssot/infrastructure/ssot-infrastructure-19.yml",
+      "kind": "file",
+      "size_bytes": 22,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-00.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-00.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-01.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-01.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-02.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-02.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-03.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-03.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-04.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-04.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-05.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-05.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-06.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-06.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-07.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-07.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-08.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-08.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-09.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-09.yml",
+      "kind": "file",
+      "size_bytes": 13,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-10.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-10.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-11.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-11.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-12.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-12.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-13.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-13.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-14.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-14.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-15.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-15.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-16.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-16.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-17.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-17.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-18.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-18.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     },
+     {
+      "name": "ssot-kanban-19.yml",
+      "relative_path": "docs/ssot/kanban/ssot-kanban-19.yml",
+      "kind": "file",
+      "size_bytes": 14,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 4
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 124,
+    "output_chars": 5160,
+    "latency_ms": 4.284143447875977,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 60
+  },
+  {
+   "id": "g03",
+   "group": "general",
+   "op": "tree",
+   "dir": "repo",
+   "prompt": "Tree of repo, 2 levels",
+   "structured": {
+    "request_chars": 146,
+    "output_chars": 8834,
+    "output_chars_rows": 4637,
+    "latency_ms": 43.048858642578125,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "docs",
+      "relative_path": "docs",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "README.md",
+      "relative_path": "README.md",
+      "kind": "file",
+      "size_bytes": 7,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "scripts",
+      "relative_path": "scripts",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "tests",
+      "relative_path": "tests",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "ssot",
+      "relative_path": "docs/ssot",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 2
+     },
+     {
+      "name": "tool-00.py",
+      "relative_path": "scripts/tool-00.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-01.py",
+      "relative_path": "scripts/tool-01.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-02.py",
+      "relative_path": "scripts/tool-02.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-03.py",
+      "relative_path": "scripts/tool-03.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-04.py",
+      "relative_path": "scripts/tool-04.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-05.py",
+      "relative_path": "scripts/tool-05.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-06.py",
+      "relative_path": "scripts/tool-06.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-07.py",
+      "relative_path": "scripts/tool-07.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-08.py",
+      "relative_path": "scripts/tool-08.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-09.py",
+      "relative_path": "scripts/tool-09.py",
+      "kind": "file",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-10.py",
+      "relative_path": "scripts/tool-10.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-11.py",
+      "relative_path": "scripts/tool-11.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-12.py",
+      "relative_path": "scripts/tool-12.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-13.py",
+      "relative_path": "scripts/tool-13.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-14.py",
+      "relative_path": "scripts/tool-14.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-15.py",
+      "relative_path": "scripts/tool-15.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-16.py",
+      "relative_path": "scripts/tool-16.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-17.py",
+      "relative_path": "scripts/tool-17.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-18.py",
+      "relative_path": "scripts/tool-18.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-19.py",
+      "relative_path": "scripts/tool-19.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-20.py",
+      "relative_path": "scripts/tool-20.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-21.py",
+      "relative_path": "scripts/tool-21.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-22.py",
+      "relative_path": "scripts/tool-22.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-23.py",
+      "relative_path": "scripts/tool-23.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-24.py",
+      "relative_path": "scripts/tool-24.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-25.py",
+      "relative_path": "scripts/tool-25.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-26.py",
+      "relative_path": "scripts/tool-26.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-27.py",
+      "relative_path": "scripts/tool-27.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-28.py",
+      "relative_path": "scripts/tool-28.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-29.py",
+      "relative_path": "scripts/tool-29.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-30.py",
+      "relative_path": "scripts/tool-30.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-31.py",
+      "relative_path": "scripts/tool-31.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-32.py",
+      "relative_path": "scripts/tool-32.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-33.py",
+      "relative_path": "scripts/tool-33.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-34.py",
+      "relative_path": "scripts/tool-34.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-35.py",
+      "relative_path": "scripts/tool-35.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-36.py",
+      "relative_path": "scripts/tool-36.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-37.py",
+      "relative_path": "scripts/tool-37.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-38.py",
+      "relative_path": "scripts/tool-38.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "tool-39.py",
+      "relative_path": "scripts/tool-39.py",
+      "kind": "file",
+      "size_bytes": 10,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_00.py",
+      "relative_path": "tests/test_00.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_01.py",
+      "relative_path": "tests/test_01.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_02.py",
+      "relative_path": "tests/test_02.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_03.py",
+      "relative_path": "tests/test_03.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_04.py",
+      "relative_path": "tests/test_04.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_05.py",
+      "relative_path": "tests/test_05.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_06.py",
+      "relative_path": "tests/test_06.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_07.py",
+      "relative_path": "tests/test_07.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_08.py",
+      "relative_path": "tests/test_08.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_09.py",
+      "relative_path": "tests/test_09.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_10.py",
+      "relative_path": "tests/test_10.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_11.py",
+      "relative_path": "tests/test_11.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_12.py",
+      "relative_path": "tests/test_12.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_13.py",
+      "relative_path": "tests/test_13.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_14.py",
+      "relative_path": "tests/test_14.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_15.py",
+      "relative_path": "tests/test_15.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_16.py",
+      "relative_path": "tests/test_16.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_17.py",
+      "relative_path": "tests/test_17.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_18.py",
+      "relative_path": "tests/test_18.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_19.py",
+      "relative_path": "tests/test_19.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 153,
+    "output_chars": 3864,
+    "latency_ms": 3.101348876953125,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 65
+  },
+  {
+   "id": "g04",
+   "group": "general",
+   "op": "tree",
+   "dir": "repo",
+   "prompt": "Only the first level of repo",
+   "structured": {
+    "request_chars": 146,
+    "output_chars": 864,
+    "output_chars_rows": 693,
+    "latency_ms": 36.733150482177734,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "docs",
+      "relative_path": "docs",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "README.md",
+      "relative_path": "README.md",
+      "kind": "file",
+      "size_bytes": 7,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "scripts",
+      "relative_path": "scripts",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "tests",
+      "relative_path": "tests",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 153,
+    "output_chars": 226,
+    "latency_ms": 3.2074451446533203,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 4
+  },
+  {
+   "id": "g05",
+   "group": "general",
+   "op": "tree",
+   "dir": "inbox",
+   "prompt": "Full inventory of inbox incl odd names and kinds",
+   "structured": {
+    "request_chars": 147,
+    "output_chars": 1538,
+    "output_chars_rows": 1154,
+    "latency_ms": 46.67997360229492,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "a_fifo",
+      "relative_path": "a_fifo",
+      "kind": "other",
+      "size_bytes": 0,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "asub",
+      "relative_path": "asub",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "escape_link",
+      "relative_path": "escape_link",
+      "kind": "symlink",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "/etc/passwd",
+      "link_escape": true
+     },
+     {
+      "name": "plain.txt",
+      "relative_path": "plain.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "rel_link",
+      "relative_path": "rel_link",
+      "kind": "symlink",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "plain.txt"
+     },
+     {
+      "name": "sp ace",
+      "relative_path": "sp ace",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "nested.txt",
+      "relative_path": "asub/nested.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "\u00fcn\u00efcode.txt",
+      "relative_path": "sp ace/\u00fcn\u00efcode.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 142,
+    "output_chars": 445,
+    "latency_ms": 3.1859874725341797,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 8
+  },
+  {
+   "id": "g06",
+   "group": "general",
+   "op": "list",
+   "dir": "wide",
+   "prompt": "List first 50 of a 200-entry dir",
+   "structured": {
+    "request_chars": 153,
+    "output_chars": 6757,
+    "output_chars_rows": 3550,
+    "latency_ms": 69.88930702209473,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "item-000.dat",
+      "relative_path": "item-000.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-001.dat",
+      "relative_path": "item-001.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-002.dat",
+      "relative_path": "item-002.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-003.dat",
+      "relative_path": "item-003.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-004.dat",
+      "relative_path": "item-004.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-005.dat",
+      "relative_path": "item-005.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-006.dat",
+      "relative_path": "item-006.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-007.dat",
+      "relative_path": "item-007.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-008.dat",
+      "relative_path": "item-008.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-009.dat",
+      "relative_path": "item-009.dat",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-010.dat",
+      "relative_path": "item-010.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-011.dat",
+      "relative_path": "item-011.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-012.dat",
+      "relative_path": "item-012.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-013.dat",
+      "relative_path": "item-013.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-014.dat",
+      "relative_path": "item-014.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-015.dat",
+      "relative_path": "item-015.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-016.dat",
+      "relative_path": "item-016.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-017.dat",
+      "relative_path": "item-017.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-018.dat",
+      "relative_path": "item-018.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-019.dat",
+      "relative_path": "item-019.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-020.dat",
+      "relative_path": "item-020.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-021.dat",
+      "relative_path": "item-021.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-022.dat",
+      "relative_path": "item-022.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-023.dat",
+      "relative_path": "item-023.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-024.dat",
+      "relative_path": "item-024.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-025.dat",
+      "relative_path": "item-025.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-026.dat",
+      "relative_path": "item-026.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-027.dat",
+      "relative_path": "item-027.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-028.dat",
+      "relative_path": "item-028.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-029.dat",
+      "relative_path": "item-029.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-030.dat",
+      "relative_path": "item-030.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-031.dat",
+      "relative_path": "item-031.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-032.dat",
+      "relative_path": "item-032.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-033.dat",
+      "relative_path": "item-033.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-034.dat",
+      "relative_path": "item-034.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-035.dat",
+      "relative_path": "item-035.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-036.dat",
+      "relative_path": "item-036.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-037.dat",
+      "relative_path": "item-037.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-038.dat",
+      "relative_path": "item-038.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-039.dat",
+      "relative_path": "item-039.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-040.dat",
+      "relative_path": "item-040.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-041.dat",
+      "relative_path": "item-041.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-042.dat",
+      "relative_path": "item-042.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-043.dat",
+      "relative_path": "item-043.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-044.dat",
+      "relative_path": "item-044.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-045.dat",
+      "relative_path": "item-045.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-046.dat",
+      "relative_path": "item-046.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-047.dat",
+      "relative_path": "item-047.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-048.dat",
+      "relative_path": "item-048.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "item-049.dat",
+      "relative_path": "item-049.dat",
+      "kind": "file",
+      "size_bytes": 3,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 119,
+    "output_chars": 650,
+    "latency_ms": 4.612922668457031,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 50
+  },
+  {
+   "id": "g07",
+   "group": "general",
+   "op": "search",
+   "dir": "repo",
+   "prompt": "Find test files under repo/tests",
+   "structured": {
+    "request_chars": 171,
+    "output_chars": 2989,
+    "output_chars_rows": 1762,
+    "latency_ms": 58.94279479980469,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "test_00.py",
+      "relative_path": "tests/test_00.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_01.py",
+      "relative_path": "tests/test_01.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_02.py",
+      "relative_path": "tests/test_02.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_03.py",
+      "relative_path": "tests/test_03.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_04.py",
+      "relative_path": "tests/test_04.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_05.py",
+      "relative_path": "tests/test_05.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_06.py",
+      "relative_path": "tests/test_06.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_07.py",
+      "relative_path": "tests/test_07.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_08.py",
+      "relative_path": "tests/test_08.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_09.py",
+      "relative_path": "tests/test_09.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_10.py",
+      "relative_path": "tests/test_10.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_11.py",
+      "relative_path": "tests/test_11.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_12.py",
+      "relative_path": "tests/test_12.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_13.py",
+      "relative_path": "tests/test_13.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_14.py",
+      "relative_path": "tests/test_14.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_15.py",
+      "relative_path": "tests/test_15.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_16.py",
+      "relative_path": "tests/test_16.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_17.py",
+      "relative_path": "tests/test_17.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_18.py",
+      "relative_path": "tests/test_18.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "test_19.py",
+      "relative_path": "tests/test_19.py",
+      "kind": "file",
+      "size_bytes": 4,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 131,
+    "output_chars": 1260,
+    "latency_ms": 3.1876564025878906,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 20
+  },
+  {
+   "id": "g08",
+   "group": "general",
+   "op": "search",
+   "dir": "repo",
+   "prompt": "All directories under repo",
+   "structured": {
+    "request_chars": 161,
+    "output_chars": 1258,
+    "output_chars_rows": 889,
+    "latency_ms": 41.79978370666504,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "docs",
+      "relative_path": "docs",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "scripts",
+      "relative_path": "scripts",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "tests",
+      "relative_path": "tests",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "ssot",
+      "relative_path": "docs/ssot",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 2
+     },
+     {
+      "name": "apps",
+      "relative_path": "docs/ssot/apps",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 3
+     },
+     {
+      "name": "infrastructure",
+      "relative_path": "docs/ssot/infrastructure",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 3
+     },
+     {
+      "name": "kanban",
+      "relative_path": "docs/ssot/kanban",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 3
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 118,
+    "output_chars": 454,
+    "latency_ms": 4.250764846801758,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 7
+  },
+  {
+   "id": "g09",
+   "group": "general",
+   "op": "list",
+   "dir": "empty",
+   "prompt": "List an empty directory",
+   "structured": {
+    "request_chars": 135,
+    "output_chars": 399,
+    "output_chars_rows": 484,
+    "latency_ms": 44.90303993225098,
+    "parse_ok": true,
+    "error": false,
+    "entries": [],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 113,
+    "output_chars": 97,
+    "latency_ms": 3.1952857971191406,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 0
+  },
+  {
+   "id": "g10",
+   "group": "general",
+   "op": "stat",
+   "dir": "missing",
+   "prompt": "Stat a path that does not exist (expect clean error)",
+   "structured": {
+    "request_chars": 137,
+    "output_chars": 152,
+    "output_chars_rows": 152,
+    "latency_ms": 38.672685623168945,
+    "parse_ok": true,
+    "error": true,
+    "entries": [],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 133,
+    "output_chars": 98,
+    "latency_ms": 2.3260116577148438,
+    "parse_ok": true,
+    "error": true,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      1
+     ],
+     "err": [
+      "stat: cannot statx '/tmp/mcp-files-bench-2_7njnr8/bench-root/missing': No such file or directory\n"
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 0
+  },
+  {
+   "id": "g11",
+   "group": "general",
+   "op": "list",
+   "dir": "inbox",
+   "prompt": "List inbox incl symlinks with targets",
+   "structured": {
+    "request_chars": 135,
+    "output_chars": 1258,
+    "output_chars_rows": 986,
+    "latency_ms": 39.88814353942871,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "a_fifo",
+      "relative_path": "a_fifo",
+      "kind": "other",
+      "size_bytes": 0,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "asub",
+      "relative_path": "asub",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "escape_link",
+      "relative_path": "escape_link",
+      "kind": "symlink",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "/etc/passwd",
+      "link_escape": true
+     },
+     {
+      "name": "plain.txt",
+      "relative_path": "plain.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "rel_link",
+      "relative_path": "rel_link",
+      "kind": "symlink",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "plain.txt"
+     },
+     {
+      "name": "sp ace",
+      "relative_path": "sp ace",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 113,
+    "output_chars": 428,
+    "latency_ms": 3.170490264892578,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.833,
+   "n_expected": 6
+  },
+  {
+   "id": "g12",
+   "group": "general",
+   "op": "tree",
+   "dir": "inbox",
+   "prompt": "Recursive inbox listing incl fifo/other kinds, depth 3",
+   "structured": {
+    "request_chars": 147,
+    "output_chars": 1538,
+    "output_chars_rows": 1154,
+    "latency_ms": 37.026405334472656,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "a_fifo",
+      "relative_path": "a_fifo",
+      "kind": "other",
+      "size_bytes": 0,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "asub",
+      "relative_path": "asub",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "escape_link",
+      "relative_path": "escape_link",
+      "kind": "symlink",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "/etc/passwd",
+      "link_escape": true
+     },
+     {
+      "name": "plain.txt",
+      "relative_path": "plain.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 1
+     },
+     {
+      "name": "rel_link",
+      "relative_path": "rel_link",
+      "kind": "symlink",
+      "size_bytes": 9,
+      "mtime": 1793171098,
+      "mode": "0777",
+      "depth": 1,
+      "link_target": "plain.txt"
+     },
+     {
+      "name": "sp ace",
+      "relative_path": "sp ace",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775",
+      "depth": 1
+     },
+     {
+      "name": "nested.txt",
+      "relative_path": "asub/nested.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     },
+     {
+      "name": "\u00fcn\u00efcode.txt",
+      "relative_path": "sp ace/\u00fcn\u00efcode.txt",
+      "kind": "file",
+      "size_bytes": 2,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 2
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 154,
+    "output_chars": 445,
+    "latency_ms": 3.0188560485839844,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 8
+  },
+  {
+   "id": "g13",
+   "group": "general",
+   "op": "search",
+   "dir": "repo/docs",
+   "prompt": "Find ssot yamls under apps subdir",
+   "structured": {
+    "request_chars": 176,
+    "output_chars": 3338,
+    "output_chars_rows": 2111,
+    "latency_ms": 44.30341720581055,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "ssot-apps-00.yml",
+      "relative_path": "ssot/apps/ssot-apps-00.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-01.yml",
+      "relative_path": "ssot/apps/ssot-apps-01.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-02.yml",
+      "relative_path": "ssot/apps/ssot-apps-02.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-03.yml",
+      "relative_path": "ssot/apps/ssot-apps-03.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-04.yml",
+      "relative_path": "ssot/apps/ssot-apps-04.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-05.yml",
+      "relative_path": "ssot/apps/ssot-apps-05.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-06.yml",
+      "relative_path": "ssot/apps/ssot-apps-06.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-07.yml",
+      "relative_path": "ssot/apps/ssot-apps-07.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-08.yml",
+      "relative_path": "ssot/apps/ssot-apps-08.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-09.yml",
+      "relative_path": "ssot/apps/ssot-apps-09.yml",
+      "kind": "file",
+      "size_bytes": 11,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-10.yml",
+      "relative_path": "ssot/apps/ssot-apps-10.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-11.yml",
+      "relative_path": "ssot/apps/ssot-apps-11.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-12.yml",
+      "relative_path": "ssot/apps/ssot-apps-12.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-13.yml",
+      "relative_path": "ssot/apps/ssot-apps-13.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-14.yml",
+      "relative_path": "ssot/apps/ssot-apps-14.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-15.yml",
+      "relative_path": "ssot/apps/ssot-apps-15.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-16.yml",
+      "relative_path": "ssot/apps/ssot-apps-16.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-17.yml",
+      "relative_path": "ssot/apps/ssot-apps-17.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-18.yml",
+      "relative_path": "ssot/apps/ssot-apps-18.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     },
+     {
+      "name": "ssot-apps-19.yml",
+      "relative_path": "ssot/apps/ssot-apps-19.yml",
+      "kind": "file",
+      "size_bytes": 12,
+      "mtime": 1793171098,
+      "mode": "0664",
+      "depth": 3
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 136,
+    "output_chars": 1560,
+    "latency_ms": 3.6346912384033203,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 0.333,
+   "n_expected": 20
+  },
+  {
+   "id": "g14",
+   "group": "general",
+   "op": "stat",
+   "dir": "repo/scripts",
+   "prompt": "Stat the scripts directory itself",
+   "structured": {
+    "request_chars": 142,
+    "output_chars": 518,
+    "output_chars_rows": 545,
+    "latency_ms": 41.19086265563965,
+    "parse_ok": true,
+    "error": false,
+    "entries": [
+     {
+      "name": "scripts",
+      "relative_path": ".",
+      "kind": "dir",
+      "size_bytes": 4096,
+      "mtime": 1793171098,
+      "mode": "0775"
+     }
+    ],
+    "interventions": 0
+   },
+   "raw": {
+    "request_chars": 138,
+    "output_chars": 84,
+    "latency_ms": 2.792835235595703,
+    "parse_ok": true,
+    "error": false,
+    "interventions": 0,
+    "raw": {
+     "rc": [
+      0
+     ],
+     "err": [
+      ""
+     ]
+    }
+   },
+   "recall_s": 1.0,
+   "fid_s": 1.0,
+   "recall_r": 1.0,
+   "fid_r": 1.0,
+   "n_expected": 1
+  }
+ ]
+}

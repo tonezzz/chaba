@@ -1,0 +1,126 @@
+title: mcp_files_* structured filesystem tools — design, verification, benchmark
+job: mcp-structured-files-tool
+date: 2026-10-28
+card: mcp-structured-files-tool
+ref: OPS-0961
+runner: idc02
+
+design:
+  tools: [mcp_files_list, mcp_files_stat, mcp_files_search, mcp_files_tree]
+  card_notation: "card spec writes them mcp_files/list etc.; MCP tool names must match [a-zA-Z0-9_-]+ so shipped as underscores"
+  transport: >-
+    Single round trip per call. Server-side (scripts/mcp_debug/files.py) vets
+    the path against limits.allowed_path_prefixes in
+    ssot.mcp-debug.files.yml — the same allowlist mcp_get_file/mcp_put_file
+    use — then ships files_agent.py base64'd over run_on_host(shell=True):
+    `printf %s <b64> | base64 -d | "$(command -v python3 || command -v python)" - <op> <params_b64>`.
+    The remote agent re-verifies allowlist after realpath resolution
+    (defense in depth), never descends symlinks, and enforces all caps
+    remotely. Requires only python3 on the target — no mcp-debug remote
+    binary needed, so macbook works too.
+  schema:
+    envelope: ok, tool, host, root, resolved_root, entries, truncated,
+      truncated_reason, errors, errors_truncated, observed_at, counts,
+      scanned, depth, pattern, sort, order
+    entry: name, relative_path, kind, size_bytes, mtime, mode
+      (+depth on search/tree, +link_target/link_escape on symlinks)
+    kinds: [file, dir, symlink, other]
+    mtime: epoch seconds int; mode: 4-digit octal string
+  inputs: host, path, pattern (fnmatch; '/' anchors at any depth),
+    depth, max_entries, sort (name|size|mtime|kind), order, kind, format
+  format_rows: >-
+    opt-in `format:"rows"` returns the same fields positionally with a
+    fields[] header — 36.7% smaller payload than objects on the bench
+    corpus. objects stays the default (card-mandated schema).
+  caps:
+    max_entries: 500 default / 5000 hard
+    max_depth: 3 default (tree; 6 search) / 12 hard
+    max_output_bytes: 196608 default / 524288 hard
+    max_errors: 50 default / 200 hard
+    max_scan: 200000 hard
+  security:
+    - allowlist roots from ssot.mcp-debug.files.yml allowed_path_prefixes
+    - '..' / NUL / non-absolute rejected server-side and remotely
+    - symlink escape flagged (link_escape + errors[]), never traversed
+    - dir-loop safe (lstat kinds; no symlink descent)
+    - read-only; mcp_raw remains gated behind raw_commands.allowed_prefixes
+    - existing compact mcp_debug commands untouched
+  lane_gate: >-
+    all four added to READONLY_MCP_TOOLS in scripts/devnest/lane_gate.py —
+    graduated opencode lanes may request them; mcp_raw still denied.
+
+verification:
+  script: scripts/mcp-files-verify.py
+  result: "39/39 checks green on idc02 (2026-10-28)"
+  covers: >-
+    agent ops + schema, caps (entries/depth/output), '..' + outside-roots +
+    symlink escape rejection, dir loops, permission-denied dirs, unicode/space
+    names, rows format; tool-layer e2e through run_on_host with an injected
+    local host; MCP stdio tools/list + error envelope.
+  lane_gate_tests: "python3 -m unittest tests.devnest.test_lane_gate tests.devnest.test_opencode_profiles — 96/96 OK"
+
+benchmark:
+  script: scripts/mcp-files-bench.py
+  report: reports/mcp-files-bench-2026-10-28.md (+ .json)
+  method: >-
+    30 representative tasks (10 host-assessment, 6 node-red/devnest, 14
+    general) on a deterministic local fixture; structured lane runs
+    files_agent.py exactly as shipped; raw lane runs best-practice shell an
+    agent would write (ls -la, find -name/-printf, du, stat). tokens ≈
+    chars/4; latency = median of 3 reps; recall/fidelity vs independent
+    os.walk oracle.
+  headline:
+    recall: "1.000 vs 0.987 raw"
+    field_fidelity: "1.000 vs 0.666 raw"
+    parse_success: "1.000 vs 1.000"
+    error_rate: "0.033 vs 0.033 (1 intentional missing-path task)"
+    interventions: "0 vs 0 (raw lane given ideal commands)"
+    latency_ms_median: "41.7 vs 3.7 (python startup; SSH adds constant to both)"
+    tool_tokens: "18981 objects / 12015 rows vs 7392 raw"
+    prompt_tokens: "1157 vs 991"
+  honest_read: >-
+    Structured tools cost ~2.4x output tokens (objects; ~1.6x in rows mode)
+    and ~38ms local overhead per call vs best-case raw printf pipelines, but
+    deliver guaranteed parse, 100% recall and 6/6-field fidelity vs raw's
+    66.6% fidelity — find -name yields paths only, ls -la loses epoch mtime
+    and relative paths, and the ha04 task shows ls -lat|head silently
+    dropping entries (recall 0.60). In real sessions raw's field gaps force
+    follow-up calls that erase its byte advantage. Trade: correct, safe,
+    stable schema > terse-but-lossy shell.
+
+integration:
+  host_assessment: >-
+    devnest-host-assessment skill (~/evals/tasks/devnest-host-assessment on
+    tony-dell) enumerates per-host artifacts (devnest-host-*.json globs),
+    systemd units and log dirs via ad-hoc SSH shell today; mcp_files_search /
+    mcp_files_list / mcp_files_stat cover those read paths with schema +
+    allowlist. Skill itself lives outside the repo (untracked) — swap
+    documented in ssot.devnest-lanes.yml deterministic lane note; no code
+    change here.
+  node_red_devnest: >-
+    node-red-devnest-visual-map observe flow (/tmp/node-red-devnest-observe.json
+    prototype) polls facts for a visual report; filesystem fact-gathering
+    (artifact dirs, queue files) can call board-side mcp_files_* instead of
+    shelling out — comment posted on card.
+  reports: >-
+    benchmark report committed at reports/mcp-files-bench-2026-10-28.md;
+    verifier at scripts/mcp-files-verify.py is re-runnable any time.
+
+files_changed:
+  - scripts/mcp_debug/files_agent.py        (new — shipped remote agent)
+  - scripts/mcp_debug/files.py              (new — tool layer)
+  - scripts/mcp_debug/server.py             (4 tool defs + dispatch)
+  - scripts/mcp-files-verify.py             (new — verifier)
+  - scripts/mcp-files-bench.py              (new — benchmark harness)
+  - scripts/devnest/lane_gate.py            (READONLY_MCP_TOOLS +4)
+  - docs/ssot/infrastructure/ssot.mcp-debug.files.yml  (files: policy section)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml    (lane note)
+  - reports/mcp-files-bench-2026-10-28.{md,json}
+
+followups:
+  - deploy note: mcp-debug.sh restarts the server on demand; new tools appear
+    after the next mcp_debug reload / server restart on tony-dell.
+  - rows format could become the recommended bulk mode in the tool
+    description once agents use it; measure real-session usage first.
+  - remote hosts that lack python3 would need a find/stat fallback path —
+    none in the current fleet (all run chaba units needing python3).

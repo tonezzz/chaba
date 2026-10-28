@@ -157,6 +157,7 @@ DENIED_CLASSES = ["production", "destructive", "deploy", "secret",
 READONLY_MCP_TOOLS = [
     "mcp_debug", "mcp_health", "mcp_get_file", "mcp_read_ssot",
     "mcp_search_ssot", "mcp_ssot_query", "mcp_ssot_get", "mcp_mddb_doc",
+    "mcp_files_list", "mcp_files_stat", "mcp_files_search", "mcp_files_tree",
 ]
 
 # models permitted for S5 branch/code work — strong tier only
