@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 08:32
+updated: 2026-10-28 08:33
 priority: medium
 tags:
 - cline-kanban
@@ -234,6 +234,13 @@ comms:
 - at: 2026-10-28 08:32
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:33
+  from: tony
+  text: 'answered the-openrouter-key-answer-in-the-board-i-edf0aa: store-fresh-key — Store a rotated Cline-only
+    key in the proxy secret file; allow pinned :free models only (recommended)'
+- at: 2026-10-28 08:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -385,7 +392,7 @@ requests:
     or call it. Please do not post a key to a card or chat. If it was a real key, rotate it and put a fresh Cline-only
     key in con01 ~/.config/secrets/cline-kanban.env as OPENROUTER_API_KEY_CLINE, then reply “stored”; I will keep
     it proxy-only and enforce the pinned :free allowlist. Or choose local-only to defer OpenRouter.
-  status: open
+  status: answered
   at: 2026-10-28 07:05
   from: devin
   options:
@@ -394,6 +401,8 @@ requests:
   - id: local-only
     label: Defer OpenRouter and continue local qwen3:4b only
   suggested: store-fresh-key
+  answer: store-fresh-key — Store a rotated Cline-only key in the proxy secret file; allow pinned :free models only
+    (recommended)
 action:
   type: dispatch
   status: done
