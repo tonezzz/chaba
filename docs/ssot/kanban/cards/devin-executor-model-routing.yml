@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: backlog
-updated: 2026-10-28 07:05
+updated: 2026-10-28 07:30
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -29,6 +29,13 @@ comms:
   from: devin
   text: 'raised request for-a-no-charge-fix-i-recommend-routing-3b88fd: For a no-charge fix, I recommend routing
     free_lane work through a LiteLLM-capable OpenCode executor and using Cline/Olla'
+- at: 2026-10-28 07:30
+  from: devin
+  text: 'MacBook evidence: the dispatched unit reached Devin CLI and failed before inference because `litellm/or-claude-fable-5.1`
+    is not a native Devin model ID; the CLI listed `claude-fable-5.1` without the prefix. The valid native model
+    is a hosted frontier lane, so it was not retried. On tony-macbook, OpenCode and Devin binaries exist under `~/.local/bin`;
+    systemd manager PATH includes that directory, but `runner-agent` has no OPENCODE_LANES override and defaults
+    it to 0. This supports an executor-sp'
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
