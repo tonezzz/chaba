@@ -227,6 +227,13 @@ comms:
 - at: 2026-10-28 08:32
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered the-openrouter-key-answer-is-redacted-tr-aa0700: store-fresh-key — Store a rotated Cline-only
+    key in the proxy secret file; use pinned :free models only (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -348,7 +355,7 @@ requests:
     a fresh Cline-only key in con01 `~/.config/secrets/cline-kanban.env` as `OPENROUTER_API_KEY_CLINE` and reply
     `stored`; I will keep it in the proxy container and enforce only pinned `:free` model IDs. Or choose local-only
     to defer OpenRouter.
-  status: open
+  status: answered
   at: 2026-10-28 07:00
   from: devin
   options:
@@ -357,6 +364,8 @@ requests:
   - id: local-only
     label: Defer OpenRouter; continue with local qwen3:4b only
   suggested: store-fresh-key
+  answer: store-fresh-key — Store a rotated Cline-only key in the proxy secret file; use pinned :free models only
+    (recommended)
 - id: the-jack-job-now-parses-but-the-reposito-2b544d
   ask: The Jack job now parses, but the repository-wide SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml
     lacks the required top-level title. This separate file is not part of the Cline PR and has no matching board
