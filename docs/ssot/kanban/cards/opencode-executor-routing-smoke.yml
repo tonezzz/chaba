@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
-column: doing
-updated: 2026-10-28 10:15
+column: review
+updated: 2026-10-28 10:16
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -32,8 +32,11 @@ action:
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-101547-smoke-card-for-opencode-explic.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261028-101547-smoke-card-for-opencode-explic.service:
+    Failed with result ''exit-code''.'
 expected_goals:
 - id: artifact-landed
   check: file-exists evals/opencode-lane/out/executor-contract-smoke.json
@@ -50,3 +53,8 @@ comms:
 - at: 2026-10-28 10:15
   from: chaba
   text: started devin-task-20261028-101547-smoke-card-for-opencode-explic on idc02 (dispatch)
+- at: 2026-10-28 10:16
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261028-101547-smoke-card-for-opencode-explic.service:
+    Main process exited, cod'
+claim: {}
