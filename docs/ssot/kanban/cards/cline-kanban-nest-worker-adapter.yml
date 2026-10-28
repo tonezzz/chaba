@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 19:41
+updated: 2026-10-28 20:12
 priority: medium
 tags:
 - cline-kanban
@@ -309,6 +309,13 @@ comms:
     that file was lost. The app data volume and base /workspace remain; post-restart stack preflight, authenticated
     HTTP, WebSocket, and host audit passed. The isolated pack retry still produced no task-result/patch/done artifacts.
     fd918 is now Trash, so the adapter corr'
+- at: 2026-10-28 20:12
+  from: devin
+  text: 'Follow-up: PR #52 (fix/cline-kanban-preserve-worktrees) is open; CI is running. It adds Cline --skip-shutdown-cleanup,
+    a regression assertion, and a process-specific SSOT validator temp path. Local tests and SSOT validation pass;
+    optimizer baseline covers 46 warnings, including one unrelated open-request recommendation warning (that card
+    was left unchanged). Not deployed yet. After merge, preserve the current network image as the rollback tag,
+    rebuild/restart under the deploy lock, and verify. N'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
