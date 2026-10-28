@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 13:23
+updated: 2026-10-28 13:24
 priority: high
 tags:
 - litellm
@@ -102,6 +102,14 @@ comms:
     local /health 200; deployed `_gemini_thai` helper returned nonempty via the free-only route. LiteLLM SpendLogs
     recorded 48 tokens under `mddb`, estimated spend $0.00003860. No keys or caps changed. SEC-0962 remains open
     for the live/SSOT budget discrepancy, near-cap alert, and more g'
+- at: 2026-10-28 13:24
+  from: devin
+  text: 're-answered sec0962-served-checkout-deploy: No safe-pull was needed: PR #47''s merged board-api/gemini_rest
+    files were already present and clean in the served checkout. I restarted only chaba-board-api.service under
+    /tmp/pfg-deploy.lock; /health'
+- at: 2026-10-28 13:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -128,8 +136,9 @@ requests:
   - id: owner-reconcile-first
     label: I will reconcile the served checkout first; wait to restart.
   suggested: safe-pull-and-restart
-  answer: safe-pull-and-restart — Approve safe-pull reconciliation, inspect/preserve local edits, then restart and
-    verify board-api (recommended).
+  answer: 'No safe-pull was needed: PR #47''s merged board-api/gemini_rest files were already present and clean
+    in the served checkout. I restarted only chaba-board-api.service under /tmp/pfg-deploy.lock; /health returned
+    200 and the free-only translation helper smoke passed. Unrelated dirty docs/cards/out were left untouched.'
 - id: litellm-key-cap-reconciliation
   ask: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5 documented; Ada $30 and active vs $10/spare; Bench
     spend is slightly over its $2 cap). Which budget policy should we follow before changing caps?
