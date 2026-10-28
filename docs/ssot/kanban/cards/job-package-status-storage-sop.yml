@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-28 09:38
+updated: 2026-10-28 09:40
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -56,3 +56,10 @@ comms:
     gap packs, defines offline/stale, fresh-idle, warming, running, and drained handling, and recommends not cold-starting
     a T4 for CPU-only work. Existing `gap-packs/PROCEDURE.md` remains the source for opportunistic prep-window jobs.
     Commit is local/unpushed; full SSOT validator still ha'
+- at: 2026-10-28 09:40
+  from: devin
+  text: '[small-pack dispatch procedure landed locally 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state`
+    on `docs/colab-small-job-dispatch`, commit `e5161664a` (unpublished). It separates normal durable packs from
+    gap packs, covers stale/registered/warming/running/drained states, and routes CPU-small work away from cold
+    T4 starts. Current runtime registry still has no fresh Colab session; queue start waits for Cell 1/boot registration.
+    SSOT index was left unchanged becaus'
