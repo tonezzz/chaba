@@ -270,6 +270,65 @@ The launch order that keeps the T4 fed end-to-end:
    DriveFS finish flushing before the VM idles; server-side truth is
    `rclone lsf` from a fleet host.
 
+### Pre-stage a time-boxed DevNest model slot
+
+Use this when a DevNest model assessment should use the T4 while the next
+render pack is doing CPU/I/O preparation. It is a staging-and-ordering
+procedure, not permission to run two GPU workloads at once.
+
+1. **Freeze the experiment before staging.** Pin the model ID and revision,
+   prompt/fixture set, held-out verifier, maximum context/output, expected
+   artifacts, and resource floor. Use synthetic or approved fixtures; do
+   not put credentials, private user data, or production worktrees in the
+   pack. The five read-only S0 fixtures are frozen under
+   `evals/shadow/fixtures` (DEV-0861); their current harness measures
+   L0/OpenCode/Devin, not a Colab T4 model arm. A separate T4 model adapter
+   and verifier are required before claiming a DevNest-on-Colab model pass
+   (tracked by OPS-0971).
+   `devnest-heldout-assessment` is only a worker/queue health check, not a
+   model-quality benchmark.
+2. **Start with a 30-minute cap.** Set `timeout_s: 1800` for the first
+   bounded model slot. Extend to `3600` only after the 30-minute run passes
+   its quality and memory gates and needs more evidence. Record the backend,
+   exact model revision, load time, latency/tokens per second, peak VRAM,
+   verifier result, and any intervention in `out/metrics.json` and
+   `out/report.md`. Keep external/paid providers out of the default pack.
+3. **Stage the complete release while the queue is stopped or running.**
+   Put the slot manifest, inputs, verifier, and render pack on Drive before
+   the next Launch cell. Run the release preflight, `rclone check` the
+   canonical source against Drive, and inspect the resolved `requires`
+   graph. Staging during an active runner is safe, but it only affects the
+   *next* launch; the current runner never rescans the manifest.
+4. **Place the slot immediately before the render pack.** Packs execute
+   after all `JOBS.py` entries and are ordered by preflight dependencies,
+   then name. Ensure the startup `packs discovered` list has the model slot
+   directly before the target render pack. The runner starts only the next
+   pack's `prep` under the current pack's `run`, so the render's CPU/I/O
+   prep can overlap the model slot. The render's GPU `run` starts only
+   after the model slot ends. If the assessment needs the cache currently
+   being restored, run a small cache-independent harness during restore
+   and the real model assessment after the cache is ready.
+5. **Treat cache work as preparation, not a second GPU job.** Reuse the
+   pinned Drive cache when possible; download/extract only from `prep`.
+   Keep render and model inference runs serialized, and don't add ad-hoc
+   GPU work while a run is already active. The harness, render preflight,
+   and model slot need their own artifacts gates so a runner failure cannot
+   be mistaken for a completed assessment.
+6. **Close the slot with evidence.** Verify the pack's `done` marker and
+   every declared non-empty artifact from Drive; record the model verdict
+   against the held-out gate, not just a successful process exit. After
+   the queue drains and the flush-settle completes, stop the T4 in Manage
+   Sessions unless another staged pack is ready for the same session.
+
+**KK-Mac lane:** the generic `nest-worker.py` currently detects GPU memory
+through `nvidia-smi` and has no Mac/MPS or target-host selector. Until the
+worker advertises an Apple accelerator and host affinity, don't put an MPS
+pack in the shared worker queue. Use an isolated KK-Mac queue root and a
+one-shot worker on `kk-mac` for the pilot, with `needs.ram_gb`/`disk_gb`,
+an explicit short timeout, and remote artifact verification. KK-Mac is a
+member device: schedule GPU work only in an approved idle window and
+serialize it with the LTX/MPS render lane (OPS-0966, OPS-0967).
+
 ## Packs — work units for any worker (nest-pack v2, 2026-10-23)
 
 OPS-0759: work now ships as **packs**, not manifest jobs — a pack is a
