@@ -7,10 +7,28 @@ ref: OPS-0701
 comms:
 - at: 2026-10-15 12:30
   from: devin
-  text: 'Records land with filesystem paths (job 117: /local/local-gen/test-sdxl-1024.png — file later lost, image
-    unrecoverable). v0.4.1 plugin now flags these (2/2 broken on the QC scoreboard + wp-admin widget).
+  text: 'Records land with filesystem paths (job 117: /local/local-gen/test-sdxl-1024.png — file later
+    lost, image unrecoverable). v0.4.1 plugin now flags these (2/2 broken on the QC scoreboard + wp-admin
+    widget).
 
 
-    Fix the writer(s) — local_image lane (OPS-0658) + ada_render_video path: after a render completes, POST the
-    binary to /wp/v2/media (or chaba/v1/media for member-gated), attach to the render_job post, and set output_url
-    to the returned source_url. Convention documented in ssot.wp-boards.yml wri'
+    Fix the writer(s) — local_image lane (OPS-0658) + ada_render_video path: after a render completes,
+    POST the binary to /wp/v2/media (or chaba/v1/media for member-gated), attach to the render_job post,
+    and set output_url to the returned source_url. Convention documented in ssot.wp-boards.yml wri'
+- at: 2026-10-28 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-render-job-writer-needs-to-d0fd99
+  ask: The render_job writer needs to upload output binaries to WordPress media endpoints rather than
+    saving local filesystem paths that get lost, but the specific host, repository, and endpoint path
+    between '/wp/v2/media' and 'chaba/v1/media' are not definitively specified in the card text.
+  options:
+  - ★ Use the chaba repository on host tony-dell to implement media uploads targeting /wp/v2/media with
+    output_url conventions
+  - Postpone the render_job writer update until the exact target host and repository are explicitly confirmed
+  - Split the task to update the local_image lane (OPS-0658) and ada_render_video path separately across
+    available infrastructure hosts
+  status: open
+  at: 2026-10-28 07:20
+  from: backlog-spec-enrich
