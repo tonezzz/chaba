@@ -1,0 +1,27 @@
+id: kk-mac-local-llm-lane
+title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
+column: backlog
+updated: 2026-10-28 19:39
+brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
+  work.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- ollama
+- mlx
+- inference
+- free-lane
+spec: Use KK-Mac Apple M4 Max (36 GiB unified memory, 32-core Metal GPU, 14 CPU cores) as a local model lane. Check/install
+  one approved runtime (Ollama Metal or MLX), run a read-only inference smoke and model-size benchmark, record model/load
+  time/tokens per second/memory/temperature/energy if available, and verify no personal-file access. Start with
+  7-8B quantized and 14B quantized candidates; do not load 20B+ until resource evidence supports it. Route only
+  classification, summaries, audits, deterministic-codomod suggestions, and small bounded code tasks with independent
+  verifiers. Keep credentials/account/destructive/multi-step work off the lane. Add load/quiet-hours gate and one-shot
+  rollback before launchd persistence. Compare against Flash Lite and Devin on cost, latency, pass rate, and intervention
+  minutes.
+ref: OPS-0966
+comms:
+- at: 2026-10-28 19:39
+  from: devin
+  text: card captured via board-api
