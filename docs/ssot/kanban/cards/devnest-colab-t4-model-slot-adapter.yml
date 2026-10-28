@@ -25,3 +25,24 @@ comms:
 - at: 2026-10-28 23:15
   from: tony
   text: card captured via board-api
+- at: 2026-10-28 23:15
+  from: devin
+  text: 'raised request choose-colab-t4-model-arm: Choose the first Colab model-slot arm before I stage a runnable
+    pack. The T4 adapter is not in the existing shadow harne'
+requests:
+- id: choose-colab-t4-model-arm
+  ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
+    shadow harness.
+  status: open
+  at: 2026-10-28 23:15
+  from: devin
+  options:
+  - id: model-only
+    label: Model-only local HF 7–8B inference with synthetic JSON fixtures; 30m throughput/format smoke only (recommended,
+      fastest/safest)
+  - id: agent-replay
+    label: Port full shadow_eval agent/tool replay to Colab and run the five frozen S0 fixtures with held-out verification
+      (higher effort)
+  - id: mac-first
+    label: Hold Colab model work; finish the KK-Mac local Ollama lane (OPS-0966) first
+  suggested: model-only
