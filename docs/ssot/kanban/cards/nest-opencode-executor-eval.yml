@@ -1,7 +1,7 @@
 id: nest-opencode-executor-eval
 title: 'Nest executor eval: opencode as a coding-agent worker'
-column: backlog
-updated: 2026-10-26 19:23
+column: done
+updated: 2026-10-28 13:30
 note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
   Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
   mddb prune/compact sequence — every step is checkable, making it an ideal eval template.'
@@ -22,3 +22,71 @@ comms:
 
 
     WHY MEM-0871 IS THE'
+- at: 2026-10-28 12:43
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 12:44
+  from: idc02
+  text: claimed
+- at: 2026-10-28 12:44
+  from: chaba
+  text: started devin-task-20261028-124411-nest-executor-eval-opencode-as on idc02 (dispatch)
+- at: 2026-10-28 12:44
+  from: devin
+  text: dispatch started on idc02 — scoping opencode executor eval vs prior opencode cards + MEM-0871 template
+- at: 2026-10-28 12:55
+  from: devin
+  text: 'EVAL DONE — verdict: opencode is a viable Nest executor for the verified read-only/planning tier today;
+    mutating classes stay correctly outside the lane. Shipped the MEM-0871 checkable-sequence template: profile
+    evals/opencode-lane/profiles/mddb-sequence/ + bounded probe scripts/devnest/mddb_probe.py + envelope jobs/p1-mddb-sequence-idc02.yaml
+    + held-out verifier (recomputes every claim vs live banks). Gated S1 runs on idc02: run1 missing_artifact (flash-lite
+    early-stop, correctly caught+escalat'
+- at: 2026-10-28 12:55
+  from: idc02
+  text: 'finished (ok): exit=0 `, trail in `docs/ssot/jobs/devnest/2026-10-28-nest-opencode-executor-eval.yml`,
+    tests 53/53 green. | devin-task-'
+- at: 2026-10-28 12:55
+  from: chaba
+  text: 'session-end checkpoint 20c902c3: 10 leftover file(s) committed'
+- at: 2026-10-28 12:55
+  from: chaba
+  text: pushed dispatch/20261028-124411-nest-executor-eval-opencode-as to origin
+- at: 2026-10-28 12:55
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-28 12:55
+  from: chaba
+  text: auto-merged 62524f66 (dispatch/20261028-124411-nest-executor-eval-opencode-as) → origin/master
+- at: 2026-10-28 12:55
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-124411-nest-executor-eval-opencode-as,
+    branch dispatch/20261028-124411-nest-executor-eval-opencode-as'
+- at: 2026-10-28 13:02
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-28 13:30
+  from: devin
+  text: 'GIT-OPS POLICY for opencode executors (2026-10-28, per Tony question ''how far can agents do git?''):
+
+
+    GREEN LANE (allow): worktree create, commit, rebase onto master, push to dispatch/* branches, force-push OWN
+    branch only, PR open. All recoverable, matches dispatch model.
+
+
+    REAL RISKS (not history loss): (1) secrets in commits — history preserves leaks forever, can''t unpublish; needs
+    pre-commit secrets scan; (2) fleet invariants bypassed — single-writer card rules, deploy lock, role stamps,
+    --no-'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 `, trail in `docs/ssot/jobs/devnest/2026-10-28-nest-opencode-executor-eval.yml`, tests 53/53 green.
+    | devin-task-20261028-124411-nest-executor-eval-opencode-as.service: Consumed 1min 9.973s CPU time, 289.2M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-28 13:02
+  note: verified — evidence checks green, closing itself

@@ -1,7 +1,7 @@
 id: kk-video-c9f99fee6146
 title: KK short movie — OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf
 column: done
-updated: 2026-10-28 11:41
+updated: 2026-10-28 13:11
 brief: KK short-video intake from OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf; source sha256=c9f99fee6146867d141a7061bdfdc71c6b15d3a617308db9420b57d67efa7cd6.
   Requirements extraction and planning pending.
 priority: high
@@ -145,6 +145,33 @@ comms:
   text: 'pub alert: Sacred Father: R3 narration still blocked after Edge TTS upgrade — R3 preflight passed (0 failures,
     1 expected source-materialization warning); all 10 shots pass QC and the silent teaser is present. Edge TTS
     7.3.1 still returne [evt-b4dbb906b309db28]'
+- at: 2026-10-28 12:56
+  from: devin
+  text: '[source-image audit 2026-10-28] Verified the current preview did not use embedded images from KK''s PDF.
+    The source manifest still points to the old 39-page `OST_-.pdf` (5,011,217 bytes; SHA-256 binding unchanged),
+    and the PDF itself is not materialized in Drive. The staged preview pack fetches only shot embeddings; LTX shots
+    are text-prompt generated and the I2V continuations use generated shots 01/09 as keyframes. Drive''s project
+    assets contain the rights matrix but no extracted PDF images. Upd'
+- at: 2026-10-28 12:57
+  from: devin
+  text: 'pub milestone: Sacred Father source-image audit: current preview did not use PDF images — Verified: the
+    existing LTX preview is text-prompt generated; its continuation keyframes come from generated shots 01/09. The
+    source PDF is not materialized in D [evt-77cceda578566632]'
+- at: 2026-10-28 13:11
+  from: devin
+  text: '[updated source received 2026-10-28] Telegram intake created private `source/OST_-_v1_01.pdf` on idc03
+    (5,821,084 bytes, SHA-256 5a6ef65431865b1b4957b70023d3e83cbdcaf19a5ebaa4896c6f2cd31ad06d34). `project.json`
+    now retains both the original `OST_-.pdf` and this new source entry; the primary pointer still references the
+    original. Current LTX preview used no PDF images: the queue pack fetches only text-prompt embeddings and uses
+    generated shot frames for I2V. The new PDF has not been extracted or '
+- at: 2026-10-28 13:11
+  from: devin
+  text: 'pub milestone: Updated Sacred Father PDF received privately via Telegram — Received `OST_-_v1_01.pdf` in
+    the private project source directory on idc03: 40-page PDF 1.7, 5,821,084 bytes, SHA-256 5a6ef65431865b1b4957b70023d3e83cbdcaf19a5
+    [evt-e41e3f204310ea5a]'
+- at: 2026-10-28 13:11
+  from: devin
+  text: 'raised request source-pdf-v1-01-role: How should OST_-_v1_01.pdf be treated relative to the original OST_-.pdf?'
 action:
   type: dispatch
   status: done
@@ -156,3 +183,15 @@ action:
     session_gone: 2026-10-26 19:16
 review_kind: verify
 claim: {}
+requests:
+- id: source-pdf-v1-01-role
+  ask: How should OST_-_v1_01.pdf be treated relative to the original OST_-.pdf?
+  status: open
+  at: 2026-10-28 13:11
+  from: devin
+  options:
+  - id: supersedes-v1
+    label: Treat v1_01 as the new source of truth; preserve the original as v1 (recommended).
+  - id: addendum
+    label: Treat v1_01 as an addendum; retain both as active source material.
+  suggested: supersedes-v1

@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-28 12:12
+updated: 2026-10-28 13:42
 priority: medium
 tags:
 - cline-kanban
@@ -48,6 +48,19 @@ comms:
     401. Tailscale status maps 100.72.146.39 to online con01. Endpoint is tailnet-only, but its declared Basic Auth
     gate is not verified/enforced on the live path. No login, credentials, service changes, or content writes performed.
     Before sharing/adding this URL to lesson 2737, i'
+- at: 2026-10-28 13:24
+  from: tony
+  text: status?
+- at: 2026-10-28 13:42
+  from: devin
+  text: 'AUTH SURFACE RESOLVED (2026-10-28, probed live): unauthenticated GET / returns the 1.4KB login shell ONLY
+    — every real API surface is passcode-gated: /api/runtime/status, /api/sessions, /api/tasks, /api/kanban/cards,
+    /api/config, /api/runtime/ws all return 401. This is correct web-app behavior; the verify contract''s ''expect
+    401 on /'' is wrong — it should check / for the login shell AND /api/* for the 401 gate. NOT a security hole;
+    contract needs updating, not the deployment.
+
+
+    NEST-ADAPTER DESIGN'
 requests:
 - id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
   ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3

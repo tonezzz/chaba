@@ -1,7 +1,7 @@
 id: audit-oc-unsafe-classification-svhrnlx3
 title: 'OpenCode audit: unsafe_classification (SvHrNlX3)'
-column: backlog
-updated: 2026-10-27 20:49
+column: review
+updated: 2026-10-28 13:17
 brief: /home/tony/CascadeProjects classified automatic_ok; /home/tony/.devin classified automatic_ok
 priority: high
 tags:
@@ -18,19 +18,68 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-10-27 20:49
   from: tony
-  text: 'answered the-card-opencode-audit-unsafe-59dd62: ★ Perform the audit in the chaba repository on
-    tony-dell'
+  text: 'answered the-card-opencode-audit-unsafe-59dd62: ★ Perform the audit in the chaba repository on tony-dell'
 - at: 2026-10-27 20:49
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-28 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-28 13:12
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 13:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 13:13
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-28 13:13
+  from: chaba
+  text: started devin-task-20261028-131307-perform-the-audit-of-unsafe-cl on tony-macbook (dispatch)
+- at: 2026-10-28 13:15
+  from: devin
+  text: 'audit done: classifier+verifier reviewed; gated path sound, but blacklist-only roots leave /home/tony/.devin
+    (the literal incident path) + all non-scan paths automatic_ok-able; case-evasion on APFS; verifier self-references
+    manifest policy. Writing report.'
+- at: 2026-10-28 13:16
+  from: devin
+  text: 'audit report committed: evals/opencode-lane/reports/2026-10-28-unsafe-classification-audit.md + docs/ssot/jobs/devnest/2026-10-28-opencode-unsafe-classification-audit.yml
+    (commit f1ff8a29a). Verdict PARTIALLY REMEDIATED: F1 high — /home/tony/.devin (literal incident path) still
+    classifies automatic_ok; blacklist needs whitelist + normalization + verifier floor. Fix follow-ups listed in
+    report.'
+- at: 2026-10-28 13:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 hitelist roots, path normalization, verifier floor, policy lint) are listed as follow-ups.
+    | devin-task-20261028-'
+- at: 2026-10-28 13:17
+  from: chaba
+  text: 'session-end checkpoint c8bcc584: 2 leftover file(s) committed'
+- at: 2026-10-28 13:17
+  from: chaba
+  text: pushed dispatch/20261028-131307-perform-the-audit-of-unsafe-cl to origin
+- at: 2026-10-28 13:17
+  from: chaba
+  text: 'auto-merge not done: worktree add: Preparing worktree (detached HEAD 21942dd55)
+
+    error: unable to write file backups/ada-memory/ada-cms-pages.json
+
+    error: unable to write file backups/ada-memory/ada-ha-bank-developer-tony.json
+
+    error: una — close will block until merged'
+- at: 2026-10-28 13:17
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-28 13:17
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261028-131307-perform-the-audit-of-unsafe-cl on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 requests:
 - id: the-card-opencode-audit-unsafe-59dd62
   ask: 'The card ''OpenCode audit: unsafe_classification (SvHrNlX3)'' requires an audit of an ''unsafe_classification''
-    flag or feature, but lacks any specification regarding which host, repository, or codebase this audit
-    should be performed against.'
+    flag or feature, but lacks any specification regarding which host, repository, or codebase this audit should
+    be performed against.'
   options:
   - ★ Perform the audit in the chaba repository on tony-dell
   - Perform the audit in the ada-voice repository on tony-dell
@@ -39,9 +88,18 @@ requests:
   at: 2026-10-27 19:20
   from: backlog-spec-enrich
   answer: ★ Perform the audit in the chaba repository on tony-dell
-awaiting_action: true
-spec: Perform the audit of unsafe_classification in the chaba repository on tony-dell, as explicitly directed
-  by tony in the recent comms. The goal is to review code or configurations related to unsafe classification
-  for security and correctness. Constraints include operating strictly within the specified repository
-  and host environment without introducing unvetted external dependencies. The verifiable done-condition
-  is a completed audit report committed or documented in the chaba repository on tony-dell.
+spec: Perform the audit of unsafe_classification in the chaba repository on tony-dell, as explicitly directed by
+  tony in the recent comms. The goal is to review code or configurations related to unsafe classification for security
+  and correctness. Constraints include operating strictly within the specified repository and host environment without
+  introducing unvetted external dependencies. The verifiable done-condition is a completed audit report committed
+  or documented in the chaba repository on tony-dell.
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 hitelist roots, path normalization, verifier floor, policy lint) are listed as follow-ups. | devin-task-20261028-131307-perform-the-audit-of-unsafe-cl.service:
+    Consumed 37.714s CPU time over 3min 52.637s wall clock time, 684.8M memory peak.'
+  sweep:
+    dirty: 1
+review_kind: verify
+claim: {}

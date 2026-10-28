@@ -13,6 +13,8 @@ LiteLLM gateway on idc03 is a pure env change — no code:
   GEMINI_API_KEY   Google AI key for direct calls; a LITELLM_KEY_*
                    virtual key (e.g. LITELLM_KEY_CHABA) when BASE_URL
                    points at the gateway.
+  base_url_override  per-call gateway override for services that must not
+                     change the process-wide GEMINI_BASE_URL.
 
 Routing table / budgets: docs/ssot/infrastructure/ssot.llm-gateway.yml.
 """
@@ -35,8 +37,8 @@ def via_gateway() -> bool:
     return not base_url().startswith(DIRECT_BASE)
 
 
-def endpoint(model: str) -> str:
-    base = base_url()
+def endpoint(model: str, base_url_override: str | None = None) -> str:
+    base = (base_url_override or base_url()).rstrip("/")
     if not base.endswith("/v1beta"):
         base += "/v1beta"
     return f"{base}/models/{model}:generateContent"
@@ -45,6 +47,7 @@ def endpoint(model: str) -> str:
 def generate(prompt: str, model: str, *, key: str | None = None,
              generation_config: dict | None = None,
              timeout: int = 120, label: str = "gemini",
+             base_url_override: str | None = None,
              max_attempts: int = 4) -> str | None:
     """One generateContent call -> text or None. Retries 429/5xx with
     linear backoff; other HTTP errors fail fast with a printed reason."""
@@ -60,7 +63,7 @@ def generate(prompt: str, model: str, *, key: str | None = None,
     for attempt in range(max_attempts):
         try:
             req = urllib.request.Request(
-                endpoint(model), data=data,
+                endpoint(model, base_url_override), data=data,
                 headers={"Content-Type": "application/json",
                          "x-goog-api-key": key})
             with urllib.request.urlopen(req, timeout=timeout) as r:

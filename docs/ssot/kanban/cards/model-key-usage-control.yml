@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
-column: backlog
-updated: 2026-10-28 12:09
+column: doing
+updated: 2026-10-28 13:38
 priority: high
 tags:
 - litellm
@@ -38,10 +38,107 @@ comms:
     29 Groq GPT-OSS; local rows $0), ada $0.020755, mddb $0.004122, bench $0. The Chaba alias is at $19.672/$20
     with reset Nov 1; Ada $14.528/$30; Bench $2.008/$2. SSOT documents different Ada/Chaba limits, so do not change
     caps until intended limits are confirmed. Ledger excludes boa'
+- at: 2026-10-28 12:33
+  from: devin
+  text: 'answered board-api-translation-spend-policy: free-only — route through LiteLLM''s gemini-3.5-flash-lite-free
+    deployment; if quota/gateway fails, keep the lesson English-only. No paid fallback.'
+- at: 2026-10-28 12:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 12:56
+  from: devin
+  text: '[implementation merged 2026-10-28] PR #47 merged to origin/master as `1aaac638`. board-api `/lesson` now
+    uses the free-only LiteLLM deployment `gemini-3.5-flash-lite-free` with the existing MDDB virtual key; if the
+    gateway/free quota fails it degrades to English-only, with no paid fallback. Tests: 24 targeted unittests +
+    board-api selftest passed; a minimal live free-route probe returned OK. No keys or caps changed. Production
+    is NOT deployed yet: idc03 served checkout `~/CascadeProjects/chaba-t'
+- at: 2026-10-28 12:57
+  from: devin
+  text: 'raised request sec0962-served-checkout-deploy: PR #47 is merged, but the idc03 served checkout is dirty
+    and 10 commits ahead. May I reconcile it with the prescribed sa'
+- at: 2026-10-28 12:57
+  from: devin
+  text: '[merged implementation 2026-10-28] PR #47 merged to master as `1aaac638`. board-api `/lesson` now uses
+    `gemini-3.5-flash-lite-free` through the LiteLLM gateway with the existing MDDB virtual key; it has no direct
+    Google-key fallback or paid fallback, and errors remain EN-only. 24 targeted unit tests + board-api selftest
+    pass; a 10-token live free-route probe returned OK. No key/budget changed. Production restart is pending because
+    idc03''s served checkout is dirty/ahead 10; I added request `sec09'
+- at: 2026-10-28 12:59
+  from: devin
+  text: 'raised request litellm-key-cap-reconciliation: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5
+    documented; Ada $30 and active vs $10/spare; Bench spend is slig'
+- at: 2026-10-28 13:00
+  from: devin
+  text: '[SEC-0962 status 2026-10-28] The free-only board-api route is merged in PR #47 (`1aaac638`): it uses the
+    existing MDDB virtual key and the dedicated `gemini-3.5-flash-lite-free` deployment, with no direct Google fallback
+    and EN-only degradation. This avoids a new key and paid fallback; key+model are metered, though Google-native
+    per-request tags aren''t reliable. No key caps changed. The live chaba-board-api process is still on old code
+    because the idc03 served checkout is dirty/ahead; safe-pull/'
+- at: 2026-10-28 13:03
+  from: tony
+  text: 'answered sec0962-served-checkout-deploy: safe-pull-and-restart — Approve safe-pull reconciliation, inspect/preserve
+    local edits, then restart and verify board-api (recommended).'
+- at: 2026-10-28 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:03
+  from: tony
+  text: 'answered litellm-key-cap-reconciliation: audit-first — Keep live limits unchanged and audit which callers/approval
+    changed them before reconciling (recommended).'
+- at: 2026-10-28 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:22
+  from: devin
+  text: '[production verified 2026-10-28] The merged `gemini-3.5-flash-lite-free` route is now live. Served checkout
+    already contained the merged board-api/gemini_rest files, so I did not pull or touch its unrelated dirty docs/cards;
+    I restarted only `chaba-board-api.service` under `/tmp/pfg-deploy.lock`. Service is active, local /health returned
+    HTTP 200, and a harmless translation helper smoke returned nonempty. LiteLLM SpendLogs recorded the probe under
+    key alias `mddb`: 48 tokens, estimated spend $0.'
+- at: 2026-10-28 13:23
+  from: devin
+  text: '[live verification 2026-10-28] `chaba-board-api.service` restarted under the shared deploy lock without
+    pulling or touching unrelated dirty files; the merged route was already in the served checkout. Service active;
+    local /health 200; deployed `_gemini_thai` helper returned nonempty via the free-only route. LiteLLM SpendLogs
+    recorded 48 tokens under `mddb`, estimated spend $0.00003860. No keys or caps changed. SEC-0962 remains open
+    for the live/SSOT budget discrepancy, near-cap alert, and more g'
+- at: 2026-10-28 13:24
+  from: devin
+  text: 're-answered sec0962-served-checkout-deploy: No safe-pull was needed: PR #47''s merged board-api/gemini_rest
+    files were already present and clean in the served checkout. I restarted only chaba-board-api.service under
+    /tmp/pfg-deploy.lock; /health'
+- at: 2026-10-28 13:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:30
+  from: devin
+  text: 'TRIAGE (2026-10-28): routing bypass half is DONE — PR #47 gemini-3.5-flash-lite-free merged + board-api
+    restarted verified-live 13:24. Remaining work splits into: (A) AUDIT — who/what raised LiteLLM budgets (chaba
+    $5->$20, ada $10->$30 per SSOT) — read-only, per Tony''s audit-first answer 13:03; (B) near-cap alert/report
+    on LiteLLM_VerificationToken spend vs cap; (C) tests proving paid fallback blocked/capped per policy. Recommend
+    queueing (A) as a bounded dispatch job now — it''s the piece Tony e'
+- at: 2026-10-28 13:36
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 13:37
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 13:37
+  from: idc02
+  text: claimed
+- at: 2026-10-28 13:37
+  from: chaba
+  text: started devin-task-20261028-133721-audit-non-live-model-calls-and on idc02 (dispatch)
+- at: 2026-10-28 13:38
+  from: devin
+  text: '[audit 2026-10-28] Starting full non-Live model-call inventory + budget reconciliation in dispatch worktree.
+    Scope: every gemini_rest/litellm_chat/direct-API caller classified gateway-metered vs bypass; VerificationToken
+    audit for cap changes; near-cap coverage check. No caps/routing changes.'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
-  status: open
+  status: answered
   at: 2026-10-28 12:08
   from: devin
   options:
@@ -50,3 +147,40 @@ requests:
   - id: budgeted-paid
     label: LiteLLM route may fall back to paid Gemini, but enforce a per-30d cap and alert.
   suggested: free-only
+  answer: free-only — route through LiteLLM's gemini-3.5-flash-lite-free deployment; if quota/gateway fails, keep
+    the lesson English-only. No paid fallback.
+- id: sec0962-served-checkout-deploy
+  ask: 'PR #47 is merged, but the idc03 served checkout is dirty and 10 commits ahead. May I reconcile it with the
+    prescribed safe-pull, then restart and verify chaba-board-api.service?'
+  status: answered
+  at: 2026-10-28 12:57
+  from: devin
+  options:
+  - id: safe-pull-and-restart
+    label: Approve safe-pull reconciliation, inspect/preserve local edits, then restart and verify board-api (recommended).
+  - id: owner-reconcile-first
+    label: I will reconcile the served checkout first; wait to restart.
+  suggested: safe-pull-and-restart
+  answer: 'No safe-pull was needed: PR #47''s merged board-api/gemini_rest files were already present and clean
+    in the served checkout. I restarted only chaba-board-api.service under /tmp/pfg-deploy.lock; /health returned
+    200 and the free-only translation helper smoke passed. Unrelated dirty docs/cards/out were left untouched.'
+- id: litellm-key-cap-reconciliation
+  ask: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5 documented; Ada $30 and active vs $10/spare; Bench
+    spend is slightly over its $2 cap). Which budget policy should we follow before changing caps?
+  status: answered
+  at: 2026-10-28 12:59
+  from: devin
+  options:
+  - id: audit-first
+    label: Keep live limits unchanged and audit which callers/approval changed them before reconciling (recommended).
+  - id: live-values
+    label: Treat current DB limits as intentional and update SSOT to match after verifying owner intent.
+  - id: ssot-values
+    label: Treat SSOT limits as policy; plan correction after the Nov 1 reset, knowing Chaba may be quota-blocked.
+  suggested: audit-first
+  answer: audit-first — Keep live limits unchanged and audit which callers/approval changed them before reconciling
+    (recommended).
+action:
+  type: dispatch
+  status: running
+  runner: idc02
