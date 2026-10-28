@@ -282,6 +282,12 @@ comms:
     tasks with no running session. Fix is in PR #50 (8 adapter tests + 7 proxy tests pass locally; CI running).
     After merge, restage the pack and resume this existing job key; no duplicate task, paid model, or service restart
     needed.'
+- at: 2026-10-28 16:45
+  from: devin
+  text: 'Correction: task fd918 is in_progress with no session. The adapter only called start from backlog; the
+    CLI can safely start an in-progress task when its session is missing. Fix is in PR #50 (8 adapter tests and
+    7 proxy tests pass locally; CI running). After merge, restage the pack and resume this existing job key. No
+    duplicate task, paid model, or service restart needed.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
