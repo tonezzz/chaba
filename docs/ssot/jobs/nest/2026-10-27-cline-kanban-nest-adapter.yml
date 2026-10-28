@@ -93,9 +93,33 @@ processing:
         no workspace files changed.
     - id: test
       label: Stage isolated pack, claim once, and verify task/patch artifacts
-      status: not_started
-      notes: ''
+      status: in_progress
+      notes: >-
+        The staged task `cline-nest-smoke-20261028-093509` already exists in
+        `in_progress` with no session and no result artifacts. Reproduced the
+        runtime host gate: the adapter's 127.0.0.1:3485 setting returns 403
+        Host not allowed; 0.0.0.0:3485 lists the workspace tasks successfully.
+        The adapter also needs to invoke the idempotent `task start` command
+        for an existing in-progress task so the session is actually created.
+    - id: resume-existing-task
+      label: Resume the existing disposable smoke task and publish verified artifacts
+      status: in_progress
+      notes: >-
+        Fix the adapter to call `task start` for both backlog and in_progress
+        tasks. The CLI start operation is idempotent when a session is already
+        running and starts the session when the task was only moved to
+        in_progress.
   decisions:
+    - label: Resume an existing in-progress task through the idempotent CLI start operation
+      rationale: >-
+        The current Nest task is already in_progress but has no session; the
+        adapter previously skipped `task start` unless the column was backlog,
+        leaving it stuck. The CLI safely no-ops for a running session and
+        starts one if absent.
+      alternatives_considered: >-
+        Creating a new task would duplicate the approved smoke and violate the
+        job-key idempotency contract. Manually moving the task back to backlog
+        would mutate live task state unnecessarily.
     - label: Use localhost runtime mode behind proxy Basic Auth
       rationale: >-
         Cline Kanban's CLI task API is reliable in local mode; remote-mode
@@ -147,6 +171,8 @@ processing:
       summary: Declared the proxy and bridge-network units in con01 expectations.
     - file: scripts/colab/packs/cline-kanban-nest-bridge/
       summary: Added an idempotent Nest pack for one local Cline task and verified patch output.
+    - file: scripts/colab/packs/cline-kanban-nest-bridge/bridge.py
+      summary: Resume a matching backlog or in-progress task using the idempotent Cline CLI start operation.
     - file: .github/workflows/ssot.yml
       summary: Added CI coverage for Cline proxy and Nest adapter tests.
     - file: tests/test_cline_kanban_proxy.mjs
@@ -157,6 +183,7 @@ processing:
 followup:
   verification:
     - Adapter unit tests cover input validation, idempotent lookup, CLI calls, and artifact requirements.
+    - An existing in-progress task with no session is resumed rather than left waiting until timeout.
     - Cline task CLI list/create/start is tested in localhost runtime mode.
     - Nest done is written only after task reaches review/completion and remote artifacts verify non-empty.
     - Confirm the disposable test repository is unchanged outside the Cline task worktree.

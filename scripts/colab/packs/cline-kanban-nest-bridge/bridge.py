@@ -133,6 +133,10 @@ def find_existing_task(tasks, marker):
     )
 
 
+def should_start_task(task):
+    return task.get("column") in {"backlog", "in_progress"}
+
+
 def parse_worktrees(output):
     worktrees = []
     current = {}
@@ -263,12 +267,12 @@ def run_bridge(spec, output_path, patch_path):
         print(f"created Cline task {task['id']}", flush=True)
 
     task_id = task["id"]
-    if task.get("column") == "backlog":
+    if should_start_task(task):
         run_kanban([
             "task", "start", "--task-id", task_id,
             "--project-path", spec["project_path"],
         ])
-        print(f"started Cline task {task_id}", flush=True)
+        print(f"ensured Cline task session {task_id}", flush=True)
 
     final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
     worktree = choose_task_worktree(before, get_worktrees(), task_id)
