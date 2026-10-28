@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: doing
-updated: 2026-10-28 13:38
+updated: 2026-10-28 13:56
 priority: high
 tags:
 - litellm
@@ -135,6 +135,13 @@ comms:
   text: '[audit 2026-10-28] Starting full non-Live model-call inventory + budget reconciliation in dispatch worktree.
     Scope: every gemini_rest/litellm_chat/direct-API caller classified gateway-metered vs bypass; VerificationToken
     audit for cap changes; near-cap coverage check. No caps/routing changes.'
+- at: 2026-10-28 13:56
+  from: devin
+  text: 'Audit done (worktree only, no cap/route changes). Findings: (1) LiteLLM_AuditLog EMPTY — cap raises on
+    10-24 attributable only via journal (POST /key/update 09:08+14:07 local, right after chaba $5 422s during ai-workforce-eval
+    opencode burns ~$27.5 via or-claude-fable-5.1 from tony-dell). (2) ada key is NOT spare — serves live opencode
+    from tony-macbook. (3) keys ada/chaba/mddb/michael have models={} unrestricted. (4) Direct-Google bypasses still
+    open: devin-bank-distill (chaba-paid.env PAID), a'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
