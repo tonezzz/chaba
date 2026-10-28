@@ -1,0 +1,36 @@
+# S1 profile job — mddb-sequence canary on idc02 (card
+# nest-opencode-executor-eval). The MEM-0871 checkable-sequence eval
+# template: the agent builds a read-only preflight plan for the
+# prune/compact runbook from live bank state (mddb_probe.py allowlist
+# only), and the held-out verifier recomputes every claim against the
+# live banks. Supervised per S1 (heartbeat required, dispatch watches).
+id: p1-mddb-sequence-idc02
+card: nest-opencode-executor-eval
+task_class: read_only
+stage: S1
+target_host: idc02
+executor: opencode
+profile: mddb-sequence
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+unattended: true
+mcp_allowlist: []           # idc02 has no mcp-allowlist proxy — the
+                            # mddb_probe.py bash entry covers collection;
+                            # the profile's MCP ceiling is still enforced
+allowed_paths: [evals/opencode-lane/out/]
+artifact:
+  path: evals/opencode-lane/out/p1-mddb-sequence-plan.json
+  schema: >-
+    evals/opencode-lane/profiles/mddb-sequence/fixture/task.yaml
+    #contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/mddb-sequence/fixture/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: none
+heartbeat:
+  required: true
+  stale_s: 300
