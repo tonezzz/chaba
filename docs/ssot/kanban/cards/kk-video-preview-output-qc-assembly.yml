@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-28 22:56
+updated: 2026-10-28 23:08
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -147,6 +147,13 @@ comms:
     remains private; no audio, full preview, or publication. OPS-0952 records KK''s all-pages private-use approval.
     Production preview still needs integrated scene-to-image mapping; Edge TTS remains on hold pending egress diagnosis
     per Tony''s 19:32 decision. Probe report: docs/ssot/job'
+- at: 2026-10-28 23:08
+  from: devin
+  text: 'LATER RUNS VERIFIED: `run-20261028-1329` completed the private 60s teaser with all 10 existing shots passing
+    QC, Thai/English SRTs, and a 152,685B narration track. The pack uses non-cloned Edge TTS `th-TH-PremwadeeNeural`;
+    it succeeded this run. Important: the full teaser reused the previous generated shots and still did NOT use
+    the PDF images. `run-20261028-1524` separately passed a private image-conditioned smoke using v1_01 page 2 image-000
+    + shot01 embeddings: H.264 640x384, 25 frames/1.042s'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
