@@ -199,6 +199,10 @@ comms:
     remaining unrelated error in docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml: missing required top-level
     title. I did not edit it; a separate request asks whether to add the minimal title or leave it to its owner.
     This still blocks normal commits/CI.'
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'raised request the-jack-job-now-parses-but-the-reposito-2b544d: The Jack job now parses, but the repository-wide
+    SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kan'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -327,6 +331,20 @@ requests:
   - id: local-only
     label: Defer OpenRouter; continue with local qwen3:4b only
   suggested: store-fresh-key
+- id: the-jack-job-now-parses-but-the-reposito-2b544d
+  ask: The Jack job now parses, but the repository-wide SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml
+    lacks the required top-level title. This separate file is not part of the Cline PR and has no matching board
+    card. May I add a minimal descriptive title in a separate follow-up PR so validation can pass, or should I leave
+    it to its owner?
+  status: open
+  at: 2026-10-28 07:05
+  from: devin
+  options:
+  - id: add-title
+    label: Add the minimal required title in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: Leave it to the job owner and keep Cline CI blocked
+  suggested: add-title
 action:
   type: dispatch
   status: done
