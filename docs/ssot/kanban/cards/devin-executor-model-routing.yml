@@ -25,3 +25,23 @@ comms:
 - at: 2026-10-28 07:05
   from: tony
   text: card captured via board-api
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'raised request for-a-no-charge-fix-i-recommend-routing-3b88fd: For a no-charge fix, I recommend routing
+    free_lane work through a LiteLLM-capable OpenCode executor and using Cline/Olla'
+requests:
+- id: for-a-no-charge-fix-i-recommend-routing-3b88fd
+  ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
+    Cline/Ollama for this pilot, while keeping paid_frontier disabled unless approved. The Devin CLI list does include
+    `claude-fable-5.1` (without `litellm/`), but that is a hosted frontier lane and I have not retried it. Should
+    I implement the executor split with paid_frontier still gated, or do you explicitly want Devin-native `claude-fable-5.1`
+    enabled for future paid_frontier dispatches?
+  status: open
+  at: 2026-10-28 07:05
+  from: devin
+  options:
+  - id: executor-split-no-paid
+    label: Implement executor-specific mapping; free lane only, keep paid frontier gated (recommended)
+  - id: approve-fable
+    label: Also permit paid Devin CLI claude-fable-5.1 for paid_frontier dispatches
+  suggested: executor-split-no-paid
