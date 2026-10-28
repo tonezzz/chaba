@@ -1,0 +1,50 @@
+# MED-0692 — hybrid media store helper landed (2026-10-28)
+# dispatch-wt session: card media-hybrid-object-store, spec confirmed by
+# Tony 2026-10-27 (request the-card-defines-a-hybrid-medi-8c6e53):
+# implement media_store.py in the chaba repo for infra-wide use.
+title: Hybrid media store — media_store.py helper (R2 archive layer design)
+card: media-hybrid-object-store
+date: 2026-10-28
+mode: "implementation (dispatch worktree; no deploy, no host changes)"
+
+deliverables:
+  helper: scripts/lib/media_store.py
+  tests: tests/test_media_store.py (25 cases, all green)
+  runbook: docs/kb/media-store.md
+
+design:
+  model: >-
+    hybrid, not migration — local hosts keep hot/working data; the object
+    store is the durable archive + link layer. Backend is a config flag
+    (local|r2|s3), never code.
+  canonical_url: >-
+    records store media://<key> — backend-neutral, resolves on any host
+    through the configured backend, survives local->r2->s3 flips.
+    public_url (MEDIA_STORE_PUBLIC_BASE) is the human/edge link.
+  layout: "media/<kind>/<yyyy-mm>/<name> — month buckets per the card spec"
+  dedup: >-
+    put() is idempotent on sha256; same-name/different-content collisions
+    get a -<sha8> suffix instead of a silent overwrite; unique=False for
+    'latest'-style keys.
+  s3: >-
+    stdlib SigV4 (no boto3 — matches repo convention), path-style URLs,
+    works on R2/AWS/MinIO; signer pinned to the AWS docs worked example
+    in tests. r2 backend = s3 preset (region=auto, endpoint derived from
+    account id incl. CF_API_ACCOUNT_ID fallback).
+  config: >-
+    ~/.config/secrets/media-store.env (parsed, not sourced; env vars win).
+    backend=local is the zero-dep default.
+
+verification:
+  - "python3 tests/test_media_store.py — 25 tests OK (local backend
+     roundtrip, dedup/unique, layout, config resolution, SigV4 AWS vector,
+     mock-S3 end-to-end PUT/GET/HEAD/list/DELETE, CLI smoke)"
+  - "python3 -m py_compile scripts/lib/media_store.py"
+
+open_followups:
+  - "Tony: create the R2 bucket + API token, drop media-store.env on
+     writing hosts, flip MEDIA_STORE_BACKEND=r2 (runbook §5 checklist)"
+  - "per-producer adoption cards: ada-line-relay (kind=line), cam frames
+     (cam), Ada renders (render), WP uploads (wp), backup-manager (backup)"
+  - "v2 levers if needed: multipart upload for multi-GB renders,
+     cross-backend pinning/seed sync"
