@@ -1,0 +1,32 @@
+id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
+title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
+column: backlog
+updated: 2026-10-28 19:48
+spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
+  own video work.
+
+
+  LANE A — port existing kk-video pack (scripts/colab/packs/kk-video-c9f99fee6146-*) to Mac: same Lightricks/LTX-Video
+  0.9.x checkpoint, same shot plan (640x384 @73f/40step, t2v + 2 i2v last-frame continuations). Changes needed:
+  device abstraction (8 cuda call sites -> mps), brew deps instead of apt-get, bf16-on-MPS guidance precision check
+  (upstream documented fp32-upcast requirement for STG), one probe shot to validate speed+quality before full run.
+
+
+  LANE B — new native pipeline via appautomaton/ltx-video-mlx (or dgrauet/ltx-2-mlx): MLX-native LTX-2.3 22B, ~10-14GB
+  mem, t2v+i2v+keyframe+Audio support, no PyTorch. Render the same 2-3 probe prompts at comparable settings.
+
+
+  COMPARE: side-by-side probe shots on identical prompts — judge subject fidelity, motion, temporal consistency;
+  measure s/shot and peak memory. Deliverable: verdict + recommended pipeline + a kk-mac nest pack for the winner.
+
+
+  Constraints: keep it on kk-mac''s own disk (~101GB free, watch the ~30GB pack footprint + MLX weights); no cloud
+  spend; KK uses the winner for her video — quality is the deciding metric, not speed.'
+note: 'Spawned from session work 2026-10-28: KNB-0932 Cline deploy done; kk-mac hardware verified M4 Max/36GB; GitHub
+  survey found official MPS support (LTX-Video repo), MLX ports (appautomaton/ltx-video-mlx, dgrauet/ltx-2-mlx),
+  and a SwiftUI wrapper (james-see/ltx-video-mac).'
+ref: OPS-0967
+comms:
+- at: 2026-10-28 19:48
+  from: tony
+  text: card captured via board-api
