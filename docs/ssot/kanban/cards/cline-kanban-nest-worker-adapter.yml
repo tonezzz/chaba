@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 18:59
+updated: 2026-10-28 19:41
 priority: medium
 tags:
 - cline-kanban
@@ -302,6 +302,13 @@ comms:
     completed exit_code=0 but produced no tool call or file; the task worktree is clean and nest-cline-smoke.txt
     is absent. The worker timed out waiting for Review; task-result.json, task.patch, and done marker were not produced.
     The PR #51 retry path did not create a new session or another'
+- at: 2026-10-28 19:41
+  from: devin
+  text: '2026-10-28 restart follow-up: the approved app restart cleared the Cline service, but its default shutdown
+    cleanup moved fd918, bbd43, and 62aaf to Trash and removed their task worktrees. The 62aaf worktree had nest-cline-smoke.txt;
+    that file was lost. The app data volume and base /workspace remain; post-restart stack preflight, authenticated
+    HTTP, WebSocket, and host audit passed. The isolated pack retry still produced no task-result/patch/done artifacts.
+    fd918 is now Trash, so the adapter corr'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
