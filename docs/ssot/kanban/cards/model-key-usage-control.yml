@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 12:57
+updated: 2026-10-28 12:59
 priority: high
 tags:
 - litellm
@@ -63,6 +63,10 @@ comms:
     Google-key fallback or paid fallback, and errors remain EN-only. 24 targeted unit tests + board-api selftest
     pass; a 10-token live free-route probe returned OK. No key/budget changed. Production restart is pending because
     idc03''s served checkout is dirty/ahead 10; I added request `sec09'
+- at: 2026-10-28 12:59
+  from: devin
+  text: 'raised request litellm-key-cap-reconciliation: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5
+    documented; Ada $30 and active vs $10/spare; Bench spend is slig'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -89,4 +93,18 @@ requests:
   - id: owner-reconcile-first
     label: I will reconcile the served checkout first; wait to restart.
   suggested: safe-pull-and-restart
+- id: litellm-key-cap-reconciliation
+  ask: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5 documented; Ada $30 and active vs $10/spare; Bench
+    spend is slightly over its $2 cap). Which budget policy should we follow before changing caps?
+  status: open
+  at: 2026-10-28 12:59
+  from: devin
+  options:
+  - id: audit-first
+    label: Keep live limits unchanged and audit which callers/approval changed them before reconciling (recommended).
+  - id: live-values
+    label: Treat current DB limits as intentional and update SSOT to match after verifying owner intent.
+  - id: ssot-values
+    label: Treat SSOT limits as policy; plan correction after the Nov 1 reset, knowing Chaba may be quota-blocked.
+  suggested: audit-first
 awaiting_action: true
