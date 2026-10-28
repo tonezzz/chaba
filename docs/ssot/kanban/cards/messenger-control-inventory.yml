@@ -1,0 +1,25 @@
+id: messenger-control-inventory
+title: Reconcile Telegram and LINE relay inventory
+column: backlog
+updated: 2026-10-28 13:22
+priority: medium
+tags:
+- telegram
+- line
+- messaging
+- inventory
+- ssot
+spec: 'Create one reconciled inventory of live Telegram/LINE control surfaces across SSOT, systemd, publication,
+  and topic routing. Verified on idc03 2026-10-28: active relays ada-line-relay, ada-tg-relay, ada-tg-relay-kk,
+  ada-tg-relay-mn, devnest-tg-relay; audit-hosts flags ada-tg-relay-mn and devnest-tg-relay as unexpected. Also
+  distinguish OpenClaw @myChabaBot (separate TG DM bot) and Yomi (LINE history/search, not the Chaba webhook). Document
+  owner, transport mode, port, token slot reference (never value), target/lane, inbound vs outbound role, and source-of-truth.
+  Do not enable/disable services, rotate tokens, or move webhooks in this card.'
+note: 'Current model: 2 provider platforms, 5 active relay services (4 Telegram + 1 LINE), plus separate OpenClaw
+  TG and Yomi LINE integrations; Board API PublicationEvent + DevNest topic registry is the application-level outbound
+  routing layer. audit-hosts report: reports/audit-hosts/idc03-20261028-131959.yml.'
+ref: OPS-0963
+comms:
+- at: 2026-10-28 13:22
+  from: devin
+  text: card captured via board-api
