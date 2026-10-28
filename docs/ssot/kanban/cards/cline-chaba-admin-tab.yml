@@ -1,7 +1,7 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
 column: backlog
-updated: 2026-10-28 15:29
+updated: 2026-10-28 22:59
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
 blocked_by: cline-kanban-nest-worker-adapter
@@ -82,6 +82,14 @@ comms:
     has been installed. Cline split proxy is now deployed and unauthenticated root returns 401; Nest adapter PR/deployment
     and smoke are reported complete, so the tab card can advance once the target/auth choice is confirmed. Safety
     note: reuse the same Cloudflare Access SSO if desired;'
+- at: 2026-10-28 22:59
+  from: tony
+  text: 're-answered which-chaba-admin-instance-should-receiv-b168fa: ada-ha-root-host — use the live ada-ha chaba-admin
+    dashboard at https://ada-ha.surf-thailand.com/chaba-admin/board; preserve the existing Access login and put
+    Cline in a new tab after Board.'
+- at: 2026-10-28 22:59
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
@@ -100,6 +108,6 @@ requests:
   - id: same-host-subpath
     label: Use a same-host Cline subpath; accept extra path and WebSocket compatibility work
   suggested: tony-ha-root-host
-  answer: tony-ha-root-host — Use documented tony-ha chaba-admin; add a root-path, Access-protected Cline iframe
-    after Board (recommended)
+  answer: ada-ha-root-host — use the live ada-ha chaba-admin dashboard at https://ada-ha.surf-thailand.com/chaba-admin/board;
+    preserve the existing Access login and put Cline in a new tab after Board.
 awaiting_action: true
