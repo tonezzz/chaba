@@ -69,6 +69,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261028-123908-hybrid-media-store-r2-archive- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-10-28 12:47
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261028-123908-hybrid-media-store-r2-archive- on
+    idc02 — if the work was never pushed it may be gone'
 requests:
 - id: the-card-defines-a-hybrid-medi-8c6e53
   ask: The card defines a hybrid media store using `media_store.py` with a config flag and canonical URLs, but does
@@ -89,5 +93,7 @@ action:
     writers — both flagged on the card. | devin-task-20261028-123908-hybrid-media-store-r2-archive-.service: Consumed
     22.376s CPU time.'
   verified: true
+  sweep:
+    stale_running: 2026-10-28 12:47
 review_kind: verify
 claim: {}
