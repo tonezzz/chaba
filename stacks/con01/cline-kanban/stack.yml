@@ -1,11 +1,12 @@
 id: cline-kanban
 host: con01
-unit: cline-kanban.service
+unit: cline-kanban-proxy.service
 description: >-
   Disposable Cline Kanban v0.1.70 research-preview pilot. Rootless Podman
-  service behind strict Host/Origin and Basic Auth checks; HTTP/WebSocket
-  port 3484 is published only on con01's Tailscale IPv4 address. No public
-  Caddy route, live Chaba repository, or provider credential is included.
+  app and proxy containers share a dedicated bridge network; only the proxy
+  passes strict Host/Origin and Basic Auth checks and publishes HTTP/WebSocket
+  port 3484 on con01's Tailscale IPv4 address. No public Caddy route, live
+  Chaba repository, or provider credential is included.
 verify: >-
   bash ~/CascadeProjects/chaba/stacks/con01/cline-kanban/verify.sh
 secrets:
@@ -22,13 +23,12 @@ state:
 ports:
   - "100.72.146.39:3484 — Basic Auth and strict Host/Origin proxy for UI/WebSocket; Tailscale only"
 restore: >-
-  Rebuild localhost/cline-kanban:0.1.70 from this directory's Containerfile,
-  reinstall the declared Quadlets, and restart cline-kanban.service. The
-  proxy password remains in ~/.config/secrets/cline-kanban.env; rotate it
-  by replacing that file and restarting the Quadlet. Pilot state is
-  disposable and is not backed up. Rollback stops the unit and removes the
-  Quadlets through the repository sync path; retain state for inspection
-  unless Tony separately approves cleanup.
+  To revert to the pre-split pilot, restore the single-container Quadlet
+  files from revision 1c9420c88, retag the preserved
+  localhost/cline-kanban:0.1.70-pre-pr45 image as localhost/cline-kanban:0.1.70,
+  reload systemd, and restart cline-kanban.service. Keep the proxy password in
+  ~/.config/secrets/cline-kanban.env and retain all pilot state; do not remove
+  data or images without separate approval.
 related_cards:
   - cline-kanban-con01-pilot
   - cline-kanban-nest-worker-adapter

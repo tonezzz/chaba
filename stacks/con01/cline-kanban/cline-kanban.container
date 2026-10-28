@@ -1,12 +1,13 @@
 [Unit]
 Description=Cline Kanban research-preview pilot (con01, tailnet-only)
 Wants=network-online.target
-After=network-online.target
+After=network-online.target cline-kanban-network.service
+Requires=cline-kanban-network.service
 
 [Container]
 Image=localhost/cline-kanban:0.1.70
 ContainerName=cline-kanban
-Pod=cline-kanban.pod
+Network=cline-kanban.network
 Volume=%h/.local/share/cline-kanban/data:/root/.cline
 Volume=%h/cline-kanban-pilot/workspace:/workspace
 Environment=CLINE_ROLE=app

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import {
   getExternalRequestRejection,
@@ -92,16 +92,16 @@ test("validates Basic Auth without exposing its header upstream", () => {
 
 test("rewrites the upstream Host and Origin", () => {
   assert.deepEqual(rewriteUpstreamHeaders(goodHeaders), {
-    host: "127.0.0.1:3485",
-    origin: "http://127.0.0.1:3485",
+    host: "0.0.0.0:3485",
+    origin: "http://0.0.0.0:3485",
   });
 });
 
 test("rewrites backend absolute URLs and CORS origin to the trusted URL", () => {
   assert.deepEqual(
     rewriteDownstreamHeaders({
-      location: "http://127.0.0.1:3485/workspace",
-      "access-control-allow-origin": "http://127.0.0.1:3485",
+      location: "http://0.0.0.0:3485/workspace",
+      "access-control-allow-origin": "http://0.0.0.0:3485",
       "content-type": "text/html",
     }),
     {
@@ -121,17 +121,35 @@ test("keeps the proxy credential out of the Cline agent container", () => {
     new URL("../stacks/con01/cline-kanban/cline-kanban-proxy.container", import.meta.url),
     "utf8",
   );
-  const pod = readFileSync(
-    new URL("../stacks/con01/cline-kanban/cline-kanban.pod", import.meta.url),
+  const proxySource = readFileSync(
+    new URL("../stacks/con01/cline-kanban/proxy.mjs", import.meta.url),
+    "utf8",
+  );
+  const entrypoint = readFileSync(
+    new URL("../stacks/con01/cline-kanban/entrypoint.sh", import.meta.url),
+    "utf8",
+  );
+  const network = readFileSync(
+    new URL("../stacks/con01/cline-kanban/cline-kanban.network", import.meta.url),
     "utf8",
   );
 
   assert.match(app, /Environment=CLINE_ROLE=app/);
+  assert.match(app, /Network=cline-kanban\.network/);
   assert.doesNotMatch(app, /EnvironmentFile=/);
+  assert.doesNotMatch(app, /PublishPort=/);
+  assert.doesNotMatch(app, /Pod=/);
+  assert.match(entrypoint, /kanban --host 0\.0\.0\.0 --port 3485/);
   assert.match(proxy, /Environment=CLINE_ROLE=proxy/);
+  assert.match(proxy, /Network=cline-kanban\.network/);
   assert.match(proxy, /EnvironmentFile=%h\/\.config\/secrets\/cline-kanban\.env/);
   assert.doesNotMatch(proxy, /Volume=.*\.local\/share\/cline-kanban\/data/);
-  assert.match(pod, /PublishPort=100\.72\.146\.39:3484:3484\/tcp/);
-  assert.doesNotMatch(app, /PublishPort=/);
-  assert.doesNotMatch(proxy, /PublishPort=/);
+  assert.match(proxy, /PublishPort=100\.72\.146\.39:3484:3484\/tcp/);
+  assert.doesNotMatch(proxy, /Pod=/);
+  assert.match(network, /NetworkName=cline-kanban/);
+  assert.match(proxySource, /BACKEND_HOST = "cline-kanban"/);
+  assert.equal(
+    existsSync(new URL("../stacks/con01/cline-kanban/cline-kanban.pod", import.meta.url)),
+    false,
+  );
 });
