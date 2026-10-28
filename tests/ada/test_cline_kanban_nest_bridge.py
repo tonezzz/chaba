@@ -1,7 +1,9 @@
 import importlib.util
+import subprocess
 import unittest
 from pathlib import Path
 
+import yaml
 
 BRIDGE_PATH = (
     Path(__file__).parents[2]
@@ -62,6 +64,17 @@ class ClineKanbanNestBridgeTests(unittest.TestCase):
         }))
         self.assertFalse(bridge.should_start_task({"column": "review"}))
         self.assertFalse(bridge.should_start_task({"column": "trash"}))
+
+    def test_pack_shell_prelude_runs_under_posix_sh(self):
+        pack_path = Path(__file__).parents[2] / (
+            "scripts/colab/packs/cline-kanban-nest-bridge/pack.yml"
+        )
+        pack = yaml.safe_load(pack_path.read_text(encoding="utf-8"))
+        prelude = pack["run_sh"].splitlines()[0]
+        result = subprocess.run(
+            ["/bin/sh", "-c", prelude], capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_create_command_pins_local_provider_and_disables_auto_review(self):
         args = bridge.create_args(bridge.validate_spec(self.task_spec()))
