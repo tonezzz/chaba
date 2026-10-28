@@ -1,7 +1,7 @@
 id: mcp-structured-files-tool
 title: 'mcp-debug structured filesystem tools: list/stat/search instead of shell strings'
 column: doing
-updated: 2026-10-28 13:58
+updated: 2026-10-28 14:06
 brief: Add typed read-only filesystem tools so agents request list/stat/search with parameters and receive stable
   JSON instead of generating shell commands like ls -la.
 priority: high
@@ -41,6 +41,11 @@ comms:
   text: 'impl done + verifier GREEN 36/36: files_agent.py (shipped remote agent), files.py tool layer, 4 tools wired
     in server.py, ssot files: limits, lane_gate READONLY_MCP_TOOLS updated (mcp_raw still gated). Next: 30-task
     bench vs raw shell'
+- at: 2026-10-28 14:06
+  from: devin
+  text: 'DONE: 4 tools implemented+verified (39/39) + benchmarked. reports/mcp-files-bench-2026-10-28.md — fidelity
+    1.00 vs 0.67 raw, recall 1.00 vs 0.99, parse 100%, but ~2.4x tool tokens (objects; 1.6x in opt-in rows mode)
+    and +38ms local latency. Verdict: correct/safe beats terse-but-lossy for agent fs reads. Job record docs/ssot/jobs/mcp-tools/2026-10-28-mcp-structured-files.yml'
 action:
   type: dispatch
   status: running
