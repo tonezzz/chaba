@@ -1,0 +1,11 @@
+[Unit]
+# Declared, not armed — enable --now nest-queue-health.timer on tony-dell to
+# start the ada-nest queue mirror for the Node-RED DevNest map (card
+# node-red-devnest-visual-map, job doc
+# docs/ssot/jobs/devnest/2026-10-28-node-red-devnest-map.yml).
+Description=Snapshot ada-nest Drive queue -> ~/var/chaba/health/nest-queue-status.json
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-health.py --quiet
+TimeoutStartSec=150

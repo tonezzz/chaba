@@ -1,0 +1,85 @@
+title: Node-RED DevNest visual map — Phase 1 observe flow
+subtitle: Read-only specialist flow -> CMS page devnest-visual-map; fixes the
+  nodred-live-demo wrong-bank bug found on the way
+icon: map
+version: 1
+card: node-red-devnest-visual-map
+dispatch: 20261028-223744-phase-1-read-only-build-a-flow
+runner: idc02
+date: 2026-10-28
+
+planning:
+  goal: >-
+    Phase 1 read-only: a Node-RED flow that polls board-api /health + /cards,
+    the ada-nest queue heartbeat, JEV lane/runner status, Colab/Omen status,
+    and emits a visual report. Phase 2 (later): allowlisted board-api writes
+    (queue/hold/request) behind confirmation — never shell/restart/delete/
+    deploy from Node-RED.
+  scope: >-
+    In: flow JSON in-repo, queue-heartbeat mirror producer, declared systemd
+    pair, job doc, live-data verification of every polled endpoint. Out:
+    deploying the flow (editor import is the documented preview path),
+    Phase-2 write nodes, any host service changes.
+
+processing:
+  status: done
+  findings:
+    - >-
+      nodred-live-demo froze on 2026-10-13 because the demo flow POSTs to
+      mddb :11023 but ada-cms-pages moved to the CMS fork :11027 in the
+      mddb split — the flow still runs and writes every 5 min, just to the
+      wrong bank. Repo copy of flows-cms-live-report.json patched to :11027;
+      re-import revives the page.
+    - >-
+      Node-RED container mounts: /home/tony/.local/share/nodered->/data and
+      /home/tony/var/chaba/health->/var/chaba-health (RO, runtime-added —
+      not in the quadlet). Drive queue files are NOT reachable from inside
+      the container; the health-dir mirror file is the clean read path.
+    - >-
+      Verified live from tony-dell: board-api :10000/health+/cards (200),
+      JEV lanes idc03:8778 + idc02:8777 + omen:8777+8778 (all up),
+      ollama omen:11434 (200), litellm :4000 liveliness (200),
+      mddb-cms :11027 (healthy).
+    - >-
+      Queue state at snapshot: heartbeat ~25m old (state flush-settle),
+      runner.id absent (clean exit), lease epoch 34, 9 managed runtime
+      sessions, freshest 12f47b46 T4 ~2.5m old => verdict idle-runtime;
+      58 packs, 57 done, 1 pending.
+    - >-
+      cards.json 'generated' is ICT local time (not UTC); specialists must
+      not append 'Z' when computing render age.
+    - >-
+      GET /apps/node-red/flows returned 200 with an empty body — unverified
+      whether adminAuth protects the admin API. Worth checking before
+      exposing the editor wider.
+  artifacts:
+    - stacks/tony-dell/node-red/flows-devnest-map.json (new tab,
+      33 nodes, 14 specialist facts)
+    - scripts/ops/nest-queue-health.py (light queue snapshot; heavy audit
+      remains nest-queue-status.py)
+    - systemd/nest-queue-health.{service,timer} (declared, NOT armed)
+    - stacks/tony-dell/node-red/flows-cms-live-report.json (11023->11027,
+      host text fix)
+    - >-
+      one-shot mirror landed on tony-dell at
+      ~/var/chaba/health/nest-queue-status.json (stale within minutes
+      unless the timer is armed)
+
+followup:
+  preview_path: >-
+    Node-RED editor https://tony-dell.taila0626a.ts.net:8080/apps/node-red/
+    -> menu -> Import -> stacks/tony-dell/node-red/flows-devnest-map.json
+    -> Deploy. Page: https://idc03.taila0626a.ts.net/cms/#/devnest-visual-map
+  arm_timer: >-
+    To keep the nest-queue fact fresh past the one-shot file:
+    install systemd/nest-queue-health.{service,timer} into
+    ~/.config/systemd/user/ on tony-dell and
+    `systemctl --user enable --now nest-queue-health.timer`
+  phase2_contract: >-
+    Allowlisted board-api writes only: POST /action {do:queue|hold},
+    POST /request — each behind a manual confirmation inject node.
+    No /card create, /action move|close|finish|claim|retry, and never
+    exec/shell/restart/delete/deploy nodes. Encoded in the flow tab info.
+  open_question: >-
+    Same fix is needed in the DEPLOYED demo flow — it still POSTs :11023;
+    re-import the repo copy to unfreeze nodred-live-demo.
