@@ -1,0 +1,27 @@
+id: devin-executor-model-routing
+title: Separate Devin CLI model IDs from LiteLLM lane aliases
+column: backlog
+updated: 2026-10-28 07:05
+brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
+  `devin --model` or silently enable paid frontier.
+tags:
+- devin
+- runner
+- models
+- routing
+spec: 'Fix the executor/model-ID mismatch found in the tony-macbook Cline/Nest implementation dispatch. `dispatch_repos.py`
+  and `runner-agent.py` currently map lanes to LiteLLM IDs (`litellm/gemini-3.5-flash-lite`, `litellm/or-claude-fable-5.1`),
+  while `devin-dispatch.sh` passes `DEVIN_MODEL` directly to `devin --model`; the MacBook CLI rejected the `litellm/`
+  alias before inference.
+
+
+  Goal: make model routing executor-aware. Devin CLI receives only IDs accepted by `devin models list`; LiteLLM
+  aliases go only to a compatible executor (e.g. OpenCode/proxy). Add a preflight/test that rejects unsupported
+  model strings before systemd-run and prove it with mocked CLI output. Keep free and paid lanes distinct. Do not
+  silently map `paid_frontier` to a billable model; paid route requires explicit budget approval. For this Cline
+  pilot, local qwen3:4b via the Nest adapter is the no-token-cost route after PR #45 deploy.'
+ref: DEV-0958
+comms:
+- at: 2026-10-28 07:05
+  from: tony
+  text: card captured via board-api
