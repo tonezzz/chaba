@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-28 09:32
+updated: 2026-10-28 09:38
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -49,3 +49,10 @@ comms:
     VRAM and gap-lease checks; 15 minutes was only a proposed regular-pack cutoff, not an existing policy. I recommend
     formalizing two classes separately: durable low-resource queue packs vs ephemeral gap packs. Current inventory
     counts use resource-only small = gpu<=3GB + disk<=4GB; ti'
+- at: 2026-10-28 09:38
+  from: devin
+  text: '[procedure written 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state` on
+    branch `docs/colab-small-job-dispatch` (local commit `e5161664a`). It distinguishes durable queue packs from
+    gap packs, defines offline/stale, fresh-idle, warming, running, and drained handling, and recommends not cold-starting
+    a T4 for CPU-only work. Existing `gap-packs/PROCEDURE.md` remains the source for opportunistic prep-window jobs.
+    Commit is local/unpushed; full SSOT validator still ha'
