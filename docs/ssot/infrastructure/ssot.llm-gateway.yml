@@ -28,7 +28,8 @@ auth:
     2026-10-14: ada-ha-tony + ada-pi-pwa on LITELLM_KEY_CHABA,
     ada-ha-michael on LITELLM_KEY_MICHAEL, ada-kk on LITELLM_KEY_KK,
     dev lanes on LITELLM_KEY_BENCH, mddb-gemini.env on
-    LITELLM_KEY_MDDB. LITELLM_KEY_ADA is now an unused spare.
+    LITELLM_KEY_MDDB. LITELLM_KEY_ADA is held by interactive opencode
+    sessions (tony-macbook/tony-dell) — no longer a spare.
   live_keys: >-
     GEMINI_API_KEY per ada env: prod voice lanes (ada-ha-tony, ada-kk,
     ada-pi-pwa, ada-ha-michael, + relays sharing ada-ha-tony.env) run
@@ -45,15 +46,28 @@ auth:
 budgets:
   proxy_cap: "$50 / 30d (litellm_settings.max_budget — absolute ceiling)"
   keys:
-    LITELLM_KEY_ADA: "$10 / 30d — SPARE since 2026-10-14 (was shared
-      tony/michael/pwa/mddb; all moved to per-lane keys)"
-    LITELLM_KEY_CHABA: "$5 / 30d — tony lane REST (ada-ha-tony +
-      ada-pi-pwa) + chaba batch jobs"
-    LITELLM_KEY_MICHAEL: "$5 / 30d — michael lane REST (minted 2026-10-14)"
-    LITELLM_KEY_MDDB: "$10 / 30d — gemini-ollama-proxy + ada-embed-bench
-      (minted 2026-10-14; was riding LITELLM_KEY_ADA)"
-    LITELLM_KEY_BENCH: "$2 / 30d — benchmark runs + dev lanes"
-    LITELLM_KEY_KK: "$5 / 30d — kk lane side-tools (minted 2026-10-12, wired into ada-kk.env ADA_GEMINI_REST_API_KEY)"
+    LITELLM_KEY_ADA: "live $30 / 30d (documented $10) — opencode/eval key
+      (tony-macbook, tony-dell); raised 2026-10-24 during ai-workforce-eval"
+    LITELLM_KEY_CHABA: "live $20 / 30d (documented $5) — tony lane REST
+      (ada-ha-tony + ada-pi-pwa) + chaba batch jobs; raised 2026-10-24
+      after 422 storm during eval runs"
+    LITELLM_KEY_MICHAEL: "live $5 / 30d (matches) — michael lane REST"
+    LITELLM_KEY_MDDB: "live $10 / 30d (matches) — gemini-ollama-proxy,
+      ada-embed-bench, board-api /lesson translation"
+    LITELLM_KEY_BENCH: "live $2 / 30d (matches) — benchmark runs + dev lanes"
+    LITELLM_KEY_KK: "live $5 / 30d (matches) — kk lane side-tools"
+  live_audit: >-
+    2026-10-28 (card model-key-usage-control): LiteLLM_AuditLog is EMPTY
+    — proxy audit logging off, cap changes attributable only via journal
+    (POST /key/update 09:08 + 14:07 on 2026-10-24, right after chaba
+    422s during OpenCode Fable-5.1 eval burns ~$27.5 across chaba+ada).
+    keys ada/chaba/mddb/michael have models={} (unrestricted model
+    access); only bench/kk are allowlisted. Live config.yaml drifts
+    from repo: or-claude-fable-5.1, omen/colab/groq legs, groq legs in
+    voice-aux+classify chains, custom_callbacks — never written back.
+    Policy decision pending: codify live caps vs revert post-reset.
+    Report: docs/reports/2026-10-28-model-key-usage-audit.md.
+    Near-cap monitor: scripts/litellm/budget-watch.py (timer pending).
   note: OR weekly key rotation (rotate-or-key.sh) also updates OPENROUTER_API_KEY in mddb-gemini.env — mounted into the litellm container; restart litellm after rotation.
 
 providers:

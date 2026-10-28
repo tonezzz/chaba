@@ -189,7 +189,8 @@ def classify_situation_intent(text):
             CLASSIFY_PROMPT.format(text=text),
             model=os.environ.get("WCS_CLASSIFY_MODEL", "chat-local"),
             temperature=0, max_tokens=8, timeout=90,
-            label="wp-comment-classify")
+            label="wp-comment-classify",
+            tags="service=wp-comment-sync,job=wp-comment-sync,route=intent_classify")
     except Exception as e:
         print(f"  classify failed: {e}", file=sys.stderr)
         return None

@@ -1,0 +1,75 @@
+title: Model key usage audit — non-Live call inventory + budget reconciliation
+subtitle: direct-key bypasses classified, cap-change evidence chain, near-cap watcher + request-metadata contract shipped
+icon: shield
+version: 1
+
+card: model-key-usage-control
+ref: SEC-0962
+date: 2026-10-28
+dispatch: 20261028-133721-audit-non-live-model-calls-and
+report: docs/reports/2026-10-28-model-key-usage-audit.md
+
+question: |
+  Audit non-Live model calls and key budgets. Board-api /lesson Thai
+  translation bypassed LiteLLM SpendLogs via gemini_rest's direct-Google
+  default + missing GEMINI_BASE_URL. Live VerificationToken caps diverged
+  from SSOT (chaba $20 vs $5, ada $30 vs $10, bench over $2). No cap or
+  routing changes without owner policy.
+
+findings: |
+  1. Non-Live text inventory: metered = ada REST side-calls (per-lane
+     virtual keys + lane/tool/session tags), board-api /lesson
+     (free-only route, mddb key), wp-news-digest, wp-comment-sync,
+     kanban-brief, embed lanes, evals on bench/chaba/ada keys.
+     Unmetered = devin-bank-distill (chaba-paid.env PAID, no
+     GEMINI_BASE_URL), ada-memory-distill (backend.env PAID),
+     backlog-spec-enrich (PAID), ada-lesson-miner (FREE),
+     wp-news-digest Thai/synth fallback legs (PAID), yomi-api, ops
+     manual tools, probes (by design). Gemini Live WS + Edge TTS out of
+     scope per spec.
+  2. Budgets: LiteLLM_AuditLog EMPTY (audit logging off). Journal shows
+     POST /key/update 2026-10-24 09:08+14:07 local, right after chaba
+     $5-cap 422s during ai-workforce-eval opencode burns (~$27.5
+     chaba+ada via or-claude-fable-5.1, requester tony-dell). Caps
+     raised live, never written to SSOT. ada key actively serves
+     opencode from tony-macbook — "spare" doc was wrong.
+  3. keys ada/chaba/mddb/michael have models={} (unrestricted model
+     access — any holder can burn paid legs). Live litellm config.yaml
+     drifts from repo (fable/omen/colab/groq legs, custom_callbacks).
+  4. No virtual-key budget watcher existed; daily-ledger published
+     hardcoded stale caps.
+
+shipped: |
+  - scripts/ada/gemini_rest.py + litellm_chat.py: tags/litellm_metadata
+    params -> x-litellm-tags + x-litellm-metadata headers, gateway
+    bases only (never sent to direct Google).
+  - Call-site tags: board-api, news-digest, wp-comment-sync,
+    kanban-brief (service/job/route).
+  - scripts/litellm/budget-watch.py (new): VerificationToken near-cap
+    watcher, >=80% warn / >=100% alert / uncapped note, LINE+ops-event+
+    incident sinks, --selftest/--dry-run/--json. Live-smoked on idc03
+    -> verdict alert (bench at cap 422ing, chaba 99%).
+  - daily-ledger.py: live budget table replaces stale hardcoded caps.
+  - tests/litellm/test_budget_watch.py + tests/ada/test_litellm_tags.py
+    (23 cases); 44 unittest green.
+  - board-api /lesson free-only contract already shipped+verified via
+    PR47 (gemini-3.5-flash-lite-free, no paid fallback, EN degrade).
+
+pending_owner: |
+  1. Cap policy: codify live (chaba $20, ada $30) into SSOT vs revert
+     to $5/$10 after 2026-11-01 reset.
+  2. Flip direct batch jobs onto gateway (env-only): devin-bank-distill,
+     ada-memory-distill, ada-lesson-miner, backlog-spec-enrich,
+     wp-news-digest fallback legs, yomi-api.
+  3. Write back or prune live litellm config drift.
+  4. Restrict models={} keys to needed classes.
+  5. Enable LiteLLM audit logging (store_audit_logs).
+  6. Install budget-watch timer.
+
+verification: |
+  python3 -m unittest tests.litellm.test_budget_watch
+    tests.ada.test_litellm_tags tests.ada.test_gemini_rest
+    tests.board.test_board_api_mutations  # 44 tests OK
+  ssh idc03 'python3 - --dry-run' < scripts/litellm/budget-watch.py
+    # verdict: alert — bench 100%, chaba 99% warn
+  python3 scripts/litellm/budget-watch.py --selftest

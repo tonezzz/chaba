@@ -59,8 +59,14 @@ def chat(prompt: str | None = None, *, messages: list | None = None,
          model: str = DEFAULT_MODEL, temperature: float = 0.2,
          max_tokens: int = 1024, timeout: int = 90,
          url: str | None = None, key: str | None = None,
-         env_file: str | None = None, label: str = "litellm") -> str | None:
-    """One /chat/completions call -> assistant text or None."""
+         env_file: str | None = None, label: str = "litellm",
+         tags: str | list | None = None,
+         litellm_metadata: dict | None = None) -> str | None:
+    """One /chat/completions call -> assistant text or None.
+
+    tags/litellm_metadata stamp SpendLogs rows via the proxy's
+    x-litellm-* headers (same contract ada gemini_pool uses) — e.g.
+    tags="service=news-digest,job=wp-news-digest,route=en_synth"."""
     if messages is None:
         messages = [{"role": "user", "content": prompt or ""}]
     if not (url and key):
@@ -72,11 +78,18 @@ def chat(prompt: str | None = None, *, messages: list | None = None,
     data = json.dumps({"model": model, "messages": messages,
                        "temperature": temperature,
                        "max_tokens": max_tokens}).encode()
+    headers = {"Authorization": f"Bearer {key}",
+               "Content-Type": "application/json"}
+    if tags:
+        headers["x-litellm-tags"] = (
+            tags if isinstance(tags, str)
+            else ",".join(str(t) for t in tags))
+    if litellm_metadata:
+        headers["x-litellm-metadata"] = json.dumps(litellm_metadata)
     try:
         req = urllib.request.Request(
             url.rstrip("/") + "/chat/completions", data=data,
-            headers={"Authorization": f"Bearer {key}",
-                     "Content-Type": "application/json"})
+            headers=headers)
         with urllib.request.urlopen(req, timeout=timeout) as r:
             d = json.loads(r.read())
         return (d["choices"][0]["message"].get("content") or "").strip() or None

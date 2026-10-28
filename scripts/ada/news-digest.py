@@ -344,12 +344,14 @@ def _translate_th(brief, key):
     out = litellm_chat.chat(
         PROMPT_TH.format(brief=brief), model="summary",
         temperature=0.2, max_tokens=400, timeout=90,
-        label="news-digest-th")
+        label="news-digest-th",
+        tags="service=news-digest,job=wp-news-digest,route=brief_th")
     if out:
         return out
     return gemini_rest.generate(
         PROMPT_TH.format(brief=brief), MODEL, key=key,
-        label="news-digest-th") or ""
+        label="news-digest-th",
+        tags="service=news-digest,job=wp-news-digest,route=brief_th") or ""
 
 
 def synthesize(members, key):
@@ -366,7 +368,8 @@ def synthesize(members, key):
             PROMPT_LOCAL.format(n=min(len(members), 8),
                                 items=_payload(members[:8], 400)),
             model=DIGEST_LLM, temperature=0.2, max_tokens=600,
-            timeout=600, label="news-digest")
+            timeout=600, label="news-digest",
+            tags="service=news-digest,job=wp-news-digest,route=en_synth")
         if out:
             out["brief_th"] = _translate_th(out.get("brief") or "", key) \
                 if out.get("brief") else ""
