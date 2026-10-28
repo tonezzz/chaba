@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 16:04
+updated: 2026-10-28 16:08
 priority: medium
 tags:
 - cline-kanban
@@ -268,6 +268,13 @@ comms:
     and PR #49 opened against master. Adapter/proxy tests pass 7+7; YAML parses; GitHub syntax+validate checks are
     green so far. Waiting for mergeability and remaining CI before the approved con01 restart and free local qwen3:4b
     smoke. No hosted call or model download.'
+- at: 2026-10-28 16:08
+  from: devin
+  text: 'Next-step triage 2026-10-28: PR #49 is open; local tests and GitHub syntax/validate checks pass, but mergeability
+    is unknown. A read-only merge-tree against current master finds conflicts in the Nest adapter bridge/job spec
+    and Cline proxy/Quadlet/security files due newer network-hardening changes. Recommend port only the Nest adapter
+    onto current master, preserving master’s latest isolated proxy/stack, then rerun CI and the already-approved
+    local qwen3:4b con01 smoke. No deploy/restart done yet'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
