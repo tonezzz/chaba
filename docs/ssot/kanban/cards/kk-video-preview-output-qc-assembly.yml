@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-28 23:08
+updated: 2026-10-28 23:09
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -154,6 +154,10 @@ comms:
     it succeeded this run. Important: the full teaser reused the previous generated shots and still did NOT use
     the PDF images. `run-20261028-1524` separately passed a private image-conditioned smoke using v1_01 page 2 image-000
     + shot01 embeddings: H.264 640x384, 25 frames/1.042s'
+- at: 2026-10-28 23:09
+  from: devin
+  text: 'raised request image-aware-v2-scene-map: How should the approved v1_01 storyboard images map into the next
+    private image-aware preview? The 1-shot probe passed, '
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -205,6 +209,21 @@ requests:
   answer: 'hold-same-voice-diagnose-egress — Recommended: keep th-TH-PremwadeeNeural, stop retries for now, and
     diagnose the Edge TTS network path before retrying.'
   executed: 2026-10-28 hold
+- id: image-aware-v2-scene-map
+  ask: How should the approved v1_01 storyboard images map into the next private image-aware preview? The 1-shot
+    probe passed, but the completed 60s teaser still uses the old generated visuals.
+  status: open
+  at: 2026-10-28 23:09
+  from: devin
+  options:
+  - id: storyboard-order-v2
+    label: 'Recommended: use p2-3 as private cast-reference sheets and map storyboard images p4-39 to the existing
+      10 shots in scene-plan order; selectively rerender only the affected shots.'
+  - id: keep-v1-defer-master
+    label: Keep the completed narrated 60s preview unchanged; reserve PDF images for the later 10-minute master.
+  - id: specific-map
+    label: Provide exact PDF page-to-shot mappings; we will use only those approved pairs.
+  suggested: storyboard-order-v2
 awaiting_action: true
 action:
   status: idle
