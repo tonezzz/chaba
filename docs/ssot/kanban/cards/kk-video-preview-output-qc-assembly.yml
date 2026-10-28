@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-28 23:09
+updated: 2026-10-28 23:11
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -163,6 +163,13 @@ comms:
   text: 'pub milestone: Private Sacred Father teaser v1 completed; image probe passed — The managed Colab run-20261028-1329
     completed the private narrated 60s preview: all 10 existing shots passed media QC, Thai/English SRTs and narration.mp3
     were  [evt-14377bef0bda399c]'
+- at: 2026-10-28 23:11
+  from: devin
+  text: 'Voice inventory (read-only): the Sacred Father project source contains no audio. The separate idc03 LINE
+    speaker-ID corpus has 3 M4A clips under `line/user-kk` (176,249 bytes total), but no transcript/duration/clean-reference
+    verification was found. These are enrollment clips, not an approved clone-ready narrator sample. The run-20261028-1329
+    teaser used non-cloned Edge TTS `th-TH-PremwadeeNeural`; the image-material approval does not authorize cloning
+    KK''s voice. No voice clone has been made.'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
