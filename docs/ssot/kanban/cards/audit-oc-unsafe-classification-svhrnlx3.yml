@@ -1,7 +1,7 @@
 id: audit-oc-unsafe-classification-svhrnlx3
 title: 'OpenCode audit: unsafe_classification (SvHrNlX3)'
 column: backlog
-updated: 2026-10-27 20:49
+updated: 2026-10-28 13:12
 brief: /home/tony/CascadeProjects classified automatic_ok; /home/tony/.devin classified automatic_ok
 priority: high
 tags:
@@ -18,19 +18,21 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-10-27 20:49
   from: tony
-  text: 'answered the-card-opencode-audit-unsafe-59dd62: ★ Perform the audit in the chaba repository on
-    tony-dell'
+  text: 'answered the-card-opencode-audit-unsafe-59dd62: ★ Perform the audit in the chaba repository on tony-dell'
 - at: 2026-10-27 20:49
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-28 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-28 13:12
+  from: tony
+  text: queued for processing
 requests:
 - id: the-card-opencode-audit-unsafe-59dd62
   ask: 'The card ''OpenCode audit: unsafe_classification (SvHrNlX3)'' requires an audit of an ''unsafe_classification''
-    flag or feature, but lacks any specification regarding which host, repository, or codebase this audit
-    should be performed against.'
+    flag or feature, but lacks any specification regarding which host, repository, or codebase this audit should
+    be performed against.'
   options:
   - ★ Perform the audit in the chaba repository on tony-dell
   - Perform the audit in the ada-voice repository on tony-dell
@@ -39,9 +41,11 @@ requests:
   at: 2026-10-27 19:20
   from: backlog-spec-enrich
   answer: ★ Perform the audit in the chaba repository on tony-dell
-awaiting_action: true
-spec: Perform the audit of unsafe_classification in the chaba repository on tony-dell, as explicitly directed
-  by tony in the recent comms. The goal is to review code or configurations related to unsafe classification
-  for security and correctness. Constraints include operating strictly within the specified repository
-  and host environment without introducing unvetted external dependencies. The verifiable done-condition
-  is a completed audit report committed or documented in the chaba repository on tony-dell.
+spec: Perform the audit of unsafe_classification in the chaba repository on tony-dell, as explicitly directed by
+  tony in the recent comms. The goal is to review code or configurations related to unsafe classification for security
+  and correctness. Constraints include operating strictly within the specified repository and host environment without
+  introducing unvetted external dependencies. The verifiable done-condition is a completed audit report committed
+  or documented in the chaba repository on tony-dell.
+action:
+  type: dispatch
+  status: queued
