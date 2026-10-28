@@ -1,0 +1,26 @@
+id: local-llm-model-cache-transfer
+title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
+column: backlog
+updated: 2026-10-28 22:06
+brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
+  reuse them across lanes.
+priority: high
+program: devnest
+tags:
+- model-cache
+- kk-mac
+- ollama
+- idc03
+- con01
+spec: Use idc03 or con01 as a download/cache host rather than repeatedly downloading from KK-Mac. Prefer a content-addressed
+  GGUF/Ollama blob cache with model name, quantization, source URL, sha256, byte size, license, created_at, and
+  compatibility metadata. Transfer only after checksum verification, preserve the cache on a declared data tier,
+  and import into KK-Mac Ollama/MLX without moving credentials. First candidate qwen3:0.6b for runtime smoke, then
+  qwen3:8b or a coder model after benchmark. Reuse cache for other Mac/fleet workers. Keep incomplete downloads
+  quarantined; never expose model URLs/tokens in chat. Measure download time, transfer time, disk use, load time,
+  tokens/sec, and verifier quality.
+ref: OPS-0969
+comms:
+- at: 2026-10-28 22:06
+  from: devin
+  text: card captured via board-api
