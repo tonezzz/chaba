@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-28 13:42
+updated: 2026-10-28 14:45
 priority: medium
 tags:
 - cline-kanban
@@ -61,6 +61,13 @@ comms:
 
 
     NEST-ADAPTER DESIGN'
+- at: 2026-10-28 14:45
+  from: devin
+  text: 'STATUS UPDATE (2026-10-28): the stalled triage is resolved — all work continued under KNB-0932 (adapter
+    PR #45 merged, now DEPLOYED on con01 and verified). Auth finding from this morning is also resolved: the new
+    proxy enforces BasicAuth BEFORE the app, so unauthenticated / now 401s (stricter than the old contract). The
+    app''s own passcode was disabled (--no-passcode, upstream flag patched) — the proxy is the declared auth layer;
+    app :3485 unpublished on private bridge. First end-to-end smoke ran'
 requests:
 - id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
   ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3
