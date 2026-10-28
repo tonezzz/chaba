@@ -1,7 +1,7 @@
 id: nest-vs-legacy-queue-benchmark
 title: Benchmark Nest queue workers against legacy scheduled jobs
-column: backlog
-updated: 2026-10-28 15:36
+column: review
+updated: 2026-10-28 21:28
 brief: Measure Ada Nest pack/worker queue against existing systemd/dispatcher execution and classify which jobs
   should migrate, remain scheduled, or use card-dispatch.
 priority: high
@@ -24,3 +24,40 @@ comms:
 - at: 2026-10-28 15:36
   from: devin
   text: card captured via board-api
+- at: 2026-10-28 21:26
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 21:27
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 21:27
+  from: idc02
+  text: claimed
+- at: 2026-10-28 21:27
+  from: chaba
+  text: started devin-task-20261028-212709-build-a-matched-a-b-benchmark- on idc02 (dispatch)
+- at: 2026-10-28 21:28
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261028-212709-build-a-matched-a-b-benchmark-.service:
+    Main process exited, cod'
+- at: 2026-10-28 21:28
+  from: chaba
+  text: pushed dispatch/20261028-212709-build-a-matched-a-b-benchmark- to origin
+- at: 2026-10-28 21:28
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-28 21:28
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-212709-build-a-matched-a-b-benchmark-,
+    branch dispatch/20261028-212709-build-a-matched-a-b-benchmark-'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-212709-build-a-matched-a-b-benchmark-.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261028-212709-build-a-matched-a-b-benchmark-.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}

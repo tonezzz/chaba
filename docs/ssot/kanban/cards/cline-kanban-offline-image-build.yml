@@ -1,7 +1,7 @@
 id: cline-kanban-offline-image-build
 title: Resolve Cline shutdown-guard image build blocker
-column: backlog
-updated: 2026-10-28 20:40
+column: done
+updated: 2026-10-28 21:27
 brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
   not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
 priority: high
@@ -49,3 +49,26 @@ comms:
 
     Options: (1) approve a one-off supervised branch-code setup using an explicitly selected non-paid model/provider,
     with Devin review (local Qwen3:4b would nee'
+- at: 2026-10-28 21:26
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 21:26
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-28 21:26
+  from: chaba
+  text: started devin-task-20261028-212652-context-pr-52-fix-cline-preser on tony-macbook (dispatch)
+- at: 2026-10-28 21:27
+  from: devin
+  text: 'Selected route 1: fetched public kanban@0.1.70 during the locked image build, deployed the merged PR #52
+    shutdown guard, and verified con01. OpenCode was not dispatched. Current image is localhost/cline-kanban:0.1.70;
+    rollback image remains localhost/cline-kanban:0.1.70-pre-shutdown-guard. Stack preflight PASS, app/proxy/network
+    active, WebSocket 101. No new model task or inference was run.'
+- at: 2026-10-28 21:27
+  from: devin
+  text: moved doing -> done
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+claim: {}
