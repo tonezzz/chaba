@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 08:33
+updated: 2026-10-28 13:57
 priority: medium
 tags:
 - cline-kanban
@@ -248,6 +248,13 @@ comms:
 - at: 2026-10-28 08:33
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:57
+  from: devin
+  text: '2026-10-28 continuation: the network-isolated Quadlet change is committed on the feature branch (700cba7);
+    proxy tests 7/7 and Nest adapter tests 7/7 pass. I created a separate integration worktree and merged current
+    origin/master without conflicts. Full SSOT validation repeatedly fails while writing /tmp/ssot-validate-batch.py
+    (errno -122); I have not bypassed it. con01 currently reports only the private network unit active, with no
+    Cline containers/listener; no deployment or model call has occ'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
