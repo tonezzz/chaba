@@ -1,7 +1,7 @@
 id: cline-kanban-offline-image-build
 title: Resolve Cline shutdown-guard image build blocker
 column: done
-updated: 2026-10-28 21:33
+updated: 2026-10-28 21:38
 brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
   not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
 priority: high
@@ -73,6 +73,13 @@ comms:
     15:24:56 on image d8427f43; kanban --help inside running container confirms --skip-shutdown-cleanup is a supported
     flag of kanban@0.1.70). Rollback tags pre-shutdown-guard (9c55) and pre-pr45 (fa70) intact; no task runs by
     me. Now testing a --network=none layered rebuild FROM the preserved image to prove the fully-offline path.'
+- at: 2026-10-28 21:38
+  from: devin
+  text: 'Resolution: NO external fetch is needed for this class of change. PR #52 only changed entrypoint.sh (a
+    COPYed file); kanban@0.1.70 is unchanged and already inside the preserved image. Verified on con01: podman build
+    --network=none FROM localhost/cline-kanban:0.1.70-pre-shutdown-guard + COPY produced an image whose kanban tree
+    is byte-identical (sha256-verified) to the deployed d8427f43. Committed Containerfile.offline + regression test
+    + stack.yml minimum-access doc on branch dispatch/20261028-2'
 action:
   type: dispatch
   status: done
