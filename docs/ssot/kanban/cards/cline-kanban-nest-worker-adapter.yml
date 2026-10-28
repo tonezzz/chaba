@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 06:59
+updated: 2026-10-28 07:00
 priority: medium
 tags:
 - cline-kanban
@@ -178,6 +178,13 @@ comms:
   from: devin
   text: 'raised request after-the-approved-jack-yaml-repair-targ-bff7ce: After the approved Jack YAML repair, targeted
     validation passes, but full SSOT validation now fails on docs/ssot/jobs/ka'
+- at: 2026-10-28 07:00
+  from: devin
+  text: 'MacBook dispatch root cause is verified: the unit reached Devin CLI but passed the LiteLLM alias `litellm/or-claude-fable-5.1`,
+    which the CLI rejects. Its available list includes `claude-fable-5.1` (without the prefix), but that is a hosted
+    frontier model and I did not retry or spend. This is a runner/executor model-ID mismatch, not a MacBook hardware/PATH
+    failure. For the approved no-charge pilot, use local Cline/Ollama qwen3:4b after PR #45 is merged/deployed;
+    the broader lane mapping needs an'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
