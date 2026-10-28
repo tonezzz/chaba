@@ -1,0 +1,14 @@
+name: cline-kanban-nest-bridge
+needs:
+  disk_gb: 1
+  egress_only_ok: true
+timeout_s: 1200
+artifacts:
+  - packs/cline-kanban-nest-bridge/out/task-result.json
+  - packs/cline-kanban-nest-bridge/out/task.patch
+run_sh: |
+  set -euo pipefail
+  python3 "$PACK_DIR/bridge.py" \
+    --input "$PACK_DIR/inputs/task.json" \
+    --output "$PACK_DIR/out/task-result.json" \
+    --patch "$PACK_DIR/out/task.patch"
