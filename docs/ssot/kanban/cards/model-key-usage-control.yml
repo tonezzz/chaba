@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 12:07
+updated: 2026-10-28 12:08
 priority: high
 tags:
 - litellm
@@ -27,3 +27,19 @@ comms:
   from: tony
   text: Created from the 2026-10-28 token/key and control-plane assessment. No code, key, budget, or production
     routing changed.
+- at: 2026-10-28 12:08
+  from: devin
+  text: 'raised request board-api-translation-spend-policy: For board-api Thai lesson translation, which gateway
+    policy should we implement?'
+requests:
+- id: board-api-translation-spend-policy
+  ask: For board-api Thai lesson translation, which gateway policy should we implement?
+  status: open
+  at: 2026-10-28 12:08
+  from: devin
+  options:
+  - id: free-only
+    label: Free-only LiteLLM route; on quota exhaustion keep the lesson English-only (recommended).
+  - id: budgeted-paid
+    label: LiteLLM route may fall back to paid Gemini, but enforce a per-30d cap and alert.
+  suggested: free-only
