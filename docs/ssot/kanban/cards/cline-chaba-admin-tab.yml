@@ -54,6 +54,13 @@ comms:
   from: devin
   text: 'raised request which-chaba-admin-instance-should-receiv-b168fa: Which chaba-admin instance should receive
     the Cline tab? The live dashboard returned by HA tools and the current SSOT ar'
+- at: 2026-10-28 07:01
+  from: devin
+  text: 'Research note: Board already uses the full-page iframe convention and does not carry an API key; access
+    is through Cloudflare Access/HA admin. Do not replicate CMS iframe query-key pattern. Cline is a code-execution
+    surface, so the proxy must be operator-gated and keep its credential server-side. Cline Kanban source search
+    found no UI base-path setting; only internal /api/trpc basePath, so a dedicated root-path host is safer than
+    /chaba-admin/cline until HTTP asset and WebSocket prefix behavior '
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
