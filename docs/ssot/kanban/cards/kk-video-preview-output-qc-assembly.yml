@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-28 17:47
+updated: 2026-10-28 17:59
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -90,6 +90,12 @@ comms:
   from: devin
   text: 'raised request source-image-private-use-approval: Which v1_01 PDF image pages may be used as private visual
     references in the revised preview? Please name page numbers an'
+- at: 2026-10-28 17:59
+  from: devin
+  text: Added private contact sheets for review at `gdrive:ada-nest/packs/kk-video-c9f99fee6146-pdf-image-audit/out/contact-sheets/`
+    (original + v1_01). The v1_01 sheet shows portrait/cast-reference boards on pages 2-3 and storyboard collages
+    later; I did not identify any people or infer family identity. The page-specific visual-use request is open
+    above. No images were fed to LTX.
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
