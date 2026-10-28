@@ -1,7 +1,7 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
 column: backlog
-updated: 2026-10-28 07:01
+updated: 2026-10-28 07:30
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
 blocked_by: cline-kanban-nest-worker-adapter
@@ -61,6 +61,13 @@ comms:
     surface, so the proxy must be operator-gated and keep its credential server-side. Cline Kanban source search
     found no UI base-path setting; only internal /api/trpc basePath, so a dedicated root-path host is safer than
     /chaba-admin/cline until HTTP asset and WebSocket prefix behavior '
+- at: 2026-10-28 07:30
+  from: devin
+  text: 'Access note: the Board iframe itself has no key parameter; the only query name is `v` for cache busting.
+    Both `ada-ha` and `tony-ha` public hosts are Cloudflare Access gated. Cloudflare Access has a global SSO token
+    and per-host application tokens; adding the Cline hostname to the same Access application/policy (or same IdP/policy)
+    should avoid a manual API key, though a first-time redirect may be needed to establish the host cookie. The
+    unauthenticated Access login page refuses framing, so veri'
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
