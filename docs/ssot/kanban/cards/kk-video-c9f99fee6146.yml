@@ -1,7 +1,7 @@
 id: kk-video-c9f99fee6146
 title: KK short movie — OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf
 column: done
-updated: 2026-10-28 11:41
+updated: 2026-10-28 12:56
 brief: KK short-video intake from OST_พ่อคือสิ่งศักดิ์สิทธิ์.pdf; source sha256=c9f99fee6146867d141a7061bdfdc71c6b15d3a617308db9420b57d67efa7cd6.
   Requirements extraction and planning pending.
 priority: high
@@ -145,6 +145,13 @@ comms:
   text: 'pub alert: Sacred Father: R3 narration still blocked after Edge TTS upgrade — R3 preflight passed (0 failures,
     1 expected source-materialization warning); all 10 shots pass QC and the silent teaser is present. Edge TTS
     7.3.1 still returne [evt-b4dbb906b309db28]'
+- at: 2026-10-28 12:56
+  from: devin
+  text: '[source-image audit 2026-10-28] Verified the current preview did not use embedded images from KK''s PDF.
+    The source manifest still points to the old 39-page `OST_-.pdf` (5,011,217 bytes; SHA-256 binding unchanged),
+    and the PDF itself is not materialized in Drive. The staged preview pack fetches only shot embeddings; LTX shots
+    are text-prompt generated and the I2V continuations use generated shots 01/09 as keyframes. Drive''s project
+    assets contain the rights matrix but no extracted PDF images. Upd'
 action:
   type: dispatch
   status: done
