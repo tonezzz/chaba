@@ -64,7 +64,22 @@ comms:
     4 JEV lanes, omen-ollama, litellm, nest-queue heartbeat, ops/mcp/host health, house-pulse. Phase-2 contract
     (allowlisted queue/hold/request behind confirm) is written in the tab info, not wired. BONUS FIX: root-caused
     why nodred-live-demo froze 10-13 — the deployed demo had'
+- at: 2026-10-28 23:05
+  from: devin
+  text: 'raised request arm-the-nest-queue-health-timer-on-tony-97d3fd: Arm the nest-queue-health timer on tony-dell
+    so the queue heartbeat stays fresh (one-shot snapshot already landed; witho'
 action:
   type: dispatch
   status: running
   runner: idc02
+requests:
+- id: arm-the-nest-queue-health-timer-on-tony-97d3fd
+  ask: 'Arm the nest-queue-health timer on tony-dell so the queue heartbeat stays fresh (one-shot snapshot already
+    landed; without the timer it ages)? Options: [arm] copy systemd/nest-queue-health.{service,timer} to ~/.config/systemd/user/
+    + enable --now (recommended) / [skip] leave manual — the map just shows snap age.'
+  status: open
+  at: 2026-10-28 23:05
+  from: devin
+  options:
+  - proceed
+  - hold
