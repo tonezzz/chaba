@@ -1,7 +1,7 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
 column: backlog
-updated: 2026-10-28 22:59
+updated: 2026-10-28 23:11
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
 blocked_by: cline-kanban-nest-worker-adapter
@@ -90,6 +90,10 @@ comms:
 - at: 2026-10-28 22:59
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 23:11
+  from: devin
+  text: 'raised request cline-keyless-access-route: The live Ada HA chaba-admin dashboard has Board, but a keyless
+    Cline iframe needs a root host behind Cloudflare Access a'
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
@@ -110,4 +114,21 @@ requests:
   suggested: tony-ha-root-host
   answer: ada-ha-root-host — use the live ada-ha chaba-admin dashboard at https://ada-ha.surf-thailand.com/chaba-admin/board;
     preserve the existing Access login and put Cline in a new tab after Board.
+- id: cline-keyless-access-route
+  ask: The live Ada HA chaba-admin dashboard has Board, but a keyless Cline iframe needs a root host behind Cloudflare
+    Access and server-side Cline credential injection. The existing Cline proxy is Tailnet-only; no Cline public
+    hostname exists. Which Access setup should we use?
+  status: open
+  at: 2026-10-28 23:11
+  from: devin
+  options:
+  - id: reuse-ada-ha-policy
+    label: 'Recommended: add cline.surf-thailand.com as a Cline Access app using the same Ada HA admin allowlist/session;
+      keep Cline upstream Tailnet-only and verify direct-origin access is blocked.'
+  - id: scoped-cf-api
+    label: Provide a scoped Cloudflare API token through the secure secret manager so Devin can create the Access
+      app/policy and DNS route.
+  - id: keep-tailnet
+    label: Keep Cline Tailnet-only; do not add a seamless Ada HA iframe route.
+  suggested: reuse-ada-ha-policy
 awaiting_action: true
