@@ -1,7 +1,7 @@
 id: cline-kanban-offline-image-build
 title: Resolve Cline shutdown-guard image build blocker
 column: done
-updated: 2026-10-28 21:38
+updated: 2026-10-28 21:39
 brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
   not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
 priority: high
@@ -80,6 +80,9 @@ comms:
     --network=none FROM localhost/cline-kanban:0.1.70-pre-shutdown-guard + COPY produced an image whose kanban tree
     is byte-identical (sha256-verified) to the deployed d8427f43. Committed Containerfile.offline + regression test
     + stack.yml minimum-access doc on branch dispatch/20261028-2'
+- at: 2026-10-28 21:39
+  from: chaba
+  text: 'session-end checkpoint 7f577b59: 1 leftover file(s) committed'
 action:
   type: dispatch
   status: done
