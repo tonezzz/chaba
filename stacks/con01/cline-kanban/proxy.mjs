@@ -6,7 +6,7 @@ import {
 } from "./proxy-policy.mjs";
 
 const PUBLIC_HOST = "100.72.146.39:3484";
-const BACKEND_HOST = "127.0.0.1";
+const BACKEND_HOST = "cline-kanban";
 const BACKEND_PORT = 3485;
 const PASSCODE = process.env.CLINE_PROXY_PASSCODE?.trim();
 if (!PASSCODE || PASSCODE.length < 24) {

@@ -22,11 +22,11 @@ planning:
     - A non-empty patch and task-state JSON are verified in the remote pack directory before done.
     - No model-provider API charge, Git commit, or push occurs.
   risks:
-    - Cline Kanban's remote-mode task CLI fails; the backend must be localhost-only behind the authenticated Tailnet proxy.
+    - Cline Kanban's remote-mode task CLI fails; keep its backend on a private container bridge and publish ingress only through the authenticated Tailnet proxy.
     - The Nest worker uses podman exec to the Cline container and is therefore con01-specific in this pilot.
     - qwen3:4b is a small local model; tool use or task quality may be insufficient even though the model supports tools.
     - The smoke task consumes Omen GPU/CPU briefly through its Tailnet Ollama endpoint.
-    - The Tailnet proxy uses a separate Basic Auth secret in its own pod container; it is not mounted into the Cline agent container.
+    - The Tailnet proxy uses a separate Basic Auth secret in its own container; it is not mounted into the Cline app container.
   resources:
     - con01 rootless Podman, rclone, Nest worker, and disposable Git workspace
     - Cline Kanban v0.1.70 CLI inside the local container
@@ -67,18 +67,20 @@ processing:
       status: done
       notes: >-
         Proxy tests 7/7, Nest adapter tests 7/7, Nest pack --dry-run valid,
-        stack-preflight passes against the current live service, full SSOT
-        validation 3139 files/0 errors, and cross-references pass. Optimizer
-        reports 44 warnings; two unrelated open requests lack suggested
-        recommendations and are included in the refreshed warning baseline.
+        full SSOT validation 3218 files/0 errors, and cross-references pass.
+        Optimizer reports 45 warnings; the baseline records the two known
+        card-size warnings and the reviewed `chaba` key-alias false positive.
     - id: secure-runtime
-      label: Switch Cline backend to localhost behind a credential-gated proxy
+      label: Separate the Cline app and credential-gated proxy on a private network
       status: in_progress
       notes: >-
-        Declared a Podman pod with separate app and proxy containers. The
-        app uses pod-local loopback; the secret EnvironmentFile is attached
-        only to the proxy container. Deploy/restart and consumer verification
-        remain pending.
+        PR #45's Podman pod deployment was attempted, but con01's Podman
+        4.9.3 Quadlet generator rejects the `Pod` key in Container units.
+        Rolled back to the previous single-container unit and verified
+        Tailnet HTTP 200; application data and the rollback image were
+        retained. The follow-up uses separate app/proxy containers on the
+        existing private bridge, with no backend host port and the secret
+        mounted only in the proxy container.
     - id: configure-model
       label: Configure local Ollama provider/model without API credentials
       status: done
@@ -99,14 +101,15 @@ processing:
         Cline Kanban's CLI task API is reliable in local mode; remote-mode
         task commands fail even when host and port environment overrides are
         set. The proxy keeps the browser on Tailnet, enforces Basic Auth and
-        exact Host/Origin, and the backend port is not published. The proxy
-        runs in a separate container in the same pod. The pod shares only
-        net/IPC/UTS namespaces (not PID); the secret file is mounted into the
-        proxy container only, so the Cline agent cannot read the credential.
+        exact Host/Origin, and the backend port is not published. The app and
+        proxy run as separate containers on a dedicated rootless bridge; only
+        the proxy publishes ingress and receives the secret EnvironmentFile.
+        The Cline app container cannot read the proxy credential.
       alternatives_considered: >-
         Host networking was rejected because it would let an agent container
         reach con01 loopback services. Blind Host/Origin rewriting without an
-        external allowlist was rejected.
+        external allowlist was rejected. Quadlet `Pod=` was rejected after
+        con01's generator reported it unsupported.
     - label: Use existing local Omen qwen3:4b for one smoke task
       rationale: >-
         It is already cached, advertises tool support, and needs no model
@@ -129,25 +132,25 @@ processing:
     - file: stacks/con01/cline-kanban/Containerfile
       summary: Added a role-selecting entrypoint for the local Cline app and separate proxy container.
     - file: stacks/con01/cline-kanban/cline-kanban.container
-      summary: Moved the Cline app into a private pod without publishing its backend port.
+      summary: Put the Cline app on a private bridge without publishing its backend port.
     - file: stacks/con01/cline-kanban/cline-kanban-proxy.container
-      summary: Added a separate Basic Auth proxy container with the secret EnvironmentFile.
+      summary: Added a separate bridge-connected Basic Auth proxy that alone publishes Tailnet ingress and receives the secret EnvironmentFile.
     - file: stacks/con01/cline-kanban/proxy.mjs
       summary: Added external Basic Auth and strict Host/Origin checks, stripping auth before forwarding.
-    - file: stacks/con01/cline-kanban/cline-kanban.pod
-      summary: Added a Tailnet-only Podman pod that publishes only proxy port 3484.
+    - file: stacks/con01/cline-kanban/cline-kanban.network
+      summary: Uses a dedicated rootless bridge shared only by the app and proxy.
     - file: stacks/con01/cline-kanban/stack.yml
       summary: Declared the proxy secret and authenticated health verification.
     - file: stacks/con01/cline-kanban/verify.sh
       summary: Verified all Quadlet units and both unauthenticated/authenticated HTTP behavior.
     - file: docs/ssot/infrastructure/ssot.audit.hosts.yml
-      summary: Declared the proxy and pod units in con01 expectations.
+      summary: Declared the proxy and bridge-network units in con01 expectations.
     - file: scripts/colab/packs/cline-kanban-nest-bridge/
       summary: Added an idempotent Nest pack for one local Cline task and verified patch output.
     - file: .github/workflows/ssot.yml
       summary: Added CI coverage for Cline proxy and Nest adapter tests.
     - file: tests/test_cline_kanban_proxy.mjs
-      summary: Added Basic Auth, header stripping, and pod credential-isolation checks.
+      summary: Added Basic Auth, header stripping, network separation, and credential-isolation checks.
     - file: tests/ada/test_cline_kanban_nest_bridge.py
       summary: Added input, idempotency, provider pinning, and task-worktree selection tests.
 
@@ -163,13 +166,11 @@ followup:
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
     - >-
-      KNB-0932 publish/deploy request was answered approve-live-test. The
-      queued attempt on tony-macbook failed before execution with unknown
-      Devin model litellm/or-claude-fable-5.1; continue through the approved
-      no-paid PR path. PR #46 merged to repair the two SSOT validation
-      blockers; the PR #45 branch has merged the updated master locally.
-      Push the branch update, wait for fresh CI, then merge/deploy and run
-      the approved one-shot local Qwen smoke.
+      KNB-0932 approved the PR/deploy and one local-Qwen smoke. PR #45 and
+      support PR #46 are merged. The first con01 deployment attempt found
+      that Podman 4.9.3 rejects Quadlet `Pod=`; rollback restored the prior
+      single-container service and Tailnet HTTP 200. A no-Pod bridge-network
+      compatibility PR is in progress; redeploy and the smoke remain next.
     - >-
       OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
       its $2/30d budget. The direct-key response in the board is redacted
@@ -187,13 +188,13 @@ followup:
     Adapter code and tests are written. After the requested restart, the
     Ollama Base URL was corrected to /v1 and a local Cline request returned
     HTTP 200 (6m33s); the smoke turn was canceled before shell tools and made
-    no workspace changes. PR #46 merged the Jack YAML syntax repair and
-    required triage-audit title. The PR #45 branch now includes current
-    master locally; full SSOT validation and cross-reference checks pass.
-    Remote PR #45 remains draft at its previous head until the branch update
-    is pushed and fresh CI passes. No merge/deploy or Nest job claim has
-    occurred for PR #45. OpenRouter is blocked by the exhausted benchmark key
-    budget and the unavailable redacted key response.
+    no workspace changes. PR #45 merged, along with support PR #46. The
+    first con01 rollout failed because Podman 4.9.3's Quadlet generator
+    rejects `Pod=`; rollback restored the previous single-container unit
+    and Tailnet HTTP 200, with data and the old image retained. A private
+    bridge-network compatibility PR is being prepared. No Nest task or
+    model call has run. OpenRouter remains blocked by the exhausted
+    benchmark key budget and the unusable redacted key response.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
@@ -202,9 +203,9 @@ followup:
     - metric: pack schema dry-run
       value: valid
     - metric: SSOT validation
-      value: 3215 files, 0 errors
+      value: 3218 files, 0 errors
     - metric: SSOT optimizer warnings
-      value: 44 warnings; baseline updated for two known card-size warnings
+      value: 45 warnings; includes reviewed model-key alias false positive
     - metric: local model provider
       value: Ollama qwen3:4b at /v1; /v1/models 200; chat completion 200 in 6m33s
     - metric: OpenRouter key
@@ -212,15 +213,17 @@ followup:
     - metric: dispatch attempt
       value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
     - metric: Cline adapter PR
-      value: #46 merged; #45 branch locally updated and validated; remote update/CI pending
+      value: #45 merged at 3471df41; #46 SSOT follow-up merged at 1c9420c8
+    - metric: Quadlet compatibility
+      value: con01 Podman 4.9.3 rejects Pod=; rollback restored old unit and Tailnet HTTP 200
     - metric: Nest pack claims
       value: 0
     - metric: user Cline task
       value: Two Done cards show 404; one smoke turn returned provider HTTP 200 then was canceled; no workspace changes or commits
     - metric: service after requested restart
-      value: Active; Tailnet root HTTP 200; listener remains 100.72.146.39:3484
+      value: Prior single-container service restored and active; Tailnet root HTTP 200 on 100.72.146.39:3484
     - metric: host audit
-      value: New Cline pod/proxy units absent because local topology is not deployed; 6 unrelated failed units
+      value: Podman 4.9.3 rejected Pod= Quadlets; rollback leaves new proxy unit absent; seven unrelated failed units were observed in the last audit
     - metric: OpenRouter benchmark key
       value: 422 budget_exceeded at $2.00844621/$2.00; no inference call
   links:

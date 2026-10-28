@@ -1,14 +1,14 @@
 [Unit]
 Description=Cline Kanban authenticated Tailnet proxy (con01)
 Wants=network-online.target
-After=network-online.target
-Requires=cline-kanban.service
-After=cline-kanban.service
+After=network-online.target cline-kanban-network.service cline-kanban.service
+Requires=cline-kanban-network.service cline-kanban.service
 
 [Container]
 Image=localhost/cline-kanban:0.1.70
 ContainerName=cline-kanban-proxy
-Pod=cline-kanban.pod
+Network=cline-kanban.network
+PublishPort=100.72.146.39:3484:3484/tcp
 Environment=CLINE_ROLE=proxy
 EnvironmentFile=%h/.config/secrets/cline-kanban.env
 

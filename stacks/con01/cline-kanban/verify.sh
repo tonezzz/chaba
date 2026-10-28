@@ -6,7 +6,6 @@ set -a
 set +a
 
 systemctl --user is-active \
-  cline-kanban-pod.service \
   cline-kanban.service \
   cline-kanban-proxy.service \
   cline-kanban-network.service >/dev/null

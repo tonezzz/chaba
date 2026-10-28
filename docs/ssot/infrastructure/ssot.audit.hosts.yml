@@ -2248,31 +2248,24 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: "Disposable Cline Kanban v0.1.70 pilot via rootless Quadlet
-          stacks/con01/cline-kanban; strict-origin proxy published only on
-          tailnet 100.72.146.39:3484; proxy Basic Auth from
-          ~/.config/secrets/cline-kanban.env. No production repo or model key."
+        note: "Disposable Cline Kanban v0.1.70 app on private
+          cline-kanban.network; backend port 3485 is not published. No
+          production repo or model key."
       - name: cline-kanban-proxy.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: "Separate rootless proxy container; Basic Auth secret is not
-          mounted into the Cline agent container."
-      - name: cline-kanban-pod.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Private pod publishes only Tailnet TCP 3484; Cline backend
-          listens on pod loopback 3485."
+        note: "Separate rootless proxy container publishes only Tailnet TCP
+          3484; Basic Auth secret is mounted only here, not into the Cline
+          app container."
       - name: cline-kanban-network.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: "Dedicated rootless bridge network for the Cline Kanban pilot;
-          keeps the backend port private to its container network."
+        note: "Dedicated rootless bridge network shared only by the Cline app
+          and proxy; backend port 3485 is not published to the host."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
