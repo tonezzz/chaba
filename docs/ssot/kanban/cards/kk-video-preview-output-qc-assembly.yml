@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-28 17:46
+updated: 2026-10-28 17:47
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -86,6 +86,10 @@ comms:
     checks), completed the CPU-only PDF image audit, and correctly skipped this preview because source-image approval
     is still missing. A private text-diff pack also completed without model calls. All 10 existing shots remain
     QC-passed; no LTX rerender, voice change, or publication. Do not '
+- at: 2026-10-28 17:47
+  from: devin
+  text: 'raised request source-image-private-use-approval: Which v1_01 PDF image pages may be used as private visual
+    references in the revised preview? Please name page numbers an'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -101,4 +105,19 @@ requests:
     label: Do not reconnect; keep the silent private preview for now
   suggested: connect-t4
   answer: connect-t4 — Reconnect T4 and run Cell 1; Devin starts the queue (recommended)
+- id: source-image-private-use-approval
+  ask: Which v1_01 PDF image pages may be used as private visual references in the revised preview? Please name
+    page numbers and explicitly approve any recognizable likeness; no public use is implied.
+  status: open
+  at: 2026-10-28 17:47
+  from: devin
+  options:
+  - id: specific-pages
+    label: 'Recommended: select specific page numbers after reviewing the private extracted images; explicitly approve
+      recognizable likenesses.'
+  - id: non-identifiable-only
+    label: Use only images confirmed non-identifying; exclude portrait/reference sheets on pages 2-3.
+  - id: symbolic-only
+    label: Use no PDF images; keep the current symbolic/generated visual approach.
+  suggested: specific-pages
 awaiting_action: true
