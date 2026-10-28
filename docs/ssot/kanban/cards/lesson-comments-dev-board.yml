@@ -1,7 +1,7 @@
 id: lesson-comments-dev-board
 title: Comment → work bridge — turn WP post comments into a dev discussion board
 column: backlog
-updated: 2026-10-23 13:46
+updated: 2026-10-28 12:04
 brief: 'Tony wants comment sections on boards (lesson/CMS posts) to function as a development discussion board —
   comments become actionable threads, not just a suggestion log. Today the digest bot files comments as reference-only
   (digest:74) and nothing acts. Live demo of the target loop already ran: Tony commented images-vertical→horizontal
@@ -28,3 +28,10 @@ comms:
   text: 'Carded from chat ask on the lesson page. Phase-1 spec is the recommendation: digest-worker classification
     + board-api card creation + WP service users. Phase 2 (status badges, per-card discussion links) deferred —
     kanban stays the only trustworthy work list.'
+- at: 2026-10-28 12:04
+  from: devin
+  text: 'Verified 2026-10-28: wp-comment-sync.timer is active every 15m, but its route table has no lesson lane.
+    If a lesson comment is accepted, unknown post types fall back to digest-only, with an in-thread “Noted” ack;
+    it creates no Kanban card and never edits the lesson. The lesson-comments-dev-board Phase-1 bridge remains backlog.
+    Identity fix should use authenticated WP user_id/comment_id/post slug, dedicated least-privilege Devin/Ada WP
+    users for replies, classify to actionable/question/discussion'
