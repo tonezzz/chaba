@@ -80,6 +80,18 @@ model_list:
       model: ollama_chat/qwen2.5:7b-instruct
       api_base: http://100.123.163.11:11434
 
+  # ── OpenRouter :free tier (KNB-0932 Cline lane — zero-cost upstreams) ──
+  - model_name: or-free-nemotron-nano
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: or-free-gemma31b
+    litellm_params:
+      model: openrouter/google/gemma-4-31b-it:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
   # ── colab GPU worker (scripts/colab/colab-serve-worker.ipynb) ─────
   # ollama on a Colab T4, reverse-SSH'd onto idc03 loopback :11434 by
   # colabtun@ (nologin, permitopen-only). Ephemeral by design — when the
