@@ -1,6 +1,6 @@
 id: nest-opencode-executor-eval
 title: 'Nest executor eval: opencode as a coding-agent worker'
-column: doing
+column: review
 updated: 2026-10-28 12:55
 note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
   Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
@@ -41,7 +41,17 @@ comms:
     evals/opencode-lane/profiles/mddb-sequence/ + bounded probe scripts/devnest/mddb_probe.py + envelope jobs/p1-mddb-sequence-idc02.yaml
     + held-out verifier (recomputes every claim vs live banks). Gated S1 runs on idc02: run1 missing_artifact (flash-lite
     early-stop, correctly caught+escalat'
+- at: 2026-10-28 12:55
+  from: idc02
+  text: 'finished (ok): exit=0 `, trail in `docs/ssot/jobs/devnest/2026-10-28-nest-opencode-executor-eval.yml`,
+    tests 53/53 green. | devin-task-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 `, trail in `docs/ssot/jobs/devnest/2026-10-28-nest-opencode-executor-eval.yml`, tests 53/53 green.
+    | devin-task-20261028-124411-nest-executor-eval-opencode-as.service: Consumed 1min 9.973s CPU time, 289.2M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
