@@ -140,6 +140,7 @@ test("keeps the proxy credential out of the Cline agent container", () => {
   assert.doesNotMatch(app, /PublishPort=/);
   assert.doesNotMatch(app, /Pod=/);
   assert.match(entrypoint, /kanban --host 0\.0\.0\.0 --port 3485/);
+  assert.match(entrypoint, /--skip-shutdown-cleanup/);
   assert.match(proxy, /Environment=CLINE_ROLE=proxy/);
   assert.match(proxy, /Network=cline-kanban\.network/);
   assert.match(proxy, /EnvironmentFile=%h\/\.config\/secrets\/cline-kanban\.env/);

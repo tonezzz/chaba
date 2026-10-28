@@ -18,7 +18,7 @@ const REPO = join(__dirname, '..');
 const SSOT_DIR = join(__dirname, '..', 'docs', 'ssot');
 const CACHE_DIR = join(REPO, '.cache');
 const CACHE_FILE = join(CACHE_DIR, 'ssot-validate.json');
-const TEMP_PY = '/tmp/ssot-validate-batch.py';
+const TEMP_PY = join(CACHE_DIR, `ssot-validate-batch-${process.pid}.py`);
 
 function sha256(filePath) {
   const content = readFileSync(filePath);
@@ -341,6 +341,7 @@ function main() {
     console.log(`Found ${allFiles.length} SSOT YAML files (${toValidate.length} to validate, ${cachedResults.length} from cache)\n`);
 
     const pythonScript = buildPythonScript(toValidate);
+    if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
     writeFileSync(TEMP_PY, pythonScript, 'utf8');
 
     try {

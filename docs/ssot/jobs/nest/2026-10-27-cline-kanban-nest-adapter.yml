@@ -72,15 +72,13 @@ processing:
         card-size warnings and the reviewed `chaba` key-alias false positive.
     - id: secure-runtime
       label: Separate the Cline app and credential-gated proxy on a private network
-      status: in_progress
+      status: done
       notes: >-
-        PR #45's Podman pod deployment was attempted, but con01's Podman
-        4.9.3 Quadlet generator rejects the `Pod` key in Container units.
-        Rolled back to the previous single-container unit and verified
-        Tailnet HTTP 200; application data and the rollback image were
-        retained. The follow-up uses separate app/proxy containers on the
-        existing private bridge, with no backend host port and the secret
-        mounted only in the proxy container.
+        PR #48 replaced the unsupported Podman pod with separate app/proxy
+        containers on the private bridge. The network stack is deployed;
+        preflight passes, unauthenticated UI returns 401, authenticated UI
+        succeeds, WebSocket returns 101, and the host audit has no
+        Cline-specific delta. The proxy secret remains isolated.
     - id: ci-tool-registry
       label: Restore SSOT/server parity for the structured mcp_files tools
       status: done
@@ -103,22 +101,32 @@ processing:
       label: Stage isolated pack, claim once, and verify task/patch artifacts
       status: in_progress
       notes: >-
-        The staged task `cline-nest-smoke-20261028-093509` already exists in
-        `in_progress` with no session and no result artifacts. Reproduced the
-        runtime host gate: the adapter's 127.0.0.1:3485 setting returns 403
-        Host not allowed; 0.0.0.0:3485 lists the workspace tasks successfully.
-        The adapter also needs to invoke the idempotent `task start` command
-        for an existing in-progress task so the session is actually created.
+        Two isolated worker attempts targeted task fd918 with local
+        qwen3:4b. One Cline session completed exit_code 0 but produced no
+        tool call or expected file; no result JSON, patch, or done marker
+        exists. The retry did not create a new session. After the approved
+        app restart, Cline shutdown cleanup moved fd918, bbd43, and 62aaf to
+        Trash and removed their task worktrees; 62aaf had held the smoke file.
     - id: resume-existing-task
       label: Resume the existing disposable smoke task and publish verified artifacts
-      status: in_progress
+      status: done
       notes: >-
         Fix the adapter to call `task start` for both backlog and in_progress
         tasks. The CLI start operation is idempotent when a session is already
         running and starts the session when the task was only moved to
         in_progress. The approved task key is
         `cline-nest-smoke-20261028-093509`; Cline task fd918 already carries
-        that marker, so resume it rather than creating another smoke task.
+        that marker. Code and unit tests are merged in PRs #50 and #51; the
+        deployed task still failed to create a fresh session after its prior
+        session completed.
+    - id: preserve-task-worktrees
+      label: Prevent task worktree cleanup when the Cline app restarts
+      status: in_progress
+      notes: >-
+        The app's default shutdown cleanup moved all in-progress tasks to
+        Trash and deleted their worktrees. This branch adds the supported
+        `--skip-shutdown-cleanup` option and a regression assertion; merge
+        and deploy it before any further restart or smoke retry.
     - id: posix-shell-prep
       label: Make the pack launcher compatible with the fleet worker shell
       status: done
@@ -173,6 +181,8 @@ processing:
   changes:
     - file: stacks/con01/cline-kanban/Containerfile
       summary: Added a role-selecting entrypoint for the local Cline app and separate proxy container.
+    - file: stacks/con01/cline-kanban/entrypoint.sh
+      summary: Keep Cline task worktrees on shutdown with --skip-shutdown-cleanup.
     - file: stacks/con01/cline-kanban/cline-kanban.container
       summary: Put the Cline app on a private bridge without publishing its backend port.
     - file: stacks/con01/cline-kanban/cline-kanban-proxy.container
@@ -182,7 +192,7 @@ processing:
     - file: stacks/con01/cline-kanban/cline-kanban.network
       summary: Uses a dedicated rootless bridge shared only by the app and proxy.
     - file: stacks/con01/cline-kanban/stack.yml
-      summary: Declared the proxy secret and authenticated health verification.
+      summary: Declared the proxy secret, authenticated health verification, and shutdown-guard rollback.
     - file: stacks/con01/cline-kanban/verify.sh
       summary: Verified all Quadlet units and both unauthenticated/authenticated HTTP behavior.
     - file: docs/ssot/infrastructure/ssot.audit.hosts.yml
@@ -196,11 +206,13 @@ processing:
     - file: .github/workflows/ssot.yml
       summary: Added CI coverage for Cline proxy and Nest adapter tests.
     - file: tests/test_cline_kanban_proxy.mjs
-      summary: Added Basic Auth, header stripping, network separation, and credential-isolation checks.
+      summary: Added Basic Auth, header stripping, network separation, credential isolation, and shutdown-guard checks.
     - file: tests/ada/test_cline_kanban_nest_bridge.py
       summary: Added input, idempotency, provider pinning, and task-worktree selection tests.
     - file: scripts/colab/packs/cline-kanban-nest-bridge/pack.yml
       summary: Use POSIX shell options because fleet workers execute run_sh with /bin/sh.
+    - file: scripts/ssot-validate-all.mjs
+      summary: Use a process-specific repo-cache batch file instead of a shared /tmp path.
 
 followup:
   verification:
@@ -212,14 +224,17 @@ followup:
   rollback_plan:
     - Stop the Nest-worker one-shot and leave the Cline pilot service running.
     - Remove only the isolated gdrive:ada-nest-cline-pilot test root after separate approval.
+    - Roll back the shutdown guard with the preserved network-topology image; retain task worktrees and pilot data.
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
     - >-
-      KNB-0932 approved the PR/deploy and one local-Qwen smoke. PR #45 and
-      support PR #46 are merged. The first con01 deployment attempt found
-      that Podman 4.9.3 rejects Quadlet `Pod=`; rollback restored the prior
-      single-container service and Tailnet HTTP 200. A no-Pod bridge-network
-      compatibility PR is in progress; redeploy and the smoke remain next.
+      PRs #45, #46, #48, #50, and #51 are merged. The network-based Cline
+      stack is deployed and verified. One local qwen3:4b session completed
+      without tool output or the smoke file; the pack produced no artifacts.
+      The authorized restart triggered default shutdown cleanup, moving
+      fd918, bbd43, and 62aaf to Trash and removing their worktrees. Do not
+      start another model run until the shutdown guard is merged and Tony
+      approves a fresh-key retry.
     - >-
       OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
       its $2/30d budget. The direct-key response in the board is redacted
@@ -234,27 +249,28 @@ followup:
   status: in_progress
   completed_at: null
   summary: >-
-    Adapter code and tests are written. After the requested restart, the
-    Ollama Base URL was corrected to /v1 and a local Cline request returned
-    HTTP 200 (6m33s); the smoke turn was canceled before shell tools and made
-    no workspace changes. PR #45 merged, along with support PR #46. The
-    first con01 rollout failed because Podman 4.9.3's Quadlet generator
-    rejects `Pod=`; rollback restored the previous single-container unit
-    and Tailnet HTTP 200, with data and the old image retained. A private
-    bridge-network compatibility PR is being prepared. No Nest task or
-    model call has run. OpenRouter remains blocked by the exhausted
-    benchmark key budget and the unusable redacted key response.
+    PRs #45, #46, #48, #50, and #51 are merged. The no-Pod Cline app/proxy
+    stack is deployed and verified on con01. One isolated Nest smoke used
+    local Ollama qwen3:4b, but the Cline session completed without a tool
+    call or expected file; no result JSON or patch was published. The
+    approved restart triggered Cline's default shutdown cleanup, moving
+    three in-progress tasks to Trash and removing their worktrees; the
+      qwen2.5 smoke worktree had contained nest-cline-smoke.txt. The
+      `--skip-shutdown-cleanup` guard is in the branch and awaits deployment.
+      No
+    hosted or paid model call occurred. OpenRouter remains blocked by the
+    exhausted benchmark key and unusable redacted key response.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
     - metric: Nest adapter tests
-      value: 7 passed
+      value: 9 passed
     - metric: pack schema dry-run
       value: valid
     - metric: SSOT validation
-      value: 3218 files, 0 errors
+      value: 3230 files, 0 errors
     - metric: SSOT optimizer warnings
-      value: 45 warnings; includes reviewed model-key alias false positive
+      value: 46 warnings; one unrelated open-request recommendation warning
     - metric: local model provider
       value: Ollama qwen3:4b at /v1; /v1/models 200; chat completion 200 in 6m33s
     - metric: OpenRouter key
@@ -262,17 +278,21 @@ followup:
     - metric: dispatch attempt
       value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
     - metric: Cline adapter PR
-      value: #45 merged at 3471df41; #46 SSOT follow-up merged at 1c9420c8
+      value: #45/#46/#48/#50/#51 merged; #49 remains open with dirty merge state
     - metric: Quadlet compatibility
       value: con01 Podman 4.9.3 rejects Pod=; rollback restored old unit and Tailnet HTTP 200
     - metric: Nest pack claims
-      value: 0
+      value: Two isolated worker attempts; no done marker or artifacts
     - metric: user Cline task
-      value: Two Done cards show 404; one smoke turn returned provider HTTP 200 then was canceled; no workspace changes or commits
+      value: fd918 used Ollama qwen3:4b; session exit 0 with no tool call/file; task now Trash after restart
+    - metric: shutdown cleanup safeguard
+      value: --skip-shutdown-cleanup added in branch; pending PR and deployment
     - metric: service after requested restart
-      value: Prior single-container service restored and active; Tailnet root HTTP 200 on 100.72.146.39:3484
+      value: App/proxy/network active; preflight PASS; HTTP 401/200 and WebSocket 101 on 100.72.146.39:3484
     - metric: host audit
-      value: Podman 4.9.3 rejected Pod= Quadlets; rollback leaves new proxy unit absent; seven unrelated failed units were observed in the last audit
+      value: No Cline-specific delta; seven unrelated failed services remain
+    - metric: shutdown cleanup incident
+      value: fd918, bbd43, and 62aaf moved to Trash with worktrees removed; 62aaf smoke file lost
     - metric: OpenRouter benchmark key
       value: 422 budget_exceeded at $2.00844621/$2.00; no inference call
   links:
