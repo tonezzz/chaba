@@ -1,0 +1,26 @@
+id: opencode-standard-procedure-rollout
+title: Pilot OpenCode on bounded standard procedures
+column: backlog
+updated: 2026-10-28 15:16
+brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
+  without weakening existing gates.
+priority: medium
+tags:
+- opencode
+- procedures
+- free-lane
+- safety
+spec: Evaluate OpenCode as a supervised executor for Chaba standard procedures, building on the completed 3-job
+  free-lane pilot. Keep deterministic procedures as scripts. For tasks that need agent judgment, use a fresh task-scoped
+  session, isolated dispatch worktree, per-task tool/path allowlist, free lane by default, declared artifact plus
+  independent verifier, and token/time/intervention record. S0-S2 read-only/report/doc/small-test tasks only; production
+  changes, secrets, external publication, key/budget changes, and service restarts remain human-gated. Do not enable
+  OPENCODE_LANES fleet-wide or run OpenCode inside Colab.
+note: 'Evidence: existing supervised pilot completed 3/3 tasks with 0 intervention/escalation; reported 30–38% faster
+  and ~$0.07 list-price delta. `free-opencode` remains supervised/gated in SSOT. Colab remains the compute-pack
+  plane, not the OpenCode executor.'
+ref: OPS-0964
+comms:
+- at: 2026-10-28 15:16
+  from: tony
+  text: card captured via board-api
