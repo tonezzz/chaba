@@ -1,7 +1,7 @@
 id: audit-oc-unsafe-classification-svhrnlx3
 title: 'OpenCode audit: unsafe_classification (SvHrNlX3)'
-column: doing
-updated: 2026-10-28 13:16
+column: review
+updated: 2026-10-28 13:17
 brief: /home/tony/CascadeProjects classified automatic_ok; /home/tony/.devin classified automatic_ok
 priority: high
 tags:
@@ -49,6 +49,10 @@ comms:
     (commit f1ff8a29a). Verdict PARTIALLY REMEDIATED: F1 high — /home/tony/.devin (literal incident path) still
     classifies automatic_ok; blacklist needs whitelist + normalization + verifier floor. Fix follow-ups listed in
     report.'
+- at: 2026-10-28 13:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 hitelist roots, path normalization, verifier floor, policy lint) are listed as follow-ups.
+    | devin-task-20261028-'
 requests:
 - id: the-card-opencode-audit-unsafe-59dd62
   ask: 'The card ''OpenCode audit: unsafe_classification (SvHrNlX3)'' requires an audit of an ''unsafe_classification''
@@ -69,5 +73,9 @@ spec: Perform the audit of unsafe_classification in the chaba repository on tony
   or documented in the chaba repository on tony-dell.
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 hitelist roots, path normalization, verifier floor, policy lint) are listed as follow-ups. | devin-task-20261028-131307-perform-the-audit-of-unsafe-cl.service:
+    Consumed 37.714s CPU time over 3min 52.637s wall clock time, 684.8M memory peak.'
+review_kind: verify
+claim: {}
