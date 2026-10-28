@@ -1,7 +1,7 @@
 id: nest-opencode-executor-eval
 title: 'Nest executor eval: opencode as a coding-agent worker'
-column: backlog
-updated: 2026-10-28 12:43
+column: doing
+updated: 2026-10-28 12:44
 note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
   Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
   mddb prune/compact sequence — every step is checkable, making it an ideal eval template.'
@@ -25,6 +25,10 @@ comms:
 - at: 2026-10-28 12:43
   from: tony
   text: queued for processing
+- at: 2026-10-28 12:44
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: idc02
