@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: review
-updated: 2026-10-28 14:02
+updated: 2026-10-28 14:07
 priority: high
 tags:
 - litellm
@@ -169,6 +169,12 @@ comms:
 - at: 2026-10-28 14:02
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''cap-policy-after-audit-live-ch''] block close)'
+- at: 2026-10-28 14:07
+  from: tony
+  text: 'answered cap-policy-after-audit-live-chaba-20-30d-27f975: proceed'
+- at: 2026-10-28 14:07
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -220,12 +226,13 @@ requests:
     — usage is real (ada tony-lane REST + evals) ★ recommended; (B) revert to $5/$10 after 2026-11-01 reset; (C)
     other caps. Also ok to flip the 6 direct batch jobs (devin-bank-distill, memory-distill, lesson-miner, spec-enrich,
     news-digest fallback legs, yomi-api) onto the gateway with virtual keys (env-only, no paid fallback)?'
-  status: open
+  status: answered
   at: 2026-10-28 13:56
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 action:
   type: dispatch
   status: done
@@ -234,5 +241,8 @@ action:
     | devin-task-20261028-133721-audit-non-live-model-calls-and.service: Consumed 1min 30.647s CPU time, 244.8M
     memory peak, 0B memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-10-28 14:02
 review_kind: verify
 claim: {}
+awaiting_action: true
