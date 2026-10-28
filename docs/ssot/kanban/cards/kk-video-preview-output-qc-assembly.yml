@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
-column: doing
-updated: 2026-10-28 20:02
+column: backlog
+updated: 2026-10-28 21:18
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -134,6 +134,12 @@ comms:
 - at: 2026-10-28 20:02
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 21:18
+  from: chaba
+  text: 'answer-sweep: executed ''hold-same-voice-diagnose-egress — Recommended: keep th-TH-Pr'' -> put on hold'
+- at: 2026-10-28 21:18
+  from: chaba
+  text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -184,4 +190,7 @@ requests:
   suggested: hold-same-voice-diagnose-egress
   answer: 'hold-same-voice-diagnose-egress — Recommended: keep th-TH-PremwadeeNeural, stop retries for now, and
     diagnose the Edge TTS network path before retrying.'
+  executed: 2026-10-28 hold
 awaiting_action: true
+action:
+  status: idle
