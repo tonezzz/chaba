@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 13:22
+updated: 2026-10-28 13:23
 priority: high
 tags:
 - litellm
@@ -95,6 +95,13 @@ comms:
     I restarted only `chaba-board-api.service` under `/tmp/pfg-deploy.lock`. Service is active, local /health returned
     HTTP 200, and a harmless translation helper smoke returned nonempty. LiteLLM SpendLogs recorded the probe under
     key alias `mddb`: 48 tokens, estimated spend $0.'
+- at: 2026-10-28 13:23
+  from: devin
+  text: '[live verification 2026-10-28] `chaba-board-api.service` restarted under the shared deploy lock without
+    pulling or touching unrelated dirty files; the merged route was already in the served checkout. Service active;
+    local /health 200; deployed `_gemini_thai` helper returned nonempty via the free-only route. LiteLLM SpendLogs
+    recorded 48 tokens under `mddb`, estimated spend $0.00003860. No keys or caps changed. SEC-0962 remains open
+    for the live/SSOT budget discrepancy, near-cap alert, and more g'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
