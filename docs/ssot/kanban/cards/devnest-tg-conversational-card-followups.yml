@@ -1,0 +1,36 @@
+id: devnest-tg-conversational-card-followups
+title: Add contextual card-explain follow-ups in DevNest Telegram
+column: backlog
+updated: 2026-10-28 09:53
+brief: Let Tony ask easier, Thai, evidence, next, and why follow-ups after explaining a card without repeating the
+  card reference.
+priority: high
+program: devnest
+tags:
+- telegram
+- devnest
+- card-explain
+- conversation
+- ux
+spec: 'Improve scripts/devnest/devnest-tg-relay.py card command UX. Current explain/status accepts only anchored
+  whole-message `explain|status <exact ref>` and replies with deterministic status/phase/verified/next/ask; follow-ups
+  like ''easier'', ''in Thai'', ''what evidence?'', and ''what next?'' are refused/captured because no per-topic
+  conversation context exists. Add a durable per-topic last-card context (card id/ref, timestamp, sender) with expiry
+  and audit. Support safe read-only follow-ups: explain/status <ref>; easier/simple; in Thai; why; evidence; next/what
+  next; history; spec. If no context or ambiguous context, ask for a card ref. Fetch current board state for every
+  response; never trust cached card text. Keep APPROVE/REJECT explicit and Tony-gated; follow-ups must never mutate.
+  Add tests for exact command, context follow-up, expiry, wrong sender/topic, unknown ref, Thai/simple rendering,
+  and audit entries. Preserve General/topic routing and redaction. Verify against real OPS-0959 conversation with
+  one English summary, one simpler follow-up, one Thai follow-up, and evidence/next response.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'Live audit 2026-10-28: relay explained opencode-explicit-executor-routing, then refused follow-ups ''easier.'',
+  ''in Thai'', and ''0959 with easy language.'' Current updates/audit/conversation files are durable; the missing
+  capability is contextual follow-up routing.'
+ref: KNB-0960
+comms:
+- at: 2026-10-28 09:53
+  from: tony
+  text: card captured via board-api
