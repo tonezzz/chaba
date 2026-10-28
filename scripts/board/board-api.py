@@ -1543,7 +1543,8 @@ def _gemini_thai(html_text: str) -> str:
             "gemini-3.5-flash-lite-free", key=key,
             base_url_override=os.environ.get(
                 "BOARD_API_LITELLM_URL", "http://100.102.134.91:4000"),
-            timeout=12, max_attempts=1, label="board-api-lesson-th")
+            timeout=12, max_attempts=1, label="board-api-lesson-th",
+            tags="service=board-api,job=lesson-translation,route=free-only")
         return (th or "").strip()
     except Exception:
         return ""

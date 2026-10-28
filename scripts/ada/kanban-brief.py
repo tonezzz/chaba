@@ -223,7 +223,9 @@ def llm_why(card: dict, deadline: float | None = None) -> str:
         f"note: {card['note1'][:300]}")
     key = os.environ.get("KANBAN_BRIEF_LLM_KEY") \
         or os.environ.get("LITELLM_KEY", "")
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json",
+               "x-litellm-tags": "service=kanban-brief,"
+                                "job=chaba-kanban-brief,route=llm_why"}
     if key:
         headers["Authorization"] = f"Bearer {key}"
     try:
