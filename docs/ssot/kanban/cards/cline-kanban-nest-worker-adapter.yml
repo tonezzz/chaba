@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 16:08
+updated: 2026-10-28 16:45
 priority: medium
 tags:
 - cline-kanban
@@ -275,6 +275,13 @@ comms:
     and Cline proxy/Quadlet/security files due newer network-hardening changes. Recommend port only the Nest adapter
     onto current master, preserving master’s latest isolated proxy/stack, then rerun CI and the already-approved
     local qwen3:4b con01 smoke. No deploy/restart done yet'
+- at: 2026-10-28 16:45
+  from: devin
+  text: 'Recovery diagnosis: the approved smoke task exists as fd918 in  with no session. The pack adapter only
+    called  from backlog, so it waited forever on this orphan.  is idempotent and starts a session for in_progress
+    tasks with no running session. Fix is in PR #50 (8 adapter tests + 7 proxy tests pass locally; CI running).
+    After merge, restage the pack and resume this existing job key; no duplicate task, paid model, or service restart
+    needed.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
