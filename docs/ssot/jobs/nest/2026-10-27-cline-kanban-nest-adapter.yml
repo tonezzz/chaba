@@ -121,12 +121,13 @@ processing:
         session completed.
     - id: preserve-task-worktrees
       label: Prevent task worktree cleanup when the Cline app restarts
-      status: in_progress
+      status: done
       notes: >-
         The app's default shutdown cleanup moved all in-progress tasks to
-        Trash and deleted their worktrees. This branch adds the supported
-        `--skip-shutdown-cleanup` option and a regression assertion; merge
-        and deploy it before any further restart or smoke retry.
+        Trash and deleted their worktrees. PR #52 adds the supported
+        `--skip-shutdown-cleanup` option and a regression assertion. The
+        guard is deployed on con01; the running app command includes the
+        flag and post-deploy stack verification passes.
     - id: posix-shell-prep
       label: Make the pack launcher compatible with the fleet worker shell
       status: done
@@ -228,13 +229,15 @@ followup:
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
     - >-
-      PRs #45, #46, #48, #50, and #51 are merged. The network-based Cline
-      stack is deployed and verified. One local qwen3:4b session completed
-      without tool output or the smoke file; the pack produced no artifacts.
-      The authorized restart triggered default shutdown cleanup, moving
-      fd918, bbd43, and 62aaf to Trash and removing their worktrees. Do not
-      start another model run until the shutdown guard is merged and Tony
-      approves a fresh-key retry.
+      PRs #45, #46, #48, #50, #51, and #52 are merged. The network-based
+      Cline stack and shutdown-cleanup guard are deployed on con01. The
+      image rebuild fetched public kanban@0.1.70 from npm as Tony approved;
+      the pre-change image remains tagged for rollback. Preflight,
+      authenticated HTTP, WebSocket, and host audit verification pass.
+      One local qwen3:4b session completed without tool output or the smoke
+      file; no pack artifacts were published. The restart incident moved
+      fd918, bbd43, and 62aaf to Trash and removed their worktrees. Do not
+      start another model run without Tony's approval and a fresh job key.
     - >-
       OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
       its $2/30d budget. The direct-key response in the board is redacted
@@ -249,17 +252,17 @@ followup:
   status: in_progress
   completed_at: null
   summary: >-
-    PRs #45, #46, #48, #50, and #51 are merged. The no-Pod Cline app/proxy
-    stack is deployed and verified on con01. One isolated Nest smoke used
-    local Ollama qwen3:4b, but the Cline session completed without a tool
-    call or expected file; no result JSON or patch was published. The
-    approved restart triggered Cline's default shutdown cleanup, moving
-    three in-progress tasks to Trash and removing their worktrees; the
-      qwen2.5 smoke worktree had contained nest-cline-smoke.txt. The
-      `--skip-shutdown-cleanup` guard is in the branch and awaits deployment.
-      No
-    hosted or paid model call occurred. OpenRouter remains blocked by the
-    exhausted benchmark key and unusable redacted key response.
+    PRs #45, #46, #48, #50, #51, and #52 are merged. The no-Pod Cline
+    app/proxy stack and `--skip-shutdown-cleanup` guard are deployed and
+    verified on con01. The approved build fetched public kanban@0.1.70
+    from npm; the previous network-topology image remains as a rollback.
+    The Nest smoke did not pass: one local qwen3:4b session completed
+    without a tool call or expected file, and no result JSON or patch was
+    published. The earlier restart cleanup moved fd918, bbd43, and 62aaf
+    to Trash and removed their worktrees; 62aaf contained
+    nest-cline-smoke.txt. No new task or model call was started. OpenRouter
+    remains blocked by the exhausted benchmark key and unusable redacted
+    key response.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
@@ -278,7 +281,7 @@ followup:
     - metric: dispatch attempt
       value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
     - metric: Cline adapter PR
-      value: #45/#46/#48/#50/#51 merged; #49 remains open with dirty merge state
+      value: #45/#46/#48/#50/#51/#52 merged; #49 remains open with dirty merge state
     - metric: Quadlet compatibility
       value: con01 Podman 4.9.3 rejects Pod=; rollback restored old unit and Tailnet HTTP 200
     - metric: Nest pack claims
@@ -286,9 +289,11 @@ followup:
     - metric: user Cline task
       value: fd918 used Ollama qwen3:4b; session exit 0 with no tool call/file; task now Trash after restart
     - metric: shutdown cleanup safeguard
-      value: --skip-shutdown-cleanup added in branch; pending PR and deployment
+      value: PR #52 merged/deployed; running app command includes --skip-shutdown-cleanup
+    - metric: Cline image build
+      value: Public npm fetch of kanban@0.1.70 succeeded; pre-shutdown-guard image tag retained for rollback
     - metric: service after requested restart
-      value: App/proxy/network active; preflight PASS; HTTP 401/200 and WebSocket 101 on 100.72.146.39:3484
+      value: New image app/proxy/network active; preflight PASS; HTTP 401/200 and WebSocket 101 on 100.72.146.39:3484
     - metric: host audit
       value: No Cline-specific delta; seven unrelated failed services remain
     - metric: shutdown cleanup incident
