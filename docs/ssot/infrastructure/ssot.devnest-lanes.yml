@@ -55,6 +55,10 @@ lanes:
       ~/evals/tasks/devnest-host-assessment/ on tony-dell) runs read-only
       SSH assessments; publish_education.py upserts the WP lesson CPT via
       board-api /lesson. Same class as report-distill.py, kanban-stats.py.
+      2026-10-28: for filesystem reads on targets (artifact globs, unit
+      dirs, log dirs), prefer the structured mcp_files_list/stat/search/
+      tree tools over ad-hoc SSH shell — allowlisted, schema-stable,
+      benchmarked in reports/mcp-files-bench-2026-10-28.md.
     task_classes:
       - read-only host assessment (uptime/load/free/df/failed units/nvidia-smi)
       - fleet snapshot + audit/inventory reports

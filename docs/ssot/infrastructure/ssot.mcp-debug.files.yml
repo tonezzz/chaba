@@ -95,6 +95,61 @@ tools:
       - host must have clipboard: true in ssot.mcp-debug.capture.yml
       - all calls logged
 
+files:
+  # mcp_files_* — structured read-only filesystem tools (card
+  # mcp-structured-files-tool / OPS-0961). Server-side vetting reuses
+  # limits.allowed_path_prefixes as the per-host allowlist; the shipped
+  # agent (scripts/mcp_debug/files_agent.py) re-verifies after realpath
+  # resolution, never descends into symlinks, and flags link_escape on
+  # entries whose targets leave the allowlist.
+  tools:
+    mcp_files_list:
+      description: List one directory level as stable JSON entries.
+      input: host, path, pattern?, max_entries?, sort?, order?
+    mcp_files_stat:
+      description: Stat a single path; entries has exactly one item.
+      input: host, path
+    mcp_files_search:
+      description: Recursive fnmatch search under a path.
+      input: host, path, pattern, depth?, max_entries?, sort?, order?, kind?
+    mcp_files_tree:
+      description: Pre-order directory tree with per-entry depth.
+      input: host, path, depth?, max_entries?, sort?, order?, kind?, pattern?
+  output_schema:
+    envelope: ok, tool, host, root, resolved_root, entries, truncated, truncated_reason, errors, errors_truncated, observed_at, counts, scanned, depth, pattern, sort, order
+    entry: name, relative_path, kind, size_bytes, mtime, mode (+depth, +link_target/link_escape on symlinks)
+    kinds: [file, dir, symlink, other]
+    mtime: epoch seconds (int)
+    mode: 4-digit octal string
+    format: >-
+      objects (default) = entries as objects per entry schema above.
+      rows (opt-in) = same fields positionally: envelope gains
+      fields[...] declaring column order and entries becomes rows of
+      values — ~55-65% smaller payload for bulk listings.
+  security:
+    - path must normalize under limits.allowed_path_prefixes for the host (server-side check + remote realpath re-check)
+    - dot-dot segments, NUL bytes, and non-absolute paths are rejected
+    - symlinks are never descended; link_escape entries are flagged and recorded in errors
+    - entries/depth/output caps below are enforced remotely; hard values cannot be raised by callers
+    - read-only: no writes, no deletes; mcp_raw stays gated behind raw_commands.allowed_prefixes
+  limits:
+    max_entries:
+      default: 500
+      hard: 5000
+    max_depth:
+      default: 3
+      hard: 12
+    max_output_bytes:
+      default: 196608
+      hard: 524288
+    max_errors:
+      default: 50
+      hard: 200
+    max_scan:
+      hard: 200000
+    path_length:
+      hard: 1024
+
 limits:
   max_bytes:
     hard: 1048576

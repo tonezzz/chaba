@@ -45,6 +45,12 @@ from .capture import (
     mcp_clipboard_image_get,
 )
 from .ssot_edit import mcp_ssot_append
+from .files import (
+    mcp_files_list,
+    mcp_files_stat,
+    mcp_files_search,
+    mcp_files_tree,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -345,6 +351,74 @@ def handle_tools_list(id_):
                     "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
                 },
                 "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_files_list",
+            "description": "List one directory level on a host as stable JSON entries{name,relative_path,kind,size_bytes,mtime,mode}. Path must be inside the host's allowed roots.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Directory path inside an allowed root"},
+                    "pattern": {"type": "string", "description": "Optional fnmatch filter on entry name"},
+                    "max_entries": {"type": "integer", "description": "Cap on returned entries", "default": 500},
+                    "sort": {"type": "string", "enum": ["name", "size", "mtime", "kind"], "default": "name"},
+                    "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
+                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects", "description": "rows = compact positional arrays + fields header (~60% smaller)"},
+                },
+                "required": ["host", "path"],
+            },
+        },
+        {
+            "name": "mcp_files_stat",
+            "description": "Stat one path on a host; entries contains exactly one item with kind/size_bytes/mtime/mode.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Path inside an allowed root"},
+                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                },
+                "required": ["host", "path"],
+            },
+        },
+        {
+            "name": "mcp_files_search",
+            "description": "Recursive filename search under a path (fnmatch pattern; '/' in pattern matches relative_path). Stable JSON, depth- and entry-capped.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Root directory inside an allowed root"},
+                    "pattern": {"type": "string", "description": "fnmatch pattern, e.g. '*.log' or 'sub/*.txt'"},
+                    "depth": {"type": "integer", "description": "Levels below root", "default": 6},
+                    "max_entries": {"type": "integer", "description": "Cap on returned entries", "default": 500},
+                    "sort": {"type": "string", "enum": ["name", "size", "mtime", "kind"], "default": "name"},
+                    "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
+                    "kind": {"type": "string", "enum": ["any", "file", "dir", "symlink"], "default": "any"},
+                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                },
+                "required": ["host", "path", "pattern"],
+            },
+        },
+        {
+            "name": "mcp_files_tree",
+            "description": "Pre-order directory tree under a path with per-entry depth. Stable JSON, depth- and entry-capped.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Root directory inside an allowed root"},
+                    "depth": {"type": "integer", "description": "Levels below root", "default": 3},
+                    "max_entries": {"type": "integer", "description": "Cap on returned entries", "default": 500},
+                    "sort": {"type": "string", "enum": ["name", "size", "mtime", "kind"], "default": "name"},
+                    "order": {"type": "string", "enum": ["asc", "desc"], "default": "asc"},
+                    "kind": {"type": "string", "enum": ["any", "file", "dir", "symlink"], "default": "any"},
+                    "pattern": {"type": "string", "description": "Optional fnmatch filter on entries (dirs still descend)"},
+                    "format": {"type": "string", "enum": ["objects", "rows"], "default": "objects"},
+                },
+                "required": ["host", "path"],
             },
         },
         {
@@ -711,6 +785,55 @@ def handle_tools_call(id_, params):
         if not h or not text:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and text are required"}}
         result = mcp_clipboard_set(h, text)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_files_list":
+        p = arguments.get("path")
+        if not host or not p:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and path are required"}}
+        result = mcp_files_list(
+            host, p,
+            pattern=arguments.get("pattern"),
+            max_entries=arguments.get("max_entries"),
+            sort=arguments.get("sort", "name"),
+            order=arguments.get("order", "asc"),
+            format=arguments.get("format", "objects"),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_files_stat":
+        p = arguments.get("path")
+        if not host or not p:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and path are required"}}
+        result = mcp_files_stat(host, p, format=arguments.get("format", "objects"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_files_search":
+        p = arguments.get("path")
+        pat = arguments.get("pattern")
+        if not host or not p or not pat:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host, path, and pattern are required"}}
+        result = mcp_files_search(
+            host, p, pat,
+            depth=arguments.get("depth"),
+            max_entries=arguments.get("max_entries"),
+            sort=arguments.get("sort", "name"),
+            order=arguments.get("order", "asc"),
+            kind=arguments.get("kind", "any"),
+            format=arguments.get("format", "objects"),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_files_tree":
+        p = arguments.get("path")
+        if not host or not p:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and path are required"}}
+        result = mcp_files_tree(
+            host, p,
+            depth=arguments.get("depth"),
+            max_entries=arguments.get("max_entries"),
+            sort=arguments.get("sort", "name"),
+            order=arguments.get("order", "asc"),
+            kind=arguments.get("kind", "any"),
+            pattern=arguments.get("pattern"),
+            format=arguments.get("format", "objects"),
+        )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_preset_list":
         result = mcp_preset_list()
