@@ -1,7 +1,7 @@
 id: devin-executor-model-routing
 title: Separate Devin CLI model IDs from LiteLLM lane aliases
 column: backlog
-updated: 2026-10-28 07:30
+updated: 2026-10-28 08:32
 brief: Fix the MacBook dispatch rejection by making model IDs executor-aware; do not pass litellm/* aliases into
   `devin --model` or silently enable paid frontier.
 tags:
@@ -36,6 +36,13 @@ comms:
     is a hosted frontier lane, so it was not retried. On tony-macbook, OpenCode and Devin binaries exist under `~/.local/bin`;
     systemd manager PATH includes that directory, but `runner-agent` has no OPENCODE_LANES override and defaults
     it to 0. This supports an executor-sp'
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered for-a-no-charge-fix-i-recommend-routing-3b88fd: executor-split-no-paid — Implement executor-specific
+    mapping; free lane only, keep paid frontier gated (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: for-a-no-charge-fix-i-recommend-routing-3b88fd
   ask: For a no-charge fix, I recommend routing free_lane work through a LiteLLM-capable OpenCode executor and using
@@ -43,7 +50,7 @@ requests:
     `claude-fable-5.1` (without `litellm/`), but that is a hosted frontier lane and I have not retried it. Should
     I implement the executor split with paid_frontier still gated, or do you explicitly want Devin-native `claude-fable-5.1`
     enabled for future paid_frontier dispatches?
-  status: open
+  status: answered
   at: 2026-10-28 07:05
   from: devin
   options:
@@ -52,3 +59,6 @@ requests:
   - id: approve-fable
     label: Also permit paid Devin CLI claude-fable-5.1 for paid_frontier dispatches
   suggested: executor-split-no-paid
+  answer: executor-split-no-paid — Implement executor-specific mapping; free lane only, keep paid frontier gated
+    (recommended)
+awaiting_action: true
