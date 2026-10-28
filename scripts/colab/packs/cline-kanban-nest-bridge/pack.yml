@@ -7,7 +7,7 @@ artifacts:
   - packs/cline-kanban-nest-bridge/out/task-result.json
   - packs/cline-kanban-nest-bridge/out/task.patch
 run_sh: |
-  set -euo pipefail
+  set -eu
   python3 "$PACK_DIR/bridge.py" \
     --input "$PACK_DIR/inputs/task.json" \
     --output "$PACK_DIR/out/task-result.json" \

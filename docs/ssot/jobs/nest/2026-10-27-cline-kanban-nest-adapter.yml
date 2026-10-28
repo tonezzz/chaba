@@ -116,7 +116,17 @@ processing:
         Fix the adapter to call `task start` for both backlog and in_progress
         tasks. The CLI start operation is idempotent when a session is already
         running and starts the session when the task was only moved to
-        in_progress.
+        in_progress. The approved task key is
+        `cline-nest-smoke-20261028-093509`; Cline task fd918 already carries
+        that marker, so resume it rather than creating another smoke task.
+    - id: posix-shell-prep
+      label: Make the pack launcher compatible with the fleet worker shell
+      status: done
+      notes: >-
+        The first con01 worker pass invoked run_sh through /bin/sh and failed
+        immediately because dash rejects `set -o pipefail`. Changed the
+        prelude to POSIX `set -eu`; the failure occurred before the bridge
+        ran, so no Cline task session or model inference was started.
   decisions:
     - label: Resume an existing in-progress task through the idempotent CLI start operation
       rationale: >-
@@ -189,6 +199,8 @@ processing:
       summary: Added Basic Auth, header stripping, network separation, and credential-isolation checks.
     - file: tests/ada/test_cline_kanban_nest_bridge.py
       summary: Added input, idempotency, provider pinning, and task-worktree selection tests.
+    - file: scripts/colab/packs/cline-kanban-nest-bridge/pack.yml
+      summary: Use POSIX shell options because fleet workers execute run_sh with /bin/sh.
 
 followup:
   verification:
