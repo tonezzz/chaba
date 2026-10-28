@@ -1,0 +1,36 @@
+name: kk-mac-thai-tts-shortlist
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 120
+fetch:
+  - packs/kk-mac-thai-tts-scout/
+artifacts:
+  - packs/kk-mac-thai-tts-shortlist/out/shortlist.md
+run: |
+  import os
+  import re
+
+  source = os.path.join(
+      NEST_ROOT, "packs", "kk-mac-thai-tts-scout", "candidates.md")
+  target = os.path.join(PACK_DIR, "out", "shortlist.md")
+  os.makedirs(os.path.dirname(target), exist_ok=True)
+  text = open(source, encoding="utf-8").read()
+  rows = []
+  for line in text.splitlines():
+      if not line.startswith("| ") or line.startswith("|---"):
+          continue
+      fields = [part.strip() for part in line.strip("|").split("|")]
+      if len(fields) != 4 or fields[0] == "model":
+          continue
+      blob = " ".join(fields).lower()
+      if re.search(r"\b(thai|th|multilingual|vits|tts)\b", blob):
+          rows.append(fields)
+
+  with open(target, "w", encoding="utf-8") as fh:
+      fh.write("# KK-Mac Thai TTS shortlist\n\n")
+      fh.write(f"Filtered {len(rows)} candidates from the scout artifact.\n\n")
+      fh.write("| model | downloads | likes | tags |\n|---|---:|---:|---|\n")
+      for fields in rows[:20]:
+          fh.write("| " + " | ".join(fields) + " |\n")
+  print(f"wrote {len(rows)} shortlist candidates", flush=True)
