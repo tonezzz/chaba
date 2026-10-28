@@ -280,10 +280,12 @@ procedure, not permission to run two GPU workloads at once.
    prompt/fixture set, held-out verifier, maximum context/output, expected
    artifacts, and resource floor. Use synthetic or approved fixtures; do
    not put credentials, private user data, or production worktrees in the
-   pack. `devnest-heldout-assessment` is only a worker/queue health check,
-   not a model-quality benchmark. The DevNest replay benchmark is not a
-   pass until its safe fixtures and independent gates are frozen (OPS-0880,
-   OPS-0966).
+   pack. The five read-only S0 fixtures are frozen under
+   `evals/shadow/fixtures` (DEV-0861); their current harness measures
+   L0/OpenCode/Devin, not a Colab T4 model arm. A separate T4 model adapter
+   and verifier are required before claiming a DevNest-on-Colab model pass.
+   `devnest-heldout-assessment` is only a worker/queue health check, not a
+   model-quality benchmark.
 2. **Start with a 30-minute cap.** Set `timeout_s: 1800` for the first
    bounded model slot. Extend to `3600` only after the 30-minute run passes
    its quality and memory gates and needs more evidence. Record the backend,
