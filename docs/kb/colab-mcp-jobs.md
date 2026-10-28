@@ -283,7 +283,8 @@ procedure, not permission to run two GPU workloads at once.
    pack. The five read-only S0 fixtures are frozen under
    `evals/shadow/fixtures` (DEV-0861); their current harness measures
    L0/OpenCode/Devin, not a Colab T4 model arm. A separate T4 model adapter
-   and verifier are required before claiming a DevNest-on-Colab model pass.
+   and verifier are required before claiming a DevNest-on-Colab model pass
+   (tracked by OPS-0971).
    `devnest-heldout-assessment` is only a worker/queue health check, not a
    model-quality benchmark.
 2. **Start with a 30-minute cap.** Set `timeout_s: 1800` for the first
