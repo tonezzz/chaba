@@ -94,7 +94,13 @@ class GapRunnerCase(unittest.TestCase):
         cls.old_path = os.environ.get("PATH", "")
         os.environ["PATH"] = f"{cls.bin_dir}:{cls.old_path}"
 
-        cls.httpd = HTTPServer(("127.0.0.1", 11434), MockOllama)
+        try:
+            cls.httpd = HTTPServer(("127.0.0.1", 11434), MockOllama)
+        except OSError as exc:
+            raise unittest.SkipTest(
+                f"cannot mock ollama on :11434 ({exc}) — a real service "
+                "holds the port; run on a host without a live ollama"
+            ) from exc
         threading.Thread(target=cls.httpd.serve_forever, daemon=True).start()
 
     @classmethod

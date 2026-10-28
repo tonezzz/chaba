@@ -9,7 +9,7 @@ import time
 from pathlib import Path, PurePosixPath
 
 CONTAINER = "cline-kanban"
-RUNTIME_HOST = "127.0.0.1"
+RUNTIME_HOST = "0.0.0.0"
 RUNTIME_PORT = "3485"
 JOB_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,59}$")
 
