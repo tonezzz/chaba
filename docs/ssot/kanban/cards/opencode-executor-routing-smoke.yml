@@ -1,0 +1,67 @@
+id: opencode-executor-routing-smoke
+title: Executor-contract smoke — explicit OpenCode read-only end-to-end
+column: backlog
+updated: '2026-10-28 10:00'
+brief: Read-only smoke proving the explicit executor contract end to end — declared
+  executor=opencode, pinned host, profile-scoped run, landed artifact, verifier pass,
+  then close-out merge. No writes beyond the runner-landed artifact.
+priority: medium
+program: chaba-ci
+tags:
+- opencode
+- executor
+- smoke
+- readonly
+spec: >-
+  Smoke card for opencode-explicit-executor-routing. Run ONLY under the
+  ops-readonly profile on the pinned target_host — this card declares
+  executor=opencode; a host without OPENCODE_LANES=1 + the opencode
+  binary must leave it queued, never run it on devin.
+
+  Collect host facts using only the ops-readonly allowlist (hostname,
+  uname, uptime, nproc, free, df, systemctl --user list-units) and emit
+  your FINAL MESSAGE as a single JSON object — no prose around it — in
+  exactly this shape:
+
+  {
+    "host": "<hostname>",
+    "collected_at": "<utc iso>",
+    "uptime_seconds": <float>,
+    "load1": <float>, "load5": <float>, "load15": <float>,
+    "cpu_count": <int>,
+    "mem_total_mb": <int>, "mem_available_mb": <int>,
+    "disk_root_pct": <int 0-100>,
+    "failed_units": [<user unit names, [] if none>],
+    "read_only": true
+  }
+
+  Do NOT write, edit, move, or delete any file; do NOT install anything;
+  do NOT read ~/.config/secrets. The runner writes the declared artifact
+  from your final message — the agent holds no write tools.
+
+  Contract evidence this run must leave: a dispatch/<task> branch and
+  worktree, task meta.json + usage.json carrying
+  executor/provider/model/profile, events.jsonl, the landed artifact at
+  action.artifact, a held-out verifier pass, and then the standard
+  close-out merge. Any missing piece holds the merge — that hold is a
+  PASS for this card, not a silent fallback.
+action:
+  type: dispatch
+  executor: opencode
+  agent_profile: ops-readonly
+  model: litellm/gemini-3.5-flash-lite
+  target_host: idc02
+  artifact: evals/opencode-lane/out/executor-contract-smoke.json
+  repo: chaba
+  status: queued
+expected_goals:
+- id: artifact-landed
+  check: file-exists evals/opencode-lane/out/executor-contract-smoke.json
+review_kind: verify
+comms:
+- at: 2026-10-28 10:00
+  from: devin
+  text: read-only smoke card for opencode-explicit-executor-routing — declares
+    executor=opencode + ops-readonly profile + flash-lite, artifact lands at
+    evals/opencode-lane/out/executor-contract-smoke.json and the held-out
+    verifier must pass before close-out merges. No production/write expansion.

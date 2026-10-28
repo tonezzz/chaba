@@ -174,6 +174,27 @@ OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
 LANE_PROFILES = {
     "free_lane": "ops-readonly",
 }
+# Executor contract (opencode-explicit-executor-routing). Mirrors
+# dispatch_repos.EXECUTORS — kept local because this file deploys as a
+# single file and may run where dispatch_repos isn't importable.
+EXECUTORS = {"opencode", "devin", "script", "manual"}
+
+
+def card_profile(card: dict) -> str:
+    """Declared OpenCode profile: action.agent_profile (contract name)
+    wins; action.profile is the pre-contract alias."""
+    a = card.get("action") or {}
+    return str(a.get("agent_profile") or a.get("profile") or "").strip()
+
+
+def model_provider(model: str) -> str:
+    """'litellm/x' -> 'litellm'; a bare model id -> 'devin'."""
+    m = (model or "").strip()
+    if not m:
+        return ""
+    return m.split("/", 1)[0] if "/" in m else "devin"
+
+
 LANE_KW = {
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend", "order the", "blocked on tony", "rotation", "rekey",
@@ -548,6 +569,201 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     return None, notes
 
 
+def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
+    """Executor-contract closeout for OpenCode lanes — runs BEFORE
+    close_out_merge so a landed artifact is checkpointed into the
+    session branch by the normal merge gate.
+
+    Returns (ok_to_merge: bool, notes). True when this isn't an OpenCode
+    task (nothing to do) or when the declared artifact landed AND the
+    held-out verifier passed; False holds the merge — the card fails
+    verified=False with the evidence in comms and the worktree kept.
+    A card with no declared action.artifact skips landing/verify and
+    only gets the usage/audit enrichment (contract evidence is still
+    durable: exit_code + events.jsonl + usage.json + manifest)."""
+    tid = ent.get("tid") or ""
+    if not tid:
+        unit = ent.get("unit") or ""
+        tid = (unit[len("devin-task-"):]
+               if unit.startswith("devin-task-") else "")
+    if not tid:
+        return True, []
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+    except Exception:
+        return True, []  # no meta -> not an opencode task
+    if not str(meta.get("executor") or "").startswith("opencode"):
+        return True, []
+    ocp = oc_profiles_module()
+    if ocp is None:
+        return False, ["opencode closeout: opencode_profiles missing — "
+                       "artifact/verifier can't run, merge held"]
+    try:
+        prof = ocp.load_profile(str(meta.get("profile") or ""))
+    except Exception as e:
+        return False, [f"opencode closeout: profile load failed: {e}"]
+    ev = taskdir / "events.jsonl"
+    env = {"id": tid, "card": cid,
+           "mcp_allowlist": list((prof.get("mcp") or {}).get("allowed")
+                                 or [])}
+    audit = ocp.audit_events(ev, env, prof) if ev.is_file() else \
+        {"tokens": {}, "tool_calls": [], "denials": [],
+         "mutating_commands": [], "verifier_peeks": [],
+         "write_attempts": []}
+    try:
+        usage = json.loads((taskdir / "usage.json").read_text())
+    except Exception:
+        usage = {}
+    tok = audit["tokens"]
+    try:
+        usage["exit_code"] = int(
+            (taskdir / "exit_code").read_text().strip())
+    except Exception:
+        usage["exit_code"] = None
+    usage.update({
+                  "input_tokens": tok.get("input") or 0,
+                  "output_tokens": tok.get("output") or 0,
+                  "cache_read_tokens": tok.get("cache_read") or 0,
+                  "cache_write_tokens": tok.get("cache_write") or 0,
+                  "tool_calls": len(audit["tool_calls"]),
+                  "denials": audit["denials"],
+                  "write_attempts": audit["write_attempts"],
+                  "mutating": audit["mutating_commands"],
+                  "verifier_peeks": audit["verifier_peeks"]})
+    notes, verdict, landed = [], {"verdict": "skip", "checks": {}}, False
+    a = card.get("action") or {}
+    art_path = str(a.get("artifact") or "").strip()
+    wt = Path(str(meta.get("worktree") or ""))
+    if art_path:
+        dirs = [str(d) for d in
+                (prof.get("artifact") or {}).get("dirs") or []]
+        if not any(art_path.startswith(d) for d in dirs):
+            verdict = {"verdict": "fail",
+                       "checks": {"artifact path under profile dirs":
+                                  False}}
+            notes.append(f"artifact {art_path!r} outside profile dirs "
+                         f"{dirs}")
+        else:
+            amode = (prof.get("artifact") or {}).get("mode", "message")
+            afmt = (prof.get("artifact") or {}).get("format", "json")
+            content = None
+            if amode == "message":
+                text = ocp.final_text(ev) if ev.is_file() else ""
+                content = ocp.extract_artifact(text, afmt) \
+                    if text else None
+                src = None
+            else:
+                src = wt / art_path
+                if src.is_file():
+                    content = src.read_text()
+            if content:
+                (taskdir / "artifact.out").write_text(content)
+                dest = wt / art_path
+                try:
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    dest.write_text(
+                        content + ("" if content.endswith("\n") else "\n"))
+                    landed = True
+                    notes.append(f"opencode artifact landed {art_path}")
+                except OSError as e:
+                    verdict = {"verdict": "fail",
+                               "checks": {"artifact write": str(e)}}
+            if not landed and verdict["verdict"] == "skip":
+                verdict = {"verdict": "fail",
+                           "checks": {"artifact landed": False}}
+        # manifest + held-out verifier — the verifier never trusts the
+        # agent's narrative (same contract as opencode_profiles._verify)
+        man = {"at": datetime.now(timezone.utc).isoformat(),
+               "job": tid,
+               "envelope": {"id": tid, "card": cid, "target_host": HOST,
+                            "model": meta.get("model"),
+                            "executor": meta.get("executor"),
+                            "profile": meta.get("profile"),
+                            "artifact": {"path": art_path}},
+               "profile": {k: v for k, v in prof.items()
+                           if k != "_path"},
+               "agent": ocp.agent_name(prof.get("id") or "")}
+        (taskdir / "manifest.json").write_text(json.dumps(man, indent=1))
+        if landed:
+            vref = str((prof.get("verifier") or {}).get("ref") or "")
+            vpath = Path("")
+            for base in (wt, Path(str(meta.get("repo_root") or "."))):
+                cand = base / vref
+                if cand.is_file():
+                    vpath = cand
+                    break
+            if not str(vpath) or not vpath.is_file():
+                verdict = {"verdict": "fail",
+                           "checks": {"verifier missing": vref}}
+            else:
+                try:
+                    spec = importlib.util.spec_from_file_location(
+                        f"pverify_{re.sub('[^a-zA-Z0-9]', '_', tid)}",
+                        vpath)
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    verdict = mod.verify(str(taskdir)) or {}
+                    verdict.setdefault("checks", {})
+                    verdict["verified_at"] = \
+                        datetime.now(timezone.utc).isoformat()
+                except Exception as e:
+                    verdict = {"verdict": "fail",
+                               "checks": {"verifier_error":
+                                          f"{type(e).__name__}: {e}"[:300]}}
+        # denials/mutating from the event audit are contract violations —
+        # they fail the closeout even when the verifier itself passed
+        if verdict.get("verdict") == "pass" and \
+                (audit["denials"] or audit["mutating_commands"]):
+            verdict = {"verdict": "fail",
+                       "checks": {**verdict.get("checks", {}),
+                                  "denials": audit["denials"][:5],
+                                  "mutating":
+                                  audit["mutating_commands"][:5]}}
+        (taskdir / "verdict.json").write_text(json.dumps(verdict,
+                                                        indent=1))
+        notes.append(f"opencode verifier: {verdict.get('verdict')}")
+    else:
+        notes.append("no action.artifact declared — closeout evidence is "
+                     "exit code + event audit only")
+    usage["verdict"] = verdict.get("verdict")
+    usage["artifact_landed"] = landed
+    (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
+    # lane_gate metric ledger — the durable accounting row for the run
+    lg = getattr(ocp, "lane_gate", None)
+    if lg:
+        try:
+            menv = {"id": tid, "card": cid, "profile": prof.get("id"),
+                    "model": meta.get("model") or "",
+                    "provider": meta.get("provider") or "",
+                    "stage": "", "task_class": ""}
+            m = lg.new_metric(menv, "opencode")
+            m["input_tokens"] = tok.get("input") or 0
+            m["output_tokens"] = tok.get("output") or 0
+            m["cache_read_tokens"] = tok.get("cache_read") or 0
+            m["cache_write_tokens"] = tok.get("cache_write") or 0
+            m["verifier_pass"] = verdict.get("verdict") == "pass"
+            m["artifact_landed"] = landed
+            m["tool_denials"] = len(audit["denials"]) + \
+                len(audit["write_attempts"])
+            m["failure_reason"] = None if m["verifier_pass"] else \
+                ("mutating_command" if audit["mutating_commands"]
+                 else "tool_denial" if audit["denials"]
+                 else "missing_artifact" if art_path and not landed
+                 else "unverified_exit" if art_path
+                 else "no_artifact_declared")
+            lg.record_metric(m)
+        except Exception:
+            pass  # ledger is best-effort; usage.json is the contract copy
+    if art_path and verdict.get("verdict") != "pass":
+        checks = "; ".join(f"{k}={v}" for k, v in
+                           list(verdict.get("checks", {}).items())[:4])
+        notes.append("merge held — executor contract requires declared "
+                     f"artifact + verifier pass ({checks})")
+        return False, notes
+    return True, notes
+
+
 def claimable(card: dict) -> str:
     """task type the card wants if this host may claim it, else ""."""
     a = card.get("action") or {}
@@ -558,17 +774,49 @@ def claimable(card: dict) -> str:
     pinned = a.get("host")
     if pinned and pinned != HOST:
         return ""
+    # executor contract host pin (action.target_host) — independent of
+    # action.host; both must be satisfied.
+    th = str(a.get("target_host") or "").strip()
+    if th and th != HOST:
+        return ""
     needs = set(a.get("labels") or [])
     if not needs <= LABELS:
         return ""
+    ex = str(a.get("executor") or "").strip()
+    # executor contract (opencode-explicit-executor-routing):
+    # manual = Tony's hands — never claimed; an unrecognised executor is
+    # an unintelligible contract — fail closed, don't guess a route.
+    if ex == "manual" or (ex and ex not in EXECUTORS):
+        return ""
     typ = a.get("type") or "dispatch"
+    if ex and typ != "dispatch" and not (ex == "script" and typ == "script"):
+        return ""  # executor contract routes dispatch-typed cards; on a
+        # script/container card only a matching script executor is a
+        # consistent declaration — anything else fails closed
+    if ex == "script" and typ == "dispatch":
+        # the contract routes a dispatch-typed card to the script
+        # executor — it must carry a usable action.script block
+        c = a.get("script") or {}
+        url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
+        if c.get("cmd") and url and shutil_which("git"):
+            return "script"
+        return ""
     if typ == "dispatch":
-        if not Path(DISPATCH).exists():
-            return ""
         if a.get("lane") == "manual":
             return ""  # lane routing: manual = Tony's hands, never claimed
+        if ex == "opencode":
+            # Declared OpenCode executor: this host may claim ONLY when
+            # it is a compatible runner — OPENCODE_LANES=1 AND a real
+            # opencode binary. Anything less leaves the card queued for
+            # a host that qualifies (the defer note says why) — claiming
+            # it for a devin run would silently break the contract.
+            if not OPENCODE_LANES or not opencode_bin():
+                return ""
+        elif not Path(DISPATCH).exists():
+            return ""
         # runner-push-cred-gap: never claim a repo this host can't push
-        # — finishing here strands the branch (ADA-0673)
+        # — finishing here strands the branch (ADA-0673). Applies to the
+        # OpenCode lane too: its close-out pushes the session branch.
         if not push_capable(str(a.get("repo") or "chaba")):
             return ""
     if typ == "container":
@@ -585,9 +833,63 @@ def claimable(card: dict) -> str:
     return typ
 
 
+def executor_defer_reason(card: dict) -> str:
+    """Why this host declines an executor=opencode card it otherwise
+    could claim — "" when N/A. The note goes to the board so the card
+    visibly waits for an OpenCode-capable runner instead of silently
+    starving (or worse, silently falling back to devin)."""
+    a = card.get("action") or {}
+    ex = str(a.get("executor") or "").strip()
+    if a.get("status") != "queued" \
+            or (a.get("runner") and a["runner"] != HOST) \
+            or (a.get("host") and a["host"] != HOST) \
+            or (a.get("target_host") and a["target_host"] != HOST) \
+            or not set(a.get("labels") or []) <= LABELS:
+        return ""
+    if ex == "opencode":
+        missing = []
+        if not OPENCODE_LANES:
+            missing.append("OPENCODE_LANES=0")
+        if not opencode_bin():
+            missing.append("no opencode binary")
+        if missing:
+            return (f"executor=opencode declared but this runner can't "
+                    f"serve it ({', '.join(missing)}) — the card stays "
+                    "queued for an OpenCode-capable runner; it will "
+                    "never silently fall back to devin")
+    if ex and ex not in EXECUTORS:
+        return (f"executor={ex!r} is not a known executor "
+                f"({', '.join(sorted(EXECUTORS))}) — fix the card; "
+                "fail closed rather than guess a route")
+    if ex == "script" and (a.get("type") or "dispatch") == "dispatch" \
+            and not (a.get("script") or {}).get("cmd"):
+        return ("executor=script declared but action.script.cmd is "
+                "missing — the card can't be served; fix the card")
+    return ""
+
+
 def shutil_which(name: str) -> bool:
     return any((Path(p) / name).exists()
                for p in os.environ.get("PATH", "").split(":"))
+
+
+def opencode_bin() -> str:
+    """Resolve the opencode binary — $OPENCODE_BIN, PATH, then the two
+    install locations the systemd user manager PATH never carries
+    (~/.opencode/bin only enters PATH via ~/.bashrc, so shutil_which
+    alone misses it under the timer unit)."""
+    env = os.environ.get("OPENCODE_BIN") or ""
+    if env and Path(env).is_file():
+        return env
+    for p in os.environ.get("PATH", "").split(":"):
+        c = Path(p) / "opencode"
+        if c.is_file() and os.access(c, os.X_OK):
+            return str(c)
+    for c in (Path.home() / ".opencode/bin/opencode",
+              Path.home() / ".local/bin/opencode"):
+        if c.is_file() and os.access(c, os.X_OK):
+            return str(c)
+    return ""
 
 
 # --- task unit resource limits ---------------------------------------
@@ -951,20 +1253,51 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
 
     The generic build agent is kept out of unattended routing
     (opencode-task-agent-profiles): the lane must resolve a task-scoped
-    profile (card action.profile or LANE_PROFILES), which is rendered
-    into a worktree-local opencode config — custom agent + builtin
-    agents disabled + minimal MCP + permission rules — and the run
-    addresses it via --agent."""
-    model = LANE_MODELS[lane]
-    if not shutil_which("opencode"):
+    profile (action.agent_profile — action.profile as the pre-contract
+    alias — else LANE_PROFILES), which is rendered into a worktree-local
+    opencode config — custom agent + builtin agents disabled + minimal
+    MCP + permission rules — and the run addresses it via --agent.
+
+    Executor contract (opencode-explicit-executor-routing): this path
+    requires OPENCODE_LANES=1 AND a real opencode binary — the caller
+    normally gates on both at claim time, but the check repeats here so
+    no route reaches devin-free OpenCode execution silently. The run
+    stamps executor/provider/model/profile into taskdir meta.json AND
+    usage.json, and tees the opencode event stream to events.jsonl so
+    the finish pass can land the declared artifact and the close-out
+    can prove who ran the work."""
+    if not OPENCODE_LANES:
+        return "", "", ("OPENCODE_LANES=0 on this runner — the opencode "
+                        "executor is disabled; the card needs an "
+                        "OpenCode-capable runner, not a devin run")
+    oc_bin = opencode_bin()
+    if not oc_bin:
         return "", "", "opencode is not installed on this runner"
     a = card.get("action") or {}
-    prof_id = str(a.get("profile") or LANE_PROFILES.get(lane) or "")
+    prof_id = str(card_profile(card) or LANE_PROFILES.get(lane) or "")
     if not prof_id:
-        return "", "", f"no task profile for lane {lane} — opencode " \
-                       "lane requires action.profile (generic build " \
-                       "agent is not an unattended executor)"
-    repo_name = str((card.get("action") or {}).get("repo") or "chaba")
+        return "", "", f"no task profile for lane {lane or '(none)'} — " \
+                       "the opencode executor requires " \
+                       "action.agent_profile or a mapped lane (generic " \
+                       "build agent is not an unattended executor)"
+    ocp = oc_profiles_module()
+    if ocp is None:
+        return "", "", "opencode_profiles.py missing in this " \
+                       "checkout — profile render impossible"
+    try:
+        prof = ocp.load_profile(prof_id)
+    except SystemExit as e:
+        return "", "", f"profile {prof_id}: {e}"
+    # model precedence: explicit action.model > lane table > the
+    # profile's declared default — the contract's model always wins.
+    model = str(a.get("model") or "").strip() or \
+        str(LANE_MODELS.get(lane) or "") or \
+        str(((prof.get("model") or {}).get("default")) or "")
+    if not model:
+        return "", "", (f"no model resolvable for profile {prof_id} — "
+                        "set action.model or a lane")
+    provider = model_provider(model)
+    repo_name = str(a.get("repo") or "chaba")
     dr = dr_module()
     ent = (dr.repos().get(repo_name) if dr else None) or {}
     root = Path(ent.get("path") or "")
@@ -974,7 +1307,9 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     branch = f"dispatch/{tid}"
     worktree = Path.home() / f"CascadeProjects/dispatch-wt-{tid}"
     # Match devin-dispatch's task metadata so the existing closeout/merge
-    # gate can discover this OpenCode session after the unit exits.
+    # gate can discover this OpenCode session after the unit exits —
+    # plus the executor contract fields (provider/model/profile/card)
+    # and usage.json so the trail proves who ran the work.
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         taskdir.mkdir(parents=True, exist_ok=True)
@@ -988,14 +1323,24 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         if r.returncode:
             return "", "", (r.stderr or r.stdout).strip()[:240]
         dbranch = ent.get('default_branch') or 'master'
+        started = datetime.now(timezone.utc).isoformat()
         meta = {"repo": repo_name, "branch": branch,
-                "worktree": str(worktree),
+                "worktree": str(worktree), "repo_root": str(root),
                 "default_branch": dbranch,
                 "base": f"origin/{dbranch}",
-                "executor": f"opencode:{lane}", "profile": prof_id,
+                "executor": f"opencode:{lane or prof_id}",
+                "card": card["id"], "provider": provider,
+                "model": model, "profile": prof_id, "lane": lane,
                 "unit": unit, "task_id": tid,
-                "started_at": datetime.now(timezone.utc).isoformat()}
+                "started_at": started}
         (taskdir / "meta.json").write_text(json.dumps(meta, indent=1))
+        usage = {"task_id": tid, "card": card["id"], "unit": unit,
+                 "host": HOST, "executor": "opencode",
+                 "provider": provider, "model": model,
+                 "profile": prof_id, "lane": lane,
+                 "artifact": str(a.get("artifact") or ""),
+                 "started_at": started}
+        (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
     except Exception as e:
         return "", "", f"OpenCode worktree setup: {e}"
     spec = (card.get("spec") or "").strip() or \
@@ -1008,15 +1353,11 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     # the profile. Render failure = the lane can't start.
     confdir = worktree / ".opencode-profile"
     try:
-        ocp = oc_profiles_module()
-        if ocp is None:
-            return "", "", "opencode_profiles.py missing in this " \
-                           "checkout — profile render impossible"
-        prof = ocp.load_profile(prof_id)
         synth = {"id": tid, "card": card["id"], "target_host": HOST,
                  "model": model, "mcp_allowlist":
                      list((prof.get("mcp") or {}).get("allowed") or []),
-                 "artifact": {"path": "", "schema": ""}}
+                 "artifact": {"path": str(a.get("artifact") or ""),
+                              "schema": ""}}
         cfg = ocp.render_config(synth, prof)
         cfg.pop("_allowfile", None)
         confdir.mkdir(parents=True, exist_ok=True)
@@ -1025,21 +1366,27 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         return "", "", f"profile {prof_id}: {e}"
     except Exception as e:
         return "", "", f"profile render: {e}"
+    # The event stream tees to events.jsonl — durable proof for the
+    # finish pass (artifact extraction, tool-call audit) that also
+    # survives journal rotation.
     shell = (
         "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
         ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
         "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
-        f"cd {shlex.quote(str(worktree))} && opencode run --format json "
+        f"cd {shlex.quote(str(worktree))} && "
+        f"{shlex.quote(oc_bin)} run --format json "
         f"--dir {shlex.quote(str(worktree))} --model {shlex.quote(model)} "
         f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
-        f"{shlex.quote(task)}; "
-        "rc=$?; "
+        f"{shlex.quote(task)} 2>&1 | "
+        f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "
+        "rc=${PIPESTATUS[0]}; "
         f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $rc"
     )
     argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
-             "--description", f"runner {card['id']} OpenCode {lane}"]
+             "--description", f"runner {card['id']} OpenCode "
+                              f"{lane or prof_id}"]
             + task_run_props() + ["bash", "-lc", shell])
     r = sh(argv, timeout=180)
     if r.returncode:
@@ -1090,23 +1437,48 @@ def start_task(card: dict, typ: str) -> tuple:
                  f"cd {shlex.quote(workdir)} && "
                  f"exec {shlex.join(cmd)}"])
     else:  # dispatch
-        # Claim-time lane routing (jev-pilot Phase 2): classify when the
-        # card has no lane yet, persist it, map to the cheapest model.
-        # `lane` must be bound even when the card already carries
-        # action.lane (explicit lane or the JEV_LANE claim-classify that
-        # persisted it) — reading it unbound crashed every such claim
-        # with UnboundLocalError (OPS-0846 review 2026-10-25).
-        lane = str(a.get("lane") or "")
-        if not lane:
-            lane = classify_lane(card)
-            if lane and lane != "manual":
-                a["lane"] = lane
-                if lane in LANE_MODELS and not a.get("model"):
-                    a["model"] = LANE_MODELS[lane]
+        # Executor contract (opencode-explicit-executor-routing): an
+        # explicit action.executor decides the route BEFORE any lane
+        # classification, and never silently re-routes to a different
+        # executor.
+        ex = str(a.get("executor") or "").strip()
+        if ex == "opencode":
+            try:
+                return start_opencode_lane(card, "", unit)
+            except Exception as e:
+                # contract failures fail the task — never a devin fallback
+                return "", "", f"opencode executor: {e}"
+        if ex == "manual" or (ex and ex not in EXECUTORS):
+            return "", "", (f"action.executor={ex or '?'!r} cannot be "
+                            "auto-claimed — fail closed")
+        if ex == "script":
+            # claimable() routes dispatch-typed executor=script cards to
+            # typ=script; reaching the dispatch branch means the card is
+            # inconsistent — fail closed rather than improvise a route.
+            return "", "", ("executor=script on a dispatch card needs "
+                            "action.script — fail closed")
+        if ex == "devin":
+            # pinned to the devin path — lane classification stays out;
+            # action.model (a native devin id) maps via DISPATCH_MODEL
+            lane = ""
+        else:
+            # Claim-time lane routing (jev-pilot Phase 2): classify when the
+            # card has no lane yet, persist it, map to the cheapest model.
+            # `lane` must be bound even when the card already carries
+            # action.lane (explicit lane or the JEV_LANE claim-classify that
+            # persisted it) — reading it unbound crashed every such claim
+            # with UnboundLocalError (OPS-0846 review 2026-10-25).
+            lane = str(a.get("lane") or "")
+            if not lane:
+                lane = classify_lane(card)
+                if lane and lane != "manual":
+                    a["lane"] = lane
+                    if lane in LANE_MODELS and not a.get("model"):
+                        a["model"] = LANE_MODELS[lane]
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in LANE_MODELS and OPENCODE_LANES and \
-                (a.get("profile") or LANE_PROFILES.get(lane)):
+                (card_profile(card) or LANE_PROFILES.get(lane)):
             return start_opencode_lane(card, lane, unit)
         # no resolvable task profile -> generic build agent stays out
         # of unattended routing; the card takes the devin path
@@ -1115,6 +1487,16 @@ def start_task(card: dict, typ: str) -> tuple:
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
         argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
     env = dict(os.environ)
+    if typ == "dispatch":
+        # executor contract context — devin-dispatch._meta_write stamps
+        # it into meta.json + usage.json so the close-out can prove who
+        # ran the work.
+        env["DISPATCH_CARD"] = cid
+        env["DISPATCH_EXECUTOR"] = ex or "devin"
+        if card_profile(card):
+            env["DISPATCH_PROFILE"] = card_profile(card)
+        if a.get("target_host"):
+            env["DISPATCH_TARGET_HOST"] = str(a["target_host"])
     if a.get("model"):
         env["DISPATCH_MODEL"] = str(a["model"])
     elif typ == "dispatch":
@@ -1134,6 +1516,12 @@ def start_task(card: dict, typ: str) -> tuple:
             return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in lane_models:
             env["DISPATCH_MODEL"] = str(lane_models[lane])
+    if typ == "dispatch":
+        # provider follows the RESOLVED model (action.model or the lane
+        # mapping) — computed after both so litellm lane ids report
+        # provider=litellm, not devin.
+        env["DISPATCH_PROVIDER"] = model_provider(
+            env.get("DISPATCH_MODEL") or "") or "devin"
     if typ == "dispatch" and LIMITS_ON:
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the
@@ -1165,8 +1553,18 @@ def finish_pass(st: dict) -> bool:
             if cards is None:
                 cards = {c.get("id"): c for c in
                          (api("/cards") or {}).get("cards") or []}
-            verified, notes = close_out_merge(cid, ent,
-                                              cards.get(cid) or {})
+            card = cards.get(cid) or {}
+            # Executor contract: the OpenCode closeout lands the declared
+            # artifact + runs the verifier BEFORE the merge gate; a
+            # contract failure holds the merge (verified=False) with the
+            # evidence in comms — never merges on exit code alone.
+            may_merge, oc_notes = finish_opencode_lane(cid, ent, card)
+            notes = oc_notes
+            if may_merge:
+                verified, merge_notes = close_out_merge(cid, ent, card)
+                notes += merge_notes
+            else:
+                verified = False
         body = {"id": cid, "do": "finish", "host": HOST,
                 "ok": ok, "result": result}
         if verified is not None:
@@ -1242,6 +1640,12 @@ def claim_pass(st: dict) -> bool:
             pg = push_guard_reason(card)
             if pg:
                 note_defer(card, "push", pg)
+            # executor-contract defer: an executor=opencode card this
+            # host can't serve, or an unrecognised executor, gets a
+            # visible reason instead of silently starving
+            xr = executor_defer_reason(card)
+            if xr:
+                note_defer(card, "executor", xr)
             continue
         if card.get("blocked_by"):
             blocker = by_id.get(card["blocked_by"]) or {}
@@ -1254,11 +1658,21 @@ def claim_pass(st: dict) -> bool:
             note_gpu_defer(card, reason)
             continue  # stays queued — a later pass or spec fix picks it up
         claim_body = {"id": cid, "do": "claim", "host": HOST}
+        a0 = card.get("action") or {}
+        ex_decl = str(a0.get("executor") or "").strip()
+        if ex_decl:
+            # The declared executor rides the atomic claim so the board
+            # record carries the contract that served it.
+            claim_body["executor"] = ex_decl
+            if card_profile(card):
+                claim_body["agent_profile"] = card_profile(card)
         # Classify BEFORE the atomic claim and persist the lane/model in the
         # claim request. The previous start_task-only classification could
         # not write action fields back to the board and remote runners lost
-        # the model chain (OPS-0836..0844).
-        if typ == "dispatch" and os.environ.get("JEV_LANE", "0") == "1":
+        # the model chain (OPS-0836..0844). An explicit executor is itself
+        # the routing decision — classification stays out of it.
+        if typ == "dispatch" and not ex_decl \
+                and os.environ.get("JEV_LANE", "0") == "1":
             a = card.setdefault("action", {})
             # An explicit action.lane (pinned in the card YAML, e.g. the
             # OPS-0885 pilot cards) wins over claim-time classification —
@@ -1282,8 +1696,16 @@ def claim_pass(st: dict) -> bool:
             api("/action", {"id": cid, "do": "finish", "host": HOST,
                             "ok": False, "result": f"start failed: {err}"})
             continue
+        detail = typ
+        if ex_decl:
+            # comms carry the executor contract that ran the card
+            detail += f" executor={ex_decl}"
+            if card_profile(card):
+                detail += f" profile={card_profile(card)}"
+            if a0.get("model"):
+                detail += f" model={a0['model']}"
         api("/comment", {"id": cid, "from": "chaba",
-                         "text": f"started {unit} on {HOST} ({typ})"})
+                         "text": f"started {unit} on {HOST} ({detail})"})
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
                    "at": int(time.time()),
                    "gpu": "gpu" in set((card.get("action") or {})

@@ -548,8 +548,12 @@ def start_pending(path: Path) -> str:
     a = card["action"]
     repo = a.get("repo", "chaba")
     task = build_task(card)
+    ex = str(a.get("executor") or "").strip()
     lane = str(a.get("lane") or "")
-    if not lane and JEV_LANE:
+    # An explicit executor is itself the routing decision — lane
+    # classification stays out (executor=devin pins the devin path and
+    # keeps action.model as the native devin id it declared).
+    if not lane and JEV_LANE and not ex:
         lane = classify_lane(card)
         if lane:
             a["lane"] = lane
@@ -567,6 +571,17 @@ def start_pending(path: Path) -> str:
         env["DISPATCH_MODEL"] = str(a["model"])  # -> devin --model
     elif lane in LANE_MODELS:
         env["DISPATCH_MODEL"] = LANE_MODELS[lane]  # cheapest lane
+    # Executor-contract context for the launcher's task meta + usage:
+    # the card that declared it, the resolved executor/provider, and the
+    # profile id — devin-dispatch._meta_write persists them.
+    env["DISPATCH_CARD"] = card.get("id") or path.stem
+    env["DISPATCH_EXECUTOR"] = ex or "devin"
+    env["DISPATCH_PROVIDER"] = dr.model_provider(
+        env.get("DISPATCH_MODEL") or "") or "devin"
+    if dr.card_profile(card):
+        env["DISPATCH_PROFILE"] = dr.card_profile(card)
+    if a.get("target_host"):
+        env["DISPATCH_TARGET_HOST"] = str(a["target_host"])
     r = sh([DISPATCH, "start", repo, task], timeout=120, env=env)
 
     def apply():
@@ -584,7 +599,10 @@ def start_pending(path: Path) -> str:
         a["runner"] = HOST
         card.setdefault("claim", {})["session"] = task_id
         card["claim"]["since"] = now()
-        comms_add(card, "chaba", f"dispatched {task_id} on {repo}")
+        blurb = dr.executor_blurb(card)
+        comms_add(card, "chaba",
+                  f"dispatched {task_id} on {repo}"
+                  + (f" ({blurb})" if blurb else ""))
         if LAST_PRIMER_LINES:
             comms_add(
                 card, "chaba",
@@ -745,6 +763,26 @@ def main() -> int:
                     print(f"{card['id']}: skipped — action.type "
                           f"{a.get('type')!r} is not dispatchable "
                           "(claims are type=dispatch only)")
+                    continue
+                # Executor contract (opencode-explicit-executor-routing):
+                # this dispatcher's only executor is devin. A declared
+                # executor other than devin routes elsewhere — opencode/
+                # script cards are runner-agent territory, manual is
+                # Tony's hands, anything unknown fails closed. Never
+                # silently run them on devin.
+                ex = str(a.get("executor") or "").strip()
+                if ex and ex != "devin":
+                    why = ("not a known executor"
+                           if ex not in dr.EXECUTORS
+                           else "Tony's hands — never claimed"
+                           if ex == "manual"
+                           else f"routes to the {ex} executor, not devin")
+                    print(f"{card['id']}: skipped — executor={ex} "
+                          f"({why})")
+                    continue
+                th = str(a.get("target_host") or "").strip()
+                if th and th != HOST:
+                    print(f"{card['id']}: skipped — target_host={th}")
                     continue
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:

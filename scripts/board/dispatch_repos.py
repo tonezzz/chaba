@@ -94,6 +94,80 @@ LANE_MODELS = {
 LANE_EXECUTORS = {"codemod": "script", "manual": None}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 
+# ------------------------------------------------- executor contract
+#
+# Card opencode-explicit-executor-routing: `action.executor` is the
+# card's DECLARED executor — who the work must run under:
+#
+#   opencode — the profile-scoped OpenCode lane (runner-agent
+#              start_opencode_lane). Requires OPENCODE_LANES=1 on the
+#              claiming host, an opencode binary, and a resolvable task
+#              profile (action.agent_profile — action.profile accepted
+#              as the pre-contract alias — else the LANE_PROFILES map).
+#              A card that can't get all three must NEVER fall back to
+#              devin: it stays queued with a defer note, or the claim
+#              fails closed with the reason recorded.
+#   devin    — devin-dispatch, regardless of lane tables/env.
+#   script   — the action.script block via the runner's script path.
+#   manual   — Tony's hands; automation never claims it.
+#
+# Unset = pre-contract behavior: the lane classifier decides (the safe
+# classifier fallback — devin when nothing cheaper resolves). An
+# executor value outside EXECUTORS is unintelligible — claimants fail
+# closed rather than guess.
+EXECUTORS = {"opencode", "devin", "script", "manual"}
+MODEL_ID_RE = re.compile(r"^[a-zA-Z0-9._/-]{1,80}$")
+PROFILE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,60}$")
+HOST_ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
+
+
+def card_executor(card: dict) -> str:
+    """Declared executor contract, '' when the card carries none."""
+    return str((card.get("action") or {}).get("executor") or "").strip()
+
+
+def card_profile(card: dict) -> str:
+    """Declared OpenCode task profile: action.agent_profile (the
+    contract name) wins; action.profile is the pre-contract alias."""
+    a = card.get("action") or {}
+    return str(a.get("agent_profile") or a.get("profile") or "").strip()
+
+
+def card_target_host(card: dict) -> str:
+    """Declared executor host pin (action.target_host) — independent of
+    action.host; both must be satisfied for a claim."""
+    return str((card.get("action") or {}).get("target_host") or "").strip()
+
+
+def model_provider(model: str) -> str:
+    """Provider prefix of a model id — 'litellm/x' -> 'litellm';
+    a bare id ('swe-2-high') -> 'devin'; '' for no model."""
+    m = (model or "").strip()
+    if not m:
+        return ""
+    return m.split("/", 1)[0] if "/" in m else "devin"
+
+
+def executor_blurb(card: dict) -> str:
+    """Short executor/provider/model/profile phrase for comms lines —
+    'executor=opencode provider=litellm model=litellm/g-3.5 profile=ops'
+    or '' when nothing is declared."""
+    a = card.get("action") or {}
+    bits = []
+    ex = card_executor(card)
+    if ex:
+        bits.append(f"executor={ex}")
+    model = str(a.get("model") or "").strip()
+    prov = model_provider(model)
+    if prov:
+        bits.append(f"provider={prov}")
+    if model:
+        bits.append(f"model={model}")
+    prof = card_profile(card)
+    if prof:
+        bits.append(f"profile={prof}")
+    return " ".join(bits)
+
 # Keyword lane classifier — deterministic, validated on the lane corpus
 # (evals/results/jev/). Keyword hits run first; jevos is the fallback.
 LANE_KW = {
@@ -241,6 +315,12 @@ def session(card: dict) -> dict:
     if a.get("type") != "dispatch" or not tid:
         return out
     meta = task_meta(tid)
+    # executor contract fields the launcher stamped into meta.json
+    # (devin-dispatch.sh _meta_write / runner-agent start_opencode_lane)
+    # — rides the session record so close-out notes and reviewers can
+    # see who actually ran the work.
+    for k in ("executor", "provider", "model", "profile", "card"):
+        out[k] = str(meta.get(k) or "")
     out["repo_name"] = meta.get("repo") or a.get("repo") or ""
     out["branch"] = meta.get("branch") or f"dispatch/{tid}"
     wt = Path(meta.get("worktree") or
@@ -1196,10 +1276,13 @@ def close_out(card: dict) -> dict:
     checkpoint, pushed/push_error, gate, conflicts, shadows (pre-push
     gitignored-dir shadow guard), merged_sha,
     tests/test_failures (post-merge test gate), skipped|error, note,
-    session."""
+    session, executor/provider/model/profile (from task meta)."""
     out: dict = {"merged": False}
     s = session(card)
     out["session"] = s
+    for k in ("executor", "provider", "model", "profile"):
+        if s.get(k):
+            out[k] = s[k]
     if not s.get("task_id") and not s.get("branch"):
         out.update(noop=True, skipped="not a dispatch session")
         return out
@@ -1331,6 +1414,19 @@ def close_out_notes(res: dict) -> list:
     """Comms lines for a close_out() result — shared by kanban-dispatch
     (local cards) and runner-agent (remote cards)."""
     notes = []
+    # executor contract audit line (opencode-explicit-executor-routing):
+    # the run's real executor/provider/model/profile rides the close-out
+    # so the card trail proves who did the work — never silent on this.
+    se = res.get("session") or {}
+    if se.get("executor"):
+        bits = [f"executor={se['executor']}"]
+        if se.get("provider"):
+            bits.append(f"provider={se['provider']}")
+        if se.get("model"):
+            bits.append(f"model={se['model']}")
+        if se.get("profile"):
+            bits.append(f"profile={se['profile']}")
+        notes.append("ran under " + " ".join(bits))
     cp = res.get("checkpoint") or {}
     if cp.get("committed"):
         notes.append(f"session-end checkpoint {cp['sha'][:8]}: "

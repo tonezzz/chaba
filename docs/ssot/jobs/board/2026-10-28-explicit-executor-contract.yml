@@ -1,0 +1,42 @@
+title: "Explicit executor contract for delegated kanban cards — action.executor + agent_profile/model/target_host"
+date: 2026-10-28
+card: opencode-explicit-executor-routing
+session: "dispatch-wt-20261028-094504-add-an-explicit-executor-contr (idc02)"
+status: "implemented — 40 new contract tests pass, 289 board + 116 devnest tests green; smoke card queued (opencode-executor-routing-smoke)"
+
+contract:
+  fields:
+    executor: "action.executor ∈ {opencode, devin, script, manual} — the card's DECLARED executor; unset = pre-contract classifier fallback; unknown = fail closed"
+    agent_profile: "task-scoped OpenCode profile id (evals/opencode-lane/profiles/<id>/); action.profile is the accepted pre-contract alias"
+    model: "model id incl. provider-qualified forms (litellm/...); MODEL_ID_RE [a-zA-Z0-9._/-]{1,80}"
+    target_host: "host pin independent of action.host — both must be satisfied"
+    artifact: "repo-relative path the OpenCode run must land (message-mode: runner writes it from the final message; must sit under the profile's artifact.dirs)"
+  rules:
+    - "explicit executor decides routing BEFORE lane classification — it never silently re-routes"
+    - "executor=opencode requires OPENCODE_LANES=1 AND an opencode binary AND push creds on the claiming runner — otherwise the card stays queued with a defer note; it never falls back to devin"
+    - "executor=devin pins the devin path — lane tables and OPENCODE_LANES can't steal it; action.model stays the native devin id (fixes the litellm-alias-to-devin-CLI miss from devin-executor-model-routing)"
+    - "executor=script routes a dispatch-typed card to action.script via the runner's script path"
+    - "executor=manual is Tony's hands — never claimed; queue-time warn preserves the starvation guard"
+    - "executor on a non-dispatch card type (script/container) fails closed unless it's a consistent script-on-script declaration"
+
+surfaces:
+  dispatch_repos.py: "EXECUTORS, MODEL_ID_RE/PROFILE_ID_RE/HOST_ID_RE, card_executor/card_profile/card_target_host/model_provider/executor_blurb; session() picks up executor/provider/model/profile/card from task meta; close_out() + close_out_notes() carry the executor line into comms"
+  board-api.py: "ACTION_KEYS + executor/agent_profile/profile/target_host/artifact; do_create validates executor membership + profile/host/artifact shapes + widened model regex; do_claim accepts executor fields atomically and REFUSES to change a declared executor; queue_starve_warn flags executor=manual"
+  runner-agent.py: "opencode_bin() resolves $OPENCODE_BIN/PATH/~/.opencode/bin/~/.local/bin (systemd PATH never carries bashrc additions); claimable() honors the contract + target_host; executor_defer_reason() posts a debounced comms note instead of silent starvation; start_task() routes explicit executors before classify; start_opencode_lane() stamps meta.json (executor/provider/model/profile/card/lane/repo_root) + usage.json and tees events.jsonl; finish_opencode_lane() audits events, lands the declared artifact, writes manifest+artifact.out+verdict.json, runs the held-out verifier, records a lane_gate metric — merge holds (verified=False) unless artifact+verifier pass; claim_pass skips classification for declared executors, rides executor/agent_profile in the claim body, and details executor in the started comms line"
+  kanban-dispatch.py: "claim loop skips declared non-devin executors and target_host mismatches with a printed reason; start_pending skips classification for declared executors and passes DISPATCH_CARD/EXECUTOR/PROVIDER/PROFILE/TARGET_HOST env"
+  devin-dispatch.sh: "_meta_write stamps executor/provider/model/profile/card/target_host into meta.json AND writes usage.json — durable accounting even when the provider reports nothing"
+
+evidence_chain:
+  - "task dir: meta.json + usage.json + events.jsonl + manifest.json + artifact.out + verdict.json + exit_code"
+  - "card comms: 'started <unit> on <host> (dispatch executor=...)' + 'ran under executor=... provider=... model=... profile=...' from close_out_notes"
+  - "lane_gate metrics.jsonl row per OpenCode closeout (executor/profile/model/provider/tokens/verifier_pass/artifact_landed/failure_reason)"
+  - "close-out merges only with exit evidence AND (when declared) artifact landed + verifier pass"
+
+tests: "tests/board/test_executor_contract.py — 40 cases: claimable/defer (opencode on/off binary/lanes, manual, unknown, script, target_host, non-dispatch type), start_task routing (explicit opencode, no-fallback on start failure, devin pin beating lane+profile, classifier fallback), finish_opencode_lane (artifact land+verify, missing artifact/outside-dirs/verifier-fail/denials hold merge, no-artifact usage enrichment), board-api create/claim validation + preservation, kanban-dispatch skip/claim/env, dispatch_repos helpers + regexes + closeout notes"
+
+smoke: "docs/ssot/kanban/cards/opencode-executor-routing-smoke.yml — queued, executor=opencode, ops-readonly, flash-lite, target_host=idc02, artifact evals/opencode-lane/out/executor-contract-smoke.json, expected_goal file-exists; read-only (agent holds no write tools — no production/write capability expansion)"
+
+known_limits:
+  - "claim-time defer notes are per-runner debounced (GPU_DEFER_SECS) — a card pinned to a non-OpenCode host shows ONE note per reason, not a flood"
+  - "executor=script on a script-typed card is a confirming no-op; executor=opencode|devin on script/container types fails closed"
+  - "kanban-dispatch (the devin dispatcher) cannot serve opencode/script — those cards wait for a runner-agent host; the skip is logged, not silent"
