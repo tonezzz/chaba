@@ -1,0 +1,25 @@
+id: mcp-structured-files-tool
+title: 'mcp-debug structured filesystem tools: list/stat/search instead of shell strings'
+column: backlog
+updated: 2026-10-28 11:59
+brief: Add typed read-only filesystem tools so agents request list/stat/search with parameters and receive stable
+  JSON instead of generating shell commands like ls -la.
+priority: high
+program: ai-workforce
+tags:
+- mcp-debug
+- devnest
+- tokens
+- filesystem
+- structured-output
+spec: 'Design and benchmark mcp_files/list, mcp_files/stat, mcp_files/search, and mcp_files/tree. Inputs: host,
+  path, depth, pattern, max_entries, sort. Output stable schema: host, root, entries[{name,relative_path,kind,size_bytes,mtime,mode}],
+  truncated, errors, observed_at. Allowlist roots, prevent traversal/symlink escape, cap entries/depth/output. Keep
+  mcp_raw gated; existing compact commands remain. Benchmark 30 representative tasks against raw shell: prompt/tool
+  tokens, latency, parse success, error rate, intervention, and information recall. Integrate host-assessment and
+  Node-RED/DevNest reports after verifier passes.'
+ref: OPS-0961
+comms:
+- at: 2026-10-28 11:59
+  from: devin
+  text: card captured via board-api
