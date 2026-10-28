@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-28 09:29
+updated: 2026-10-28 09:32
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -42,3 +42,10 @@ comms:
     set before launch because discovery snapshots once. (2) tiny opportunistic gap packs use `gap-runner` only while
     main heartbeat is fresh <=60s and phase is prep/prep-wait, VRAM/gap lease pass, hard timeout/artifact gate;
     never model-pull/cache-write/production-index mutate. State ma'
+- at: 2026-10-28 09:32
+  from: devin
+  text: '[scope clarification 2026-10-28] The existing gap-pack contract is narrower than normal small packs: it
+    only admits work that fits the currently open prep/prep-wait window (sample timeout 120s), with fresh heartbeat,
+    VRAM and gap-lease checks; 15 minutes was only a proposed regular-pack cutoff, not an existing policy. I recommend
+    formalizing two classes separately: durable low-resource queue packs vs ephemeral gap packs. Current inventory
+    counts use resource-only small = gpu<=3GB + disk<=4GB; ti'
