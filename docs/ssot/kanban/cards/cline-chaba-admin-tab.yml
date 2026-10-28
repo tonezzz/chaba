@@ -1,7 +1,7 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
 column: backlog
-updated: 2026-10-28 07:30
+updated: 2026-10-28 08:32
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
 blocked_by: cline-kanban-nest-worker-adapter
@@ -68,6 +68,13 @@ comms:
     and per-host application tokens; adding the Cline hostname to the same Access application/policy (or same IdP/policy)
     should avoid a manual API key, though a first-time redirect may be needed to establish the host cookie. The
     unauthenticated Access login page refuses framing, so veri'
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered which-chaba-admin-instance-should-receiv-b168fa: tony-ha-root-host — Use documented tony-ha chaba-admin;
+    add a root-path, Access-protected Cline iframe after Board (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
@@ -75,7 +82,7 @@ requests:
     instance. Recommended: add the tab to the tony-ha dashboard that contains the documented Board view, using a
     root-path Cline host behind the same Cloudflare Access SSO and a server-side proxy credential (no key in the
     browser).'
-  status: open
+  status: answered
   at: 2026-10-28 07:01
   from: devin
   options:
@@ -86,3 +93,6 @@ requests:
   - id: same-host-subpath
     label: Use a same-host Cline subpath; accept extra path and WebSocket compatibility work
   suggested: tony-ha-root-host
+  answer: tony-ha-root-host — Use documented tony-ha chaba-admin; add a root-path, Access-protected Cline iframe
+    after Board (recommended)
+awaiting_action: true
