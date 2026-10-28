@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 16:45
+updated: 2026-10-28 18:58
 priority: medium
 tags:
 - cline-kanban
@@ -288,6 +288,13 @@ comms:
     CLI can safely start an in-progress task when its session is missing. Fix is in PR #50 (8 adapter tests and
     7 proxy tests pass locally; CI running). After merge, restage the pack and resume this existing job key. No
     duplicate task, paid model, or service restart needed.'
+- at: 2026-10-28 18:58
+  from: devin
+  text: 'Nest smoke status (2026-10-28): the isolated worker reused Cline task fd918 with job key cline-nest-smoke-20261028-093509.
+    One local Ollama qwen3:4b session completed exit_code=0 but produced only a thinking turn; no tool call or nest-cline-smoke.txt.
+    The task-specific worktree is clean, the worker timed out waiting for Review, and task-result/patch/done artifacts
+    are absent. PRs #50/#51 are merged; the adapter now resumes in-progress tasks. No paid model or shared Colab
+    queue was used. Awaiting'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
