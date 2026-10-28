@@ -1,7 +1,7 @@
 id: media-hybrid-object-store
 title: 'Hybrid media store: R2 archive layer over local working stores (S3-compatible design)'
 column: doing
-updated: 2026-10-28 12:42
+updated: 2026-10-28 12:46
 priority: medium
 ref: MED-0692
 comms:
@@ -42,6 +42,12 @@ comms:
   from: devin
   text: 'dispatch started: implementing scripts/lib/media_store.py (stdlib SigV4, local|r2|s3 backends, media://
     canonical URLs, media/<kind>/<yyyy-mm>/ layout) + tests + kb runbook'
+- at: 2026-10-28 12:46
+  from: devin
+  text: 'DONE (dispatch branch): scripts/lib/media_store.py — one write path, backend=local|r2|s3 via media-store.env,
+    media:// canonical URLs, media/<kind>/<yyyy-mm>/ layout, stdlib SigV4 (no boto3). 25 tests green incl AWS doc
+    vector + mock-S3 e2e. Runbook docs/kb/media-store.md (R2 cutover checklist §5); trail docs/ssot/jobs/infrastructure/2026-10-28-media-store-hybrid.yml.
+    Needs Tony: R2 bucket+token, then per-producer adoption cards (line/cam/render/wp/backup).'
 requests:
 - id: the-card-defines-a-hybrid-medi-8c6e53
   ask: The card defines a hybrid media store using `media_store.py` with a config flag and canonical URLs, but does
