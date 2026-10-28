@@ -1,7 +1,7 @@
 id: node-red-devnest-visual-map
 title: 'Node-RED DevNest visual map: observe first, allowlisted control second'
 column: doing
-updated: 2026-10-28 22:52
+updated: 2026-10-28 23:05
 brief: 'Use Node-RED as a visual mental model for DevNest: cards -> JEV -> lanes -> runners -> verifiers -> Education,
   with safe controls later.'
 priority: medium
@@ -57,6 +57,13 @@ comms:
     CMS fork :11027 in the mddb split — writes still land but in the wrong bank. New devnest-map flow will write
     :11027. Queue heartbeat: container can only see /data + /var/chaba-health (verified mounts), so a tiny nest-queue-health.py
     producer will mirror Drive queue state into ~/va'
+- at: 2026-10-28 23:05
+  from: devin
+  text: 'PHASE 1 LIVE: devnest-observe flow deployed to tony-dell Node-RED (additive POST /flow — demo tab untouched).
+    Page: https://idc03.taila0626a.ts.net/cms/#/devnest-visual-map — 14 specialists: board-api, kanban, dispatch-queue,
+    4 JEV lanes, omen-ollama, litellm, nest-queue heartbeat, ops/mcp/host health, house-pulse. Phase-2 contract
+    (allowlisted queue/hold/request behind confirm) is written in the tab info, not wired. BONUS FIX: root-caused
+    why nodred-live-demo froze 10-13 — the deployed demo had'
 action:
   type: dispatch
   status: running
