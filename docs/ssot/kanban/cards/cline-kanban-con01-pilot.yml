@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-27 13:36
+updated: 2026-10-28 12:12
 priority: medium
 tags:
 - cline-kanban
@@ -41,6 +41,13 @@ comms:
 - at: 2026-10-27 13:36
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 12:12
+  from: devin
+  text: 'Read-only identity/auth finding (2026-10-28): direct unauthenticated GET to the declared tailnet endpoint
+    http://100.72.146.39:3484/ returned HTTP 200 with the Kanban page; the stack verify contract expects unauthenticated
+    401. Tailscale status maps 100.72.146.39 to online con01. Endpoint is tailnet-only, but its declared Basic Auth
+    gate is not verified/enforced on the live path. No login, credentials, service changes, or content writes performed.
+    Before sharing/adding this URL to lesson 2737, i'
 requests:
 - id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
   ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3
