@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 13:57
+updated: 2026-10-28 14:45
 priority: medium
 tags:
 - cline-kanban
@@ -255,6 +255,13 @@ comms:
     origin/master without conflicts. Full SSOT validation repeatedly fails while writing /tmp/ssot-validate-batch.py
     (errno -122); I have not bypassed it. con01 currently reports only the private network unit active, with no
     Cline containers/listener; no deployment or model call has occ'
+- at: 2026-10-28 14:45
+  from: devin
+  text: 'DEPLOYED + SMOKE EXECUTED (2026-10-28 ~08:30 UTC): the merged split stack is now live on con01 — cline-kanban
+    (app :3485 bridge-internal) + cline-kanban-proxy (BasicAuth+Host/Origin, tailnet :3484). verify.sh passes; unauth
+    -> 401 on all paths, authed -> 200. Three fixes landed on master to get here: (1) 97d1547e6 was already on master
+    (Pod= unsupported on podman 4.9 -> bridge network); (2) entrypoint --no-passcode + Containerfile sed-patch —
+    upstream kanban 0.1.70 bug: --no-passcode parses to o'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
