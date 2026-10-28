@@ -1,7 +1,7 @@
 id: devnest-tg-conversational-card-followups
 title: Add contextual card-explain follow-ups in DevNest Telegram
-column: doing
-updated: 2026-10-28 10:04
+column: review
+updated: 2026-10-28 10:05
 brief: Let Tony ask easier, Thai, evidence, next, and why follow-ups after explaining a card without repeating the
   card reference.
 priority: high
@@ -25,8 +25,12 @@ spec: 'Improve scripts/devnest/devnest-tg-relay.py card command UX. Current expl
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 s.yml` and the full outcome is in `dispatch-outcome-20261028-095414-improve-scripts-devnest-devnes.md`.
+    | devin-task-20261028-095414-improve-scripts-devnest-devnes.service: Consumed 30.082s CPU time, 197.6M memory
+    peak, 0B memory swap peak.'
+  verified: true
 note: 'Live audit 2026-10-28: relay explained opencode-explicit-executor-routing, then refused follow-ups ''easier.'',
   ''in Thai'', and ''0959 with easy language.'' Current updates/audit/conversation files are durable; the missing
   capability is contextual follow-up routing.'
@@ -55,3 +59,9 @@ comms:
     follow-ups easier/thai/why/evidence/next/history/spec with optional embedded ref. 55 tests pass; verified live
     vs OPS-0959 — explain summary, easier., in Thai, what evidence?, what next?, and the exact refused msg 0959-with-easy-language
     all answer now. No board mutations; APPROVE/REJECT unchanged. Trail: docs/ssot/jobs/devnest/2026-10-28-tg-card-conversational-followups.yml'
+- at: 2026-10-28 10:05
+  from: idc02
+  text: 'finished (ok): exit=0 s.yml` and the full outcome is in `dispatch-outcome-20261028-095414-improve-scripts-devnest-devnes.md`.
+    | devin-t'
+review_kind: verify
+claim: {}
