@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-28 21:38
+updated: 2026-10-28 23:16
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -70,6 +70,10 @@ comms:
     review as PR #54: https://github.com/tonezzz/chaba/pull/54. It defines a 30-minute default/60-minute gated model
     slot, pre-stages the render pack before launch, overlaps only CPU/I/O prep, and keeps GPU runs serial. No model
     pack was staged or launched yet; OPS-0966 replay fixtures/model choice remain the readiness gate.'
+- at: 2026-10-28 23:16
+  from: devin
+  text: 'Scope note: OPS-0966 remains the KK-Mac local Ollama/MLX lane. The separate Colab T4 model-arm adapter
+    is OPS-0971; keep it distinct and do not double-book the Mac MPS video work in OPS-0967.'
 action:
   type: dispatch
   status: done
