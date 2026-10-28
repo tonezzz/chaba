@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 13:24
+updated: 2026-10-28 13:30
 priority: high
 tags:
 - litellm
@@ -110,6 +110,13 @@ comms:
 - at: 2026-10-28 13:24
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:30
+  from: devin
+  text: 'TRIAGE (2026-10-28): routing bypass half is DONE — PR #47 gemini-3.5-flash-lite-free merged + board-api
+    restarted verified-live 13:24. Remaining work splits into: (A) AUDIT — who/what raised LiteLLM budgets (chaba
+    $5->$20, ada $10->$30 per SSOT) — read-only, per Tony''s audit-first answer 13:03; (B) near-cap alert/report
+    on LiteLLM_VerificationToken spend vs cap; (C) tests proving paid fallback blocked/capped per policy. Recommend
+    queueing (A) as a bounded dispatch job now — it''s the piece Tony e'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
