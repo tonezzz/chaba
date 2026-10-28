@@ -1,6 +1,6 @@
 id: cline-kanban-offline-image-build
 title: Resolve Cline shutdown-guard image build blocker
-column: backlog
+column: doing
 updated: 2026-10-28 21:26
 brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
   not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
@@ -52,6 +52,10 @@ comms:
 - at: 2026-10-28 21:26
   from: tony
   text: queued for processing
+- at: 2026-10-28 21:26
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: tony-macbook
