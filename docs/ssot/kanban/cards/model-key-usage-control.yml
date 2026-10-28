@@ -1,0 +1,29 @@
+id: model-key-usage-control
+title: Centralize model keys and reconcile spend attribution
+column: backlog
+updated: 2026-10-28 12:07
+priority: high
+tags:
+- litellm
+- key-management
+- spend
+- board-api
+spec: 'Audit non-Live model calls and key budgets. Confirmed board-api /lesson Thai translation calls _gemini_thai
+  -> gemini_rest; gemini_rest defaults to direct Google unless GEMINI_BASE_URL is set, while the deployed chaba-board-api.service
+  has no GEMINI_BASE_URL in its unit/manager environment and board-api resolves a direct GEMINI_API_KEY_FREE from
+  secret files. This bypasses LiteLLM SpendLogs. Also reconcile live LiteLLM_VerificationToken aliases with SSOT:
+  at 2026-10-28 05:00Z chaba max_budget=$20/30d with spend=$19.672 (SSOT says $5); ada max_budget=$30 with spend=$14.528
+  (SSOT says spare/$10); bench spend=$2.008 against $2. No caps or production routing may be changed until the owner
+  confirms policy and impact. Keep Gemini Live WebSockets direct by design; Edge TTS is a separate service. Acceptance:
+  every non-Live text call is gateway-metered with safe key alias plus service/project/job/route/fallback metadata;
+  live budget values are reconciled to approved policy; near-cap alert/report is available; tests prove paid fallback
+  is blocked or capped according to the chosen policy.'
+note: Assessment found three control domains (workflow/publication, model routing/keys, execution/queue) but no
+  single joined usage/status read model. Preserve domain boundaries; simplify operator visibility and remove direct-key
+  bypasses.
+ref: SEC-0962
+comms:
+- at: 2026-10-28 12:07
+  from: tony
+  text: Created from the 2026-10-28 token/key and control-plane assessment. No code, key, budget, or production
+    routing changed.
