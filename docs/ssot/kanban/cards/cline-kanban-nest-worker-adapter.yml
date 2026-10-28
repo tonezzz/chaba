@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 07:12
+updated: 2026-10-28 08:32
 priority: medium
 tags:
 - cline-kanban
@@ -213,6 +213,13 @@ comms:
     latest equivalents: `the-jack-job-now-parses-but-the-reposito-2b544d` for the unrelated missing-title validator
     error, and `the-openrouter-key-answer-in-the-board-i-edf0aa` for secure key storage/local-only. The earlier
     requests ask the same thing and may be ignored; I will not treat them as separate approvals.'
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered after-the-approved-jack-yaml-repair-targ-bff7ce: add-title — Add a minimal title field in a separate
+    follow-up PR (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -302,7 +309,7 @@ requests:
     for a missing required top-level title (not changed by the Cline PR; no matching board card was found). May
     I add a descriptive title in a separate minimal PR too, or should I leave it to the job owner and keep PR #45
     blocked? I will not bypass the commit hook.'
-  status: open
+  status: answered
   at: 2026-10-28 06:59
   from: devin
   options:
@@ -311,6 +318,7 @@ requests:
   - id: hold-owner
     label: 'Leave that job file to its owner; keep Cline PR #45 draft'
   suggested: add-title
+  answer: add-title — Add a minimal title field in a separate follow-up PR (recommended)
 - id: the-approved-jack-syntax-repair-now-pass-666335
   ask: 'The approved Jack syntax repair now passes targeted validation. Full SSOT validation exposes one additional
     unrelated origin/master error: docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml is missing the required
