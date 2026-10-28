@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 20:12
+updated: 2026-10-28 20:19
 priority: medium
 tags:
 - cline-kanban
@@ -316,6 +316,12 @@ comms:
     optimizer baseline covers 46 warnings, including one unrelated open-request recommendation warning (that card
     was left unchanged). Not deployed yet. After merge, preserve the current network image as the rollback tag,
     rebuild/restart under the deploy lock, and verify. N'
+- at: 2026-10-28 20:19
+  from: devin
+  text: 'Deployment update: PR #52 merged as e4c0bc1. The rollback tag localhost/cline-kanban:0.1.70-pre-shutdown-guard
+    now preserves the current image. An offline build reached npm install kanban@0.1.70 and failed with DNS EAI_AGAIN
+    because that package layer is not cached. No service restart occurred; current image and all three Cline units
+    remain active. Awaiting approval for registry.npmjs.org access to rebuild; no model task was run.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
