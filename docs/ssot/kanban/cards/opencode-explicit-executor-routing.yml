@@ -1,6 +1,6 @@
 id: opencode-explicit-executor-routing
 title: Make 'use OpenCode' an explicit executor contract in cards
-column: doing
+column: review
 updated: 2026-10-28 10:11
 brief: Ensure a request to use OpenCode is persisted, honored, audited, and never silently falls back to Devin.
 priority: high
@@ -22,8 +22,12 @@ spec: 'Add an explicit executor contract for delegated cards: action.executor=op
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 , and the durable trail lives at `docs/ssot/jobs/board/2026-10-28-explicit-executor-contract.yml`.
+    | devin-task-20261028-094504-add-an-explicit-executor-contr.service: Consumed 4min 43.569s CPU time, 397.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
 note: Current runner routes by keywords and OPENCODE_LANES; a user phrase 'use OpenCode' is not yet a first-class
   persisted choice and can silently use Devin when the gate is off. This is the highest-value routing clarity fix.
 ref: OPS-0959
@@ -57,3 +61,9 @@ comms:
     only with OPENCODE_LANES+binary (defers visibly, never devin fallback), devin pins, manual/unknown fail closed;
     meta.json+usage.json+events.jsonl+manifest+verdict persist the evidence; finish lands declared artifact + held-out
     verifier before merge. 40 new tests; 289 board + 1'
+- at: 2026-10-28 10:11
+  from: idc02
+  text: 'finished (ok): exit=0 , and the durable trail lives at `docs/ssot/jobs/board/2026-10-28-explicit-executor-contract.yml`.
+    | devin-task-2'
+review_kind: verify
+claim: {}
