@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
-column: backlog
-updated: 2026-10-28 22:49
+column: doing
+updated: 2026-10-28 22:50
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -76,13 +76,17 @@ comms:
     cards in scope, no current salvage work. Historical warnings remain, but the fix is still needed: replace alarm-only
     session_gone wording with bounded exact-ref/branch/patch-relay/artifact lookup and durable UNPROVEN/NEEDS_HUMAN
     classification. Do not close as done until regression tests pass.'
+- at: 2026-10-28 22:50
+  from: tony-macbook
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 | devin-task-20261027-102925-extend-scripts-board-merge-swe.service: Failed with result ''exit-code''.
     | devin-task-20261027-102925-extend-scripts-board-merge-swe.service: Consumed 842ms CPU time over 697ms wall
     clock time, 80.8M memory peak.'
   sweep:
     session_gone: 2026-10-27 10:31
+  runner: tony-macbook
 review_kind: verify
 claim: {}
