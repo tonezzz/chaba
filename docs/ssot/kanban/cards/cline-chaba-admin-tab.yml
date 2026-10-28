@@ -1,0 +1,98 @@
+id: cline-chaba-admin-tab
+title: Add a secure Cline tab to Chaba Admin
+column: backlog
+updated: 2026-10-28 08:32
+brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
+  a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
+blocked_by: cline-kanban-nest-worker-adapter
+tags:
+- cline
+- home-assistant
+- security
+spec: 'Goal: add a Cline view immediately after Board in the chaba-admin Lovelace dashboard, with a full-page iframe,
+  no credential in the URL/browser, and the existing Cloudflare Access login experience.
+
+
+  Verified patterns: the SSOT full_page_iframe convention uses a panel view with one iframe card; live tony-ha Board
+  points to https://tony-ha.surf-thailand.com/apps/board/index.html?v=6 and has no key query (only cache-buster).
+  The chaba-admin dashboard is require_admin and SSOT records it on tony-ha. The supplied ada-ha URL reaches a different
+  HA instance (ada-ha edge -> tony-omen:8125), while tony-ha is tony-omen:8123; confirm which dashboard to change.
+  The CMS iframe tabs do use api_key query, but that is a read-only legacy pattern marked for retirement and must
+  not be copied.
+
+
+  Recommended design: add a Cline panel iframe to the confirmed dashboard, pointing at a root-path Cline hostname
+  behind the same Cloudflare Access identity/policy; keep Cline''s con01 upstream Tailnet-only. The edge proxy should
+  authorize the Cline operator group and inject the Cline proxy credential server-side; the browser must never hold
+  the credential. Restrict the tab to the operator/admin identity because Cline exposes terminal/code execution,
+  stronger than Board access. Keep the disposable workspace, no production repositories/provider secrets, and auto-commit/PR
+  disabled.
+
+
+  Options: (A) dedicated root-path hostname + panel iframe (recommended; reliable root API/WebSocket paths, needs
+  DNS/Caddy/Access route); (B) same-host subpath (best-looking URL, but Cline v0.1.70 has no verified UI base-path
+  setting and expects root API/WS paths; current proxy uses exact Host/Origin, so prefix stripping/rewrite must
+  be proven first); (C) direct Tailnet link (smallest change, but requires Tailscale and separate passcode). Never
+  put a service key in an iframe URL or client JS.
+
+
+  Standard procedure deliverable: extend the existing ssot.home-assistant.dashboards.yml full_page_iframe convention
+  with an embedded-app security gate (capability tier, SSO policy, no browser-visible keys, private upstream, origin/CSP/WebSocket
+  checks, audit/rollback); add/update the route/service declarations; apply storage-mode dashboard changes through
+  push-dashboard.py WebSocket, then sync-ssot-from-live.sh; never edit .storage directly. Verify authorized SSO
+  load with no key prompt, unauthorized denial, CSP/frame behavior, WebSocket 101, no secret in URL/DOM/network
+  logs, mobile layout, and rollback.
+
+
+  Dependency: PR #45 must merge/deploy the split Cline proxy before this tab can be used.'
+ref: HOM-0957
+comms:
+- at: 2026-10-28 07:01
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-28 07:01
+  from: devin
+  text: 'raised request which-chaba-admin-instance-should-receiv-b168fa: Which chaba-admin instance should receive
+    the Cline tab? The live dashboard returned by HA tools and the current SSOT ar'
+- at: 2026-10-28 07:01
+  from: devin
+  text: 'Research note: Board already uses the full-page iframe convention and does not carry an API key; access
+    is through Cloudflare Access/HA admin. Do not replicate CMS iframe query-key pattern. Cline is a code-execution
+    surface, so the proxy must be operator-gated and keep its credential server-side. Cline Kanban source search
+    found no UI base-path setting; only internal /api/trpc basePath, so a dedicated root-path host is safer than
+    /chaba-admin/cline until HTTP asset and WebSocket prefix behavior '
+- at: 2026-10-28 07:30
+  from: devin
+  text: 'Access note: the Board iframe itself has no key parameter; the only query name is `v` for cache busting.
+    Both `ada-ha` and `tony-ha` public hosts are Cloudflare Access gated. Cloudflare Access has a global SSO token
+    and per-host application tokens; adding the Cline hostname to the same Access application/policy (or same IdP/policy)
+    should avoid a manual API key, though a first-time redirect may be needed to establish the host cookie. The
+    unauthenticated Access login page refuses framing, so veri'
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered which-chaba-admin-instance-should-receiv-b168fa: tony-ha-root-host — Use documented tony-ha chaba-admin;
+    add a root-path, Access-protected Cline iframe after Board (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: which-chaba-admin-instance-should-receiv-b168fa
+  ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
+    current SSOT are on tony-ha:8123, but your supplied ada-ha.surf-thailand.com URL routes to the separate ada-ha:8125
+    instance. Recommended: add the tab to the tony-ha dashboard that contains the documented Board view, using a
+    root-path Cline host behind the same Cloudflare Access SSO and a server-side proxy credential (no key in the
+    browser).'
+  status: answered
+  at: 2026-10-28 07:01
+  from: devin
+  options:
+  - id: tony-ha-root-host
+    label: Use documented tony-ha chaba-admin; add a root-path, Access-protected Cline iframe after Board (recommended)
+  - id: ada-ha-root-host
+    label: Use the ada-ha dashboard from my URL; verify and update that instance instead
+  - id: same-host-subpath
+    label: Use a same-host Cline subpath; accept extra path and WebSocket compatibility work
+  suggested: tony-ha-root-host
+  answer: tony-ha-root-host — Use documented tony-ha chaba-admin; add a root-path, Access-protected Cline iframe
+    after Board (recommended)
+awaiting_action: true

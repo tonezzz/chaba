@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-27 09:58
+updated: 2026-10-28 09:40
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -35,3 +35,31 @@ comms:
     and SSOT optimization checks passed; the validator reports 8 pre-existing errors in the separate exec checkout,
     but this branch validation passed. Not pushed or merged: this worktree is 459 commits behind origin/master and
     no promotion was requested. Sacred Father project s'
+- at: 2026-10-28 09:29
+  from: devin
+  text: '[small-pack dispatch policy proposal 2026-10-28] Extend the lifecycle SOP with two lanes: (1) normal durable
+    packs (`pack.yml`, `needs`/`requires`, artifact gate) run after boot-scoped env prep; stage the entire pack
+    set before launch because discovery snapshots once. (2) tiny opportunistic gap packs use `gap-runner` only while
+    main heartbeat is fresh <=60s and phase is prep/prep-wait, VRAM/gap lease pass, hard timeout/artifact gate;
+    never model-pull/cache-write/production-index mutate. State ma'
+- at: 2026-10-28 09:32
+  from: devin
+  text: '[scope clarification 2026-10-28] The existing gap-pack contract is narrower than normal small packs: it
+    only admits work that fits the currently open prep/prep-wait window (sample timeout 120s), with fresh heartbeat,
+    VRAM and gap-lease checks; 15 minutes was only a proposed regular-pack cutoff, not an existing policy. I recommend
+    formalizing two classes separately: durable low-resource queue packs vs ephemeral gap packs. Current inventory
+    counts use resource-only small = gpu<=3GB + disk<=4GB; ti'
+- at: 2026-10-28 09:38
+  from: devin
+  text: '[procedure written 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state` on
+    branch `docs/colab-small-job-dispatch` (local commit `e5161664a`). It distinguishes durable queue packs from
+    gap packs, defines offline/stale, fresh-idle, warming, running, and drained handling, and recommends not cold-starting
+    a T4 for CPU-only work. Existing `gap-packs/PROCEDURE.md` remains the source for opportunistic prep-window jobs.
+    Commit is local/unpushed; full SSOT validator still ha'
+- at: 2026-10-28 09:40
+  from: devin
+  text: '[small-pack dispatch procedure landed locally 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state`
+    on `docs/colab-small-job-dispatch`, commit `e5161664a` (unpublished). It separates normal durable packs from
+    gap packs, covers stale/registered/warming/running/drained states, and routes CPU-small work away from cold
+    T4 starts. Current runtime registry still has no fresh Colab session; queue start waits for Cell 1/boot registration.
+    SSOT index was left unchanged becaus'

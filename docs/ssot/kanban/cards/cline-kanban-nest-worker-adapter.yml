@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-27 18:25
+updated: 2026-10-28 08:33
 priority: medium
 tags:
 - cline-kanban
@@ -136,6 +136,118 @@ comms:
   from: devin
   text: 'raised request openrouter-free-only-route-was-approved-293f91: OpenRouter free-only route was approved,
     but the existing LITELLM_KEY_BENCH cannot serve it: LiteLLM returns 422 budget_'
+- at: 2026-10-27 18:29
+  from: devin
+  text: 'Follow-up after Tony selected approve-live-test and or-free-gateway: Cline Ollama Base URL is fixed to
+    /v1; a local Cline completion returned HTTP 200 after 6m33s, but the smoke turn was canceled before shell tools
+    and no files changed. The approved OpenRouter path is currently blocked: LiteLLM returned 422 budget_exceeded
+    for LITELLM_KEY_BENCH (current cost $2.00844621 / cap $2.00); no OpenRouter inference was made. A separate request
+    asks whether to mint a dedicated Cline-only key with a free-'
+- at: 2026-10-27 18:53
+  from: devin
+  text: 'raised request pr-45-validation-is-blocked-by-an-existi-df1d28: PR #45 validation is blocked by an existing
+    YAML syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gatew'
+- at: 2026-10-27 18:54
+  from: devin
+  text: 'PR #45 is open as a draft from infra/cline-kanban-nest-worker-publish. Node proxy tests 7/7, adapter tests
+    7/7, and SSOT cross-refs pass. GitHub syntax check passed; the full SSOT validator failed on the unrelated origin/master
+    file docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml (commit 6c23b7a9a), not changed by this PR.
+    I will not merge/deploy until the recorded syntax-fix/owner decision is resolved. The local qwen3:4b Cline path
+    now returns HTTP 200 via /v1, but the manual turn'
+- at: 2026-10-27 18:55
+  from: devin
+  text: 'PR #45 is now open as a draft from infra/cline-kanban-nest-worker-publish. CI syntax passed; CI validate
+    is red only on the pre-existing origin/master syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml,
+    which is outside this PR. Per the approved flow, I am holding merge/deploy until that gate is resolved. Local
+    Cline/Ollama /v1 transport is fixed (HTTP 200), but the smoke turn was canceled before tools/files. LiteLLM
+    bench key is over cap; the separate Cline-key budget'
+- at: 2026-10-27 19:24
+  from: tony
+  text: 'answered openrouter-free-only-route-was-approved-293f91: use this key sk-or-v1-e2c...528'
+- at: 2026-10-27 19:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 19:25
+  from: tony
+  text: 'answered pr-45-validation-is-blocked-by-an-existi-df1d28: syntax-fix — Make a minimal syntax-only repair
+    in a separate follow-up PR (recommended)'
+- at: 2026-10-27 19:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 06:59
+  from: devin
+  text: 'raised request after-the-approved-jack-yaml-repair-targ-bff7ce: After the approved Jack YAML repair, targeted
+    validation passes, but full SSOT validation now fails on docs/ssot/jobs/ka'
+- at: 2026-10-28 07:00
+  from: devin
+  text: 'MacBook dispatch root cause is verified: the unit reached Devin CLI but passed the LiteLLM alias `litellm/or-claude-fable-5.1`,
+    which the CLI rejects. Its available list includes `claude-fable-5.1` (without the prefix), but that is a hosted
+    frontier model and I did not retry or spend. This is a runner/executor model-ID mismatch, not a MacBook hardware/PATH
+    failure. For the approved no-charge pilot, use local Cline/Ollama qwen3:4b after PR #45 is merged/deployed;
+    the broader lane mapping needs an'
+- at: 2026-10-28 07:00
+  from: devin
+  text: 'raised request the-approved-jack-syntax-repair-now-pass-666335: The approved Jack syntax repair now passes
+    targeted validation. Full SSOT validation exposes one additional unrelated or'
+- at: 2026-10-28 07:00
+  from: devin
+  text: 'raised request the-openrouter-key-answer-is-redacted-tr-aa0700: The OpenRouter key answer is redacted/truncated
+    in the board record, so it is not usable; I did not retrieve, transfer, '
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'The approved Jack YAML syntax repair is now valid when checked directly. Full-repo validation exposes one
+    remaining unrelated error in docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml: missing required top-level
+    title. I did not edit it; a separate request asks whether to add the minimal title or leave it to its owner.
+    This still blocks normal commits/CI.'
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'raised request the-jack-job-now-parses-but-the-reposito-2b544d: The Jack job now parses, but the repository-wide
+    SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kan'
+- at: 2026-10-28 07:05
+  from: devin
+  text: 'raised request the-openrouter-key-answer-in-the-board-i-edf0aa: The OpenRouter-key answer in the board
+    is redacted/truncated, so it is not usable; I did not retrieve, transfer, or call'
+- at: 2026-10-28 07:12
+  from: devin
+  text: 'Board housekeeping: I accidentally created duplicate open requests while resuming. Please answer only the
+    latest equivalents: `the-jack-job-now-parses-but-the-reposito-2b544d` for the unrelated missing-title validator
+    error, and `the-openrouter-key-answer-in-the-board-i-edf0aa` for secure key storage/local-only. The earlier
+    requests ask the same thing and may be ignored; I will not treat them as separate approvals.'
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered after-the-approved-jack-yaml-repair-targ-bff7ce: add-title — Add a minimal title field in a separate
+    follow-up PR (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered the-approved-jack-syntax-repair-now-pass-666335: add-title — Add a minimal title field in a separate
+    follow-up PR (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:32
+  from: tony
+  text: 'answered the-openrouter-key-answer-is-redacted-tr-aa0700: store-fresh-key — Store a rotated Cline-only
+    key in the proxy secret file; use pinned :free models only (recommended)'
+- at: 2026-10-28 08:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:33
+  from: tony
+  text: 'answered the-openrouter-key-answer-in-the-board-i-edf0aa: store-fresh-key — Store a rotated Cline-only
+    key in the proxy secret file; allow pinned :free models only (recommended)'
+- at: 2026-10-28 08:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 08:33
+  from: tony
+  text: 'answered the-jack-job-now-parses-but-the-reposito-2b544d: add-title — Add the minimal required title in
+    a separate follow-up PR (recommended)'
+- at: 2026-10-28 08:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
@@ -193,7 +305,7 @@ requests:
     enable pinned :free models through the secret-backed proxy, should I mint a separate Cline-only virtual key
     and allowlist only those free model aliases? That creates a new possible spend ceiling; paid model IDs would
     remain blocked.'
-  status: open
+  status: answered
   at: 2026-10-27 18:25
   from: devin
   options:
@@ -204,6 +316,101 @@ requests:
   - id: new-lower-cap
     label: Mint a dedicated Cline key with a lower cap; specify the cap in a reply
   suggested: new-cline-free-key
+  answer: use this key sk-or-v1-e2c...528
+- id: pr-45-validation-is-blocked-by-an-existi-df1d28
+  ask: 'PR #45 validation is blocked by an existing YAML syntax error in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml
+    (origin/master commit 6c23b7a9a, lines 30-31); this file is not changed by the Cline PR. To complete the approved
+    Cline deploy, may I make a syntax-only repair in a separate commit/PR, or should I leave it to the Jack gateway
+    owner and keep PR #45 draft? I will not merge/deploy while the required SSOT check is red.'
+  status: answered
+  at: 2026-10-27 18:53
+  from: devin
+  options:
+  - id: syntax-fix
+    label: Make a minimal syntax-only repair in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: 'Leave it to the Jack gateway owner; keep Cline PR #45 draft and hold deploy'
+  suggested: syntax-fix
+  answer: syntax-fix — Make a minimal syntax-only repair in a separate follow-up PR (recommended)
+- id: after-the-approved-jack-yaml-repair-targ-bff7ce
+  ask: 'After the approved Jack YAML repair, targeted validation passes, but full SSOT validation now fails on docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml
+    for a missing required top-level title (not changed by the Cline PR; no matching board card was found). May
+    I add a descriptive title in a separate minimal PR too, or should I leave it to the job owner and keep PR #45
+    blocked? I will not bypass the commit hook.'
+  status: answered
+  at: 2026-10-28 06:59
+  from: devin
+  options:
+  - id: add-title
+    label: Add a minimal title field in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: 'Leave that job file to its owner; keep Cline PR #45 draft'
+  suggested: add-title
+  answer: add-title — Add a minimal title field in a separate follow-up PR (recommended)
+- id: the-approved-jack-syntax-repair-now-pass-666335
+  ask: 'The approved Jack syntax repair now passes targeted validation. Full SSOT validation exposes one additional
+    unrelated origin/master error: docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml is missing the required
+    top-level title; it is outside the Jack fix and Cline PR, and no matching board card was found. May I add a
+    descriptive title in a separate minimal PR so the required checks can pass, or leave it to its owner and keep
+    the Cline PR blocked?'
+  status: answered
+  at: 2026-10-28 07:00
+  from: devin
+  options:
+  - id: add-title
+    label: Add a minimal title field in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: 'Leave it to its owner; keep Cline PR #45 draft'
+  suggested: add-title
+  answer: add-title — Add a minimal title field in a separate follow-up PR (recommended)
+- id: the-openrouter-key-answer-is-redacted-tr-aa0700
+  ask: The OpenRouter key answer is redacted/truncated in the board record, so it is not usable; I did not retrieve,
+    transfer, or call it. Please do not post the key to a card or chat. If it was a live key, rotate it, then place
+    a fresh Cline-only key in con01 `~/.config/secrets/cline-kanban.env` as `OPENROUTER_API_KEY_CLINE` and reply
+    `stored`; I will keep it in the proxy container and enforce only pinned `:free` model IDs. Or choose local-only
+    to defer OpenRouter.
+  status: answered
+  at: 2026-10-28 07:00
+  from: devin
+  options:
+  - id: store-fresh-key
+    label: Store a rotated Cline-only key in the proxy secret file; use pinned :free models only (recommended)
+  - id: local-only
+    label: Defer OpenRouter; continue with local qwen3:4b only
+  suggested: store-fresh-key
+  answer: store-fresh-key — Store a rotated Cline-only key in the proxy secret file; use pinned :free models only
+    (recommended)
+- id: the-jack-job-now-parses-but-the-reposito-2b544d
+  ask: The Jack job now parses, but the repository-wide SSOT validator still fails because docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml
+    lacks the required top-level title. This separate file is not part of the Cline PR and has no matching board
+    card. May I add a minimal descriptive title in a separate follow-up PR so validation can pass, or should I leave
+    it to its owner?
+  status: answered
+  at: 2026-10-28 07:05
+  from: devin
+  options:
+  - id: add-title
+    label: Add the minimal required title in a separate follow-up PR (recommended)
+  - id: hold-owner
+    label: Leave it to the job owner and keep Cline CI blocked
+  suggested: add-title
+  answer: add-title — Add the minimal required title in a separate follow-up PR (recommended)
+- id: the-openrouter-key-answer-in-the-board-i-edf0aa
+  ask: The OpenRouter-key answer in the board is redacted/truncated, so it is not usable; I did not retrieve, transfer,
+    or call it. Please do not post a key to a card or chat. If it was a real key, rotate it and put a fresh Cline-only
+    key in con01 ~/.config/secrets/cline-kanban.env as OPENROUTER_API_KEY_CLINE, then reply “stored”; I will keep
+    it proxy-only and enforce the pinned :free allowlist. Or choose local-only to defer OpenRouter.
+  status: answered
+  at: 2026-10-28 07:05
+  from: devin
+  options:
+  - id: store-fresh-key
+    label: Store a rotated Cline-only key in the proxy secret file; allow pinned :free models only (recommended)
+  - id: local-only
+    label: Defer OpenRouter and continue local qwen3:4b only
+  suggested: store-fresh-key
+  answer: store-fresh-key — Store a rotated Cline-only key in the proxy secret file; allow pinned :free models only
+    (recommended)
 action:
   type: dispatch
   status: done

@@ -1,0 +1,89 @@
+id: opencode-explicit-executor-routing
+title: Make 'use OpenCode' an explicit executor contract in cards
+column: done
+updated: 2026-10-28 10:18
+brief: Ensure a request to use OpenCode is persisted, honored, audited, and never silently falls back to Devin.
+priority: high
+program: ai-workforce
+tags:
+- opencode
+- routing
+- devnest
+- executor
+- safety
+spec: 'Add an explicit executor contract for delegated cards: action.executor=opencode|devin|script|manual and optional
+  action.agent_profile/model/target_host. Board-api must preserve and validate executor/profile fields; dispatcher/runner
+  must honor executor=opencode, require OPENCODE_LANES=1 and a compatible runner, and fail closed or request reroute
+  instead of silently falling back to Devin. Persist executor/provider/model/profile in task meta, card comms, usage.json,
+  and closeout. The OpenCode path must create an isolated worktree/branch, run the selected profile/model, land
+  the declared artifact, run the verifier, then merge/close only with exit evidence and durable proof. Add tests
+  for explicit OpenCode, unavailable OpenCode, explicit Devin, and no executor (safe classifier fallback). Add a
+  read-only smoke card proving the end-to-end flow. No production/write capability expansion in this card.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 , and the durable trail lives at `docs/ssot/jobs/board/2026-10-28-explicit-executor-contract.yml`.
+    | devin-task-20261028-094504-add-an-explicit-executor-contr.service: Consumed 4min 43.569s CPU time, 397.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
+note: Current runner routes by keywords and OPENCODE_LANES; a user phrase 'use OpenCode' is not yet a first-class
+  persisted choice and can silently use Devin when the gate is off. This is the highest-value routing clarity fix.
+ref: OPS-0959
+comms:
+- at: 2026-10-28 09:44
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-28 09:44
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 09:45
+  from: idc02
+  text: claimed
+- at: 2026-10-28 09:45
+  from: chaba
+  text: started devin-task-20261028-094504-add-an-explicit-executor-contr on idc02 (dispatch)
+- at: 2026-10-28 09:45
+  from: devin
+  text: dispatch session started on idc02 — reading dispatcher/runner/board-api to map executor contract touchpoints
+- at: 2026-10-28 10:07
+  from: devin
+  text: 'executor contract implemented: board-api validates+preserves executor/agent_profile/target_host/artifact;
+    runner honors explicit executor before lanes (opencode needs OPENCODE_LANES+binary, defers with comms note,
+    never devin-falls-back); devin pinned path; meta/usage/events/manifest/verdict persisted; finish lands declared
+    artifact + held-out verifier before merge; 40 new tests, 289 board+116 devnest green; smoke card queued'
+- at: 2026-10-28 10:11
+  from: devin
+  text: 'done: explicit executor contract shipped on dispatch branch (c08108e5+db728a95). board-api validates/preserves
+    executor/agent_profile/model/target_host/artifact + refuses claim-time executor changes; runner honors opencode
+    only with OPENCODE_LANES+binary (defers visibly, never devin fallback), devin pins, manual/unknown fail closed;
+    meta.json+usage.json+events.jsonl+manifest+verdict persist the evidence; finish lands declared artifact + held-out
+    verifier before merge. 40 new tests; 289 board + 1'
+- at: 2026-10-28 10:11
+  from: idc02
+  text: 'finished (ok): exit=0 , and the durable trail lives at `docs/ssot/jobs/board/2026-10-28-explicit-executor-contract.yml`.
+    | devin-task-2'
+- at: 2026-10-28 10:11
+  from: chaba
+  text: pushed dispatch/20261028-094504-add-an-explicit-executor-contr to origin
+- at: 2026-10-28 10:11
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-28 10:11
+  from: chaba
+  text: auto-merged 969cafe8 (dispatch/20261028-094504-add-an-explicit-executor-contr) → origin/master
+- at: 2026-10-28 10:11
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-094504-add-an-explicit-executor-contr,
+    branch dispatch/20261028-094504-add-an-explicit-executor-contr'
+- at: 2026-10-28 10:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-28 10:18
+  note: verified — evidence checks green, closing itself

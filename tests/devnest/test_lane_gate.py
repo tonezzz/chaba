@@ -15,6 +15,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/devnest/lane_gate.py"
 
+# never let a test touch the host's real lane state dir
+os.environ["OPENCODE_LANE_STATE"] = tempfile.mkdtemp(
+    prefix="lane-gate-test-state-")
+
 spec = importlib.util.spec_from_file_location("lane_gate", SCRIPT)
 mod = importlib.util.module_from_spec(spec)
 sys.modules["lane_gate"] = mod
@@ -198,8 +202,57 @@ class Admit(unittest.TestCase):
         self.assertTrue(any(r.startswith("quota_exceeded")
                             for r in d["reasons"]))
 
-    def test_s5_branch_code_needs_strong_model(self):
+    def _enabled_profile_dir(self, pid="bc-test"):
+        """Temp PROFILES dir holding one enabled+unattended profile —
+        admit() reads profile.yml status/unattended only."""
+        td = tempfile.TemporaryDirectory()
+        d = Path(td.name) / pid
+        d.mkdir(parents=True)
+        (d / "profile.yml").write_text(
+            f"id: {pid}\nstatus: enabled\nunattended: true\n")
+        self.addCleanup(td.cleanup)
+        old = mod.PROFILES
+        mod.PROFILES = Path(td.name)
+        self.addCleanup(setattr, mod, "PROFILES", old)
+
+    def test_missing_profile_denied_for_unattended_opencode(self):
+        # opencode-task-agent-profiles: an opencode job outside S0
+        # shadow_replay MUST name a task profile — the generic build
+        # agent is never an unattended executor
+        env = mk_env(task_class="read_only", stage="S1")
+        d = admit(env, stage="S1")
+        self.assertFalse(d["admit"])
+        self.assertTrue(any(r.startswith("missing_profile")
+                            for r in d["reasons"]))
+        env["profile"] = "no-such-profile"
+        d = admit(env, stage="S1")
+        self.assertTrue(any(r.startswith("unknown_profile")
+                            for r in d["reasons"]))
+
+    def test_disabled_profile_denied(self):
+        # the committed branch-code profile is disabled — admitting
+        # its envelope must fail on profile_disabled /
+        # profile_not_unattended even at the right stage
         env = mk_env(task_class="branch_code", stage="S5",
+                     profile="branch-code",
+                     model="litellm/claude-fable-5.1",
+                     rollback={"kind": "worktree-drop", "ref": "wt"},
+                     verifier={"type": "independent_devin",
+                               "ref": "devin-review"},
+                     allowed_paths=["scripts/"])
+        d = mod.admit(env, probe=PROBE_OK, host="tony-macbook",
+                      stage_state=stage_state("S5"), inflight=0,
+                      env_get=lambda k, d=None:
+                      "1" if k == "OPENCODE_LANES" else d)
+        self.assertFalse(d["admit"])
+        self.assertIn("profile_disabled:branch-code", d["reasons"])
+        self.assertIn("profile_not_unattended:branch-code",
+                      d["reasons"])
+
+    def test_s5_branch_code_needs_strong_model(self):
+        self._enabled_profile_dir()
+        env = mk_env(task_class="branch_code", stage="S5",
+                     profile="bc-test",
                      model="litellm/gemini-3.5-flash-lite",
                      rollback={"kind": "git-revert", "ref": "HEAD"},
                      verifier={"type": "independent_devin",
@@ -311,11 +364,103 @@ class ReviewAndMetrics(unittest.TestCase):
                   "devin_tokens_displaced", "escalations", "by_stage"):
             self.assertIn(k, a)
 
+    def test_metric_carries_profile(self):
+        # opencode-task-agent-profiles: durable metrics must record the
+        # task profile identity alongside executor/model
+        env = mk_env(task_class="read_only", stage="S1",
+                     profile="ops-readonly")
+        m = mod.new_metric(env, "opencode")
+        self.assertIn("profile", mod.METRIC_FIELDS)
+        self.assertEqual(m["profile"], "ops-readonly")
+
     def test_devin_tokens_displaced(self):
         recs = [self._rec(devin_equiv_tokens=50000)]
         a = mod.aggregate(recs)
         # verified job used 150 in+out tokens vs 50k devin-equivalent
         self.assertEqual(a["devin_tokens_displaced"], 49850)
+
+    def test_review_embeds_stage_ledger(self):
+        # AUD-0950: a committed review must carry the records its
+        # aggregate was computed from, so it stays re-derivable after
+        # state-dir loss
+        recs = [self._rec() for _ in range(5)] + \
+               [self._rec(executor="l0")]
+        r = mod.review(stage_state("S0"), recs)
+        self.assertEqual(len(r["ledger"]), 5)  # lane arm only
+        self.assertTrue(all(m["executor"] == "opencode"
+                            for m in r["ledger"]))
+
+
+class StateDir(unittest.TestCase):
+    def test_env_override_wins(self):
+        old = os.environ["OPENCODE_LANE_STATE"]
+        with tempfile.TemporaryDirectory() as td:
+            os.environ["OPENCODE_LANE_STATE"] = td
+            try:
+                self.assertEqual(mod.state_dir(), Path(td))
+            finally:
+                os.environ["OPENCODE_LANE_STATE"] = old
+
+    def test_xdg_fallback_and_legacy_migration(self):
+        with tempfile.TemporaryDirectory() as xdg, \
+                tempfile.TemporaryDirectory() as legacy:
+            (Path(legacy) / "metrics.jsonl").write_text('{"a":1}\n')
+            old_env = os.environ.pop("OPENCODE_LANE_STATE", None)
+            old_xdg = os.environ.get("XDG_STATE_HOME")
+            old_legacy = mod.LEGACY_STATE
+            os.environ["XDG_STATE_HOME"] = xdg
+            mod.LEGACY_STATE = Path(legacy)
+            try:
+                d = mod.state_dir()
+                self.assertEqual(d, Path(xdg) / "opencode-lane")
+                # legacy dir migrated once
+                self.assertEqual(
+                    (d / "metrics.jsonl").read_text(), '{"a":1}\n')
+            finally:
+                if old_env is not None:
+                    os.environ["OPENCODE_LANE_STATE"] = old_env
+                if old_xdg is None:
+                    os.environ.pop("XDG_STATE_HOME", None)
+                else:
+                    os.environ["XDG_STATE_HOME"] = old_xdg
+                mod.LEGACY_STATE = old_legacy
+
+
+class Restore(unittest.TestCase):
+    def _review(self, decision="promote", to="S1", frm="S0"):
+        return {"at": "x", "stage": frm, "decision": decision,
+                "promote_to": to, "rollback_to": None,
+                "reasons": ["gate met"], "aggregate": {},
+                "gate": {}, "next_review_due": "y"}
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.old = os.environ["OPENCODE_LANE_STATE"]
+        os.environ["OPENCODE_LANE_STATE"] = self.td.name
+        self.rp = Path(self.td.name) / "review.json"
+        self.rp.write_text(json.dumps(self._review()))
+
+    def tearDown(self):
+        os.environ["OPENCODE_LANE_STATE"] = self.old
+        self.td.cleanup()
+
+    def test_restore_writes_stage_with_evidence(self):
+        r = mod.restore_stage("S1", self.rp)
+        self.assertEqual(r["restored"], "S1")
+        st = json.loads((Path(self.td.name) / "stage.json").read_text())
+        self.assertEqual(st["current_stage"], "S1")
+        self.assertEqual(st["history"][-1]["by"], "restore")
+
+    def test_restore_refuses_without_review_evidence(self):
+        self.rp.write_text(json.dumps(self._review(decision="hold")))
+        r = mod.restore_stage("S1", self.rp)
+        self.assertIn("error", r)
+        self.assertFalse((Path(self.td.name) / "stage.json").exists())
+
+    def test_restore_refuses_when_already_at_stage(self):
+        mod.restore_stage("S1", self.rp)
+        r = mod.restore_stage("S1", self.rp)
+        self.assertIn("error", r)
 
 
 class EnvelopeLibrary(unittest.TestCase):

@@ -37,13 +37,21 @@ unverified_exit, tool_denial, timeout, executor_error.
 
 Layout:
     evals/opencode-lane/jobs/*.yaml        committed envelope library
-    evals/opencode-lane/state/             per-host, gitignored:
+    lane state dir (per-host, STABLE across checkouts — resolved as
+        $OPENCODE_LANE_STATE, else
+        ${XDG_STATE_HOME:-~/.local/state}/opencode-lane/):
         stage.json        current stage + promotion history + review_due
         metrics.jsonl     per-job metric ledger
         KILLED            kill-switch marker (presence = lane dead)
         inflight/<id>.json  concurrency markers
         heartbeat-<id>.json freshness markers
-    evals/opencode-lane/reports/           committed review reports
+        AUD-0950: this used to live at evals/opencode-lane/state/
+        inside the checkout — dispatch worktree deletion destroyed the
+        S0 ledger. A surviving legacy dir is migrated once on first use.
+    evals/opencode-lane/reports/           committed review reports;
+        each review JSON embeds the stage ledger records so the
+        verified-job aggregate stays re-derivable even if the state
+        dir is lost again.
 
 Subcommands:
     lint <job.yaml>         envelope validation only
@@ -53,6 +61,10 @@ Subcommands:
     review                  weekly promotion review -> report + recommendation
     promote                 apply a 'promote' recommendation from review
     demote <S>              operator rollback to an earlier stage
+    restore <S> --from-review <review.json>
+                            rebuild stage.json after state loss — only
+                            accepts a committed review whose decision
+                            promotes to <S>
     kill --reason R         engage kill switch (all admits deny)
     resume                  lift kill switch (records history)
     begin|end <job_id>      inflight markers (concurrency cap)
@@ -66,6 +78,7 @@ import argparse
 import importlib.util
 import json
 import os
+import shutil
 import statistics
 import sys
 import time
@@ -75,12 +88,48 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 LANE = REPO / "evals" / "opencode-lane"
 JOBS = LANE / "jobs"
-STATE = LANE / "state"
 REPORTS = LANE / "reports"
-STAGE_JSON = STATE / "stage.json"
-LEDGER = STATE / "metrics.jsonl"
-KILL_FILE = STATE / "KILLED"
-INFLIGHT = STATE / "inflight"
+PROFILES = LANE / "profiles"    # task-scoped agent profiles
+                                # (opencode-task-agent-profiles)
+LEGACY_STATE = LANE / "state"   # pre-AUD-0950 per-checkout location
+
+
+def state_dir() -> Path:
+    """Lane state dir — per-host and stable across checkouts.
+
+    Resolved as $OPENCODE_LANE_STATE, else
+    ${XDG_STATE_HOME:-~/.local/state}/opencode-lane. State lived inside
+    the checkout until AUD-0950 showed dispatch worktree deletion
+    destroys the ledger and every fresh worktree silently re-inits at
+    S0; a surviving legacy repo-local dir is migrated once."""
+    env = os.environ.get("OPENCODE_LANE_STATE")
+    if env:
+        return Path(env)
+    base = Path(os.environ.get("XDG_STATE_HOME")
+                or Path.home() / ".local" / "state")
+    d = base / "opencode-lane"
+    if not d.exists() and LEGACY_STATE.is_dir():
+        try:
+            shutil.copytree(LEGACY_STATE, d)
+        except Exception:
+            return LEGACY_STATE   # can't migrate — keep working in place
+    return d
+
+
+def stage_file() -> Path:
+    return state_dir() / "stage.json"
+
+
+def ledger_file() -> Path:
+    return state_dir() / "metrics.jsonl"
+
+
+def kill_file() -> Path:
+    return state_dir() / "KILLED"
+
+
+def inflight_dir() -> Path:
+    return state_dir() / "inflight"
 
 # import the shadow harness without duplicating its machinery
 _spec = importlib.util.spec_from_file_location(
@@ -344,6 +393,8 @@ def lint_envelope(env: dict) -> list:
         errs.append(f"bad_value:task_class={env.get('task_class')}")
     if env.get("stage") not in STAGES:
         errs.append(f"bad_value:stage={env.get('stage')}")
+    if "profile" in env and not isinstance(env.get("profile"), str):
+        errs.append("bad_value:profile must be a profile id string")
     if not isinstance(env.get("mcp_allowlist"), list):
         errs.append("bad_value:mcp_allowlist must be a list")
     if not isinstance(env.get("allowed_paths"), list) or \
@@ -368,9 +419,9 @@ def killed() -> str:
     """Kill-switch reason, or ''. KILLED file or env var both count."""
     if os.environ.get("OPENCODE_LANE_KILL"):
         return "env:OPENCODE_LANE_KILL"
-    if KILL_FILE.is_file():
+    if kill_file().is_file():
         try:
-            return json.loads(KILL_FILE.read_text()).get(
+            return json.loads(kill_file().read_text()).get(
                 "reason", "killed") or "killed"
         except Exception:
             return "killed"
@@ -378,8 +429,8 @@ def killed() -> str:
 
 
 def load_stage() -> dict:
-    if STAGE_JSON.is_file():
-        return json.loads(STAGE_JSON.read_text())
+    if stage_file().is_file():
+        return json.loads(stage_file().read_text())
     return {"current_stage": "S0",
             "history": [{"at": now_iso(), "from": None, "to": "S0",
                          "by": "init",
@@ -389,12 +440,12 @@ def load_stage() -> dict:
 
 
 def save_stage(st: dict):
-    STATE.mkdir(parents=True, exist_ok=True)
-    STAGE_JSON.write_text(json.dumps(st, indent=1))
+    state_dir().mkdir(parents=True, exist_ok=True)
+    stage_file().write_text(json.dumps(st, indent=1))
 
 
 def _heartbeat_age_s(job_id: str):
-    f = STATE / f"heartbeat-{job_id}.json"
+    f = state_dir() / f"heartbeat-{job_id}.json"
     if not f.is_file():
         return None
     try:
@@ -406,10 +457,10 @@ def _heartbeat_age_s(job_id: str):
 
 
 def _inflight_count(stale_s: int = 3600) -> int:
-    if not INFLIGHT.is_dir():
+    if not inflight_dir().is_dir():
         return 0
     n = 0
-    for f in INFLIGHT.glob("*.json"):
+    for f in inflight_dir().glob("*.json"):
         try:
             at = json.loads(f.read_text())["at"]
             if time.time() - datetime.fromisoformat(at).timestamp() \
@@ -452,6 +503,28 @@ def admit(env: dict, probe: dict = None, host: str = "",
         reasons.append(f"wrong_stage:job={estage} lane={cur}")
     elif cls not in stage["classes"]:
         reasons.append(f"class_not_in_stage:{cls}")
+
+    # task-scoped profiles (opencode-task-agent-profiles): an opencode
+    # job outside the frozen S0 shadow corpus must name a profile —
+    # the generic build agent is never an unattended executor. Deep
+    # envelope<->profile consistency (tool/path/model/verifier/rollback
+    # ceilings) is checked by opencode_profiles.check_envelope.
+    if env.get("executor") == "opencode" and cls != "shadow_replay":
+        pid = env.get("profile")
+        if not pid:
+            reasons.append(
+                "missing_profile:unattended opencode jobs must name "
+                "a task profile")
+        elif not (PROFILES / pid / "profile.yml").is_file():
+            reasons.append(f"unknown_profile:{pid}")
+        else:
+            pdata = _load_yaml_min(PROFILES / pid / "profile.yml")
+            if isinstance(pdata, dict):
+                if pdata.get("status") != "enabled":
+                    reasons.append(f"profile_disabled:{pid}")
+                if pdata.get("unattended") is False and \
+                        env.get("unattended", True) is not False:
+                    reasons.append(f"profile_not_unattended:{pid}")
 
     h = host or os.uname().nodename
     if env["target_host"] != h:
@@ -528,7 +601,8 @@ def admit(env: dict, probe: dict = None, host: str = "",
 # -------------------------------------------------------------- metrics
 
 METRIC_FIELDS = [
-    "job_id", "card", "stage", "task_class", "executor", "model",
+    "job_id", "card", "stage", "task_class", "executor", "profile",
+    "model",
     "provider", "input_tokens", "cache_read_tokens", "cache_write_tokens",
     "output_tokens", "provider_cost_usd", "wall_s", "queue_s", "retries",
     "tool_denials", "human_minutes", "verifier_pass", "artifact_landed",
@@ -546,7 +620,8 @@ def new_metric(env: dict, executor: str) -> dict:
     m = {k: None for k in METRIC_FIELDS}
     m.update({"job_id": env.get("id"), "card": env.get("card"),
               "stage": env.get("stage"), "task_class": env.get("task_class"),
-              "executor": executor, "model": env.get("model", ""),
+              "executor": executor, "profile": env.get("profile"),
+              "model": env.get("model", ""),
               "provider": env.get("provider", ""), "at": now_iso(),
               "input_tokens": 0, "cache_read_tokens": 0,
               "cache_write_tokens": 0, "output_tokens": 0,
@@ -569,16 +644,16 @@ def finalize_cost(m: dict):
 
 def record_metric(m: dict):
     finalize_cost(m)
-    STATE.mkdir(parents=True, exist_ok=True)
-    with open(LEDGER, "a") as f:
+    state_dir().mkdir(parents=True, exist_ok=True)
+    with open(ledger_file(), "a") as f:
         f.write(json.dumps(m) + "\n")
 
 
 def load_ledger(stage: str = "") -> list:
-    if not LEDGER.is_file():
+    if not ledger_file().is_file():
         return []
     out = []
-    for line in LEDGER.read_text().splitlines():
+    for line in ledger_file().read_text().splitlines():
         try:
             m = json.loads(line)
         except Exception:
@@ -711,6 +786,8 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
     return {"at": now_iso(), "stage": cur, "decision": decision,
             "promote_to": nxt, "rollback_to": prev,
             "reasons": reasons, "aggregate": agg,
+            "ledger": recs,     # embedded so a committed review stays
+                                # re-derivable after state loss (AUD-0950)
             "gate": gate, "next_review_due":
             (datetime.now(timezone.utc) + timedelta(days=7)).date()
             .isoformat()}
@@ -754,6 +831,34 @@ def cmd_review(args):
                                         "promote_to", "rollback_to",
                                         "reasons")}, indent=1))
     return 0
+
+
+def restore_stage(stage: str, review_path: Path) -> dict:
+    """Rebuild stage.json after state-dir loss (AUD-0950). Only accepts
+    a committed promotion-review JSON whose decision promotes to the
+    requested stage — the restore is evidence-backed, never bare."""
+    st = load_stage()
+    cur = st.get("current_stage", "S0")
+    if stage_file().is_file() and \
+            STAGE_ORDER.index(cur) >= STAGE_ORDER.index(stage):
+        return {"error": f"lane already at {cur} — use promote/demote"}
+    rp = Path(review_path)
+    if not rp.is_file():
+        return {"error": f"no such review: {rp}"}
+    rv = json.loads(rp.read_text())
+    if rv.get("decision") != "promote" or rv.get("promote_to") != stage:
+        return {"error": f"review {rp.name} does not promote to {stage}",
+                "review": {k: rv.get(k) for k in
+                           ("decision", "promote_to", "stage")}}
+    st.setdefault("history", []).append(
+        {"at": now_iso(), "from": cur, "to": stage, "by": "restore",
+         "reason": f"stage rebuilt from committed review {rp.name} "
+                   "after state-dir loss (AUD-0950); ledger records "
+                   "pre-loss are unrecoverable"})
+    st["current_stage"] = stage
+    save_stage(st)
+    return {"restored": stage, "evidence": str(rp),
+            "history": st["history"][-1]}
 
 
 # ----------------------------------------------------------------- s0
@@ -877,6 +982,11 @@ def main():
     sub.add_parser("promote")
     sp = sub.add_parser("demote")
     sp.add_argument("stage", choices=STAGE_ORDER)
+    sp = sub.add_parser("restore")
+    sp.add_argument("stage", choices=STAGE_ORDER)
+    sp.add_argument("--from-review", required=True,
+                    help="committed promotion-review JSON that proves "
+                         "the stage (decision=promote, promote_to=S)")
 
     sp = sub.add_parser("kill")
     sp.add_argument("--reason", default="operator kill")
@@ -940,9 +1050,13 @@ def main():
         save_stage(st)
         print(json.dumps({"demoted": args.stage}))
         return 0
+    if args.cmd == "restore":
+        r = restore_stage(args.stage, Path(args.from_review))
+        print(json.dumps(r, indent=1))
+        return 1 if "error" in r else 0
     if args.cmd == "kill":
-        STATE.mkdir(parents=True, exist_ok=True)
-        KILL_FILE.write_text(json.dumps(
+        state_dir().mkdir(parents=True, exist_ok=True)
+        kill_file().write_text(json.dumps(
             {"at": now_iso(), "reason": args.reason}))
         st = load_stage()
         st["history"].append({"at": now_iso(), "from": st["current_stage"],
@@ -952,8 +1066,8 @@ def main():
         print(json.dumps({"killed": True, "reason": args.reason}))
         return 0
     if args.cmd == "resume":
-        if KILL_FILE.is_file():
-            KILL_FILE.unlink()
+        if kill_file().is_file():
+            kill_file().unlink()
         st = load_stage()
         st["history"].append({"at": now_iso(), "from": "KILLED",
                               "to": st["current_stage"], "by": "operator",
@@ -962,18 +1076,18 @@ def main():
         print(json.dumps({"killed": False}))
         return 0
     if args.cmd == "begin":
-        INFLIGHT.mkdir(parents=True, exist_ok=True)
-        (INFLIGHT / f"{args.job_id}.json").write_text(json.dumps(
+        inflight_dir().mkdir(parents=True, exist_ok=True)
+        (inflight_dir() / f"{args.job_id}.json").write_text(json.dumps(
             {"job": args.job_id, "at": now_iso(), "pid": os.getpid()}))
         return 0
     if args.cmd == "end":
-        f = INFLIGHT / f"{args.job_id}.json"
+        f = inflight_dir() / f"{args.job_id}.json"
         if f.is_file():
             f.unlink()
         return 0
     if args.cmd == "heartbeat":
-        STATE.mkdir(parents=True, exist_ok=True)
-        (STATE / f"heartbeat-{args.job_id}.json").write_text(
+        state_dir().mkdir(parents=True, exist_ok=True)
+        (state_dir() / f"heartbeat-{args.job_id}.json").write_text(
             json.dumps({"job": args.job_id, "at": now_iso()}))
         return 0
     if args.cmd == "record":

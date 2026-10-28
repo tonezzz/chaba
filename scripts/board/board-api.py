@@ -185,7 +185,9 @@ PRIORITIES = {"high", "medium", "low"}
 ACTION_TYPES = {"dispatch", "manual"}
 # action keys a caller may set — status/runner/task_id are board-owned and
 # silently dropped so a spawn can't fake a running card
-ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model")
+ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
+               "executor", "agent_profile", "profile", "target_host",
+               "artifact")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -600,9 +602,15 @@ def queue_starve_warn(card: dict) -> str:
     action.type == dispatch. Queueing a card typed manual/devin/self/
     container silently starves it (2026-10-13 zombie-sweep: 6 cards
     queued for days, zero claims). Warn the queuer — never auto-flip the
-    type, a manual card queued by hand may mean 'not for dispatch'."""
-    t = str((card.get("action") or {}).get("type") or "dispatch")
+    type, a manual card queued by hand may mean 'not for dispatch'.
+    Same for the executor contract: executor=manual means Tony's hands —
+    automation never claims it."""
+    a = card.get("action") or {}
+    t = str(a.get("type") or "dispatch")
     if t == "dispatch":
+        if str(a.get("executor") or "") == "manual":
+            return ("WARNING: action.executor=manual — never claimed by "
+                    "automation; this card will starve in queue")
         return ""
     return (f"WARNING: action.type={t} — kanban-dispatch claims only "
             "type=dispatch; this card will starve in queue")
@@ -701,9 +709,35 @@ def do_claim(card: dict, body: dict) -> str:
             raise ValueError("invalid action lane")
         a["lane"] = lane
     if model:
-        if not re.fullmatch(r"[a-zA-Z0-9._/-]{1,80}", model):
+        if not dr.MODEL_ID_RE.match(model):
             raise ValueError("invalid action model")
         a["model"] = model
+    # Executor contract (opencode-explicit-executor-routing): the claim
+    # may carry the resolved executor/profile/target_host so a remote
+    # claimer's routing persists atomically with the claim. A declared
+    # action.executor is the contract — a claim that disagrees with it
+    # is refused, not silently rewritten.
+    ex = str(body.get("executor") or "").strip()
+    if ex:
+        if ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"invalid action executor (one of {sorted(dr.EXECUTORS)})")
+        if a.get("executor") and str(a["executor"]) != ex:
+            raise ValueError(
+                f"card declares executor={a['executor']} — a claim "
+                "can't change the contract")
+        a["executor"] = ex
+    prof = str(body.get("agent_profile") or body.get("profile")
+               or "").strip()
+    if prof:
+        if not dr.PROFILE_ID_RE.match(prof):
+            raise ValueError("invalid action agent_profile")
+        a["agent_profile"] = prof
+    th = str(body.get("target_host") or "").strip()
+    if th:
+        if not dr.HOST_ID_RE.match(th):
+            raise ValueError("invalid action target_host")
+        a["target_host"] = th
     a["runner"] = host
     a["status"] = "running"  # claimed = running from the board's view;
     # the runner's finish call (or a sweeper) is the only way out
@@ -1120,6 +1154,29 @@ def do_create(body: dict, frm: str) -> dict:
         if repo and repo not in dr.repos():
             raise ValueError(
                 f"action.repo {repo!r} is not in the dispatch whitelist")
+        # executor contract (opencode-explicit-executor-routing) —
+        # the declared executor is first-class: bad values are refused
+        # here so a misspelled executor never routes silently.
+        ex = str(act.get("executor") or "").strip()
+        if ex and ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"action.executor must be one of {sorted(dr.EXECUTORS)}")
+        for pk in ("agent_profile", "profile"):
+            pv = str(act.get(pk) or "").strip()
+            if pv and not dr.PROFILE_ID_RE.match(pv):
+                raise ValueError(
+                    f"action.{pk} must be a profile id "
+                    "([a-z0-9][a-z0-9-], max 61)")
+        th = str(act.get("target_host") or "").strip()
+        if th and not dr.HOST_ID_RE.match(th):
+            raise ValueError(
+                "action.target_host must be a host id "
+                "([a-z0-9][a-z0-9.-], max 63)")
+        ap = str(act.get("artifact") or "").strip()
+        if ap and (ap.startswith("/") or ".." in ap.split("/")
+                   or len(ap) > 200):
+            raise ValueError(
+                "action.artifact must be a safe repo-relative path")
     on_exists = str(body.get("on_exists") or "error").strip()
     if on_exists not in ("error", "queue"):
         raise ValueError("on_exists must be error|queue")
@@ -1189,9 +1246,9 @@ def do_create(body: dict, frm: str) -> dict:
             card["action"]["labels"] = [str(x)[:40] for x in labels][:10]
         if "model" in card["action"]:
             model = str(card["action"]["model"]).strip()
-            if not re.fullmatch(r"[a-zA-Z0-9._-]{1,40}", model):
+            if not dr.MODEL_ID_RE.match(model):
                 raise ValueError("action.model must be a model id "
-                                 "([a-zA-Z0-9._-], max 40)")
+                                 "([a-zA-Z0-9._/-], max 80)")
             card["action"]["model"] = model
     if body.get("queue"):
         a = card.setdefault("action", {})

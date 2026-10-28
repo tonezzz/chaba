@@ -26,7 +26,8 @@ planning:
     - OpenCode SPA loads through https://idc02.taila0626a.ts.net:8448
     - no credential reaches browser JS (config, page, cookie)
   risks:
-    - opencode /config leaks resolved provider apiKey -> mitigated: key in
+    - >-
+      opencode /config leaks resolved provider apiKey -> mitigated: key in
       auth.json credential store, not opencode.json (verified clean)
     - rootless uid mapping on bind mounts -> mitigated: UserNS=keep-id
   resources:
@@ -125,15 +126,17 @@ report:
     auth.json.
   evidence:
     - enroll flow: POST /enroll -> 303 / + cookie flags verified live
-    - replay: {"error":"code_used"}; forged code -> 401 invalid_code
+    - 'replay: {"error":"code_used"}; forged code -> 401 invalid_code'
     - re-register: old cookie -> 401 after new mint
     - unauth: /global/health 401 (no cookie + forged); /admin 401
-    - boundary: /file/content?path=/etc/passwd denied; /workspace/* served;
-      direct :4096 unreachable from host
+    - boundary: >-
+        /file/content?path=/etc/passwd denied; /workspace/* served;
+        direct :4096 unreachable from host
     - UI: OpenCode SPA 200 via tailnet URL; SSE server.connected event live
     - model: podman exec opencode run -> "PONG" through LiteLLM (auth.json)
-    - audit: mint_reregister/enroll_ok/enroll_code_used/ws/boot events in
-      state/audit.jsonl with client IP via X-Forwarded-For
+    - audit: >-
+        mint_reregister/enroll_ok/enroll_code_used/ws/boot events in
+        state/audit.jsonl with client IP via X-Forwarded-For
   how_to_verify: |
     jack-enroll mint                 # prints code + redeem URL
     open https://idc02.taila0626a.ts.net:8448/enroll  -> paste code -> IDE

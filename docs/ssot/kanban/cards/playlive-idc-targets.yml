@@ -1,16 +1,17 @@
 id: playlive-idc-targets
 title: Provision playlived/Chrome lanes on idc hosts (target preference)
-brief: Tony prefers idc01–idc03 as PlayLive targets (2026-10-08). No idc host runs playlived today — the preference
-  is recorded but cannot activate until one is provisioned. This card is the provisioning work.
+brief: Tony prefers idc01–idc03 as PlayLive targets (2026-10-08). No idc host runs playlived today — the
+  preference is recorded but cannot activate until one is provisioned. This card is the provisioning work.
 column: backlog
 priority: medium
 created: 2026-10-08
-note: 'Preference recorded in docs/ssot/infrastructure/playlive-hosts.yml (target_preference block) + ssot.apps.playlive.yml.
-  Scope: pick the idc host (idc02 suggested — least loaded; idc01 is retired/cold-batch so keep it last), install
-  a user playlived.service there (reuse stacks/ or mcp-servers/mcp-playlive unit from tony-dell), add the host to
-  playlive-hosts.yml hosts: + per_host: + failover:, update self_heal commands, then flip target_preference.status
-  to active. Constraints: VPS CPU is modest — headless Playwright only (no chrome-live heavy sessions); keep tony-dell
-  as fallback. idc01 must never take ada services or mddb writes (retired host) per ssot.host-roles.'
+note: 'Preference recorded in docs/ssot/infrastructure/playlive-hosts.yml (target_preference block) +
+  ssot.apps.playlive.yml. Scope: pick the idc host (idc02 suggested — least loaded; idc01 is retired/cold-batch
+  so keep it last), install a user playlived.service there (reuse stacks/ or mcp-servers/mcp-playlive
+  unit from tony-dell), add the host to playlive-hosts.yml hosts: + per_host: + failover:, update self_heal
+  commands, then flip target_preference.status to active. Constraints: VPS CPU is modest — headless Playwright
+  only (no chrome-live heavy sessions); keep tony-dell as fallback. idc01 must never take ada services
+  or mddb writes (retired host) per ssot.host-roles.'
 links:
 - docs/ssot/infrastructure/playlive-hosts.yml
 - docs/ssot/apps/ssot.apps.playlive.yml
@@ -28,5 +29,15 @@ comms:
 - at: 2026-10-15 13:04
   from: tony
   text: moved doing -> backlog
+- at: 2026-10-28 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 updated: 2026-10-15 13:04
 ref: OPS-0439
+spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing
+  a user playlived.service by reusing stacks/ or mcp-servers/mcp-playlive unit from tony-dell. Update
+  docs/ssot/infrastructure/playlive-hosts.yml (target_preference block, hosts, per_host, failover) and
+  ssot.apps.playlive.yml, update self_heal commands, and flip target_preference.status to active. Keep
+  tony-dell as fallback and ensure idc01 remains last (retired/cold-batch, never taking ada services or
+  mddb writes). Verify by checking the active status in playlive-hosts.yml, service health on idc02, and
+  correct failover configuration.

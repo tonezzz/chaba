@@ -1,7 +1,7 @@
 id: audit-oc-lane-state-missing-lane
 title: 'OpenCode audit: lane_state_missing (lane)'
-column: backlog
-updated: 2026-10-27 16:54
+column: done
+updated: 2026-10-27 19:17
 brief: promotion reviews exist but evals/opencode-lane/state/ (stage.json + metrics.jsonl ledger) is absent — the
   verified-job aggregate cannot be re-derived
 priority: high
@@ -14,3 +14,68 @@ comms:
 - at: 2026-10-27 16:54
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 18:54
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 18:54
+  from: mn01
+  text: claimed
+- at: 2026-10-27 18:54
+  from: chaba
+  text: started devin-task-20261027-115440-opencode-audit-lane-state-miss on mn01 (dispatch)
+- at: 2026-10-27 18:54
+  from: devin
+  text: '[audit] started: checking evals/opencode-lane state dir + promotion review producers'
+- at: 2026-10-27 19:00
+  from: devin
+  text: '[audit] CONFIRMED + fixed in branch. Root cause: lane_gate.py resolved state/ inside the checkout — the
+    S0 ledger died with its dispatch worktree (gitignored, never committed); per-job records unrecoverable, aggregate
+    survives only in the committed review JSON. Fix: state dir moved to host-stable ${XDG_STATE_HOME:-~/.local/state}/opencode-lane
+    (env override, legacy auto-migrates); review JSON now embeds the stage ledger; new restore subcommand rebuilds
+    stage.json from committed review evidence. '
+- at: 2026-10-27 19:01
+  from: mn01
+  text: 'finished (ok): exit=0 py restore S1 --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json`.
+    | devin-task-20261027-'
+- at: 2026-10-27 19:01
+  from: chaba
+  text: 'session-end checkpoint 3f0c83b8: 7 leftover file(s) committed'
+- at: 2026-10-27 19:01
+  from: chaba
+  text: pushed dispatch/20261027-115440-opencode-audit-lane-state-miss to origin
+- at: 2026-10-27 19:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 19:01
+  from: chaba
+  text: auto-merged 243c9a48 (dispatch/20261027-115440-opencode-audit-lane-state-miss) → origin/master
+- at: 2026-10-27 19:01
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 19:02
+  from: chaba
+  text: 'merge-sweep: devin-task-20261027-115440-opencode-audit-lane-state-miss no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-27 19:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261027-115440-opencode-audit-lane-state-miss on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 19:17
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 py restore S1 --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json`. | devin-task-20261027-115440-opencode-audit-lane-state-miss.service:
+    Consumed 13.756s CPU time over 5min 56.368s wall clock time, 557.6M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-10-27 19:02
+    dirty: 1
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 19:17
+  note: verified — evidence checks green, closing itself

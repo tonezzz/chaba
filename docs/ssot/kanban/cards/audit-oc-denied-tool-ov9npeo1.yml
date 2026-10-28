@@ -1,7 +1,7 @@
 id: audit-oc-denied-tool-ov9npeo1
 title: 'OpenCode audit: denied_tool (OV9npEO1)'
-column: backlog
-updated: 2026-10-27 16:54
+column: done
+updated: 2026-10-28 06:48
 brief: 'read denied: The user rejected permission to use this specific tool call.'
 priority: high
 tags:
@@ -13,3 +13,90 @@ comms:
 - at: 2026-10-27 16:54
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 19:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-10-27 20:49
+  from: tony
+  text: 'answered the-card-notes-an-opencode-aud-fb14b7: ★ investigate in chaba repo on tony-dell'
+- at: 2026-10-27 20:49
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-28 05:59
+  from: tony
+  text: queued for processing
+- at: 2026-10-28 06:00
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 06:00
+  from: idc02
+  text: claimed
+- at: 2026-10-28 06:00
+  from: chaba
+  text: started devin-task-20261028-060022-investigate-the-opencode-audit on idc02 (dispatch)
+- at: 2026-10-28 06:00
+  from: devin
+  text: dispatch started — locating OV9npEO1 in chaba repo audit data
+- at: 2026-10-28 06:04
+  from: devin
+  text: 'done (dispatch idc02): OV9npEO1 = permission-rejected `read` (ask-form, not rule-deny) — enforcement held,
+    pass-with-caveat. Session-ID map shows it is a 5th distinct session; all committed event streams scanned — 0
+    read-rejects, so the session lives only in tony-macbook opencode.db (S0/shadow/ops0902/tmp groups). Confirmed
+    the AUD-0938 evidence gap: audit script/report/tests/job-doc never landed. Full record: docs/ssot/jobs/devnest/2026-10-28-opencode-denied-tool-ov9npeo1-audit.yml'
+- at: 2026-10-28 06:05
+  from: idc02
+  text: 'finished (ok): exit=0 and follow-ups noted (land the audit toolchain; query opencode.db on tony-macbook
+    for the denied path). | devin-t'
+- at: 2026-10-28 06:05
+  from: chaba
+  text: pushed dispatch/20261028-060022-investigate-the-opencode-audit to origin
+- at: 2026-10-28 06:05
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-28 06:05
+  from: chaba
+  text: auto-merged b1a688e7 (dispatch/20261028-060022-investigate-the-opencode-audit) → origin/master
+- at: 2026-10-28 06:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-060022-investigate-the-opencode-audit,
+    branch dispatch/20261028-060022-investigate-the-opencode-audit'
+- at: 2026-10-28 06:17
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-28 06:32
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+requests:
+- id: the-card-notes-an-opencode-aud-fb14b7
+  ask: The card notes an OpenCode audit event for a denied tool call (OV9npEO1), but lacks a target host, repository,
+    and investigation boundaries. Since no specific host or repository is mentioned in the card or recent communications,
+    I need the owner to select the appropriate context and target for this audit investigation.
+  options:
+  - ★ investigate in chaba repo on tony-dell
+  - investigate in ada-voice repo on tony-macbook
+  - postpone audit until more telemetry is available
+  status: answered
+  at: 2026-10-27 19:20
+  from: backlog-spec-enrich
+  answer: ★ investigate in chaba repo on tony-dell
+spec: Investigate the OpenCode audit denied_tool event referenced by ID OV9npEO1 within the chaba repository on
+  host tony-dell. Ensure all constraints and context from the card notes are respected during the inspection. The
+  done-condition is verified when the investigation results are fully documented and recorded within the chaba repository.
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 and follow-ups noted (land the audit toolchain; query opencode.db on tony-macbook for the denied
+    path). | devin-task-20261028-060022-investigate-the-opencode-audit.service: Consumed 40.033s CPU time, 602.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-28 06:32
+  note: verified — evidence checks green, closing itself
