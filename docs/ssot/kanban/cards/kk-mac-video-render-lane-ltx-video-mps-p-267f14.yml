@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-28 19:48
+updated: 2026-10-28 20:21
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -30,3 +30,14 @@ comms:
 - at: 2026-10-28 19:48
   from: tony
   text: card captured via board-api
+- at: 2026-10-28 20:21
+  from: devin
+  text: 'progress: kk-mac lanes building.
+
+    - kk-mac verified: M4 Max / 36GB / macOS 15.7.3 / arm64; uv + CPython 3.11.18 + torch 2.14.1, MPS=True.
+
+    - Lane A (MPS port of kk-video-c9f99fee6146-preview): probe script written (DEV=mps, bf16, 640x384x73f@40steps,
+    same shot embeds). shot01-02 embeds already on kk-mac; shot03 in flight.
+
+    - Lane B (native MLX): chose baisampayans/ltx-mlx — pure-MLX port of LTX-Video 0.9.x family (2B/13B distilled),
+    ~200MB deps, ~3.4x faster than PyTorch-MPS in upstream bench. Bett'
