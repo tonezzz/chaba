@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-28 19:39
+updated: 2026-10-28 20:53
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -25,3 +25,10 @@ comms:
 - at: 2026-10-28 19:39
   from: devin
   text: card captured via board-api
+- at: 2026-10-28 20:53
+  from: devin
+  text: 'Packaging recommendation (2026-10-28): make the first KK-Mac DevNest slot a 30-minute local-model benchmark;
+    allow 60 minutes only after the 30-minute pass. Pin model/runtime/revision and a fixed read-only fixture set
+    (classification, summaries, bounded code suggestions), use an independent verifier, and publish JSON/Markdown
+    with load time, tokens/s, peak unified memory/thermal if available, pass rate, and intervention count. Prefetch/cache
+    in prep; no API keys or personal files. Schedule this '
