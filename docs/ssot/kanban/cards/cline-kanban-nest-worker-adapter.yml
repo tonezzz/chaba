@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 22:42
+updated: 2026-10-28 22:58
 priority: medium
 tags:
 - cline-kanban
@@ -337,6 +337,13 @@ comms:
   text: Tony authorized one fresh-key local Qwen smoke. Preparing job_key cline-nest-smoke-20261028-ada-r1 in a
     new isolated Drive root gdrive:ada-nest-cline-pilot-rerun-20261028-ada; the prior fd918/bbd43/62aaf tasks remain
     in Trash. Using only qwen3:4b on the existing disposable con01 workspace; no shared queue, paid model, or commit/push.
+- at: 2026-10-28 22:58
+  from: devin
+  text: 'Fresh-key smoke result (Tony-authorized): job_key cline-nest-smoke-20261028-ada-r1 created Cline task f49b1
+    via a new isolated Drive root. One local Ollama qwen3:4b session completed exit_code=0, but the task worktree
+    contains only README.md; nest-cline-smoke.txt is absent. The worker timed out waiting for Review; no task-result.json,
+    patch, done marker, or remote claim remains. The deployed --skip-shutdown-cleanup guard is active, so the worktree
+    remains available for inspection. No paid model,'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
