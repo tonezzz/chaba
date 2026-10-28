@@ -1,7 +1,7 @@
 id: nest-opencode-executor-eval
 title: 'Nest executor eval: opencode as a coding-agent worker'
-column: review
-updated: 2026-10-28 12:55
+column: done
+updated: 2026-10-28 13:02
 note: 'Evaluate opencode (SST open-source coding agent, headless `opencode run`) as a general job executor in the
   Ada Nest — workers pull a job spec, run it in an isolated worktree, post results to kanban. Motivating job: MEM-0871
   mddb prune/compact sequence — every step is checkable, making it an ideal eval template.'
@@ -61,6 +61,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-124411-nest-executor-eval-opencode-as,
     branch dispatch/20261028-124411-nest-executor-eval-opencode-as'
+- at: 2026-10-28 13:02
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -71,3 +74,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-28 13:02
+  note: verified — evidence checks green, closing itself
