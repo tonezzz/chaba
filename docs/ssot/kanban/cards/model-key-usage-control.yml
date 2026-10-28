@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 12:56
+updated: 2026-10-28 12:57
 priority: high
 tags:
 - litellm
@@ -52,6 +52,10 @@ comms:
     gateway/free quota fails it degrades to English-only, with no paid fallback. Tests: 24 targeted unittests +
     board-api selftest passed; a minimal live free-route probe returned OK. No keys or caps changed. Production
     is NOT deployed yet: idc03 served checkout `~/CascadeProjects/chaba-t'
+- at: 2026-10-28 12:57
+  from: devin
+  text: 'raised request sec0962-served-checkout-deploy: PR #47 is merged, but the idc03 served checkout is dirty
+    and 10 commits ahead. May I reconcile it with the prescribed sa'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
@@ -66,4 +70,16 @@ requests:
   suggested: free-only
   answer: free-only — route through LiteLLM's gemini-3.5-flash-lite-free deployment; if quota/gateway fails, keep
     the lesson English-only. No paid fallback.
+- id: sec0962-served-checkout-deploy
+  ask: 'PR #47 is merged, but the idc03 served checkout is dirty and 10 commits ahead. May I reconcile it with the
+    prescribed safe-pull, then restart and verify chaba-board-api.service?'
+  status: open
+  at: 2026-10-28 12:57
+  from: devin
+  options:
+  - id: safe-pull-and-restart
+    label: Approve safe-pull reconciliation, inspect/preserve local edits, then restart and verify board-api (recommended).
+  - id: owner-reconcile-first
+    label: I will reconcile the served checkout first; wait to restart.
+  suggested: safe-pull-and-restart
 awaiting_action: true
