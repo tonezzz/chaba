@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 12:09
+updated: 2026-10-28 12:33
 priority: high
 tags:
 - litellm
@@ -38,10 +38,17 @@ comms:
     29 Groq GPT-OSS; local rows $0), ada $0.020755, mddb $0.004122, bench $0. The Chaba alias is at $19.672/$20
     with reset Nov 1; Ada $14.528/$30; Bench $2.008/$2. SSOT documents different Ada/Chaba limits, so do not change
     caps until intended limits are confirmed. Ledger excludes boa'
+- at: 2026-10-28 12:33
+  from: devin
+  text: 'answered board-api-translation-spend-policy: free-only — route through LiteLLM''s gemini-3.5-flash-lite-free
+    deployment; if quota/gateway fails, keep the lesson English-only. No paid fallback.'
+- at: 2026-10-28 12:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
-  status: open
+  status: answered
   at: 2026-10-28 12:08
   from: devin
   options:
@@ -50,3 +57,6 @@ requests:
   - id: budgeted-paid
     label: LiteLLM route may fall back to paid Gemini, but enforce a per-30d cap and alert.
   suggested: free-only
+  answer: free-only — route through LiteLLM's gemini-3.5-flash-lite-free deployment; if quota/gateway fails, keep
+    the lesson English-only. No paid fallback.
+awaiting_action: true
