@@ -25,7 +25,7 @@ design:
     entry: name, relative_path, kind, size_bytes, mtime, mode
       (+depth on search/tree, +link_target/link_escape on symlinks)
     kinds: [file, dir, symlink, other]
-    mtime: epoch seconds int; mode: 4-digit octal string
+    mtime: "epoch seconds int; mode: 4-digit octal string"
   inputs: host, path, pattern (fnmatch; '/' anchors at any depth),
     depth, max_entries, sort (name|size|mtime|kind), order, kind, format
   format_rows: >-
@@ -40,7 +40,7 @@ design:
     max_scan: 200000 hard
   security:
     - allowlist roots from ssot.mcp-debug.files.yml allowed_path_prefixes
-    - '..' / NUL / non-absolute rejected server-side and remotely
+    - "'..' / NUL / non-absolute rejected server-side and remotely"
     - symlink escape flagged (link_escape + errors[]), never traversed
     - dir-loop safe (lstat kinds; no symlink descent)
     - read-only; mcp_raw remains gated behind raw_commands.allowed_prefixes
@@ -118,7 +118,8 @@ files_changed:
   - reports/mcp-files-bench-2026-10-28.{md,json}
 
 followups:
-  - deploy note: mcp-debug.sh restarts the server on demand; new tools appear
+  - >-
+    Deploy note: mcp-debug.sh restarts the server on demand; new tools appear
     after the next mcp_debug reload / server restart on tony-dell.
   - rows format could become the recommended bulk mode in the tool
     description once agents use it; measure real-session usage first.

@@ -54,6 +54,15 @@ class ClineKanbanNestBridgeTests(unittest.TestCase):
         task = {"id": "task-123", "prompt": f"{spec['prompt']}\n{marker}"}
         self.assertEqual(bridge.find_existing_task([task], marker), task)
 
+    def test_resumes_tasks_already_moved_to_in_progress(self):
+        self.assertTrue(bridge.should_start_task({"column": "backlog"}))
+        self.assertTrue(bridge.should_start_task({
+            "column": "in_progress",
+            "session": None,
+        }))
+        self.assertFalse(bridge.should_start_task({"column": "review"}))
+        self.assertFalse(bridge.should_start_task({"column": "trash"}))
+
     def test_create_command_pins_local_provider_and_disables_auto_review(self):
         args = bridge.create_args(bridge.validate_spec(self.task_spec()))
         self.assertIn("--agent-id", args)
