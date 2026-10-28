@@ -126,6 +126,7 @@ def _harness(monkeypatch, tmp_path, cards=None):
     monkeypatch.setattr(relay, "UPDATES_FILE", tmp_path / "updates.jsonl")
     monkeypatch.setattr(relay, "AUDIT_FILE", tmp_path / "audit.jsonl")
     monkeypatch.setattr(relay, "TOPICS_FILE", tmp_path / "topics.json")
+    monkeypatch.setattr(relay, "CONTEXT_FILE", tmp_path / "card-context.json")
     monkeypatch.setattr(relay, "CONVERSATIONS_DIR", tmp_path / "conversations")
     monkeypatch.setattr(relay, "PROJECTS_DIR", tmp_path / "projects")
     monkeypatch.setattr(relay, "_send_text",
@@ -698,3 +699,224 @@ def test_rollback_marks_entry_never_deletes(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="never deleted"):
         relay._api("deleteForumTopic", {"chat_id": CHAT,
                                         "message_thread_id": 9})
+
+
+# --- per-topic card context + read-only follow-ups ---------------------------
+
+
+def _audit_events(tmp_path):
+    return [json.loads(line) for line in
+            (tmp_path / "audit.jsonl").read_text().splitlines()]
+
+
+def test_parse_followup_anchored_phrases():
+    assert relay.parse_followup("easier.") == ("simple", None)
+    assert relay.parse_followup("in Thai") == ("thai", None)
+    assert relay.parse_followup("what evidence?") == ("evidence", None)
+    assert relay.parse_followup("what's next") == ("next", None)
+    assert relay.parse_followup("why") == ("why", None)
+    assert relay.parse_followup("history") == ("history", None)
+    assert relay.parse_followup("spec") == ("spec", None)
+    # embedded ref overrides context; filler words are ignored
+    assert relay.parse_followup("0959 with easy language.") == \
+        ("simple", "OPS-0959")
+    assert relay.parse_followup("spec ops-0905") == ("spec", "OPS-0905")
+    # ordinary chat never matches
+    assert relay.parse_followup("the next meeting is monday") is None
+    # leftover non-alias words keep ordinary chat from matching
+    assert relay.parse_followup("what happened in 2026") is None
+    assert relay.parse_followup("what happened") == ("history", None)
+    assert relay.parse_followup("hello") is None
+    assert relay.parse_followup("please explain 0905") is None
+
+
+def test_explain_sets_durable_context(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    contexts = json.loads(
+        (tmp_path / "card-context.json").read_text())["contexts"]
+    record = contexts[f"{CHAT}:0"]
+    assert record["card_ref"] == "OPS-0905"
+    assert record["card_id"] == "devnest-telegram-team-channel"
+    assert record["sender_id"] == TONY
+    assert record["at"]
+
+
+def test_context_followup_resolves_last_card(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("easier.", update_id=2))
+    assert posts == []  # follow-ups never mutate the board
+    reply = sent[-1]["text"]
+    assert "in plain terms" in reply
+    assert "Connect DevNest household AI team" in reply
+    assert "being worked on by idc02" in reply
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "followup_ok"
+    assert audit[-1]["kind"] == "simple"
+    assert audit[-1]["card"] == "devnest-telegram-team-channel"
+    assert audit[-1]["ref_source"] == "context"
+
+
+def test_followup_fetches_fresh_board_state(monkeypatch, tmp_path):
+    """Context stores the card identity only — every reply re-reads the
+    board, so edits between messages are reflected."""
+    sent, posts = _harness(monkeypatch, tmp_path)
+    fetches = []
+    index = {"OPS-0905": [CARD], "devnest-telegram-team-channel": [CARD]}
+    monkeypatch.setattr(
+        relay, "_card_index", lambda: fetches.append(1) or index)
+    relay.handle_update(_update("explain 0905"))
+    moved = dict(CARD, column="review", action={}, note="verify on staging")
+    index["OPS-0905"] = index["devnest-telegram-team-channel"] = [moved]
+    relay.handle_update(_update("what next?", update_id=2))
+    assert len(fetches) == 2
+    reply = sent[-1]["text"]
+    assert "verify on staging" in reply
+    assert "running" not in reply
+
+
+def test_followup_without_context_asks_for_ref(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("easier"))
+    assert "name a ref" in sent[-1]["text"]
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "need_ref"
+    assert audit[-1]["detail"] == "no card in context"
+
+
+def test_followup_expired_context_asks_for_ref(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    monkeypatch.setattr(relay, "CONTEXT_TTL", -1)
+    relay.handle_update(_update("next", update_id=2))
+    assert "expired" in sent[-1]["text"]
+    assert "OPS-0905" in sent[-1]["text"]
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "need_ref"
+    assert audit[-1]["detail"].startswith("context for OPS-0905 expired")
+
+
+def test_followup_wrong_sender_asks_for_ref(monkeypatch, tmp_path):
+    """Another sender's follow-up is ambiguous — ask for a ref rather
+    than guessing across people."""
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("easier", sender=OTHER, update_id=2))
+    assert "another sender" in sent[-1]["text"]
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "need_ref"
+    assert audit[-1]["context"] == "wrong_sender"
+
+
+def test_followup_wrong_topic_has_no_context(monkeypatch, tmp_path):
+    """Context is per (chat, thread): explaining in one topic does not
+    leak into another."""
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_forum_created("Ops", 42))
+    relay.handle_update(_forum_created("Research", 43, update_id=51))
+    relay.handle_update(_update("explain 0905", thread=42, update_id=2))
+    relay.handle_update(_update("easier", thread=43, update_id=3))
+    assert "name a ref" in sent[-1]["text"]
+    assert sent[-1]["thread"] == 43
+    # ...and the context still answers in the topic that set it
+    relay.handle_update(_update("easier", thread=42, update_id=4))
+    assert "in plain terms" in sent[-1]["text"]
+    assert sent[-1]["thread"] == 42
+
+
+def test_followup_explicit_ref_ignores_context(monkeypatch, tmp_path):
+    """'0959 with easy language' resolves the named card, not the
+    topic context."""
+    other = dict(CARD, id="other-card", ref="OPS-0999",
+                 title="Other card entirely", column="backlog", action={})
+    sent, posts = _harness(monkeypatch, tmp_path, cards=[CARD, other])
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(
+        _update("0999 with easy language.", update_id=2))
+    reply = sent[-1]["text"]
+    assert "Other card entirely" in reply
+    # context now points at the card that was actually discussed
+    contexts = json.loads(
+        (tmp_path / "card-context.json").read_text())["contexts"]
+    assert contexts[f"{CHAT}:0"]["card_ref"] == "OPS-0999"
+
+
+def test_followup_unknown_ref_refused(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("OPS-0912 evidence"))
+    assert posts == []
+    assert "unknown ref OPS-0912" in sent[-1]["text"]
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "refused"
+    assert audit[-1]["command"] == "followup"
+
+
+def test_thai_followup_rendering(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("in Thai", update_id=2))
+    body = sent[-1]["text"]
+    assert "สถานะ:" in body and "ขั้นตอน:" in body
+    assert "การยืนยัน:" in body and "ถัดไป:" in body
+    assert "คำถามที่รอ:" in body
+    assert "กำลังรันโดย idc02" in body
+    assert "OPS-0905" in body
+
+
+def test_bare_explain_uses_context(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("status", update_id=2))
+    body = sent[-1]["text"]
+    for field in ("status:", "phase:", "verified:", "next:", "ask:"):
+        assert field in body
+    # with no context a bare explain asks for a ref instead
+    relay.handle_update(_forum_created("Ops", 42, update_id=52))
+    relay.handle_update(_update("explain", thread=42, update_id=3))
+    assert "name a ref" in sent[-1]["text"]
+
+
+def test_evidence_next_history_spec_replies(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("what evidence?", update_id=2))
+    assert "evidence" in sent[-1]["text"]
+    assert "Verified relay capture" in sent[-1]["text"]
+    relay.handle_update(_update("history", update_id=3))
+    assert "history" in sent[-1]["text"]
+    assert "Verified capture path" in sent[-1]["text"]
+    spec_card = dict(CARD, spec="do the thing", brief="why it matters")
+    monkeypatch.setattr(relay, "_card_index", lambda: {
+        "OPS-0905": [spec_card],
+        "devnest-telegram-team-channel": [spec_card]})
+    relay.handle_update(_update("spec", update_id=4))
+    assert "spec" in sent[-1]["text"]
+    assert "do the thing" in sent[-1]["text"]
+    assert posts == []
+
+
+def test_approve_still_requires_explicit_ref(monkeypatch, tmp_path):
+    """Context never feeds the mutating verbs — bare APPROVE is refused
+    even with a live context."""
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("APPROVE", update_id=2))
+    assert posts == []
+    assert "usage: APPROVE <ref>" in sent[-1]["text"]
+    audit = _audit_events(tmp_path)
+    assert audit[-1]["result"] == "refused"
+    assert audit[-1]["command"] == "approve"
+
+
+def test_followup_audit_entries(monkeypatch, tmp_path):
+    sent, posts = _harness(monkeypatch, tmp_path)
+    relay.handle_update(_update("explain 0905"))
+    relay.handle_update(_update("easier", update_id=2))
+    relay.handle_update(_update("in thai", update_id=3))
+    audit = _audit_events(tmp_path)
+    assert audit[0]["result"] == "explained"
+    assert audit[1]["kind"] == "simple" and audit[1]["context"] == "hit"
+    assert audit[1]["context_ref"] == "OPS-0905"
+    assert audit[2]["kind"] == "thai"
+    assert all("at" in e for e in audit)

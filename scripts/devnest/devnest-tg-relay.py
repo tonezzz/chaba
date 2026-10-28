@@ -8,6 +8,26 @@ in the originating topic. Commands (anchored whole-message forms only):
   APPROVE <ref|card-id>          board-api /respond (open ask/request) or
   REJECT  <ref|card-id>          /action (review card -> close|hold)
 
+After a successful explain/status the relay keeps a durable per-topic
+last-card context (STATE_DIR/card-context.json: card ref/id, timestamp,
+sender; expires after DEVNEST_CARD_CONTEXT_TTL seconds). Safe read-only
+follow-ups then resolve that card without repeating the ref — anchored
+whole-message phrases only:
+
+  easier|simple|eli5             plain-language summary
+  in thai|ภาษาไทย                 Thai-labelled summary
+  why                            brief + current blockers/state
+  evidence|what evidence         verify checks + verification comms
+  next|what next                 next step + open requests
+  history                        recent card comms
+  spec                           card spec/brief
+
+A follow-up may also carry an explicit ref ('0959 with easy language',
+'explain 0959 in thai', 'spec ops-0905'). No/expired/wrong-sender context
+asks for a ref; the board is fetched fresh for every reply — the context
+stores only the card identity, never cached card text. Follow-ups never
+mutate: APPROVE/REJECT still require an explicit ref + approver id.
+
 Refs normalize like the board: bare digits -> OPS-XXXX, 'ops 0905'/'ops-0905'
 -> OPS-0905, anything else must be an exact card id. Unknown or ambiguous
 refs are refused and audited (STATE_DIR/audit.jsonl). Approvals only run for
@@ -79,6 +99,8 @@ OFFSET_FILE = STATE_DIR / "state.json"
 UPDATES_FILE = STATE_DIR / "updates.jsonl"
 AUDIT_FILE = STATE_DIR / "audit.jsonl"
 TOPICS_FILE = STATE_DIR / "topics.json"
+CONTEXT_FILE = STATE_DIR / "card-context.json"
+CONTEXT_TTL = int(os.environ.get("DEVNEST_CARD_CONTEXT_TTL", "7200"))
 CONVERSATIONS_DIR = STATE_DIR / "conversations"
 POLL_TIMEOUT = int(os.environ.get("TELEGRAM_POLL_TIMEOUT", "25"))
 TEXT_POLICY = os.environ.get("DEVNEST_TEXT_POLICY", "private-retained")
@@ -1010,6 +1032,311 @@ def summarize_card(card: dict) -> str:
     ))
 
 
+# --- per-topic last-card context (durable, expiring, audited) ---------------
+#
+# CONTEXT_FILE maps '<chat_id>:<thread_id|0>' -> {card_id, card_ref, at,
+# sender_id, sender_label, topic, uses}. It stores the card identity only —
+# every reply re-fetches the board, so card text is never cached. A context
+# expires after CONTEXT_TTL seconds of inactivity and only answers the
+# sender who set it (another sender's follow-up is ambiguous — ask for a
+# ref instead of guessing across people).
+
+
+def _context_key(chat_id: int, thread_id: int | None) -> str:
+    return f"{int(chat_id)}:{int(thread_id) if thread_id else 0}"
+
+
+def _load_contexts() -> dict:
+    try:
+        data = json.loads(CONTEXT_FILE.read_text())
+        if isinstance(data, dict) and isinstance(data.get("contexts"), dict):
+            return data
+    except (FileNotFoundError, ValueError, json.JSONDecodeError):
+        pass
+    return {"version": 1, "contexts": {}}
+
+
+def _save_contexts(data: dict) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = CONTEXT_FILE.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+    tmp.replace(CONTEXT_FILE)
+
+
+def _set_card_context(chat_id: int, thread_id: int | None, topic: str,
+                      sender: dict, card: dict) -> dict:
+    """Record the last card this topic discussed. Refreshes expiry and
+    bumps 'uses' on every successful card reply."""
+    data = _load_contexts()
+    key = _context_key(chat_id, thread_id)
+    prior = data["contexts"].get(key) or {}
+    record = {
+        "card_id": card.get("id"),
+        "card_ref": card.get("ref"),
+        "at": _now(),
+        "sender_id": sender.get("id"),
+        "sender_label": CALLERS.get(sender.get("id")),
+        "topic": topic,
+        "thread_id": thread_id,
+        "uses": int(prior.get("uses") or 0) + 1,
+    }
+    data["contexts"][key] = record
+    _save_contexts(data)
+    return record
+
+
+def _card_context(chat_id: int, thread_id: int | None,
+                  sender_id: int | None) -> tuple[dict | None, str]:
+    """Resolve the topic's last-card context for this sender.
+
+    Returns (record, "") on a usable hit, else (record|None, reason) where
+    reason is 'none', 'expired', 'corrupt', or 'wrong_sender'."""
+    record = _load_contexts()["contexts"].get(
+        _context_key(chat_id, thread_id))
+    if record is None:
+        return None, "none"
+    try:
+        at = datetime.fromisoformat(str(record.get("at") or ""))
+        age = (datetime.now(timezone.utc) - at).total_seconds()
+    except (TypeError, ValueError):
+        return record, "corrupt"
+    if age > CONTEXT_TTL:
+        record = dict(record)
+        record["age_s"] = int(age)
+        return record, "expired"
+    if sender_id is not None and record.get("sender_id") not in (
+            None, sender_id):
+        return record, "wrong_sender"
+    record = dict(record)
+    record["age_s"] = int(age)
+    return record, ""
+
+
+# --- read-only follow-up phrases --------------------------------------------
+#
+# Anchored whole-message phrases; after filler words are stripped the
+# remainder must exactly equal an alias, so ordinary chat ("the next
+# meeting", "spec review done") never matches. An optional OPS-style ref
+# embedded anywhere in the message overrides the topic context.
+
+_FOLLOWUP_FILLER = {
+    "a", "an", "about", "again", "and", "bit", "can", "card", "for", "give",
+    "in", "it", "little", "make", "me", "more", "now", "of", "on", "pls",
+    "please", "say", "so", "tell", "that", "the", "this", "to", "us",
+    "with", "you",
+}
+_FOLLOWUP_ALIASES = {
+    "simple": {
+        "easier", "easier language", "easy", "easy explanation",
+        "easy language", "easy words", "eli5", "explain simply",
+        "layman terms", "simple", "simple terms", "simpler",
+        "simpler terms",
+    },
+    "thai": {
+        "thai", "ภาษาไทย", "ภาษาไทยหน่อย", "พูดภาษาไทย", "อธิบายภาษาไทย",
+        "แปลไทย", "แปลเป็นไทย",
+    },
+    "why": {
+        "rationale", "reason", "what for", "why", "why so", "why this",
+    },
+    "evidence": {
+        "evidence", "proof", "show evidence", "verified evidence",
+        "verify", "what evidence", "what proof",
+    },
+    "next": {
+        "and next", "next", "next step", "next steps", "then what",
+        "what next", "what now", "whats next", "whats the next step",
+    },
+    "history": {
+        "activity", "card history", "history", "log", "show history",
+        "what happened",
+    },
+    "spec": {
+        "requirements", "show spec", "spec", "the spec",
+    },
+}
+_FOLLOWUP_KINDS = {
+    alias: kind for kind, aliases in _FOLLOWUP_ALIASES.items()
+    for alias in aliases
+}
+# Embedded ref inside a follow-up phrase: 'ops-0959', 'ops 0959', 'ops0959',
+# or a bare zero-padded OPS number ('0959'/'959'). Bare digits are limited
+# to 0?\d{3} so ordinary numbers like '2026' are not read as refs.
+_FOLLOWUP_REF_RE = re.compile(
+    r"(?<![\w-])(?:[a-z]{3}[-\s]?\d{1,4}|0?\d{3})(?![\w-])", re.IGNORECASE)
+
+
+def _phrase_key(text: str) -> str:
+    """Normalize a message to its alias key: lowercase, drop apostrophes
+    and punctuation, remove filler words, collapse whitespace."""
+    t = re.sub(r"['\u2019]", "", (text or "").lower())
+    t = re.sub(r"[^a-z0-9\u0e00-\u0e7f]+", " ", t)
+    return " ".join(w for w in t.split() if w not in _FOLLOWUP_FILLER)
+
+
+def parse_followup(text: str) -> tuple[str, str | None] | None:
+    """Parse an anchored read-only follow-up. Returns (kind, ref|None) or
+    None. 'ref' is a normalized OPS ref when the message carries one."""
+    t = (text or "").strip()
+    if not t:
+        return None
+    ref = None
+    m = _FOLLOWUP_REF_RE.search(t)
+    if m:
+        ref = normalize_ref(m.group(0))
+        t = (t[:m.start()] + " " + t[m.end():]).strip()
+    kind = _FOLLOWUP_KINDS.get(_phrase_key(t))
+    if kind is None:
+        return None
+    return kind, ref
+
+
+def _plain_status(card: dict) -> str:
+    a = card.get("action") or {}
+    if a.get("status") == "running":
+        return f"being worked on by {a.get('runner') or 'a runner'}"
+    if a.get("status") == "queued":
+        return "queued for dispatch"
+    return {
+        "backlog": "waiting in the backlog",
+        "doing": "in progress",
+        "review": "waiting for review",
+        "done": "done",
+    }.get(str(card.get("column") or "backlog"),
+          str(card.get("column") or "unknown"))
+
+
+def _simple_summary(card: dict) -> str:
+    bits = [f"{card.get('title') or card.get('id')} is "
+            f"{_plain_status(card)}."]
+    nxt = _next_line(card)
+    if nxt not in ("none recorded", "none — card closed"):
+        bits.append(f"Next: {nxt}.")
+    ask = _ask_line(card)
+    if ask != "none":
+        bits.append(f"Waiting on: {ask}.")
+    head = " ".join(x for x in (
+        f"[{SPEAKER}]", str(card.get("ref") or ""), "— in plain terms") if x)
+    return head + "\n" + " ".join(bits)
+
+
+_THAI_COLUMN = {
+    "backlog": "รอดำเนินการ",
+    "doing": "กำลังดำเนินการ",
+    "review": "รอตรวจสอบ",
+    "done": "เสร็จแล้ว",
+}
+
+
+def _thai_status(card: dict) -> str:
+    a = card.get("action") or {}
+    if a.get("status") == "running":
+        return f"กำลังรันโดย {a.get('runner') or 'runner'}"
+    if a.get("status") == "queued":
+        return "รอ runner รับงาน"
+    col = str(card.get("column") or "backlog")
+    return _THAI_COLUMN.get(col, col)
+
+
+def _thai_summary(card: dict) -> str:
+    head = " ".join(x for x in (
+        f"[{SPEAKER}]", str(card.get("ref") or ""),
+        str(card.get("id") or ""), "—", str(card.get("title") or "")) if x)
+    return "\n".join((
+        head,
+        f"สถานะ: {_thai_status(card)}",
+        f"ขั้นตอน: {_phase_line(card)}",
+        f"การยืนยัน: {_verified_line(card)}",
+        f"ถัดไป: {_next_line(card)}",
+        f"คำถามที่รอ: {_ask_line(card)}",
+    ))
+
+
+def _why_card(card: dict) -> str:
+    a = card.get("action") or {}
+    reasons = []
+    if a.get("status") == "running":
+        reasons.append(f"dispatch running on {a.get('runner') or 'a runner'}")
+    elif a.get("status") == "queued":
+        reasons.append("queued for dispatch")
+    ask = _ask_line(card)
+    if ask != "none":
+        reasons.append(f"open ask: {ask}")
+    note = str(card.get("note") or "").strip()
+    if note:
+        reasons.append(f"note: {note[:160]}")
+    if not reasons:
+        reasons.append("no blockers recorded")
+    brief = str(card.get("brief") or "").strip()
+    return "\n".join((
+        f"[{SPEAKER}] {card.get('ref') or card.get('id')} — why",
+        f"goal: {brief[:240] if brief else 'no brief recorded'}",
+        *(f"- {r}" for r in reasons),
+    ))
+
+
+def _evidence_card(card: dict) -> str:
+    checks = [c for c in card.get("checks") or [] if c.get("k") == "verify"]
+    lines = [f"[{SPEAKER}] {card.get('ref') or card.get('id')} — evidence"]
+    if checks:
+        for check in checks[-3:]:
+            mark = {True: "ok", False: "failed"}.get(
+                check.get("ok"), "pending")
+            lines.append(
+                f"- verify {mark} @{check.get('at') or '?'}: "
+                f"{str(check.get('how') or '')[:160]}")
+    else:
+        lines.append("- no verify checks recorded")
+    for entry in reversed(card.get("comms") or []):
+        if "verif" in str(entry.get("text") or "").lower():
+            lines.append(
+                f"- {entry.get('from')}@{entry.get('at')}: "
+                f"{str(entry.get('text'))[:160]}")
+            break
+    return "\n".join(lines)
+
+
+def _next_card(card: dict) -> str:
+    lines = [
+        f"[{SPEAKER}] {card.get('ref') or card.get('id')} — next",
+        f"next: {_next_line(card)}",
+    ]
+    for req in _open_requests(card)[:3]:
+        lines.append(
+            f"- waiting: {str(req.get('ask') or req.get('id'))[:100]}")
+    return "\n".join(lines)
+
+
+def _history_card(card: dict) -> str:
+    comms = card.get("comms") or []
+    lines = [f"[{SPEAKER}] {card.get('ref') or card.get('id')} — history"]
+    if not comms:
+        lines.append("- no comms recorded")
+    for entry in comms[-6:]:
+        lines.append(
+            f"- {entry.get('at')} {entry.get('from')}: "
+            f"{str(entry.get('text'))[:120]}")
+    return "\n".join(lines)
+
+
+def _spec_card(card: dict) -> str:
+    spec = str(card.get("spec") or card.get("brief") or "").strip()
+    return (f"[{SPEAKER}] {card.get('ref') or card.get('id')} — spec\n"
+            + (spec[:1500] if spec else "no spec recorded"))
+
+
+_FOLLOWUP_RENDERERS = {
+    "status": summarize_card,
+    "simple": _simple_summary,
+    "thai": _thai_summary,
+    "why": _why_card,
+    "evidence": _evidence_card,
+    "next": _next_card,
+    "history": _history_card,
+    "spec": _spec_card,
+}
+
+
 def _apply_decision(card: dict, verb: str) -> str:
     """Sanctioned mutation paths only: /respond for a pending question,
     /action for a review-column verdict. Nothing else mutates."""
@@ -1050,75 +1377,163 @@ def _audit(event: dict) -> None:
         handle.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
+def _ask_ref(event: dict, chat_id: int, thread_id: int | None,
+             why: str, context_ref: str | None = None) -> None:
+    """Follow-up has no usable card — ask the sender to name a ref."""
+    hints = {
+        "none": "no card in context",
+        "expired": f"context for {context_ref or '?'} expired",
+        "corrupt": "stored context is unusable",
+        "wrong_sender": "context belongs to another sender",
+    }
+    event["result"] = "need_ref"
+    event["detail"] = hints.get(why, why or "no usable context")
+    if context_ref:
+        event["context_ref"] = context_ref
+    _audit(event)
+    _send_text(
+        chat_id,
+        f"[{SPEAKER}] {event['detail']} — name a ref, "
+        "e.g. 'explain OPS-0905'",
+        thread_id,
+    )
+
+
+def _board_card_or_refuse(ref: str, event: dict, refuse) -> dict | None:
+    """Fresh board fetch + exact ref resolution; None = already refused."""
+    try:
+        card = resolve_card(_card_index(), ref)
+    except LookupError as exc:
+        refuse(str(exc))
+        return None
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError,
+            RuntimeError) as exc:
+        refuse(f"board-api unavailable: {exc}")
+        return None
+    event["card"] = card.get("id")
+    return card
+
+
 def handle_command(update: dict, msg: dict, chat_id: int, sender: dict,
                    topic: str, thread_id: int | None) -> bool:
     """Run a board command if the message is one. True = handled (the
     generic capture ack is skipped)."""
-    parsed = parse_command(msg.get("text") or "")
-    if not parsed:
-        return False
-    verb, operand_raw = parsed
+    text = msg.get("text") or ""
+    parsed = parse_command(text)
     sender_id = sender.get("id")
     event = {
         "update_id": update.get("update_id"),
         "message_id": msg.get("message_id"),
         "sender_id": sender_id,
         "sender_label": CALLERS.get(sender_id),
-        "command": verb, "operand": operand_raw,
         "chat_id": chat_id, "topic": topic, "thread_id": thread_id,
     }
 
-    def refuse(reason: str) -> None:
+    def refuse(reason: str, label: str = "") -> None:
         event["result"] = "refused"
         event["detail"] = reason
         _audit(event)
-        LOG.warning("refused %s %r sender=%s: %s",
-                    verb, operand_raw, sender_id, reason)
-        _send_text(chat_id, f"[{SPEAKER}] {verb} refused: {reason}", thread_id)
+        shown = label or event.get("command") or "followup"
+        LOG.warning("refused %s sender=%s: %s", shown, sender_id, reason)
+        _send_text(chat_id, f"[{SPEAKER}] {shown} refused: {reason}",
+                   thread_id)
 
-    operand = normalize_ref(operand_raw) if operand_raw else None
-    event["normalized"] = operand
-    if operand is None:
-        refuse("usage: explain <ref|card-id>, APPROVE <ref>, REJECT <ref>"
-               if not operand_raw
-               else f"unparseable ref {operand_raw!r}")
-        return True
-    if verb in ("approve", "reject") and sender_id not in APPROVER_IDS:
-        refuse("sender not in approver allowlist")
-        return True
-    try:
-        card = resolve_card(_card_index(), operand)
-    except LookupError as exc:
-        refuse(str(exc))
-        return True
-    except (HTTPError, URLError, TimeoutError, OSError, ValueError,
-            RuntimeError) as exc:
-        refuse(f"board-api unavailable: {exc}")
-        return True
-    event["card"] = card.get("id")
-    if verb in ("explain", "status"):
-        _send_text(chat_id, summarize_card(card), thread_id)
-        event["result"] = "explained"
+    if parsed and parsed[0] in ("approve", "reject"):
+        # Mutating verbs stay explicit: a literal ref operand plus the
+        # approver gate — never context, never phrases.
+        verb, operand_raw = parsed
+        event["command"] = verb
+        event["operand"] = operand_raw
+        operand = normalize_ref(operand_raw) if operand_raw else None
+        event["normalized"] = operand
+        if operand is None:
+            refuse("usage: APPROVE <ref>, REJECT <ref>"
+                   if not operand_raw
+                   else f"unparseable ref {operand_raw!r}", verb)
+            return True
+        if sender_id not in APPROVER_IDS:
+            refuse("sender not in approver allowlist", verb)
+            return True
+        card = _board_card_or_refuse(operand, event,
+                                     lambda r: refuse(r, verb))
+        if card is None:
+            return True
+        try:
+            outcome = _apply_decision(card, verb)
+        except (LookupError, RuntimeError, ValueError) as exc:
+            refuse(str(exc), verb)
+            return True
+        event["result"] = f"{verb}d"
+        event["detail"] = outcome
         _audit(event)
-        LOG.info("explained %s for sender=%s topic=%s",
-                 card.get("id"), sender_id, topic)
+        LOG.info("%s %s (%s) for sender=%s: %s", verb.upper(),
+                 card.get("ref"), card.get("id"), sender_id, outcome)
+        _send_text(
+            chat_id,
+            f"[{SPEAKER}] {verb.upper()} "
+            f"{card.get('ref') or card.get('id')}: {outcome}",
+            thread_id,
+        )
         return True
-    try:
-        outcome = _apply_decision(card, verb)
-    except (LookupError, RuntimeError, ValueError) as exc:
-        refuse(str(exc))
+
+    # Read-only surface: explain/status <ref>, bare explain/status on the
+    # topic context, and anchored follow-up phrases (easier/in thai/why/
+    # evidence/next/history/spec), optionally carrying an explicit ref.
+    if parsed and parsed[0] in ("explain", "status"):
+        verb, operand_raw = parsed
+        event["command"] = verb
+        event["operand"] = operand_raw
+        # Follow-up phrases outrank slug normalization — 'explain easier'
+        # means the context card in plain terms, not a card named 'easier'.
+        follow = parse_followup(operand_raw) if operand_raw else None
+        if follow is not None:
+            kind, ref = follow
+            event["kind"] = kind
+            event["normalized"] = ref
+        else:
+            operand = normalize_ref(operand_raw) if operand_raw else None
+            event["normalized"] = operand
+            if operand:
+                kind, ref = "status", operand
+            elif not operand_raw.strip():
+                kind, ref = "status", None
+            else:
+                refuse(f"unparseable ref {operand_raw!r}", verb)
+                return True
+    else:
+        follow = parse_followup(text)
+        if follow is None:
+            return False
+        kind, ref = follow
+        event["command"] = "followup"
+        event["operand"] = text.strip()[:120]
+        event["kind"] = kind
+        event["normalized"] = ref
+
+    event["ref_source"] = "explicit" if ref else "context"
+    if ref is None:
+        record, ctx_why = _card_context(chat_id, thread_id, sender_id)
+        event["context"] = ctx_why or "hit"
+        context_ref = (record or {}).get("card_ref") \
+            or (record or {}).get("card_id")
+        if record is None or ctx_why or not context_ref:
+            _ask_ref(event, chat_id, thread_id,
+                     ctx_why or "corrupt", context_ref)
+            return True
+        ref = context_ref
+        event["context_ref"] = ref
+        event["context_age_s"] = record.get("age_s")
+
+    card = _board_card_or_refuse(ref, event, refuse)
+    if card is None:
         return True
-    event["result"] = f"{verb}d"
-    event["detail"] = outcome
+    _send_text(chat_id, _FOLLOWUP_RENDERERS[kind](card), thread_id)
+    _set_card_context(chat_id, thread_id, topic, sender, card)
+    event["result"] = "explained" if kind == "status" else "followup_ok"
     _audit(event)
-    LOG.info("%s %s (%s) for sender=%s: %s",
-             verb.upper(), card.get("ref"), card.get("id"), sender_id, outcome)
-    _send_text(
-        chat_id,
-        f"[{SPEAKER}] {verb.upper()} {card.get('ref') or card.get('id')}: "
-        f"{outcome}",
-        thread_id,
-    )
+    LOG.info("%s %s (%s) kind=%s sender=%s topic=%s",
+             event["result"], card.get("ref"), card.get("id"),
+             kind, sender_id, topic)
     return True
 
 
