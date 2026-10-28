@@ -1,7 +1,7 @@
 id: media-hybrid-object-store
 title: 'Hybrid media store: R2 archive layer over local working stores (S3-compatible design)'
-column: doing
-updated: 2026-10-28 12:46
+column: review
+updated: 2026-10-28 12:47
 priority: medium
 ref: MED-0692
 comms:
@@ -48,6 +48,10 @@ comms:
     media:// canonical URLs, media/<kind>/<yyyy-mm>/ layout, stdlib SigV4 (no boto3). 25 tests green incl AWS doc
     vector + mock-S3 e2e. Runbook docs/kb/media-store.md (R2 cutover checklist §5); trail docs/ssot/jobs/infrastructure/2026-10-28-media-store-hybrid.yml.
     Needs Tony: R2 bucket+token, then per-producer adoption cards (line/cam/render/wp/backup).'
+- at: 2026-10-28 12:47
+  from: idc02
+  text: 'finished (ok): exit=0 ng work is Tony creating the R2 bucket + creds and per-producer adoption cards for
+    line/cam/render/wp/backup writ'
 requests:
 - id: the-card-defines-a-hybrid-medi-8c6e53
   ask: The card defines a hybrid media store using `media_store.py` with a config flag and canonical URLs, but does
@@ -62,5 +66,11 @@ requests:
   answer: ★ Implement `media_store.py` in the chaba repository for use across infrastructure services.
 action:
   type: dispatch
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 ng work is Tony creating the R2 bucket + creds and per-producer adoption cards for line/cam/render/wp/backup
+    writers — both flagged on the card. | devin-task-20261028-123908-hybrid-media-store-r2-archive-.service: Consumed
+    22.376s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
