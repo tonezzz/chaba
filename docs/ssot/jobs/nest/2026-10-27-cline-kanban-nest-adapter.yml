@@ -81,6 +81,14 @@ processing:
         retained. The follow-up uses separate app/proxy containers on the
         existing private bridge, with no backend host port and the secret
         mounted only in the proxy container.
+    - id: ci-tool-registry
+      label: Restore SSOT/server parity for the structured mcp_files tools
+      status: done
+      notes: >-
+        PR validation exposed four existing mcp_files_* handlers in
+        scripts/mcp_debug/server.py that were missing from
+        ssot.mcp-debug.yml. Added the four names to the canonical tool list;
+        the smoke validator now reports 44 wired tools.
     - id: configure-model
       label: Configure local Ollama provider/model without API credentials
       status: done
@@ -173,6 +181,8 @@ processing:
       summary: Added an idempotent Nest pack for one local Cline task and verified patch output.
     - file: scripts/colab/packs/cline-kanban-nest-bridge/bridge.py
       summary: Resume a matching backlog or in-progress task using the idempotent Cline CLI start operation.
+    - file: docs/ssot/infrastructure/ssot.mcp-debug.yml
+      summary: Registered the four already-implemented mcp_files tools so the server/SSOT wiring check passes.
     - file: .github/workflows/ssot.yml
       summary: Added CI coverage for Cline proxy and Nest adapter tests.
     - file: tests/test_cline_kanban_proxy.mjs
