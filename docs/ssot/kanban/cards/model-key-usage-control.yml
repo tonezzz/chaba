@@ -56,6 +56,13 @@ comms:
   from: devin
   text: 'raised request sec0962-served-checkout-deploy: PR #47 is merged, but the idc03 served checkout is dirty
     and 10 commits ahead. May I reconcile it with the prescribed sa'
+- at: 2026-10-28 12:57
+  from: devin
+  text: '[merged implementation 2026-10-28] PR #47 merged to master as `1aaac638`. board-api `/lesson` now uses
+    `gemini-3.5-flash-lite-free` through the LiteLLM gateway with the existing MDDB virtual key; it has no direct
+    Google-key fallback or paid fallback, and errors remain EN-only. 24 targeted unit tests + board-api selftest
+    pass; a 10-token live free-route probe returned OK. No key/budget changed. Production restart is pending because
+    idc03''s served checkout is dirty/ahead 10; I added request `sec09'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
