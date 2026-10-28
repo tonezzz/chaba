@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 12:59
+updated: 2026-10-28 13:00
 priority: high
 tags:
 - litellm
@@ -67,6 +67,13 @@ comms:
   from: devin
   text: 'raised request litellm-key-cap-reconciliation: The live LiteLLM caps differ from SSOT (Chaba $20 vs $5
     documented; Ada $30 and active vs $10/spare; Bench spend is slig'
+- at: 2026-10-28 13:00
+  from: devin
+  text: '[SEC-0962 status 2026-10-28] The free-only board-api route is merged in PR #47 (`1aaac638`): it uses the
+    existing MDDB virtual key and the dedicated `gemini-3.5-flash-lite-free` deployment, with no direct Google fallback
+    and EN-only degradation. This avoids a new key and paid fallback; key+model are metered, though Google-native
+    per-request tags aren''t reliable. No key caps changed. The live chaba-board-api process is still on old code
+    because the idc03 served checkout is dirty/ahead; safe-pull/'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
