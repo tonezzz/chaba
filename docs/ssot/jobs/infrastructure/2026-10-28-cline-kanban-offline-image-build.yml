@@ -1,0 +1,130 @@
+title: Cline Kanban offline image build path
+subtitle: Resolve the shutdown-guard image build blocker on con01 without an unapproved external fetch
+icon: container
+
+planning:
+  goal: >-
+    Determine whether the PR #52 shutdown-guard image can be built and deployed
+    reproducibly without an unapproved external fetch, or document the exact
+    minimum registry access needed. Deployment stays a separate human-gated
+    step.
+  scope: >-
+    Read-only inspection of con01 (podman images, running containers, journal)
+    plus a scratch-tag --network=none rebuild test. No service restart beyond
+    the already-completed operator deploy, no task/worktree changes, no
+    inference, no secrets exposure, no external network calls from this
+    session.
+  success_criteria:
+    - A tested offline/reproducible build path and diff, OR a verified
+      statement that a public npm fetch is required plus the exact
+      package/host needed.
+    - Both preserved image tags and the isolated pack output untouched.
+  risks:
+    - Mistaking the private container bridge ("network-isolated stack") for a
+      host without egress — con01 itself has working DNS/registry access.
+  owner: devin
+  estimated_duration: 1 session
+  related_focus:
+    - label: Resolve Cline shutdown-guard image build blocker
+      file: docs/ssot/kanban/cards/cline-kanban-offline-image-build.yml
+    - label: Cline Kanban pilot on con01
+      file: docs/ssot/jobs/infrastructure/2026-10-27-cline-kanban-con01-pilot.yml
+
+processing:
+  status: done
+  started_at: '2026-10-28T21:26:52+07:00'
+  steps:
+    - id: inspect-state
+      label: Inspect con01 image store, running containers, and journal
+      status: done
+      notes: >-
+        Image localhost/cline-kanban:0.1.70 (d8427f43) was already built at
+        15:24:20 CET and both units restarted onto it at 15:24:53-56 CET by an
+        operator session, ~2 minutes before this dispatch opened. The running
+        app process is `kanban --host 0.0.0.0 --port 3485 --no-open
+        --no-passcode --skip-shutdown-cleanup`. Rollback tags intact:
+        0.1.70-pre-shutdown-guard (9c55bd3d) and 0.1.70-pre-pr45 (fa703215).
+        `kanban --help` inside the running container confirms
+        --skip-shutdown-cleanup is a supported flag of the installed
+        kanban@0.1.70 ("Do not move sessions to done or delete task worktrees
+        on shutdown").
+    - id: offline-build-test
+      label: Test --network=none layered rebuild from the preserved image
+      status: done
+      notes: >-
+        Built a scratch tag localhost/cline-kanban-offline-verify:0.1.70 with
+        `podman build --network=none` FROM
+        localhost/cline-kanban:0.1.70-pre-shutdown-guard plus COPY of the
+        three repo files. Succeeded with zero external fetches. Content
+        comparison against the deployed image d8427f43: the entire
+        /usr/local/lib/node_modules/kanban tree is byte-identical
+        (sha256-of-hashes e9e29931942b...), dist/cli.js (sed-patched)
+        identical, all /opt/cline-kanban files identical. The ~32k
+        podman-image-diff entries were mtime-only metadata plus npm/apt
+        bookkeeping noise, no content drift. Scratch tag and temp
+        Containerfile removed afterward; image store returned to the three
+        declared tags.
+    - id: verify-surface
+      label: Verify the deployed consumer surface
+      status: done
+      notes: >-
+        bash stacks/con01/cline-kanban/verify.sh on con01 PASSED after the
+        operator deploy: all three Quadlet units active, unauthenticated GET
+        on 100.72.146.39:3484 returns 401, authenticated request succeeds.
+        No restart or task run performed by this session.
+    - id: record-path
+      label: Commit the offline recipe and minimum-access documentation
+      status: done
+      notes: >-
+        Added stacks/con01/cline-kanban/Containerfile.offline (ARG-overridable
+        base tag, no apt/npm/docker.io steps) and a regression test asserting
+        its shape. stack.yml now states that registry access is only needed
+        for full Containerfile rebuilds and names the exact endpoints.
+  decisions:
+    - label: Use a layered FROM-local-image recipe for repo-file-only changes
+      rationale: >-
+        PR #52 changed only entrypoint.sh, which the image COPYs; kanban@0.1.70
+        is unchanged and already inside the preserved image. Rebuilding the
+        npm layer is therefore unnecessary — layering the repo files onto the
+        preserved image produces a byte-identical kanban tree and works with
+        --network=none, so no registry approval is needed at all for this
+        class of change.
+      alternatives_considered: >-
+        Documenting minimum registry access alone (the card's fallback) would
+        leave every repo-file change blocked on an external fetch. Vendoring
+        the kanban tarball was unnecessary because the package is already
+        installed in the preserved image.
+    - label: Full rebuild minimum access, when actually needed
+      rationale: >-
+        Only when the base OS packages or the kanban npm version change: (a)
+        registry-1.docker.io:443 + auth.docker.io:443 +
+        production.cloudflare.docker.com:443 for node:22.20.0-bookworm-slim;
+        (b) deb.debian.org:80 for the five apt packages; (c)
+        registry.npmjs.org:443 for kanban@0.1.70 tarball and its dependency
+        tree. No other hosts are contacted by the Containerfile.
+
+followup:
+  verification:
+    - "podman images on con01 — three tags: 0.1.70 (d8427f43), 0.1.70-pre-shutdown-guard (9c55bd3d), 0.1.70-pre-pr45 (fa703215)"
+    - "podman exec cline-kanban sh -c 'tr \\0 \" \" </proc/1/cmdline' shows --skip-shutdown-cleanup"
+    - "podman build --network=none -f stacks/con01/cline-kanban/Containerfile.offline -t <scratch> stacks/con01/cline-kanban"
+    - "node tests/test_cline_kanban_proxy.mjs — offline recipe regression test passes"
+  rollback_plan:
+    - Retag localhost/cline-kanban:0.1.70-pre-shutdown-guard as :0.1.70, daemon-reload, restart app+proxy units; retains task worktrees and pilot data.
+  handoff:
+    - >-
+      The shutdown guard is already deployed (operator session completed
+      15:24:56 CET before this dispatch). The remaining question on the card —
+      reproducible build without unapproved fetch — is resolved: repo-file-only
+      changes rebuild offline via Containerfile.offline; registry access is
+      only needed for base-image/kanban-version changes, with exact endpoints
+      recorded in stack.yml.
+  changes:
+    - file: stacks/con01/cline-kanban/Containerfile.offline
+      summary: Offline layered rebuild recipe FROM the preserved image; no external fetches.
+    - file: stacks/con01/cline-kanban/stack.yml
+      summary: Scoped registry requirements to full builds; documented exact minimum endpoints and the offline path.
+    - file: tests/test_cline_kanban_proxy.mjs
+      summary: Regression test pinning the offline recipe's base tag and COPY set.
+    - file: docs/ssot/jobs/infrastructure/2026-10-28-cline-kanban-offline-image-build.yml
+      summary: This record.

@@ -14,8 +14,10 @@ secrets:
 requires:
   - "tool:podman"
   - "tool:git"
-  - "tcp:registry-1.docker.io:443"
-  - "tcp:registry.npmjs.org:443"
+  - "tcp:registry-1.docker.io:443 — full Containerfile builds only; pulls node:22.20.0-bookworm-slim (also needs auth.docker.io token + production.cloudflare.docker.com blobs)"
+  - "tcp:registry.npmjs.org:443 — full Containerfile builds only; fetches kanban@0.1.70 tarball (registry.npmjs.org/kanban/-/kanban-0.1.70.tgz) plus its dependency tree"
+  - "tcp:deb.debian.org:80 — full Containerfile builds only; apt bookworm + bookworm-security for ca-certificates/git/g++/make/python3"
+  - "no registry needed for repo-file-only rebuilds — use Containerfile.offline with --network=none; it layers entrypoint.sh/proxy.mjs/proxy-policy.mjs onto the preserved localhost/cline-kanban image (verified byte-identical kanban tree, 2026-10-28)"
 state:
   - "~/.local/share/cline-kanban/data — disposable application/session state; no secrets or production work"
   - "~/cline-kanban-pilot/workspace — disposable seeded Git smoke-test project"

@@ -154,3 +154,15 @@ test("keeps the proxy credential out of the Cline agent container", () => {
     false,
   );
 });
+
+test("offline rebuild recipe layers repo files onto the preserved image", () => {
+  const offline = readFileSync(
+    new URL("../stacks/con01/cline-kanban/Containerfile.offline", import.meta.url),
+    "utf8",
+  );
+  assert.match(offline, /BASE_IMAGE=localhost\/cline-kanban:0\.1\.70-pre-shutdown-guard/);
+  assert.match(offline, /FROM \$\{BASE_IMAGE\}/);
+  assert.match(offline, /COPY entrypoint\.sh proxy\.mjs proxy-policy\.mjs \/opt\/cline-kanban\//);
+  assert.doesNotMatch(offline, /apt-get|npm install|docker\.io/);
+  assert.match(offline, /ENTRYPOINT \["\/opt\/cline-kanban\/entrypoint\.sh"\]/);
+});

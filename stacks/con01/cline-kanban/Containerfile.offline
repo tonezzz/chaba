@@ -1,0 +1,13 @@
+# Offline rebuild for repo-file-only changes (entrypoint/proxy/policy).
+# No external fetches: builds on the locally preserved image, so works with
+# `podman build --network=none`. For changes to the base OS or kanban npm
+# version, use the full Containerfile with the registry endpoints declared
+# in stack.yml instead.
+ARG BASE_IMAGE=localhost/cline-kanban:0.1.70-pre-shutdown-guard
+FROM ${BASE_IMAGE}
+
+COPY entrypoint.sh proxy.mjs proxy-policy.mjs /opt/cline-kanban/
+
+RUN chmod 0755 /opt/cline-kanban/entrypoint.sh
+
+ENTRYPOINT ["/opt/cline-kanban/entrypoint.sh"]
