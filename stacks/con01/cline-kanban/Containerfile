@@ -8,7 +8,9 @@ RUN apt-get update \
        ca-certificates git g++ make python3 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install --global --no-audit --no-fund kanban@0.1.70
+RUN npm install --global --no-audit --no-fund kanban@0.1.70 \
+    && sed -i 's/options\.noPasscode === true/options.passcode === false || options.noPasscode === true/' /usr/local/lib/node_modules/kanban/dist/cli.js \
+    && sed -i 's/if (options\.noPasscode) {/if (options.passcode === false || options.noPasscode) {/' /usr/local/lib/node_modules/kanban/dist/cli.js
 
 COPY entrypoint.sh proxy.mjs proxy-policy.mjs /opt/cline-kanban/
 
