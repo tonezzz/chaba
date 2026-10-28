@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-27 18:15
+updated: 2026-10-28 07:36
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -40,3 +40,10 @@ comms:
     on line 1; the new script correctly refused to produce a zero-byte narration/final MP4. Queue drained with no
     done marker. Alert delivered via /publish to thread 33, board, and nest_job. Fastest retry is to relaunch the
     queue: existing shots should pass QC and be reus'
+- at: 2026-10-28 07:36
+  from: devin
+  text: '[narration retry staged 2026-10-28] Added three serialized retries (1.5s/3s backoff) for the same non-cloned
+    `th-TH-PremwadeeNeural` Edge voice. A fresh r2 preflight pack gates this changed release; local preflight returned
+    warn/0 failures (only expected hash-only source PDF warning). Static YAML/shell/Python checks pass. No Colab
+    worker is active; next Cell 2 launch will run r2 preflight then revalidate/reuse the 10 existing clips and retry
+    audio/mux. Private review folder: https://drive.google'
