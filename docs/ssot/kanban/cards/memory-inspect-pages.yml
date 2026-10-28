@@ -2,14 +2,30 @@ id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: backlog
 updated: 2026-10-18 22:16
-brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
-  kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
-  by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
-  kind=memory-inspect template. Read-only snapshots keep the memory->CMS direction one-way (the leak we closed).
-  Redact secret-keyed entries at write time. ~half day.'
+brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject ->
+  attr -> kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027).
+  Timer/daily. Scope-respecting by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn,
+  etc. Renders free via chaba-cms-render kind=memory-inspect template. Read-only snapshots keep the memory->CMS
+  direction one-way (the leak we closed). Redact secret-keyed entries at write time. ~half day.'
 priority: medium
 ref: MEM-0745
 comms:
 - at: 2026-10-18 22:16
   from: tony
   text: card captured via board-api
+- at: 2026-10-28 19:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-card-captures-a-requiremen-0886de
+  ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the
+    CMS, but lacks specification on which host and repository this feature should be implemented in, as
+    well as any architectural details regarding the target CMS. Please select the appropriate execution
+    path below so a concrete dispatch spec can be generated.
+  options:
+  - ★ Use the chaba repository on tony-dell to implement memory-inspection pages and CMS integration
+  - Use the mddb-fork repository on tony-dell for the bank snapshots and CMS pages
+  - Postpone this card until the CMS schema and target repository are finalized
+  status: open
+  at: 2026-10-28 19:20
+  from: backlog-spec-enrich
