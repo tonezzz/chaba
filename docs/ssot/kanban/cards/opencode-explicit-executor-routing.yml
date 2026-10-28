@@ -1,7 +1,7 @@
 id: opencode-explicit-executor-routing
 title: Make 'use OpenCode' an explicit executor contract in cards
 column: doing
-updated: 2026-10-28 10:07
+updated: 2026-10-28 10:11
 brief: Ensure a request to use OpenCode is persisted, honored, audited, and never silently falls back to Devin.
 priority: high
 program: ai-workforce
@@ -50,3 +50,10 @@ comms:
     runner honors explicit executor before lanes (opencode needs OPENCODE_LANES+binary, defers with comms note,
     never devin-falls-back); devin pinned path; meta/usage/events/manifest/verdict persisted; finish lands declared
     artifact + held-out verifier before merge; 40 new tests, 289 board+116 devnest green; smoke card queued'
+- at: 2026-10-28 10:11
+  from: devin
+  text: 'done: explicit executor contract shipped on dispatch branch (c08108e5+db728a95). board-api validates/preserves
+    executor/agent_profile/model/target_host/artifact + refuses claim-time executor changes; runner honors opencode
+    only with OPENCODE_LANES+binary (defers visibly, never devin fallback), devin pins, manual/unknown fail closed;
+    meta.json+usage.json+events.jsonl+manifest+verdict persist the evidence; finish lands declared artifact + held-out
+    verifier before merge. 40 new tests; 289 board + 1'
