@@ -1495,34 +1495,29 @@ def _mddb_post(path: str, payload: dict, timeout: int = 30):
 _gemini_mod = None
 
 
-def _gemini_key() -> str:
-    key = os.environ.get("GEMINI_API_KEY_FREE")
+def _litellm_translation_key() -> str:
+    """Return the scoped virtual key for free-only lesson translation."""
+    key = os.environ.get("LITELLM_KEY_MDDB")
     if key:
         return key
-    found = {}
-    for f in (Path.home() / ".config/secrets/mddb-gemini.env",
-              Path.home() / ".config/secrets/gemini-keys.env",
-              Path.home() / ".config/secrets/gemini-api-key.env"):
+    sources = (
+        (Path.home() / ".config/secrets/litellm-keys.env",
+         "LITELLM_KEY_MDDB"),
+        (Path.home() / ".config/secrets/mddb-gemini.env",
+         "LITELLM_KEY"),
+    )
+    for path, variable in sources:
         try:
-            for ln in f.read_text().splitlines():
-                m = re.match(
-                    r"^(GEMINI_API_KEY_FREE|GOOGLE_API_KEY|GEMINI_API_KEY)"
-                    r"=(.*)$", ln.strip())
-                if m:
-                    found.setdefault(
-                        m.group(1), m.group(2).strip().strip('"').strip("'"))
+            key = _load_env_file(path).get(variable, "")
         except OSError:
-            pass
-    return (found.get("GEMINI_API_KEY_FREE") or found.get("GOOGLE_API_KEY")
-            or found.get("GEMINI_API_KEY")
-            or os.environ.get("GEMINI_API_KEY")
-            or os.environ.get("GOOGLE_API_KEY") or "")
+            continue
+        if key:
+            return key
+    return ""
 
 
 def _gemini_thai(html_text: str) -> str:
-    """Thai translation for lessons — the same gemini_rest flash-lite lane
-    lesson-add.py used. Best-effort: any failure returns '' so a quota or
-    edge hiccup degrades to EN-only instead of failing the write."""
+    """Free-only LiteLLM translation; failure degrades to English-only."""
     global _gemini_mod
     if _gemini_mod is None:
         import importlib.util
@@ -1536,20 +1531,19 @@ def _gemini_thai(html_text: str) -> str:
             _gemini_mod = False
     if not _gemini_mod:
         return ""
-    key = _gemini_key()
+    key = _litellm_translation_key()
     if not key:
         return ""
     try:
-        # Hard timeout (OPS-0813): a slow/capped Gemini lane must not hang
-        # the lesson write for minutes — degrade to EN-only instead. The
-        # gemini_rest.generate default is 120s; that is too long for a
-        # synchronous board-api request.
+        # Do not fall through to a paid provider when the free tier is capped.
         th = _gemini_mod.generate(
             "Translate the following HTML lesson to natural Thai. "
             "Keep HTML tags, code, URLs, and proper names verbatim. "
             "Output ONLY the translated HTML.\n\n" + html_text,
-            "gemini-3.5-flash-lite", key=key, timeout=12,
-            max_attempts=1)
+            "gemini-3.5-flash-lite-free", key=key,
+            base_url_override=os.environ.get(
+                "BOARD_API_LITELLM_URL", "http://100.102.134.91:4000"),
+            timeout=12, max_attempts=1, label="board-api-lesson-th")
         return (th or "").strip()
     except Exception:
         return ""
