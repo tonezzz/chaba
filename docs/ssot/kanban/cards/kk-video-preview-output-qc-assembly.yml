@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-28 18:02
+updated: 2026-10-28 18:08
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -115,6 +115,10 @@ comms:
 - at: 2026-10-28 18:02
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 18:08
+  from: devin
+  text: 'raised request edge-tts-after-repeated-no-audio: Edge TTS 7.3.1 returned NoAudioReceived on two Colab retries
+    using the approved non-cloned voice. What should the next n'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -147,4 +151,19 @@ requests:
   suggested: specific-pages
   answer: 'specific-pages — Recommended: select specific page numbers after reviewing the private extracted images;
     explicitly approve recognizable likenesses.'
+- id: edge-tts-after-repeated-no-audio
+  ask: Edge TTS 7.3.1 returned NoAudioReceived on two Colab retries using the approved non-cloned voice. What should
+    the next narration attempt do?
+  status: open
+  at: 2026-10-28 18:08
+  from: devin
+  options:
+  - id: hold-same-voice-diagnose-egress
+    label: 'Recommended: keep th-TH-PremwadeeNeural, stop retries for now, and diagnose the Edge TTS network path
+      before retrying.'
+  - id: approve-alternate-edge-voice
+    label: Approve a different non-cloned Thai Edge voice for a private preview; specify the voice.
+  - id: approve-alternate-provider
+    label: Approve a different non-cloned TTS provider; specify provider and any spend limit before use.
+  suggested: hold-same-voice-diagnose-egress
 awaiting_action: true
