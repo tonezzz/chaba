@@ -1,7 +1,7 @@
 id: cline-kanban-offline-image-build
 title: Resolve Cline shutdown-guard image build blocker
 column: done
-updated: 2026-10-28 21:27
+updated: 2026-10-28 21:33
 brief: 'PR #52 is merged, but con01 cannot rebuild the Cline image with network disabled because kanban@0.1.70 is
   not cached. Find a safe, reproducible route and keep the current service untouched until approval.'
 priority: high
@@ -67,6 +67,12 @@ comms:
 - at: 2026-10-28 21:27
   from: devin
   text: moved doing -> done
+- at: 2026-10-28 21:33
+  from: devin
+  text: 'Status: shutdown-guard image is ALREADY built+deployed on con01 (build finished 15:24 CET, units restarted
+    15:24:56 on image d8427f43; kanban --help inside running container confirms --skip-shutdown-cleanup is a supported
+    flag of kanban@0.1.70). Rollback tags pre-shutdown-guard (9c55) and pre-pr45 (fa70) intact; no task runs by
+    me. Now testing a --network=none layered rebuild FROM the preserved image to prove the fully-offline path.'
 action:
   type: dispatch
   status: done
