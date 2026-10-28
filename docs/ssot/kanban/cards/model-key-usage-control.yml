@@ -1,7 +1,7 @@
 id: model-key-usage-control
 title: Centralize model keys and reconcile spend attribution
 column: backlog
-updated: 2026-10-28 13:03
+updated: 2026-10-28 13:22
 priority: high
 tags:
 - litellm
@@ -88,6 +88,13 @@ comms:
 - at: 2026-10-28 13:03
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 13:22
+  from: devin
+  text: '[production verified 2026-10-28] The merged `gemini-3.5-flash-lite-free` route is now live. Served checkout
+    already contained the merged board-api/gemini_rest files, so I did not pull or touch its unrelated dirty docs/cards;
+    I restarted only `chaba-board-api.service` under `/tmp/pfg-deploy.lock`. Service is active, local /health returned
+    HTTP 200, and a harmless translation helper smoke returned nonempty. LiteLLM SpendLogs recorded the probe under
+    key alias `mddb`: 48 tokens, estimated spend $0.'
 requests:
 - id: board-api-translation-spend-policy
   ask: For board-api Thai lesson translation, which gateway policy should we implement?
