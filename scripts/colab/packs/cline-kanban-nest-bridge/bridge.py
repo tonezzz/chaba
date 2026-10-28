@@ -38,8 +38,16 @@ def validate_spec(spec):
         raise ValueError("agent_id must be cline")
     if spec.get("base_ref") != "main":
         raise ValueError("base_ref must be the disposable workspace main branch")
-    if spec.get("provider_id") != "ollama" or spec.get("model_id") != "qwen3:4b":
-        raise ValueError("the smoke task is pinned to the local Ollama qwen3:4b model")
+    allowed = {
+        ("ollama", "qwen3:4b"),
+        ("ollama", "qwen2.5:7b"),
+        ("openai", "or-free-nemotron-nano"),
+        ("openai", "or-free-gemma31b"),
+    }
+    if (spec.get("provider_id"), spec.get("model_id")) not in allowed:
+        raise ValueError(
+            "provider/model must be one of: "
+            + ", ".join(f"{p}/{m}" for p, m in sorted(allowed)))
     expected_file = spec.get("expected_file", "")
     path = PurePosixPath(expected_file)
     if path.is_absolute() or not expected_file or ".." in path.parts:
