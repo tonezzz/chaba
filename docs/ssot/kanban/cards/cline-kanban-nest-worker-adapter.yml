@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 21:27
+updated: 2026-10-28 22:42
 priority: medium
 tags:
 - cline-kanban
@@ -332,6 +332,11 @@ comms:
   text: 'PR #52 is deployed on con01. The app now starts with --skip-shutdown-cleanup; authenticated HTTP/WebSocket
     and stack preflight pass. The image-build blocker was resolved by Tony-approved npm registry access. No OpenCode
     task or Cline model run was started; fd918 remains in Trash and would need a new job key for any future smoke.'
+- at: 2026-10-28 22:42
+  from: devin
+  text: Tony authorized one fresh-key local Qwen smoke. Preparing job_key cline-nest-smoke-20261028-ada-r1 in a
+    new isolated Drive root gdrive:ada-nest-cline-pilot-rerun-20261028-ada; the prior fd918/bbd43/62aaf tasks remain
+    in Trash. Using only qwen3:4b on the existing disposable con01 workspace; no shared queue, paid model, or commit/push.
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
