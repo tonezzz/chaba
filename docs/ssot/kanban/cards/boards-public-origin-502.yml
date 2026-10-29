@@ -1,7 +1,7 @@
 id: boards-public-origin-502
 title: Repair boards.surf-thailand.com origin 502
 column: backlog
-updated: 2026-10-29 23:48
+updated: 2026-10-30 00:25
 brief: Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns
   nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.
 priority: high
@@ -21,3 +21,10 @@ comms:
 - at: 2026-10-29 23:48
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 00:25
+  from: devin
+  text: 'DNS/IP verification 2026-10-29: boards.surf-thailand.com resolves to Cloudflare proxy IPs 172.67.196.69
+    and 104.21.74.33 (expected when proxied). Origin boards.h3.gizmo-thailand.com resolves to 103.99.11.249. Direct
+    SNI/Host request to 103.99.11.249 for boards.surf-thailand.com/wp returns Nginx HTTP 502, confirming DNS points
+    to the origin but the origin upstream is broken/misrouted. Public surf endpoint now timed out during one probe.
+    Chaba board-api idc03 remains separately healthy.'
