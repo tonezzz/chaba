@@ -1,7 +1,7 @@
 id: kk-mac-live-llm-probe-access-0978
 title: OPS-0978 supervised live probe access gate
 column: backlog
-updated: 2026-10-29 22:39
+updated: 2026-10-29 23:08
 brief: Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.
 priority: high
 tags:
@@ -37,6 +37,13 @@ comms:
 - at: 2026-10-29 22:39
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 23:08
+  from: devin
+  text: 'Re-evaluated access choice: use the safer already-trusted tony-dell runner for the supervised live probe;
+    do NOT add idc03 SSH keys to KK-Mac. OPS-0978 implementation is merged/done, but the live JEV probe remains
+    pending because idc02 cannot reach KK. Direct adapter jobs on tony-dell have already passed; next step is one
+    explicit executor=kk_mac probe on tony-dell with KK_MAC_LANES=1, then close the integration if artifact+verifier
+    pass.'
 requests:
 - id: live-probe-ssh-access-path
   ask: 'The one-shot probe you already approved is not running: idc03''s host-key trust is fixed, but KK-Mac rejects
