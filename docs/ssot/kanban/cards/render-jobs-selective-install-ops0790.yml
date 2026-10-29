@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
 column: backlog
-updated: 2026-10-30 01:26
+updated: 2026-10-30 01:34
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -33,3 +33,8 @@ comms:
   from: devin
   text: 'Newly discovered rollout blocker from code inspection: current --install enables all timers on each host.
     Building a job-scoped installer before any live rollout.'
+- at: 2026-10-30 01:34
+  from: devin
+  text: 'Dispatch route correction: idc02 runner has no push:chaba capability and dry-run push fails, so it cannot
+    land this code task. I am holding this route and re-queueing the same code-only fix to tony-dell, whose exec
+    runner has chaba push access. Quiet hours (00:00-06:00) are still in effect; no live timers are touched.'
