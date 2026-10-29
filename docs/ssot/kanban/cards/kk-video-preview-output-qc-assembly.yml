@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-28 23:11
+updated: 2026-10-29 08:36
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -170,6 +170,14 @@ comms:
     verification was found. These are enrollment clips, not an approved clone-ready narrator sample. The run-20261028-1329
     teaser used non-cloned Edge TTS `th-TH-PremwadeeNeural`; the image-material approval does not authorize cloning
     KK''s voice. No voice clone has been made.'
+- at: 2026-10-29 08:36
+  from: tony
+  text: 'answered image-aware-v2-scene-map: storyboard-order-v2 — Recommended: use p2-3 as private cast-reference
+    sheets and map storyboard images p4-39 to the existing 10 shots in scene-plan order; selectively rerender only
+    the affected shots.'
+- at: 2026-10-29 08:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -224,7 +232,7 @@ requests:
 - id: image-aware-v2-scene-map
   ask: How should the approved v1_01 storyboard images map into the next private image-aware preview? The 1-shot
     probe passed, but the completed 60s teaser still uses the old generated visuals.
-  status: open
+  status: answered
   at: 2026-10-28 23:09
   from: devin
   options:
@@ -236,6 +244,8 @@ requests:
   - id: specific-map
     label: Provide exact PDF page-to-shot mappings; we will use only those approved pairs.
   suggested: storyboard-order-v2
+  answer: 'storyboard-order-v2 — Recommended: use p2-3 as private cast-reference sheets and map storyboard images
+    p4-39 to the existing 10 shots in scene-plan order; selectively rerender only the affected shots.'
 awaiting_action: true
 action:
   status: idle
