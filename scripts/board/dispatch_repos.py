@@ -107,6 +107,21 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              A card that can't get all three must NEVER fall back to
 #              devin: it stays queued with a defer note, or the claim
 #              fails closed with the reason recorded.
+#   kk_mac_local — the bounded read-only LLM lane on KKs-Mac-Studio
+#              (card kk-mac-jev-adapter-integration). The OPPORTUNISTIC
+#              executor: cards carry action.task_class in
+#              KK_MAC_TASK_CLASSES (+ optional action.prompt /
+#              action.expect / action.artifact), execute through
+#              scripts/devnest/kk_mac_executor.py, and the run is
+#              verified only after its usage/admission/response artifact
+#              lands AND the independent verifier passes. Unlike the
+#              strict executors this one is try-first: when KK-Mac is
+#              stale/unavailable/overloaded or returns invalid output it
+#              fails closed and the SAME claim falls back to the normal
+#              lane — it never starves the card and never runs outside
+#              the admitted task classes. Serving requires KK_MAC_LANES=1
+#              on the runner (off by default until the supervised
+#              dispatch passes).
 #   devin    — devin-dispatch, regardless of lane tables/env.
 #   script   — the action.script block via the runner's script path.
 #   manual   — Tony's hands; automation never claims it.
@@ -115,7 +130,16 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # classifier fallback — devin when nothing cheaper resolves). An
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
-EXECUTORS = {"opencode", "devin", "script", "manual"}
+EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local"}
+# Bounded task classes the kk_mac_local executor may ever run — mirrors
+# scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
+# validates the contract without importing the devnest package).
+KK_MAC_TASK_CLASSES = {
+    "summary", "operator_brief", "structured_extract", "safe_route"}
+# roots the kk_mac_local persisted artifact may land under — mirrors
+# kk_mac_executor.ARTIFACT_ROOTS
+KK_MAC_ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/",
+                         "docs/reports/")
 MODEL_ID_RE = re.compile(r"^[a-zA-Z0-9._/-]{1,80}$")
 PROFILE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,60}$")
 HOST_ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
@@ -137,6 +161,12 @@ def card_target_host(card: dict) -> str:
     """Declared executor host pin (action.target_host) — independent of
     action.host; both must be satisfied for a claim."""
     return str((card.get("action") or {}).get("target_host") or "").strip()
+
+
+def card_task_class(card: dict) -> str:
+    """Declared bounded task class (action.task_class) — required when
+    executor=kk_mac_local; ignored by every other executor."""
+    return str((card.get("action") or {}).get("task_class") or "").strip()
 
 
 def model_provider(model: str) -> str:
@@ -166,6 +196,9 @@ def executor_blurb(card: dict) -> str:
     prof = card_profile(card)
     if prof:
         bits.append(f"profile={prof}")
+    tc = card_task_class(card)
+    if tc:
+        bits.append(f"task={tc}")
     return " ".join(bits)
 
 # Keyword lane classifier — deterministic, validated on the lane corpus
