@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 12:35
+updated: 2026-10-29 12:50
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -190,6 +190,13 @@ comms:
     Sacred Father narration. This is separate from the previously recorded PDF-image approval. Proceed with a private
     VYNCX/F5-TTS voice sample probe using only KK''s existing LINE voice-ID clips; no external TTS API, no public
     sharing, and do not replace the existing Edge-narrated teaser until the clone is reviewed.'
+- at: 2026-10-29 12:50
+  from: devin
+  text: 'Voice-clone probe is staged. Following Tony''s report of KK''s explicit permission, the 3 existing LINE
+    reference clips are copied to the private project voice-reference folder with SHA-256 manifest. The new VYNCX
+    v2 pack transcribes locally and emits one private smoke line only; no external TTS API, no mux, no public sharing.
+    Pack: `gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/`. Current managed T4 registrations are
+    stale, so the only required operator step is run console Cell 1 '
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
