@@ -1,0 +1,40 @@
+title: Session close learnings — DevNest, dispatch durability, and KK-Mac shutdown
+subtitle: Durable lessons captured at session close
+icon: lightbulb
+version: 1
+date: '2026-10-29'
+entries:
+  - topic: devnest-cache-and-tokenization
+    lesson: >-
+      Agent workloads are prefill-heavy. Stable provider prefixes and measured
+      KV/prompt cache hits matter more than pre-tokenizing an entire repository.
+      Pre-tokenize only fixed repeated corpora, keyed by model/tokenizer revision,
+      normalization version, and content hash.
+    evidence:
+      - docs/kb/devnest-performance-and-research-procedure.md
+      - docs/kb/devnest-optimization-and-parallel-research.md
+  - topic: ncm-jev-nest-boundary
+    lesson: >-
+      NCM is a generator, JEV is a decision/gate plane, and Nest is the
+      execution/artifact plane. Benchmark orchestration around NCM before
+      attempting architectural fusion.
+    evidence:
+      - docs/kb/ncm-jev-nest-exploration-procedure.md
+      - experiments/ncm-thai/README.md
+  - topic: dispatch-durability
+    lesson: >-
+      "Work may be gone" is an uncertainty warning, not proof of loss. The
+      durable repair is exact branch/base lookup, patch-relay lookup, declared
+      artifact lookup, and UNPROVEN/NEEDS_HUMAN when evidence is absent.
+    evidence:
+      - docs/ssot/kanban/cards/merge-sweep-verify-durable-work-after-di-b32582.yml
+      - scripts/board/merge-sweep.py
+  - topic: kk-mac-shutdown
+    lesson: >-
+      Before powering off a member Mac, check active downloads/jobs, save or
+      stop resumable work, verify AC/power state, and require the owner's
+      consent. A reachable host must not be shutdown while a large model
+      download is active unless the owner accepts interruption.
+    evidence:
+      - docs/kb/ada-nest-kk-mac-onboarding.md
+      - docs/kb/host-reboot-verification.md
