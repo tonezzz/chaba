@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 12:59
+updated: 2026-10-29 15:58
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -204,6 +204,12 @@ comms:
     It will ASR-check references locally and create one private smoke line only—no external TTS API, no video mux,
     no public release. The T4 registry has no fresh runtime. Required action: open `ada-nest-job-console.ipynb`
     and run Cell 1 once; Devin will start t'
+- at: 2026-10-29 15:58
+  from: devin
+  text: '[GPU probes 2026-10-29] Colab VYNCX/F5-TTS clone smoke is DONE/probe-pass: private 24kHz sample, 5.056s,
+    RMS 0.06087, 2.03GB peak; human listening is still required before full narration. KK-Mac MPS shot01 is DONE
+    and MP4 decode passed (640x384, 73 frames, 85.29s, 9.84GB driver allocation after run); the separate MLX shot
+    is also archived/decode-passed. Neither probe is a quality sign-off. No full mux/publication occurred.'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
