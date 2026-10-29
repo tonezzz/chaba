@@ -1,6 +1,6 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
-column: backlog
+column: review
 updated: 2026-10-29 22:41
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
@@ -111,9 +111,13 @@ comms:
   text: 'devin: task 065dd review-ready — job-package-status-sop.md verified, 2290B patch (job-package-status-sop.md),
     provider ollama/qwen2.5:7b. Patch: /home/tony/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/out/intake/cline-job-package-status-storage-sop/task.patch.
     Moving to review.'
+- at: 2026-10-29 22:41
+  from: devin
+  text: moved backlog -> review
 tags:
 - cline
 cline:
   deliverable: job-package-status-sop.md
   sentinel: nest_job
   model: ollama/qwen2.5:7b
+review_kind: verify
