@@ -1,7 +1,7 @@
 id: kk-mac-jev-adapter-integration
 title: Wire KK-Mac bounded LLM adapter into JEV dispatch
 column: done
-updated: 2026-10-29 20:18
+updated: 2026-10-29 20:40
 brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
   blocking fallback lanes.
 priority: high
@@ -80,6 +80,13 @@ comms:
 - at: 2026-10-29 20:18
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-29 20:40
+  from: devin
+  text: 'Reconciliation of the answered request: the executor-contract implementation is merged, but the supervised
+    live probe was never run. I verified the KK-Mac host key against the trusted tony-dell fingerprint and added
+    that host key to idc03 known_hosts; SSH now reaches the Mac but authentication is denied because idc03''s public
+    key is not authorized there. I have NOT changed kk-mac authorized_keys. Therefore KK_MAC_LANES remains 0 and
+    no live inference ran. The answer ''b) after idc03 is fixed/'' is'
 action:
   type: dispatch
   status: done
