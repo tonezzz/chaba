@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-10-29 10:03
+updated: 2026-10-29 10:11
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -42,6 +42,13 @@ comms:
     RAM/40 GiB disk; T4 cannot claim) plus `devnest-model-slot-30m` (30-minute NF4 T4 pack, requires pre-stage done).
     Source and queue helper checks are 0-diff on Drive. The 16 GiB model snapshot is not downloaded yet; no worker/cell/inference
     launched. Run the pre-stage on an idle high-RAM CPU worker before Colab Launch.'
+- at: 2026-10-29 10:11
+  from: devin
+  text: '[Colab attempt 2026-10-29 run-20261029-0254] Queue acquired and drained without inference. `devnest-qwen3-8b-hf-prestage`
+    was skipped because runtime RAM is 13.6 GiB (<20 GiB); `devnest-model-slot-30m` then skipped its unmet dependency.
+    Additional contract mismatch found: the slot runner calls Ollama `/api/generate` for `qwen3:8b`, while the prerequisite
+    pack downloads a Transformers HF snapshot; that artifact will not satisfy Ollama `/api/tags`. No model download
+    occurred. Do not relaunch until'
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
