@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-29 18:24
+updated: 2026-10-29 18:28
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -96,6 +96,13 @@ comms:
     Qwen2.5:7B attempts timed out; an isolated scratch run returned a plan in 57.6s but the verifier rejected its
     unsafe allowed_paths=["/"] and unsupported task_class/gate fields. That run had zero tool/MCP/write activity.
     A two-token idc02 Ollama probe was reachable; it is not a task-quali'
+- at: 2026-10-29 18:28
+  from: devin
+  text: 'First plan/route S0 evaluation (2026-10-29) is recorded at evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md.
+    JEV deterministic routes passed 3/3. OpenCode produced one plan in an isolated no-tool/no-MCP scratch run (57.6s),
+    but the held-out verifier rejected task_class=readonly, allowed_paths containing ''/'', and human_gate_required=true
+    for a low-risk report. No task executed; docs/hardware cases were held. Zen free was quota-limited; OpenCode
+    local Qwen attempts timed out; '
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
