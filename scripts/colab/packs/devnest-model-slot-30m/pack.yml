@@ -1,0 +1,29 @@
+name: devnest-model-slot-30m
+needs:
+  gpu_gb: 5
+  ram_gb: 8
+  disk_gb: 8
+  egress_only_ok: true
+timeout_s: 1800
+artifacts:
+  - packs/devnest-model-slot-30m/out/metrics.json
+  - packs/devnest-model-slot-30m/out/verdict.json
+  - packs/devnest-model-slot-30m/out/report.md
+prep: |
+  set -eu
+  python3 - <<'PY'
+  import json, urllib.request
+  url = "http://127.0.0.1:11434/api/tags"
+  data = json.loads(urllib.request.urlopen(url, timeout=5).read())
+  if not any(m.get("name") == "qwen3:8b" for m in data.get("models", [])):
+      raise SystemExit("qwen3:8b unavailable; bounded JOBS prefetch did not complete")
+  print("qwen3:8b ready; no model pull in pack prep")
+  PY
+run_sh: |
+  python3 "$NEST_ROOT/queue/devnest-model-slot-runner.py" \
+    --model qwen3:8b \
+    --base-url http://127.0.0.1:11434 \
+    --output "$PACK_DIR/out" \
+    --fixtures "$NEST_ROOT/queue/devnest-model-slot-fixtures.json" \
+    --cache-archive "$NEST_ROOT/cache/ollama-qwen3-8b.tar.zst" \
+    --cache-source /root/.ollama/models-qwen3

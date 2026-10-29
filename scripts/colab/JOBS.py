@@ -255,6 +255,77 @@ print('heldout-assessment:', json.dumps(rep['verdicts']),
       json.dumps(_b.get('mode')), f"{_a['files']} log files")
 '''
 
+_QWEN3_PREFETCH_PREP = r'''
+set -eu
+NEST="${NEST_ROOT:-/content/drive/MyDrive/ada-nest}"
+PACK="$NEST/packs/devnest-model-slot-30m"
+[ -f "$PACK/pack.yml" ] || { echo "slot pack not staged; skip"; exit 0; }
+[ -f "$PACK/done" ] && { echo "slot already done; skip"; exit 0; }
+CACHE="$NEST/cache/ollama-qwen3-8b.tar.zst"
+export OLLAMA_MODELS=/root/.ollama/models-qwen3
+mkdir -p "$OLLAMA_MODELS"
+if [ -s "$CACHE" ]; then
+  command -v zstd >/dev/null 2>&1 || \
+    timeout 120 apt-get install -y -qq zstd >/dev/null 2>&1
+  if tar -I zstd -tf "$CACHE" >/dev/null 2>&1; then
+    tar -I zstd -xf "$CACHE" -C "$OLLAMA_MODELS"
+    echo "restored qwen3 Ollama cache from Drive"
+  else
+    echo "cached Ollama archive invalid; will pull model"
+  fi
+fi
+if ! command -v ollama >/dev/null 2>&1; then
+  curl -fsSL --connect-timeout 10 --max-time 90 \
+    https://ollama.com/install.sh -o /tmp/ollama-install.sh
+  timeout 120 sh /tmp/ollama-install.sh
+fi
+if ! curl -fsS --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+  nohup ollama serve > "$PACK/ollama-serve.log" 2>&1 &
+fi
+for i in $(seq 1 30); do
+  curl -fsS --max-time 3 http://127.0.0.1:11434/api/tags \
+    >/dev/null 2>&1 && break
+  sleep 2
+done
+if ! ollama list 2>/dev/null | awk 'NR > 1 {print $1}' \
+      | grep -Fxq 'qwen3:8b'; then
+  timeout 300 ollama pull qwen3:8b
+fi
+'''
+
+_QWEN3_PREFETCH_RUN = r'''
+import json, os, time, urllib.request
+
+root = globals().get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
+boot = globals().get('BOOT_ID', 'noboot')
+pack = f'{root}/packs/devnest-model-slot-30m'
+report = {'boot_id': boot, 'model': 'qwen3:8b', 'ts': time.time()}
+if not os.path.isfile(f'{pack}/pack.yml'):
+    report['status'] = 'skipped-no-pack'
+elif os.path.isfile(f'{pack}/done'):
+    report['status'] = 'skipped-already-done'
+else:
+    try:
+        with urllib.request.urlopen(
+                'http://127.0.0.1:11434/api/tags', timeout=5) as response:
+            tags = json.loads(response.read().decode())
+        models = tags.get('models') or []
+        match = next((m for m in models if m.get('name') == 'qwen3:8b'),
+                     None)
+        report.update(status='ready' if match else 'missing',
+                      model_digest=match.get('digest') if match else None)
+    except Exception as exc:
+        report.update(status='unavailable', error=repr(exc)[:240])
+out = f'{root}/queue/model-prefetch/qwen3-8b-{boot}.json'
+os.makedirs(os.path.dirname(out), exist_ok=True)
+with open(out, 'w') as stream:
+    json.dump(report, stream, sort_keys=True)
+    stream.write('\n')
+print('ollama-prefetch:', json.dumps(report))
+if report['status'] in ('missing', 'unavailable'):
+    raise RuntimeError('qwen3:8b prefetch did not become ready')
+'''
+
 
 JOBS = [
     # ---- 1. per-runtime T4 warmup — overlaps the next job's prep ----------
@@ -263,7 +334,15 @@ JOBS = [
      "timeout_s": 330,
      "run": _WARMUP_RUN},
 
-    # ---- 2. restore HF hub cache from Drive (big CPU-bound extract) -------
+    # ---- 2. optional Qwen3 model prefetch — only when its slot pack is staged.
+    #         The T4 warmup overlaps this bounded Ollama/cache prep. ----------
+    {"name": "prefetch-qwen3-8b-for-devnest-slot", "scope": "env",
+     "prep": _QWEN3_PREFETCH_PREP,
+     "artifacts": ["queue/model-prefetch/qwen3-8b-{boot_id}.json"],
+     "timeout_s": 60,
+     "run": _QWEN3_PREFETCH_RUN},
+
+    # ---- 3. restore HF hub cache from Drive (big CPU-bound extract) -------
     {"name": "restore-hf-cache", "scope": "env",
      "prep": "test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
              " && mkdir -p /root/.cache/huggingface"
@@ -272,14 +351,14 @@ JOBS = [
      "run": "import os;p='/root/.cache/huggingface/hub';"
             "print('hub entries:',len(os.listdir(p))if os.path.isdir(p)else 0)"},
 
-    # ---- 3. shared deps — packs may still declare their own prep ----------
+    # ---- 4. shared deps — packs may still declare their own prep ----------
     {"name": "deps", "scope": "env",
      "prep": "apt-get install -y -qq zstd >/dev/null 2>&1 || true;"
              " pip install -q pyyaml huggingface-hub",
      "run": "import yaml,huggingface_hub;"
             "print('deps ok: pyyaml',yaml.__version__)"},
 
-    # ---- 4. stage any operator-uploaded asset bundles into /tmp -----------
+    # ---- 5. stage any operator-uploaded asset bundles into /tmp -----------
     {"name": "assets-stage", "scope": "env",
      "prep": "mkdir -p /tmp/stage;"
              " for t in /content/drive/MyDrive/ada-nest/assets/incoming/*.tar.zst;"
@@ -287,7 +366,7 @@ JOBS = [
      "run": "import os;p='/tmp/stage';"
             "print('staged:',os.listdir(p)if os.path.isdir(p)else [])"},
 
-    # ---- 5. held-out worker assessment — cache-independent GPU work that
+    # ---- 6. held-out worker assessment — cache-independent GPU work that
     #         hides the save-hf-cache repack prep (the second un-hideable
     #         window). env scope: re-runs every boot like the warmup. -----
     {"name": "devnest-heldout-assessment", "scope": "env",
@@ -296,7 +375,7 @@ JOBS = [
      "timeout_s": 1200,
      "run": _HELDOUT_RUN},
 
-    # ---- 6. repack hub cache for the next runtime (verify-before-mark) --
+    # ---- 7. repack hub cache for the next runtime (verify-before-mark) --
     {"name": "save-hf-cache", "scope": "env",
      "artifacts": ["cache/hf-hub.tar.zst"],
      "prep": "test -d /root/.cache/huggingface/hub"

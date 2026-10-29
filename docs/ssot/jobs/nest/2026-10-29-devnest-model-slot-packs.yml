@@ -1,0 +1,108 @@
+title: DevNest model-slot packs for Colab T4 and KK-Mac
+subtitle: Prepare bounded local Qwen3 8B smoke packs for both workers
+icon: cpu
+card: devnest-colab-t4-model-slot-adapter (OPS-0971)
+date: 2026-10-29
+
+planning:
+  goal: >-
+    Stage a 30-minute local-model structured-output smoke pack for Colab T4
+    and a matching no-pull pack for KK-Mac, without running either worker.
+  scope: >-
+    Use qwen3:8b and five synthetic read-only fixtures. Report latency,
+    token throughput, memory availability, and exact structured-output
+    verifier results. The result is a model-only smoke, not a DevNest
+    agent-replay score. Colab may pull Qwen3 only during bounded prep;
+    Mac must use its already-installed local model.
+  success_criteria:
+    - Both pack manifests declare 1800s timeout and durable artifact gates.
+    - Colab model prefetch is bounded and overlapped with T4 warm-up.
+    - Mac pack is isolated from the shared queue and performs no model pull.
+    - Unit tests cover JSON parsing, exact verifier scoring, and missing-model handling.
+    - Both packs are staged to their worker roots; neither is launched.
+  risks:
+    - >-
+      Colab Qwen download may exceed the warm-up window; bound the pull and
+      let the render queue continue if the model is unavailable.
+    - >-
+      KK-Mac is a member device; do not start the local pack while the
+      MPS video probe or owner workloads are active.
+    - >-
+      Ollama model cache uploads are best-effort DriveFS writes; keep the
+      report as the required completion artifact and verify the cache remotely.
+  resources:
+    - Colab shared root: gdrive:ada-nest
+    - KK-Mac isolated root: gdrive:ada-nest-kk-mac-pilot
+    - Local model candidate: qwen3:8b (no paid provider)
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: DevNest Colab model-slot adapter
+      file: docs/ssot/kanban/cards/devnest-colab-t4-model-slot-adapter.yml
+
+processing:
+  status: in_progress
+  started_at: 2026-10-29
+  steps:
+    - id: 1
+      label: Freeze model-only smoke contract
+      status: completed
+      notes: >-
+        Use five synthetic JSON tasks and a deterministic verifier. This
+        does not claim the frozen S0 shadow-eval agent replay.
+    - id: 2
+      label: Build and test Colab and Mac pack variants
+      status: in_progress
+      notes: Shared runner, Colab-only bounded model prefetch, Mac no-pull preflight.
+    - id: 3
+      label: Stage packages to Drive
+      status: not_started
+      notes: Stage to shared Colab queue and isolated KK-Mac pilot root only after tests pass.
+    - id: 4
+      label: Verify worker state and handoff
+      status: not_started
+      notes: Do not launch; Colab and Mac availability/idle windows are separate gates.
+  decisions:
+    - label: Start with model-only inference
+      rationale: >-
+        Lowest-risk first slot; measures structured output and throughput
+        without conflating model quality with tool-runner capability.
+      alternatives_considered: Full shadow_eval agent replay requires a separate Colab tool-runner adapter.
+  changes: []
+
+followup:
+  verification:
+    - python3 -m unittest tests.colab.test_devnest_model_slot
+    - Full SSOT validation and optimization gate.
+    - rclone check both staged pack trees against canonical sources.
+  rollback_plan:
+    - >-
+      Remove only the uniquely named staged pack directories if a release
+      preflight fails; never delete shared model-cache archives.
+  handoff:
+    - Launch the Colab pack from the canonical notebook after queue preflight.
+    - Run the KK-Mac pack once from the isolated root only during an approved idle window.
+  deferred:
+    - Full tool-using replay on Colab.
+    - Any model pull or launch on KK-Mac.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: Preparing the two bounded model-only smoke packs; no worker run yet.
+  metrics: []
+  links:
+    - title: Colab model-slot procedure
+      url: https://github.com/tonezzz/chaba/pull/54
+    - title: Colab adapter card
+      file: docs/ssot/kanban/cards/devnest-colab-t4-model-slot-adapter.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

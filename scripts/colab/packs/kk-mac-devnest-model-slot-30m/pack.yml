@@ -1,0 +1,29 @@
+name: kk-mac-devnest-model-slot-30m
+needs:
+  ram_gb: 30
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 1800
+fetch:
+  - queue/devnest-model-slot-runner.py
+  - queue/devnest-model-slot-fixtures.json
+artifacts:
+  - packs/kk-mac-devnest-model-slot-30m/out/metrics.json
+  - packs/kk-mac-devnest-model-slot-30m/out/verdict.json
+  - packs/kk-mac-devnest-model-slot-30m/out/report.md
+prep: |
+  set -eu
+  python3 - <<'PY'
+  import json, urllib.request
+  url = "http://127.0.0.1:11434/api/tags"
+  data = json.loads(urllib.request.urlopen(url, timeout=5).read())
+  if not any(m.get("name") == "qwen3:8b" for m in data.get("models", [])):
+      raise SystemExit("qwen3:8b is not already installed; this Mac pack never pulls models")
+  print("local qwen3:8b ready; no network model pull")
+  PY
+run_sh: |
+  python3 "$NEST_ROOT/queue/devnest-model-slot-runner.py" \
+    --model qwen3:8b \
+    --base-url http://127.0.0.1:11434 \
+    --output "$PACK_DIR/out" \
+    --fixtures "$NEST_ROOT/queue/devnest-model-slot-fixtures.json"
