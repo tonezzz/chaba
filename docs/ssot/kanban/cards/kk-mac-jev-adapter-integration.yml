@@ -1,7 +1,7 @@
 id: kk-mac-jev-adapter-integration
 title: Wire KK-Mac bounded LLM adapter into JEV dispatch
 column: doing
-updated: 2026-10-29 19:47
+updated: 2026-10-29 19:48
 brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
   blocking fallback lanes.
 priority: high
@@ -38,7 +38,25 @@ comms:
   text: 'kk_mac_local executor wired: kk_mac_executor.py (admit→run→persist→verify), board-api contract validation,
     runner claimable/start/finish/fallback paths + busy/overload gate in kk_mac_admission. 59 board tests + 18 executor
     tests green; KK_MAC_LANES stays 0 pending supervised dispatch.'
+- at: 2026-10-29 19:48
+  from: devin
+  text: 'raised request supervised-live-dispatch-unit-tests-full-2f68ac: Supervised live dispatch: unit tests +
+    full contract wiring are green and the KK-Mac lane probe is eligible right now (h'
 action:
   type: dispatch
   status: running
   runner: idc02
+requests:
+- id: supervised-live-dispatch-unit-tests-full-2f68ac
+  ask: 'Supervised live dispatch: unit tests + full contract wiring are green and the KK-Mac lane probe is eligible
+    right now (heartbeat 129s, ollama_ok, 72G free, node idle). But this runner (idc02) cannot ssh kk-mac (host
+    key verification fails), and a prior request answer limited KK-Mac to deterministic-only runs. Options: (a)
+    I stop here — KK_MAC_LANES stays 0, the supervised dispatch runs later on a host with kk-mac ssh access (documented
+    in the job file); (b) you authorize one bounded live inference and tell me which host should run it; (c) run
+    it yourself with the command in the comms. Which do you want?'
+  status: open
+  at: 2026-10-29 19:48
+  from: devin
+  options:
+  - proceed
+  - hold
