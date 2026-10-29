@@ -8,11 +8,31 @@ ref: OPS-0790
 comms:
 - at: 2026-10-23 15:30
   from: devin
-  text: 'Found 2026-10-23 while arming nest-queue-watch: chaba-jobs.timer is inactive/disabled on idc03 and absent
-    on dell+mn01. Every job in ssot.jobs.yml with dispatch:dispatcher + every: has silently not run since the timer
-    died (when? check last journal). Options: (a) re-enable chaba-jobs.timer on the declared dispatcher host — which
-    host owns it? ssot.jobs.yml config does not say; (b) migrate remaining dispatcher jobs to dispatch:systemd rendered
-    timers like nest-queue-watch. Verify which dispatcher'
+  text: 'Found 2026-10-23 while arming nest-queue-watch: chaba-jobs.timer is inactive/disabled on idc03
+    and absent on dell+mn01. Every job in ssot.jobs.yml with dispatch:dispatcher + every: has silently
+    not run since the timer died (when? check last journal). Options: (a) re-enable chaba-jobs.timer on
+    the declared dispatcher host — which host owns it? ssot.jobs.yml config does not say; (b) migrate
+    remaining dispatcher jobs to dispatch:systemd rendered timers like nest-queue-watch. Verify which
+    dispatcher'
 - at: 2026-10-23 15:30
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
+    in queue'
+- at: 2026-10-29 19:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+requests:
+- id: the-chaba-jobs-timer-is-inacti-04f0e4
+  ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml
+    jobs with dispatch:dispatcher to silently fail since the timer died. We need to decide how to handle
+    the architecture of these dispatcher jobs moving forward before we can fix or migrate them.
+  options:
+  - ★ Re-enable and configure chaba-jobs.timer on idc03 as the dedicated dispatcher host and verify it
+    runs ssot.jobs.yml jobs
+  - Migrate all remaining dispatcher jobs to use dispatch:systemd rendered timers (like nest-queue-watch)
+    and remove the legacy dispatcher
+  - Postpone fixing the fleet-wide dispatcher failure until a full infrastructure review of chaba-jobs
+    can be performed
+  status: open
+  at: 2026-10-29 19:20
+  from: backlog-spec-enrich
