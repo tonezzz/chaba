@@ -1,7 +1,7 @@
 id: automate-host-post-restart-verification-5ad4ac
 title: Automate host post-restart verification
 column: doing
-updated: 2026-10-27 05:35
+updated: 2026-10-29 11:33
 action:
   type: manual
   status: queued
@@ -48,3 +48,8 @@ comms:
 - at: 2026-10-27 05:35
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-29 11:33
+  from: devin
+  text: 'Missed-job sweep 2026-10-29: this card is Doing but action.type=manual, action.status=queued; kanban-dispatch
+    cannot claim it and there is no active task. Holding it in Backlog so it no longer appears to be an executing
+    job; resume only with a dispatchable implementation spec or a named manual owner.'
