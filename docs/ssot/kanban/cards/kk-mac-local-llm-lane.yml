@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 12:27
+updated: 2026-10-29 12:28
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -97,6 +97,13 @@ comms:
 - at: 2026-10-29 12:27
   from: devin
   text: put on hold
+- at: 2026-10-29 12:28
+  from: devin
+  text: 'Tony authorized kk-mac host use for 2026-10-29. Read-only preflight via the trusted tony-dell SSH hop confirms
+    M4 Max/14 cores/36 GiB RAM, 98 GiB free disk, moderate system load, cached local Ollama models, and an empty
+    /api/ps (no model loaded). The kkkakk shell has no OpenCode, ffmpeg, or Ollama CLI; the local Ollama API is
+    available. Direct SSH from tony-macbook is not authorized; the Dell hop is the trusted path. Plan: deterministic
+    CPU/MPS preprocessing and tests first. The staged Qwen3:8B '
 action:
   type: dispatch
   status: idle
