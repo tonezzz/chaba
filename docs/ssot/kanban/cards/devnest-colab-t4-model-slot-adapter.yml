@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-10-29 08:36
+updated: 2026-10-29 10:03
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -36,6 +36,12 @@ comms:
 - at: 2026-10-29 08:36
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 10:03
+  from: devin
+  text: 'Final model-only HF package staged: `devnest-qwen3-8b-hf-prestage` (pinned Qwen/Qwen3-8B revision, 20 GiB
+    RAM/40 GiB disk; T4 cannot claim) plus `devnest-model-slot-30m` (30-minute NF4 T4 pack, requires pre-stage done).
+    Source and queue helper checks are 0-diff on Drive. The 16 GiB model snapshot is not downloaded yet; no worker/cell/inference
+    launched. Run the pre-stage on an idle high-RAM CPU worker before Colab Launch.'
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
