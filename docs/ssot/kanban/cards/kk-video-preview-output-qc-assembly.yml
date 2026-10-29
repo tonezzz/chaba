@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 16:04
+updated: 2026-10-29 16:05
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -221,6 +221,9 @@ comms:
     a 10.07s segment from one consented LINE clip (ASR avg logprob -0.054) and generated a non-silent 5.056s, 24kHz
     clone smoke (242,732 bytes; 2.03GB GPU peak). No full narration or mux was made; the Edge-narrated teaser is
     unchanged. Private audio: `gdrive:ada-nest/packs/kk-video'
+- at: 2026-10-29 16:05
+  from: devin
+  text: 'raised request kk-clone-smoke-listen-next-step: Please listen to the private 5s KK clone sample at gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/clo'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -304,6 +307,21 @@ requests:
   - id: hold-revise
     label: Hold both; keep current teaser unchanged and specify what needs revision.
   suggested: hold-revise
+- id: kk-clone-smoke-listen-next-step
+  ask: Please listen to the private 5s KK clone sample at gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/clone-smoke.wav
+    and choose the next step. Consent is already recorded; this is only a quality/use decision.
+  status: open
+  at: 2026-10-29 16:05
+  from: devin
+  options:
+  - id: approve-full-kk-narration
+    label: 'Recommended if it sounds like KK: synthesize all four private narrator cues with VYNCX, keep the video
+      unchanged until the audio is reviewed.'
+  - id: capture-clean-reference
+    label: Ask KK for a clean 10-12s Thai read with exact transcript; rerun the clone probe before full narration.
+  - id: keep-edge-narration
+    label: Keep the existing non-cloned Edge narration; do not make a full clone track.
+  suggested: approve-full-kk-narration
 awaiting_action: true
 action:
   status: idle
