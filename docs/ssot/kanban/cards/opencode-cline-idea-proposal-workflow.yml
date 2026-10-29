@@ -103,6 +103,12 @@ comms:
     but the held-out verifier rejected task_class=readonly, allowed_paths containing ''/'', and human_gate_required=true
     for a low-risk report. No task executed; docs/hardware cases were held. Zen free was quota-limited; OpenCode
     local Qwen attempts timed out; '
+- at: 2026-10-29 18:28
+  from: devin
+  text: 'Short result: JEV passed 3/3. OpenCode returned one 57.6s plan in an isolated no-tool/no-MCP scratch run;
+    verifier failed task_class=readonly, allowed_paths=["/"] (overbroad), and unnecessary human_gate=true. Other
+    two cases held. Full report: evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md. Do not pass
+    model-proposed ACLs to Nest/Cline; derive/intersect them deterministically from the canonical card.'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
