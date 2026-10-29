@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: backlog
-updated: 2026-10-29 19:57
+updated: 2026-10-29 20:03
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -48,3 +48,9 @@ comms:
     HTTP import to KK-Mac. KK import PID 46328 is active; model files are being copied into ~/kk-video/ltx-mlx/models/LTX
     with resume support. KK-side HF download was stopped/preserved; no render starts until the local model import
     verifies.'
+- at: 2026-10-29 20:03
+  from: devin
+  text: 'Transfer optimization: direct Con01->KK-Mac HTTP was too slow (~133MB after ~5h), so it was stopped without
+    deleting KK partials. Con01->IDC03 rsync mirror is now active at ~2-3 MB/s for the complete MLX package; after
+    IDC03 receives it, KK-Mac will pull over the Thailand-side path. This preserves the cache and avoids restarting
+    from the public HF source.'
