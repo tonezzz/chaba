@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 13:33
+updated: 2026-10-29 13:40
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -124,6 +124,12 @@ comms:
 - at: 2026-10-29 13:33
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 13:40
+  from: devin
+  text: 'Correction to my prior availability note (2026-10-29): KK-Mac is online and its SSH host key is present
+    in known_hosts. The connection now fails at authentication (`Permission denied (publickey,password,keyboard-interactive)`),
+    not host-key verification. I did not bypass SSH checks or start the staged pack; no GPU/owner-process state
+    was readable.'
 action:
   type: dispatch
   status: idle
