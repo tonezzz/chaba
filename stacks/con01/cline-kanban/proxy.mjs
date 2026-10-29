@@ -4,26 +4,55 @@ import {
   rewriteDownstreamHeaders,
   rewriteUpstreamHeaders,
 } from "./proxy-policy.mjs";
+import { verifyCloudflareAccessJwt } from "./access-jwt.mjs";
 
-const PUBLIC_HOST = "100.72.146.39:3484";
+const TAILNET_HOST = "100.72.146.39:3484";
+const TAILNET_ORIGIN = "http://100.72.146.39:3484";
+const PUBLIC_HOST = process.env.CLINE_PUBLIC_HOST?.trim().toLowerCase() || "";
+const PUBLIC_ORIGIN = process.env.CLINE_PUBLIC_ORIGIN?.trim() || "";
+const ACCESS_ISSUER = process.env.CLINE_CF_ACCESS_ISSUER?.trim() || "";
+const ACCESS_AUDIENCE = process.env.CLINE_CF_ACCESS_AUD?.trim() || "";
+const ACCESS_JWKS_URL = process.env.CLINE_CF_ACCESS_JWKS_URL?.trim() || "";
+const PUBLIC_ACCESS_ENABLED = Boolean(
+  PUBLIC_HOST && PUBLIC_ORIGIN && ACCESS_ISSUER && ACCESS_AUDIENCE && ACCESS_JWKS_URL,
+);
 const BACKEND_HOST = "cline-kanban";
 const BACKEND_PORT = 3485;
 const PASSCODE = process.env.CLINE_PROXY_PASSCODE?.trim();
 if (!PASSCODE || PASSCODE.length < 24) {
   throw new Error("CLINE_PROXY_PASSCODE is missing or too short");
 }
+if (PUBLIC_HOST && !PUBLIC_ACCESS_ENABLED) {
+  console.error("Cline public route disabled: Cloudflare Access verification is incomplete");
+}
 
 const authFailures = new Map();
 
-function requestRejection(req, upgrade = false) {
+async function requestRejection(req, upgrade = false) {
   const ip = req.socket.remoteAddress || "unknown";
   const now = Date.now();
   const state = authFailures.get(ip);
   if (state?.lockedUntil > now) return "auth";
+
+  const host = String(req.headers.host || "").toLowerCase();
+  const isPublic = PUBLIC_ACCESS_ENABLED && host === PUBLIC_HOST;
+  const accessJwtValid = isPublic
+    ? await verifyCloudflareAccessJwt(
+        req.headers["cf-access-jwt-assertion"],
+        {
+          issuer: ACCESS_ISSUER,
+          audience: ACCESS_AUDIENCE,
+          jwksUrl: ACCESS_JWKS_URL,
+        },
+      )
+    : false;
   const reason = getExternalRequestRejection(req.headers, req.method, {
-    externalHost: PUBLIC_HOST,
-    externalOrigin: "http://100.72.146.39:3484",
+    externalHost: TAILNET_HOST,
+    externalOrigin: TAILNET_ORIGIN,
+    publicHost: PUBLIC_ACCESS_ENABLED ? PUBLIC_HOST : "",
+    publicOrigin: PUBLIC_ORIGIN,
     passcode: PASSCODE,
+    accessJwtValid,
     upgrade,
   });
   if (reason === "auth") {
@@ -39,8 +68,20 @@ function requestRejection(req, upgrade = false) {
   return reason;
 }
 
+function responseOrigin(req) {
+  return PUBLIC_ACCESS_ENABLED &&
+      String(req.headers.host || "").toLowerCase() === PUBLIC_HOST
+    ? PUBLIC_ORIGIN
+    : TAILNET_ORIGIN;
+}
+
 function rejectHttp(res, reason) {
   const unauthorized = reason === "auth";
+  const message = unauthorized
+    ? "Authentication required."
+    : reason === "access"
+      ? "Cloudflare Access authentication required."
+      : "Host or Origin not allowed.";
   res.writeHead(unauthorized ? 401 : 403, {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
@@ -50,17 +91,17 @@ function rejectHttp(res, reason) {
   });
   res.end(
     JSON.stringify({
-      error: unauthorized
-        ? "Authentication required."
-        : "Host or Origin not allowed.",
+      error: message,
     }),
   );
 }
 
 function rejectSocket(socket, reason) {
   const unauthorized = reason === "auth";
+  const status = unauthorized ? 401 : 403;
+  const message = unauthorized ? "Unauthorized" : "Forbidden";
   socket.end(
-    `HTTP/1.1 ${unauthorized ? "401 Unauthorized" : "403 Forbidden"}\r\n` +
+    `HTTP/1.1 ${status} ${message}\r\n` +
       "Connection: close\r\nCache-Control: no-store\r\n" +
       (unauthorized
         ? 'WWW-Authenticate: Basic realm="Cline Kanban pilot", charset="UTF-8"\r\n'
@@ -81,12 +122,13 @@ function sendBadGateway(res) {
   res.end(JSON.stringify({ error: "Cline Kanban backend unavailable." }));
 }
 
-const server = http.createServer((req, res) => {
-  const rejection = requestRejection(req);
+async function proxyHttp(req, res) {
+  const rejection = await requestRejection(req);
   if (rejection) {
     rejectHttp(res, rejection);
     return;
   }
+  const externalOrigin = responseOrigin(req);
 
   const upstream = http.request(
     {
@@ -99,7 +141,7 @@ const server = http.createServer((req, res) => {
     (upstreamRes) => {
       res.writeHead(
         upstreamRes.statusCode || 502,
-        rewriteDownstreamHeaders(upstreamRes.headers),
+        rewriteDownstreamHeaders(upstreamRes.headers, externalOrigin),
       );
       upstreamRes.pipe(res);
     },
@@ -107,10 +149,10 @@ const server = http.createServer((req, res) => {
 
   upstream.on("error", () => sendBadGateway(res));
   req.pipe(upstream);
-});
+}
 
-server.on("upgrade", (req, clientSocket, head) => {
-  const rejection = requestRejection(req, true);
+async function proxyUpgrade(req, clientSocket, head) {
+  const rejection = await requestRejection(req, true);
   if (rejection) {
     rejectSocket(clientSocket, rejection);
     return;
@@ -146,6 +188,16 @@ server.on("upgrade", (req, clientSocket, head) => {
   });
   upstream.on("error", () => rejectSocket(clientSocket));
   upstream.end();
+}
+
+const server = http.createServer((req, res) => {
+  void proxyHttp(req, res).catch(() => sendBadGateway(res));
+});
+
+server.on("upgrade", (req, clientSocket, head) => {
+  void proxyUpgrade(req, clientSocket, head).catch(() =>
+    rejectSocket(clientSocket, "access"),
+  );
 });
 
 server.on("clientError", (_error, socket) => rejectSocket(socket, "host"));
@@ -155,7 +207,9 @@ server.on("error", (error) => {
 });
 
 server.listen(3484, "0.0.0.0", () => {
-  console.log(`Cline Kanban authenticated proxy listening on ${PUBLIC_HOST}`);
+  const routes = [`Tailnet ${TAILNET_HOST}`];
+  if (PUBLIC_ACCESS_ENABLED) routes.push(`Access ${PUBLIC_HOST}`);
+  console.log(`Cline Kanban authenticated proxy listening: ${routes.join(", ")}`);
 });
 
 function shutdown() {

@@ -10,6 +10,11 @@ ContainerName=cline-kanban-proxy
 Network=cline-kanban.network
 PublishPort=100.72.146.39:3484:3484/tcp
 Environment=CLINE_ROLE=proxy
+Environment=CLINE_PUBLIC_HOST=cline.surf-thailand.com
+Environment=CLINE_PUBLIC_ORIGIN=https://cline.surf-thailand.com
+Environment=CLINE_CF_ACCESS_ISSUER=https://chaba-team.cloudflareaccess.com
+Environment=CLINE_CF_ACCESS_AUD=f1ca41927bd26da135e85a2fc1ba07c5869efaa1a27737225debd9d2af9865ac
+Environment=CLINE_CF_ACCESS_JWKS_URL=https://chaba-team.cloudflareaccess.com/cdn-cgi/access/certs
 EnvironmentFile=%h/.config/secrets/cline-kanban.env
 
 [Service]

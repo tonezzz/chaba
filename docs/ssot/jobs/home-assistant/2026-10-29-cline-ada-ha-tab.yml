@@ -1,0 +1,167 @@
+title: Cline Tab on Ada HA
+subtitle: Publish a keyless, Access-protected Cline panel after Board
+icon: shield
+
+planning:
+  goal: >-
+    Add a Cline panel immediately after Board in Ada HA's live chaba-admin
+    dashboard without exposing a browser-side Cline passcode.
+  scope: >-
+    Use a root host at cline.surf-thailand.com, the same allow policies and
+    720h session as Ada HA, an idc02 Caddy route to the Tailnet-only con01
+    proxy, signed Cloudflare Access JWT verification in that proxy, and a
+    WebSocket dashboard mutation plus sanitized SSOT snapshot.
+  success_criteria:
+    - Ada HA chaba-admin shows Cline immediately after Board.
+    - Cloudflare Access uses the existing Ada HA allowlist; no Cline key appears in the iframe URL or browser code.
+    - Direct-origin requests without a valid Cline Access JWT return 403.
+    - Cline HTTP and WebSocket traffic work through the root host.
+    - The live dashboard is read back over WebSocket and its sanitized snapshot is in SSOT.
+  risks:
+    - The idc02 Caddy origin is directly reachable; mitigate by validating the signed, app-specific Access JWT at the Cline proxy.
+    - Cloudflare Access credentials/cookies could leak to the agent; strip Access headers and cookies before forwarding.
+    - Dashboard snapshots contain existing CMS viewer keys; redact api_key query values before committing.
+  resources:
+    - con01 Cline proxy and private app network
+    - idc02 Caddy edge and Cloudflare Access
+    - tony-omen Ada HA at 127.0.0.1:8125
+    - Cloudflare Access JWKS endpoint for signature verification
+  owner: tony
+  estimated_duration: 1 session
+  related_focus: []
+
+processing:
+  status: in_progress
+  started_at: "2026-10-29T09:11:42+07:00"
+  steps:
+    - id: confirm-target
+      label: Confirm Ada HA target and Access policy
+      status: done
+      notes: >-
+        HOM-0957 records Ada HA and reuse of the Ada HA Access allowlist.
+        Read-only WebSocket auth with the SSOT's `ada-ha-live` token confirms
+        the live view order Pair, Board, DevNest, Ada Pages, Monitor, Events,
+        Log, Obsidian; Cline is absent. The old builder's `tony-devin` alias
+        was stale and is corrected to `ada-ha-live`.
+    - id: create-access-app
+      label: Create a Cline Access app with the Ada HA allowlist
+      status: done
+      notes: >-
+        Created cline.surf-thailand.com with the same allow-tony and
+        allow-tony-gmail policies and 720h session. DNS is intentionally not
+        published until the proxy JWT guard is deployed.
+    - id: proxy-jwt-guard
+      label: Verify Cloudflare Access JWT in the Tailnet proxy
+      status: done
+      notes: >-
+        Added RS256/JWKS verification, exact issuer/audience and time checks,
+        same-origin enforcement, and stripping of Access JWT/cookies before
+        forwarding to the private Cline app. Ten proxy tests pass; deployment
+        remains pending.
+    - id: deploy-proxy-guard
+      label: Deploy the Access-verifying proxy to con01
+      status: not_started
+      notes: Rebuild from cached layers and restart only the proxy unit under the deploy lock.
+    - id: caddy-route
+      label: Add the root-host Caddy route
+      status: in_progress
+      notes: >-
+        Tracked fragment is prepared and passes Caddy validation in a temporary
+        config. Install only after the proxy guard passes CI and is on con01.
+    - id: publish-dns
+      label: Publish cline.surf-thailand.com DNS
+      status: not_started
+      notes: Wait until proxy JWT validation and Caddy route are ready.
+    - id: dashboard-tab
+      label: Add Cline after Board in Ada HA over WebSocket
+      status: not_started
+    - id: snapshot
+      label: Sync a sanitized Ada dashboard snapshot into SSOT
+      status: not_started
+    - id: verify-surface
+      label: Verify Access, direct-origin denial, HTTP, WebSocket, and dashboard read-back
+      status: not_started
+  decisions:
+    - label: Root host and Access policy
+      rationale: >-
+        Tony selected cline.surf-thailand.com and the same Ada HA Access
+        allowlist; root hosting avoids Cline base-path and WebSocket rewrites.
+      alternatives_considered: >-
+        Tailnet Basic Auth requires a second key; a same-host subpath is
+        unverified and risks Cline root API/WebSocket paths.
+    - label: Direct-origin protection
+      rationale: >-
+        The idc02 Caddy origin is directly reachable, so the Cline proxy must
+        validate the signed Access JWT and exact Cline audience itself.
+      alternatives_considered: >-
+        Trusting the Cloudflare Access header or injecting Basic Auth at Caddy
+        would permit origin bypass.
+  changes:
+    - file: stacks/con01/cline-kanban/access-jwt.mjs
+      summary: Verify Cloudflare Access RS256 JWTs using cached JWKS.
+    - file: stacks/con01/cline-kanban/proxy.mjs
+      summary: Accept Tailnet Basic Auth or the app-specific public Access JWT.
+    - file: stacks/idc02/cline.surf-thailand.com.caddy
+      summary: Track the Caddy root-host route to the Tailnet proxy.
+    - file: scripts/home-assistant/ada_ha_auth.py
+      summary: Use Ada HA's current ada-ha-live refresh-token alias.
+    - file: scripts/home-assistant/sync-ssot-from-live.sh
+      summary: Add an Ada-specific sanitized dashboard snapshot mode.
+
+followup:
+  verification:
+    - node --test tests/test_cline_kanban_proxy.mjs
+    - Run Cline stack verify.sh; direct public-host requests without JWT must return 403.
+    - Unauthenticated cline.surf-thailand.com must be stopped at Cloudflare Access.
+    - Verify HTTP and WebSocket through the Cline root host after Access login.
+    - Read back Ada HA dashboard config via WebSocket and verify Cline follows Board.
+    - Sync the live Ada dashboard using a sanitizer that removes api_key query values.
+  rollback_plan:
+    - Remove the Cline Caddy site block to disable the public route; keep Cline Tailnet access intact.
+    - Leave the Access app/DNS in place unless Tony separately approves removing those Cloudflare resources.
+    - Do not restart the Cline app container; restart only the proxy if deploying proxy changes.
+  handoff:
+    - Move HOM-0957 to review after the live Ada dashboard and Access route are verified.
+    - Ask Tony to visually confirm the Cline panel after Board in ada-ha.surf-thailand.com/chaba-admin.
+  deferred:
+    - Further Cline model inference; the authorized qwen3:4b attempt failed without artifacts.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: >-
+    Ada HA and reuse of its Access policy are confirmed. The Cline Access app
+    exists with the same two allow policies, but DNS, Caddy routing, and the
+    dashboard tab are not live yet. The stale `tony-devin` dashboard token
+    lookup was replaced with the documented `ada-ha-live` alias, and the
+    WebSocket read confirms the Cline tab is absent. The Access-JWT guard and
+    dashboard mutation/snapshot helpers pass local tests; deploy is pending.
+    No further model inference is running.
+  metrics:
+    - metric: Access app
+      value: cline.surf-thailand.com; 2 Ada HA allow policies; 720h session
+    - metric: proxy regression tests
+      value: 10 proxy tests, 7 dashboard/auth tests passed locally
+    - metric: Ada dashboard WebSocket read
+      value: Authenticated with ada-ha-live; Board is followed by DevNest; no Cline view yet
+    - metric: Caddy route syntax
+      value: Cline fragment validates against the live idc02 Caddy config; not installed
+    - metric: DNS and Caddy route
+      value: DNS unpublished; Caddy route fragment tracked but not deployed
+    - metric: Ada dashboard
+      value: Board exists; Cline tab not yet added
+  links:
+    - title: HOM-0957 dashboard card
+      file: docs/ssot/kanban/cards/cline-chaba-admin-tab.yml
+  kb_review:
+    - Direct-origin Caddy access requires app-specific Access JWT verification at the Cline proxy.
+  lessons_learned:
+    - Read and act on answered board requests before asking for confirmation again.
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml

@@ -1,0 +1,14 @@
+# Cline Kanban public root host. Append this block to
+# ~/.config/caddy/Caddyfile on idc02, then validate and reload caddy-edge.
+# Cloudflare Access protects this hostname; the Cline proxy independently
+# verifies the Access JWT, so direct-origin requests cannot bypass Access.
+cline.surf-thailand.com {
+	bind 45.136.236.190
+	tls internal
+	reverse_proxy http://100.72.146.39:3484 {
+		header_up Host {http.request.host}
+		header_up Origin {http.request.header.Origin}
+		header_up Cf-Access-Jwt-Assertion {http.request.header.Cf-Access-Jwt-Assertion}
+		header_up -Authorization
+	}
+}
