@@ -47,7 +47,7 @@ PROMPT_TEMPLATE = """You are completing Chaba kanban card "{title}" in a disposa
 Card spec:
 {spec}
 
-Write the deliverable as a single self-contained markdown file named {deliverable}. Cover the spec faithfully; where it names real systems, paths, units, or env vars use them verbatim and do not invent tooling that is not in the spec. Do not commit, push, or open a PR. Verify the file exists and report the changed path."""
+Write the deliverable as a single self-contained markdown file named {deliverable}. Cover the spec faithfully; where it names real systems, paths, units, or env vars use them verbatim and do not invent tooling that is not in the spec. You MUST create the file with the editor/write tool — do NOT paste the file contents as chat text; a reply without the file on disk is a failure. Do not commit, push, or open a PR. Verify the file exists and report the changed path."""
 
 
 def load_cards(cards_dir):
