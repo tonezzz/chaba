@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 11:33
+updated: 2026-10-29 12:35
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -184,6 +184,12 @@ comms:
     local worktrees, not origin/master. The separate KK worktree has a dirty ssot.dev-system.assessment.yml, which
     I did not touch. This card remains Backlog with its existing review/approval decisions; please do not treat
     those files as landed.'
+- at: 2026-10-29 12:35
+  from: tony
+  text: 'Voice decision (2026-10-29): Tony states KK has explicitly permitted cloning her voice for the private
+    Sacred Father narration. This is separate from the previously recorded PDF-image approval. Proceed with a private
+    VYNCX/F5-TTS voice sample probe using only KK''s existing LINE voice-ID clips; no external TTS API, no public
+    sharing, and do not replace the existing Edge-narrated teaser until the clone is reviewed.'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
