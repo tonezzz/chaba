@@ -1,0 +1,28 @@
+id: cline-nest-failure-artifact-durability
+title: Persist Cline Nest diagnostics when task execution fails
+column: doing
+updated: 2026-10-29 16:56
+brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
+  exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
+  pack done.
+priority: high
+program: devnest
+tags:
+- cline
+- nest
+- artifact-contract
+- verification
+spec: For the Cline Nest adapter repair selected by Tony on DEV-0975, make failures observable without another model
+  call. If the bridge has a task ID but cannot reach Review, cannot read the expected file/text, or collects an
+  empty patch, write a sanitized task-result.json with result=failed, stable failure_code, task_id/job_key and last-known
+  column. Update nest-worker to upload only declared artifact files after a nonzero run_sh result, then return failure
+  and never write the done marker. Keep success behavior unchanged. No Cline task submission, no provider calls,
+  no service restart/deploy, no secrets, and no remote deletion. Add mocked unit tests for partial-artifact upload/failure
+  and rerun the offline adapter tests.
+ref: DEV-0979
+comms:
+- at: 2026-10-29 16:56
+  from: tony
+  text: 'Follow-up for DEV-0975 / KNB-0932. Initial test this turn: Cline bridge offline unit tests 9/9 pass; no
+    Cline task or model inference was run. The live smoke tasks previously failed without an expected file/result.
+    This card tests failure-artifact durability only.'
