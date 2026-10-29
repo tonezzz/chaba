@@ -261,6 +261,23 @@ instances:
           key, device='*', works from any browser; revocable via the Pair
           tab. Use push-dashboard.py, never .storage edits (a HA restart
           flushes .storage edits — learned 2026-09-23).
+  chaba_admin_ada:
+    name: chaba-admin
+    instance: ada-ha
+    title: Chaba admin (Ada)
+    icon: mdi:shield-crown
+    url: https://ada-ha.surf-thailand.com/chaba-admin/board
+    require_admin: true
+    storage_path: /home/tony/.config/ada-ha/.storage/lovelace.chaba_admin
+    repo_snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+    note: >-
+      Ada HA lab copy of chaba-admin, distinct from the tony-ha dashboard
+      above. Live view order: Pair → Board → Cline → DevNest → Ada Pages →
+      Monitor → Events → Log → Obsidian. Cline is a full-page panel iframe
+      to https://cline.surf-thailand.com/?v=1; its Cloudflare Access app
+      reuses Ada HA's allowlist and session, and its Tailnet proxy verifies
+      the signed app-specific JWT. The snapshot redacts existing CMS api_key
+      query values.
   ai:
     name: ai                 # url_path "ai" — renamed from chaba-ai
                              # 2026-10-12 (Tony: /ai/chaba pattern, mirrors
@@ -533,6 +550,6 @@ conventions:
     examples: [chaba-admin/chaba-cms, chaba-admin/board]
 
 status:
-  last_updated: "2026-10-02"
-  last_verified: "2026-09-25"
+  last_updated: "2026-10-29"
+  last_verified: '2026-10-29'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

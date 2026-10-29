@@ -48,8 +48,7 @@ processing:
       status: done
       notes: >-
         Created cline.surf-thailand.com with the same allow-tony and
-        allow-tony-gmail policies and 720h session. DNS is intentionally not
-        published until the proxy JWT guard is deployed.
+        allow-tony-gmail policies and 720h session.
     - id: proxy-jwt-guard
       label: Verify Cloudflare Access JWT in the Tailnet proxy
       status: done
@@ -60,27 +59,47 @@ processing:
         remains pending.
     - id: deploy-proxy-guard
       label: Deploy the Access-verifying proxy to con01
-      status: not_started
-      notes: Rebuild from cached layers and restart only the proxy unit under the deploy lock.
+      status: done
+      notes: >-
+        Rebuilt offline from cached layers and restarted only
+        cline-kanban-proxy.service under the deploy lock. The Cline app stayed
+        running with --skip-shutdown-cleanup; rollback image retained.
     - id: caddy-route
       label: Add the root-host Caddy route
-      status: in_progress
+      status: done
       notes: >-
-        Tracked fragment is prepared and passes Caddy validation in a temporary
-        config. Install only after the proxy guard passes CI and is on con01.
+        Installed and reloaded under the idc02 deploy lock after Caddy
+        validation; upstream remains the con01 Tailnet proxy.
     - id: publish-dns
       label: Publish cline.surf-thailand.com DNS
-      status: not_started
-      notes: Wait until proxy JWT validation and Caddy route are ready.
+      status: done
+      notes: >-
+        Created a proxied A record to the idc02 edge after Access app policy,
+        proxy JWT validation, and Caddy route were ready.
     - id: dashboard-tab
       label: Add Cline after Board in Ada HA over WebSocket
-      status: not_started
+      status: done
+      notes: >-
+        Pushed through lovelace/config/save using the documented ada-ha-live
+        refresh token. WebSocket read-back confirms Cline immediately follows
+        Board in the live chaba-admin dashboard.
     - id: snapshot
       label: Sync a sanitized Ada dashboard snapshot into SSOT
-      status: not_started
+      status: done
+      notes: >-
+        Ran sync-ssot-from-live.sh --instance ada-ha; snapshot contains the
+        Cline tab and redacts the existing CMS api_key query value.
     - id: verify-surface
       label: Verify Access, direct-origin denial, HTTP, WebSocket, and dashboard read-back
-      status: not_started
+      status: in_progress
+      notes: >-
+        Verified unauthenticated browser-style requests redirect to the
+        Cloudflare Access login, direct-origin requests with no or forged JWT
+        return 403, the proxy can fetch the Cloudflare JWKS, Tailnet Basic Auth
+        remains healthy, and the Ada dashboard read-back has Cline after Board.
+        An authenticated public Cline WebSocket turn was not independently
+        exercised from this headless session; keep the job in review until
+        the Access-authenticated iframe/session is visually confirmed.
   decisions:
     - label: Root host and Access policy
       rationale: >-
@@ -113,7 +132,7 @@ followup:
     - node --test tests/test_cline_kanban_proxy.mjs
     - Run Cline stack verify.sh; direct public-host requests without JWT must return 403.
     - Unauthenticated cline.surf-thailand.com must be stopped at Cloudflare Access.
-    - Verify HTTP and WebSocket through the Cline root host after Access login.
+    - Verify authenticated HTTP and WebSocket through the Cline root host in a user Access session.
     - Read back Ada HA dashboard config via WebSocket and verify Cline follows Board.
     - Sync the live Ada dashboard using a sanitizer that removes api_key query values.
   rollback_plan:
@@ -121,8 +140,8 @@ followup:
     - Leave the Access app/DNS in place unless Tony separately approves removing those Cloudflare resources.
     - Do not restart the Cline app container; restart only the proxy if deploying proxy changes.
   handoff:
-    - Move HOM-0957 to review after the live Ada dashboard and Access route are verified.
-    - Ask Tony to visually confirm the Cline panel after Board in ada-ha.surf-thailand.com/chaba-admin.
+    - HOM-0957 is ready for review; the live dashboard config and route are deployed.
+    - The Cline iframe uses the existing Ada HA Access allowlist; no second Cline key is placed in the browser.
   deferred:
     - Further Cline model inference; the authorized qwen3:4b attempt failed without artifacts.
 
@@ -131,25 +150,32 @@ report:
   completed_at: null
   summary: >-
     Ada HA and reuse of its Access policy are confirmed. The Cline Access app
-    exists with the same two allow policies, but DNS, Caddy routing, and the
-    dashboard tab are not live yet. The stale `tony-devin` dashboard token
-    lookup was replaced with the documented `ada-ha-live` alias, and the
-    WebSocket read confirms the Cline tab is absent. The Access-JWT guard and
-    dashboard mutation/snapshot helpers pass local tests; deploy is pending.
-    No further model inference is running.
+    uses the same two allow policies. The Access-JWT proxy is deployed on
+    con01, the idc02 Caddy root route and proxied DNS record are live, and
+    Ada HA's chaba-admin dashboard now has Cline immediately after Board.
+    The stale `tony-devin` token lookup was corrected to the documented
+    `ada-ha-live` alias. Direct-origin requests fail closed and the dashboard
+    config was read back over WebSocket; unauthenticated/forged direct-origin
+    HTTP and WebSocket requests return 403. An authenticated public WebSocket
+    turn remains untested from this headless session. No further model
+    inference is running.
   metrics:
     - metric: Access app
       value: cline.surf-thailand.com; 2 Ada HA allow policies; 720h session
     - metric: proxy regression tests
       value: 10 proxy tests, 7 dashboard/auth tests passed locally
     - metric: Ada dashboard WebSocket read
-      value: Authenticated with ada-ha-live; Board is followed by DevNest; no Cline view yet
+      value: Authenticated with ada-ha-live; Cline is immediately after Board in the live dashboard
     - metric: Caddy route syntax
-      value: Cline fragment validates against the live idc02 Caddy config; not installed
+      value: Caddy fragment validated, installed, and reloaded on idc02
     - metric: DNS and Caddy route
-      value: DNS unpublished; Caddy route fragment tracked but not deployed
+      value: Proxied cline.surf-thailand.com A record and root Caddy route deployed
     - metric: Ada dashboard
-      value: Board exists; Cline tab not yet added
+      value: Pair → Board → Cline → DevNest → Ada Pages → Monitor → Events → Log → Obsidian
+    - metric: Access boundary
+      value: Browser-style request redirects to Access; direct-origin HTTP and WebSocket with missing/forged JWT return 403
+    - metric: Cloudflare JWKS
+      value: Proxy container fetch returned HTTP 200 with 2 signing keys
   links:
     - title: HOM-0957 dashboard card
       file: docs/ssot/kanban/cards/cline-chaba-admin-tab.yml
