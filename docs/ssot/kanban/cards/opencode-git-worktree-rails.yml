@@ -1,7 +1,7 @@
 id: opencode-git-worktree-rails
 title: Align OpenCode branch-code Git rails with the isolated-worktree contract
 column: doing
-updated: 2026-10-29 14:12
+updated: 2026-10-29 14:14
 brief: Fix the branch-code prompt/allowlist contradiction so a future disabled-by-default code profile can commit
   only inside its isolated worktree.
 priority: high
@@ -32,3 +32,10 @@ comms:
     to my earlier chat: ops-readonly does NOT allow git commands; only the disabled branch-code profile has Git
     commands in its allowlist. This change fixes that profile path but does not enable it or permit push/merge.
     Independent review and a separate non-paid model canary remain require'
+- at: 2026-10-29 14:14
+  from: devin
+  text: 'Implementation is locally complete in the isolated branch: generated prompt now grants local git add/commit
+    only for the disabled branch-code profile; staging patterns are limited to scripts/, tests/, docs/kb/, docs/reports/,
+    docs/ssot/jobs/, and evals/. Push/merge/rebase/branch/worktree/network actions remain denied. ops-readonly remains
+    non-writing. Validation: 99 profile/lane tests pass; all five profiles lint clean; 3,260 SSOT files validate
+    with zero errors. Branch-code is still disabled; n'
