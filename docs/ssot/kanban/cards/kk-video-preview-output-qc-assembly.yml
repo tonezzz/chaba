@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 16:27
+updated: 2026-10-29 16:38
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -248,6 +248,14 @@ comms:
 - at: 2026-10-29 16:27
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 16:38
+  from: devin
+  text: 'answered kk-clone-smoke-listen-next-step: Superseded by Tony''s 2026-10-29 16:27 answer to review-private-gpu-probes-20261029:
+    approve-private-v2 with cloned narration and no public release. This records acceptance of the private clone
+    smoke f'
+- at: 2026-10-29 16:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -336,7 +344,7 @@ requests:
 - id: kk-clone-smoke-listen-next-step
   ask: Please listen to the private 5s KK clone sample at gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/clone-smoke.wav
     and choose the next step. Consent is already recorded; this is only a quality/use decision.
-  status: open
+  status: answered
   at: 2026-10-29 16:05
   from: devin
   options:
@@ -348,6 +356,9 @@ requests:
   - id: keep-edge-narration
     label: Keep the existing non-cloned Edge narration; do not make a full clone track.
   suggested: approve-full-kk-narration
+  answer: 'Superseded by Tony''s 2026-10-29 16:27 answer to review-private-gpu-probes-20261029: approve-private-v2
+    with cloned narration and no public release. This records acceptance of the private clone smoke for that V2
+    only; it does not authorize public release.'
 awaiting_action: true
 action:
   status: idle
