@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 13:41
+updated: 2026-10-29 13:48
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -142,6 +142,13 @@ comms:
 - at: 2026-10-29 13:41
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 13:48
+  from: devin
+  text: 'qwen3:4b transferred from Con01 cache and benchmarked on KK-Mac isolated Metal server. Results: lane classification
+    returned codemod (incorrect for host-load report), 31.5s wall / 30.7s eval; summary was correct, 4.14s wall;
+    strict JSON was syntactically valid but returned lane=main (incorrect), 21.0s wall. qwen3:4b is materially more
+    capable than 0.6b for summary/JSON shape but still too slow and not routing-safe. Keep both models out of automatic
+    JEV promotion; use only behind explicit task-sp'
 action:
   type: dispatch
   status: idle
