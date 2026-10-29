@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 15:30
+updated: 2026-10-29 15:32
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -66,6 +66,12 @@ comms:
     Pinned Lightricks/LTX-Video revision 8984fa25007f376c1a299016d0957a37a2f797bb; 640x384, 73f, 40 steps, bf16;
     load 4.52s, generation 80.45s, total 85.29s; 9.84GB MPS driver allocation after run. MP4 decode passed; output
     SHA ecf26bf244a6e8ab95b6444709bef26b55b88cc7d0bdf17ec0d29ea81e27ed5. No model download, MLX, or multi-scene'
+- at: 2026-10-29 15:32
+  from: devin
+  text: 'Lane A MPS single-shot probe completed via the isolated Mac Nest pack. Artifacts: `gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-ltx-mps-probe-20261029/out/`.
+    LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb; shot01 640x384, 73f, 40 steps, BF16; load 4.52s, generation
+    80.45s, total 85.29s. MP4 decode passed; 79,595 bytes, SHA ecf26bf244a6e8ab95b6444709bef26b55b88cc7d0bdf17ec0d29ea81e27ed5.
+    No download, MLX, or multi-scene run. Visual quality is still pending KK review. Full-day permission wa'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
