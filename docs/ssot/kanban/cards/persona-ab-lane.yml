@@ -1,19 +1,24 @@
 id: persona-ab-lane
 title: Persona A/B + toggle standard — clone instance, flip lane pointer, compare scenario scores
 column: backlog
-updated: 2026-10-11 17:21
+updated: 2026-10-29 21:50
 priority: low
-spec: 'Standard procedure for testing improved persona builds: (1) clone instance to new port (ada-kk-b
-  :8009) with variant env/prompt/model; (2) toggle via LINE_NAME_BACKENDS pointer flip — instant, reversible;
-  (3) measure via scenario-benchmark scores per variant; (4) adopt = flip back or retire loser. Optional:
-  per-caller split routing in relay for true concurrent A/B (e.g. kk->A, nhong->B). Memory transfer between
-  variants = selective bank export/import — tooling TBD (banks are isolated by design).'
+spec: 'Standard procedure for testing improved persona builds: (1) clone instance to new port (ada-kk-b :8009) with
+  variant env/prompt/model; (2) toggle via LINE_NAME_BACKENDS pointer flip — instant, reversible; (3) measure via
+  scenario-benchmark scores per variant; (4) adopt = flip back or retire loser. Optional: per-caller split routing
+  in relay for true concurrent A/B (e.g. kk->A, nhong->B). Memory transfer between variants = selective bank export/import
+  — tooling TBD (banks are isolated by design).'
 note: 'Connects to ai-engine-lines (OPS-0466): engine swap behind a stable lane contract.'
 ref: OPS-0469
 comms:
 - at: 2026-10-11 17:21
   from: devin
   text: card captured via board-api
+- at: 2026-10-29 21:50
+  from: devin
+  text: 'devin: task 4ee00 review-ready — persona-ab-procedure.md verified, 1668B patch (persona-ab-procedure.md),
+    provider ollama/qwen2.5:7b. Patch: /home/tony/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/out/intake/cline-persona-ab-lane/task.patch.
+    Moving to review.'
 tags:
 - cline
 cline:
