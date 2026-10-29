@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: backlog
-updated: 2026-10-29 18:37
+updated: 2026-10-29 19:57
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -41,3 +41,10 @@ comms:
     tree; golden-hour has original/final manifests; Colab scenes have outputs+embeds but incomplete prompts. Reconstruction
     inventory: /home/tony/evals/results/kk-mac-video-reconstruction-20261029.json. Current blocker for queueing
     new MLX rerenders: KK MLX model '
+- at: 2026-10-29 19:57
+  from: devin
+  text: 'Model acquisition improved: instead of slow unauthenticated HF download on KK-Mac, fetched the complete
+    MLX 2B checkpoint + T5 shards/tokenizer on con01 over fast registry/HF path (~22G cache), then started a tailnet
+    HTTP import to KK-Mac. KK import PID 46328 is active; model files are being copied into ~/kk-video/ltx-mlx/models/LTX
+    with resume support. KK-side HF download was stopped/preserved; no render starts until the local model import
+    verifies.'
