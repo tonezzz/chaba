@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: review
-updated: 2026-10-29 22:52
+updated: 2026-10-29 23:15
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -129,6 +129,13 @@ comms:
   text: 'devin: task 065dd review-ready — job-package-status-sop.md verified, 2290B patch (job-package-status-sop.md),
     provider ollama/qwen2.5:7b. Patch: /home/tony/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/out/intake/cline-job-package-status-storage-sop/task.patch.
     Moving to review.'
+- at: 2026-10-29 23:15
+  from: devin
+  text: 'cline verdict (task 065dd, qwen2.5:7b after 4 attempts): REJECT. Structurally clean but invents a fake
+    status taxonomy — InPlanning/Running/Completed/Finished enums that do not match the real nest_job lifecycle,
+    plus hallucinated GDrive folder conventions stated as fact. Following this doc would mislead. The model cannot
+    derive schema truth it cannot see; this card asked for derivation, so it fabricated. Recommend: rewrite by a
+    lane with repo access, or regenerate with the real status enum paste'
 tags:
 - cline
 cline:
