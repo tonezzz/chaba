@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 13:25
+updated: 2026-10-29 13:33
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -118,6 +118,12 @@ comms:
     manual incorrectly. JSON extraction case: 0.588s, returned fenced JSON with wrong lane=update and violated exact
     schema. Verdict: runtime/Metal lane works, but 0.6b is not yet reliable for routing or structured DevNest decisions;
     keep it out of JEV promotion pending larger model bench'
+- at: 2026-10-29 13:33
+  from: tony
+  text: 'answered does-today-s-kk-mac-permission-include-o-6d3988: deterministic-only'
+- at: 2026-10-29 13:33
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: idle
@@ -133,10 +139,12 @@ requests:
 - id: does-today-s-kk-mac-permission-include-o-6d3988
   ask: Does today’s KK-Mac permission include one local 30-minute Qwen3:8B inference benchmark using the already-staged
     synthetic read-only pack (no download, no paid provider)?
-  status: open
+  status: answered
   at: 2026-10-29 12:28
   from: devin
   options:
   - run-local-30m
   - deterministic-only
   suggested: deterministic-only
+  answer: deterministic-only
+awaiting_action: true
