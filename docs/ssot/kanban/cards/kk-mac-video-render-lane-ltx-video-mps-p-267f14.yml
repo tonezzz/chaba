@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 15:38
+updated: 2026-10-29 16:54
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -85,6 +85,22 @@ comms:
     `mlx_probe.py`, `chain.log`) has now been archived under `gdrive:ada-nest-kk-mac-video-pilot/comparisons/2026-10-29/`;
     rclone checks and MP4 decode pass. This session did not rerun Lane B. The MPS result remains a technical probe
     only; KK visual review and the full multi-scene winner decision are still pending.'
+- at: 2026-10-29 16:54
+  from: devin
+  text: 'VERDICT — 3-shot comparison + control, all at 73f/640x384/seed42, same .pt embeds.
+
+
+    Timing: MPS-dev(40st) 80-81s/shot; MPS-distilled(4st) 14s; MLX-distilled(4st) 7-10s. MLX ~8-10x faster.
+
+
+    Visual (frame tiles on Drive, same dir):
+
+    - shot1: MPS dark muddy interior vs MLX bright on-prompt motorcycle/father/daughter
+
+    - shot2: MPS dark curtain-silhouette (moody, off-prompt) vs MLX bright family-home scene — exactly ''mother+playful
+    father, daughter observing''
+
+    - shot3: MPS near-abstract dark blur (fails'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
