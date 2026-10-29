@@ -1,0 +1,90 @@
+title: DevNest LLM model cache — con01 origin, verified transfer to consumers
+subtitle: >-
+  Content-addressed Ollama blob cache on a fast VPS; sha256-gated
+  quarantine->promote; OLLAMA_MODELS-native store consumable directly by
+  isolated serves on any fleet host or Mac.
+icon: database
+version: 1
+
+card: local-llm-model-cache-transfer
+ref: OPS-0969
+date: 2026-10-29
+dispatch: 20261029-093301-use-idc03-or-con01-as-a-downlo
+runner: mn01
+runbook: docs/kb/devnest-model-cache.md
+
+context: |
+  Prior session (2026-10-28/29) proved the concept ad-hoc: con01 pulled
+  qwen3:0.6b at ~68 MB/s, transfer to KK-Mac over a temporary tailnet HTTP
+  path, isolated ollama on KK :11435 ran ~301 tok/s. This session turned
+  it into durable tooling + declared state, and re-verified end to end.
+
+architecture: |
+  cache origin: con01 ~/var/cache/devnest/models (dr-absorber, 209G free,
+    42-68 MB/s registry pulls). Declared cache tier (ssot.storage.yml).
+  mirror: idc03 same path, populated by `pull --ssh con01` (TH-side leg
+    for Mac/fleet workers — the con01(France)->TH tailnet leg is ~4.6 MB/s,
+    so a TH-side mirror matters).
+  store: ollama-models/{blobs/sha256-*, manifests/<reg>/<ns>/<name>/<tag>}
+    — itself a valid OLLAMA_MODELS dir, verified by serving it directly.
+  index.json: name, tag, namespace, registry, source ref + public
+    source_url, model_sha256, bytes, license, created_at, compatibility
+    (architecture, parameters, quantization, host_arch, runtime).
+  quarantine/: all downloads land as *.part (Range-resumable); promote to
+    blobs/ only when sha256 == manifest digest. Corrupt/short reads can
+    never reach the store.
+  metrics.jsonl: every fetch/pull/verify appends {at, op, model, bytes,
+    secs, mbps} — the standing measurement trail.
+
+built: |
+  - scripts/models/model-cache.py — stdlib-only CLI (python3, macOS-safe):
+      fetch / verify / index / list / export-gguf / serve / pull / metrics.
+      fetch resolves registry.ollama.ai manifests and downloads each layer
+      to quarantine with Range resume, sha256-verifies, atomic-renames into
+      blobs/, writes the manifest, updates index.json, logs metrics.
+      pull is the consumer import (--ssh host or --base-url http export);
+      export-gguf hardlinks the model blob to exports/<name>-<tag>-<quant>.gguf
+      for llama.cpp / mlx_lm direct load.
+      serve is a GET-only ThreadingHTTPServer bound to a chosen iface for
+      credential-free consumers (kk-mac path).
+  - con01: ~/var/cache/devnest/bin/model-cache.py deployed; existing
+    informal store adopted — `index` rebuilt index.json over 3 manifests.
+  - idc03: mirror store created at same path; qwen3:0.6b pulled+verified;
+    full mirror of 1.7b/4b/8b in progress at session end.
+  - ssot.storage.yml: model-cache category declared (cache tier, both hosts).
+  - ssot.host-capacity.yml: con01 role note gains "devnest model-cache origin".
+
+measured: |
+  con01 registry fetch qwen3:1.7b:  1,359,280,263 B in 32.1s = 42.3 MB/s
+  con01 verify (18 blobs, 8.2 GB):  32.6s = 253 MB/s sha256
+  idc03 verify qwen3:0.6b:          523 MB in 1.5s = 338 MB/s
+  transfer con01->idc03 (ssh pull): 523 MB in 114.1s = 4.6 MB/s verified
+  disk use: con01 ollama-models 7.7G (3 models shared layers), +1.4G 1.7b
+  runtime smoke con01 isolated serve (OLLAMA_MODELS=cache, 127.0.0.1:11435):
+    4 models listed zero-copy; qwen3:0.6b load 12.1s, 0.4 tok/s
+    (load 6.7/8 — VPS contended; inference is not the cache host's job)
+  runtime smoke idc03 ephemeral podman (:ro mount, 127.0.0.1:11439):
+    qwen3:0.6b listed; load 5.5s, 2.2 tok/s (contended + mirror running)
+  prior session consumer proof (kk-mac isolated :11435): load 1.05s,
+    ~301 tok/s — the Mac is the fast inference host, VPSes are the fast
+    download hosts. That is the point of the split.
+
+consumer_paths: |
+  ollama: pull --ssh con01 (or idc03) -> --root ~/.ollama/models, or serve
+    tailnet HTTP + pull --base-url for no-SSH consumers (kk-mac proven).
+  MLX / llama.cpp: pull then export-gguf -> named .gguf (sha256 = index
+    model_sha256); mlx_lm.generate --model <gguf> loads directly.
+  fleet workers: any tailnet host can `pull --ssh` from con01 or idc03;
+    no credentials involved anywhere (public registry in, tailnet out).
+
+open: |
+  - idc03 mirror (1.7b/4b/8b) still pulling at ~4.6 MB/s at session end —
+    ~30 min total; verify with `model-cache.py list` on idc03.
+  - kk-mac import path depends on no-SSH HTTP export or tony-dell hop;
+    seeding fleet keys to con01 (host-hardening follow-up) simplifies it.
+  - coder-model pick (spec: "qwen3:8b or a coder model after benchmark") —
+    8b already cached; coder variant (qwen2.5-coder:7b) is a one-line fetch
+    when a bench card picks it.
+  - persistent `serve` is intentionally NOT a declared service — export
+    legs are per-session; if a permanent tailnet model registry is wanted,
+    make it a quadlet per R5 and declare it.
