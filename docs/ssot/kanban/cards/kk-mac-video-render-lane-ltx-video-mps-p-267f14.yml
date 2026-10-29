@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-28 20:21
+updated: 2026-10-29 09:55
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -41,3 +41,10 @@ comms:
 
     - Lane B (native MLX): chose baisampayans/ltx-mlx — pure-MLX port of LTX-Video 0.9.x family (2B/13B distilled),
     ~200MB deps, ~3.4x faster than PyTorch-MPS in upstream bench. Bett'
+- at: 2026-10-29 09:55
+  from: devin
+  text: 'Live status update (2026-10-29): KK powered off kk-mac after consenting to shutdown while an LTX-Video
+    HF download was active. Current Tailscale ping times out. The download left two incomplete ~2-2.5GB blobs and
+    about 10GB of cache; preserve them and resume/verify on next boot, do not delete or restart from scratch. Next
+    safe sequence: verify trusted managed access, inspect/resume cache, apply the staged concurrency=1 memory fix,
+    then run one MPS/MLX probe only. Do not run the full multi-scene '
