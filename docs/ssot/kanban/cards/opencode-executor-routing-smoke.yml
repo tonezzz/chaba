@@ -1,6 +1,6 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
-column: review
+column: backlog
 updated: 2026-10-29 11:13
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
@@ -32,7 +32,7 @@ action:
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: done
+  status: idle
   runner: idc02
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-101547-smoke-card-for-opencode-explic.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261028-101547-smoke-card-for-opencode-explic.service:
@@ -81,4 +81,7 @@ comms:
     produced no commits, and the worktree was removed; this is not a verified pass. Holding/reopening the card in
     Backlog, with no OpenCode run or model call started. A supervised read-only rerun needs OPENCODE_LANES=1 on
     a compatible runner and explicit model/cost approval.'
+- at: 2026-10-29 11:13
+  from: devin
+  text: put on hold
 claim: {}
