@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 16:10
+updated: 2026-10-29 16:27
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -241,6 +241,13 @@ comms:
   text: 'pub milestone: Private KK voice-clone smoke passed technical QC — Colab run-20261029-0638 completed the
     private VYNCX v2/F5-TTS probe. It used 10.07s of the selected consented reference and produced a non-silent
     5.056s 24kHz W [evt-ad36b7379b5de326]'
+- at: 2026-10-29 16:27
+  from: tony
+  text: 'answered review-private-gpu-probes-20261029: approve-private-v2 — Both outputs are acceptable; approve
+    one private V2 preview with mapped shots and cloned narration, no public release.'
+- at: 2026-10-29 16:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -312,7 +319,7 @@ requests:
 - id: review-private-gpu-probes-20261029
   ask: Please Tony/KK review the private MPS and MLX shot01 clips plus the private voice-clone smoke sample. No
     full render or narration will start until this review is answered. Which next step is approved?
-  status: open
+  status: answered
   at: 2026-10-29 15:58
   from: devin
   options:
@@ -324,6 +331,8 @@ requests:
   - id: hold-revise
     label: Hold both; keep current teaser unchanged and specify what needs revision.
   suggested: hold-revise
+  answer: approve-private-v2 — Both outputs are acceptable; approve one private V2 preview with mapped shots and
+    cloned narration, no public release.
 - id: kk-clone-smoke-listen-next-step
   ask: Please listen to the private 5s KK clone sample at gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/clone-smoke.wav
     and choose the next step. Consent is already recorded; this is only a quality/use decision.
