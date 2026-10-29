@@ -1,7 +1,10 @@
 import importlib.util
+import json
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -96,6 +99,49 @@ class ClineKanbanNestBridgeTests(unittest.TestCase):
         }]
         selected = bridge.choose_task_worktree(before, after, "task-123")
         self.assertEqual(selected["path"], "/root/.cline/worktrees/task-123")
+
+    def test_failure_after_task_creation_writes_sanitized_result(self):
+        spec = bridge.validate_spec(self.task_spec())
+        task = {
+            "id": "task-123",
+            "prompt": bridge.task_prompt(spec),
+            "column": "review",
+            "session": {"exitCode": 0},
+        }
+        before = [{"path": "/workspace", "branch": "refs/heads/main"}]
+        after = before + [{
+            "path": "/root/.cline/worktrees/task-123",
+            "branch": "refs/heads/kanban/task-123",
+        }]
+
+        with tempfile.TemporaryDirectory() as td:
+            output = Path(td) / "out" / "task-result.json"
+            patch_path = Path(td) / "out" / "task.patch"
+            with patch.object(bridge.socket, "gethostname",
+                              return_value="con01"), \
+                    patch.object(bridge, "get_worktrees",
+                                 side_effect=[before, after]), \
+                    patch.object(bridge, "list_tasks",
+                                 return_value=[task]), \
+                    patch.object(bridge, "wait_for_review",
+                                 return_value=task), \
+                    patch.object(bridge, "choose_task_worktree",
+                                 return_value=after[1]), \
+                    patch.object(
+                        bridge, "read_expected_file",
+                        side_effect=RuntimeError("private raw error detail"),
+                    ):
+                with self.assertRaisesRegex(RuntimeError, "private raw"):
+                    bridge.run_bridge(spec, output, patch_path)
+
+            result = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(result["job_key"], spec["job_key"])
+            self.assertEqual(result["task_id"], "task-123")
+            self.assertEqual(result["result"], "failed")
+            self.assertEqual(result["failure_code"], "expected_file_unavailable")
+            self.assertEqual(result["failed_phase"], "read_expected_file")
+            self.assertNotIn("private raw", output.read_text(encoding="utf-8"))
+            self.assertFalse(patch_path.exists())
 
     def test_parses_git_worktree_porcelain(self):
         output = (

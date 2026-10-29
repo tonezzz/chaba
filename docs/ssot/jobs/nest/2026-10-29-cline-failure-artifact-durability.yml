@@ -1,0 +1,112 @@
+title: Cline Nest failure-artifact durability
+subtitle: Preserve declared task diagnostics without marking a failed pack done
+icon: workflow
+
+planning:
+  goal: >-
+    Make failed Cline adapter attempts diagnosable from durable pack artifacts
+    while preserving a failed worker result and never claiming task success.
+  scope: >-
+    For declared pack outputs only, let nest-worker upload partial diagnostics
+    after a nonzero run_sh result. When a Cline task ID exists, have the bridge
+    write a sanitized task-result.json failure record before returning failure.
+    Do not submit a Cline task, call a model, restart a service, delete remote
+    files, or write a done marker.
+  success_criteria:
+    - A mocked bridge failure after task creation writes a failure result with task ID, phase, and stable error code.
+    - A mocked worker run_sh failure uploads only declared partial artifacts and returns failure.
+    - The worker does not verify the failed pack as successful or create a done marker.
+    - Existing success-path behavior and Cline bridge tests continue to pass.
+  risks:
+    - Uploading undeclared temporary files on failures could expose unintended data; partial upload must be limited to artifact globs.
+    - A failure diagnostic must not include raw exception text, provider responses, credentials, or prompt contents.
+    - This does not make a model produce tools or artifacts; it only makes failures durable.
+  resources:
+    - scripts/ada/nest-worker.py
+    - scripts/colab/packs/cline-kanban-nest-bridge/bridge.py
+    - scripts/colab/packs/cline-kanban-nest-bridge/pack.yml
+    - tests/ada/test_cline_kanban_nest_bridge.py
+    - tests/ada/test_nest_worker.py
+  owner: Devin
+  estimated_duration: 1 session
+  related_focus:
+    - label: Pilot OpenCode-to-Cline idea refinement workflow
+      file: docs/ssot/kanban/cards/opencode-cline-idea-proposal-workflow.yml
+
+processing:
+  status: in_progress
+  started_at: "2026-10-29"
+  steps:
+    - id: 1
+      label: Verify the current failure path
+      status: done
+      notes: >-
+        The Cline bridge raises before writing task-result.json when the
+        expected file or non-empty patch is absent. nest-worker returns on a
+        nonzero run_sh before copying any local outputs to the remote pack.
+    - id: 2
+      label: Add sanitized bridge failure results and declared-only partial upload
+      status: done
+      notes: >-
+        Bridge writes a sanitized failure result after it has a task ID.
+        nest-worker uploads only declared partial artifacts on run failure
+        and still returns failure without a done marker. Stale local copies
+        of declared outputs are cleared before each attempt.
+    - id: 3
+      label: Add mocked worker/bridge regression tests
+      status: done
+      notes: 13 offline bridge/worker tests pass; no Cline task or model call.
+  decisions:
+    - label: Keep failure and success distinct
+      rationale: >-
+        The worker must report failure and omit the done marker even if a
+        task-result.json diagnostic is preserved. The expected patch remains
+        required for success.
+      alternatives_considered: >-
+        Returning success after writing a failure result would make the queue
+        mark an unsuccessful Cline task done.
+  changes: []
+
+followup:
+  verification:
+    - Run the Cline bridge and Nest worker unit tests with mocked dependencies only.
+    - Verify partial upload paths are constrained beneath the pack directory and match declared artifacts.
+    - Keep the real Cline model/task smoke blocked until separately authorized.
+  rollback_plan:
+    - Revert the worker and bridge changes; no remote artifacts or services are modified by the tests.
+  handoff:
+    - DEV-0979 tracks this code change; DEV-0975 remains the proposal-workflow gate.
+  deferred:
+    - Do not rerun Cline inference or deploy the Nest worker in this change.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: >-
+    Offline adapter/worker failure-artifact fix is implemented and tested.
+    No Cline task, model inference, or service change has occurred; PR review
+    remains.
+  metrics:
+    - metric: Offline tests
+      value: 13 bridge/worker tests passed; no model or live Cline task
+    - metric: Proxy tests
+      value: 10 passed
+    - metric: SSOT validation
+      value: 3264 files valid, 0 errors; 3271 references parsed with no broken refs
+    - metric: Failure artifact
+      value: sanitized task-result JSON preserved; patch absence still fails the pack
+  links:
+    - title: Cline failure-artifact follow-up
+      card: DEV-0979
+    - title: OpenCode-to-Cline proposal workflow
+      card: DEV-0975
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml
