@@ -1,6 +1,6 @@
 id: kk-mac-live-llm-probe-access-0978
 title: OPS-0978 supervised live probe access gate
-column: backlog
+column: done
 updated: 2026-10-30 01:07
 brief: Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.
 priority: high
@@ -17,6 +17,7 @@ spec: 'The OPS-0978 executor contract is merged and KK_MAC_LANES remains 0 pendi
   unchanged.'
 action:
   type: manual
+  status: done
 ref: OPS-0984
 comms:
 - at: 2026-10-29 20:44
@@ -63,6 +64,9 @@ comms:
     through the trusted tony-dell connection; retained the prior file as `authorized_keys.bak-20261030010441`. Verified
     both the key fingerprint and idc03→KK-Mac SSH as kkkakk, with ComputerName `KK’s Mac Studio`. No inference was
     run by this access-card step; the one-shot probe will be tracked separately.'
+- at: 2026-10-30 01:07
+  from: tony
+  text: closed by tony
 requests:
 - id: live-probe-ssh-access-path
   ask: 'The one-shot probe you already approved is not running: idc03''s host-key trust is fixed, but KK-Mac rejects
@@ -82,4 +86,3 @@ requests:
   suggested: tony-dell-runner
   answer: authorize-idc03-key — Authorize adding idc03's public key to kkkakk@kk-mac authorized_keys; this grants
     idc03 SSH shell access to KK-Mac.
-awaiting_action: true
