@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 12:50
+updated: 2026-10-29 12:59
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -197,6 +197,13 @@ comms:
     v2 pack transcribes locally and emits one private smoke line only; no external TTS API, no mux, no public sharing.
     Pack: `gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/`. Current managed T4 registrations are
     stale, so the only required operator step is run console Cell 1 '
+- at: 2026-10-29 12:59
+  from: devin
+  text: 'Clone probe inputs and pack are now staged. Three consented LINE samples and a hash manifest are in the
+    private project voice-reference folder; the VYNCX v2/F5-TTS probe is at `gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/`.
+    It will ASR-check references locally and create one private smoke line only—no external TTS API, no video mux,
+    no public release. The T4 registry has no fresh runtime. Required action: open `ada-nest-job-console.ipynb`
+    and run Cell 1 once; Devin will start t'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
