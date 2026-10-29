@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 16:54
+updated: 2026-10-29 16:59
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -101,6 +101,19 @@ comms:
     father, daughter observing''
 
     - shot3: MPS near-abstract dark blur (fails'
+- at: 2026-10-29 16:59
+  from: devin
+  text: 'i2v continuation TESTED — both lanes chain shot1->shot2 correctly (last frame -> first-frame conditioning).
+
+
+    - MLX i2v: 7.8s gen. Continuity excellent — shot2 opens on the same motorcycle/family scene and evolves naturally;
+    character+setting preserved.
+
+    - MPS i2v (LTXImageToVideoPipeline, 40st): 87.8s gen. Continuity works mechanically (dark interior continues,
+    characters evolve) but same dark/soft character as its t2v.
+
+
+    Conclusion: the pack''s shot-chaining semantics are viable on kk-mac in BOTH '
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
