@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-omen
 title: OpenCode closeout probe pinned to tony-omen
 column: backlog
-updated: 2026-10-29 04:12
+updated: 2026-10-29 11:04
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-omen.
 priority: low
 program: chaba-ci
@@ -44,3 +44,8 @@ comms:
   from: chaba
   text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-29 11:04
+  from: devin
+  text: 'Sweep 2026-10-29: the queued OpenCode closeout probe has repeatedly deferred because tony-omen has no push:chaba
+    label/credentials and git push --dry-run fails. No runner process is active. Holding it in Backlog to stop repeated
+    futile claims; resume only on a push-capable approved host.'
