@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-28 22:58
+updated: 2026-10-29 14:57
 priority: medium
 tags:
 - cline-kanban
@@ -344,6 +344,13 @@ comms:
     contains only README.md; nest-cline-smoke.txt is absent. The worker timed out waiting for Review; no task-result.json,
     patch, done marker, or remote claim remains. The deployed --skip-shutdown-cleanup guard is active, so the worktree
     remains available for inspection. No paid model,'
+- at: 2026-10-29 14:57
+  from: devin
+  text: '[test-run canary 2026-10-29] One synthetic Nest pack was claimed on con01. Cline task 16152 was created
+    with local Ollama qwen3:4b, but stayed in_progress with session=null; after the 180s gate, the bridge failed
+    without running tests or producing task-result.json, patch, or done marker. No paid model, network, commit/push,
+    or Chaba source access. The fast-fail guard and 10 bridge unit tests pass locally. Adapter still needs a reliable
+    headless session-start path before another canary.'
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model

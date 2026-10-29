@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 14:48
+updated: 2026-10-29 14:59
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -163,6 +163,20 @@ comms:
 - at: 2026-10-29 14:48
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-29 14:53
+  from: devin
+  text: 'Additional 5-case read-only DevNest batch on KK-Mac qwen3:4b: 3/5 passed the independent schema/fact gate;
+    safe_route, queue_brief, and audit_action verified. host_inventory failed schema (model returned `remed` instead
+    of required `remediation`). operator_brief content was semantically correct, but the first verifier harness
+    incorrectly treated required evidence words as keys; recorded as verifier recheck needed, not a model failure.
+    Artifact: /home/tony/evals/results/kk-mac-llm-batch-20261029.'
+- at: 2026-10-29 14:59
+  from: devin
+  text: 'History/SSOT recheck found the existing KK onboarding solution: Ollama is already a login-bound :11434
+    service with qwen3:8b, qwen2.5:32b, qwen2.5vl:7b, and llama3.2:3b available; no need to re-download/install
+    models. Real qwen3:8b batch today: operator_brief, host_inventory, and safe_route all independently verified
+    (3/3). Warm calls ~3.8-4.7s, first load ~3.6s. Artifact: /home/tony/evals/results/kk-mac-qwen8-real-jobs-20261029.json.
+    Use existing :11434 solution, not temporary servers. Automat'
 action:
   type: dispatch
   status: idle

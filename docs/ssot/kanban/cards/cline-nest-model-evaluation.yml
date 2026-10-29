@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: backlog
-updated: 2026-10-29 14:30
+updated: 2026-10-29 14:56
 priority: medium
 tags:
 - cline-kanban
@@ -70,6 +70,13 @@ comms:
     task-result.json, or done marker; test-tool execution is not yet proven. Recommended next canary: one synthetic
     disposable /workspace, one fixed allowlisted `python -m unittest` command, no Chaba repo, network, secrets,
     installs, commit/push, structured result JSON plus determinis'
+- at: 2026-10-29 14:56
+  from: devin
+  text: '[test-run canary 2026-10-29] One isolated Nest pack ran on con01 with local Ollama qwen3:4b, synthetic
+    unittest only, 180s cap. It created Cline task 16152, but task stayed in_progress with `session=null`; bridge
+    timed out before terminal execution. No test files, task-result.json, patch, or done marker landed. No external
+    provider/model download, no Chaba repo access, and no commit/push. This confirms the Cline app/adapter still
+    does not start a headless task session reliably; do not retry unti'
 action:
   type: dispatch
   status: done

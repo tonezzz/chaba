@@ -1,0 +1,108 @@
+title: KK-Mac LTX-Video MPS single-shot probe
+subtitle: Stage and run one local MPS render before considering a full video lane
+icon: video
+card: kk-mac-video-render-lane-ltx-video-mps-p-267f14 (OPS-0967)
+date: 2026-10-29
+
+planning:
+  goal: >-
+    Deliver a verified Mac-specific Nest pack and run one bounded LTX-Video
+    MPS probe using the existing local cache and approved shot01 embeddings.
+  scope: >-
+    Render only shot01 at 640x384, 73 frames, 40 steps, 24 fps using the
+    pinned cached Lightricks/LTX-Video revision
+    8984fa25007f376c1a299016d0957a37a2f797bb and the precomputed shot01
+    embeddings. Store the MP4 and technical report in the isolated
+    gdrive:ada-nest-kk-mac-video-pilot root. Do not run the full preview,
+    parallel model lanes, voice, MLX, or multi-scene render in this job.
+  success_criteria:
+    - The pack preflight verifies MPS, pinned model components, and shot01 input hash.
+    - One shot renders and decodes as a valid 640x384 H.264 MP4.
+    - Report records model revision, settings, load/generation time, MPS memory, and hashes.
+    - Drive artifacts pass remote verification and the one-shot worker writes done.
+  risks:
+    - >-
+      The full HF snapshot cache contains incomplete unrelated blobs; preserve
+      them and load only the required cached model components offline.
+    - >-
+      MPS BF16 support passed a small tensor smoke, but the LTX pipeline may
+      expose unsupported kernels; failure must not trigger a model download or
+      a larger render.
+    - >-
+      KK-Mac is a member device; stop at the single probe and avoid any
+      concurrent owner or video workload.
+  resources:
+    - KK-Mac M4 Max, 36 GiB unified memory, AC power, 98 GiB disk free at preflight
+    - Existing local HF cache for Lightricks/LTX-Video revision 8984fa25007f376c1a299016d0957a37a2f797bb
+    - Private shot01 embedding staged from kk-video-c9f99fee6146-embeds
+  owner: tony
+  estimated_duration: 1 probe
+  related_focus:
+    - label: OPS-0967 KK-Mac video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+
+processing:
+  status: in_progress
+  started_at: 2026-10-29
+  steps:
+    - id: 1
+      label: Verify trusted Mac access and cached inputs
+      status: completed
+      notes: >-
+        Mac is online on AC; host fingerprint matches the trusted tony-dell
+        known_hosts entry. LTX model components and shot01 embedding hash were
+        verified. No active LTX/MLX download or model process was found.
+    - id: 2
+      label: Build and stage isolated one-shot pack
+      status: in_progress
+      notes: Pack source and private shot01 input are being staged to Drive.
+    - id: 3
+      label: Run one MPS probe and verify artifacts
+      status: not_started
+      notes: Do not run MLX or multi-scene work in this job.
+  decisions:
+    - label: Probe Lane A MPS first
+      rationale: >-
+        The request is to send the existing LTX render package to KK-Mac; one
+        serial MPS shot is the smallest useful validation before any wider run.
+      alternatives_considered: >-
+        Lane B MLX is deferred until the MPS result is available; the existing
+        chain.sh would launch both lanes and is intentionally not used.
+  changes: []
+
+followup:
+  verification:
+    - Focused unit tests and pack YAML validation.
+    - rclone check the staged pack and input against their canonical sources.
+    - Verify remote MP4/report artifacts and done marker after the one-shot run.
+  rollback_plan:
+    - >-
+      Leave all existing HF cache blobs untouched. If the pack fails, preserve
+      its logs and output directory for diagnosis; do not clear model caches.
+  handoff:
+    - >-
+      Review the probe report and video on Drive with KK before running any
+      additional scenes or the MLX comparison.
+  deferred:
+    - Full kk-video-c9f99fee6146 preview on MPS.
+    - Lane B MLX pipeline comparison.
+    - Any concurrent model or video run on KK-Mac.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: Preparing a single offline MPS probe; no full render is authorized by this job.
+  metrics: []
+  links:
+    - title: OPS-0967 video render lane
+      file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
