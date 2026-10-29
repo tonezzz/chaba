@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe2
 title: KK-Mac supervised JEV executor probe
-column: doing
-updated: 2026-10-29 23:14
+column: review
+updated: 2026-10-29 23:15
 brief: Run one supervised explicit kk_mac_local executor job on tony-dell runner against KK-Mac qwen3:8b.
 priority: high
 program: devnest
@@ -19,8 +19,11 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health must be fresh; no mutation occurred. Return a concise operator summary.'
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 devin-task-20261029-161424-read-only-summary-probe-do-not.service: Failed with result ''exit-code''.
+    | devin-task-20261029-161424-read-only-summary-probe-do-not.service: Consumed 357ms CPU time over 1.183s wall
+    clock time, 104.7M memory peak.'
 ref: OPS-0987
 comms:
 - at: 2026-10-29 23:13
@@ -43,3 +46,9 @@ comms:
 - at: 2026-10-29 23:14
   from: chaba
   text: started devin-task-20261029-161424-read-only-summary-probe-do-not on mn01 (dispatch)
+- at: 2026-10-29 23:15
+  from: mn01
+  text: 'finished (ok): exit=0 devin-task-20261029-161424-read-only-summary-probe-do-not.service: Failed with result
+    ''exit-code''. | devin-task-2'
+review_kind: verify
+claim: {}
