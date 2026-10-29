@@ -101,12 +101,15 @@ processing:
       label: Stage isolated pack, claim once, and verify task/patch artifacts
       status: in_progress
       notes: >-
-        Two isolated worker attempts targeted task fd918 with local
-        qwen3:4b. One Cline session completed exit_code 0 but produced no
-        tool call or expected file; no result JSON, patch, or done marker
-        exists. The retry did not create a new session. After the approved
-        app restart, Cline shutdown cleanup moved fd918, bbd43, and 62aaf to
-        Trash and removed their task worktrees; 62aaf had held the smoke file.
+        Three isolated worker attempts ran. Task fd918 produced one local
+        qwen3:4b session with exit_code 0 but no tool call or expected file;
+        its retry created no new session. After the shutdown guard deployed,
+        Tony authorized one fresh-key attempt: task f49b1 and job key
+        `cline-nest-smoke-20261028-ada-r1`. Its qwen3:4b session also
+        completed exit_code 0 without a tool call or expected file. The
+        fresh worktree remains in_progress and clean except for README.md.
+        No result JSON, patch, or done marker was produced; do not retry again
+        without Tony's approval.
     - id: resume-existing-task
       label: Resume the existing disposable smoke task and publish verified artifacts
       status: done
@@ -229,15 +232,17 @@ followup:
     - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
   handoff:
     - >-
-      PRs #45, #46, #48, #50, #51, and #52 are merged. The network-based
+      PRs #45, #46, #48, #50, #51, #52, #53, and #57 are merged. The network-based
       Cline stack and shutdown-cleanup guard are deployed on con01. The
       image rebuild fetched public kanban@0.1.70 from npm as Tony approved;
       the pre-change image remains tagged for rollback. Preflight,
       authenticated HTTP, WebSocket, and host audit verification pass.
-      One local qwen3:4b session completed without tool output or the smoke
-      file; no pack artifacts were published. The restart incident moved
-      fd918, bbd43, and 62aaf to Trash and removed their worktrees. Do not
-      start another model run without Tony's approval and a fresh job key.
+      Both recorded local qwen3:4b sessions completed without tool output
+      or the smoke file; no pack artifacts were published. The fresh task
+      f49b1 remains in_progress with its worktree preserved. The earlier
+      restart incident moved fd918, bbd43, and 62aaf to Trash and removed
+      their worktrees; 62aaf contained nest-cline-smoke.txt. Do not start
+      another model run without Tony's approval.
     - >-
       OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
       its $2/30d budget. The direct-key response in the board is redacted
@@ -252,17 +257,18 @@ followup:
   status: in_progress
   completed_at: null
   summary: >-
-    PRs #45, #46, #48, #50, #51, and #52 are merged. The no-Pod Cline
+    PRs #45, #46, #48, #50, #51, #52, #53, and #57 are merged. The no-Pod Cline
     app/proxy stack and `--skip-shutdown-cleanup` guard are deployed and
     verified on con01. The approved build fetched public kanban@0.1.70
     from npm; the previous network-topology image remains as a rollback.
-    The Nest smoke did not pass: one local qwen3:4b session completed
-    without a tool call or expected file, and no result JSON or patch was
-    published. The earlier restart cleanup moved fd918, bbd43, and 62aaf
-    to Trash and removed their worktrees; 62aaf contained
-    nest-cline-smoke.txt. No new task or model call was started. OpenRouter
-    remains blocked by the exhausted benchmark key and unusable redacted
-    key response.
+    PR #57 adds the Ada HA Cline Access route; its proxy guard is deployed
+    without restarting the Cline app. The Nest smoke remains unsuccessful:
+    both local qwen3:4b sessions completed without a tool call or expected
+    file, and no result JSON or patch was published. Fresh task f49b1 remains
+    in_progress with its clean worktree preserved. The earlier restart
+    cleanup moved fd918, bbd43, and 62aaf to Trash and removed their
+    worktrees; 62aaf contained nest-cline-smoke.txt. No further model run is
+    authorized. OpenRouter remains blocked by the exhausted benchmark key.
   metrics:
     - metric: proxy policy tests
       value: 7 passed
@@ -271,7 +277,9 @@ followup:
     - metric: pack schema dry-run
       value: valid
     - metric: SSOT validation
-      value: 3230 files, 0 errors
+      value: 3253 files, 0 errors
+    - metric: SSOT references
+      value: 3258 files parsed; no broken references
     - metric: SSOT optimizer warnings
       value: 46 warnings; one unrelated open-request recommendation warning
     - metric: local model provider
@@ -281,13 +289,13 @@ followup:
     - metric: dispatch attempt
       value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
     - metric: Cline adapter PR
-      value: #45/#46/#48/#50/#51/#52 merged; #49 remains open with dirty merge state
+      value: #45/#46/#48/#50/#51/#52/#53/#57 merged; #49 remains open with dirty merge state
     - metric: Quadlet compatibility
       value: con01 Podman 4.9.3 rejects Pod=; rollback restored old unit and Tailnet HTTP 200
     - metric: Nest pack claims
-      value: Two isolated worker attempts; no done marker or artifacts
+      value: Three isolated worker attempts, two qwen3:4b sessions; no done marker or artifacts
     - metric: user Cline task
-      value: fd918 used Ollama qwen3:4b; session exit 0 with no tool call/file; task now Trash after restart
+      value: fd918 and f49b1 sessions exited 0 without tool calls/files; f49b1 remains in_progress
     - metric: shutdown cleanup safeguard
       value: PR #52 merged/deployed; running app command includes --skip-shutdown-cleanup
     - metric: Cline image build

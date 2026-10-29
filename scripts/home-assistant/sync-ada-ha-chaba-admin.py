@@ -63,6 +63,17 @@ def sanitize_snapshot(value, counts=None):
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(sanitized), parts.fragment))
 
 
+def extract_dashboard_config(storage):
+    """Return the Lovelace config, not Home Assistant's storage envelope."""
+    data = storage.get("data") if isinstance(storage, dict) else None
+    config = data.get("config") if isinstance(data, dict) else None
+    if isinstance(config, dict) and isinstance(config.get("views"), list):
+        return config
+    if isinstance(storage, dict) and isinstance(storage.get("views"), list):
+        return storage
+    raise ValueError("Ada chaba-admin storage has no Lovelace views config")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="tony-omen")
@@ -76,7 +87,7 @@ def main():
         capture_output=True,
         text=True,
     ).stdout
-    snapshot = json.loads(raw)
+    snapshot = extract_dashboard_config(json.loads(raw))
     counts = {"redacted": 0}
     safe_snapshot = sanitize_snapshot(snapshot, counts)
     output = Path(args.output)

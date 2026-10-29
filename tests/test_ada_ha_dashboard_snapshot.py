@@ -11,6 +11,17 @@ SPEC.loader.exec_module(MODULE)
 
 
 class AdaDashboardSnapshotTests(unittest.TestCase):
+    def test_extracts_dashboard_config_from_home_assistant_storage_envelope(self):
+        config = {"views": [{"title": "Board", "path": "board"}]}
+        self.assertEqual(
+            MODULE.extract_dashboard_config({
+                "version": 1,
+                "key": "lovelace.chaba_admin",
+                "data": {"config": config},
+            }),
+            config,
+        )
+
     def test_redacts_sensitive_query_values_and_fields(self):
         source = {
             "views": [
