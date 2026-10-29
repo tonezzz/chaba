@@ -42,6 +42,7 @@ def _parse(doc: dict) -> dict | None:
 def snapshot(
     *,
     host: str = "KKs-Mac-Studio",
+    tailnet_ip: str = "100.108.217.17",
     url: str = "http://100.102.134.91:11026/v1",
     max_age_s: int = 900,
     min_disk_gb: int = 20,
@@ -52,6 +53,16 @@ def snapshot(
     now = time.time() if now is None else now
     candidates = [_parse(d) for d in _search(url)]
     body = next((x for x in candidates if x and x.get("host") == host), None)
+    identity_alias = False
+    if body is None:
+        # Older installed Mac heartbeat scripts used the LAN address as the
+        # host key (for example "192"). Accept it only when the tailnet IP
+        # identifies the expected machine; freshness and health gates remain.
+        body = next(
+            (x for x in candidates if x and x.get("tailnet_ip") == tailnet_ip),
+            None,
+        )
+        identity_alias = body is not None
     result = {
         "host": host,
         "eligible": False,
@@ -60,6 +71,7 @@ def snapshot(
         "heartbeat_age_s": None,
         "ollama_ok": None,
         "disk_free_gb": None,
+        "identity_alias": identity_alias,
         "node_busy": None,
     }
     if not body:

@@ -64,6 +64,22 @@ class KkMacAdmissionTests(unittest.TestCase):
         self.assertFalse(result["eligible"])
         self.assertEqual(result["reasons"], ["heartbeat_missing"])
 
+    def test_old_ip_key_can_match_by_tailnet_identity(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "192",
+                "tailnet_ip": "100.108.217.17",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertTrue(result["eligible"])
+        self.assertTrue(result["identity_alias"])
+
     def test_busy_node_defers_lane(self):
         now = time.time()
         with patch(
