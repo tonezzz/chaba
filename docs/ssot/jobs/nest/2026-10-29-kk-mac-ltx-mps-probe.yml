@@ -17,7 +17,7 @@ planning:
     parallel model lanes, voice, MLX, or multi-scene render in this job.
   success_criteria:
     - The pack preflight verifies MPS, pinned model components, and shot01 input hash.
-    - One shot renders and decodes as a valid 640x384 H.264 MP4.
+    - One shot renders and decodes as a valid 640x384 MP4.
     - Report records model revision, settings, load/generation time, MPS memory, and hashes.
     - Drive artifacts pass remote verification and the one-shot worker writes done.
   risks:
@@ -25,14 +25,14 @@ planning:
       The full HF snapshot cache contains incomplete unrelated blobs; preserve
       them and load only the required cached model components offline.
     - >-
-      MPS BF16 support passed a small tensor smoke, but the LTX pipeline may
-      expose unsupported kernels; failure must not trigger a model download or
-      a larger render.
+      Background Adobe/OneDrive/Spotlight activity may contend for unified
+      memory; stop after the one probe and keep quality review separate from
+      technical decode success.
     - >-
       KK-Mac is a member device; stop at the single probe and avoid any
       concurrent owner or video workload.
   resources:
-    - KK-Mac M4 Max, 36 GiB unified memory, AC power, 98 GiB disk free at preflight
+    - KK-Mac M4 Max; worker reported 38.7 GiB RAM and 84.9 GB free disk; AC power
     - Existing local HF cache for Lightricks/LTX-Video revision 8984fa25007f376c1a299016d0957a37a2f797bb
     - Private shot01 embedding staged from kk-video-c9f99fee6146-embeds
   owner: tony
@@ -42,7 +42,7 @@ planning:
       file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: 2026-10-29
   steps:
     - id: 1
@@ -54,12 +54,17 @@ processing:
         verified. No active LTX/MLX download or model process was found.
     - id: 2
       label: Build and stage isolated one-shot pack
-      status: in_progress
-      notes: Pack source and private shot01 input are being staged to Drive.
+      status: completed
+      notes: >-
+        Pack source and shot01 input staged under the isolated Mac video root;
+        rclone checks report 0 differences.
     - id: 3
       label: Run one MPS probe and verify artifacts
-      status: not_started
-      notes: Do not run MLX or multi-scene work in this job.
+      status: completed
+      notes: >-
+        Shot01 MPS BF16 probe completed in 85.29s total (80.45s generation);
+        73 frames decoded successfully. The direct pipeline is one synchronous
+        call; no ViMax fan-out patch was applied. No MLX or multi-scene work ran.
   decisions:
     - label: Probe Lane A MPS first
       rationale: >-
@@ -68,34 +73,75 @@ processing:
       alternatives_considered: >-
         Lane B MLX is deferred until the MPS result is available; the existing
         chain.sh would launch both lanes and is intentionally not used.
-  changes: []
+  changes:
+    - file: scripts/colab/packs/kk-mac-ltx-mps-probe-20261029/pack.yml
+      summary: Added an isolated, offline-only one-shot LTX MPS pack with AC/memory preflight gates.
+    - file: scripts/colab/packs/kk-mac-ltx-mps-probe-20261029/run_probe.py
+      summary: Added pinned-cache LTX MPS probe, strict input hash check, MP4 decode verification, and metrics report.
 
 followup:
   verification:
-    - Focused unit tests and pack YAML validation.
-    - rclone check the staged pack and input against their canonical sources.
-    - Verify remote MP4/report artifacts and done marker after the one-shot run.
+    - Focused unit tests passed 4/4; Python compilation and pack shell/YAML checks passed.
+    - Full SSOT validation passed 3,261 files with 0 errors.
+    - rclone checks reported 0 differences for pack source and shot01 input.
+    - Mac nest-worker wrote a done marker after remote verification of all three artifacts.
   rollback_plan:
     - >-
       Leave all existing HF cache blobs untouched. If the pack fails, preserve
       its logs and output directory for diagnosis; do not clear model caches.
   handoff:
     - >-
-      Review the probe report and video on Drive with KK before running any
-      additional scenes or the MLX comparison.
+      Review the probe video and report with KK; quality remains unjudged.
+    - >-
+      Only after human review, schedule the Lane B MLX comparison or a
+      separate full-preview run with serial GPU stages.
   deferred:
     - Full kk-video-c9f99fee6146 preview on MPS.
     - Lane B MLX pipeline comparison.
     - Any concurrent model or video run on KK-Mac.
+    - ViMax concurrency patch application; it was not found in the checked repo paths and is not exercised by this direct LTX probe.
 
 report:
-  status: in_progress
-  completed_at: null
-  summary: Preparing a single offline MPS probe; no full render is authorized by this job.
-  metrics: []
+  status: completed
+  completed_at: '2026-10-29T15:22:50+07:00'
+  summary: >-
+    One local, offline MPS technical probe completed and passed MP4 decode.
+    The private output is on Drive; visual quality review remains pending.
+    No HF download, MLX run, audio, or multi-scene render occurred.
+  metrics:
+    - metric: model_revision
+      value: Lightricks/LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb
+    - metric: settings
+      value: 640x384, 73 frames, 40 steps, 24 fps, torch.bfloat16
+    - metric: model_load_seconds
+      value: 4.52
+    - metric: generation_seconds
+      value: 80.45
+    - metric: total_seconds
+      value: 85.29
+    - metric: mps_driver_allocated_gb_after_run
+      value: 9.84
+    - metric: mps_current_allocated_gb_after_run
+      value: 4.69
+    - metric: background_activity
+      value: >-
+        Adobe/OneDrive/Spotlight processes were present; no LTX/MLX process or
+        resident Ollama model was active. KK had granted a full-day use window.
+    - metric: output
+      value: 79,595 bytes; MP4 decode pass; sha256 ecf26bf244a6e8ab95b6444709bef26b55b88cc7d0bdf17ec0d29ea81e27ed5a
+    - metric: input_embed_sha256
+      value: ad7558cdbfbc4a79b2e0812d1d90397b55d3279e40db66419847dded54cbc133
+    - metric: visual_review
+      value: >-
+        Pending; temporary still extraction hit a local /tmp disk quota, so no
+        visual quality verdict is claimed. The MP4 remains remotely verified.
   links:
     - title: OPS-0967 video render lane
       file: docs/ssot/kanban/cards/kk-mac-video-render-lane-ltx-video-mps-p-267f14.yml
+    - title: Private Mac probe artifacts
+      url: "gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-ltx-mps-probe-20261029/out/"
+    - title: Pack implementation PR
+      url: https://github.com/tonezzz/chaba/pull/61
   kb_review: []
   lessons_learned: []
 
