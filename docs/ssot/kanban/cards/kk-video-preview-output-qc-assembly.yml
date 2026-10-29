@@ -210,6 +210,10 @@ comms:
     RMS 0.06087, 2.03GB peak; human listening is still required before full narration. KK-Mac MPS shot01 is DONE
     and MP4 decode passed (640x384, 73 frames, 85.29s, 9.84GB driver allocation after run); the separate MLX shot
     is also archived/decode-passed. Neither probe is a quality sign-off. No full mux/publication occurred.'
+- at: 2026-10-29 15:58
+  from: devin
+  text: 'raised request review-private-gpu-probes-20261029: Please Tony/KK review the private MPS and MLX shot01
+    clips plus the private voice-clone smoke sample. No full render or '
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -278,6 +282,21 @@ requests:
   suggested: storyboard-order-v2
   answer: 'storyboard-order-v2 — Recommended: use p2-3 as private cast-reference sheets and map storyboard images
     p4-39 to the existing 10 shots in scene-plan order; selectively rerender only the affected shots.'
+- id: review-private-gpu-probes-20261029
+  ask: Please Tony/KK review the private MPS and MLX shot01 clips plus the private voice-clone smoke sample. No
+    full render or narration will start until this review is answered. Which next step is approved?
+  status: open
+  at: 2026-10-29 15:58
+  from: devin
+  options:
+  - id: approve-private-v2
+    label: Both outputs are acceptable; approve one private V2 preview with mapped shots and cloned narration, no
+      public release.
+  - id: visual-only
+    label: Approve private image-aware visuals only; keep narration unchanged and do not use the clone.
+  - id: hold-revise
+    label: Hold both; keep current teaser unchanged and specify what needs revision.
+  suggested: hold-revise
 awaiting_action: true
 action:
   status: idle
