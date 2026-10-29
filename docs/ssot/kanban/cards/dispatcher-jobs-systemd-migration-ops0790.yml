@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-ops0790
 title: Implement systemd migration for OPS-0790 dispatcher jobs
 column: doing
-updated: 2026-10-29 20:47
+updated: 2026-10-29 20:54
 brief: Implement the user's approved migration of legacy dispatcher jobs to rendered systemd timers; keep the legacy
   timer until a later verified rollout.
 priority: high
@@ -43,3 +43,10 @@ comms:
     real EnvironmentFile=/ConditionPathExists= under systemd); podman --name stale-container preclean (OPS-0531
     wedge guard) needs a renderer ExecStartPre equivalent — implementing as auto-detect in render-jobs.py. No live
     timers touched.'
+- at: 2026-10-29 20:54
+  from: devin
+  text: DONE (code phase) — commit 93c61b905 on dispatch/20261029-204303. All 8 dispatcher jobs converted to dispatch:systemd
+    preserving host/cadence/timeout/cwd/exec/env_file/condition_path; render-jobs.py gained the podman --name stale
+    preclean as ExecStartPre (OPS-0531 parity, also fixes yomi-update-all); generated/ reconciled (16 new units,
+    70 stale removed incl chaba-jobs.*); 16 new tests incl a tree==manifest parity guard. Exceptions documented
+    in docs/reports/dispatcher-systemd-migration-2026-10-
