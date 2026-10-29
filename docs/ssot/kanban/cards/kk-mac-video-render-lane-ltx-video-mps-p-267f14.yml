@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 17:07
+updated: 2026-10-29 19:33
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -128,6 +128,16 @@ comms:
     - Prompt adherence strong across sequence (hospital vigil s3, roadside smoke s6, truck drift s8)
 
     - Total: ~7-8s/shot vs ~81s on MPS-dev vs ~5min '
+- at: 2026-10-29 19:33
+  from: devin
+  text: 'Pack variant LANDED: scripts/colab/packs/kk-video-c9f99fee6146-preview-mac/pack.yml (commit 69b6c3637,
+    pushed).
+
+
+    Design: mirrors the CUDA pack (same fetch/artifacts/I2V={2:1,10:9}/teaser+SRTs) but prep clones baisampayans/ltx-mlx
+    + pulls only the 5.9GB distilled ckpt + tokenizer; run uses pure-MLX pipeline with shot .pt embeds injected
+    through an inline torch-free zip/pickle loader (verified: exact (1,256,4096) shapes). gpu_gb:0 — real constraint
+    is ~8GB unified-mem headroom. Resumable per-shot '
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
