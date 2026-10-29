@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
-column: doing
-updated: 2026-10-29 19:36
+column: review
+updated: 2026-10-29 19:38
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -303,6 +303,9 @@ comms:
     claim time on every worker. I mirrored the hold line into the canonical repo copy so they stay byte-identical,
     and updated the job doc. My earlier Cell-1 request is effectively superseded: even a fresh T4 will skip V2 until
     the authorization marker exists or the requires line is rem'
+- at: 2026-10-29 19:38
+  from: tony-macbook
+  text: 'finished (ok): exit=0  artifact globs and QC before marking the Nest job done). | devin-task-20261029-183226-continue-from-the-complete'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -422,6 +425,11 @@ requests:
   - hold
   answer: hold
 action:
-  status: running
+  status: done
   type: dispatch
   runner: tony-macbook
+  result: 'exit=0  artifact globs and QC before marking the Nest job done). | devin-task-20261029-183226-continue-from-the-completed-to.service:
+    Consumed 1min 57.175s CPU time over 1h 4min 50.257s wall clock time, 679.7M memory peak, 166.6M memory swap
+    peak.'
+review_kind: verify
+claim: {}
