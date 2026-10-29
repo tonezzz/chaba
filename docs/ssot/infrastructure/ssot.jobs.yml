@@ -331,7 +331,7 @@ jobs:
 - id: embed-lane-news
   name: Embed lane — news title vectors (nomic) refresh
   host: idc03
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 1h
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba'
@@ -345,11 +345,15 @@ jobs:
     NEWS_VEC_CACHE default path instead of re-embedding every window.
     Resume-safe (sha1 of norm(title)); 26h window covers the 36h digest
     horizon with slack. Fresh misses inside news-digest append back to
-    the same file, so the store self-heals between refreshes.'
+    the same file, so the store self-heals between refreshes.
+    dispatcher->systemd 2026-10-29 (OPS-0790): env_file/condition_path
+    were inert under job-dispatcher — EnvironmentFile=/ConditionPathExists=
+    now actually apply (embed-lane.py also self-loads the same env file,
+    so a missing secrets file failed it under the dispatcher too).'
 - id: embed-lane-lessons
   name: Embed lane — lesson CPT vectors (nomic) refresh
   host: idc03
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 1d
   timeout: 10m
   cwd: '%h/CascadeProjects/chaba'
@@ -362,11 +366,12 @@ jobs:
     embedded in the nomic space for edu-review recall
     (embed-lane.py recall --store lessons). Resume-safe on content hash;
     changed lessons re-embed only their chunks. Daily cadence — lessons
-    change rarely.'
+    change rarely. dispatcher->systemd 2026-10-29 (OPS-0790) — same
+    env_file/condition_path activation note as embed-lane-news.'
 - id: embed-lane-banks
   name: Embed lane — MDDB bank sync into mddb-embed (bge-m3)
   host: idc02
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 1d
   timeout: 45m
   cwd: '%h/CascadeProjects/chaba'
@@ -647,23 +652,28 @@ jobs:
 - id: yomi-update-active
   name: Yomi Update Active
   host: idc03
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 15m
   timeout: 120s
   exec: /usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z
     -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi
     docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs
+  note: 'podman one-shot. dispatcher->systemd 2026-10-29 (OPS-0790) — the
+    dispatcher stale --name preclean (OPS-0531: timeout-killed run leaves
+    the container, next runs exit 125 forever) is preserved by the
+    renderer, which emits ExecStartPre=-podman rm -f <name> for any exec
+    carrying --name.'
 - id: mcp-debug-h3-sync
   name: MCP Debug H3 Sync
   host: tony_dell
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 10m
   timeout: 60s
   exec: '%h/.local/bin/mcp-debug-h3-sync.sh'
 - id: tony-dell-health-snapshot
   name: Tony-Dell Health Snapshot
   host: tony_dell
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 5m
   timeout: 60s
   exec: '%h/.local/bin/health-snapshot.sh'
@@ -671,19 +681,22 @@ jobs:
 - id: network-scan-tony
   name: Tony LAN Network Scan
   host: tony_dell
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 15m
   timeout: 120s
-  critical: false
   exec: '%h/CascadeProjects/chaba/venv/bin/python3 scripts/network-scan.py --push'
   cwd: '%h/CascadeProjects/chaba'
-  note: scans the LAN — stays on tony_dell. exec/cwd moved chaba-tony-dell (readonly
+  note: 'scans the LAN — stays on tony_dell. exec/cwd moved chaba-tony-dell (readonly
     mirror) -> chaba (exec checkout) 2026-10-23 (migration-stragglers-orphaned-units);
     venv created on exec checkout with PyYAML==6.0.3 websockets==17.1.
     critical:false made explicit 2026-10-27 (card
     fix-chaba-jobs-network-scan-failure-isolation) — a --push subprocess
     crash must back off + alert, not fail the chaba-jobs.service tick or
-    starve mcp-debug-h3-sync / tony-dell-health-snapshot.
+    starve mcp-debug-h3-sync / tony-dell-health-snapshot. Field dropped
+    with the dispatcher->systemd migration 2026-10-29 (OPS-0790): under
+    rendered timers failure isolation is inherent (a failed oneshot marks
+    only its own unit; nothing else is starved) and failure alerting
+    moves to timer-sentinel timer-alert-* kanban cards.'
 - id: ada-flood-news
   name: Flood news CMS refresh
   host: con01
@@ -1098,7 +1111,7 @@ jobs:
 - id: lesson-drift-check
   name: Lesson drift check — trade docs mtime vs lesson modified
   host: tony_dell
-  dispatch: dispatcher
+  dispatch: systemd   # dispatcher->systemd 2026-10-29 (OPS-0790)
   every: 1d
   timeout: 90s
   cwd: '%h/CascadeProjects/chaba'
