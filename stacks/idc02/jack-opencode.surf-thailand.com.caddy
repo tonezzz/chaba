@@ -1,0 +1,13 @@
+# Jack OpenCode public root host.
+# Cloudflare Access protects this hostname; the Jack gateway independently
+# verifies the Access JWT, so direct-origin requests cannot bypass Access.
+opencode-jack.surf-thailand.com {
+	bind 45.136.236.190
+	tls internal
+	reverse_proxy http://127.0.0.1:8377 {
+		header_up Host {http.request.host}
+		header_up Origin {http.request.header.Origin}
+		header_up Cf-Access-Jwt-Assertion {http.request.header.Cf-Access-Jwt-Assertion}
+		header_up -Authorization
+	}
+}

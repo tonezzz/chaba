@@ -160,9 +160,10 @@ function wantsHtml(req) {
 
 async function edgeOk(req) {
   if (!REQUIRE_EDGE_HEADER) return true;
-  if (req.headers["tailscale-user-login"]) return true;
+  const host = String(req.headers.host || "").toLowerCase();
+  if (req.headers["tailscale-user-login"] && host !== PUBLIC_HOST) return true;
   if (!PUBLIC_ACCESS_ENABLED) return false;
-  if (String(req.headers.host || "").toLowerCase() !== PUBLIC_HOST) return false;
+  if (host !== PUBLIC_HOST) return false;
   return verifyCloudflareAccessJwt(req.headers["cf-access-jwt-assertion"], {
     issuer: ACCESS_ISSUER,
     audience: ACCESS_AUDIENCE,
