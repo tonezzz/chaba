@@ -1,15 +1,14 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: backlog
-updated: 2026-10-29 11:33
-spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow,
-  and artifact storage into one operator SOP. Clarify exact status transitions and source-of-truth locations;
-  distinguish plan/project/approval status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md
-  and the colab-mcp entry in docs/ssot/ssot.procedures.yml; add a job-lifecycle SSOT record. Define a
-  private project artifact root at gdrive:ada-nest/projects/<project-slug>/ with source, ingest, brief,
-  story, shots, assets, packs, renders, qc subfolders, and register the Sacred Father project's current
-  planning/preview state without pretending a Colab pack or clip exists. No GPU jobs, paid calls, public
-  publishing, or permission changes.
+updated: 2026-10-29 21:52
+spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
+  storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
+  status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
+  in docs/ssot/ssot.procedures.yml; add a job-lifecycle SSOT record. Define a private project artifact root at gdrive:ada-nest/projects/<project-slug>/
+  with source, ingest, brief, story, shots, assets, packs, renders, qc subfolders, and register the Sacred Father
+  project's current planning/preview state without pretending a Colab pack or clip exists. No GPU jobs, paid calls,
+  public publishing, or permission changes.
 ref: OPS-0922
 comms:
 - at: 2026-10-27 09:41
@@ -19,62 +18,63 @@ comms:
   from: devin
   text: '[SOP draft ready 2026-10-27] Added the status/storage map and transition/done gates to `docs/kb/colab-mcp-jobs.md`,
     registered `nest-job-lifecycle` in `docs/ssot/ssot.procedures.yml`, and added `docs/ssot/jobs/nest/2026-10-27-job-package-status-storage-sop.yml`
-    in branch `docs/job-package-status-storage-sop`. YAML parses; full SSOT validator confirms the new
-    file is valid, though it reports 8 pre-existing errors in other files. Correction to the card''s initial
-    path idea: the verified project roo'
+    in branch `docs/job-package-status-storage-sop`. YAML parses; full SSOT validator confirms the new file is valid,
+    though it reports 8 pre-existing errors in other files. Correction to the card''s initial path idea: the verified
+    project roo'
 - at: 2026-10-27 09:56
   from: devin
   text: '[status/storage SOP draft 2026-10-27] SOP is written in `docs/kb/colab-mcp-jobs.md#job-status-lifecycle-and-storage-map`;
     the SSOT procedure index points to it, and `docs/ssot/jobs/nest/2026-10-27-job-package-status-storage-sop.yml`
-    records this work. YAML parses; full validator confirms the new SSOT file valid, with 8 unrelated
-    pre-existing validation errors elsewhere. Correction to initial card spec: the verified DevNest project
-    root is idc03 `DEVNEST_PROJECTS_DIR` (default `~/.local/share/dev'
+    records this work. YAML parses; full validator confirms the new SSOT file valid, with 8 unrelated pre-existing
+    validation errors elsewhere. Correction to initial card spec: the verified DevNest project root is idc03 `DEVNEST_PROJECTS_DIR`
+    (default `~/.local/share/dev'
 - at: 2026-10-27 09:58
   from: devin
   text: '[validation/landing 2026-10-27] SOP draft validated and committed locally as `docs/job-package-status-storage-sop`
-    commit `5fdd24105` (docs KB + procedure index + SSOT lifecycle record). Pre-commit YAML, full SSOT
-    validation, and SSOT optimization checks passed; the validator reports 8 pre-existing errors in the
-    separate exec checkout, but this branch validation passed. Not pushed or merged: this worktree is
-    459 commits behind origin/master and no promotion was requested. Sacred Father project s'
+    commit `5fdd24105` (docs KB + procedure index + SSOT lifecycle record). Pre-commit YAML, full SSOT validation,
+    and SSOT optimization checks passed; the validator reports 8 pre-existing errors in the separate exec checkout,
+    but this branch validation passed. Not pushed or merged: this worktree is 459 commits behind origin/master and
+    no promotion was requested. Sacred Father project s'
 - at: 2026-10-28 09:29
   from: devin
-  text: '[small-pack dispatch policy proposal 2026-10-28] Extend the lifecycle SOP with two lanes: (1)
-    normal durable packs (`pack.yml`, `needs`/`requires`, artifact gate) run after boot-scoped env prep;
-    stage the entire pack set before launch because discovery snapshots once. (2) tiny opportunistic gap
-    packs use `gap-runner` only while main heartbeat is fresh <=60s and phase is prep/prep-wait, VRAM/gap
-    lease pass, hard timeout/artifact gate; never model-pull/cache-write/production-index mutate. State
-    ma'
+  text: '[small-pack dispatch policy proposal 2026-10-28] Extend the lifecycle SOP with two lanes: (1) normal durable
+    packs (`pack.yml`, `needs`/`requires`, artifact gate) run after boot-scoped env prep; stage the entire pack
+    set before launch because discovery snapshots once. (2) tiny opportunistic gap packs use `gap-runner` only while
+    main heartbeat is fresh <=60s and phase is prep/prep-wait, VRAM/gap lease pass, hard timeout/artifact gate;
+    never model-pull/cache-write/production-index mutate. State ma'
 - at: 2026-10-28 09:32
   from: devin
-  text: '[scope clarification 2026-10-28] The existing gap-pack contract is narrower than normal small
-    packs: it only admits work that fits the currently open prep/prep-wait window (sample timeout 120s),
-    with fresh heartbeat, VRAM and gap-lease checks; 15 minutes was only a proposed regular-pack cutoff,
-    not an existing policy. I recommend formalizing two classes separately: durable low-resource queue
-    packs vs ephemeral gap packs. Current inventory counts use resource-only small = gpu<=3GB + disk<=4GB;
-    ti'
+  text: '[scope clarification 2026-10-28] The existing gap-pack contract is narrower than normal small packs: it
+    only admits work that fits the currently open prep/prep-wait window (sample timeout 120s), with fresh heartbeat,
+    VRAM and gap-lease checks; 15 minutes was only a proposed regular-pack cutoff, not an existing policy. I recommend
+    formalizing two classes separately: durable low-resource queue packs vs ephemeral gap packs. Current inventory
+    counts use resource-only small = gpu<=3GB + disk<=4GB; ti'
 - at: 2026-10-28 09:38
   from: devin
-  text: '[procedure written 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state`
-    on branch `docs/colab-small-job-dispatch` (local commit `e5161664a`). It distinguishes durable queue
-    packs from gap packs, defines offline/stale, fresh-idle, warming, running, and drained handling, and
-    recommends not cold-starting a T4 for CPU-only work. Existing `gap-packs/PROCEDURE.md` remains the
-    source for opportunistic prep-window jobs. Commit is local/unpushed; full SSOT validator still ha'
+  text: '[procedure written 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state` on
+    branch `docs/colab-small-job-dispatch` (local commit `e5161664a`). It distinguishes durable queue packs from
+    gap packs, defines offline/stale, fresh-idle, warming, running, and drained handling, and recommends not cold-starting
+    a T4 for CPU-only work. Existing `gap-packs/PROCEDURE.md` remains the source for opportunistic prep-window jobs.
+    Commit is local/unpushed; full SSOT validator still ha'
 - at: 2026-10-28 09:40
   from: devin
   text: '[small-pack dispatch procedure landed locally 2026-10-28] Added `docs/kb/colab-mcp-jobs.md#small-pack-dispatch-by-runtime-state`
-    on `docs/colab-small-job-dispatch`, commit `e5161664a` (unpublished). It separates normal durable
-    packs from gap packs, covers stale/registered/warming/running/drained states, and routes CPU-small
-    work away from cold T4 starts. Current runtime registry still has no fresh Colab session; queue start
-    waits for Cell 1/boot registration. SSOT index was left unchanged becaus'
+    on `docs/colab-small-job-dispatch`, commit `e5161664a` (unpublished). It separates normal durable packs from
+    gap packs, covers stale/registered/warming/running/drained states, and routes CPU-small work away from cold
+    T4 starts. Current runtime registry still has no fresh Colab session; queue start waits for Cell 1/boot registration.
+    SSOT index was left unchanged becaus'
 - at: 2026-10-29 11:33
   from: devin
   text: 'Missed-job sweep 2026-10-29: the SOP and job record exist only in local /tmp/chaba-wt-colab-small-job-dispatch,
-    commit e5161664a; no remote branch/PR exists. No active agent task is running. I am moving this stale
-    Doing card back to Backlog until a safe publication/PR is landed; no files in that separate worktree
-    were edited.'
+    commit e5161664a; no remote branch/PR exists. No active agent task is running. I am moving this stale Doing
+    card back to Backlog until a safe publication/PR is landed; no files in that separate worktree were edited.'
 - at: 2026-10-29 11:33
   from: devin
   text: moved doing -> backlog
+- at: 2026-10-29 21:52
+  from: devin
+  text: 'devin: bridge failed after 83s — cline-kanban-nest-bridge: container command failed (1): cat: /root/.cline/worktrees/091b7/workspace/job-package-status-sop.md:
+    No such file or directory. Card left in backlog; job_key cline-job-package-status-storage-sop.'
 tags:
 - cline
 cline:
