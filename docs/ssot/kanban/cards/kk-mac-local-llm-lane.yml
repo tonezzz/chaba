@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-29 21:15
+updated: 2026-10-29 21:17
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -233,6 +233,11 @@ comms:
     structured_extract, safe_route all admitted and completed with heartbeat/Ollama gates true. Artifact: /home/tony/evals/results/kk-mac-real-job-batch-20261029.jsonl.
     Admission remained eligible across batch; disk decreased to 64G, no node_busy flag. KK-Mac is actively useful
     for these real read-only jobs now.'
+- at: 2026-10-29 21:17
+  from: devin
+  text: 'Second live batch completed: 5 additional read-only jobs (operator briefs, cache structured extraction,
+    summary, safe route) all admitted and returned usable results. Heartbeat/Ollama gates passed on every call;
+    disk 63G, node_busy=false. Artifact: /home/tony/evals/results/kk-mac-real-job-batch2-20261029.jsonl.'
 action:
   type: dispatch
   status: done
