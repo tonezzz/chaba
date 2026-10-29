@@ -1,0 +1,8 @@
+[Unit]
+Description=Yomi Update Active (job:yomi-update-active, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStartPre=-/usr/bin/podman rm -f yomi-update-active
+ExecStart=/usr/bin/podman run --rm --name yomi-update-active --network=container:yomi-api -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-refresh-active.mjs

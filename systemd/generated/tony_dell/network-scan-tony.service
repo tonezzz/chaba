@@ -1,0 +1,8 @@
+[Unit]
+Description=Tony LAN Network Scan (job:network-scan-tony, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=%h/CascadeProjects/chaba/venv/bin/python3 scripts/network-scan.py --push
+WorkingDirectory=%h/CascadeProjects/chaba

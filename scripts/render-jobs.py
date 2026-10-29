@@ -108,6 +108,15 @@ def render_service(j, man):
         "Type=oneshot",
         f"TimeoutStartSec={dur_s(j.get('timeout', '5m'))}",
     ]
+    # podman stale-name preclean — parity with job-dispatcher.run_job: a
+    # timeout-killed `podman run` can orphan the named container and every
+    # later run then exits 125 on the name conflict (OPS-0531). The '-'
+    # prefix makes the rm best-effort (absent container is fine).
+    names = [
+        n for e in job_execs(j) if "podman" in e
+        for n in re.findall(r"--name[ =]([\w.:-]+)", e)
+    ]
+    lines += [f"ExecStartPre=-/usr/bin/podman rm -f {n}" for n in names]
     # Later ExecStart lines run only if the previous ones succeeded —
     # chain steps in dependency order.
     lines += [f"ExecStart={esc(e)}" for e in job_execs(j)]

@@ -1,0 +1,10 @@
+[Unit]
+Description=Embed lane — lesson CPT vectors (nomic) refresh (job:embed-lane-lessons, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/embed/embed-lane.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/embed/embed-lane.py lessons --dir %h/.local/share/embed-lane
+WorkingDirectory=%h/CascadeProjects/chaba
+EnvironmentFile=%h/.config/secrets/litellm-chaba.env
