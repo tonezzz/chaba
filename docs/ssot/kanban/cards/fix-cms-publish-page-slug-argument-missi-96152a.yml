@@ -1,6 +1,6 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
-column: doing
+column: backlog
 updated: 2026-10-29 11:02
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
@@ -67,6 +67,9 @@ comms:
     it still needs applying/deploying to the live Ada Voice host, which is not verified. I am holding the stale
     action in Backlog rather than claiming live success. No service deploy or restart was done; the pending production
     deployment needs explicit approval because it affects the Ada V'
+- at: 2026-10-29 11:02
+  from: devin
+  text: put on hold
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -81,7 +84,7 @@ requests:
   answer: ★ Use repo chaba on host tony-dell to debug and fix the cms_publish_page slug argument error.
 action:
   type: dispatch
-  status: running
+  status: idle
   runner: tony-macbook
   result: 'exit=0 cutes at the deploy gate — landing it is `git apply` + `deploy-ada.sh` on tony-dell. | devin-task-20261027-064822-fix-cms-publish-page-slug-argu.service:
     Consumed 1min 29.197s CPU time over 9min 30.702s wall clock time, 1005.3M memory peak.'
@@ -94,4 +97,3 @@ auto_close:
   by: merge-sweep
   at: 2026-10-27 07:01
   note: verified — evidence checks green, closing itself
-awaiting_action: true
