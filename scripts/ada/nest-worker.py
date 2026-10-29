@@ -17,6 +17,7 @@ Usage: nest-worker.py [--once] [--remote gdrive:ada-nest]
                       [--workdir /tmp/nest-worker] [--stale-claim-min 60]
 """
 import argparse, glob, json, os, re, shutil, signal, subprocess, sys, time
+from pathlib import Path, PurePosixPath
 
 REMOTE = 'gdrive:ada-nest'
 # /tmp on managed hosts is a small tmpfs (dell: 7.5G) — venvs + synced
@@ -148,12 +149,66 @@ def verify_artifacts(spec, remote_root):
     return True, ''
 
 
+def declared_artifact_files(name, spec, local):
+    """Return declared local outputs as safe (path, relative-path) pairs."""
+    root = Path(local).resolve()
+    prefix = f'packs/{name}/'
+    found = {}
+    for pattern in (spec.get('artifacts') or []):
+        if not isinstance(pattern, str) or not pattern.startswith(prefix):
+            continue
+        rel_pattern = pattern[len(prefix):]
+        pure = PurePosixPath(rel_pattern)
+        if pure.is_absolute() or '..' in pure.parts:
+            continue
+        for candidate in glob.glob(str(root / rel_pattern), recursive=True):
+            try:
+                path = Path(candidate).resolve()
+                rel = path.relative_to(root)
+            except ValueError:
+                continue
+            if not path.is_file():
+                continue
+            found[str(path)] = (path, rel)
+    return list(found.values())
+
+
+def clear_local_declared_artifacts(name, spec, local):
+    """Remove stale copies of outputs before a pack attempt starts."""
+    for path, _ in declared_artifact_files(name, spec, local):
+        path.unlink()
+
+
+def upload_partial_artifacts(name, spec, local, remote_root):
+    """Upload only declared pack artifacts after a failed run step."""
+    prefix = f'packs/{name}/'
+    copied, failed = [], []
+    for path, rel in declared_artifact_files(name, spec, local):
+        dest = f'{remote_root}/{prefix}{rel.as_posix()}'
+        result = rc('copyto', str(path), dest, check=False)
+        if result.returncode == 0:
+            copied.append(dest)
+        else:
+            failed.append(dest)
+    return copied, failed
+
+
 def run_pack(name, spec, remote_root):
     """Local execution of one claimed pack. Returns (ok, info)."""
     local = f'{WORKDIR}/{name}'
     if os.path.exists(local):
         shutil.rmtree(local)
     os.makedirs(local)
+
+    def fail(info):
+        copied, failed = upload_partial_artifacts(
+            name, spec, local, remote_root)
+        if copied:
+            info += f'; preserved {len(copied)} declared partial artifact(s)'
+        if failed:
+            info += f'; {len(failed)} partial artifact upload(s) failed'
+        return False, info
+
     # sync the pack down (inputs/ etc.) — artifacts write back after run
     r = rc('copy', f'{remote_root}/packs/{name}', local,
            '--exclude', 'claim/**', '--exclude', 'done', check=False)
@@ -177,6 +232,8 @@ def run_pack(name, spec, remote_root):
             return False, f'fetch failed: {rel}'
         fetched.append(rel.rstrip('/') + ('/**' if rel.endswith('/') else ''))
 
+    clear_local_declared_artifacts(name, spec, local)
+
     env = dict(os.environ, NEST_ROOT=local, PACK_DIR=local)
     pyexe = sys.executable
     if spec.get('venv'):
@@ -187,7 +244,7 @@ def run_pack(name, spec, remote_root):
             r = subprocess.run([sys.executable, '-m', 'venv', venv],
                                env=env, timeout=300)
             if r.returncode != 0:
-                return False, 'venv create failed'
+                return fail('venv create failed')
         pyexe = f'{venv}/bin/python'
         env['PATH'] = f'{venv}/bin:{env["PATH"]}'
 
@@ -196,14 +253,14 @@ def run_pack(name, spec, remote_root):
         r = subprocess.run(spec['prep'], shell=True, env=env,
                            cwd=local, timeout=int(spec.get('timeout_s') or 3600))
         if r.returncode != 0:
-            return False, f'prep rc={r.returncode}'
+            return fail(f'prep rc={r.returncode}')
 
     t0 = time.time()
     if spec.get('run_sh'):
         r = subprocess.run(spec['run_sh'], shell=True, env=env, cwd=local,
                            timeout=int(spec.get('timeout_s') or 3600))
         if r.returncode != 0:
-            return False, f'run_sh rc={r.returncode}'
+            return fail(f'run_sh rc={r.returncode}')
     elif spec.get('venv'):
         # run in venv: wrap source with the same injected globals so pack
         # code is byte-identical to the Colab exec path
@@ -213,7 +270,7 @@ def run_pack(name, spec, remote_root):
         r = subprocess.run([pyexe, '_run.py'], env=env, cwd=local,
                            timeout=int(spec.get('timeout_s') or 3600))
         if r.returncode != 0:
-            return False, f'run rc={r.returncode}'
+            return fail(f'run rc={r.returncode}')
     else:
         ns = {'PACK_DIR': local, 'NEST_ROOT': local}
         try:
@@ -221,7 +278,7 @@ def run_pack(name, spec, remote_root):
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return False, f'run: {e}'
+            return fail(f'run: {type(e).__name__}')
     dt = time.time() - t0
 
     # push everything back (out/, report.md, refs stay local — pack

@@ -246,59 +246,114 @@ def collect_patch(worktree_path, out_path):
     return patch, changed_files
 
 
-def run_bridge(spec, output_path, patch_path):
-    actual_host = socket.gethostname().split(".", 1)[0]
-    if actual_host != spec["target_host"]:
-        raise RuntimeError(f"pack targets {spec['target_host']}, running on {actual_host}")
-
-    marker = task_marker(spec)
-    before = get_worktrees()
-    tasks = list_tasks(spec["project_path"])
-    task = find_existing_task(tasks, marker)
-    if task and task.get("column") == "trash":
-        raise RuntimeError(
-            "matching task is already in Done; use a new job_key for another run"
-        )
-    if not task:
-        created = run_kanban(create_args(spec))
-        task = created.get("task")
-        if not isinstance(task, dict) or not task.get("id"):
-            raise RuntimeError("Kanban create response did not include task.id")
-        print(f"created Cline task {task['id']}", flush=True)
-
-    task_id = task["id"]
-    if should_start_task(task):
-        run_kanban([
-            "task", "start", "--task-id", task_id,
-            "--project-path", spec["project_path"],
-        ])
-        print(f"ensured Cline task session {task_id}", flush=True)
-
-    final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
-    worktree = choose_task_worktree(before, get_worktrees(), task_id)
-    expected = read_expected_file(worktree["path"], spec["expected_file"])
-    if spec["expected_text"] not in expected:
-        raise RuntimeError("expected smoke text was not written in the Cline task worktree")
-
-    patch, changed_files = collect_patch(worktree["path"], patch_path)
+def write_task_result(output_path, result):
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    result = {
-        "job_key": spec["job_key"],
-        "task_id": task_id,
-        "title": task_title(spec),
-        "column": final_task.get("column"),
-        "session": final_task.get("session"),
-        "worktree_branch": worktree.get("branch"),
-        "expected_file": spec["expected_file"],
-        "changed_files": changed_files,
-        "patch_bytes": len(patch.encode()),
-        "result": "review-ready",
-    }
     temp_path = output_path.with_suffix(output_path.suffix + ".tmp")
     temp_path.write_text(json.dumps(result, indent=2) + "\n")
     temp_path.replace(output_path)
-    print(f"Nest adapter completed task {task_id}; diff={len(patch.encode())} bytes",
-          flush=True)
+
+
+def failure_code(phase, exc):
+    if phase == "wait_for_review":
+        return "review_timeout" if isinstance(exc, TimeoutError) else "task_not_reviewable"
+    return {
+        "create_task": "task_create_failed",
+        "start_task": "task_start_failed",
+        "select_worktree": "task_worktree_unavailable",
+        "read_expected_file": "expected_file_unavailable",
+        "check_expected_text": "expected_text_missing",
+        "collect_patch": "patch_unavailable",
+    }.get(phase, "bridge_step_failed")
+
+
+def run_bridge(spec, output_path, patch_path):
+    task_id = None
+    last_task = None
+    phase = "host_check"
+    try:
+        actual_host = socket.gethostname().split(".", 1)[0]
+        if actual_host != spec["target_host"]:
+            raise RuntimeError(
+                f"pack targets {spec['target_host']}, running on {actual_host}")
+
+        marker = task_marker(spec)
+        phase = "task_lookup"
+        before = get_worktrees()
+        tasks = list_tasks(spec["project_path"])
+        task = find_existing_task(tasks, marker)
+        if task:
+            task_id = task.get("id")
+            last_task = task
+        if task and task.get("column") == "trash":
+            raise RuntimeError(
+                "matching task is already in Done; use a new job_key for another run"
+            )
+        if not task:
+            phase = "create_task"
+            created = run_kanban(create_args(spec))
+            task = created.get("task")
+            if not isinstance(task, dict) or not task.get("id"):
+                raise RuntimeError("Kanban create response did not include task.id")
+            task_id = task["id"]
+            last_task = task
+            print(f"created Cline task {task_id}", flush=True)
+
+        if should_start_task(task):
+            phase = "start_task"
+            run_kanban([
+                "task", "start", "--task-id", task_id,
+                "--project-path", spec["project_path"],
+            ])
+            print(f"ensured Cline task session {task_id}", flush=True)
+
+        phase = "wait_for_review"
+        final_task = wait_for_review(
+            task_id, spec["project_path"], spec["timeout_s"])
+        last_task = final_task
+
+        phase = "select_worktree"
+        worktree = choose_task_worktree(before, get_worktrees(), task_id)
+        phase = "read_expected_file"
+        expected = read_expected_file(worktree["path"], spec["expected_file"])
+        phase = "check_expected_text"
+        if spec["expected_text"] not in expected:
+            raise RuntimeError(
+                "expected smoke text was not written in the Cline task worktree")
+
+        phase = "collect_patch"
+        patch, changed_files = collect_patch(worktree["path"], patch_path)
+        result = {
+            "job_key": spec["job_key"],
+            "task_id": task_id,
+            "title": task_title(spec),
+            "column": final_task.get("column"),
+            "session": final_task.get("session"),
+            "worktree_branch": worktree.get("branch"),
+            "expected_file": spec["expected_file"],
+            "changed_files": changed_files,
+            "patch_bytes": len(patch.encode()),
+            "result": "review-ready",
+        }
+        phase = "write_success_result"
+        write_task_result(output_path, result)
+        print(
+            f"Nest adapter completed task {task_id}; "
+            f"diff={len(patch.encode())} bytes",
+            flush=True,
+        )
+    except Exception as exc:
+        if task_id:
+            write_task_result(output_path, {
+                "job_key": spec["job_key"],
+                "task_id": task_id,
+                "title": task_title(spec),
+                "column": (last_task or {}).get("column"),
+                "expected_file": spec["expected_file"],
+                "result": "failed",
+                "failure_code": failure_code(phase, exc),
+                "failed_phase": phase,
+            })
+        raise
 
 
 def main():
