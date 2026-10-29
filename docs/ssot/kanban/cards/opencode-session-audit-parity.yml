@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
 column: done
-updated: 2026-10-27 17:14
+updated: 2026-10-29 11:13
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -87,6 +87,13 @@ comms:
     to evals/opencode-lane/PROCEDURE.md; audit script/report/job artifacts are not present in the served checkout,
     and the dispatch worktree was kept dirty (7 files). Treat AUD-0938 as evidence-incomplete until the audit script
     + JSON/Markdown report + tests land durably and the fail-open test gate is fixed.'
+- at: 2026-10-29 11:13
+  from: devin
+  text: 'Durability recheck 2026-10-29 confirms Tony''s 2026-10-27 correction: scripts/devnest/opencode_session_audit.py
+    and evals/opencode-lane/reports/2026-10-27-session-audit.{md,json} are absent from origin/master; the original
+    dispatch worktree was dirty and removed. The card was incorrectly marked done by merge-sweep. Holding it in
+    Backlog until the audit script, tests, report, and durable job record land; existing AUD-0943/45/46/48 artifact-miss
+    cards remain separate.'
 review_kind: verify
 claim: {}
 auto_close:
