@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 09:55
+updated: 2026-10-29 12:17
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -52,11 +52,19 @@ comms:
   from: devin
   text: 'raised request kk-mac-next-powered-idle-window: When should we resume the KK-Mac LTX lane? The host is
     currently powered off; the next safe action needs it online for c'
+- at: 2026-10-29 12:17
+  from: tony
+  text: 'answered kk-mac-next-powered-idle-window: Full-day permission today. Resume only once kk-mac is powered
+    on, reachable with a trusted host key, and idle; first preserve/verify the partial HF cache, apply concurrency=1,
+    then run one bounded MPS'
+- at: 2026-10-29 12:17
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
     it online for cache verification and a bounded probe.
-  status: open
+  status: answered
   at: 2026-10-29 09:55
   from: devin
   options:
@@ -66,3 +74,7 @@ requests:
   - id: colab-only
     label: Keep kk-mac off for now and continue the image-aware preview on Colab only.
   suggested: notify-when-online
+  answer: Full-day permission today. Resume only once kk-mac is powered on, reachable with a trusted host key, and
+    idle; first preserve/verify the partial HF cache, apply concurrency=1, then run one bounded MPS/MLX probe only.
+    No full multi-scene render until that probe passes.
+awaiting_action: true
