@@ -1,7 +1,7 @@
 id: node-red-devnest-visual-map
 title: 'Node-RED DevNest visual map: observe first, allowlisted control second'
 column: review
-updated: 2026-10-28 23:17
+updated: 2026-10-29 08:37
 brief: 'Use Node-RED as a visual mental model for DevNest: cards -> JEV -> lanes -> runners -> verifiers -> Education,
   with safe controls later.'
 priority: medium
@@ -88,6 +88,12 @@ comms:
 - at: 2026-10-28 23:17
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''arm-the-nest-queue-health-time''] block close)'
+- at: 2026-10-29 08:37
+  from: tony
+  text: 'answered arm-the-nest-queue-health-timer-on-tony-97d3fd: proceed'
+- at: 2026-10-29 08:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -103,11 +109,13 @@ requests:
   ask: 'Arm the nest-queue-health timer on tony-dell so the queue heartbeat stays fresh (one-shot snapshot already
     landed; without the timer it ages)? Options: [arm] copy systemd/nest-queue-health.{service,timer} to ~/.config/systemd/user/
     + enable --now (recommended) / [skip] leave manual — the map just shows snap age.'
-  status: open
+  status: answered
   at: 2026-10-28 23:05
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 review_kind: verify
 claim: {}
+awaiting_action: true
