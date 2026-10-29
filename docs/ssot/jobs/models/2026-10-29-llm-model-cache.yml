@@ -49,8 +49,8 @@ built: |
       credential-free consumers (kk-mac path).
   - con01: ~/var/cache/devnest/bin/model-cache.py deployed; existing
     informal store adopted — `index` rebuilt index.json over 3 manifests.
-  - idc03: mirror store created at same path; qwen3:0.6b pulled+verified;
-    full mirror of 1.7b/4b/8b in progress at session end.
+  - idc03: mirror store created at same path; all 4 models pulled +
+    verify-clean (23 blobs, 9.6 GB, 249 MB/s) by session end.
   - ssot.storage.yml: model-cache category declared (cache tier, both hosts).
   - ssot.host-capacity.yml: con01 role note gains "devnest model-cache origin".
 
@@ -58,7 +58,10 @@ measured: |
   con01 registry fetch qwen3:1.7b:  1,359,280,263 B in 32.1s = 42.3 MB/s
   con01 verify (18 blobs, 8.2 GB):  32.6s = 253 MB/s sha256
   idc03 verify qwen3:0.6b:          523 MB in 1.5s = 338 MB/s
-  transfer con01->idc03 (ssh pull): 523 MB in 114.1s = 4.6 MB/s verified
+  transfer con01->idc03 (ssh pull, sha256 per blob):
+    0.6b 523 MB/114s = 4.6 MB/s; 1.7b 1359 MB/187s = 7.3; 4b 2497 MB/322s
+    = 7.8; 8b 5225 MB/608s = 8.6 MB/s
+  idc03 verify (23 blobs, 9.6 GB):  38.6s = 249 MB/s; quarantine empty
   disk use: con01 ollama-models 7.7G (3 models shared layers), +1.4G 1.7b
   runtime smoke con01 isolated serve (OLLAMA_MODELS=cache, 127.0.0.1:11435):
     4 models listed zero-copy; qwen3:0.6b load 12.1s, 0.4 tok/s
@@ -78,8 +81,7 @@ consumer_paths: |
     no credentials involved anywhere (public registry in, tailnet out).
 
 open: |
-  - idc03 mirror (1.7b/4b/8b) still pulling at ~4.6 MB/s at session end —
-    ~30 min total; verify with `model-cache.py list` on idc03.
+  - idc03 mirror complete + verify-clean at session end (all 4 models).
   - kk-mac import path depends on no-SSH HTTP export or tony-dell hop;
     seeding fleet keys to con01 (host-hardening follow-up) simplifies it.
   - coder-model pick (spec: "qwen3:8b or a coder model after benchmark") —
