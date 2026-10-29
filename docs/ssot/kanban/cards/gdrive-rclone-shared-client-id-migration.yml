@@ -1,0 +1,21 @@
+id: gdrive-rclone-shared-client-id-migration
+title: Migrate gdrive rclone remotes off the shared OAuth client ID
+column: backlog
+updated: 2026-10-29 15:47
+priority: medium
+tags:
+- rclone
+- google-drive
+- oauth
+- infrastructure
+spec: 'Audit the gdrive: rclone remotes used by fleet and member hosts, then migrate from rclone’s shared Google
+  Drive client ID to an approved project-specific OAuth client before the shared ID retirement notice takes effect.
+  Keep client secrets in the existing secret/config store, never in repo or chat. Verify each remote and run rclone
+  check after migration. No config changes were made during the KK-Mac probe.'
+note: 'Observed 2026-10-29 during KK-Mac video artifact upload: rclone warned the shared Google Drive client_id
+  is planned to stop working during 2026. Current transfer succeeded; this is a non-blocking future risk.'
+ref: DEV-0977
+comms:
+- at: 2026-10-29 15:47
+  from: devin
+  text: Follow-up captured from successful KK-Mac artifact staging; no rclone credentials or config changed.
