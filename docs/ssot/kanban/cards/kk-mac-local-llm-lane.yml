@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-28 23:16
+updated: 2026-10-29 10:03
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -74,6 +74,12 @@ comms:
   from: devin
   text: 'Scope note: OPS-0966 remains the KK-Mac local Ollama/MLX lane. The separate Colab T4 model-arm adapter
     is OPS-0971; keep it distinct and do not double-book the Mac MPS video work in OPS-0967.'
+- at: 2026-10-29 10:03
+  from: devin
+  text: 'KK-Mac pack staged at isolated `gdrive:ada-nest-kk-mac-pilot/packs/kk-mac-devnest-model-slot-30m`: existing
+    local Ollama `qwen3:8b`, five synthetic fixtures, 30-minute cap, no model pull. `rclone check` is clean. No
+    Mac worker launched; run its one-shot worker only after the MPS video probe and owner workloads are idle. The
+    separate HF pre-stage pack is queued in the shared `gdrive:ada-nest` root.'
 action:
   type: dispatch
   status: done
