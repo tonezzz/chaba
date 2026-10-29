@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-29 21:06
+updated: 2026-10-29 21:07
 action:
   type: manual
 ref: OPS-0790
@@ -45,6 +45,10 @@ comms:
     No live units were installed or enabled, and chaba-jobs.timer was not disabled. Before the separate deploy-lock
     rollout, the migration report''s behavior deltas (notably no exponential backoff and changed result/alert surfaces)
     need review.'
+- at: 2026-10-29 21:07
+  from: devin
+  text: 'raised request systemd-rollout-behavior-review: The approved migration code is merged, but live timers
+    are not installed. Before rollout, please choose how to handle th'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
@@ -61,4 +65,23 @@ requests:
   from: backlog-spec-enrich
   answer: Migrate all remaining dispatcher jobs to use dispatch:systemd rendered timers (like nest-queue-watch)
     and remove the legacy dispatcher
+- id: systemd-rollout-behavior-review
+  ask: 'The approved migration code is merged, but live timers are not installed. Before rollout, please choose
+    how to handle the behavior deltas documented in docs/reports/dispatcher-systemd-migration-2026-10-29.md: systemd
+    cadence replaces dispatcher exponential backoff; results move from timeline.jsonl to journald/timer-timeline;
+    critical:false alerting moves to timer-sentinel; boot catch-up is delayed to the 1-minute OnBootSec. First activation
+    may run the embed-lane jobs with the existing LiteLLM key (no caps changed).'
+  status: open
+  at: 2026-10-29 21:07
+  from: devin
+  options:
+  - id: accept-systemd-contract
+    label: 'Recommended for momentum: accept these documented systemd semantics and proceed with a locked, host-by-host
+      rollout; leave legacy timer until all eight replacement timers are verified.'
+  - id: preserve-dispatcher-behavior
+    label: Before rollout, add backoff/result-ledger/alert parity where needed; keep all timers untouched until
+      that code is reviewed.
+  - id: hold-rollout
+    label: Keep the code merged but do not install or enable any replacement timers yet.
+  suggested: accept-systemd-contract
 awaiting_action: true
