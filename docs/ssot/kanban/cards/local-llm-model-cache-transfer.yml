@@ -1,7 +1,7 @@
 id: local-llm-model-cache-transfer
 title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
-column: doing
-updated: 2026-10-29 17:09
+column: review
+updated: 2026-10-29 17:10
 brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
   reuse them across lanes.
 priority: high
@@ -62,7 +62,16 @@ comms:
     (23 blobs, 9.6 GB, 249 MB/s, quarantine empty). scripts/models/model-cache.py covers fetch/quarantine/promote/verify/index/serve/pull/export-gguf/metrics.
     OLLAMA_MODELS-native store — isolated serves list models zero-copy; import paths to Ollama + MLX documented
     for kk-mac/fleet with z'
+- at: 2026-10-29 17:10
+  from: mn01
+  text: 'finished (ok): exit=0  con01 would simplify kk-mac imports, and the coder-model pick awaits its benchmark
+    card. | devin-task-20261029-0'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0  con01 would simplify kk-mac imports, and the coder-model pick awaits its benchmark card. | devin-task-20261029-093301-use-idc03-or-con01-as-a-downlo.service:
+    Consumed 27.752s CPU time over 36min 25.053s wall clock time, 359.9M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
