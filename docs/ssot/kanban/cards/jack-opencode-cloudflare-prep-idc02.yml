@@ -1,7 +1,7 @@
 id: jack-opencode-cloudflare-prep-idc02
 title: Prepare Jack Cloudflare route with OpenCode on idc02
 column: backlog
-updated: 2026-10-29 21:56
+updated: 2026-10-29 23:08
 brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
 priority: high
 program: devnest
@@ -50,3 +50,10 @@ comms:
     returns HTTP 403 / error 1010. Token still lacks Account → Access: Apps and Policies → Edit, or is scoped to
     the wrong account. No DNS/Caddy/public route was changed. Prepared and committed isolated Jack gateway Cloudflare
     JWT validation patch in commit fd9b78'
+- at: 2026-10-29 23:08
+  from: devin
+  text: 'PUBLIC EDGE DEPLOYED AND SECURITY-SMOKED: Cloudflare Access app opencode-jack.surf-thailand.com exists
+    (24h session), allow policy javkster@gmail.com, audience configured. Proxied DNS A record points to 45.136.236.190.
+    idc02 jack-enroll and caddy-edge active. Public /enroll returns Cloudflare Access 302; direct loopback and public-host
+    requests with forged Tailscale header return 403. Gateway JWT validation deployed; Caddy config validated. Commits
+    in isolated branch: fd9b78f3e and cef7f0f9c. Re'
