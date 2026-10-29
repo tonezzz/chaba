@@ -14,3 +14,8 @@ unauth_status=$(curl -sS -o /dev/null -w "%{http_code}" \
 test "$unauth_status" = "401"
 curl -fsS --config <(printf 'user = "cline:%s"\n' "$CLINE_PROXY_PASSCODE") \
   -o /dev/null http://100.72.146.39:3484/
+public_without_access_jwt=$(curl -sS -o /dev/null -w "%{http_code}" \
+  -H "Host: cline.surf-thailand.com" \
+  -H "Origin: https://cline.surf-thailand.com" \
+  http://100.72.146.39:3484/)
+test "$public_without_access_jwt" = "403"

@@ -79,6 +79,9 @@ edges:
   #   /ada-ws/michael/* -> rewrite /apps/ha/ada-michael{uri} -> https://idc03.taila0626a.ts.net
   #   /ada-ws/dev/*     -> rewrite /apps/ha/ada-dev{uri}     -> https://idc03.taila0626a.ts.net
   # (rides the CF Access session; ws + /api/* both proxy) 2026-10-09
+  # cline.surf-thailand.com edge (idc02 Caddy) -> con01 Tailnet Cline proxy.
+  # Cloudflare Access uses the Ada HA allowlist; the Cline proxy validates
+  # the signed Access JWT so direct-origin requests fail closed.
   # kk-ha.surf-thailand.com edge (idc02 caddy): same-origin lane
   #   /ada-ws/kk/* -> rewrite /apps/ha/ada-kk{uri} -> https://idc03.taila0626a.ts.net
   # then proxy -> https://idc03.taila0626a.ts.net:8126 (member node kk-ha)
@@ -136,6 +139,7 @@ services:
   trade-api:      {host: idc03, listen: "100.102.134.91:9002", tailnet: "http://100.102.134.91:9002", note: "migrated from tony-dell 2026-10-19 (constellation move w/ pg+redis+yomi); tailnet-only bind"}
   input-bridge:   {host: idc03, listen: "0.0.0.0:3010", tailnet: "http://100.102.134.91:3010"}
   cms-render:     {host: idc03, listen: "100.102.134.91:8010", tailnet: "http://100.102.134.91:8010", note: "chaba-cms-render FastAPI (apps/cms-render) — live MDDB->HTML; public as cms.surf-thailand.com via idc02 caddy-edge behind CF Access"}
+  cline-kanban:   {host: con01, listen: "100.72.146.39:3484", tailnet: "http://100.72.146.39:3484", public: "https://cline.surf-thailand.com", auth: "Cloudflare Access JWT verified by the Tailnet proxy"}
   frigate:        {host: tony-dell, listen: "docker-net:5000", tailnet: "frigate:5000"}
   imagen:         {host: tony-omen, listen: "docker-net:8000", tailnet: "imagen-inference:8000"}
 

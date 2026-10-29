@@ -16,7 +16,7 @@
 Spec: docs/ssot/infrastructure/ssot.chaba-nest-dashboard.yml (the modular
 single source — topics, tile slugs/states, report filters, zoom/aspect).
 
-Auth: ada-ha has no HASS_TOKEN file; the refresh token named 'tony-devin' in
+Auth: ada-ha has no HASS_TOKEN file; the refresh token named 'ada-ha-live' in
 ~/.config/ada-ha/.storage/auth is exchanged at /auth/token, then websocket
 auth. The CMS viewer api_key is reused from the live dashboard config (or
 CMS_API_KEY env / ~/.config/secrets/ada-ha-cms.env CMS_API_KEY= line).
@@ -28,6 +28,7 @@ Layout generated per topic (TILE STANDARD — tiles never scroll):
                     full CMS browser pre-filtered (tab=/q= params)
 """
 import argparse, asyncio, datetime, json, os, re, sys, urllib.parse, urllib.request
+from ada_ha_auth import get_access_token
 import websockets, yaml
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -62,18 +63,6 @@ def tile_slug(t):
 
 def tile_state(t):
     return t.get("state", "pinned") if isinstance(t, dict) else "pinned"
-
-
-def get_access_token(ha):
-    """refresh_token 'tony-devin' → access_token via /auth/token."""
-    auth = json.load(open(os.path.expanduser("~/.config/ada-ha/.storage/auth")))
-    rt = next(t["token"] for t in auth["data"]["refresh_tokens"]
-              if t.get("client_name") == "tony-devin")
-    req = urllib.request.Request(
-        ha + "/auth/token", method="POST",
-        data=f"grant_type=refresh_token&refresh_token={rt}".encode(),
-        headers={"Content-Type": "application/x-www-form-urlencoded"})
-    return json.load(urllib.request.urlopen(req))["access_token"]
 
 
 def cms_key(live_config):
@@ -273,4 +262,5 @@ async def main():
         print("dry run — pass --print, --apply, or --discover")
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -2,6 +2,43 @@
 set -euo pipefail
 
 REPO=$(cd "$(dirname "$0")/../.." && pwd)
+
+if [[ "${1:-}" == "--instance" && "${2:-}" == "ada-ha" ]]; then
+    TODAY=$(date +%Y-%m-%d)
+    python3 "${REPO}/scripts/home-assistant/sync-ada-ha-chaba-admin.py" \
+        --host tony-omen \
+        --output "${REPO}/docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json"
+    python3 - "${REPO}/docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml" "${TODAY}" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+text = path.read_text()
+text, count = re.subn(
+    r"(?m)^  last_verified:.*$",
+    f"  last_verified: '{sys.argv[2]}'",
+    text,
+    count=1,
+)
+if count != 1:
+    raise SystemExit("could not update dashboard SSOT last_verified")
+path.write_text(text)
+PY
+    (
+        cd "${REPO}"
+        node scripts/ssot-validate-all.mjs \
+            docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml >/dev/null
+        python3 scripts/ssot-validate-refs.py >/dev/null
+    )
+    echo "Done. Ada HA chaba-admin snapshot synced with sensitive values redacted."
+    exit 0
+fi
+if [[ "${1:-}" == "--instance" ]]; then
+    echo "Unsupported instance: ${2:-<missing>}" >&2
+    exit 2
+fi
+
 HOST=tony-dell
 DEV_CONFIG=/home/tony/.config/michael-dev
 STORAGE_REMOTE=${DEV_CONFIG}/.storage/lovelace.tony_test
