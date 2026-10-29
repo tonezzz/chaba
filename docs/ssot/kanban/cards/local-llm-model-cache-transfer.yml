@@ -1,7 +1,7 @@
 id: local-llm-model-cache-transfer
 title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
 column: done
-updated: 2026-10-29 17:18
+updated: 2026-10-29 21:29
 brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
   reuse them across lanes.
 priority: high
@@ -82,6 +82,13 @@ comms:
 - at: 2026-10-29 17:18
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-29 21:29
+  from: devin
+  text: 'Home-network cache plan confirmed: tony-dell has only ~39G free and is not suitable for a 22G MLX mirror;
+    tony-omen has /data with ~168G free and existing /data/ollama-models. After IDC03 MLX mirror completes, add
+    Omen /data/devnest-model-cache/ltx-mlx as the home-LAN cache, then import KK-Mac over the local/Tailscale path.
+    KK-Mac remains the active local runtime; Omen is the home cache origin; IDC03/Con01 remain remote origins/mirrors.
+    No new sync started while the IDC03 transfer is active.'
 action:
   type: dispatch
   status: done
