@@ -1,7 +1,7 @@
 id: cline-nest-model-evaluation
 title: Evaluate Cline models through the Nest worker adapter
 column: backlog
-updated: 2026-10-28 22:45
+updated: 2026-10-29 14:30
 priority: medium
 tags:
 - cline-kanban
@@ -63,6 +63,13 @@ comms:
 - at: 2026-10-28 22:45
   from: tony
   text: moved doing -> backlog
+- at: 2026-10-29 14:30
+  from: devin
+  text: '[test-run canary assessment 2026-10-29] Cline proxy is live (unauthenticated GET / returns 401). Adapter
+    is deployed, but the last authorized local qwen3:4b smoke (task f49b1) exited 0 without the expected file, patch,
+    task-result.json, or done marker; test-tool execution is not yet proven. Recommended next canary: one synthetic
+    disposable /workspace, one fixed allowlisted `python -m unittest` command, no Chaba repo, network, secrets,
+    installs, commit/push, structured result JSON plus determinis'
 action:
   type: dispatch
   status: done
