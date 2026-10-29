@@ -1,0 +1,15 @@
+{
+  "job_key": "cline-persona-ab-orfree-20261029",
+  "target_host": "con01",
+  "execute": true,
+  "title": "Draft Persona A/B toggle standard (or-free)",
+  "project_path": "/workspace",
+  "base_ref": "main",
+  "agent_id": "cline",
+  "provider_id": "openai-native",
+  "model_id": "or-free-nemotron-nano",
+  "timeout_s": 900,
+  "expected_file": "persona-ab-procedure.md",
+  "expected_text": "LINE_NAME_BACKENDS",
+  "prompt": "Write a standard operating procedure file named persona-ab-procedure.md for A/B-testing voice-assistant persona builds. Context: an assistant persona runs as a backend instance; callers are routed to backends via a LINE_NAME_BACKENDS pointer map. Required procedure content: (1) clone the instance to a new port (e.g. ada-kk-b :8009) with variant env/prompt/model; (2) toggle callers via the LINE_NAME_BACKENDS pointer flip \u2014 instant, reversible; (3) measure via scenario-benchmark scores per variant; (4) adoption = flip back or retire the loser. Optional section: per-caller split routing for concurrent A/B (e.g. kk->A, nhong->B). Note that memory transfer between variants is selective bank export/import and tooling is TBD. Format: markdown with numbered steps, rollback note, and verification checklist. Do not commit, push, or open a PR. Verify the file exists and report the changed path."
+}
