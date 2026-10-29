@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-30 01:27
+updated: 2026-10-30 01:37
 action:
   type: manual
 ref: OPS-0790
@@ -64,6 +64,13 @@ comms:
     no replacement timer listed. The current `render-jobs.py --host H --install` enables/starts every rendered timer
     on that host, not just the migrated jobs, so I did not run it. OPS-0992 is queued to add/test per-job installation
     before any locked rollout.'
+- at: 2026-10-30 01:37
+  from: devin
+  text: 'After your `accept-systemd-contract` answer, the code phase (OPS-0983) is complete. The live rollout is
+    not started: preflight found `render-jobs.py --host <h> --install` enables every timer on a host, not just the
+    eight migrated jobs. OPS-0992 was held because idc02 cannot push; OPS-0993 is queued to tony-dell to add/test
+    a per-job selector before deployment. No live timer units were changed. OPS-0993 is still unclaimed during the
+    current quiet-hours window.'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
