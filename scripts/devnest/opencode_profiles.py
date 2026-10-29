@@ -362,6 +362,20 @@ def agent_prompt(env: dict, prof: dict) -> str:
     """Agent system prompt = profile rails + lane rails (no task text —
     the task is the run message)."""
     art = env.get("artifact") or {}
+    branch_code = (
+        prof.get("id") == "branch-code"
+        and env.get("task_class") == "branch_code"
+    )
+    git_rail = (
+        "- Git writes are limited to staging one declared in-scope path at "
+        "a time and committing inside this isolated worktree. Inspect the "
+        "staged diff before committing. Do not use `git add .` or "
+        "`git add -A`. Never push, merge, rebase, switch branches, or "
+        "create/manage worktrees."
+        if branch_code else
+        "- Do not stage or commit Git changes. Push, merge, rebase, branch "
+        "changes, and worktree operations are also prohibited."
+    )
     rails = [
         "",
         "## Lane rails (enforced — violations fail the job)",
@@ -373,7 +387,8 @@ def agent_prompt(env: dict, prof: dict) -> str:
            "contract."] if art.get("path") else []),
         "- Do not read evals/opencode-lane/profiles/*/fixture/verify.py "
         "or evals/shadow/fixtures — grading is held out.",
-        "- No commits, pushes, merges, worktree ops, service changes, "
+        git_rail,
+        "- No service changes, "
         "package installs, or deletions.",
         "- When the artifact content is complete, output it and stop.",
     ]

@@ -88,6 +88,30 @@ class LintProfiles(unittest.TestCase):
         self.assertTrue(p["verifier"]["require_review"])
         self.assertEqual(p["rollback"]["kind"], "worktree-drop")
 
+    def test_branch_code_git_allowlist_is_worktree_scoped(self):
+        p = mod.load_profile("branch-code")
+        bash = p["permission"]["bash"]
+        self.assertNotIn("git add *", bash)
+        roots = ("scripts", "tests", "evals", "docs/kb",
+                 "docs/reports", "docs/ssot/jobs")
+        self.assertNotIn("git add docs/*", bash)
+        self.assertNotIn("git add -- docs/*", bash)
+        self.assertEqual(
+            p["allowed_paths"],
+            ["scripts/", "tests/", "docs/kb/", "docs/reports/",
+             "docs/ssot/jobs/", "evals/"])
+        for root in roots:
+            self.assertEqual(bash[f"git add {root}/*"], "allow")
+            self.assertEqual(bash[f"git add -- {root}/*"], "allow")
+        for command in (
+            "git add .", "git add -A", "git push *", "git merge *",
+            "git rebase *", "git switch *", "git checkout *",
+            "git branch *", "git worktree *",
+        ):
+            self.assertNotIn(command, bash)
+        self.assertEqual(bash["git commit *"], "allow")
+        self.assertEqual(p["status"], "disabled")
+
     def test_mcp_overlap_rejected(self):
         p = mod.load_profile("ops-readonly")
         p["mcp"] = {"allowed": ["mcp_health"],
@@ -289,6 +313,20 @@ class Render(unittest.TestCase):
         self.assertIn("ops-readonly profile agent", ag["prompt"])
         # agent prompt is rails-only — task text is the run message
         self.assertNotIn("{{TASK}}", ag["prompt"])
+
+    def test_branch_code_prompt_allows_local_commit_but_not_publish(self):
+        prof = mod.load_profile("branch-code")
+        prompt = mod.agent_prompt(mk_env("branch-code"), prof)
+        self.assertIn("committing inside this isolated worktree", prompt)
+        self.assertIn("staging one declared in-scope path at a time", prompt)
+        self.assertIn("Never push, merge, rebase", prompt)
+        self.assertNotIn("Do not stage or commit Git changes", prompt)
+        self.assertEqual(prof["status"], "disabled")
+
+    def test_readonly_prompt_forbids_git_writes(self):
+        prof = mod.load_profile("ops-readonly")
+        prompt = mod.agent_prompt(mk_env(), prof)
+        self.assertIn("Do not stage or commit Git changes", prompt)
 
     def test_agent_name_slug(self):
         self.assertEqual(mod.agent_name("ops-readonly"), "ops-readonly")
