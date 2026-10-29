@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 14:48
+updated: 2026-10-29 14:53
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -163,6 +163,13 @@ comms:
 - at: 2026-10-29 14:48
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-29 14:53
+  from: devin
+  text: 'Additional 5-case read-only DevNest batch on KK-Mac qwen3:4b: 3/5 passed the independent schema/fact gate;
+    safe_route, queue_brief, and audit_action verified. host_inventory failed schema (model returned `remed` instead
+    of required `remediation`). operator_brief content was semantically correct, but the first verifier harness
+    incorrectly treated required evidence words as keys; recorded as verifier recheck needed, not a model failure.
+    Artifact: /home/tony/evals/results/kk-mac-llm-batch-20261029.'
 action:
   type: dispatch
   status: idle
