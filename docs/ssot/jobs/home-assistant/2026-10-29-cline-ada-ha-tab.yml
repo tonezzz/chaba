@@ -91,15 +91,14 @@ processing:
         Cline tab and redacts the existing CMS api_key query value.
     - id: verify-surface
       label: Verify Access, direct-origin denial, HTTP, WebSocket, and dashboard read-back
-      status: in_progress
+      status: done
       notes: >-
         Verified unauthenticated browser-style requests redirect to the
         Cloudflare Access login, direct-origin requests with no or forged JWT
         return 403, the proxy can fetch the Cloudflare JWKS, Tailnet Basic Auth
         remains healthy, and the Ada dashboard read-back has Cline after Board.
-        An authenticated public Cline WebSocket turn was not independently
-        exercised from this headless session; keep the job in review until
-        the Access-authenticated iframe/session is visually confirmed.
+        Tony confirmed the tab is visible and working; he plans additional
+        testing after returning in about an hour.
   decisions:
     - label: Root host and Access policy
       rationale: >-
@@ -140,14 +139,14 @@ followup:
     - Leave the Access app/DNS in place unless Tony separately approves removing those Cloudflare resources.
     - Do not restart the Cline app container; restart only the proxy if deploying proxy changes.
   handoff:
-    - HOM-0957 is ready for review; the live dashboard config and route are deployed.
-    - The Cline iframe uses the existing Ada HA Access allowlist; no second Cline key is placed in the browser.
+    - HOM-0957 is done after Tony confirmed the Cline tab works.
+    - Tony plans additional hands-on testing after returning in about an hour.
   deferred:
     - Further Cline model inference; the authorized qwen3:4b attempt failed without artifacts.
 
 report:
-  status: in_progress
-  completed_at: null
+  status: done
+  completed_at: "2026-10-29"
   summary: >-
     Ada HA and reuse of its Access policy are confirmed. The Cline Access app
     uses the same two allow policies. The Access-JWT proxy is deployed on
@@ -155,10 +154,11 @@ report:
     Ada HA's chaba-admin dashboard now has Cline immediately after Board.
     The stale `tony-devin` token lookup was corrected to the documented
     `ada-ha-live` alias. Direct-origin requests fail closed and the dashboard
-    config was read back over WebSocket; unauthenticated/forged direct-origin
-    HTTP and WebSocket requests return 403. An authenticated public WebSocket
-    turn remains untested from this headless session. No further model
-    inference is running.
+    config was read back over WebSocket. Unauthenticated browser traffic is
+    gated by Cloudflare Access; direct-origin HTTP and WebSocket requests
+    with missing/forged JWT return 403. Tony confirmed the tab is visible and
+    working, with more hands-on testing planned. No further model inference
+    is running.
   metrics:
     - metric: Access app
       value: cline.surf-thailand.com; 2 Ada HA allow policies; 720h session
