@@ -1,0 +1,35 @@
+id: render-jobs-selective-install-ops0790
+title: Scope systemd timer installation for OPS-0790 rollout
+column: backlog
+updated: 2026-10-30 01:26
+brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
+  dispatcher jobs.
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+- deploy-safety
+spec: 'Follow-up to the accepted OPS-0790 systemd rollout. Preflight found `scripts/render-jobs.py --host <host>
+  --install` installs all rendered units for that host and calls `systemctl --user enable --now` for every timer,
+  not only the migrated jobs. Do not use it for this rollout: starting all host timers can retrigger unrelated jobs
+  and costs. Add a safe per-job selector (e.g. `--ids <comma-separated job ids>`) so `--install` copies/reloads/enables
+  only the requested generated service/timer pairs; preserve the existing full-host behavior when no selector is
+  given. Add tests proving a selected id does not enable/restart unrelated timers. Update the rollout report/runbook
+  to use the selector for the 8 migrated jobs and keep chaba-jobs.timer active until all 8 pass. Code/tests/report
+  only; no live unit install or service operation in this task.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - push:chaba
+  - cpu
+  target_host: idc02
+  artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
+  status: queued
+ref: OPS-0992
+comms:
+- at: 2026-10-30 01:26
+  from: devin
+  text: 'Newly discovered rollout blocker from code inspection: current --install enables all timers on each host.
+    Building a job-scoped installer before any live rollout.'
