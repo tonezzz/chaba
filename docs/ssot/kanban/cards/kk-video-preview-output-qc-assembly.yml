@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
-column: review
-updated: 2026-10-29 19:38
+column: done
+updated: 2026-10-29 19:48
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -324,6 +324,11 @@ comms:
 - at: 2026-10-29 19:38
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-10-29 19:48
+  from: chaba
+  text: 'merge-sweep: merged 714642ba (dispatch/20261029-183226-continue-from-the-completed-to from tony-macbook)
+    -> origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261029-183226-continue-from-the-completed-to.md)
+    — auto-closed'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -449,5 +454,10 @@ action:
   result: 'exit=0  artifact globs and QC before marking the Nest job done). | devin-task-20261029-183226-continue-from-the-completed-to.service:
     Consumed 1min 57.175s CPU time over 1h 4min 50.257s wall clock time, 679.7M memory peak, 166.6M memory swap
     peak.'
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-29 19:48
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261029-183226-continue-from-the-completed-to.md
