@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-29 18:41
+updated: 2026-10-29 18:50
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -279,6 +279,10 @@ comms:
     9-36 with per-image hash checks, render uses existing shot embeddings + LTX I2V, per-shot ffprobe/full-decode/blackdetect
     QC, VYNCX clone narration gated on consent manifest + probe verdict, and final 60s teaser decode QC. Pack is
     queued; checking for a live managed runtime to start '
+- at: 2026-10-29 18:50
+  from: devin
+  text: 'raised request the-private-v2-preview-is-fully-staged-a-6b9059: The private V2 preview is fully staged
+    and verified claim-ready in Drive (kk-video-c9f99fee6146-preview-v2: storyboard-m'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -384,6 +388,18 @@ requests:
     with cloned narration and no public release. This records acceptance of the private clone smoke for that V2
     only; it does not authorize public release.'
   executed: 2026-10-29 none
+- id: the-private-v2-preview-is-fully-staged-a-6b9059
+  ask: 'The private V2 preview is fully staged and verified claim-ready in Drive (kk-video-c9f99fee6146-preview-v2:
+    storyboard-mapped shots + consented KK clone narration; all 6 requires packs DONE, r4 preflight verdict=pass).
+    The only missing piece is a live managed T4 — all registered sessions are stale and consumer Colab provisioning
+    is manual. Please open ada-nest-job-console.ipynb on a T4 runtime and run Cell 1 once; I will start the queue
+    with colab_queue_start and verify all artifacts when it finishes.'
+  status: open
+  at: 2026-10-29 18:50
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   status: running
   type: dispatch
