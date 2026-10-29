@@ -1,0 +1,42 @@
+id: opencode-cline-idea-proposal-workflow
+title: Pilot OpenCode-to-Cline idea refinement workflow
+column: backlog
+updated: 2026-10-29 12:12
+brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
+  Chaba Kanban remains the canonical record.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- cline-kanban
+- idea-intake
+- proposal
+- pilot
+spec: 'Design and run a bounded, analysis-only pilot for an OpenCode -> Cline proposal workflow. Chaba Kanban remains
+  the sole source of truth for request, decisions, approval, and execution status; Cline Kanban is a linked analysis
+  workspace, not a replacement controller. First verify the currently deployed Cline task-submission path, model/provider,
+  privacy boundary, and adapter status. Use one low-risk card with a versioned/read-only snapshot and stable Chaba
+  card ID. OpenCode''s role: interview Tony for missing goal, scope, constraints, and done-condition; return a structured
+  intake draft, not mutate the card or make decisions. Cline''s role: compare the request with existing cards/SSOT/procedures,
+  analyze stakeholder/user, architecture, operations, security/privacy, cost, and delivery viewpoints, identify
+  matches/duplicates, state evidence vs assumptions, offer options with tradeoffs and a recommendation, and produce
+  acceptance criteria plus open questions. The final proposal is reviewed and recorded on the Chaba card; the Cline
+  task links back to that card and snapshot version. No auto-queue, dispatch, code edits, board-state writes from
+  Cline, deployments, secrets, or paid model calls in the pilot. Use a local model only after its live configuration
+  is verified. Measure factual accuracy, useful missing-question capture, Tony corrections/intervention, latency/token/resource
+  cost, and whether card/task views remain consistent. Acceptance: a cold reader can follow the proposal from either
+  linked surface; all decisions and status remain canonical on Chaba; stale snapshots are detected; no unsupported
+  claims or unapproved actions; one safe pilot passes an independent review. After the pilot, update the existing
+  idea-intake and ai-lane-delegate procedures in place if the workflow proves repeatable; do not register a speculative
+  procedure before a real run. Link this initiative to cline-kanban-con01-pilot and cline-kanban-nest-worker-adapter;
+  this work is distinct from the Nest-to-Cline execution adapter. Keep this card unqueued until the live task path
+  and the pilot''s execution gate are verified.'
+note: 'Recommendation: use Cline as a shared proposal/review workbench, not as the Kanban controller of record.
+  Existing OpenCode profile and Cline/Nest adapter work are adjacent precedents, not proof of this end-to-end intake
+  workflow.'
+ref: DEV-0975
+comms:
+- at: 2026-10-29 12:12
+  from: tony
+  text: Captured from Tony's request to compare Cline Kanban with Chaba Kanban and explore an OpenCode-to-Cline
+    idea refinement workflow.
