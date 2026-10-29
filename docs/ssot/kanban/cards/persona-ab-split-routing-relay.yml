@@ -1,0 +1,14 @@
+id: persona-ab-split-routing-relay
+title: Per-caller A/B split routing in ada-line-relay — route senders to variant backends
+column: backlog
+updated: 2026-10-29 23:18
+priority: low
+spec: 'From persona-ab-lane (OPS-0469) optional scope, now the real remaining work. Today A/B = whole-lane LINE_NAME_BACKENDS
+  pointer flip (instant, reversible, all callers). True concurrent A/B needs a per-caller override in the relay:
+  e.g. kk->variant A (:8009), nhong->control. Deliverable: relay config/override mechanism + docs/kb/persona-eval-ab.md
+  section 3 updated to show the split config. Code lane — needs repo + relay access, NOT a doc-shaped card.'
+ref: OPS-0989
+comms:
+- at: 2026-10-29 23:18
+  from: devin
+  text: card captured via board-api
