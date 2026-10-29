@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-ops0790
 title: Implement systemd migration for OPS-0790 dispatcher jobs
-column: doing
-updated: 2026-10-29 20:54
+column: review
+updated: 2026-10-29 20:55
 brief: Implement the user's approved migration of legacy dispatcher jobs to rendered systemd timers; keep the legacy
   timer until a later verified rollout.
 priority: high
@@ -22,8 +22,12 @@ action:
   repo: chaba
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 verify/retire sequence is left for the deploy-lock rollout per the rollout checklist in the report.
+    | devin-task-20261029-204303-follow-up-execution-for-the-ap.service: Consumed 1min 7.295s CPU time, 242.4M memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-0982
 comms:
 - at: 2026-10-29 20:42
@@ -50,3 +54,9 @@ comms:
     preclean as ExecStartPre (OPS-0531 parity, also fixes yomi-update-all); generated/ reconciled (16 new units,
     70 stale removed incl chaba-jobs.*); 16 new tests incl a tree==manifest parity guard. Exceptions documented
     in docs/reports/dispatcher-systemd-migration-2026-10-
+- at: 2026-10-29 20:55
+  from: idc02
+  text: 'finished (ok): exit=0 verify/retire sequence is left for the deploy-lock rollout per the rollout checklist
+    in the report. | devin-task-'
+review_kind: verify
+claim: {}
