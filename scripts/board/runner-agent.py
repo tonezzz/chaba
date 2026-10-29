@@ -177,7 +177,17 @@ LANE_PROFILES = {
 # Executor contract (opencode-explicit-executor-routing). Mirrors
 # dispatch_repos.EXECUTORS — kept local because this file deploys as a
 # single file and may run where dispatch_repos isn't importable.
-EXECUTORS = {"opencode", "devin", "script", "manual"}
+EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local"}
+# kk_mac_local executor contract (kk-mac-jev-adapter-integration):
+# bounded read-only LLM lane on KKs-Mac-Studio. Try-first, not strict —
+# the admitted task classes mirror kk_mac_llm.ALLOWED_TASKS; a card the
+# lane can't serve falls back to the next lane under the same claim.
+# KK_MAC_LANES=1 marks this host as able to serve it — off by default
+# until the supervised live dispatch passes.
+KK_MAC_LANES = os.environ.get("KK_MAC_LANES", "0") == "1"
+KK_MAC_TASK_CLASSES = {
+    "summary", "operator_brief", "structured_extract", "safe_route"}
+KK_MAC_FALLBACK = "__kk_mac_fallback__"
 
 
 def card_profile(card: dict) -> str:
@@ -804,6 +814,18 @@ def claimable(card: dict) -> str:
     if typ == "dispatch":
         if a.get("lane") == "manual":
             return ""  # lane routing: manual = Tony's hands, never claimed
+        if ex == "kk_mac_local" and not a.get("kk_mac_tried"):
+            # Try-first executor contract: a fresh kk_mac_local card is
+            # claimed here only when this host can serve the lane —
+            # otherwise it waits for a capable runner. The exception:
+            # when the lane is currently INELIGIBLE the card just needs
+            # its next lane, so any dispatch-capable host may claim it
+            # (the run skips straight to the fallback path).
+            if not kk_mac_contract_ok(a):
+                return ""  # broken contract — defer note says why
+            if not kk_mac_servable() and \
+                    kk_mac_probe().get("eligible"):
+                return ""  # lane is live elsewhere — leave for it
         if ex == "opencode":
             # Declared OpenCode executor: this host may claim ONLY when
             # it is a compatible runner — OPENCODE_LANES=1 AND a real
@@ -857,6 +879,27 @@ def executor_defer_reason(card: dict) -> str:
                     f"serve it ({', '.join(missing)}) — the card stays "
                     "queued for an OpenCode-capable runner; it will "
                     "never silently fall back to devin")
+    if ex == "kk_mac_local" and not a.get("kk_mac_tried"):
+        if not kk_mac_contract_ok(a):
+            return (f"executor=kk_mac_local but action.task_class "
+                    f"{a.get('task_class') or '(missing)'!r} is not "
+                    f"admitted ({', '.join(sorted(KK_MAC_TASK_CLASSES))}"
+                    ") or action.artifact is outside the lane roots — "
+                    "fix the card; fail closed rather than guess")
+        if not kk_mac_servable():
+            missing = []
+            if not KK_MAC_LANES:
+                missing.append("KK_MAC_LANES=0")
+            if kk_mac_module() is None:
+                missing.append("no kk_mac_executor.py")
+            gate = kk_mac_probe()
+            if gate.get("eligible"):
+                return (f"executor=kk_mac_local declared and the lane is "
+                        f"live, but this runner can't serve it "
+                        f"({', '.join(missing)}) — the card stays queued "
+                        "for a kk_mac-capable runner")
+            # lane ineligible — this host claims it as a next-lane run,
+            # so no defer note (nothing is actually waiting on kk_mac)
     if ex and ex not in EXECUTORS:
         return (f"executor={ex!r} is not a known executor "
                 f"({', '.join(sorted(EXECUTORS))}) — fix the card; "
@@ -1248,6 +1291,274 @@ def oc_profiles_module():
     return m
 
 
+_KK_MAC = None
+_KK_MAC_TRIED = False
+
+
+def kk_mac_module():
+    """Import scripts/devnest/kk_mac_executor.py from this checkout —
+    same lazy pattern as dr_module()/oc_profiles_module(); None when
+    unavailable."""
+    global _KK_MAC, _KK_MAC_TRIED
+    if _KK_MAC_TRIED:
+        return _KK_MAC
+    _KK_MAC_TRIED = True
+    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
+        "kk_mac_executor.py"
+    if not p.is_file():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "kk_mac_executor", p)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        _KK_MAC = m
+    except Exception:
+        _KK_MAC = None
+    return _KK_MAC
+
+
+def kk_mac_servable() -> bool:
+    """May this host RUN the kk_mac_local executor — the env gate plus a
+    resolvable executor module."""
+    return bool(KK_MAC_LANES) and kk_mac_module() is not None
+
+
+_KK_PROBE = [0.0, None]
+
+
+def kk_mac_probe() -> dict:
+    """Heartbeat liveness for the KK-Mac lane, cached ~60s — used at
+    claim time by hosts that can't serve the lane themselves: a live
+    eligible lane means leave the card for a capable runner; anything
+    else means the card just needs its next lane. Probe failure reads
+    as ineligible (the lane is effectively unavailable)."""
+    now = time.time()
+    if now - _KK_PROBE[0] < 60 and _KK_PROBE[1] is not None:
+        return _KK_PROBE[1]
+    kme = kk_mac_module()
+    try:
+        res = (kme.probe() if kme is not None
+               else {"eligible": False, "reasons": ["executor_missing"]})
+    except Exception:
+        res = {"eligible": False, "reasons": ["probe_failed"]}
+    _KK_PROBE[0], _KK_PROBE[1] = now, res
+    return res
+
+
+def kk_mac_contract_ok(a: dict) -> bool:
+    """Is the action block a servable kk_mac_local contract — admitted
+    task class and (when declared) an artifact path inside the lane's
+    roots. Prompt size is an admission question, checked at start."""
+    if str(a.get("task_class") or "").strip() not in KK_MAC_TASK_CLASSES:
+        return False
+    kme = kk_mac_module()
+    art = str(a.get("artifact") or "").strip()
+    if art and kme is not None and not kme.artifact_allowed(art):
+        return False
+    return True
+
+
+def start_kk_mac_lane(card: dict, unit: str) -> tuple:
+    """Run the bounded kk_mac_local executor in a dispatch worktree.
+
+    Same lifecycle as start_opencode_lane: worktree + taskdir meta/
+    usage, a devin-task-<tid> unit running kk_mac_executor.py, and the
+    finish pass gates the merge on the verdict. Admission is probed
+    HERE (fresh, right before the unit launches): an ineligible lane
+    returns (KK_MAC_FALLBACK, "", reason) so the caller continues the
+    card on the next lane under the same claim — never a silent devin
+    run and never a starved card."""
+    a = card.get("action") or {}
+    kme = kk_mac_module()
+    if kme is None:
+        return "", "", ("kk_mac_executor.py missing in this checkout — "
+                        "can't serve the contract")
+    cid = card["id"]
+    task_class = str(a.get("task_class") or "").strip()
+    if task_class not in KK_MAC_TASK_CLASSES:
+        return "", "", (f"executor=kk_mac_local needs action.task_class "
+                        f"in {sorted(KK_MAC_TASK_CLASSES)} — fail closed")
+    prompt = str(a.get("prompt") or "").strip() or \
+        (card.get("spec") or "").strip() or \
+        f"{card.get('title', '')}\n\n{card.get('note', '')}".strip()
+    expect = a.get("expect") if isinstance(a.get("expect"), dict) else {}
+    art = str(a.get("artifact") or "").strip() or \
+        f"evals/kk-mac-lane/out/{cid}.json"
+    if not kme.artifact_allowed(art):
+        return "", "", (f"artifact {art!r} outside the kk_mac roots — "
+                        "fail closed")
+    # Fresh admission probe BEFORE the worktree spend — the contract
+    # says a stale/unavailable/overloaded KK-Mac falls back, and the
+    # fallback is cheaper than an isolated worktree.
+    try:
+        gate = kme.admission_gate(task_class, prompt)
+    except Exception as e:
+        return KK_MAC_FALLBACK, "", \
+            f"admission probe failed: {type(e).__name__}"
+    if not gate.get("eligible"):
+        return KK_MAC_FALLBACK, "", \
+            "ineligible: " + ",".join(gate.get("reasons") or ["?"])
+    repo_name = str(a.get("repo") or "chaba")
+    dr = dr_module()
+    ent = (dr.repos().get(repo_name) if dr else None) or {}
+    root = Path(ent.get("path") or "")
+    if not root.is_dir():
+        return "", "", f"no dispatch repo checkout for {repo_name}"
+    tid = unit.removeprefix("runner-")
+    branch = f"dispatch/{tid}"
+    worktree = Path.home() / f"CascadeProjects/dispatch-wt-{tid}"
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        taskdir.mkdir(parents=True, exist_ok=True)
+        if worktree.exists():
+            return "", "", f"worktree already exists: {worktree}"
+        base = f"origin/{ent.get('default_branch') or 'master'}"
+        sh(["git", "-C", str(root), "fetch", "-q", "origin",
+            ent.get('default_branch') or 'master'], timeout=60)
+        r = sh(["git", "-C", str(root), "worktree", "add", "-B", branch,
+                str(worktree), base], timeout=120)
+        if r.returncode:
+            return "", "", (r.stderr or r.stdout).strip()[:240]
+        dbranch = ent.get('default_branch') or 'master'
+        started = datetime.now(timezone.utc).isoformat()
+        model = os.environ.get("KK_MAC_MODEL", "qwen3:8b")
+        meta = {"repo": repo_name, "branch": branch,
+                "worktree": str(worktree), "repo_root": str(root),
+                "default_branch": dbranch,
+                "base": f"origin/{dbranch}",
+                "executor": "kk_mac_local", "card": cid,
+                "provider": "ollama", "model": model,
+                "task_class": task_class, "unit": unit,
+                "task_id": tid, "started_at": started}
+        (taskdir / "meta.json").write_text(json.dumps(meta, indent=1))
+        usage = {"task_id": tid, "card": cid, "unit": unit,
+                 "host": HOST, "executor": "kk_mac_local",
+                 "provider": "ollama", "model": model,
+                 "task_class": task_class, "artifact": art,
+                 "started_at": started}
+        (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
+        (taskdir / "prompt.txt").write_text(prompt)
+        (taskdir / "expect.json").write_text(json.dumps(expect, indent=1))
+    except Exception as e:
+        return "", "", f"kk_mac worktree setup: {e}"
+    shell = (
+        f"cd {shlex.quote(str(worktree))} && "
+        f"python3 scripts/devnest/kk_mac_executor.py run "
+        f"--card {shlex.quote(cid)} --task-id {shlex.quote(tid)} "
+        f"--task-class {shlex.quote(task_class)} "
+        f"--worktree {shlex.quote(str(worktree))} "
+        f"--taskdir {shlex.quote(str(taskdir))} "
+        f"--artifact {shlex.quote(art)} "
+        f"--model {shlex.quote(model)} "
+        f"--prompt-file {shlex.quote(str(taskdir / 'prompt.txt'))} "
+        f"--expect-file {shlex.quote(str(taskdir / 'expect.json'))} "
+        f"2>&1 | tee {shlex.quote(str(taskdir / 'kk_mac.log'))}; "
+        "rc=${PIPESTATUS[0]}; "
+        f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
+        "exit $rc"
+    )
+    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}",
+             "--collect",
+             "--description", f"runner {cid} kk_mac {task_class}"]
+            + task_run_props() + ["bash", "-lc", shell])
+    r = sh(argv, timeout=180)
+    if r.returncode:
+        return "", "", (r.stderr or r.stdout).strip()[:240]
+    return f"devin-task-{tid}", tid, ""
+
+
+def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
+    """kk_mac_local closeout — runs BEFORE close_out_merge like
+    finish_opencode_lane. Returns (may_merge, notes, fallback_reason):
+
+    - verdict pass AND the declared artifact landed in the worktree ->
+      may_merge=True; the merge gate stamps verified.
+    - verdict fallback (lane declined mid-run or invalid output) ->
+      may_merge=False + fallback_reason set; the caller runs the next
+      lane under the same claim and the stale worktree is cleaned up.
+    - verdict fail/missing (contract violation, crashed unit) ->
+      may_merge=False, no fallback — the card is held for a human."""
+    tid = ent.get("tid") or ""
+    if not tid:
+        unit = ent.get("unit") or ""
+        tid = (unit[len("devin-task-"):]
+               if unit.startswith("devin-task-") else "")
+    if not tid:
+        return True, [], ""
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+    except Exception:
+        return True, [], ""  # no meta -> not a kk_mac task
+    if str(meta.get("executor") or "") != "kk_mac_local":
+        return True, [], ""
+    notes = []
+    try:
+        usage = json.loads((taskdir / "usage.json").read_text())
+    except Exception:
+        usage = {}
+    try:
+        verdict = json.loads((taskdir / "verdict.json").read_text())
+    except Exception:
+        verdict = {}
+    try:
+        result = json.loads(
+            (taskdir / "kk_mac_result.json").read_text())
+    except Exception:
+        result = {}
+    art = str(verdict.get("artifact")
+              or (card.get("action") or {}).get("artifact") or "")
+    wt = Path(str(meta.get("worktree") or ""))
+    landed = bool(art) and (wt / art).is_file()
+    if landed:
+        try:  # durable copy for the task record
+            (taskdir / "artifact.out").write_text(
+                (wt / art).read_text())
+        except OSError:
+            pass
+    v = str(verdict.get("verdict") or "")
+    usage.update({"verdict": v or "missing",
+                  "artifact_landed": landed,
+                  "checks": verdict.get("checks") or {},
+                  "reasons": verdict.get("reasons") or [],
+                  "usage": result.get("usage") or {}})
+    try:
+        (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
+    except OSError:
+        pass
+    if v == "pass" and landed:
+        u = result.get("usage") or {}
+        notes.append(f"kk_mac_local artifact landed {art} — verifier "
+                     f"pass (eval_tokens={u.get('eval_count')})")
+        return True, notes, ""
+    fb = ""
+    if v == "fallback" or (not v and result):
+        reasons = ";".join(verdict.get("reasons")
+                           or result.get("reasons") or ["unknown"])
+        fb = reasons[:240]
+        notes.append(f"kk_mac_local fell back: {fb}")
+        # the declared artifact evidence stays in the taskdir; the
+        # stale kk_mac worktree/branch is cleaned up so the next lane's
+        # dispatch worktree machinery runs clean
+        root = Path(str(meta.get("repo_root") or ""))
+        if wt.is_dir() and root.is_dir():
+            sh(["git", "-C", str(root), "worktree", "remove", "--force",
+                str(wt)], timeout=60)
+            sh(["git", "-C", str(root), "branch", "-D",
+                str(meta.get("branch") or "")], timeout=30)
+    elif v == "pass" and not landed:
+        notes.append("merge held — verifier passed but the declared "
+                     f"artifact {art or '(none)'} did not land")
+    else:
+        checks = "; ".join(f"{k}={x}" for k, x in
+                           list((verdict.get("checks") or {}).items())[:4])
+        detail = checks or v or "no verdict"
+        notes.append("merge held — kk_mac_local contract requires "
+                     f"artifact + verifier pass ({detail})")
+    return False, notes, fb
+
+
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     """Run a profile-scoped opencode lane in a dispatch worktree.
 
@@ -1442,6 +1753,26 @@ def start_task(card: dict, typ: str) -> tuple:
         # classification, and never silently re-routes to a different
         # executor.
         ex = str(a.get("executor") or "").strip()
+        if ex == "kk_mac_local":
+            # Try-first contract (kk-mac-jev-adapter-integration): the
+            # bounded lane gets one shot; every decline falls back to
+            # the normal lane cascade under THIS claim — the card never
+            # starves and never silently skips the contract.
+            if not a.get("kk_mac_tried") and kk_mac_servable():
+                kunit, ktid, kerr = start_kk_mac_lane(card, unit)
+                if kunit != KK_MAC_FALLBACK:
+                    return kunit, ktid, kerr
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"kk_mac_local declined "
+                                         f"({kerr or 'ineligible'}) — "
+                                         "running the next lane"})
+            elif not a.get("kk_mac_tried"):
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": "kk_mac_local not servable on "
+                                         "this host — running the next "
+                                         "lane"})
+            a["kk_mac_tried"] = True   # consumed for this claim (local
+            ex = ""                    # copy — the board keeps the
         if ex == "opencode":
             try:
                 return start_opencode_lane(card, "", unit)
@@ -1560,7 +1891,36 @@ def finish_pass(st: dict) -> bool:
             # evidence in comms — never merges on exit code alone.
             may_merge, oc_notes = finish_opencode_lane(cid, ent, card)
             notes = oc_notes
+            kk_fb = ""
             if may_merge:
+                # kk_mac_local closeout: verdict pass + landed artifact
+                # or the merge is held; a fallback verdict hands the
+                # card to the next lane under the same claim.
+                may_merge, kk_notes, kk_fb = \
+                    finish_kk_mac_lane(cid, ent, card)
+                notes += kk_notes
+            if kk_fb:
+                # In-claim fallback (kk-mac-jev-adapter-integration):
+                # the bounded lane declined after starting — mark the
+                # executor consumed on the local copy and run the next
+                # lane now; the card never requeues for it.
+                (card.setdefault("action", {}))["kk_mac_tried"] = True
+                u2, t2, e2 = start_task(card, "dispatch")
+                if e2 or not u2:
+                    notes.append(f"kk_mac_local fell back ({kk_fb}) but "
+                                 f"the next lane failed to start: "
+                                 f"{e2 or 'no unit'}")
+                    verified = False
+                else:
+                    st[cid].update({"unit": u2, "tid": t2})
+                    notes.append(f"kk_mac_local fell back ({kk_fb}) — "
+                                 f"next lane running as {u2}")
+                    for n in notes:
+                        api("/comment", {"id": cid, "from": "chaba",
+                                         "text": n})
+                    changed = True
+                    continue  # still claimed — no finish post yet
+            elif may_merge:
                 verified, merge_notes = close_out_merge(cid, ent, card)
                 notes += merge_notes
             else:

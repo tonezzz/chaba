@@ -1,0 +1,59 @@
+title: "kk_mac_local — explicit bounded executor contract for the KK-Mac LLM lane"
+date: 2026-10-29
+card: kk-mac-jev-adapter-integration
+session: "dispatch-wt-20261029-192611-add-an-explicit-executor-contr (idc02)"
+status: "implemented — 18 executor tests + 19 board contract cases green; KK_MAC_LANES stays 0 until one supervised live dispatch passes (board request raised — idc02 has no kk-mac ssh key; deterministic-only concern noted)"
+
+contract:
+  executor: "action.executor=kk_mac_local — the OPPORTUNISTIC executor. Try-first: it gets one shot per claim; every decline (stale/absent heartbeat, ollama down, node busy, ssh failure, invalid output) fails closed and the SAME claim runs the next lane. Unlike strict executors it never starves the card; unlike a silent fallback it never skips the contract."
+  admission:
+    - "fresh Ada Nest heartbeat for KKs-Mac-Studio (kk_mac_admission.snapshot, max_age 900s)"
+    - "ollama_ok is true"
+    - "disk_free_gb >= 20"
+    - "node not busy/overloaded: tmux_jobs non-empty, load_ok=false, or load1/cpu_cores > 1.0 all defer the lane (absent fields skipped, --allow-busy / require_idle=False bypasses)"
+    - "bounded task class: summary | operator_brief | structured_extract | safe_route (mirrors kk_mac_llm.ALLOWED_TASKS)"
+  fields:
+    task_class: "required; rejected for every other executor"
+    prompt: "optional, <=6000 chars; falls back to spec/title+note"
+    expect: "optional {required_keys[], facts[], enums{}} — each bounded <=20 short strings; the independent verifier checks required keys, enum membership, and literal fact substrings against the response"
+    artifact: "optional repo-relative path; must sit under evals/kk-mac-lane/out/ | reports/ | docs/reports/ (default evals/kk-mac-lane/out/<card>.json)"
+    kk_mac_tried: "internal flag on the in-claim card copy — the lane's one shot is consumed; a requeued card may retry"
+  verdicts:
+    pass: "artifact landed under the roots AND verifier checks all true — only then does the merge gate run / verified get stamped"
+    fallback: "lane conditions or invalid output — evidence kept in the taskdir, worktree+branch cleaned, next lane started under the same claim"
+    fail: "contract violation (unadmitted class, artifact outside roots, empty prompt) — merge held, card left for a human"
+
+safety:
+  - "no shell, code mutation, credentials, destructive action, or publish anywhere in the lane — the model-facing surface is one bounded stdin prompt through scripts/devnest/kk_mac_llm.py's fixed ssh+ollama call"
+  - "the verifier is deterministic — it never calls the model and never trusts a self-report"
+  - "serving requires KK_MAC_LANES=1 on the runner (default 0); automatic routing stays OFF until one supervised live dispatch passes"
+  - "claimable(): a non-serving host claims a kk_mac_local card only when the lane probe is ineligible (the card needs its next lane); a live lane leaves it for a capable runner; broken contracts fail closed with a defer note"
+
+surfaces:
+  scripts/devnest/kk_mac_executor.py: "NEW — the contract: probe/admission_gate/run_contract/verify/artifact_allowed + CLI (run|admit|verify|probe); persists kk_mac_result.json + verdict.json in the taskdir and the usage/admission/response artifact in the worktree"
+  scripts/devnest/kk_mac_admission.py: "snapshot() gains the overload gate (tmux_jobs/load_ok/load1-over-cores, require_idle, max_load_pc) + --allow-busy CLI flag"
+  scripts/board/dispatch_repos.py: "kk_mac_local in EXECUTORS; KK_MAC_TASK_CLASSES/KK_MAC_ARTIFACT_ROOTS; card_task_class(); executor_blurb adds task="
+  scripts/board/board-api.py: "ACTION_KEYS gains task_class/prompt/expect; do_create validates the class bound, executor/task_class pairing, kk_mac artifact roots, 6000-char prompt cap, expect shape"
+  scripts/board/runner-agent.py: "kk_mac_module()/servable()/probe() (60s cache)/contract_ok(); start_kk_mac_lane() probes admission fresh before spending a worktree, launches devin-task-<tid> running kk_mac_executor.py run; finish_kk_mac_lane() gates merge on verdict+landed artifact, cleans the stale worktree on fallback; claimable() defers to capable runners when the lane is live; start_task() runs the in-claim fallback; finish_pass() chains the closeout and continues the claim on fallback"
+
+evidence_chain:
+  - "task dir: meta.json + usage.json + prompt.txt + expect.json + kk_mac.log + kk_mac_result.json + verdict.json + exit_code"
+  - "worktree: the declared artifact under the allowed roots (usage/admission/response/verdict/checks)"
+  - "card comms: decline notes at start/finish + executor=kk_mac_local closeout lines"
+
+tests:
+  - "tests/devnest/test_kk_mac_executor.py — 18 cases: verifier (JSON classes, fences, required keys/enums/facts), admission gate merge, artifact roots, run_contract pass/fallback/fail, artifact+verdict persistence"
+  - "tests/devnest/test_kk_mac_admission.py — +2 cases: busy node defers (tmux_jobs), load signals gate overload (load_ok, load1/cores)"
+  - "tests/board/test_executor_contract.py — +19 cases: claimable (serving host, live-elsewhere defer, ineligible fallback, broken contract, kk_mac_tried), start_task (kk_mac route, admission-decline in-claim fallback + board note, unservable next lane), finish (noop, pass+landed, fallback cleanup, held merge), board-api validation, kanban-dispatch skip"
+
+supervised_dispatch:
+  state: "pending — the card requires one supervised live dispatch before KK_MAC_LANES may flip to 1"
+  why_pending: "idc02 cannot ssh kk-mac (host key verification fails — no authorized config on this runner); a prior parent-card answer scoped KK-Mac to deterministic-only runs. Board request raised for Tony's call."
+  runbook:
+    - "on a host with kk-mac ssh access and this branch checked out: KK_MAC_LANES=1 runner serving enabled temporarily, or directly: python3 scripts/devnest/kk_mac_executor.py run --card <id> --task-id <tid> --task-class summary --worktree <wt> --taskdir <td> --artifact evals/kk-mac-lane/out/<id>.json --prompt-file <p> --expect-file <e>"
+    - "check verdict.json verdict=pass + artifact landed; then set KK_MAC_LANES=1 in the runner env to enable automatic serving"
+
+known_limits:
+  - "kk_mac_tried lives on the in-claim card copy — a claim that dies mid-flight lets the next claim retry the lane once more (acceptable for an opportunistic executor)"
+  - "claimable() probes Ada Nest from every dispatch runner (~60s cache); probe failure reads as ineligible -> next-lane claim, which is the desired fail-closed direction"
+  - "overload signals are best-available: absent tmux_jobs/load fields mean only freshness+ollama+disk gate the lane until the heartbeat producer reports them"

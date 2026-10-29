@@ -671,5 +671,329 @@ class DispatchReposContractTest(unittest.TestCase):
             self.assertFalse(dr.HOST_ID_RE.match(bad), bad)
 
 
+# ------------------------------------------------------------- kk_mac lane
+
+class KkMacExecutorContractTest(unittest.TestCase):
+    """The kk_mac_local try-first executor contract
+    (kk-mac-jev-adapter-integration): bounded task class required,
+    serving gated on KK_MAC_LANES, and every lane decline falls back to
+    the next lane under the same claim."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("runner-agent.py")
+
+    def setUp(self):
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("KK_MAC_LANES", "DISPATCH", "LABELS", "HOST")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("push_capable", "shutil_which",
+                           "kk_mac_probe", "start_kk_mac_lane", "api",
+                           "sh", "classify_lane", "dr_module",
+                           "enforce_task_limits")}
+        m.DISPATCH = str(SCRIPT)
+        m.push_capable = lambda repo: True
+        m.shutil_which = lambda name: True
+        m.HOST = "testhost"
+        m.LABELS = set()
+        m.dr_module = lambda: None
+        m.enforce_task_limits = lambda *a, **k: None
+        self.comments = []
+        m.api = lambda path, body=None: (
+            self.comments.append((path, body)) or {})
+        self.calls = []
+        m.sh = lambda argv, **kw: self.calls.append(argv) or _proc(
+            0, "fake-tid-9\n")
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def _kk_card(self, **kw):
+        return _card(executor="kk_mac_local", task_class="summary",
+                     prompt="summarize the host evidence", **kw)
+
+    # --- claimable -------------------------------------------------
+
+    def test_claimable_on_serving_host(self):
+        self.mod.KK_MAC_LANES = True
+        self.assertEqual(self.mod.claimable(self._kk_card()), "dispatch")
+
+    def test_claimable_defers_when_lane_live_elsewhere(self):
+        """A non-serving host leaves a live lane's card for a capable
+        runner — with a visible defer reason, not silent starvation."""
+        self.mod.KK_MAC_LANES = False
+        self.mod.kk_mac_probe = lambda: {"eligible": True}
+        c = self._kk_card()
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("kk_mac-capable runner", r)
+
+    def test_claimable_fallback_when_lane_ineligible(self):
+        """Lane currently ineligible -> any dispatch host may claim it;
+        the card just runs the next lane."""
+        self.mod.KK_MAC_LANES = False
+        self.mod.kk_mac_probe = lambda: {"eligible": False}
+        self.assertEqual(self.mod.claimable(self._kk_card()), "dispatch")
+
+    def test_bad_contract_fails_closed(self):
+        self.mod.KK_MAC_LANES = True
+        c = _card(executor="kk_mac_local")   # no task_class
+        self.assertEqual(self.mod.claimable(c), "")
+        r = self.mod.executor_defer_reason(c)
+        self.assertIn("task_class", r)
+        self.assertIn("fail closed", r)
+
+    def test_tried_executor_consumed(self):
+        """A card marked kk_mac_tried routes normally — the executor had
+        its one shot."""
+        self.mod.KK_MAC_LANES = False
+        c = self._kk_card(kk_mac_tried=True)
+        self.assertEqual(self.mod.claimable(c), "dispatch")
+
+    # --- start_task -------------------------------------------------
+
+    def test_start_routes_to_kk_mac_lane(self):
+        self.mod.KK_MAC_LANES = True
+        seen = []
+        self.mod.start_kk_mac_lane = lambda card, unit: (
+            seen.append(unit) or ("devin-task-kk", "kk", ""))
+        unit, tid, err = self.mod.start_task(self._kk_card(), "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-kk")
+        self.assertFalse(self.calls)      # no devin-dispatch spawn
+
+    def test_start_ineligible_falls_back_in_claim(self):
+        """Admission decline at start -> same-claim fallback to the
+        normal lane, with a board note."""
+        self.mod.KK_MAC_LANES = True
+        self.mod.start_kk_mac_lane = lambda card, unit: (
+            self.mod.KK_MAC_FALLBACK, "", "ineligible: heartbeat_stale")
+        self.mod.classify_lane = lambda card: "devin"
+        unit, tid, err = self.mod.start_task(self._kk_card(), "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-fake-tid-9")
+        self.assertTrue(self.calls)       # devin-dispatch ran instead
+        self.assertTrue(any("declined" in (b or {}).get("text", "")
+                            or "next lane" in (b or {}).get("text", "")
+                            for p, b in self.comments))
+
+    def test_start_unservable_goes_next_lane(self):
+        self.mod.KK_MAC_LANES = False
+        self.mod.classify_lane = lambda card: "devin"
+        unit, tid, err = self.mod.start_task(self._kk_card(), "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-fake-tid-9")
+        self.assertTrue(self.calls)
+
+    # --- finish ------------------------------------------------------
+
+    def _taskdir(self, tid):
+        td = (Path.home() / ".local/share/devin-dispatch/tasks" / tid)
+        td.mkdir(parents=True, exist_ok=True)
+        return td
+
+    def test_finish_noop_for_other_executors(self):
+        may, notes, fb = self.mod.finish_kk_mac_lane(
+            "c", {"tid": "nope"}, self._kk_card())
+        self.assertTrue(may)
+        self.assertEqual((notes, fb), ([], ""))
+
+    def test_finish_pass_requires_artifact_landed(self):
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t1"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                (wt / "evals/kk-mac-lane/out").mkdir(parents=True)
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (wt / "evals/kk-mac-lane/out/c.json").write_text("{}")
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "pass", "checks": {"json": True},
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text(json.dumps({
+                    "usage": {"eval_count": 5}}))
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", {"tid": tid}, self._kk_card())
+                self.assertTrue(may)
+                self.assertEqual(fb, "")
+                self.assertIn("artifact landed", " ".join(notes))
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+    def test_finish_fallback_runs_next_lane(self):
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t2"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                wt.mkdir()
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td, "branch": "dispatch/kk-t2"}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "fallback", "checks": {},
+                    "reasons": ["invalid_output:json_parses"],
+                    "artifact": "evals/kk-mac-lane/out/c.json"}))
+                (taskdir / "kk_mac_result.json").write_text("{}")
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", {"tid": tid}, self._kk_card())
+                self.assertFalse(may)
+                self.assertIn("invalid_output", fb)
+                self.assertIn("fell back", " ".join(notes))
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+    def test_finish_contract_violation_holds_merge(self):
+        with tempfile.TemporaryDirectory() as td:
+            home = os.environ.get("HOME")
+            os.environ["HOME"] = td
+            try:
+                tid = "kk-t3"
+                taskdir = self._taskdir(tid)
+                wt = Path(td) / "wt"
+                wt.mkdir()
+                (taskdir / "meta.json").write_text(json.dumps({
+                    "executor": "kk_mac_local", "worktree": str(wt),
+                    "repo_root": td}))
+                (taskdir / "verdict.json").write_text(json.dumps({
+                    "verdict": "fail",
+                    "reasons": ["class_not_admitted:x"]}))
+                may, notes, fb = self.mod.finish_kk_mac_lane(
+                    "c", {"tid": tid}, self._kk_card())
+                self.assertFalse(may)
+                self.assertEqual(fb, "")
+                self.assertIn("merge held", " ".join(notes))
+            finally:
+                if home is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = home
+
+
+class KkMacBoardApiTest(unittest.TestCase):
+    """board-api validates the kk_mac_local contract at the door."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("board-api.py")
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.mod.CARD_DIR = Path(self.td.name)
+
+    def rejects(self, body, frag):
+        try:
+            self.mod.do_create(body, "devin")
+        except ValueError as e:
+            self.assertIn(frag, str(e))
+            return
+        raise AssertionError(f"expected ValueError containing {frag!r}")
+
+    def test_kk_mac_card_accepted(self):
+        res = self.mod.do_create(
+            {"id": "c-kk", "title": "t",
+             "action": {"type": "dispatch", "executor": "kk_mac_local",
+                        "task_class": "summary",
+                        "prompt": "summarize this",
+                        "expect": {"facts": ["x"]},
+                        "artifact": "evals/kk-mac-lane/out/c-kk.json"}},
+            "devin")
+        import yaml
+        saved = yaml.safe_load((Path(self.td.name) / "c-kk.yml")
+                               .read_text())
+        a = saved["action"]
+        self.assertEqual(a["executor"], "kk_mac_local")
+        self.assertEqual(a["task_class"], "summary")
+        self.assertEqual(a["expect"], {"facts": ["x"]})
+
+    def test_kk_mac_requires_task_class(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "kk_mac_local"}},
+                     "requires action.task_class")
+
+    def test_kk_mac_rejects_unadmitted_class(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "kk_mac_local",
+                                 "task_class": "code_mutation"}},
+                     "requires action.task_class")
+
+    def test_task_class_needs_kk_mac_executor(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "devin",
+                                 "task_class": "summary"}},
+                     "only valid with")
+
+    def test_kk_mac_artifact_roots(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "kk_mac_local",
+                                 "task_class": "summary",
+                                 "artifact": "scripts/evil.py"}},
+                     "must live under")
+
+    def test_kk_mac_prompt_and_expect_bounds(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "kk_mac_local",
+                                 "task_class": "summary",
+                                 "prompt": "x" * 6001}},
+                     "6000-char")
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "executor": "kk_mac_local",
+                                 "task_class": "summary",
+                                 "expect": ["not-a-dict"]}},
+                     "expect must be an object")
+
+    def test_kk_mac_skipped_by_served_dispatcher(self):
+        """kanban-dispatch (devin-only claimer) never serves it — the
+        card waits for a runner host, like every non-devin executor."""
+        kd = _load("kanban-dispatch.py")
+        with tempfile.TemporaryDirectory() as td:
+            kd.CARD_DIR = Path(td)
+            kd.LOCK = Path(td) / "lock"
+            _write_card(Path(td), "c-kkq",
+                        action={"status": "queued",
+                                "executor": "kk_mac_local",
+                                "task_class": "summary"})
+            started = []
+            saved = (kd.load_policy, kd.overloaded, kd.active_tasks,
+                     kd.push_capable, kd.start_pending)
+            kd.load_policy = lambda: {"kill_switch": str(Path(td) / "k")}
+            kd.overloaded = lambda: False
+            kd.active_tasks = lambda: 0
+            kd.push_capable = lambda repo: True
+            kd.start_pending = lambda p: (started.append(p.stem)
+                                          or "started")
+            try:
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    kd.main()
+            finally:
+                (kd.load_policy, kd.overloaded, kd.active_tasks,
+                 kd.push_capable, kd.start_pending) = saved
+            self.assertIn("executor=kk_mac_local", buf.getvalue())
+            self.assertEqual(started, [])
+
+
 if __name__ == "__main__":
     unittest.main()

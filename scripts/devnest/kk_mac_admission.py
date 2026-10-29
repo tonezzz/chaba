@@ -45,6 +45,8 @@ def snapshot(
     url: str = "http://100.102.134.91:11026/v1",
     max_age_s: int = 900,
     min_disk_gb: int = 20,
+    require_idle: bool = True,
+    max_load_pc: float = 1.0,
     now: float | None = None,
 ) -> dict:
     now = time.time() if now is None else now
@@ -58,6 +60,7 @@ def snapshot(
         "heartbeat_age_s": None,
         "ollama_ok": None,
         "disk_free_gb": None,
+        "node_busy": None,
     }
     if not body:
         result["reasons"].append("heartbeat_missing")
@@ -85,6 +88,29 @@ def snapshot(
             result["reasons"].append("disk_low")
     except (TypeError, ValueError):
         result["reasons"].append("disk_unknown")
+    # Overload gate: KK-Mac is an owner-first box — a busy node defers
+    # the opportunistic lane. Signals, best available first: tmux_jobs
+    # non-empty (work is running on the node), an explicit load_ok flag,
+    # or load1/cpu_cores above max_load_pc — absent fields are skipped.
+    busy = []
+    if require_idle:
+        tmux = body.get("tmux_jobs")
+        if isinstance(tmux, str) and tmux.strip():
+            busy.append("tmux_jobs")
+        elif isinstance(tmux, list) and tmux:
+            busy.append("tmux_jobs")
+    if body.get("load_ok") is False:
+        busy.append("load_ok")
+    try:
+        load1 = float(body.get("load1"))
+        cores = float(body.get("cpu_cores") or 0)
+        if cores > 0 and load1 / cores > max_load_pc:
+            busy.append("load1")
+    except (TypeError, ValueError):
+        pass
+    result["node_busy"] = bool(busy)
+    if busy:
+        result["reasons"].append("node_busy:" + "+".join(busy))
     result["eligible"] = not result["reasons"]
     return result
 
@@ -95,6 +121,9 @@ def main() -> int:
     parser.add_argument("--url", default="http://100.102.134.91:11026/v1")
     parser.add_argument("--max-age-s", type=int, default=900)
     parser.add_argument("--min-disk-gb", type=int, default=20)
+    parser.add_argument("--allow-busy", action="store_true",
+                        help="admit even when the node reports work")
+    parser.add_argument("--max-load-pc", type=float, default=1.0)
     args = parser.parse_args()
     try:
         result = snapshot(
@@ -102,6 +131,8 @@ def main() -> int:
             url=args.url,
             max_age_s=args.max_age_s,
             min_disk_gb=args.min_disk_gb,
+            require_idle=not args.allow_busy,
+            max_load_pc=args.max_load_pc,
         )
     except Exception as exc:
         result = {

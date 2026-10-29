@@ -187,7 +187,7 @@ ACTION_TYPES = {"dispatch", "manual"}
 # silently dropped so a spawn can't fake a running card
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
-               "artifact")
+               "artifact", "task_class", "prompt", "expect")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -1177,6 +1177,52 @@ def do_create(body: dict, frm: str) -> dict:
                    or len(ap) > 200):
             raise ValueError(
                 "action.artifact must be a safe repo-relative path")
+        # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
+        # the bounded task class is part of the contract — a card must
+        # declare one of the admitted classes, and no other executor
+        # takes a task_class.
+        tc = str(act.get("task_class") or "").strip()
+        if tc and ex != "kk_mac_local":
+            raise ValueError(
+                "action.task_class is only valid with "
+                "executor=kk_mac_local")
+        if ex == "kk_mac_local" and tc not in dr.KK_MAC_TASK_CLASSES:
+            raise ValueError(
+                "executor=kk_mac_local requires action.task_class in "
+                f"{sorted(dr.KK_MAC_TASK_CLASSES)}")
+        if ex == "kk_mac_local" and ap:
+            if not any(ap.lstrip("/").startswith(r)
+                       for r in dr.KK_MAC_ARTIFACT_ROOTS):
+                raise ValueError(
+                    "kk_mac_local artifact must live under "
+                    + "/".join(r.rstrip("/") for r in
+                               dr.KK_MAC_ARTIFACT_ROOTS))
+        pr = str(act.get("prompt") or "")
+        if len(pr) > 6000:
+            raise ValueError("action.prompt exceeds the 6000-char "
+                             "read-only lane limit")
+        xp = act.get("expect")
+        if xp is not None:
+            if not isinstance(xp, dict):
+                raise ValueError("action.expect must be an object")
+            for k in ("required_keys", "facts"):
+                v = xp.get(k)
+                if v is not None and (not isinstance(v, list)
+                                      or len(v) > 20
+                                      or any(not isinstance(s, str)
+                                             or len(s) > 200
+                                             for s in v)):
+                    raise ValueError(
+                        f"action.expect.{k} must be a list of <=20 "
+                        "short strings")
+            enums = xp.get("enums")
+            if enums is not None and (
+                    not isinstance(enums, dict) or len(enums) > 20
+                    or any(not isinstance(v, list) or len(v) > 20
+                           for v in enums.values())):
+                raise ValueError(
+                    "action.expect.enums must be an object of small "
+                    "lists")
     on_exists = str(body.get("on_exists") or "error").strip()
     if on_exists not in ("error", "queue"):
         raise ValueError("on_exists must be error|queue")
