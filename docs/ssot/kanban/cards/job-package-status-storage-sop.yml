@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: backlog
-updated: 2026-10-29 23:33
+updated: 2026-10-29 23:39
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -148,6 +148,11 @@ comms:
   from: devin
   text: 'devin: bridge failed after 632s — cline-kanban-nest-bridge: task c3813 did not reach Review within 600s.
     Card left in backlog; job_key cline-job-package-status-storage-sop.'
+- at: 2026-10-29 23:39
+  from: devin
+  text: 'devin: task c3813 review-ready — job-package-status-sop.md verified, 2102B patch (job-package-status-sop.md),
+    provider ollama/qwen2.5:7b. Patch: /home/tony/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/out/intake/cline-job-package-status-storage-sop/task.patch.
+    Moving to review.'
 tags:
 - cline
 cline:
