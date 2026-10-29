@@ -1,0 +1,39 @@
+id: kk-mac-live-probe-idc03-20261030
+title: Run one supervised KK-Mac JEV probe from idc03
+column: backlog
+updated: 2026-10-30 01:15
+brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
+  SSH key; do not enable automatic KK-Mac routing.
+priority: high
+tags:
+- kk-mac
+- jev
+- supervised-probe
+- ops-0978
+spec: One task-class summary inference only via scripts/devnest/kk_mac_executor.py. Use the fresh admission gate
+  and the verified kk-mac SSH alias. Persist the executor result under evals/kk-mac-lane/out/ and require the deterministic
+  verifier to pass. Do not set persistent KK_MAC_LANES=1. No shell, code mutation, secrets, or external provider
+  calls. This is the single supervised live test from OPS-0978; leave the broader lane disabled pending review.
+action:
+  type: dispatch
+  repo: chaba
+  host: idc03
+  executor: kk_mac_local
+  target_host: idc03
+  artifact: evals/kk-mac-lane/out/kk-mac-live-jev-probe-idc03-20261030.json
+  task_class: summary
+  prompt: 'Summarize this supervised, read-only DevNest executor smoke in one or two sentences. Verified context:
+    KK-Mac is the local host; qwen3:8b runs through Ollama; this task is a read-only summary and made no system,
+    file, or card mutations. Include the exact phrases ''KK-Mac'', ''read-only'', and ''no mutations''. Do not claim
+    anything beyond that context.'
+  expect:
+    facts:
+    - KK-Mac
+    - read-only
+    - no mutations
+  status: queued
+ref: OPS-0991
+comms:
+- at: 2026-10-30 01:15
+  from: devin
+  text: Queued after Tony authorized the idc03 key on OPS-0984. One-shot only; persistent KK_MAC_LANES remains off.
