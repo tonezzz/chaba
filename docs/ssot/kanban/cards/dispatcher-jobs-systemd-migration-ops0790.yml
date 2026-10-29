@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-ops0790
 title: Implement systemd migration for OPS-0790 dispatcher jobs
 column: doing
-updated: 2026-10-29 20:43
+updated: 2026-10-29 20:47
 brief: Implement the user's approved migration of legacy dispatcher jobs to rendered systemd timers; keep the legacy
   timer until a later verified rollout.
 priority: high
@@ -36,3 +36,10 @@ comms:
 - at: 2026-10-29 20:43
   from: chaba
   text: started devin-task-20261029-204303-follow-up-execution-for-the-ap on idc02 (dispatch)
+- at: 2026-10-29 20:47
+  from: devin
+  text: 'OPS-0790 follow-up running: inventoried the 8 dispatcher jobs; converting to dispatch:systemd rendered
+    timers in-worktree. Key deltas found: env_file/condition_path were DEAD fields under job-dispatcher (become
+    real EnvironmentFile=/ConditionPathExists= under systemd); podman --name stale-container preclean (OPS-0531
+    wedge guard) needs a renderer ExecStartPre equivalent — implementing as auto-detect in render-jobs.py. No live
+    timers touched.'
