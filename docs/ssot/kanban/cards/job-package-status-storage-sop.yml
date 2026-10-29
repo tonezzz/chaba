@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: doing
-updated: 2026-10-28 09:40
+updated: 2026-10-29 11:33
 spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
   storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
   status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
@@ -63,3 +63,8 @@ comms:
     gap packs, covers stale/registered/warming/running/drained states, and routes CPU-small work away from cold
     T4 starts. Current runtime registry still has no fresh Colab session; queue start waits for Cell 1/boot registration.
     SSOT index was left unchanged becaus'
+- at: 2026-10-29 11:33
+  from: devin
+  text: 'Missed-job sweep 2026-10-29: the SOP and job record exist only in local /tmp/chaba-wt-colab-small-job-dispatch,
+    commit e5161664a; no remote branch/PR exists. No active agent task is running. I am moving this stale Doing
+    card back to Backlog until a safe publication/PR is landed; no files in that separate worktree were edited.'
