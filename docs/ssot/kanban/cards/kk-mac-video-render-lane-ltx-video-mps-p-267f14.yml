@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 16:59
+updated: 2026-10-29 17:07
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -114,6 +114,20 @@ comms:
 
 
     Conclusion: the pack''s shot-chaining semantics are viable on kk-mac in BOTH '
+- at: 2026-10-29 17:07
+  from: devin
+  text: 'FULL 10-SHOT RUN on kk-mac — complete Sacred Father preview in ~80s of compute.
+
+
+    - All 10 shots rendered t2v, i2v chaining executed correctly (shot2<-shot1, shot10<-shot9)
+
+    - Every clip 73f/640x384 h264 verified; teaser-preview-silent.mp4 assembled (2x PTS concat, 60s)
+
+    - Continuity visible in montage: s1->s2 same motorcycle family, s9->s10 same road/car
+
+    - Prompt adherence strong across sequence (hospital vigil s3, roadside smoke s6, truck drift s8)
+
+    - Total: ~7-8s/shot vs ~81s on MPS-dev vs ~5min '
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
