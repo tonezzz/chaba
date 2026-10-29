@@ -1,7 +1,7 @@
 id: kk-mac-jev-adapter-integration
 title: Wire KK-Mac bounded LLM adapter into JEV dispatch
 column: doing
-updated: 2026-10-29 19:48
+updated: 2026-10-29 19:49
 brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
   blocking fallback lanes.
 priority: high
@@ -42,6 +42,12 @@ comms:
   from: devin
   text: 'raised request supervised-live-dispatch-unit-tests-full-2f68ac: Supervised live dispatch: unit tests +
     full contract wiring are green and the KK-Mac lane probe is eligible right now (h'
+- at: 2026-10-29 19:49
+  from: devin
+  text: 'Supervised dispatch runbook (on a host with kk-mac ssh + this branch): python3 scripts/devnest/kk_mac_executor.py
+    run --card <id> --task-id <tid> --task-class summary --worktree <wt> --taskdir <td> --artifact evals/kk-mac-lane/out/<id>.json
+    --prompt-file <p> --expect-file <e>. Require verdict.json verdict=pass + landed artifact, THEN set KK_MAC_LANES=1
+    in the runner env. Details: docs/ssot/jobs/devnest/2026-10-29-kk-mac-executor-contract.yml'
 action:
   type: dispatch
   status: running
