@@ -1,7 +1,7 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
 column: doing
-updated: 2026-10-29 08:55
+updated: 2026-10-29 09:23
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
 blocked_by: cline-kanban-nest-worker-adapter
@@ -119,6 +119,13 @@ comms:
     so no public route is active. Next: add Access-JWT validation to the Cline proxy, add the Caddy route with upstream
     still Tailnet-only, publish DNS only after the proxy is safe, then update the Ada chaba-admin dashboard by WebSocket
     and sync a sanitized Ada snapshot. No Cline dashb'
+- at: 2026-10-29 09:23
+  from: devin
+  text: 'Auth root cause found: the dashboard helper looked for refresh-token client_name `tony-devin`, which is
+    absent from Ada HA’s current auth store. The current SSOT names `ada-ha-live`; using that documented token,
+    the read-only Home Assistant WebSocket call succeeds and confirms Board is followed by DevNest (no Cline tab
+    yet). I am correcting the helper and will use the supported WebSocket push followed by `sync-ssot-from-live.sh
+    --instance ada-ha`; no credential values were read or logged.'
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
