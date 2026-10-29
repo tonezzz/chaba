@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: backlog
-updated: 2026-10-29 16:07
+updated: 2026-10-29 16:10
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -236,6 +236,11 @@ comms:
     a faster-whisper/PyAV metadata_errors incompatibility; the soundfile-to-NumPy decode fix made the retry pass.
     Private output: `gdrive:ada-nest/packs/kk-video-c9f99fee6146-voice-clone-probe/out/clone-smoke.wav`. No full
     narration, mux, public release, or replacement of the current Ed'
+- at: 2026-10-29 16:10
+  from: devin
+  text: 'pub milestone: Private KK voice-clone smoke passed technical QC — Colab run-20261029-0638 completed the
+    private VYNCX v2/F5-TTS probe. It used 10.07s of the selected consented reference and produced a non-silent
+    5.056s 24kHz W [evt-ad36b7379b5de326]'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
