@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 14:59
+updated: 2026-10-29 15:02
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -177,6 +177,12 @@ comms:
     models. Real qwen3:8b batch today: operator_brief, host_inventory, and safe_route all independently verified
     (3/3). Warm calls ~3.8-4.7s, first load ~3.6s. Artifact: /home/tony/evals/results/kk-mac-qwen8-real-jobs-20261029.json.
     Use existing :11434 solution, not temporary servers. Automat'
+- at: 2026-10-29 15:02
+  from: devin
+  text: 'Production-shaped real job passed 2026-10-29: qwen3:8b on KK-Mac summarized live read-only host facts (hostname,
+    macOS version, 1m load, free disk, active model) into a JSON operator report. Independent verifier matched all
+    live fields and lane enum. verified=true; wall 10.297s; 605 eval tokens; artifact /home/tony/evals/results/kk-mac-live-host-llm-report-20261029.json.
+    This proves KK-Mac can run a real bounded DevNest job, not only a fixture benchmark.'
 action:
   type: dispatch
   status: idle
