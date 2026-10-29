@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: backlog
-updated: 2026-10-29 23:19
+updated: 2026-10-29 23:33
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -144,6 +144,10 @@ comms:
   text: back to backlog for a cline retry with the real schema facts injected into spec (JOB_STATUSES enum, board-api
     /job upsert, JOB_META_KEYS, publication adapter, kanban-column separation). Testing the hypothesis that spec-contains-truth
     produces non-hallucinated drafts. Prior task 065dd patch retained in out/intake for comparison.
+- at: 2026-10-29 23:33
+  from: devin
+  text: 'devin: bridge failed after 632s — cline-kanban-nest-bridge: task c3813 did not reach Review within 600s.
+    Card left in backlog; job_key cline-job-package-status-storage-sop.'
 tags:
 - cline
 cline:
