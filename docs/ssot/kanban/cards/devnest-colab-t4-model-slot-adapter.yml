@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-10-28 23:15
+updated: 2026-10-29 08:36
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -29,11 +29,18 @@ comms:
   from: devin
   text: 'raised request choose-colab-t4-model-arm: Choose the first Colab model-slot arm before I stage a runnable
     pack. The T4 adapter is not in the existing shadow harne'
+- at: 2026-10-29 08:36
+  from: tony
+  text: 'answered choose-colab-t4-model-arm: model-only — Model-only local HF 7–8B inference with synthetic JSON
+    fixtures; 30m throughput/format smoke only (recommended, fastest/safest)'
+- at: 2026-10-29 08:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
     shadow harness.
-  status: open
+  status: answered
   at: 2026-10-28 23:15
   from: devin
   options:
@@ -46,3 +53,6 @@ requests:
   - id: mac-first
     label: Hold Colab model work; finish the KK-Mac local Ollama lane (OPS-0966) first
   suggested: model-only
+  answer: model-only — Model-only local HF 7–8B inference with synthetic JSON fixtures; 30m throughput/format smoke
+    only (recommended, fastest/safest)
+awaiting_action: true
