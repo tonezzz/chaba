@@ -1,0 +1,27 @@
+id: opencode-git-worktree-rails
+title: Align OpenCode branch-code Git rails with the isolated-worktree contract
+column: doing
+updated: 2026-10-29 14:07
+brief: Fix the branch-code prompt/allowlist contradiction so a future disabled-by-default code profile can commit
+  only inside its isolated worktree.
+priority: high
+program: devnest
+tags:
+- opencode
+- git
+- safety
+- worktree
+spec: 'The branch-code profile currently permits git add/commit in its bash allowlist while the generated generic
+  prompt says no commits. Fix the mismatch without enabling the profile or running inference. Scope: (1) branch-code-specific
+  prompt rails allow git status/diff/log and scoped git add/commit only inside the provided worktree; explicitly
+  deny push, merge, rebase, branch/worktree management, network, services, secrets. (2) Narrow bash patterns to
+  allowed repository roots; reject git add . or out-of-scope paths. (3) Add tests proving branch-code permits the
+  scoped local Git contract and read-only profiles still deny Git mutation. Keep branch-code status disabled and
+  paid strong default untouched; no OPENCODE_LANES enablement. Done only after profile lint + targeted tests + independent
+  diff review; actual model/canary run remains a separate approval-gated step.'
+ref: OPS-0976
+comms:
+- at: 2026-10-29 14:07
+  from: tony
+  text: Created from Tony's 2026-10-29 request to advance OpenCode Git capability. No model call or profile enablement
+    is authorized by this card.
