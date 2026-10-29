@@ -286,53 +286,61 @@ def run_bridge(spec, output_path, patch_path):
     marker = task_marker(spec)
     before = get_worktrees()
     tasks = list_tasks(spec["project_path"])
-    task = find_existing_task(tasks, marker)
-    if task and task.get("column") == "trash":
-        raise RuntimeError(
-            "matching task is already in Done; use a new job_key for another run"
-        )
-    if task and not should_start_task(task) and spec.get("expected_file"):
-        # a terminal task (review) missing its deliverable is a dead
-        # attempt — delete it so the job_key can be retried fresh
+    final_task = None
+    worktree = None
+    for attempt in range(2):
+        tasks = list_tasks(spec["project_path"])
+        task = find_existing_task(tasks, marker)
+        if task and task.get("column") == "trash":
+            raise RuntimeError(
+                "matching task is already in Done; use a new job_key for another run"
+            )
+        if not task:
+            created = run_kanban(create_args(spec))
+            task = created.get("task")
+            if not isinstance(task, dict) or not task.get("id"):
+                raise RuntimeError("Kanban create response did not include task.id")
+            print(f"created Cline task {task['id']}", flush=True)
+
+        task_id = task["id"]
+        if should_start_task(task):
+            try:
+                run_kanban([
+                    "task", "start", "--task-id", task_id,
+                    "--project-path", spec["project_path"],
+                ], timeout=90)
+            except subprocess.TimeoutExpired:
+                pass
+            print(f"ensured Cline task session {task_id}", flush=True)
+
+        final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
+        worktree = choose_task_worktree(before, get_worktrees(), task_id)
+        if not spec.get("expected_file"):
+            break
         try:
-            wt = choose_task_worktree(before, get_worktrees(), task["id"])
-            read_expected_file(wt["path"], spec["expected_file"])
+            expected = read_expected_file(worktree["path"], spec["expected_file"])
         except RuntimeError:
+            expected = None
+        sentinel = spec.get("expected_text")
+        ok = (
+            expected is not None
+            and (expected.strip() if not sentinel else sentinel in expected)
+        )
+        if ok:
+            break
+        if attempt == 0:
             run_kanban([
-                "task", "delete", "--task-id", task["id"],
+                "task", "delete", "--task-id", task_id,
                 "--project-path", spec["project_path"],
             ])
-            print(f"deleted dead Cline task {task['id']} "
-                  "(deliverable missing); retrying", flush=True)
-            task = None
-    if not task:
-        created = run_kanban(create_args(spec))
-        task = created.get("task")
-        if not isinstance(task, dict) or not task.get("id"):
-            raise RuntimeError("Kanban create response did not include task.id")
-        print(f"created Cline task {task['id']}", flush=True)
-
-    task_id = task["id"]
-    if should_start_task(task):
-        try:
-            run_kanban([
-                "task", "start", "--task-id", task_id,
-                "--project-path", spec["project_path"],
-            ], timeout=90)
-        except subprocess.TimeoutExpired:
-            pass
-        print(f"ensured Cline task session {task_id}", flush=True)
-
-    final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
-    worktree = choose_task_worktree(before, get_worktrees(), task_id)
-    if spec.get("expected_file"):
-        expected = read_expected_file(worktree["path"], spec["expected_file"])
-        sentinel = spec.get("expected_text")
-        if sentinel:
-            if sentinel not in expected:
-                raise RuntimeError("expected smoke text was not written in the Cline task worktree")
-        elif not expected.strip():
-            raise RuntimeError("expected file was written but is empty")
+            print(f"deleted failed Cline task {task_id} "
+                  "(verification failed); retrying once", flush=True)
+            continue
+        if expected is None:
+            raise RuntimeError("expected file was not written in the Cline task worktree")
+        if sentinel and sentinel not in expected:
+            raise RuntimeError("expected smoke text was not written in the Cline task worktree")
+        raise RuntimeError("expected file was written but is empty")
 
     patch, changed_files = collect_patch(worktree["path"], patch_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
