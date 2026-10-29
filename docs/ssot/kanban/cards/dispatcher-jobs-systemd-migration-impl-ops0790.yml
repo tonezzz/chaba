@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-impl-ops0790
 title: Implement OPS-0790 legacy dispatcher migration
-column: doing
-updated: 2026-10-29 20:51
+column: review
+updated: 2026-10-29 21:01
 brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
   this phase.
 priority: high
@@ -25,8 +25,12 @@ action:
   - cpu
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
-  status: running
+  status: done
   runner: idc02
+  result: 'Verified commit 93c61b905 is in origin/master. Independent checks on that commit: 16 render-jobs tests
+    + 12 job-dispatcher tests passed; render-jobs.py --check OK (87 jobs/8 hosts); SSOT validation 3278 files, 0
+    errors. Code/registry migration only; no live timers installed/enabled and legacy chaba-'
+  verified: true
 ref: OPS-0983
 comms:
 - at: 2026-10-29 20:43
@@ -41,3 +45,9 @@ comms:
 - at: 2026-10-29 20:51
   from: idc02
   text: claimed
+- at: 2026-10-29 21:01
+  from: idc02
+  text: 'finished (ok): Verified commit 93c61b905 is in origin/master. Independent checks on that commit: 16 render-jobs
+    tests + 12 job-dispatch'
+review_kind: verify
+claim: {}
