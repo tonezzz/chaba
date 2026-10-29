@@ -1311,6 +1311,25 @@ jobs:
     all card mutations, board-api and file-write alike). First tick
     records position without replaying history. OFF SWITCH:
     `touch ~/.config/kanban-notify.off` (each tick exits silently).'
+- id: cline-intake
+  name: Cline lane intake — backlog cards tagged cline -> kanban-nest-bridge
+  host: con01
+  dispatch: systemd
+  every: 15m
+  persistent: true
+  timeout: 20m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/intake.py --execute --limit 1
+  note: 'Tony ask 2026-10-29 — card->task intake for the Cline lane. Scans
+    backlog cards for tag `cline` + a `cline:` config block (or
+    `cline-deliverable:`/`cline-sentinel:`/`cline-model:` spec lines),
+    synthesizes a validated bridge envelope, runs ONE card per tick
+    through bridge.py on con01 (disposable /workspace, no repo access,
+    auto-review off), posts the patch summary via board-api /comment and
+    moves the card to review on success; failure leaves the card in
+    backlog with an error comment. Patches land under
+    scripts/colab/packs/cline-kanban-nest-bridge/out/intake/<job_key>/.
+    Provider default ollama/qwen2.5:7b; openrouter/or-free-* also
+    whitelisted. Serial by design — one card per tick.'
 related_files:
 - scripts/render-jobs.py
 - scripts/job-dispatcher.py
