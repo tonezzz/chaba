@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-ops0790
 title: Implement systemd migration for OPS-0790 dispatcher jobs
-column: backlog
-updated: 2026-10-29 20:42
+column: doing
+updated: 2026-10-29 20:43
 brief: Implement the user's approved migration of legacy dispatcher jobs to rendered systemd timers; keep the legacy
   timer until a later verified rollout.
 priority: high
@@ -22,10 +22,14 @@ action:
   repo: chaba
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0982
 comms:
 - at: 2026-10-29 20:42
   from: devin
   text: Execution follow-up to OPS-0790's answered systemd-migration decision; code/tests only, no live timer deployment
     in this task.
+- at: 2026-10-29 20:43
+  from: idc02
+  text: claimed
