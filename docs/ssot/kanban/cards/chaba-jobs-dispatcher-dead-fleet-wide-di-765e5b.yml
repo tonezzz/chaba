@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-29 22:40
+updated: 2026-10-30 01:27
 action:
   type: manual
 ref: OPS-0790
@@ -57,6 +57,13 @@ comms:
 - at: 2026-10-29 22:40
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-30 01:27
+  from: devin
+  text: 'Live rollout preflight (read-only): tony-dell currently has `chaba-jobs.timer` active plus `mcp-debug-h3-sync`,
+    `tony-dell-health-snapshot`, and `network-scan-tony` timers; idc03 has `yomi-update-active.timer`; idc02 has
+    no replacement timer listed. The current `render-jobs.py --host H --install` enables/starts every rendered timer
+    on that host, not just the migrated jobs, so I did not run it. OPS-0992 is queued to add/test per-job installation
+    before any locked rollout.'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
