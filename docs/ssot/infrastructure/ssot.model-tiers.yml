@@ -68,6 +68,12 @@ hosts:
     cpu_ceiling: tiny
     runtime: "llama.cpp b11583-vulkan @ ~/micro-bench, micro-bench-llama.service :8114 loopback"
     role: offload lane for small jobs; reachable via tailscale ssh only
+  kk-mac:
+    compute: Apple M4 Max, 14 CPU cores, 32-core Metal GPU, 36 GiB unified memory
+    gpu_resident: small (qwen3:4b proven to load; qwen3:8b pending benchmark)
+    cpu_ceiling: medium for bounded local inference; concurrency one until measured
+    runtime: "Ollama Metal, opportunistic/one-shot until launchd policy is approved"
+    role: online-when-available local inference lane; no destructive or credential work
   idc01:
     compute: VPS (warm DR)
     cpu_ceiling: micro..tiny

@@ -20,7 +20,8 @@ tiers:
     cost: 0
   t1-local-mid:
     models: [phi3-gguf, llama3.2:3b, gemma-3-4b (open-jev, dormant),
-             nomic-embed-text, moondream, hermes3:8b (omen)]
+             nomic-embed-text, moondream, hermes3:8b (omen),
+             qwen3:4b (kk-mac), qwen3:8b (kk-mac, pending benchmark)]
     serves: summaries, digests, embeddings, routine vision describes,
             short transforms, bench scorers,
             tool-call/agent-surface loops — hermes3:8b benched
@@ -28,8 +29,14 @@ tiers:
             prompted-JSON; ~11-15s/call on shared 4GB GPU, async lanes
             only; reasoning stays on phi3 — see
             docs/ssot/jobs/models/2026-10-10-hermes3-t1-eval.yml
-    hosts: omen :11434, idc03 :11434 (tailnet)
+    hosts: omen :11434, idc03 :11434 (tailnet),
+           kk-mac :11434 when online and healthy
     cost: 0
+    availability: >
+      KK-Mac is an opportunistic lane: use only while its signed health
+      heartbeat is fresh, load/memory gates pass, and the task is admitted
+      to the verified local model profile. If it disappears, retry or
+      defer to the next eligible lane; never block the queue on KK-Mac.
   t2-openrouter-free:
     models: [OR :free pool via GhostRoute rotation — prefixed ids after
              tonezzz/GhostRoute c6ca06d]
