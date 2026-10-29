@@ -1,0 +1,17 @@
+id: cline-intake-smoke
+title: 'Cline intake smoke: LiteLLM cline-key rotation runbook'
+column: backlog
+updated: 2026-10-29 20:38
+priority: low
+tags:
+- cline
+- test
+spec: 'Write a short operational runbook for rotating the scoped LiteLLM virtual key used by the Cline lane (stored
+  as CLINE_LITELLM_KEY in cline-kanban.env and in providers.json). Cover: mint a replacement scoped key, update
+  the two storage locations, restart the affected unit, verify with a scoped model call, and revoke the old key.
+  cline-deliverable: litellm-cline-key-rotation.md cline-sentinel: CLINE_LITELLM_KEY cline-model: ollama/qwen2.5:7b'
+ref: DEV-0981
+comms:
+- at: 2026-10-29 20:38
+  from: tony
+  text: card captured via board-api
