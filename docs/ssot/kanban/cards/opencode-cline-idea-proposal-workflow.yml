@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-29 18:39
+updated: 2026-10-29 19:20
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -116,6 +116,12 @@ comms:
     included ''/'', unnecessary human_gate=true); docs-only and hardware cases timed out without artifacts. The
     profile had no tools/MCP; no Nest/Cline task or dispatch ran, and no paid model was used. Report: evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md.
     N'
+- at: 2026-10-29 19:20
+  from: devin
+  text: Proposal-only v2 also timed out at 240s using local Qwen; it omitted model-owned ACL/routing fields and
+    had no tools/MCP. No artifact was produced. Combined with the v1 `allowed_paths=["/"]` verifier failure, this
+    keeps OpenCode plan generation blocked. Report and run records are in evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md.
+    I did not run the Cline/Nest canary.
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
