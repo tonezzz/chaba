@@ -1,0 +1,34 @@
+id: dispatcher-jobs-systemd-migration-impl-ops0790
+title: Implement OPS-0790 legacy dispatcher migration
+column: backlog
+updated: 2026-10-29 20:43
+brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
+  this phase.
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+spec: 'Follow-up implementation for the approved OPS-0790 decision. Migrate the eight remaining registry entries
+  in docs/ssot/infrastructure/ssot.jobs.yml that declare dispatch:dispatcher: embed-lane-news, embed-lane-lessons,
+  embed-lane-banks, yomi-update-active, mcp-debug-h3-sync, tony-dell-health-snapshot, network-scan-tony, and lesson-drift-check.
+  Preserve each job''s host, cadence, timeout, cwd, exec, env_file, condition_path, critical/failure behavior, and
+  any Podman network/volume settings. Use the established dispatch:systemd rendered-timer contract; add per-host
+  render/golden tests and a migration matrix/report. This dispatch is code/tests only: do not install/enable timers,
+  stop chaba-jobs.timer, or remove the legacy dispatcher. Do those in a separate rollout after all rendered timers
+  are reviewed and verified under the deploy lock.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - push:chaba
+  - cpu
+  target_host: idc02
+  artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
+  status: queued
+ref: OPS-0983
+comms:
+- at: 2026-10-29 20:43
+  from: devin
+  text: Actionable follow-up to OPS-0790; eight legacy dispatcher registry jobs are queued for code/test migration
+    to rendered systemd timers. Live deploy/removal remains a later verified rollout.
