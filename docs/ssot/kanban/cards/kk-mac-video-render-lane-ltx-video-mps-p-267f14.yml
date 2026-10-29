@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 15:33
+updated: 2026-10-29 15:38
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -79,6 +79,12 @@ comms:
     \ total 89s; output kk-shot01-mps.mp4 h264 73f OK.\n  bf16 on MPS: worked, no NaN/garbage. Visual: coherent\
     \ dark interior scene, soft/muddy, weak prompt adherence.\n\nLane B — baisampayans/ltx-mlx (0.9.8 distilled\
     \ 2B, 4 steps, MLX bf16, SAME injected embeds — T5 skipped entirely):\n  p"
+- at: 2026-10-29 15:38
+  from: devin
+  text: 'Artifact landing follow-up: the separate Lane B MLX probe output already present on kk-mac (`kk-shot01-mlx.mp4`,
+    `mlx_probe.py`, `chain.log`) has now been archived under `gdrive:ada-nest-kk-mac-video-pilot/comparisons/2026-10-29/`;
+    rclone checks and MP4 decode pass. This session did not rerun Lane B. The MPS result remains a technical probe
+    only; KK visual review and the full multi-scene winner decision are still pending.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
