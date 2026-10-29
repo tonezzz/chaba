@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-impl-ops0790
 title: Implement OPS-0790 legacy dispatcher migration
-column: backlog
-updated: 2026-10-29 20:48
+column: doing
+updated: 2026-10-29 20:51
 brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
   this phase.
 priority: high
@@ -25,7 +25,8 @@ action:
   - cpu
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0983
 comms:
 - at: 2026-10-29 20:43
@@ -37,3 +38,6 @@ comms:
   text: 'Execution proof: the idc02 one-shot dispatch task `devin-task-20261029-204303-follow-up-execution-for-the-ap`
     is active (`systemctl --user show` reports ActiveState=active/SubState=running; task metadata binds it to this
     card). It is implementing the registry inventory and code/tests only; no timers have been installed or disabled.'
+- at: 2026-10-29 20:51
+  from: idc02
+  text: claimed
