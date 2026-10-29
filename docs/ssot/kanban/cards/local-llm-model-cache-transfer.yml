@@ -1,7 +1,7 @@
 id: local-llm-model-cache-transfer
 title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
 column: doing
-updated: 2026-10-29 16:50
+updated: 2026-10-29 17:09
 brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
   reuse them across lanes.
 priority: high
@@ -55,6 +55,13 @@ comms:
     quarantine->sha256->promote). verify: 253 MB/s. Isolated serve lists all 4 zero-copy; 0.4 tok/s under load 6.7/8
     (inference not this hosts job). idc03 TH-mirror pulling (~4.6 MB/s ssh leg) — 0.6b already verified + ephemeral-podman
     smoke listed it read-only. Tool: scripts/models/model-cache.py; runbook docs/kb/devnest-model-cache.md.'
+- at: 2026-10-29 17:09
+  from: devin
+  text: 'Done + committed on dispatch branch (not pushed). Final state: con01 primary cache (qwen3 0.6b/1.7b/4b/8b
+    Q4_K_M, Apache-2.0, all sha256-verified, 253 MB/s verifier) + idc03 TH mirror fully pulled and verify-clean
+    (23 blobs, 9.6 GB, 249 MB/s, quarantine empty). scripts/models/model-cache.py covers fetch/quarantine/promote/verify/index/serve/pull/export-gguf/metrics.
+    OLLAMA_MODELS-native store — isolated serves list models zero-copy; import paths to Ollama + MLX documented
+    for kk-mac/fleet with z'
 action:
   type: dispatch
   status: running
