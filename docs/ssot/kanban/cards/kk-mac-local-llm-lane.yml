@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
-column: doing
-updated: 2026-10-29 16:32
+column: review
+updated: 2026-10-29 16:33
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -199,11 +199,15 @@ comms:
 - at: 2026-10-29 16:32
   from: chaba
   text: started devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib on idc02 (dispatch)
+- at: 2026-10-29 16:33
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service:
+    Main process exited, cod'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib.service:
+  status: done
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261029-163204-use-kk-mac-apple-m4-max-36-gib.service:
     Failed with result ''exit-code''.'
   sweep:
     session_gone: 2026-10-28 21:32
