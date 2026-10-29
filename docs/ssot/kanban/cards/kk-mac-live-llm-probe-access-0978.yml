@@ -1,7 +1,7 @@
 id: kk-mac-live-llm-probe-access-0978
 title: OPS-0978 supervised live probe access gate
 column: backlog
-updated: 2026-10-30 01:06
+updated: 2026-10-30 01:07
 brief: Complete the already-approved single bounded KK-Mac JEV probe without enabling automatic routing.
 priority: high
 tags:
@@ -57,6 +57,12 @@ comms:
     both keys remain present, the idc03 fingerprint matches, and idc03→KK-Mac SSH as kkkakk now verifies the Mac's
     ComputerName. No live inference has run yet. The old tony-dell attempt OPS-0988 had no exit record and is being
     held/superseded by an idc03-targeted probe.
+- at: 2026-10-30 01:07
+  from: devin
+  text: 'Completed the approved access fix: added the verified idc03-mesh public key to `kkkakk@KK-Mac` authorized_keys
+    through the trusted tony-dell connection; retained the prior file as `authorized_keys.bak-20261030010441`. Verified
+    both the key fingerprint and idc03→KK-Mac SSH as kkkakk, with ComputerName `KK’s Mac Studio`. No inference was
+    run by this access-card step; the one-shot probe will be tracked separately.'
 requests:
 - id: live-probe-ssh-access-path
   ask: 'The one-shot probe you already approved is not running: idc03''s host-key trust is fixed, but KK-Mac rejects
