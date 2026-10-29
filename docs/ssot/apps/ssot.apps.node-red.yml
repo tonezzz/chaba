@@ -19,7 +19,13 @@ sections:
       - label: nodered/node-red container
         text: Rootless Podman Quadlet with network=host and data volume at /home/tony/.local/share/nodered.
       - label: Caddy reverse proxy
-        text: Served under /apps/node-red/ on the tony-dell web stack at port 8080.
+        text: >-
+          Canonical /apps/node-red/ path is handled by the tony-dell web Caddy
+          edge at port 80 (Tailnet HTTPS); see ssot.routes.yml for its upstream.
+          Port 8080 is the static Caddy origin, not the Node-RED route, and the
+          /apps/node-red/ path there is blank. The Dell Node-RED instance used
+          by the DevNest observe flow is distinct from the canonical route's
+          Omen upstream; do not infer editor contents from an HTTP 200 alone.
       - label: Home Assistant token
         text: Long-lived tony-ha token is injected via EnvironmentFile at ~/.config/secrets/nodered-ha.env.
   - title: Files & Modules
@@ -43,7 +49,10 @@ sections:
       - label: Location
         text: tony-dell; container runs as rootless podman with Quadlet.
       - label: URLs
-        text: https://tony-dell.taila0626a.ts.net/apps/node-red/ and https://tony-dell.taila0626a.ts.net/apps/node-red/
+        text: >-
+          https://tony-dell.taila0626a.ts.net/apps/node-red/ (canonical Caddy
+          route; do not append :8080). The Ada HA DevNest tab embeds the
+          generated CMS report, not this editor.
       - label: Registry
         text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
       - label: Branch

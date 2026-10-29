@@ -57,16 +57,21 @@ topics:
       - {at: "2026-10-15", ask: "How about Thai translation? start counting", cards: [MED-0692]}
   - id: stale-card-actions
     topic: "Cards showing action buttons that contradict real state (queue on done work, never-move after answer)"
-    count: 3
+    count: 4
     status: open
     notes: "render-board.py:402-403 else-fallback draws 'Queue' on every card
       without action.type incl. doing/done. Answered requests never auto-act
       (40+ untriaged). Same root class as decision-buttons: UI affordances that
-      don't reflect state."
+      don't reflect state. Recurrence 2026-10-29: DevNest's answered timer
+      request had no active action; Jack route cards stayed running/queued
+      without a dispatch process. The timer is now armed and the stale Jack
+      actions are held; OPS-0955/OPS-0954 remain blocked on a real code-writing
+      lane and the public-route approval gate."
     history:
       - {at: "2026-10-15", ask: "board looks suspicious — cards came back or never move", cards: [OPS-0688]}
       - {at: "2026-10-15", ask: "ADA-0643 in Doing — why does it have the queue button", cards: [KNB-*]}
       - {at: "2026-10-15", ask: "OPS-0502 — what am I supposed to do with it? (stale card needing his attention again)", cards: [OPS-0502]}
+      - {at: "2026-10-29", ask: "Jack OpenCode still on day three; two route-prep actions had no active task process", cards: [OPS-0954, OPS-0955, KNB-0624]}
   - id: render-job-missing-images
     topic: "render_job records with missing/broken output — writer stores a filesystem path instead of uploading to WP media"
     count: 2
@@ -84,28 +89,36 @@ topics:
       - {at: "2026-10-15", ask: "Render jobs still missing images — still in the card or repeat counter?", cards: [render-job-writer-must-upload-output-to-78229c]}
   - id: shipped-not-scheduled
     topic: "Tooling shipped but never wired to run — agent claims 'it syncs on a cycle' when no timer/job exists"
-    count: 1
-    status: fixed-2026-10-15
+    count: 2
+    status: fixed-2026-10-29
     notes: "sync-repeat-asks.py existed for days but nothing scheduled it;
       agent told Tony the WP mirror would update 'on its normal cycle' —
       there was no cycle. Same wound as lesson-capture (capability !=
       adoption): shipping a script is not shipping the behavior. Fix:
       sync folded into qc-scoreboard.timer (twice daily); rule — a job
-      claim requires pointing at the timer/cron that runs it."
+      claim requires pointing at the timer/cron that runs it. Recurrence:
+      Tony approved nest-queue-health.timer on OPS-0867, but it remained
+      unarmed until this sweep; it is now active and the first snapshot run
+      succeeded."
     history:
       - {at: "2026-10-15", ask: "missing from wp repeat asks, is it timer or another counter?", cards: []}
+      - {at: "2026-10-29", ask: "DevNest queue heartbeat stayed stale after the approved timer request was answered", cards: [OPS-0867]}
   - id: partial-verification
     topic: "A curated subset of checks presented as the verification — agent picks which checks 'matter' instead of running the full kit"
-    count: 1
-    status: fixed-2026-10-15
+    count: 2
+    status: fixed-2026-10-29
     notes: "Frustration-procedure run used M1/M2/M4 + ad-hoc extras and was
       narrated as '3 Ms + 3 extras' — a selection framed as the standard.
       Same wound as verified-leaf-≠-verified-caller: subset dressed as whole.
       Fix: rule 7 added to frustration-procedure.md — run all M-methods every
       time, skip only with a stated reason; kit extended to 8 (M6 spawner
-      inventory, M7 watcher coverage, M8 config audit)."
+      inventory, M7 watcher coverage, M8 config audit). Recurrence:
+      DevNest was called working after an HTTP 200/config check without
+      PlayLive; the consumer iframe was blank. It now uses the rendered CMS
+      report and exact-target PlayLive verified visible content."
     history:
       - {at: "2026-10-15", ask: "I thought it's always 5, but it's for selection?", cards: []}
+      - {at: "2026-10-29", ask: "DevNest tab shows nothing; did you use PlayLive or assume it?", cards: [OPS-0867]}
   - id: storage-transport-choice
     topic: "Are we using the most efficient storage transport — gdrive policy, rclone vs REST"
     count: 1
