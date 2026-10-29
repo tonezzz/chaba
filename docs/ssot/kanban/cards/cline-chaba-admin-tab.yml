@@ -1,6 +1,6 @@
 id: cline-chaba-admin-tab
 title: Add a secure Cline tab to Chaba Admin
-column: doing
+column: review
 updated: 2026-10-29 09:57
 brief: Add Cline Kanban after the Board tab without a second browser key prompt; reuse Cloudflare Access SSO through
   a server-side, tailnet-only proxy. Confirm the correct HA instance before mutating the dashboard.
@@ -133,6 +133,9 @@ comms:
     verifies the signed app-specific JWT. Direct-origin HTTP and WebSocket requests with missing/forged JWT return
     403; Cloudflare JWKS fetch succeeds. The live Ada chaba-admin config was updated over WebSocket and read back
     as Pair → Board → Cline → DevNest → Ada Pages → Monitor → Events → L'
+- at: 2026-10-29 09:57
+  from: devin
+  text: moved doing -> review
 requests:
 - id: which-chaba-admin-instance-should-receiv-b168fa
   ask: 'Which chaba-admin instance should receive the Cline tab? The live dashboard returned by HA tools and the
@@ -172,4 +175,5 @@ requests:
   suggested: reuse-ada-ha-policy
   answer: 'reuse-ada-ha-policy — Recommended: add cline.surf-thailand.com as a Cline Access app using the same Ada
     HA admin allowlist/session; keep Cline upstream Tailnet-only and verify direct-origin access is blocked.'
+review_kind: verify
 awaiting_action: true
