@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 13:48
+updated: 2026-10-29 13:55
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -149,6 +149,13 @@ comms:
     strict JSON was syntactically valid but returned lane=main (incorrect), 21.0s wall. qwen3:4b is materially more
     capable than 0.6b for summary/JSON shape but still too slow and not routing-safe. Keep both models out of automatic
     JEV promotion; use only behind explicit task-sp'
+- at: 2026-10-29 13:55
+  from: devin
+  text: 'Real job passed 2026-10-29: KK-Mac qwen3:4b generated a DevNest operator brief from fixed host-assessment
+    evidence. Independent verifier required JSON schema and all four facts (six hosts, zero collection errors, one
+    load-review flag, no remediation); verified=true. Warm isolated run: load 0.786s, 1,987 eval tokens, 18.67s
+    generation. Artifact: /home/tony/evals/results/kk-mac-llm-real-job-20261029.json. SSOT now records KK-Mac as
+    opportunistic online-when-available t1 lane; no automatic JEV prom'
 action:
   type: dispatch
   status: idle
