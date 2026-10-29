@@ -1879,6 +1879,24 @@ def finish_pass(st: dict) -> bool:
         if not unit or unit_active(unit):
             continue
         ok, result = collect(unit)
+        # `systemd-run --collect` can remove the transient unit before the
+        # next runner pass observes it. The kk_mac executor persists its
+        # exit code and verifier evidence in the task directory, so use that
+        # durable evidence instead of treating a missing collected unit as
+        # an execution failure.
+        if not ok and ent.get("type") == "dispatch":
+            tid = ent.get("tid") or ""
+            taskdir = (Path.home() / ".local/share/devin-dispatch/tasks"
+                       / tid)
+            try:
+                meta = json.loads((taskdir / "meta.json").read_text())
+                exit_code = int((taskdir / "exit_code").read_text().strip())
+            except (OSError, ValueError, json.JSONDecodeError):
+                meta, exit_code = {}, None
+            if meta.get("executor") == "kk_mac_local" and exit_code == 0:
+                ok = True
+                result = ("kk_mac executor exited 0; collected unit was "
+                          "already reaped; using durable verdict evidence")
         verified, notes = None, []
         if ok and ent.get("type") == "dispatch":
             if cards is None:
