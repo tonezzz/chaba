@@ -5,7 +5,7 @@ updated: 2026-10-29 11:34
 priority: low
 action:
   type: manual
-  status: queued
+  status: idle
 note: 'LINE_LANE_LOCK=kk,kk-dev,chaba rewrites chat_send targets to the lane group instead of 403 on bad targets
   — a stopgap until targeting stabilises. Gate: verify lane-targeting correctness first (LINE_LANE_ALLOW allowlist
   + last-room fallback), then remove lock entries. Risk: silent misdelivery if removed early.'
@@ -28,3 +28,6 @@ comms:
   text: 'Missed-job sweep 2026-10-29: This is a manual backlog item, not a dispatch job; the dispatcher warns it
     will starve because action.type=manual. No runner is active. Clearing the impossible queued state while preserving
     the Backlog card.'
+- at: 2026-10-29 11:34
+  from: devin
+  text: put on hold
