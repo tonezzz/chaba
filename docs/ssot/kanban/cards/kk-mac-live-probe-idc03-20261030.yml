@@ -61,5 +61,23 @@ comms:
 - at: 2026-10-30 01:25
   from: tony
   text: put on hold
+- at: 2026-10-30 01:25
+  from: devin
+  text: 'raised request kk-mac-ssh-reachable-after-fallback: The authorized key is installed, but idc03 and tony-dell
+    both timed out connecting to KK-Mac SSH; the one-shot probe pro'
 review_kind: verify
 claim: {}
+requests:
+- id: kk-mac-ssh-reachable-after-fallback
+  ask: The authorized key is installed, but idc03 and tony-dell both timed out connecting to KK-Mac SSH; the one-shot
+    probe produced no model output. Please wake/restore KK-Mac Tailscale + Remote Login and tell me when it is reachable,
+    or defer the probe.
+  status: open
+  at: 2026-10-30 01:25
+  from: devin
+  options:
+  - id: reachable
+    label: 'Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+  - id: defer
+    label: Keep the JEV lane off and wait for a later idle window.
+  suggested: reachable
