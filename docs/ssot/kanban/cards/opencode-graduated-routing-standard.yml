@@ -1,7 +1,7 @@
 id: opencode-graduated-routing-standard
 title: Standardize graduated routing of safe jobs to OpenCode
 column: done
-updated: 2026-10-27 15:02
+updated: 2026-10-29 15:12
 brief: Define how OpenCode receives increasing job volume safely, with gates, canaries, rollback, and efficiency
   measurement.
 priority: high
@@ -104,6 +104,12 @@ comms:
 - at: 2026-10-27 15:02
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-29 15:12
+  from: tony
+  text: 'S1 review executed on idc02: 15 ledger jobs, 8 verified (53.3%), 11 tool denials, 1 mutating-command flag,
+    3 quota-exceeded entries, 3 unverified exits, 1 missing artifact. Review correctly recommended rollback. Applied
+    lane_gate demote S0. OpenCode promotion is paused; fix tool/profile denials and fail-closed evidence before
+    retrying.'
 review_kind: verify
 claim: {}
 auto_close:
