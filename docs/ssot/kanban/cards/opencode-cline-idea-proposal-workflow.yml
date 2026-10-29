@@ -54,3 +54,25 @@ comms:
     patch, durable done marker, and worker completion were absent, and the worker timed out waiting for Review.
     This means the UI/adapter can submit work, but the artifact/result contract has not passed. I am holding this
     proposal pilot at analysis-only/no auto-actions until we choose a'
+- at: 2026-10-29 12:14
+  from: devin
+  text: 'raised request first-cline-proposal-canary-route: For the first OpenCode-to-Cline proposal canary, which
+    safe route should we take? Live board evidence says the Nest adap'
+requests:
+- id: first-cline-proposal-canary-route
+  ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
+    the Nest adapter is deployed, but its latest local qwen3:4b smoke produced no expected durable artifact/result
+    and timed out waiting for Review. Recommended: fix and independently re-test that result contract before relying
+    on the adapter. A manual Cline UI analysis-only run on a versioned card snapshot is the faster alternative,
+    but needs a human to land the result back on this card.'
+  status: open
+  at: 2026-10-29 12:14
+  from: devin
+  options:
+  - id: repair-adapter
+    label: Fix and verify the adapter artifact contract first (recommended)
+  - id: manual-ui
+    label: Run one manual Cline UI analysis-only canary; no board writes or dispatch
+  - id: hold
+    label: Keep this at design-only for now
+  suggested: repair-adapter
