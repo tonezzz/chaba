@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: backlog
-updated: 2026-10-29 17:16
+updated: 2026-10-29 17:17
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -72,6 +72,13 @@ comms:
     timed out after 180s with no artifact, but recorded no tool/MCP/mutation; the isolated config preflight now
     resolves with no MCP/tools. The planned docs-only profile uses local Ollama Qwen2.5:7B, but the tony-macbook
     local Ollama API is unavailable, so I did not run inference. OPS-0966 '
+- at: 2026-10-29 17:17
+  from: devin
+  text: 'Test checkpoint 2026-10-29: the isolated OpenCode plan-only config resolves with zero MCP servers and zero
+    enabled tools. The existing docs-only S0 route is configured for local `ollama/qwen2.5:7b-instruct`, but the
+    tony-macbook Ollama API at localhost:11434 is unavailable. The existing read-only-report run timed out at 180s
+    with no artifact and no tool/MCP/mutation; I inspected it but did not retry. Offline Cline bridge/Nest worker
+    contract tests pass 13/13 and proxy tests 10/10. Failure-artifa'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
