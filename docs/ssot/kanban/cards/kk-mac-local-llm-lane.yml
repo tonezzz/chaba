@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-29 17:48
+updated: 2026-10-29 21:15
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -227,6 +227,12 @@ comms:
     checks the live heartbeat gate, calls existing KK-Mac Ollama :11434 through SSH, and returns usage+admission
     JSON. No shell/code/mutation bridge. 8 unit tests pass. Real adapter call passed today: qwen3:8b produced a
     verified read-only summary; admission heartbeat age 22.5s, ollama_ok=true, disk=78G. Commit d4878f8d1 pushed.'
+- at: 2026-10-29 21:15
+  from: devin
+  text: 'Ran a 4-job live batch through the KK-Mac adapter while MLX cache transfer continues: operator_brief, summary,
+    structured_extract, safe_route all admitted and completed with heartbeat/Ollama gates true. Artifact: /home/tony/evals/results/kk-mac-real-job-batch-20261029.jsonl.
+    Admission remained eligible across batch; disk decreased to 64G, no node_busy flag. KK-Mac is actively useful
+    for these real read-only jobs now.'
 action:
   type: dispatch
   status: done
