@@ -1,6 +1,6 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
-column: doing
+column: review
 updated: 2026-10-29 17:16
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
@@ -32,3 +32,7 @@ comms:
     sanitized failure task-result when a task ID exists and uploads only declared partial artifacts while keeping
     the pack failed/no done marker. Tests: 13 mocked bridge/worker tests and 10 proxy tests pass; SSOT/references
     pass. No Cline task, model inference, service restart, or deployment occurred.'
+- at: 2026-10-29 17:16
+  from: devin
+  text: moved doing -> review
+review_kind: verify
