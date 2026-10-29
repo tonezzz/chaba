@@ -19,12 +19,12 @@ planning:
     verifier results. This is a model-only smoke, not a DevNest agent-replay
     score.
   success_criteria:
-    - The CPU pre-stage pack pins the HF revision and uploads a verified archive.
-    - The Colab model pack restores cached weights and declares durable artifact gates.
+    - The CPU pre-stage pack pins the HF revision and declares a verified archive output.
+    - The Colab model pack requires the pre-stage done marker and restores weights during T4 warm-up.
     - Both inference packs declare 1800s timeouts.
     - Mac pack is isolated from the shared queue and performs no model pull.
     - Unit tests cover JSON parsing, exact verifier scoring, and missing-model handling.
-    - All three packs are staged to their worker roots; none is launched.
+    - All three pack sources are staged and checksum-verified; none is launched.
   risks:
     - >-
       The HF snapshot is approximately 16GB; the CPU pre-stage pack needs
@@ -48,7 +48,7 @@ planning:
       file: docs/ssot/kanban/cards/devnest-colab-t4-model-slot-adapter.yml
 
 processing:
-  status: in_progress
+  status: staged
   started_at: 2026-10-29
   steps:
     - id: 1
@@ -59,16 +59,21 @@ processing:
         does not claim the frozen S0 shadow-eval agent replay.
     - id: 2
       label: Build and test HF pre-stage, Colab, and Mac pack variants
-      status: in_progress
-      notes: CPU HF archive pre-stage, T4 local-HF arm, Mac local-Ollama arm.
+      status: completed
+      notes: 8 unit tests pass; pack YAML, Python, and prefetch shell syntax verified.
     - id: 3
       label: Stage packages to Drive
-      status: not_started
-      notes: Stage HF pre-stage and T4 pack to shared root; stage Mac pack in its isolated root.
+      status: completed
+      notes: >-
+        Staged HF pre-stage + T4 pack under gdrive:ada-nest/packs and Mac
+        pack under gdrive:ada-nest-kk-mac-pilot/packs. Helper/fixtures staged
+        under each root's queue/. rclone check reported 0 differences.
     - id: 4
       label: Verify worker state and handoff
       status: not_started
-      notes: Do not launch; Colab and Mac availability/idle windows are separate gates.
+      notes: >-
+        Not launched. Colab has no runner and the runtime record is stale;
+        KK-Mac must be idle after the MPS probe before its one-shot worker runs.
   decisions:
     - label: Start with model-only inference
       rationale: >-
@@ -87,18 +92,33 @@ followup:
       Remove only the uniquely named staged pack directories if a release
       preflight fails; never delete shared model-cache archives.
   handoff:
-    - Launch the Colab pack from the canonical notebook after queue preflight.
-    - Run the KK-Mac pack once from the isolated root only during an approved idle window.
+    - >-
+      Run nest-worker.py --once --remote gdrive:ada-nest on a high-RAM CPU
+      worker to complete the HF pre-stage before launching the T4 queue.
+    - >-
+      Launch the Colab model pack from the canonical notebook after the
+      pre-stage done marker exists.
+    - >-
+      Run nest-worker.py --once --remote gdrive:ada-nest-kk-mac-pilot on
+      KK-Mac only during an approved idle window.
   deferred:
     - Full tool-using replay on Colab.
     - KK-Mac inference while the MPS video probe or owner workloads are active.
-    - Colab or Mac worker launch; this task stages packs only.
+    - HF model snapshot download and all inference runs; no worker was started.
 
 report:
-  status: in_progress
+  status: staged
   completed_at: null
-  summary: Preparing the HF pre-stage, Colab T4, and KK-Mac model-only smoke packs; no worker run yet.
-  metrics: []
+  summary: >-
+    Three package sources are staged and remotely verified. The HF snapshot
+    has not been downloaded yet; no model inference or worker was run.
+  metrics:
+    - metric: unit_tests
+      value: 8 passed
+    - metric: ssot_validation
+      value: 3,253 files valid; 0 errors
+    - metric: drive_rclone_check
+      value: 0 differences for all staged paths
   links:
     - title: Colab model-slot procedure
       url: https://github.com/tonezzz/chaba/pull/54
