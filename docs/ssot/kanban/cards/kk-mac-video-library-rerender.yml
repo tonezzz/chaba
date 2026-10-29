@@ -1,0 +1,29 @@
+id: kk-mac-video-library-rerender
+title: Re-render old video library on KK-Mac MLX lane
+column: backlog
+updated: 2026-10-29 17:05
+brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
+  at a time with comparison/QC artifacts.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- video
+- rerender
+- mlx
+- archive
+- comparison
+spec: 'Use the proven KK-Mac MLX lane, not the CUDA Colab pack. Inventory /home/tony/ada-nest-videos, Vimax projects,
+  Colab scene outputs, and any Drive project manifests. Classify each item: reproducible (prompt/story/seed/reference/embeds
+  present), partial (missing inputs), or final-only (MP4 only; archive/QC only, no re-render claim). For reproducible
+  items create revisioned packs with inputs, model revision, seed, resolution, frames, steps, output globs, verifier,
+  and provenance. Preserve all old outputs; never overwrite. Queue one pack at a time on KK-Mac with concurrency=1,
+  heartbeat+idle/load gate, and owner-use stop gate. First run one old scene as a control, compare old vs MLX output
+  for prompt adherence, continuity, visual quality, duration, and runtime. Do not enqueue the full library until
+  the control passes and KK has reviewed quality. Keep MPS port available only as a comparison lane; MLX is current
+  winner candidate based on 3-shot and i2v probes.'
+ref: OPS-0980
+comms:
+- at: 2026-10-29 17:05
+  from: devin
+  text: card captured via board-api
