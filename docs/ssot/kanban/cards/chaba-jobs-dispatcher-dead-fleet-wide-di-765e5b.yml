@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-29 21:07
+updated: 2026-10-29 22:40
 action:
   type: manual
 ref: OPS-0790
@@ -49,6 +49,14 @@ comms:
   from: devin
   text: 'raised request systemd-rollout-behavior-review: The approved migration code is merged, but live timers
     are not installed. Before rollout, please choose how to handle th'
+- at: 2026-10-29 22:40
+  from: tony
+  text: 'answered systemd-rollout-behavior-review: accept-systemd-contract — Recommended for momentum: accept these
+    documented systemd semantics and proceed with a locked, host-by-host rollout; leave legacy timer until all eight
+    replacement timers are'
+- at: 2026-10-29 22:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
@@ -71,7 +79,7 @@ requests:
     cadence replaces dispatcher exponential backoff; results move from timeline.jsonl to journald/timer-timeline;
     critical:false alerting moves to timer-sentinel; boot catch-up is delayed to the 1-minute OnBootSec. First activation
     may run the embed-lane jobs with the existing LiteLLM key (no caps changed).'
-  status: open
+  status: answered
   at: 2026-10-29 21:07
   from: devin
   options:
@@ -84,4 +92,6 @@ requests:
   - id: hold-rollout
     label: Keep the code merged but do not install or enable any replacement timers yet.
   suggested: accept-systemd-contract
+  answer: 'accept-systemd-contract — Recommended for momentum: accept these documented systemd semantics and proceed
+    with a locked, host-by-host rollout; leave legacy timer until all eight replacement timers are verified.'
 awaiting_action: true
