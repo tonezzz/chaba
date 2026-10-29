@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-29 18:28
+updated: 2026-10-29 18:39
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -109,6 +109,13 @@ comms:
     verifier failed task_class=readonly, allowed_paths=["/"] (overbroad), and unnecessary human_gate=true. Other
     two cases held. Full report: evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md. Do not pass
     model-proposed ACLs to Nest/Cline; derive/intersect them deterministically from the canonical card.'
+- at: 2026-10-29 18:39
+  from: devin
+  text: 'Evaluation correction 2026-10-29: all three synthetic cases were attempted in the isolated plan-only profile.
+    JEV routing passed 3/3. One OpenCode plan returned but failed held-out checks (task_class=readonly, allowed_paths
+    included ''/'', unnecessary human_gate=true); docs-only and hardware cases timed out without artifacts. The
+    profile had no tools/MCP; no Nest/Cline task or dispatch ran, and no paid model was used. Report: evals/opencode-lane/reports/2026-10-29-plan-route-first-evaluation.md.
+    N'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
