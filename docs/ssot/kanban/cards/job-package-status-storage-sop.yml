@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: review
-updated: 2026-10-29 23:40
+updated: 2026-10-29 23:45
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -161,6 +161,13 @@ comms:
   text: 'devin: task c3813 review-ready — job-package-status-sop.md verified, 2102B patch (job-package-status-sop.md),
     provider ollama/qwen2.5:7b. Patch: /home/tony/CascadeProjects/chaba/scripts/colab/packs/cline-kanban-nest-bridge/out/intake/cline-job-package-status-storage-sop/task.patch.
     Moving to review.'
+- at: 2026-10-29 23:45
+  from: devin
+  text: 'cline verdict (task c3813, qwen2.5:7b, retry with real schema injected into spec): PASS. Hypothesis confirmed
+    — with JOB_STATUSES enum + write path + JOB_META_KEYS supplied in spec, the draft uses the real enum verbatim,
+    names board-api POST /job correctly, and separates kanban-column state from nest_job execution state. Minor
+    slips only (Publication.py capitalization, event names claim/start are plausible-but-invented). Usable draft
+    — first cline output I would hand to a human as a starting poi'
 tags:
 - cline
 cline:
