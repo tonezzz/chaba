@@ -269,10 +269,13 @@ def run_bridge(spec, output_path, patch_path):
 
     task_id = task["id"]
     if should_start_task(task):
-        run_kanban([
-            "task", "start", "--task-id", task_id,
-            "--project-path", spec["project_path"],
-        ])
+        try:
+            run_kanban([
+                "task", "start", "--task-id", task_id,
+                "--project-path", spec["project_path"],
+            ], timeout=90)
+        except subprocess.TimeoutExpired:
+            pass
         print(f"ensured Cline task session {task_id}", flush=True)
 
     final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
