@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-29 18:50
+updated: 2026-10-29 19:12
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -290,6 +290,12 @@ comms:
     satisfy the 4x15s cue contract; voice manifest consent gates + probe verdict reference-hash all check out; r4
     preflight verdict=pass. Pack byte-identical to canonical source, now landed in dispatch branch with tests (4/4
     pass) + job doc. Blocker: no live managed T4 — board request raise'
+- at: 2026-10-29 19:12
+  from: tony
+  text: 'answered the-private-v2-preview-is-fully-staged-a-6b9059: hold'
+- at: 2026-10-29 19:12
+  from: chaba
+  text: answer saved but session delivery skipped (bad task_id)
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
@@ -401,12 +407,13 @@ requests:
     The only missing piece is a live managed T4 — all registered sessions are stale and consumer Colab provisioning
     is manual. Please open ada-nest-job-console.ipynb on a T4 runtime and run Cell 1 once; I will start the queue
     with colab_queue_start and verify all artifacts when it finishes.'
-  status: open
+  status: answered
   at: 2026-10-29 18:50
   from: devin
   options:
   - proceed
   - hold
+  answer: hold
 action:
   status: running
   type: dispatch
