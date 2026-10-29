@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: review
-updated: 2026-10-28 10:18
+updated: 2026-10-29 11:13
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -74,4 +74,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261028-101547-smoke-card-for-opencode-explic on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-29 11:13
+  from: devin
+  text: 'Evidence audit 2026-10-29: the declared artifact evals/opencode-lane/out/executor-contract-smoke.json is
+    absent from origin/master and the idc02 execution checkout. The earlier dispatch log says the unit exited nonzero,
+    produced no commits, and the worktree was removed; this is not a verified pass. Holding/reopening the card in
+    Backlog, with no OpenCode run or model call started. A supervised read-only rerun needs OPENCODE_LANES=1 on
+    a compatible runner and explicit model/cost approval.'
 claim: {}
