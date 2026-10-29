@@ -1,0 +1,32 @@
+id: render-jobs-selective-install-ops0790-tonydell
+title: Scope rendered timer installation for OPS-0790 rollout
+column: backlog
+updated: 2026-10-30 01:34
+brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+- deploy-safety
+spec: Code-only follow-up to OPS-0790. `render-jobs.py --host <host> --install` currently enables/starts every rendered
+  timer for that host. Add a per-job selector (e.g. `--ids`) so the accepted eight-job rollout can install/enable
+  only requested service/timer pairs; keep full-host behavior as the explicit default when no selector is provided.
+  Add tests proving unrelated timers are neither enabled nor restarted, and update docs/reports/dispatcher-systemd-migration-2026-10-29.md
+  with the scoped rollout command. No live unit install, enable, start, or disable in this task. Target tony-dell
+  because the idc02 runner lacks chaba push; respect `/tmp/pfg-deploy.lock` for the later host rollout.
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  labels:
+  - exec
+  target_host: tony-dell
+  artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
+  status: queued
+ref: OPS-0993
+comms:
+- at: 2026-10-30 01:34
+  from: devin
+  text: Rerouted from idc02, which lacks push:chaba; tony-dell has exec/push capability. Code/tests only; live timers
+    remain untouched.
