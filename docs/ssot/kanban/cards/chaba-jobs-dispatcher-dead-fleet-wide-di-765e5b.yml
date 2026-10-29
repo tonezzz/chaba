@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-29 20:07
+updated: 2026-10-29 20:45
 action:
   type: manual
 ref: OPS-0790
@@ -26,6 +26,13 @@ comms:
 - at: 2026-10-29 20:07
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 20:45
+  from: devin
+  text: 'Triage result: the migration decision was recorded, but this card''s `action.type=manual` is not claimable
+    by kanban-dispatch, so nothing would start automatically. Inventory found 8 `dispatch:dispatcher` entries in
+    `ssot.jobs.yml` across idc02/idc03/tony_dell. I created OPS-0983 (`dispatcher-jobs-systemd-migration-impl-ops0790`)
+    as a queued code/tests-only follow-up on idc02. It preserves each job''s host/schedule/env/timeout and explicitly
+    does NOT install timers or disable the legacy dispatcher'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
