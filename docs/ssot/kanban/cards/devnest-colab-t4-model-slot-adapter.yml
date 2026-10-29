@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-10-29 13:41
+updated: 2026-10-29 13:42
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -53,6 +53,14 @@ comms:
   from: devin
   text: 'raised request the-approved-colab-model-only-hf-slot-is-35fbcc: The approved Colab model-only HF slot is
     blocked until a pinned Qwen3-8B snapshot is pre-staged. This is a one-time ~16G'
+- at: 2026-10-29 13:42
+  from: devin
+  text: 'answered the-approved-colab-model-only-hf-slot-is-35fbcc: Withdrawn as premature by Devin: the current
+    slot runner calls Ollama qwen3:8b, while the pre-stage produces a Transformers HF snapshot. Fix and verify that
+    contract before any model download. This re'
+- at: 2026-10-29 13:42
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -78,7 +86,7 @@ requests:
     KK-Mac would only stage the cache, with no inference there. SSH host key is trusted but runner authentication
     is currently denied. Do you authorize this pre-stage and the approved runner-key setup, or should the T4 slot
     remain held?
-  status: open
+  status: answered
   at: 2026-10-29 13:41
   from: devin
   options:
@@ -87,4 +95,7 @@ requests:
   - id: hold
     label: Hold the Colab slot; no model download or cache staging.
   suggested: approve-prestage
+  answer: 'Withdrawn as premature by Devin: the current slot runner calls Ollama qwen3:8b, while the pre-stage produces
+    a Transformers HF snapshot. Fix and verify that contract before any model download. This response is not Tony
+    approval; no download or inference has been authorized by this request.'
 awaiting_action: true
