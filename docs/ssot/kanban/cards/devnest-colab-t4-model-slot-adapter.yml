@@ -1,7 +1,7 @@
 id: devnest-colab-t4-model-slot-adapter
 title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
 column: backlog
-updated: 2026-10-29 10:11
+updated: 2026-10-29 13:41
 brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
   held-out battery and from the existing Mac local-LLM lane.
 priority: high
@@ -49,6 +49,10 @@ comms:
     Additional contract mismatch found: the slot runner calls Ollama `/api/generate` for `qwen3:8b`, while the prerequisite
     pack downloads a Transformers HF snapshot; that artifact will not satisfy Ollama `/api/tags`. No model download
     occurred. Do not relaunch until'
+- at: 2026-10-29 13:41
+  from: devin
+  text: 'raised request the-approved-colab-model-only-hf-slot-is-35fbcc: The approved Colab model-only HF slot is
+    blocked until a pinned Qwen3-8B snapshot is pre-staged. This is a one-time ~16G'
 requests:
 - id: choose-colab-t4-model-arm
   ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
@@ -68,4 +72,19 @@ requests:
   suggested: model-only
   answer: model-only — Model-only local HF 7–8B inference with synthetic JSON fixtures; 30m throughput/format smoke
     only (recommended, fastest/safest)
+- id: the-approved-colab-model-only-hf-slot-is-35fbcc
+  ask: The approved Colab model-only HF slot is blocked until a pinned Qwen3-8B snapshot is pre-staged. This is
+    a one-time ~16GiB public Hugging Face download to the private Drive cache on a >=20GiB RAM/40GiB disk CPU host;
+    KK-Mac would only stage the cache, with no inference there. SSH host key is trusted but runner authentication
+    is currently denied. Do you authorize this pre-stage and the approved runner-key setup, or should the T4 slot
+    remain held?
+  status: open
+  at: 2026-10-29 13:41
+  from: devin
+  options:
+  - id: approve-prestage
+    label: Approve one-time pinned ~16GiB HF snapshot pre-stage to private Drive on KK-Mac; no KK-Mac inference.
+  - id: hold
+    label: Hold the Colab slot; no model download or cache staging.
+  suggested: approve-prestage
 awaiting_action: true
