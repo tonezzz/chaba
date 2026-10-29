@@ -54,8 +54,9 @@ def validate_spec(spec):
         path = PurePosixPath(expected_file)
         if path.is_absolute() or ".." in path.parts:
             raise ValueError("expected_file must be a relative path without traversal")
-        if not isinstance(spec.get("expected_text"), str) or not spec["expected_text"]:
-            raise ValueError("expected_text is required when expected_file is set")
+        if spec.get("expected_text") is not None and not isinstance(
+                spec["expected_text"], str):
+            raise ValueError("expected_text must be a string when set")
     timeout_s = spec.get("timeout_s", 600)
     if not isinstance(timeout_s, int) or not 30 <= timeout_s <= 900:
         raise ValueError("timeout_s must be between 30 and 900 seconds")
@@ -312,8 +313,12 @@ def run_bridge(spec, output_path, patch_path):
     worktree = choose_task_worktree(before, get_worktrees(), task_id)
     if spec.get("expected_file"):
         expected = read_expected_file(worktree["path"], spec["expected_file"])
-        if spec["expected_text"] not in expected:
-            raise RuntimeError("expected smoke text was not written in the Cline task worktree")
+        sentinel = spec.get("expected_text")
+        if sentinel:
+            if sentinel not in expected:
+                raise RuntimeError("expected smoke text was not written in the Cline task worktree")
+        elif not expected.strip():
+            raise RuntimeError("expected file was written but is empty")
 
     patch, changed_files = collect_patch(worktree["path"], patch_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
