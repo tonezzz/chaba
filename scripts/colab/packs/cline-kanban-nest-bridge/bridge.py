@@ -165,8 +165,35 @@ def find_existing_task(tasks, marker):
     )
 
 
+def agent_ended(task_id):
+    """True when hooks.jsonl records agent_end for a session of this task.
+
+    The kanban runtime can lose the session record (e.g. a duplicate
+    `task start`), leaving the task in_progress with session=None even
+    though the agent finished — hooks are the surviving evidence."""
+    out = run_container([
+        "sh", "-c",
+        "grep '\"agent_end\"' /root/.cline/data/logs/hooks.jsonl 2>/dev/null"
+        f" | grep '\"rootSessionId\":\"{task_id}-' | tail -1",
+    ], allowed_codes=(0, 1))
+    return bool(out.strip())
+
+
 def should_start_task(task):
-    return task.get("column") in {"backlog", "in_progress"}
+    column = task.get("column")
+    if column == "backlog":
+        return True
+    if column == "in_progress":
+        # never re-start a task whose session ended — task start on an
+        # in_progress task clears the session record and can wipe the
+        # worktree, destroying a completed-but-unfinalized artifact
+        if agent_ended(task["id"]):
+            return False
+        # restart only when the session record is gone entirely
+        # (stale/crashed before agent_end); a live session dict means
+        # a session is running — leave it alone
+        return not (task.get("session") or {})
+    return False
 
 
 def parse_worktrees(output):
@@ -228,6 +255,10 @@ def wait_for_review(task_id, project_path, timeout_s):
         if exit_code not in (None, 0):
             raise RuntimeError(f"Cline task exited with code {exit_code}")
         if column == "review" or exit_code == 0:
+            return task
+        if not session and agent_ended(task_id):
+            # session record lost after agent_end — the task will never
+            # transition on its own; artifact verification decides below
             return task
         if column == "trash":
             raise RuntimeError("task reached Done before the adapter collected its diff")
