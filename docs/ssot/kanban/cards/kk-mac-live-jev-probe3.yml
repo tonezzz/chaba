@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe3
 title: KK-Mac supervised JEV executor probe (tony-dell)
 column: doing
-updated: 2026-10-29 23:18
+updated: 2026-10-29 23:19
 brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
 priority: high
 program: devnest
@@ -20,11 +20,13 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: failed
-  runner: tony-dell
-  result: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health checks
-    are active.  \n- **Model:** qwen3:8b running in read-only mode on KK-Mac.  \n- **Activity:** No mutations or
-    changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
+  status: queued
+  sweep:
+    failed_noted: 2026-10-29 23:18
+  last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health
+    checks are active.  \n- **Model:** qwen3:8b running in read-only mode on KK-Mac.  \n- **Activity:** No mutations
+    or changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
+  attempts: 1
 ref: OPS-0988
 comms:
 - at: 2026-10-29 23:16
@@ -47,3 +49,6 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-kk-mac-live-jev-probe3-1793290591 failed — its branch isn''t auto-merged (unverified
     partial work). Retry the card or merge dispatch/kk-mac-live-jev-probe3-1793290591 by hand.'
+- at: 2026-10-29 23:19
+  from: devin
+  text: retry requested
