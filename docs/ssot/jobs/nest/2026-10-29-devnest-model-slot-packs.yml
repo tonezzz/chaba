@@ -1,0 +1,136 @@
+title: DevNest model-slot packs for Colab T4 and KK-Mac
+subtitle: Pre-stage pinned HF Qwen3 weights and prepare bounded local smoke packs
+icon: cpu
+card: devnest-colab-t4-model-slot-adapter (OPS-0971)
+date: 2026-10-29
+
+planning:
+  goal: >-
+    Stage a CPU-only pinned Qwen3 HF cache pack, a 30-minute local-HF
+    structured-output pack for Colab T4, and a matching no-pull local
+    Ollama smoke pack for KK-Mac, without launching either inference pack.
+  scope: >-
+    Use Qwen/Qwen3-8B at pinned revision
+    b968826d9c46dd6066d109eabc6255188de91218 and five synthetic read-only
+    fixtures. A high-RAM CPU worker stages the public Apache-2.0 HF snapshot
+    to Drive; Colab restores it during warm-up and uses local NF4 inference.
+    KK-Mac uses its existing local Ollama qwen3:8b model. Report latency,
+    token throughput, GPU/unified-memory facts, and exact structured-output
+    verifier results. This is a model-only smoke, not a DevNest agent-replay
+    score.
+  success_criteria:
+    - The CPU pre-stage pack pins the HF revision and declares a verified archive output.
+    - The Colab model pack requires the pre-stage done marker and restores weights during T4 warm-up.
+    - Both inference packs declare 1800s timeouts.
+    - Mac pack is isolated from the shared queue and performs no model pull.
+    - Unit tests cover JSON parsing, exact verifier scoring, and missing-model handling.
+    - All three pack sources are staged and checksum-verified; none is launched.
+  risks:
+    - >-
+      The HF snapshot is approximately 16GB; the CPU pre-stage pack needs
+      sufficient free disk and verified artifacts before Colab can run.
+    - >-
+      KK-Mac is a member device; do not start the local pack while the
+      MPS video probe or owner workloads are active.
+    - >-
+      The HF cache archive is large; verify it from a fleet host before the
+      Colab T4 queue attempts to restore it.
+  resources:
+    - Colab shared root: gdrive:ada-nest
+    - HF pre-stage pack: devnest-qwen3-8b-hf-prestage
+    - KK-Mac isolated root: gdrive:ada-nest-kk-mac-pilot
+    - HF model: Qwen/Qwen3-8B at pinned revision (Apache-2.0)
+    - Mac local model: qwen3:8b (Ollama, no pull)
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: DevNest Colab model-slot adapter
+      file: docs/ssot/kanban/cards/devnest-colab-t4-model-slot-adapter.yml
+
+processing:
+  status: staged
+  started_at: 2026-10-29
+  steps:
+    - id: 1
+      label: Freeze model-only smoke contract
+      status: completed
+      notes: >-
+        Use five synthetic JSON tasks and a deterministic verifier. This
+        does not claim the frozen S0 shadow-eval agent replay.
+    - id: 2
+      label: Build and test HF pre-stage, Colab, and Mac pack variants
+      status: completed
+      notes: 8 unit tests pass; pack YAML, Python, and prefetch shell syntax verified.
+    - id: 3
+      label: Stage packages to Drive
+      status: completed
+      notes: >-
+        Staged HF pre-stage + T4 pack under gdrive:ada-nest/packs and Mac
+        pack under gdrive:ada-nest-kk-mac-pilot/packs. Helper/fixtures staged
+        under each root's queue/. rclone check reported 0 differences.
+    - id: 4
+      label: Verify worker state and handoff
+      status: not_started
+      notes: >-
+        Not launched. Colab has no runner and the runtime record is stale;
+        KK-Mac must be idle after the MPS probe before its one-shot worker runs.
+  decisions:
+    - label: Start with model-only inference
+      rationale: >-
+        Lowest-risk first slot; measures structured output and throughput
+        without conflating model quality with tool-runner capability.
+      alternatives_considered: Full shadow_eval agent replay requires a separate Colab tool-runner adapter.
+  changes: []
+
+followup:
+  verification:
+    - python3 -m unittest tests.colab.test_devnest_model_slot
+    - Full SSOT validation and optimization gate.
+    - rclone check both staged pack trees against canonical sources.
+  rollback_plan:
+    - >-
+      Remove only the uniquely named staged pack directories if a release
+      preflight fails; never delete shared model-cache archives.
+  handoff:
+    - >-
+      Run nest-worker.py --once --remote gdrive:ada-nest on a high-RAM CPU
+      worker to complete the HF pre-stage before launching the T4 queue.
+    - >-
+      Launch the Colab model pack from the canonical notebook after the
+      pre-stage done marker exists.
+    - >-
+      Run nest-worker.py --once --remote gdrive:ada-nest-kk-mac-pilot on
+      KK-Mac only during an approved idle window.
+  deferred:
+    - Full tool-using replay on Colab.
+    - KK-Mac inference while the MPS video probe or owner workloads are active.
+    - HF model snapshot download and all inference runs; no worker was started.
+
+report:
+  status: staged
+  completed_at: null
+  summary: >-
+    Three package sources are staged and remotely verified. The HF snapshot
+    has not been downloaded yet; no model inference or worker was run.
+  metrics:
+    - metric: unit_tests
+      value: 8 passed
+    - metric: ssot_validation
+      value: 3,253 files valid; 0 errors
+    - metric: drive_rclone_check
+      value: 0 differences for all staged paths
+  links:
+    - title: Colab model-slot procedure
+      url: https://github.com/tonezzz/chaba/pull/54
+    - title: Colab adapter card
+      file: docs/ssot/kanban/cards/devnest-colab-t4-model-slot-adapter.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

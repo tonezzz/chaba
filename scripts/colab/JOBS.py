@@ -255,6 +255,61 @@ print('heldout-assessment:', json.dumps(rep['verdicts']),
       json.dumps(_b.get('mode')), f"{_a['files']} log files")
 '''
 
+_DEVNEST_HF_SLOT_PREP = r'''
+set -eu
+NEST="${NEST_ROOT:-/content/drive/MyDrive/ada-nest}"
+PACK="$NEST/packs/devnest-model-slot-30m"
+[ -f "$PACK/pack.yml" ] || { echo "slot pack not staged; skip"; exit 0; }
+[ -f "$PACK/done" ] && { echo "slot already done; skip"; exit 0; }
+PRESTAGE="$NEST/packs/devnest-qwen3-8b-hf-prestage"
+[ -f "$PRESTAGE/done" ] || { echo "HF pre-stage not done; skip"; exit 0; }
+ARCHIVE="$PRESTAGE/out/qwen3-8b-hf-cache.tar.zst"
+[ -s "$ARCHIVE" ] || { echo "HF pre-stage archive missing; skip"; exit 0; }
+MODEL=/tmp/qwen3-8b-hf
+mkdir -p "$MODEL"
+if [ -s "$ARCHIVE" ]; then
+  command -v zstd >/dev/null 2>&1 || \
+    timeout 120 apt-get install -y -qq zstd >/dev/null 2>&1
+  timeout 900 tar -I zstd -xf "$ARCHIVE" -C "$MODEL"
+fi
+timeout 600 python3 -m pip install --quiet --disable-pip-version-check \
+  transformers==4.51.3 accelerate==1.6.0 bitsandbytes==0.45.5
+'''
+
+_DEVNEST_HF_SLOT_RUN = r'''
+import importlib, json, os, time
+
+root = globals().get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
+boot = globals().get('BOOT_ID', 'noboot')
+pack = f'{root}/packs/devnest-model-slot-30m'
+prestage = f'{root}/packs/devnest-qwen3-8b-hf-prestage'
+report = {'boot_id': boot, 'model': 'Qwen/Qwen3-8B', 'ts': time.time()}
+if not os.path.isfile(f'{pack}/pack.yml'):
+    report['status'] = 'skipped-no-model-slot'
+elif os.path.isfile(f'{pack}/done'):
+    report['status'] = 'skipped-already-done'
+elif not os.path.isfile(f'{prestage}/done'):
+    report['status'] = 'skipped-no-model-cache'
+else:
+    try:
+        importlib.import_module('torch')
+        importlib.import_module('transformers')
+        importlib.import_module('bitsandbytes')
+        report['status'] = 'ready' if os.path.isfile(
+            '/tmp/qwen3-8b-hf/config.json') else 'missing-model-files'
+    except Exception as exc:
+        report.update(status='dependencies-unavailable',
+                      error=repr(exc)[:240])
+out = f'{root}/queue/model-prefetch/qwen3-hf-{boot}.json'
+os.makedirs(os.path.dirname(out), exist_ok=True)
+with open(out, 'w') as stream:
+    json.dump(report, stream, sort_keys=True)
+    stream.write('\n')
+print('devnest-hf-model-prepare:', json.dumps(report))
+if report['status'] in ('missing-model-files', 'dependencies-unavailable'):
+    raise RuntimeError('Colab local HF model is not ready')
+'''
+
 
 JOBS = [
     # ---- 1. per-runtime T4 warmup — overlaps the next job's prep ----------
@@ -263,7 +318,15 @@ JOBS = [
      "timeout_s": 330,
      "run": _WARMUP_RUN},
 
-    # ---- 2. restore HF hub cache from Drive (big CPU-bound extract) -------
+    # ---- 2. restore the staged HF model only when its T4 slot is staged.
+    #         The T4 warmup overlaps this local extract/dependency prep. ------
+    {"name": "restore-devnest-qwen3-hf-for-slot", "scope": "env",
+     "prep": _DEVNEST_HF_SLOT_PREP,
+     "artifacts": ["queue/model-prefetch/qwen3-hf-{boot_id}.json"],
+     "timeout_s": 60,
+     "run": _DEVNEST_HF_SLOT_RUN},
+
+    # ---- 3. restore HF hub cache from Drive (big CPU-bound extract) -------
     {"name": "restore-hf-cache", "scope": "env",
      "prep": "test -f /content/drive/MyDrive/ada-nest/cache/hf-hub.tar.zst"
              " && mkdir -p /root/.cache/huggingface"
@@ -272,14 +335,14 @@ JOBS = [
      "run": "import os;p='/root/.cache/huggingface/hub';"
             "print('hub entries:',len(os.listdir(p))if os.path.isdir(p)else 0)"},
 
-    # ---- 3. shared deps — packs may still declare their own prep ----------
+    # ---- 4. shared deps — packs may still declare their own prep ----------
     {"name": "deps", "scope": "env",
      "prep": "apt-get install -y -qq zstd >/dev/null 2>&1 || true;"
              " pip install -q pyyaml huggingface-hub",
      "run": "import yaml,huggingface_hub;"
             "print('deps ok: pyyaml',yaml.__version__)"},
 
-    # ---- 4. stage any operator-uploaded asset bundles into /tmp -----------
+    # ---- 5. stage any operator-uploaded asset bundles into /tmp -----------
     {"name": "assets-stage", "scope": "env",
      "prep": "mkdir -p /tmp/stage;"
              " for t in /content/drive/MyDrive/ada-nest/assets/incoming/*.tar.zst;"
@@ -287,7 +350,7 @@ JOBS = [
      "run": "import os;p='/tmp/stage';"
             "print('staged:',os.listdir(p)if os.path.isdir(p)else [])"},
 
-    # ---- 5. held-out worker assessment — cache-independent GPU work that
+    # ---- 6. held-out worker assessment — cache-independent GPU work that
     #         hides the save-hf-cache repack prep (the second un-hideable
     #         window). env scope: re-runs every boot like the warmup. -----
     {"name": "devnest-heldout-assessment", "scope": "env",
@@ -296,7 +359,7 @@ JOBS = [
      "timeout_s": 1200,
      "run": _HELDOUT_RUN},
 
-    # ---- 6. repack hub cache for the next runtime (verify-before-mark) --
+    # ---- 7. repack hub cache for the next runtime (verify-before-mark) --
     {"name": "save-hf-cache", "scope": "env",
      "artifacts": ["cache/hf-hub.tar.zst"],
      "prep": "test -d /root/.cache/huggingface/hub"

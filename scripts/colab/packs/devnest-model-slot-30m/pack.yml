@@ -1,0 +1,23 @@
+name: devnest-model-slot-30m
+requires:
+  - devnest-qwen3-8b-hf-prestage
+needs:
+  gpu_gb: 10
+  ram_gb: 8
+  disk_gb: 20
+  egress_only_ok: true
+timeout_s: 1800
+artifacts:
+  - packs/devnest-model-slot-30m/out/metrics.json
+  - packs/devnest-model-slot-30m/out/verdict.json
+  - packs/devnest-model-slot-30m/out/report.md
+prep: |
+  set -eu
+  test -s /tmp/qwen3-8b-hf/config.json
+  python3 -c "import torch, transformers, bitsandbytes; assert torch.cuda.is_available()"
+run_sh: |
+  python3 "$PACK_DIR/run_hf_slot.py" \
+    --model-dir /tmp/qwen3-8b-hf \
+    --manifest "$NEST_ROOT/packs/devnest-qwen3-8b-hf-prestage/out/model-manifest.json" \
+    --fixtures "$NEST_ROOT/queue/devnest-model-slot-fixtures.json" \
+    --out "$PACK_DIR/out"
