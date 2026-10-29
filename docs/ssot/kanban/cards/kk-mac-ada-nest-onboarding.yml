@@ -1,7 +1,7 @@
 id: kk-mac-ada-nest-onboarding
 title: kk-mac Ada Nest onboarding — Tailscale, power policy, dev tooling
 column: done
-updated: 2026-10-28 23:02
+updated: 2026-10-29 08:39
 priority: medium
 tags:
 - ada-nest
@@ -156,6 +156,12 @@ comms:
     model download is running as kkkakk PID 47408 from ~/kk-video/.venv, writing ~/.cache/huggingface (two ~2-2.5GB
     incomplete blobs; ~10GB cache). No shutdown issued. Host runbook requires KK present/consenting before machine-changing
     steps. Need explicit KK consent to stop the resumable download, then issue macOS shutdown and verify host offline.'
+- at: 2026-10-29 08:39
+  from: devin
+  text: 'Shutdown executed/verified 2026-10-29: KK confirmed consent by powering off kk-mac while the shutdown gate
+    was being discussed. SSH preflight found the host already unreachable, and post-check remained unreachable;
+    no duplicate shutdown command was sent. Active LTX download was therefore interrupted by the already-completed
+    shutdown, with HF incomplete artifacts expected to be resumable on next boot.'
 requests:
 - id: kk-sign-off-for-kk-mac-ada-nest-install-ae6c5d
   ask: 'KK sign-off for kk-mac Ada Nest install — relay this checklist to her and answer per item. All reversible,
