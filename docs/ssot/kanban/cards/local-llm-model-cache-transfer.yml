@@ -1,7 +1,7 @@
 id: local-llm-model-cache-transfer
 title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
 column: backlog
-updated: 2026-10-28 22:06
+updated: 2026-10-29 13:21
 brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
   reuse them across lanes.
 priority: high
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-28 22:06
   from: devin
   text: card captured via board-api
+- at: 2026-10-29 13:21
+  from: devin
+  text: 'Verified 2026-10-29: con01 downloaded qwen3:0.6b at ~68 MB/s into ~/var/cache/devnest/models/ollama-models;
+    source model blob sha256 7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa. Transferred all Ollama
+    blobs+manifest to KK-Mac via temporary Tailscale HTTP path; KK checksum matches. Isolated Ollama server on port
+    11435 listed qwen3:0.6b and completed inference: total 1.938s, load 1.054s, eval 231 tokens/0.768s (~301 tok/s).
+    Temporary servers stopped; no persistent DevNest LLM '
