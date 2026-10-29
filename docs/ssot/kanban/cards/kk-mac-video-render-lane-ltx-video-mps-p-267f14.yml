@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 15:32
+updated: 2026-10-29 15:33
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -72,6 +72,13 @@ comms:
     LTX-Video@8984fa25007f376c1a299016d0957a37a2f797bb; shot01 640x384, 73f, 40 steps, BF16; load 4.52s, generation
     80.45s, total 85.29s. MP4 decode passed; 79,595 bytes, SHA ecf26bf244a6e8ab95b6444709bef26b55b88cc7d0bdf17ec0d29ea81e27ed5.
     No download, MLX, or multi-scene run. Visual quality is still pending KK review. Full-day permission wa'
+- at: 2026-10-29 15:33
+  from: devin
+  text: "PROBE RESULTS — both lanes rendered shot-1 (73f, 640x384) end-to-end on kk-mac M4 Max.\n\nLane A — PyTorch\
+    \ MPS (pack port, LTX-Video 0.9.x, 40 steps, bf16, same .pt embeds):\n  pipeline load 7s; generation 81.3s (1.11s/f);\
+    \ total 89s; output kk-shot01-mps.mp4 h264 73f OK.\n  bf16 on MPS: worked, no NaN/garbage. Visual: coherent\
+    \ dark interior scene, soft/muddy, weak prompt adherence.\n\nLane B — baisampayans/ltx-mlx (0.9.8 distilled\
+    \ 2B, 4 steps, MLX bf16, SAME injected embeds — T5 skipped entirely):\n  p"
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
