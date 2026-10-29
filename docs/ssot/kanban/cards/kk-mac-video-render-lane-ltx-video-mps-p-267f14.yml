@@ -48,3 +48,21 @@ comms:
     about 10GB of cache; preserve them and resume/verify on next boot, do not delete or restart from scratch. Next
     safe sequence: verify trusted managed access, inspect/resume cache, apply the staged concurrency=1 memory fix,
     then run one MPS/MLX probe only. Do not run the full multi-scene '
+- at: 2026-10-29 09:55
+  from: devin
+  text: 'raised request kk-mac-next-powered-idle-window: When should we resume the KK-Mac LTX lane? The host is
+    currently powered off; the next safe action needs it online for c'
+requests:
+- id: kk-mac-next-powered-idle-window
+  ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
+    it online for cache verification and a bounded probe.
+  status: open
+  at: 2026-10-29 09:55
+  from: devin
+  options:
+  - id: notify-when-online
+    label: 'Recommended: tell me when KK powers it on and has an idle window; first do cache-resume verification
+      and a single-scene MPS/MLX probe only.'
+  - id: colab-only
+    label: Keep kk-mac off for now and continue the image-aware preview on Colab only.
+  suggested: notify-when-online
