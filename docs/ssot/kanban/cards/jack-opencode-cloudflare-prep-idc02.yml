@@ -1,7 +1,7 @@
 id: jack-opencode-cloudflare-prep-idc02
 title: Prepare Jack Cloudflare route with OpenCode on idc02
 column: backlog
-updated: 2026-10-29 10:52
+updated: 2026-10-29 21:56
 brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
 priority: high
 program: devnest
@@ -43,3 +43,10 @@ comms:
 - at: 2026-10-29 10:52
   from: devin
   text: put on hold
+- at: 2026-10-29 21:56
+  from: devin
+  text: 'Verified 2026-10-29: replacement Cloudflare token parses correctly (account ID shape, token prefix, mode
+    600). GET /accounts/{account}/access/apps returns HTTP 200, but POST create self-hosted Access app for opencode-jack.surf-thailand.com
+    returns HTTP 403 / error 1010. Token still lacks Account → Access: Apps and Policies → Edit, or is scoped to
+    the wrong account. No DNS/Caddy/public route was changed. Prepared and committed isolated Jack gateway Cloudflare
+    JWT validation patch in commit fd9b78'
