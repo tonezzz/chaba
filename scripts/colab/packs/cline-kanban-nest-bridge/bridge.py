@@ -291,6 +291,20 @@ def run_bridge(spec, output_path, patch_path):
         raise RuntimeError(
             "matching task is already in Done; use a new job_key for another run"
         )
+    if task and not should_start_task(task) and spec.get("expected_file"):
+        # a terminal task (review) missing its deliverable is a dead
+        # attempt — delete it so the job_key can be retried fresh
+        try:
+            wt = choose_task_worktree(before, get_worktrees(), task["id"])
+            read_expected_file(wt["path"], spec["expected_file"])
+        except RuntimeError:
+            run_kanban([
+                "task", "delete", "--task-id", task["id"],
+                "--project-path", spec["project_path"],
+            ])
+            print(f"deleted dead Cline task {task['id']} "
+                  "(deliverable missing); retrying", flush=True)
+            task = None
     if not task:
         created = run_kanban(create_args(spec))
         task = created.get("task")
