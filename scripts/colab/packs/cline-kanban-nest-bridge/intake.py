@@ -39,7 +39,7 @@ LANE_TAG = "cline"
 DEFAULT_PROVIDER = "ollama"
 DEFAULT_MODEL = "qwen2.5:7b"
 JOB_KEY_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,59}$")
-ACTOR = "cline-intake"
+ACTOR = "devin"
 SPEC_CHARS = 3000
 
 PROMPT_TEMPLATE = """You are completing Chaba kanban card "{title}" in a disposable workspace.
