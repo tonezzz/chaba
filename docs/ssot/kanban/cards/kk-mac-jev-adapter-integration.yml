@@ -1,0 +1,26 @@
+id: kk-mac-jev-adapter-integration
+title: Wire KK-Mac bounded LLM adapter into JEV dispatch
+column: backlog
+updated: 2026-10-29 16:53
+brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
+  blocking fallback lanes.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- jev
+- online-lane
+- read-only
+- fallback
+spec: Add an explicit executor contract for kk_mac_local or equivalent. Admission must require a fresh Ada Nest
+  heartbeat, ollama_ok=true, disk threshold, and a bounded task class. Route only summary, operator_brief, structured_extract,
+  and safe_route. Execute through scripts/devnest/kk_mac_llm.py, persist usage/admission/response artifact, independently
+  verify schema and facts, and mark the card verified only after artifact+verifier pass. If KK-Mac is stale, unavailable,
+  overloaded, or returns invalid output, fail closed and fall back to the next lane. No shell, code mutation, credentials,
+  destructive action, or public publish. Add unit tests and one supervised live dispatch before enabling automatic
+  routing.
+ref: OPS-0978
+comms:
+- at: 2026-10-29 16:53
+  from: devin
+  text: card captured via board-api
