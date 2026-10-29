@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 13:40
+updated: 2026-10-29 13:41
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -134,6 +134,14 @@ comms:
   from: devin
   text: 'raised request kk-mac-is-online-and-its-host-key-is-tru-82e4b0: KK-Mac is online and its host key is trusted,
     but SSH authentication for kkkakk@kk-mac is denied. I cannot verify that M'
+- at: 2026-10-29 13:41
+  from: devin
+  text: 'answered kk-mac-is-online-and-its-host-key-is-tru-82e4b0: Superseded by Tony''s existing request answer
+    `does-today-s-kk-mac-permission-include-o-6d3988 = deterministic-only`. This duplicate access request should
+    not be treated as authorization for Qwen3 infe'
+- at: 2026-10-29 13:41
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: idle
@@ -161,7 +169,7 @@ requests:
   ask: KK-Mac is online and its host key is trusted, but SSH authentication for kkkakk@kk-mac is denied. I cannot
     verify that MPS video work and owner workloads are idle or launch the staged 30-minute qwen3:8b model-only pack.
     Which safe path do you want? Do not paste private keys or passwords here.
-  status: open
+  status: answered
   at: 2026-10-29 13:40
   from: devin
   options:
@@ -174,4 +182,7 @@ requests:
   - id: hold
     label: Leave the pack staged until later.
   suggested: seed-approved-runner-key
+  answer: Superseded by Tony's existing request answer `does-today-s-kk-mac-permission-include-o-6d3988 = deterministic-only`.
+    This duplicate access request should not be treated as authorization for Qwen3 inference; no inference will
+    be run on KK-Mac.
 awaiting_action: true
