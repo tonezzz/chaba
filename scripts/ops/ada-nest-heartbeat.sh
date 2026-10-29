@@ -20,6 +20,13 @@ set -u
 export PATH=/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin
 MDDB_URL="${MDDB_URL:-http://100.102.134.91:11026/v1}"
 HOST="$(hostname -s 2>/dev/null || hostname)"
+# Some Mac network setups resolve the hostname to the LAN address. Prefer
+# macOS's stable LocalHostName so the heartbeat key does not become "192".
+case "$HOST" in
+  ""|*[!0-9.]*) ;;
+  *) HOST="$(scutil --get LocalHostName 2>/dev/null || true)" ;;
+esac
+[ -n "$HOST" ] || HOST="$(hostname 2>/dev/null || echo member-device)"
 ROLE="${NEST_ROLE:-member-device}"
 
 tailnet_ip() {
