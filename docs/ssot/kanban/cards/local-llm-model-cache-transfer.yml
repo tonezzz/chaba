@@ -1,7 +1,7 @@
 id: local-llm-model-cache-transfer
 title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
 column: doing
-updated: 2026-10-29 16:33
+updated: 2026-10-29 16:37
 brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
   reuse them across lanes.
 priority: high
@@ -44,6 +44,11 @@ comms:
 - at: 2026-10-29 16:33
   from: chaba
   text: started devin-task-20261029-093301-use-idc03-or-con01-as-a-downlo on mn01 (dispatch)
+- at: 2026-10-29 16:37
+  from: devin
+  text: 'Session 2026-10-29 (mn01 dispatch): formalizing con01 cache into durable tooling — scripts/models/model-cache.py
+    (content-addressed store, quarantine, sha256 gate, metadata index), declared cache tier, runbook + measurements.
+    Existing qwen3 0.6b/4b/8b blobs on con01 will be adopted into the index.'
 action:
   type: dispatch
   status: running
