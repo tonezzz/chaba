@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 import socket
 import subprocess
@@ -99,13 +100,42 @@ def create_args(spec):
 
 
 def run_container(args, timeout=60, allowed_codes=(0,)):
-    cmd = ["podman", "exec", "--env", f"KANBAN_RUNTIME_HOST={RUNTIME_HOST}",
-           "--env", f"KANBAN_RUNTIME_PORT={RUNTIME_PORT}", CONTAINER, *args]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode not in allowed_codes:
-        detail = (result.stderr or result.stdout).strip()[:500]
-        raise RuntimeError(f"container command failed ({result.returncode}): {detail}")
-    return result.stdout
+    # the kanban CLI drops stdout past ~8KB when writing to a pipe, so
+    # redirect inside the container and read the files back out.
+    stamp = f"{os.getpid()}-{time.time_ns()}"
+    out_tmp = f"/tmp/nest-adapter-{stamp}.out"
+    err_tmp = f"/tmp/nest-adapter-{stamp}.err"
+    rc_tmp = f"/tmp/nest-adapter-{stamp}.rc"
+    cmd = [
+        "podman", "exec",
+        "--env", f"KANBAN_RUNTIME_HOST={RUNTIME_HOST}",
+        "--env", f"KANBAN_RUNTIME_PORT={RUNTIME_PORT}",
+        "--env", f"O={out_tmp}", "--env", f"E={err_tmp}", "--env", f"R={rc_tmp}",
+        CONTAINER, "sh", "-c",
+        '"$@" >"$O" 2>"$E"; printf "%s" "$?" >"$R"',
+        "sh", *args,
+    ]
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        stdout = _read_container_file(out_tmp)
+        stderr = _read_container_file(err_tmp)
+        rc_raw = _read_container_file(rc_tmp).strip()
+        returncode = int(rc_raw) if rc_raw.isdigit() else -1
+    finally:
+        subprocess.run(
+            ["podman", "exec", CONTAINER, "rm", "-f", out_tmp, err_tmp, rc_tmp],
+            capture_output=True, timeout=30)
+    if returncode not in allowed_codes:
+        detail = (stderr or stdout).strip()[:500]
+        raise RuntimeError(f"container command failed ({returncode}): {detail}")
+    return stdout
+
+
+def _read_container_file(path):
+    result = subprocess.run(
+        ["podman", "exec", CONTAINER, "cat", "--", path],
+        capture_output=True, text=True, timeout=30)
+    return result.stdout if result.returncode == 0 else ""
 
 
 def run_kanban(args, timeout=60):
