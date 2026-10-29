@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: doing
-updated: 2026-10-29 19:12
+updated: 2026-10-29 19:36
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -296,6 +296,13 @@ comms:
 - at: 2026-10-29 19:12
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-29 19:36
+  from: devin
+  text: '[hold observed 2026-10-29 19:40] The staged preview-v2 pack.yml gained a requires-gate on nonexistent pack
+    kk-video-c9f99fee6146-preview-v2-resume-authorized at 19:31 — a deliberate hold per Tony that fails closed at
+    claim time on every worker. I mirrored the hold line into the canonical repo copy so they stay byte-identical,
+    and updated the job doc. My earlier Cell-1 request is effectively superseded: even a fresh T4 will skip V2 until
+    the authorization marker exists or the requires line is rem'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
