@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-29 17:48
+updated: 2026-10-29 18:24
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -89,6 +89,13 @@ comms:
 - at: 2026-10-29 17:28
   from: devin
   text: moved backlog -> doing
+- at: 2026-10-29 18:24
+  from: devin
+  text: 'Evaluation status correction 2026-10-29: JEV deterministic routing passed 3/3 synthetic cases. OpenCode
+    plan generation passed 0/3 held-out cases: the existing Zen-free run hit its quota/time limit; direct local
+    Qwen2.5:7B attempts timed out; an isolated scratch run returned a plan in 57.6s but the verifier rejected its
+    unsafe allowed_paths=["/"] and unsupported task_class/gate fields. That run had zero tool/MCP/write activity.
+    A two-token idc02 Ollama probe was reachable; it is not a task-quali'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
