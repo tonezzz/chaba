@@ -1,0 +1,23 @@
+id: boards-public-origin-502
+title: Repair boards.surf-thailand.com origin 502
+column: backlog
+updated: 2026-10-29 23:48
+brief: Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns
+  nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.
+priority: high
+program: infrastructure
+tags:
+- boards
+- plesk
+- nginx
+- '502'
+- external-origin
+spec: 'Evidence 2026-10-29: https://boards.surf-thailand.com/ returns Cloudflare HTTP 502; origin https://boards.h3.gizmo-thailand.com/wp/
+  returns nginx HTTP 502. Chaba board-api on idc03 remains healthy at :8787/health and public tailnet :10000/health
+  returns 200. Do not start a duplicate board service on tony-dell. Diagnose origin nginx/Plesk/WP upstream, verify
+  /wp/ and /wp/wp-json/ through both origin and public host, then report root cause and consumer proof.'
+ref: KNB-0990
+comms:
+- at: 2026-10-29 23:48
+  from: devin
+  text: card captured via board-api
