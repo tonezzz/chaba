@@ -9,30 +9,43 @@ comms:
   text: 'Work surfaced by tony-dell power-off 2026-10-20 (OPS-0725).
 
 
-    1) Repoint ssh-hosted MCP servers in ~/.config/devin/mcp_config.json off tony-dell: postgres (conn string still
-    tony-dell:5432 - pg lives on idc03), yomi (lives on idc03), gpu/llama (omen serves :8001/:11434), docs-mcp,
-    weaviate (idc02:8084), notebooklm, focus. Each needs ssh host + env fixes.
+    1) Repoint ssh-hosted MCP servers in ~/.config/devin/mcp_config.json off tony-dell: postgres (conn
+    string still tony-dell:5432 - pg lives on idc03), yomi (lives on idc03), gpu/llama (omen serves :8001/:11434),
+    docs-mcp, weaviate (idc02:8084), notebooklm, focus. Each needs ssh host + env fixes.
 
-    2) DOC_PRINT_SSH=tony-dell-m2m in idc03 ~/.config/secrets/ada-*.env - doc printing degrades until repointed.
+    2) DOC_PRINT_SSH=tony-dell-m2m in idc03 ~/.config/secrets/ada-*.env - doc printing degrades until
+    repointed.
 
     3) cms-h3-publish: needs ~/CascadeP'
 - at: 2026-10-20 17:16
   from: devin
-  text: 'Dashboard consumer-URL audit (post OPS-0731): found + fixed absolute tony-dell URLs in live HA dashboards
-    — chaba-admin (board/monitor/percussion iframes -> tony-ha.surf-thailand.com/apps/*) and chaba-home (gesture
-    + gesture/screen links). Root-cause gap: the migration inventory covered producers (units, listeners, upstreams)
-    but not consumers; adding a consumer-reference grep step to the host-migration runbook. REMAINING: ada-ha-chaba-home
-    (:8125) still has 2 gesture links on tony-dell — no lon'
+  text: 'Dashboard consumer-URL audit (post OPS-0731): found + fixed absolute tony-dell URLs in live HA
+    dashboards — chaba-admin (board/monitor/percussion iframes -> tony-ha.surf-thailand.com/apps/*) and
+    chaba-home (gesture + gesture/screen links). Root-cause gap: the migration inventory covered producers
+    (units, listeners, upstreams) but not consumers; adding a consumer-reference grep step to the host-migration
+    runbook. REMAINING: ada-ha-chaba-home (:8125) still has 2 gesture links on tony-dell — no lon'
 - at: 2026-10-20 18:53
   from: devin
-  text: 'UPDATE: ada-ha cleared — token minted (ada-ha-token.env, macbook-origin convention), all 4 live ada-ha
-    dashboards repointed off dell (chaba-admin board+system-report, chaba-home gesture x2, chaba-nest board, smart-home
-    cams :8448->omen go2rtc), resource versions bumped. Stale ada-ha-chaba-home snapshot deleted (dashboard no longer
-    exists). consumer-canary now CLEAN with zero skips — scans ada-ha dashboards too.'
+  text: 'UPDATE: ada-ha cleared — token minted (ada-ha-token.env, macbook-origin convention), all 4 live
+    ada-ha dashboards repointed off dell (chaba-admin board+system-report, chaba-home gesture x2, chaba-nest
+    board, smart-home cams :8448->omen go2rtc), resource versions bumped. Stale ada-ha-chaba-home snapshot
+    deleted (dashboard no longer exists). consumer-canary now CLEAN with zero skips — scans ada-ha dashboards
+    too.'
 - at: 2026-10-22 10:30
   from: devin
-  text: 'sweep 2026-10-22: found+fixed a 4th follow-up class — probes/jobs that assumed the host they ran on. kanban-sync
-    moved to idc03 but gev-auto-health + vcast-auto-health still probed 127.0.0.1 (12 false review cards). Repointed
-    to tailnet names: gev units->idc02, cast/yt-live->omen, relay->idc03:3010, gev page/ws->dell caddy (still fronts
-    /apps). Also: build-dossier-devices tony-ha ws->wss://omen, board_notify HA url->https://omen, dropped idc01
-    from log fleet, added idc03 loopback ssh key. runboo'
+  text: 'sweep 2026-10-22: found+fixed a 4th follow-up class — probes/jobs that assumed the host they
+    ran on. kanban-sync moved to idc03 but gev-auto-health + vcast-auto-health still probed 127.0.0.1
+    (12 false review cards). Repointed to tailnet names: gev units->idc02, cast/yt-live->omen, relay->idc03:3010,
+    gev page/ws->dell caddy (still fronts /apps). Also: build-dossier-devices tony-ha ws->wss://omen,
+    board_notify HA url->https://omen, dropped idc01 from log fleet, added idc03 loopback ssh key. runboo'
+- at: 2026-10-29 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: The goal is to complete the remaining repointing and follow-up work resulting from the tony-dell
+  power-off, including updating ssh-hosted MCP servers in ~/.config/devin/mcp_config.json, updating DOC_PRINT_SSH
+  in idc03 secrets, addressing cms-h3-publish path requirements, and verifying probe/job host assumptions.
+  The work involves hosts idc02, idc03, and tony-omen, and targets configuration files and scripts. Constraints
+  require ensuring all dependencies are correctly pointed away from tony-dell to their new hosts (such
+  as idc03, omen, and caddy). The testable done-condition is that consumer-canary remains clean with zero
+  skips, all specified MCPs and jobs function without referencing tony-dell, and health probes successfully
+  target their correct new host destinations.
