@@ -1888,6 +1888,20 @@ def finish_pass(st: dict) -> bool:
             tid = ent.get("tid") or ""
             taskdir = (Path.home() / ".local/share/devin-dispatch/tasks"
                        / tid)
+            # A legacy runner state can lose tid while the executor's
+            # durable task directory remains. Recover by card id before
+            # treating a reaped unit as an execution failure.
+            if not taskdir.is_dir():
+                tasks_root = Path.home() / ".local/share/devin-dispatch/tasks"
+                for candidate in tasks_root.glob("*/meta.json"):
+                    try:
+                        meta_probe = json.loads(candidate.read_text())
+                    except (OSError, json.JSONDecodeError):
+                        continue
+                    if (meta_probe.get("card") == cid and
+                            meta_probe.get("executor") == "kk_mac_local"):
+                        taskdir = candidate.parent
+                        break
             try:
                 meta = json.loads((taskdir / "meta.json").read_text())
                 exit_code = int((taskdir / "exit_code").read_text().strip())
