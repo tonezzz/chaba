@@ -1,0 +1,24 @@
+id: audit-miss-education-lesson-write-timeout
+title: 'Audit miss: missed-job-sweep Education lesson not landed after WP timeout'
+column: backlog
+updated: 2026-10-29 11:58
+brief: The reusable procedure is committed in the repo, but its Education lesson upsert timed out twice through
+  the supported board-api writer.
+priority: medium
+program: audit
+tags:
+- audit
+- lesson-capture
+- wp-timeout
+- artifact-landing
+spec: Retry the Education lesson upsert for topic missed-job-sweep-and-safe-opencode-ha-tabs only after the board-api
+  WP lesson lookup is healthy. The 2026-10-29 lesson-add.py call with --no-th returned HTTP 502 on the upstream
+  WordPress GET/read timeout twice; no direct WP credential or alternate writer was used, and no model translation
+  was invoked. Confirm the lesson exists in the Education CPT/MDDB after the retry. Do not treat the repo runbook
+  as a substitute for the Education lesson.
+ref: AUD-0974
+comms:
+- at: 2026-10-29 11:58
+  from: tony
+  text: Filed by the 2026-10-29 audit. `docs/kb/missed-job-sweep.md` and SSOT procedure entry are durable; Education
+    CPT write is still pending.
