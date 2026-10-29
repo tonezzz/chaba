@@ -20,7 +20,7 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-10-29 23:18
   last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health
@@ -28,6 +28,9 @@ action:
     or changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
   attempts: 1
   runner: tony-dell
+  result: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health checks
+    are active.  \n- **Model:** qwen3:8b running in read-only mode on KK-Mac.  \n- **Activity:** No mutations or
+    changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
 ref: OPS-0988
 comms:
 - at: 2026-10-29 23:16
@@ -59,3 +62,7 @@ comms:
 - at: 2026-10-29 23:20
   from: chaba
   text: started devin-task-kk-mac-live-jev-probe3-1793290810 on tony-dell (dispatch executor=kk_mac_local)
+- at: 2026-10-29 23:20
+  from: tony-dell
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) at and
+    Ollama health checks are active.  \'
