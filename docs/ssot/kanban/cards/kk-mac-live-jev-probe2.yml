@@ -1,0 +1,26 @@
+id: kk-mac-live-jev-probe2
+title: KK-Mac supervised JEV executor probe
+column: backlog
+updated: 2026-10-29 23:13
+brief: Run one supervised explicit kk_mac_local executor job on tony-dell runner against KK-Mac qwen3:8b.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- jev
+- supervised
+- read-only
+spec: Read-only summary probe. Do not modify files, invoke shell, use credentials, or publish. Accept only if admission
+  heartbeat/Ollama gate passes, kk_mac executor returns a valid artifact, and independent contract verifier passes.
+action:
+  type: dispatch
+  executor: kk_mac_local
+  artifact: evals/kk-mac-lane/out/kk-mac-live-jev-probe2.json
+  task_class: summary
+  prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
+    and Ollama health must be fresh; no mutation occurred. Return a concise operator summary.'
+ref: OPS-0987
+comms:
+- at: 2026-10-29 23:13
+  from: devin
+  text: card captured via board-api
