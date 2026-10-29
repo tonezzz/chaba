@@ -1,14 +1,14 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
-column: review
-updated: 2026-10-29 23:15
-spec: Integrate the existing Colab pack contract, nest_job lifecycle, PublicationEvent, Kanban workflow, and artifact
-  storage into one operator SOP. Clarify exact status transitions and source-of-truth locations; distinguish plan/project/approval
-  status from runtime job status and pack markers. Update existing docs/kb/colab-mcp-jobs.md and the colab-mcp entry
-  in docs/ssot/ssot.procedures.yml; add a job-lifecycle SSOT record. Define a private project artifact root at gdrive:ada-nest/projects/<project-slug>/
-  with source, ingest, brief, story, shots, assets, packs, renders, qc subfolders, and register the Sacred Father
-  project's current planning/preview state without pretending a Colab pack or clip exists. No GPU jobs, paid calls,
-  public publishing, or permission changes.
+column: backlog
+updated: 2026-10-29 23:19
+spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
+  CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
+  /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
+  JOB_META_KEYS = kind/status/host/pack/runner/result_ref/error/updated/event_id); publication.py fans out progress|milestone|alert
+  events to the nest_job adapter for live execution state; card layer kanban column is separate (backlog/doing/review/done)
+  and owned by humans. Cover: lifecycle transitions, who writes status (queue-mgr, pack runner, close_out), where
+  state is mirrored (WP nest_job vs kanban column vs PublicationEvent), and artifact/result_ref storage convention.'
 ref: OPS-0922
 comms:
 - at: 2026-10-27 09:41
@@ -136,6 +136,9 @@ comms:
     plus hallucinated GDrive folder conventions stated as fact. Following this doc would mislead. The model cannot
     derive schema truth it cannot see; this card asked for derivation, so it fabricated. Recommend: rewrite by a
     lane with repo access, or regenerate with the real status enum paste'
+- at: 2026-10-29 23:19
+  from: devin
+  text: moved review -> backlog
 tags:
 - cline
 cline:
