@@ -130,6 +130,10 @@ comms:
     in known_hosts. The connection now fails at authentication (`Permission denied (publickey,password,keyboard-interactive)`),
     not host-key verification. I did not bypass SSH checks or start the staged pack; no GPU/owner-process state
     was readable.'
+- at: 2026-10-29 13:40
+  from: devin
+  text: 'raised request kk-mac-is-online-and-its-host-key-is-tru-82e4b0: KK-Mac is online and its host key is trusted,
+    but SSH authentication for kkkakk@kk-mac is denied. I cannot verify that M'
 action:
   type: dispatch
   status: idle
@@ -153,4 +157,21 @@ requests:
   - deterministic-only
   suggested: deterministic-only
   answer: deterministic-only
+- id: kk-mac-is-online-and-its-host-key-is-tru-82e4b0
+  ask: KK-Mac is online and its host key is trusted, but SSH authentication for kkkakk@kk-mac is denied. I cannot
+    verify that MPS video work and owner workloads are idle or launch the staged 30-minute qwen3:8b model-only pack.
+    Which safe path do you want? Do not paste private keys or passwords here.
+  status: open
+  at: 2026-10-29 13:40
+  from: devin
+  options:
+  - id: seed-approved-runner-key
+    label: Have KK/you install the approved runner public key via the existing onboarding procedure; then I can
+      run preflight and the 30-minute pack.
+  - id: kk-run-locally
+    label: Have KK run the staged one-shot pack locally after confirming MPS/video and owner workloads are idle;
+      send only the private Drive artifact path.
+  - id: hold
+    label: Leave the pack staged until later.
+  suggested: seed-approved-runner-key
 awaiting_action: true
