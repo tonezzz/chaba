@@ -1,39 +1,46 @@
 title: DevNest model-slot packs for Colab T4 and KK-Mac
-subtitle: Prepare bounded local Qwen3 8B smoke packs for both workers
+subtitle: Pre-stage pinned HF Qwen3 weights and prepare bounded local smoke packs
 icon: cpu
 card: devnest-colab-t4-model-slot-adapter (OPS-0971)
 date: 2026-10-29
 
 planning:
   goal: >-
-    Stage a 30-minute local-model structured-output smoke pack for Colab T4
-    and a matching no-pull pack for KK-Mac, without running either worker.
+    Stage a CPU-only pinned Qwen3 HF cache pack, a 30-minute local-HF
+    structured-output pack for Colab T4, and a matching no-pull local
+    Ollama smoke pack for KK-Mac, without launching either inference pack.
   scope: >-
-    Use qwen3:8b and five synthetic read-only fixtures. Report latency,
-    token throughput, memory availability, and exact structured-output
-    verifier results. The result is a model-only smoke, not a DevNest
-    agent-replay score. Colab may pull Qwen3 only during bounded prep;
-    Mac must use its already-installed local model.
+    Use Qwen/Qwen3-8B at pinned revision
+    b968826d9c46dd6066d109eabc6255188de91218 and five synthetic read-only
+    fixtures. A high-RAM CPU worker stages the public Apache-2.0 HF snapshot
+    to Drive; Colab restores it during warm-up and uses local NF4 inference.
+    KK-Mac uses its existing local Ollama qwen3:8b model. Report latency,
+    token throughput, GPU/unified-memory facts, and exact structured-output
+    verifier results. This is a model-only smoke, not a DevNest agent-replay
+    score.
   success_criteria:
-    - Both pack manifests declare 1800s timeout and durable artifact gates.
-    - Colab model prefetch is bounded and overlapped with T4 warm-up.
+    - The CPU pre-stage pack pins the HF revision and uploads a verified archive.
+    - The Colab model pack restores cached weights and declares durable artifact gates.
+    - Both inference packs declare 1800s timeouts.
     - Mac pack is isolated from the shared queue and performs no model pull.
     - Unit tests cover JSON parsing, exact verifier scoring, and missing-model handling.
-    - Both packs are staged to their worker roots; neither is launched.
+    - All three packs are staged to their worker roots; none is launched.
   risks:
     - >-
-      Colab Qwen download may exceed the warm-up window; bound the pull and
-      let the render queue continue if the model is unavailable.
+      The HF snapshot is approximately 16GB; the CPU pre-stage pack needs
+      sufficient free disk and verified artifacts before Colab can run.
     - >-
       KK-Mac is a member device; do not start the local pack while the
       MPS video probe or owner workloads are active.
     - >-
-      Ollama model cache uploads are best-effort DriveFS writes; keep the
-      report as the required completion artifact and verify the cache remotely.
+      The HF cache archive is large; verify it from a fleet host before the
+      Colab T4 queue attempts to restore it.
   resources:
     - Colab shared root: gdrive:ada-nest
+    - HF pre-stage pack: devnest-qwen3-8b-hf-prestage
     - KK-Mac isolated root: gdrive:ada-nest-kk-mac-pilot
-    - Local model candidate: qwen3:8b (no paid provider)
+    - HF model: Qwen/Qwen3-8B at pinned revision (Apache-2.0)
+    - Mac local model: qwen3:8b (Ollama, no pull)
   owner: tony
   estimated_duration: 1 session
   related_focus:
@@ -51,13 +58,13 @@ processing:
         Use five synthetic JSON tasks and a deterministic verifier. This
         does not claim the frozen S0 shadow-eval agent replay.
     - id: 2
-      label: Build and test Colab and Mac pack variants
+      label: Build and test HF pre-stage, Colab, and Mac pack variants
       status: in_progress
-      notes: Shared runner, Colab-only bounded model prefetch, Mac no-pull preflight.
+      notes: CPU HF archive pre-stage, T4 local-HF arm, Mac local-Ollama arm.
     - id: 3
       label: Stage packages to Drive
       status: not_started
-      notes: Stage to shared Colab queue and isolated KK-Mac pilot root only after tests pass.
+      notes: Stage HF pre-stage and T4 pack to shared root; stage Mac pack in its isolated root.
     - id: 4
       label: Verify worker state and handoff
       status: not_started
@@ -84,12 +91,13 @@ followup:
     - Run the KK-Mac pack once from the isolated root only during an approved idle window.
   deferred:
     - Full tool-using replay on Colab.
-    - Any model pull or launch on KK-Mac.
+    - KK-Mac inference while the MPS video probe or owner workloads are active.
+    - Colab or Mac worker launch; this task stages packs only.
 
 report:
   status: in_progress
   completed_at: null
-  summary: Preparing the two bounded model-only smoke packs; no worker run yet.
+  summary: Preparing the HF pre-stage, Colab T4, and KK-Mac model-only smoke packs; no worker run yet.
   metrics: []
   links:
     - title: Colab model-slot procedure

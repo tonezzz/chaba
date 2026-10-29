@@ -255,75 +255,59 @@ print('heldout-assessment:', json.dumps(rep['verdicts']),
       json.dumps(_b.get('mode')), f"{_a['files']} log files")
 '''
 
-_QWEN3_PREFETCH_PREP = r'''
+_DEVNEST_HF_SLOT_PREP = r'''
 set -eu
 NEST="${NEST_ROOT:-/content/drive/MyDrive/ada-nest}"
 PACK="$NEST/packs/devnest-model-slot-30m"
 [ -f "$PACK/pack.yml" ] || { echo "slot pack not staged; skip"; exit 0; }
 [ -f "$PACK/done" ] && { echo "slot already done; skip"; exit 0; }
-CACHE="$NEST/cache/ollama-qwen3-8b.tar.zst"
-export OLLAMA_MODELS=/root/.ollama/models-qwen3
-mkdir -p "$OLLAMA_MODELS"
-if [ -s "$CACHE" ]; then
+PRESTAGE="$NEST/packs/devnest-qwen3-8b-hf-prestage"
+[ -f "$PRESTAGE/done" ] || { echo "HF pre-stage not done; skip"; exit 0; }
+ARCHIVE="$PRESTAGE/out/qwen3-8b-hf-cache.tar.zst"
+[ -s "$ARCHIVE" ] || { echo "HF pre-stage archive missing; skip"; exit 0; }
+MODEL=/tmp/qwen3-8b-hf
+mkdir -p "$MODEL"
+if [ -s "$ARCHIVE" ]; then
   command -v zstd >/dev/null 2>&1 || \
     timeout 120 apt-get install -y -qq zstd >/dev/null 2>&1
-  if tar -I zstd -tf "$CACHE" >/dev/null 2>&1; then
-    tar -I zstd -xf "$CACHE" -C "$OLLAMA_MODELS"
-    echo "restored qwen3 Ollama cache from Drive"
-  else
-    echo "cached Ollama archive invalid; will pull model"
-  fi
+  timeout 900 tar -I zstd -xf "$ARCHIVE" -C "$MODEL"
 fi
-if ! command -v ollama >/dev/null 2>&1; then
-  curl -fsSL --connect-timeout 10 --max-time 90 \
-    https://ollama.com/install.sh -o /tmp/ollama-install.sh
-  timeout 120 sh /tmp/ollama-install.sh
-fi
-if ! curl -fsS --max-time 3 http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
-  nohup ollama serve > "$PACK/ollama-serve.log" 2>&1 &
-fi
-for i in $(seq 1 30); do
-  curl -fsS --max-time 3 http://127.0.0.1:11434/api/tags \
-    >/dev/null 2>&1 && break
-  sleep 2
-done
-if ! ollama list 2>/dev/null | awk 'NR > 1 {print $1}' \
-      | grep -Fxq 'qwen3:8b'; then
-  timeout 300 ollama pull qwen3:8b
-fi
+timeout 600 python3 -m pip install --quiet --disable-pip-version-check \
+  transformers==4.51.3 accelerate==1.6.0 bitsandbytes==0.45.5
 '''
 
-_QWEN3_PREFETCH_RUN = r'''
-import json, os, time, urllib.request
+_DEVNEST_HF_SLOT_RUN = r'''
+import importlib, json, os, time
 
 root = globals().get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
 boot = globals().get('BOOT_ID', 'noboot')
 pack = f'{root}/packs/devnest-model-slot-30m'
-report = {'boot_id': boot, 'model': 'qwen3:8b', 'ts': time.time()}
+prestage = f'{root}/packs/devnest-qwen3-8b-hf-prestage'
+report = {'boot_id': boot, 'model': 'Qwen/Qwen3-8B', 'ts': time.time()}
 if not os.path.isfile(f'{pack}/pack.yml'):
-    report['status'] = 'skipped-no-pack'
+    report['status'] = 'skipped-no-model-slot'
 elif os.path.isfile(f'{pack}/done'):
     report['status'] = 'skipped-already-done'
+elif not os.path.isfile(f'{prestage}/done'):
+    report['status'] = 'skipped-no-model-cache'
 else:
     try:
-        with urllib.request.urlopen(
-                'http://127.0.0.1:11434/api/tags', timeout=5) as response:
-            tags = json.loads(response.read().decode())
-        models = tags.get('models') or []
-        match = next((m for m in models if m.get('name') == 'qwen3:8b'),
-                     None)
-        report.update(status='ready' if match else 'missing',
-                      model_digest=match.get('digest') if match else None)
+        importlib.import_module('torch')
+        importlib.import_module('transformers')
+        importlib.import_module('bitsandbytes')
+        report['status'] = 'ready' if os.path.isfile(
+            '/tmp/qwen3-8b-hf/config.json') else 'missing-model-files'
     except Exception as exc:
-        report.update(status='unavailable', error=repr(exc)[:240])
-out = f'{root}/queue/model-prefetch/qwen3-8b-{boot}.json'
+        report.update(status='dependencies-unavailable',
+                      error=repr(exc)[:240])
+out = f'{root}/queue/model-prefetch/qwen3-hf-{boot}.json'
 os.makedirs(os.path.dirname(out), exist_ok=True)
 with open(out, 'w') as stream:
     json.dump(report, stream, sort_keys=True)
     stream.write('\n')
-print('ollama-prefetch:', json.dumps(report))
-if report['status'] in ('missing', 'unavailable'):
-    raise RuntimeError('qwen3:8b prefetch did not become ready')
+print('devnest-hf-model-prepare:', json.dumps(report))
+if report['status'] in ('missing-model-files', 'dependencies-unavailable'):
+    raise RuntimeError('Colab local HF model is not ready')
 '''
 
 
@@ -334,13 +318,13 @@ JOBS = [
      "timeout_s": 330,
      "run": _WARMUP_RUN},
 
-    # ---- 2. optional Qwen3 model prefetch — only when its slot pack is staged.
-    #         The T4 warmup overlaps this bounded Ollama/cache prep. ----------
-    {"name": "prefetch-qwen3-8b-for-devnest-slot", "scope": "env",
-     "prep": _QWEN3_PREFETCH_PREP,
-     "artifacts": ["queue/model-prefetch/qwen3-8b-{boot_id}.json"],
+    # ---- 2. restore the staged HF model only when its T4 slot is staged.
+    #         The T4 warmup overlaps this local extract/dependency prep. ------
+    {"name": "restore-devnest-qwen3-hf-for-slot", "scope": "env",
+     "prep": _DEVNEST_HF_SLOT_PREP,
+     "artifacts": ["queue/model-prefetch/qwen3-hf-{boot_id}.json"],
      "timeout_s": 60,
-     "run": _QWEN3_PREFETCH_RUN},
+     "run": _DEVNEST_HF_SLOT_RUN},
 
     # ---- 3. restore HF hub cache from Drive (big CPU-bound extract) -------
     {"name": "restore-hf-cache", "scope": "env",

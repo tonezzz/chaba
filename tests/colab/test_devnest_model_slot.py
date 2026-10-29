@@ -15,6 +15,11 @@ RUNNER_PATH = ROOT / "scripts/colab/devnest-model-slot-runner.py"
 SPEC = importlib.util.spec_from_file_location("devnest_model_slot", RUNNER_PATH)
 RUNNER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RUNNER)
+HF_SPEC = importlib.util.spec_from_file_location(
+    "devnest_hf_model_slot",
+    ROOT / "scripts/colab/packs/devnest-model-slot-30m/run_hf_slot.py")
+HF_RUNNER = importlib.util.module_from_spec(HF_SPEC)
+HF_SPEC.loader.exec_module(HF_RUNNER)
 
 
 class FakeResponse:
@@ -38,6 +43,9 @@ class ModelSlotRunnerTests(unittest.TestCase):
         self.assertEqual(
             RUNNER.parse_json_response('result: {"route":"read_only"} done'),
             {"route": "read_only"})
+        self.assertEqual(
+            HF_RUNNER.parse_json_response('result: {"route":"read_only"} done'),
+            {"route": "read_only"})
 
     def test_verifier_requires_exact_keys_and_types(self):
         expected = {"mutation": False, "failed_units": 2}
@@ -52,6 +60,28 @@ class ModelSlotRunnerTests(unittest.TestCase):
                 {"mutation": False, "failed_units": 2, "extra": 1},
                 expected),
             (False, "keys_mismatch"))
+        self.assertEqual(
+            HF_RUNNER.verify_response(expected, expected),
+            (True, "exact_match"))
+
+    def test_hf_snapshot_integrity_check_uses_manifest_hashes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            model_dir = Path(temp)
+            content = b"synthetic model config"
+            (model_dir / "config.json").write_bytes(content)
+            manifest = {
+                "files": {
+                    "config.json": {
+                        "bytes": len(content),
+                        "sha256": HF_RUNNER.sha256_file(
+                            model_dir / "config.json"),
+                    }
+                }
+            }
+            HF_RUNNER.verify_model_snapshot(model_dir, manifest)
+            manifest["files"]["config.json"]["sha256"] = "0" * 64
+            with self.assertRaisesRegex(RuntimeError, "hash mismatch"):
+                HF_RUNNER.verify_model_snapshot(model_dir, manifest)
 
     def test_five_synthetic_fixtures_are_declared(self):
         fixtures = json.loads(RUNNER.FIXTURES.read_text(encoding="utf-8"))
@@ -67,11 +97,22 @@ class ModelSlotRunnerTests(unittest.TestCase):
             (ROOT / "scripts/colab/packs/kk-mac-devnest-model-slot-30m/pack.yml")
             .read_text())
         self.assertEqual(colab["timeout_s"], 1800)
-        self.assertEqual(colab["needs"]["gpu_gb"], 5)
+        self.assertEqual(colab["needs"]["gpu_gb"], 10)
+        self.assertEqual(colab["requires"], ["devnest-qwen3-8b-hf-prestage"])
         self.assertEqual(mac["timeout_s"], 1800)
         self.assertEqual(mac["needs"]["ram_gb"], 30)
         self.assertNotIn("gpu_gb", mac["needs"])
         self.assertNotIn("ollama pull", mac["prep"])
+        self.assertEqual(
+            mac["fetch"],
+            ["queue/devnest-model-slot-runner.py",
+             "queue/devnest-model-slot-fixtures.json"])
+        prestage = yaml.safe_load(
+            (ROOT / "scripts/colab/packs/devnest-qwen3-8b-hf-prestage/pack.yml")
+            .read_text())
+        self.assertEqual(prestage["needs"]["ram_gb"], 20)
+        self.assertEqual(prestage["needs"]["disk_gb"], 40)
+        self.assertEqual(prestage["timeout_s"], 5400)
 
     def test_qwen_prefetch_follows_warmup_for_overlap(self):
         sys.path.insert(0, str(ROOT / "scripts/colab"))
@@ -84,9 +125,9 @@ class ModelSlotRunnerTests(unittest.TestCase):
             sys.path.pop(0)
         names = [job["name"] for job in jobs.JOBS]
         self.assertEqual(names[0], "t4-session-warmup")
-        self.assertEqual(names[1], "prefetch-qwen3-8b-for-devnest-slot")
+        self.assertEqual(names[1], "restore-devnest-qwen3-hf-for-slot")
         syntax = subprocess.run(
-            ["bash", "-n"], input=jobs._QWEN3_PREFETCH_PREP,
+            ["bash", "-n"], input=jobs._DEVNEST_HF_SLOT_PREP,
             text=True, capture_output=True, check=False)
         self.assertEqual(syntax.returncode, 0, syntax.stderr)
 
