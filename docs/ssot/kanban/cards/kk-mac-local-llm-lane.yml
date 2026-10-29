@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-29 16:33
+updated: 2026-10-29 16:51
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -221,6 +221,12 @@ comms:
 - at: 2026-10-29 16:33
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261028-212658-use-kk-mac-apple-m4-max-36-gib'
+- at: 2026-10-29 16:51
+  from: devin
+  text: 'Next adapter shipped: scripts/devnest/kk_mac_llm.py admits only summary/operator_brief/structured_extract/safe_route,
+    checks the live heartbeat gate, calls existing KK-Mac Ollama :11434 through SSH, and returns usage+admission
+    JSON. No shell/code/mutation bridge. 8 unit tests pass. Real adapter call passed today: qwen3:8b produced a
+    verified read-only summary; admission heartbeat age 22.5s, ollama_ok=true, disk=78G. Commit d4878f8d1 pushed.'
 action:
   type: dispatch
   status: done
