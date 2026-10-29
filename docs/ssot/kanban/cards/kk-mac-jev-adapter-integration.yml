@@ -1,7 +1,7 @@
 id: kk-mac-jev-adapter-integration
 title: Wire KK-Mac bounded LLM adapter into JEV dispatch
 column: done
-updated: 2026-10-29 20:40
+updated: 2026-10-29 20:45
 brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
   blocking fallback lanes.
 priority: high
@@ -87,6 +87,13 @@ comms:
     that host key to idc03 known_hosts; SSH now reaches the Mac but authentication is denied because idc03''s public
     key is not authorized there. I have NOT changed kk-mac authorized_keys. Therefore KK_MAC_LANES remains 0 and
     no live inference ran. The answer ''b) after idc03 is fixed/'' is'
+- at: 2026-10-29 20:45
+  from: devin
+  text: 'The prior answer was not lost: it is stored on the original request. It did not trigger work because that
+    request''s UI options were only `proceed`/`hold`, while the prompt described a/b/c, and an answered request
+    does not enqueue an action by itself. OPS-0978''s code/contract is done; the live probe is separate and KK_MAC_LANES
+    remains 0. The only new gate is SSH authorization: host-key trust on idc03 is now verified, but idc03''s key
+    is not authorized on KK-Mac. OPS-0984 asks whether to use the a'
 action:
   type: dispatch
   status: done
