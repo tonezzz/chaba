@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: backlog
-updated: 2026-10-29 15:02
+updated: 2026-10-29 15:33
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -183,6 +183,13 @@ comms:
     macOS version, 1m load, free disk, active model) into a JSON operator report. Independent verifier matched all
     live fields and lane enum. verified=true; wall 10.297s; 605 eval tokens; artifact /home/tony/evals/results/kk-mac-live-host-llm-report-20261029.json.
     This proves KK-Mac can run a real bounded DevNest job, not only a fixture benchmark.'
+- at: 2026-10-29 15:33
+  from: devin
+  text: 'Admission integration shipped: scripts/devnest/kk_mac_admission.py reads the canonical ada-nest heartbeat,
+    fails closed on missing/stale heartbeat, Ollama unhealthy, or low disk, and returns stable JSON eligibility
+    for lane kk_mac_local. 4 unit tests pass; live result: eligible=true, heartbeat age ~156s, ollama_ok=true, disk=78G.
+    Commit 2fb9d375d pushed. This is the online-when-available gate; task submission remains bounded read-only and
+    falls back when ineligible.'
 action:
   type: dispatch
   status: idle
