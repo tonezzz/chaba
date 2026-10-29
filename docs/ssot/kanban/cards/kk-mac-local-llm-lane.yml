@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-29 10:11
+updated: 2026-10-29 12:27
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -87,6 +87,13 @@ comms:
     verification, so I did not bypass it or launch. Before the one-shot, verify the Mac is online, the host key
     is trusted, and MPS/video plus owner workloads are idle. This remains the fastest no-model-download route once
     those gates are clear.'
+- at: 2026-10-29 12:27
+  from: devin
+  text: 'Host-use plan update 2026-10-29: Tony has authorized kk-mac availability for today. Read-only preflight
+    through the trusted tony-dell SSH hop confirms M4 Max 14 cores/36 GiB, 98 GiB free, moderate load, local Ollama
+    API with cached Qwen3:8B and other models, and no model currently loaded. `opencode` and `ffmpeg` are not on
+    the kkkakk PATH. Plan: use the Mac for deterministic CPU/MPS pre/post-processing and test/build tasks first;
+    keep owner workloads first; do not install services, pull models, '
 action:
   type: dispatch
   status: done
