@@ -1,0 +1,64 @@
+name: kk-video-c9f99fee6146-preview-v2
+requires:
+  - kk-video-c9f99fee6146-r4-preflight
+  - kk-video-c9f99fee6146-embeds
+  - kk-video-c9f99fee6146-pdf-image-audit
+  - kk-video-c9f99fee6146-source-image-use-approved
+  - kk-video-c9f99fee6146-preview
+  - kk-video-c9f99fee6146-voice-clone-probe
+  # Deliberate hold per Tony; remove only when resuming the Colab V2 run.
+  - kk-video-c9f99fee6146-preview-v2-resume-authorized
+needs:
+  gpu_gb: 14
+  ram_gb: 12
+  disk_gb: 35
+  egress_only_ok: true
+timeout_s: 18000
+fetch:
+  - packs/kk-video-c9f99fee6146-embeds/embeds/
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/audit.json
+  - packs/kk-video-c9f99fee6146-pdf-image-audit/out/v1_01/images/
+  - packs/kk-video-c9f99fee6146-preview/teaser-preview.th.srt
+  - packs/kk-video-c9f99fee6146-preview/teaser-preview.en.srt
+  - packs/kk-video-c9f99fee6146-voice-clone-probe/out/verdict.json
+  - projects/kk-video-c9f99fee6146/voice-reference/
+artifacts:
+  - packs/kk-video-c9f99fee6146-preview-v2/out/shots/kk-shot*.mp4
+  - packs/kk-video-c9f99fee6146-preview-v2/out/shots/kk-shot*.json
+  - packs/kk-video-c9f99fee6146-preview-v2/out/narration/cue-*.wav
+  - packs/kk-video-c9f99fee6146-preview-v2/out/narration/narration.wav
+  - packs/kk-video-c9f99fee6146-preview-v2/out/narration/narration-verdict.json
+  - packs/kk-video-c9f99fee6146-preview-v2/out/teaser-preview.mp4
+  - packs/kk-video-c9f99fee6146-preview-v2/out/teaser-preview.th.srt
+  - packs/kk-video-c9f99fee6146-preview-v2/out/teaser-preview.en.srt
+  - packs/kk-video-c9f99fee6146-preview-v2/out/verdict.json
+  - packs/kk-video-c9f99fee6146-preview-v2/out/report.md
+prep: |
+  set -eu
+  apt-get install -y -qq ffmpeg zstd >/dev/null
+  pip install -q pyyaml
+  pip install -q --no-deps f5-tts-th
+  pip install -q cached-path jieba pypinyin pydub torchdiffeq vocos pythainlp python-crfsuite ssg 'x_transformers>=1.31.14' soundfile
+  pip install -q --no-deps 'numpy>=2'
+  pip install -q --no-deps 'huggingface-hub>=1.32,<3'
+  pip uninstall -y -q torchao >/dev/null 2>&1 || true
+  DEST=/root/.cache/huggingface/hub
+  TAR=$NEST_ROOT/model-archive/hf/ltx-slim.tar.zst
+  [ -f "$TAR" ] || TAR=$NEST_ROOT/model-archive/hf/ltx-video.tar.zst
+  if [ -f "$TAR" ]; then
+    tar -I zstd -tf "$TAR" 2>/dev/null | head -1 | grep -q '^hub/' \
+      && DEST=/root/.cache/huggingface || DEST=/root/.cache/huggingface/hub
+    if du -sh "$DEST/models--Lightricks--LTX-Video" 2>/dev/null | awk '$1+0 >= 9 {exit 1}'; then
+      mkdir -p "$DEST" && tar -I zstd -xf "$TAR" -C "$DEST" || true
+    fi
+  fi
+  python -c "from diffusers import LTXImageToVideoPipeline; from f5_tts_th.tts import TTS; print('LTX and F5-TTS imports ok')"
+  if ls "$DEST/models--Lightricks--LTX-Video"/snapshots/*/transformer/*.safetensors >/dev/null 2>&1; then
+    echo "LTX weights present"
+  else
+    python -c "from huggingface_hub import snapshot_download; snapshot_download('Lightricks/LTX-Video',ignore_patterns=['text_encoder/*','tokenizer/*','*.bin','*fp8*','*gguf*'])"
+  fi
+run_sh: |
+  exec python3 "$PACK_DIR/run_preview_v2.py" \
+    --pack-dir "$PACK_DIR" \
+    --nest-root "$NEST_ROOT"
