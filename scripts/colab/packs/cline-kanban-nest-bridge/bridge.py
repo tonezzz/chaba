@@ -41,8 +41,8 @@ def validate_spec(spec):
     allowed = {
         ("ollama", "qwen3:4b"),
         ("ollama", "qwen2.5:7b"),
-        ("openai-native", "or-free-nemotron-nano"),
-        ("openai-native", "or-free-gemma31b"),
+        ("openrouter", "or-free-nemotron-nano"),
+        ("openrouter", "or-free-gemma31b"),
     }
     if (spec.get("provider_id"), spec.get("model_id")) not in allowed:
         raise ValueError(
