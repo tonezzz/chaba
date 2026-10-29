@@ -1,7 +1,7 @@
 id: kk-mac-jev-adapter-integration
 title: Wire KK-Mac bounded LLM adapter into JEV dispatch
 column: review
-updated: 2026-10-29 20:03
+updated: 2026-10-29 20:09
 brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
   blocking fallback lanes.
 priority: high
@@ -71,6 +71,12 @@ comms:
 - at: 2026-10-29 20:03
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''supervised-live-dispatch-unit-''] block close)'
+- at: 2026-10-29 20:09
+  from: tony
+  text: 'answered supervised-live-dispatch-unit-tests-full-2f68ac: b) after idc03 is fixed/'
+- at: 2026-10-29 20:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -79,6 +85,8 @@ action:
     | devin-task-20261029-192611-add-an-explicit-executor-contr.service: Consumed 2min 48.518s CPU time, 450.2M
     memory peak, 0B memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-10-29 20:03
 requests:
 - id: supervised-live-dispatch-unit-tests-full-2f68ac
   ask: 'Supervised live dispatch: unit tests + full contract wiring are green and the KK-Mac lane probe is eligible
@@ -87,11 +95,13 @@ requests:
     I stop here — KK_MAC_LANES stays 0, the supervised dispatch runs later on a host with kk-mac ssh access (documented
     in the job file); (b) you authorize one bounded live inference and tell me which host should run it; (c) run
     it yourself with the command in the comms. Which do you want?'
-  status: open
+  status: answered
   at: 2026-10-29 19:48
   from: devin
   options:
   - proceed
   - hold
+  answer: b) after idc03 is fixed/
 review_kind: verify
 claim: {}
+awaiting_action: true
