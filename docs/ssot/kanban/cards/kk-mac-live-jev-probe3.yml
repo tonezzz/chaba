@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe3
 title: KK-Mac supervised JEV executor probe (tony-dell)
 column: doing
-updated: 2026-10-29 23:25
+updated: 2026-10-29 23:26
 brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
 priority: high
 program: devnest
@@ -20,7 +20,7 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: queued
+  status: held
   sweep:
     failed_noted: 2026-10-29 23:18
   last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health
@@ -71,3 +71,6 @@ comms:
 - at: 2026-10-29 23:25
   from: devin
   text: queued for processing
+- at: 2026-10-29 23:26
+  from: chaba
+  text: dispatch parked after 2 attempts (policy retries_per_card=2) — re-queue to retry
