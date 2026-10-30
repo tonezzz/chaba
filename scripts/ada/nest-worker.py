@@ -269,7 +269,7 @@ def main():
     for d in sorted(lsf(f'{args.remote}/packs')):
         pdir = f'{args.remote}/packs/{d}'
         entries = lsf(pdir)
-        if 'done' in entries:
+        if 'done' in entries or 'failed' in entries:
             continue
         claims = lsf(f'{pdir}/claim')
         if claims:
@@ -327,6 +327,9 @@ def main():
             say(f'{d}: DONE {info}')
         else:
             say(f'{d}: FAIL {info}')
+            # Contract failures are terminal for this package. Leaving the
+            # pack unmarked causes an invalid model response to retry forever.
+            rcat(f'{pdir}/failed', f'{info} worker={WORKER}')
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
     say('pass complete')
 
