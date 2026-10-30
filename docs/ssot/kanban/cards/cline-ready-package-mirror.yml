@@ -1,7 +1,7 @@
 id: cline-ready-package-mirror
 title: Cline Kanban ready-package mirror — project queue+dispatch state into the con01 cline-kanban board
 column: backlog
-updated: 2026-10-30 15:18
+updated: 2026-10-30 17:45
 priority: medium
 blocked_by: runner-readiness-projection
 tags:
@@ -41,3 +41,10 @@ comms:
 - at: 2026-10-30 15:18
   from: tony
   text: carded from chaba session — Tony's 'ready package' visualization proposal; spike gates the build
+- at: 2026-10-30 17:45
+  from: devin
+  text: 'DONE + deployed + verified live (commit d2146addf): scripts/ops/cline-board-mirror.py runs on con01 every
+    2min (job:cline-board-mirror, rendered units enabled). SPIKE RESULT — board.json is live state: direct locked
+    write (tmp+rename) is immediately visible to task list/UI and spawns NO agent session; kanban task move-without-session
+    is not exposed via CLI/tRPC so the mirror writes board.json directly following the app''s own atomic-write convention.
+    Mapping: queued->backlog (#pos + [ready:hosts|'
