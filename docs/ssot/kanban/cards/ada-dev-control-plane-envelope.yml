@@ -1,0 +1,30 @@
+id: ada-dev-control-plane-envelope
+title: Canonical Ada development-control-plane job envelope and Nest lifecycle
+column: backlog
+updated: 2026-10-30 16:39
+brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
+  without losing project context.
+priority: high
+program: ai-workforce
+tags:
+- ada
+- devnest
+- nest
+- opencode
+- cline
+- node-red
+- workflow
+spec: Define and test one canonical job envelope shared by Ada, Node-RED, OpenCode, Cline, and DevNest. The envelope
+  must carry job_id, card_id, project, repo, worktree, task_class, objective, requirements, acceptance_criteria,
+  executor, model, target_host, allowed_paths, input_artifacts, output_artifacts, verify, approval_required, and
+  timeout_s. Define the lifecycle draft -> ready -> claimed -> running -> verifying -> review -> approved -> merged
+  -> done, with durable actor/host/time/evidence at each transition. Define the result bundle result.json, summary.md,
+  diff.patch, tests.json, logs/, and artifacts/. Add idempotency keys, heartbeat-vs-completion separation, and a
+  local queue/artifact transport design for offline operation. Node-RED remains a read-only projection by default;
+  any controls are allowlisted and confirmation-gated. Do not add arbitrary shell, restart, delete, deploy, or automatic
+  production mutation from Node-RED.
+ref: ADA-1010
+comms:
+- at: 2026-10-30 16:39
+  from: tony
+  text: card captured via board-api
