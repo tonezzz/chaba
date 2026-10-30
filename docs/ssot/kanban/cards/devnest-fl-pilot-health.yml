@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: doing
-updated: 2026-10-30 10:48
+updated: 2026-10-30 16:13
 spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
   on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
   merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-gemini-3.5-flash-lite
@@ -15,8 +15,7 @@ action:
   executor: opencode
   agent_profile: ops-readonly
   artifact: evals/opencode-lane/out/ops-readonly-health.json
-  status: failed
-  runner: idc02
+  status: queued
   result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-devnest-fl-pilot-health-1793331204.service,
     ignoring: Invalid argument | devin-task-devnest-fl-pilot-health-1793331204.service: Consumed 1min 28.320s CPU
     time, 637.6M memory peak, 0B'
@@ -50,3 +49,6 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-devnest-fl-pilot-health-1793331204 failed — its branch isn''t auto-merged (unverified
     partial work). Retry the card or merge dispatch/devnest-fl-pilot-health-1793331204 by hand.'
+- at: 2026-10-30 16:13
+  from: devin
+  text: queued for processing
