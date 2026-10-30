@@ -1,0 +1,24 @@
+id: jevnest-worker-scan-latency
+title: Reduce JevNest remote queue scan latency
+column: backlog
+updated: 2026-10-30 14:37
+brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
+  Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
+  gates.
+priority: medium
+program: ai-workforce
+tags:
+- jevnest
+- nest-worker
+- rclone
+- latency
+- kk-mac
+spec: Measure and optimize scripts/ada/nest-worker.py against gdrive:ada-nest-kk-llm. Preserve first-writer claim,
+  stale-claim release, needs/admission, independent verification, done/failed markers, and serial concurrency. Prefer
+  one recursive listing or an index/priority path over one rclone call per historical pack. Add a regression fixture/benchmark
+  for package discovery latency. Do not start a second worker or bypass the LaunchAgent.
+ref: OPS-1003
+comms:
+- at: 2026-10-30 14:37
+  from: devin
+  text: card captured via board-api
