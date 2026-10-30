@@ -170,7 +170,7 @@ STRONG_MODELS = [
 # provider cost into combined_cost; 0.0 = unpriced/free
 PRICE_TABLE = {
     "litellm/gemini-3.5-flash-lite": (0.10, 0.40),
-    "litellm/gemini-3-flash": (0.30, 2.50),
+    "litellm/gemini-3.5-flash": (0.30, 2.50),
     "litellm/claude-fable-5.1": (10.0, 50.0),
     "opencode/deepseek-v4.1-flash-free": (0.0, 0.0),
     "ollama/qwen2.5:7b-instruct": (0.0, 0.0),
