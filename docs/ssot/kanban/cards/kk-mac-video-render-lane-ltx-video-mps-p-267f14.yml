@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:18
+updated: 2026-10-30 21:24
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -178,6 +178,13 @@ comms:
     (zero differences). Fresh Mac preflight now passes: AC, eligible, no busy owner app, 92% memory free, and Ollama
     `/api/ps` empty. Starting exactly one private shot03/page15 image-conditioned MPS test; the remaining scene
     batch and Colab V2 hold are unchanged.'
+- at: 2026-10-30 21:24
+  from: devin
+  text: 'One-off v2 safety stop: the worker rejected `prep` before model load/render because its broad process regex
+    matched only the Adobe Photoshop (Beta) crash processor, not an editor/video workload. Read-only `ps` confirmed
+    the matching process is the crash reporter. No app was stopped, no model loaded, and no video was generated.
+    I am narrowing the one-off gate to ignore only Adobe crash-reporter helpers while continuing to block actual
+    Photoshop/FFmpeg/MLX/video apps; batch packs and their visual-'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
