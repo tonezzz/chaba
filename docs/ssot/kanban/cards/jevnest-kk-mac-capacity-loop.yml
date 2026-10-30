@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 11:33
+updated: 2026-10-30 13:59
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -31,3 +31,9 @@ comms:
     inbox tasks, checks KK admission, caps queue depth at 3/new packages at 3, stages only allowed read-only classes,
     dedupes by pack name, and never invents work. First real producer-created task completed on KK-Mac: cache-status-20261030-1,
     verifier pass, artifact+done marker landed in ~2s.'
+- at: 2026-10-30 13:59
+  from: devin
+  text: 'Added three real inbox tasks and staged them on KK-Mac. Independent verifier correctly rejected all three
+    model responses for missing literal facts (Omen, Ollama, fallback); no invalid output was accepted. Marked those
+    packages terminal-failed/held to stop retry churn. This exposed and fixed a worker issue: terminal package failures
+    now write a failed marker and are skipped, rather than retrying forever. Commit 8bc67743d.'
