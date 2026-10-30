@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:08
+updated: 2026-10-30 21:10
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -152,6 +152,13 @@ comms:
     pack. It is not the remaining eight-shot batch, not a narration/mux, and not a Colab V2 resume. I will launch
     only after the pack's AC, memory, owner-app, cache, and no-resident-Ollama gates pass; no model will be unloaded
     and no public output will be made.
+- at: 2026-10-30 21:10
+  from: devin
+  text: Staged a separate one-off Mac image-conditioned probe for shot03/page15 (`kk-mac-storyboard-i2v-shot03-oneoff-20261030`)
+    in the isolated video-pilot store; rclone check reports 0 differences. It omits the batch visual-review marker
+    only for this user-requested single probe; shots04–10 remain gated. Fresh preflight currently sees Qwen3:8B
+    resident until its natural expiry, so I have not launched the worker or unloaded it. I will recheck the no-resident-model/AC/memory
+    gate before the one-shot run
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
