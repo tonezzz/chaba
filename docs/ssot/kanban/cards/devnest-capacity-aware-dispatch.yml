@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 20:03
+updated: 2026-10-30 22:31
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -72,3 +72,10 @@ comms:
     It now uses one recursive pack inventory plus one existing-pack set. Live test on tony-dell completed in 3.37s
     with queue_before=3 and correctly held new staging at the watermark. Commit f7dab43f4. This removes the producer-side
     idle gap; worker remains serial and drains the three queued packages.'
+- at: 2026-10-30 22:31
+  from: devin
+  text: Tony requested overnight KK-Mac shutdown. Stopped the KK LaunchAgent and all three KK/report/broker timers
+    on tony-dell; deployed DEVNEST_KK_MAC_ENABLED=false into the rendered units. Existing queue artifacts are preserved.
+    KK-Mac host/Ollama was not powered off; only DevNest usage was stopped. Overnight fallback is the free OpenCode/Flash
+    Lite lane for small verified tasks, Colab for staged finite GPU batches, and Devin for ambiguous/multi-step
+    work.
