@@ -1,0 +1,26 @@
+id: devnest-fl-pilot-ssotresearch
+title: 'OpenCode ssot-research pilot: kk-mac fleet declarations (qwen3:8b)'
+column: backlog
+updated: 2026-10-30 20:58
+spec: "Research question: What does the fleet declare about kk-mac — its host entry, its ollama capability, and\
+  \ the LiteLLM routes that reach it?\n\nAnswer ONLY from the checkout's SSOT (docs/ssot/, AGENTS.md, docs/kb/)\
+  \ — never from memory. Every factual claim must cite a file path (with a line range when possible). If the sources\
+  \ do not contain the answer, say so. You may not write files or run shell commands.\n\nEmit ONLY a JSON object\
+  \ as your final message — no prose before or after — in exactly this shape:\n{\n  \"question\": \"<the research\
+  \ question, echoed>\",\n  \"answer\": \"<prose answer>\",\n  \"citations\": [{\"path\": \"<repo-relative path>\"\
+  , \"note\": \"<what it supports>\"}, ...],\n  \"sources_consulted\": [\"<paths actually read>\"],\n  \"read_only\"\
+  : true\n}\nEvery cited path must exist in the checkout (a held-out verifier checks each one). >= 2 citations,\
+  \ >= 1 source under docs/."
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: ssot-research
+  artifact: evals/opencode-lane/out/ssot-research-kkmac.json
+ref: KNB-1029
+comms:
+- at: 2026-10-30 20:58
+  from: tony
+  text: card captured via board-api
