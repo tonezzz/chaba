@@ -3,7 +3,7 @@
 ## kk-mac Ollama Lane Documentation
 
 ### Overview
-The kk-mac host runs Ollama services under the `adanest` account, bound to loopback (`127.0.0.1`). Access to these services is tunneled via `kkmac-ollama-tunnel.service` on idc03, which forwards port 11434 (Ollama default) to the local loopback interface. The LiteLLM routes for these models are:
+The kk-mac host runs Ollama services under the `adanest` account, bound to loopback (`127.0.0.1`). Access to these services is tunneled via `kkmac-ollama-tunnel.service` on idc03, which forwards idc03 loopback port 11445 to kk-mac loopback port 11434 (Ollama default). The LiteLLM routes for these models are:
 
 - `ollama-qwen32b-kkmac`
 - `ollama-qwen38b-kkmac`
@@ -17,7 +17,7 @@ From `docs/ssot/infrastructure/ssot.audit.hosts.yml`:
 - **Account**: `adanest` (non-root)
 - **Network**: Loopback-only (`127.0.0.1`)
 - **Tunnel**: `kkmac-ollama-tunnel.service` on idc03
-  - SSH command: `ssh -L 11445:127.0.0.1:11434 idc03`
+  - SSH command: `ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac` (runs on idc03)
   - Tunnel has `Restart=always` but may fail if kk-mac (member device) is offline
 
 ---
