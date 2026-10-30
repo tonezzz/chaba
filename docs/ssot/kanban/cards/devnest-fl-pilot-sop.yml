@@ -1,6 +1,6 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
-column: backlog
+column: doing
 updated: 2026-10-30 09:10
 priority: low
 spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
@@ -20,7 +20,8 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   artifact: reports/job-package-status-sop.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -59,5 +60,8 @@ comms:
     and devin rejected the litellm/ model id. Now explicit executor=opencode, artifact moved to reports/ (ops-readonly
     admitted dir, message-mode landing). This doubles as the S1 gate evidence: claimed dispatch card under an enabled
     read-only profile with human watch.'
+- at: 2026-10-30 09:10
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
