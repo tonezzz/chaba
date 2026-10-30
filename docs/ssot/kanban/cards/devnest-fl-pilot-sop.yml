@@ -20,13 +20,16 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   artifact: reports/job-package-status-sop.md
-  status: running
+  status: failed
   attempts: 1
   agent_profile: ops-readonly
   last_failure: 'start failed: opencode executor: 2'
   runner: idc02
   sweep:
     stale_running: 2026-10-30 09:33
+    session_gone: 2026-10-30 09:33
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) imit_error\",\"param\":null,\"code\":\"429\"}}","metadata":{"url":"http://100.102.134.91:4000/v1/chat/completions"}}}}
+    | devin-task-devnest-fl-pilot-sop-1793327507.service: Consumed 12.861s CPU time, 612.3M memory peak, 0B'
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -115,5 +118,8 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261030-090752-write-docs-kb-job-package-stat on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-30 09:33
+  from: idc02
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) imit_error\",\"param\":null,\"code\":\"429'
 review_kind: verify
 claim: {}
