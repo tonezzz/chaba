@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 13:59
+updated: 2026-10-30 20:52
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -37,3 +37,10 @@ comms:
     model responses for missing literal facts (Omen, Ollama, fallback); no invalid output was accepted. Marked those
     packages terminal-failed/held to stop retry churn. This exposed and fixed a worker issue: terminal package failures
     now write a failed marker and are skipped, rather than retrying forever. Commit 8bc67743d.'
+- at: 2026-10-30 20:52
+  from: devin
+  text: 'Defined and indexed the fast-submit procedure at docs/kb/jevnest-kk-mac-capacity-procedure.md#fast-submission-skip-the-timer-wait.
+    Quick path: validate a unique normalized task, stream it to gdrive:ada-nest-devnest/inbox, start devnest-capacity-broker.service
+    then jevnest-kk-mac-capacity-producer.service, and verify the KK pack done marker/result. Admission, queue depth,
+    verifier and human-review gates remain required. Commit 226c52748 is pushed on docs/kk-mac-fast-submit-20261030.
+    The manual on'
