@@ -1,0 +1,26 @@
+id: devnest-fl-pilot-kkmac-doc
+title: 'OpenCode doc-draft pilot 2: kk-mac ollama lane KB page (qwen3:8b)'
+column: backlog
+updated: 2026-10-30 19:51
+spec: 'Write docs/kb/kkmac-ollama-lane.md — a KB page documenting the kk-mac ollama lane for the fleet. Ground it
+  in the checkout: read stacks/idc03/litellm/config.yaml (the ollama-*-kkmac routes), docs/ssot/infrastructure/ssot.audit.hosts.yml
+  (the kk-mac capabilities.ollama block), and docs/kb/opencode-lane-model-notes.md (the model verdicts). The page
+  must state: ollama serve runs on kk-mac under the adanest account bound to loopback; it is reachable through kkmac-ollama-tunnel.service
+  on idc03 (ssh -L 11445 -> 127.0.0.1:11434); the LiteLLM routes are ollama-qwen32b-kkmac, ollama-qwen38b-kkmac,
+  ollama-qwen25vl7b-kkmac, ollama-llama32-3b-kkmac; models must be registered in idc02''s opencode provider map
+  AND a profile''s model.allowed before use; the tunnel unit has Restart=always but the route dies with kk-mac itself
+  (member device, offline is normal). Begin output with ''# docs/kb/kkmac-ollama-lane.md'' then the markdown. Emit
+  ONLY the document — no prose, no meta commentary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: doc-draft
+  artifact: docs/kb/kkmac-ollama-lane.md
+ref: OPS-1024
+comms:
+- at: 2026-10-30 19:51
+  from: tony
+  text: card captured via board-api
