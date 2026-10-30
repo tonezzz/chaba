@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 19:23
+updated: 2026-10-30 19:40
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -53,3 +53,10 @@ comms:
     in SSOT/job units, restarted KK LaunchAgent, and started report-feed, shared broker, and KK producer timers.
     Admission is green with ~80 GB disk reported, load ~1.34, Ollama healthy. KK is again the preferred bounded
     read-only lane; Colab/OpenCode/Devin remain fallback/parallel lanes.'
+- at: 2026-10-30 19:40
+  from: devin
+  text: 'Blocker review: KK resources were healthy (disk ~80GB, load ~1.4-1.7, Ollama green), but usage was blocked
+    by two orchestration defects: broker repeatedly scanned routed inbox specs and timed out; KK producer invoked
+    nest-pack-submit via a relative path (/home/tony/scripts/...) and failed staging. Fixed both in commits ba48a270c
+    + 2527abdb1, deployed to tony-dell. Producer now staged three new report-review packs; KK worker completed report-review-32bef8dc950a
+    in ~2.4s model wall. Two more are q'
