@@ -1,0 +1,28 @@
+id: devnest-capacity-aware-dispatch
+title: Build shared DevNest capacity-aware dispatcher
+column: backlog
+updated: 2026-10-30 14:14
+brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
+  before capacity appears.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- jevteam
+- jevnest
+- kk-mac
+- colab
+- capacity
+- dispatch
+spec: 'Implement a shared DevNest capacity loop: every five minutes observe KK-Mac and Colab admission/queue state;
+  select real ready work from reports, audits, service deltas, held-out evals, and finite batch prep; normalize
+  task_id/task_class/evidence/lane/model/expect/artifact/timeout/fallback; refill KK-Mac to depth 3 with max 3 packages/cycle
+  and concurrency 1; stage complete Colab JOBS.py/packs before launch because the runner snapshots inventory; use
+  cache-independent assessment before model prep; never create synthetic production filler, duplicate Colab runners,
+  or bypass owner/quota gates; record queue wait, productive time, verified success, fallback, cost, GPU time, and
+  owner impact. Start with read-only reports and finite Colab evaluations. Procedure: docs/kb/devnest-capacity-aware-dispatch-procedure.md.'
+ref: OPS-1002
+comms:
+- at: 2026-10-30 14:14
+  from: devin
+  text: card captured via board-api
