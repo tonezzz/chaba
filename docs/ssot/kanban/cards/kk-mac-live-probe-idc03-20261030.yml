@@ -1,7 +1,7 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
 column: backlog
-updated: 2026-10-30 01:25
+updated: 2026-10-30 08:39
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
 priority: high
@@ -65,6 +65,13 @@ comms:
   from: devin
   text: 'raised request kk-mac-ssh-reachable-after-fallback: The authorized key is installed, but idc03 and tony-dell
     both timed out connecting to KK-Mac SSH; the one-shot probe pro'
+- at: 2026-10-30 08:39
+  from: tony
+  text: 'answered kk-mac-ssh-reachable-after-fallback: reachable — Recommended: KK-Mac is awake and SSH/Tailscale
+    responds; rerun the one bounded probe.'
+- at: 2026-10-30 08:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 review_kind: verify
 claim: {}
 requests:
@@ -72,7 +79,7 @@ requests:
   ask: The authorized key is installed, but idc03 and tony-dell both timed out connecting to KK-Mac SSH; the one-shot
     probe produced no model output. Please wake/restore KK-Mac Tailscale + Remote Login and tell me when it is reachable,
     or defer the probe.
-  status: open
+  status: answered
   at: 2026-10-30 01:25
   from: devin
   options:
@@ -81,3 +88,5 @@ requests:
   - id: defer
     label: Keep the JEV lane off and wait for a later idle window.
   suggested: reachable
+  answer: 'reachable — Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+awaiting_action: true
