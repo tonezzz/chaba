@@ -1,6 +1,6 @@
 id: cline-ready-package-mirror
 title: Cline Kanban ready-package mirror — project queue+dispatch state into the con01 cline-kanban board
-column: backlog
+column: review
 updated: 2026-10-30 17:45
 priority: medium
 blocked_by: runner-readiness-projection
@@ -48,3 +48,7 @@ comms:
     write (tmp+rename) is immediately visible to task list/UI and spawns NO agent session; kanban task move-without-session
     is not exposed via CLI/tRPC so the mirror writes board.json directly following the app''s own atomic-write convention.
     Mapping: queued->backlog (#pos + [ready:hosts|'
+- at: 2026-10-30 17:45
+  from: tony
+  text: moved backlog -> review
+review_kind: verify
