@@ -1732,7 +1732,22 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
+    # Outer runtime bound (OPS-0999): a looping agent must die with the
+    # unit — the subprocess timeout in opencode_profiles.run() does not
+    # apply to this direct systemd-run shell. Same chain as the lane:
+    # card action.timeout_s -> profile fixture timeout_s -> 420s.
+    tmax = 0
+    try:
+        tmax = int(a.get("timeout_s") or 0)
+        if not tmax:
+            fyaml = ocp._fixture_dir(prof) / "task.yaml"
+            m = re.search(r"(?m)^timeout_s:\s*(\d+)",
+                          fyaml.read_text() if fyaml.is_file() else "")
+            tmax = int(m.group(1)) if m else 420
+    except Exception:
+        tmax = 420
     argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
+             f"--property=RuntimeMaxSec={tmax}",
              "--description", f"runner {card['id']} OpenCode "
                               f"{lane or prof_id}"]
             + task_run_props() + ["bash", "-lc", shell])
