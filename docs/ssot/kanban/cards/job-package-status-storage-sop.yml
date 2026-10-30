@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: review
-updated: 2026-10-30 10:48
+updated: 2026-10-30 20:10
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -178,6 +178,13 @@ comms:
   text: 'deliverable now satisfied upstream: docs/kb/job-package-status-sop.md (opencode lane, repo-grounded, 422f7fe34)
     supersedes the thin cline draft in review (task c3813 patch). Recommend closing this card; the cline patch can
     be dropped.'
+- at: 2026-10-30 20:10
+  from: devin
+  text: 'Cross-project package sweep (read-only): Drive has 64 pack folders, 59 runnable manifests, and 57 `done`
+    markers. The two without `done` are `devnest-model-slot-30m` (Qwen3:8B inference, explicitly declined via OPS-0966
+    `deterministic-only`) and Sacred Father `preview-v2` (explicit hold on OPS-0952). S1 frame extraction/i2v and
+    DocPilot assembly/VO/render packs are already done; Golden Hour is final; Gaussian splat has only synthetic
+    smoke, real PLY/photos not staged. `scripts/ada/nest-queue-sta'
 tags:
 - cline
 cline:
