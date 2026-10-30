@@ -1,0 +1,29 @@
+id: kk-mac-continuous-llm-worker
+title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
+column: backlog
+updated: 2026-10-30 09:40
+brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
+  packages arrive without manual one-off commands.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- nest
+- llm
+- continuous
+- queue
+- launchd
+spec: Build a dedicated KK-Mac LLM Nest queue/worker, separate from generic GPU/video packs. Unit = bounded task
+  pack with task_class {summary, operator_brief, structured_extract, safe_route}, prompt/evidence, expect verifier,
+  artifact path, model, timeout. Producer stages packages to a dedicated queue path; KK-Mac launchd/user worker
+  polls/claims one or two at a time, checks ada-nest heartbeat + Ollama + macOS load + disk + owner/busy gate, executes
+  scripts/devnest/kk_mac_executor.py, persists result/usage/admission/verdict, writes done/fallback, and releases
+  claims safely. Worker must not claim video/GPU/coding/destructive packs. Offline/stale/invalid output falls back
+  or holds without blocking other lanes. Use existing rclone/model cache and local Ollama; never use Drive as active
+  model filesystem. Add launchd rollback, stale claim recovery, metrics (queue wait, wall, tokens, verifier, fallback,
+  intervention), tests, and one 10-package supervised soak before automatic JEV promotion.
+ref: OPS-0997
+comms:
+- at: 2026-10-30 09:40
+  from: devin
+  text: card captured via board-api
