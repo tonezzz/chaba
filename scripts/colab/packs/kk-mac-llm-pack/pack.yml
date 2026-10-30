@@ -1,0 +1,46 @@
+name: kk-mac-llm-pack
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 180
+artifacts:
+  - packs/kk-mac-llm-pack/out/result.json
+run: |
+  import json
+  import os
+  import time
+  import urllib.request
+
+  task = json.load(open(f"{PACK_DIR}/inputs/task.json", encoding="utf-8"))
+  body = json.dumps({
+      "model": task.get("model", "qwen3:8b"),
+      "prompt": task["prompt"],
+      "format": task.get("format"),
+      "stream": False,
+      "options": {"temperature": 0},
+  }).encode()
+  request = urllib.request.Request(
+      "http://127.0.0.1:11434/api/generate",
+      data=body,
+      headers={"Content-Type": "application/json"},
+  )
+  started = time.time()
+  with urllib.request.urlopen(request, timeout=120) as response:
+      raw = json.load(response)
+  result = {
+      "task_id": task.get("task_id", "unknown"),
+      "model": raw.get("model"),
+      "response": raw.get("response", ""),
+      "eval_count": raw.get("eval_count"),
+      "eval_duration": raw.get("eval_duration"),
+      "load_duration": raw.get("load_duration"),
+      "wall_seconds": round(time.time() - started, 3),
+      "read_only": True,
+  }
+  if not result["response"].strip():
+      raise RuntimeError("empty model response")
+  out = f"{PACK_DIR}/out/result.json"
+  os.makedirs(os.path.dirname(out), exist_ok=True)
+  json.dump(result, open(out, "w", encoding="utf-8"), indent=2,
+            ensure_ascii=False)
+  print(json.dumps({"task_id": result["task_id"], "wall_seconds": result["wall_seconds"]}))
