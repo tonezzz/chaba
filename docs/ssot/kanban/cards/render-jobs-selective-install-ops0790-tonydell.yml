@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790-tonydell
 title: Scope rendered timer installation for OPS-0790 rollout
-column: backlog
-updated: 2026-10-30 01:34
+column: doing
+updated: 2026-10-30 15:13
 brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
 priority: high
 tags:
@@ -23,10 +23,14 @@ action:
   - exec
   target_host: tony-dell
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
-  status: queued
+  status: running
+  runner: tony-dell
 ref: OPS-0993
 comms:
 - at: 2026-10-30 01:34
   from: devin
   text: Rerouted from idc02, which lacks push:chaba; tony-dell has exec/push capability. Code/tests only; live timers
     remain untouched.
+- at: 2026-10-30 15:13
+  from: tony-dell
+  text: claimed
