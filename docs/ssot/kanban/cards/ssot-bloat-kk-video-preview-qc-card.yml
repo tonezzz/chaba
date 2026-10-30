@@ -1,0 +1,30 @@
+id: ssot-bloat-kk-video-preview-qc-card
+title: Resolve SSOT bloat warning on KK video preview QC card
+column: backlog
+updated: 2026-10-30 20:57
+brief: Resolve the validation warning on the completed KK video preview QC card without hiding unrelated debt in
+  another PR.
+priority: medium
+program: chaba-ci
+tags:
+- ssot
+- bloat
+- ci
+- kk-video
+spec: 'Resolve the SSOT optimization warning for docs/ssot/kanban/cards/kk-video-preview-output-qc-assembly.yml
+  (>350 lines). Prefer a safe structural split only if it preserves card-union/history/board behavior; otherwise
+  propose and document a narrow reviewed baseline exemption with rationale and follow-up owner. Run ssot-optimize,
+  ssot-optimize-gate, SSOT validation, refs validation, and affected card/render tests. Do not change card status/action
+  semantics, delete history, or refresh the global baseline blindly. This warning currently blocks Cline PR #62
+  validation but must be fixed separately from the Cline failure-artifact change.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'Existing focus-inbox item records the bloat warning. Keep Cline PR #62 focused; land this independent SSOT
+  hygiene fix first or document the reviewed exception.'
+ref: KNB-1028
+comms:
+- at: 2026-10-30 20:57
+  from: tony
+  text: card captured via board-api
