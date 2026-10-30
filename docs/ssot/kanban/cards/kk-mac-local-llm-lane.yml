@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-30 09:23
+updated: 2026-10-30 09:32
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -244,6 +244,12 @@ comms:
     3 more direct qwen3:8b jobs (operator_brief, structured_extract, summary), all admitted successfully. Artifact:
     /home/tony/evals/results/kk-mac-real-job-batch5-20261030.jsonl. Local MLX video import remains pending; Omen
     home cache is complete (~24G) but KK local model verification is not finished.'
+- at: 2026-10-30 09:32
+  from: devin
+  text: 'Performance update: 15 successful adapter jobs measured on KK-Mac qwen3:8b. Steady eval throughput mean
+    60.5 tok/s, median 60.5 tok/s; total 5,786 output/eval tokens; average wall 8.52s (range 3.76–13.18s). First-load
+    overhead ~3.6s; warm calls ~3.8–13.2s depending output size. Local cost $0; admission/fallback remains the controlling
+    gate.'
 action:
   type: dispatch
   status: done
