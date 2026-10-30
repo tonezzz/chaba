@@ -416,6 +416,20 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
   that file before finishing; newest line wins per request_id.
 """.strip()
 
+# OpenCode profile agents hold no board-api write path — the read-only
+# bash allowlist denies curl/python POSTs, and a denied call counts as a
+# contract violation at closeout. Their rails must not instruct the
+# progress/request posts the devin executor uses; the runner itself
+# writes claim/start/finish comms.
+RAILS_OPENCODE = """
+---
+Rails: you are processing kanban card '{id}' on runner '{host}'.
+- Do NOT push to git remotes unless the card spec explicitly says to.
+- Do NOT call board-api or any network endpoint — the runner records
+  progress and verdicts itself. Emit only what the task contract asks
+  as your final message.
+""".strip()
+
 
 def sh(cmd: list, timeout: int = 60,
        **kw) -> subprocess.CompletedProcess:
@@ -1656,7 +1670,7 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         return "", "", f"OpenCode worktree setup: {e}"
     spec = (card.get("spec") or "").strip() or \
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
-    task = spec + "\n\n" + RAILS.format(
+    task = spec + "\n\n" + RAILS_OPENCODE.format(
         id=card["id"], host=HOST, api=API)
     # Render the task-scoped profile into a worktree-local opencode
     # config: profile agent only, builtin agents disabled, MCP surface
