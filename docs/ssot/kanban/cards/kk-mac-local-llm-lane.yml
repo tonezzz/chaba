@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-30 20:24
+updated: 2026-10-30 20:25
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -269,6 +269,10 @@ comms:
 - at: 2026-10-30 20:24
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-30 20:25
+  from: devin
+  text: 'raised request kk-mac-bot-hosting-topology-20261030: For the first KK-Mac bot/LLM policy, where should
+    the bot process run? The inference model and agent loop are separate c'
 action:
   type: dispatch
   status: done
@@ -333,4 +337,19 @@ requests:
   answer: local-only — use a KK-Mac-hosted local LLM for the bot lanes; no OpenRouter/remote inference for this
     lane. This clarifies the policy direction only; it does not authorize an inference run, model download, or dispatch.
     Those still require a fresh per-job KK idle-window/consent preflight.
+- id: kk-mac-bot-hosting-topology-20261030
+  ask: For the first KK-Mac bot/LLM policy, where should the bot process run? The inference model and agent loop
+    are separate choices. Recommend a same-host one-shot pilot in the isolated adanest workspace; only later add
+    remote bot consumers through an authenticated/metered proxy, never raw Ollama :11434.
+  status: open
+  at: 2026-10-30 20:25
+  from: devin
+  options:
+  - id: same-host
+    label: Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
+  - id: remote-proxy
+    label: Let bots on other hosts call KK-Mac local inference only through a dedicated authenticated/metered proxy
+  - id: model-only
+    label: Benchmark local model only first; no bot-agent integration yet
+  suggested: same-host
 awaiting_action: true
