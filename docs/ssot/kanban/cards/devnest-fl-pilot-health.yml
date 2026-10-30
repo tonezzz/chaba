@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
-column: review
-updated: 2026-10-30 17:13
+column: done
+updated: 2026-10-30 17:18
 spec: "Produce a JSON health snapshot of THIS host (idc02). Emit ONLY the\nJSON object as your final message — the\
   \ runner writes it for you; you\nhold no write tools and any denied tool call fails the job.\n\nCollect with read-only\
   \ commands only (one per bash call):\n- hostname / current time: hostname, date -Iseconds\n- uptime + load: uptime\
@@ -191,5 +191,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-health-1793355048,
     branch dispatch/devnest-fl-pilot-health-1793355048'
+- at: 2026-10-30 17:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-30 17:18
+  note: verified — evidence checks green, closing itself
