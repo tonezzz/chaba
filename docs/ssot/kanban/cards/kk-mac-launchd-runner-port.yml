@@ -1,0 +1,15 @@
+id: kk-mac-launchd-runner-port
+title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
+column: backlog
+updated: 2026-10-30 19:18
+spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
+  equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
+  — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
+  seam for launchctl bootstrap/kickstart/print of gui/<uid>/devin-task-* wrappers; (b) worktree + push creds (deploy
+  key) under kkkakk; (c) opencode binary for darwin-arm64; (d) overload gate via sysctl vm.loadavg. Prereqs: OPENCODE_LANES
+  contract same as Linux. Bigger job — do after doc-draft/branch-code lanes stabilize on idc02.'
+ref: OPS-1019
+comms:
+- at: 2026-10-30 19:18
+  from: tony
+  text: card captured via board-api
