@@ -1,7 +1,7 @@
 id: ssot-bloat-kk-video-preview-qc-card
 title: Resolve SSOT bloat warning on KK video preview QC card
 column: doing
-updated: 2026-10-30 21:01
+updated: 2026-10-30 21:08
 brief: Resolve the validation warning on the completed KK video preview QC card without hiding unrelated debt in
   another PR.
 priority: medium
@@ -44,3 +44,10 @@ comms:
   text: 'Triage done: split is unsafe — union-merge resurrects trimmed comms, cards/archive/ breaks live board-api
     writes (card still gets producer comms today), card is <30d in done. Proceeding with narrow reviewed bloat_exemptions
     entry + job record + focus-item close.'
+- at: 2026-10-30 21:08
+  from: devin
+  text: 'Done: narrow reviewed exemption added in ssot.file-optimization.yml (review_threshold only; 750 hard cap
+    retained) + decision record docs/ssot/jobs/kanban/2026-10-30-kk-video-card-bloat-exemption.yml + focus item
+    marked processed. Verified: optimize run no longer flags the card; validate-all 3383/0 errors; refs OK; 312
+    board tests (2 env-only disk-quota errors); card renders done/71 comms. NOTE: gate now flags only kk-mac-local-llm-lane.yml
+    (~356 lines, active review card — live drift, left for '
