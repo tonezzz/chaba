@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
 column: review
-updated: 2026-10-30 20:03
+updated: 2026-10-30 21:40
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -41,4 +41,23 @@ comms:
     passed; `validate` failed at `Fail on warnings absent from baseline`. PR remains open/unmerged; no deploy or
     live Cline task. The exact new warning was not available from this read surface. Do not change the warning baseline
     to clear the failure; inspect and fix the underlying warning first.'
+- at: 2026-10-30 21:40
+  from: devin
+  text: 'raised request pr62-kkmac-warning-baseline-resolution: PR #62''s code/tests pass, but after syncing the
+    current master the SSOT warning gate finds one unrelated unbaselined war'
 review_kind: verify
+requests:
+- id: pr62-kkmac-warning-baseline-resolution
+  ask: 'PR #62''s code/tests pass, but after syncing the current master the SSOT warning gate finds one unrelated
+    unbaselined warning: OPS-0966 `kk-mac-local-llm-lane.yml` is 356 lines, over the 350-line review threshold.
+    I did not edit that active card or the warning baseline. Which safe route should unblock PR validation?'
+  status: open
+  at: 2026-10-30 21:40
+  from: devin
+  options:
+  - id: defer-owner-fix
+    label: 'Keep PR #62 blocked; let the OPS-0966 owner trim the card or resolve its warning first (recommended).'
+  - id: accept-baseline
+    label: Approve a full SSOT optimizer baseline refresh that records this known warning without changing OPS-0966
+      content.
+  suggested: defer-owner-fix
