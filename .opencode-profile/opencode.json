@@ -1,6 +1,6 @@
 {
  "$schema": "https://opencode.ai/config.json",
- "model": "litellm/or-gemini-3.5-flash",
+ "model": "litellm/ollama-qwen32b-kkmac",
  "agent": {
   "build": {
    "disable": true
@@ -11,11 +11,11 @@
   "general": {
    "disable": true
   },
-  "ops-readonly": {
+  "doc-draft": {
    "mode": "primary",
-   "model": "litellm/or-gemini-3.5-flash",
-   "description": "Read-only host and MCP ops reports. Collects declared host facts via a bounded bash allowlist (no mutating verbs) and/or the 8-tool mcp-debug read-only allowlis",
-   "prompt": "You are the ops-readonly profile agent. You may READ the host and the repo; you may not write, edit, move, delete, install packages, or change services \u2014 denied tool calls are recorded and fail the job. Do not read anything under ~/.config/secrets. Your report is your final message: emit ONLY the artifact content, no prose around it.\n\n## Lane rails (enforced \u2014 violations fail the job)\n- Job devnest-fl-pilot-health-1793355048 / card devnest-fl-pilot-health on idc02 \u2014 stay inside declared scope; denied tool calls and scope violations are recorded.\n- The artifact lands at `evals/opencode-lane/out/ops-readonly-health.json` (schema ``) \u2014 emit it exactly per contract.\n- Do not read evals/opencode-lane/profiles/*/fixture/verify.py or evals/shadow/fixtures \u2014 grading is held out.\n- No commits, pushes, merges, worktree ops, service changes, package installs, or deletions.\n- When the artifact content is complete, output it and stop.",
+   "model": "litellm/ollama-qwen32b-kkmac",
+   "description": "Repo-grounded document drafting. Reads the checkout with read-only tools only (no bash, no writes), then emits ONE markdown artifact as its final message \u2014 the ",
+   "prompt": "You are the doc-draft profile agent. You may READ the repo with the read/grep/glob tools \u2014 bash, writes, and network calls are denied and any denied call fails the job. Ground every claim in the code you actually read: name the real files, enums, functions, and paths; do not invent commands or schemas. The document is your final message: emit ONLY the markdown content (the first line may declare the target path as `# <path>`), no prose around it, no meta commentary.\n\n## Lane rails (enforced \u2014 violations fail the job)\n- Job devnest-fl-pilot-modelnotes-1793361029 / card devnest-fl-pilot-modelnotes on idc02 \u2014 stay inside declared scope; denied tool calls and scope violations are recorded.\n- The artifact lands at `docs/kb/opencode-lane-model-notes.md` (schema ``) \u2014 emit it exactly per contract.\n- Do not read evals/opencode-lane/profiles/*/fixture/verify.py or evals/shadow/fixtures \u2014 grading is held out.\n- No commits, pushes, merges, worktree ops, service changes, package installs, or deletions.\n- When the artifact content is complete, output it and stop.",
    "tools": {
     "read": true,
     "grep": true,
@@ -23,7 +23,7 @@
     "list": true,
     "todoread": true,
     "todowrite": true,
-    "bash": true,
+    "bash": false,
     "write": false,
     "edit": false,
     "patch": false,
@@ -36,43 +36,7 @@
     "external_directory": "deny",
     "doom_loop": "ask",
     "bash": {
-     "*": "deny",
-     "hostname": "allow",
-     "hostname *": "allow",
-     "uname": "allow",
-     "uname *": "allow",
-     "whoami": "allow",
-     "date": "allow",
-     "date *": "allow",
-     "uptime": "allow",
-     "uptime *": "allow",
-     "nproc": "allow",
-     "nproc *": "allow",
-     "lscpu": "allow",
-     "lscpu *": "allow",
-     "df": "allow",
-     "df *": "allow",
-     "du *": "allow",
-     "free": "allow",
-     "free *": "allow",
-     "ls": "allow",
-     "ls *": "allow",
-     "stat *": "allow",
-     "ss *": "allow",
-     "ps *": "allow",
-     "journalctl *": "allow",
-     "systemctl list-units *": "allow",
-     "systemctl --user list-units *": "allow",
-     "systemctl list-timers *": "allow",
-     "systemctl --user list-timers *": "allow",
-     "systemctl status *": "allow",
-     "systemctl --user status *": "allow",
-     "systemctl is-active *": "allow",
-     "systemctl --user is-active *": "allow",
-     "systemctl is-enabled *": "allow",
-     "systemctl --user is-enabled *": "allow",
-     "systemctl show *": "allow",
-     "systemctl --user show *": "allow"
+     "*": "deny"
     }
    }
   }
