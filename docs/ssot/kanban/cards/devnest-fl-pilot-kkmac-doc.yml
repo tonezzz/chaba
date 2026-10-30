@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-kkmac-doc
 title: 'OpenCode doc-draft pilot 2: kk-mac ollama lane KB page (qwen3:8b)'
-column: doing
-updated: 2026-10-30 19:52
+column: review
+updated: 2026-10-30 19:54
 spec: 'Write docs/kb/kkmac-ollama-lane.md — a KB page documenting the kk-mac ollama lane for the fleet. Ground it
   in the checkout: read stacks/idc03/litellm/config.yaml (the ollama-*-kkmac routes), docs/ssot/infrastructure/ssot.audit.hosts.yml
   (the kk-mac capabilities.ollama block), and docs/kb/opencode-lane-model-notes.md (the model verdicts). The page
@@ -19,8 +19,11 @@ action:
   executor: opencode
   agent_profile: doc-draft
   artifact: docs/kb/kkmac-ollama-lane.md
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 21846affefs4OaOglM2Cq2C","type":"step-finish","tokens":{"total":26185,"input":25169,"output":471,"reasoning":545,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-kkmac-doc-1793364748.service: Consumed 17.213s CPU time.'
+  verified: true
 ref: OPS-1024
 comms:
 - at: 2026-10-30 19:51
@@ -36,3 +39,8 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-kkmac-doc-1793364748 on idc02 (dispatch executor=opencode profile=doc-draft
     model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-30 19:54
+  from: idc02
+  text: 'finished (ok): exit=0 21846affefs4OaOglM2Cq2C","type":"step-finish","tokens":{"total":26185,"input":25169,"output":471,"reasoning":545,'
+review_kind: verify
+claim: {}
