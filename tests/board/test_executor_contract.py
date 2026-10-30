@@ -191,12 +191,13 @@ class StartTaskContractTest(unittest.TestCase):
         self.mod.start_opencode_lane = lambda card, lane, unit: (
             seen.append((lane, unit)) or ("devin-task-x", "x", ""))
         unit, tid, err = self.mod.start_task(
-            _card(executor="opencode", agent_profile="ops-readonly"),
+            _card(executor="opencode", lane="free_lane",
+                  agent_profile="ops-readonly"),
             "dispatch")
         self.assertEqual(err, "")
         self.assertEqual(unit, "devin-task-x")
         self.assertEqual(len(seen), 1)
-        self.assertEqual(seen[0][0], "")  # executor route, not a lane
+        self.assertEqual(seen[0][0], "free_lane")
         self.assertFalse(self.calls)      # no devin-dispatch spawn
 
     def test_opencode_start_failure_never_falls_back(self):
@@ -540,7 +541,10 @@ class KanbanDispatchContractTest(unittest.TestCase):
             saved = (m.load_policy, m.overloaded, m.active_tasks,
                      m.push_capable, m.start_pending)
             self.started = []
-            m.load_policy = lambda: {"kill_switch": str(Path(td) / "k")}
+            m.load_policy = lambda: {
+                "kill_switch": str(Path(td) / "k"),
+                "state_file": str(Path(td) / "state.json"),
+            }
             m.overloaded = lambda: False
             m.active_tasks = lambda: 0
             m.push_capable = lambda repo: True

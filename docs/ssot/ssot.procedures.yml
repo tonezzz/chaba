@@ -58,7 +58,17 @@ procedures:
   - {id: mddb-backup,   where: "docs/kb/mddb-backup-binlog-2026-10-03.md",                     trigger: "MDDB backup/restore/replication",       status: verified}
   - {id: mddb-prune-compact, where: "docs/kb/mddb-prune-compact.md + MEM-0871", trigger: "any 'mddb is too big / reduce storage / distill or compact' work — storage layers model, guard stack (prune timer, maxRevisions, restart timer, freelist sync), sweep vs delete-collection vs export-rebuild vs offline bbolt compact paths + all gotchas (backup/restore are file-level NOT compacting, stats timeouts, podman unshare file ops)", status: verified, last_run: 2026-10-26}
   # --- work management ---
-  - {id: idea-intake,   where: "ssot.windsurf.common.md#Request-to-Focus + Procedure Quick Map", trigger: "any new idea/request",              status: verified, last_run: 2026-10-09}
+  - id: idea-intake
+    where: "ssot.windsurf.common.md#Request-to-Focus-Workflow + DEV-0975 + docs/reports/2026-10-30-cline-proposal-pilot.md"
+    trigger: >-
+      Any new idea/request. For OpenCode/JEV/Nest/Cline proposal work, start
+      from a versioned Chaba snapshot; keep OpenCode content-only, route the
+      original request through JEV, and derive policy deterministically from
+      the card/JEV result. No dispatch before human approval and verified
+      scheduler/artifact gates. DEV-0975's shadow arm passed; its live lane
+      did not pick up after 70 minutes.
+    status: verified
+    last_run: 2026-10-30
   - {id: where-things-go, where: "docs/kb/where-things-go.md + ssot.windsurf.common.md#Interrupt-Handling rule 5", trigger: "'where did my idea go', 'how do I find X later', or any capture — destinations map + recall ritual + announce-the-landing-spot rule", status: verified, last_run: 2026-10-12}
   - {id: vocab,         where: "ssot.terminology.yml + this file",                             trigger: "new shared vocabulary",               status: verified, last_run: 2026-10-09}
   - {id: board-report,  where: "scripts/render-board.py + chaba-board-render.timer",           trigger: "card -> board/CMS report refresh",    status: verified}
@@ -88,7 +98,30 @@ procedures:
   - {id: model-eval,   where: "scripts/voice-bench pattern + ada-voice tests/benchmark.yml + reports/<topic>/", trigger: "'can micro/local model X help with Y' — fixtures -> variant harness -> measure vs baseline -> report -> adopt-gate", status: verified, last_run: 2026-10-11}
   - {id: colab-serve,  where: "scripts/colab/colab-serve-worker.ipynb + ssot.llm-gateway.yml#providers.colab", trigger: "'use colab as serving lane / more LLM power' — open notebook T4 -> Run all -> keep-alive stays; colab-gemma3 auto-joins gateway chains via colabtun@-R to idc03 loopback; kill runtime to detach, chains fall through", status: verified, last_run: 2026-10-12}
   - {id: colab-gdrive-cache, where: "docs/kb/colab-gdrive-cache.md",       trigger: "any colab job fetching >20MB inputs (datasets/weights/wheels) — mount drive once -> cache PACKED artifacts under MyDrive/colab-cache/ -> extract to local /tmp -> download once ever, rehydrate in seconds on later runtimes", status: verified, last_run: 2026-10-13}
-  - {id: ai-lane-delegate, where: "devin-kb docs/tools/ai-lane-delegation.md (tony-dell ~/devin-kb) + card ai-lane-delegation-procedure + jobs/workflow/2026-10-24-ai-lane-delegation.yml", trigger: "delegating ANY task to a model/agent lane — classify task class -> route cheapest gated lane (L0 codemod / L1 free flash-lite / L2-L3 paid / L4 Devin) -> inline verifier mandatory -> escalate one rung on gate fail. Free lane = single-step verifiable ops only; artifact-first prompt contract (write JSON skeleton before searching) beats early-stop. EXECUTOR CONTRACT LAYER (added 2026-10-30, KNB-1007/1008): the rung is declared on the card as action.executor — devin(default)|opencode|script|kk_mac_local|manual — fail-closed, a host that can't serve it leaves it queued rather than guessing a cheaper/weaker route (no silent fallback; defer reason lands in comms AND in runner /ready verdicts). executor=opencode + lane=free_lane -> ops-readonly profile (read-only bash, no board-api writes, no push — RAILS_OPENCODE; serving host today: idc02 only, omen flags OPENCODE_LANES=1 but has no binary). kk_mac_local = bounded read-only task_classes {summary,operator_brief,structured_extract,safe_route} on KKs-Mac-Studio, try-first then any dispatch host runs its fallback. PRE-FLIGHT: GET /queue verdicts show which hosts can actually serve a contract before you card to it. Ada/any actor uses the same door — file the card with the executor contract; she never runs sessions herself", status: verified, last_run: 2026-10-24}
+  - id: ai-lane-delegate
+    where: "devin-kb docs/tools/ai-lane-delegation.md (tony-dell ~/devin-kb) + card ai-lane-delegation-procedure + jobs/workflow/2026-10-24-ai-lane-delegation.yml + DEV-0975 pilot report"
+    trigger: >-
+      Delegating ANY task to a model/agent lane: classify task class -> route
+      cheapest gated lane (L0 codemod / L1 free flash-lite / L2-L3 paid /
+      L4 Devin) -> inline verifier mandatory -> escalate one rung on gate
+      fail. Free lane = single-step verifiable ops only; artifact-first prompt
+      contract (write JSON skeleton before searching) beats early-stop.
+      EXECUTOR CONTRACT LAYER (KNB-1007/1008): action.executor is declared
+      on the card — devin(default)|opencode|script|kk_mac_local|manual —
+      fail-closed, with no silent fallback; defer reason lands in comms and
+      runner /ready verdicts. executor=opencode + lane=free_lane selects
+      ops-readonly; preserve the declared action.lane through runner dispatch.
+      kk_mac_local remains bounded to summary, operator_brief,
+      structured_extract, and safe_route after admission preflight.
+      Proposal-refinement path (DEV-0975): OpenCode output is content-only;
+      JEV routes the original request; a deterministic compiler binds
+      card ID/version and policy; Nest owns job lifecycle; Cline is isolated;
+      an independent verifier requires the declared artifact and result_ref.
+      Keep live dispatch off until the scheduler and artifact/terminal-state
+      contract are independently verified; the October pilot's shadow arm
+      passed, but the live intake lane did not pick up.
+    status: verified
+    last_run: 2026-10-30
   - {id: colab-mcp,    where: "docs/kb/colab-mcp-jobs.md + ~/.config/devin/mcp_config.json#colab (uvx git+googlecolab/colab-mcp, local)", trigger: "'drive/run code in open colab notebook' — open_colab_browser_connection opens browser -> colab FE websockets back -> cell tools unlock (add/update/run); drives a SCRATCH nb; runtime type (T4) is UI-only pick; 4-step job pattern ends with publish step INSIDE the job (artifact-landing)", status: verified, last_run: 2026-10-13}
   - {id: colab-batch-queue, where: "docs/kb/colab-mcp-jobs.md#batch-queue-mode — manifest at gdrive:ada-nest/queue/JOBS.py + one resumable runner cell", trigger: "'run the colab queue' / multi-experiment colab session — jobs list on Drive, per-job done markers, next job's CPU prep runs in background under current job's GPU time; resume = rerun same cell", status: verified, last_run: 2026-10-23}
   - {id: feature-explore, where: ".devin/skills/info-find step 4a (GitHub precedent rung)", trigger: "expanding a feature/idea — 'what exists for X', 'any tool for X', hypothesis needs options — internal sources -> GitHub precedent -> web -> findings on card", status: verified, last_run: 2026-10-11}

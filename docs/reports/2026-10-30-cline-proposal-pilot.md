@@ -63,12 +63,27 @@
 - [x] Stale snapshots detectable (manifest hash + updated field)
 - [x] No unsupported claims in shadow output; no unapproved actions (local free model only, verified live before use)
 - [~] One safe pilot — the shadow arm completed cleanly; the live lane arm is correctly armed at the queue head but its scheduler is unproven (>70 min no pickup). Counts as a partial pass pending the on-host timer check.
-- [ ] Independent review — raised as board request for Tony (gate for procedure updates)
+- [x] Independent review — Tony answered “proceed” on 2026-10-30, authorizing a narrowly scoped Chaba procedure update. This does not mark the live lane complete.
 
-## 6. Recommendations (if repeatable after review)
+## 6. Procedure follow-up and recommendations
+
+Tony approved proceeding with the procedure update. Chaba's existing
+`Request-to-Focus` guidance and `idea-intake`/`ai-lane-delegate` index entries
+now describe a versioned, proposal-only OpenCode stage, independent JEV
+routing, deterministic card-policy compilation, Nest-owned lifecycle,
+isolated Cline execution, and artifact/result-reference verification. The
+guard is explicit: this documents the analysis path, not automatic dispatch.
+The external `devin-kb` body linked by the ai-lane-delegate entry was not
+available in this worktree and was not changed.
+
+The pilot's live lane still did not pick up for over 70 minutes, so the
+workflow is not yet repeatable end to end. Keep live Cline/Nest dispatch
+blocked until the con01 intake timer/repo-sync is verified and a subsequent
+lane run lands the expected artifact and terminal evidence.
+
+Recommendations:
 
 1. Lane prompt should carry a context digest (done here) — repeatability needs a digest-builder, not ad-hoc writing.
 2. Proposal artifacts are invisible off con01 — add a deliverable-content excerpt (first N lines) to the intake comment, or publish the patch to a retrievable surface.
 3. Fix lane starvation: `intake.py` should skip unconfigured `cline`-tagged cards instead of stopping at the first candidate (scan all, pick first *valid*), and/or post a "missing cline config" comment on skipped cards so the failure is visible. This is a real, currently-active bug.
 4. The smoke card carries two identical result comments — board-api /comment is not at fault (deliver_comment only relays); likely overlapping intake executions (manual + timer tick) before the review move landed. Worth an idempotency note, not a board-api fix.
-5. Procedure updates (idea-intake, ai-lane-delegate): DEFER until Tony's independent review passes — one pilot is not "repeatable".
