@@ -1,7 +1,7 @@
 id: con01-jobs-silently-dead-chaba-audit-mdd-0eb30f
 title: con01 jobs silently dead — chaba-audit, mddb-vector-reindex, devin-bank-distill fail every run
 column: doing
-updated: 2026-10-30 18:26
+updated: 2026-10-30 18:41
 priority: high
 tags:
 - ops
@@ -40,6 +40,13 @@ comms:
     daily), todays runs were manual catchup, /v1/stats timeout was transient (answers 200 in 0.9s now); (3) devin-bank-distill
     — chaba-paid GCP project hit monthly spend cap, direct 429 RESOURCE_EXHAUSTED, fix = route via LiteLLM gateway
     per KNB-0611 recipe.'
+- at: 2026-10-30 18:41
+  from: devin
+  text: '[done] all 3 jobs verified exit 0 on con01. (1) chaba-audit: npm ci in exec checkout — node_modules was
+    never installed after the 10-26 move; js-yaml now a real package.json dep; full suite ran 10.5min exit 0 (standardization/doc-links
+    are reported findings, exit 0 by design). Same fix cures chaba-audit-full + chaba-kb-audit. (2) mddb-vector-reindex:
+    .timer was systemctl-DISABLED since onboarding — never fired; re-enabled, verified sweep exit 0 (18175 skipped,
+    index healthy; todays timeouts were'
 action:
   type: dispatch
   status: running
