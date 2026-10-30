@@ -1,0 +1,27 @@
+id: devnest-fl-pilot-sop
+title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
+column: backlog
+updated: 2026-10-30 09:06
+priority: low
+spec: 'Write docs/kb/job-package-status-sop.md — the SOP for job-package status lifecycle + storage. READ THE CODE
+  FIRST, then write: (1) scripts/board/board-api.py — JOB_STATUSES enum {queued, claimed, running, done, failed,
+  stalled, cancelled}, do_job upsert contract, JOB_META_KEYS; (2) scripts/board/publication.py — nest_job adapter,
+  progress|milestone|alert fanout. Cover: lifecycle transitions + who writes each (queue-mgr claims, pack runner
+  runs/finishes), where state is mirrored (WP nest_job CPT vs kanban column vs PublicationEvent), result_ref/artifact
+  storage convention. Write the file first, then verify all seven status enum values appear. Do not modify any other
+  file, do not run tests, do not push — the runner closeout commits, pushes, gates, and merges. PILOT DECLARATIONS:
+  target_host=idc02; base_ref=origin/master; verifier=docs/kb/job-package-status-sop.md exists and contains all
+  JOB_STATUSES values; expected_artifact=docs/kb/job-package-status-sop.md; stop_condition=fail if file unwritten
+  after one retry or any path outside docs/kb/ touched; counts as free-lane datapoint only if meta.json executor
+  starts with opencode:.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/gemini-3.5-flash-lite
+  artifact: docs/kb/job-package-status-sop.md
+ref: OPS-0995
+comms:
+- at: 2026-10-30 09:06
+  from: devin
+  text: card captured via board-api
