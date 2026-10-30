@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: doing
-updated: 2026-10-30 19:57
+column: review
+updated: 2026-10-30 19:59
 priority: medium
 tags:
 - ops
@@ -19,11 +19,12 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: running
+  status: done
   lane: free_lane
-  result: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile or
-    a mapped lane (generic build agent is not an unattended executor)'
+  result: 'exit=0 61ffers6Zgh0FNUUrsT","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17933.service: Consumed 17.121s CPU time.'
   runner: idc02
+  verified: true
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -100,3 +101,8 @@ comms:
 - at: 2026-10-30 19:57
   from: chaba
   text: started devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17933 on idc02 (dispatch executor=opencode)
+- at: 2026-10-30 19:59
+  from: idc02
+  text: 'finished (ok): exit=0 61ffers6Zgh0FNUUrsT","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write"'
+review_kind: verify
+claim: {}
