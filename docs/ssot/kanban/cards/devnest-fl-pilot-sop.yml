@@ -25,6 +25,8 @@ action:
   agent_profile: ops-readonly
   last_failure: 'start failed: opencode executor: 2'
   runner: idc02
+  sweep:
+    stale_running: 2026-10-30 09:33
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -109,5 +111,9 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261030-090752-write-docs-kb-job-package-stat no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-10-30 09:33
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261030-090752-write-docs-kb-job-package-stat on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
