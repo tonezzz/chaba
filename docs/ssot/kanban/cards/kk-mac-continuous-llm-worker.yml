@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
 column: backlog
-updated: 2026-10-30 10:34
+updated: 2026-10-30 11:11
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -45,3 +45,9 @@ comms:
     0 timeouts, 0 fallbacks, serial concurrency=1, qwen3:8b, mean wall 0.500s (0.490-0.514), 231 eval tokens total.
     Aggregate artifact: /home/tony/evals/results/kk-mac-llm-soak-20261030.json. Worker is ready for a supervised
     steady queue; automatic JEV promotion still requires policy review/verification mapping.'
+- at: 2026-10-30 11:11
+  from: devin
+  text: 'SEMANTIC SOAK PASS 2026-10-30: all 10 packages verified. 10/10 JSON/schema/fact contracts passed; 0 failures,
+    0 timeouts, 0 fallbacks; mean wall 0.907s; 460 eval tokens total; every checks map passed. This is stronger
+    than the transport-only soak. Ready for review of automatic JEV promotion for the four read-only classes, subject
+    to heartbeat/load fallback.'
