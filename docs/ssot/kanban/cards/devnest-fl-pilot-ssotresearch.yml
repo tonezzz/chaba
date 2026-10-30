@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-ssotresearch
 title: 'OpenCode ssot-research pilot: kk-mac fleet declarations (qwen3:8b)'
-column: doing
-updated: 2026-10-30 20:59
+column: review
+updated: 2026-10-30 21:01
 spec: "Research question: What does the fleet declare about kk-mac — its host entry, its ollama capability, and\
   \ the LiteLLM routes that reach it?\n\nAnswer ONLY from the checkout's SSOT (docs/ssot/, AGENTS.md, docs/kb/)\
   \ — never from memory. Every factual claim must cite a file path (with a line range when possible). If the sources\
@@ -19,8 +19,11 @@ action:
   executor: opencode
   agent_profile: ssot-research
   artifact: evals/opencode-lane/out/ssot-research-kkmac.json
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 65dffeSHpW6C3zDQtnTG","type":"step-finish","tokens":{"total":25780,"input":25088,"output":234,"reasoning":458,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-ssotresearch-1793368746.service: Consumed 14.847s CPU time.'
+  verified: true
 ref: KNB-1029
 comms:
 - at: 2026-10-30 20:58
@@ -36,3 +39,8 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-ssotresearch-1793368746 on idc02 (dispatch executor=opencode profile=ssot-research
     model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-30 21:01
+  from: idc02
+  text: 'finished (ok): exit=0 65dffeSHpW6C3zDQtnTG","type":"step-finish","tokens":{"total":25780,"input":25088,"output":234,"reasoning":458,"ca'
+review_kind: verify
+claim: {}
