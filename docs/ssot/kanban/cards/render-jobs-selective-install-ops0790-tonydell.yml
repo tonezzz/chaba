@@ -1,6 +1,6 @@
 id: render-jobs-selective-install-ops0790-tonydell
 title: Scope rendered timer installation for OPS-0790 rollout
-column: doing
+column: backlog
 updated: 2026-10-30 15:24
 brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
 priority: high
@@ -23,7 +23,7 @@ action:
   - exec
   target_host: tony-dell
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
-  status: running
+  status: idle
   runner: tony-dell
 ref: OPS-0993
 comms:
@@ -40,3 +40,6 @@ comms:
     transcript shows a read-only `systemctl is-enabled` probe was rejected and work stopped before implementation.
     I''m clearing the stale running claim; no service command was re-run and no live timer changed. I will resume
     the same code-only task with the install-selector tests isolated from host/systemctl probes.'
+- at: 2026-10-30 15:24
+  from: tony
+  text: put on hold
