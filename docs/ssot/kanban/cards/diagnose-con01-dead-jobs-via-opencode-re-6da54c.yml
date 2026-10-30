@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: doing
-updated: 2026-10-30 19:41
+updated: 2026-10-30 19:46
 priority: medium
 tags:
 - ops
@@ -19,13 +19,11 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: failed
+  status: queued
+  attempts: 3
+  lane: free_lane
   last_failure: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile
     or a mapped lane (generic build agent is not an unattended executor)'
-  attempts: 2
-  runner: idc02
-  result: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile or
-    a mapped lane (generic build agent is not an unattended executor)'
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -77,3 +75,6 @@ comms:
   from: idc02
   text: 'finished (failed): start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile
     or a mapped lane (ge'
+- at: 2026-10-30 19:46
+  from: tony
+  text: retry requested
