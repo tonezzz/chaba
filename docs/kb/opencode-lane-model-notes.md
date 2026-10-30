@@ -1,76 +1,54 @@
-The provided code is a detailed and complex system for managing and executing tasks on a runner, which includes task dispatch, resource management, and GPU pre-flight checks. Below, I will summarize the key parts and provide some suggestions for improvements or clarifications.
+# docs/kb/opencode-lane-model-notes.md
 
-### Key Components
+Which LiteLLM models work on the OpenCode dispatch lane (idc02), what
+each failure mode looked like, and how the lane contract constrains
+model choice. Written from pilot evidence 2026-10-30.
 
-1. **Task Dispatch and Claiming:**
-   - The runner checks if it can claim a card based on the card's action type, executor, labels, and other attributes.
-   - It supports multiple executors: `devin`, `opencode`, `kk_mac_local`, `script`, and `manual`.
-   - The code includes logic to handle executor-specific claims, such as checking if a card can be claimed by a `kk_mac_local` executor and if the host can serve the lane.
+## The contract models must satisfy
 
-2. **Resource Management:**
-   - The runner manages CPU, memory, and IO limits for task units using systemd properties.
-   - It applies nice and ionice settings to running units to manage their priority.
+- `ops-readonly` emits **JSON** artifacts (`artifact.format: json`);
+  `doc-draft` emits **markdown** (`artifact.format: md`). Both are
+  message-mode: the agent's final message *is* the artifact.
+- The runner writes files, not the agent. Agents must **emit** the
+  artifact as their final message — every write/bash attempt in a
+  read-only profile is denied, recorded in `events.jsonl`, and fails
+  the job at closeout.
+- The held-out verifier re-checks artifact content against reality
+  (fresh host facts) plus sentinels from `action.verify_contains`.
+  Denials or mutating commands fail closeout even if content is right.
+- `RAILS_OPENCODE` in `scripts/board/runner-agent.py` is the prompt
+  block for this lane: no board-api calls, no network; emit only the
+  artifact. (The devin-executor rails previously caused a spurious
+  denial by instructing a curl progress-post the sandbox denies.)
 
-3. **GPU Pre-Flight Checks:**
-   - Before claiming a card, the runner checks if there is enough free VRAM on the GPU.
-   - It uses `nvidia-smi` to query the GPU memory status and caches the result to avoid frequent calls.
+## Verified working
 
-4. **Task Execution and Close-Out:**
-   - The runner uses `devin-dispatch` to execute tasks and handles the close-out process, including merging the session branch and performing artifact verification.
-   - It supports OpenCode lanes and ensures that artifacts are landed and verified according to the contract.
+| Model | Route | Evidence |
+|---|---|---|
+| gemini-3.5-flash | `litellm/or-gemini-3.5-flash` | Full pass — health JSON artifact verified + merged (OPS-0998, merge `562d54fdd`) |
+| qwen2.5:32b (kk-mac ollama) | `litellm/ollama-qwen32b-kkmac` | Full pass — doc-draft markdown verified + merged (OPS-1014). Content off-spec on first run (see below). ~6 tok/s |
 
-5. **Watchdog and Stuck Detection:**
-   - The runner includes a watchdog to detect and handle stuck tasks by checking for `GetVSyncParametersIfAvailable` journal entries and `xrandr` probes.
+## Failed / limited
 
-### Suggestions and Improvements
+| Model | Failure |
+|---|---|
+| `or-free-nemotron-nano` | Agentic loop can't emit-vs-write: 60/77 bash denials looping on `echo '{...}'`, never emitted. Honest fail. |
+| `or-free-gemma31b` | Upstream `API_KEY_INVALID` at OpenRouter — not our key |
+| `or-gemini-3.5-flash-lite` | Empties mid-agentic-loop (dies ~turn 5 with 0 output tokens) — unlike the AI-Studio-direct route |
+| `litellm/gemini-3.5-flash-lite` | Proven model, but the upstream AI Studio project hits its monthly cap |
 
-1. **Code Organization:**
-   - The code is quite dense and could benefit from better modularization. Functions and classes could be organized into separate files to improve readability and maintainability.
-   - Consider using a more structured logging mechanism instead of `print` statements for debug and informational messages.
+## kk-mac free lane
 
-2. **Error Handling:**
-   - The error handling is primarily done through exception handling and return values. Consider adding more detailed error messages and using a consistent error handling strategy.
-   - Ensure that all external commands and API calls have proper error handling and fallback mechanisms.
+`ollama serve` runs on kk-mac under the `adanest` account, bound to
+loopback only. Reachable via `ssh -L 11445:127.0.0.1:11434
+kkkakk@kk-mac` on idc03; registered in LiteLLM as
+`ollama-qwen32b-kkmac`. The tunnel is currently a nohup process —
+needs a declared unit or a real `OLLAMA_HOST` bind on adanest's plist
+before it is durable.
 
-3. **Caching and State Management:**
-   - The caching mechanism for GPU probe results is good, but consider adding more robust caching for other frequently accessed data.
-   - Ensure that state management (e.g., state file updates) is atomic and thread-safe.
+## Verifier weakness found
 
-4. **Configuration Management:**
-   - The configuration is currently managed through environment variables and hardcoded defaults. Consider using a configuration file (e.g., YAML or JSON) for better manageability and readability.
-   - Ensure that all configuration options are documented clearly.
-
-5. **Security and Compliance:**
-   - Ensure that all external commands and API calls are properly sanitized to prevent injection attacks.
-   - Verify that the code complies with security best practices, especially when handling sensitive data or executing external commands.
-
-### Example Refactoring
-
-Here is a refactored version of the `claimable` function for better readability and modularity:
-
-```python
-def is_claimable(card: dict) -> str:
-    a = card.get("action") or {}
-    if a.get("status") != "queued":
-        return "not queued"
-    if a.get("runner") and a["runner"] != HOST:
-        return f"pinned to runner {a['runner']}"
-    if a.get("host") and a["host"] != HOST:
-        return f"host-pinned to {a['host']}"
-    if a.get("target_host") and a["target_host"] != HOST:
-        return f"target_host {a['target_host']}"
-    needs = set(a.get("labels") or [])
-    if not needs <= LABELS:
-        return f"missing labels {sorted(needs - LABELS)}"
-    if a.get("executor") and a["executor"] not in EXECUTORS:
-        return f"unknown executor {a['executor']}"
-    if a.get("lane") == "manual":
-        return "manual lane"
-    return ""
-
-def claimable(card: dict) -> str:
-    reason = is_claimable(card)
-    return "" if reason else (card.get("action") or {}).get("type") or "dispatch"
-```
-
-This refactoring separates the claimability checks into a separate function for better readability and modularity.
+The `doc-draft` verifier passed a doc that contained the sentinel
+strings but ignored the task brief (wrote a code-summary instead of
+model notes). Sentinel checks are mechanical, not semantic — doc
+quality still needs human review at card closeout.
