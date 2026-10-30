@@ -1,0 +1,52 @@
+id: job-health-sweep-consecutive-failure-alerts
+title: Job-health sweep — alert when a declared job fails N consecutive runs
+column: backlog
+updated: 2026-10-30 18:32
+brief: 'Found 2026-10-30 (KNB-1008 deploy catchup): chaba-audit, mddb-vector-reindex, devin-bank-distill all had
+  ZERO successful finishes in 30d on con01 — nobody knew until a human read journalctl. Dead jobs must surface themselves.'
+priority: medium
+tags:
+- ops
+- alerting
+- jobs
+- systemd
+spec: 'Context: three con01 jobs sat dead up to a month — causes were per-host env drift (missing node_modules,
+  a disabled timer, a spend-capped API key), none of which any dashboard watches. Alerting gap is systemic: any
+  declared job on any host can die silently.
+
+
+  Build: per-host systemd user timer job-health-sweep.timer (declared in ssot.jobs.yml for every jobs host — con01,
+  idc02, idc03, mn01, tony-dell), hourly-or-4h cadence, running scripts/ops/job-health-sweep.py.
+
+
+  Sweep logic: enumerate this host''s jobs (ssot.jobs.yml host: match — rendered units already carry ''job:<id>''
+  in Description); per unit, count consecutive failed activations since the last status=0/SUCCESS via journalctl
+  --user -u <unit>; ALSO flag timers that are disabled/inactive while their job is declared dispatch:systemd (the
+  reindex case — never even fires).
+
+
+  Alert path: board-api. One auto card per host, e.g. job-auto-health-<host> (mirrors cms-auto-health / gev-auto-health
+  / runner-fleet-health precedent) — comment per failing job with last error line + consecutive-fail count. Anti-noise:
+  comment on state change only (new failure / still-failing daily summary / recovered-then-close).
+
+
+  Thresholds: >=3 consecutive failures, or >=1 attempt with zero successes in the journal window. Caveat: journal
+  retention can be <30d on small hosts — fall back to failed-since-boot counting.
+
+
+  Meta-gap to note in card: a dead sweep can''t report itself — host-level silence stays covered by runner-fleet-health;
+  this covers job-level failure.
+
+
+  Verify: point the sweep at a deliberately-broken test unit (or an already-failed one), confirm a card comment
+  lands on idc03 board; healthy host produces no card.'
+action:
+  type: manual
+ref: OPS-1015
+comms:
+- at: 2026-10-30 18:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-30 18:32
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
