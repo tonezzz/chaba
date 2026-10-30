@@ -359,6 +359,29 @@ per runtime with `scripts/colab/gap-launcher-cell.py`. Policy + contract:
 `gap-packs/PROCEDURE.md`; job record:
 `docs/ssot/jobs/nest/2026-10-25-ada-nest-gap-runner.yml`.
 
+### KK-Mac isolated Nest and DevNest jobs
+
+The Mac lacks a persistent queue heartbeat; dispatch is a **trusted-host
+one-shot worker**: stage the pack under the lane root
+(`gdrive:ada-nest-kk-mac-video-pilot` for video/MPS work,
+`gdrive:ada-nest-kk-mac-pilot` for LLM/devnest work), then launch
+`nest-worker.py --once` over ssh (`ssh idc03 -> ssh kk-mac`, or the
+tony-dell hop). No service is installed on the Mac.
+
+- **Job visibility (2026-10-30)** — while a pack is claimed the worker
+  writes `<root>/queue/heartbeat` (`<epoch> <pack> <phase>`, ~60s) and
+  `== <name>: prep|run|DONE|FAIL` lines into
+  `<root>/queue/log-<yyyymmdd>-<hhmm>.txt`. Two idc03 watchers
+  (`nest-queue-watch-kk-mac-video`, `nest-queue-watch-kk-mac`) push TG
+  alerts with `[nest:kk-mac-video]`/`[nest:kk-mac]` prefixes;
+  `kk_mac_admission.snapshot()` exposes `current_job`/`phase`/`job_age_s`.
+- **Python/PyYAML gotcha** — neither `/usr/bin/python3` (3.9) nor brew
+  python on kk-mac ships PyYAML; launch with uv:
+  `~/.local/bin/uv run --no-project --with pyyaml --python 3.11
+  /tmp/nest-worker.py --once --remote <lane_root>`
+- rclone lives at `~/.local/bin/rclone` (off PATH) — the worker resolves
+  it automatically.
+
 ### Writing packs — lessons so far
 
 - Declare honest `needs` floors — they decide which workers can take the

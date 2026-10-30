@@ -16,7 +16,8 @@ pack code must use those, never hardcode /content/drive.
 Usage: nest-worker.py [--once] [--remote gdrive:ada-nest]
                       [--workdir /tmp/nest-worker] [--stale-claim-min 60]
 """
-import argparse, glob, json, os, re, shutil, signal, subprocess, sys, time
+import argparse, glob, json, os, re, shutil, signal, subprocess, sys, \
+    threading, time
 
 REMOTE = 'gdrive:ada-nest'
 # /tmp on managed hosts is a small tmpfs (dell: 7.5G) — venvs + synced
@@ -26,6 +27,20 @@ WORKER = None
 # fleet hosts keep rclone in ~/.local/bin which non-login shells (ssh,
 # systemd units) don't have on PATH — resolve once at start
 RCLONE = shutil.which('rclone') or os.path.expanduser('~/.local/bin/rclone')
+
+# Queue visibility — same convention as the Colab queue-runner: while a
+# pack is claimed, <remote>/queue/heartbeat carries
+# '<epoch> <pack> <phase>' (phase prep|run, ~60s cadence) and
+# <remote>/queue/log-<yyyymmdd>-<hhmm>.txt carries the '== <name>: ev'
+# event lines nest-queue-watch parses. Remote objects cannot append —
+# emit() read-modify-writes the log on every event so a worker killed
+# mid-run still leaves a readable trail. NEST_WORKER_HB_S overrides the
+# beat interval (stall simulations / tests).
+QROOT = None                      # <remote>/queue — set in main()
+HB = {'job': 'boot', 'phase': 'boot'}
+HB_STOP = threading.Event()
+HB_EVERY = float(os.environ.get('NEST_WORKER_HB_S', '60'))
+LOG_NAME = time.strftime('log-%Y%m%d-%H%M.txt')
 
 
 def rc(*args, check=True, timeout=900):
@@ -139,6 +154,44 @@ def say(msg):
     print(f'{time.strftime("%H:%M:%S")} {msg}', flush=True)
 
 
+def _beat():
+    try:
+        rcat(f'{QROOT}/heartbeat',
+             f'{time.time():.0f} {HB["job"]} {HB["phase"]}')
+    except Exception as e:
+        say(f'  heartbeat: {e}')
+
+
+def set_phase(job, phase):
+    HB['job'], HB['phase'] = job, phase
+    if QROOT:
+        _beat()                 # transition beat — watchers see the flip now
+
+
+def heartbeat_loop():
+    while not HB_STOP.wait(HB_EVERY):
+        if HB['phase'] in ('prep', 'run'):
+            _beat()
+
+
+def emit(msg):
+    """say() plus one durable queue-log line, flushed immediately.
+
+    The event regex in nest-queue-watch keys on 'HH:MM:SS == <name>: ev';
+    every call rewrites the remote log so a mid-run kill loses at most
+    this one line."""
+    line = f'{time.strftime("%H:%M:%S")} {msg}'
+    print(line, flush=True)
+    if not QROOT:
+        return
+    try:
+        cur = cat(f'{QROOT}/{LOG_NAME}')
+        rcat(f'{QROOT}/{LOG_NAME}',
+             (cur + '\n' if cur else '') + line + '\n')
+    except Exception as e:
+        print(f'  queue-log: {e}', flush=True)
+
+
 def glob_remote(remote_root, pattern):
     """{relpath: size} for glob vs ada-nest root — remote truth."""
     parent, _, pat = pattern.rpartition('/')
@@ -216,6 +269,8 @@ def run_pack(name, spec, remote_root):
         if r.returncode != 0:
             return False, f'prep rc={r.returncode}'
 
+    set_phase(name, 'run')
+    emit(f'== {name}: run')
     t0 = time.time()
     if spec.get('run_sh'):
         r = subprocess.run(spec['run_sh'], shell=True, env=env, cwd=local,
@@ -269,7 +324,7 @@ def run_pack(name, spec, remote_root):
 
 
 def main():
-    global WORKER, CAPS, WORKDIR
+    global WORKER, CAPS, WORKDIR, QROOT, LOG_NAME
     ap = argparse.ArgumentParser()
     ap.add_argument('--once', action='store_true',
                     help='process currently-claimable packs then exit')
@@ -282,6 +337,10 @@ def main():
                           text=True).stdout.strip()
     WORKER = f'{host}-{os.getpid()}'
     CAPS = caps()
+    QROOT = f'{args.remote}/queue'
+    LOG_NAME = time.strftime('log-%Y%m%d-%H%M.txt')
+    emit(f'# nest-worker {WORKER} remote={args.remote}')
+    threading.Thread(target=heartbeat_loop, daemon=True).start()
     say(f'nest-worker {WORKER} caps={CAPS}')
 
     for d, inventory_entries in sorted(
@@ -344,16 +403,22 @@ def main():
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
             continue
         say(f'{d}: CLAIMED — running')
+        set_phase(d, 'prep')
+        emit(f'== {d}: prep')
         ok, info = run_pack(d, spec, args.remote)
         if ok:
             rcat(f'{pdir}/done', f'{info} worker={WORKER}')
-            say(f'{d}: DONE {info}')
+            set_phase(d, 'done')
+            emit(f'== {d}: DONE {info}')
         else:
-            say(f'{d}: FAIL {info}')
+            set_phase(d, 'fail')
+            emit(f'== {d}: FAIL {info}')
             # Contract failures are terminal for this package. Leaving the
             # pack unmarked causes an invalid model response to retry forever.
             rcat(f'{pdir}/failed', f'{info} worker={WORKER}')
             rc('deletefile', f'{pdir}/claim/{WORKER}', check=False)
+    set_phase('exit', 'exit')
+    HB_STOP.set()
     say('pass complete')
 
 

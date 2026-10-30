@@ -1299,6 +1299,48 @@ jobs:
     BOARD_NOTIFY_TG_CHAT_ID — /send otherwise defaults to Tony''s DM).
     OFF SWITCH: `touch ~/.config/nest-queue-watch.off` on idc03
     (every tick exits silently), rm to resume — or pull this job entry.'
+- id: nest-queue-watch-kk-mac-video
+  name: Nest queue watch kk-mac video lane — TG notify on pack claim/done/fail
+  host: idc03
+  dispatch: systemd
+  every: 1m
+  timeout: 60s
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+    NEST_QUEUE_REMOTE: gdrive:ada-nest-kk-mac-video-pilot
+    NEST_QUEUE_WATCH_STATE: '%h/.local/state/nest-queue-watch-kk-mac-video.json'
+    NEST_QUEUE_WATCH_OFF_FILE: '%h/.config/nest-queue-watch-kk-mac-video.off'
+    NEST_QUEUE_WATCH_TAG: 'nest:kk-mac-video'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-watch.py
+  note: 'card kk-mac-nest-job-visibility (2026-10-30) — per-lane instance of
+    nest-queue-watch for the isolated kk-mac video root
+    gdrive:ada-nest-kk-mac-video-pilot. Same poller as nest-queue-watch:
+    reads queue/heartbeat + newest log-*.txt via `ssh idc02 rclone`,
+    notifies the ada-ha TG group on prep/run/DONE/FAIL/stall events with
+    the [nest:kk-mac-video] prefix so lanes are distinguishable. Own
+    state file + kill-switch. OFF: `touch
+    ~/.config/nest-queue-watch-kk-mac-video.off` on idc03.'
+- id: nest-queue-watch-kk-mac
+  name: Nest queue watch kk-mac lane — TG notify on pack claim/done/fail
+  host: idc03
+  dispatch: systemd
+  every: 1m
+  timeout: 60s
+  env:
+    BOARD_NOTIFY_CHANNEL: tg
+    BOARD_NOTIFY_TG_CHAT_ID: '-5410424865'
+    NEST_QUEUE_REMOTE: gdrive:ada-nest-kk-mac-pilot
+    NEST_QUEUE_WATCH_STATE: '%h/.local/state/nest-queue-watch-kk-mac.json'
+    NEST_QUEUE_WATCH_OFF_FILE: '%h/.config/nest-queue-watch-kk-mac.off'
+    NEST_QUEUE_WATCH_TAG: 'nest:kk-mac'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-watch.py
+  note: 'card kk-mac-nest-job-visibility (2026-10-30) — per-lane instance of
+    nest-queue-watch for the isolated kk-mac pilot root
+    gdrive:ada-nest-kk-mac-pilot (LLM/devnest lane). Same poller as
+    nest-queue-watch, [nest:kk-mac] TG prefix, own state file +
+    kill-switch. OFF: `touch ~/.config/nest-queue-watch-kk-mac.off` on
+    idc03.'
 - id: ada-tg-webhook-watch
   name: Ada Telegram webhook registration monitor
   host: idc03

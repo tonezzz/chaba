@@ -11,6 +11,14 @@ def doc(body):
 
 
 class KkMacAdmissionTests(unittest.TestCase):
+    def setUp(self):
+        # lane heartbeat reads go over ssh — keep unit tests offline
+        p = patch(
+            "scripts.devnest.kk_mac_admission._lane_heartbeat",
+            return_value=None)
+        p.start()
+        self.addCleanup(p.stop)
+
     def test_fresh_healthy_heartbeat_is_eligible(self):
         now = time.time()
         with patch(
@@ -180,3 +188,44 @@ class KkMacAdmissionTests(unittest.TestCase):
             result = snapshot(now=now)
         self.assertFalse(result["eligible"])
         self.assertIn("node_busy:load1", result["reasons"])
+
+    def test_lane_job_fields_surface_without_gating(self):
+        now = time.time()
+        beat = {"current_job": "smoke-pack", "phase": "run",
+                "job_age_s": 12.0}
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+            })],
+        ), patch(
+            "scripts.devnest.kk_mac_admission._lane_heartbeat",
+            side_effect=lambda root, host, now: (
+                beat if "video" in root else None),
+        ):
+            result = snapshot(now=now)
+        self.assertTrue(result["eligible"])
+        self.assertEqual(result["current_job"], "smoke-pack")
+        self.assertEqual(result["phase"], "run")
+        self.assertEqual(result["job_age_s"], 12.0)
+        self.assertEqual(result["nest_jobs"], {"video": beat})
+
+    def test_empty_lane_map_disables_job_reads(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 1.2,
+            })],
+        ):
+            result = snapshot(now=now, job_lanes={})
+        self.assertEqual(result["nest_jobs"], {})
+        self.assertIsNone(result["current_job"])

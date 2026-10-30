@@ -33,6 +33,8 @@ Env:
   NEST_QUEUE_SSH            rclone proxy host (default idc02)
   NEST_QUEUE_REMOTE         rclone remote root (default gdrive:ada-nest)
   NEST_QUEUE_STALE_S        heartbeat staleness alert (default 240)
+  NEST_QUEUE_WATCH_TAG      TG title prefix tag (default "nest" — e.g.
+                            "nest:kk-mac-video" for the kk-mac lanes)
   BOARD_NOTIFY_CHANNEL      board_notify channel (default tg)
 """
 
@@ -57,6 +59,7 @@ SSH_HOST = os.environ.get("NEST_QUEUE_SSH", "idc02")
 REMOTE = os.environ.get("NEST_QUEUE_REMOTE", "gdrive:ada-nest").rstrip("/")
 Q = f"{REMOTE}/queue"
 STALE_S = int(os.environ.get("NEST_QUEUE_STALE_S", "240"))
+TAG = os.environ.get("NEST_QUEUE_WATCH_TAG", "nest")
 MAX_CATCHUP = 5  # don't burst-notify ancient history on first tick
 LOG_NAME = re.compile(r"^(?:log|run)-(?P<stamp>\d{8}-\d{4})")
 
@@ -104,7 +107,7 @@ def save_state(st: dict) -> None:
 
 
 def notify(title: str, body: str = "") -> bool:
-    ok = board_notify.send(f"[nest] {title}", body, url="")
+    ok = board_notify.send(f"[{TAG}] {title}", body, url="")
     if not ok:
         print(f"nest-queue-watch: notification was not accepted: {title}",
               file=sys.stderr)
