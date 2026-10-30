@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 11:20
+updated: 2026-10-30 11:33
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -25,3 +25,9 @@ comms:
 - at: 2026-10-30 11:20
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 11:33
+  from: devin
+  text: 'Capacity producer now implemented in scripts/devnest/kk_mac_capacity_producer.py. It scans explicit gdrive
+    inbox tasks, checks KK admission, caps queue depth at 3/new packages at 3, stages only allowed read-only classes,
+    dedupes by pack name, and never invents work. First real producer-created task completed on KK-Mac: cache-status-20261030-1,
+    verifier pass, artifact+done marker landed in ~2s.'
