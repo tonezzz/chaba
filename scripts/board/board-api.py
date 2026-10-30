@@ -188,7 +188,7 @@ ACTION_TYPES = {"dispatch", "manual"}
 # silently dropped so a spawn can't fake a running card
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
-               "artifact", "task_class", "prompt", "expect")
+               "artifact", "task_class", "prompt", "expect", "lane")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -1162,6 +1162,15 @@ def do_create(body: dict, frm: str) -> dict:
         if ex and ex not in dr.EXECUTORS:
             raise ValueError(
                 f"action.executor must be one of {sorted(dr.EXECUTORS)}")
+        # lane is a first-class routing knob too (executor=opencode +
+        # lane=free_lane -> ops-readonly via LANE_PROFILES). Whitelist it
+        # or the write door silently drops the declaration — the first
+        # OPS-1021 claims failed closed on exactly that (2026-10-30).
+        ln = str(act.get("lane") or "").strip()
+        if ln and ln not in (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)):
+            raise ValueError(
+                f"action.lane must be one of "
+                f"{sorted(set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS))}")
         for pk in ("agent_profile", "profile"):
             pv = str(act.get(pk) or "").strip()
             if pv and not dr.PROFILE_ID_RE.match(pv):
