@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: done
-updated: 2026-10-30 20:00
+updated: 2026-10-30 20:10
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -351,6 +351,12 @@ comms:
     (WP lesson post 3107). It includes the 10-scene flow, exact Thai/English cues, V1-vs-V2 distinction, private
     Drive storyboard path, and the existing V2 hold. I used `--no-th` because the lesson already contains the exact
     Thai subtitle cues; no translation model call was needed.'
+- at: 2026-10-30 20:10
+  from: devin
+  text: 'Storyboard updated to v2 to include the already-existing KK-Mac MLX silent alternate. Private deck: `gdrive:ada-nest/projects/kk-video-c9f99fee6146/presentations/sacred-father-storyboard-summary-2026-10-30-v2.html`
+    (SHA-256 `7d4477261e10ea7b3856addc7c6bb57dc87609410929706bf8bdd68f1d777e6e`). Education upsert is verified at
+    `lesson-f16f13e54382` (post 3107); it now records the Mac alternate and still distinguishes V1, planned V2,
+    and the explicit V2 hold. No new render or public release.'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
