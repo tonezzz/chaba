@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-30 20:12
+updated: 2026-10-30 20:24
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -261,6 +261,14 @@ comms:
   from: devin
   text: 'raised request kk-mac-agent-egress-policy-20261030: For a future KK-Mac Clawbot/Hermes benchmark, Clawbot
     currently uses OpenRouter/free, so inference and prompt text still'
+- at: 2026-10-30 20:24
+  from: tony
+  text: 'answered kk-mac-agent-egress-policy-20261030: local-only — use a KK-Mac-hosted local LLM for the bot lanes;
+    no OpenRouter/remote inference for this lane. This clarifies the policy direction only; it does not authorize
+    an inference run, model down'
+- at: 2026-10-30 20:24
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -311,7 +319,7 @@ requests:
   ask: For a future KK-Mac Clawbot/Hermes benchmark, Clawbot currently uses OpenRouter/free, so inference and prompt
     text still leave the Mac. Which egress policy should the pilot use? No run, model pull, or route change will
     happen from this request; KK still needs a fresh idle-window consent at execution time.
-  status: open
+  status: answered
   at: 2026-10-30 20:12
   from: devin
   options:
@@ -322,4 +330,7 @@ requests:
   - id: defer
     label: Keep the current deterministic-only scope; defer both lanes
   suggested: synthetic-only
+  answer: local-only — use a KK-Mac-hosted local LLM for the bot lanes; no OpenRouter/remote inference for this
+    lane. This clarifies the policy direction only; it does not authorize an inference run, model download, or dispatch.
+    Those still require a fresh per-job KK idle-window/consent preflight.
 awaiting_action: true
