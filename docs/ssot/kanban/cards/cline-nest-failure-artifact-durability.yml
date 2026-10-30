@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
 column: review
-updated: 2026-10-29 17:16
+updated: 2026-10-30 20:03
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -35,4 +35,10 @@ comms:
 - at: 2026-10-29 17:16
   from: devin
   text: moved doing -> review
+- at: 2026-10-30 20:03
+  from: devin
+  text: 'GitHub PR #62 check-state readback: `syntax` passed; SSOT file/cross-reference and bridge/proxy test steps
+    passed; `validate` failed at `Fail on warnings absent from baseline`. PR remains open/unmerged; no deploy or
+    live Cline task. The exact new warning was not available from this read surface. Do not change the warning baseline
+    to clear the failure; inspect and fix the underlying warning first.'
 review_kind: verify
