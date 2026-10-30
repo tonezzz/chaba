@@ -1,0 +1,17 @@
+id: runner-agent-opencode-lane-profile-bug
+title: 'runner-agent: explicit executor=opencode ignores card lane when resolving profile'
+column: backlog
+updated: 2026-10-30 09:19
+priority: low
+spec: 'start_task calls start_opencode_lane(card, "", unit) for declared executor=opencode — the card''s own action.lane
+  never reaches the lane->LANE_PROFILES map, so an executor=opencode + lane=free_lane card fails with "no task profile
+  for lane (none)" unless it also pins action.agent_profile. Either pass a.get("lane") into start_opencode_lane
+  (so a mapped lane resolves) or tighten the error to say agent_profile is required with explicit executor. Found
+  live 2026-10-30 on devnest-fl-pilot-sop (3rd claim attempt, idc02). Related: idc02''s ~/.local/bin/runner-agent
+  was a stale Oct-25 copy missing the whole executor-contract block — reinstalled; runner-fleet-health should flag
+  binary/repo drift.'
+ref: OPS-0996
+comms:
+- at: 2026-10-30 09:19
+  from: devin
+  text: card captured via board-api
