@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
 column: backlog
-updated: 2026-10-30 11:11
+updated: 2026-10-30 13:35
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -51,3 +51,10 @@ comms:
     0 timeouts, 0 fallbacks; mean wall 0.907s; 460 eval tokens total; every checks map passed. This is stronger
     than the transport-only soak. Ready for review of automatic JEV promotion for the four read-only classes, subject
     to heartbeat/load fallback.'
+- at: 2026-10-30 13:35
+  from: devin
+  text: 'Current count: dedicated gdrive:ada-nest-kk-llm queue has 22 unique package jobs DONE (smoke + 10 transport
+    soak + 10 semantic soak + 1 real cache-status task); 0 queued/claimed. There were 4 earlier failed timeout attempts
+    of the original smoke pack before the think=false fix. General ada-nest KK one-shot packs add 5 more DONE packages
+    (readonly/cpu/TTS/approval/shortlist). Direct kk_mac_llm adapter has 26 completed calls recorded separately,
+    plus 5 safely denied stale-admission calls. Counts a'
