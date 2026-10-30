@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-29 21:17
+updated: 2026-10-30 09:23
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -238,6 +238,12 @@ comms:
   text: 'Second live batch completed: 5 additional read-only jobs (operator briefs, cache structured extraction,
     summary, safe route) all admitted and returned usable results. Heartbeat/Ollama gates passed on every call;
     disk 63G, node_busy=false. Artifact: /home/tony/evals/results/kk-mac-real-job-batch2-20261029.jsonl.'
+- at: 2026-10-30 09:23
+  from: devin
+  text: 'KK-Mac continued 2026-10-30: refreshed corrected heartbeat with load_1m=1.78 (admission passed) and completed
+    3 more direct qwen3:8b jobs (operator_brief, structured_extract, summary), all admitted successfully. Artifact:
+    /home/tony/evals/results/kk-mac-real-job-batch5-20261030.jsonl. Local MLX video import remains pending; Omen
+    home cache is complete (~24G) but KK local model verification is not finished.'
 action:
   type: dispatch
   status: done
