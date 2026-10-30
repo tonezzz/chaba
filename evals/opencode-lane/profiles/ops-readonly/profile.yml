@@ -1,32 +1,31 @@
-# Task-scoped OpenCode agent profile — ops-readonly
-# (card opencode-task-agent-profiles).
-#
-# Read-only host/MCP report agent. It may inspect the host through a
-# bounded bash allowlist and/or the mcp-debug read-only proxy, and read
-# the repo; it may NOT write, edit, move, delete, install, or change
-# services. The artifact is emitted as the agent's final message and the
-# RUNNER writes it — the agent holds no write tools at all.
 id: ops-readonly
 version: 1
 status: enabled
 unattended: true
-description: >-
-  Read-only host and MCP ops reports. Collects declared host facts via a
-  bounded bash allowlist (no mutating verbs) and/or the 8-tool mcp-debug
-  read-only allowlist, then emits a JSON report artifact.
-task_classes: [read_only, report]
-stages: [S1, S2, S3]
+description: Read-only host and MCP ops reports. Collects declared host facts via
+  a bounded bash allowlist (no mutating verbs) and/or the 8-tool mcp-debug read-only
+  allowlist, then emits a JSON report artifact.
+task_classes:
+- read_only
+- report
+stages:
+- S1
+- S2
+- S3
 target_host:
-  required: true          # envelope must name target_host explicitly
-  allowed: []             # [] = any runner host
+  required: true
+  allowed: []
 model:
   tier: cheap
   default: litellm/gemini-3.5-flash-lite
-  allowed: [litellm/gemini-3.5-flash-lite, litellm/gemini-3-flash]
-providers: [litellm]
+  allowed:
+  - litellm/gemini-3.5-flash-lite
+  - litellm/gemini-3-flash
+  - litellm/or-free-nemotron-nano
+providers:
+- litellm
 agent:
   mode: primary
-# builtin tool toggles rendered into the opencode agent
 tools:
   read: true
   grep: true
@@ -40,97 +39,101 @@ tools:
   patch: false
   task: false
   webfetch: false
-# opencode permission rules rendered into the agent. bash is a
-# prefix-glob allowlist of read-only commands; anything unmatched is a
-# hard deny (verified live: 'ls /etc' denied while 'df -h /' allowed,
-# 2026-10-27 idc02 smoke). Post-run event audit still catches any
-# mutating verb that slips a compound command.
 permission:
   edit: deny
   webfetch: deny
   external_directory: deny
   doom_loop: ask
   bash:
-    "*": deny
-    "hostname": allow
-    "hostname *": allow
-    "uname": allow
-    "uname *": allow
-    "whoami": allow
-    "date": allow
-    "date *": allow
-    "uptime": allow
-    "uptime *": allow
-    "nproc": allow
-    "nproc *": allow
-    "lscpu": allow
-    "lscpu *": allow
-    "df": allow
-    "df *": allow
-    "du *": allow
-    "free": allow
-    "free *": allow
-    "ls": allow
-    "ls *": allow
-    "stat *": allow
-    # deliberately absent: "cat /proc/*" — external_directory:deny makes
-    # reads outside the checkout a guaranteed denial (verified in the
-    # p1-ops-readonly-idc02 run); /proc facts come via uptime/free
-    "ss *": allow
-    "ps *": allow
-    "journalctl *": allow
-    "systemctl list-units *": allow
-    "systemctl --user list-units *": allow
-    "systemctl list-timers *": allow
-    "systemctl --user list-timers *": allow
-    "systemctl status *": allow
-    "systemctl --user status *": allow
-    "systemctl is-active *": allow
-    "systemctl --user is-active *": allow
-    "systemctl is-enabled *": allow
-    "systemctl --user is-enabled *": allow
-    "systemctl show *": allow
-    "systemctl --user show *": allow
+    '*': deny
+    hostname: allow
+    hostname *: allow
+    uname: allow
+    uname *: allow
+    whoami: allow
+    date: allow
+    date *: allow
+    uptime: allow
+    uptime *: allow
+    nproc: allow
+    nproc *: allow
+    lscpu: allow
+    lscpu *: allow
+    df: allow
+    df *: allow
+    du *: allow
+    free: allow
+    free *: allow
+    ls: allow
+    ls *: allow
+    stat *: allow
+    ss *: allow
+    ps *: allow
+    journalctl *: allow
+    systemctl list-units *: allow
+    systemctl --user list-units *: allow
+    systemctl list-timers *: allow
+    systemctl --user list-timers *: allow
+    systemctl status *: allow
+    systemctl --user status *: allow
+    systemctl is-active *: allow
+    systemctl --user is-active *: allow
+    systemctl is-enabled *: allow
+    systemctl --user is-enabled *: allow
+    systemctl show *: allow
+    systemctl --user show *: allow
 mcp:
-  # ceiling — envelopes may narrow, never widen. All are the verified
-  # read-only mcp-debug set (OPS-0902).
-  allowed: [mcp_debug, mcp_health, mcp_get_file, mcp_read_ssot,
-            mcp_search_ssot, mcp_ssot_query, mcp_ssot_get, mcp_mddb_doc]
-  # explicit deny — defense in depth; the proxy also denies by omission.
-  denied: [mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append,
-           mcp_clipboard_set, mcp_clipboard_get, mcp_clipboard_image_get,
-           mcp_eget, mcp_screenshot, mcp_window_list, mcp_preset_run,
-           mcp_adaptive]
-  # how the MCP surface is reached when the host provides the proxy —
-  # rendered only when the proxy script exists on the running host;
-  # global OpenCode config keeps zero MCP entries (minimal surface).
+  allowed:
+  - mcp_debug
+  - mcp_health
+  - mcp_get_file
+  - mcp_read_ssot
+  - mcp_search_ssot
+  - mcp_ssot_query
+  - mcp_ssot_get
+  - mcp_mddb_doc
+  denied:
+  - mcp_raw
+  - mcp_put_file
+  - mcp_remediate
+  - mcp_ssot_append
+  - mcp_clipboard_set
+  - mcp_clipboard_get
+  - mcp_clipboard_image_get
+  - mcp_eget
+  - mcp_screenshot
+  - mcp_window_list
+  - mcp_preset_run
+  - mcp_adaptive
   upstream:
     name: mcp-debug-readonly
     proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
-    command: [/bin/bash, ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh]
+    command:
+    - /bin/bash
+    - ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh
 allowed_paths: []
 artifact:
-  mode: message           # agent emits artifact as final message; the
-                          # runner writes it (agent has no write tools)
+  mode: message
   format: json
-  dirs: [evals/opencode-lane/out/, reports/]
-  schema: >-
-    evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml
-    #contract.required_fields
+  dirs:
+  - evals/opencode-lane/out/
+  - reports/
+  schema: 'evals/opencode-lane/profiles/ops-readonly/fixture/task.yaml #contract.required_fields'
 verifier:
-  type: held_out_py       # floor — envelopes may strengthen to
-                          # independent_devin, never weaken
+  type: held_out_py
   ref: evals/opencode-lane/profiles/ops-readonly/fixture/verify.py
 escalation:
   on_fail: manual
-  allowed_on_fail: [manual, devin, retry_then_manual, hold]
+  allowed_on_fail:
+  - manual
+  - devin
+  - retry_then_manual
+  - hold
   max_retries: 1
 rollback:
-  kind: none              # agent writes nothing; the runner-written
-                          # artifact is simply removed
-rails: >-
-  You are the ops-readonly profile agent. You may READ the host and the
-  repo; you may not write, edit, move, delete, install packages, or
-  change services — denied tool calls are recorded and fail the job.
-  Do not read anything under ~/.config/secrets. Your report is your
-  final message: emit ONLY the artifact content, no prose around it.
+  kind: none
+rails: 'You are the ops-readonly profile agent. You may READ the host and the repo;
+  you may not write, edit, move, delete, install packages, or change services — denied
+  tool calls are recorded and fail the job. Do not read anything under ~/.config/secrets.
+  Your report is your final message: emit ONLY the artifact content, no prose around
+  it.'
