@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
 column: backlog
-updated: 2026-10-30 10:29
+updated: 2026-10-30 10:34
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -39,3 +39,9 @@ comms:
   text: 'Soak progress 2026-10-30: smoke DONE, kk-mac-llm-soak-01 through -09 DONE (each ~0.49-0.51s); -10 is currently
     active. After the think=false/600s pack fix, no new timeouts occurred. LaunchAgent worker is continuously claiming
     and closing packages one at a time.'
+- at: 2026-10-30 10:34
+  from: devin
+  text: 'SOAK PASS 2026-10-30: all 10 dedicated KK-Mac LLM packages completed via LaunchAgent worker. 10/10 responses/artifacts,
+    0 timeouts, 0 fallbacks, serial concurrency=1, qwen3:8b, mean wall 0.500s (0.490-0.514), 231 eval tokens total.
+    Aggregate artifact: /home/tony/evals/results/kk-mac-llm-soak-20261030.json. Worker is ready for a supervised
+    steady queue; automatic JEV promotion still requires policy review/verification mapping.'
