@@ -1,0 +1,51 @@
+id: kk-mac-nest-job-visibility
+title: kk-mac Nest job visibility — queue heartbeat + durable log + watcher for member-Mac lane
+column: backlog
+updated: 2026-10-30 15:18
+priority: medium
+tags:
+- nest
+- kk-mac
+- monitoring
+- board
+spec: 'Goal: see which Nest/DevNest pack is currently being processed on kk-mac (and any member-device lane), Nest-style
+  — same convention as the Colab queue.
+
+
+  Context: scripts/ada/nest-worker.py claims packs via packs/<name>/claim/<worker> and writes packs/<name>/done,
+  but say() only prints to the launching ssh session''s stdout — nothing durable records what is running. scripts/ops/nest-queue-watch.py
+  already polls gdrive:ada-nest/queue for queue/heartbeat + queue/log-*.txt and pushes TG on claim/done/fail/stall;
+  it is env-parameterized (NEST_QUEUE_REMOTE, NEST_QUEUE_WATCH_STATE, kill-switch file). kk-mac already has host
+  liveness via ada-nest-heartbeat.sh -> MDDB ada-nest-heartbeats (host/ts/ollama_ok/disk_free_gb) read by scripts/devnest/kk_mac_admission.py
+  — but it carries no job field. SOP: docs/kb/colab-mcp-jobs.md ''KK-Mac isolated Nest and DevNest jobs'' notes
+  ''Mac lacks a persistent queue heartbeat; dispatch is a trusted-host one-shot worker''.
+
+
+  Deliverables:
+
+  1. nest-worker.py: while a pack is claimed, write <remote_root>/queue/heartbeat = ''<epoch> <pack> <phase>'' on
+  ~60s cadence (background thread; phase in prep|run). Emit ''== <name>: prep|run|DONE|FAIL'' lines appended to
+  <remote_root>/queue/log-<yyyymmdd>-<hhmm>.txt — matching nest-queue-watch''s EVENT regex and LOG_NAME. Flush periodically,
+  not only at exit (worker death mid-run must leave a readable trail).
+
+  2. A nest-queue-watch instance per kk-mac root (gdrive:ada-nest-kk-mac-video-pilot, gdrive:ada-nest-kk-mac-pilot):
+  systemd generated units on idc03, own state file, ''[nest:kk-mac-video]''/''[nest:kk-mac]'' TG prefix so lanes
+  are distinguishable. Register in ssot.jobs.yml.
+
+  3. kk_mac_admission.snapshot(): surface current_job/phase/job_age_s read from <lane_root>/queue/heartbeat.
+
+
+  Verify: stage a smoke pack to the video root; run the trusted one-shot worker over ssh per the SOP; watcher TG
+  fires preparing->started->done for [nest:kk-mac-video]; rclone cat .../queue/heartbeat shows job+phase during
+  run; a stale heartbeat mid-job fires the stall alert (simulate by pausing the beat). Host hygiene: no changes
+  on the Mac itself — worker-side script + idc03 watcher only.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: AUD-1006
+comms:
+- at: 2026-10-30 15:18
+  from: tony
+  text: 'carded from chaba session — kk-mac package-visibility design agreed with Tony (Nest-style: queue/heartbeat
+    + log-*.txt + per-root watcher instance)'
