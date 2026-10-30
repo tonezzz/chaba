@@ -1634,13 +1634,23 @@ hosts:
           embeds via embed-pool-shim (:11436) racing fleet ollama bge-m3
           (1024d) instead of the gemini proxy (MEM-0788/MEM-0805);
           ada-ha-bank-devin-tony backfilled 2560/2560 2026-10-23"
+      - name: kkmac-ollama-tunnel.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac —
+          reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
+          feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
+          dies with kk-mac (member device, offline_ok)"
       - name: embed-pool-shim.service
         type: service
         scope: user
         expected_state: active
         critical: false
         note: "Ollama-shaped /api/embed racing proxy on 100.102.134.91:11436
-          (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen ollama bge-m3;
+          (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen/kk-mac ollama
+          bge-m3 (kk-mac via kkmac-ollama-tunnel :11445, added 2026-10-30);
           first 2xx wins, 8s upstream timeout; fronts mddb-embed embeds"
       - name: mddb-panel.service
         type: service
