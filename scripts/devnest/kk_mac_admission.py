@@ -46,6 +46,7 @@ def snapshot(
     url: str = "http://100.102.134.91:11026/v1",
     max_age_s: int = 900,
     min_disk_gb: int = 20,
+    max_load_1m: float = 4.0,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
@@ -71,6 +72,7 @@ def snapshot(
         "heartbeat_age_s": None,
         "ollama_ok": None,
         "disk_free_gb": None,
+        "load_1m": None,
         "identity_alias": identity_alias,
         "node_busy": None,
     }
@@ -79,6 +81,7 @@ def snapshot(
         return result
     result["ollama_ok"] = body.get("ollama_ok")
     result["disk_free_gb"] = body.get("disk_free_gb")
+    result["load_1m"] = body.get("load_1m")
     try:
         raw_ts = body["ts"]
         if isinstance(raw_ts, (int, float)):
@@ -100,6 +103,11 @@ def snapshot(
             result["reasons"].append("disk_low")
     except (TypeError, ValueError):
         result["reasons"].append("disk_unknown")
+    try:
+        if float(body["load_1m"]) > max_load_1m:
+            result["reasons"].append("load_high")
+    except (KeyError, TypeError, ValueError):
+        result["reasons"].append("load_unknown")
     # Overload gate: KK-Mac is an owner-first box — a busy node defers
     # the opportunistic lane. Signals, best available first: tmux_jobs
     # non-empty (work is running on the node), an explicit load_ok flag,

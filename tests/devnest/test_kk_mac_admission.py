@@ -20,6 +20,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 30,
                 "ollama_ok": True,
                 "disk_free_gb": 78,
+                "load_1m": 1.2,
             })],
         ):
             result = snapshot(now=now)
@@ -35,6 +36,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 901,
                 "ollama_ok": True,
                 "disk_free_gb": 78,
+                "load_1m": 1.2,
             })],
         ):
             result = snapshot(now=now)
@@ -50,6 +52,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 30,
                 "ollama_ok": False,
                 "disk_free_gb": 19,
+                "load_1m": 1.2,
             })],
         ):
             result = snapshot(now=now)
@@ -64,6 +67,22 @@ class KkMacAdmissionTests(unittest.TestCase):
         self.assertFalse(result["eligible"])
         self.assertEqual(result["reasons"], ["heartbeat_missing"])
 
+    def test_high_load_fails_closed(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+                "load_1m": 4.1,
+            })],
+        ):
+            result = snapshot(now=now)
+        self.assertFalse(result["eligible"])
+        self.assertIn("load_high", result["reasons"])
+
     def test_old_ip_key_can_match_by_tailnet_identity(self):
         now = time.time()
         with patch(
@@ -74,6 +93,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 30,
                 "ollama_ok": True,
                 "disk_free_gb": 78,
+                "load_1m": 1.2,
             })],
         ):
             result = snapshot(now=now)
@@ -89,6 +109,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 30,
                 "ollama_ok": True,
                 "disk_free_gb": 78,
+                "load_1m": 1.2,
                 "tmux_jobs": "vimax-render",
             })],
         ):
@@ -104,6 +125,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ts": now - 30,
                 "ollama_ok": True,
                 "disk_free_gb": 78,
+                "load_1m": 1.2,
                 "tmux_jobs": "",
             })],
         ):
@@ -120,6 +142,7 @@ class KkMacAdmissionTests(unittest.TestCase):
                 "ollama_ok": True,
                 "disk_free_gb": 78,
                 "load_ok": False,
+                "load_1m": 1.2,
             })],
         ):
             result = snapshot(now=now)

@@ -58,12 +58,17 @@ disk_free_gb() {
   df -g / 2>/dev/null | awk 'NR==2 {print $4}'
 }
 
+load_1m() {
+  sysctl -n vm.loadavg 2>/dev/null |
+    awk '{gsub(/[{}]/, ""); print $1}'
+}
+
 EXTRA=""
 [ -n "${HEARTBEAT_EXTRA_CMD:-}" ] && EXTRA="\"extra\": $(sh -c "$HEARTBEAT_EXTRA_CMD" 2>/dev/null || echo null),"
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"uptime_s\":$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*{ sec = //;s/,.*//' | awk -v n=$(date +%s) '{print n-$1}' || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"uptime_s\":$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*{ sec = //;s/,.*//' | awk -v n=$(date +%s) '{print n-$1}' || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )
