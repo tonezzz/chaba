@@ -1,7 +1,7 @@
 id: gaussian-splatting-nest-video-poc
 title: Prototype Gaussian splat scene render for Ada Nest video lane
 column: backlog
-updated: 2026-10-30 16:14
+updated: 2026-10-30 16:25
 spec: Research and prototype the smallest useful Gaussian-splatting lane for Ada Nest video generation. First render
   a known small PLY scene; then run one photo/video reconstruction on Colab using the existing nest-pack contract.
   Publish a PLY plus orbit MP4 and timing/VRAM report to durable Drive storage. Evaluate whether the rendered scene
@@ -57,3 +57,9 @@ comms:
     in an isolated environment, run a 300-iteration smoke on a small COLMAP scene, then a downscaled real scene.
     Existing CUDA packs are not valid on Apple Silicon. KK-Mac admission/owner window remains required before software
     install or training; no mutation was run in this session.'
+- at: 2026-10-30 16:25
+  from: devin
+  text: 'KK-Mac native Metal timing estimate: 5-10m owner/preflight + 10-25m isolated mpsplat/msplat environment
+    and model/dependency setup + 1-3m 300-iteration synthetic smoke; allow 30-45m total for a safe first session.
+    Small real COLMAP scene: additional 30-90m depending on image count/downloads. If KK break is under 15m, do
+    preflight only; do not start installation/training.'
