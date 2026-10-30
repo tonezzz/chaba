@@ -1,7 +1,7 @@
 id: cline-kanban-nest-worker-adapter
 title: Build Nest worker adapter for Cline Kanban pilot
 column: review
-updated: 2026-10-29 14:57
+updated: 2026-10-30 14:56
 priority: medium
 tags:
 - cline-kanban
@@ -351,6 +351,13 @@ comms:
     without running tests or producing task-result.json, patch, or done marker. No paid model, network, commit/push,
     or Chaba source access. The fast-fail guard and 10 bridge unit tests pass locally. Adapter still needs a reliable
     headless session-start path before another canary.'
+- at: 2026-10-30 14:56
+  from: devin
+  text: 'Linked initiative: proposal-workflow pilot (opencode-cline-idea-proposal-workflow) reused the repaired
+    cline-intake/bridge path as its submission mechanism — analysis-only, no Nest execution-adapter semantics. Earlier
+    artifact-contract concern is stale: cline-intake-smoke task 0bcda (2026-10-29) produced a verified patch + review
+    move. New finding for adapter work: intake.py posted its result comment twice on the smoke card (dedupe bug);
+    lane deliverables are not retrievable off con01 — content '
 requests:
 - id: may-i-publish-this-local-implementation-1f84ca
   ask: May I publish this local implementation branch, open a PR, and after CI deploy it to con01 for one free local-model
