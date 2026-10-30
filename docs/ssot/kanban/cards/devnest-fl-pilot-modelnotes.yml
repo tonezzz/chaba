@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-modelnotes
 title: 'OpenCode doc-draft pilot: lane model notes KB page'
-column: backlog
-updated: 2026-10-30 18:24
+column: doing
+updated: 2026-10-30 18:50
 spec: 'Write docs/kb/opencode-lane-model-notes.md — a short KB note recording which LiteLLM models work on the OpenCode
   dispatch lane on idc02, grounded in the checkout. Read evals/opencode-lane/profiles/ops-readonly/profile.yml (the
   model allowlist + artifact contract), evals/opencode-lane/profiles/doc-draft/profile.yml, and scripts/board/runner-agent.py
@@ -14,11 +14,12 @@ action:
   type: dispatch
   repo: chaba
   host: idc02
-  model: litellm/or-gemini-3.5-flash
+  model: litellm/ollama-qwen32b-kkmac
   executor: opencode
   agent_profile: doc-draft
   artifact: docs/kb/opencode-lane-model-notes.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1014
 comms:
 - at: 2026-10-30 18:24
@@ -27,3 +28,6 @@ comms:
 - at: 2026-10-30 18:24
   from: devin
   text: queued for processing
+- at: 2026-10-30 18:50
+  from: idc02
+  text: claimed
