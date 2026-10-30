@@ -1,0 +1,16 @@
+id: audit-hosts-macos-blindspot
+title: audit-hosts.py misses macOS hosts + other-user launchd domains (kk-mac adanest ollama ran undeclared)
+column: backlog
+updated: 2026-10-30 19:18
+spec: 'Evidence 2026-10-30: kk-mac ran ollama serve under the adanest account for days/weeks — fleet didn''t know.
+  Three stacked gaps: (1) kk-mac is not in audit-hosts.py HOSTS map (macos_services() exists but is never called
+  for it — SSOT says ''host-loads probe only''); (2) even if it were, `launchctl list` only sees the caller''s domain
+  — adanest''s user agents are invisible; need `ps` scan + `launchctl print gui/<uid>` for each login user, or sudo
+  launchctl; (3) no alert consumed the ''undeclared process'' class anyway. Fix: add kk-mac to HOSTS with os=macos,
+  extend macos_services() to enumerate all-user launchd domains via ps + dscl user list, declare findings in ssot.audit.hosts.yml.
+  This is the ''how did we miss it'' fix.'
+ref: AUD-1018
+comms:
+- at: 2026-10-30 19:18
+  from: tony
+  text: card captured via board-api
