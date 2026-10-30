@@ -38,15 +38,15 @@ def inbox(remote: str) -> list[str]:
 
 
 def queue_depth(remote: str) -> int:
-    depth = 0
-    for pack in rc("lsf", f"{remote}/packs").splitlines():
-        pack = pack.rstrip("/")
-        entries = set(rc(
-            "lsf", f"{remote}/packs/{pack}", "--max-depth", "1"
-        ).splitlines())
-        if "done" not in entries and "failed" not in entries:
-            depth += 1
-    return depth
+    # One recursive listing avoids one remote API call per historical pack.
+    entries = rc("lsf", f"{remote}/packs", "--recursive").splitlines()
+    packs = {line.split("/", 1)[0] for line in entries if line.strip()}
+    terminal = {
+        line.split("/", 1)[0]
+        for line in entries
+        if line.endswith("/done") or line.endswith("/failed")
+    }
+    return len(packs - terminal)
 
 
 def read_spec(remote: str, filename: str) -> dict:
