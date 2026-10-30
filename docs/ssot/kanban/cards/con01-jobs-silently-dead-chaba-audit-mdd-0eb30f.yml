@@ -1,0 +1,23 @@
+id: con01-jobs-silently-dead-chaba-audit-mdd-0eb30f
+title: con01 jobs silently dead — chaba-audit, mddb-vector-reindex, devin-bank-distill fail every run
+column: backlog
+updated: 2026-10-30 18:21
+priority: high
+tags:
+- ops
+- jobs
+- con01
+- alerting
+spec: 'Found 2026-10-30 during KNB-1008 deploy (render-jobs --install Persistent catchup fired them): journalctl
+  shows chaba-audit 7 fails/7d, mddb-vector-reindex 6/7d, devin-bank-distill 6/7d — ZERO successful finishes in
+  30d on con01. Audit dies ~8s into run-and-ship.sh (Node v22.22.1), vector-reindex hits TimeoutError, distill exits
+  nonzero after ~4s. They fail silently — no alert surfaces ''job never succeeds''. Scope: (1) diagnose each job''s
+  env/deps on con01 vs its last-known-good host run, (2) fix or re-home, (3) bigger gap: nothing alerts when a declared
+  job fails N consecutive runs — consider a job-health sweep (journalctl failure count -> board card) so the next
+  dead job doesn''t sit silent for a month. Verify: each named job exits 0 or is re-declared correctly; propose
+  the consecutive-failure alert as a follow-on card.'
+ref: OPS-1013
+comms:
+- at: 2026-10-30 18:21
+  from: tony
+  text: card captured via board-api
