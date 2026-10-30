@@ -83,6 +83,24 @@ class KkMacAdmissionTests(unittest.TestCase):
         self.assertFalse(result["eligible"])
         self.assertIn("load_high", result["reasons"])
 
+    def test_old_heartbeat_uses_read_only_ssh_load_fallback(self):
+        now = time.time()
+        with patch(
+            "scripts.devnest.kk_mac_admission._search",
+            return_value=[doc({
+                "host": "KKs-Mac-Studio",
+                "ts": now - 30,
+                "ollama_ok": True,
+                "disk_free_gb": 78,
+            })],
+        ), patch(
+            "scripts.devnest.kk_mac_admission._ssh_load",
+            return_value=1.5,
+        ):
+            result = snapshot(now=now)
+        self.assertTrue(result["eligible"])
+        self.assertEqual(result["load_source"], "ssh_read_only_fallback")
+
     def test_old_ip_key_can_match_by_tailnet_identity(self):
         now = time.time()
         with patch(

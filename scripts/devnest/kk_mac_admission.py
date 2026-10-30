@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import subprocess
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -37,6 +40,24 @@ def _parse(doc: dict) -> dict | None:
     except (TypeError, json.JSONDecodeError):
         return None
     return body if isinstance(body, dict) else None
+
+
+def _ssh_load(host: str) -> float | None:
+    """Read-only fallback while older installed heartbeats lack load_1m."""
+    try:
+        result = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+             host, "sysctl -n vm.loadavg 2>/dev/null"],
+            capture_output=True,
+            text=True,
+            timeout=12,
+        )
+        if result.returncode:
+            return None
+        match = re.search(r"\d+(?:\.\d+)?", result.stdout)
+        return float(match.group(0)) if match else None
+    except (OSError, ValueError, IndexError, subprocess.TimeoutExpired):
+        return None
 
 
 def snapshot(
@@ -103,8 +124,16 @@ def snapshot(
             result["reasons"].append("disk_low")
     except (TypeError, ValueError):
         result["reasons"].append("disk_unknown")
+    load = body.get("load_1m")
+    if load is None:
+        load = _ssh_load(os.environ.get("KK_MAC_SSH_HOST", "kk-mac"))
+        if load is not None:
+            result["load_1m"] = load
+            result["load_source"] = "ssh_read_only_fallback"
     try:
-        if float(body["load_1m"]) > max_load_1m:
+        if load is None:
+            raise ValueError("missing load")
+        if float(load) > max_load_1m:
             result["reasons"].append("load_high")
     except (KeyError, TypeError, ValueError):
         result["reasons"].append("load_unknown")
