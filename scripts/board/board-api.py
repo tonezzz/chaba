@@ -146,6 +146,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -1479,6 +1480,20 @@ PUB_PROGRESS_MIN_S = int(os.environ.get("PUB_PROGRESS_MIN_S", "900"))
 PUB_TG_MIN_S = int(os.environ.get("PUB_TG_MIN_S", "600"))
 PUB_ALERT_MIN_S = int(os.environ.get("PUB_ALERT_MIN_S", "60"))
 
+# --- runner readiness projection (runner-readiness-projection, KNB-1007) --
+# Verdicts live off-repo on the service host: each runner POSTs its own
+# claimability verdicts + active claims, so GET /queue reports
+# runner-observed truth instead of a central simulation of host state.
+READY_STATE_DIR = Path(os.environ.get(
+    "BOARD_API_READY_STATE",
+    str(Path.home() / ".local/state/board-api-ready")))
+READY_FILE = READY_STATE_DIR / "verdicts.json"
+READY_LOCK = Path(os.environ.get("BOARD_API_READY_LOCK",
+                                 "/tmp/board-api-ready.lock"))
+READY_STALE_S = int(os.environ.get("BOARD_API_READY_STALE_S", "900"))
+READY_HOST_TTL_S = int(os.environ.get("BOARD_API_READY_HOST_TTL_S",
+                                      str(7 * 86400)))
+
 
 class UpstreamError(RuntimeError):
     """Remote write service (WP/MDDB) failed — surfaces as a 502 so a
@@ -2305,6 +2320,146 @@ def render() -> None:
         )
 
 
+def _ready_load() -> dict:
+    try:
+        return json.loads(READY_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def _ready_save(state: dict) -> None:
+    READY_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = READY_STATE_DIR / "verdicts.json.tmp"
+    tmp.write_text(json.dumps(state, ensure_ascii=False))
+    tmp.replace(READY_FILE)
+
+
+def do_ready(body: dict) -> str:
+    """/ready — a runner's complete claimability report for this pass.
+
+    {host, verdicts:{card_id:{ok,reason}}, active:[{id,unit,at}]} — the
+    host block is replaced wholesale; a runner always reports its full
+    current view, so missing verdicts mean "not queued anymore", not
+    drift. Card files are never touched (off-repo state, no re-render)."""
+    host = str(body.get("host") or "").strip()
+    if not dr.HOST_ID_RE.match(host):
+        raise ValueError("host must be a valid host id")
+    verdicts_in = body.get("verdicts") or {}
+    if not isinstance(verdicts_in, dict) or len(verdicts_in) > 2000:
+        raise ValueError("verdicts must be an object of card -> verdict")
+    now_ts = time.time()
+    verdicts = {}
+    for cid, v in verdicts_in.items():
+        if not isinstance(cid, str) or len(cid) > 120:
+            continue
+        v = v or {}
+        verdicts[cid] = {"ok": bool(v.get("ok")),
+                         "reason": str(v.get("reason") or "")[:300],
+                         "at": now_ts}
+    active = []
+    for a in (body.get("active") or [])[:50]:
+        if isinstance(a, dict) and a.get("id"):
+            active.append({"id": str(a["id"])[:120],
+                           "unit": str(a.get("unit") or "")[:160],
+                           "at": int(a.get("at") or now_ts)})
+    state = _ready_load()
+    hosts = state.setdefault("hosts", {})
+    hosts[host] = {"at": now_ts, "verdicts": verdicts, "active": active}
+    # prune hosts silent > READY_HOST_TTL_S so a retired fleet member
+    # doesn't keep voting on claimability forever
+    for h in list(hosts):
+        if now_ts - ((hosts[h] or {}).get("at") or 0) > READY_HOST_TTL_S:
+            del hosts[h]
+    _ready_save(state)
+    return f"readiness recorded for {host} ({len(verdicts)} verdicts)"
+
+
+def queue_view() -> dict:
+    """GET /queue — the ready-package projection (KNB-1007): queued cards
+    in claim-drain order with per-runner verdicts and in-flight claims.
+    Read-only; verdicts fresher than READY_STALE_S count as live."""
+    cards = []
+    j = REPO / "stacks/web/public/apps/board/cards.json"
+    if j.exists():
+        try:
+            cards = (json.loads(j.read_text()) or {}).get("cards") or []
+        except Exception:
+            cards = []
+    now_ts = time.time()
+    hosts_in = (_ready_load().get("hosts") or {})
+    hosts = {}
+    for h, hb in hosts_in.items():
+        age = now_ts - ((hb or {}).get("at") or 0)
+        hosts[h] = {"at": (hb or {}).get("at"),
+                    "age_s": int(age),
+                    "stale": age > READY_STALE_S,
+                    "active": (hb or {}).get("active") or []}
+
+    def verdicts_for(cid: str) -> dict:
+        return {h: v for h, hb in hosts_in.items()
+                for cv in [((hb or {}).get("verdicts") or {}).get(cid)]
+                if cv is not None
+                for v in [cv]}
+
+    queued = [c for c in cards
+              if (c.get("action") or {}).get("status") == "queued"]
+    try:
+        queued = dr.sort_claimable(queued)
+    except Exception:
+        pass  # dr unavailable -> keep board order; still truthful
+
+    out_q = []
+    for i, c in enumerate(queued, 1):
+        cid = c.get("id") or ""
+        a = c.get("action") or {}
+        v = verdicts_for(cid)
+        fresh = {h: x for h, x in v.items()
+                 if now_ts - (x.get("at") or 0) <= READY_STALE_S}
+        out_q.append({
+            "pos": i, "id": cid, "ref": c.get("ref") or "",
+            "title": c.get("title") or "",
+            "priority": c.get("priority") or "",
+            "updated": c.get("updated") or "",
+            "action": {k: a.get(k) for k in
+                       ("repo", "type", "lane", "executor", "model",
+                        "labels", "host", "target_host", "runner")
+                       if a.get(k) not in (None, "", [])},
+            "eligible": sorted(h for h, x in fresh.items()
+                               if x.get("ok")),
+            "blocked": {h: (x.get("reason") or "blocked")
+                        for h, x in fresh.items() if not x.get("ok")},
+            "verdicts": v,
+            "unreported": sorted(
+                h for h, hb in hosts.items()
+                if not hb["stale"] and h not in v)})
+
+    # in-flight: card action.status plus the runner's own active report
+    # (richer — unit name + start epoch) when one exists
+    active_by_card = {}
+    for h, hb in hosts_in.items():
+        for a in (hb or {}).get("active") or []:
+            if a.get("id"):
+                active_by_card[a["id"]] = {"host": h, **a}
+    claimed = []
+    for c in cards:
+        a = c.get("action") or {}
+        if a.get("status") not in ("claimed", "running"):
+            continue
+        cid = c.get("id") or ""
+        rep = active_by_card.get(cid) or {}
+        claimed.append({
+            "id": cid, "ref": c.get("ref") or "",
+            "title": c.get("title") or "",
+            "status": a.get("status"),
+            "host": rep.get("host") or a.get("runner")
+                    or (c.get("claim") or {}).get("host") or "",
+            "unit": rep.get("unit") or a.get("task_id") or "",
+            "at": rep.get("at") or "",
+            "repo": a.get("repo") or ""})
+    return {"ok": True, "at": now(), "stale_after_s": READY_STALE_S,
+            "hosts": hosts, "queued": out_q, "claimed": claimed}
+
+
 class H(BaseHTTPRequestHandler):
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False).encode()
@@ -2326,6 +2481,11 @@ class H(BaseHTTPRequestHandler):
             if j.exists():
                 return self._send(200, json.loads(j.read_text()))
             return self._send(404, {"error": "no cards.json yet"})
+        if path == "/queue":
+            try:
+                return self._send(200, queue_view())
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -2344,6 +2504,20 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write(
             "board-api write %s id=%s via=%s\n"
             % (path, body.get("id") or body.get("card"), ident))
+
+        # runner readiness reports (KNB-1007) — off-repo state under its
+        # own flock; no card writes, no re-render, no upstream calls
+        if path == "/ready":
+            try:
+                with READY_LOCK.open("w") as lf:
+                    fcntl.flock(lf, fcntl.LOCK_EX)
+                    msg = do_ready(body)
+                return self._send(200, {"ok": True, "message": msg,
+                                        "via": ident})
+            except ValueError as e:
+                return self._send(400, {"error": str(e)})
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
 
         # remote-backed mutation endpoints (WP/MDDB) — separate flock so a
         # slow upstream call never stalls card writes; no board re-render

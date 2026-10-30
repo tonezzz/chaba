@@ -1368,8 +1368,25 @@ jobs:
     scripts/colab/packs/cline-kanban-nest-bridge/out/intake/<job_key>/.
     Provider default ollama/qwen2.5:7b; openrouter/or-free-* also
     whitelisted. Serial by design — one card per tick.'
+- id: cline-board-mirror
+  name: Cline board mirror — Chaba queue/lifecycle -> con01 kanban projection
+  host: con01
+  dispatch: systemd
+  every: 2min
+  timeout: 3m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/cline-board-mirror.py
+  note: 'KNB-1008 — READ-ONLY projection of the Chaba pipeline onto the
+    cline-kanban board (cline.surf-thailand.com). Reads GET /queue +
+    /cards from board-api, applies moves/creates/deletes to
+    board.json under the app''s own atomic write convention (spike
+    2026-10-30: direct locked edit is live to task list + UI; no agent
+    session is spawned). Only tasks carrying [CARD:<id>] markers are
+    touched — pilot + cline-intake execution tasks are never modified.
+    Chaba stays the source of truth; Cline state is rebuildable
+    display data. Requires runner verdicts flowing (KNB-1007 /ready).'
 related_files:
 - scripts/render-jobs.py
+- scripts/ops/cline-board-mirror.py
 - scripts/job-dispatcher.py
 - systemd/generated/
 - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml

@@ -126,6 +126,7 @@ same cleanup on this host over ssh when it salvaged the merge from
 dell's side.
 """
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -153,6 +154,10 @@ LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
 STATE_DIR = Path(os.environ.get(
     "RUNNER_STATE", str(Path.home() / ".local/share/runner-agent")))
 STATE_FILE = STATE_DIR / "state.json"
+READY_REPORT = STATE_DIR / "ready-verdicts.json"
+# /ready reports are debounced by payload hash; a forced refresh every
+# READY_FORCE_S keeps 'stale' detection honest on quiet boards.
+READY_FORCE_S = int(os.environ.get("RUNNER_READY_FORCE_S", "900"))
 # Starvation guard for the shared claim order (dispatch_repos).
 STARVE_HOURS = float(os.environ.get("RUNNER_STARVE_HOURS", "12"))
 DISPATCH = os.environ.get(
@@ -788,46 +793,53 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
     return True, notes
 
 
-def claimable(card: dict) -> str:
-    """task type the card wants if this host may claim it, else ""."""
+def _claimable(card: dict) -> tuple:
+    """(task type, block reason) — typ ""/reason text when unclaimable.
+    The gate order IS claimable(); the reason feeds /ready verdicts so
+    the board can say *why* a card waits instead of silently starving."""
     a = card.get("action") or {}
     if a.get("status") != "queued":
-        return ""
+        return "", "not queued"
     if a.get("runner") and a["runner"] != HOST:
-        return ""  # queued but tagged with another host's runner
+        # queued but tagged with another host's runner
+        return "", f"pinned to runner {a['runner']}"
     pinned = a.get("host")
     if pinned and pinned != HOST:
-        return ""
+        return "", f"host-pinned to {pinned}"
     # executor contract host pin (action.target_host) — independent of
     # action.host; both must be satisfied.
     th = str(a.get("target_host") or "").strip()
     if th and th != HOST:
-        return ""
+        return "", f"target_host {th}"
     needs = set(a.get("labels") or [])
     if not needs <= LABELS:
-        return ""
+        return "", f"missing labels {sorted(needs - LABELS)}"
     ex = str(a.get("executor") or "").strip()
     # executor contract (opencode-explicit-executor-routing):
     # manual = Tony's hands — never claimed; an unrecognised executor is
     # an unintelligible contract — fail closed, don't guess a route.
-    if ex == "manual" or (ex and ex not in EXECUTORS):
-        return ""
+    if ex == "manual":
+        return "", "manual executor (Tony's hands)"
+    if ex and ex not in EXECUTORS:
+        return "", f"unknown executor {ex!r}"
     typ = a.get("type") or "dispatch"
     if ex and typ != "dispatch" and not (ex == "script" and typ == "script"):
-        return ""  # executor contract routes dispatch-typed cards; on a
+        # executor contract routes dispatch-typed cards; on a
         # script/container card only a matching script executor is a
         # consistent declaration — anything else fails closed
+        return "", f"executor={ex} cannot serve type={typ}"
     if ex == "script" and typ == "dispatch":
         # the contract routes a dispatch-typed card to the script
         # executor — it must carry a usable action.script block
         c = a.get("script") or {}
         url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
         if c.get("cmd") and url and shutil_which("git"):
-            return "script"
-        return ""
+            return "script", ""
+        return "", "executor=script needs action.script.cmd+repo+git"
     if typ == "dispatch":
         if a.get("lane") == "manual":
-            return ""  # lane routing: manual = Tony's hands, never claimed
+            # lane routing: manual = Tony's hands, never claimed
+            return "", "manual lane"
         if ex == "kk_mac_local" and not a.get("kk_mac_tried"):
             # Try-first executor contract: a fresh kk_mac_local card is
             # claimed here only when this host can serve the lane —
@@ -836,37 +848,48 @@ def claimable(card: dict) -> str:
             # its next lane, so any dispatch-capable host may claim it
             # (the run skips straight to the fallback path).
             if not kk_mac_contract_ok(a):
-                return ""  # broken contract — defer note says why
+                return "", ("executor=kk_mac_local: task_class "
+                            f"{a.get('task_class') or '(missing)'!r} not "
+                            "admitted or artifact outside lane roots")
             if not kk_mac_servable() and \
                     kk_mac_probe().get("eligible"):
-                return ""  # lane is live elsewhere — leave for it
+                # lane is live elsewhere — leave for it
+                return "", ("kk_mac lane is live but this host can't "
+                            "serve it")
         if ex == "opencode":
             # Declared OpenCode executor: this host may claim ONLY when
             # it is a compatible runner — OPENCODE_LANES=1 AND a real
             # opencode binary. Anything less leaves the card queued for
             # a host that qualifies (the defer note says why) — claiming
             # it for a devin run would silently break the contract.
-            if not OPENCODE_LANES or not opencode_bin():
-                return ""
+            if not OPENCODE_LANES:
+                return "", "executor=opencode but OPENCODE_LANES=0"
+            if not opencode_bin():
+                return "", "executor=opencode but no opencode binary"
         elif not Path(DISPATCH).exists():
-            return ""
+            return "", "no devin-dispatch on host"
         # runner-push-cred-gap: never claim a repo this host can't push
         # — finishing here strands the branch (ADA-0673). Applies to the
         # OpenCode lane too: its close-out pushes the session branch.
         if not push_capable(str(a.get("repo") or "chaba")):
-            return ""
+            return "", push_guard_reason(card) or "cannot push repo"
     if typ == "container":
         c = a.get("container") or {}
         if not c.get("image") or not shutil_which("podman"):
-            return ""
+            return "", "container task needs image+podman"
     elif typ == "script":
         c = a.get("script") or {}
         url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
         if not c.get("cmd") or not url or not shutil_which("git"):
-            return ""
+            return "", "script task needs cmd+repo+git"
     elif typ != "dispatch":
-        return ""
-    return typ
+        return "", f"unknown type {typ!r}"
+    return typ, ""
+
+
+def claimable(card: dict) -> str:
+    """task type the card wants if this host may claim it, else ""."""
+    return _claimable(card)[0]
 
 
 def executor_defer_reason(card: dict) -> str:
@@ -2121,9 +2144,62 @@ def claim_pass(st: dict) -> bool:
     return changed
 
 
+def verdict_pass(st: dict) -> None:
+    """/ready report — runner-observed claimability for every queued card
+    plus this host's in-flight claims (KNB-1007). Runs every pass, even
+    at cap/overload: the projection needs 'why waiting' exactly when the
+    host is busiest. Debounced by payload hash, forced every
+    READY_FORCE_S; never fails the claim pass."""
+    try:
+        cards = (api("/cards") or {}).get("cards") or []
+        by_id = {c.get("id"): c for c in cards}
+        verdicts = {}
+        for c in cards:
+            cid = c.get("id")
+            if not cid or (c.get("action") or {}).get("status") != "queued":
+                continue
+            typ, reason = _claimable(c)
+            if typ:
+                g = gpu_preflight(c)
+                verdicts[cid] = {"ok": not g, "reason": g or ""}
+                if not g:
+                    continue
+                blocker = by_id.get(c.get("blocked_by") or "") or {}
+                if c.get("blocked_by") and not blocker_released(blocker):
+                    verdicts[cid] = {
+                        "ok": False,
+                        "reason": f"blocked_by {c['blocked_by']}"}
+            else:
+                verdicts[cid] = {"ok": False, "reason": reason}
+        active = [{"id": cid, "unit": v.get("unit", ""),
+                   "at": v.get("at", 0)} for cid, v in st.items()]
+        h = hashlib.sha1(json.dumps(
+            {"v": verdicts, "a": sorted(x["id"] for x in active)},
+            sort_keys=True).encode()).hexdigest()
+        last = {}
+        try:
+            last = json.loads(READY_REPORT.read_text())
+        except Exception:
+            pass
+        if last.get("hash") == h and \
+                time.time() - (last.get("at") or 0) < READY_FORCE_S:
+            return
+        resp = api("/ready",
+                   {"host": HOST, "verdicts": verdicts, "active": active})
+        if resp.get("error"):
+            print(f"warn: /ready report failed: {resp['error']}")
+            return
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        READY_REPORT.write_text(
+            json.dumps({"hash": h, "at": time.time()}))
+    except Exception as e:
+        print(f"warn: verdict_pass failed: {e}")
+
+
 def main() -> int:
     st = load_state()
     changed = finish_pass(st) | watchdog_pass(st) | claim_pass(st)
+    verdict_pass(st)
     if changed:
         save_state(st)
     return 0
