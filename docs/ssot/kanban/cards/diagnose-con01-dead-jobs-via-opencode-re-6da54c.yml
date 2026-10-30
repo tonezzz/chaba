@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: done
-updated: 2026-10-30 20:04
+updated: 2026-10-30 20:06
 priority: medium
 tags:
 - ops
@@ -129,6 +129,13 @@ comms:
 - at: 2026-10-30 20:04
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-30 20:06
+  from: devin
+  text: 'LANE PROVEN, DELIVERABLE MISSED — honest verdict. The opencode lane ran end-to-end: fail-closed defers
+    with honest reasons, idc02 claimed, free_lane->ops-readonly resolved, profile rendered, stamps recorded, auto-merged
+    1141894f. But the run landed only .opencode-profile/opencode.json — no report. Root causes found+fixed live:
+    (1) runner-agent blinded action.lane on the explicit-executor path (fixed, pushed, all 5 ~/.local/bin snapshots
+    updated); (2) board-api ACTION_KEYS dropped lane at card cr'
 review_kind: verify
 claim: {}
 auto_close:
