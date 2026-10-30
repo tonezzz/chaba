@@ -1,6 +1,6 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
-column: backlog
+column: doing
 updated: 2026-10-30 15:07
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
@@ -31,9 +31,10 @@ action:
     - KK-Mac
     - read-only
     - no mutations
-  status: queued
+  status: running
   last_failure: ' finished (unknown) — see `devin-dispatch logs `'
   attempts: 1
+  runner: idc03
 ref: OPS-0991
 comms:
 - at: 2026-10-30 01:15
@@ -75,6 +76,9 @@ comms:
 - at: 2026-10-30 15:07
   from: tony
   text: retry requested
+- at: 2026-10-30 15:07
+  from: idc03
+  text: claimed
 review_kind: verify
 claim: {}
 requests:
