@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
 column: doing
-updated: 2026-10-30 10:16
+updated: 2026-10-30 10:18
 priority: low
 spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
   + storage standard. READ THE CODE FIRST, then emit the report: (1) scripts/board/board-api.py — JOB_STATUSES enum
@@ -20,7 +20,7 @@ action:
   lane: free_lane
   model: litellm/or-free-nemotron-nano
   artifact: reports/job-package-status-sop.md
-  status: queued
+  status: running
   attempts: 0
   agent_profile: ops-readonly
   sweep:
@@ -29,6 +29,7 @@ action:
     failed_noted: 2026-10-30 09:48
   result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) nish","tokens":{"total":81213,"input":8879,"output":2263,"reasoning":1975,"cache":{"write":0,"read":68096}},"cost":0}}
     | devin-task-devnest-fl-pilot-sop-1793329296.service: Consumed 22.113s CPU time, 767.7M memory peak, 0B'
+  runner: idc02
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -160,5 +161,8 @@ comms:
 - at: 2026-10-30 10:16
   from: devin
   text: queued for processing
+- at: 2026-10-30 10:18
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
