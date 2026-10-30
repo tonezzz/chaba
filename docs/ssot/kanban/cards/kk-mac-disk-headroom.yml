@@ -1,0 +1,23 @@
+id: kk-mac-disk-headroom
+title: Reclaim KK-Mac worker staging headroom safely
+column: backlog
+updated: 2026-10-30 16:40
+brief: KK-Mac has ~20 GB free while 27 GB of duplicated Qwen HF staging occupies the Nest worker cache. Review and
+  reclaim only with Tony approval.
+priority: high
+program: ai-workforce
+tags:
+- kk-mac
+- disk
+- capacity
+- safety
+spec: 'Read-only review found /Users/kkkakk/.cache/nest-worker/devnest-qwen3-8b-hf-prestage/out at ~27 GB: a 12
+  GB qwen3-8b-hf-cache.tar.zst plus ~15 GB extracted model. Current Ollama qwen3:8b lane uses ~/.ollama (~2.8 GB),
+  not this HF staging tree. Do not delete Adobe caches, Desktop, Downloads, or LTX Hugging Face cache. Before removal,
+  confirm no active Colab package references this staged source; then require Tony approval for the reversible/irreversible
+  cleanup choice.'
+ref: OPS-1011
+comms:
+- at: 2026-10-30 16:40
+  from: devin
+  text: card captured via board-api
