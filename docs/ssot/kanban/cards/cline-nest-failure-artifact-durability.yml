@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
 column: review
-updated: 2026-10-30 21:40
+updated: 2026-10-30 21:58
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -45,6 +45,13 @@ comms:
   from: devin
   text: 'raised request pr62-kkmac-warning-baseline-resolution: PR #62''s code/tests pass, but after syncing the
     current master the SSOT warning gate finds one unrelated unbaselined war'
+- at: 2026-10-30 21:58
+  from: devin
+  text: 'PR #62 follow-up: local merge worktree has the bridge conflict resolved, but the merge is not committed
+    or pushed. On that tree, 14 bridge/worker tests and 10 proxy tests pass; SSOT validation is 3384 files/0 errors
+    and refs 3389/no breaks. `ssot-optimize-gate` is blocked by the one fresh OPS-0966 warning (kk-mac-local-llm-lane.yml:
+    356 lines > 350); I did not change that card or baseline. Current PR remote head remains c9e2c314; waiting on
+    the open warning-resolution request before any merge pu'
 review_kind: verify
 requests:
 - id: pr62-kkmac-warning-baseline-resolution
