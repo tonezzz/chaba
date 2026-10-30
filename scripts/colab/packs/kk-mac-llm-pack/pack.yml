@@ -2,7 +2,7 @@ name: kk-mac-llm-pack
 needs:
   disk_gb: 1
   egress_only_ok: false
-timeout_s: 180
+timeout_s: 600
 artifacts:
   - packs/kk-mac-llm-pack/out/result.json
 run: |
@@ -12,20 +12,23 @@ run: |
   import urllib.request
 
   task = json.load(open(f"{PACK_DIR}/inputs/task.json", encoding="utf-8"))
-  body = json.dumps({
+  request_body = {
       "model": task.get("model", "qwen3:8b"),
       "prompt": task["prompt"],
-      "format": task.get("format"),
       "stream": False,
+      "keep_alive": "10m",
       "options": {"temperature": 0},
-  }).encode()
+  }
+  if task.get("format"):
+      request_body["format"] = task["format"]
+  body = json.dumps(request_body).encode()
   request = urllib.request.Request(
       "http://127.0.0.1:11434/api/generate",
       data=body,
       headers={"Content-Type": "application/json"},
   )
   started = time.time()
-  with urllib.request.urlopen(request, timeout=120) as response:
+  with urllib.request.urlopen(request, timeout=300) as response:
       raw = json.load(response)
   result = {
       "task_id": task.get("task_id", "unknown"),
