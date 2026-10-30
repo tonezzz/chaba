@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
 column: review
-updated: 2026-10-30 21:58
+updated: 2026-10-30 22:00
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -52,6 +52,11 @@ comms:
     and refs 3389/no breaks. `ssot-optimize-gate` is blocked by the one fresh OPS-0966 warning (kk-mac-local-llm-lane.yml:
     356 lines > 350); I did not change that card or baseline. Current PR remote head remains c9e2c314; waiting on
     the open warning-resolution request before any merge pu'
+- at: 2026-10-30 22:00
+  from: devin
+  text: 'Safety note: the PR worktree''s in-progress merge points at b4da506, while `git ls-remote origin master`
+    now reports 4633d103 (one commit newer). No merge commit or push has been made; the branch will need that latest
+    remote commit integrated before any push.'
 review_kind: verify
 requests:
 - id: pr62-kkmac-warning-baseline-resolution
