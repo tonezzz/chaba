@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:35
+updated: 2026-10-30 21:49
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -197,6 +197,13 @@ comms:
     empty, and no matching video/compute app (the Adobe crash helper is the only excluded background process). The
     v3 one-shot pack''s gates now pass. Launching only `kk-mac-storyboard-i2v-shot03-oneoff-v3-20261030` (shot03/page15);
     the staged shots04–10 batch remains blocked pending visual review.'
+- at: 2026-10-30 21:49
+  from: devin
+  text: 'One-off Mac image-conditioned probe completed from the new isolated pack: shot03 / v1_01 page15 image-008,
+    LTX-Video MPS bf16, 73 frames at 640×384, 87.93s generation, 3.04s H.264, no black frames; full decode passed.
+    Private artifact: `gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-i2v-shot03-oneoff-v3-20261030/out/shot03-i2v-mps.mp4`;
+    probe JSON and done marker are present. It is a technical pass, not visual sign-off; no audio/mux or shots04–10
+    batch ran.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
