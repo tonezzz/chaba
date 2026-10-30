@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 20:53
+updated: 2026-10-30 21:26
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -49,3 +49,9 @@ comms:
   text: 'Fast path is defined but not yet exercised as a manual one-shot; index status stays defined. Report packages
     with empty expect remain human-review drafts because the worker only checks response_nonempty. Next: exercise
     broker then producer on a real task, preserving admission and the queue cap.'
+- at: 2026-10-30 21:26
+  from: devin
+  text: 'Quick-submit exercised on real report: decision-arena-extract-20261030-2114 (structured_extract; reports/2026-10-25-decision-arena-50.md).
+    Routed through the shared inbox, staged by the producer, and completed on KK-Mac qwen3:8b. Done marker/result
+    verified; all 11 JSON/key/literal-fact checks passed in 2.525s (65 eval tokens). No persistent service/timer
+    config changed; automatic JEV remains gated. Empty-expect report summaries remain human-review drafts.'
