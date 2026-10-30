@@ -1,0 +1,123 @@
+title: Repository and Executor Decision Standard
+subtitle: Required task facts and cheapest safe lane selection
+icon: git-branch
+version: 1
+last_updated: "2026-10-30"
+card: repo-choice-decision-policy
+
+purpose: >
+  Make repo selection, executor selection, and fallback decisions explicit,
+  reproducible, and measurable. Models may explain a decision, but executable
+  gates own safety and routing.
+
+card_action_contract:
+  repo: "logical repo name from the dispatch allowlist"
+  repo_root: "resolved checkout path; never model-selected"
+  default_branch: "master|main from the repo registry"
+  target_host: "explicit inspection/worker host when remote facts are needed"
+  task_class: "codemod|summary|operator_brief|structured_extract|safe_route|code|manual"
+  executor: "script|kk_mac_local|opencode|devin|manual"
+  lane: "codemod|free_lane|paid_frontier|kk_mac_local|colab|devin|manual"
+  model: "resolved model/provider id; explicit card value wins"
+  profile: "task-scoped agent profile when an agent executor is used"
+  artifact: "safe repo-relative output path under an allowlisted root"
+  expect: "independent verifier schema/facts/enums"
+
+repo_registry_contract:
+  required:
+    - name
+    - path
+    - default_branch
+    - push_capable
+    - owner
+    - sensitivity
+    - allowed_write_paths
+    - test_command
+    - verify_command
+    - artifact_roots
+    - host_labels
+  deny_by_default:
+    - missing repo mapping
+    - unknown branch
+    - unavailable push capability for a write task
+    - artifact outside an allowlisted root
+    - production/secret/destructive task without human executor
+
+decision_precedence:
+  - rank: 1
+    condition: "explicit executor=manual or destructive/credential/deploy/irreversible"
+    lane: manual
+    action: "do not auto-claim"
+  - rank: 2
+    condition: "known deterministic transform with a passing codemod verifier"
+    lane: codemod
+    executor: script
+  - rank: 3
+    condition: "read-only bounded class and KK-Mac heartbeat/Ollama/load gate passes"
+    lane: kk_mac_local
+    executor: kk_mac_local
+    model: qwen3:8b
+  - rank: 4
+    condition: "small verified docs/config/read-only task with a matching profile"
+    lane: free_lane
+    executor: opencode
+    model: litellm/gemini-3.5-flash-lite
+  - rank: 5
+    condition: "finite GPU batch/render/evaluation with a pack contract"
+    lane: colab
+    executor: script
+  - rank: 6
+    condition: "cheap frontier lane is available and its gate passes"
+    lane: free_lane
+    executor: devin
+  - rank: 7
+    condition: "multi-step, ambiguous, or strong reasoning task"
+    lane: devin
+    executor: devin
+  - rank: 8
+    condition: "unknown or conflicting facts"
+    lane: devin
+    action: "safe fallback; never silently discard the task"
+
+injection:
+  executable_truth: >
+    dispatch_repos.py, runner-agent.py, lane_gate.py, and independent
+    verifiers enforce the contract. Prompt text cannot grant permissions.
+  opencode: >
+    inject a compact policy primer through the selected task profile and
+    envelope; include repo, acceptance gate, artifact, and fallback facts.
+  cline_nest: >
+    include the same normalized envelope in task.json/intake validation;
+    validator rejects unknown repo/model/task class and unsafe paths.
+  context_budget: >
+    inject only the facts needed for the task; link to this SSOT and the
+    deeper Education lesson rather than pasting the full policy.
+
+evaluation:
+  arms:
+    - none
+    - compact_policy
+    - full_policy
+  corpus: "frozen repo-choice and task-class corpus with held-out cases"
+  metrics:
+    - repo_accuracy
+    - branch_accuracy
+    - lane_accuracy
+    - executor_accuracy
+    - model_accuracy
+    - artifact_contract_pass_rate
+    - independent_verifier_pass_rate
+    - policy_violation_rate
+    - wall_time
+    - model_tokens
+    - human_intervention_minutes
+    - cost_per_verified_success
+  promotion: >
+    promote only when held-out verifier success is non-inferior to the
+    baseline and cost/intervention improve; unknown cases must remain safely
+    escalated.
+
+operating_rule: >
+  The cheapest lane is selected only after the repo, task class, acceptance
+  gate, and executor capability are known. The cheapest lane whose verified
+  output passes the gate wins.
