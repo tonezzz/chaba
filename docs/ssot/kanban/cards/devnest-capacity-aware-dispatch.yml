@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 16:21
+updated: 2026-10-30 19:15
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -40,3 +40,10 @@ comms:
     specs per 15m. SSOT job devnest-report-feed is declared on tony-dell. First run submitted 3 real report-review
     tasks; broker routed them and KK producer staged them. Prompt bound was corrected to stay under the 6000-character
     package limit. Current KK disk is at the 20GB'
+- at: 2026-10-30 19:15
+  from: devin
+  text: Tony requested KK-Mac stop now. Stopped devnest-report-feed, devnest-capacity-broker, and jevnest-kk-mac-capacity-producer
+    timers/services on tony-dell; booted out the KK-Mac LaunchAgent worker. Added DEVNEST_KK_MAC_ENABLED=false defensive
+    gates to broker/producer SSOT jobs so future starts hold KK packages instead of routing them. Existing inbox/packs
+    are preserved for later reroute; Ollama itself remains running for owner use. Next dispatch must use Colab/OpenCode/Devin/manual
+    lanes.
