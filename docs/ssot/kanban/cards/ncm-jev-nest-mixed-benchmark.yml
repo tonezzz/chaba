@@ -1,7 +1,7 @@
 id: ncm-jev-nest-mixed-benchmark
 title: Benchmark NCM + JEV + Nest mixed generation routing
 column: review
-updated: 2026-10-30 15:31
+updated: 2026-10-30 15:32
 spec: Explore whether NCM improves Thai generation speed/quality when orchestrated by JEV and executed by Nest.
   NCM is the candidate generator; JEV routes/gates; Nest runs parallel candidates and publishes artifacts. P0 replay
   Sudoku/Thai fixtures through AR baseline, NCM, JEV route-only, and mixed candidates. P1 run Thai NCM toy on Colab.
@@ -73,6 +73,13 @@ comms:
     comparisons, paired repetitions, a deterministic-primary verifier, latency/cost/queue metrics, and an explicit
     no-Colab-upgrade/no-paid-compute gate. Validation: 3,358 SSOT files / 0 errors (48 existing warnings); git diff
     --check passed. No model/GPU calls or production route cha'
+- at: 2026-10-30 15:32
+  from: devin
+  text: 'PR #63 is open: https://github.com/tonezzz/chaba/pull/63 (docs/ncm-jev-production-procedure-20261028 ->
+    master). Local SSOT validation passed 3,358 files/0 errors (48 warnings); GitHub validate check is currently
+    in progress, so not merged yet. Updated Education lesson post 1967 (`Ada Nest — NCM report`) in place with the
+    P0-P5 procedure, identical pinned AR/NCM/LLM model matrix, 3 paired repetitions, JEV verifier boundaries, and
+    the no-account-upgrade/no-paid-compute gate; read-back verified, n'
 action:
   type: dispatch
   status: done
