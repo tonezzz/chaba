@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-kkmac-doc
 title: 'OpenCode doc-draft pilot 2: kk-mac ollama lane KB page (qwen3:8b)'
-column: backlog
-updated: 2026-10-30 19:51
+column: doing
+updated: 2026-10-30 19:52
 spec: 'Write docs/kb/kkmac-ollama-lane.md — a KB page documenting the kk-mac ollama lane for the fleet. Ground it
   in the checkout: read stacks/idc03/litellm/config.yaml (the ollama-*-kkmac routes), docs/ssot/infrastructure/ssot.audit.hosts.yml
   (the kk-mac capabilities.ollama block), and docs/kb/opencode-lane-model-notes.md (the model verdicts). The page
@@ -19,7 +19,8 @@ action:
   executor: opencode
   agent_profile: doc-draft
   artifact: docs/kb/kkmac-ollama-lane.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1024
 comms:
 - at: 2026-10-30 19:51
@@ -28,3 +29,6 @@ comms:
 - at: 2026-10-30 19:51
   from: devin
   text: queued for processing
+- at: 2026-10-30 19:52
+  from: idc02
+  text: claimed
