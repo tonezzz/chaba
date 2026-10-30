@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
 column: doing
-updated: 2026-10-30 09:27
+updated: 2026-10-30 09:31
 priority: low
 spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
   + storage standard. READ THE CODE FIRST, then emit the report: (1) scripts/board/board-api.py — JOB_STATUSES enum
@@ -20,10 +20,11 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   artifact: reports/job-package-status-sop.md
-  status: queued
+  status: running
   attempts: 1
   agent_profile: ops-readonly
   last_failure: 'start failed: opencode executor: 2'
+  runner: idc02
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -97,5 +98,8 @@ comms:
 - at: 2026-10-30 09:27
   from: devin
   text: retry requested
+- at: 2026-10-30 09:31
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
