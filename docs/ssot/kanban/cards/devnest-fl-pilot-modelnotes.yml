@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-modelnotes
 title: 'OpenCode doc-draft pilot: lane model notes KB page'
-column: doing
-updated: 2026-10-30 18:50
+column: review
+updated: 2026-10-30 18:59
 spec: 'Write docs/kb/opencode-lane-model-notes.md — a short KB note recording which LiteLLM models work on the OpenCode
   dispatch lane on idc02, grounded in the checkout. Read evals/opencode-lane/profiles/ops-readonly/profile.yml (the
   model allowlist + artifact contract), evals/opencode-lane/profiles/doc-draft/profile.yml, and scripts/board/runner-agent.py
@@ -18,8 +18,11 @@ action:
   executor: opencode
   agent_profile: doc-draft
   artifact: docs/kb/opencode-lane-model-notes.md
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 35a47aaffe542KeqUFj55u4W","type":"step-finish","tokens":{"total":17322,"input":16386,"output":936,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-modelnotes-1793361029.service: Consumed 19.589s CPU time.'
+  verified: true
 ref: OPS-1014
 comms:
 - at: 2026-10-30 18:24
@@ -35,3 +38,8 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-modelnotes-1793361029 on idc02 (dispatch executor=opencode profile=doc-draft
     model=litellm/ollama-qwen32b-kkmac)
+- at: 2026-10-30 18:59
+  from: idc02
+  text: 'finished (ok): exit=0 35a47aaffe542KeqUFj55u4W","type":"step-finish","tokens":{"total":17322,"input":16386,"output":936,"reasoning":0,"'
+review_kind: verify
+claim: {}
