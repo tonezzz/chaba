@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
 column: backlog
-updated: 2026-10-30 09:40
+updated: 2026-10-30 10:11
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -27,3 +27,10 @@ comms:
 - at: 2026-10-30 09:40
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 10:11
+  from: devin
+  text: 'Continuous worker rollout advanced: dedicated queue gdrive:ada-nest-kk-llm staged; user-level launchd worker
+    active on KK-Mac; first pack initially timed out due qwen thinking/worker raw request, then pack fixed with
+    think=false + 600s timeout. Smoke now passed: kk-mac-llm-pack DONE in ~1s. Ten-package supervised soak staged;
+    soak-01 claimed and DONE in 0.509s, remaining packs are draining one at a time. The worker is real and continuously
+    consuming packages.'
