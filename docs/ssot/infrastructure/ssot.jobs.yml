@@ -1261,7 +1261,7 @@ jobs:
   persistent: false
   env:
     DEVNEST_KK_MAC_ENABLED: 'true'
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 3 --max-new 3
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 10 --max-new 5
   note: 'OPS-1001 — reads only explicit task specs from
     gdrive:ada-nest-kk-llm/inbox/; stages at most three admitted
     read-only packages when the KK-Mac heartbeat/load/Ollama/disk gates
@@ -1289,7 +1289,7 @@ jobs:
   every: 15m
   timeout: 3m
   persistent: false
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_report_feed.py --max-new 3
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_report_feed.py --max-age-hours 72 --max-new 10
   note: 'OPS-1002 — converts recent allowlisted durable reports into
     bounded KK-Mac summary specs. Uses source markers for idempotency, excludes
     KK-Mac self-reports to avoid feedback loops, and never creates synthetic
