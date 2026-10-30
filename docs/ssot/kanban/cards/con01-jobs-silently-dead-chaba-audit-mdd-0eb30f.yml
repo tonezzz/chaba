@@ -1,7 +1,7 @@
 id: con01-jobs-silently-dead-chaba-audit-mdd-0eb30f
 title: con01 jobs silently dead — chaba-audit, mddb-vector-reindex, devin-bank-distill fail every run
 column: review
-updated: 2026-10-30 18:48
+updated: 2026-10-30 20:07
 priority: high
 tags:
 - ops
@@ -68,6 +68,13 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261030-182224-found-2026-10-30-during-knb-10 on tony-macbook still
     dirty — 6 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-30 20:07
+  from: devin
+  text: 'DIAGNOSIS (devin inline — opencode remote-diagnosis profile does not exist yet, OPS-1025): mddb-vector-reindex
+    + devin-bank-distill both SUCCEEDED on latest runs (12:29/12:31, earlier failures transient). chaba-audit-full
+    js-yaml ERR_MODULE_NOT_FOUND self-healed (import resolves now; node_modules populated after the failure window).
+    chaba-audit exits 0 but reports REAL audit findings (standardization, doc-links) — repo content issues, not
+    job failures. Remaining defect: no alerting on consecutiv'
 action:
   type: dispatch
   status: done
