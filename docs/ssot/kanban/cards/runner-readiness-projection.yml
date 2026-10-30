@@ -1,6 +1,6 @@
 id: runner-readiness-projection
 title: Runner-reported claim readiness projection — per-card eligible hosts + blocking reason
-column: backlog
+column: doing
 updated: 2026-10-30 15:18
 priority: medium
 tags:
@@ -42,7 +42,8 @@ spec: 'Goal: make ''is this queued card claimable, by which host, and if not why
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 ref: KNB-1007
 comms:
 - at: 2026-10-30 15:18
@@ -53,3 +54,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-30 15:18
+  from: tony-macbook
+  text: claimed
