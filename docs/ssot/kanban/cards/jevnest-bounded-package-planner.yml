@@ -1,7 +1,7 @@
 id: jevnest-bounded-package-planner
 title: Bounded JevNest package planner for real-work fanout
 column: backlog
-updated: 2026-10-30 20:43
+updated: 2026-10-30 20:58
 brief: Evaluate a bounded planner that proposes additional real task packages from existing evidence without allowing
   KK-Mac to mutate or recursively feed its own queue.
 priority: medium
@@ -24,3 +24,10 @@ comms:
 - at: 2026-10-30 20:43
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 20:58
+  from: devin
+  text: 'FIRST PLANNER PROBE COMPLETE. Staged `kk-mac-task-planner-mcp-files-bench-20261030` on KK-Mac; model ran
+    qwen3:8b in ~5.34s and returned a verified JSON artifact. The deterministic validator then rejected the candidates
+    because a candidate prompt contained forbidden planner/action text. No follow-up packages were written to the
+    shared inbox. This validates the safety boundary: KK may propose, but only the upstream validator can fan out
+    work. Next refinement is prompt/validator calibration on hel'
