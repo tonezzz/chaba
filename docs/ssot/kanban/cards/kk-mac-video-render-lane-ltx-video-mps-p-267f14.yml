@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-29 19:33
+updated: 2026-10-30 20:10
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -138,6 +138,13 @@ comms:
     + pulls only the 5.9GB distilled ckpt + tokenizer; run uses pure-MLX pipeline with shot .pt embeds injected
     through an inline torch-free zip/pickle loader (verified: exact (1,256,4096) shapes). gpu_gb:0 — real constraint
     is ~8GB unified-mem headroom. Resumable per-shot '
+- at: 2026-10-30 20:10
+  from: devin
+  text: 'Read-only inventory update: KK-Mac is currently eligible/on AC (77GB free disk, ~72% system memory free,
+    load ~3.06), but Ollama reports qwen3:8b resident (~7.2GB). The full Mac MLX alternate already exists at `gdrive:ada-nest/packs/kk-mac-video-probes/full-run/`:
+    10/10 shots, silent 59.92s H.264 640x384, full decode passed. It is an archived artifact, not a queued package,
+    and is not PDF-conditioned V2. Do not run another model package: OPS-0966 answer is deterministic-only. OPS-0952
+    V2 remains'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
