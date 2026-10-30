@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-30 09:32
+updated: 2026-10-30 20:11
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -250,6 +250,13 @@ comms:
     60.5 tok/s, median 60.5 tok/s; total 5,786 output/eval tokens; average wall 8.52s (range 3.76–13.18s). First-load
     overhead ~3.6s; warm calls ~3.8–13.2s depending output size. Local cost $0; admission/fallback remains the controlling
     gate.'
+- at: 2026-10-30 20:11
+  from: devin
+  text: 'Proposed KK-Mac agent-lane policy (no run authorized yet): inherit member-device-heavy-job and the one-shot
+    Nest SOP. Current deterministic-only permission remains the limit until a new per-job authorization and fresh
+    KK idle-window consent. Keep owner priority; require AC/heartbeat/load/disk preflight, one LLM/MPS job at a
+    time, stop on owner activity or pressure, isolated adanest pack root, no personal home/keys/secrets/MCP/auto-commit.
+    Distinguish host from provider: Clawbot currently uses Op'
 action:
   type: dispatch
   status: done
