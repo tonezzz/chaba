@@ -31,10 +31,38 @@ run: |
   started = time.time()
   with urllib.request.urlopen(request, timeout=300) as response:
       raw = json.load(response)
+  response_text = raw.get("response", "")
+  checks = {"response_nonempty": bool(response_text.strip())}
+  if task.get("format") == "json":
+      candidate = response_text.strip()
+      if candidate.startswith("```"):
+          candidate = candidate.split("\n", 1)[-1]
+          candidate = candidate.rsplit("```", 1)[0].strip()
+      try:
+          parsed = json.loads(candidate)
+          checks["json_parses"] = isinstance(parsed, dict)
+      except json.JSONDecodeError:
+          parsed = None
+          checks["json_parses"] = False
+      for key in task.get("expect", {}).get("required_keys", []):
+          checks[f"required_key:{key}"] = (
+              isinstance(parsed, dict) and key in parsed
+          )
+      haystack = json.dumps(parsed, ensure_ascii=False) if parsed else candidate
+  else:
+      parsed = None
+      haystack = response_text
+  for fact in task.get("expect", {}).get("facts", []):
+      checks[f"fact:{fact[:40]}"] = fact.lower() in haystack.lower()
+  if not all(checks.values()):
+      raise RuntimeError("independent checks failed: " + json.dumps(checks))
   result = {
       "task_id": task.get("task_id", "unknown"),
       "model": raw.get("model"),
-      "response": raw.get("response", ""),
+      "response": response_text,
+      "parsed": parsed,
+      "checks": checks,
+      "verified": True,
       "eval_count": raw.get("eval_count"),
       "eval_duration": raw.get("eval_duration"),
       "load_duration": raw.get("load_duration"),
