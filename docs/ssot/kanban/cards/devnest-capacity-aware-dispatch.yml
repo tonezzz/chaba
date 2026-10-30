@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 14:14
+updated: 2026-10-30 14:23
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -26,3 +26,10 @@ comms:
 - at: 2026-10-30 14:14
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 14:23
+  from: devin
+  text: IMPLEMENTED v1 and deployed. Added scripts/devnest/devnest_capacity_broker.py plus SSOT job devnest-capacity-broker
+    on tony-dell every 5m. It reads explicit normalized specs from gdrive:ada-nest-devnest/inbox/, applies KK admission
+    and depth cap, routes KK specs to gdrive:ada-nest-kk-llm/inbox/, and stages complete Colab pack_source entries
+    to gdrive:ada-nest/packs/ without launching a runtime. Empty inbox smoke passed; a real broker smoke spec routed
+    successfully. Optimized recursive queue scan
