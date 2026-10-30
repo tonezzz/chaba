@@ -95,8 +95,9 @@ def stage_task(
         (pack / "inputs" / "task.json").write_text(
             json.dumps(task, indent=2, ensure_ascii=False) + "\n"
         )
+        submitter = Path(__file__).resolve().parents[1] / "ada" / "nest-pack-submit.py"
         subprocess.run(
-            ["python3", "scripts/ada/nest-pack-submit.py",
+            ["python3", str(submitter),
              str(pack), "--remote", remote],
             check=True,
             timeout=120,

@@ -64,16 +64,6 @@ def read_spec(remote: str, filename: str) -> dict:
     return spec
 
 
-def already_routed(remote: str, task_id: str) -> bool:
-    try:
-        return bool(rc(
-            "lsf", f"{remote}/inbox/{task_id}.routed",
-            "--files-only",
-        ).strip())
-    except RuntimeError:
-        return False
-
-
 def mark_routed(remote: str, filename: str, destination: str) -> None:
     rc(
         "rcat", f"{remote}/inbox/{filename}.routed",
@@ -82,14 +72,12 @@ def mark_routed(remote: str, filename: str, destination: str) -> None:
 
 
 def route_kk(
-    spec: dict, source: str, filename: str, destination: str, max_depth: int
+    spec: dict, source: str, filename: str, destination: str
 ) -> str:
     if spec["task_class"] not in KK_CLASSES:
         raise ValueError(f"KK task class not admitted: {spec['task_class']}")
     if not spec.get("prompt"):
         raise ValueError("KK task requires prompt")
-    if queue_depth(destination) >= max_depth:
-        return "kk_capacity"
     target = f"{destination}/inbox/{spec['task_id']}.json"
     rc("copyto", f"{source}/inbox/{filename}", target)
     return target
@@ -118,21 +106,27 @@ def produce(
     result = {"source": source, "routed": [], "held": [], "rejected": []}
     gate = snapshot()
     kk_enabled = os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() == "true"
+    source_entries = set(rc("lsf", f"{source}/inbox", "--recursive").splitlines())
+    kk_depth = queue_depth(kk_remote) if kk_enabled else 0
     for filename in inbox(source):
         try:
             spec = read_spec(source, filename)
-            if already_routed(source, spec["task_id"]):
+            if f"{spec['task_id']}.routed" in source_entries:
                 continue
             if spec["lane"] == "kk_mac_local":
                 if not kk_enabled:
                     result["held"].append(f"{filename}:kk_disabled")
                     continue
+                if kk_depth >= max_depth:
+                    result["held"].append(f"{filename}:kk_capacity")
+                    continue
                 if not gate.get("eligible"):
                     result["held"].append(f"{filename}:kk_admission")
                     continue
                 destination = route_kk(
-                    spec, source, filename, kk_remote, max_depth
+                    spec, source, filename, kk_remote
                 )
+                kk_depth += 1
             else:
                 destination = route_colab(spec, source, colab_remote)
             mark_routed(source, filename, destination)
