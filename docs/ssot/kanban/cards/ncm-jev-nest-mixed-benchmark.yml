@@ -1,7 +1,7 @@
 id: ncm-jev-nest-mixed-benchmark
 title: Benchmark NCM + JEV + Nest mixed generation routing
 column: review
-updated: 2026-10-30 15:32
+updated: 2026-10-30 15:34
 spec: Explore whether NCM improves Thai generation speed/quality when orchestrated by JEV and executed by Nest.
   NCM is the candidate generator; JEV routes/gates; Nest runs parallel candidates and publishes artifacts. P0 replay
   Sudoku/Thai fixtures through AR baseline, NCM, JEV route-only, and mixed candidates. P1 run Thai NCM toy on Colab.
@@ -80,6 +80,12 @@ comms:
     in progress, so not merged yet. Updated Education lesson post 1967 (`Ada Nest — NCM report`) in place with the
     P0-P5 procedure, identical pinned AR/NCM/LLM model matrix, 3 paired repetitions, JEV verifier boundaries, and
     the no-account-upgrade/no-paid-compute gate; read-back verified, n'
+- at: 2026-10-30 15:34
+  from: devin
+  text: 'PR #63 status update: GitHub validate check completed red in `Test Cline Kanban proxy and Nest adapter`;
+    I could not retrieve its logs (HTTP 403), and the failure is outside this docs-only diff. Local `ssot-validate-all`
+    passed 3,358 files / 0 errors and `git diff --check` passed. The PR remains open/unmerged; I did not bypass
+    CI or touch unrelated Cline tests. No benchmark model calls or production routing changes have occurred.'
 action:
   type: dispatch
   status: done
