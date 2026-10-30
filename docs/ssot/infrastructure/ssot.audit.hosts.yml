@@ -2266,6 +2266,17 @@ hosts:
         critical: false
         note: "Dedicated rootless bridge network shared only by the Cline app
           and proxy; backend port 3485 is not published to the host."
+      - name: cline-intake.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Cline lane intake (ssot.jobs.yml cline-intake, 15m) — scans
+          backlog cards tagged cline + cline: config, runs ONE card/tick
+          through kanban-nest-bridge on con01, comments + moves card to
+          review. Declared 2026-10-30; enablement on con01 unverified —
+          proposal pilot saw no pickup in >70min (report
+          docs/reports/2026-10-30-cline-proposal-pilot.md)."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}

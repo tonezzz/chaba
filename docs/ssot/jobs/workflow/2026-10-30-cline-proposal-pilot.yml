@@ -1,0 +1,33 @@
+title: Cline proposal-workflow pilot — bounded analysis-only run
+id: 2026-10-30-cline-proposal-pilot
+date: 2026-10-30
+domain: workflow
+host: mn01
+status: done-pending-review
+cards:
+  parent: opencode-cline-idea-proposal-workflow
+  pilot_lane: cline-proposal-pilot-edu-no-th
+  target_snapshot: education-lesson-no-th-marker-readback
+  linked: [cline-kanban-con01-pilot, cline-kanban-nest-worker-adapter]
+summary: >-
+  First bounded run of the OpenCode->Cline proposal workflow. Verified the
+  deployed Cline path (cline-intake.timer -> intake.py -> bridge.py -> kanban
+  CLI on con01, Ollama tony-omen qwen2.5:7b/qwen3:4b allowlist, BasicAuth
+  tailnet proxy — unauth 401 verified live). Created versioned snapshot v1
+  (SNAP-edu-no-th-v1:d4cc6b50) of the target card, ran the intake role via
+  local Ollama (53.2s/739tok — opencode CLI absent on mn01, substitution
+  recorded), created lane card cline-proposal-pilot-edu-no-th for the real
+  intake path, and ran a same-prompt shadow analysis on mn01 (157.2s/1730tok,
+  0 unsupported claims). Report: docs/reports/2026-10-30-cline-proposal-pilot.md.
+  Procedure updates deferred to Tony's independent review (one pilot is not
+  "repeatable").
+key_findings:
+  - "cline-intake.timer was deployed but undeclared in con01 expected_services — declared in ssot.audit.hosts.yml; >70min without pickup suggests the timer may not be enabled on con01 (smoke was likely a manual run) — needs on-host list-timers check"
+  - "Serial lane starves silently: a cline-tagged card without lane config blocks every later card (--limit 1 + alphabetical order); live example starving the queue right now"
+  - "Cline workspace isolation means card/SSOT comparison needs an injected context digest (<=3000ch prompt budget)"
+  - "Lane deliverables stay on con01 fs — not retrievable remotely; recommend content excerpt in result comment"
+  - "Smoke card has duplicate result comments — likely overlapping intake executions, not a board-api bug"
+  - "chaba-repo-sync not declared for con01 — lane pickup latency depends on unverified sync cadence"
+artifacts:
+  - docs/reports/2026-10-30-cline-proposal-pilot.md
+  - evals/cline-proposal-pilot/ (snapshot, manifest, intake draft, shadow proposal, run meta)
