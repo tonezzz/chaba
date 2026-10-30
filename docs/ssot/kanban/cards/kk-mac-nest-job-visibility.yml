@@ -1,7 +1,7 @@
 id: kk-mac-nest-job-visibility
 title: kk-mac Nest job visibility — queue heartbeat + durable log + watcher for member-Mac lane
-column: doing
-updated: 2026-10-30 15:44
+column: review
+updated: 2026-10-30 15:45
 priority: medium
 tags:
 - nest
@@ -42,8 +42,10 @@ spec: 'Goal: see which Nest/DevNest pack is currently being processed on kk-mac 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 ity.yml` + outcome file; nothing installed on the Mac itself. | devin-task-20261030-151841-goal-see-which-nest-devnest-pa.service:
+    Consumed 1min 14.870s CPU time over 26min 18.795s wall clock time, 537.8M memory peak, 205M memory swap peak.'
 ref: AUD-1006
 comms:
 - at: 2026-10-30 15:18
@@ -73,3 +75,8 @@ comms:
     + units installed (nest-queue-watch-kk-mac{,-video}, tags [nest:kk-mac]/[nest:kk-mac-video]). kk_mac_admission
     surfaces current_job/phase/job_age_s. Smoke on the video root: TG preparing->started->done, heartbeat visible
     mid-job, stall sim fired runner-silent-277s alert. Caveat'
+- at: 2026-10-30 15:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ity.yml` + outcome file; nothing installed on the Mac itself. | devin-task-20261030-151841-goal-see-which-nest-de'
+review_kind: verify
+claim: {}
