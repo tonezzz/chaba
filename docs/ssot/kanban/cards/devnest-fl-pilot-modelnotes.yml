@@ -1,0 +1,25 @@
+id: devnest-fl-pilot-modelnotes
+title: 'OpenCode doc-draft pilot: lane model notes KB page'
+column: backlog
+updated: 2026-10-30 18:24
+spec: 'Write docs/kb/opencode-lane-model-notes.md — a short KB note recording which LiteLLM models work on the OpenCode
+  dispatch lane on idc02, grounded in the checkout. Read evals/opencode-lane/profiles/ops-readonly/profile.yml (the
+  model allowlist + artifact contract), evals/opencode-lane/profiles/doc-draft/profile.yml, and scripts/board/runner-agent.py
+  (the RAILS_OPENCODE block and the opencode lane closeout). The note must state: ops-readonly emits JSON artifacts
+  (format json) while doc-draft emits markdown (format md); the runner writes artifacts — agents emit them as their
+  final message only; denied tool calls are recorded and fail the job at closeout; or-gemini-3.5-flash is a proven
+  working model on this lane. Begin output with ''# docs/kb/opencode-lane-model-notes.md'' then the markdown. Emit
+  ONLY the document — no prose, no meta commentary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/or-gemini-3.5-flash
+  executor: opencode
+  agent_profile: doc-draft
+  artifact: docs/kb/opencode-lane-model-notes.md
+ref: OPS-1014
+comms:
+- at: 2026-10-30 18:24
+  from: tony
+  text: card captured via board-api
