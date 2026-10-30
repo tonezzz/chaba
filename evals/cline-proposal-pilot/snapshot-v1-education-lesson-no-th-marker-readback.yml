@@ -1,0 +1,26 @@
+id: education-lesson-no-th-marker-readback
+title: Verify Education no_th metadata persists through board-api
+column: backlog
+updated: 2026-10-30 10:57
+brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
+  op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
+  persist no_th=true.
+priority: medium
+program: education
+tags:
+- education
+- board-api
+- wp
+- metadata
+spec: Investigate why a lesson written through the unified /lesson door with no_th=true does not expose meta.no_th=true
+  on a subsequent /lesson op=get. Reproduce with a synthetic lesson using board-api only; inspect/adjust board-api
+  serialization or WP REST meta registration through the supported service deployment process. Add regression coverage
+  for create and upsert/read-back. Do not write directly to WordPress, do not generate Thai translation, and do
+  not change the existing lesson post unless explicitly requested.
+ref: OPS-1000
+comms:
+- at: 2026-10-30 10:57
+  from: tony
+  text: 'Observed on Education post 3033 (lesson-5b285de4e9ef): lesson-add.py was called with --no-th; post read-back
+    showed title, status draft, next_review, and content, but meta.no_th was null. Card is diagnostic follow-up;
+    no direct WP fallback or translation call was made.'
