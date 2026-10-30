@@ -1,7 +1,7 @@
 id: gaussian-splatting-nest-video-poc
 title: Prototype Gaussian splat scene render for Ada Nest video lane
 column: backlog
-updated: 2026-10-30 10:55
+updated: 2026-10-30 16:14
 spec: Research and prototype the smallest useful Gaussian-splatting lane for Ada Nest video generation. First render
   a known small PLY scene; then run one photo/video reconstruction on Colab using the existing nest-pack contract.
   Publish a PLY plus orbit MP4 and timing/VRAM report to durable Drive storage. Evaluate whether the rendered scene
@@ -51,3 +51,9 @@ comms:
     Metal, COLMAP, 3DGS/2DGS/3DGUT, PLY/viewer), then compare msplat/gsplat-mlx/splatx-metal. Current KK-Mac Python
     env has no torch; create an isolated native-Metal experiment, start with a 300-iteration smoke and downscaled
     real scene, publish PLY/PNG/timing/unified-memory/license e'
+- at: 2026-10-30 16:14
+  from: devin
+  text: 'Next safe step staged as a manual KK-Mac experiment (not auto-launched): install/test native Metal mpsplat
+    in an isolated environment, run a 300-iteration smoke on a small COLMAP scene, then a downscaled real scene.
+    Existing CUDA packs are not valid on Apple Silicon. KK-Mac admission/owner window remains required before software
+    install or training; no mutation was run in this session.'
