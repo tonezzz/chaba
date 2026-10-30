@@ -1812,7 +1812,11 @@ def start_task(card: dict, typ: str) -> tuple:
             ex = ""                    # copy — the board keeps the
         if ex == "opencode":
             try:
-                return start_opencode_lane(card, "", unit)
+                # an explicit action.lane maps through LANE_PROFILES
+                # (executor=opencode + lane=free_lane -> ops-readonly);
+                # the error below promised this route but the lane was
+                # blinded here (OPS-1021 first claim, 2026-10-30)
+                return start_opencode_lane(card, str(a.get("lane") or ""), unit)
             except Exception as e:
                 # contract failures fail the task — never a devin fallback
                 return "", "", f"opencode executor: {e}"
