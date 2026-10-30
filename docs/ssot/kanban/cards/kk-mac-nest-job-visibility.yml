@@ -1,7 +1,7 @@
 id: kk-mac-nest-job-visibility
 title: kk-mac Nest job visibility — queue heartbeat + durable log + watcher for member-Mac lane
 column: doing
-updated: 2026-10-30 15:23
+updated: 2026-10-30 15:44
 priority: medium
 tags:
 - nest
@@ -66,3 +66,10 @@ comms:
     (Colab convention), (2) two env-parameterized nest-queue-watch instances on idc03 for the kk-mac pilot roots
     with [nest:kk-mac-video]/[nest:kk-mac] TG prefixes, (3) kk_mac_admission surfaces current_job/phase/job_age_s
     from the lane heartbeat. Then live smoke per SOP.'
+- at: 2026-10-30 15:44
+  from: devin
+  text: 'DONE + verified live. nest-worker.py now writes queue/heartbeat (<epoch> <pack> <prep|run>, 60s) and ==
+    name: prep|run|DONE|FAIL lines into queue/log-<ts>.txt on every event. Two idc03 watchers registered in ssot.jobs.yml
+    + units installed (nest-queue-watch-kk-mac{,-video}, tags [nest:kk-mac]/[nest:kk-mac-video]). kk_mac_admission
+    surfaces current_job/phase/job_age_s. Smoke on the video root: TG preparing->started->done, heartbeat visible
+    mid-job, stall sim fired runner-silent-277s alert. Caveat'
