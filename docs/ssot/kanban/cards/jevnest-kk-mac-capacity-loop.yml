@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 20:52
+updated: 2026-10-30 20:53
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -44,3 +44,8 @@ comms:
     then jevnest-kk-mac-capacity-producer.service, and verify the KK pack done marker/result. Admission, queue depth,
     verifier and human-review gates remain required. Commit 226c52748 is pushed on docs/kk-mac-fast-submit-20261030.
     The manual on'
+- at: 2026-10-30 20:53
+  from: devin
+  text: 'Fast path is defined but not yet exercised as a manual one-shot; index status stays defined. Report packages
+    with empty expect remain human-review drafts because the worker only checks response_nonempty. Next: exercise
+    broker then producer on a real task, preserving admission and the queue cap.'
