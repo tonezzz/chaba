@@ -1,0 +1,29 @@
+id: repo-choice-decision-policy
+title: Standardize repo-choice and executor decision policy across DevNest OpenCode and Cline
+column: backlog
+updated: 2026-10-30 09:01
+brief: Define the required repo/task metadata and one cheapest-safe-lane decision policy, then inject and benchmark
+  it across OpenCode and Cline.
+priority: high
+program: chaba-ci
+tags:
+- repo-management
+- decision-policy
+- opencode
+- cline
+- jev
+- efficiency
+spec: 'Define card action.repo/task_class/target_host/executor/lane/model/profile/artifact/expect plus repo registry
+  fields: path, default branch, push capability, owner, sensitivity, allowed write paths, test/verify command, artifact
+  roots, resource needs, host labels, and fallback. Decision precedence: explicit human/manual or destructive/credential
+  work; deterministic codemod; verified KK-Mac local read-only; other local/fleet; Colab batch; free frontier; Devin;
+  manual escalation. Explicit declarations win; unknown/ambiguous repo or policy facts fail closed to Devin/manual.
+  Inject a compact policy primer into OpenCode task profiles and Cline/Nest task envelopes, but keep executable
+  gates in code. Benchmark none vs compact vs full policy on frozen repo-choice/task corpus, measuring correct repo,
+  branch, lane, executor, model, artifact, verifier, cost, latency, intervention, and policy violations. Add held-out
+  regression tests and weekly confusion/efficiency review.'
+ref: OPS-0994
+comms:
+- at: 2026-10-30 09:01
+  from: devin
+  text: card captured via board-api
