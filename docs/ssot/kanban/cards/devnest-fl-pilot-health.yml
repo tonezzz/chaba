@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: doing
-updated: 2026-10-30 10:45
+updated: 2026-10-30 10:48
 spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
   on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
   merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-free-nemotron-nano
@@ -44,3 +44,7 @@ comms:
     — or-free nemotron collected correct data but never emitted message-mode artifact (kept trying to write via
     denied bash echo). Needs a model that completes emit-vs-write: retry on gemini-3.5-flash-lite after the google
     monthly cap resets Nov 1, or another OR-free route.'
+- at: 2026-10-30 10:48
+  from: chaba
+  text: 'merge-sweep: devin-task-devnest-fl-pilot-health-1793331204 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/devnest-fl-pilot-health-1793331204 by hand.'
