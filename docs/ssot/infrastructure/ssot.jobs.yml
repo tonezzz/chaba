@@ -1289,7 +1289,7 @@ jobs:
   every: 15m
   timeout: 3m
   persistent: false
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_report_feed.py --max-age-hours 72 --max-new 10
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_report_feed.py --max-age-hours 168 --max-new 10
   note: 'OPS-1002 — converts recent allowlisted durable reports into
     bounded KK-Mac summary specs. Uses source markers for idempotency, excludes
     KK-Mac self-reports to avoid feedback loops, and never creates synthetic
