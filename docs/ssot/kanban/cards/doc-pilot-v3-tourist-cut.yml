@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-29 11:33
+updated: 2026-10-30 20:12
 priority: medium
 tags:
 - ada-nest
@@ -198,6 +198,10 @@ comms:
   text: 'Missed-job sweep 2026-10-29: private static review cuts and reports are recorded in comms, but the earlier
     doc-align-v3 pack source remains only in a local dispatch worktree, not origin/master. Current cut still notes
     placeholders; this is not a final release. No pack was dispatched or published by this audit.'
+- at: 2026-10-30 20:12
+  from: devin
+  text: 'raised request docpilot-kk-mac-static-qc-consent: No existing cross-project package is currently both unfinished
+    and safe to dispatch. The best new candidate is a one-sho'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -264,4 +268,18 @@ requests:
     label: Pause additional layout work until I review the current animatic with KK
   suggested: full-bleed-2p5d
   answer: full-bleed-2p5d
+- id: docpilot-kk-mac-static-qc-consent
+  ask: No existing cross-project package is currently both unfinished and safe to dispatch. The best new candidate
+    is a one-shot CPU-only, read-only static-asset/QC audit for DocPilot v3 on KK-Mac. It would stage only the existing
+    static cut and manifest to an isolated job root; no LTX, Qwen, service changes, publication, or edits. Do you
+    authorize that cross-project asset transfer and audit, or should KK-Mac stay idle?
+  status: open
+  at: 2026-10-30 20:12
+  from: devin
+  options:
+  - id: approve-docpilot-static-qc
+    label: 'Recommended: stage and run one isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+  - id: hold-mac
+    label: Keep KK-Mac idle; do not stage another project's assets.
+  suggested: approve-docpilot-static-qc
 awaiting_action: true
