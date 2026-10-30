@@ -1,7 +1,7 @@
 id: runner-readiness-projection
 title: Runner-reported claim readiness projection — per-card eligible hosts + blocking reason
-column: doing
-updated: 2026-10-30 15:18
+column: review
+updated: 2026-10-30 15:19
 priority: medium
 tags:
 - board
@@ -42,8 +42,11 @@ spec: 'Goal: make ''is this queued card claimable, by which host, and if not why
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261030-151847-goal-make-is-this-queued-card-.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261030-151847-goal-make-is-this-queued-card-.service:
+    Failed with result ''exit-code''.'
 ref: KNB-1007
 comms:
 - at: 2026-10-30 15:18
@@ -60,3 +63,9 @@ comms:
 - at: 2026-10-30 15:18
   from: chaba
   text: started devin-task-20261030-151847-goal-make-is-this-queued-card- on tony-macbook (dispatch)
+- at: 2026-10-30 15:19
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261030-151847-goal-make-is-this-queued-card-.service:
+    Main process exited, cod'
+review_kind: verify
+claim: {}
