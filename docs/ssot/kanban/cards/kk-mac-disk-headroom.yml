@@ -1,7 +1,7 @@
 id: kk-mac-disk-headroom
 title: Reclaim KK-Mac worker staging headroom safely
 column: backlog
-updated: 2026-10-30 16:40
+updated: 2026-10-30 16:57
 brief: KK-Mac has ~20 GB free while 27 GB of duplicated Qwen HF staging occupies the Nest worker cache. Review and
   reclaim only with Tony approval.
 priority: high
@@ -21,3 +21,9 @@ comms:
 - at: 2026-10-30 16:40
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 16:57
+  from: devin
+  text: APPROVED CLEANUP COMPLETED. Verified no active process or pack reference was using ~/.cache/nest-worker/devnest-qwen3-8b-hf-prestage,
+    then removed only that exact 27 GB duplicated Qwen HF staging tree. Preserved LTX HF cache, Ollama models, Adobe
+    caches, Desktop, Downloads, and Trash. Disk improved from ~20 GB to ~47 GB available; refreshed heartbeat reports
+    46 GB and admission is eligible. Report-feed timer is now active; KK/producer/broker timers remain active.
