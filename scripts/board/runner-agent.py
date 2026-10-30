@@ -1454,9 +1454,9 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
         f"--prompt-file {shlex.quote(str(taskdir / 'prompt.txt'))} "
         f"--expect-file {shlex.quote(str(taskdir / 'expect.json'))} "
         f"2>&1 | tee {shlex.quote(str(taskdir / 'kk_mac.log'))}; "
-        "rc=${PIPESTATUS[0]}; "
-        f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
-        "exit $rc"
+        "rc=$${PIPESTATUS[0]}; "
+        f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
+        "exit $$rc"
     )
     argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}",
              "--collect",
@@ -1681,9 +1681,9 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     # finish pass (artifact extraction, tool-call audit) that also
     # survives journal rotation.
     shell = (
-        "set -a; if [ -f $HOME/.config/secrets/litellm-keys.env ]; then "
-        ". $HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=${LITELLM_KEY_ADA:-}; "
-        "else . $HOME/.config/secrets/litellm-chaba.env; fi; "
+        "set -a; if [ -f $$HOME/.config/secrets/litellm-keys.env ]; then "
+        ". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=$${LITELLM_KEY_ADA:-}; "
+        "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
         f"{shlex.quote(oc_bin)} run --format json "
@@ -1691,9 +1691,9 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
         f"{shlex.quote(task)} 2>&1 | "
         f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "
-        "rc=${PIPESTATUS[0]}; "
-        f"echo \"$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
-        "exit $rc"
+        "rc=$${PIPESTATUS[0]}; "
+        f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
+        "exit $$rc"
     )
     argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
              "--description", f"runner {card['id']} OpenCode "
