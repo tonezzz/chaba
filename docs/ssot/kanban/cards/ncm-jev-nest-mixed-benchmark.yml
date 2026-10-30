@@ -1,7 +1,7 @@
 id: ncm-jev-nest-mixed-benchmark
 title: Benchmark NCM + JEV + Nest mixed generation routing
 column: review
-updated: 2026-10-30 15:16
+updated: 2026-10-30 15:17
 spec: Explore whether NCM improves Thai generation speed/quality when orchestrated by JEV and executed by Nest.
   NCM is the candidate generator; JEV routes/gates; Nest runs parallel candidates and publishes artifacts. P0 replay
   Sudoku/Thai fixtures through AR baseline, NCM, JEV route-only, and mixed candidates. P1 run Thai NCM toy on Colab.
@@ -59,6 +59,13 @@ comms:
     is not in master. It already separates NCM generator, JEV decision/gates, and Nest execution. Evidence remains
     research-only: NCM Sudoku validation passed but Thai GPU numbers are missing; deterministic JEV route smoke
     passed 3/3 synthetic cases; OpenCode proposal-only p'
+- at: 2026-10-30 15:17
+  from: devin
+  text: 'Review update 2026-10-28: a P0-P5 SOP already exists at docs/kb/ncm-jev-nest-exploration-procedure.md on
+    feat/ncm-jev-benchmark (ffff8c214), but it is 842 commits behind current origin/master and is not merged/indexed
+    there. It frames NCM as candidate generator, JEV as independent route/gates, Nest as execution/artifact layer.
+    I recommend extending the matrix to compare pinned NCM, Thai AR baseline, and multiple available LLM generators
+    on identical fixtures/seeds, plus deterministic vs LLM judg'
 action:
   type: dispatch
   status: done
