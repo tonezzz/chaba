@@ -204,6 +204,10 @@ comms:
     Private artifact: `gdrive:ada-nest-kk-mac-video-pilot/packs/kk-mac-storyboard-i2v-shot03-oneoff-v3-20261030/out/shot03-i2v-mps.mp4`;
     probe JSON and done marker are present. It is a technical pass, not visual sign-off; no audio/mux or shots04–10
     batch ran.'
+- at: 2026-10-30 21:49
+  from: devin
+  text: 'raised request review-kk-mac-storyboard-shot03-before-batch: The new private Mac image-conditioned S03
+    test (page15/image-008) passed technical QC and is embedded in the updated sto'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -221,4 +225,21 @@ requests:
   answer: Full-day permission today. Resume only once kk-mac is powered on, reachable with a trusted host key, and
     idle; first preserve/verify the partial HF cache, apply concurrency=1, then run one bounded MPS/MLX probe only.
     No full multi-scene render until that probe passes.
+- id: review-kk-mac-storyboard-shot03-before-batch
+  ask: 'The new private Mac image-conditioned S03 test (page15/image-008) passed technical QC and is embedded in
+    the updated storyboard. Before I run the staged S04–S10 batch, please review S01–S03 in the private deck and
+    choose: continue the remaining shots serially, request a change to S03, or keep the rest held. This is a visual-quality
+    gate only; no publication is implied.'
+  status: open
+  at: 2026-10-30 21:49
+  from: devin
+  options:
+  - id: continue-shots-04-10
+    label: 'Recommended: the mapped private samples look acceptable; continue S04–S10 serially, with per-shot QC
+      and stop-on-failure.'
+  - id: revise-shot03
+    label: S03 needs a visual/prompt change; keep the remaining batch held and revise only that shot.
+  - id: hold-remaining-shots
+    label: Keep S04–S10 staged and held; do not launch more renders.
+  suggested: continue-shots-04-10
 awaiting_action: true
