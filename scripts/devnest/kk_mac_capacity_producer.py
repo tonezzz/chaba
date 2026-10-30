@@ -37,16 +37,16 @@ def rclone(*args: str, input_text: str | None = None) -> str:
 
 
 def queue_depth(remote: str) -> int:
-    names = [x.rstrip("/") for x in
-             rclone("lsf", f"{remote}/packs").splitlines() if x.strip()]
-    depth = 0
-    for name in names:
-        entries = set(rclone(
-            "lsf", f"{remote}/packs/{name}", "--max-depth", "1"
-        ).splitlines())
-        if "done" not in entries and not any(e.startswith("claim/") for e in entries):
-            depth += 1
-    return depth
+    entries = rclone(
+        "lsf", f"{remote}/packs", "--recursive"
+    ).splitlines()
+    packs = {line.split("/", 1)[0] for line in entries if line.strip()}
+    terminal = {
+        line.split("/", 1)[0]
+        for line in entries
+        if line.endswith("/done") or line.endswith("/failed")
+    }
+    return len(packs - terminal)
 
 
 def task_files(remote: str) -> list[str]:
@@ -136,6 +136,11 @@ def produce(
     if result["queue_before"] >= max_depth:
         result["skipped"].append("queue_at_capacity")
         return result
+    existing_packs = {
+        x.rstrip("/") for x in rclone(
+            "lsf", f"{remote}/packs"
+        ).splitlines() if x.strip()
+    }
     for filename in task_files(remote):
         if len(result["staged"]) >= min(
             max_new, max_depth - result["queue_before"]
@@ -144,13 +149,13 @@ def produce(
         try:
             task = load_task(remote, filename)
             pack_name = f"kk-mac-task-{task['task_id']}"
-            existing = rclone("lsf", f"{remote}/packs", "--max-depth", "1")
-            if f"{pack_name}/" in existing.splitlines():
+            if pack_name in existing_packs:
                 result["skipped"].append(f"{filename}:already_staged")
                 continue
             result["staged"].append(stage_task(
                 task, remote=remote, template=template, dry_run=dry_run
             ))
+            existing_packs.add(pack_name)
         except Exception as exc:
             result["skipped"].append(f"{filename}:{type(exc).__name__}")
     return result
