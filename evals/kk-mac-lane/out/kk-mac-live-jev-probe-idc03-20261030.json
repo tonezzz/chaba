@@ -1,0 +1,40 @@
+{
+ "executor": "kk_mac_local",
+ "card": "kk-mac-live-probe-idc03-20261030",
+ "task_id": "kk-mac-live-probe-retry-20261030",
+ "task_class": "summary",
+ "model": "qwen3:8b",
+ "at": "2026-10-30T08:07:21.592778+00:00",
+ "prompt_sha256": "fcacd0b90c459bc1edc150679d0d2bf0468eed617604f14001f760e304f8aac3",
+ "prompt_chars": 348,
+ "artifact": "evals/kk-mac-lane/out/kk-mac-live-jev-probe-idc03-20261030.json",
+ "artifact_written": true,
+ "verdict": "pass",
+ "reasons": [],
+ "checks": {
+  "response_nonempty": true,
+  "response_bounded": true,
+  "fact:KK-Mac": true,
+  "fact:read-only": true,
+  "fact:no mutations": true
+ },
+ "admission": {
+  "host": "KKs-Mac-Studio",
+  "eligible": true,
+  "lane": "kk_mac_local",
+  "reasons": [],
+  "heartbeat_age_s": 165.6,
+  "ollama_ok": true,
+  "disk_free_gb": 40,
+  "load_1m": 2.17,
+  "identity_alias": false,
+  "node_busy": false,
+  "load_source": "ssh_read_only_fallback"
+ },
+ "usage": {
+  "eval_count": 265,
+  "eval_duration": 4446164000,
+  "load_duration": 4093779208
+ },
+ "response": "The supervised, read-only DevNest executor smoke test was executed on KK-Mac, with qwen3:8b running via Ollama, ensuring no mutations to system, files, or cards. This task adhered strictly to read-only operations with no mutations."
+}
