@@ -19,9 +19,11 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: running
+  status: failed
   lane: free_lane
   runner: idc02
+  result: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile or
+    a mapped lane (generic build agent is not an unattended executor)'
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -88,3 +90,7 @@ comms:
 - at: 2026-10-30 19:52
   from: idc02
   text: claimed
+- at: 2026-10-30 19:52
+  from: idc02
+  text: 'finished (failed): start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile
+    or a mapped lane (ge'
