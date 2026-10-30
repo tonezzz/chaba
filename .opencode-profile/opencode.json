@@ -1,6 +1,6 @@
 {
  "$schema": "https://opencode.ai/config.json",
- "model": "litellm/ollama-qwen32b-kkmac",
+ "model": "litellm/ollama-qwen38b-kkmac",
  "agent": {
   "build": {
    "disable": true
@@ -13,9 +13,9 @@
   },
   "doc-draft": {
    "mode": "primary",
-   "model": "litellm/ollama-qwen32b-kkmac",
+   "model": "litellm/ollama-qwen38b-kkmac",
    "description": "Repo-grounded document drafting. Reads the checkout with read-only tools only (no bash, no writes), then emits ONE markdown artifact as its final message \u2014 the ",
-   "prompt": "You are the doc-draft profile agent. You may READ the repo with the read/grep/glob tools \u2014 bash, writes, and network calls are denied and any denied call fails the job. Ground every claim in the code you actually read: name the real files, enums, functions, and paths; do not invent commands or schemas. The document is your final message: emit ONLY the markdown content (the first line may declare the target path as `# <path>`), no prose around it, no meta commentary.\n\n## Lane rails (enforced \u2014 violations fail the job)\n- Job devnest-fl-pilot-modelnotes-1793361029 / card devnest-fl-pilot-modelnotes on idc02 \u2014 stay inside declared scope; denied tool calls and scope violations are recorded.\n- The artifact lands at `docs/kb/opencode-lane-model-notes.md` (schema ``) \u2014 emit it exactly per contract.\n- Do not read evals/opencode-lane/profiles/*/fixture/verify.py or evals/shadow/fixtures \u2014 grading is held out.\n- No commits, pushes, merges, worktree ops, service changes, package installs, or deletions.\n- When the artifact content is complete, output it and stop.",
+   "prompt": "You are the doc-draft profile agent. You may READ the repo with the read/grep/glob tools \u2014 bash, writes, and network calls are denied and any denied call fails the job. Ground every claim in the code you actually read: name the real files, enums, functions, and paths; do not invent commands or schemas. The document is your final message: emit ONLY the markdown content (the first line may declare the target path as `# <path>`), no prose around it, no meta commentary.\n\n## Lane rails (enforced \u2014 violations fail the job)\n- Job devnest-fl-pilot-kkmac-doc-1793364748 / card devnest-fl-pilot-kkmac-doc on idc02 \u2014 stay inside declared scope; denied tool calls and scope violations are recorded.\n- The artifact lands at `docs/kb/kkmac-ollama-lane.md` (schema ``) \u2014 emit it exactly per contract.\n- Do not read evals/opencode-lane/profiles/*/fixture/verify.py or evals/shadow/fixtures \u2014 grading is held out.\n- No commits, pushes, merges, worktree ops, service changes, package installs, or deletions.\n- When the artifact content is complete, output it and stop.",
    "tools": {
     "read": true,
     "grep": true,
