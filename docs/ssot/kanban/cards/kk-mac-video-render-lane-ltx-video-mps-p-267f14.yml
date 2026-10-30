@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:13
+updated: 2026-10-30 21:17
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -165,6 +165,12 @@ comms:
     76GB disk free, and Ollama `/api/ps` is empty; the pinned LTX cache is present. Staged pack `kk-mac-storyboard-i2v-shot03-oneoff-20261030`
     passed submit dry-run and zero-difference readback. Launching this single private page15/shot03 image-conditioned
     test only; the 8 remaining child packs stay gated by visual-review approval.'
+- at: 2026-10-30 21:17
+  from: devin
+  text: 'The one-shot worker launched as requested but stopped in `prep` before model load/render: macOS BSD `awk`
+    rejected the escaped-slash regex in the owner-app gate. No video output was generated and no owner model/service
+    was changed. I am correcting only that portable preflight line and will submit a new immutable one-shot pack
+    revision; the remaining scene batch stays behind its separate visual-review gate.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
