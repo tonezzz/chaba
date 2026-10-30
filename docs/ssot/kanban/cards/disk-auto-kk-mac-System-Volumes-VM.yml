@@ -2,12 +2,13 @@ id: disk-auto-kk-mac-System-Volumes-VM
 title: Disk kk-mac /System/Volumes/VM fills in <7d
 brief: Disk space on kk-mac (/System/Volumes/VM) is running low — check the note for
   the rate and top growers, then free space or close the card.
-column: review
+column: done
 review_kind: triage
 generated: disk-trend-watch
 area: monitoring
 priority: high
-note: 27% used, growing 6.1 GiB/day -> full in ~5.9d
+note: 'Auto-recovered 2026-10-30: kk-mac /System/Volumes/VM back in bounds (3%, slope
+  7.22 GiB/d)'
 help: 'Free space or slow the growth — check the top growers in reports/disk-trend/disk-trend.yml.
   tony-dell playbook (2026-10-05): mddb backups, pip/go caches, journalctl --vacuum-size,
   ~/.cache/yt-live-media LRU is 8GiB.'
