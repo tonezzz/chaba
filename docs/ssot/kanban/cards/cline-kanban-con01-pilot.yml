@@ -1,7 +1,7 @@
 id: cline-kanban-con01-pilot
 title: Pilot Cline Kanban host on con01
 column: doing
-updated: 2026-10-28 14:45
+updated: 2026-10-30 14:56
 priority: medium
 tags:
 - cline-kanban
@@ -68,6 +68,12 @@ comms:
     proxy enforces BasicAuth BEFORE the app, so unauthenticated / now 401s (stricter than the old contract). The
     app''s own passcode was disabled (--no-passcode, upstream flag patched) — the proxy is the declared auth layer;
     app :3485 unpublished on private bridge. First end-to-end smoke ran'
+- at: 2026-10-30 14:56
+  from: devin
+  text: 'Linked initiative: the OpenCode->Cline proposal-workflow pilot (card opencode-cline-idea-proposal-workflow)
+    ran a bounded analysis-only canary through the deployed con01 path today. Live verification held: unauth 401
+    on / and /api/tasks; Ollama tony-omen provider live (qwen2.5:7b+qwen3:4b). Lane card cline-proposal-pilot-edu-no-th
+    carries the snapshot analysis; report at reports/2026-10-30-cline-proposal-pilot.md.'
 requests:
 - id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
   ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3
