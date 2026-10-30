@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:24
+updated: 2026-10-30 21:31
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -185,6 +185,12 @@ comms:
     the matching process is the crash reporter. No app was stopped, no model loaded, and no video was generated.
     I am narrowing the one-off gate to ignore only Adobe crash-reporter helpers while continuing to block actual
     Photoshop/FFmpeg/MLX/video apps; batch packs and their visual-'
+- at: 2026-10-30 21:31
+  from: devin
+  text: Revision 3 (`kk-mac-storyboard-i2v-shot03-oneoff-v3-20261030`) is staged and checksum-matched. It narrows
+    only the false-positive Adobe crash-reporter match; actual video/editor processes still fail closed. Fresh preflight
+    shows AC, 76GB disk, ~72% free memory, no busy worker, but Qwen3:8B remains resident until 21:33:36. I am waiting
+    for natural expiry; I will not unload it or bypass the gate.
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
