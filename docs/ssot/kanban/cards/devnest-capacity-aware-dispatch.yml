@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 19:48
+updated: 2026-10-30 20:03
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -66,3 +66,9 @@ comms:
     (~2.4s), report-review-42f0ca748e57 (~5.1s), report-review-784b75a88e57 (~2.1s). KK remains eligible: ~77GB
     heartbeat disk, load ~1.5, Ollama healthy. The report feed/broker/producer timers remain active and will continue
     filling up to three packages per cycle.'
+- at: 2026-10-30 20:03
+  from: devin
+  text: 'Continued efficiency work: KK producer had been spending minutes on one remote listing per historical pack.
+    It now uses one recursive pack inventory plus one existing-pack set. Live test on tony-dell completed in 3.37s
+    with queue_before=3 and correctly held new staging at the watermark. Commit f7dab43f4. This removes the producer-side
+    idle gap; worker remains serial and drains the three queued packages.'
