@@ -2320,6 +2320,17 @@ hosts:
       id_ed25519 (dell key seeded into authorized_keys 2026-10-22;
       remaining fleet keys + adanest user pending KK sign-off per
       docs/kb/ada-nest-kk-mac-onboarding.md)."
+    capabilities:
+      ollama:
+        note: "ollama serve under adanest user (launchd
+          net.adanest.ollama.plist), loopback bind only — reachable via
+          kkmac-ollama-tunnel.service on idc03 (ssh -L 11445 -> :11434).
+          KK approved full fleet use 2026-10-30. Models: qwen2.5:32b,
+          qwen3:8b, qwen2.5vl:7b, llama3.2:3b. LiteLLM routes:
+          ollama-*-kkmac. Audit blind spot: services in other users'
+          launchd domains are invisible to launchctl list — adanest
+          ollama ran undeclared until 2026-10-30 (OPS-1018)."
+        upstream: "http://127.0.0.1:11445 (idc03 tunnel) / 127.0.0.1:11434 (kk-mac)"
   michael-ha:
     tailscale_ip: 100.85.88.100
     description: michael-ha Home Assistant OS host — ssh via `ssh michael-ha`
