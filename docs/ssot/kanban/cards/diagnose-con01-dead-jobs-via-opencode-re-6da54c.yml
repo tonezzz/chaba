@@ -1,0 +1,26 @@
+id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
+title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
+column: backlog
+updated: 2026-10-30 19:32
+priority: medium
+tags:
+- ops
+- opencode
+- diagnosis
+spec: 'Sibling of OPS-1013 — the diagnosis half, routed to the cheap lane per ai-lane-delegate (executor contract
+  layer, added to ssot.procedures.yml 2026-10-30). Read-only ops task, ops-readonly profile: for each of chaba-audit,
+  chaba-audit-full, mddb-vector-reindex, devin-bank-distill on con01 — (1) journalctl --user -u <svc> last failure
+  tail, (2) systemctl --user cat <svc> env/ExecStart, (3) check the declared deps exist (paths, env files, node/.n,
+  MDDB endpoints), (4) classify each failure: missing-env | dep-gone | upstream-dead | code-drift. Output: a markdown
+  report in comms with per-job verdict + first fix guess. Do NOT edit units, env files, or code — read and report
+  only; fixes stay on OPS-1013. Route: action.executor=opencode, lane=free_lane, host that serves it (idc02). Verify:
+  report names a failure class for all 4 jobs with journal evidence.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: opencode
+ref: OPS-1021
+comms:
+- at: 2026-10-30 19:32
+  from: tony
+  text: card captured via board-api
