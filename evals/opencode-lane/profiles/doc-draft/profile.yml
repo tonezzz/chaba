@@ -1,0 +1,88 @@
+id: doc-draft
+version: 1
+status: enabled
+unattended: true
+description: Repo-grounded document drafting. Reads the checkout with
+  read-only tools only (no bash, no writes), then emits ONE markdown
+  artifact as its final message — the runner lands it at the declared
+  path and the held-out verifier checks structure + declared sentinels.
+task_classes:
+- report
+stages:
+- S1
+- S2
+- S3
+target_host:
+  required: true
+  allowed: []
+model:
+  tier: cheap
+  default: litellm/or-gemini-3.5-flash
+  allowed:
+  - litellm/or-gemini-3.5-flash
+  - litellm/or-gemini-3.5-flash-lite
+  - litellm/gemini-3.5-flash-lite
+  - litellm/gemini-3-flash
+  - litellm/or-free-nemotron-nano
+providers:
+- litellm
+agent:
+  mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  list: true
+  todoread: true
+  todowrite: true
+  bash: false
+  write: false
+  edit: false
+  patch: false
+  task: false
+  webfetch: false
+permission:
+  edit: deny
+  webfetch: deny
+  external_directory: deny
+  doom_loop: ask
+  bash:
+    '*': deny
+mcp:
+  allowed: []
+  denied: []
+  upstream:
+    name: mcp-debug-readonly
+    proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
+    command:
+    - /bin/bash
+    - ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh
+allowed_paths: []
+artifact:
+  mode: message
+  format: md
+  dirs:
+  - docs/kb/
+  - docs/reports/
+  - evals/opencode-lane/out/
+  schema: 'evals/opencode-lane/profiles/doc-draft/fixture/task.yaml #contract.required_fields'
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/doc-draft/fixture/verify.py
+escalation:
+  on_fail: manual
+  allowed_on_fail:
+  - manual
+  - devin
+  - retry_then_manual
+  - hold
+  max_retries: 1
+rollback:
+  kind: none
+rails: 'You are the doc-draft profile agent. You may READ the repo with
+  the read/grep/glob tools — bash, writes, and network calls are denied
+  and any denied call fails the job. Ground every claim in the code you
+  actually read: name the real files, enums, functions, and paths; do
+  not invent commands or schemas. The document is your final message:
+  emit ONLY the markdown content (the first line may declare the target
+  path as `# <path>`), no prose around it, no meta commentary.'

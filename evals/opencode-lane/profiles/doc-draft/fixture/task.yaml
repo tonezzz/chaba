@@ -1,0 +1,20 @@
+id: doc-draft
+title: Repo-grounded markdown document draft
+class: doc
+timeout_s: 420
+artifact: evals/opencode-lane/out/doc-draft-sample.md
+description: >-
+  Produce a markdown document grounded in the checkout. The agent reads
+  the repo with read-only tools and emits the document as its final
+  message; the runner writes it. The card spec carries the task, the
+  target path, and optionally action.verify_contains — sentinel strings
+  the held-out verifier requires in the emitted text.
+contract:
+  required_fields:
+    artifact_path: "markdown file under docs/kb/, docs/reports/, or evals/opencode-lane/out/"
+    min_bytes: "int >= 300 — emitted document minimum size"
+    verify_contains: "optional list of sentinel strings (from action.verify_contains)"
+  forbidden:
+    - "TODO/TBD/placeholder markers"
+    - "echoing the rails block"
+    - "non-markdown output (must start with a # header or path line)"
