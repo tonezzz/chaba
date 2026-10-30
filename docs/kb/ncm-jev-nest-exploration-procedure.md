@@ -26,18 +26,37 @@ task -> JEV chooses route
 Do not describe this as “JEV inside NCM” unless a later research experiment
 actually changes the NCM model. Start with orchestration around the model.
 
+## Resource and authority guard
+
+- Do not upgrade a Colab account, rent a GPU, or call a paid model provider
+  without separate explicit approval. Use only already-authorized compute;
+  if it is unavailable, mark the GPU stage blocked and continue with offline
+  replay.
+- NCM, AR, and LLMs produce candidate content. JEV and deterministic policy
+  own routing, gates, and permissions. A model output must never set
+  `allowed_paths`, tools, credentials, human-gate flags, or execution
+  authorization.
+- Nest owns queueing, isolation, retries, and artifacts. It does not grant
+  permissions based on a model's confidence or self-reported success.
+
 ## Experiment ladder
 
 ### P0 — contract and replay, no GPU
 
 Use the existing Sudoku and Thai fixtures plus a fixed set of short prompts.
-Implement a common worker contract:
+Freeze the corpus and candidate configuration before running. Each generator
+gets the same examples, prompt/template, decoding settings, and seed set;
+pin the exact model/revision, tokenizer, quantization, and hardware. Implement
+a common worker contract:
 
 ```json
 {
   "task_id": "...",
   "input": "...",
   "candidate": "ncm|ar|llm",
+  "model_id": "...",
+  "model_revision": "...",
+  "prompt_hash": "...",
   "seed": 42,
   "output": "...",
   "latency_ms": 0,
@@ -52,12 +71,14 @@ Replay the same task through:
 
 1. small Thai AR baseline;
 2. NCM generator;
-3. JEV route-only policy;
-4. JEV route + NCM/AR candidates;
-5. JEV route + parallel candidates + verifier.
+3. each pinned LLM generator candidate as a separate arm;
+4. JEV route-only policy (score this as a decision, not generated text);
+5. JEV route + selected AR/NCM/LLM candidate;
+6. bounded parallel candidates + deterministic verifier/ranker.
 
 The P0 gate is deterministic schema validity and reproducible seed/output
-capture. No production routing changes.
+capture. It should be possible to replay results from `manifest.json` without
+calling a provider. No production routing changes.
 
 ### P1 — NCM Thai toy on Colab
 
@@ -72,21 +93,24 @@ Run the already implemented NCM tokenizer and generator on Colab GPU:
 
 Stop if the tokenizer reconstruction gate or data quality gate fails. Persist
 checkpoints and reports to Drive; do not train on a live worker checkout.
+Use only an already-authorized runtime/account tier. No account-level upgrade,
+paid GPU rental, or paid inference is implied by this procedure.
 
 ### P2 — JEV replay benchmark
 
 Give JEV only metadata/features and candidate summaries, not hidden labels.
 Measure route accuracy, gate precision/recall, abstention, escalation, and
-decision latency. Compare:
+decision latency. Compare each router/judge candidate separately:
 
 - deterministic rules;
 - jevos;
 - jev-student where it is in-domain;
-- the best available LLM judge;
+- each approved LLM router/judge model, pinned by model ID and prompt hash;
 - human labels on a held-out set.
 
-JEV is not allowed to declare success from its own confidence. The verifier
-owns the outcome.
+Use a deterministic task-specific verifier as the primary outcome. An LLM
+judge is a secondary, blind measurement, never the sole verifier. JEV is not
+allowed to declare success from its own confidence.
 
 ### P3 — mixed candidate benchmark
 
@@ -96,9 +120,10 @@ parallel set when latency is more important than cost. Compare:
 ```text
 AR only
 NCM only
-JEV -> AR/NCM
-parallel AR+NCM -> deterministic ranker
-parallel AR+NCM -> LLM judge
+each pinned LLM generator only
+JEV -> AR / NCM / each pinned LLM generator
+bounded parallel AR + NCM + selected LLMs -> deterministic ranker
+bounded parallel candidates -> blind LLM judge (secondary analysis only)
 ```
 
 Measure:
@@ -112,26 +137,36 @@ Measure:
 - token/API cost;
 - verifier pass rate;
 - escalation and human intervention rate;
-- quality per dollar and quality per second.
+- quality per dollar and quality per second;
+- queue delay and orchestration/verifier overhead, not just model generation time.
+
+Run at least three paired repetitions for every fixture/model/arm cell, report
+median and spread, and extend repetitions when the result is near the
+pre-registered decision threshold. Randomize/interleave candidate order to
+reduce warm-cache and load-order bias. Compare quality against the same
+held-out baseline; speed gains do not compensate for a quality or safety
+regression.
 
 ### P4 — shadow production
 
 Run the mixed route beside the existing lane without changing user-visible
 output. Store paired results and judge them with frozen labels. Promote only
-if the mixed route improves a declared metric without exceeding cost,
-latency, safety, or maintenance budgets.
+if it clears the pre-registered quality floor and improves a declared speed,
+quality, or cost metric without exceeding safety or maintenance budgets.
 
 ### P5 — production promotion
 
 Promotion requires:
 
-- three repeated benchmark runs;
+- three repeated benchmark runs per promoted configuration, with uncertainty
+  and failure cases reported;
 - held-out data not used for routing;
 - no secret or private-input leakage;
 - deterministic fallback;
 - artifact and audit publication;
 - rollback route;
-- human approval for user-facing or paid changes.
+- human approval for user-facing changes, account-tier changes, or any paid
+  model/compute.
 
 ## Standard research/benchmark packet
 
