@@ -1,0 +1,51 @@
+id: runner-readiness-projection
+title: Runner-reported claim readiness projection — per-card eligible hosts + blocking reason
+column: backlog
+updated: 2026-10-30 15:18
+priority: medium
+tags:
+- board
+- dispatch
+- monitoring
+spec: 'Goal: make ''is this queued card claimable, by which host, and if not why'' a queryable property instead
+  of state that only exists inside each runner''s head.
+
+
+  Context: scripts/board/runner-agent.py evaluates every queued card each pass against ~8 gates (claimable() — status/runner/host/target_host
+  pins, labels subset, lane!=manual, executor availability; push_guard_reason() — live git push --dry-run; gpu_preflight();
+  executor_defer_reason()). Defer reasons today surface only as debounced free-text comms. No read API answers ''the
+  ready package in claim order + per-card blocking gate'' — dispatch_repos.claim_sort_key defines the order (starved>=12h,
+  then priority, then oldest updated) but nothing projects it centrally.
+
+
+  Deliverables:
+
+  1. runner-agent.py: after each evaluation pass, POST a compact per-card verdict to board-api — {card_id, host,
+  claimable: bool, reason} (only for cards it evaluated; batch endpoint acceptable). Debounce so unchanged verdicts
+  don''t rewrite.
+
+  2. board-api: accept the verdicts and store a `readiness:` block on the card (or a side projection file) — last_evaluated_at,
+  per-host verdicts, computed eligible_hosts, blocking_reason summary, queue_position hint via claim_sort_key. New
+  read surface: GET /queue (ordered ready package + non-ready cards with reasons), or embed readiness in GET /cards.
+
+  3. Truthful-by-construction: report actual runner decisions including live push-probe/GPU results — never a re-simulated
+  gate on another host. Stale verdicts (>N min without a pass) flagged rather than trusted.
+
+
+  Verify: queued cards accumulate readiness blocks; a push-cred-gated card shows the correct eligible-host set;
+  a manual-lane card shows lane=manual as blocking reason; GET /queue output matches claim_sort_key order; stale
+  verdicts are marked, not silent.
+
+
+  Feeds: the Cline ready-package mirror and future pipeline views; also gives backlog-audit a mechanical ''waiting
+  on what'' bucket.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: KNB-1007
+comms:
+- at: 2026-10-30 15:18
+  from: tony
+  text: carded from chaba session — readiness projection is the UI-agnostic data layer behind the 'ready package'
+    visualization Tony asked for
