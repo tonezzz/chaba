@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-30 20:11
+updated: 2026-10-30 20:12
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -257,6 +257,10 @@ comms:
     KK idle-window consent. Keep owner priority; require AC/heartbeat/load/disk preflight, one LLM/MPS job at a
     time, stop on owner activity or pressure, isolated adanest pack root, no personal home/keys/secrets/MCP/auto-commit.
     Distinguish host from provider: Clawbot currently uses Op'
+- at: 2026-10-30 20:12
+  from: devin
+  text: 'raised request kk-mac-agent-egress-policy-20261030: For a future KK-Mac Clawbot/Hermes benchmark, Clawbot
+    currently uses OpenRouter/free, so inference and prompt text still'
 action:
   type: dispatch
   status: done
@@ -303,4 +307,19 @@ requests:
     This duplicate access request should not be treated as authorization for Qwen3 inference; no inference will
     be run on KK-Mac.
   executed: 2026-10-29 none
+- id: kk-mac-agent-egress-policy-20261030
+  ask: For a future KK-Mac Clawbot/Hermes benchmark, Clawbot currently uses OpenRouter/free, so inference and prompt
+    text still leave the Mac. Which egress policy should the pilot use? No run, model pull, or route change will
+    happen from this request; KK still needs a fresh idle-window consent at execution time.
+  status: open
+  at: 2026-10-30 20:12
+  from: devin
+  options:
+  - id: synthetic-only
+    label: Allow Clawbot only on synthetic/public fixtures; Hermes only if already local (recommended)
+  - id: local-only
+    label: No external Clawbot calls; test local Hermes only if already staged
+  - id: defer
+    label: Keep the current deterministic-only scope; defer both lanes
+  suggested: synthetic-only
 awaiting_action: true
