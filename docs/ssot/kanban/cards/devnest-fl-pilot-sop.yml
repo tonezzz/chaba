@@ -20,13 +20,14 @@ action:
   lane: free_lane
   model: litellm/or-free-nemotron-nano
   artifact: reports/job-package-status-sop.md
-  status: queued
+  status: running
   attempts: 0
   agent_profile: ops-readonly
   sweep:
     stale_running: 2026-10-30 09:33
     session_gone: 2026-10-30 09:33
     failed_noted: 2026-10-30 09:48
+  runner: idc02
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -132,5 +133,8 @@ comms:
 - at: 2026-10-30 09:55
   from: devin
   text: queued for processing
+- at: 2026-10-30 09:55
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
