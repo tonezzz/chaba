@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 19:40
+updated: 2026-10-30 19:48
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -60,3 +60,9 @@ comms:
     nest-pack-submit via a relative path (/home/tony/scripts/...) and failed staging. Fixed both in commits ba48a270c
     + 2527abdb1, deployed to tony-dell. Producer now staged three new report-review packs; KK worker completed report-review-32bef8dc950a
     in ~2.4s model wall. Two more are q'
+- at: 2026-10-30 19:48
+  from: devin
+  text: 'Follow-up verified: all three newly staged report packages completed on KK-Mac: report-review-32bef8dc950a
+    (~2.4s), report-review-42f0ca748e57 (~5.1s), report-review-784b75a88e57 (~2.1s). KK remains eligible: ~77GB
+    heartbeat disk, load ~1.5, Ollama healthy. The report feed/broker/producer timers remain active and will continue
+    filling up to three packages per cycle.'
