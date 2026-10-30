@@ -10,8 +10,9 @@ planning:
     intervals.
   scope: >-
     Update the existing JevNest capacity procedure and its SSOT index.
-    Do not change services, queue limits, worker concurrency, or automatic
-    JEV routing.
+    Do not change service configuration, timers, queue limits, worker
+    concurrency, or automatic JEV routing. A transient broker/producer run
+    to verify the documented path is in scope.
   success_criteria:
     - Procedure contains a copyable immediate submission sequence.
     - Fast path preserves admission, queue-depth, task-class, and verifier gates.
@@ -55,6 +56,13 @@ processing:
       notes: >-
         Both changed YAML files parse, git diff --check passes, and full SSOT
         validation checked 3,382 files with zero errors and 49 warnings.
+    - id: 4
+      label: Exercise the fast path with a real verified task
+      status: completed
+      notes: >-
+        Submitted decision-arena-extract-20261030-2114 via the upstream inbox,
+        started broker then producer oneshots, and read back the KK done marker
+        and result. JSON/schema/literal-fact checks all passed in 2.525 seconds.
   decisions:
     - label: Keep admission and queue limits authoritative
       rationale: >-
@@ -78,7 +86,6 @@ followup:
   handoff:
     - Record the completed procedure and evidence on the DevNest capacity card.
   deferred:
-    - Exercise the one-shot fast path with the next real task and record enqueue-to-done latency; keep the index status defined until then.
     - Strengthen report-feed factual verification before report summaries are treated as quality-passed.
     - Land the outstanding supervised JEV probe artifact before considering automatic JEV promotion.
 
@@ -88,12 +95,13 @@ report:
   summary: >-
     Defined and indexed an immediate KK-Mac package-submit path that starts
     the existing broker and producer oneshots in order while preserving
-    admission, queue-capacity, and verifier requirements.
+    admission, queue-capacity, and verifier requirements. Exercised it with
+    a real structured-extraction task and verified the landed result.
   metrics:
     - "Full SSOT validation: 3,382 files, 0 errors, 49 warnings."
     - "Changed YAML parse: pass; 4 embedded bash snippets: bash -n pass."
-    - "markdownlint unavailable; no service or queue mutation performed."
-    - "No fast-path package was submitted in this task; the procedure index remains status=defined."
+    - "Fast-path task decision-arena-extract-20261030-2114: 2.525s, 65 eval tokens, 11/11 verifier checks true."
+    - "markdownlint unavailable; the existing broker/producer oneshots ran without persistent service or timer changes."
   links:
     - title: JevNest KK-Mac capacity procedure
       url: docs/kb/jevnest-kk-mac-capacity-procedure.md

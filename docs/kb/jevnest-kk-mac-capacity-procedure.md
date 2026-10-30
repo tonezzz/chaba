@@ -220,3 +220,10 @@ Use the fast path above to remove timer delay, but keep report summaries as
 human-review drafts until their factual verifier is strengthened. Automatic
 JEV promotion remains gated on the supervised probe artifact being landed and
 verified, plus policy review of the report-summary verifier.
+
+The immediate path was exercised on 2026-10-30 with
+`decision-arena-extract-20261030-2114`, a structured extraction from
+`reports/2026-10-25-decision-arena-50.md`. The pack reached the KK queue,
+completed with a `done` marker, and passed JSON parsing, required-key, and
+literal-fact checks in 2.525 seconds. This verifies the one-shot submit path;
+it does not upgrade empty-`expect` report summaries to factually verified.
