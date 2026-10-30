@@ -3,7 +3,7 @@ id: 2026-10-30-cline-proposal-pilot
 date: 2026-10-30
 domain: workflow
 host: mn01
-status: done-pending-review
+status: partial
 cards:
   parent: opencode-cline-idea-proposal-workflow
   pilot_lane: cline-proposal-pilot-edu-no-th
@@ -19,15 +19,22 @@ summary: >-
   recorded), created lane card cline-proposal-pilot-edu-no-th for the real
   intake path, and ran a same-prompt shadow analysis on mn01 (157.2s/1730tok,
   0 unsupported claims). Report: docs/reports/2026-10-30-cline-proposal-pilot.md.
-  Procedure updates deferred to Tony's independent review (one pilot is not
-  "repeatable").
+  Tony approved proceeding with a bounded Chaba-side procedure update; the
+  common intake guidance and procedure index now describe proposal-only
+  OpenCode/JEV/Nest/Cline roles with deterministic policy and verifier gates.
+  The external devin-kb procedure body was not available in this worktree.
+  The live intake lane still did not pick up, so end-to-end repeatability
+  remains unproven and automatic dispatch stays blocked.
 key_findings:
   - "cline-intake.timer was deployed but undeclared in con01 expected_services — declared in ssot.audit.hosts.yml; >70min without pickup suggests the timer may not be enabled on con01 (smoke was likely a manual run) — needs on-host list-timers check"
   - "Serial lane starves silently: a cline-tagged card without lane config blocks every later card (--limit 1 + alphabetical order); live example starving the queue right now"
   - "Cline workspace isolation means card/SSOT comparison needs an injected context digest (<=3000ch prompt budget)"
+  - "The Chaba-side procedure update records a proposal-only path; it does not authorize automatic dispatch while the live scheduler is unverified"
   - "Lane deliverables stay on con01 fs — not retrievable remotely; recommend content excerpt in result comment"
   - "Smoke card has duplicate result comments — likely overlapping intake executions, not a board-api bug"
   - "chaba-repo-sync not declared for con01 — lane pickup latency depends on unverified sync cadence"
 artifacts:
   - docs/reports/2026-10-30-cline-proposal-pilot.md
   - evals/cline-proposal-pilot/ (snapshot, manifest, intake draft, shadow proposal, run meta)
+  - docs/ssot/ssot.windsurf.common.md
+  - docs/ssot/ssot.procedures.yml

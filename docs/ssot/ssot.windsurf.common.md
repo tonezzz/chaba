@@ -312,6 +312,27 @@ For each user request:
 7. For exact lookups in the full focus file, prefer `ssot-search` over reading the entire `ssot.focus.yml`.
 8. At session end, update subtask statuses, append completed quick wins to focus history, and commit only the intended files.
 
+### Multi-agent proposal intake (DEV-0975)
+
+For a request intended to pass through OpenCode, JEV, Nest, and Cline:
+
+- Anchor the work on a Chaba card ID and immutable snapshot version; Chaba
+  remains the sole authority for decisions, approval, status, and closeout.
+- OpenCode may clarify and draft review content only. It must not set the
+  route, task class, target, paths, MCP allowlist, verifier, human gate, or
+  execution permission. Existing-work matching requires supplied evidence.
+- JEV independently routes the original request. A deterministic compiler
+  derives policy from the card snapshot and JEV result; never forward model-
+  proposed ACLs to Nest/Cline. Preserve the JEV decision as `action.lane`
+  through runner dispatch; an unservable or missing lane fails closed.
+- After explicit approval, Nest owns claim/heartbeat/retry/result_ref state;
+  Cline is an isolated executor; an independent verifier gates completion on
+  the declared artifact and durable result reference.
+- Keep this path analysis-only unless the live Cline intake scheduler and
+  repo-sync are verified and the artifact/terminal-state contract passes.
+  The 2026-10-30 pilot's shadow analysis passed, but its live lane did not
+  pick up after 70 minutes; do not claim repeatable automatic dispatch.
+
 ## Subtask Inbox Triage
 
 - At the start of every session, immediately after reading `docs/ssot/ssot.focus.current.active.yml` (active foci) and `docs/ssot/ssot.focus.current.backlog.yml` (quick wins), invoke the `subtask-triage` skill on the active focus subtasks.
@@ -387,6 +408,8 @@ Frequent ones:
 - **New idea / feature / "what if we…"** → capture to a kanban card
   (`column: backlog`) or focus-inbox entry immediately, then triage with
   `mcp_focus`. The board owns all pending work.
+- **OpenCode/Cline proposal review** → follow the DEV-0975 analysis-only
+  branch above; a schema-valid proposal is not execution authorization.
 - **Deploy or place a service** → `ssot.host-capacity.yml` (placement_policy
   + live `free`/`df`), record the host decision on the card.
 - **New vocabulary** → `ssot.terminology.yml`; MDDB picks it up on sync.
