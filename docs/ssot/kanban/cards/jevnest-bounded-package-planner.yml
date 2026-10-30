@@ -1,0 +1,26 @@
+id: jevnest-bounded-package-planner
+title: Bounded JevNest package planner for real-work fanout
+column: backlog
+updated: 2026-10-30 20:43
+brief: Evaluate a bounded planner that proposes additional real task packages from existing evidence without allowing
+  KK-Mac to mutate or recursively feed its own queue.
+priority: medium
+program: ai-workforce
+tags:
+- jevnest
+- kk-mac
+- package-planner
+- fanout
+- safety
+spec: 'Design a planner artifact path: KK-Mac may summarize explicit evidence into at most three candidate task
+  specs, but it may not write to any queue. A deterministic upstream validator on tony-dell checks source evidence,
+  task class, prompt/fact bounds, allowed lane, artifact root, dedupe, secret patterns, and planner self-reference.
+  Only validated candidates are staged by the normal broker; max fanout 3/cycle, depth 1, no planner-generated planner
+  tasks, no auto-replan after verifier failure. Measure verified-success lift, queue wait, planner cost, rejected
+  candidates, and recursive-loop incidents against the current deterministic report feed. Start with a held-out
+  fixture before production enablement.'
+ref: OPS-1027
+comms:
+- at: 2026-10-30 20:43
+  from: devin
+  text: card captured via board-api
