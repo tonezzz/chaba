@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
-column: doing
-updated: 2026-10-30 16:14
+column: review
+updated: 2026-10-30 16:15
 spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
   on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
   merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-gemini-3.5-flash-lite
@@ -15,13 +15,13 @@ action:
   executor: opencode
   agent_profile: ops-readonly
   artifact: evals/opencode-lane/out/ops-readonly-health.json
-  status: running
-  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-devnest-fl-pilot-health-1793331204.service,
-    ignoring: Invalid argument | devin-task-devnest-fl-pilot-health-1793331204.service: Consumed 1min 28.320s CPU
-    time, 637.6M memory peak, 0B'
+  status: done
+  result: 'exit=0 ionID":"ses_e73e952dfffeHO5pQF0B3N5BcE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-health-1793351654.service: Consumed 13.922s CPU time.'
   sweep:
     failed_noted: 2026-10-30 10:48
   runner: idc02
+  verified: false
 ref: OPS-0998
 comms:
 - at: 2026-10-30 10:32
@@ -60,3 +60,8 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-health-1793351654 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/or-gemini-3.5-flash-lite)
+- at: 2026-10-30 16:15
+  from: idc02
+  text: 'finished (ok): exit=0 ionID":"ses_e73e952dfffeHO5pQF0B3N5BcE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning"'
+review_kind: verify
+claim: {}
