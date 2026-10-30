@@ -1,0 +1,39 @@
+{
+  "name": "kk-mac-native-gaussian-smoke",
+  "target_host": "kk-mac",
+  "owner_gate": "KK present and explicitly approves the selected step",
+  "default_step": "preflight-only",
+  "candidate": {
+    "name": "mpsplat",
+    "source": "https://github.com/zacsmms/mpsplat",
+    "reason": "Apple Metal/MPS training path with COLMAP, 3DGS/2DGS/3DGUT, PLY and viewer support"
+  },
+  "alternatives": [
+    "https://github.com/rayanht/msplat",
+    "https://github.com/RobotFlow-Labs/gsplat-mlx",
+    "https://github.com/PoSTMEDIA-AI/splatx-metal"
+  ],
+  "budgets": {
+    "preflight_minutes": 10,
+    "install_and_smoke_minutes": 35,
+    "small_real_scene_minutes": 90,
+    "minimum_free_disk_gb": 30,
+    "max_unified_memory_pressure_percent": 80
+  },
+  "gates": [
+    "host_identity",
+    "owner_window",
+    "no_unrelated_job",
+    "native_metal_backend",
+    "non_black_smoke",
+    "finite_metrics",
+    "non_empty_ply",
+    "durable_artifacts"
+  ],
+  "prohibited": [
+    "CUDA-only graphdeco/gsplat/Nerfstudio training",
+    "writing into production Ada/KK environments",
+    "starting the real-scene run without a second owner confirmation",
+    "deleting existing model caches"
+  ]
+}
