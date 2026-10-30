@@ -36,9 +36,27 @@ def rc(*args, check=True, timeout=900):
     return r
 
 
-def lsf(path):
-    return [l.rstrip('/') for l in rc('lsf', path, check=False)
+def lsf(path, recursive=False):
+    args = ['lsf', path]
+    if recursive:
+        args.append('--recursive')
+    return [l.rstrip('/') for l in rc(*args, check=False)
             .stdout.splitlines() if l.strip()]
+
+
+def pack_inventory(remote_root):
+    """Return one remote listing grouped by pack.
+
+    Drive/rclone latency dominates small queues when each pack is listed
+    separately. A single recursive listing keeps claim semantics unchanged
+    while making newly staged packs visible promptly.
+    """
+    inventory = {}
+    for line in lsf(f'{remote_root}/packs', recursive=True):
+        parts = line.split('/', 1)
+        if len(parts) == 2:
+            inventory.setdefault(parts[0], set()).add(parts[1])
+    return inventory
 
 
 def rcat(path, text):
@@ -266,12 +284,17 @@ def main():
     CAPS = caps()
     say(f'nest-worker {WORKER} caps={CAPS}')
 
-    for d in sorted(lsf(f'{args.remote}/packs')):
+    for d, inventory_entries in sorted(
+            pack_inventory(args.remote).items()):
         pdir = f'{args.remote}/packs/{d}'
-        entries = lsf(pdir)
+        entries = inventory_entries
         if 'done' in entries or 'failed' in entries:
             continue
-        claims = lsf(f'{pdir}/claim')
+        claims = [
+            e.removeprefix('claim/')
+            for e in entries
+            if e.startswith('claim/') and e != 'claim/'
+        ]
         if claims:
             # stale-claim release: claim file older than N min + no done
             # → previous worker died. lsl gives us mtime.
