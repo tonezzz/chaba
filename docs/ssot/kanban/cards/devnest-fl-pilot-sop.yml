@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
 column: doing
-updated: 2026-10-30 09:16
+updated: 2026-10-30 09:18
 priority: low
 spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
   + storage standard. READ THE CODE FIRST, then emit the report: (1) scripts/board/board-api.py — JOB_STATUSES enum
@@ -20,8 +20,9 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   artifact: reports/job-package-status-sop.md
-  status: queued
+  status: running
   attempts: 1
+  runner: idc02
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -70,5 +71,8 @@ comms:
   from: chaba
   text: 'idc02 defers: executor=opencode declared but this runner can''t serve it (OPENCODE_LANES=0) — the card
     stays queued for an OpenCode-capable runner; it will never silently fall back to devin'
+- at: 2026-10-30 09:18
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
