@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: doing
-updated: 2026-10-30 10:33
+updated: 2026-10-30 10:44
 spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
   on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
   merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-free-nemotron-nano
@@ -15,8 +15,11 @@ action:
   executor: opencode
   agent_profile: ops-readonly
   artifact: evals/opencode-lane/out/ops-readonly-health.json
-  status: running
+  status: failed
   runner: idc02
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-devnest-fl-pilot-health-1793331204.service,
+    ignoring: Invalid argument | devin-task-devnest-fl-pilot-health-1793331204.service: Consumed 1min 28.320s CPU
+    time, 637.6M memory peak, 0B'
 ref: OPS-0998
 comms:
 - at: 2026-10-30 10:32
@@ -32,3 +35,6 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-health-1793331204 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/or-free-nemotron-nano)
+- at: 2026-10-30 10:44
+  from: idc02
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-de'
