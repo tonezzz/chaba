@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 20:10
+updated: 2026-10-30 21:08
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -145,6 +145,13 @@ comms:
     10/10 shots, silent 59.92s H.264 640x384, full decode passed. It is an archived artifact, not a queued package,
     and is not PDF-conditioned V2. Do not run another model package: OPS-0966 answer is deterministic-only. OPS-0952
     V2 remains'
+- at: 2026-10-30 21:08
+  from: devin
+  text: Per Tony's latest instruction, I am staging one bounded private Mac image-conditioned test for the next
+    mapped scene only (shot03, v1_01 page15 / image-008), using the existing MPS scene runner and a fresh isolated
+    pack. It is not the remaining eight-shot batch, not a narration/mux, and not a Colab V2 resume. I will launch
+    only after the pack's AC, memory, owner-app, cache, and no-resident-Ollama gates pass; no model will be unloaded
+    and no public output will be made.
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
