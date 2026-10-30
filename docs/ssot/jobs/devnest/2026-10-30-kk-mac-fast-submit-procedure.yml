@@ -63,6 +63,14 @@ processing:
         Submitted decision-arena-extract-20261030-2114 via the upstream inbox,
         started broker then producer oneshots, and read back the KK done marker
         and result. JSON/schema/literal-fact checks all passed in 2.525 seconds.
+    - id: 5
+      label: Document a no-temp streaming variant
+      status: completed
+      notes: >-
+        Local /tmp task-file creation hit a disk-quota error. Added a
+        zero-temp JSON-generation/validation/SSH-stream option and used it for
+        the real package. The partial empty temp file from the failed attempt
+        was removed; no empty task was uploaded.
   decisions:
     - label: Keep admission and queue limits authoritative
       rationale: >-
@@ -79,7 +87,7 @@ processing:
 followup:
   verification:
     - "Full SSOT validator: 3,382 files, 0 errors, 49 existing warnings."
-    - "YAML parsing, four embedded bash snippets via bash -n, and git diff --check all pass."
+    - "YAML parsing, five embedded bash snippets via bash -n after Markdown indentation removal, and git diff --check pass."
     - "Reviewed fast-path service names against ssot.jobs.yml; markdownlint is not installed."
   rollback_plan:
     - Revert only the procedure and index edits from this task branch.
@@ -99,8 +107,9 @@ report:
     a real structured-extraction task and verified the landed result.
   metrics:
     - "Full SSOT validation: 3,382 files, 0 errors, 49 warnings."
-    - "Changed YAML parse: pass; 4 embedded bash snippets: bash -n pass."
+    - "Changed YAML parse: pass; 5 embedded bash snippets: bash -n pass."
     - "Fast-path task decision-arena-extract-20261030-2114: 2.525s, 65 eval tokens, 11/11 verifier checks true."
+    - "Disk-quota fallback documented; no-empty-task guard is validated."
     - "markdownlint unavailable; the existing broker/producer oneshots ran without persistent service or timer changes."
   links:
     - title: JevNest KK-Mac capacity procedure

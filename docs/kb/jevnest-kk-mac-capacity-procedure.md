@@ -116,6 +116,34 @@ class, or verification gates.
    ssh tony-dell "rclone rcat gdrive:ada-nest-devnest/inbox/${TASK_ID}.json" < "$TASK_FILE"
    ```
 
+   If local temp storage is quota-limited, run the same task-ID collision
+   checks above, then keep the JSON in memory and stream it directly. Validate
+   before connecting so a failed generator cannot create an empty inbox object:
+
+   ```bash
+   TASK_JSON="$(python3 - "$TASK_ID" <<'PY'
+   import json, sys
+   task = {
+       "task_id": sys.argv[1],
+       "lane": "kk_mac_local",
+       "task_class": "structured_extract",
+       "model": "qwen3:8b",
+       "format": "json",
+       "prompt": "Extract the requested source-backed fields as JSON: ...",
+       "expect": {
+           "required_keys": ["field_a"],
+           "facts": ["exact phrase copied from the evidence"]
+       },
+       "source": "reports/example-report.json"
+   }
+   assert task["prompt"] and task["expect"]["facts"]
+   print(json.dumps(task, ensure_ascii=False))
+   PY
+   )"
+   python3 -c 'import json,sys; json.loads(sys.argv[1])' "$TASK_JSON"
+   printf '%s' "$TASK_JSON" | ssh tony-dell "rclone rcat gdrive:ada-nest-devnest/inbox/${TASK_ID}.json"
+   ```
+
 3. Kick the broker, then the KK producer. They are declared systemd user
    oneshots on `tony-dell`; the broker applies admission and queue-capacity
    gates, then the producer stages an accepted inbox item as a pack:
