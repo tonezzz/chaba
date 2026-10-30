@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -116,12 +117,16 @@ def produce(
 ) -> dict:
     result = {"source": source, "routed": [], "held": [], "rejected": []}
     gate = snapshot()
+    kk_enabled = os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() == "true"
     for filename in inbox(source):
         try:
             spec = read_spec(source, filename)
             if already_routed(source, spec["task_id"]):
                 continue
             if spec["lane"] == "kk_mac_local":
+                if not kk_enabled:
+                    result["held"].append(f"{filename}:kk_disabled")
+                    continue
                 if not gate.get("eligible"):
                     result["held"].append(f"{filename}:kk_admission")
                     continue

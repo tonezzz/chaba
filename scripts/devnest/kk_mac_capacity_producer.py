@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -116,6 +117,10 @@ def produce(
         "kk-mac-llm-pack"
     )
     gate = snapshot()
+    if os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() != "true":
+        gate = dict(gate)
+        gate["eligible"] = False
+        gate.setdefault("reasons", []).append("kk_disabled")
     result = {
         "eligible": bool(gate.get("eligible")),
         "gate": gate,
