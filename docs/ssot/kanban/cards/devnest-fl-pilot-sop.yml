@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
 column: doing
-updated: 2026-10-30 09:18
+updated: 2026-10-30 09:19
 priority: low
 spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
   + storage standard. READ THE CODE FIRST, then emit the report: (1) scripts/board/board-api.py — JOB_STATUSES enum
@@ -20,11 +20,11 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   artifact: reports/job-package-status-sop.md
-  status: failed
-  attempts: 1
-  runner: idc02
-  result: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile or
-    a mapped lane (generic build agent is not an unattended executor)'
+  status: queued
+  attempts: 2
+  agent_profile: ops-readonly
+  last_failure: 'start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile
+    or a mapped lane (generic build agent is not an unattended executor)'
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -80,5 +80,8 @@ comms:
   from: idc02
   text: 'finished (failed): start failed: no task profile for lane (none) — the opencode executor requires action.agent_profile
     or a mapped lane (ge'
+- at: 2026-10-30 09:19
+  from: devin
+  text: retry requested
 review_kind: verify
 claim: {}
