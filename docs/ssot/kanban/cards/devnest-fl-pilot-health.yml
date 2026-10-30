@@ -2,11 +2,28 @@ id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: review
 updated: 2026-10-30 16:15
-spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
-  on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
-  merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-gemini-3.5-flash-lite
-  (google key monthly-capped). The agent emits the JSON health report as its final message; the runner lands it
-  under evals/opencode-lane/out/ and the held-out verifier compares it against re-collected host facts. No deployment.'
+spec: |-
+    Produce a JSON health snapshot of THIS host (idc02). Emit ONLY the
+    JSON object as your final message — the runner writes it for you; you
+    hold no write tools and any denied tool call fails the job.
+
+    Collect with read-only commands only (one per bash call):
+    - hostname / current time: hostname, date -Iseconds
+    - uptime + load: uptime (load1/load5/load15). For uptime_seconds:
+      uptime -s (boot ts) and date +%s (epoch now) as two calls, subtract
+      YOURSELF — python3/expr/bc are not allowlisted. NEVER /proc/*.
+    - cpu count: nproc or lscpu
+    - memory: free -m (MB)
+    - root fs usage: df -P / (used percent, int)
+    - failed units: systemctl list-units --failed --no-legend AND
+      systemctl --user list-units --failed --no-legend (empty ok)
+
+    Required JSON fields (exact names): host, collected_at,
+    uptime_seconds, load1, load5, load15, cpu_count, mem_total_mb,
+    mem_available_mb, disk_root_pct, failed_units, read_only.
+    read_only MUST be true. The artifact lands at
+    evals/opencode-lane/out/ops-readonly-health.json — emit the JSON as
+    your final message and stop. No files, no writes, no secrets.
 action:
   type: dispatch
   repo: chaba
