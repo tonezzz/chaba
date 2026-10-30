@@ -1,7 +1,7 @@
 id: kk-video-preview-output-qc-assembly
 title: 'Finish Sacred Father teaser: validate shots, narration, and private assembly'
 column: done
-updated: 2026-10-30 19:38
+updated: 2026-10-30 19:39
 spec: 'Continue from the completed TorchAO import fix (OPS-0929) and Colab run-20261027-0843. Evidence: LTX import
   preflight passed and all 10 shot MP4 paths were written, but the preview pack failed its artifact gate: the pack''s
   `done()` predicate rejects files <=50KB (shots 03/04/05/07/09 are 47,845/9,251/12,134/40,754/26,587 bytes), so
@@ -340,6 +340,11 @@ comms:
     cue windows, story/motif flow, and embedded V1 teaser). It explicitly distinguishes V1 rendered frames from
     V2 PDF references; V2 remains held by the existing resume gate. No new video render, mux, or public release
     was m'
+- at: 2026-10-30 19:39
+  from: devin
+  text: 'Artifact verification: 2,117,092 bytes; SHA-256 `716db51814624533a931f54cf458e062bbcd0ebdef3b3aa707893d49f665a1db`.
+    Self-contained HTML contains 10 scene panels, 20 embedded still/reference thumbnails, 4 subtitle cue cards,
+    and the private V1 preview player; local HTTP preview returned 200. No external asset dependencies.'
 requests:
 - id: the-narration-retry-release-is-staged-in-f5906a
   ask: The narration retry release is staged in Drive, but mcp-colab reports no fresh managed runtime (all registered
