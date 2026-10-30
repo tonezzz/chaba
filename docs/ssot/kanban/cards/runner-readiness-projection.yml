@@ -1,7 +1,7 @@
 id: runner-readiness-projection
 title: Runner-reported claim readiness projection — per-card eligible hosts + blocking reason
 column: review
-updated: 2026-10-30 15:33
+updated: 2026-10-30 17:45
 priority: medium
 tags:
 - board
@@ -84,5 +84,12 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261030-151847-goal-make-is-this-queued-card- on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-30 17:45
+  from: devin
+  text: 'DONE + deployed + verified live (commit d2146addf): board-api accepts runner verdicts at POST /ready (off-repo
+    state ~/.local/state/board-api-ready/, own flock, never touches cards) and serves GET /queue — the ready package
+    in claim-drain order with per-card verdicts {eligible, blocked, unreported} + in-flight claims. runner-agent.py:
+    claimable() refactored to _claimable() returning (typ, reason) so wait-reasons come from the same gates that
+    claim (pins, labels, executor incl. kk_mac_local, push'
 review_kind: verify
 claim: {}
