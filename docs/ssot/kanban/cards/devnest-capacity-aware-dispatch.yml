@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 14:23
+updated: 2026-10-30 16:21
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -33,3 +33,10 @@ comms:
     and depth cap, routes KK specs to gdrive:ada-nest-kk-llm/inbox/, and stages complete Colab pack_source entries
     to gdrive:ada-nest/packs/ without launching a runtime. Empty inbox smoke passed; a real broker smoke spec routed
     successfully. Optimized recursive queue scan
+- at: 2026-10-30 16:21
+  from: devin
+  text: 'Continued OPS-1002 with a real upstream producer: scripts/devnest/devnest_report_feed.py scans recent allowlisted
+    durable reports, excludes KK-Mac self-reports, uses idempotent source markers, and submits up to 3 bounded summary
+    specs per 15m. SSOT job devnest-report-feed is declared on tony-dell. First run submitted 3 real report-review
+    tasks; broker routed them and KK producer staged them. Prompt bound was corrected to stay under the 6000-character
+    package limit. Current KK disk is at the 20GB'
