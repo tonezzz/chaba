@@ -1,6 +1,6 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: backlog
+column: doing
 updated: 2026-10-30 19:33
 priority: medium
 tags:
@@ -19,7 +19,8 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -44,3 +45,6 @@ comms:
   from: chaba
   text: 'tony-macbook defers: executor=opencode declared but this runner can''t serve it (OPENCODE_LANES=0) — the
     card stays queued for an OpenCode-capable runner; it will never silently fall back to devin'
+- at: 2026-10-30 19:33
+  from: idc02
+  text: claimed
