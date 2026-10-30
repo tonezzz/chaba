@@ -1,0 +1,112 @@
+title: "KK-Mac fast DevNest package submission procedure"
+date: 2026-10-30
+card: devnest-capacity-aware-dispatch
+session: "Devin session 1642333"
+
+planning:
+  goal: >-
+    Document a safe fast path to submit a bounded DevNest package to KK-Mac
+    without waiting for the normal report-feed, broker, and producer timer
+    intervals.
+  scope: >-
+    Update the existing JevNest capacity procedure and its SSOT index.
+    Do not change services, queue limits, worker concurrency, or automatic
+    JEV routing.
+  success_criteria:
+    - Procedure contains a copyable immediate submission sequence.
+    - Fast path preserves admission, queue-depth, task-class, and verifier gates.
+    - Procedure distinguishes artifact completion from factual-quality acceptance.
+  risks:
+    - Duplicate tasks if operators enqueue a second ID while a claim is active.
+    - A non-empty response can be mistaken for a factually verified summary.
+    - Manual timer starts could bypass gates if the documented order is wrong.
+  resources:
+    - "tony-dell systemd user services: devnest-capacity-broker and jevnest-kk-mac-capacity-producer"
+    - "Drive inbox: gdrive:ada-nest-devnest"
+    - "KK-Mac package queue: gdrive:ada-nest-kk-llm"
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: DevNest capacity-aware dispatch
+      file: docs/ssot/kanban/cards/devnest-capacity-aware-dispatch.yml
+
+processing:
+  status: completed
+  started_at: "2026-10-30"
+  steps:
+    - id: 1
+      label: Verify current fast-path surfaces and live canary evidence
+      status: completed
+      notes: >-
+        Confirmed the report-feed, broker, and KK producer are declared as
+        separate systemd user jobs. Read-only Drive check found completed
+        real-report packages, but the report-feed currently emits expect={}
+        and the worker only checks response_nonempty for those summaries.
+    - id: 2
+      label: Update the JevNest procedure and register it in SSOT
+      status: completed
+      notes: >-
+        The worktree contained an uncommitted fast-submit draft. Reviewed and
+        preserved it, added task-ID collision checks, and registered the
+        procedure pointer.
+    - id: 3
+      label: Validate documentation and index
+      status: completed
+      notes: >-
+        Both changed YAML files parse, git diff --check passes, and full SSOT
+        validation checked 3,382 files with zero errors and 49 warnings.
+  decisions:
+    - label: Keep admission and queue limits authoritative
+      rationale: >-
+        Faster dispatch should remove timer delay only. It must not bypass
+        current KK admission, maximum queue depth, one-worker concurrency,
+        or human review of weakly verified report summaries.
+      alternatives_considered: Increasing queue depth or launching a second worker was rejected.
+  changes:
+    - file: docs/kb/jevnest-kk-mac-capacity-procedure.md
+      summary: Added safe task-ID checks to the existing immediate submit sequence.
+    - file: docs/ssot/ssot.procedures.yml
+      summary: Registered the KK-Mac fast-submit procedure as defined.
+
+followup:
+  verification:
+    - "Full SSOT validator: 3,382 files, 0 errors, 49 existing warnings."
+    - "YAML parsing, four embedded bash snippets via bash -n, and git diff --check all pass."
+    - "Reviewed fast-path service names against ssot.jobs.yml; markdownlint is not installed."
+  rollback_plan:
+    - Revert only the procedure and index edits from this task branch.
+  handoff:
+    - Record the completed procedure and evidence on the DevNest capacity card.
+  deferred:
+    - Exercise the one-shot fast path with the next real task and record enqueue-to-done latency; keep the index status defined until then.
+    - Strengthen report-feed factual verification before report summaries are treated as quality-passed.
+    - Land the outstanding supervised JEV probe artifact before considering automatic JEV promotion.
+
+report:
+  status: done
+  completed_at: 2026-10-30
+  summary: >-
+    Defined and indexed an immediate KK-Mac package-submit path that starts
+    the existing broker and producer oneshots in order while preserving
+    admission, queue-capacity, and verifier requirements.
+  metrics:
+    - "Full SSOT validation: 3,382 files, 0 errors, 49 warnings."
+    - "Changed YAML parse: pass; 4 embedded bash snippets: bash -n pass."
+    - "markdownlint unavailable; no service or queue mutation performed."
+    - "No fast-path package was submitted in this task; the procedure index remains status=defined."
+  links:
+    - title: JevNest KK-Mac capacity procedure
+      url: docs/kb/jevnest-kk-mac-capacity-procedure.md
+    - title: Procedure index
+      url: docs/ssot/ssot.procedures.yml
+  kb_review:
+    - Updated the existing JevNest capacity procedure in place; no duplicate was created.
+    - Report summaries with expect={} have only a non-empty-response check and remain human-review drafts.
+  lessons_learned:
+    - One-shot systemd starts remove the 5/15-minute timer delay without changing the recurring timers.
+
+config:
+  version: 1
+  created_at: 2026-10-30
+  last_updated: 2026-10-30
+  maintainer: tony
