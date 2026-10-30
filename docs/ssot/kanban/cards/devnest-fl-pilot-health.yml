@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: doing
-updated: 2026-10-30 16:29
+updated: 2026-10-30 17:04
 spec: "Produce a JSON health snapshot of THIS host (idc02). Emit ONLY the\nJSON object as your final message — the\
   \ runner writes it for you; you\nhold no write tools and any denied tool call fails the job.\n\nCollect with read-only\
   \ commands only (one per bash call):\n- hostname / current time: hostname, date -Iseconds\n- uptime + load: uptime\
@@ -20,14 +20,13 @@ action:
   executor: opencode
   agent_profile: ops-readonly
   artifact: evals/opencode-lane/out/ops-readonly-health.json
-  status: failed
+  status: queued
   result: 'exit=1 3352519.service: Main process exited, code=exited, status=1/FAILURE | devin-task-devnest-fl-pilot-health-1793352519.service:
     Failed with result ''exit-code''. | devin-task-devnest-fl-pilot-health-1793352519.service: Consumed 12.023s
     CPU time.'
   sweep:
     failed_noted: 2026-10-30 10:48
     dirty: 1
-  runner: idc02
 ref: OPS-0998
 comms:
 - at: 2026-10-30 10:32
@@ -130,5 +129,8 @@ comms:
 - at: 2026-10-30 16:29
   from: idc02
   text: 'finished (failed): exit=1 3352519.service: Main process exited, code=exited, status=1/FAILURE | devin-task-devnest-fl-pilot-health-17933525'
+- at: 2026-10-30 17:04
+  from: devin
+  text: queued for processing
 review_kind: verify
 claim: {}
