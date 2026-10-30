@@ -27,6 +27,7 @@ model choice. Written from pilot evidence 2026-10-30.
 |---|---|---|
 | gemini-3.5-flash | `litellm/or-gemini-3.5-flash` | Full pass — health JSON artifact verified + merged (OPS-0998, merge `562d54fdd`) |
 | qwen2.5:32b (kk-mac ollama) | `litellm/ollama-qwen32b-kkmac` | Full pass — doc-draft markdown verified + merged (OPS-1014). Content off-spec on first run (see below). ~6 tok/s |
+| qwen3:8b (kk-mac ollama) | `litellm/ollama-qwen38b-kkmac` | Full pass — on-spec grounded KB doc merged (OPS-1024, merge `c1813b5a0`). ~4x faster than 32b, better instruction-following. **doc-draft default** |
 
 ## Failed / limited
 
