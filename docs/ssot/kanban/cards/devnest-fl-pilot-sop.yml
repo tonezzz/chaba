@@ -1,30 +1,26 @@
 id: devnest-fl-pilot-sop
 title: 'DevNest fl-pilot: repo-aware SOP write on OpenCode flash-lite (job-package status lifecycle)'
-column: review
-updated: 2026-10-30 09:08
+column: backlog
+updated: 2026-10-30 09:10
 priority: low
-spec: 'Write docs/kb/job-package-status-sop.md — the SOP for job-package status lifecycle + storage. READ THE CODE
-  FIRST, then write: (1) scripts/board/board-api.py — JOB_STATUSES enum {queued, claimed, running, done, failed,
-  stalled, cancelled}, do_job upsert contract, JOB_META_KEYS; (2) scripts/board/publication.py — nest_job adapter,
-  progress|milestone|alert fanout. Cover: lifecycle transitions + who writes each (queue-mgr claims, pack runner
-  runs/finishes), where state is mirrored (WP nest_job CPT vs kanban column vs PublicationEvent), result_ref/artifact
-  storage convention. Write the file first, then verify all seven status enum values appear. Do not modify any other
-  file, do not run tests, do not push — the runner closeout commits, pushes, gates, and merges. PILOT DECLARATIONS:
-  target_host=idc02; base_ref=origin/master; verifier=docs/kb/job-package-status-sop.md exists and contains all
-  JOB_STATUSES values; expected_artifact=docs/kb/job-package-status-sop.md; stop_condition=fail if file unwritten
-  after one retry or any path outside docs/kb/ touched; counts as free-lane datapoint only if meta.json executor
-  starts with opencode:.'
+spec: 'Produce reports/job-package-status-sop.md — a report artifact describing the job-package status lifecycle
+  + storage standard. READ THE CODE FIRST, then emit the report: (1) scripts/board/board-api.py — JOB_STATUSES enum
+  {queued, claimed, running, done, failed, stalled, cancelled}, the do_job upsert contract, JOB_META_KEYS; (2) scripts/board/publication.py
+  — the nest_job adapter and the progress|milestone|alert fanout. Cover: lifecycle transitions and who writes each
+  (queue-mgr claims, pack runner runs/finishes), where state is mirrored (WP nest_job CPT vs kanban column vs PublicationEvent),
+  and the result_ref/artifact storage convention. Emit ONLY the final markdown report as the artifact message —
+  the runner writes it to the artifact path. PILOT DECLARATIONS: target_host=idc02; base_ref=origin/master; verifier=reports/job-package-status-sop.md
+  exists and names all seven JOB_STATUSES values; expected_artifact=reports/job-package-status-sop.md; counts as
+  a free-lane datapoint only if meta.json executor starts with opencode:.'
 action:
   type: dispatch
   repo: chaba
   host: idc02
+  executor: opencode
+  lane: free_lane
   model: litellm/gemini-3.5-flash-lite
-  artifact: docs/kb/job-package-status-sop.md
-  status: done
-  runner: idc02
-  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261030-090752-write-docs-kb-job-package-stat.service: Main
-    process exited, code=exited, status=1/FAILURE | devin-task-20261030-090752-write-docs-kb-job-package-stat.service:
-    Failed with result ''exit-code''.'
+  artifact: reports/job-package-status-sop.md
+  status: queued
 ref: OPS-0995
 comms:
 - at: 2026-10-30 09:06
@@ -54,5 +50,8 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261030-090752-write-docs-kb-job-package-stat,
     branch dispatch/20261030-090752-write-docs-kb-job-package-stat'
+- at: 2026-10-30 09:10
+  from: devin
+  text: queued for processing
 review_kind: verify
 claim: {}
