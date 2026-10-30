@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 19:15
+updated: 2026-10-30 19:23
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -47,3 +47,9 @@ comms:
     gates to broker/producer SSOT jobs so future starts hold KK packages instead of routing them. Existing inbox/packs
     are preserved for later reroute; Ollama itself remains running for owner use. Next dispatch must use Colab/OpenCode/Devin/manual
     lanes.
+- at: 2026-10-30 19:23
+  from: devin
+  text: 'Correction from Tony: KK-Mac is owner-free and should be used fully. Re-enabled the KK lane: DEVNEST_KK_MAC_ENABLED=true
+    in SSOT/job units, restarted KK LaunchAgent, and started report-feed, shared broker, and KK producer timers.
+    Admission is green with ~80 GB disk reported, load ~1.34, Ollama healthy. KK is again the preferred bounded
+    read-only lane; Colab/OpenCode/Devin remain fallback/parallel lanes.'
