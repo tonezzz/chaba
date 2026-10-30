@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:10
+updated: 2026-10-30 21:13
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -159,6 +159,12 @@ comms:
     only for this user-requested single probe; shots04–10 remain gated. Fresh preflight currently sees Qwen3:8B
     resident until its natural expiry, so I have not launched the worker or unloaded it. I will recheck the no-resident-model/AC/memory
     gate before the one-shot run
+- at: 2026-10-30 21:13
+  from: devin
+  text: 'Fresh preflight after the resident Qwen3 process expired: KK-Mac is on AC, admission `eligible=true`, `node_busy=false`,
+    76GB disk free, and Ollama `/api/ps` is empty; the pinned LTX cache is present. Staged pack `kk-mac-storyboard-i2v-shot03-oneoff-20261030`
+    passed submit dry-run and zero-difference readback. Launching this single private page15/shot03 image-conditioned
+    test only; the 8 remaining child packs stay gated by visual-review approval.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
