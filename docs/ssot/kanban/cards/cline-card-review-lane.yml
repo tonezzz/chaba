@@ -1,0 +1,51 @@
+id: cline-card-review-lane
+title: Cline card-review lane — batch review-column cards through cline-kanban with drafted verdicts
+column: backlog
+updated: 2026-10-30 15:36
+priority: medium
+tags:
+- cline
+- kanban
+- review
+- nest
+spec: 'Goal: drain the review column''s mechanical/bounded subset through Cline — each card gets an evidence check
+  + a drafted verdict posted to its comms, so Tony''s review becomes a one-word decision. Proven pattern already
+  ran 2026-10-29: card lane-cms-content-model -> cline task 8b60e -> lane-cms-coverage-procedure.md (856B patch)
+  -> ''cline verdict (qwen2.5:7b): WEAK-PASS'' comms line.
+
+
+  What this lane does (a driver script, e.g. scripts/ops/cline-review-feed.py + card review requests):
+
+  1. SELECT cline-suitable review cards: bounded deliverable or evidence-verdict work. EXCLUDE: open human requests
+  awaiting Tony, security/secret handling, host mutations/deploys, anything needing a live chaba repo or creds (Cline''s
+  workspace is disposable and isolated by design). Auto-incident cards (logs-auto, runner-auto, cms-auto, disk-auto,
+  vcast-auto) get an evidence-pack task: ''check this claimed condition against the described probes, produce verdict.json
+  {close|hold|investigate} + evidence.md''.
+
+  2. CREATE one cline task per card via the con01 kanban API/CLI — prompt carries the card spec + evidence inline
+  (no repo mount). Marker [CARD:<id>] for idempotency (bridge pattern). Batch cap: max 3 concurrent tasks — qwen2.5:7b
+  on omen is slow (~10-30min/task) and OR-free models share the free quota.
+
+  3. COLLECT: poll task to column=review, pull the worktree diff (/root/.cline/worktrees/<id>/workspace) via the
+  bridge''s collect_patch logic, run the cheap verifier (declared artifact exists + non-empty).
+
+  4. REPORT BACK to the chaba card: comms line with verdict + artifact summary, and when the card''s question is
+  a decision, raise a /request with concrete options (close/keep/requeue) and a ★ suggestion — never auto-close
+  on a weak-model verdict; humans keep the gate.
+
+
+  Bug to fix while building: the lane-cms run posted ''task 8b60e review-ready'' comms 5+ times (poll loop re-reports
+  unchanged state) — dedupe by last-reported (task_id, column, updatedAt).
+
+
+  Verify: run against 2 pilot cards (one auto-incident, one bounded deliverable); each gets verdict comms + options
+  request; no auto-close happens; dedupe prevents repeat comms; zero paid/model-key spend.'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-1009
+comms:
+- at: 2026-10-30 15:36
+  from: tony
+  text: carded from chaba session — Tony asked how to use Cline itself to finish the review backlog; mechanism proven
+    by the lane-cms task, this cards the batch driver
