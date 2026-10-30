@@ -1,0 +1,14 @@
+id: kkmac-ollama-durable-bind
+title: Make kk-mac ollama reachable durably (declared tunnel unit or OLLAMA_HOST bind)
+column: backlog
+updated: 2026-10-30 19:02
+spec: 'ollama serve runs on kk-mac under the adanest account bound to loopback only. Probe 2026-10-30 uses a nohup
+  ssh -L 11445:127.0.0.1:11434 kkkakk@kk-mac on idc03 feeding LiteLLM route ollama-qwen32b-kkmac — dies on reboot/network
+  drop. Options: (a) declared user unit on idc03 (autossh-style ssh -L, Restart=always) ★ simplest, no adanest access
+  needed; (b) set OLLAMA_HOST=0.0.0.0 or the tailscale IP in adanest''s net.adanest.ollama.plist — needs adanest
+  account access on kk-mac. Do (a) now; (b) when adanest access is sorted. Update docs/kb/opencode-lane-model-notes.md.'
+ref: OPS-1016
+comms:
+- at: 2026-10-30 19:02
+  from: tony
+  text: card captured via board-api
