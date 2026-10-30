@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-30 14:50
+updated: 2026-10-30 14:56
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -212,6 +212,10 @@ comms:
     (boundary holds); Ollama provider tony-omen:11434 reachable with qwen2.5:7b + qwen3:4b present; deployed submission
     path = cline-intake.timer -> intake.py -> bridge.py -> podman exec kanban task create/start, proven by cline-intake-smoke
     task 0bcda (patch produced, 2026-10-29 20:55). Next: snapshot + intake draft + pilot lane card.'
+- at: 2026-10-30 14:56
+  from: devin
+  text: 'raised request independent-review-needed-for-pilot-acce-231d62: Independent review needed for pilot acceptance:
+    shadow proposal (evals/cline-proposal-pilot/shadow-proposal-edu-no-th-ma'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
@@ -246,6 +250,19 @@ requests:
   suggested: approve-english-draft
   answer: approve-english-draft — Approve the English draft as the baseline; keep Thai translation deferred
   executed: 2026-10-30 queue
+- id: independent-review-needed-for-pilot-acce-231d62
+  ask: 'Independent review needed for pilot acceptance: shadow proposal (evals/cline-proposal-pilot/shadow-proposal-edu-no-th-marker.md)
+    + report (reports/2026-10-30-cline-proposal-pilot.md) are committed on this dispatch branch; live lane card
+    is cline-proposal-pilot-edu-no-th. Did the pilot pass your review, and should I update the idea-intake + ai-lane-delegate
+    procedures to include this workflow? Options: pass-update (approve pilot + update procedures, recommended only
+    if the lane run also lands clean), pass-hold (pilot ok but defer procedure changes until a second run), revise
+    (point out what failed).'
+  status: open
+  at: 2026-10-30 14:56
+  from: devin
+  options:
+  - proceed
+  - hold
 action:
   type: dispatch
   status: running
