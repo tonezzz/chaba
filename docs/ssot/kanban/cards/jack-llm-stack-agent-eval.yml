@@ -1,0 +1,30 @@
+id: jack-llm-stack-agent-eval
+title: Evaluate OpenCode and Cline for Jack LLM-stack construction
+column: backlog
+updated: 2026-10-30 14:53
+brief: Run a matched, gated evaluation of OpenCode and Cline building a disposable Jack LLM stack on a safe host.
+priority: high
+program: devnest
+tags:
+- jack
+- opencode
+- cline
+- llm
+- evaluation
+spec: 'Compare OpenCode and Cline on the same bounded task: design, configure, test, and document a disposable Jack
+  LLM stack consisting of a local Ollama model, LiteLLM-compatible routing, OpenCode provider config, health checks,
+  secret placeholders, resource limits, rollback, and operator runbook. Use fresh isolated worktrees and a disposable
+  test host or mock deployment. No production DNS, Cloudflare, Jack credentials, Ada/Devin memory, household HA,
+  public exposure, or external provider spend. Each arm must produce a committed artifact, deterministic tests,
+  independent verifier result, safety ledger, wall time, token/cost estimate, human minutes, and rollback evidence.
+  Start S0 shadow/replay, then one supervised S1 build; do not enable unattended routing until the existing S2 evidence
+  gate is satisfied.'
+help: Success requires artifact completeness, tests passing, scope compliance, secret isolation, reproducible deployment
+  in the disposable target, health check, rollback, and independent verification. Compare correctness, safety, cost,
+  latency, retries, human intervention, and failure mode. OpenCode may be considered for bounded unattended preparation
+  only after verifier gates; Cline remains supervised coding/execution until matched evidence exists.
+ref: OPS-1005
+comms:
+- at: 2026-10-30 14:53
+  from: tony
+  text: card captured via board-api
