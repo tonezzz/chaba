@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-health
 title: 'OpenCode lane pilot: ops-readonly health report on idc02'
 column: doing
-updated: 2026-10-30 10:44
+updated: 2026-10-30 10:45
 spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
   on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
   merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-free-nemotron-nano
@@ -38,3 +38,9 @@ comms:
 - at: 2026-10-30 10:44
   from: idc02
   text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-de'
+- at: 2026-10-30 10:45
+  from: devin
+  text: 'pilot result: lane machinery proven through audit (60 denials enforced+recorded); BLOCKED on model capability
+    — or-free nemotron collected correct data but never emitted message-mode artifact (kept trying to write via
+    denied bash echo). Needs a model that completes emit-vs-write: retry on gemini-3.5-flash-lite after the google
+    monthly cap resets Nov 1, or another OR-free route.'
