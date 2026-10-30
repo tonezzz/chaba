@@ -86,7 +86,9 @@ sections:
       - label: JEV
         text: The original/canonical decision engine or decision protocol. Use this name for the specific JEV component, API, model, or decision-plane implementation.
       - label: JevTeam
-        text: The umbrella for JEV plus all Jev alternatives, classifiers, pre-gates, evaluators, and routing adapters used by DevNest. JevTeam is the family/team name, not a single executor.
+        text: The umbrella for JEV plus all Jev alternatives, classifiers, pre-gates, evaluators, routing adapters, and JevNest sub-nests used by DevNest. JevTeam is the decision family/team, not a single executor.
+      - label: JevNest
+        text: A specialized DevNest sub-nest fed and governed by JevTeam. It owns a bounded queue, worker, verifier, artifacts, and feedback loop for one decision/work family; the KK-Mac local LLM queue is the first JevNest.
         recommendation: Use decision.
       - label: adn
         text: Misspelling of and.
