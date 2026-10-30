@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-10-30 14:37
+updated: 2026-10-30 14:39
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -22,3 +22,10 @@ comms:
 - at: 2026-10-30 14:37
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 14:39
+  from: devin
+  text: 'DONE: scripts/ada/nest-worker.py now performs one recursive rclone pack inventory per pass instead of one
+    lsf per historical pack, while preserving claim races, stale claim release, needs gates, verifier, and done/failed
+    markers. KK-Mac checkout synced and LaunchAgent restarted. New broker-smoke package completed (qwen3:8b wall
+    ~4.6s); worker-activity package also completed, with one expected lost-claim race from the manual verification
+    run. Commit 290358235.'
