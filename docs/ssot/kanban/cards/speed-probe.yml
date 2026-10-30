@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: backlog
-updated: 2026-10-24 12:39
+updated: 2026-10-30 08:39
 brief: probe
 ref: OPS-0812
 comms:
@@ -11,14 +11,22 @@ comms:
 - at: 2026-10-30 01:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-30 08:39
+  from: tony
+  text: 'answered the-card-speed-probe-lacks-any-9a39e8: ★ use repo chaba on host tony-dell for the speed probe'
+- at: 2026-10-30 08:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
-  ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository,
-    or execution parameters, making it impossible to dispatch a concrete runner without owner input.
+  ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
+    parameters, making it impossible to dispatch a concrete runner without owner input.
   options:
   - ★ use repo chaba on host tony-dell for the speed probe
   - use repo mddb-fork on host idc02 for the speed probe
   - postpone the speed probe card until further context is provided
-  status: open
+  status: answered
   at: 2026-10-30 01:20
   from: backlog-spec-enrich
+  answer: ★ use repo chaba on host tony-dell for the speed probe
+awaiting_action: true
