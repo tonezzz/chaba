@@ -1,0 +1,43 @@
+id: cline-ready-package-mirror
+title: Cline Kanban ready-package mirror — project queue+dispatch state into the con01 cline-kanban board
+column: backlog
+updated: 2026-10-30 15:18
+priority: medium
+blocked_by: runner-readiness-projection
+tags:
+- cline
+- kanban
+- monitoring
+- board
+spec: 'Goal: visualize the ready package + dispatch lifecycle in the con01 cline-kanban UI (already Cloudflare-Access-gated
+  at cline.surf-thailand.com and embedded in Ada HA chaba-admin after Board — stacks/con01/cline-kanban/).
+
+
+  Step 0 — SPIKE on con01 (do first, report, then decide): verify whether the kanban v0.1.70 CLI or the in-app HTTP
+  API (/api/tasks, /api/kanban/cards — see cline-kanban-con01-pilot comms for the endpoint list) supports creating
+  tasks AND moving them across columns WITHOUT spawning an agent session. The nest bridge only uses task create/start/list;
+  a mirror must NEVER call task start — a started task burns Ollama/OR-free model calls and mutates the disposable
+  workspace. If column-move-without-session is unsupported, record the finding on this card and STOP — fall back
+  to a pipeline view in the existing /apps/board app rather than patching preview software.
+
+
+  Then — projector: a small service (con01 or idc03) that reads the readiness projection + card lifecycle state
+  and mirrors card-id-keyed tasks into a dedicated ''chaba-pipeline'' Cline project. Idempotent identity via marker
+  like the nest bridge''s [NEST_JOB_KEY:x] (e.g. [CARD:<id>] in prompt). Column map: queued-and-ready -> backlog
+  (title prefix = queue position), claimed/running -> in_progress (host + unit), pushed/awaiting-merge + human-gated
+  -> review, merged+closed -> done. Blocked/not-ready queued cards stay out of backlog or carry a ''blocked: <reason>''
+  tag. Cline state is disposable by design: the projector MUST be able to rebuild the whole board from board-api
+  truth after a data wipe.
+
+
+  Verify: spike result recorded on this card; a queued card appears in cline backlog with no session created; claim
+  moves it to in_progress; merge+close moves it to done; wipe cline data dir -> projector repopulates identically.
+  No inference calls anywhere in the path.'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-1008
+comms:
+- at: 2026-10-30 15:18
+  from: tony
+  text: carded from chaba session — Tony's 'ready package' visualization proposal; spike gates the build
