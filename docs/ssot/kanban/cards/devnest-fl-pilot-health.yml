@@ -1,0 +1,22 @@
+id: devnest-fl-pilot-health
+title: 'OpenCode lane pilot: ops-readonly health report on idc02'
+column: backlog
+updated: 2026-10-30 10:32
+spec: 'Supervised OpenCode lane pilot — run the ops-readonly fixture task (read-only host health report) end-to-end
+  on idc02: claim -> dispatch worktree -> OpenCode ops-readonly agent -> artifact extract -> held-out verifier ->
+  merge gate -> push -> card done. Evidence for the supervised-pilot gate (S-lane). Model: litellm/or-free-nemotron-nano
+  (google key monthly-capped). The agent emits the JSON health report as its final message; the runner lands it
+  under evals/opencode-lane/out/ and the held-out verifier compares it against re-collected host facts. No deployment.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/or-free-nemotron-nano
+  executor: opencode
+  agent_profile: ops-readonly
+  artifact: evals/opencode-lane/out/ops-readonly-health.json
+ref: OPS-0998
+comms:
+- at: 2026-10-30 10:32
+  from: tony
+  text: card captured via board-api
