@@ -1,0 +1,27 @@
+id: jevnest-kk-mac-capacity-loop
+title: JevNest KK-Mac capacity-aware queue refill
+column: backlog
+updated: 2026-10-30 11:20
+brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
+  load, disk, and fallback gates.
+priority: high
+program: devnest
+tags:
+- jevnest
+- jevteam
+- kk-mac
+- queue
+- capacity
+- continuous
+spec: 'JevNest is a DevNest sub-nest governed by JevTeam. Build the capacity-aware producer for gdrive:ada-nest-kk-llm:
+  when heartbeat age<=900s, ollama_ok=true, load_1m<=4, disk>=20G, owner/busy gate clear, and queue depth<3, enqueue
+  at most three real summary/operator_brief/structured_extract/safe_route packages from host reports, audits, queue
+  status, and outstanding DevNest work. Soak packages are benchmark-only and never refill production capacity. Worker
+  concurrency remains one until a two-request load test is approved. Each package carries expect schema/facts, artifact,
+  verifier, usage, and fallback. Stale/offline/high-load KK falls back immediately. Publish L0-L3 evidence and feed
+  weekly JevTeam review. Standard procedure: docs/kb/jevnest-kk-mac-capacity-procedure.md.'
+ref: OPS-1001
+comms:
+- at: 2026-10-30 11:20
+  from: devin
+  text: card captured via board-api
