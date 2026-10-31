@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 12:55
+updated: 2026-10-31 13:01
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -381,6 +381,12 @@ comms:
     30/30 prompt embeddings, 466s). S01-C01 MPS I2V pack was claimed at 12:53:34; LTX pipeline loaded and is now
     rendering. S01-C02 remains dependency-blocked until C01 passes full media QC. No MP4 has been verified yet;
     this isolated root contains only the two test cuts.'
+- at: 2026-10-31 13:01
+  from: devin
+  text: 'First panel clip is now verified: S01-C01 rendered at 12:58 as a private 6.0s H.264 640x384/24fps clip
+    (144 frames), full decode passed, black duration 0.0s, SHA-256 `04fc25f55b3bf8199f80ffe41c5a6b1a0c98df33ac3604470fa72b578baf326d`.
+    Private smoke-root artifact: `gdrive:ada-nest-kk-mac-render-smoke-20261031/packs/kk-mac-storyboard-panel-s01-c01-v2-20261031/out/S01-C01-i2v-mps.mp4`.
+    Technical QC is not creative approval; visual review is pending. S01-C02 is next in the same serial chain.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
