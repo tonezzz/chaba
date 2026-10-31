@@ -1,0 +1,26 @@
+id: devnest-fl-pilot-artwrite2
+title: 'OpenCode artifact-write pilot 2: LiteLLM route inventory report'
+column: backlog
+updated: 2026-10-31 08:26
+spec: 'Write docs/reports/litellm-route-inventory-2026-10-30.md — a route inventory report grounded ONLY in stacks/idc03/litellm/config.yaml.
+  Read that file. Report every model_name with its upstream (api_base or model provider), grouped by upstream family
+  (OpenRouter, AI Studio direct, ollama-idc02, ollama-kkmac, colab, other). The report must name ollama-qwen32b-kkmac
+  and ollama-qwen38b-kkmac explicitly, state the kk-mac routes go through 127.0.0.1:11445 (the tunnel), and list
+  the alias/fallback routes (chat, classify, bench, embedding, vision, summary) separately.
+
+
+  WRITE the file at the declared path using the write tool — do NOT emit the document as your message. End with
+  a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/litellm-route-inventory-2026-10-30.md
+ref: OPS-1034
+comms:
+- at: 2026-10-31 08:26
+  from: tony
+  text: card captured via board-api
