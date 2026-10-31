@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 07:32
+updated: 2026-10-31 08:20
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -229,6 +229,13 @@ comms:
 - at: 2026-10-31 07:32
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 08:20
+  from: devin
+  text: 'Follow-up after Tony''s `continue-shots-04-10` response: created a scoped approval marker for only S04–S10
+    and added explicit `shotN requires shotN-1` dependencies so the one-pass worker stops after any failed shot.
+    Manifests retain the private v1_01 page/image hashes and the corrected macOS-safe prep. All seven packs are
+    staged/unclaimed; no render has started because KK-Mac currently fails fresh admission (stale heartbeat/SSH
+    timeout).'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
