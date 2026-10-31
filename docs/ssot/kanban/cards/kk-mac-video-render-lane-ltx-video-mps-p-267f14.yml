@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 10:46
+updated: 2026-10-31 10:51
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -320,6 +320,12 @@ comms:
     checks show 0 differences (69 source-bundle files, 60 panel-pack manifest files). No worker has run: fresh Mac
     status still shows Qwen2.5:32B resident and only 22% memory free. I will not unload it or launch diffusion.
     Once the owner model clears and fresh AC/me'
+- at: 2026-10-31 10:51
+  from: devin
+  text: 'Fresh preflight update: KK-Mac is on AC and the trusted idc03 hop works, but `ollama ps` now shows `qwen3:8b`
+    resident for ~50 minutes and `memory_pressure` reports 68% free. This fails the no-resident-model gate (and
+    the panel 80%-free gate). No worker or render started; I will not unload the owner model. All 30 private panel
+    packs and the T5 pack remain staged with serial dependencies.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
