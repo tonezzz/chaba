@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 11:39
+updated: 2026-10-31 11:59
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -338,6 +338,10 @@ comms:
     (219,792B; 640x384, 73 frames/3.04s; full decode pass; technical probe only, visual review pending). The local
     v1 pack in ~/.cache still has no output; Drive v1/v2 attempts show prep-failed markers. This does not mean the
     V2 30-panel sequence rendered: its packs are staged in the privat'
+- at: 2026-10-31 11:59
+  from: devin
+  text: 'raised request kk-mac-ssh-route-20261031: Hostname diagnosis: this client has no SSH Host entry for KKs-Mac-Studio;
+    the bare name fails DNS. The canonical tailnet'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -395,4 +399,20 @@ requests:
   suggested: ten-minute-master
   answer: 'ten-minute-master — Recommended: preserve all numbered panels for the 10-minute master; retime to about
     6 seconds per panel (~1 minute per page). Keep the short teaser separate.'
+- id: kk-mac-ssh-route-20261031
+  ask: 'Hostname diagnosis: this client has no SSH Host entry for KKs-Mac-Studio; the bare name fails DNS. The canonical
+    tailnet hostname `kk-mac` resolves to kk-mac.taila0626a.ts.net, and the host registry lists SSH user `kkkakk`.
+    A direct read-only attempt to `kkkakk@kk-mac` reached SSH but was denied with `Permission denied (publickey,password,keyboard-interactive)`.
+    The SSOT documents a tony-dell ProxyJump route. May I use that documented jump path for one read-only host/Ollama/memory
+    check? No key installation, SSH config edit, model unload, service change, or render is included.'
+  status: open
+  at: 2026-10-31 11:59
+  from: devin
+  options:
+  - id: proxyjump-readonly
+    label: 'Recommended: authorize one read-only status check through the documented tony-dell ProxyJump using canonical
+      host kk-mac and user kkkakk; no config/key/service changes.'
+  - id: hold-remote-check
+    label: Do not use another route; have KK/you provide the current Mac status or resolve SSH authorization later.
+  suggested: proxyjump-readonly
 awaiting_action: true
