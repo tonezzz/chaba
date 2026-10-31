@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: backlog
-updated: 2026-10-31 08:51
+updated: 2026-10-31 10:10
 priority: medium
 tags:
 - telegram
@@ -30,3 +30,25 @@ comms:
     command limits; added cross-links from the DevNest group-policy lesson and Ada Nest hub. Consolidation recommendation:
     use this existing OPS-0963 card to create docs/ssot/apps/ssot.messaging-lanes.yml as one TG+LINE lane registry.
     Keep tokens out; because chaba is public, prefer al'
+- at: 2026-10-31 10:10
+  from: devin
+  text: 'raised request mn-bot-identity-and-group-policy-20261031: The MN records conflict: the lane/Rika-alert
+    records use @KrautMNBot, Michael onboarding references @mn_ha_bot, and the '
+requests:
+- id: mn-bot-identity-and-group-policy-20261031
+  ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
+    and the general Ada-MN relay is marked TG_PUSH_DENY while Rika alerts use a separate route. Which identity/policy
+    should the canonical inventory record? General group sends remain denied until explicitly resolved.'
+  status: open
+  at: 2026-10-31 10:10
+  from: devin
+  options:
+  - id: keep-denied
+    label: 'Recommended: leave @mn_ha_bot unresolved, keep @KrautMNBot on the documented Rika route, and retain
+      the general MN group-send deny.'
+  - id: same-account
+    label: Confirm @mn_ha_bot and @KrautMNBot are the same account; keep general group sends denied unless separately
+      approved.
+  - id: distinct-bots
+    label: Confirm they are distinct bots and specify which handle owns the MN lane.
+  suggested: keep-denied
