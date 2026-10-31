@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 12:49
+updated: 2026-10-31 12:55
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -375,6 +375,12 @@ comms:
     pack has written 25/30 prompt embeddings (~100MB) into its local workdir; no MP4/render pack has claimed yet.
     Once T5 finishes, only S01-C01 and C02 are in this smoke root and will render serially. The root is isolated
     from the full 30-cut production queue. I will report the two output paths and QC only after remote readback.'
+- at: 2026-10-31 12:55
+  from: devin
+  text: 'Smoke update at 12:55 local: shared CPU T5 embed pack finished successfully at 12:52:38 (`embeddings_pass`,
+    30/30 prompt embeddings, 466s). S01-C01 MPS I2V pack was claimed at 12:53:34; LTX pipeline loaded and is now
+    rendering. S01-C02 remains dependency-blocked until C01 passes full media QC. No MP4 has been verified yet;
+    this isolated root contains only the two test cuts.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
