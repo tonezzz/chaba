@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 10:15
+updated: 2026-10-31 10:46
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -313,6 +313,13 @@ comms:
     3:00→60s, page15 3:20→60s, proportionally by each panel''s printed interval. V2 includes 30 visual/full crops,
     caption sheets, action paraphrases and prompt hashes (map SHA-256 `8c023dbdfe286ae0488618934b3e6a09c0c55918ceb59b101b1088ec7653ebcd`).
     It is still preparation-only; no new panel render while the Mac has Qwen2.5:32B resident.'
+- at: 2026-10-31 10:46
+  from: devin
+  text: 'Per-panel render preparation is now staged: 30 individual S01-C01→S03-C10 packs with strict serial dependencies/stop-on-failure,
+    plus one CPU T5 embedding pack. The private v2 crop/map bundle is in the isolated KK-Mac inputs root; rclone
+    checks show 0 differences (69 source-bundle files, 60 panel-pack manifest files). No worker has run: fresh Mac
+    status still shows Qwen2.5:32B resident and only 22% memory free. I will not unload it or launch diffusion.
+    Once the owner model clears and fresh AC/me'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
