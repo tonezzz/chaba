@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-audit
 title: Audit repeated manual commands and optimize API/MCP workflow efficiency
 column: doing
-updated: 2026-10-31 08:17
+updated: 2026-10-31 08:27
 brief: Measure recurring manual shell/API/MCP workflows and replace the highest-cost repetitive paths with compact,
   typed, auditable interfaces.
 priority: high
@@ -45,3 +45,9 @@ comms:
   from: devin
   text: Session started on idc02 worktree. Inventorying recent agent command sequences; will classify + propose
     contracts.
+- at: 2026-10-31 08:27
+  from: devin
+  text: 'Inventory done (14 opencode lane runs + 306 dispatch outcomes + live board-api). Gap: no read projection
+    — /cards is 5.2MB, runner polls it ~60s. Implemented GET /card/<id> + /cards filters/fields/compact + host_snapshot.py
+    job-pack; bench on live fixture: 95.8-99.97% byte cut, evidence-equal, 29 tests OK. Writing contracts+report
+    next.'
