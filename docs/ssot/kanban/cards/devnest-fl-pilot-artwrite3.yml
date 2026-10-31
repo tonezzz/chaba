@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
 column: doing
-updated: 2026-10-31 09:53
+updated: 2026-10-31 10:34
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
   The files exist — read them directly: evals/opencode-lane/profiles/ops-readonly/profile.yml and the six siblings
   in that same directory. Report each profile file id, status, task_classes, artifact mode+format, which tools are
@@ -21,10 +21,10 @@ action:
   agent_profile: artifact-write
   artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
   timeout_s: 2400
-  status: running
-  result: 'journal=timeout  time limit. Stopping. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service: Failed
-    with result ''timeout''. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service: Consumed 20.258s CPU time,
-    474.3M memory peak, 0B memory swap peak.'
+  status: failed
+  result: 'journal=timeout ring: Invalid argument | devin-task-devnest-fl-pilot-artwrite3-1793415194.service: Failed
+    with result ''timeout''. | devin-task-devnest-fl-pilot-artwrite3-1793415194.service: Consumed 27.351s CPU time,
+    637.1M memory peak, 0B memory swap peak.'
   runner: idc02
   verified: false
   sweep:
@@ -129,5 +129,9 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-artwrite3-1793415194 on idc02 (dispatch executor=opencode profile=artifact-write
     model=litellm/ollama-qwen32b-kkmac)
+- at: 2026-10-31 10:34
+  from: idc02
+  text: 'finished (failed): journal=timeout ring: Invalid argument | devin-task-devnest-fl-pilot-artwrite3-1793415194.service:
+    Failed with result ''t'
 review_kind: verify
 claim: {}
