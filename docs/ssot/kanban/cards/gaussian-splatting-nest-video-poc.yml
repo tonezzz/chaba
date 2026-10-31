@@ -1,7 +1,7 @@
 id: gaussian-splatting-nest-video-poc
 title: Prototype Gaussian splat scene render for Ada Nest video lane
 column: backlog
-updated: 2026-10-30 19:42
+updated: 2026-10-31 09:19
 spec: Research and prototype the smallest useful Gaussian-splatting lane for Ada Nest video generation. First render
   a known small PLY scene; then run one photo/video reconstruction on Colab using the existing nest-pack contract.
   Publish a PLY plus orbit MP4 and timing/VRAM report to durable Drive storage. Evaluate whether the rendered scene
@@ -75,3 +75,9 @@ comms:
     report landed at gdrive:ada-nest/packs/kk-mac-gaussian-smoke/. Optional examples fused-SSIM bundle hit a build
     issue, but core training path works. Next gate is separate owner-approved 20-60 image COLMAP scene; do not start
     implicitly.'
+- at: 2026-10-31 09:19
+  from: devin
+  text: 'KK-Mac continuation PASS: rendered real mpsplat garden Gaussian fixture on M4 Max/MPS. 138,766 points,
+    3 calibrated 648x420 views, 0.299s, mean alpha 0.7615. Contact sheet/views/metrics/report landed at gdrive:ada-nest/packs/kk-mac-gaussian-garden-render/.
+    This is real Gaussian scene rendering, not photo-to-PLY training; source fixture lacked covariance/opacity so
+    proxy values were used. Next gate remains 20-60 image COLMAP capture + true mpsplat training.'
