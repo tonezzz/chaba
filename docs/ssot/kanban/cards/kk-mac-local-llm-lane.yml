@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-31 10:09
+updated: 2026-10-31 10:44
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -288,6 +288,10 @@ comms:
   text: 'Triage of the answered egress/hosting requests: local-only and same-host are policy direction, not a per-job
     inference authorization. No model run, download, or dispatch is armed; execution still needs fresh per-job idle-window/consent
     and admission preflight.'
+- at: 2026-10-31 10:44
+  from: devin
+  text: 'raised request kk-mac-qwen8-one-shot-authorization-20261031: Education lesson 3180 records the local-only,
+    same-host plan. May we supersede the existing deterministic-only answer fo'
 action:
   type: dispatch
   status: done
@@ -369,4 +373,22 @@ requests:
   suggested: same-host
   answer: same-host — Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
   escalated_at: 2026-10-31 08:33
+- id: kk-mac-qwen8-one-shot-authorization-20261031
+  ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
+    answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and
+    a fresh KK owner-idle/resource preflight passes? The existing synthetic model-only slot is partial (2/5), so
+    first audit its artifacts and resume only missing cases; do not rerun completed fixtures. No model download,
+    OpenRouter, external egress, personal files, or automatic routing.
+  status: open
+  at: 2026-10-31 10:44
+  from: devin
+  options:
+  - id: authorize-one-after-gates
+    label: Authorize one synthetic read-only Qwen3:8B pilot after video work clears, artifact reconciliation, and
+      fresh KK idle consent (no automatic routing)
+  - id: keep-deterministic-only
+    label: Keep deterministic-only; no inference on KK-Mac
+  - id: defer-until-video-review
+    label: Defer the decision until the current MPS/video batch is reviewed
+  suggested: authorize-one-after-gates
 awaiting_action: true
