@@ -106,14 +106,15 @@ def produce(
     result = {"source": source, "routed": [], "held": [], "rejected": []}
     gate = snapshot()
     kk_enabled = os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() == "true"
-    source_entries = set(rc("lsf", f"{source}/inbox", "--recursive").splitlines())
-    kk_depth = queue_depth(kk_remote) if kk_enabled else 0
-    if kk_enabled and kk_depth >= max_depth:
-        result["held"].append("kk_capacity")
-        result["kk_gate"] = gate
-        return result
+    # The KK producer owns the execution queue watermark. The broker only
+    # routes a bounded number of new specs per pass.
+    source_entries = set(rc(
+        "lsf", f"{source}/inbox", "--files-only"
+    ).splitlines())
     for filename in inbox(source):
         try:
+            if len(result["routed"]) >= 10:
+                break
             if f"{filename}.routed" in source_entries:
                 continue
             spec = read_spec(source, filename)
@@ -123,16 +124,12 @@ def produce(
                 if not kk_enabled:
                     result["held"].append(f"{filename}:kk_disabled")
                     continue
-                if kk_depth >= max_depth:
-                    result["held"].append(f"{filename}:kk_capacity")
-                    continue
                 if not gate.get("eligible"):
                     result["held"].append(f"{filename}:kk_admission")
                     continue
                 destination = route_kk(
                     spec, source, filename, kk_remote
                 )
-                kk_depth += 1
             else:
                 destination = route_colab(spec, source, colab_remote)
             mark_routed(source, filename, destination)
