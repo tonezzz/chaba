@@ -1707,6 +1707,18 @@ hosts:
         expected_state: active
         critical: false
         note: Telegram webhook relay on 127.0.0.1:8911
+      - name: ada-tg-relay-mn.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: MN/Kraut Telegram polling relay on 127.0.0.1:8917; see ssot.messaging-lanes.yml for route policy
+      - name: devnest-tg-relay.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: DevNest Telegram forum relay on 127.0.0.1:8919; see ssot.messaging-lanes.yml for command/topic routing
       - name: ada-dev.service
         type: service
         scope: user
@@ -1955,7 +1967,12 @@ hosts:
       - {name: ada-bankq-student.service, type: service, scope: user}
       - {name: ada-kk.service, type: service, scope: user}
       - {name: ada-kk-dev.service, type: service, scope: user}
-      - {name: ada-tg-relay-kk.service, type: service, scope: user}
+      - name: ada-tg-relay-kk.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: KK/Kaewta Telegram polling relay on 127.0.0.1:8913; see ssot.messaging-lanes.yml
       - {name: kk-ha.service, type: service, scope: user}
       - {name: litellm.service, type: service, scope: user}
       - {name: litellm-db.service, type: service, scope: user}

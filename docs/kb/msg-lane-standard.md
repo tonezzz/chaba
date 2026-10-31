@@ -19,17 +19,17 @@ One bot lane per persona. Every lane follows the same contract — new lanes cop
    Lane backends reach it via `ADA_TG_SEND_URL=http://<listen>/send` in the
    backend env (`ada-<lane>.env`) — unset means the ada default :8911, which is
    wrong for any non-ada lane. Proactive messages go through it — assistants
-   never call the Telegram API directly.
+   never call the Telegram API directly. The canonical cross-provider relay
+   inventory is `docs/ssot/apps/ssot.messaging-lanes.yml`.
 
-| lane | bot | chat | tag | TG_WEBHOOK_LISTEN | state |
-|---|---|---|---|---|---|
-| ada | ada bot | 8960073266 (Tony DM), -5410424865 | ada | 127.0.0.1:8911 | live |
-| kk | kk_ha_bot | -5597972933 (KK-HA) | kaewta | 127.0.0.1:8913 | live |
-| mn | KrautMNBot | 8960073266 (Tony DM), 80597829 (Michael DM), -5426710106 (mn group) | michael | 127.0.0.1:8917 | live |
-| line | — | — | — | — | blocked: Yomi token revoked (PIN re-login on Tony's phone) |
+## Current inventory
 
-Loopback 891x allocation: 8911 ada tg, 8912 line_relay, 8913 kk tg,
-8914 ada-stt, 8917 mn tg. 8915/8916 are free.
+Use `docs/ssot/apps/ssot.messaging-lanes.yml` for the cross-provider relay
+roster, bot/client distinctions, lane targets, listener ports, host unit
+state, secret-slot references, publication, and topic-routing pointers.
+Do not maintain a second current-state roster in this procedure.
+The same registry's `line.routing` section is also the detailed LINE
+group/persona/caller routing source.
 
 ## Verify a lane
 
@@ -52,7 +52,9 @@ curl -X POST http://<TG_WEBHOOK_LISTEN>/send -H 'content-type: application/json'
       file — voice notes transcribe on the omen GPU (large-v3); local
       `TG_WHISPER_MODEL` fallback kicks in when the endpoint is down
 - [ ] verify: push test + real inbound → reply carries `[tag]`
-- [ ] add row to the table above + bump member-tg/msg-lane in ssot.procedures.yml
+- [ ] update `docs/ssot/apps/ssot.messaging-lanes.yml` and
+      `docs/ssot/infrastructure/ssot.audit.hosts.yml`; for LINE group routing,
+      update the registry's `line.routing` section
 
 ## Voice-message handling (approved 2026-10-10)
 

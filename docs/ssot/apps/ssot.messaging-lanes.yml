@@ -1,0 +1,306 @@
+title: Messaging lane and relay inventory
+subtitle: Canonical cross-provider index for Telegram and LINE control surfaces
+version: 1
+last_updated: "2026-10-31"
+card: messenger-control-inventory
+ref: OPS-0963
+
+policy:
+  inventory_scope: >-
+    Inventory of active provider relays and adjacent messaging clients,
+    including transport, host, port, owner/lane, target aliases, routing
+    policy, secret slot references, and source-of-truth links.
+  secrets: >-
+    Never store bot tokens or credential values here. Record only the
+    host-local EnvironmentFile path and token variable name.
+  personal_identifiers: >-
+    LINE sender IDs remain in the host-only LINE_USER_CALLERS environment
+    setting; this registry records caller aliases, not sender IDs.
+  targets: >-
+    Use stable target aliases here. Exact Telegram chat IDs are configured
+    in the relay EnvironmentFiles. Detailed LINE group/persona/caller
+    routing is consolidated under line.routing below.
+  service_changes: >-
+    This file is inventory only. Do not enable/disable units, rotate
+    credentials, or change webhooks as part of OPS-0963.
+
+telegram:
+  relays:
+    - id: ada
+      owner: "Tony / Ada"
+      persona: Ada
+      bot_handle: "@ChabaClawBot"
+      identity_status: verified
+      relay:
+        unit: ada-tg-relay.service
+        host: idc03
+        mode: webhook
+        listen: "127.0.0.1:8911"
+        observed_state: active
+        observed_at: "2026-10-31T09:30:43+07:00"
+        environment_files:
+          backend: "~/.config/secrets/tony-ha/backend.env"
+          relay: "~/.config/secrets/telegram-bot.env"
+        token_slot: "idc03:~/.config/secrets/telegram-bot.env:TELEGRAM_BOT_TOKEN"
+      targets:
+        - alias: ada-ha
+          role: inbound_and_outbound
+          target_environment_key: "idc03:telegram-bot.env:TELEGRAM_ALLOWED_CHAT_IDS"
+        - alias: tony-dm
+          role: inbound_and_outbound
+          target_environment_key: "idc03:telegram-bot.env:TELEGRAM_ALLOWED_CHAT_IDS"
+      routing:
+        backend_environment_key: "idc03:tony-ha/backend.env:ADA_TG_SEND_URL"
+        notes: Main Ada/Chaba relay; separate from tony-omen OpenClaw.
+      source_of_truth:
+        - docs/ssot/infrastructure/ssot.system-map.yml#ada-tg-relay
+        - docs/ssot/infrastructure/ssot.audit.hosts.yml#hosts.idc03.expected_services
+        - docs/ssot/jobs/ada/2026-10-19-tg-relay-env-drift-decision.yml
+        - docs/ssot/kanban/cards/ada-tg-relay-rotate-token-session-log-exposure.yml
+
+    - id: kk
+      owner: "KK / Kaewta"
+      persona: Kaewta
+      bot_handle: "@kk_ha_bot"
+      identity_status: documented
+      relay:
+        unit: ada-tg-relay-kk.service
+        host: idc03
+        mode: polling
+        listen: "127.0.0.1:8913"
+        observed_state: active
+        observed_at: "2026-10-31T09:30:43+07:00"
+        environment_files:
+          backend: "~/.config/secrets/kk-ha/backend.env"
+          relay: "~/.config/secrets/telegram-kk-bot.env"
+        token_slot: "idc03:~/.config/secrets/telegram-kk-bot.env:TELEGRAM_BOT_TOKEN"
+      targets:
+        - alias: kk-ha
+          role: inbound_and_outbound
+          target_environment_key: "idc03:telegram-kk-bot.env:TELEGRAM_ALLOWED_CHAT_IDS"
+      routing:
+        backend_environment_key: "idc03:kk-ha/backend.env:ADA_TG_SEND_URL"
+      source_of_truth:
+        - docs/ssot/infrastructure/ssot.system-map.yml#ada-tg-relay-kk
+        - docs/ssot/infrastructure/ssot.audit.hosts.yml#hosts.idc03.expected_services
+        - docs/ssot/jobs/ada/2026-10-19-tg-relay-env-drift-decision.yml
+        - docs/ssot/kanban/cards/kk-ha-tg-relay.yml
+
+    - id: mn
+      owner: "Michael / Kraut"
+      persona: Kraut
+      bot_handle:
+        documented: "@KrautMNBot"
+        status: needs_reconciliation
+        other_documented_handle: "@mn_ha_bot"
+      relay:
+        unit: ada-tg-relay-mn.service
+        host: idc03
+        mode: polling
+        listen: "127.0.0.1:8917"
+        observed_state: active
+        observed_at: "2026-10-31T09:30:43+07:00"
+        environment_files:
+          backend: "~/.config/secrets/michael-ha/backend.env"
+          relay: "~/.config/secrets/telegram-mn-bot.env"
+        token_slot: "idc03:~/.config/secrets/telegram-mn-bot.env:TELEGRAM_BOT_TOKEN"
+      targets:
+        - alias: mn-ha
+          role: inbound_documented_outbound_route_specific
+          target_environment_key: "idc03:telegram-mn-bot.env:TELEGRAM_ALLOWED_CHAT_IDS"
+      routing:
+        backend_environment_key: "idc03:michael-ha/backend.env:ADA_TG_SEND_URL"
+        outbound_policy: >-
+          General group delivery through ada-tg-relay-mn is marked
+          TG_PUSH_DENY in the outbound-surface lesson. Rika weather alerts
+          have a separate documented route to mn-ha; do not infer that
+          route authorizes general group pushes.
+      source_of_truth:
+        - docs/ssot/infrastructure/ssot.audit.hosts.yml#hosts.idc03.expected_services
+        - docs/ssot/jobs/ada/2026-10-19-tg-relay-env-drift-decision.yml
+        - docs/ssot/kanban/cards/mn-ha-michael-onboard.yml
+        - docs/ssot/kanban/cards/rika-wx-tg-alerts.yml
+        - docs/ssot/kanban/cards/tg-relay-tg-listen-env-drift-kk-binds-89-62c51e.yml
+        - "Education lesson: Ada lanes — outbound delivery surfaces (lesson-4865e5f26c60)"
+
+    - id: devnest
+      owner: Tony
+      persona: DevNestHA
+      bot_handle: "@TonyDvnsBot"
+      identity_status: verified
+      relay:
+        unit: devnest-tg-relay.service
+        host: idc03
+        mode: polling
+        listen: "127.0.0.1:8919"
+        observed_state: active
+        observed_at: "2026-10-31T09:30:43+07:00"
+        environment_files:
+          relay: "~/.config/secrets/telegram-devnest-bot.env"
+        token_slot: "idc03:~/.config/secrets/telegram-devnest-bot.env:TELEGRAM_BOT_TOKEN"
+      targets:
+        - alias: DevNestHA
+          type: supergroup_forum
+          role: inbound_capture_and_commands_outbound_replies
+          target_environment_key: "idc03:telegram-devnest-bot.env:TELEGRAM_ALLOWED_CHAT_IDS"
+      routing:
+        command_surface: "explain/status <ref>; APPROVE/REJECT <ref> for authorized sender"
+        publication_ref: docs/ssot/jobs/devnest/2026-10-26-publication-adapter-layer.yml
+        topic_registry_ref: docs/ssot/jobs/devnest/2026-10-26-tg-topic-registry.yml
+        topic_state: "~/.local/share/devnest/telegram/topics.json"
+      source_of_truth:
+        - docs/ssot/infrastructure/ssot.audit.hosts.yml#hosts.idc03.expected_services
+        - docs/ssot/infrastructure/ssot.jobs.yml
+        - docs/ssot/jobs/devnest/2026-10-26-tg-command-router.yml
+        - docs/ssot/jobs/devnest/2026-10-26-tg-topic-registry.yml
+        - docs/ssot/jobs/devnest/2026-10-26-publication-adapter-layer.yml
+        - docs/ssot/kanban/cards/devnest-telegram-team-channel.yml
+
+  adjacent_clients:
+    - id: openclaw-tony
+      owner: Tony
+      bot_handle: "@myChabaBot"
+      host: tony-omen
+      service: openclaw-gateway.service
+      mode: polling
+      role: private_dm_assistant
+      group_policy: disabled
+      token_slot: "tony-omen:~/.config/secrets/telegram-bot.env:TELEGRAM_BOT_TOKEN"
+      distinct_from: ada-tg-relay
+      source_of_truth:
+        - docs/ssot/infrastructure/ssot.services.yml#openclaw-gateway.channels.telegram
+        - docs/ssot/kanban/cards/openclaw-travel-agent.yml
+
+line:
+  relay:
+    id: ada-line
+    owner: "Tony / Ada"
+    service: ada-line-relay.service
+    host: idc03
+    mode: webhook
+    listen: "127.0.0.1:8912"
+    observed_state: active
+    observed_at: "2026-10-31T09:30:43+07:00"
+    environment_files:
+      backend: "~/.config/secrets/tony-ha/backend.env"
+      relay: "~/.config/secrets/line-bot.env"
+    token_slot: "idc03:~/.config/secrets/line-bot.env (credential value not stored)"
+    role: inbound_and_outbound_line_relay
+    routing_ref: line.routing
+    source_of_truth:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml#hosts.idc03.expected_services
+      - docs/ssot/infrastructure/ssot.system-map.yml#ada-line-relay
+      - docs/ssot/jobs/ada/2026-10-19-tg-relay-env-drift-decision.yml
+
+  routing:
+    migrated_from: docs/ssot/apps/ssot.line-groups.yml
+    applied_environment:
+      file: "~/.config/secrets/line-bot.env"
+      group_ids: LINE_ALLOWED_GROUP_IDS
+      persona_pins: LINE_GROUP_PERSONA
+      callers: LINE_USER_CALLERS
+      backend_map: LINE_NAME_BACKENDS
+    relay:
+      webhook: "127.0.0.1/webhook/line"
+      ops_stream: "~/.local/share/ada/line-media/ops-events.jsonl"
+      journals: "~/.local/share/ada/line-media/<chat_id>/journal-YYYY-MM-DD.jsonl"
+    personas:
+      ada: "ws://127.0.0.1:8002/ws"
+      chaba: "ws://127.0.0.1:8002/ws"
+      ada-dev: "ws://127.0.0.1:8005/ws"
+      kaewta: "ws://127.0.0.1:8007/ws"
+      kaewta-cms: "ws://127.0.0.1:8009/ws"
+      kaewta-dev: "ws://127.0.0.1:8009/ws"
+      chaba-dev: "ws://127.0.0.1:8005/ws"
+    default_persona: kaewta
+    persona_notes:
+      ada: "ada-ha-tony production lane"
+      chaba: "alias of ada on the same production lane"
+      ada-dev: "Tony-lane development twin"
+      kaewta: "ada-kk production lane"
+      kaewta-cms: "legacy name for the KK development lane"
+      kaewta-dev: "ada-kk-dev development lane"
+      chaba-dev: "alias of ada-dev"
+    default_persona_note: "Unaddressed group messages route to Kaewta."
+    groups:
+      - group: C822026077530a29620b5041bd1a955c5
+        name: "ชบา - KK-Home"
+        persona: default
+        lane: "ada-kk (8007)"
+      - group: Cc92a99eba4feb0b37a76c4e5ed57767d
+        name: "ชบา - KK-Home-dev"
+        persona: kaewta-dev
+        lane: "ada-kk-dev (8009)"
+      - group: C4fb0ce548a58e2d758335b7e21ce3411
+        name: "ชบา, tony-home"
+        persona: chaba
+        lane: "ada-ha-tony (8002)"
+      - group: C46492d367c73b106edb78d6a9068f09c
+        name: "ชบา- tony-home-dev"
+        persona: chaba-dev
+        lane: "ada-dev (8005)"
+      - group: Cb754717565d4cee5eab43a0e848654a2
+        name: "ชบา ada-home"
+        persona: ada
+        lane: "ada-ha-tony (8002)"
+      - group: Ca00f23f0ab37ff73e52147b1720b2e79
+        name: "ชบา ada-home-dev"
+        persona: ada-dev
+        lane: "ada-dev (8005)"
+    callers:
+      environment_file: "~/.config/secrets/line-bot.env"
+      environment_key: LINE_USER_CALLERS
+      configured_aliases: [user-tonezzzz, user-nhong, user-kk]
+      sender_ids_in_public_ssot: false
+    notes:
+      - "Edit line.routing before applying new group IDs/persona pins to line-bot.env."
+      - "Customer-site groups use a dedicated ada-<slug> persona and caller entry; see docs/kb/wp-customer-site-onboarding.md."
+      - "LINE pushes count against monthly quota (429 observed 2026-10-14); replies are free and push_failed events go to the ops stream."
+      - "Each wired group has a private /chat/line/<lane>/ page plus timeline_block; sync via scripts/ada/line-chat-timeline.py."
+
+  adjacent_clients:
+    - id: yomi-line-history
+      role: LINE history_and_search_client
+      is_relay: false
+      note: Yomi history/search is not the Chaba LINE webhook relay.
+      source_of_truth:
+        - docs/ssot/apps/ssot.apps.yml#yomi
+        - docs/ssot/kanban/cards/messenger-control-inventory.yml
+
+application_routing:
+  devnest_publication:
+    mechanism: "Board API PublicationEvent -> Telegram sink -> devnest-tg-relay /send"
+    policy_ref: docs/ssot/jobs/devnest/2026-10-26-publication-adapter-layer.yml
+  devnest_topics:
+    mechanism: "registered forum thread_id -> project/lane binding"
+    state_file: "~/.local/share/devnest/telegram/topics.json"
+    durable_sources:
+      - board card
+      - project manifest
+    policy_ref: docs/ssot/jobs/devnest/2026-10-26-tg-topic-registry.yml
+
+reconciliation:
+  live_audit:
+    host: idc03
+    observed_at: "2026-10-31T09:30:43+07:00"
+    active_units:
+      - ada-line-relay.service
+      - ada-tg-relay.service
+      - ada-tg-relay-kk.service
+      - ada-tg-relay-mn.service
+      - devnest-tg-relay.service
+    listeners:
+      - "127.0.0.1:8911"
+      - "127.0.0.1:8912"
+      - "127.0.0.1:8913"
+      - "127.0.0.1:8917"
+      - "127.0.0.1:8919"
+    secret_values_read: false
+  unresolved:
+    - >-
+      MN bot identity is not reconciled: @KrautMNBot is used in the lane
+      and Rika alert records, while @mn_ha_bot appears in Michael onboarding.
+    - >-
+      MN group outbound policy differs by route: generic ada-tg-relay-mn
+      group push is denied in one record, while Rika alerts have a separate
+      documented route.

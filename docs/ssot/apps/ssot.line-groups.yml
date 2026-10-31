@@ -1,74 +1,13 @@
-title: LINE Group → Lane Routing Registry
-subtitle: Group→persona→lane map; applied state in line-bot.env on idc03
-version: 1
-last_updated: "2026-10-14"
-
-# ssot.line-groups — LINE group -> lane routing (authoritative map)
-#
-# Applied state lives in ~/.config/secrets/line-bot.env on idc03
-# (LINE_ALLOWED_GROUP_IDS / LINE_NAME_BACKENDS / LINE_GROUP_PERSONA).
-# This file is the registry — when adding a group, edit here first,
-# then apply to the env. A renderer for the env is carded future work.
-relay:
-  service: "ada-line-relay (idc03, user unit)"
-  webhook: "127.0.0.1/webhook/line"
-  ops_stream: "~/.local/share/ada/line-media/ops-events.jsonl"
-  journals: "~/.local/share/ada/line-media/<chat_id>/journal-YYYY-MM-DD.jsonl"
-
-personas:            # LINE_NAME_BACKENDS — persona -> lane backend
-  ada:        "ws://127.0.0.1:8002/ws"   # ada-ha-tony (prod)
-  chaba:      "ws://127.0.0.1:8002/ws"   # alias of ada on same lane
-  ada-dev:    "ws://127.0.0.1:8005/ws"   # ada-dev (tony-lane dev twin)
-  kaewta:     "ws://127.0.0.1:8007/ws"   # ada-kk (prod, KK lane)
-  kaewta-cms: "ws://127.0.0.1:8009/ws"   # legacy name -> kk-dev lane
-  kaewta-dev: "ws://127.0.0.1:8009/ws"   # ada-kk-dev (kk-lane dev twin)
-  chaba-dev:  "ws://127.0.0.1:8005/ws"   # alias of ada-dev
-
-default_persona: kaewta   # unaddressed group messages go to kaewta
-
-groups:              # LINE_GROUP_PERSONA — pinned lanes; all must be in LINE_ALLOWED_GROUP_IDS
-  - group: C822026077530a29620b5041bd1a955c5
-    name: "ชบา - KK-Home"
-    persona: default
-    lane: "ada-kk (8007)"
-  - group: Cc92a99eba4feb0b37a76c4e5ed57767d
-    name: "ชบา - KK-Home-dev"
-    persona: kaewta-dev
-    lane: "ada-kk-dev (8009)"
-  - group: C4fb0ce548a58e2d758335b7e21ce3411
-    name: "ชบา, tony-home"
-    persona: chaba
-    lane: "ada-ha-tony (8002)"
-  - group: C46492d367c73b106edb78d6a9068f09c
-    name: "ชบา- tony-home-dev"
-    persona: chaba-dev
-    lane: "ada-dev (8005)"
-  - group: Cb754717565d4cee5eab43a0e848654a2
-    name: "ชบา ada-home"
-    persona: ada
-    lane: "ada-ha-tony (8002)"
-  - group: Ca00f23f0ab37ff73e52147b1720b2e79
-    name: "ชบา ada-home-dev"
-    persona: ada-dev
-    lane: "ada-dev (8005)"
-
-callers:             # LINE_USER_CALLERS — room members need an entry (no admin fallback)
-  U7efe5dde785e89fc998de234dfbe3d90: user-tonezzzz
-  Uc0b894d3f0e715e8077fca887ce4534c: user-nhong
-  U749908a2e83d9c2242d11fd2a9920478: user-kk
-
-notes:
-  - "New group flow: bot joins -> greets with groupId -> add id here +"
-  - "LINE_ALLOWED_GROUP_IDS + LINE_GROUP_PERSONA pin -> restart relay."
-  - "Customer WP-site groups (approved 2026-10-27, card"
-  - "line-wp-site-manager): one dedicated group per customer-site,"
-  - "LINE_GROUP_PERSONA hard-pin to the site's dedicated ada-<slug>"
-  - "lane, customer's userId in callers:. Onboarding:"
-  - "docs/kb/wp-customer-site-onboarding.md"
-  - "push messages count against LINE monthly quota (429 observed"
-  - "2026-10-14); reply calls are free. Relay emits push_failed ops"
-  - "events — watch the ops timeline."
-  - "LINE timelines: each wired group gets a private /chat/line/<lane>/"
-  - "page + timeline_block (see ssot.wp-boards.yml); sync via"
-  - "scripts/ada/line-chat-timeline.py (deployed ~/.local/bin/ on idc03,"
-  - "path-triggered + 5min sweeper)."
+title: LINE Group → Lane Routing Registry (compatibility pointer)
+subtitle: LINE routing moved to the unified messaging-lanes SSOT
+version: 2
+last_updated: "2026-10-31"
+status: superseded
+canonical_ref: docs/ssot/apps/ssot.messaging-lanes.yml#line.routing
+note: >-
+  The LINE personas, groups, caller aliases, and operational notes from this
+  file were migrated without changing runtime configuration to
+  docs/ssot/apps/ssot.messaging-lanes.yml#line.routing. Do not add new routing
+  data here; sender IDs remain in the host-only LINE_USER_CALLERS EnvironmentFile.
+  Update the canonical registry, then apply any separately approved
+  EnvironmentFile changes.

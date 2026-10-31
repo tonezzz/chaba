@@ -1,0 +1,136 @@
+title: "Reconcile Telegram and LINE relay inventory"
+subtitle: "Process OPS-0963 and publish one canonical messaging-lane inventory"
+icon: route
+
+planning:
+  goal: >-
+    Reconcile the documented and live Telegram/LINE control surfaces into
+    one discoverable inventory, including relay services, modes, targets,
+    secret references, command surfaces, publication, and topic routing.
+  scope: >-
+    Add one SSOT inventory, repair idc03 host-audit expectations for active
+    relays, update the system map and messaging-lane pointer, and record
+    provenance on OPS-0963. Do not enable/disable services, rotate tokens,
+    move webhooks, or read secret values.
+  success_criteria:
+    - All five live idc03 relay units are represented in the inventory and idc03 audit expectations.
+    - LINE group/persona/caller routing is consolidated under the same SSOT with the old path retained as a pointer.
+    - OpenClaw is distinguished from Ada relay; Yomi is labeled as LINE history/search, not a relay.
+    - Bot/group uncertainty and the MN push-policy conflict are explicitly marked unresolved.
+    - No token values are present; group targets use aliases and source references.
+    - Read-only service/port snapshot matches the five expected relay declarations without changing services.
+  risks:
+    - Collapsing distinct bots or routing policies into one inaccurate row.
+    - Exposing credentials or unnecessary personal identifiers in public SSOT.
+    - Treating a service as a relay when it is only a bot client or publication sink.
+  resources:
+    - "Live idc03 user units and loopback listeners"
+    - "SSOT: ssot.messaging-lanes.yml, ssot.audit.hosts.yml, ssot.system-map.yml, ssot.jobs.yml"
+    - "OPS-0963 messenger-control-inventory"
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Messenger control inventory
+      file: docs/ssot/kanban/cards/messenger-control-inventory.yml
+
+processing:
+  status: complete
+  started_at: 2026-10-31T09:30:43+07:00
+  steps:
+    - id: 1
+      label: Reconcile source references and live relay state
+      status: complete
+      notes: >-
+        Read SSOT, unit metadata, audit expectations, publication and topic registry.
+        Read-only idc03 check found all five relay services active with listeners
+        on 8911, 8912, 8913, 8917, and 8919. EnvironmentFile paths were inspected,
+        not secret values. The idc03 audit list includes ada-line-relay,
+        ada-tg-relay, and ada-tg-relay-kk but omits ada-tg-relay-mn and
+        devnest-tg-relay; system-map also omits those latter two.
+    - id: 2
+      label: Add canonical inventory and reconcile declarations
+      status: complete
+      notes: >-
+        Added ssot.messaging-lanes.yml, added the two missing idc03 relay
+        expectations, linked all relay rows in ssot.system-map.yml, and
+        changed msg-lane-standard.md to point to the canonical inventory.
+        Migrated LINE group/persona routes and caller aliases into line.routing,
+        updated its consumers, and left sender IDs in the host-only env file.
+        Token values remain outside the repo. MN identity and outbound-policy
+        conflicts remain explicit.
+    - id: 3
+      label: Validate and audit idc03
+      status: complete
+      notes: >-
+        SSOT and reference validation pass; optimization gate has no new
+        warnings. Static host expectations now contain all five relay units,
+        matching the successful 09:30 +07 active-unit/listener snapshot. A
+        later SSH recheck reset by peer, so the full host-audit command was
+        not rerun after the declaration edit.
+  decisions:
+    - label: Treat this file as the cross-provider inventory, not as a secret store
+      rationale: >-
+        Keep one easy-to-follow inventory, move the detailed LINE route map
+        into it, and leave token values plus LINE sender IDs in host-only
+        EnvironmentFiles. Retain the old LINE path as a compatibility pointer.
+      alternatives_considered: >-
+        Copying tokens or LINE sender IDs into public SSOT was rejected;
+        changing any applied EnvironmentFile or runtime route is out of scope.
+  changes:
+    - docs/ssot/apps/ssot.messaging-lanes.yml
+    - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    - docs/ssot/infrastructure/ssot.system-map.yml
+    - docs/kb/msg-lane-standard.md
+    - docs/ssot/apps/ssot.line-groups.yml
+    - docs/ssot/ssot.procedures.yml
+    - docs/ssot/apps/ssot.wp-boards.yml
+    - docs/ssot/jobs/ada/2026-10-27-wp-customer-site-lanes.yml
+    - docs/kb/wp-customer-site-onboarding.md
+
+followup:
+  verification:
+    - "scripts/ssot-validate-all.mjs: 3390 files, 0 errors, 50 warnings."
+    - "scripts/ssot-validate-refs.py: 3395 files parsed, no broken refs."
+    - "ssot-optimize-gate: 48 warnings, all covered by the committed baseline."
+    - "Expected idc03 relay list matches the five units/listeners observed at 09:30 +07."
+    - "LINE routing parity: six groups, all personas, default, and caller aliases preserved; sender IDs remain host-only."
+    - "A later SSH recheck reset by peer; no alternate route or service change was attempted, and no post-edit host-audit report is claimed."
+  rollback_plan:
+    - Revert only this branch's SSOT, host-audit, system-map, and documentation pointer edits.
+    - No live services, credentials, or webhook state are modified.
+  handoff:
+    - Update OPS-0963 through board-api with commit and audit evidence.
+  deferred:
+    - Retry a fresh idc03 audit after SSH connectivity is restored.
+    - Resolve whether @mn_ha_bot and @KrautMNBot refer to distinct identities.
+    - Resolve the route-specific MN group push-deny discrepancy.
+
+report:
+  status: completed
+  completed_at: 2026-10-31
+  summary: >-
+    Published a unified Telegram/LINE relay inventory, migrated detailed LINE
+    group/persona routing into its line.routing section, converted the old
+    line-groups file into a compatibility pointer, and declared the missing
+    active MN and DevNest units in the idc03 audit/system map. No live services,
+    webhooks, or credentials changed. MN identity and group-push policy remain
+    explicitly unresolved; a fresh SSH audit recheck was blocked by a reset.
+  metrics:
+    - "Live snapshot: 5 idc03 relay units active; 5 listeners matched at 09:30 +07."
+    - "SSOT validation: 3390 files, 0 errors, 50 warnings."
+    - "SSOT refs: 3395 files parsed, 0 broken refs."
+    - "Optimization gate: 48 warnings, all covered by baseline."
+    - "LINE migration parity: 6 groups, 7 persona mappings, 3 caller aliases preserved; sender IDs not copied."
+  links:
+    - title: OPS-0963
+      file: docs/ssot/kanban/cards/messenger-control-inventory.yml
+    - title: Canonical messaging-lane inventory
+      file: docs/ssot/apps/ssot.messaging-lanes.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-10-31
+  last_updated: 2026-10-31
+  maintainer: tony

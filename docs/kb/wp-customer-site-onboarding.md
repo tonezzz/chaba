@@ -9,7 +9,8 @@ customer never sees credentials; secrets policy applies — nothing goes
 into LINE where it persists in history/Yomi index.
 
 Registry: `docs/ssot/apps/ssot.wp-boards.yml` `sites:` — every managed
-site must land there. Routing: `docs/ssot/apps/ssot.line-groups.yml`.
+site must land there. LINE routing:
+`docs/ssot/apps/ssot.messaging-lanes.yml` `line.routing`.
 
 ## Model
 
@@ -80,7 +81,7 @@ Per `ssot.apps.ada-persona-lanes.yml` + `docs/kb/msg-lane-standard.md`:
 
 - [ ] Customer creates a LINE group, invites the chaba bot
       (@339sbrov). Bot greets with the groupId.
-- [ ] Add the group to `ssot.line-groups.yml` `groups:` (persona =
+- [ ] Add the group to `ssot.messaging-lanes.yml` `line.routing.groups:` (persona =
       the lane's persona name) + relay env on idc03:
       `LINE_ALLOWED_GROUP_IDS`, `LINE_GROUP_PERSONA=<gid>:<persona>`,
       `LINE_NAME_BACKENDS` persona → `ws://127.0.0.1:<port>/ws`.

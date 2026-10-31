@@ -156,18 +156,31 @@ edges:
     unit: ada-line-relay.service
     host: idc03
     keys: [line-relay-channel]
+    inventory_file: docs/ssot/apps/ssot.messaging-lanes.yml
   - id: ada-tg-relay
     role: Telegram relay — tony lane (@ChabaClawBot; display name ADA)
     unit: ada-tg-relay.service
     host: idc03
-    target: "ada-ha group (chat_id -5410424865)"
+    target: "ada-ha group (target config in telegram-bot.env)"
     secret_slot: "idc03 ~/.config/secrets/telegram-bot.env: TELEGRAM_BOT_TOKEN"
     distinct_from: "tony-omen OpenClaw @myChabaBot; same filename, different host-local token"
     identity_verified: "Bot API getMe, 2026-10-23; token value not recorded"
+    inventory_file: docs/ssot/apps/ssot.messaging-lanes.yml
   - id: ada-tg-relay-kk
     role: Telegram relay — kk-ha lane (kk_ha_bot)
     unit: ada-tg-relay-kk.service
     host: idc03
+    inventory_file: docs/ssot/apps/ssot.messaging-lanes.yml
+  - id: ada-tg-relay-mn
+    role: Telegram relay — MN/Kraut lane; group push is route-specific
+    unit: ada-tg-relay-mn.service
+    host: idc03
+    inventory_file: docs/ssot/apps/ssot.messaging-lanes.yml
+  - id: devnest-tg-relay
+    role: DevNest Telegram capture, card commands, publication, and topic routing
+    unit: devnest-tg-relay.service
+    host: idc03
+    inventory_file: docs/ssot/apps/ssot.messaging-lanes.yml
   - id: litellm-gateway
     role: REST/embedding LLM gateway — per-lane virtual keys, budget caps
     host: idc03

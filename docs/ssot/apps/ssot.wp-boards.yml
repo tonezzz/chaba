@@ -36,7 +36,7 @@ sites:
     env_file: wp-boards.env        # under ~/.config/secrets/ on writer hosts
     lanes: [tony, kk]              # ada lanes whose env carries these creds
     person_tags: [tony, kk, nhong] # post_tag person axis for this site
-    line_groups: [kk-ha shared multihome, tony-ha]   # ssot.line-groups.yml
+    line_groups: [kk-ha shared multihome, tony-ha]   # ssot.messaging-lanes.yml#line.routing
   # customer template — copy and fill at onboarding:
   # <slug>:                      # short site key, also the env suffix
   #   public_base / origin_base / rest_route_style
@@ -67,7 +67,7 @@ customer_onboarding:
     wp_update (confirm-gated publish) + wp_post + chat_send + core
     memory/search; no home-control, no internal ops tools. The LINE
     group hard-pins to the lane persona via LINE_GROUP_PERSONA
-    (ssot.line-groups.yml); the customer's LINE userId gets a
+    (ssot.messaging-lanes.yml#line.routing); the customer's LINE userId gets a
     LINE_USER_CALLERS entry.
   runbook: docs/kb/wp-customer-site-onboarding.md
 
