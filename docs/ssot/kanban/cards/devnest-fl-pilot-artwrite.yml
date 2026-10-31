@@ -1,0 +1,28 @@
+id: devnest-fl-pilot-artwrite
+title: 'OpenCode artifact-write pilot 1: lane status report (first S4 write job)'
+column: backlog
+updated: 2026-10-31 08:15
+spec: 'Write docs/reports/opencode-lane-status-2026-10-30.md — a lane status report. Ground it in the checkout:
+  read evals/opencode-lane/profiles/ops-readonly/profile.yml, evals/opencode-lane/profiles/doc-draft/profile.yml,
+  evals/opencode-lane/profiles/artifact-write/profile.yml, and docs/kb/opencode-lane-model-notes.md. The report
+  must state: which profiles exist and each one''s artifact mode (message vs file); ops-readonly emits JSON, doc-draft
+  emits markdown via message mode, artifact-write writes files directly; the verified pilot merges 562d54fdd (health
+  JSON) and ddda1db1b + c1813b5a0 (docs); the working models litellm/or-gemini-3.5-flash, litellm/ollama-qwen32b-kkmac,
+  litellm/ollama-qwen38b-kkmac; and that branch-code is status:disabled pending its S5 gate.
+
+
+  WRITE the file at the declared path using the write tool — do NOT emit the document as your message. End with
+  a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/opencode-lane-status-2026-10-30.md
+ref: OPS-1032
+comms:
+- at: 2026-10-31 08:15
+  from: tony
+  text: card captured via board-api
