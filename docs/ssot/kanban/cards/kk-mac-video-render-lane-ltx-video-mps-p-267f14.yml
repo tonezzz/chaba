@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 08:57
+updated: 2026-10-31 09:09
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -247,6 +247,13 @@ comms:
     hashes, and the extraction/action-continuity README. Education post3107 now shows 23 inline images and links
     to V5. S04–S10 are approved/staged with sequential stop-on-failure gates but have not run because KK-Mac is
     unreachable. Request `sacred-'
+- at: 2026-10-31 09:09
+  from: devin
+  text: 'Fresh check 2026-10-31 via the trusted idc03→KK-Mac SSH route: heartbeat is fresh (~58s), AC is connected,
+    69% memory is free, disk has 79 GiB, and no owner video/editor process is active. However `ollama ps` shows
+    `qwen3:8b` resident (7.2 GiB, ~9 minutes remaining). I did not unload it or start the worker. The isolated root
+    has only three claimable packs: approved static QC, approved T5 embeddings, and approved S04; the sequential
+    gates block later work. Let Qwen expire naturally, then rerun fu'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
