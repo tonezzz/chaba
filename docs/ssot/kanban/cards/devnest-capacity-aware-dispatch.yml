@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-31 10:56
+updated: 2026-10-31 11:00
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -90,6 +90,13 @@ comms:
     was still empty (no pack files, claim, result, done, or failed marker). The timers remain active and will retry;
     no remote cleanup, service stop/restart, or cap change was made. The existing producer-staging-timeout-recovery-20261031
     request is the single pending decision.'
+- at: 2026-10-31 11:00
+  from: devin
+  text: 'Root-cause refinement for producer-staging-timeout-recovery-20261031: kk_mac_capacity_producer.py calls
+    load_task()/rclone cat for each inbox JSON before checking existing_packs. With 70 already-routed specs, a retry
+    can perform many unnecessary Drive reads before reaching new work and hit the 4m service timeout. Code-only
+    fix should derive a safe candidate task_id from each filename, skip complete existing packs before rclone cat,
+    and verify task_id matches after loading. Build a single pack in'
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
