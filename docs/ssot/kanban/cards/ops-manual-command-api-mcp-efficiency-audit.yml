@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-audit
 title: Audit repeated manual commands and optimize API/MCP workflow efficiency
 column: review
-updated: 2026-10-31 08:49
+updated: 2026-10-31 09:20
 brief: Measure recurring manual shell/API/MCP workflows and replace the highest-cost repetitive paths with compact,
   typed, auditable interfaces.
 priority: high
@@ -32,6 +32,8 @@ action:
     | devin-task-20261031-081655-audit-recent-opencode-devin-ne.service: Consumed 4min 35.860s CPU time, 402.3M
     memory peak, 0B memory swap peak.'
   verified: true
+  sweep:
+    close_held: 2026-10-31 08:49
 note: Existing policy requires benchmark, testing, rollback, monitoring, scoped tool surfaces, action-param tools,
   and on-demand detail. This card turns those rules into a measured command-to-API/MCP migration loop.
 ref: AUD-1033
@@ -85,10 +87,16 @@ comms:
 - at: 2026-10-31 08:49
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''gated-follow-ups-from-aud-1033''] block close)'
+- at: 2026-10-31 09:20
+  from: tony
+  text: 'answered gated-follow-ups-from-aud-1033-which-to-8d37ba: all three (runner switch + mcp preset + storage_probe)'
+- at: 2026-10-31 09:20
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: gated-follow-ups-from-aud-1033-which-to-8d37ba
   ask: Gated follow-ups from AUD-1033 — which to proceed with?
-  status: open
+  status: answered
   at: 2026-10-31 08:34
   from: devin
   options:
@@ -97,5 +105,7 @@ requests:
   - mcp host_snapshot preset only
   - none — report only, hold all
   suggested: runner-agent /cards→projected read only
+  answer: all three (runner switch + mcp preset + storage_probe)
 review_kind: verify
 claim: {}
+awaiting_action: true
