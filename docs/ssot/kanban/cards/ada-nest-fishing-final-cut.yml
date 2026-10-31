@@ -170,6 +170,10 @@ comms:
     supported binary Media-upload route; using direct WP credentials would bypass policy. Manifest and Education
     continue to state Media upload is pending/unverified. A Board API media adapter would be a separate production
     change; no repeat approval was requested here.'
+- at: 2026-10-31 09:30
+  from: devin
+  text: 'raised request wp-media-upload-door-20261031: The final Golden Hour MP4 and Education page are updated,
+    but the approved `approve-and-wp` upload has not occurred. Boa'
 requests:
 - id: choose-golden-hour-catch-final-length
   ask: What target should we finish Golden Hour Catch to? The existing assembled cut is 14.292s, 7 shots, and silent.
@@ -220,6 +224,20 @@ requests:
     label: List fixes in comms (VO pacing, caption text, ambience level, credit line, etc.) — I will cut v2
   suggested: approve-final
   answer: approve-and-wp — Approve v1 AND upload to WP media so it is linkable/embeddable like the original (public-fetchable)
+- id: wp-media-upload-door-20261031
+  ask: The final Golden Hour MP4 and Education page are updated, but the approved `approve-and-wp` upload has not
+    occurred. Board API is the canonical WP write door, and it currently exposes no binary WP Media upload route;
+    direct WP credentials would bypass policy. What should we do about the already-approved upload?
+  status: open
+  at: 2026-10-31 09:30
+  from: devin
+  options:
+  - id: add-board-api-media-adapter
+    label: 'Recommended: track a separate Board API media-upload adapter (private-first, hash-bound, audited); only
+      then execute the existing upload approval and verify the public media URL.'
+  - id: keep-drive-only
+    label: Keep v1 in private Drive/Education and close the old Media upload as not needed; do not publish the MP4.
+  suggested: add-board-api-media-adapter
 action:
   type: dispatch
   status: done
