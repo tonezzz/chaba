@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
-column: backlog
-updated: 2026-10-31 08:26
+column: doing
+updated: 2026-10-31 08:34
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
   Read each profile.yml: report id, status, task_classes, artifact mode+format, which tools are enabled (read/grep/bash/write/edit),
   the verifier type, and rollback kind. A table is expected. Must name all of: ops-readonly, doc-draft, artifact-write,
@@ -18,7 +18,8 @@ action:
   executor: opencode
   agent_profile: artifact-write
   artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1035
 comms:
 - at: 2026-10-31 08:26
@@ -27,3 +28,6 @@ comms:
 - at: 2026-10-31 08:26
   from: devin
   text: queued for processing
+- at: 2026-10-31 08:34
+  from: idc02
+  text: claimed
