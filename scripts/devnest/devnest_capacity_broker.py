@@ -108,6 +108,10 @@ def produce(
     kk_enabled = os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() == "true"
     source_entries = set(rc("lsf", f"{source}/inbox", "--recursive").splitlines())
     kk_depth = queue_depth(kk_remote) if kk_enabled else 0
+    if kk_enabled and kk_depth >= max_depth:
+        result["held"].append("kk_capacity")
+        result["kk_gate"] = gate
+        return result
     for filename in inbox(source):
         try:
             if f"{filename}.routed" in source_entries:
