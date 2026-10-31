@@ -286,6 +286,57 @@ sections:
         expected_savings: 10-20% (additional)
         status: pending
 
+  - title: Command-to-API/MCP Efficiency Layer (AUD-1033)
+    icon: 🔀
+    layout: list
+    items:
+      - label: Board read projection (GET /card/<id>, /cards?<query>)
+        text: "Measured fix for the largest repeated waste: bare /cards was
+          the only read path — 5,224,998 B for one fact, and runner-agent
+          pulled it twice per ~60s pass per host (~7.5 GB/day/host).
+          Projection endpoints add filters (id/column/action_status/since),
+          field subsets (fields=, compact=1), and limit/offset/truncated
+          pagination while bare /cards keeps its legacy shape."
+        type: api-endpoint
+        savings: "95.8-99.97% response bytes, identical evidence"
+        benchmark: docs/reports/board-read-bench-2026-10-31.md
+        status: implemented
+        pending_tests: "runner-agent switchover to
+          action_status=queued&fields=… after soak (carded follow-up)"
+        pros:
+          - zero capability regression (bare /cards untouched)
+          - claim-poll 5.2 MB -> 1.7 KB at equal evidence
+          - GETs stay open — no auth surface added
+        cons:
+          - read freshness still bound to cards.json render cadence
+
+      - label: host_snapshot.py job-pack
+        text: "Collapses the ops-readonly micro-probe storm (~10 bash
+          calls/run: hostname/date/uptime/nproc/free/df/systemctl x2) into
+          one allowlistable script emitting exactly the lane contract.
+          Lane telemetry showed 4-30% call error rates from allowlist
+          denials and retried arithmetic — the storm class disappears."
+        type: job-pack
+        savings: "~10 calls -> 1; deny-rate -> 0 by construction"
+        status: implemented
+        benchmark: "evals/opencode-lane/runs/p1-ops-readonly-* (telemetry)"
+        pros:
+          - emits the verified contract shape directly
+          - per-probe timeout + errors[] degradation, still exits 0
+        cons:
+          - local-host only (remote hosts still route mcp-debug)
+
+      - label: Scoped probe surfaces (existing pattern reaffirmed)
+        text: "mddb_probe.py + mcp-debug-readonly measured zero-error across
+          lane runs — the model for bounded read surfaces. Ad-hoc ssh
+          orchestration (27% of dispatch outcomes) should route through
+          mcp-debug presets, not bespoke ssh chains."
+        type: mcp-optimization
+        status: operational
+        recommended_action: "design-ready follow-ups: host_snapshot mcp
+          preset (MCP surface change — explicit gate), storage_probe.py
+          job-pack for drift scans"
+
   - title: Monitoring and Measurement
     icon: 📈
     layout: list
@@ -323,10 +374,12 @@ sections:
 # Configuration and metadata
 config:
   version: 1
-  last_updated: 2026-08-13
+  last_updated: 2026-10-31
   maintainer: tony
   validation_enabled: true
   related_files:
+    - docs/kb/board-api-read-door.md
+    - docs/reports/2026-10-31-manual-command-api-mcp-efficiency-audit.md
     - docs/kb/token-optimization-strategies.md
     - docs/kb/token-optimization-implementation-plan.md
     - docs/kb/token-optimization-summary.md

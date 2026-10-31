@@ -1,0 +1,129 @@
+{
+ "meta": {
+  "date": "2026-10-31",
+  "reps": 15,
+  "fixture_desc": "synthetic seeded=1033 \u2014 live distribution (n=1136)"
+ },
+ "results": [
+  {
+   "scenario": "single-card-read",
+   "manual": {
+    "path": "/cards",
+    "bytes": 3476940,
+    "calls": 2,
+    "tokens_est": 869355,
+    "median_ms": 55.4
+   },
+   "replacement": {
+    "path": "/card/bench-card-0622",
+    "bytes": 3432,
+    "calls": 1,
+    "tokens_est": 918,
+    "median_ms": 24.6
+   },
+   "delta": {
+    "bytes_pct": 99.9,
+    "tokens_pct": 99.89,
+    "calls": 1,
+    "median_ms_pct": 55.6
+   },
+   "evidence_equal": true
+  },
+  {
+   "scenario": "board-index",
+   "manual": {
+    "path": "/cards",
+    "bytes": 3476940,
+    "calls": 2,
+    "tokens_est": 869355,
+    "median_ms": 49.8
+   },
+   "replacement": {
+    "path": "/cards?compact=1",
+    "bytes": 233309,
+    "calls": 1,
+    "tokens_est": 58387,
+    "median_ms": 24.8
+   },
+   "delta": {
+    "bytes_pct": 93.29,
+    "tokens_pct": 93.28,
+    "calls": 1,
+    "median_ms_pct": 50.2
+   },
+   "evidence_equal": true
+  },
+  {
+   "scenario": "claim-poll",
+   "manual": {
+    "path": "/cards",
+    "bytes": 3476940,
+    "calls": 1,
+    "tokens_est": 869295,
+    "median_ms": 53.4
+   },
+   "replacement": {
+    "path": "/cards?action_status=queued&fields=id,title,brief,spec,action,blocked_by,priority,updated,claim",
+    "bytes": 41480,
+    "calls": 1,
+    "tokens_est": 10430,
+    "median_ms": 24.0
+   },
+   "delta": {
+    "bytes_pct": 98.81,
+    "tokens_pct": 98.8,
+    "calls": 0,
+    "median_ms_pct": 55.1
+   },
+   "evidence_equal": true
+  },
+  {
+   "scenario": "status-check",
+   "manual": {
+    "path": "/cards",
+    "bytes": 3476940,
+    "calls": 2,
+    "tokens_est": 869355,
+    "median_ms": 54.0
+   },
+   "replacement": {
+    "path": "/cards?fields=id,column",
+    "bytes": 53461,
+    "calls": 1,
+    "tokens_est": 13425,
+    "median_ms": 25.8
+   },
+   "delta": {
+    "bytes_pct": 98.46,
+    "tokens_pct": 98.46,
+    "calls": 1,
+    "median_ms_pct": 52.2
+   },
+   "evidence_equal": true
+  },
+  {
+   "scenario": "delta-sync",
+   "manual": {
+    "path": "/cards",
+    "bytes": 3476940,
+    "calls": 2,
+    "tokens_est": 869355,
+    "median_ms": 53.3
+   },
+   "replacement": {
+    "path": "/cards?since=2026-10-28&fields=id,updated",
+    "bytes": 8030,
+    "calls": 1,
+    "tokens_est": 2068,
+    "median_ms": 24.0
+   },
+   "delta": {
+    "bytes_pct": 99.77,
+    "tokens_pct": 99.76,
+    "calls": 1,
+    "median_ms_pct": 55.1
+   },
+   "evidence_equal": true
+  }
+ ]
+}
