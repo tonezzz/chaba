@@ -1,0 +1,34 @@
+id: kk-mac-worker-idle-poll-efficiency
+title: Reduce KK-Mac worker idle polling and failed-pack retry load
+column: backlog
+updated: 2026-10-31 08:45
+brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
+  idle polling/model residency without weakening claim or verifier gates.
+priority: medium
+program: ai-workforce
+tags:
+- kk-mac
+- jevnest
+- nest-worker
+- ollama
+- efficiency
+spec: 'Investigate the live KK-Mac worker: net.adanest.kk-llm-worker LaunchAgent currently uses StartInterval=15
+  with nest-worker.py --once. Preserve serial concurrency, first-writer claims, stale-claim release, admission,
+  independent verification, done/failed markers, and owner-approved capacity windows. Measure empty-pass CPU/network
+  cost, task-run latency, Ollama model residency, and failure/retry behavior. Design a safer idle strategy (bounded
+  backoff, queue notification/index, or a longer interval) and quarantine/retry policy for failed packs so old failed
+  work cannot cause repeated bursts. Compare before/after on an identical queue fixture. Do not change the LaunchAgent,
+  stop the worker, restart services, or alter owner workload until the plan and rollback are reviewed; no new worker
+  may be started.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: 'Observed 2026-10-31: worker runs every 15s; 55 runs reported, qwen3:8b resident, recent short verified jobs
+  completed in ~0.9s, and worker.err contains rclone timeout plus independent-check failures from older packs. Current
+  load spike is transient; sustained CPU was also mediaanalysisd, not Nest.'
+ref: OPS-1036
+comms:
+- at: 2026-10-31 08:45
+  from: tony
+  text: card captured via board-api
