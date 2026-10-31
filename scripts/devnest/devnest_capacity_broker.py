@@ -110,8 +110,7 @@ def produce(
     kk_depth = queue_depth(kk_remote) if kk_enabled else 0
     for filename in inbox(source):
         try:
-            filename_id = filename.removesuffix(".json")
-            if f"{filename_id}.routed" in source_entries:
+            if f"{filename}.routed" in source_entries:
                 continue
             spec = read_spec(source, filename)
             if f"{spec['task_id']}.routed" in source_entries:
