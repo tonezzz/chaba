@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-31 10:53
+updated: 2026-10-31 10:56
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -83,6 +83,13 @@ comms:
   from: devin
   text: 'raised request producer-staging-timeout-recovery-20261031: Live flow is enabled: the three timers are active,
     KK admission was eligible (78 GB free, load 3.54, not busy), and 70 D'
+- at: 2026-10-31 10:56
+  from: devin
+  text: 'Evidence update 2026-10-31 10:53 +07: second jevnest-kk-mac-capacity-producer.service run also timed out
+    at 10:53:03 after the 4-minute start timeout. At 10:53:44 the remote report-review-a8ff708e96d4 pack directory
+    was still empty (no pack files, claim, result, done, or failed marker). The timers remain active and will retry;
+    no remote cleanup, service stop/restart, or cap change was made. The existing producer-staging-timeout-recovery-20261031
+    request is the single pending decision.'
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
