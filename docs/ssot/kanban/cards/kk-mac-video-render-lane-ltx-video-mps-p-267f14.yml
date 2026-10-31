@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 12:15
+updated: 2026-10-31 12:32
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -355,6 +355,13 @@ comms:
     (219,792B; 640x384/73f/3.04s; decode pass; visual review pending). The V2 panel Drive listing now has 32 panel-related
     pack directories, but 0 claimed, 0 failed, 0 output-bearing render packs; the single done entry is an approval
     pack, not a render. No new V2 video is coming out yet. Tony approved one read-o'
+- at: 2026-10-31 12:32
+  from: devin
+  text: 'Bounded smoke launch notice: the latest trusted Mac preflight at 12:28 shows AC power, 91% memory free,
+    59GiB disk available, no Ollama model, and no video/editor process. Qwen3:8B has exited naturally; I did not
+    stop it. To avoid the main worker scanning all approved queues, I created a separate private smoke root containing
+    only the panel T5 embed pack plus S01-C01 and S01-C02 (two 6s image-guided cuts). Inputs, approval marker, model
+    archive and runner hashes were verified. I am launching onl'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
