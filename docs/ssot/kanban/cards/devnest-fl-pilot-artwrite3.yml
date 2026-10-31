@@ -1,0 +1,25 @@
+id: devnest-fl-pilot-artwrite3
+title: 'OpenCode artifact-write pilot 3: profile inventory report'
+column: backlog
+updated: 2026-10-31 08:26
+spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
+  Read each profile.yml: report id, status, task_classes, artifact mode+format, which tools are enabled (read/grep/bash/write/edit),
+  the verifier type, and rollback kind. A table is expected. Must name all of: ops-readonly, doc-draft, artifact-write,
+  ssot-research, mddb-sequence, storage-dryrun, branch-code — and mark branch-code as status:disabled.
+
+
+  WRITE the file at the declared path using the write tool — do NOT emit the document as your message. End with
+  a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
+ref: OPS-1035
+comms:
+- at: 2026-10-31 08:26
+  from: tony
+  text: card captured via board-api
