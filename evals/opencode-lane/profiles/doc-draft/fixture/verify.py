@@ -55,8 +55,9 @@ def verify(run_dir):
     stripped = text.strip()
     checks["markdown shape"] = bool(
         re.search(r"^#{1,3} \S", stripped, re.M))
-    checks["not rails echo"] = not stripped.startswith(
-        ("---", "Rails: you are processing"))
+    checks["not rails echo"] = (
+        not stripped.startswith("Rails: you are processing")
+        and "Rails: you are processing" not in stripped[:400])
     bad = [m for m in BAD_MARKERS if m.lower() in stripped.lower()]
     checks["no placeholder markers"] = not bad
     if bad:
