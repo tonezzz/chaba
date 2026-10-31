@@ -209,6 +209,13 @@ comms:
     passed, 18 measured VO cues. Jupiter and Great Red Spot remain schematic placeholders; no LTX or music bed.
     Existing shipped v6 remains untouched. No assets were staged to KK-Mac; `docpilot-kk-mac-static-qc-consent`
     remains open and covers only CPU/read-only static QC, not LTX rendering'
+- at: 2026-10-31 07:32
+  from: tony
+  text: 'answered docpilot-kk-mac-static-qc-consent: approve-docpilot-static-qc — Recommended: stage and run one
+    isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+- at: 2026-10-31 07:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-10-31 08:33
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -283,7 +290,7 @@ requests:
     is a one-shot CPU-only, read-only static-asset/QC audit for DocPilot v3 on KK-Mac. It would stage only the existing
     static cut and manifest to an isolated job root; no LTX, Qwen, service changes, publication, or edits. Do you
     authorize that cross-project asset transfer and audit, or should KK-Mac stay idle?
-  status: open
+  status: answered
   at: 2026-10-30 20:12
   from: devin
   options:
@@ -293,4 +300,6 @@ requests:
     label: Keep KK-Mac idle; do not stage another project's assets.
   suggested: approve-docpilot-static-qc
   escalated_at: 2026-10-31 08:33
+  answer: 'approve-docpilot-static-qc — Recommended: stage and run one isolated CPU-only read-only asset/QC audit;
+    no GPU or model inference.'
 awaiting_action: true
