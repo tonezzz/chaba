@@ -1,7 +1,7 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
 column: review
-updated: 2026-10-31 10:09
+updated: 2026-10-31 10:12
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
 priority: high
@@ -114,6 +114,12 @@ comms:
     Earlier comms report a local verifier pass and patch bundle `1f1696502` in patch-inbox, but I cannot find a
     durable result artifact in origin/master. Keeping this in review until the patch/result is landed and the verified
     gate is supported by evidence; no new inference run without a fresh idle-window preflight.
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Kanban review note: the `reachable` answer has been followed by the bounded retry, but the latest action
+    ended `unknown`/no task_id. The earlier verifier-pass result is only in a patch-inbox relay and no result artifact
+    is present in origin/master; keeping this in review until the artifact is landed and checked. No additional
+    model run without a fresh idle-window preflight.'
 review_kind: verify
 claim: {}
 requests:
