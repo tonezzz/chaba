@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 07:21
+updated: 2026-10-31 07:32
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -222,6 +222,13 @@ comms:
     macOS-compatible owner-app check proven by the S03 run. `rclone check` reports zero differences; each remains
     unclaimed and still requires `kk-mac-storyboard-i2v-visual-review-approved-20261030`. No review marker was created
     and no worker was started.'
+- at: 2026-10-31 07:32
+  from: tony
+  text: 'answered review-kk-mac-storyboard-shot03-before-batch: continue-shots-04-10 — Recommended: the mapped private
+    samples look acceptable; continue S04–S10 serially, with per-shot QC and stop-on-failure.'
+- at: 2026-10-31 07:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -244,7 +251,7 @@ requests:
     the updated storyboard. Before I run the staged S04–S10 batch, please review S01–S03 in the private deck and
     choose: continue the remaining shots serially, request a change to S03, or keep the rest held. This is a visual-quality
     gate only; no publication is implied.'
-  status: open
+  status: answered
   at: 2026-10-30 21:49
   from: devin
   options:
@@ -256,4 +263,6 @@ requests:
   - id: hold-remaining-shots
     label: Keep S04–S10 staged and held; do not launch more renders.
   suggested: continue-shots-04-10
+  answer: 'continue-shots-04-10 — Recommended: the mapped private samples look acceptable; continue S04–S10 serially,
+    with per-shot QC and stop-on-failure.'
 awaiting_action: true
