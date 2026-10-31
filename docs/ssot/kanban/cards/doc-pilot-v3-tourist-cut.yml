@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 10:12
+updated: 2026-10-31 10:51
 priority: medium
 tags:
 - ada-nest
@@ -288,6 +288,12 @@ comms:
   text: 'Progress record: the isolated static-QC staging and fresh no-run preflight are recorded in `docs/ssot/jobs/nest/2026-10-31-docpilot-static-qc.yml`
     (local branch commit `c45de0df0`). It is not pushed yet. The QC remains blocked while qwen2.5:32b is still `Stopping...`;
     I will not unload it or start the worker until the Ollama-empty gate passes.'
+- at: 2026-10-31 10:51
+  from: devin
+  text: 'Fresh KK-Mac read: AC power and trusted route are good, but `qwen3:8b` is resident for ~50 minutes and
+    only 68% memory is free. The offline/cache-only worker is held; no model will be unloaded or displaced. Static
+    QC, T5 embeddings, Solar System shots08/09, S04-S10, and the 30-panel sequence remain staged/blocked by the
+    no-resident-model gate.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
