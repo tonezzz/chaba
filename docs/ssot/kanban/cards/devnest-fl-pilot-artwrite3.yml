@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
-column: backlog
-updated: 2026-10-31 08:39
+column: doing
+updated: 2026-10-31 08:40
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
   Read each profile.yml: report id, status, task_classes, artifact mode+format, which tools are enabled (read/grep/bash/write/edit),
   the verifier type, and rollback kind. A table is expected. Must name all of: ops-readonly, doc-draft, artifact-write,
@@ -18,9 +18,10 @@ action:
   executor: opencode
   agent_profile: artifact-write
   artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
-  status: queued
+  status: running
   result: 'exit=0 0680598ffe0xrvVKQGxPgCc5","type":"step-finish","tokens":{"total":26872,"input":26554,"output":57,"reasoning":261,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-devnest-fl-pilot-artwrite3-1793410460.service: Consumed 17.932s CPU time.'
+  runner: idc02
 ref: OPS-1035
 comms:
 - at: 2026-10-31 08:26
@@ -52,5 +53,8 @@ comms:
 - at: 2026-10-31 08:39
   from: devin
   text: queued for processing
+- at: 2026-10-31 08:40
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
