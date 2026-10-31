@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 08:20
+updated: 2026-10-31 08:31
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -236,6 +236,10 @@ comms:
     Manifests retain the private v1_01 page/image hashes and the corrected macOS-safe prep. All seven packs are
     staged/unclaimed; no render has started because KK-Mac currently fails fresh admission (stale heartbeat/SSH
     timeout).'
+- at: 2026-10-31 08:31
+  from: devin
+  text: 'raised request sacred-father-panel-cut-runtime-20261031: The approved storyboard pages 9, 12, and 15 each
+    contain ten numbered cut panels with source timings of roughly 18 secon'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -272,4 +276,23 @@ requests:
   suggested: continue-shots-04-10
   answer: 'continue-shots-04-10 — Recommended: the mapped private samples look acceptable; continue S04–S10 serially,
     with per-shot QC and stop-on-failure.'
+- id: sacred-father-panel-cut-runtime-20261031
+  ask: The approved storyboard pages 9, 12, and 15 each contain ten numbered cut panels with source timings of roughly
+    18 seconds per panel (~3 minutes per page). The project brief calls for both a 60–90s teaser and an approximately
+    10-minute vertical master. For S01–S03, which timing should the panel-by-panel cut map target? This choice changes
+    how many seconds each panel gets; I will not render the new panel crops until it is decided.
+  status: open
+  at: 2026-10-31 08:31
+  from: devin
+  options:
+  - id: ten-minute-master
+    label: 'Recommended: preserve all numbered panels for the 10-minute master; retime to about 6 seconds per panel
+      (~1 minute per page). Keep the short teaser separate.'
+  - id: source-storyboard-timecodes
+    label: Honor the panel timing as drawn (~18 seconds each, about 3 minutes per page; roughly 30 minutes across
+      ten pages).
+  - id: teaser-60-90
+    label: Keep the 60–90s teaser; use the panels as reference but select/compress cuts instead of rendering every
+      panel separately.
+  suggested: ten-minute-master
 awaiting_action: true
