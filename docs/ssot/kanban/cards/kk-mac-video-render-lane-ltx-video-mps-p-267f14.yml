@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 09:09
+updated: 2026-10-31 09:12
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -254,6 +254,13 @@ comms:
     `qwen3:8b` resident (7.2 GiB, ~9 minutes remaining). I did not unload it or start the worker. The isolated root
     has only three claimable packs: approved static QC, approved T5 embeddings, and approved S04; the sequential
     gates block later work. Let Qwen expire naturally, then rerun fu'
+- at: 2026-10-31 09:12
+  from: devin
+  text: 'Additional read-only preflight: direct SSH from this shell is denied, but the approved idc03→KK-Mac route
+    works. On Mac, AC is connected, memory free was 69%, disk 79 GiB, no editor/compute process was found, MPS is
+    available, the pinned LTX snapshot is complete, and `.venv` imports torch 2.14.1 / transformers 5.21.0 / diffusers
+    0.42.1 / imageio_ffmpeg. `qwen3:8b` is still resident (7.2 GiB, about 7 minutes left), so no worker was launched.
+    Wait for natural expiry; do not unload it.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
