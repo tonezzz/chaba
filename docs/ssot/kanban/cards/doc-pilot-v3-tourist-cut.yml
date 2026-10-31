@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 10:51
+updated: 2026-10-31 10:58
 priority: medium
 tags:
 - ada-nest
@@ -294,6 +294,12 @@ comms:
     only 68% memory is free. The offline/cache-only worker is held; no model will be unloaded or displaced. Static
     QC, T5 embeddings, Solar System shots08/09, S04-S10, and the 30-panel sequence remain staged/blocked by the
     no-resident-model gate.'
+- at: 2026-10-31 10:58
+  from: devin
+  text: 'Fresh live check: Mac is reachable/on AC, but Qwen3:8B is resident (7.2GB GPU, lease ~45min; 67% system
+    memory free). No static QC/T5/LTX pack has a claim/done/failed/out marker; no worker has run. DocPilot shots08/09,
+    the approved Sacred Father S04-S10 chain, and the new 30-panel sequence are all staged privately. Dispatch waits
+    for the owner model to unload naturally and a fresh preflight to pass.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
