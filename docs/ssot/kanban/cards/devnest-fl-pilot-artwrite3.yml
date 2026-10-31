@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
-column: backlog
-updated: 2026-10-31 09:45
+column: doing
+updated: 2026-10-31 09:53
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
   The files exist — read them directly: evals/opencode-lane/profiles/ops-readonly/profile.yml and the six siblings
   in that same directory. Report each profile file id, status, task_classes, artifact mode+format, which tools are
@@ -21,7 +21,7 @@ action:
   agent_profile: artifact-write
   artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
   timeout_s: 2400
-  status: queued
+  status: running
   result: 'journal=timeout  time limit. Stopping. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service: Failed
     with result ''timeout''. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service: Consumed 20.258s CPU time,
     474.3M memory peak, 0B memory swap peak.'
@@ -122,5 +122,8 @@ comms:
   from: idc02
   text: 'finished (failed): journal=timeout  time limit. Stopping. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service:
     Failed with result ''t'
+- at: 2026-10-31 09:53
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
