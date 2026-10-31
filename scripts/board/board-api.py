@@ -15,7 +15,17 @@ column moves (board-api-writes-eaten-by-autostash-pops-515009).
 
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
-  GET  /cards                        -> cards.json payload
+  GET  /cards                        -> cards.json payload (legacy full dump)
+  GET  /cards?<query>                -> projected/filtered card read
+      (AUD-1033) so callers stop paying the multi-MB full dump for one
+      card or a claim poll. Envelope {ok, count, total, offset,
+      truncated, cards[]}; bare /cards keeps the raw payload shape.
+      filters:   id=<card-id>, column=<col>, action_status=<s>,
+                 since=<updated string> (lexicographic, same format)
+      projection: fields=a,b,c (top-level keys; unknown ignored),
+                 compact=1 -> {id,title,column,updated,priority,ref}
+      pagination: limit=<n> (cap 1000), offset=<n>
+  GET  /card/<id>[?fields=|compact=1] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
       dispatch card whose session branch still has commits not in
@@ -154,7 +164,7 @@ from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote
 
 import yaml
 
@@ -2383,17 +2393,85 @@ def do_ready(body: dict) -> str:
     return f"readiness recorded for {host} ({len(verdicts)} verdicts)"
 
 
+CARDS_JSON = REPO / "stacks/web/public/apps/board/cards.json"
+
+# The read-side contract (AUD-1033, card ops-manual-command-api-mcp-
+# efficiency-audit): one small filtered/projected surface so neither
+# agents nor daemons pay the whole-board dump for a single fact.
+COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref")
+CARDS_MAX_LIMIT = 1000
+
+
+def load_cards() -> dict:
+    """Parsed rendered board payload; {} when the file is absent/corrupt
+    (readers degrade to empty results, never a 500)."""
+    try:
+        return json.loads(CARDS_JSON.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def _q1(q: dict, name: str, default: str = "") -> str:
+    v = q.get(name)
+    return v[0] if v else default
+
+
+def _truthy(v: str) -> bool:
+    return v.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _field_set(q: dict) -> set:
+    if _truthy(_q1(q, "compact")):
+        return set(COMPACT_FIELDS)
+    return {f.strip() for f in _q1(q, "fields").split(",") if f.strip()}
+
+
+def _project(card: dict, fields: set) -> dict:
+    return ({k: card.get(k) for k in fields if k in card}
+            if fields else card)
+
+
+def card_query(cards: list, q: dict) -> dict:
+    """Filtered/projected read over rendered cards (AUD-1033 contract):
+    filters -> pagination -> field projection, in that order, so count/
+    total describe the filtered set and truncation is honest."""
+    out = list(cards)
+    cid = _q1(q, "id")
+    if cid:
+        out = [c for c in out if c.get("id") == cid]
+    col = _q1(q, "column")
+    if col:
+        out = [c for c in out if c.get("column") == col]
+    st = _q1(q, "action_status")
+    if st:
+        out = [c for c in out
+               if (c.get("action") or {}).get("status") == st]
+    since = _q1(q, "since")
+    if since:
+        out = [c for c in out if str(c.get("updated") or "") >= since]
+    total = len(out)
+    try:
+        off = max(0, int(_q1(q, "offset", "0")))
+    except ValueError:
+        off = 0
+    try:
+        lim = int(_q1(q, "limit", "0"))
+    except ValueError:
+        lim = 0
+    lim = min(lim, CARDS_MAX_LIMIT) if lim else 0
+    page = out[off: off + lim if lim else None]
+    fields = _field_set(q)
+    page = [_project(c, fields) for c in page]
+    return {"ok": True, "count": len(page), "total": total,
+            "offset": off, "truncated": off + len(page) < total,
+            "cards": page}
+
+
 def queue_view() -> dict:
     """GET /queue — the ready-package projection (KNB-1007): queued cards
     in claim-drain order with per-runner verdicts and in-flight claims.
     Read-only; verdicts fresher than READY_STALE_S count as live."""
-    cards = []
-    j = REPO / "stacks/web/public/apps/board/cards.json"
-    if j.exists():
-        try:
-            cards = (json.loads(j.read_text()) or {}).get("cards") or []
-        except Exception:
-            cards = []
+    cards = (load_cards().get("cards") or [])
     now_ts = time.time()
     hosts_in = (_ready_load().get("hosts") or {})
     hosts = {}
@@ -2482,14 +2560,33 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write("board-api %s\n" % (fmt % args))
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        url = urlparse(self.path)
+        path = url.path
         if path == "/health":
             return self._send(200, {"ok": True})
         if path == "/cards":
-            j = REPO / "stacks/web/public/apps/board/cards.json"
-            if j.exists():
-                return self._send(200, json.loads(j.read_text()))
-            return self._send(404, {"error": "no cards.json yet"})
+            payload = load_cards()
+            if not payload:
+                return self._send(404, {"error": "no cards.json yet"})
+            q = parse_qs(url.query)
+            if not q:
+                return self._send(200, payload)
+            return self._send(
+                200, card_query(payload.get("cards") or [], q))
+        if path == "/card" or path == "/card/":
+            return self._send(400, {
+                "error": "missing card id",
+                "hint": "use /card/<id> or /cards?id=<id>"})
+        if path.startswith("/card/"):
+            cid = unquote(path[len("/card/"):])
+            hit = next((c for c in (load_cards().get("cards") or [])
+                        if c.get("id") == cid), None)
+            if hit is None:
+                return self._send(404, {"error": "card not found",
+                                        "id": cid})
+            return self._send(200, {
+                "ok": True,
+                "card": _project(hit, _field_set(parse_qs(url.query)))})
         if path == "/queue":
             try:
                 return self._send(200, queue_view())

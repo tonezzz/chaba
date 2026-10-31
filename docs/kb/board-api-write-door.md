@@ -13,6 +13,10 @@ entries — goes through board-api over HTTP. Agents and runners never hold
 WP app passwords or mddb credentials; only the service host has
 `~/.config/secrets/wp-boards.env`. Same reason Colab stays credential-free.
 
+Reads are the mirror image: `docs/kb/board-api-read-door.md` — never
+pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
+`/cards?<filters>&fields=` cover the narrow questions.
+
 ## Endpoints (after prefix strip)
 
 | Path | Body | Writes |

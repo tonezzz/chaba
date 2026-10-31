@@ -1,0 +1,99 @@
+title: "AUD-1033 — manual command→API/MCP efficiency audit: board read gap
+  found+fixed (5.2MB→KB projections), host_snapshot job-pack landed, corpus
+  classified"
+date: 2026-10-31
+card: ops-manual-command-api-mcp-efficiency-audit
+session: "dispatch-wt-20261031-081655-audit-recent-opencode-devin-ne (idc02)"
+status: "audited + implemented — code+tests+contracts committed; no deploy
+  (promotion via served-checkout merge); MCP surface untouched"
+
+corpus:
+  opencode_telemetry: "evals/opencode-lane/runs/p1-*/events.jsonl +
+    evals/results/opencode-mcp-readonly — 14 runs, 137 tool calls,
+    per-call status/bytes + per-step tokens"
+  dispatch_outcomes: "306 dispatch-outcome-*.md — command-pattern census"
+  live_surface: "board-api idc03 — /cards measured 5,224,998B / 1136
+    cards / 15,714 comms entries; /queue 2KB; GET /card/<id> was 404"
+  machine_consumers: "runner-agent.py api('/cards') x2 per ~60s pass per
+    host"
+  boundary: "Devin sessions.db + tony-macbook opencode.db out of
+    worktree — excluded (same boundary as AUD-0944); findings from
+    committed telemetry only"
+
+inventory_highlights:
+  biggest_gap: "no board read projection — every single-card or status
+    read paid the 5.2MB dump; fleet claim polls ~7.5GB/day/host"
+  storm_class: "ops-readonly micro-probe runs: ~10 bash calls each,
+    4-30% error rate from allowlist denies + retried date arithmetic;
+    compound commands denied while per-cmd probes passed — the allowlist
+    itself incentivized call-spam"
+  proven_patterns: "mddb_probe.py + mcp-debug-readonly ran 21 calls, 0
+    errors — bounded job-packs and scoped MCP are already the winning
+    shape"
+  ssh_class: "27% of dispatch outcomes show ssh orchestration —
+    highest permission-risk class; mcp-debug run_on_host + presets is
+    the existing scoped alternative"
+
+implemented:
+  - "board-api.py: GET /card/<id>[?fields|compact] + /cards?<query>
+    projection (id/column/action_status/since filters, fields/compact
+    projection, limit<=1000/offset/truncated); bare /cards unchanged —
+    additive routes, trivial rollback"
+  - "scripts/devnest/host_snapshot.py — one call emits the ops-readonly
+    contract ({host,collected_at,uptime_seconds,load1/5/15,cpu_count,
+    mem_*,disk_root_pct,failed_units,read_only,errors?}); allowlisted in
+    ops-readonly profile bash rules"
+  - "scripts/board/board_read_bench.py — real-handler loopback bench,
+    identical fixtures, evidence-equality verifier; live + seeded-synth
+    modes"
+  - "docs/kb/board-api-read-door.md — the read-side operational
+    procedure (mirror of write-door)"
+
+benchmarks:
+  live_fixture: "docs/reports/board-read-bench-2026-10-31.{md,json}
+    (real cards.json) — single-card 99.92%, board-index 95.80%,
+    claim-poll 99.97% (5.2MB->1.7KB), status-check 98.73%,
+    delta-sync 99.79% byte cuts; 2->1 calls; all evidence-equal"
+  synth_fixture: "*-synth.{md,json} — seeded 1136-card fixture, same
+    ordering, reproducible"
+  requirements: "met — no capability regression (evidence-equal, legacy
+    shape kept), lower token/command overhead, equal-or-better evidence"
+
+classifications:
+  board_api_endpoint: [D1 card/state reads]
+  job_pack: [S1 host_snapshot (new), S3 mddb_probe (exists)]
+  scoped_mcp: [S4 mcp-debug-readonly (exists), D3/D4 via mcp preset —
+    contract designed, deploy gated]
+  composite_workflow: [S2/D10 storage+artifact profiles w/ held-out
+    verifiers, D3 ssh sweeps -> mcp_preset_run]
+  keep_shell: [D2 write curls, D5 test gates, D8 answers polling,
+    D9 surface curls, S5 repo reads, S6 date math]
+
+follow_ups:
+  - "runner-agent: swap api('/cards') x2 -> projected claim/verdict
+    fields after endpoint soak (bench claim-poll proves adequacy)"
+  - "mcp preset 'host_snapshot' in scripts/mcp_debug config PRESETS —
+    MCP surface change, needs explicit gate"
+  - "storage_probe.py job-pack for S2-class drift scans — worth it only
+    if storage-dryrun lanes run unattended often"
+  - "devin sessions.db tool-call exporter (devin-session-audit skill) —
+    closes the Devin-side telemetry gap for the next audit"
+
+tests:
+  - "tests/board/test_board_api_reads.py — 19 (projection, filters,
+    pagination, compact, routing, 400/404, legacy shape)"
+  - "tests/devnest/test_host_snapshot.py — 10 (parsers, contract shape,
+    independent degradation)"
+  - "tests.devnest.test_opencode_profiles — stale expected-profile list
+    fixed (pre-existing master failure, artifact-write+doc-draft)"
+  - "suite: tests/board 333 OK, devnest profiles+lane_gate 96 OK,
+    board-api --selftest OK"
+
+report: docs/reports/2026-10-31-manual-command-api-mcp-efficiency-audit.md
+procedure: docs/kb/board-api-read-door.md
+catalog: docs/ssot/ssot.token-tools.yml (Command-to-API/MCP Efficiency
+  Layer section)
+related_cards:
+  - nest-api-unified-mutation-service (the write door this mirrors)
+  - devnest-publication-adapter-layer (/publish — same contract idiom)
+  - mcp-structured-files-tool (bench methodology precedent)

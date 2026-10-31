@@ -72,7 +72,8 @@ class LintProfiles(unittest.TestCase):
     def test_all_committed_profiles_lint_clean(self):
         pids = mod.list_profiles()
         self.assertEqual(sorted(pids),
-                         ["branch-code", "mddb-sequence", "ops-readonly",
+                         ["artifact-write", "branch-code", "doc-draft",
+                          "mddb-sequence", "ops-readonly",
                           "ssot-research", "storage-dryrun"])
         for pid in pids:
             self.assertEqual(mod.lint_profile(mod.load_profile(pid)),
