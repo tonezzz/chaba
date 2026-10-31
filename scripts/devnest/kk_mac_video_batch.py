@@ -9,11 +9,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 from pathlib import Path
 
 import imageio.v3 as iio
 import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "ltx-mlx"))
 from ltx_mlx.pipeline import LTXPipeline
 
 
