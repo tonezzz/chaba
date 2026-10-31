@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: backlog
-updated: 2026-10-30 08:39
+updated: 2026-10-31 10:09
 brief: probe
 ref: OPS-0812
 comms:
@@ -17,6 +17,10 @@ comms:
 - at: 2026-10-30 08:39
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 10:09
+  from: devin
+  text: 'raised request speed-probe-target-and-done-criteria-20261031: Thanks, repo=chaba and host=tony-dell are
+    recorded. I still need the speed-probe target and completion criterion before '
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -29,4 +33,22 @@ requests:
   at: 2026-10-30 01:20
   from: backlog-spec-enrich
   answer: ★ use repo chaba on host tony-dell for the speed probe
+- id: speed-probe-target-and-done-criteria-20261031
+  ask: Thanks, repo=chaba and host=tony-dell are recorded. I still need the speed-probe target and completion criterion
+    before arming it. Which read-only probe do you want?
+  status: open
+  at: 2026-10-31 10:09
+  from: devin
+  options:
+  - id: repo-ssot-readonly
+    label: 'Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba checkout; report
+      raw timings only, no writes.'
+  - id: board-api-read
+    label: Measure board-api read latency; note AUD-1033 already added and benchmarked projected reads, so only
+      choose if you want a repeat on tony-dell.
+  - id: other-target
+    label: Name a different command/path and what counts as fast enough.
+  - id: hold
+    label: Leave the card in backlog until the probe goal is clear.
+  suggested: repo-ssot-readonly
 awaiting_action: true
