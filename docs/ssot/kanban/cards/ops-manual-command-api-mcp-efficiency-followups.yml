@@ -1,0 +1,24 @@
+id: ops-manual-command-api-mcp-efficiency-followups
+title: Implement the three approved AUD-1033 command-efficiency follow-ups
+column: backlog
+updated: 2026-10-31 10:06
+brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
+priority: medium
+program: devnest-efficiency
+tags:
+- board-api
+- mcp-debug
+- storage-probe
+- follow-up
+spec: 'Parent: ops-manual-command-api-mcp-efficiency-audit (AUD-1033), request gated-follow-ups-from-aud-1033-which-to-8d37ba;
+  Tony answered all three. Implement in sequence with independent tests and no production rollout without its normal
+  gate: (1) runner-agent read projection: after a claim-poll soak, replace only the two /cards reads with the projected
+  endpoint and prove claim/verdict field parity; (2) scoped host_snapshot mcp_debug preset and preset-catalog note,
+  with tool policy and contract tests, no global tool-surface expansion; (3) read-only storage_probe.py S2 job-pack
+  returning the storage-dryrun contract (directory-size table and protected-fragment checks), with a deterministic
+  verifier and no delete/write operations. Preserve existing fallback/rollback behavior.'
+ref: OPS-1037
+comms:
+- at: 2026-10-31 10:06
+  from: tony
+  text: card captured via board-api
