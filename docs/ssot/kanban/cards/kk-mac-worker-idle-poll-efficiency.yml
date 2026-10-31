@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
 column: doing
-updated: 2026-10-31 08:49
+updated: 2026-10-31 09:27
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -28,6 +28,8 @@ action:
   result: 'exit=1 E | devin-task-20261031-084555-investigate-the-live-kk-mac-wo.service: Failed with result ''exit-code''.
     | devin-task-20261031-084555-investigate-the-live-kk-mac-wo.service: Consumed 821ms CPU time over 657ms wall
     clock time, 87M memory peak.'
+  sweep:
+    failed_noted: 2026-10-31 08:49
 note: 'Observed 2026-10-31: worker runs every 15s; 55 runs reported, qwen3:8b resident, recent short verified jobs
   completed in ~0.9s, and worker.err contains rclone timeout plus independent-check failures from older packs. Current
   load spike is transient; sustained CPU was also mediaanalysisd, not Nest.'
@@ -51,3 +53,9 @@ comms:
   text: 'merge-sweep: devin-task-20261031-084555-investigate-the-live-kk-mac-wo failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261031-084555-investigate-the-live-kk-mac-wo by
     hand.'
+- at: 2026-10-31 09:27
+  from: devin
+  text: 'Implemented OPS-1036 in commit fb58de0be: added a reviewed KK-Mac LaunchAgent installer with a safe 60-second
+    default (rejects intervals below 30s) plus 3 tests. Applied the generated plist on KK-Mac; launchd now reports
+    run interval=60s and worker state=running. No worker code or claim/verifier semantics changed. Follow-up: monitor
+    queue latency/load and quarantine old failed packs separately.'
