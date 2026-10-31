@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 09:56
+updated: 2026-10-31 10:09
 priority: medium
 tags:
 - ada-nest
@@ -277,6 +277,12 @@ comms:
     all three rclone checks report zero differences, shared source root untouched. Fresh KK-Mac preflight: AC, 23%
     memory free, 78 GiB disk, no matching owner video process, QC venv ready; however qwen2.5:32b is still `Stopping...`.
     No worker was started. Waiting for it to '
+- at: 2026-10-31 10:09
+  from: devin
+  text: 'Status for the approved static QC: the one-pack isolated Drive root is staged and verified (0 differences).
+    Fresh preflight at 10:03+07 had AC, 22% free memory, 78 GiB disk, no matching owner video process, QC venv ready,
+    but qwen2.5:32b was still `Stopping...`. No worker was started; waiting for Ollama to become empty naturally,
+    then I will rerun the gates and run only this pack.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
