@@ -1,0 +1,168 @@
+title: Missed-job sweep and stale execution audit
+subtitle: Reconcile repeated requests, board claims, live work, and durable artifacts
+icon: search
+
+planning:
+  goal: >-
+    Identify and list missing or stale jobs behind Tony's repeated Cline,
+    DevNest, and Jack OpenCode requests, then define a repeatable verification
+    procedure.
+  scope: >-
+    Sweep live board actions, answered requests, previous Devin summaries
+    since the audit marker, durable repo/CMS/card artifacts, and actual user
+    surfaces. Fix safe stale state and already-approved work; leave public
+    access, spending, and credential gates explicit. Do not start model
+    inference.
+  success_criteria:
+    - Cline and DevNest live surfaces have actual consumer-side evidence.
+    - Running/queued board claims are reconciled against live runner processes and artifacts.
+    - Missing artifacts are listed and linked to existing or new cards without duplication.
+    - A reusable missed-job sweep procedure is registered in SSOT.
+    - The Devin session audit report and marker are updated after the full window is checked.
+  risks:
+    - Old session summaries may repeat the same artifact miss; deduplicate against existing audit cards.
+    - Public Jack OpenCode access would expose a code-execution surface; do not publish without explicit approval and a scoped spend key.
+  resources:
+    - board-api on idc03
+    - PlayLive fallback on tony-omen:9230
+    - Devin session summaries under ~/.local/share/devin/cli/summaries/
+    - Current audit marker ~/.local/share/devin/session-audit-marker
+  owner: Devin
+  estimated_duration: 1 session
+
+processing:
+  status: in_progress
+  started_at: "2026-10-29"
+  steps:
+    - id: 1
+      label: Confirm Cline and DevNest user surfaces
+      status: done
+      notes: >-
+        Cline view was confirmed by Tony. DevNest was PlayLive-blank at the
+        old :8080 URL and is now pointed at the CMS visual report; PlayLive
+        read-back shows 14 specialist rows, no unlock prompt.
+    - id: 2
+      label: Reconcile the approved queue timer request
+      status: done
+      notes: >-
+        Tony answered proceed on OPS-0867, but the timer was absent. Installed
+        and enabled nest-queue-health.timer under the deploy lock; the oneshot
+        succeeded and refreshed the snapshot.
+    - id: 3
+      label: Verify live OpenCode and dispatch state
+      status: done
+      notes: >-
+        idc02 Jack IDE/enrollment services are active, but no OpenCode dispatch
+        task is running. The two route-prep cards were held because the general
+        code-writing lane is disabled and the route remains Tony-gated.
+        OPS-0954, OPS-0955, KNB-0624, and OPS-0876 now have truthful idle/held
+        states. The two stale manual queue badges (SYS-0863 and OPS-0781) are
+        also idle; KNB-0928 is the sole remaining queued manual card and has no
+        runner claim.
+    - id: 4
+      label: Audit prior session summaries and durable artifacts
+      status: in_progress
+      notes: >-
+        Read/scanned 304 prior history files newer than the 2026-10-17 marker
+        (excluding this active session), covering 22,480 assistant messages.
+        Extracted 148 repository artifact paths; 133 are on origin/master and
+        15 exceptions were traced. Confirmed follow-ups are linked to existing
+        cards (OPS-0922, OPS-0927, OPS-0952, OPS-0818, AUD-0938 and related
+        artifact misses) or AUD-0972. External CMS/Drive outputs still need a
+        final per-artifact check, so the audit marker is intentionally unchanged.
+    - id: 5
+      label: Publish the audit result and update the marker
+      status: in_progress
+      notes: >-
+        Created partial findings report devin-session-audit-2026-10-29 through
+        board-api /report and linked it to AUD-0973. Verified the exact page
+        via the configured CMS MDDB endpoint on :11027 and added its title
+        metadata. Do not advance the marker until the remaining CMS/Drive
+        artifact checks are complete.
+  decisions:
+    - label: Keep Jack's public route gated
+      rationale: >-
+        No Cloudflare Access app, DNS record, or Caddy block exists for
+        opencode-jack.surf-thailand.com. The existing job requires explicit
+        Tony sign-off and a scoped spend-capped provider key; no approval or
+        key was inferred.
+      alternatives_considered: >-
+        Reusing the Ada allowlist would grant the wrong identity; publishing
+        without the specified policy or scoped key is unsafe.
+  changes:
+    - file: docs/kb/missed-job-sweep.md
+      summary: Define the board/process/artifact/surface audit procedure.
+    - file: docs/ssot/ssot.procedures.yml
+      summary: Register missed-job-sweep and its triggers.
+
+followup:
+  verification:
+    - Read back board status for every card whose action was held.
+    - Verify all prior summaries newer than the audit marker and record durable homes.
+    - Confirm the CMS audit report exists and contains only redacted data.
+  rollback_plan:
+    - Reopen any held card via board-api if an active runner/worktree is found.
+  handoff:
+    - Present the list of verified misses, corrected statuses, and approval gates to Tony.
+  deferred:
+    - Enable an OpenCode code-writing profile only after a non-paid model route and independent test/review contract are defined.
+    - Do not publish the Jack public route before Tony approves the Access identity and spend boundary.
+
+report:
+  status: in_progress
+  completed_at: null
+  summary: >-
+    Cline is confirmed working; DevNest is now visually verified against the
+    CMS report, and the approved queue timer is active. The initial scan covers
+    304 prior summaries and identified stale claims plus unlanded artifacts;
+    external CMS/Drive checks remain before the session-audit marker can move.
+  metrics:
+    - metric: PlayLive
+      value: old DevNest iframe blank; replacement report renders 14 specialist rows
+    - metric: Queue-health timer
+      value: enabled on tony-dell; first run exit success; snapshot refreshed
+    - metric: Board nonterminal actions
+      value: 7 initially observed; 6 held/cleared; 1 queued manual card remains (KNB-0928), no active runner job
+    - metric: Previous session summaries scanned
+      value: 304; 22,480 assistant messages; 148 repo paths extracted; 133 tracked on origin/master
+    - metric: Audit marker
+      value: remains 2026-10-17T16:02:03 until external artifact verification is complete
+    - metric: Education lesson capture
+      value: >-
+        lesson-add.py --no-th failed twice with board-api 502 on the upstream
+        WordPress lookup; no lesson is claimed landed, AUD-0974 tracks retry.
+    - metric: PlayLive host
+      value: >-
+        tony-dell playlived.service is missing; the healthy tony-omen fallback
+        was used for exact-target visual verification; existing card playlive-idc-targets updated.
+    - metric: Backlog audit
+      value: >-
+        Read-only sweep: 17 answered-queue, 2 answered-hold, 3 obsolete-signal,
+        27 thin, 71 valid; review has 14 done-candidates, 4 answered, 15 waiting-human.
+        The full ID list is in the CMS audit report; signals are not assumed failures.
+  links:
+    - title: Missed-job sweep procedure
+      file: docs/kb/missed-job-sweep.md
+    - title: Devin session audit report
+      page: ada-cms-pages/devin-session-audit-2026-10-29
+    - title: Audit follow-up card
+      card: AUD-0973
+    - title: Missing Ada HA chaba-home snapshot
+      card: AUD-0972
+    - title: Education lesson write timeout
+      card: AUD-0974
+  kb_review:
+    - >-
+      Repository runbook is durable. Education lesson upsert was attempted
+      twice via lesson-add.py --no-th and failed with WP 502/read timeout;
+      AUD-0974 tracks retry after the supported WP lookup recovers.
+  lessons_learned:
+    - HTTP 200 and an answered request are not proof of a visible surface or completed action.
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml
