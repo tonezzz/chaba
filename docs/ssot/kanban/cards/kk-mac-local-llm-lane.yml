@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-31 08:33
+updated: 2026-10-31 10:09
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -283,6 +283,11 @@ comms:
 - at: 2026-10-31 08:33
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-31 10:09
+  from: devin
+  text: 'Triage of the answered egress/hosting requests: local-only and same-host are policy direction, not a per-job
+    inference authorization. No model run, download, or dispatch is armed; execution still needs fresh per-job idle-window/consent
+    and admission preflight.'
 action:
   type: dispatch
   status: done
@@ -362,6 +367,6 @@ requests:
   - id: model-only
     label: Benchmark local model only first; no bot-agent integration yet
   suggested: same-host
-  escalated_at: 2026-10-31 08:33
   answer: same-host — Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
+  escalated_at: 2026-10-31 08:33
 awaiting_action: true
