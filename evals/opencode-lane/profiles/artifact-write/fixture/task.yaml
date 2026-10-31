@@ -1,0 +1,21 @@
+id: artifact-write
+title: Bounded single-file write inside S4 roots
+class: artifact_write
+timeout_s: 420
+artifact: evals/opencode-lane/out/artifact-write-canary.md
+description: >-
+  Write exactly one file — the declared artifact path — inside the
+  worktree using the write/edit tools. Ground the content in the
+  checkout (real reads, real paths). The card spec carries the task,
+  the target path, and optionally action.verify_contains — sentinel
+  strings the held-out verifier requires in the written file.
+contract:
+  required_fields:
+    artifact_path: "file under evals/opencode-lane/out/, reports/, or docs/reports/"
+    min_bytes: "int >= 300 — written file minimum size"
+    verify_contains: "optional list of sentinel strings (from action.verify_contains)"
+  forbidden:
+    - "writes outside the declared artifact path"
+    - "TODO/TBD/placeholder markers"
+    - "emitting the document as the final message instead of writing it"
+    - "bash/shell use of any kind"
