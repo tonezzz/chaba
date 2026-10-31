@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 09:23
+updated: 2026-10-31 09:28
 priority: medium
 tags:
 - ada-nest
@@ -264,6 +264,12 @@ comms:
   text: 'Live host update: trusted idc03→KK-Mac route remains reachable, but a fresh `ollama ps` now shows `qwen2.5:32b`
     active for ~4 more minutes (24 GiB GPU). No packs have run; we do not unload the owner model. After natural
     expiry, repeat the full AC/memory/Ollama/process preflight and then start the isolated one-shot worker if clear.'
+- at: 2026-10-31 09:28
+  from: devin
+  text: 'The four new DocPilot Mac pack sources are committed locally as `4c60fe639` on `feat/docpilot-mac-ltx-v3-20261031`
+    (not pushed); matching manifests/scripts are already staged in the isolated Drive root with zero-difference
+    checks. Runtime remains safely held: Qwen2.5:32B is still present/`Stopping...`; wait until `ollama ps` is empty,
+    then rerun full admission before any one-shot worker.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
