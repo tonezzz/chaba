@@ -1,6 +1,6 @@
 id: ops-manual-command-api-mcp-efficiency-audit
 title: Audit repeated manual commands and optimize API/MCP workflow efficiency
-column: backlog
+column: doing
 updated: 2026-10-31 08:16
 brief: Measure recurring manual shell/API/MCP workflows and replace the highest-cost repetitive paths with compact,
   typed, auditable interfaces.
@@ -25,7 +25,9 @@ spec: Audit recent OpenCode/Devin/Nest command sequences, especially long shell/
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  lane: codemod
+  runner: idc02
 note: Existing policy requires benchmark, testing, rollback, monitoring, scoped tool surfaces, action-param tools,
   and on-demand detail. This card turns those rules into a measured command-to-API/MCP migration loop.
 ref: AUD-1033
@@ -33,3 +35,6 @@ comms:
 - at: 2026-10-31 08:16
   from: tony
   text: card captured via board-api
+- at: 2026-10-31 08:16
+  from: idc02
+  text: claimed
