@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 10:51
+updated: 2026-10-31 10:58
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -326,6 +326,12 @@ comms:
     resident for ~50 minutes and `memory_pressure` reports 68% free. This fails the no-resident-model gate (and
     the panel 80%-free gate). No worker or render started; I will not unload the owner model. All 30 private panel
     packs and the T5 pack remain staged with serial dependencies.'
+- at: 2026-10-31 10:58
+  from: devin
+  text: 'Fresh read after pack staging: KK-Mac is still on AC, but `ollama ps` shows `qwen3:8b` resident (7.2GB
+    GPU, lease ~45min) and system memory free 67%. The one-shot root has no claim/done/failed/out markers for static
+    QC, DocPilot T5/LTX, S04, panel embeddings, or S01-C01; no job has run. The 30-panel chain is fully staged and
+    hash-verified. No unload or worker launch while this owner model remains resident.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
