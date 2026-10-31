@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 09:21
+updated: 2026-10-31 09:22
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -269,6 +269,12 @@ comms:
 - at: 2026-10-31 09:21
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 09:22
+  from: devin
+  text: 'Updated live gate: a fresh trusted idc03→KK-Mac query now shows `qwen2.5:32b` resident (24 GiB GPU, Ollama
+    reports `Stopping...`). The host is reachable and on AC, but the no-resident-model gate is still not clear.
+    I will not unload it or start the worker; wait for natural unload and then repeat preflight. All seven S04–S10
+    packs remain staged and claim-gated.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
