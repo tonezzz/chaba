@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
 column: review
-updated: 2026-10-30 22:00
+updated: 2026-10-31 07:32
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -57,13 +57,20 @@ comms:
   text: 'Safety note: the PR worktree''s in-progress merge points at b4da506, while `git ls-remote origin master`
     now reports 4633d103 (one commit newer). No merge commit or push has been made; the branch will need that latest
     remote commit integrated before any push.'
+- at: 2026-10-31 07:32
+  from: tony
+  text: 'answered pr62-kkmac-warning-baseline-resolution: defer-owner-fix — Keep PR #62 blocked; let the OPS-0966
+    owner trim the card or resolve its warning first (recommended).'
+- at: 2026-10-31 07:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 review_kind: verify
 requests:
 - id: pr62-kkmac-warning-baseline-resolution
   ask: 'PR #62''s code/tests pass, but after syncing the current master the SSOT warning gate finds one unrelated
     unbaselined warning: OPS-0966 `kk-mac-local-llm-lane.yml` is 356 lines, over the 350-line review threshold.
     I did not edit that active card or the warning baseline. Which safe route should unblock PR validation?'
-  status: open
+  status: answered
   at: 2026-10-30 21:40
   from: devin
   options:
@@ -73,3 +80,6 @@ requests:
     label: Approve a full SSOT optimizer baseline refresh that records this known warning without changing OPS-0966
       content.
   suggested: defer-owner-fix
+  answer: 'defer-owner-fix — Keep PR #62 blocked; let the OPS-0966 owner trim the card or resolve its warning first
+    (recommended).'
+awaiting_action: true
