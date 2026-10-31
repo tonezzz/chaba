@@ -99,7 +99,9 @@ followup:
     - Revert only this branch's SSOT, host-audit, system-map, and documentation pointer edits.
     - No live services, credentials, or webhook state are modified.
   handoff:
-    - Update OPS-0963 through board-api with commit and audit evidence.
+    - "OPS-0963 moved to review via board-api; the MN identity/policy request remains open."
+    - "Implementation commit ad2fe7512 is pushed to origin/feat/messenger-control-inventory-20261031."
+    - "Rerun a fresh idc03 host audit after SSH connectivity is restored, then update OPS-0963."
   deferred:
     - Retry a fresh idc03 audit after SSH connectivity is restored.
     - Resolve whether @mn_ha_bot and @KrautMNBot refer to distinct identities.
@@ -121,6 +123,7 @@ report:
     - "SSOT refs: 3395 files parsed, 0 broken refs."
     - "Optimization gate: 48 warnings, all covered by baseline."
     - "LINE migration parity: 6 groups, 7 persona mappings, 3 caller aliases preserved; sender IDs not copied."
+    - "Branch feat/messenger-control-inventory-20261031; implementation commit ad2fe7512 pushed."
   links:
     - title: OPS-0963
       file: docs/ssot/kanban/cards/messenger-control-inventory.yml
