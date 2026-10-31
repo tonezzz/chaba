@@ -1,7 +1,7 @@
 id: cline-nest-failure-artifact-durability
 title: Persist Cline Nest diagnostics when task execution fails
-column: review
-updated: 2026-10-31 07:32
+column: done
+updated: 2026-10-31 08:16
 brief: A Cline task can fail after creating a task ID but before producing the expected file; nest-worker currently
   exits before uploading the adapter’s failure evidence. Preserve only declared diagnostics without marking the
   pack done.
@@ -64,6 +64,9 @@ comms:
 - at: 2026-10-31 07:32
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 08:16
+  from: tony
+  text: closed by tony
 review_kind: verify
 requests:
 - id: pr62-kkmac-warning-baseline-resolution
@@ -82,4 +85,5 @@ requests:
   suggested: defer-owner-fix
   answer: 'defer-owner-fix — Keep PR #62 blocked; let the OPS-0966 owner trim the card or resolve its warning first
     (recommended).'
-awaiting_action: true
+action:
+  status: done
