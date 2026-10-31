@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 12:32
+updated: 2026-10-31 12:45
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -362,6 +362,13 @@ comms:
     stop it. To avoid the main worker scanning all approved queues, I created a separate private smoke root containing
     only the panel T5 embed pack plus S01-C01 and S01-C02 (two 6s image-guided cuts). Inputs, approval marker, model
     archive and runner hashes were verified. I am launching onl'
+- at: 2026-10-31 12:45
+  from: devin
+  text: Controlled render smoke actually started at 12:32:51 in the isolated `ada-nest-kk-mac-render-smoke-20261031`
+    root; it contains only the panel T5 pack plus S01-C01/C02, not the production queue. The embed pack has loaded
+    T5 and is encoding the 30 action prompts on CPU (~764% aggregate CPU, ~89% memory free at 12:45). It is still
+    working; no MP4 exists yet. Once embeddings finish, this same one-shot will render the two 6s panel clips. Main
+    video root remains untouched; no Ollama model was stopped,
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
