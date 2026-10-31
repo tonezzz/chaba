@@ -1,11 +1,13 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
-column: review
-updated: 2026-10-31 08:45
+column: doing
+updated: 2026-10-31 08:49
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
-  Read each profile.yml: report id, status, task_classes, artifact mode+format, which tools are enabled (read/grep/bash/write/edit),
-  the verifier type, and rollback kind. A table is expected. Must name all of: ops-readonly, doc-draft, artifact-write,
-  ssot-research, mddb-sequence, storage-dryrun, branch-code — and mark branch-code as status:disabled.
+  The files exist — read them directly: evals/opencode-lane/profiles/ops-readonly/profile.yml and the six siblings
+  in that same directory. Report each profile file id, status, task_classes, artifact mode+format, which tools are
+  enabled (read/grep/bash/write/edit), the verifier type, and rollback kind. A table is expected. Must name all
+  of: ops-readonly, doc-draft, artifact-write, ssot-research, mddb-sequence, storage-dryrun, branch-code — and mark
+  branch-code as status:disabled.
 
 
   WRITE the file at the declared path using the write tool — do NOT emit the document as your message. End with
@@ -18,7 +20,7 @@ action:
   executor: opencode
   agent_profile: artifact-write
   artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
-  status: done
+  status: running
   result: 'exit=0 622e0bffeSY3xbdjkd69fps","type":"step-finish","tokens":{"total":33039,"input":32556,"output":195,"reasoning":288,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-devnest-fl-pilot-artwrite3-1793410843.service: Consumed 24.945s CPU time.'
   runner: idc02
@@ -70,5 +72,8 @@ comms:
 - at: 2026-10-31 08:45
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-31 08:49
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
