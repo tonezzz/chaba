@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-30 21:51
+updated: 2026-10-31 07:21
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -215,6 +215,13 @@ comms:
     black pass; 219,792B, SHA-256 `b2b94bdceddf915a31141eae9d681ffd95ed7292200675d1feb06f82764a34f1`. Private artifact
     and probe report are in the isolated video-pilot root. No narration/mux. Human visual review is still pending;
     I raised the review/continue decision before S04–S10.'
+- at: 2026-10-31 07:21
+  from: devin
+  text: 'Preparation update (no renders launched): Sacred Father S04–S10 one-shot packs are staged in the isolated
+    KK-Mac video root, input hashes/pages checked (p18/21/24/27/30/33/36), and all seven `prep` blocks now use the
+    macOS-compatible owner-app check proven by the S03 run. `rclone check` reports zero differences; each remains
+    unclaimed and still requires `kk-mac-storyboard-i2v-visual-review-approved-20261030`. No review marker was created
+    and no worker was started.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
