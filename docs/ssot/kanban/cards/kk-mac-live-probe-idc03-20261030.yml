@@ -1,7 +1,7 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
 column: review
-updated: 2026-10-30 15:22
+updated: 2026-10-31 10:09
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
 priority: high
@@ -108,6 +108,12 @@ comms:
 - at: 2026-10-30 15:22
   from: chaba
   text: run finished (unknown) → review
+- at: 2026-10-31 10:09
+  from: devin
+  text: The reachable answer led to a retry, but the current action is still `finished (unknown)` with no task_id.
+    Earlier comms report a local verifier pass and patch bundle `1f1696502` in patch-inbox, but I cannot find a
+    durable result artifact in origin/master. Keeping this in review until the patch/result is landed and the verified
+    gate is supported by evidence; no new inference run without a fresh idle-window preflight.
 review_kind: verify
 claim: {}
 requests:
