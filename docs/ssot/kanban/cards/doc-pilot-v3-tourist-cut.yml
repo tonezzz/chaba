@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 09:12
+updated: 2026-10-31 09:22
 priority: medium
 tags:
 - ada-nest
@@ -253,6 +253,12 @@ comms:
     disk, no editor/compute process, MPS available, required LTX snapshot files present, and Torch/Transformers/Diffusers/ffmpeg
     imports available. Qwen3:8B remains resident for ~7 minutes; I will not unload it or start any package until
     it expires and a fresh preflight confirms the no-model gate.
+- at: 2026-10-31 09:22
+  from: devin
+  text: 'Updated live gate: KK-Mac is reachable via idc03 and AC/memory/cache/dependency checks look good, but the
+    latest `ollama ps` shows `qwen2.5:32b` resident (24 GiB GPU; `Stopping...`). I did not unload it or start the
+    worker. Wait for it to disappear naturally, then run the fresh full preflight; static QC, T5 embed, and S04
+    are the only currently claimable packs, with LTX shots08/09 dependent on embeddings.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
