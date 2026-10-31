@@ -1,6 +1,6 @@
 id: devnest-fl-pilot-artwrite
 title: 'OpenCode artifact-write pilot 1: lane status report (first S4 write job)'
-column: backlog
+column: doing
 updated: 2026-10-31 08:15
 spec: 'Write docs/reports/opencode-lane-status-2026-10-30.md — a lane status report. Ground it in the checkout:
   read evals/opencode-lane/profiles/ops-readonly/profile.yml, evals/opencode-lane/profiles/doc-draft/profile.yml,
@@ -21,7 +21,8 @@ action:
   executor: opencode
   agent_profile: artifact-write
   artifact: docs/reports/opencode-lane-status-2026-10-30.md
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1032
 comms:
 - at: 2026-10-31 08:15
@@ -30,3 +31,6 @@ comms:
 - at: 2026-10-31 08:15
   from: devin
   text: queued for processing
+- at: 2026-10-31 08:15
+  from: idc02
+  text: claimed
