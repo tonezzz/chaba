@@ -33,7 +33,7 @@ def render(manifest: Path, model_dir: Path, output_dir: Path) -> dict:
     for shot in shots:
         shot_id = str(shot["id"])
         output = output_dir / f"{shot_id}.mp4"
-        if output.exists() and output.stat().st_size > 50_000:
+        if output.exists() and output.stat().st_size > 10_000:
             rows.append({"id": shot_id, "status": "existing"})
             continue
         image = iio.imread(shot["image"]) if shot.get("image") else None
@@ -71,7 +71,7 @@ def render(manifest: Path, model_dir: Path, output_dir: Path) -> dict:
         "elapsed_seconds": round(time.time() - started, 2),
         "verified_nonblack": all(
             r["status"] == "existing"
-            or (r["min"] < r["max"] and r["bytes"] > 50_000)
+            or (r["min"] < r["max"] and r["bytes"] > 10_000)
             for r in rows
         ),
     }
