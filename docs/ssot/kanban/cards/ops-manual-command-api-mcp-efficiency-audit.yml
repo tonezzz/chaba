@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-audit
 title: Audit repeated manual commands and optimize API/MCP workflow efficiency
 column: doing
-updated: 2026-10-31 08:27
+updated: 2026-10-31 08:34
 brief: Measure recurring manual shell/API/MCP workflows and replace the highest-cost repetitive paths with compact,
   typed, auditable interfaces.
 priority: high
@@ -51,3 +51,9 @@ comms:
     — /cards is 5.2MB, runner polls it ~60s. Implemented GET /card/<id> + /cards filters/fields/compact + host_snapshot.py
     job-pack; bench on live fixture: 95.8-99.97% byte cut, evidence-equal, 29 tests OK. Writing contracts+report
     next.'
+- at: 2026-10-31 08:34
+  from: devin
+  text: 'DONE on dispatch branch 21b4309ca: GET /card/<id> + /cards?filters/fields/compact/limit read projection
+    (95.8-99.97% byte cuts, evidence-equal, bench on live fixture), host_snapshot.py job-pack (~10 probes->1), 29
+    new tests green (333 board + 96 profiles). Durable: audit report, read-door kb, token-tools catalog, job yml.
+    No deploys/MCP changes — gated follow-ups in request.'
