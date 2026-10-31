@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: backlog
-updated: 2026-10-31 10:23
+updated: 2026-10-31 12:56
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -61,3 +61,9 @@ comms:
     shards 00002-00004 are missing. The LTX 2B checkpoint is present, but the text encoder cannot load. Next: resume/complete
     the model import, verify all referenced files/checksums, run exactly one MLX control shot + decode/QC, then
     queue the finite render batch.'
+- at: 2026-10-31 12:56
+  from: devin
+  text: 'FIRST CLEAN CONTROL RENDER PASSED 2026-10-31. Repaired all four T5 text-encoder shards plus the 2B checkpoint
+    from Omen mirror, installed compatible MLX runtime, rendered `kk-first-control-final.mp4` on KK-Mac: 17 frames,
+    768x480 H.264, 24fps, ~40s generation. Frame QC non-black: min=0 max=255 mean=150.0. Durable artifact: gdrive:ada-nest-kk-mac-video-pilot/controls/kk-first-control-final.mp4.
+    The earlier black control was rejected due corrupt/incomplete model files. Next gate is prompt/quality '
