@@ -1,0 +1,35 @@
+id: ops-manual-command-api-mcp-efficiency-audit
+title: Audit repeated manual commands and optimize API/MCP workflow efficiency
+column: backlog
+updated: 2026-10-31 08:16
+brief: Measure recurring manual shell/API/MCP workflows and replace the highest-cost repetitive paths with compact,
+  typed, auditable interfaces.
+priority: high
+program: devnest-efficiency
+tags:
+- api
+- mcp
+- tokens
+- efficiency
+- observability
+spec: Audit recent OpenCode/Devin/Nest command sequences, especially long shell/python/curl orchestration used for
+  board actions, status checks, test gates, MCP probes, and artifact verification. Inventory each sequence by intent,
+  repeat frequency, wall time, bytes/tokens, failure/retry rate, permission risk, and whether a canonical API/MCP
+  endpoint already exists. Classify each as keep shell, script/job-pack, board-api endpoint, scoped MCP tool, or
+  composite workflow. For candidates, design the smallest provider-neutral contract with structured input/output,
+  pagination/limits, compact mode, idempotency key, timeout, audit event, authorization scope, deterministic verifier,
+  and rollback. Benchmark manual baseline versus replacement on identical fixtures; require no capability regression,
+  lower token/command overhead, and equal-or-better evidence quality. Update SSOT token/tool catalog and an operational
+  procedure; land durable reports and tests. Do not expose secrets, broaden MCP globally, or deploy production changes
+  without an explicit gate.
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+note: Existing policy requires benchmark, testing, rollback, monitoring, scoped tool surfaces, action-param tools,
+  and on-demand detail. This card turns those rules into a measured command-to-API/MCP migration loop.
+ref: AUD-1033
+comms:
+- at: 2026-10-31 08:16
+  from: tony
+  text: card captured via board-api
