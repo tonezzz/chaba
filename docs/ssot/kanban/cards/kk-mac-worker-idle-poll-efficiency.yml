@@ -1,6 +1,6 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
-column: backlog
+column: doing
 updated: 2026-10-31 08:45
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
@@ -23,7 +23,8 @@ spec: 'Investigate the live KK-Mac worker: net.adanest.kk-llm-worker LaunchAgent
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
+  runner: tony-macbook
 note: 'Observed 2026-10-31: worker runs every 15s; 55 runs reported, qwen3:8b resident, recent short verified jobs
   completed in ~0.9s, and worker.err contains rclone timeout plus independent-check failures from older packs. Current
   load spike is transient; sustained CPU was also mediaanalysisd, not Nest.'
@@ -32,3 +33,6 @@ comms:
 - at: 2026-10-31 08:45
   from: tony
   text: card captured via board-api
+- at: 2026-10-31 08:45
+  from: tony-macbook
+  text: claimed
