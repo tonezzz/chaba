@@ -58,7 +58,11 @@ def verify(run_dir):
     checks["not rails echo"] = (
         not stripped.startswith("Rails: you are processing")
         and "Rails: you are processing" not in stripped[:400])
-    bad = [m for m in BAD_MARKERS if m.lower() in stripped.lower()]
+    # word-boundary match — 'todowrite'/'read_todo' tool names must not
+    # trip placeholder markers (artwrite3 pilot 1793410460 false-fail)
+    bad = [m for m in BAD_MARKERS
+           if re.search(r"(?i)(?<![a-z])" + re.escape(m) + r"(?![a-z])",
+                        stripped)]
     checks["no placeholder markers"] = not bad
     if bad:
         checks["markers found"] = bad
