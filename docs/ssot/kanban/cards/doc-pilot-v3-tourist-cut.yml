@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-10-31 09:22
+updated: 2026-10-31 09:23
 priority: medium
 tags:
 - ada-nest
@@ -259,6 +259,11 @@ comms:
     latest `ollama ps` shows `qwen2.5:32b` resident (24 GiB GPU; `Stopping...`). I did not unload it or start the
     worker. Wait for it to disappear naturally, then run the fresh full preflight; static QC, T5 embed, and S04
     are the only currently claimable packs, with LTX shots08/09 dependent on embeddings.'
+- at: 2026-10-31 09:23
+  from: devin
+  text: 'Live host update: trusted idc03→KK-Mac route remains reachable, but a fresh `ollama ps` now shows `qwen2.5:32b`
+    active for ~4 more minutes (24 GiB GPU). No packs have run; we do not unload the owner model. After natural
+    expiry, repeat the full AC/memory/Ollama/process preflight and then start the isolated one-shot worker if clear.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
