@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-10-31 11:59
+updated: 2026-10-31 12:13
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -342,6 +342,13 @@ comms:
   from: devin
   text: 'raised request kk-mac-ssh-route-20261031: Hostname diagnosis: this client has no SSH Host entry for KKs-Mac-Studio;
     the bare name fails DNS. The canonical tailnet'
+- at: 2026-10-31 12:13
+  from: tony
+  text: 'answered kk-mac-ssh-route-20261031: proxyjump-readonly — approve one read-only current status check via
+    the documented tony-dell ProxyJump route. No key/config/service changes, model unload, or render launch.'
+- at: 2026-10-31 12:13
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
@@ -405,7 +412,7 @@ requests:
     A direct read-only attempt to `kkkakk@kk-mac` reached SSH but was denied with `Permission denied (publickey,password,keyboard-interactive)`.
     The SSOT documents a tony-dell ProxyJump route. May I use that documented jump path for one read-only host/Ollama/memory
     check? No key installation, SSH config edit, model unload, service change, or render is included.'
-  status: open
+  status: answered
   at: 2026-10-31 11:59
   from: devin
   options:
@@ -415,4 +422,6 @@ requests:
   - id: hold-remote-check
     label: Do not use another route; have KK/you provide the current Mac status or resolve SSH authorization later.
   suggested: proxyjump-readonly
+  answer: proxyjump-readonly — approve one read-only current status check via the documented tony-dell ProxyJump
+    route. No key/config/service changes, model unload, or render launch.
 awaiting_action: true
