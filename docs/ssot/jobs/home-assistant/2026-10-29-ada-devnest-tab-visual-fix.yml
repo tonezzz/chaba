@@ -1,0 +1,154 @@
+title: Ada HA DevNest tab visual fix
+subtitle: Replace the blank Node-RED iframe with the verified DevNest visual report
+icon: target
+
+planning:
+  goal: >-
+    Make https://ada-ha.surf-thailand.com/chaba-admin/devnest render the
+    intended DevNest visual map instead of the empty Node-RED static endpoint.
+  scope: >-
+    Update only the Ada HA chaba-admin DevNest iframe through the supported
+    WebSocket mutation path, reuse the existing read-only CMS viewer key from
+    the adjacent Ada Pages view, then read back, visually verify with PlayLive,
+    and sync a sanitized snapshot. Do not alter Node-RED services, Caddy routes,
+    DNS, or create a new API key.
+  success_criteria:
+    - The live DevNest view uses embed=1 and the devnest-visual-map report route.
+    - PlayLive shows report text and specialist rows without an Unlock Pages prompt.
+    - The live dashboard WebSocket read-back and sanitized SSOT snapshot agree.
+  risks:
+    - The CMS viewer key remains in the iframe URL, matching the existing Ada Pages embed; never print or add a new key.
+    - The report may expose stale or unhealthy system facts; render them honestly rather than hiding warnings.
+  resources:
+    - Ada HA at tony-omen:8125; refresh-token alias ada-ha-live
+    - PlayLive fallback daemon on tony-omen:9230 (tony-dell primary unavailable)
+    - CMS report devnest-visual-map on idc03
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Ada HA chaba-admin dashboard and live DevNest correction
+      file: docs/ssot/jobs/home-assistant/2026-10-29-cline-ada-ha-tab.yml
+
+processing:
+  status: done
+  started_at: "2026-10-29"
+  steps:
+    - id: 1
+      label: Verify the blank production surface
+      status: done
+      notes: >-
+        The live iframe was https://tony-dell.taila0626a.ts.net:8080/apps/node-red/.
+        PlayLive on tony-omen showed an empty document (blank title, zero body
+        text, no DOM widgets); port 8080 is the Caddy static endpoint.
+    - id: 2
+      label: Verify the intended CMS report in PlayLive
+      status: done
+      notes: >-
+        Used the existing Ada Pages viewer URL in memory, adding embed=1 and
+        #/devnest-visual-map. PlayLive showed the DevNest visual map, 14
+        specialist rows, and no Unlock Pages modal. The existing viewer key
+        was not printed or copied into this job record.
+    - id: 3
+      label: Repoint the live DevNest iframe
+      status: done
+      notes: >-
+        Prepare an idempotent mutate(config) script that derives the target
+        from the existing Ada Pages iframe URL, then push via push-dashboard.py
+        using ada-ha-live. The saved target is the CMS report's embed=1 URL
+        with the #/devnest-visual-map route; no viewer key was printed or
+        newly created.
+    - id: 4
+      label: Read back, visually verify, and sync SSOT
+      status: done
+      notes: >-
+        WebSocket read-back confirms the DevNest panel points at the CMS
+        report. PlayLive on the exact live iframe URL shows 14 specialist
+        rows and report text, with no Unlock Pages modal. The sanitized
+        Ada snapshot is synced; both existing CMS api_key values are redacted.
+  decisions:
+    - label: Embed the report, not the Node-RED editor
+      rationale: >-
+        PlayLive proved the current :8080 target is blank. The existing
+        devnest-visual-map CMS report renders the intended human-facing
+        specialist table and flow health facts.
+      alternatives_considered: >-
+        The Node-RED editor is an administrative surface and its current iframe
+        target is blank; changing Node-RED routing/services is outside this fix.
+    - label: Reuse the existing Ada Pages viewer
+      rationale: >-
+        The adjacent Ada Pages iframe already uses this read-only CMS viewer.
+        Reusing it avoids a new key or prompt; the dashboard snapshot sanitizer
+        redacts the query value.
+      alternatives_considered: >-
+        A new Access-protected CMS proxy would be preferable for eventual
+        retirement of query-key embeds, but requires a separate route/security
+        design and is not needed for this focused repair.
+  changes:
+    - file: scripts/home-assistant/mutate-ada-ha-devnest-tab.py
+      summary: Idempotently repoint the DevNest panel to the embedded CMS visual report using the existing Ada Pages viewer URL.
+    - file: tests/test_ada_ha_devnest_dashboard.py
+      summary: Cover target URL construction, key reuse, and idempotence without exposing a real key.
+    - file: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+      summary: Sync sanitized live Ada HA dashboard snapshot after the WebSocket mutation.
+    - file: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+      summary: Document the Ada DevNest panel target and viewer-key reuse.
+    - file: docs/ssot/infrastructure/ssot.home-assistant.instances.yml
+      summary: Document the live Ada chaba-admin DevNest report view.
+
+followup:
+  verification:
+    - Read back the Ada chaba-admin view over WebSocket; path devnest must point to devnest-visual-map.
+    - PlayLive screenshot must show report content and specialist rows with no unlock prompt.
+    - Run scripts/home-assistant/sync-ssot-from-live.sh --instance ada-ha and confirm the key is redacted.
+  rollback_plan:
+    - Restore the previous iframe URL https://tony-dell.taila0626a.ts.net:8080/apps/node-red/ via push-dashboard.py.
+  handoff:
+    - >-
+      Tony can review the DevNest tab; the 11:45 ICT PlayLive check shows the
+      report content, 14 rows, and no unlock prompt. Queue state is drained
+      with no stale claims after the held actions were reconciled.
+    - Keep Node-RED editor routing distinct; the :8080 preview is not the Node-RED route and is blank.
+  deferred:
+    - Replace legacy CMS query-key embeds with a server-side Access-protected viewer route.
+    - Reconcile the Node-RED placement mismatch between the Dell instance and the route SSOT pointing to Omen.
+
+report:
+  status: done
+  completed_at: "2026-10-29"
+  summary: >-
+    PlayLive proved the old :8080 iframe target was blank. The live Ada HA
+    DevNest panel now embeds the existing CMS devnest-visual-map report in
+    document-only mode, reusing the viewer key already used by Ada Pages.
+    Live WebSocket read-back and a PlayLive screenshot confirm visible report
+    text and all 14 specialist rows without an unlock prompt. The snapshot is
+    sanitized; no Node-RED services or routes were changed. The approved
+    queue-health timer is active; after stale dispatch actions were held, the
+    refreshed report shows 1 queued, 0 running, and no stale claims.
+  metrics:
+    - metric: Current iframe PlayLive
+      value: old :8080 URL returned a blank document; title/body empty
+    - metric: DevNest CMS report PlayLive
+      value: exact live iframe URL shows 14 specialist rows; text visible; unlock modal absent
+    - metric: Dispatch queue shown by report
+      value: 11:45 ICT — 1 queued, 0 running, no stale claims; drained, 1 pending of 60 packs, snapshot 2m old
+    - metric: Snapshot redaction
+      value: 2 existing CMS api_key query values redacted
+  links:
+    - title: DevNest flow job
+      file: docs/ssot/jobs/devnest/2026-10-28-node-red-devnest-map.yml
+    - title: Node-RED visual map card
+      file: docs/ssot/kanban/cards/node-red-devnest-visual-map.yml
+  kb_review: []
+  lessons_learned:
+    - >-
+      HTTP 200 for an iframe target does not prove it renders. Require a
+      PlayLive screenshot of the actual consumer surface before marking a
+      dashboard tab verified.
+
+config:
+  version: 1
+  created_at: 2026-10-29
+  last_updated: 2026-10-29
+  maintainer: Devin
+  related_files:
+    - docs/ssot/templates/job.yml

@@ -163,3 +163,11 @@ an output surface, not ground truth:
 5. **Every Tony-facing request must carry options** — an ask without
    buttons is a rendering failure, now enforced at board-api. If one
    appears, it's an invariant breach worth a repeat-ask increment.
+
+## Multi-job follow-through
+
+When Tony reports repeated or missing work across several cards, run
+`docs/kb/missed-job-sweep.md` in addition to the applicable M-methods above.
+It cross-checks board actions against live task processes, durable artifacts,
+answered-request outcomes, and PlayLive evidence for the actual user surface.
+Do not treat an HTTP 200 or an agent's “finished” note as visual completion.
