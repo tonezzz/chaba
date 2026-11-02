@@ -205,6 +205,20 @@ hosts:
       - laptop
       - portable
     note: ssh alias 'macbook' -> tony@100.77.76.112 (id_ed25519_macbook on omen, id_cascade on dell). Standard Linux command set applies.
+  con01:
+    name: con01 (Colab/OpenClaw runner)
+    description: GPU runner + jobs host — chaba-audit, mddb-vector-reindex, devin-bank-distill units
+    role: runner
+    hostname: con01
+    ssh_user: tony
+    mcp_debug_path: /home/tony/.local/bin/mcp-debug
+    compact: true
+    clipboard: false
+    tags:
+      - runner
+      - gpu
+      - colab
+    note: mcp-debug installed 2026-11-02 to unblock ops-remote-read remote diagnosis (OPS-1021) — reachable from tony-dell via the 'con01' ssh alias.
 debug_commands:
   systemctl list-units:
     description: Running systemd services

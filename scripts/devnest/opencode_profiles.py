@@ -331,8 +331,13 @@ def render_config(env: dict, prof: dict) -> dict:
         "$schema": "https://opencode.ai/config.json",
         "model": env["model"],
         "agent": {a: {"disable": True} for a in DENIED_BUILTIN_AGENTS},
+        # doom_loop must be "deny", not "ask": profile runs are
+        # non-interactive (`opencode run`), so an "ask" can never be
+        # answered — the loop aborts with a 0-token final step and the
+        # agent never emits its artifact (OPS-1021, 2026-11-02). A deny
+        # is fed back to the model, which must then synthesize a reply.
         "permission": {"external_directory": "deny",
-                       "doom_loop": "ask"},
+                       "doom_loop": "deny"},
         "mcp": {},
     }
     cfg["agent"][agent_name(pid)] = agent
