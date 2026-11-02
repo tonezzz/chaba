@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-10-31 10:13
+updated: 2026-11-02 08:58
 priority: medium
 tags:
 - telegram
@@ -50,12 +50,20 @@ comms:
     complete in commit 7007e858e; implementation is commit ad2fe7512 on pushed branch feat/messenger-control-inventory-20261031.
     Card remains in review with MN identity/policy request open. Fresh idc03 audit is deferred because the later
     SSH recheck reset by peer; the last successful live snapshot remains 09:30 +07.'
+- at: 2026-11-02 08:58
+  from: tony
+  text: 'answered mn-bot-identity-and-group-policy-20261031: Tony confirms @mn_ha_bot does not exist; use @KrautMNBot
+    as the canonical MN/Kraut handle. This resolves identity only. Keep generic ada-tg-relay-mn group sends denied
+    (TG_PUSH_DENY) until separately '
+- at: 2026-11-02 08:58
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
     and the general Ada-MN relay is marked TG_PUSH_DENY while Rika alerts use a separate route. Which identity/policy
     should the canonical inventory record? General group sends remain denied until explicitly resolved.'
-  status: open
+  status: answered
   at: 2026-10-31 10:10
   from: devin
   options:
@@ -68,4 +76,8 @@ requests:
   - id: distinct-bots
     label: Confirm they are distinct bots and specify which handle owns the MN lane.
   suggested: keep-denied
+  answer: Tony confirms @mn_ha_bot does not exist; use @KrautMNBot as the canonical MN/Kraut handle. This resolves
+    identity only. Keep generic ada-tg-relay-mn group sends denied (TG_PUSH_DENY) until separately authorized; the
+    Rika alert route remains distinct.
 review_kind: verify
+awaiting_action: true
