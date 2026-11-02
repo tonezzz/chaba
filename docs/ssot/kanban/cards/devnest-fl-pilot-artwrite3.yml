@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite3
 title: 'OpenCode artifact-write pilot 3: profile inventory report'
 column: doing
-updated: 2026-10-31 10:34
+updated: 2026-11-02 10:58
 spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
   The files exist — read them directly: evals/opencode-lane/profiles/ops-readonly/profile.yml and the six siblings
   in that same directory. Report each profile file id, status, task_classes, artifact mode+format, which tools are
@@ -30,6 +30,7 @@ action:
   sweep:
     stale_running: 2026-10-31 09:04
     dirty: 2
+    failed_noted: 2026-10-31 10:34
 ref: OPS-1035
 comms:
 - at: 2026-10-31 08:26
@@ -137,5 +138,12 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-devnest-fl-pilot-artwrite3-1793410460 failed — its branch isn''t auto-merged (unverified
     partial work). Retry the card or merge dispatch/devnest-fl-pilot-artwrite3-1793410460 by hand.'
+- at: 2026-11-02 10:58
+  from: devin
+  text: 'evidence-complete after 6 attempts — deliverable never landed, findings captured: (1) verifier false-positives
+    fixed en route (4f3ab7aef); (2) qwen3:8b path-discipline broken on file-mode writes — 3 attempts, 3 wrong/invented
+    paths (2023-10-27 filename, docs/ssot-research/inventory.md, claimed-absent dir); message-mode profiles unaffected
+    since runner lands artifact; (3) qwen2.5:32b latency floor — ~6tok/s via 3-hop path = >40min to read 7 profiles,
+    hit 2400s bound twice; (4) RuntimeMaxSec bound'
 review_kind: verify
 claim: {}
