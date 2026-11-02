@@ -163,6 +163,15 @@ def card_target_host(card: dict) -> str:
     return str((card.get("action") or {}).get("target_host") or "").strip()
 
 
+def card_subject_host(card: dict) -> str:
+    """Declared diagnosis SUBJECT (action.subject_host) — the host the
+    task inspects, distinct from where it executes (OPS-1025: remote-read
+    profiles diagnose a remote host while running locally; hijacking
+    target_host for that collided with the claim pin and made the card
+    unclaimable fleet-wide)."""
+    return str((card.get("action") or {}).get("subject_host") or "").strip()
+
+
 def card_task_class(card: dict) -> str:
     """Declared bounded task class (action.task_class) — required when
     executor=kk_mac_local; ignored by every other executor."""

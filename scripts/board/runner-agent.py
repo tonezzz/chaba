@@ -713,6 +713,7 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
                # empty and their own conditional checks skip it as before.
                "envelope": {"id": tid, "card": cid,
                             "target_host": str(a.get("target_host") or ""),
+                            "subject_host": str(a.get("subject_host") or ""),
                             "model": meta.get("model"),
                             "executor": meta.get("executor"),
                             "profile": meta.get("profile"),

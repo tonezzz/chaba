@@ -198,7 +198,8 @@ ACTION_TYPES = {"dispatch", "manual"}
 # silently dropped so a spawn can't fake a running card
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
-               "artifact", "task_class", "prompt", "expect", "lane")
+               "artifact", "task_class", "prompt", "expect", "lane",
+               "subject_host")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -1191,6 +1192,15 @@ def do_create(body: dict, frm: str) -> dict:
         if th and not dr.HOST_ID_RE.match(th):
             raise ValueError(
                 "action.target_host must be a host id "
+                "([a-z0-9][a-z0-9.-], max 63)")
+        # subject_host is the diagnosis subject, NOT an execution pin —
+        # remote-read profiles need it without pinning the claim
+        # (OPS-1021 third defer storm: every host read target_host=con01
+        # as 'run on con01' and deferred, 2026-11-02)
+        sh = str(act.get("subject_host") or "").strip()
+        if sh and not dr.HOST_ID_RE.match(sh):
+            raise ValueError(
+                "action.subject_host must be a host id "
                 "([a-z0-9][a-z0-9.-], max 63)")
         ap = str(act.get("artifact") or "").strip()
         if ap and (ap.startswith("/") or ".." in ap.split("/")

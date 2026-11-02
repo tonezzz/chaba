@@ -83,7 +83,11 @@ def verify(run_dir):
         return {"verdict": "fail",
                 "checks": {"artifact readable": False, "error": str(e)}}
     env = (man.get("envelope") or {})
-    th = str(env.get("target_host") or "").strip()
+    # subject_host is the declared diagnosis target (OPS-1025);
+    # target_host remains the execution pin — fall back for envelopes
+    # written before the split.
+    th = str(env.get("subject_host") or env.get("target_host") or ""
+             ).strip()
 
     checks["required fields"] = all(k in a for k in REQ)
     checks["read_only true"] = a.get("read_only") is True
