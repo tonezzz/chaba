@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 09:54
+updated: 2026-11-02 11:03
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -436,6 +436,11 @@ comms:
     the separate `kk_mac_video_batch.py` process earlier at 27GB RAM / 56% CPU; it later exited and memory recovered
     to 89%. C01 v4 prompt embedding completed in 26s. The C01 v4 render pack then refused in prep because a separate
     `kk-llm` Nest worker had started; no C01 video/inference ran. '
+- at: 2026-11-02 11:03
+  from: devin
+  text: 'Fresh Nov 2 status after the earlier C01 refusal: Ollama is currently empty and no worker process is active,
+    but Photoshop remains open. No LTX/S04-S10 render was launched; keep the serial per-shot plan held until a fresh
+    idle/owner-workload preflight passes.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
