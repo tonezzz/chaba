@@ -1,0 +1,27 @@
+id: ops-remote-read
+title: Read-only remote host diagnosis
+class: diagnosis
+timeout_s: 420
+artifact: evals/opencode-lane/out/ops-remote-read-diagnosis.json
+description: >-
+  Produce a read-only diagnosis of the envelope's declared target host,
+  collected through the mcp_debug read-only tools. The agent emits the
+  JSON as its final message; the runner writes it. The held-out verifier
+  re-probes the target itself and compares — facts not actually read
+  from the host will not match.
+contract:
+  required_fields:
+    host: "hostname string — MUST equal the envelope target_host AND the
+           target's real `hostname` output (the verifier probes it)"
+    collected_at: "ISO-8601 timestamp of the collection"
+    read_only: "must be true"
+    failed_units_on_target: "int >= 0 — count of `systemctl --user
+           list-units --state=failed --no-legend | wc -l` on the target;
+           the verifier re-counts this itself (tolerance 2)"
+    services: "list of {unit, state} objects for the units the task
+           asked about (may be empty if none were asked)"
+    findings: "list of strings — each a concrete finding with the
+           evidence (journal line, unit state, command output)"
+    summary: "one-paragraph operator summary of the diagnosis"
+  tolerances:
+    failed_units_on_target: 2

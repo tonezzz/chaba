@@ -705,7 +705,14 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
         # agent's narrative (same contract as opencode_profiles._verify)
         man = {"at": datetime.now(timezone.utc).isoformat(),
                "job": tid,
-               "envelope": {"id": tid, "card": cid, "target_host": HOST,
+               # envelope.target_host carries the card's DECLARED target —
+               # no silent runner-host default: an ops-remote-read card
+               # that forgot action.target_host must fail its verifier's
+               # "target_host declared" check, not be re-scoped to local
+               # (OPS-1025). Local-target profiles (ops-readonly) leave it
+               # empty and their own conditional checks skip it as before.
+               "envelope": {"id": tid, "card": cid,
+                            "target_host": str(a.get("target_host") or ""),
                             "model": meta.get("model"),
                             "executor": meta.get("executor"),
                             "profile": meta.get("profile"),
@@ -2215,7 +2222,43 @@ def verdict_pass(st: dict) -> None:
         print(f"warn: verdict_pass failed: {e}")
 
 
+def _self_update():
+    """~/.local/bin/runner-agent is a deploy SNAPSHOT — chaba-repo-sync
+    pulls the repo but the binary never refreshes (OPS-1026: every host
+    ran stale code until manual scp, and a stale snapshot claimed OPS-1021
+    with a bug already fixed in the repo). When running AS the snapshot,
+    install a differing repo copy if it byte-compiles, then re-exec so
+    this pass runs the new code — no restart step, no fleet scp."""
+    me = Path(__file__).resolve()
+    if me != Path.home() / ".local/bin/runner-agent":
+        return                     # repo checkout/dev run — not the snapshot
+    src = None
+    dr = dr_module()
+    ent = (dr.repos().get("chaba") if dr else None) or {}
+    cand = Path(str(ent.get("path") or "")) / "scripts" / "board" \
+        / "runner-agent.py"
+    if cand.is_file():
+        src = cand
+    else:
+        alt = Path.home() / "CascadeProjects/chaba/scripts/board" \
+            / "runner-agent.py"
+        if alt.is_file():
+            src = alt
+    if src is None:
+        return
+    try:
+        data = src.read_bytes()
+        if data == me.read_bytes():
+            return
+        compile(data, str(src), "exec")   # never self-install a broken copy
+        me.write_bytes(data)
+    except Exception:
+        return                            # keep the known-good snapshot
+    os.execv(sys.executable, [sys.executable, str(me)] + sys.argv[1:])
+
+
 def main() -> int:
+    _self_update()
     st = load_state()
     changed = finish_pass(st) | watchdog_pass(st) | claim_pass(st)
     verdict_pass(st)
