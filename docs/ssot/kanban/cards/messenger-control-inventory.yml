@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-02 15:39
+updated: 2026-11-02 15:41
 priority: medium
 tags:
 - telegram
@@ -79,6 +79,13 @@ comms:
   from: devin
   text: 'raised request household-bot-group-membership-20261102: Read-only getMe tests succeeded for the five new
     bot tokens, but getChatMember returned chat_not_found for the new ADA/K'
+- at: 2026-11-02 15:41
+  from: devin
+  text: 'Test update 2026-11-02: local secret slots'' getMe calls returned the five screenshot handles (ADA, TONY,
+    KK, MN, DevNest); the TONY handle is under key TONY_HA_AdaBot_TOKEN (no TONY_HA_ChabaBot_TOKEN key), and DevNest_HA_DevNestBot
+    is present without a _TOKEN suffix. Read-only idc03 checks show existing relays still use @ChabaClawBot, @kk_ha_bot,
+    @KrautMNBot, and @TonyDvnstBot; no tony-ha relay/env exists. New bot getChatMember checks against documented
+    groups returned chat_not_found; tony-ha ha'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
