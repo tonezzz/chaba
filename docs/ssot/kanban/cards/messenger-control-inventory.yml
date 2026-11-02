@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-02 15:41
+updated: 2026-11-02 15:42
 priority: medium
 tags:
 - telegram
@@ -86,6 +86,13 @@ comms:
     is present without a _TOKEN suffix. Read-only idc03 checks show existing relays still use @ChabaClawBot, @kk_ha_bot,
     @KrautMNBot, and @TonyDvnstBot; no tony-ha relay/env exists. New bot getChatMember checks against documented
     groups returned chat_not_found; tony-ha ha'
+- at: 2026-11-02 15:42
+  from: devin
+  text: 'Runtime identity correction from idc03 read-only getMe checks: telegram-bot.env -> @ChabaClawBot; telegram-kk-bot.env
+    -> @kk_ha_bot; telegram-mn-bot.env -> @KrautMNBot; telegram-devnest-bot.env -> @TonyDvnstBot (note spelling
+    includes a trailing ''t'' before Bot, differing from the older @TonyDvnsBot record). All four existing relays
+    remain active on those old handles. The new five bot tokens pass getMe from tony-macbook, but new accounts are
+    not yet accessible in their intended groups; no test me'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
