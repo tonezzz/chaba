@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: backlog
-updated: 2026-10-31 10:06
+updated: 2026-11-02 11:08
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -22,3 +22,9 @@ comms:
 - at: 2026-10-31 10:06
   from: tony
   text: card captured via board-api
+- at: 2026-11-02 11:08
+  from: devin
+  text: 'Efficiency sequencing recommendation: start with a read-only claim-poll soak for the projected card endpoint,
+    then replace the three full `/cards` reads in runner-agent only if claim/verdict parity holds. The audit bench
+    reports 95.8–99.97% payload reduction. After that, add the scoped host_snapshot preset and the read-only storage_probe
+    pack; no global MCP or runner rollout without tests/review.'
