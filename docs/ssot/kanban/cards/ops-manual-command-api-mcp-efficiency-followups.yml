@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 12:21
+updated: 2026-11-02 12:32
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -37,3 +37,10 @@ comms:
 - at: 2026-11-02 12:21
   from: tony
   text: moved backlog -> doing
+- at: 2026-11-02 12:32
+  from: devin
+  text: 'Runner projection gate result (Nov 2): five read-only paired polls against the live `:10000/cards` endpoint
+    all returned the legacy full-card payload (~5,336,702 B); `action_status`/`fields` produced no projection envelope
+    (`count/total` absent). One queued card observed. The live endpoint is not serving the projection yet, so no
+    runner rollout/switch will be claimed. Local runner implementation keeps the full-read fallback; deployment
+    remains a separate gate.'
