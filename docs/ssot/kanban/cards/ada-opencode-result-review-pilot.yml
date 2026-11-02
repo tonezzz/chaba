@@ -1,0 +1,28 @@
+id: ada-opencode-result-review-pilot
+title: Pilot Ada as a read-only OpenCode result reviewer
+column: backlog
+updated: 2026-11-02 21:40
+brief: Evaluate Ada as an independent review-plane QA/QC stage for OpenCode-generated result bundles. Ada reviews;
+  she does not execute or approve deployment.
+priority: medium
+tags:
+- ada
+- opencode
+- verification
+- evaluation
+spec: Related to ADA-1010 (canonical job envelope), OPS-0956 (OpenCode profiles), and OPS-1037 (command efficiency).
+  Build an evaluation-only Ada reviewer path, not an `executor=ada` lane. Each case is anchored to a Chaba card
+  ID and immutable input snapshot. OpenCode produces an isolated result bundle with source commit/diff, declared
+  artifacts and hashes, test results, deterministic verifier output, and tool-call audit. Ada receives only the
+  original request plus this allowlisted read-only bundle and returns a schema-validated `pass|fail|needs_human`
+  review with evidence references, severity, and exact findings. Deterministic tests/verifiers remain hard gates;
+  Ada cannot waive them, edit the repo, change board status/action, merge, deploy, or access secrets. Preserve a
+  separate human approval for risky work. Evaluate first in shadow mode on frozen cases with seeded defects and
+  held-out expected labels; measure critical-defect recall, false positives, evidence citation quality, disagreement,
+  latency, and cost. Keep results durable on the Chaba card with a `result_ref`. Pass criteria and any activation
+  of Ada tools/DevTeam playbooks require review before dispatch. No production execution or auto-close in this pilot.
+ref: ADA-1041
+comms:
+- at: 2026-11-02 21:40
+  from: tony
+  text: card captured via board-api
