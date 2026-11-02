@@ -1,0 +1,27 @@
+id: video-render-dispatcher
+title: Build canonical video render dispatcher and queue status
+column: backlog
+updated: 2026-11-02 22:03
+brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
+  final artifact.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- dispatcher
+- kk-mac
+- colab
+- qc
+spec: 'Implement a read-only inventory/status layer first, then a controlled dispatcher for project kk-video-c9f99fee6146
+  and future video projects. Inventory both gdrive:ada-nest-kk-mac-video-pilot and gdrive:ada-nest packs; classify
+  packages as queued, claimed, running, done, failed, or support/other; show active claims and artifacts. Dispatch
+  only approved manifest stages, never historical/support packages. Route MLX work to KK-Mac when awake/model-ready/load/disk
+  gates pass, otherwise route finite GPU batches to Colab only after complete staging. Preserve one writer/one runner,
+  idempotent shot IDs, review-vs-clean variants, and final artifact QC. First deliverable: queue status report and
+  one canonical final-preview manifest for the Sacred Father project.'
+ref: OPS-1042
+comms:
+- at: 2026-11-02 22:03
+  from: devin
+  text: card captured via board-api
