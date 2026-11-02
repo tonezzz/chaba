@@ -2247,6 +2247,12 @@ def _self_update():
     if src is None:
         return
     try:
+        # never downgrade: a stale repo checkout (between pushes/pulls)
+        # must not overwrite a newer snapshot — the first mn01 deploy
+        # did exactly that and removed _self_update itself, deadlocking
+        # on old code until manual scp (OPS-1026, 2026-11-02)
+        if src.stat().st_mtime <= me.stat().st_mtime:
+            return
         data = src.read_bytes()
         if data == me.read_bytes():
             return
