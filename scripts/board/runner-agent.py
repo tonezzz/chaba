@@ -701,6 +701,23 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
                 except OSError as e:
                     verdict = {"verdict": "fail",
                                "checks": {"artifact write": str(e)}}
+            if landed:
+                # a gitignored artifact path lands in the worktree but
+                # can never reach the merge — reports/* is ignored, so
+                # OPS-1021's pass merged everything EXCEPT the report.
+                # Unmergeable = not landed.
+                try:
+                    ign = subprocess.run(
+                        ["git", "-C", str(wt), "check-ignore", "-q",
+                         art_path], timeout=15)
+                    if ign.returncode == 0:
+                        landed = False
+                        verdict = {"verdict": "fail", "checks":
+                                   {"artifact landed": False,
+                                    "unmergeable path":
+                                        f"{art_path} is gitignored"}}
+                except Exception:
+                    pass
             if not landed and verdict["verdict"] == "skip":
                 verdict = {"verdict": "fail",
                            "checks": {"artifact landed": False}}
