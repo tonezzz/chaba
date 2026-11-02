@@ -58,6 +58,10 @@ comms:
 - at: 2026-11-02 08:58
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-02 08:58
+  from: devin
+  text: 'raised request mn-bot-rename-vs-display-name-20261102: Telegram''s official BotFather documentation says
+    a standard bot username cannot be changed after creation and must end i'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -79,5 +83,24 @@ requests:
   answer: Tony confirms @mn_ha_bot does not exist; use @KrautMNBot as the canonical MN/Kraut handle. This resolves
     identity only. Keep generic ada-tg-relay-mn group sends denied (TG_PUSH_DENY) until separately authorized; the
     Rika alert route remains distinct.
+- id: mn-bot-rename-vs-display-name-20261102
+  ask: Telegram's official BotFather documentation says a standard bot username cannot be changed after creation
+    and must end in `bot`; `@MN_HA_Kraut` is not a valid standard BotFather username. You can change the display
+    name to `MN_HA_Kraut` while keeping @KrautMNBot. If you need a different @handle, it requires a new bot/migration
+    (for example @MN_HA_KrautBot if available), unless you already own that exact collectible username. Which outcome
+    do you intend? No BotFather/API/token/relay changes are being made by me.
+  status: open
+  at: 2026-11-02 08:58
+  from: devin
+  options:
+  - id: display-name
+    label: 'Recommended: set the visible display name to MN_HA_Kraut; keep the existing @KrautMNBot handle and relay
+      unchanged.'
+  - id: new-bot-handle
+    label: Plan a new bot username such as @MN_HA_KrautBot if BotFather confirms availability; requires a separate
+      token, group, and relay migration approval.
+  - id: collectible-handle
+    label: Use @MN_HA_Kraut only if you already own it as a collectible username; then verify by read-only getMe.
+  suggested: display-name
 review_kind: verify
 awaiting_action: true
