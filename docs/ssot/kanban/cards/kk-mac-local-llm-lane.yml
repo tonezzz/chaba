@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-10-31 10:44
+updated: 2026-11-02 08:37
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -297,6 +297,14 @@ comms:
   text: 'Education captured and verified: post 3180, “KK-Mac local inference for household bots” — https://boards.surf-thailand.com/wp/lesson/lesson-f9068ebe2181/.
     Lesson is bilingual, records the local-only/same-host design, separates the 3/3 real-job results from the 2/5
     partial fixture slot, and preserves deterministic-only as the current execution gate.'
+- at: 2026-11-02 08:37
+  from: tony
+  text: 'answered kk-mac-qwen8-one-shot-authorization-20261031: authorize-one-after-gates — Authorize one synthetic
+    read-only Qwen3:8B pilot after video work clears, artifact reconciliation, and fresh KK idle consent (no automatic
+    routing)'
+- at: 2026-11-02 08:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -384,7 +392,7 @@ requests:
     a fresh KK owner-idle/resource preflight passes? The existing synthetic model-only slot is partial (2/5), so
     first audit its artifacts and resume only missing cases; do not rerun completed fixtures. No model download,
     OpenRouter, external egress, personal files, or automatic routing.
-  status: open
+  status: answered
   at: 2026-10-31 10:44
   from: devin
   options:
@@ -396,4 +404,6 @@ requests:
   - id: defer-until-video-review
     label: Defer the decision until the current MPS/video batch is reviewed
   suggested: authorize-one-after-gates
+  answer: authorize-one-after-gates — Authorize one synthetic read-only Qwen3:8B pilot after video work clears,
+    artifact reconciliation, and fresh KK idle consent (no automatic routing)
 awaiting_action: true
