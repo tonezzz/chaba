@@ -166,7 +166,10 @@ DISPATCH = os.environ.get(
 # Lane -> cheapest model (jev-pilot Phase 2). Mirrors kanban-dispatch.
 LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
-    "paid_frontier": "litellm/or-claude-fable-5.1",
+    # was litellm/or-claude-fable-5.1 — that alias was never deployed
+    # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
+    # gemini-3.5-flash is the strongest served non-lite model
+    "paid_frontier": "litellm/gemini-3.5-flash",
 }
 OPENCODE_LANES = os.environ.get("OPENCODE_LANES", "0") == "1"
 # lane -> task-scoped opencode profile (opencode-task-agent-profiles).
