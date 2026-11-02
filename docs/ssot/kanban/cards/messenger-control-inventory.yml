@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-02 09:06
+updated: 2026-11-02 09:31
 priority: medium
 tags:
 - telegram
@@ -69,6 +69,12 @@ comms:
     handle; no live Bot API getMe check or token read was performed. Generic MN group push remains denied; Rika
     alert routing is unchanged. The existing Education lesson was updated in place and read back. Rename request
     mn-bot-rename-vs-display-name-20261102 remains open: standard'
+- at: 2026-11-02 09:31
+  from: tony
+  text: 'answered mn-bot-rename-vs-display-name-20261102: already send  new bot list.'
+- at: 2026-11-02 09:31
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -96,7 +102,7 @@ requests:
     name to `MN_HA_Kraut` while keeping @KrautMNBot. If you need a different @handle, it requires a new bot/migration
     (for example @MN_HA_KrautBot if available), unless you already own that exact collectible username. Which outcome
     do you intend? No BotFather/API/token/relay changes are being made by me.
-  status: open
+  status: answered
   at: 2026-11-02 08:58
   from: devin
   options:
@@ -109,5 +115,6 @@ requests:
   - id: collectible-handle
     label: Use @MN_HA_Kraut only if you already own it as a collectible username; then verify by read-only getMe.
   suggested: display-name
+  answer: already send  new bot list.
 review_kind: verify
 awaiting_action: true
