@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 13:10
+updated: 2026-11-02 13:51
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -57,3 +57,10 @@ comms:
     is in the runtime `presets` map consumed by `mcp_preset_list`; policy stays fixed to one host/one command. I
     left the oversized `ssot.token-tools.yml` unchanged rather than create a new bloat warning or refresh the warning
     baseline. Code remains local/unpushed; projection flag stays off until the served endpoint passes the soak.
+- at: 2026-11-02 13:51
+  from: devin
+  text: 'Read-only deployment provenance check: `chaba-board-api.service` is active on idc03, but ExecStart runs
+    `scripts/board/board-api.py` from the served `chaba-tony-dell` checkout at `916efdb9e`, which has no projection
+    route. That served checkout is highly diverged (621 ahead/662 behind) and dirty. I did not pull, restart, or
+    edit it. The projection/runner enablement now needs a separately gated served-checkout reconciliation and service
+    rollout, followed by the same soak.'
