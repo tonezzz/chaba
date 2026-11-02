@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: done
-updated: 2026-11-02 10:11
+column: doing
+updated: 2026-11-02 10:19
 priority: medium
 tags:
 - ops
@@ -19,14 +19,15 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: queued
+  status: running
   lane: free_lane
   result: 'exit=0 61ffers6Zgh0FNUUrsT","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17933.service: Consumed 17.121s CPU time.'
   verified: true
   agent_profile: ops-remote-read
-  target_host: con01
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
+  subject_host: con01
+  runner: idc02
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -142,6 +143,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-02 10:19
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
 auto_close:
