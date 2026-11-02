@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: doing
-updated: 2026-11-02 11:09
+column: review
+updated: 2026-11-02 11:12
 priority: medium
 tags:
 - ops
@@ -19,15 +19,15 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: running
+  status: done
   lane: paid_frontier
-  result: 'exit=1  code=exited, status=1/FAILURE | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service:
-    Failed with result ''exit-code''. | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service:
-    Consumed 3.941s CPU time.'
+  result: 'exit=0 fJF4QVz","type":"step-finish","tokens":{"total":37950,"input":868,"output":740,"reasoning":0,"cache":{"write":0,"read":36342}},"cost":0}}
+    | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service: Consumed 15.244s CPU time.'
   agent_profile: ops-remote-read
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
   subject_host: con01
   runner: idc02
+  verified: true
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -307,6 +307,9 @@ comms:
   from: chaba
   text: started devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935 on idc02 (dispatch executor=opencode
     profile=ops-remote-read)
+- at: 2026-11-02 11:12
+  from: idc02
+  text: 'finished (ok): exit=0 fJF4QVz","type":"step-finish","tokens":{"total":37950,"input":868,"output":740,"reasoning":0,"cache":{"write":0,"'
 review_kind: verify
 claim: {}
 auto_close:
