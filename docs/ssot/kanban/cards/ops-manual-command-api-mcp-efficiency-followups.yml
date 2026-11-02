@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 14:14
+updated: 2026-11-02 14:16
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -71,3 +71,10 @@ comms:
     behind and dirty, including an unresolved `UU stacks/idc03/litellm/config.yaml` conflict. No safe pull/restart
     is possible as an OPS-1037 code step; it needs its own writer-owned reconciliation/deployment gate. I did not
     touch that checkout or service.'
+- at: 2026-11-02 14:16
+  from: devin
+  text: 'One design constraint: board-api derives `REPO` from `__file__` and anchors `CARD_DIR`, render scripts,
+    and `CARDS_JSON` beneath it. Simply repointing ExecStart to a clean exec checkout would redirect canonical card
+    writes/rendering, so do not switch checkouts as a quick fix. Short term, reconcile the served writer checkout
+    safely after its unresolved conflict is handled; long term, a separate immutable service-code checkout needs
+    an explicit canonical data/render root contract and its own migra'
