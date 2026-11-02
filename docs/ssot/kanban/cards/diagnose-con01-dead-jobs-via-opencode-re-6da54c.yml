@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: review
-updated: 2026-11-02 11:12
+updated: 2026-11-02 11:18
 priority: medium
 tags:
 - ops
@@ -335,6 +335,13 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935,
     branch dispatch/diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935'
+- at: 2026-11-02 11:18
+  from: devin
+  text: 'RESOLVED end-to-end on paid_frontier (litellm/gemini-2.5-flash): verifier 9/9 pass incl. held-out ssh probe
+    of con01, artifact extracted + committed to docs/reports/con01-jobs-diagnosis-2026-11-02.json. Iterations: free_lane
+    x2 failed on model silence (empty final msg, 0-token stop); paid rungs found proxy gaps now fixed (opencode
+    provider models map missing gemini-2.5-flash; or-gemini-3.5 mid-loop OR 400; direct gemini 402 no credit). Infra
+    fixed along the way: allowfile never written (mcp serv'
 review_kind: verify
 claim: {}
 auto_close:
