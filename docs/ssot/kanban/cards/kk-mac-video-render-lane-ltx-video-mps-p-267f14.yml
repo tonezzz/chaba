@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 12:21
+updated: 2026-11-02 13:49
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -448,6 +448,13 @@ comms:
     and per-cut render status. Each crop is an individual image guide for its own candidate cut; the full PDF collage
     is not sent as one I2V frame. Board API readback confirms 37 inline JPEGs total. No accepted S01 clip exists:
     C01 v2 rejected; the v4 embed passed but v4 render prep re'
+- at: 2026-11-02 13:49
+  from: devin
+  text: 'Next retry is staged: C01 v5 is render-only and reuses the completed v4 prompt embedding; the private Drive
+    pack passed rclone check with 0 differences. Fresh Mac read at 13:48 +07: AC on, Ollama empty, 83% free memory,
+    no Nest worker or kk_mac_video_batch.py process. Activity probe still says `busy/recent_user_input` (HIDIdleTime
+    139s < 600s). Adobe can remain open; the C01 render should start only after 10 minutes of Mac input-idle, another
+    fresh memory check, and no competing worker. No outpu'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
