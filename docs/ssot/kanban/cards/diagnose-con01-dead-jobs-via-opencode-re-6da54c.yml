@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: doing
-updated: 2026-11-02 10:19
+column: review
+updated: 2026-11-02 10:20
 priority: medium
 tags:
 - ops
@@ -19,11 +19,11 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: running
+  status: done
   lane: free_lane
-  result: 'exit=0 61ffers6Zgh0FNUUrsT","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
-    | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17933.service: Consumed 17.121s CPU time.'
-  verified: true
+  result: 'exit=0 7cffe93HL9HovwHcOQg","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service: Consumed 15.061s CPU time.'
+  verified: false
   agent_profile: ops-remote-read
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
   subject_host: con01
@@ -158,6 +158,9 @@ comms:
   from: chaba
   text: 'mn01 defers: executor=opencode declared but this runner can''t serve it (OPENCODE_LANES=0, no opencode
     binary) — the card stays queued for an OpenCode-capable runner; it will never silently fall back to devin'
+- at: 2026-11-02 10:20
+  from: idc02
+  text: 'finished (ok): exit=0 7cffe93HL9HovwHcOQg","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write"'
 review_kind: verify
 claim: {}
 auto_close:
