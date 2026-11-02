@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 15:22
+updated: 2026-11-02 21:39
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -475,6 +475,13 @@ comms:
     but free memory is 79%, just below the 80% LTX render threshold. C01 v5 remains staged/unclaimed and no video
     exists. No need to close Adobe; next is a fresh check after memory recovers, then run only C01 v5 if all gates
     still pass.'
+- at: 2026-11-02 21:39
+  from: devin
+  text: 'Fresh KK-Mac check at 21:38 +07: C01 v5 is already staged in the private smoke root but remains unclaimed
+    (no output). AC is on, Ollama empty, memory 84% free, and no competing Nest worker or kk_mac_video_batch.py
+    process is visible. The activity probe reports busy/recent_user_input: HIDIdleTime 0.3s, so the 10-minute idle
+    gate is not met. Illustrator can stay open; after 600s with no Mac input, rerun admission and submit v5 only
+    if memory remains >=80% and no worker/render process has started.'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
