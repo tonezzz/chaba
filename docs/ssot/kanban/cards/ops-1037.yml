@@ -1,0 +1,14 @@
+id: ops-1037
+title: Route backlog-spec-enrich through LiteLLM (kk-mac eligible) instead of direct Gemini API
+column: backlog
+updated: 2026-11-02 10:59
+spec: 'backlog-spec-enrich (idc03, 4x/day) calls gemini-3.5-flash-lite via gemini_rest + raw API key — bypasses
+  LiteLLM entirely: no proxy attribution, no budget caps, no failover, and zero kk-mac usage on routine card work.
+  Add a LiteLLM path (OpenAI-compatible /chat/completions against idc03:4000 with the chaba key), keep gemini_rest
+  as fallback. Then the enrich model can be any registered route — ollama-qwen38b-kkmac for free local spec drafts,
+  or litellm/gemini-3.5-flash-lite for the same model with attribution. ENRICH_MODEL env already exists; add ENRICH_PROVIDER=litellm|gemini.'
+ref: OPS-1037
+comms:
+- at: 2026-11-02 10:59
+  from: tony
+  text: card captured via board-api
