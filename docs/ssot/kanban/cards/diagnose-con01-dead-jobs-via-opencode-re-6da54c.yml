@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
-column: review
-updated: 2026-11-02 10:44
+column: backlog
+updated: 2026-11-02 10:45
 priority: medium
 tags:
 - ops
@@ -19,15 +19,13 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: done
-  lane: free_lane
+  status: queued
+  lane: paid_frontier
   result: 'exit=0 eeffe8p4r5fOZH3BVgX","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service: Consumed 14.490s CPU time.'
   agent_profile: ops-remote-read
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
   subject_host: con01
-  runner: idc02
-  verified: false
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -227,6 +225,9 @@ comms:
 - at: 2026-11-02 10:44
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-02 10:45
+  from: devin
+  text: queued for processing
 review_kind: verify
 claim: {}
 auto_close:
