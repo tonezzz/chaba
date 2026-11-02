@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 12:32
+updated: 2026-11-02 13:07
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -44,3 +44,10 @@ comms:
     (`count/total` absent). One queued card observed. The live endpoint is not serving the projection yet, so no
     runner rollout/switch will be claimed. Local runner implementation keeps the full-read fallback; deployment
     remains a separate gate.'
+- at: 2026-11-02 13:07
+  from: devin
+  text: 'Implementation checkpoint committed locally: `bf5b0ff1f` on `feat/ops1037-command-efficiency-20261102`
+    (not pushed). Added the default-off projected claim/verdict reader with legacy fallback and blocker parity,
+    a fixed one-step host_snapshot preset/policy, and the read-only storage_probe S2 pack plus independent verifier.
+    Board suite: 342 passed/6 skipped; focused MCP/storage/runner suite: 28 passed; SSOT: 3,389 valid/0 errors,
+    optimizer warnings baseline-covered. The live board-api still ignore'
