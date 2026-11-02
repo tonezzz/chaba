@@ -1,30 +1,32 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: done
-updated: 2026-10-30 20:06
+updated: 2026-11-02 10:11
 priority: medium
 tags:
 - ops
 - opencode
 - diagnosis
-spec: 'Sibling of OPS-1013 — the diagnosis half, routed to the cheap lane per ai-lane-delegate (executor contract
-  layer, added to ssot.procedures.yml 2026-10-30). Read-only ops task, ops-readonly profile: for each of chaba-audit,
-  chaba-audit-full, mddb-vector-reindex, devin-bank-distill on con01 — (1) journalctl --user -u <svc> last failure
-  tail, (2) systemctl --user cat <svc> env/ExecStart, (3) check the declared deps exist (paths, env files, node/.n,
-  MDDB endpoints), (4) classify each failure: missing-env | dep-gone | upstream-dead | code-drift. Output: a markdown
-  report in comms with per-job verdict + first fix guess. Do NOT edit units, env files, or code — read and report
-  only; fixes stay on OPS-1013. Route: action.executor=opencode, lane=free_lane, host that serves it (idc02). Verify:
-  report names a failure class for all 4 jobs with journal evidence.'
+spec: 'Diagnose the four con01 jobs: chaba-audit, chaba-audit-full, mddb-vector-reindex, devin-bank-distill. Target
+  host: con01 — collect ALL remote facts via the mcp_debug read-only tools (ssh is not in your bash allowlist; local
+  reads may use the local allowlist). For each job check: journalctl --user -u <svc> last failure tail, systemctl
+  --user status, whether declared deps exist (paths, env files, node_modules). Emit ONLY a JSON object as your final
+  message (the runner writes it to the declared artifact path) with EXACTLY these fields: host (must equal con01
+  — probe it), collected_at (ISO-8601 now), read_only (true), failed_units_on_target (int — count of systemctl --user
+  list-units --state=failed --no-legend | wc -l on con01), services (list of {unit, state} for the four jobs), findings
+  (list of strings with evidence), summary (one paragraph). No prose around the JSON.'
 action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: done
+  status: queued
   lane: free_lane
   result: 'exit=0 61ffers6Zgh0FNUUrsT","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17933.service: Consumed 17.121s CPU time.'
-  runner: idc02
   verified: true
+  agent_profile: ops-remote-read
+  target_host: con01
+  artifact: reports/con01-jobs-diagnosis-2026-11-02.json
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -136,6 +138,10 @@ comms:
     1141894f. But the run landed only .opencode-profile/opencode.json — no report. Root causes found+fixed live:
     (1) runner-agent blinded action.lane on the explicit-executor path (fixed, pushed, all 5 ~/.local/bin snapshots
     updated); (2) board-api ACTION_KEYS dropped lane at card cr'
+- at: 2026-11-02 10:11
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 review_kind: verify
 claim: {}
 auto_close:
