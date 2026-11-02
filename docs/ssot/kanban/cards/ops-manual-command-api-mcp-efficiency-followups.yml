@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 13:07
+updated: 2026-11-02 13:10
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -51,3 +51,9 @@ comms:
     a fixed one-step host_snapshot preset/policy, and the read-only storage_probe S2 pack plus independent verifier.
     Board suite: 342 passed/6 skipped; focused MCP/storage/runner suite: 28 passed; SSOT: 3,389 valid/0 errors,
     optimizer warnings baseline-covered. The live board-api still ignore'
+- at: 2026-11-02 13:10
+  from: devin
+  text: Follow-up checkpoint `5d08978bf` records final validation/job evidence. The `host_snapshot` catalog description
+    is in the runtime `presets` map consumed by `mcp_preset_list`; policy stays fixed to one host/one command. I
+    left the oversized `ssot.token-tools.yml` unchanged rather than create a new bloat warning or refresh the warning
+    baseline. Code remains local/unpushed; projection flag stays off until the served endpoint passes the soak.
