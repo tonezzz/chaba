@@ -7,14 +7,15 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/runner-agent sha e4f58d874d891bb3 != repo 8511b36de33ac7d9
+note: 'Failing: ~/.local/bin/runner-agent sha 26354d1b34612b0f != repo 826242c118399300
   — installed copy drifted; redeploy; ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca
   != repo 71a2c26532c597f4 — installed copy drifted; redeploy. Info: chaba origin
   is push-capable; no ada-voice checkout — host can''t take action.repo=ada-voice
   cards; no sunsynk-card checkout — host can''t take action.repo=sunsynk-card cards;
   no mddb-fork checkout — host can''t take action.repo=mddb-fork cards; no gods-eye-view
-  checkout — host can''t take action.repo=gods-eye-view cards; devin: /home/tony/.local/bin/devin
-  (devin 3000.11.234 (92c83011d113)).'
+  checkout — host can''t take action.repo=gods-eye-view cards; dispatch_repos copy
+  differs from repo (sha 91a14cbd4b5717d1 vs 61849bc8d5850e67) — functional attrs
+  present; devin: /home/tony/.local/bin/devin (devin 3000.11.234 (92c83011d113)).'
 help: 'Per-check fixes:
 
   - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
