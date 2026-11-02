@@ -1,7 +1,7 @@
 id: ops-manual-command-api-mcp-efficiency-followups
 title: Implement the three approved AUD-1033 command-efficiency follow-ups
 column: doing
-updated: 2026-11-02 13:51
+updated: 2026-11-02 14:14
 brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
 priority: medium
 program: devnest-efficiency
@@ -64,3 +64,10 @@ comms:
     route. That served checkout is highly diverged (621 ahead/662 behind) and dirty. I did not pull, restart, or
     edit it. The projection/runner enablement now needs a separately gated served-checkout reconciliation and service
     rollout, followed by the same soak.'
+- at: 2026-11-02 14:14
+  from: devin
+  text: 'More precise read-only gate finding: `chaba-board-api.service` on idc03 runs the served checkout''s `board-api.py`
+    at `916efdb9e`; the file is clean but lacks `card_query`/`action_status`. The served checkout is now 624 ahead/663
+    behind and dirty, including an unresolved `UU stacks/idc03/litellm/config.yaml` conflict. No safe pull/restart
+    is possible as an OPS-1037 code step; it needs its own writer-owned reconciliation/deployment gate. I did not
+    touch that checkout or service.'
