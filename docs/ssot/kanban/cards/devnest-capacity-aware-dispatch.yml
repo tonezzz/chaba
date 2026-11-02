@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-31 11:00
+updated: 2026-11-02 08:37
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -97,6 +97,14 @@ comms:
     can perform many unnecessary Drive reads before reaching new work and hit the 4m service timeout. Code-only
     fix should derive a safe candidate task_id from each filename, skip complete existing packs before rclone cat,
     and verify task_id matches after loading. Build a single pack in'
+- at: 2026-11-02 08:37
+  from: tony
+  text: 'answered producer-staging-timeout-recovery-20261031: atomic-3-3 — Recommended: prepare code/tests for ready-marker
+    staging and incomplete-pack retry; align producer to the card''s 3/3 caps and keep concurrency 1. No deployment
+    or remote cleanup yet.'
+- at: 2026-11-02 08:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
@@ -107,7 +115,7 @@ requests:
     treats any directory as a pack, and report-feed summaries use expect:{} (nonempty-only verification). Which
     next step do you authorize? No remote cleanup, service restart, or concurrency change will be done without separate
     review.'
-  status: open
+  status: answered
   at: 2026-10-31 10:53
   from: devin
   options:
@@ -119,3 +127,6 @@ requests:
   - id: hold
     label: Hold changes and monitor the current producer run and pending pack.
   suggested: atomic-3-3
+  answer: 'atomic-3-3 — Recommended: prepare code/tests for ready-marker staging and incomplete-pack retry; align
+    producer to the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
+awaiting_action: true
