@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: doing
-updated: 2026-11-02 10:50
+updated: 2026-11-02 10:51
 priority: medium
 tags:
 - ops
@@ -19,11 +19,11 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: running
+  status: failed
   lane: paid_frontier
   result: 'exit=1  code=exited, status=1/FAILURE | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service:
     Failed with result ''exit-code''. | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service:
-    Consumed 3.837s CPU time.'
+    Consumed 3.950s CPU time.'
   agent_profile: ops-remote-read
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
   subject_host: con01
@@ -251,6 +251,10 @@ comms:
   from: chaba
   text: started devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935 on idc02 (dispatch executor=opencode
     profile=ops-remote-read)
+- at: 2026-11-02 10:51
+  from: idc02
+  text: 'finished (failed): exit=1  code=exited, status=1/FAILURE | devin-task-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935.service:
+    Failed'
 review_kind: verify
 claim: {}
 auto_close:
