@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 22:49
+updated: 2026-11-02 22:52
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -489,6 +489,13 @@ comms:
     per tracked design-app tree, system CPU <=65%, memory >=80%, plus hard blocks for active render/export processes,
     competing Nest worker, Ollama, or unknown readings. The new helper and updated v5 manifest are staged and rclone-verified
     (0 differences); four resource-gate tests p'
+- at: 2026-11-02 22:52
+  from: devin
+  text: 'Policy update: per Tony, keyboard/mouse input is now informational, not a render veto; resource use controls
+    the design-app gate. The unclaimed v5 pack now uses the resource helper (app tree <=1 CPU-second/10s, total
+    CPU <=65%, with the existing >=80% free-memory gate); known render/export processes, Ollama, and competing Nest
+    workers remain hard blocks. Helper tests pass and the updated v5 pack is rclone-verified. Mac is off/unreachable
+    now (SSH timeout), so no job can execute until it is onlin'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
