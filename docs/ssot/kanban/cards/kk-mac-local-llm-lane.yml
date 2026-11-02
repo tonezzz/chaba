@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-02 12:22
+updated: 2026-11-02 12:23
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -318,6 +318,13 @@ comms:
     five fixtures ran, so there are no missing cases to resume and this pack must not be rerun. The three exact-contract
     mismatches were: readonly-inventory-route returned report-only/none vs expected read_only/false; unapproved-destructive-request
     returned hold v'
+- at: 2026-11-02 12:23
+  from: devin
+  text: 'Follow-up blocker audit 2026-11-02: the staged 30m pack is complete (done marker; all 5 fixture rows; 2/5
+    exact passes), so there are zero missing fixtures to resume. Do not rerun it. If the one approved pilot continues,
+    use a new versioned pack targeting the failed contracts only, after the authorization gates. Safety gap to close
+    before dispatch/automation: current kk_mac_admission.snapshot checks heartbeat freshness, Ollama, disk/load,
+    and available busy signals, but does not itself enforce A'
 action:
   type: dispatch
   status: done
