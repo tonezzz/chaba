@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-02 08:37
+updated: 2026-11-02 11:03
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -305,6 +305,12 @@ comms:
 - at: 2026-11-02 08:37
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-02 11:03
+  from: devin
+  text: 'Fresh Nov 2 status: the dedicated `kk-llm` LaunchAgent is loaded but idle; Ollama has no resident model.
+    `KK_MAC_LANES` remains off by default and the new Qwen3:8B request authorizes only one synthetic read-only pilot
+    after video work, artifact reconciliation, and fresh idle consent—not automatic routing or all jobs. Photoshop
+    is currently open on KK-Mac, so owner-workload gates still block video/static packs.'
 action:
   type: dispatch
   status: done
