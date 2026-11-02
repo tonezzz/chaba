@@ -1,7 +1,7 @@
 id: diagnose-con01-dead-jobs-via-opencode-re-6da54c
 title: Diagnose con01 dead jobs via opencode read-only lane (OPS-1013 phase 1)
 column: doing
-updated: 2026-11-02 10:32
+updated: 2026-11-02 10:33
 priority: medium
 tags:
 - ops
@@ -19,12 +19,13 @@ action:
   type: dispatch
   repo: chaba
   executor: opencode
-  status: queued
+  status: running
   lane: free_lane
   result: 'start failed: worktree already exists: /home/tony/CascadeProjects/dispatch-wt-diagnose-con01-dead-jobs-via-opencode-re-6da54c-17935'
   agent_profile: ops-remote-read
   artifact: reports/con01-jobs-diagnosis-2026-11-02.json
   subject_host: con01
+  runner: idc02
 ref: OPS-1021
 comms:
 - at: 2026-10-30 19:32
@@ -180,6 +181,9 @@ comms:
 - at: 2026-11-02 10:32
   from: devin
   text: queued for processing
+- at: 2026-11-02 10:33
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
 auto_close:
