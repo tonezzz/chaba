@@ -92,7 +92,7 @@ LANE_MODELS = {
     # was litellm/or-claude-fable-5.1 — that alias was never deployed
     # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
     # gemini-3.5-flash is the strongest served non-lite model
-    "paid_frontier": "litellm/or-gemini-3.5-flash",
+    "paid_frontier": "litellm/or-gemini-2.5-flash",
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
