@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 09:20
+updated: 2026-11-02 09:39
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -422,6 +422,13 @@ comms:
     Father C01 v3 remains staged, not running. Do not unload/kill either task. To start the approved single-cut
     pilot, wait until KK finishes the LLM worker and closes Illustrator; then I will recheck admission and launch
     only C01 v3. No new creative approval is needed.'
+- at: 2026-11-02 09:39
+  from: devin
+  text: 'Activity-gate update, Nov 2: yes, Adobe process presence alone is now not a blocker. Read-only Mac probe
+    found Illustrator left open, HID idle 637s, and only 0.3 CPU-seconds across a 10s sample: `idle_candidate`;
+    the separate kk-llm worker had finished. First launch using system Python could not parse YAML (PyYAML absent).
+    Retried with the video venv; the old v3 embed pack then failed safely in prep because its Nest-worker check
+    counted its own awk process. No inference or video ran. I preserved'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
