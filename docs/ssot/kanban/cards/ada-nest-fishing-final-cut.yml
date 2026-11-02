@@ -1,7 +1,7 @@
 id: ada-nest-fishing-final-cut
 title: Ada Nest — Golden Hour Catch fishing final cut
 column: done
-updated: 2026-10-31 09:30
+updated: 2026-11-02 08:38
 brief: 'Status from the living ada-nest-video Education lesson: Golden Hour Catch has a 2-scene/7-shot, 14.292s
   silent H.264 proof cut. It is a ViMax + local LTX/Colab workflow, not the generic Veo ada_render_video tool. Define
   the deliverable, add audio/subtitles/title/credits, review fishing-action continuity, and export a verified final.'
@@ -174,6 +174,11 @@ comms:
   from: devin
   text: 'raised request wp-media-upload-door-20261031: The final Golden Hour MP4 and Education page are updated,
     but the approved `approve-and-wp` upload has not occurred. Boa'
+- at: 2026-11-02 08:38
+  from: tony
+  text: 'answered wp-media-upload-door-20261031: add-board-api-media-adapter — Recommended: track a separate Board
+    API media-upload adapter (private-first, hash-bound, audited); only then execute the existing upload approval
+    and verify the public me'
 requests:
 - id: choose-golden-hour-catch-final-length
   ask: What target should we finish Golden Hour Catch to? The existing assembled cut is 14.292s, 7 shots, and silent.
@@ -228,7 +233,7 @@ requests:
   ask: The final Golden Hour MP4 and Education page are updated, but the approved `approve-and-wp` upload has not
     occurred. Board API is the canonical WP write door, and it currently exposes no binary WP Media upload route;
     direct WP credentials would bypass policy. What should we do about the already-approved upload?
-  status: open
+  status: answered
   at: 2026-10-31 09:30
   from: devin
   options:
@@ -238,6 +243,8 @@ requests:
   - id: keep-drive-only
     label: Keep v1 in private Drive/Education and close the old Media upload as not needed; do not publish the MP4.
   suggested: add-board-api-media-adapter
+  answer: 'add-board-api-media-adapter — Recommended: track a separate Board API media-upload adapter (private-first,
+    hash-bound, audited); only then execute the existing upload approval and verify the public media URL.'
 action:
   type: dispatch
   status: done
