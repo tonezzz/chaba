@@ -1709,14 +1709,37 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     # the profile. Render failure = the lane can't start.
     confdir = worktree / ".opencode-profile"
     try:
-        synth = {"id": tid, "card": card["id"], "target_host": HOST,
+        synth = {"id": tid, "card": card["id"],
+                 # the prompt's target is the declared SUBJECT first —
+                 # remote-read profiles diagnose a host they don't run
+                 # on (OPS-1021: hardcoding HOST told the agent to
+                 # diagnose idc02, so it never reached for mcp_debug)
+                 "target_host": str(a.get("subject_host") or
+                                    a.get("target_host") or HOST),
+                 "subject_host": str(a.get("subject_host") or ""),
                  "model": model, "mcp_allowlist":
                      list((prof.get("mcp") or {}).get("allowed") or []),
                  "artifact": {"path": str(a.get("artifact") or ""),
                               "schema": ""}}
         cfg = ocp.render_config(synth, prof)
-        cfg.pop("_allowfile", None)
+        allowfile_spec = cfg.pop("_allowfile", None)
         confdir.mkdir(parents=True, exist_ok=True)
+        if allowfile_spec:
+            # the allowlist proxy spawns the upstream command FROM the
+            # allowfile — rendered then discarded meant the mcp server
+            # could never launch and the agent had no remote tools at
+            # all (OPS-1021 remote-read run, 2026-11-02)
+            af = confdir / f"allowlist.{ocp.agent_name(prof_id)}.json"
+            # the proxy Popen's the command without a shell — expand ~
+            # in the profile's upstream command here
+            if isinstance(allowfile_spec.get("command"), list):
+                allowfile_spec = dict(allowfile_spec)
+                allowfile_spec["command"] = [
+                    os.path.expanduser(str(x))
+                    for x in allowfile_spec["command"]]
+            af.write_text(json.dumps(allowfile_spec, indent=1))
+            for srv in (cfg.get("mcp") or {}).values():
+                srv.setdefault("environment", {})["MCP_ALLOWFILE"] = str(af)
         (confdir / "opencode.json").write_text(json.dumps(cfg, indent=1))
     except SystemExit as e:
         return "", "", f"profile {prof_id}: {e}"
