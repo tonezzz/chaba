@@ -1,7 +1,7 @@
 title: Messaging lane and relay inventory
 subtitle: Canonical cross-provider index for Telegram and LINE control surfaces
 version: 1
-last_updated: "2026-10-31"
+last_updated: "2026-11-02"
 card: messenger-control-inventory
 ref: OPS-0963
 
@@ -89,10 +89,13 @@ telegram:
     - id: mn
       owner: "Michael / Kraut"
       persona: Kraut
-      bot_handle:
-        documented: "@KrautMNBot"
-        status: needs_reconciliation
-        other_documented_handle: "@mn_ha_bot"
+      bot_handle: "@KrautMNBot"
+      identity_status: owner_confirmed
+      identity_confirmed_at: "2026-11-02"
+      identity_note: >-
+        Tony confirmed @mn_ha_bot does not exist; use @KrautMNBot as the
+        canonical MN/Kraut handle. Owner-confirmed, not independently checked
+        with a live Bot API getMe call.
       relay:
         unit: ada-tg-relay-mn.service
         host: idc03
@@ -296,10 +299,12 @@ reconciliation:
       - "127.0.0.1:8917"
       - "127.0.0.1:8919"
     secret_values_read: false
-  unresolved:
+  resolved:
     - >-
-      MN bot identity is not reconciled: @KrautMNBot is used in the lane
-      and Rika alert records, while @mn_ha_bot appears in Michael onboarding.
+      Tony confirmed on 2026-11-02 that @mn_ha_bot does not exist and
+      @KrautMNBot is the canonical MN/Kraut handle. This is owner confirmation,
+      not a live Bot API identity check.
+  unresolved:
     - >-
       MN group outbound policy differs by route: generic ada-tg-relay-mn
       group push is denied in one record, while Rika alerts have a separate

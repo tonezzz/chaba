@@ -16,7 +16,7 @@ planning:
     - All five live idc03 relay units are represented in the inventory and idc03 audit expectations.
     - LINE group/persona/caller routing is consolidated under the same SSOT with the old path retained as a pointer.
     - OpenClaw is distinguished from Ada relay; Yomi is labeled as LINE history/search, not a relay.
-    - Bot/group uncertainty and the MN push-policy conflict are explicitly marked unresolved.
+    - Owner-confirmed MN bot identity is recorded; the MN group-push policy conflict remains explicitly unresolved.
     - No token values are present; group targets use aliases and source references.
     - Read-only service/port snapshot matches the five expected relay declarations without changing services.
   risks:
@@ -56,8 +56,9 @@ processing:
         changed msg-lane-standard.md to point to the canonical inventory.
         Migrated LINE group/persona routes and caller aliases into line.routing,
         updated its consumers, and left sender IDs in the host-only env file.
-        Token values remain outside the repo. MN identity and outbound-policy
-        conflicts remain explicit.
+        Token values remain outside the repo. Tony later confirmed
+        @mn_ha_bot does not exist and @KrautMNBot is canonical; the outbound
+        group-push policy conflict remains explicit.
     - id: 3
       label: Validate and audit idc03
       status: complete
@@ -99,12 +100,13 @@ followup:
     - Revert only this branch's SSOT, host-audit, system-map, and documentation pointer edits.
     - No live services, credentials, or webhook state are modified.
   handoff:
-    - "OPS-0963 moved to review via board-api; the MN identity/policy request remains open."
+    - "OPS-0963 remains in review; owner confirmation of @KrautMNBot was recorded via board-api."
+    - "Rename choice mn-bot-rename-vs-display-name-20261102 is open; no Telegram handle, token, or relay changes were made."
     - "Implementation commit ad2fe7512 is pushed to origin/feat/messenger-control-inventory-20261031."
     - "Rerun a fresh idc03 host audit after SSH connectivity is restored, then update OPS-0963."
   deferred:
     - Retry a fresh idc03 audit after SSH connectivity is restored.
-    - Resolve whether @mn_ha_bot and @KrautMNBot refer to distinct identities.
+    - Confirm whether the requested MN_HA_Kraut change means display name or a new/collectible bot username; verify only after Telegram confirms it.
     - Resolve the route-specific MN group push-deny discrepancy.
 
 report:
@@ -115,14 +117,17 @@ report:
     group/persona routing into its line.routing section, converted the old
     line-groups file into a compatibility pointer, and declared the missing
     active MN and DevNest units in the idc03 audit/system map. No live services,
-    webhooks, or credentials changed. MN identity and group-push policy remain
-    explicitly unresolved; a fresh SSH audit recheck was blocked by a reset.
+    webhooks, or credentials changed. Tony confirmed @mn_ha_bot does not exist
+    and @KrautMNBot is the canonical MN/Kraut handle; the group-push policy
+    remains unresolved and the requested username/display-name change is pending.
+    A fresh SSH audit recheck was blocked by a reset.
   metrics:
     - "Live snapshot: 5 idc03 relay units active; 5 listeners matched at 09:30 +07."
     - "SSOT validation: 3390 files, 0 errors, 50 warnings."
     - "SSOT refs: 3395 files parsed, 0 broken refs."
     - "Optimization gate: 48 warnings, all covered by baseline."
     - "LINE migration parity: 6 groups, 7 persona mappings, 3 caller aliases preserved; sender IDs not copied."
+    - "MN handle corrected by owner: @KrautMNBot canonical; @mn_ha_bot does not exist; no live Bot API check performed."
     - "Branch feat/messenger-control-inventory-20261031; implementation commit ad2fe7512 pushed."
   links:
     - title: OPS-0963
@@ -135,5 +140,5 @@ report:
 config:
   version: 1
   created_at: 2026-10-31
-  last_updated: 2026-10-31
+  last_updated: 2026-11-02
   maintainer: tony
