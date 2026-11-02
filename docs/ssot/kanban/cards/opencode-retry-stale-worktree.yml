@@ -1,0 +1,20 @@
+id: opencode-retry-stale-worktree
+title: 'runner-agent: GC stale dispatch worktree on opencode retry'
+column: backlog
+updated: 2026-11-02 11:18
+priority: low
+tags:
+- opencode
+- runner-agent
+- hygiene
+spec: 'OPS-1021 proved it: when an opencode run is held (verifier fail / merge held), the dispatch worktree dispatch-wt-<task-id>
+  stays behind. The task-id is deterministic per card, so EVERY retry fails with "start failed: worktree already
+  exists" until a human removes the dir (4 manual removals needed this session). Fix: in start_opencode_lane, if
+  the worktree path exists and the previous task is finished (taskdir has verdict.json/exit_code), git worktree
+  remove --force it before creating — the prior run''s evidence is already durable in the taskdir. If the task is
+  still running, defer instead.'
+ref: OPS-1039
+comms:
+- at: 2026-11-02 11:18
+  from: devin
+  text: card captured via board-api
