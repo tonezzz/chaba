@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 21:39
+updated: 2026-11-02 22:49
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -482,6 +482,13 @@ comms:
     process is visible. The activity probe reports busy/recent_user_input: HIDIdleTime 0.3s, so the 10-minute idle
     gate is not met. Illustrator can stay open; after 600s with no Mac input, rerun admission and submit v5 only
     if memory remains >=80% and no worker/render process has started.'
+- at: 2026-11-02 22:49
+  from: devin
+  text: 'Policy update per Tony: Mac keyboard/mouse input is advisory; it does not block by itself when measured
+    resource use is low. The unclaimed v5 C01 render pack now uses the resource gate: sample 10s, app CPU <=1 CPU-second
+    per tracked design-app tree, system CPU <=65%, memory >=80%, plus hard blocks for active render/export processes,
+    competing Nest worker, Ollama, or unknown readings. The new helper and updated v5 manifest are staged and rclone-verified
+    (0 differences); four resource-gate tests p'
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
