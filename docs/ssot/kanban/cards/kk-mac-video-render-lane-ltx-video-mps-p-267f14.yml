@@ -1,7 +1,7 @@
 id: kk-mac-video-render-lane-ltx-video-mps-p-267f14
 title: kk-mac video render lane — LTX-Video MPS port + MLX LTX-2.3 eval
 column: backlog
-updated: 2026-11-02 09:39
+updated: 2026-11-02 09:54
 spec: 'Two-lane comparison on kk-mac (M4 Max, 36GB unified, macOS 15.7) so KK can pick a render pipeline for her
   own video work.
 
@@ -429,6 +429,13 @@ comms:
     the separate kk-llm worker had finished. First launch using system Python could not parse YAML (PyYAML absent).
     Retried with the video venv; the old v3 embed pack then failed safely in prep because its Nest-worker check
     counted its own awk process. No inference or video ran. I preserved'
+- at: 2026-11-02 09:54
+  from: devin
+  text: 'Activity-gate verification and render outcome (Nov 2, ~09:53 +07): Illustrator remained open but passed
+    the 10-minute HID-idle + CPU sample (1311.8s idle, 0.32 CPU-seconds/10s). The full-command probe also found
+    the separate `kk_mac_video_batch.py` process earlier at 27GB RAM / 56% CPU; it later exited and memory recovered
+    to 89%. C01 v4 prompt embedding completed in 26s. The C01 v4 render pack then refused in prep because a separate
+    `kk-llm` Nest worker had started; no C01 video/inference ran. '
 requests:
 - id: kk-mac-next-powered-idle-window
   ask: When should we resume the KK-Mac LTX lane? The host is currently powered off; the next safe action needs
