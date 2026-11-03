@@ -1,0 +1,36 @@
+id: video-history-opencode-report
+title: 'OpenCode report: verify video history procedure'
+column: backlog
+updated: 2026-11-03 14:10
+brief: Produce a verifier-compatible review report for the video history procedure.
+priority: medium
+program: ai-workforce
+tags:
+- video
+- history
+- opencode
+- artifact-write
+spec: Review the existing docs/kb/video-history-data-management-procedure.md, artifact lifecycle SSOT, and claim
+  lifecycle procedure. Write a concise review report with required findings and any recommended changes. Do not
+  mutate queue state or canonical docs.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-history-procedure-review.md
+  prompt: Read the declared documents and write a concise review report to the declared artifact path. Do not edit
+    canonical docs or queue state. Include source/final/QC, superseded/archive, and no-delete findings.
+  expect:
+    facts:
+    - source/final/QC
+    - superseded
+    - archive
+    - no-delete
+  lane: free_lane
+ref: KNB-1051
+comms:
+- at: 2026-11-03 14:10
+  from: devin
+  text: card captured via board-api
