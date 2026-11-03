@@ -1,7 +1,7 @@
 id: jevteam-omen-or-lane-admission
 title: Add Omen and OpenRouter lanes to JevTeam admission ladder
 column: backlog
-updated: 2026-11-03 13:25
+updated: 2026-11-03 13:42
 brief: Make Omen local Jev decision services and OpenRouter free/paid tiers dependable optional lanes with health,
   quota, cost, verifier, and fallback gates.
 priority: high
@@ -25,3 +25,10 @@ comms:
 - at: 2026-11-03 13:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 13:42
+  from: devin
+  text: 'Corrected live preflight: Omen was not down; the prior probe used 127.0.0.1, but services bind tailnet
+    100.75.102.88. open-jev 8777 /health and /metrics are HTTP 200 (gemma-3-4b-it, CPU; 200 requests, avg ~23.8s/request).
+    open-jev-student 8778 is HTTP 200 (gemma-3-1b-it; 386 requests, avg ~2.62s/request). A real /v1/systemone smoke
+    passed on 8778 with 92 input/4 output tokens. Recommendation: use 8778 student for hot bounded lane classification/Noul
+    pre-gate; reserve 8777 4B for async audit/ambi'
