@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
 column: backlog
-updated: 2026-10-30 16:39
+updated: 2026-11-03 15:51
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -28,3 +28,10 @@ comms:
 - at: 2026-10-30 16:39
   from: tony
   text: card captured via board-api
+- at: 2026-11-03 15:51
+  from: devin
+  text: 'Recommended terminology for the next phase: use `/ada process <ref>` only as a bounded lifecycle coordinator,
+    never as an unconditional ''do everything until finished'' command. Define phases explicitly: observe/rank ->
+    plan -> handoff -> start (explicit dispatch approval) -> run in isolated worktree -> verify -> review-ready
+    -> approve -> merge -> deploy. Ada must not approve her own work; promotion is capability-scoped autonomy with
+    separation of duties. Suggested tiers: T0 observe/rank, T1 plan'
