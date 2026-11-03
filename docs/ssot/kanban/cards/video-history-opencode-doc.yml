@@ -1,0 +1,37 @@
+id: video-history-opencode-doc
+title: 'OpenCode: verify video history procedure'
+column: backlog
+updated: 2026-11-03 11:30
+brief: Have Ada/OpenCode independently review and verify the video history data-management procedure.
+priority: medium
+program: ai-workforce
+tags:
+- video
+- history
+- opencode
+- ada
+spec: Read the existing video history procedure, artifact lifecycle SSOT, and video queue claim procedure. Improve
+  only docs/kb/video-history-data-management-procedure.md if needed. Preserve source/final/QC retention, supersedes/tombstone,
+  no-delete handwritten rule, and generated-cache cleanup gates. Do not modify cards, services, queue state, or
+  video artifacts.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: doc-draft
+  target_host: idc02
+  artifact: docs/kb/video-history-data-management-procedure.md
+  prompt: Review and, if needed, minimally improve the video history data-management procedure. Work read-only except
+    the declared documentation artifact. Do not mutate queue state or delete files.
+  expect:
+    facts:
+    - source/final/QC
+    - superseded
+    - archive
+    - no-delete
+  lane: free_lane
+ref: ADA-1045
+comms:
+- at: 2026-11-03 11:30
+  from: devin
+  text: card captured via board-api
