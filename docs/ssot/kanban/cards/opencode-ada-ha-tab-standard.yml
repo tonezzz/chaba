@@ -1,0 +1,37 @@
+id: opencode-ada-ha-tab-standard
+title: Add OpenCode/Ada tab after Board with standard protected app integration
+column: backlog
+updated: 2026-11-03 08:27
+brief: Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard,
+  using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- ada
+- dashboard
+- cline
+- node-red
+- access
+spec: 'Assess whether the tab should embed (A) the full OpenCode web UI behind a dedicated root host and Cloudflare
+  Access, or (B) a safer read-only OpenCode/Ada control-plane surface that exposes debug/status/plan/handoff/self-test
+  receipts without granting browser-side credentials or unrestricted agent control. Preferred recommendation is
+  B first. Preserve the dashboard standard: panel iframe, root-host URL, Access policy, WebSocket support where
+  required, no secrets in iframe URLs, direct-origin denial, idempotent WebSocket mutation via push-dashboard.py,
+  live read-back, sanitized SSOT snapshot, and surface verification. Compare Board, Cline, and Node-RED current
+  arrangements; document Node-RED''s current tailnet direct iframe as an exception or migrate it to the same protected
+  root-host pattern. No production route or dashboard mutation until Tony selects the option and the protected endpoint
+  is verified.'
+action:
+  type: manual
+note: Current live order is Pair -> Board -> Cline -> DevNest(Node-RED) -> Ada Pages... Cline follows the strongest
+  root-host + Access + JWT-proxy pattern. Board uses a protected app iframe. DevNest currently points directly to
+  a tailnet :8080 Node-RED path and uses aspect_ratio, so it is not fully aligned with the full-page iframe standard.
+ref: ADA-1043
+comms:
+- at: 2026-11-03 08:27
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-03 08:27
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
