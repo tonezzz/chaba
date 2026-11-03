@@ -1,7 +1,7 @@
 id: opencode-ada-ha-tab-standard
 title: Add OpenCode/Ada tab after Board with standard protected app integration
 column: backlog
-updated: 2026-11-03 08:27
+updated: 2026-11-03 10:09
 brief: Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard,
   using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.
 priority: medium
@@ -35,3 +35,21 @@ comms:
 - at: 2026-11-03 08:27
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-03 10:09
+  from: devin
+  text: 'raised request choose-the-first-opencode-ada-dashboard-66e7fd: Choose the first OpenCode/Ada dashboard
+    surface for the tab immediately after Board.'
+requests:
+- id: choose-the-first-opencode-ada-dashboard-66e7fd
+  ask: Choose the first OpenCode/Ada dashboard surface for the tab immediately after Board.
+  status: open
+  at: 2026-11-03 10:09
+  from: devin
+  options:
+  - id: control-plane
+    label: 'Recommended: protected read-only Ada/OpenCode control plane (debug/status/plan/handoff/self-test/session
+      receipts); no full agent UI or writes.'
+  - id: full-opencode
+    label: Expose the full OpenCode web UI behind a dedicated Cloudflare Access root host; higher capability and
+      security/ops work.
+  suggested: control-plane
