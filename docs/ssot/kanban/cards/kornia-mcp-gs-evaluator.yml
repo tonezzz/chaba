@@ -1,0 +1,17 @@
+id: kornia-mcp-gs-evaluator
+title: Add read-only Kornia MCP tools for Gaussian capture evaluation
+column: backlog
+updated: 2026-11-03 15:22
+spec: 'Build a narrow Ada-facing MCP evaluator around Kornia for Gaussian Splat capture sets. Tools: inspect_image_set
+  (dimensions/duplicates/sharpness/exposure), match_views (DISK/LightGlue or SIFT fallback + RANSAC inliers), propose_foreground_masks
+  (review-only), score_capture_manifest, and compare_gs_runs (PSNR/SSIM/LPIPS/COLMAP registration/PLY/metrics).
+  Every tool returns JSON plus durable artifact_ref; no training, deletion, upload, or production mutation. Start
+  offline/read-only on the hibiscus fixture, compare CPU/MPS feasibility, then expose only through the existing
+  MCP policy/allowlist. Ada remains an explainer; deterministic metrics own gates.'
+note: 'Kornia official MCP module PR #3182 merged into kornia; local stack has no Kornia package or configured Kornia
+  MCP server yet. Education post 3620 covers Kornia GS fit and lane tracking.'
+ref: OPS-1055
+comms:
+- at: 2026-11-03 15:22
+  from: devin
+  text: card captured via board-api
