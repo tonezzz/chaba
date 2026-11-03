@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-03 17:40
+updated: 2026-11-03 18:12
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -336,6 +336,13 @@ comms:
   from: devin
   text: 'raised request kk-mac-heartbeat-load-refresh-20261103: The latest KK-Mac heartbeat still omits `load_1m`;
     `kk_mac_admission.py` is ineligible with `load_unknown`, and its SSH '
+- at: 2026-11-03 18:12
+  from: tony
+  text: 'answered kk-mac-heartbeat-load-refresh-20261103: kk-local-update — Have KK update/run the heartbeat locally
+    during an approved window; then verify load_1m via MDDB (recommended, no SSH-key change)'
+- at: 2026-11-03 18:12
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -443,7 +450,7 @@ requests:
     emits `load_1m`. May KK, during an owner-approved window, update the installed `/Users/adanest/bin/ada-nest-heartbeat.sh`
     from that source and allow the existing 5-minute LaunchDaemon to publish a fresh heartbeat? This is telemetry-only:
     no inference, model download, SSH-key change, or route enable.'
-  status: open
+  status: answered
   at: 2026-11-03 17:40
   from: devin
   options:
@@ -453,4 +460,6 @@ requests:
   - id: hold
     label: Keep the inference lane blocked until a later owner-approved telemetry refresh
   suggested: kk-local-update
+  answer: kk-local-update — Have KK update/run the heartbeat locally during an approved window; then verify load_1m
+    via MDDB (recommended, no SSH-key change)
 awaiting_action: true
