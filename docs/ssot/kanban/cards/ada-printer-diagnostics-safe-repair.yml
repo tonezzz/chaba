@@ -1,0 +1,33 @@
+id: ada-printer-diagnostics-safe-repair
+title: 'Ada: diagnose and safely repair the HP DeskJet queue'
+column: backlog
+updated: 2026-11-03 13:02
+brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
+  repair actions.
+priority: medium
+program: ada
+tags:
+- ada
+- printer
+- cups
+- home-assistant
+- safety
+spec: 'Use the existing Ada document-print pipeline as the base. Current `docs(action=print)` only prints archived
+  pages and is confirmation-gated; it cannot diagnose or repair arbitrary CUPS queues. V1 should expose read-only
+  printer/queue status (stable device identity, reachability, printer-state, accepting-jobs, queued job IDs/states,
+  ink levels, source host) and clearly distinguish CUPS-host queues from printer-internal/direct-print jobs. Repair
+  operations must be a fixed allowlist, target one verified queue/job, require Ada''s existing same-session explicit
+  confirmation bound to exact arguments, re-read status after acting, and record an audit result. Never provide
+  arbitrary shell/sudo, never cancel-all, and never print a test page or reprint a document without explicit confirmation.
+  Resolve the known identity drift before changing queues: HP DeskJet 2700 serial CN33BDZ0KS / UUID 5ba42c21-ae68-7f6d-830e-600ee5b90fe6
+  / mDNS HPE073E705C516.local was observed at 192.168.2.78; 192.168.2.75 serves a wireless repeater. The Dell static
+  CUPS queue still targets .75, and the older Ada print-plan names mn01/.74. Update the authoritative registry and
+  queue target only after IPP identity verification. Prefer a narrow privileged CUPS service/helper on the print
+  host over giving Ada SSH/root. Test idle/queued/held/unreachable/stale-target cases and negative confirmation
+  paths; stage and verify on idc02 before any Ada production deploy. Related: docs/ssot/jobs/ada/2026-09-22-document-print-pipeline.yml
+  and docs/ssot/ssot.learning.printer-hp-deskjet.2026-09-21.yml.'
+ref: ADA-1049
+comms:
+- at: 2026-11-03 13:02
+  from: devin
+  text: card captured via board-api
