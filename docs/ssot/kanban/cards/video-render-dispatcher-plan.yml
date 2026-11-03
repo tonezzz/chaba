@@ -1,7 +1,7 @@
 id: video-render-dispatcher-plan
 title: 'OpenCode: produce canonical video dispatcher plan'
 column: review
-updated: 2026-11-03 16:12
+updated: 2026-11-03 16:13
 brief: Have Ada/OpenCode turn OPS-1042 into a concrete implementation plan with manifest schema, state machine,
   and safe rollout.
 priority: high
@@ -32,12 +32,15 @@ action:
     - QC
     - read-only
   lane: free_lane
-  status: done
+  status: running
   agent_profile: ops-readonly
-  runner: idc02
   result: 'exit=0 ":"ses_e5f524a03ffeyUJV1y2jU6oy7j","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-video-render-dispatcher-plan-1793697096.service: Consumed 15.885s CPU time.'
   verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=0'
+  sweep:
+    zero_commit: 2026-11-03 16:13
+  runner: idc02
 ref: OPS-1057
 comms:
 - at: 2026-11-03 16:11
@@ -62,5 +65,12 @@ comms:
 - at: 2026-11-03 16:12
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 16:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 16:13
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
