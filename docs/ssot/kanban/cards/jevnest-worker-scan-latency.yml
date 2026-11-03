@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-11-03 21:24
+updated: 2026-11-03 21:25
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -42,3 +42,22 @@ comms:
     290358235, scripts/ada/nest-worker.py, LaunchAgent state, and recent worker evidence could not be independently
     re-read. No retry, service change, queue action, or mutation performed. Keep OPS-1003 in verify-only/blocked
     state until KK-Mac reachability returns; do not infer DONE from historical comms.'
+- at: 2026-11-03 21:25
+  from: devin
+  text: 'raised request kk-mac-is-offline-choose-the-next-safe-e-183153: KK-Mac is offline. Choose the next safe
+    evidence path for OPS-1003.'
+requests:
+- id: kk-mac-is-offline-choose-the-next-safe-e-183153
+  ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
+  status: open
+  at: 2026-11-03 21:25
+  from: devin
+  options:
+  - id: wait-kk
+    label: Wait for KK-Mac — required for live worker/LaunchAgent verification.
+  - id: omen-replay
+    label: 'Recommended: run a deterministic/synthetic discovery-latency replay on tony-omen; do not claim KK-Mac
+      live state.'
+  - id: or-analysis
+    label: Use OpenRouter/OR only to review existing evidence or draft analysis; it cannot verify KK-Mac or deploy.
+  suggested: omen-replay
