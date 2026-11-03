@@ -36,7 +36,10 @@ comms:
   text: 'Missed-job sweep 2026-10-29: audit-hosts reports the expected tony-dell `playlived.service` missing. PlayLive
     verification used the healthy tony-omen:9230 fallback; exact DevNest iframe content and 14 rows were verified.
     No daemon was installed or restarted. The idc target-preference decision remains a separate backlog item.'
-updated: 2026-10-29 12:02
+- at: 2026-11-03 11:48
+  from: tony
+  text: queued for processing
+updated: 2026-11-03 11:48
 ref: OPS-0439
 spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing a user playlived.service
   by reusing stacks/ or mcp-servers/mcp-playlive unit from tony-dell. Update docs/ssot/infrastructure/playlive-hosts.yml
@@ -44,3 +47,6 @@ spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the prefe
   flip target_preference.status to active. Keep tony-dell as fallback and ensure idc01 remains last (retired/cold-batch,
   never taking ada services or mddb writes). Verify by checking the active status in playlive-hosts.yml, service
   health on idc02, and correct failover configuration.
+action:
+  type: dispatch
+  status: queued
