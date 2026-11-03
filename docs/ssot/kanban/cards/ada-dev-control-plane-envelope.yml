@@ -38,6 +38,12 @@ comms:
 - at: 2026-11-03 20:22
   from: tony
   text: queued for processing
+- at: 2026-11-03 20:22
+  from: devin
+  text: 'Continued the supervised boundary: added `ada_dispatch_check` in DevNest commit `395dbea`. It validates
+    required typed envelope fields (type, repo, executor, model, profile, target_host, artifact, verifier) without
+    creating a job. OPS-1039 currently fails this check with all dispatch fields missing, so Ada stops safely before
+    dispatch. This is the next gate before typed start can be enabled.'
 action:
   type: dispatch
   status: queued
