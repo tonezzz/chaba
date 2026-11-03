@@ -1,7 +1,7 @@
 id: jack-opencode-cloudflare-prep-idc02
 title: Prepare Jack Cloudflare route with OpenCode on idc02
 column: backlog
-updated: 2026-11-03 10:13
+updated: 2026-11-03 10:19
 brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
 priority: high
 program: devnest
@@ -63,3 +63,10 @@ comms:
     Minted a shared one-time test enrollment code labeled tony; stored locally mode 600, not posted. This is a shared-workspace
     test only: both users reach the same Jack /workspace and sessions are not yet identity-bound at the filesystem
     level.'
+- at: 2026-11-03 10:19
+  from: devin
+  text: 'Separate Tony instance deployed for supervised shared-workspace testing. New public host opencode-tony.surf-thailand.com
+    has Cloudflare Access policy for javkster@gmail.com and tonezzzz@gmail.com, proxied DNS, separate tony-opencode
+    + tony-enroll services, separate Tony workspace/session state. Jack and Tony containers can each read/write
+    the other primary workspace at /workspace/tony-workspace and /workspace/jack-workspace respectively, per Tony''s
+    explicit request. Both health checks and Caddy '
