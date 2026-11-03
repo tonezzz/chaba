@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-10-30 14:39
+updated: 2026-11-03 20:45
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -29,3 +29,10 @@ comms:
     markers. KK-Mac checkout synced and LaunchAgent restarted. New broker-smoke package completed (qwen3:8b wall
     ~4.6s); worker-activity package also completed, with one expected lost-claim race from the manual verification
     run. Commit 290358235.'
+- at: 2026-11-03 20:45
+  from: devin
+  text: 'Proposed Ada-assisted continuation for OPS-1003, gated by phase: (1) read-only evidence pack verifies commit
+    290358235 and current KK-Mac worker/LaunchAgent state; (2) Ada reconciles DONE comms vs card column and reports
+    verify-only vs implementation-retry, but does not mutate workflow fields; (3) typed handoff records selected
+    route; (4) if retry is required, allowed_paths explicitly include scripts/ada/nest-worker.py + tests and executor
+    remains OpenCode/review-only; (5) deterministic discover'
