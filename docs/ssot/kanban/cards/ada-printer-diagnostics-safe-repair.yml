@@ -31,3 +31,21 @@ comms:
 - at: 2026-11-03 13:02
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 13:02
+  from: devin
+  text: 'raised request what-repair-authority-should-ada-have-af-fe1959: What repair authority should Ada have after
+    diagnosing the printer?'
+requests:
+- id: what-repair-authority-should-ada-have-af-fe1959
+  ask: What repair authority should Ada have after diagnosing the printer?
+  status: open
+  at: 2026-11-03 13:02
+  from: devin
+  options:
+  - id: confirmed-single-job-repair
+    label: 'Recommended: diagnose read-only; with your explicit spoken confirmation, allow one verified per-job
+      recovery (resume/retry/cancel that job). Queue reconfiguration, service restart, and test printing each need
+      separate explicit approval. Never cancel all.'
+  - id: diagnosis-only
+    label: Read-only diagnostics and exact instructions; you perform every CUPS or printer change manually.
+  suggested: confirmed-single-job-repair
