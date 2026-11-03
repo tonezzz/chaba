@@ -1,0 +1,38 @@
+id: video-render-dispatcher-plan-repair
+title: 'OpenCode artifact repair: video dispatcher plan'
+column: backlog
+updated: 2026-11-03 16:15
+brief: Retry the OPS-1042 plan with a verifier-compatible artifact path.
+priority: high
+program: ai-workforce
+tags:
+- video
+- dispatcher
+- opencode
+- artifact-write
+spec: Read OPS-1042, the video claim lifecycle procedure, video history procedure, current queue status report,
+  and Sacred Father manifest. Write the concrete dispatcher implementation plan to the declared artifact path. Do
+  not mutate queues, cards, claims, services, or source files.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-render-dispatcher-plan.md
+  prompt: Write the declared plan artifact under evals/opencode-lane/out/. Read source documents and reports, but
+    do not edit them or mutate queues. Include canonical manifest, stale claim policy, rollback, QC, and read-only
+    boundaries.
+  expect:
+    facts:
+    - canonical manifest
+    - stale claim
+    - rollback
+    - QC
+    - read-only
+  lane: free_lane
+ref: OPS-1058
+comms:
+- at: 2026-11-03 16:15
+  from: devin
+  text: card captured via board-api
