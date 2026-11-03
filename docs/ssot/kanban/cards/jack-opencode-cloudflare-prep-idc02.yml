@@ -1,7 +1,7 @@
 id: jack-opencode-cloudflare-prep-idc02
 title: Prepare Jack Cloudflare route with OpenCode on idc02
 column: backlog
-updated: 2026-10-29 23:08
+updated: 2026-11-03 10:13
 brief: Bounded OpenCode prep for the Jack Cloudflare route on the executor host.
 priority: high
 program: devnest
@@ -57,3 +57,9 @@ comms:
     idc02 jack-enroll and caddy-edge active. Public /enroll returns Cloudflare Access 302; direct loopback and public-host
     requests with forged Tailscale header return 403. Gateway JWT validation deployed; Caddy config validated. Commits
     in isolated branch: fd9b78f3e and cef7f0f9c. Re'
+- at: 2026-11-03 10:13
+  from: devin
+  text: 'Supervised test access added: Cloudflare reusable policy now allows javkster@gmail.com and tonezzzz@gmail.com.
+    Minted a shared one-time test enrollment code labeled tony; stored locally mode 600, not posted. This is a shared-workspace
+    test only: both users reach the same Jack /workspace and sessions are not yet identity-bound at the filesystem
+    level.'
