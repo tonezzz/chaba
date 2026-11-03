@@ -53,7 +53,14 @@ comms:
   from: devin
   text: 'Started: provisioning playlived on idc02. Found port 9230 already owned by caddy (vcast signaling) on tailnet
     IP — will use :9240. node22 at ~/.local/node OK; no Chrome yet — installing via playwright. Then SSOT updates.'
-updated: 2026-11-03 11:51
+- at: 2026-11-03 11:57
+  from: devin
+  text: 'DONE (dispatch 2026-11-03): playlived provisioned on idc02 :9240 (user unit, playwright-headless only —
+    :9230 is caddy-edge/vcast). Verified e2e: health + session navigate+close on idc02; dell fallback unit restored
+    (was missing) and verified; remote self-heal from dell->idc02 live-tested rc=0. SSOT: playlive-hosts.yml target_preference=active,
+    per_host/failover/self_heal rewired idc02-first, ssot.apps + audit manifest + health check updated. idc01 stays
+    last/untouched. Committed on dispatch bra'
+updated: 2026-11-03 11:57
 ref: OPS-0439
 spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing a user playlived.service
   by reusing stacks/ or mcp-servers/mcp-playlive unit from tony-dell. Update docs/ssot/infrastructure/playlive-hosts.yml
