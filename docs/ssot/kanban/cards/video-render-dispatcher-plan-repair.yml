@@ -1,7 +1,7 @@
 id: video-render-dispatcher-plan-repair
 title: 'OpenCode artifact repair: video dispatcher plan'
 column: review
-updated: 2026-11-03 22:29
+updated: 2026-11-03 22:30
 brief: Retry the OPS-1042 plan with a verifier-compatible artifact path.
 priority: high
 program: ai-workforce
@@ -31,7 +31,7 @@ action:
     - QC
     - read-only
   lane: free_lane
-  status: queued
+  status: running
   agent_profile: artifact-write
   result: 'exit=0 e5e05c88cffejKvgFT5PC6KTX4","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-video-render-dispatcher-plan-repair-1793718888.service: Consumed 13.158s CPU time.'
@@ -39,6 +39,7 @@ action:
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
   sweep:
     zero_commit: 2026-11-03 22:29
+  runner: idc02
 ref: OPS-1058
 comms:
 - at: 2026-11-03 16:15
@@ -562,5 +563,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 22:30
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
