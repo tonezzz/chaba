@@ -1,0 +1,39 @@
+# Tony's separate enrollment/session gateway. It is public only through
+# Cloudflare Access + Caddy and proxies to tony-opencode on the private podnet.
+[Unit]
+Description=Tony IDE enrollment gateway + session proxy
+After=tony-ide-network.service tony-opencode.service
+Requires=tony-ide-network.service
+
+[Container]
+Image=localhost/jack-enroll:latest
+ContainerName=tony-enroll
+Network=tony-ide.network
+UserNS=keep-id
+PublishPort=127.0.0.1:8378:8080
+Environment=LISTEN_PORT=8080
+Environment=UPSTREAM_URL=http://tony-opencode:4096
+Environment=UPSTREAM_USER=opencode
+Environment=STATE_DIR=/state
+Environment=CODE_TTL_S=900
+Environment=SESSION_TTL_S=43200
+Environment=REQUIRE_EDGE_HEADER=1
+Environment=PUBLIC_HOST=opencode-tony.surf-thailand.com
+Environment=CF_ACCESS_ISSUER=https://chaba-team.cloudflareaccess.com
+Environment=CF_ACCESS_AUDIENCE=2da7c3970094342fae2203b88ef6e98254c7a8301c1582947671bc8060953555
+Environment=CF_ACCESS_JWKS_URL=https://chaba-team.cloudflareaccess.com/cdn-cgi/access/certs
+Environment=COOKIE_SECURE=1
+EnvironmentFile=%h/.config/secrets/tony-enroll.env
+Volume=%h/.local/share/tony-ide/state:/state:Z
+HealthCmd=/usr/local/bin/node -e "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=30s
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
