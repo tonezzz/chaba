@@ -1,7 +1,7 @@
 id: ada-printer-diagnostics-safe-repair
 title: 'Ada: diagnose and safely repair the HP DeskJet queue'
 column: backlog
-updated: 2026-11-03 13:02
+updated: 2026-11-03 14:10
 brief: Extend Ada's existing confirmed document-print tool with printer status, CUPS job diagnostics, and bounded
   repair actions.
 priority: medium
@@ -35,10 +35,18 @@ comms:
   from: devin
   text: 'raised request what-repair-authority-should-ada-have-af-fe1959: What repair authority should Ada have after
     diagnosing the printer?'
+- at: 2026-11-03 14:10
+  from: tony
+  text: 'answered what-repair-authority-should-ada-have-af-fe1959: confirmed-single-job-repair — Recommended: diagnose
+    read-only; with your explicit spoken confirmation, allow one verified per-job recovery (resume/retry/cancel
+    that job). Queue reconfiguration, servic'
+- at: 2026-11-03 14:10
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: what-repair-authority-should-ada-have-af-fe1959
   ask: What repair authority should Ada have after diagnosing the printer?
-  status: open
+  status: answered
   at: 2026-11-03 13:02
   from: devin
   options:
@@ -49,3 +57,7 @@ requests:
   - id: diagnosis-only
     label: Read-only diagnostics and exact instructions; you perform every CUPS or printer change manually.
   suggested: confirmed-single-job-repair
+  answer: 'confirmed-single-job-repair — Recommended: diagnose read-only; with your explicit spoken confirmation,
+    allow one verified per-job recovery (resume/retry/cancel that job). Queue reconfiguration, service restart,
+    and test printing each need separate explicit approval. Never cancel all.'
+awaiting_action: true
