@@ -1,0 +1,24 @@
+id: kk-mac-safe-cache-cleanup
+title: Reclaim KK-Mac generated cache headroom safely
+column: backlog
+updated: 2026-11-03 15:34
+brief: Review and reclaim only generated DevNest caches while preserving owner data, active models, and video source
+  history.
+priority: high
+program: ai-workforce
+tags:
+- kk-mac
+- disk
+- cleanup
+- cache
+- safety
+spec: 'Read-only disk review 2026-11-03: free disk ~17 GB; ~/.cache/nest-worker-smoke-20261031 ~9 GB; ~/.cache/huggingface
+  ~23 GB (LTX cache); ~/kk-video/ltx-mlx/models ~27 GB (active local video models); ~/.ollama ~2.8 GB (active models);
+  Adobe caches ~60 GB; Desktop ~46 GB; Downloads ~11 GB. Do not touch Adobe/Desktop/Downloads/Trash/Ollama/LTX local
+  models without explicit approval. First verify no active process/reference, then propose exact generated-cache
+  cleanup and expected recovery.'
+ref: OPS-1056
+comms:
+- at: 2026-11-03 15:34
+  from: devin
+  text: card captured via board-api
