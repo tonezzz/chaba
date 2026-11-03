@@ -1,0 +1,27 @@
+id: jack-shared-workspace-repo-promotion
+title: Jack shared workspace repository and PR promotion lane
+column: backlog
+updated: 2026-11-03 10:29
+brief: Use the shared Jack OpenCode instance for Tony/Jack collaboration with organized repo workspaces and a gated
+  commit/push/PR flow.
+priority: high
+program: devnest
+tags:
+- jack
+- opencode
+- git
+- workspace
+- pull-request
+spec: Use opencode-jack.surf-thailand.com as the canonical shared instance. Organize /workspace into repos/, worktrees/,
+  shared/, incoming/, and outputs/. Tony and Jack may read/write each other's mounted primary workspaces during
+  the supervised test. Keep separate OpenCode instances only as fallback; do not delete the Tony instance yet. Add
+  operator-controlled repository import, per-task branches/worktrees, local commits, secret/scope/test verification,
+  scoped branch push, and PR creation without direct global GitHub PAT or SSH key exposure. Main-branch merge and
+  deployment remain human gates.
+help: 'First pilot: one toy/private repository, one Jack task branch, deterministic tests, independent verifier,
+  local commit, and reviewable diff. Do not grant broad GitHub credentials to the OpenCode container.'
+ref: OPS-1044
+comms:
+- at: 2026-11-03 10:29
+  from: tony
+  text: card captured via board-api
