@@ -1,7 +1,7 @@
 id: video-render-dispatcher
 title: Build canonical video render dispatcher and queue status
 column: backlog
-updated: 2026-11-02 22:03
+updated: 2026-11-03 09:37
 brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
   final artifact.
 priority: high
@@ -25,3 +25,10 @@ comms:
 - at: 2026-11-02 22:03
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 09:37
+  from: devin
+  text: 'OPS-1042 v1 implemented and verified. Added read-only scripts/devnest/video_queue_status.py plus durable
+    report reports/video-queue-status-2026-11-03.json. Live audit: KK video pilot 54 packages = 9 done, 43 queued/other,
+    2 failed; general video queue 16 = 14 done, 2 queued/other. The key finding is 0 fresh active claims and 14
+    stale claims (ages ~77–251h); the queues are not actively moving. No claims were deleted automatically. Next
+    operational decision is to retire/release stale historical cl'
