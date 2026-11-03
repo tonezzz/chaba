@@ -64,6 +64,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261103-044920-provision-headless-playwright- no longer active on mn01 but card
     still says running — sweeping its branch'
+- at: 2026-11-03 11:57
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261103-044920-provision-headless-playwright- on mn01 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 updated: 2026-11-03 11:57
 ref: OPS-0439
 spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing a user playlived.service
@@ -76,3 +80,5 @@ action:
   type: dispatch
   status: running
   runner: mn01
+  sweep:
+    stale_running: 2026-11-03 11:57
