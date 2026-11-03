@@ -1,0 +1,36 @@
+id: video-queue-audit-opencode-repair
+title: 'OpenCode artifact repair: video queue audit'
+column: backlog
+updated: 2026-11-03 12:11
+brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- opencode
+- artifact-write
+spec: Run scripts/devnest/video_queue_status.py read-only against both video roots, write reports/video-queue-status-opencode.md
+  with counts, stale claim ages, canonical Sacred Father packages, and safe recommendations. Do not release claims
+  or start renders.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: reports/video-queue-status-opencode.md
+  prompt: Run the existing queue status tool read-only, write the declared report artifact, and preserve evidence.
+    Do not delete/release claims or start renders.
+  expect:
+    facts:
+    - stale claims
+    - canonical
+    - read-only
+    - recommendation
+  lane: free_lane
+ref: AUD-1048
+comms:
+- at: 2026-11-03 12:11
+  from: devin
+  text: card captured via board-api
