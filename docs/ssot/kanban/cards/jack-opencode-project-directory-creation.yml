@@ -1,0 +1,36 @@
+id: jack-opencode-project-directory-creation
+title: Make project-directory creation clear and safe in Jack OpenCode
+column: backlog
+updated: 2026-11-03 14:48
+brief: Jack OpenCode is healthy and /workspace is writable, but the UI cannot create/open a new project directory
+  as Tony expects.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- jack-ide
+- workspace
+- ux
+- permissions
+spec: 'Diagnose and improve the Jack OpenCode project flow. The container may write only inside the bind-mounted
+  /workspace, whose standard layout is repos/, worktrees/, incoming/, shared/, and outputs/. Determine whether the
+  UI expects an existing directory rather than creating one, and whether external_directory=deny is confusing the
+  flow. Provide a safe project-create/import path that never permits host paths, secrets, SSH keys, or arbitrary
+  mounts. Preserve the isolated Jack workspace, rootless container, no published port, Access/enrollment gateway,
+  and repository promotion flow. Add an operator-facing guide and a verified smoke: create a disposable directory
+  under /workspace/repos or worktrees, open it in OpenCode, write a test artifact, verify it, then remove only the
+  disposable fixture if the test creates one. Do not expose Tony''s private host paths, change mounts, grant broad
+  filesystem access, or restore the deleted Tony OpenCode service without a separate decision.'
+action:
+  type: manual
+note: 'Live check: jack-opencode.service and jack-enroll.service active; container uid node:node; /workspace, /workspace/repos,
+  and /workspace/worktrees are writable. Existing workspace has hello, repos, worktrees, incoming, shared, outputs,
+  and tony-workspace. Current likely boundary is UI/project semantics or path scope, not service health.'
+ref: OPS-1053
+comms:
+- at: 2026-11-03 14:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-03 14:48
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
