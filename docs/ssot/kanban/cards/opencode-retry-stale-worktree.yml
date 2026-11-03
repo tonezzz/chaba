@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-02 11:18
+updated: 2026-11-03 14:59
 priority: low
 tags:
 - opencode
@@ -18,3 +18,9 @@ comms:
 - at: 2026-11-02 11:18
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 14:59
+  from: devin
+  text: 'Recommended as the first supervised Ada -> OpenCode real-fix canary: OPS-1039 is narrow, deterministic,
+    regression-testable, reversible, and has no secrets/deploy/destructive scope. Ada should produce the handoff
+    only; OpenCode works in an isolated branch/worktree; tests + independent verifier run; Tony reviews the patch.
+    Do not auto-merge or let Ada dispatch directly until ADA-1010 typed dispatch gates exist.'
