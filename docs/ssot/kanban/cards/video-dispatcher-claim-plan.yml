@@ -1,0 +1,38 @@
+id: video-dispatcher-claim-plan
+title: 'OpenCode: write stale-claim reconciliation plan'
+column: backlog
+updated: 2026-11-03 17:31
+brief: Produce a small verified artifact mapping video stale claims to retire/release/hold decisions.
+priority: high
+program: ai-workforce
+tags:
+- video
+- dispatcher
+- claims
+- opencode
+- artifact-write
+spec: Read the existing video queue status report and video-queue-claim-lifecycle-procedure.md. Write only the declared
+  report; do not release claims, delete files, start renders, or mutate cards.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-stale-claim-action-plan.md
+  prompt: Use the write tool immediately to create the declared artifact. Summarize the stale-claim lifecycle and
+    categorize safe actions as retire, release-after-check, or hold. Do not mutate any queue. End only after the
+    file exists.
+  expect:
+    facts:
+    - retire
+    - release
+    - hold
+    - no automatic deletion
+    - 2 hours
+  lane: free_lane
+ref: OPS-1061
+comms:
+- at: 2026-11-03 17:31
+  from: devin
+  text: card captured via board-api
