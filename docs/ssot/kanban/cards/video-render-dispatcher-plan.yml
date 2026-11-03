@@ -1,0 +1,39 @@
+id: video-render-dispatcher-plan
+title: 'OpenCode: produce canonical video dispatcher plan'
+column: backlog
+updated: 2026-11-03 16:11
+brief: Have Ada/OpenCode turn OPS-1042 into a concrete implementation plan with manifest schema, state machine,
+  and safe rollout.
+priority: high
+program: ai-workforce
+tags:
+- video
+- dispatcher
+- opencode
+- plan
+spec: Read OPS-1042, video queue claim lifecycle, video history procedure, current video queue status, and Sacred
+  Father project manifest. Produce a concrete implementation plan only; do not mutate queues, cards, claims, services,
+  or files outside the declared report. Include current blockers, canonical manifest fields, stale-claim classification,
+  worker/runner contract, QC gates, rollback, and rollout steps.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: ops-readonly
+  target_host: idc02
+  artifact: reports/video-render-dispatcher-plan.md
+  prompt: 'Produce the declared report artifact with the OPS-1042 implementation plan. Read-only only: do not edit
+    files, delete/release claims, or start renders.'
+  expect:
+    facts:
+    - canonical manifest
+    - stale claim
+    - rollback
+    - QC
+    - read-only
+  lane: free_lane
+ref: OPS-1057
+comms:
+- at: 2026-11-03 16:11
+  from: devin
+  text: card captured via board-api
