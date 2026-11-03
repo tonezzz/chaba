@@ -1,7 +1,7 @@
 id: opencode-ada-ha-tab-standard
 title: Add OpenCode/Ada tab after Board with standard protected app integration
 column: backlog
-updated: 2026-11-03 10:09
+updated: 2026-11-03 11:30
 brief: Define and add a protected OpenCode/Ada surface immediately after Board in the Ada HA chaba-admin dashboard,
   using the same app-tab contract as Board/Cline and a clear Node-RED exception or migration path.
 priority: medium
@@ -39,6 +39,13 @@ comms:
   from: devin
   text: 'raised request choose-the-first-opencode-ada-dashboard-66e7fd: Choose the first OpenCode/Ada dashboard
     surface for the tab immediately after Board.'
+- at: 2026-11-03 11:30
+  from: devin
+  text: 'Continuation check 2026-11-03: current chaba-jack-cf HEAD 31380302bb explicitly removed the duplicate Tony
+    OpenCode service, `opencode-tony.surf-thailand.com` route, Tony enrollment gateway/network, Tony container,
+    and cross-workspace mount. The remaining deployed canonical surface is `opencode-jack.surf-thailand.com` for
+    the isolated Jack workspace, with Cloudflare Access/JWT gateway and no MCP in its container config. Therefore
+    a Tony OpenCode full-UI tab cannot be wired to the deleted Tony ro'
 requests:
 - id: choose-the-first-opencode-ada-dashboard-66e7fd
   ask: Choose the first OpenCode/Ada dashboard surface for the tab immediately after Board.
