@@ -1,0 +1,37 @@
+id: video-history-opencode-repair
+title: 'OpenCode artifact repair: video history procedure'
+column: backlog
+updated: 2026-11-03 12:11
+brief: Retry ADA-1045 with a write-capable artifact contract so the procedure lands and verifies.
+priority: medium
+program: ai-workforce
+tags:
+- video
+- history
+- opencode
+- artifact-write
+spec: Read docs/kb/video-history-data-management-procedure.md and the lifecycle SSOT. Make only minimal corrections
+  if needed. Write the declared artifact, validate it, and leave queue/video data untouched.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: docs/kb/video-history-data-management-procedure.md
+  prompt: Review the existing procedure, make only necessary documentation corrections, save the declared artifact,
+    and run the relevant validation. Do not touch queue state or delete data.
+  expect:
+    facts:
+    - source
+    - final
+    - QC
+    - superseded
+    - archive
+    - no-delete
+  lane: free_lane
+ref: OPS-1047
+comms:
+- at: 2026-11-03 12:11
+  from: devin
+  text: card captured via board-api
