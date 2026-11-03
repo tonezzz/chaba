@@ -1,6 +1,6 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
-column: backlog
+column: doing
 updated: 2026-11-03 20:22
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
@@ -44,6 +44,12 @@ comms:
     required typed envelope fields (type, repo, executor, model, profile, target_host, artifact, verifier) without
     creating a job. OPS-1039 currently fails this check with all dispatch fields missing, so Ada stops safely before
     dispatch. This is the next gate before typed start can be enabled.'
+- at: 2026-11-03 20:22
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  runner: idc02
