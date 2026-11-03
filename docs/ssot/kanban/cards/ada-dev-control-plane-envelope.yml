@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
-column: doing
-updated: 2026-11-03 20:23
+column: review
+updated: 2026-11-03 20:24
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -50,9 +50,16 @@ comms:
 - at: 2026-11-03 20:23
   from: chaba
   text: started devin-task-ada-dev-control-plane-envelope-1793712178 on idc02 (dispatch)
+- at: 2026-11-03 20:24
+  from: idc02
+  text: 'finished (ok): exit=0 "ses_e5e6c2974ffetzRkQTc8XmFgpY","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cac'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   runner: idc02
+  result: 'exit=0 "ses_e5e6c2974ffetzRkQTc8XmFgpY","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-ada-dev-control-plane-envelope-1793712178.service: Consumed 15.397s CPU time.'
+review_kind: verify
+claim: {}
