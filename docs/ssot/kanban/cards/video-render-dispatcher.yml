@@ -1,7 +1,7 @@
 id: video-render-dispatcher
 title: Build canonical video render dispatcher and queue status
 column: backlog
-updated: 2026-11-03 09:37
+updated: 2026-11-03 10:31
 brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
   final artifact.
 priority: high
@@ -32,3 +32,10 @@ comms:
     2 failed; general video queue 16 = 14 done, 2 queued/other. The key finding is 0 fresh active claims and 14
     stale claims (ages ~77–251h); the queues are not actively moving. No claims were deleted automatically. Next
     operational decision is to retire/release stale historical cl'
+- at: 2026-11-03 10:31
+  from: devin
+  text: Defined the standard claim lifecycle in docs/kb/video-queue-claim-lifecycle-procedure.md and Education post
+    3582. States are now queued/running/stale/done/failed/retired; default lease TTL is 2h; status scans remain
+    read-only; stale claims require evidence/reconciliation before explicit release; historical/support packages
+    get retired markers, not reruns. Only one canonical current render manifest may dispatch final-cut packages.
+    Live audit remains 0 fresh claims + 14 stale claims; no claims wer
