@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-11-03 20:45
+updated: 2026-11-03 21:24
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -36,3 +36,9 @@ comms:
     verify-only vs implementation-retry, but does not mutate workflow fields; (3) typed handoff records selected
     route; (4) if retry is required, allowed_paths explicitly include scripts/ada/nest-worker.py + tests and executor
     remains OpenCode/review-only; (5) deterministic discover'
+- at: 2026-11-03 21:24
+  from: devin
+  text: 'Read-only evidence preflight attempted 2026-11-03: SSH BatchMode to kk-mac timed out on port 22, so commit
+    290358235, scripts/ada/nest-worker.py, LaunchAgent state, and recent worker evidence could not be independently
+    re-read. No retry, service change, queue action, or mutation performed. Keep OPS-1003 in verify-only/blocked
+    state until KK-Mac reachability returns; do not infer DONE from historical comms.'
