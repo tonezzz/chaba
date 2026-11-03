@@ -1,7 +1,7 @@
 id: video-stale-claim-reconciliation
 title: 'OpenCode: reconcile stale video queue claims'
-column: doing
-updated: 2026-11-03 14:51
+column: review
+updated: 2026-11-03 14:52
 brief: Have Ada/OpenCode classify stale video claims without releasing or deleting anything.
 priority: high
 program: ai-workforce
@@ -31,9 +31,12 @@ action:
     - hold
     - read-only
   lane: free_lane
-  status: running
+  status: done
   agent_profile: artifact-write
   runner: idc02
+  result: 'exit=0 d87ffe2Jr2NsSQl5IbZj","type":"step-finish","tokens":{"total":43229,"input":43130,"output":99,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-video-stale-claim-reconciliation-1793692299.service: Consumed 17.603s CPU time.'
+  verified: true
 ref: OPS-1054
 comms:
 - at: 2026-11-03 14:51
@@ -49,3 +52,8 @@ comms:
   from: chaba
   text: started devin-task-video-stale-claim-reconciliation-1793692299 on idc02 (dispatch executor=opencode profile=artifact-write
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 14:52
+  from: idc02
+  text: 'finished (ok): exit=0 d87ffe2Jr2NsSQl5IbZj","type":"step-finish","tokens":{"total":43229,"input":43130,"output":99,"reasoning":0,"cache'
+review_kind: verify
+claim: {}
