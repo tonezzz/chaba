@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-02 15:42
+updated: 2026-11-03 11:47
 priority: medium
 tags:
 - telegram
@@ -93,6 +93,13 @@ comms:
     includes a trailing ''t'' before Bot, differing from the older @TonyDvnsBot record). All four existing relays
     remain active on those old handles. The new five bot tokens pass getMe from tony-macbook, but new accounts are
     not yet accessible in their intended groups; no test me'
+- at: 2026-11-03 11:47
+  from: tony
+  text: 'answered household-bot-group-membership-20261102: groups-ready — Recommended: add the new bots to their
+    intended groups and configure the host-only group allowlists; then have Devin recheck before any send.'
+- at: 2026-11-03 11:47
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -142,7 +149,7 @@ requests:
     target is allowlisted in the idc03 host-only EnvironmentFile; do not paste tokens or raw group IDs here. When
     ready, tell me groups-ready so I can repeat the read-only membership checks and then test through the matching
     relays.
-  status: open
+  status: answered
   at: 2026-11-02 15:39
   from: devin
   options:
@@ -154,5 +161,7 @@ requests:
   - id: other
     label: Give a different routing/setup direction.
   suggested: groups-ready
+  answer: 'groups-ready — Recommended: add the new bots to their intended groups and configure the host-only group
+    allowlists; then have Devin recheck before any send.'
 review_kind: verify
 awaiting_action: true
