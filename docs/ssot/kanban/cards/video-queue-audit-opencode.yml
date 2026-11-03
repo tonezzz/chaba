@@ -1,6 +1,6 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
-column: backlog
+column: doing
 updated: 2026-11-03 11:31
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
@@ -35,7 +35,9 @@ action:
     - done
     - failed
   lane: free_lane
-  status: queued
+  status: running
+  agent_profile: ops-readonly
+  runner: idc02
 ref: ADA-1046
 comms:
 - at: 2026-11-03 11:30
@@ -48,3 +50,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 11:31
+  from: idc02
+  text: claimed
