@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode
 title: 'OpenCode: audit video queue claims'
-column: doing
-updated: 2026-11-03 11:31
+column: review
+updated: 2026-11-03 11:32
 brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
 priority: high
 program: ai-workforce
@@ -35,9 +35,12 @@ action:
     - done
     - failed
   lane: free_lane
-  status: running
+  status: done
   agent_profile: ops-readonly
   runner: idc02
+  result: 'exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-video-queue-audit-opencode-1793680313.service: Consumed 13.632s CPU time.'
+  verified: false
 ref: ADA-1046
 comms:
 - at: 2026-11-03 11:30
@@ -57,3 +60,8 @@ comms:
   from: chaba
   text: started devin-task-video-queue-audit-opencode-1793680313 on idc02 (dispatch executor=opencode profile=ops-readonly
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 11:32
+  from: idc02
+  text: 'finished (ok): exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,'
+review_kind: verify
+claim: {}
