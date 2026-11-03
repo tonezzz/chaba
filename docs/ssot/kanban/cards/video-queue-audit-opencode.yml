@@ -1,0 +1,42 @@
+id: video-queue-audit-opencode
+title: 'OpenCode: audit video queue claims'
+column: backlog
+updated: 2026-11-03 11:30
+brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- opencode
+- ada
+- audit
+spec: Run the existing read-only video queue status tool against both video roots. Classify queued/running/stale/done/failed/retired;
+  do not release claims or mutate Drive. Write a durable report with package counts, stale claim ages, canonical
+  Sacred Father packages, and recommended safe next actions.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: ops-readonly
+  target_host: idc02
+  artifact: reports/video-queue-status-opencode.md
+  prompt: Audit both video queues read-only. Do not delete/release claims or start renders. Use scripts/devnest/video_queue_status.py
+    and write the declared report artifact with evidence and recommendations.
+  expect:
+    required_keys:
+    - queue counts
+    - stale claims
+    - canonical manifest
+    - recommendation
+    facts:
+    - read-only
+    - stale
+    - done
+    - failed
+  lane: free_lane
+ref: ADA-1046
+comms:
+- at: 2026-11-03 11:30
+  from: devin
+  text: card captured via board-api
