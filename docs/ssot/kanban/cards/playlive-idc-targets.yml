@@ -2,7 +2,7 @@ id: playlive-idc-targets
 title: Provision playlived/Chrome lanes on idc hosts (target preference)
 brief: Tony prefers idc01–idc03 as PlayLive targets (2026-10-08). No idc host runs playlived today — the preference
   is recorded but cannot activate until one is provisioned. This card is the provisioning work.
-column: review
+column: done
 priority: medium
 created: 2026-10-08
 note: 'Preference recorded in docs/ssot/infrastructure/playlive-hosts.yml (target_preference block) + ssot.apps.playlive.yml.
@@ -87,7 +87,10 @@ comms:
 - at: 2026-11-03 11:57
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
-updated: 2026-11-03 11:57
+- at: 2026-11-03 12:12
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+updated: 2026-11-03 12:12
 ref: OPS-0439
 spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing a user playlived.service
   by reusing stacks/ or mcp-servers/mcp-playlive unit from tony-dell. Update docs/ssot/infrastructure/playlive-hosts.yml
@@ -106,3 +109,7 @@ action:
     Consumed 15.964s CPU time over 7min 46.944s wall clock time, 392.1M memory peak.'
   verified: true
 review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-03 12:12
+  note: verified — evidence checks green, closing itself
