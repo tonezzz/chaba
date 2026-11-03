@@ -1,6 +1,6 @@
 id: video-history-opencode-report
 title: 'OpenCode report: verify video history procedure'
-column: doing
+column: review
 updated: 2026-11-03 14:12
 brief: Produce a verifier-compatible review report for the video history procedure.
 priority: medium
@@ -29,9 +29,14 @@ action:
     - archive
     - no-delete
   lane: free_lane
-  status: running
+  status: done
   agent_profile: artifact-write
   runner: idc02
+  sweep:
+    stale_running: 2026-11-03 14:12
+  result: 'exit=0 c71ffezOGmGcMNh88lx4","type":"step-finish","tokens":{"total":45693,"input":2777,"output":26,"reasoning":0,"cache":{"write":0,"read":42890}},"cost":0}}
+    | devin-task-video-history-opencode-report-1793689902.service: Consumed 17.789s CPU time.'
+  verified: true
 ref: KNB-1051
 comms:
 - at: 2026-11-03 14:10
@@ -55,3 +60,8 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-video-history-opencode-report-1793689902 no longer active on idc02 but card still
     says running — sweeping its branch'
+- at: 2026-11-03 14:12
+  from: idc02
+  text: 'finished (ok): exit=0 c71ffezOGmGcMNh88lx4","type":"step-finish","tokens":{"total":45693,"input":2777,"output":26,"reasoning":0,"cache"'
+review_kind: verify
+claim: {}
