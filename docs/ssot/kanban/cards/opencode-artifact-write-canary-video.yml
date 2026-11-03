@@ -1,0 +1,37 @@
+id: opencode-artifact-write-canary-video
+title: OpenCode artifact-write canary for video dispatcher
+column: backlog
+updated: 2026-11-03 17:17
+brief: Verify the artifact-write profile can actually write and land a declared file before retrying OPS-1058.
+priority: medium
+program: ai-workforce
+tags:
+- opencode
+- artifact-write
+- canary
+- video
+spec: This is a canary, not production work. Read at least two OpenCode profiles and write the declared markdown
+  artifact. No bash, queue mutation, card edits, or render launch. The final response must be one line only after
+  the file has been written.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-dispatcher-artifact-canary.md
+  prompt: Use the write tool now to create evals/opencode-lane/out/video-dispatcher-artifact-canary.md. Read at
+    least two profiles under evals/opencode-lane/profiles. The file must be markdown and mention ops-readonly, doc-draft,
+    and artifact-write, with one short paragraph describing each artifact mode. Do not emit the document in chat.
+    Do not use bash. After writing and verifying the file exists, end with exactly one short summary line.
+  expect:
+    facts:
+    - ops-readonly
+    - doc-draft
+    - artifact-write
+  lane: free_lane
+ref: OPS-1059
+comms:
+- at: 2026-11-03 17:17
+  from: devin
+  text: card captured via board-api
