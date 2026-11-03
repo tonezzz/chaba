@@ -76,6 +76,24 @@ services:
       - home
       - mobile
     host: idc03
+  - id: playlived-idc02
+    name: Playlived (idc02)
+    type: http
+    host: idc02
+    url: http://idc02.taila0626a.ts.net:9240/health
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles:
+      - home
+      - mobile
+    verification:
+      - "Test sessions: curl -s http://idc02.taila0626a.ts.net:9240/sessions"
+      - 'Check pinned package: ssh idc02 "grep playwright ~/.local/playlive/package.json"'
+      - "Check service: ssh idc02 systemctl --user status playlived.service"
+    recovery_actions:
+      - "Restart service: ssh idc02 systemctl --user restart playlived.service"
+      - "Reinstall browser: ssh idc02 'cd ~/.local/playlive && PATH=$HOME/.local/node/bin:$PATH npx playwright install --with-deps chrome'"
   - id: playlived-dell
     name: Playlived (tony-dell)
     type: http

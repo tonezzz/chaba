@@ -5,22 +5,33 @@ subtitle: Chrome CDP host registry for the PlayLive MCP client
 # This file is the SSOT for which Chrome CDP endpoints the local playlive MCP
 # client can attach to.  The playlive-hosts-loader.py wrapper reads it, sets
 # PLAYLIVE_HOSTS as JSON, and then execs playlive-server.py.
-playlive_url: http://tony-dell.taila0626a.ts.net:9230
+playlive_url: http://idc02.taila0626a.ts.net:9240
 
 # Target preference (Tony, 2026-10-08): prefer idc01–idc03 for playlive
 # sessions once a playlived/Chrome lane exists on them. Order below is
 # provisional (idc02 first — least loaded; idc01 last — retired/cold-batch
-# role). TODAY no idc host runs playlived, so nothing here changes until
-# card playlive-idc-targets provisions one. Loader ignores this key.
+# role, never takes ada services or mddb writes). Loader ignores this key.
+# ACTIVATED 2026-11-03 (card playlive-idc-targets): idc02 lane provisioned —
+# user playlived.service on :9240, headless playwright only (no Chrome CDP,
+# VPS CPU is modest). idc03/idc01 still have no lane; tony-dell is the
+# declared fallback daemon, tony-omen a further manual option.
 target_preference:
   order: [idc02, idc03, idc01, tony-dell, tony-omen, tony-macbook]
-  status: pending-provisioning
+  status: active
+  active_since: 2026-11-03
+  provisioned: [idc02]
   card: docs/ssot/kanban/cards/playlive-idc-targets.yml
 
 hosts:
+  idc02:
+    description: Headless playlived on idc02 :9240 — preferred daemon. No Chrome
+      CDP endpoint (playwright-headless sessions only); unauthenticated, tailnet
+      + localhost only (ufw denies public inbound).
+    playlive_url: http://idc02.taila0626a.ts.net:9240
+    available: true
   tony-dell:
     cdp: http://127.0.0.1:9222
-    description: Local headless Chrome CDP on tony-dell (primary target)
+    description: Local headless Chrome CDP on tony-dell (fallback target)
     available: true
   tony-omen:
     cdp: http://127.0.0.1:9228
@@ -32,47 +43,65 @@ hosts:
     available: false
 
 per_host:
+  idc02:
+    playlive_url: http://127.0.0.1:9240
+  tony_dell:
+    playlive_url: http://idc02.taila0626a.ts.net:9240
+  tony_omen:
+    playlive_url: http://idc02.taila0626a.ts.net:9240
+
+failover:
+  idc02:
+    playlive_url: http://tony-dell.taila0626a.ts.net:9230
   tony_dell:
     playlive_url: http://127.0.0.1:9230
   tony_omen:
     playlive_url: http://tony-dell.taila0626a.ts.net:9230
 
-failover:
-  tony_dell:
-    playlive_url: http://tony-omen.taila0626a.ts.net:9230
-  tony_omen:
-    playlive_url: http://127.0.0.1:9230
-
+# Self-heal commands repair THIS host's primary playlive_url (per_host above):
+# idc02 restarts its own daemon; dell/omen ssh to idc02 and restart the remote
+# one (both verified to have BatchMode ssh access to idc02, 2026-11-03). If the
+# remote heal fails the loader falls back to the failover URL, then focus.
+# tony_dell's command is compound: heal idc02 first, then ensure the local
+# daemon (its failover URL 127.0.0.1:9230) is alive — restarted only when not
+# active so healthy sessions are never killed.
 self_heal:
   enabled: true
   retry_delay: 5
   commands:
+    idc02:
+      - systemctl
+      - --user
+      - restart
+      - playlived.service
     tony_dell:
-      - systemctl
-      - --user
-      - restart
-      - playlived.service
+      - bash
+      - -c
+      - ssh -o ConnectTimeout=4 -o BatchMode=yes idc02 'systemctl --user restart playlived.service' || true; systemctl --user is-active --quiet playlived.service || systemctl --user restart playlived.service
     tony_omen:
-      - systemctl
-      - --user
-      - restart
-      - playlived.service
+      - ssh
+      - -o
+      - ConnectTimeout=4
+      - -o
+      - BatchMode=yes
+      - idc02
+      - systemctl --user restart playlived.service
 
 session_selection:
   default:
-    daemon: tony-dell
-    host: tony_dell
+    daemon: idc02
+    host: idc02
     session_type: playwright
     headless: true
-    playlive_url: http://127.0.0.1:9230
-    note: Fastest default; no remote Chrome required.
+    playlive_url: http://idc02.taila0626a.ts.net:9240
+    note: Preferred target since 2026-11-03 (OPS-0439). Headless playwright only — no chrome-live on idc02 (VPS, modest CPU).
   visual_debug:
     daemon: tony-dell
     host: tony_dell
     session_type: chrome_live
     playlive_url: http://127.0.0.1:9230
     remote_url: http://127.0.0.1:9222
-    note: Use when a visible browser window or live screenshot is needed.
+    note: Use when a visible browser window or live screenshot is needed. idc02 has no Chrome CDP — chrome-live sessions stay on tony-dell/tony-omen.
   macos:
     daemon: tony-macbook
     host: macbook
@@ -82,12 +111,12 @@ session_selection:
     available: false
     note: RETIRED 2026-10-11 — no macOS host left in the fleet; Safari/WebKit verification unavailable.
   fallback:
-    daemon: tony-omen
-    host: tony_omen
+    daemon: tony-dell
+    host: tony_dell
     session_type: playwright
     headless: true
-    playlive_url: http://tony-omen.taila0626a.ts.net:9230
-    note: Use when tony-dell daemon is unavailable after self-heal.
+    playlive_url: http://tony-dell.taila0626a.ts.net:9230
+    note: Declared fleet fallback — use when the idc02 daemon is unavailable after self-heal. tony-omen:9230 runs a playlived too if tony-dell is also down.
 
 focus:
   enabled: true
