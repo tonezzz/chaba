@@ -1,7 +1,7 @@
 id: kornia-mcp-gs-evaluator
 title: Add read-only Kornia MCP tools for Gaussian capture evaluation
 column: backlog
-updated: 2026-11-03 15:22
+updated: 2026-11-03 18:03
 spec: 'Build a narrow Ada-facing MCP evaluator around Kornia for Gaussian Splat capture sets. Tools: inspect_image_set
   (dimensions/duplicates/sharpness/exposure), match_views (DISK/LightGlue or SIFT fallback + RANSAC inliers), propose_foreground_masks
   (review-only), score_capture_manifest, and compare_gs_runs (PSNR/SSIM/LPIPS/COLMAP registration/PLY/metrics).
@@ -15,3 +15,10 @@ comms:
 - at: 2026-11-03 15:22
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 18:03
+  from: devin
+  text: 'Implementation complete on feat/ops-0882-p0 commit 43fb20b4e1: read-only mcp-kornia inspect_image_set adapter
+    + deterministic scripts/gs/image_set_eval.py + 2 tests. Hibiscus example: 14 images, same 1600x2844 dimensions,
+    zero duplicate groups, min sharpness 17.328, median 270.383, recommendation train_baseline_then_review_masks.
+    Education lesson updated with example post result. Next: optional DISK/LightGlue or SIFT/RANSAC matcher, then
+    reviewed foreground masks.'
