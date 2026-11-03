@@ -2,17 +2,18 @@ id: vcast-auto-cast-browser-proxy
 title: cast-browser-proxy :8799 not answering
 brief: 'An automated health check flagged: cast-browser-proxy :8799 not answering.
   Read the note, fix it, then close the card.'
-column: done
+column: review
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
-priority: high
-note: 'Auto-recovered 2026-10-25: `cast-browser-proxy` check passing again.'
+priority: medium
+note: 'GET http://tony-omen.taila0626a.ts.net:8799/__vcast_health_probe__ failed:
+  <urlopen error timed out>'
 help: 'cast-browser.service listens on tony-omen:8799 (the dell cast-browser-proxy
   shim is retired). Any HTTP <500 is alive. Check: ssh tony-omen systemctl --user
   status cast-browser'
-updated: '2026-10-25'
+updated: '2026-11-04'
 comms:
 - at: 2026-10-11 17:08
   from: devin
