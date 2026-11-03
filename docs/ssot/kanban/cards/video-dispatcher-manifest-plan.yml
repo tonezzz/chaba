@@ -1,7 +1,7 @@
 id: video-dispatcher-manifest-plan
 title: 'OpenCode: write Sacred Father canonical manifest plan'
 column: review
-updated: 2026-11-03 23:59
+updated: 2026-11-04 00:00
 brief: Produce a small verified artifact defining the canonical Sacred Father render manifest.
 priority: high
 program: ai-workforce
@@ -31,7 +31,7 @@ action:
     - QC
     - output root
   lane: free_lane
-  status: queued
+  status: running
   agent_profile: artifact-write
   result: 'exit=0 "ses_e5db350d0ffeyqi5pnDHkMLvfZ","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-video-dispatcher-manifest-plan-1793724292.service: Consumed 12.195s CPU time.'
@@ -39,6 +39,7 @@ action:
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
   sweep:
     zero_commit: 2026-11-03 23:59
+  runner: idc02
 ref: OPS-1060
 comms:
 - at: 2026-11-03 17:31
@@ -575,5 +576,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-04 00:00
+  from: idc02
+  text: claimed
 review_kind: verify
 claim: {}
