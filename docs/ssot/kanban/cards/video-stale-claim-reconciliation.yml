@@ -1,6 +1,6 @@
 id: video-stale-claim-reconciliation
 title: 'OpenCode: reconcile stale video queue claims'
-column: backlog
+column: doing
 updated: 2026-11-03 14:51
 brief: Have Ada/OpenCode classify stale video claims without releasing or deleting anything.
 priority: high
@@ -31,7 +31,9 @@ action:
     - hold
     - read-only
   lane: free_lane
-  status: queued
+  status: running
+  agent_profile: artifact-write
+  runner: idc02
 ref: OPS-1054
 comms:
 - at: 2026-11-03 14:51
@@ -40,3 +42,6 @@ comms:
 - at: 2026-11-03 14:51
   from: devin
   text: queued for processing
+- at: 2026-11-03 14:51
+  from: idc02
+  text: claimed
