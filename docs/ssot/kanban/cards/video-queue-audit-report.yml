@@ -1,6 +1,6 @@
 id: video-queue-audit-report
 title: 'OpenCode report: audit video queue claims'
-column: doing
+column: review
 updated: 2026-11-03 14:13
 brief: Produce a verifier-compatible video queue audit report without mutating the queue.
 priority: high
@@ -28,9 +28,12 @@ action:
     - failed
     - recommendation
   lane: free_lane
-  status: running
+  status: done
   agent_profile: artifact-write
   runner: idc02
+  result: 'exit=0 5fbed848ffeziOwn84ij0xFb4","type":"step-finish","tokens":{"total":40172,"input":3336,"output":87,"reasoning":0,"cache":{"write":0,"read":36749}},"cost":0}}
+    | devin-task-video-queue-audit-report-1793689981.service: Consumed 23.106s CPU time.'
+  verified: true
 ref: AUD-1052
 comms:
 - at: 2026-11-03 14:10
@@ -50,3 +53,8 @@ comms:
   from: chaba
   text: started devin-task-video-queue-audit-report-1793689981 on idc02 (dispatch executor=opencode profile=artifact-write
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 14:13
+  from: idc02
+  text: 'finished (ok): exit=0 5fbed848ffeziOwn84ij0xFb4","type":"step-finish","tokens":{"total":40172,"input":3336,"output":87,"reasoning":0,"c'
+review_kind: verify
+claim: {}
