@@ -1,7 +1,7 @@
 id: video-dispatcher-claim-plan
 title: 'OpenCode: write stale-claim reconciliation plan'
-column: backlog
-updated: 2026-11-03 17:31
+column: doing
+updated: 2026-11-03 17:32
 brief: Produce a small verified artifact mapping video stale claims to retire/release/hold decisions.
 priority: high
 program: ai-workforce
@@ -31,7 +31,9 @@ action:
     - no automatic deletion
     - 2 hours
   lane: free_lane
-  status: queued
+  status: running
+  agent_profile: artifact-write
+  runner: idc02
 ref: OPS-1061
 comms:
 - at: 2026-11-03 17:31
@@ -40,3 +42,6 @@ comms:
 - at: 2026-11-03 17:31
   from: devin
   text: queued for processing
+- at: 2026-11-03 17:32
+  from: idc02
+  text: claimed
