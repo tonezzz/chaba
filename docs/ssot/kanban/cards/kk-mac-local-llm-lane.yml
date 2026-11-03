@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-02 12:23
+updated: 2026-11-03 15:59
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -325,6 +325,13 @@ comms:
     use a new versioned pack targeting the failed contracts only, after the authorization gates. Safety gap to close
     before dispatch/automation: current kk_mac_admission.snapshot checks heartbeat freshness, Ollama, disk/load,
     and available busy signals, but does not itself enforce A'
+- at: 2026-11-03 15:59
+  from: devin
+  text: 'Fresh read-only admission check: Tailscale currently sees `kk-mac` active and local mDNS resolves KKs-Mac-Studio.local.
+    `kk_mac_admission.py` returned eligible=false: heartbeat age ~180s, Ollama healthy, disk 26GB, but load_1m unknown.
+    Its SSH fallback failed with `tony@kk-mac: Permission denied (publickey,password,keyboard-interactive)`. `node_busy=false`
+    is not proof of idle because busy/load fields may be absent. No AC, free-memory, resident-model, or foreground-app
+    state was verified, and no'
 action:
   type: dispatch
   status: done
