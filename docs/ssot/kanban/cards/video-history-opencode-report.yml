@@ -1,6 +1,6 @@
 id: video-history-opencode-report
 title: 'OpenCode report: verify video history procedure'
-column: backlog
+column: doing
 updated: 2026-11-03 14:11
 brief: Produce a verifier-compatible review report for the video history procedure.
 priority: medium
@@ -29,7 +29,9 @@ action:
     - archive
     - no-delete
   lane: free_lane
-  status: queued
+  status: running
+  agent_profile: artifact-write
+  runner: idc02
 ref: KNB-1051
 comms:
 - at: 2026-11-03 14:10
@@ -42,3 +44,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 14:11
+  from: idc02
+  text: claimed
