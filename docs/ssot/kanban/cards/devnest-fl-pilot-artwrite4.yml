@@ -1,0 +1,22 @@
+id: devnest-fl-pilot-artwrite4
+title: 'OpenCode artifact-write pilot 4: branch-code gate summary'
+column: backlog
+updated: 2026-11-03 13:25
+spec: 'Write docs/reports/branch-code-gate-2026-11-02.md — a short gate summary. Read exactly ONE file: evals/opencode-lane/profiles/branch-code/profile.yml.
+  Report: its status, task_classes, required stage, model tier, which tools are enabled, verifier type, rollback
+  kind, and the S5 entry requirements from its comments/escalation. A short markdown doc with a small table. WRITE
+  the file with the write tool at EXACTLY docs/reports/branch-code-gate-2026-11-02.md — no other filename. Do NOT
+  emit the doc as your message; end with a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/branch-code-gate-2026-11-02.md
+ref: OPS-1034
+comms:
+- at: 2026-11-03 13:25
+  from: tony
+  text: card captured via board-api
