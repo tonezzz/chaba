@@ -1,0 +1,38 @@
+id: video-stale-claim-reconciliation
+title: 'OpenCode: reconcile stale video queue claims'
+column: backlog
+updated: 2026-11-03 14:51
+brief: Have Ada/OpenCode classify stale video claims without releasing or deleting anything.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- stale-claims
+- opencode
+- artifact-write
+spec: Run scripts/devnest/video_queue_status.py read-only against gdrive:ada-nest-kk-mac-video-pilot and gdrive:ada-nest.
+  Classify each stale claim as historical/support, done-artifact, failed, or canonical current Sacred Father candidate.
+  Recommend retire/release/hold, but do not mutate queues. Write the report artifact and preserve claim history.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-stale-claim-reconciliation.md
+  prompt: Run the read-only video queue status tool, classify every stale claim, and write the declared report.
+    Never delete/release claims, start renders, or modify cards.
+  expect:
+    facts:
+    - historical
+    - canonical
+    - release
+    - hold
+    - read-only
+  lane: free_lane
+ref: OPS-1054
+comms:
+- at: 2026-11-03 14:51
+  from: devin
+  text: card captured via board-api
