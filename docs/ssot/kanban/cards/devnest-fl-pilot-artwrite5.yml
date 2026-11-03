@@ -1,7 +1,7 @@
 id: devnest-fl-pilot-artwrite5
 title: 'OpenCode artifact-write pilot 5: kk-mac capacity summary'
-column: doing
-updated: 2026-11-03 13:28
+column: review
+updated: 2026-11-03 13:33
 spec: 'Write docs/reports/kk-mac-capacity-summary-2026-11-02.md — a short capacity note. Read exactly ONE file:
   docs/kb/jevnest-kk-mac-capacity-procedure.md. Summarize in <=15 lines: host specs, Ollama models available, how
   the fleet reaches it (tunnel + LiteLLM routes), and the access caveat. WRITE the file with the write tool at EXACTLY
@@ -15,8 +15,11 @@ action:
   executor: opencode
   agent_profile: artifact-write
   artifact: docs/reports/kk-mac-capacity-summary-2026-11-02.md
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 fe77f23ffeNPUOz7fkZa5dtg","type":"step-finish","tokens":{"total":27987,"input":27832,"output":10,"reasoning":145,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-artwrite5-1793687318.service: Consumed 16.574s CPU time.'
+  verified: false
 ref: OPS-1035
 comms:
 - at: 2026-11-03 13:25
@@ -32,3 +35,8 @@ comms:
   from: chaba
   text: started devin-task-devnest-fl-pilot-artwrite5-1793687318 on idc02 (dispatch executor=opencode profile=artifact-write
     model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-11-03 13:33
+  from: idc02
+  text: 'finished (ok): exit=0 fe77f23ffeNPUOz7fkZa5dtg","type":"step-finish","tokens":{"total":27987,"input":27832,"output":10,"reasoning":145,'
+review_kind: verify
+claim: {}
