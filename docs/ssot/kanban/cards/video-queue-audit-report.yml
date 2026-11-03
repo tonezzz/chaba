@@ -1,0 +1,35 @@
+id: video-queue-audit-report
+title: 'OpenCode report: audit video queue claims'
+column: backlog
+updated: 2026-11-03 14:10
+brief: Produce a verifier-compatible video queue audit report without mutating the queue.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- opencode
+- artifact-write
+spec: Run scripts/devnest/video_queue_status.py read-only against both video roots. Write a report with counts,
+  stale claim ages, canonical Sacred Father packages, and safe recommendations. Do not release claims or start renders.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-queue-status-opencode.md
+  prompt: Run the existing video queue status tool read-only and write the declared report artifact under evals/opencode-lane/out/.
+    Do not delete/release claims or start renders. Include counts, stale claims, canonical manifest, and recommendation.
+  expect:
+    facts:
+    - stale
+    - done
+    - failed
+    - recommendation
+  lane: free_lane
+ref: AUD-1052
+comms:
+- at: 2026-11-03 14:10
+  from: devin
+  text: card captured via board-api
