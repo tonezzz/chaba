@@ -1,7 +1,7 @@
 id: kk-mac-safe-cache-cleanup
 title: Reclaim KK-Mac generated cache headroom safely
 column: backlog
-updated: 2026-11-03 15:36
+updated: 2026-11-03 16:01
 brief: Review and reclaim only generated DevNest caches while preserving owner data, active models, and video source
   history.
 priority: high
@@ -28,3 +28,9 @@ comms:
     then removed only that exact generated Nest smoke cache (~9 GB). Free disk improved from ~17 GB to ~27 GB. Preserved
     Adobe/Desktop/Downloads/Trash, HuggingFace/LTX cache, local kk-video models, and Ollama models. No model/video
     render started during cleanup.
+- at: 2026-11-03 16:01
+  from: devin
+  text: APPROVED SECOND CLEANUP COMPLETED. Verified the active local LTX model was complete, no Hugging Face download/MLX
+    process was running, and no launch/repo references required ~/.cache/huggingface. Removed only that 23 GB duplicate
+    HF cache. Preserved ~/kk-video/ltx-mlx/models, ~/.ollama, Adobe/Desktop/Downloads/Trash. Free disk improved
+    from ~26 GB to ~49 GB; refreshed admission is eligible with load_1m ~1.9.
