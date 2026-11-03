@@ -2,7 +2,7 @@ id: playlive-idc-targets
 title: Provision playlived/Chrome lanes on idc hosts (target preference)
 brief: Tony prefers idc01–idc03 as PlayLive targets (2026-10-08). No idc host runs playlived today — the preference
   is recorded but cannot activate until one is provisioned. This card is the provisioning work.
-column: backlog
+column: doing
 priority: medium
 created: 2026-10-08
 note: 'Preference recorded in docs/ssot/infrastructure/playlive-hosts.yml (target_preference block) + ssot.apps.playlive.yml.
@@ -43,6 +43,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 11:49
+  from: mn01
+  text: claimed
 updated: 2026-11-03 11:49
 ref: OPS-0439
 spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the preferred target, installing a user playlived.service
@@ -53,4 +56,5 @@ spec: Provision headless Playwright playlived/Chrome lanes on idc02 as the prefe
   health on idc02, and correct failover configuration.
 action:
   type: dispatch
-  status: queued
+  status: running
+  runner: mn01
