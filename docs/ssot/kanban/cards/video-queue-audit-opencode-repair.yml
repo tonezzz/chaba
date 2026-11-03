@@ -1,7 +1,7 @@
 id: video-queue-audit-opencode-repair
 title: 'OpenCode artifact repair: video queue audit'
-column: doing
-updated: 2026-11-03 12:12
+column: review
+updated: 2026-11-03 12:13
 brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
 priority: high
 program: ai-workforce
@@ -29,9 +29,12 @@ action:
     - read-only
     - recommendation
   lane: free_lane
-  status: running
+  status: done
   agent_profile: artifact-write
   runner: idc02
+  result: 'exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"write":0,"read":38794}},"cost":0}}
+    | devin-task-video-queue-audit-opencode-repair-1793682775.service: Consumed 14.057s CPU time.'
+  verified: false
 ref: AUD-1048
 comms:
 - at: 2026-11-03 12:11
@@ -51,3 +54,8 @@ comms:
   from: chaba
   text: started devin-task-video-queue-audit-opencode-repair-1793682775 on idc02 (dispatch executor=opencode profile=artifact-write
     model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 12:13
+  from: idc02
+  text: 'finished (ok): exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"w'
+review_kind: verify
+claim: {}
