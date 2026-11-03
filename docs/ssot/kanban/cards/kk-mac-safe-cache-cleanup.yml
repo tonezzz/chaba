@@ -1,7 +1,7 @@
 id: kk-mac-safe-cache-cleanup
 title: Reclaim KK-Mac generated cache headroom safely
 column: backlog
-updated: 2026-11-03 15:34
+updated: 2026-11-03 15:36
 brief: Review and reclaim only generated DevNest caches while preserving owner data, active models, and video source
   history.
 priority: high
@@ -22,3 +22,9 @@ comms:
 - at: 2026-11-03 15:34
   from: devin
   text: card captured via board-api
+- at: 2026-11-03 15:36
+  from: devin
+  text: APPROVED CLEANUP COMPLETED. Verified no active process or repository reference used ~/.cache/nest-worker-smoke-20261031,
+    then removed only that exact generated Nest smoke cache (~9 GB). Free disk improved from ~17 GB to ~27 GB. Preserved
+    Adobe/Desktop/Downloads/Trash, HuggingFace/LTX cache, local kk-video models, and Ollama models. No model/video
+    render started during cleanup.
