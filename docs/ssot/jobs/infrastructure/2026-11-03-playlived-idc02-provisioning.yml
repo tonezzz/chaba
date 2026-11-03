@@ -1,0 +1,70 @@
+title: playlived-idc02 — headless Playwright lane provisioned (preferred target)
+subtitle: kanban card playlive-idc-targets (OPS-0439) — dispatch session 2026-11-03
+icon: server
+
+summary: |
+  Provisioned the first idc playlived lane on idc02 and activated the
+  target_preference recorded 2026-10-08. idc02 is now the preferred
+  playlived daemon fleet-wide (headless playwright only); tony-dell is the
+  declared fallback, tony-omen a further manual option. idc01 stays last
+  in the preference order — retired/cold-batch, never takes ada services
+  or mddb writes.
+
+provisioned:
+  host: idc02
+  unit: ~/.config/systemd/user/playlived.service (user unit, linger already on)
+  repo_unit: mcp-servers/mcp-playlive/playlived-idc02.service
+  port: 9240
+  port_note: >-
+    :9230 on idc02's tailnet IP is already owned by caddy-edge (vcast
+    signaling, different service — its /health returns rooms/screens JSON,
+    not playlived's). playlived therefore runs on PLAYLIVED_PORT=9240.
+  layout: |
+    ~/.local/playlive/{playlived.mjs,package.json,node_modules} — playlived.mjs
+    is the canonical repo copy (dell's had drifted: 60s idle timeout vs 15m).
+    playwright pinned 1.62.0; Google Chrome 156 via
+    'npx playwright install --with-deps chrome'; node from ~/.local/node
+    (v22 — system node18 is too old, playwright needs >=20). Nice=10.
+  exposure: |
+    Daemon binds 0.0.0.0:9240 unauthenticated — safe because ufw on idc02 is
+    deny-inbound except tailscale0 + 80/443 (verified). Same posture as
+    tony-dell/tony-omen.
+
+ssot_changes:
+  playlive-hosts.yml: |
+    playlive_url default -> idc02:9240. target_preference.status flipped to
+    active (active_since, provisioned: [idc02]). hosts.idc02 added (no cdp —
+    headless daemon only). per_host: idc02->local, tony_dell/tony_omen->idc02.
+    failover: idc02->tony-dell, tony_dell->local:9230, tony_omen->tony-dell.
+    self_heal.commands: idc02 local restart; dell/omen ssh-to-idc02 restart
+    (dell's is compound — also ensures its local failover daemon is active,
+    restarted only when dead so healthy sessions are never killed).
+    session_selection default/fallback updated.
+  ssot.apps.playlive.yml: |
+    Daemon row, per-host/failover/self-heal/target-preference items, hosts
+    table (idc02 row added), decision guide (first move -> idc02:9240),
+    pinned-version note updated. Only the canonical docs/ssot/apps copy was
+    edited; stacks/web/public + public/docs/overview are generated snapshots
+    left for the normal sync pipeline.
+  ssot.audit.hosts.yml: playlived.service declared on idc02 expected_services.
+  ssot.health.home.api.yml: playlived-idc02 http check added (:9240/health).
+
+incidental_repair: |
+  tony-dell's playlived.service unit file was missing (only the Nice=10
+  drop-in remained — audit finding noted 2026-10-29). Restored from
+  mcp-servers/mcp-playlive/playlived-dell.service + refreshed
+  ~/.local/playlive/playlived.mjs to the canonical repo copy. A declared
+  fallback that can't start isn't a fallback; verified healthy after.
+
+verification:
+  - "curl -s http://idc02.taila0626a.ts.net:9240/health -> ok:true, port 9240"
+  - "POST /sessions playwright-headless on idc02 -> navigate example.com -> title 'Example Domain' -> DELETE closed"
+  - "Same session cycle on tony-dell:9230 after unit restore -> ok"
+  - "Loader resolution simulated for idc02/tony_dell/tony_omen/mn01: primary idc02:9240 everywhere except idc02 local; failovers resolve to tony-dell"
+  - "Live self-heal from tony-dell: compound ssh command restarted idc02 daemon remotely (uptime reset), rc=0"
+  - "All three daemon /health endpoints green from mn01 tailnet"
+
+caveats:
+  - "idc02 serves playwright-headless only — chrome-live/playwright-chrome sessions need a CDP endpoint and will fail on idc02 by design; use tony-dell (127.0.0.1:9222) or tony-omen."
+  - "Clients on a host must reach target URLs from idc02's browser — localhost-bound services on another host can't be driven through the idc02 daemon; use that host's local daemon via per_host or explicit remote_url."
+  - "Sessions on idc02 idle-close after 15min (repo playlived.mjs IDLE_TIMEOUT_MS)."

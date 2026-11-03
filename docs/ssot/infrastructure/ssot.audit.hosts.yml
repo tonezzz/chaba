@@ -2105,6 +2105,15 @@ hosts:
         expected_state: active
         critical: false
         note: Headless Chromium+Playwright virtual display 7
+      - name: playlived.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Playlive headless browser daemon on :9240 — preferred playlive
+          target fleet-wide since 2026-11-03 (OPS-0439, card
+          playlive-idc-targets). :9230 stays with caddy-edge. Headless
+          playwright only — no Chrome CDP on this host.
       - name: mddb.service
         type: service
         scope: user
