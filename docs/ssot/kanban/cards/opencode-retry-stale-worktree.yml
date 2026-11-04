@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 15:33
+updated: 2026-11-04 15:44
 priority: low
 tags:
 - opencode
@@ -191,6 +191,12 @@ comms:
   from: chaba
   text: started devin-task-opencode-retry-stale-worktree-1793781214 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
     model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:44
+  from: devin
+  text: 'Budget check after OpenRouter refill: LiteLLM VerificationToken `chaba` is capped at $25 per 30 days and
+    currently shows $21.8133 spent, reset 2026-12-01. Only ~$3.19 remains at the LiteLLM key layer, independent
+    of OpenRouter account credit. OPS-1039 must not retry Claude until Tony explicitly raises/changes the LiteLLM
+    chaba budget or selects a lower-cost route; card remains held.'
 action:
   type: dispatch
   repo: chaba
