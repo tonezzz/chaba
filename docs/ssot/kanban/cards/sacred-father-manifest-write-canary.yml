@@ -1,0 +1,40 @@
+id: sacred-father-manifest-write-canary
+title: 'OpenCode artifact canary: Sacred Father manifest'
+column: backlog
+updated: 2026-11-04 14:07
+brief: Verify artifact-write on a small Sacred Father manifest task before dispatcher implementation.
+priority: high
+program: ai-workforce
+tags:
+- video
+- manifest
+- opencode
+- artifact-write
+- canary
+spec: Canary only. Read reports/sacred-father-canonical-manifest-20261103.yml and write a concise manifest review
+  to the declared artifact. Do not modify canonical files, queues, claims, or services.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/sacred-father-manifest-review.md
+  prompt: Use the write tool immediately to create evals/opencode-lane/out/sacred-father-manifest-review.md. Read
+    reports/sacred-father-canonical-manifest-20261103.yml. Write a concise review covering project_id, source hash,
+    10 approved shots, LTX renderer, output artifact, QC, and private-only status. Do not edit any other file or
+    queue. Do not emit the report in chat; end only after the file exists with one summary line.
+  expect:
+    facts:
+    - project_id
+    - source hash
+    - 10 approved shots
+    - LTX
+    - QC
+    - private
+  lane: free_lane
+ref: OPS-1063
+comms:
+- at: 2026-11-04 14:07
+  from: devin
+  text: card captured via board-api
