@@ -14,6 +14,10 @@ not need a second enrollment code. The gateway still verifies the
 app-specific Access JWT and never forwards it or provider credentials to
 OpenCode.
 
+The Ada image includes Python and the `mcp` package because the Ada control
+bridge is a local Python MCP server launched by OpenCode. The Jack image is
+not sufficient for this tenant.
+
 ```
 browser ──https──> idc02.taila0626a.ts.net:8448   (tailscale serve: TLS + tailnet auth,
         |                                         injects Tailscale-User-Login)
