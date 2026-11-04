@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 16:00
+updated: 2026-11-04 16:01
 priority: low
 tags:
 - opencode
@@ -282,6 +282,13 @@ comms:
 - at: 2026-11-04 16:00
   from: devin
   text: put on hold
+- at: 2026-11-04 16:01
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 16:01
+  from: devin
+  text: put on hold
 action:
   type: dispatch
   repo: chaba
@@ -305,12 +312,11 @@ action:
     CPU time.'
   sweep:
     stale_running: 2026-11-04 14:30
-    zero_commit: 2026-11-04 15:45
+    zero_commit: 2026-11-04 16:01
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   verified: false
   llm_key_alias: bench
   button: test-key-alias
-  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
