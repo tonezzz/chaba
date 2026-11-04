@@ -4,6 +4,16 @@ VCAST-style enrollment for Jack's disposable OpenCode web IDE. The browser
 never sees LiteLLM/MCP/host/SSH/Ada/Devin credentials — only an opaque
 HttpOnly session ticket.
 
+The companion `ada-opencode` and `ada-enroll` quadlets provide the protected
+Ada control-plane surface at `opencode-ada.surf-thailand.com`. They use a
+separate Podman network, workspace, state directory, loopback port (`8378`),
+and LiteLLM environment from Jack. Cloudflare Access is the user gate:
+`AUTO_ENROLL_ACCESS=1` turns a valid Access JWT into a short-lived
+server-side session cookie, so users entering from the Ada HA dashboard do
+not need a second enrollment code. The gateway still verifies the
+app-specific Access JWT and never forwards it or provider credentials to
+OpenCode.
+
 ```
 browser ──https──> idc02.taila0626a.ts.net:8448   (tailscale serve: TLS + tailnet auth,
         |                                         injects Tailscale-User-Login)
