@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
 column: review
-updated: 2026-11-04 15:26
+updated: 2026-11-04 15:29
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -88,6 +88,12 @@ comms:
     record_type, card_id, workflow_id, job_id, created_at, updated_at, summary, content_pointer, artifact_pointers,
     provenance, freshness, confidence, scope, privacy_class. Board/Chaba remains operational truth; artifacts/verifiers
     remain evidence; Education rema'
+- at: 2026-11-04 15:29
+  from: devin
+  text: 'Clean envelope implementation promoted: PR #69 merged at 183cc4bac6. It adds schemas/ada-job-envelope.schema.json,
+    scripts/board/ada_job_envelope.py, the lifecycle/result-bundle/approval procedure, and 65 targeted tests passed.
+    The memory compatibility extension is now the next ADA-1010 design slice; typed runner adapter remains separate.
+    No dispatch/deploy side effect occurred.'
 action:
   type: dispatch
   status: done
