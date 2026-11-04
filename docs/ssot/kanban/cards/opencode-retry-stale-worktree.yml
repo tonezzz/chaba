@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 14:08
+updated: 2026-11-04 14:14
 priority: low
 tags:
 - opencode
@@ -92,10 +92,13 @@ comms:
     cost $0.000460. Gemini closest available route: `google/gemini-3.1-pro-preview` returned OK in 2.57s, 69 tokens,
     cost $0.000728 (58 reasoning tokens). Exact `google/gemini-3-pro` was not listed; only Gemini 3 Pro image variants
     appeared. Both provider routes are reachable via OpenRouter'
+- at: 2026-11-04 14:14
+  from: tony
+  text: re-spawned from report page
 action:
   type: dispatch
   repo: chaba
-  model: litellm/claude-fable-5.1
+  model: litellm/or-claude-fable-5.1
   executor: opencode
   agent_profile: branch-code-supervised-pilot
   target_host: idc02
@@ -107,10 +110,9 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: idle
+  status: queued
   labels:
   - push:chaba
-  runner: idc02
   result: 'exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793771349.service:
     Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793771349.service: Consumed 4.158s
     CPU time.'
