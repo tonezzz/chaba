@@ -1,7 +1,7 @@
 id: ada-opencode-control-plane-tab
 title: Add protected Ada OpenCode control-plane tab after Board
 column: backlog
-updated: 2026-11-04 18:03
+updated: 2026-11-04 18:30
 brief: Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after
   Board in the ada-ha chaba-admin dashboard.
 priority: high
@@ -39,3 +39,10 @@ comms:
     and will not be reused. Current blocker is that no Ada control-plane backend/container or `opencode-ada.surf-thailand.com`
     DNS/Caddy/Access app exists yet. Dashboard tab remains intentionally unmutated until the protected origin passes
     health, Access-denial, WebSocket, and read-only Ad'
+- at: 2026-11-04 18:30
+  from: devin
+  text: 'Deployed and verified: dedicated ada-opencode/ada-enroll rootless services active on idc02; Caddy route
+    and Cloudflare Access app `opencode-ada.surf-thailand.com` created; DNS now points proxied A record to idc02
+    edge. Unauthenticated public request redirects to Cloudflare Access; direct-origin request does not expose the
+    UI. Live Ada HA `chaba-admin` dashboard was mutated via HA WebSocket and now orders Pair → Board → OpenCode
+    / Ada → Cline. Snapshot and dashboard SSOT synced and committed as `'
