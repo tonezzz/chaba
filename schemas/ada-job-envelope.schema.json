@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaba.local/schemas/ada-job-envelope.schema.json",
+  "title": "Ada development-control-plane job envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id", "card_id", "project", "repo", "worktree", "task_class",
+    "objective", "requirements", "acceptance_criteria", "executor", "model",
+    "target_host", "allowed_paths", "input_artifacts", "output_artifacts",
+    "verify", "approval_required", "timeout_s", "idempotency_key"
+  ],
+  "properties": {
+    "job_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$"},
+    "card_id": {"type": "string", "minLength": 1},
+    "project": {"type": "string", "minLength": 1},
+    "repo": {"type": "string", "minLength": 1},
+    "worktree": {"type": "string", "minLength": 1},
+    "task_class": {"type": "string", "minLength": 1},
+    "objective": {"type": "string", "minLength": 1},
+    "requirements": {"type": "array", "items": {"type": "string"}},
+    "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+    "executor": {"enum": ["opencode", "devin", "script", "manual", "kk_mac_local"]},
+    "model": {"type": "string", "minLength": 1},
+    "target_host": {"type": "string", "minLength": 1},
+    "allowed_paths": {"type": "array", "items": {"type": "string"}},
+    "input_artifacts": {"type": "array", "items": {"type": "string"}},
+    "output_artifacts": {"type": "array", "items": {"type": "string"}},
+    "verify": {"type": "array", "items": {"type": "string"}},
+    "approval_required": {"type": "array", "items": {"type": "string"}},
+    "timeout_s": {"type": "integer", "minimum": 30, "maximum": 86400},
+    "idempotency_key": {"type": "string", "minLength": 1},
+    "lane": {"type": "string"},
+    "profile": {"type": "string"}
+  }
+}
