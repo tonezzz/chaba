@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 13:15
+updated: 2026-11-04 13:17
 priority: low
 tags:
 - opencode
@@ -74,6 +74,10 @@ comms:
   from: devin
   text: 'raised request the-first-real-opencode-dispatch-reached-163fd0: The first real OpenCode dispatch reached
     idc02 but the approved strong model route is unavailable. Choose the next route'
+- at: 2026-11-04 13:17
+  from: devin
+  text: 'raised request tony-proposes-benchmarking-both-strong-m-ae0fa6: Tony proposes benchmarking both strong-model
+    routes before choosing one. Should we prepare two bounded provider probes w'
 action:
   type: dispatch
   repo: chaba
@@ -115,3 +119,19 @@ requests:
   - id: stop
     label: Keep OPS-1039 held.
   suggested: gemini-3-pro-route
+- id: tony-proposes-benchmarking-both-strong-m-ae0fa6
+  ask: Tony proposes benchmarking both strong-model routes before choosing one. Should we prepare two bounded provider
+    probes without retrying OPS-1039?
+  status: open
+  at: 2026-11-04 13:17
+  from: devin
+  options:
+  - id: benchmark-both
+    label: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
+  - id: gemini-only
+    label: Probe Gemini route only.
+  - id: claude-only
+    label: Probe Claude route only.
+  - id: stop
+    label: Do not configure or probe either route.
+  suggested: benchmark-both
