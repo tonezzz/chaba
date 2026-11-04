@@ -1,10 +1,23 @@
-"""Add or update the protected Ada/OpenCode panel immediately after Board."""
+"""Make the dashboard's OpenCode slot Ada-first and retain a worker tab."""
 
 from copy import deepcopy
 
-OPENCODE_VIEW = {
-    "title": "OpenCode / Ada",
+ADA_CONTROL_VIEW = {
+    "title": "Ada Control",
     "path": "opencode-ada",
+    "icon": "mdi:account-voice",
+    "type": "panel",
+    "cards": [
+        {
+            "type": "iframe",
+            "url": "https://ada-ha.surf-thailand.com/chaba-home/ai",
+        }
+    ],
+}
+
+OPENCODE_WORKER_VIEW = {
+    "title": "OpenCode Worker",
+    "path": "opencode-worker",
     "icon": "mdi:code-braces",
     "type": "panel",
     "cards": [
@@ -31,14 +44,20 @@ def mutate(config):
     if board_index is None:
         raise ValueError("Ada chaba-admin dashboard has no Board view")
 
-    opencode_indexes = [i for i, view in enumerate(views) if view.get("path") == "opencode-ada"]
-    if len(opencode_indexes) > 1:
-        raise ValueError("Ada chaba-admin dashboard has duplicate OpenCode / Ada views")
+    ada_indexes = [i for i, view in enumerate(views) if view.get("path") == "opencode-ada"]
+    worker_indexes = [i for i, view in enumerate(views) if view.get("path") == "opencode-worker"]
+    if len(ada_indexes) > 1 or len(worker_indexes) > 1:
+        raise ValueError("Ada chaba-admin dashboard has duplicate OpenCode views")
 
-    if opencode_indexes:
-        current_index = opencode_indexes[0]
-        views.pop(current_index)
+    remove_indexes = sorted(ada_indexes + worker_indexes, reverse=True)
+    if remove_indexes:
+        current_index = min(remove_indexes)
+        for index in remove_indexes:
+            views.pop(index)
         if current_index < board_index:
-            board_index -= 1
-    views.insert(board_index + 1, deepcopy(OPENCODE_VIEW))
+            board_index -= len(remove_indexes)
+    views[board_index + 1:board_index + 1] = [
+        deepcopy(ADA_CONTROL_VIEW),
+        deepcopy(OPENCODE_WORKER_VIEW),
+    ]
     return config
