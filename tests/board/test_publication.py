@@ -408,6 +408,7 @@ class NoiseTest(PubTestBase):
             evidence=["https://example/source"], confidence="verified",
             visibility="public", meta={
                 "wiki_title": "News/Countries/Thailand/AI/Test",
+                "summary": "Verified Thailand AI test story.",
                 "geo_scope": "country", "country": "Thailand",
                 "region": "Asia", "topic": "Artificial Intelligence",
             }))
@@ -417,6 +418,7 @@ class NoiseTest(PubTestBase):
         edit = calls[-1][0]
         self.assertEqual(edit["title"], "News/Countries/Thailand/AI/Test")
         self.assertIn("Thailand AI update", edit["text"])
+        self.assertIn("Quick summary:", edit["text"])
         self.assertIn("Category:News/Geography/Thailand", edit["text"])
         self.assertTrue(calls[-1][1])
 

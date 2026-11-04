@@ -142,6 +142,7 @@ metadata:
     - status
     - visibility
     - confidence
+    - summary
     - desk
     - geo_scope
     - topic
@@ -150,6 +151,8 @@ metadata:
     - source_url
     - parent
   recommended:
+    - lede
+    - why_it_matters
     - country
     - region
     - locality
@@ -167,10 +170,23 @@ metadata:
     meta.parent: parent link
   body_rules:
     - "lede first; explain the bottom line in one breath"
+    - "render Quick summary immediately below the title"
+    - "summary is the stable index/AI handoff sentence; keep it <=80 characters"
+    - "lede may expand the summary to 1-2 sentences; keep it <=280 characters"
+    - "why_it_matters is optional and stays separate from the factual summary"
     - "show source publication time separately from wiki publication time"
     - "include an Evidence section with every source link"
     - "include confidence and visibility in the rendered metadata"
     - "do not claim currentness without a source timestamp"
+  quick_summary:
+    display_label: "Quick summary"
+    source: "meta.summary or NewsReport summary parameter"
+    position: "immediately after H1, before the body"
+    format: "one factual sentence; no unsupported interpretation"
+    ai_contract: >
+      AI may use summary and lede as the first-pass context, but an AI
+      summary never overwrites the editorial summary. Any generated AI
+      block must carry model, generated_at, source_revid, and confidence.
 
 taxonomy:
   categories:

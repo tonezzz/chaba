@@ -367,8 +367,14 @@ class MediaWikiSink(Sink):
 
     def _wikitext(self, ev: dict) -> str:
         meta = ev.get("meta") or {}
+        summary = str(meta.get("summary") or "").strip()
+        if not summary:
+            raise Skip("wiki sink needs meta.summary")
+        if len(summary) > 80:
+            raise Skip("wiki meta.summary must be <=80 characters")
         lines = [
             f"= {ev['title']} =", "",
+            f"'''Quick summary:''' {summary}", "",
             f"{{{{{self.template}",
             f"|story_id={ev['event_id']}",
             f"|status={meta.get('status', 'published')}",
