@@ -266,6 +266,61 @@ maintenance:
     - wiki_maintain
     - wiki_draft
     - wiki_publish
+extensions:
+  policy: >
+    Install only extensions compatible with MediaWiki 1.46.2 and PHP 8.3.
+    Do not install archived Graph or archived Drawio. Every extension change
+    requires a LocalSettings.php backup, a dry-run/test page, and a
+    Special:Version verification.
+  phase_1:
+    - name: CategoryTree
+      purpose: expandable category and News hierarchy navigation
+      risk: low
+    - name: Mermaid
+      purpose: text-defined flowcharts, timelines, and architecture diagrams
+      risk: low
+    - name: MsUpload
+      purpose: drag-and-drop multi-file upload and gallery insertion
+      risk: medium
+    - name: MultimediaViewer
+      purpose: image lightbox and full-size media browsing
+      risk: low
+  phase_2:
+    - name: Cargo
+      purpose: structured NewsReport storage and queries
+      risk: medium
+    - name: PageForms
+      purpose: form-driven creation of structured news pages
+      risk: medium
+  phase_3:
+    - name: Wanda
+      purpose: read-only wiki-grounded AI search/chat with citations
+      risk: high
+      rule: editing disabled until Ada/publication policy parity is proven
+    - name: CirrusSearch
+      purpose: Elasticsearch-backed full-text retrieval for larger content
+      risk: high
+      prerequisite: Elasticsearch/OpenSearch capacity and backup plan
+  rejected:
+    - name: Graph
+      reason: archived; security issues and no current MediaWiki support
+    - name: Drawio
+      reason: archived; use DrawioEditor only if external draw.io loading is acceptable
+  install_gate:
+    current_state: >
+      MediaWiki API access is available, but filesystem/Plesk/SSH access for
+      extension installation is not. Plesk HTTPS responds on port 8443;
+      no Plesk credential is stored in the Chaba secret set.
+    required_access:
+      - Plesk login or SSH/SFTP to the wiki webroot
+      - write access to extensions/ and LocalSettings.php
+      - PHP CLI/Composer or a supported extension release bundle
+      - backup and rollback path
+    verification:
+      - Special:Version lists the extension
+      - test page renders the extension output
+      - existing News/ pages remain readable
+      - API publication remains functional
 
 current_state:
   verified:
@@ -280,6 +335,7 @@ current_state:
     - "scheduled wiki maintenance worker"
     - "Ada wiki read/search tools"
     - "public rollup generator"
+    - "filesystem/Plesk access for extension installation"
 
 related_ssot:
   - docs/ssot/apps/ssot.apps.cms-reports.yml
