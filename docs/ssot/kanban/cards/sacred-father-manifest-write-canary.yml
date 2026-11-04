@@ -1,7 +1,7 @@
 id: sacred-father-manifest-write-canary
 title: 'OpenCode artifact canary: Sacred Father manifest'
-column: backlog
-updated: 2026-11-04 14:07
+column: doing
+updated: 2026-11-04 14:08
 brief: Verify artifact-write on a small Sacred Father manifest task before dispatcher implementation.
 priority: high
 program: ai-workforce
@@ -33,7 +33,9 @@ action:
     - QC
     - private
   lane: free_lane
-  status: queued
+  status: running
+  agent_profile: artifact-write
+  runner: idc02
 ref: OPS-1063
 comms:
 - at: 2026-11-04 14:07
@@ -46,3 +48,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-04 14:08
+  from: idc02
+  text: claimed
