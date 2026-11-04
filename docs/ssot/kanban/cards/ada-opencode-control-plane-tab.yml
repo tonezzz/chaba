@@ -1,7 +1,7 @@
 id: ada-opencode-control-plane-tab
 title: Add protected Ada OpenCode control-plane tab after Board
 column: backlog
-updated: 2026-11-04 17:56
+updated: 2026-11-04 18:03
 brief: Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after
   Board in the ada-ha chaba-admin dashboard.
 priority: high
@@ -32,3 +32,10 @@ comms:
 - at: 2026-11-04 17:56
   from: tony
   text: card captured via board-api
+- at: 2026-11-04 18:03
+  from: devin
+  text: 'Continuation update: confirmed idc02 is the correct host for the protected control-plane route and has
+    existing Caddy/Cloudflare Access infrastructure. `opencode-jack.surf-thailand.com` is a separate Jack instance
+    and will not be reused. Current blocker is that no Ada control-plane backend/container or `opencode-ada.surf-thailand.com`
+    DNS/Caddy/Access app exists yet. Dashboard tab remains intentionally unmutated until the protected origin passes
+    health, Access-denial, WebSocket, and read-only Ad'
