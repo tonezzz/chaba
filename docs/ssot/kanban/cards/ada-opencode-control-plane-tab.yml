@@ -1,7 +1,7 @@
 id: ada-opencode-control-plane-tab
 title: Add protected Ada OpenCode control-plane tab after Board
 column: backlog
-updated: 2026-11-04 18:30
+updated: 2026-11-04 19:00
 brief: Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after
   Board in the ada-ha chaba-admin dashboard.
 priority: high
@@ -46,3 +46,10 @@ comms:
     edge. Unauthenticated public request redirects to Cloudflare Access; direct-origin request does not expose the
     UI. Live Ada HA `chaba-admin` dashboard was mutated via HA WebSocket and now orders Pair → Board → OpenCode
     / Ada → Cline. Snapshot and dashboard SSOT synced and committed as `'
+- at: 2026-11-04 19:00
+  from: devin
+  text: 'Fixed the remaining enrollment-code friction. Root cause was reusing Jack''s enrollment gateway, which
+    required a minted code even after Cloudflare Access authentication. Added `AUTO_ENROLL_ACCESS=1`: a valid app-specific
+    Cloudflare Access JWT now creates the server-side Ada session cookie automatically; no code/redeem page is needed.
+    Deployed rebuilt `localhost/ada-enroll:latest` on idc02, restarted `ada-enroll.service`, health remains HTTP
+    200/upstream up. Added declared Ada quadlets and regres'
