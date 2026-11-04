@@ -1505,6 +1505,9 @@ WP_LOCK = Path(os.environ.get("BOARD_API_WP_LOCK",
 WP_ENV_FILE = Path(os.environ.get(
     "BOARD_API_WP_ENV",
     str(Path.home() / ".config/secrets/wp-boards.env")))
+WIKI_ENV_FILE = Path(os.environ.get(
+    "BOARD_API_WIKI_ENV",
+    str(Path.home() / ".config/secrets/wiki-h3-gizmo.env")))
 INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
@@ -2263,7 +2266,7 @@ def _pub_board_send(ev: dict, frm: str) -> dict:
 def _pub_sinks(frm: str) -> dict:
     """The adapter registry — WP is only one adapter among peers; the
     'json' ledger proves a second sink receives the same event."""
-    return {
+    sinks = {
         "job": pub.FuncSink(
             "job", surface="members",
             kinds=("progress", "milestone", "alert"),
@@ -2285,6 +2288,24 @@ def _pub_sinks(frm: str) -> dict:
         "telegram": pub.TelegramSink(PUB_TG_URL),
         "json": pub.JsonSink(PUB_STATE_DIR / "published.jsonl"),
     }
+    try:
+        wiki_env = _load_env_file(WIKI_ENV_FILE)
+        wiki_host = wiki_env.get("WIKI_HOST", "").rstrip("/")
+        if wiki_host.endswith("/v0"):
+            wiki_host = wiki_host[:-3]
+        wiki_api = (wiki_env.get("WIKI_API_URL") or
+                    f"{wiki_host}/api.php").rstrip("/")
+        if wiki_host and wiki_env.get("WIKI_USER") and \
+                wiki_env.get("WIKI_PASSWORD"):
+            sinks["wiki"] = pub.MediaWikiSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_NEWS_TEMPLATE",
+                                       "แม่แบบ:NewsReport"))
+    except (OSError, KeyError):
+        # Optional sink: the news event still follows the configured routes
+        # and the missing wiki credentials remain a service-host concern.
+        pass
+    return sinks
 
 
 def do_publish(body: dict, frm: str) -> dict:

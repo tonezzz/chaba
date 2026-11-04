@@ -43,9 +43,11 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from http.cookiejar import CookieJar
 
 KINDS = ("progress", "milestone", "report", "lesson", "news", "alert")
 CONFIDENCE = ("observed", "measured", "verified")
@@ -63,7 +65,7 @@ DEFAULT_ROUTES = {
     "milestone": ["job", "board", "telegram"],
     "report": ["report", "board"],
     "lesson": ["lesson"],
-    "news": ["news", "board", "telegram"],
+    "news": ["news", "wiki", "board", "telegram"],
     "alert": ["telegram", "board", "job"],
 }
 
@@ -315,6 +317,117 @@ class TelegramSink(Sink):
             raise DeliveryError(f"telegram relay -> {r.get('error')}")
         return {"ref": f"tg:{(r or {}).get('message_thread_id', '')}"
                        if isinstance(r, dict) else "tg"}
+
+
+class MediaWikiSink(Sink):
+    """Verified-public news adapter for a MediaWiki Action API.
+
+    Wiki writes are deliberately public-only until a real MediaWiki
+    permission boundary exists. Credentials stay in the service env; callers
+    provide only a canonical event and a safe ``meta.wiki_title``.
+    """
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:NewsReport", api=None):
+        super().__init__(name="wiki", surface="public", kinds=("news",),
+                         evidence_required=True)
+        self.api_url = api_url.rstrip("/")
+        self.username = username
+        self.password = password
+        self.template = template
+        self._jar = CookieJar()
+        self._opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(self._jar))
+        self._api_override = api
+
+    def _api(self, params: dict, post: bool = False) -> dict:
+        if self._api_override is not None:
+            return self._api_override(params, post)
+        data = urllib.parse.urlencode(params).encode() if post else None
+        url = self.api_url if post else (
+            self.api_url + "?" + urllib.parse.urlencode(params))
+        req = urllib.request.Request(
+            url, data=data, headers={"User-Agent": "chaba-board-api/1.0"})
+        try:
+            return json.loads(self._opener.open(req, timeout=30).read())
+        except urllib.error.HTTPError as e:
+            detail = e.read()[:300].decode("utf-8", "replace")
+            raise DeliveryError(f"mediawiki -> {e.code}: {detail}")
+        except OSError as e:
+            raise DeliveryError(f"mediawiki -> {e}")
+
+    @staticmethod
+    def _title(ev: dict) -> str:
+        title = str((ev.get("meta") or {}).get("wiki_title") or "").strip()
+        if not title:
+            raise Skip("wiki sink needs meta.wiki_title")
+        if not title.startswith("News/") or "\n" in title or "\r" in title:
+            raise Skip("wiki title must be under News/")
+        return title
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        lines = [
+            f"= {ev['title']} =", "",
+            f"{{{{{self.template}",
+            f"|story_id={ev['event_id']}",
+            f"|status={meta.get('status', 'published')}",
+            f"|visibility={ev['visibility']}",
+            f"|confidence={ev['confidence']}",
+            f"|desk={meta.get('desk', 'DevNest')}",
+            f"|geo_scope={meta.get('geo_scope', '')}",
+            f"|country={meta.get('country', '')}",
+            f"|region={meta.get('region', '')}",
+            f"|topic={meta.get('topic', '')}",
+            f"|published_at={meta.get('published_at', ev['occurred_at'])}",
+            f"|source_published_at={meta.get('source_published_at', '')}",
+            f"|source_url={ev['evidence'][0]}",
+            f"|source_name={meta.get('source_name', ev['source'])}",
+            f"|parent={meta.get('parent', '')}",
+            "}}", "",
+            ev["body"], "", "== Evidence ==", "",
+        ]
+        lines.extend(f"* [{url} {url}]" for url in ev["evidence"])
+        categories = ["News", "News/Desks/DevNest"]
+        geo_scope = str(meta.get("geo_scope") or "").strip()
+        if geo_scope == "world":
+            categories.append("News/Geography/World")
+        for key in ("region", "country"):
+            value = str(meta.get(key) or "").strip()
+            if value:
+                categories.append(f"News/Geography/{value}")
+        topic = str(meta.get("topic") or "").strip()
+        if topic:
+            categories.append(f"News/Topics/{topic}")
+        lines.extend([""] + [f"[[Category:{category}]]"
+                             for category in dict.fromkeys(categories)])
+        return "\n".join(lines)
+
+    def publish(self, ev: dict) -> dict:
+        title = self._title(ev)
+        login = self._api({
+            "action": "query", "meta": "tokens", "type": "login",
+            "format": "json"})
+        login_token = login["query"]["tokens"]["logintoken"]
+        result = self._api({
+            "action": "login", "lgname": self.username,
+            "lgpassword": self.password, "lgtoken": login_token,
+            "format": "json"}, post=True).get("login", {})
+        if result.get("result") != "Success":
+            raise DeliveryError("mediawiki login failed")
+        csrf = self._api({
+            "action": "query", "meta": "tokens", "format": "json"
+        })["query"]["tokens"]["csrftoken"]
+        edited = self._api({
+            "action": "edit", "title": title, "text": self._wikitext(ev),
+            "summary": f"DevNest News {ev['event_id']}",
+            "token": csrf, "format": "json"}, post=True).get("edit", {})
+        if edited.get("result") not in ("Success", "Nochange"):
+            raise DeliveryError("mediawiki edit failed")
+        return {"ref": f"wiki:{title}",
+                "pageid": edited.get("pageid"),
+                "revid": edited.get("newrevid"),
+                "action": edited.get("result", "").lower()}
 
 
 # --- noise policy -----------------------------------------------------------

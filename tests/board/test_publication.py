@@ -386,6 +386,50 @@ class NoiseTest(PubTestBase):
         self.assertIn("Flood watch upgraded", text)
         self.assertIn("http://x", text)
 
+    def test_mediawiki_sink_login_edit_and_metadata(self):
+        calls = []
+
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "login-token"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success", "lgusername": "Ada"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "csrf-token"}}}
+            return {"edit": {"result": "Success", "pageid": 7,
+                              "newrevid": 8}}
+
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+        e = pub.validate_event(ev(
+            kind="news", title="Thailand AI update", body="A test story.",
+            evidence=["https://example/source"], confidence="verified",
+            visibility="public", meta={
+                "wiki_title": "News/Countries/Thailand/AI/Test",
+                "geo_scope": "country", "country": "Thailand",
+                "region": "Asia", "topic": "Artificial Intelligence",
+            }))
+        result = sink.publish(e)
+        self.assertEqual(result["pageid"], 7)
+        self.assertEqual(result["revid"], 8)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "News/Countries/Thailand/AI/Test")
+        self.assertIn("Thailand AI update", edit["text"])
+        self.assertIn("Category:News/Geography/Thailand", edit["text"])
+        self.assertTrue(calls[-1][1])
+
+    def test_mediawiki_sink_is_public_only(self):
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=lambda *_: {})
+        e = pub.validate_event(ev(
+            kind="news", title="private", body="test",
+            evidence=["https://example/source"], visibility="members"))
+        reason = sink.check(e)
+        self.assertIn("visibility", reason)
+
 
 class BoardApiWiringTest(PubTestBase):
     """do_publish in board-api: WP adapter + JsonSink receive the same
