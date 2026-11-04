@@ -160,6 +160,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from http.cookiejar import CookieJar
 from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address, ip_network
@@ -1512,7 +1513,13 @@ INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
-REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish"}
+REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
+                      "/wiki/extension"}
+WIKI_EXTENSION_ALLOWLIST = {
+    "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
+    "Cargo", "PageForms",
+}
+WIKI_API_CALL = None
 
 # --- publication layer (devnest-publication-adapter-layer) ------------------
 # State lives off-repo on the service host; tests redirect via env.
@@ -1553,6 +1560,94 @@ def _load_env_file(p: Path) -> dict:
             k, v = ln.split("=", 1)
             env[k.strip()] = v.strip().strip('"').strip("'")
     return env
+
+
+def _wiki_env() -> tuple[dict, str]:
+    """Load the Wiki service credentials and normalize its API URL."""
+    env = _load_env_file(WIKI_ENV_FILE)
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+    api = (env.get("WIKI_API_URL") or f"{host}/api.php").rstrip("/")
+    if not host or not env.get("WIKI_USER") or not env.get("WIKI_PASSWORD"):
+        raise UpstreamError("wiki credentials unavailable")
+    return env, api
+
+
+def _wiki_api_call(api_url: str, opener, params: dict, post: bool = False):
+    """Call MediaWiki Action API; tests may replace WIKI_API_CALL."""
+    if WIKI_API_CALL is not None:
+        return WIKI_API_CALL(params, post)
+    data = urllib.parse.urlencode(params).encode() if post else None
+    url = api_url if post else api_url + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(
+        url, data=data, headers={"User-Agent": "chaba-board-api/1.0"})
+    try:
+        return json.loads(opener.open(req, timeout=30).read())
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace")
+        raise UpstreamError(f"mediawiki -> {e.code}: {detail}")
+    except OSError as e:
+        raise UpstreamError(f"mediawiki -> {e}")
+
+
+def _wiki_installed(api_url: str, opener) -> list[str]:
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo",
+         "siprop": "extensions", "format": "json"})
+    return sorted(x.get("name", "")
+                  for x in result.get("query", {}).get("extensions", []))
+
+
+def do_wiki_extension(body: dict, frm: str) -> dict:
+    """List or confirm-gated install/enable/disable of approved extensions."""
+    action = str(body.get("action") or "list").strip().lower()
+    name = str(body.get("name") or "").strip()
+    if action not in {"list", "install", "enable", "disable"}:
+        raise ValueError("action must be list|install|enable|disable")
+    if action != "list" and name not in WIKI_EXTENSION_ALLOWLIST:
+        raise ValueError(
+            f"name is not approved (choose {sorted(WIKI_EXTENSION_ALLOWLIST)})")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    before = _wiki_installed(api_url, opener)
+    if action == "list":
+        return {"action": "list", "installed": before,
+                "approved": sorted(WIKI_EXTENSION_ALLOWLIST)}
+
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    csrf = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "format": "json"}
+    )["query"]["tokens"]["csrftoken"]
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "springboard", "sbaction": action,
+         "sbtype": "extension", "sbname": name, "token": csrf,
+         "format": "json"}, post=True)
+    if "error" in result:
+        raise UpstreamError("springboard: " +
+                            str(result["error"].get("info") or
+                                result["error"].get("code")))
+    after = _wiki_installed(api_url, opener)
+    if action == "install" and name not in after:
+        raise UpstreamError(f"{name} install was not visible after request")
+    return {"action": action, "name": name, "before": before,
+            "after": after, "verified": name in after,
+            "actor": frm}
 
 
 def wp_api(route: str, data=None, method: str | None = None):
@@ -2675,7 +2770,7 @@ class H(BaseHTTPRequestHandler):
         if path in REMOTE_WRITE_PATHS:
             try:
                 frm = (job_actor(body, ident)
-                       if path in ("/job", "/publish")
+                       if path in ("/job", "/publish", "/wiki/extension")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -2690,6 +2785,8 @@ class H(BaseHTTPRequestHandler):
                         if (res.get("receipts") or {}).get(
                                 "board", {}).get("status") == "delivered":
                             render_async()   # board audit -> cards.json
+                    elif path == "/wiki/extension":
+                        res = do_wiki_extension(body, frm)
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
