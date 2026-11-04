@@ -146,7 +146,7 @@ def now_iso():
 # ------------------------------------------------------------- stage book
 
 TASK_CLASSES = ["shadow_replay", "report", "read_only",
-                "artifact_write", "branch_code"]
+                "diagnosis", "artifact_write", "branch_code"]
 # never admitted to the OpenCode lane at any stage — human/Devin only
 DENIED_CLASSES = ["production", "destructive", "deploy", "secret",
                   "payment", "credential"]
