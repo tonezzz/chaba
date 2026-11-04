@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 12:51
+updated: 2026-11-04 12:52
 priority: low
 tags:
 - opencode
@@ -56,6 +56,13 @@ comms:
 - at: 2026-11-04 12:51
   from: devin
   text: put on hold
+- at: 2026-11-04 12:52
+  from: devin
+  text: First real Ada -> OpenCode dispatch attempted on idc02 under branch-code-supervised-pilot with model litellm/claude-fable-5.1.
+    Runner/worktree/profile gates passed, but OpenCode exited 1 immediately with an UnknownError. idc02 LiteLLM
+    config does not serve claude-fable-5.1 or gemini-3-pro; only Gemini 2.5/3.5 aliases, local Ollama, and OpenRouter
+    Gemini aliases are configured. Card held; no artifact, tests, verifier, merge, or deploy. Do not retry until
+    a supported strong model route is explicit
 action:
   type: dispatch
   repo: chaba
