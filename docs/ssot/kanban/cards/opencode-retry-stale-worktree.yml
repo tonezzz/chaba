@@ -1,6 +1,6 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: backlog
+column: doing
 updated: 2026-11-04 12:49
 priority: low
 tags:
@@ -43,6 +43,9 @@ comms:
 - at: 2026-11-04 12:49
   from: tony
   text: re-spawned from report page
+- at: 2026-11-04 12:49
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -58,6 +61,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: queued
+  status: running
   labels:
   - push:chaba
+  runner: idc02
