@@ -194,12 +194,13 @@ REPORT_SPAWN_TEMPLATE = (
 )
 PRIORITIES = {"high", "medium", "low"}
 ACTION_TYPES = {"dispatch", "manual"}
+LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 # action keys a caller may set — status/runner/task_id are board-owned and
 # silently dropped so a spawn can't fake a running card
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
-               "subject_host")
+               "subject_host", "llm_key_alias")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -1188,6 +1189,11 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError(
                     f"action.{pk} must be a profile id "
                     "([a-z0-9][a-z0-9-], max 61)")
+        key_alias = str(act.get("llm_key_alias") or "").strip().lower()
+        if key_alias and key_alias not in LLM_KEY_ALIASES:
+            raise ValueError(
+                f"action.llm_key_alias must be one of "
+                f"{sorted(LLM_KEY_ALIASES)}")
         th = str(act.get("target_host") or "").strip()
         if th and not dr.HOST_ID_RE.match(th):
             raise ValueError(
