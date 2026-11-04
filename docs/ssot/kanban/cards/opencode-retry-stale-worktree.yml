@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 14:46
+updated: 2026-11-04 14:47
 priority: low
 tags:
 - opencode
@@ -144,6 +144,15 @@ comms:
   from: chaba
   text: started devin-task-opencode-retry-stale-worktree-1793778387 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
     model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 14:47
+  from: tony
+  text: 'Execution focus: implement only OPS-1039. Inspect `start_opencode_lane` and existing `tests/board/test_worktree_gc.py`/runner
+    tests. If worktree exists, remove it only when taskdir has verdict.json or exit_code; if active, defer. Add
+    a focused regression test, run targeted tests, and write the declared JSON artifact `evals/opencode-lane/out/ops-1039.json`.
+    Do not inventory unrelated files/cards or spend time reading the whole runner; stop after artifact + tests.'
+- at: 2026-11-04 14:47
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
 action:
   type: dispatch
   repo: chaba
