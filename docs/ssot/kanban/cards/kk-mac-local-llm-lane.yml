@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-03 18:12
+updated: 2026-11-04 16:40
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -343,6 +343,13 @@ comms:
 - at: 2026-11-03 18:12
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-04 16:40
+  from: devin
+  text: 'Hermes clarification per Tony (2026-11-04): target `hermes-agent` means the NousResearch agent framework,
+    not the `hermes3:8b` model. The old education benchmark’s Hermes scores were the Hermes3:8B model under an OpenClaw-shaped
+    loop and are not Hermes Agent evidence. A framework test is a new scope; the prior one-shot authorization covers
+    only the synthetic Qwen3:8B model pack. After Tony chose the local heartbeat refresh path, the latest MDDB heartbeat
+    still omits `load_1m`; admission remains '
 action:
   type: dispatch
   status: done
