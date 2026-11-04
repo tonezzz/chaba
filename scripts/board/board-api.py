@@ -1273,6 +1273,13 @@ def do_create(body: dict, frm: str) -> dict:
         if st in ("queued", "running"):
             return {"message": f"card {cid} already active ({st})",
                     "id": cid, "status": st}
+        # A re-queue may carry a freshly approved executor envelope. Preserve
+        # board-owned lifecycle fields, but update only caller-owned action
+        # fields after the same validation used for new cards.
+        if act is not None:
+            for key in ACTION_KEYS:
+                if key in act:
+                    a[key] = act[key]
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue
