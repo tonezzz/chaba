@@ -362,6 +362,13 @@ comms:
 - at: 2026-11-04 18:09
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-04 19:53
+  from: devin
+  text: 'Clarification/continued unblock (2026-11-04): yes, the target is Hermes Agent running on KK-Mac with a
+    KK-local LLM backend (Qwen3:8B first), same-host and no OpenRouter. Do not confuse this with the hermes3:8b
+    model lane. `kk_mac_admission.py` run from the production/trusted tony-dell hop succeeds via its read-only SSH
+    fallback (heartbeat ~126s, load_1m 2.6, Ollama healthy, disk 28GB); the `load_unknown` seen from tony-macbook
+    was a client-path false negative. This is only the coarse admission '
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
