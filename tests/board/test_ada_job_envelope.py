@@ -26,6 +26,7 @@ def envelope(**overrides):
         "approval_required": ["merge", "deploy"],
         "timeout_s": 900,
         "idempotency_key": "ada-1010-envelope-v1",
+        "state": "draft",
     }
     value.update(overrides)
     return value
@@ -51,8 +52,9 @@ def test_required_and_path_safety():
     assert "allowed_paths:path-traversal:../secret" in validate_envelope(envelope(allowed_paths=["../secret"]))
 
 
-def test_executor_fails_closed():
+def test_executor_and_unknown_fields_fail_closed():
     assert "executor:unknown" in validate_envelope(envelope(executor="ada"))
+    assert "unknown:surprise" in validate_envelope(envelope(surprise=True))
 
 
 def test_lifecycle_is_forward_only():
@@ -60,6 +62,10 @@ def test_lifecycle_is_forward_only():
     assert can_transition("review", "approved")
     assert not can_transition("done", "running")
     assert not can_transition("running", "done")
+    assert can_transition("running", "failed")
+    assert can_transition("stalled", "claimed")
+    assert can_transition("failed", "ready")
+    assert not can_transition("cancelled", "ready")
 
 
 def test_result_requires_artifacts_verifier_and_evidence():

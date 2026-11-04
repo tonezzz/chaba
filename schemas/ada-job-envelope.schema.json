@@ -8,7 +8,7 @@
     "job_id", "card_id", "project", "repo", "worktree", "task_class",
     "objective", "requirements", "acceptance_criteria", "executor", "model",
     "target_host", "allowed_paths", "input_artifacts", "output_artifacts",
-    "verify", "approval_required", "timeout_s", "idempotency_key"
+    "verify", "approval_required", "timeout_s", "idempotency_key", "state"
   ],
   "properties": {
     "job_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$"},
@@ -30,6 +30,7 @@
     "approval_required": {"type": "array", "items": {"type": "string"}},
     "timeout_s": {"type": "integer", "minimum": 30, "maximum": 86400},
     "idempotency_key": {"type": "string", "minLength": 1},
+    "state": {"enum": ["draft", "ready", "claimed", "running", "verifying", "review", "approved", "merged", "done", "failed", "stalled", "cancelled"]},
     "lane": {"type": "string"},
     "profile": {"type": "string"}
   }

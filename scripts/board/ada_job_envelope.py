@@ -10,29 +10,35 @@ EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local"}
 LIFECYCLE = (
     "draft", "ready", "claimed", "running", "verifying",
     "review", "approved", "merged", "done",
+    "failed", "stalled", "cancelled",
 )
 RESULT_ARTIFACTS = ("result.json", "summary.md", "diff.patch", "tests.json")
 REQUIRED = (
     "job_id", "card_id", "project", "repo", "worktree", "task_class",
     "objective", "requirements", "acceptance_criteria", "executor", "model",
     "target_host", "allowed_paths", "input_artifacts", "output_artifacts",
-    "verify", "approval_required", "timeout_s", "idempotency_key",
+    "verify", "approval_required", "timeout_s", "idempotency_key", "state",
 )
 _TRANSITIONS = {
-    "draft": {"ready"},
-    "ready": {"claimed"},
-    "claimed": {"running"},
-    "running": {"verifying"},
-    "verifying": {"review"},
-    "review": {"approved"},
-    "approved": {"merged"},
-    "merged": {"done"},
+    "draft": {"ready", "cancelled"},
+    "ready": {"claimed", "cancelled"},
+    "claimed": {"running", "failed", "stalled", "cancelled"},
+    "running": {"verifying", "failed", "stalled", "cancelled"},
+    "verifying": {"review", "failed", "stalled"},
+    "review": {"approved", "failed", "cancelled"},
+    "approved": {"merged", "failed"},
+    "merged": {"done", "failed"},
     "done": set(),
+    "failed": {"ready", "cancelled"},
+    "stalled": {"claimed", "cancelled"},
+    "cancelled": set(),
 }
 
 
 def validate_envelope(envelope: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    known = set(REQUIRED) | {"lane", "profile"}
+    errors.extend(f"unknown:{key}" for key in sorted(set(envelope) - known))
     missing = [key for key in REQUIRED if key not in envelope]
     errors.extend(f"missing:{key}" for key in missing)
     job_id = envelope.get("job_id")
@@ -40,6 +46,8 @@ def validate_envelope(envelope: dict[str, Any]) -> list[str]:
         errors.append("job_id:invalid-slug")
     if envelope.get("executor") not in EXECUTORS:
         errors.append("executor:unknown")
+    if envelope.get("state") not in LIFECYCLE:
+        errors.append("state:unknown")
     timeout = envelope.get("timeout_s")
     if not isinstance(timeout, int) or isinstance(timeout, bool) or not 30 <= timeout <= 86400:
         errors.append("timeout_s:outside-30..86400")

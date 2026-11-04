@@ -18,16 +18,20 @@ The JSON Schema is `schemas/ada-job-envelope.schema.json`. Required fields are:
 job_id, card_id, project, repo, worktree, task_class,
 objective, requirements, acceptance_criteria, executor, model,
 target_host, allowed_paths, input_artifacts, output_artifacts,
-verify, approval_required, timeout_s, idempotency_key
+verify, approval_required, timeout_s, idempotency_key, state
 ```
 
-Known executor values are `opencode`, `devin`, `script`, `manual`, and `kk_mac_local`. Unknown executors fail closed; no silent fallback is allowed.
+Known executor values are `opencode`, `devin`, `script`, `manual`, and `kk_mac_local`. Unknown executors and unknown envelope fields fail closed; no silent fallback or schema drift is allowed.
 
 ## Lifecycle
 
 ```text
 draft -> ready -> claimed -> running -> verifying
       -> review -> approved -> merged -> done
+
+Failure/recovery states are explicit: `failed`, `stalled`, and `cancelled`.
+A failed job may return to `ready` for a bounded retry; a stalled job may
+return to `claimed` after reconciliation; cancelled is terminal.
 ```
 
 A heartbeat is progress evidence, not completion. `done` requires the declared artifact bundle and an independent verifier receipt.
