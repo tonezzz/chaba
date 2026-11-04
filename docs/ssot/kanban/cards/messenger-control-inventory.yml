@@ -107,6 +107,10 @@ comms:
     still get chat_not_found against the documented ada-ha/kk-ha/mn-ha/DevNestHA targets; tony-ha cannot be checked
     because its target is not configured on idc03. Runtime relays remain active on old handles; no tony-ha relay
     exists. No test messages or cutover performed. TONY token is u'
+- at: 2026-11-04 13:44
+  from: devin
+  text: 'raised request household-bot-membership-retest-20261104: After the groups-ready reply, the 2026-11-04 read-only
+    check still returns chat_not_found for the new bots against ada-h'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -170,5 +174,23 @@ requests:
   suggested: groups-ready
   answer: 'groups-ready — Recommended: add the new bots to their intended groups and configure the host-only group
     allowlists; then have Devin recheck before any send.'
+- id: household-bot-membership-retest-20261104
+  ask: After the groups-ready reply, the 2026-11-04 read-only check still returns chat_not_found for the new bots
+    against ada-ha, kk-ha, mn-ha, and DevNestHA; tony-ha has no host-side target or relay. Please add each new bot
+    to its intended group and ensure the correct target is in idc03's host-only allowlist (do not post raw chat
+    IDs or tokens here). Keep the old relays active until new group membership and a /send smoke pass. Then reply
+    groups-ready and I will retest.
+  status: open
+  at: 2026-11-04 13:44
+  from: devin
+  options:
+  - id: fix-new-memberships
+    label: 'Recommended: add each new bot to its target group and configure host-only allowlists; keep old relays
+      until tests pass.'
+  - id: hold-new-cutover
+    label: Leave old relays active and defer the new-bot cutover.
+  - id: other
+    label: Give a different lane/group mapping.
+  suggested: fix-new-memberships
 review_kind: verify
 awaiting_action: true
