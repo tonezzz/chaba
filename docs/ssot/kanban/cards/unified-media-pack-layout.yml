@@ -1,0 +1,25 @@
+id: unified-media-pack-layout
+title: Define unified durable media pack layout and local-cache contract
+column: backlog
+updated: 2026-11-04 18:37
+brief: Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive
+  dataset/job/pack contract with local scratch processing and immutable manifests.
+tags:
+- nest
+- media
+- gaussian
+- video
+- artifacts
+- storage
+- manifest
+spec: Define and implement a reusable pack_manifest utility and documented directory contract. Drive/Nest is the
+  durable source and artifact registry; local scratch is disposable. Standardize datasets/<type>/<project>/<version>,
+  projects/<project>, jobs/<job-id>, and packs/<pack-id>; include manifest hashes, tool versions, config, device,
+  outputs, metrics, verifier, privacy, retention, and path_id. Add init/hash/verify/summarize commands and verify
+  a Hibiscus round-trip without deleting local source until upload and restore verification pass. Reuse existing
+  video pack fields (fetch, artifacts, needs, timeout_s, run_sh) instead of creating a competing schema.
+ref: MED-1032
+comms:
+- at: 2026-11-04 18:37
+  from: tony
+  text: card captured via board-api
