@@ -269,6 +269,9 @@ comms:
 - at: 2026-11-04 15:58
   from: tony
   text: put on hold
+- at: 2026-11-04 15:58
+  from: tony
+  text: re-spawned from report page
 action:
   type: dispatch
   repo: chaba
@@ -284,7 +287,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: idle
+  status: queued
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793782503.service:
@@ -296,7 +299,7 @@ action:
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   verified: false
   llm_key_alias: bench
-  runner: idc02
+  button: test-key-alias
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
