@@ -350,6 +350,10 @@ comms:
     loop and are not Hermes Agent evidence. A framework test is a new scope; the prior one-shot authorization covers
     only the synthetic Qwen3:8B model pack. After Tony chose the local heartbeat refresh path, the latest MDDB heartbeat
     still omits `load_1m`; admission remains '
+- at: 2026-11-04 16:40
+  from: devin
+  text: 'raised request kk-mac-hermes-agent-scope-20261104: For the next KK-Mac evaluation, now that Hermes means
+    Hermes Agent (framework), which scope should we prepare? The old H'
 action:
   type: dispatch
   status: done
@@ -469,4 +473,22 @@ requests:
   suggested: kk-local-update
   answer: kk-local-update — Have KK update/run the heartbeat locally during an approved window; then verify load_1m
     via MDDB (recommended, no SSH-key change)
+- id: kk-mac-hermes-agent-scope-20261104
+  ask: For the next KK-Mac evaluation, now that Hermes means Hermes Agent (framework), which scope should we prepare?
+    The old Hermes3:8B result was a model test inside an OpenClaw-shaped loop, not a Hermes Agent test. Any actual
+    framework run must wait for the heartbeat/admission fix and separate one-run authorization; this request is
+    scope only.
+  status: open
+  at: 2026-11-04 16:40
+  from: devin
+  options:
+  - id: framework-ab
+    label: ★ Compare actual Hermes Agent vs OpenClaw/Clawbot on the same local Qwen3:8B backend, synthetic read-only
+      fixtures, same tool allowlist/verifier, no live channels or external egress (recommended)
+  - id: ada-executor
+    label: Evaluate Hermes Agent only as a bounded executor Ada can dispatch through Nest; different integration
+      test, not a framework scorecard
+  - id: document-only
+    label: Keep this as documentation only; no framework install or run
+  suggested: framework-ab
 awaiting_action: true
