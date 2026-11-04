@@ -289,6 +289,12 @@ comms:
 - at: 2026-11-04 16:01
   from: devin
   text: put on hold
+- at: 2026-11-04 16:01
+  from: devin
+  text: 'Separate `bench` LiteLLM key wiring was tested on idc02. The runner correctly selected `LITELLM_KEY_BENCH`,
+    but OpenRouter/LiteLLM returned HTTP 403: requested model `or-claude-fable-5.1` is not available for this API
+    key. Card is held again; no artifact/tests/verifier. The separate key exists but lacks Claude model access.
+    Do not retry until the bench key is granted the model or the envelope uses a model it is authorized to access.'
 action:
   type: dispatch
   repo: chaba
