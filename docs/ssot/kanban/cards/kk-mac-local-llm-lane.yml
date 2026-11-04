@@ -369,6 +369,13 @@ comms:
     model lane. `kk_mac_admission.py` run from the production/trusted tony-dell hop succeeds via its read-only SSH
     fallback (heartbeat ~126s, load_1m 2.6, Ollama healthy, disk 28GB); the `load_unknown` seen from tony-macbook
     was a client-path false negative. This is only the coarse admission '
+- at: 2026-11-04 19:55
+  from: devin
+  text: 'Admission correction 2026-11-04: `load_unknown` was a false negative from running the probe on tony-macbook,
+    whose SSH key is not authorized. Running the unchanged admission helper from the production/trusted tony-dell
+    host now succeeds via its read-only SSH fallback: eligible=true, load_1m=2.6, heartbeat age ~126s, Ollama healthy,
+    disk 28GB. The heartbeat document itself still omits load_1m, so a KK-local heartbeat refresh remains useful
+    for diagnostics but is not required for the tony-dell pro'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
