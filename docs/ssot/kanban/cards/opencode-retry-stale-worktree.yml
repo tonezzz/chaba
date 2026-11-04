@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 10:27
+updated: 2026-11-04 12:48
 priority: low
 tags:
 - opencode
@@ -30,3 +30,22 @@ comms:
     It pins idc02, keeps unattended=false, permits Claude Fable 5.1 or Gemini 3 Pro, requires isolated worktree/tests/independent
     verifier/rollback, and does not queue or deploy. CI is pending. Next gates: merge/review PR #64, configure OPENCODE_LANES
     + runner-agent on idc02, then populate the OPS-1039 action envelope and queue only with auto-merge/deploy disabled.'
+- at: 2026-11-04 12:48
+  from: tony
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/claude-fable-5.1
+  executor: opencode
+  agent_profile: branch-code-supervised-pilot
+  target_host: idc02
+  artifact: evals/opencode-lane/out/ops-1039.json
+  expect:
+    required_keys:
+    - task_id
+    - tests_run
+    - tests_passed
+    - verifier_pass
+    - artifact
+  status: queued
