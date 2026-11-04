@@ -9,14 +9,21 @@ area: dispatch
 priority: high
 note: 'Failing: ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca != repo 71a2c26532c597f4
   — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
-  — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok —
-  declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates);
-  sunsynk-card: push probe ok — declare push:sunsynk-card in RUNNER_LABELS for the
-  fast path (live probe still gates); mddb-fork: push probe ok — declare push:mddb-fork
-  in RUNNER_LABELS for the fast path (live probe still gates); gods-eye-view: push
-  probe fails (fatal: could not read Username for ''https://github.com'': No ) — gods-eye-view
-  dispatches defer to a pushable host; stranded work relays via board-api; devin:
-  /home/tony/.local/bin/devin (devin 3000.10.35 (dfa4a2d6)).'
+  — no push creds); merge-sweep salvage path verified; ada-voice: push probe fails
+  (git@github.com: Permission denied (publickey).
+
+  fatal: Could ) — ada-voice dispatches defer to a pushable host; stranded work relays
+  via board-api; sunsynk-card: push probe fails (git@github.com: Permission denied
+  (publickey).
+
+  fatal: Could ) — sunsynk-card dispatches defer to a pushable host; stranded work
+  relays via board-api; mddb-fork: push probe fails (git@github.com: Permission denied
+  (publickey).
+
+  fatal: Could ) — mddb-fork dispatches defer to a pushable host; stranded work relays
+  via board-api; gods-eye-view: push probe fails (fatal: could not read Username for
+  ''https://github.com'': No ) — gods-eye-view dispatches defer to a pushable host;
+  st'
 help: 'Per-check fixes:
 
   - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
