@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 15:14
+updated: 2026-11-04 15:32
 priority: low
 tags:
 - opencode
@@ -181,6 +181,9 @@ comms:
     model on idc02; OpenRouter Fable route returned HTTP 402 after ~87 calls / 7.25M tokens / ~$12.24 trailing 24h,
     with key spend around $17.29/$25. No code artifact/tests/verifier/merge produced. Do not requeue until a funded/approved
     strong route or a supervised zero-cost route is explicitly selected.'
+- at: 2026-11-04 15:32
+  from: devin
+  text: queued for processing
 action:
   type: dispatch
   repo: chaba
@@ -196,7 +199,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: idle
+  status: queued
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793778387.service:
@@ -205,9 +208,7 @@ action:
   sweep:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-04 14:45
-  verified: false
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
