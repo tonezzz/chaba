@@ -1768,9 +1768,12 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     # The event stream tees to events.jsonl — durable proof for the
     # finish pass (artifact extraction, tool-call audit) that also
     # survives journal rotation.
+    key_alias = str(a.get("llm_key_alias") or "ada").strip().lower()
+    key_env_var = "LITELLM_KEY_" + key_alias.upper()
+    key_expr = "${" + key_env_var + ":-}"
     shell = (
         "set -a; if [ -f $$HOME/.config/secrets/litellm-keys.env ]; then "
-        ". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY=$${LITELLM_KEY_ADA:-}; "
+        f". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY={key_expr}; "
         "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
