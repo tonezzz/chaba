@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 12:59
+updated: 2026-11-04 13:15
 priority: low
 tags:
 - opencode
@@ -70,6 +70,10 @@ comms:
     `gemini-3.5-flash-free` HTTP 200 (~8.1s, low token cap yielded no text); `or-free-nemotron-nano` HTTP 200 (~0.6s,
     cost=0, low token cap yielded reasoning only); KK-Mac `qwen3:8b` HTTP 200 (~6.1s). The branch-code S5 profile
     only permits strong models, so none of these routes is curre'
+- at: 2026-11-04 13:15
+  from: devin
+  text: 'raised request the-first-real-opencode-dispatch-reached-163fd0: The first real OpenCode dispatch reached
+    idc02 but the approved strong model route is unavailable. Choose the next route'
 action:
   type: dispatch
   repo: chaba
@@ -92,3 +96,22 @@ action:
   result: 'exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793771349.service:
     Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793771349.service: Consumed 4.158s
     CPU time.'
+requests:
+- id: the-first-real-opencode-dispatch-reached-163fd0
+  ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
+    the next route before any retry.
+  status: open
+  at: 2026-11-04 13:15
+  from: devin
+  options:
+  - id: gemini-3-pro-route
+    label: Configure and verify a served Gemini 3 Pro strong-tier route on LiteLLM; spend/API configuration may
+      be required.
+  - id: claude-route
+    label: Configure and verify litellm/claude-fable-5.1 on LiteLLM; paid strong-model route.
+  - id: benchmark-free
+    label: Run a separate non-code benchmark profile using an already served free/KK-Mac model; do not treat it
+      as OPS-1039 code execution.
+  - id: stop
+    label: Keep OPS-1039 held.
+  suggested: gemini-3-pro-route
