@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 15:45
+updated: 2026-11-04 15:46
 priority: low
 tags:
 - opencode
@@ -211,6 +211,12 @@ comms:
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (field:task=True; field:branch=True;
     field:worktree=True; field:files_changed=True)
+- at: 2026-11-04 15:46
+  from: devin
+  text: 'Verified after OpenRouter refill: LiteLLM `chaba` virtual key remains capped at $25/30d and now shows $22.2458
+    spent (about $2.75 remaining; reset 2026-12-01). OpenRouter credit does not raise this LiteLLM cap. OPS-1039
+    remains held; no retry performed. To continue, explicitly raise the LiteLLM chaba budget or authorize a separate
+    low-budget benchmark key/profile.'
 action:
   type: dispatch
   repo: chaba
