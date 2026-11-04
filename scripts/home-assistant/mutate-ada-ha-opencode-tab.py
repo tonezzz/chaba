@@ -9,8 +9,19 @@ ADA_CONTROL_VIEW = {
     "type": "panel",
     "cards": [
         {
-            "type": "iframe",
-            "url": "https://ada-ha.surf-thailand.com/chaba-home/ai",
+            "type": "vertical-stack",
+            "cards": [
+                {
+                    "type": "custom:ada-voice-card",
+                    "title": "Ada",
+                    "instance": "tony",
+                    "assistant_name": "Ada",
+                },
+                {
+                    "type": "custom:ada-activity-card",
+                    "title": "Live activity",
+                },
+            ],
         }
     ],
 }
