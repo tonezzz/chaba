@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 14:30
+updated: 2026-11-04 14:31
 priority: low
 tags:
 - opencode
@@ -122,6 +122,13 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-opencode-retry-stale-worktree-1793771349 no longer active on idc02 but card still
     says running — sweeping its branch'
+- at: 2026-11-04 14:30
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 14:31
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -143,6 +150,11 @@ action:
   result: 'exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793776717.service:
     Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793776717.service: Consumed 4.252s
     CPU time.'
+  sweep:
+    stale_running: 2026-11-04 14:30
+    zero_commit: 2026-11-04 14:30
+  verified: false
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
@@ -180,3 +192,4 @@ requests:
     label: Do not configure or probe either route.
   suggested: benchmark-both
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
+claim: {}
