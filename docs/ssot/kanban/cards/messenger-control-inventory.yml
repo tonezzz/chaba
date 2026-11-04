@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-03 11:47
+updated: 2026-11-04 13:44
 priority: medium
 tags:
 - telegram
@@ -100,6 +100,13 @@ comms:
 - at: 2026-11-03 11:47
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-04 13:44
+  from: devin
+  text: '2026-11-04 groups-ready recheck: getMe passes for @ADA_HA_AdaBot, @TONY_HA_ChabaBot, @KK_HA_KaewtaBot,
+    @MN_HA_KrautBot, and @DevNest_HA_DevNestBot using the local protected key slots (no values shown). The new tokens
+    still get chat_not_found against the documented ada-ha/kk-ha/mn-ha/DevNestHA targets; tony-ha cannot be checked
+    because its target is not configured on idc03. Runtime relays remain active on old handles; no tony-ha relay
+    exists. No test messages or cutover performed. TONY token is u'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
