@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 15:44
+updated: 2026-11-04 15:45
 priority: low
 tags:
 - opencode
@@ -197,6 +197,13 @@ comms:
     currently shows $21.8133 spent, reset 2026-12-01. Only ~$3.19 remains at the LiteLLM key layer, independent
     of OpenRouter account credit. OPS-1039 must not retry Claude until Tony explicitly raises/changes the LiteLLM
     chaba budget or selects a lower-cost route; card remains held.'
+- at: 2026-11-04 15:45
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 15:45
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/ops-1039.json
 action:
   type: dispatch
   repo: chaba
@@ -212,7 +219,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: queued
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793778387.service:
@@ -220,9 +227,9 @@ action:
     CPU time.'
   sweep:
     stale_running: 2026-11-04 14:30
-    zero_commit: 2026-11-04 14:45
+    zero_commit: 2026-11-04 15:45
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  runner: idc02
+  verified: false
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
