@@ -107,6 +107,13 @@ comms:
     runtime validator now rejects unknown fields to match additionalProperties=false; envelope requires explicit
     state; lifecycle models failed/stalled/cancelled with bounded recovery transitions. Re-ran envelope + executor
     contract suite: 65 passed. Still review-only; no merge/deploy/self-approval.'
+- at: 2026-11-04 19:24
+  from: devin
+  text: 'Ada should become the main responder by making the Ada HA/voice/Telegram channels the only user-facing
+    intake for work orchestration. The OpenCode tab is an operator/review surface, not the control plane. Current
+    state: Ada already owns the HA-native user UI, conversation policy, board-first capture, memory retrieval, approvals,
+    and Devin dispatch; OpenCode currently owns the reverse path (OpenCode -> ada-control MCP via `.opencode/ada_mcp.py`).
+    Missing path: Ada -> bounded OpenCode executor. Ne'
 - at: 2026-11-06 20:22
   from: devin
   text: 'ADA-1010 contract COMPLETE and merged: chaba PR #73 (e89b3bc — envelope schema + validator with unknown-field
