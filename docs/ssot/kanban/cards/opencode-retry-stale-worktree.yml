@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-04 12:49
+updated: 2026-11-04 12:50
 priority: low
 tags:
 - opencode
@@ -50,6 +50,9 @@ comms:
   from: chaba
   text: started devin-task-opencode-retry-stale-worktree-1793771349 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
     model=litellm/claude-fable-5.1)
+- at: 2026-11-04 12:50
+  from: idc02
+  text: 'finished (failed): exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793771349.se'
 action:
   type: dispatch
   repo: chaba
@@ -65,7 +68,10 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: failed
   labels:
   - push:chaba
   runner: idc02
+  result: 'exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793771349.service:
+    Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793771349.service: Consumed 4.158s
+    CPU time.'
