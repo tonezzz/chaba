@@ -118,6 +118,13 @@ comms:
   from: tony
   text: '[approval] Tony approved ADA-1010 for merge after hardening. Approval covers the contract/schema/tests
     implementation only; deployment remains separately gated.'
+- at: 2026-11-04 19:51
+  from: devin
+  text: Implemented and deployed Ada as the orchestration front door for bounded OpenCode work. ada-voice now exposes
+    read-only `ada_opencode` actions (preflight/status/receipts) plus confirm-gated `ada_opencode_dispatch`; the
+    adapter reads exact cards via board-api and requires explicit repo, model, LiteLLM key alias, profile, target
+    host, artifact, max USD, turns, tokens, wall time, and retries. Ada instructions now state OpenCode is an executor,
+    plain questions stay in Ada, and no silent route/key/mo
 - at: 2026-11-06 20:22
   from: devin
   text: 'ADA-1010 contract COMPLETE and merged: chaba PR #73 (e89b3bc — envelope schema + validator with unknown-field
