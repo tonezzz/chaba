@@ -1,0 +1,34 @@
+id: ada-opencode-control-plane-tab
+title: Add protected Ada OpenCode control-plane tab after Board
+column: backlog
+updated: 2026-11-04 17:56
+brief: Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after
+  Board in the ada-ha chaba-admin dashboard.
+priority: high
+program: devnest
+tags:
+- ada
+- opencode
+- dashboard
+- cloudflare
+- access
+- websocket
+- safety
+spec: 'Create a stable protected Ada/OpenCode control-plane surface on idc02, separate from Jack''s OpenCode instance.
+  Backend must use the DevNest Ada command/MCP surface with read-only plan/preflight/spend behavior; no unrestricted
+  shell, credentials, merge, deploy, or production mutation from the dashboard. Use a dedicated root hostname `opencode-ada.surf-thailand.com`
+  behind the existing Cloudflare Access admin policy, server-side auth/session handling, WebSocket support, and
+  no secrets in iframe URL/browser code. Verify direct-origin denial, authorized Access load, WebSocket connectivity,
+  project workspace `/home/tony/DevNest` equivalent, stale-server/version readback, and safe menu/preflight flow.
+  Add a full-page panel iframe immediately after Board in the live `ada-ha` `chaba-admin` dashboard; mutate via
+  push-dashboard.py WebSocket, read back live config, sync `docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json`
+  and `docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml`. Preserve rollback and do not expose Jack or
+  Tony host secrets. Dependency: stable idc02 backend/proxy and Access hostname must pass origin/auth/WebSocket
+  smoke before dashboard mutation.'
+note: 'Tony selected option 1: dedicated protected Ada/OpenCode control-plane hostname on idc02. Do not point the
+  tab at opencode-jack.surf-thailand.com; that is Jack''s isolated instance.'
+ref: ADA-1043
+comms:
+- at: 2026-11-04 17:56
+  from: tony
+  text: card captured via board-api
