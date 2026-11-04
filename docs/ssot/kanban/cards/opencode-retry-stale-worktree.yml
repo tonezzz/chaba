@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
-column: backlog
-updated: 2026-11-04 15:58
+column: doing
+updated: 2026-11-04 15:59
 priority: low
 tags:
 - opencode
@@ -272,6 +272,9 @@ comms:
 - at: 2026-11-04 15:58
   from: tony
   text: re-spawned from report page
+- at: 2026-11-04 15:59
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -287,7 +290,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: queued
+  status: running
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793782503.service:
@@ -300,6 +303,7 @@ action:
   verified: false
   llm_key_alias: bench
   button: test-key-alias
+  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
