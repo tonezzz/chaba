@@ -1,7 +1,7 @@
 id: mcp-schema-allowlist-heavy-servers-7c22e9
 title: mcp-schema-allowlist-heavy-servers
 column: review
-updated: 2026-11-03 11:57
+updated: 2026-11-04 07:45
 priority: medium
 spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
   FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
@@ -40,6 +40,9 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-04 07:45
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph'
 action:
   type: dispatch
   status: done
@@ -47,5 +50,7 @@ action:
   result: 'exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
     | devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph.service: Consumed 38.582s CPU time over 3min 4.580s
     wall clock time, 1.1G memory peak.'
+  sweep:
+    session_gone: 2026-11-03 11:57
 review_kind: verify
 claim: {}
