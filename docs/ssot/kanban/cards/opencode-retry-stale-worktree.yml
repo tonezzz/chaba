@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-03 14:59
+updated: 2026-11-04 10:27
 priority: low
 tags:
 - opencode
@@ -24,3 +24,9 @@ comms:
     regression-testable, reversible, and has no secrets/deploy/destructive scope. Ada should produce the handoff
     only; OpenCode works in an isolated branch/worktree; tests + independent verifier run; Tony reviews the patch.
     Do not auto-merge or let Ada dispatch directly until ADA-1010 typed dispatch gates exist.'
+- at: 2026-11-04 10:27
+  from: devin
+  text: 'Prepared the Tony-approved supervised branch-code pilot profile in PR #64: https://github.com/tonezzz/chaba/pull/64.
+    It pins idc02, keeps unattended=false, permits Claude Fable 5.1 or Gemini 3 Pro, requires isolated worktree/tests/independent
+    verifier/rollback, and does not queue or deploy. CI is pending. Next gates: merge/review PR #64, configure OPENCODE_LANES
+    + runner-agent on idc02, then populate the OPS-1039 action envelope and queue only with auto-merge/deploy disabled.'
