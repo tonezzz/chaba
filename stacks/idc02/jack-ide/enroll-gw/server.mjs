@@ -31,6 +31,7 @@ const SESSION_TTL_S = +(process.env.SESSION_TTL_S || 43200); // 12 h
 const COOKIE_NAME = process.env.COOKIE_NAME || "jack_ide_sess";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "0";
 const REQUIRE_EDGE_HEADER = process.env.REQUIRE_EDGE_HEADER === "1";
+const AUTO_ENROLL_ACCESS = process.env.AUTO_ENROLL_ACCESS === "1";
 const PUBLIC_HOST = (process.env.PUBLIC_HOST || "").trim().toLowerCase();
 const ACCESS_ISSUER = (process.env.CF_ACCESS_ISSUER || "").trim();
 const ACCESS_AUDIENCE = (process.env.CF_ACCESS_AUDIENCE || "").trim();
@@ -210,6 +211,26 @@ function consumeCode(raw) {
   return { sessRaw, sid, next: rec.next || "/" };
 }
 
+function accessSession(req) {
+  const raw = tok(24);
+  const sid = tok(9);
+  const label =
+    String(req.headers["cf-access-authenticated-user-email"] || "cloudflare-access")
+      .slice(0, 256);
+  const session = {
+    id: sid,
+    scope: SCOPE,
+    created: nowS(),
+    expires: nowS() + SESSION_TTL_S,
+    label,
+    last_seen: nowS(),
+  };
+  state.sessions[sha256(raw)] = session;
+  persist();
+  audit("access_auto_enroll", { sid, label });
+  return { raw, session };
+}
+
 // ---- proxy ---------------------------------------------------------------
 function proxyHttp(req, res, sess) {
   const headers = { ...req.headers };
@@ -308,6 +329,8 @@ const server = http.createServer(async (req, res) => {
 
     if (p === "/enroll" && req.method === "GET") {
       if (!(await edgeOk(req))) return send(res, 403, { error: "edge_auth_required" });
+      if (AUTO_ENROLL_ACCESS)
+        return send(res, 303, "", { location: "/" });
       if (sessionFor(req))
         return send(res, 303, "", { location: "/" }); // already enrolled
       const html = ENROLL_HTML
@@ -369,7 +392,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     // everything else: session-gated OpenCode route
-    const sess = sessionFor(req);
+    let sess = sessionFor(req);
+    if (!sess && AUTO_ENROLL_ACCESS && (await edgeOk(req))) {
+      const issued = accessSession(req);
+      sess = issued.session;
+      res.setHeader("set-cookie", cookieHeader(issued.raw, SESSION_TTL_S));
+    }
     if (!sess) {
       if (wantsHtml(req)) {
         const next = encodeURIComponent(req.url);
@@ -474,7 +502,9 @@ async function admin(req, res, p, u) {
 
 server.on("upgrade", (req, sock, head) => {
   void (async () => {
-    const sess = sessionFor(req);
+    let sess = sessionFor(req);
+    if (!sess && AUTO_ENROLL_ACCESS && (await edgeOk(req)))
+      sess = accessSession(req).session;
     if (!sess || !(await edgeOk(req))) {
       audit("ws_denied", { path: req.url });
       sock.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");

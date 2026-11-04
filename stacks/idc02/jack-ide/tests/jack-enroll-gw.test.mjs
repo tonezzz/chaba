@@ -335,3 +335,17 @@ test("audit trail records the lifecycle", async () => {
   for (const ev of ["boot", "mint", "enroll_ok", "enroll_code_used", "revoke", "reset", "ws_open"])
     assert.ok(events.includes(ev), `missing audit event ${ev}`);
 });
+
+test("Access auto-enroll skips the enrollment-code page", async () => {
+  gw.kill();
+  await startGw({ AUTO_ENROLL_ACCESS: "1" });
+
+  const first = await api("/", { headers: { accept: "text/html" } });
+  assert.equal(first.status, 200);
+  assert.match(first.headers.get("set-cookie"), /jack_ide_sess=/);
+  assert.match(await first.text(), /SPA/);
+
+  const enrollPage = await api("/enroll", { headers: { accept: "text/html" } });
+  assert.equal(enrollPage.status, 303);
+  assert.equal(enrollPage.headers.get("location"), "/");
+});
