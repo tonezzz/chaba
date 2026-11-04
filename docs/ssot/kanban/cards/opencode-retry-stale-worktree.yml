@@ -217,6 +217,9 @@ comms:
     spent (about $2.75 remaining; reset 2026-12-01). OpenRouter credit does not raise this LiteLLM cap. OPS-1039
     remains held; no retry performed. To continue, explicitly raise the LiteLLM chaba budget or authorize a separate
     low-budget benchmark key/profile.'
+- at: 2026-11-04 15:46
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -232,7 +235,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: queued
+  status: running
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793778387.service:
@@ -243,6 +246,7 @@ action:
     zero_commit: 2026-11-04 15:45
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   verified: false
+  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
