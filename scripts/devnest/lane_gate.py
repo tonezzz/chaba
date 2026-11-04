@@ -164,6 +164,8 @@ READONLY_MCP_TOOLS = [
 STRONG_MODELS = [
     "litellm/claude-fable-5.1", "litellm/gemini-3-pro",
     "litellm/gpt-5.2-codex", "openrouter/anthropic/claude-fable-5.1",
+    "litellm/or-claude-fable-5.1",
+    "litellm/or-gemini-3.1-pro-preview",
 ]
 
 # rough $/1M-token {input, output} planning rates — used only to roll
@@ -172,6 +174,8 @@ PRICE_TABLE = {
     "litellm/gemini-3.5-flash-lite": (0.10, 0.40),
     "litellm/gemini-3.5-flash": (0.30, 2.50),
     "litellm/claude-fable-5.1": (10.0, 50.0),
+    "litellm/or-claude-fable-5.1": (10.0, 50.0),
+    "litellm/or-gemini-3.1-pro-preview": (2.0, 12.0),
     "opencode/deepseek-v4.1-flash-free": (0.0, 0.0),
     "ollama/qwen2.5:7b-instruct": (0.0, 0.0),
 }
