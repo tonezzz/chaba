@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
 column: review
-updated: 2026-11-03 20:28
+updated: 2026-11-04 14:04
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -74,6 +74,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-ada-dev-control-plane-envelope-1793712178 on idc02
     — if the work was never pushed it may be gone'
+- at: 2026-11-04 14:04
+  from: devin
+  text: '[implementation evidence] ADA-1010 contract implementation committed and pushed on feat/ada-next-card-procedure
+    at 278a599159. Added schemas/ada-job-envelope.schema.json, scripts/board/ada_job_envelope.py, docs/kb/ada-development-control-plane-job-envelope.md,
+    and tests/board/test_ada_job_envelope.py. Verification: 65 targeted tests passed (envelope + executor contract).
+    The earlier OpenCode dispatch produced no commit/artifact and remains unverified; this implementation is review-ready
+    but not '
 action:
   type: dispatch
   status: done
@@ -82,5 +89,7 @@ action:
   runner: idc02
   result: 'exit=0 "ses_e5e6c2974ffetzRkQTc8XmFgpY","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
     | devin-task-ada-dev-control-plane-envelope-1793712178.service: Consumed 15.397s CPU time.'
+  sweep:
+    session_gone: 2026-11-03 20:28
 review_kind: verify
 claim: {}
