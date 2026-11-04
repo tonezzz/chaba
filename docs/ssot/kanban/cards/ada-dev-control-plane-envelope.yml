@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
 column: review
-updated: 2026-11-04 14:04
+updated: 2026-11-04 15:26
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -81,6 +81,13 @@ comms:
     and tests/board/test_ada_job_envelope.py. Verification: 65 targeted tests passed (envelope + executor contract).
     The earlier OpenCode dispatch produced no commit/artifact and remains unverified; this implementation is review-ready
     but not '
+- at: 2026-11-04 15:26
+  from: devin
+  text: 'Memory compatibility extension (2026-11-04): Ada should use the same durable memory record shape as Devin
+    without creating a competing memory database. Required fields: memory_id, source (education|devin-session|ada-session|board|artifact),
+    record_type, card_id, workflow_id, job_id, created_at, updated_at, summary, content_pointer, artifact_pointers,
+    provenance, freshness, confidence, scope, privacy_class. Board/Chaba remains operational truth; artifacts/verifiers
+    remain evidence; Education rema'
 action:
   type: dispatch
   status: done
