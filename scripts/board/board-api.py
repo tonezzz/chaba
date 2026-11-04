@@ -1615,7 +1615,8 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
     before = _wiki_installed(api_url, opener)
     if action == "list":
         return {"action": "list", "installed": before,
-                "approved": sorted(WIKI_EXTENSION_ALLOWLIST)}
+                "approved": sorted(WIKI_EXTENSION_ALLOWLIST),
+                "message": "wiki extension list"}
 
     login = _wiki_api_call(
         api_url, opener,
@@ -1647,7 +1648,8 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
         raise UpstreamError(f"{name} install was not visible after request")
     return {"action": action, "name": name, "before": before,
             "after": after, "verified": name in after,
-            "actor": frm}
+            "actor": frm,
+            "message": f"wiki extension {action}: {name}"}
 
 
 def wp_api(route: str, data=None, method: str | None = None):
