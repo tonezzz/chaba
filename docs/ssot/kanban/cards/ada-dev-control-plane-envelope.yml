@@ -1,7 +1,7 @@
 id: ada-dev-control-plane-envelope
 title: Canonical Ada development-control-plane job envelope and Nest lifecycle
 column: review
-updated: 2026-11-04 15:29
+updated: 2026-11-04 15:43
 brief: Give Ada, Node-RED, OpenCode, Cline, and DevNest one durable task contract so intent becomes verified execution
   without losing project context.
 priority: high
@@ -94,6 +94,13 @@ comms:
     scripts/board/ada_job_envelope.py, the lifecycle/result-bundle/approval procedure, and 65 targeted tests passed.
     The memory compatibility extension is now the next ADA-1010 design slice; typed runner adapter remains separate.
     No dispatch/deploy side effect occurred.'
+- at: 2026-11-04 15:43
+  from: devin
+  text: 'Memory compatibility continuation verified 2026-11-04: `scripts/ada/sync-devin-summaries.py` completed
+    with 480 summaries scanned, 0 failed, 0 empty skipped, 0 superseded; follow-up dry-run reports 0 synced / 480
+    unchanged. Direct Ada MCP `ada_memory_search("Ada development control plane memory workflow")` returned ok=true
+    with 3 Education hits, 3 Devin-session hits, and no errors. Ada and Devin now share a practical imported-summary
+    memory path, while board/artifact workflow receipts remain the'
 action:
   type: dispatch
   status: done
