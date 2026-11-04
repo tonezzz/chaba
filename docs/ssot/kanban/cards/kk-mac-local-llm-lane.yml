@@ -376,6 +376,10 @@ comms:
     host now succeeds via its read-only SSH fallback: eligible=true, load_1m=2.6, heartbeat age ~126s, Ollama healthy,
     disk 28GB. The heartbeat document itself still omits load_1m, so a KK-local heartbeat refresh remains useful
     for diagnostics but is not required for the tony-dell pro'
+- at: 2026-11-04 19:56
+  from: devin
+  text: 'raised request kk-mac-hermes-agent-benchmark-authorization-20261104: To continue from the confirmed same-host
+    plan: authorize exactly one Hermes Agent vs OpenClaw/Clawbot framework benchmar'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -460,6 +464,24 @@ requests:
   suggested: same-host
   escalated_at: 2026-10-31 08:33
   answer: same-host — Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
+- id: kk-mac-hermes-agent-benchmark-authorization-20261104
+  ask: 'To continue from the confirmed same-host plan: authorize exactly one Hermes Agent vs OpenClaw/Clawbot framework
+    benchmark on KK-Mac, using the already-cached local Qwen3:8B backend and synthetic read-only fixtures, identical
+    tool allowlist/verifier, no external egress, model download, personal files, live channels, or automatic routing?
+    This is separate from the prior Qwen model-only pilot. Run only after ready-aware worker deployment, fresh KK
+    owner-idle/resource preflight, and admission passes.'
+  status: open
+  at: 2026-11-04 19:56
+  from: devin
+  options:
+  - id: framework-ab
+    label: ★ Authorize one bounded synthetic framework A/B after all gates (Hermes Agent vs OpenClaw, same local
+      Qwen3:8B; recommended)
+  - id: hermes-smoke
+    label: Authorize only a one-time Hermes Agent synthetic smoke on KK-Mac; no comparison or routing
+  - id: hold
+    label: Keep Hermes Agent at design/documentation only for now
+  suggested: framework-ab
 - id: kk-mac-qwen8-one-shot-authorization-20261031
   ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
     answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and
