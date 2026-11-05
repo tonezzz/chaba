@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 18:02
+updated: 2026-11-05 18:14
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -51,6 +51,13 @@ comms:
   text: 'Progress check: no declared Google OIDC client credential was found in the local secret filenames. Existing
     google_credentials.json / calendar tokens are not assumed to be an OIDC client. SEC-1035 remains waiting on
     the human/provider gate; no secret values were read or exposed.'
+- at: 2026-11-05 18:14
+  from: tony
+  text: 'answered oidc-client-registration: register-new-google-client — ★ Register a dedicated Google OIDC client
+    for wiki-internal'
+- at: 2026-11-05 18:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
@@ -74,7 +81,7 @@ requests:
   ask: Provide or approve the Google OIDC client registration for wiki-internal. The callback URL will be https://wiki-internal.h3.gizmo-thailand.com/index.php?title=Special:PluggableAuthLogin.
     Store client ID/secret only in the Plesk/Wiki secret store; never paste them into chat or LocalSettings.php
     plaintext.
-  status: open
+  status: answered
   at: 2026-11-05 17:49
   from: devin
   options:
@@ -85,4 +92,5 @@ requests:
   - id: stop
     label: Stop SSO work and keep the private Wiki on manual login
   suggested: register-new-google-client
+  answer: register-new-google-client — ★ Register a dedicated Google OIDC client for wiki-internal
 awaiting_action: true
