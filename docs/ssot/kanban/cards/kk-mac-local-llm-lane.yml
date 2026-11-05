@@ -405,6 +405,13 @@ comms:
     free, Photoshop and Illustrator active, Ollama empty, no Nest/Hermes worker. `node_busy=false` in the heartbeat
     is not sufficient to override these readings. Do NOT launch LLM/Hermes now. Queue remains 78 packs (71 done,
     6 failed, 1 incomplete empty folder). The two topology/'
+- at: 2026-11-05 15:46
+  from: devin
+  text: 'Threshold clarification 2026-11-05: the 80%-free memory gate in the Mac SOP is specifically for MPS/video
+    model loads; it is not a universal LLM threshold. A one-off local Qwen3:8B smoke could use a separate LLM-only
+    resource gate, but the existing five-fixture model pack is complete (2/5 exact) and must not be rerun. Current
+    sample is 66% free, with Photoshop/Illustrator open, so no run now. Keep video gate unchanged; any new LLM test
+    needs a versioned pack, KK idle consent, AC/no competing ren'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
