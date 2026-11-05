@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 17:49
+updated: 2026-11-05 18:02
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -46,6 +46,11 @@ comms:
   from: devin
   text: 'raised request oidc-client-registration: Provide or approve the Google OIDC client registration for wiki-internal.
     The callback URL will be https://wiki-internal'
+- at: 2026-11-05 18:02
+  from: devin
+  text: 'Progress check: no declared Google OIDC client credential was found in the local secret filenames. Existing
+    google_credentials.json / calendar tokens are not assumed to be an OIDC client. SEC-1035 remains waiting on
+    the human/provider gate; no secret values were read or exposed.'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
