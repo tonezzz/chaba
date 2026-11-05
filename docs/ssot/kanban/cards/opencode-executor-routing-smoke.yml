@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: backlog
-updated: 2026-11-05 16:58
+updated: 2026-11-05 17:32
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -88,13 +88,19 @@ comms:
   from: devin
   text: 'raised request the-explicit-opencode-smoke-is-held-afte-063faa: The explicit OpenCode smoke is held after
     its prior run exited nonzero with no artifact. Choose the next safe path: veri'
+- at: 2026-11-05 17:32
+  from: tony
+  text: 'answered the-explicit-opencode-smoke-is-held-afte-063faa: rerun-free-readonly'
+- at: 2026-11-05 17:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
   ask: 'The explicit OpenCode smoke is held after its prior run exited nonzero with no artifact. Choose the next
     safe path: verify OPENCODE_LANES=1 + compatible idc02 runner, add the held-out ops-readonly verifier, then rerun
     with the declared free Flash model; or keep it held until typed dispatch/receipt integration is complete.'
-  status: open
+  status: answered
   at: 2026-11-05 16:58
   from: devin
   options:
@@ -105,3 +111,5 @@ requests:
   - id: choose-different-model
     label: Choose a different model/cost envelope before rerun
   suggested: rerun-free-readonly
+  answer: rerun-free-readonly
+awaiting_action: true
