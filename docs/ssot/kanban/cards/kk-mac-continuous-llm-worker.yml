@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
-column: review
-updated: 2026-11-03 17:30
+column: backlog
+updated: 2026-11-05 09:07
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -85,4 +85,11 @@ comms:
     artifact and no stale/session-gone ambiguity; (3) run 3 repeated summary/structured-extract/safe-route jobs;
     (4) verify queue wait, wall time, fallback, owner-impact, and artifact pass; (5) only then enable KK_MAC_LANES
     for bounded JevNest work. Video/Gaussian GPU work stays in expli'
+- at: 2026-11-05 09:07
+  from: devin
+  text: 'Fresh read-only queue census (2026-11-04): dedicated `gdrive:ada-nest-kk-llm` contains 78 pack directories:
+    71 done, 6 failed, and 1 incomplete empty staging directory (`kk-mac-task-report-review-a8ff708e96d4`); inbox
+    has 76 task JSON specs. This is a bounded local-LLM pack queue, not a full Hermes Agent runtime or generic OpenAI-compatible
+    model endpoint. The existing `kk_mac_local` executor can keep orchestration on a fleet runner and send only
+    allowlisted one-shot prompts to KK-Mac Ollama ove'
 review_kind: verify
