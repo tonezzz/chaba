@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 18:14
+updated: 2026-11-05 18:51
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -58,6 +58,13 @@ comms:
 - at: 2026-11-05 18:14
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-05 18:51
+  from: devin
+  text: 'VERIFICATION FAILED / urgent: wiki.h3.gizmo-thailand.com now returns HTTP 500 Configuration error: PluggableAuth
+    is enabled in LocalSettings.php but /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com/extensions/PluggableAuth/extension.json
+    is missing. OpenIDConnect verification cannot proceed; public News and private Infrastructure consumers are
+    currently impacted. Immediate rollback: comment out PluggableAuth/OpenIDConnect wfLoadExtension/config block
+    OR upload the prepared Pl'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
