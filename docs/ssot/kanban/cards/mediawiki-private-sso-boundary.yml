@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 18:51
+updated: 2026-11-05 18:56
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -65,6 +65,12 @@ comms:
     is missing. OpenIDConnect verification cannot proceed; public News and private Infrastructure consumers are
     currently impacted. Immediate rollback: comment out PluggableAuth/OpenIDConnect wfLoadExtension/config block
     OR upload the prepared Pl'
+- at: 2026-11-05 18:56
+  from: devin
+  text: 'Verification after auth extension upload: PluggableAuth/OpenIDConnect now progress past missing extension.json,
+    but Wiki remains down because LocalSettings.php fatal-errors at line 150: OIDC secret file is missing/unreadable.
+    Required next: upload wiki-internal-oidc.php to the exact Plesk path expected by LocalSettings.php (/var/www/vhosts/system/wiki.h3.gizmo-thailand.com/etc/wiki-internal-oidc.php)
+    or adjust the path to the actual private file location, with owner-readable mode 600. Do not put'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
