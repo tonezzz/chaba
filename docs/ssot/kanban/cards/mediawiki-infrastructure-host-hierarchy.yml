@@ -1,0 +1,31 @@
+id: mediawiki-infrastructure-host-hierarchy
+title: MediaWiki Infrastructure Hosts hierarchy
+column: backlog
+updated: 2026-11-05 09:35
+brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
+  one consolidated leaf per host, while keeping full topology private.
+priority: high
+program: devnest
+tags:
+- mediawiki
+- infrastructure
+- hosts
+- reports
+- hierarchy
+- privacy
+spec: 'Define and implement the MediaWiki Infrastructure/Hosts hierarchy. Canonical pages: Infrastructure/Hosts
+  rollup and Infrastructure/Hosts/<host> leaves. Integrate existing scripts/ada/host-services-cms.py, scripts/audit-hosts.py,
+  host-loads, disk-trend-watch, timer-timeline-update, ssot.reports.yml, and ssot.audit.hosts.yml. Each leaf requires
+  Quick summary, status active|degraded|unreachable|retired, role, last_verified, services, capacity/load/disk,
+  expected-service delta, source/generator links, related report links, parent=Infrastructure/Hosts, report_role=leaf.
+  Rollup requires one row per declared host, status/freshness/role/key warning/link, report_role=rollup, children.
+  Reconcile host registry including idc01 retirement and idc03 coverage; remove stale six-host assumptions. Preserve
+  compatibility links from services-by-host and services-<host>. Full infrastructure pages remain private until
+  MediaWiki access control is configured; before then only dry-run or sanitized public fleet-status derivative with
+  no ports, routes, service names, or topology. Done when dry-run, orphan/missing-host checks, rollup/leaf rendering,
+  compatibility links, and privacy gates pass.'
+ref: SYS-1034
+comms:
+- at: 2026-11-05 09:35
+  from: tony
+  text: card captured via board-api
