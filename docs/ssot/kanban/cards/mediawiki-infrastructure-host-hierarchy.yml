@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 15:45
+updated: 2026-11-05 15:52
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -55,3 +55,10 @@ comms:
     changed. Keep SYS-1034 as the parent card; do not create a duplicate. Next private-namespace gate is manual
     Plesk/LocalSettings work: confirm extensions/Lockdown exists, add wfLoadExtension(Lockdown), define Infrastructure
     + Infrastructure_talk namespaces an'
+- at: 2026-11-05 15:52
+  from: tony
+  text: 'VERIFICATION: Lockdown is installed; Infrastructure/Infrastructure talk custom namespaces exist with subpages/nonincludable.
+    However privacy gate FAILS: authenticated Ada can read Infrastructure:Hosts/Test (pageid 27), and anonymous
+    API can also read it. Read-lock rules/group membership are not configured or not active yet. No real host data
+    exposed; test page contains only placeholder text. Do not publish Infrastructure/Hosts until anonymous deny
+    is verified.'
