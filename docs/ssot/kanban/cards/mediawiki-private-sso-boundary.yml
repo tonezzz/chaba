@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 19:00
+updated: 2026-11-05 19:06
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -77,6 +77,13 @@ comms:
     loaded: Lockdown, PluggableAuth, OpenID Connect. However Special:PluggableAuthLogin redirects with error=pluggableauth-fatal-error
     (login loop). OIDC config/provider/client validation remains failing; public API works but SSO is not ready.
     Need inspect Plesk PHP/MediaWiki error log for the fatal cause before exposing private hostname/tab.'
+- at: 2026-11-05 19:06
+  from: devin
+  text: 'New verified blocker: wiki-internal.h3.gizmo-thailand.com resolves to 103.99.11.249 but serves the Plesk
+    default page (no Wiki vhost/site configured). The OIDC callback hostname is therefore not a MediaWiki endpoint.
+    Before debugging provider credentials further, add wiki-internal as a Plesk domain/alias sharing the Wiki document
+    root, issue TLS, then put the hostname behind Cloudflare Access. Re-test Special:PluggableAuthLogin only after
+    the private hostname serves MediaWiki.'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
