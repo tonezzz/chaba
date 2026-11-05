@@ -1,0 +1,27 @@
+id: mediawiki-private-sso-boundary
+title: MediaWiki private Wiki SSO and in-house access boundary
+column: backlog
+updated: 2026-11-05 17:26
+brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
+  Infrastructure pages without a second manual login, while public News remains anonymous-safe.
+priority: high
+program: devnest
+tags:
+- mediawiki
+- security
+- sso
+- cloudflare-access
+- lockdown
+- home-assistant
+spec: 'Design and implement one-Wiki/two-surfaces access. Keep wiki.h3.gizmo-thailand.com public-safe for News only;
+  add a private Wiki hostname behind the same Cloudflare Access identity policy used by ada-ha. Integrate MediaWiki
+  OIDC/PluggableAuth with the same approved identity provider, auto-provision/map Tony and Ada to the inhouse group,
+  and retain Lockdown namespace read rules for Infrastructure/Home/Ops/Draft. Point the Ada HA Private Wiki tab
+  at the private hostname and verify anonymous deny, Tony/inhouse allow, Ada/sysop allow, public News allow, and
+  spoofed identity-header/direct-public-host denial. Do not put Wiki passwords or permanent tokens in iframe URLs.
+  Rollback: remove private hostname/tab and disable OIDC/PluggableAuth config while leaving public News alive.'
+ref: SEC-1035
+comms:
+- at: 2026-11-05 17:26
+  from: tony
+  text: card captured via board-api
