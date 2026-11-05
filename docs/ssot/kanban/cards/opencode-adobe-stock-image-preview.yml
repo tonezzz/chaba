@@ -1,7 +1,7 @@
 id: opencode-adobe-stock-image-preview
 title: OpenChamber Adobe Stock image preview and asset picker
 column: backlog
-updated: 2026-11-05 18:02
+updated: 2026-11-05 20:11
 brief: Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset
   selection without uploading or mutating Adobe Stock.
 priority: medium
@@ -34,3 +34,10 @@ comms:
     are browser-safe; file paths, credentials, and invalid schemes are rejected with warnings. Existing source_ref
     and read-only mutations_performed contract remain intact. Tests: 14 passed; py_compile and git diff --check
     passed. Next: add real fixture preview metadata and wire native O'
+- at: 2026-11-05 20:11
+  from: devin
+  text: 'Continued implementation: the report now includes openchamber_preview_markdown with safe image Markdown,
+    full-preview links, source_ref, and explicit unavailable/warning states. Added an end-to-end temporary RUN.json
+    indexer test proving preview_url/thumbnail_url metadata survives indexing. Verification: 15 pytest tests passed,
+    py_compile passed, diff check passed. Still read-only; no upload/license/generation path added. Existing .opencode/opencode.json
+    deletion and root opencode.json untracked'
