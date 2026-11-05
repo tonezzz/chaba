@@ -391,6 +391,13 @@ comms:
     on, but free memory is 76%, Photoshop/Illustrator processes are active, Ollama has no resident model, and no
     Nest worker is running. Hold all KK inference until owner-idle/resource gates pass. Queue census: 78 packs (71
     done, 6 failed, 1 incomplete empty staging folder), no model run sta'
+- at: 2026-11-05 14:56
+  from: devin
+  text: 'Fresh Nov 5 preflight correction: coarse `kk_mac_admission.py` from tony-dell says eligible=true (heartbeat
+    age 130s, load_1m=2.7 via SSH fallback, Ollama healthy, disk 42GB), but a direct read-only Mac resource sample
+    shows only 64% free memory and Photoshop at 39.8% CPU (Illustrator 1.4%); Ollama has no resident model and no
+    Nest worker is visible. Treat KK-Mac as owner-busy and DO NOT launch LLM/Hermes work. This confirms the coarse
+    admission helper misses GUI-app/memory pressure; a full reso'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
