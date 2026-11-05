@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 15:52
+updated: 2026-11-05 16:42
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -62,3 +62,10 @@ comms:
     API can also read it. Read-lock rules/group membership are not configured or not active yet. No real host data
     exposed; test page contains only placeholder text. Do not publish Infrastructure/Hosts until anonymous deny
     is verified.'
+- at: 2026-11-05 16:42
+  from: tony
+  text: 'VERIFIED after Plesk PHP restart: Lockdown active; anonymous browser request to Infrastructure:Hosts/Test
+    redirects to login; anonymous API parse returns permissiondenied; authenticated Ada parse succeeds. API prop=info
+    still reveals page existence/pageid metadata, but private content is not readable. Privacy gate for content
+    passes; next: add/verify inhouse group membership, then generate private Infrastructure/Hosts rollup + leaves
+    and add private Wiki tab.'
