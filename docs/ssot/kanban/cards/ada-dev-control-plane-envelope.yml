@@ -132,6 +132,13 @@ comms:
     workflow_id, job_id, created_at, updated_at, summary, content_pointer, artifact_pointers, provenance, freshness,
     confidence, scope, and privacy_class. Ada/OpenCode reads through a read-only bounded memory adapter/API on idc03,
     not a host filesystem mount. Retrieval su'
+- at: 2026-11-05 15:54
+  from: devin
+  text: 'Long-term memory implementation progressed: Ada OpenCode now queries canonical MDDB `ada-ha-bank-devin-tony`
+    on port 11023 first, then bounded local read-only summary fallback. idc02 has a read-only 2,077-file snapshot
+    from tony-omen for rollback/parity. Real OpenCode/LiteLLM test returned 3 `storage:mddb` Devin records with
+    source=freshness labels and no shell; Education returned alongside it. The previous port 11027 was CMS/report
+    data and returned no Devin records, so the adapter now separate'
 - at: 2026-11-06 20:22
   from: devin
   text: 'ADA-1010 contract COMPLETE and merged: chaba PR #73 (e89b3bc — envelope schema + validator with unknown-field
