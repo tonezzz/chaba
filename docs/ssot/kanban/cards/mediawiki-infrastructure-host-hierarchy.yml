@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 17:24
+updated: 2026-11-05 17:27
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -88,3 +88,8 @@ comms:
     Wiki hostname behind the same Cloudflare Access identity and integrate verified identity-to-MediaWiki login
     (prefer OIDC/PluggableAuth or a strictly trusted AuthRemoteuser gateway). Do not put Wiki passwords/tokens in
     iframe URLs. Done when Tony reaches Infrastructure:Hosts from chaba-a'
+- at: 2026-11-05 17:27
+  from: tony
+  text: 'Follow-up security work split into SEC-1035 (MediaWiki private SSO boundary): private hostname + OIDC/PluggableAuth
+    + inhouse identity mapping + Private Wiki tab target. SYS-1034 owns host hierarchy/content; SEC-1035 owns authentication
+    and exposure boundary.'
