@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 18:56
+updated: 2026-11-05 19:00
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -71,6 +71,12 @@ comms:
     but Wiki remains down because LocalSettings.php fatal-errors at line 150: OIDC secret file is missing/unreadable.
     Required next: upload wiki-internal-oidc.php to the exact Plesk path expected by LocalSettings.php (/var/www/vhosts/system/wiki.h3.gizmo-thailand.com/etc/wiki-internal-oidc.php)
     or adjust the path to the actual private file location, with owner-readable mode 600. Do not put'
+- at: 2026-11-05 19:00
+  from: devin
+  text: 'Verification after auth bundle/secret upload: API is healthy HTTP 200; MediaWiki 1.46.2; extensions now
+    loaded: Lockdown, PluggableAuth, OpenID Connect. However Special:PluggableAuthLogin redirects with error=pluggableauth-fatal-error
+    (login loop). OIDC config/provider/client validation remains failing; public API works but SSO is not ready.
+    Need inspect Plesk PHP/MediaWiki error log for the fatal cause before exposing private hostname/tab.'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
