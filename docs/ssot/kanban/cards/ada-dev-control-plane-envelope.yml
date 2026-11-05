@@ -125,6 +125,13 @@ comms:
     adapter reads exact cards via board-api and requires explicit repo, model, LiteLLM key alias, profile, target
     host, artifact, max USD, turns, tokens, wall time, and retries. Ada instructions now state OpenCode is an executor,
     plain questions stay in Ada, and no silent route/key/mo
+- at: 2026-11-05 15:34
+  from: devin
+  text: 'Recommended long-term Devin-compatible memory design: tony-omen remains the ingestion source; `sync-devin-summaries`
+    normalizes summaries into the canonical MDDB Devin memory collection with memory_id, source, record_type, card_id,
+    workflow_id, job_id, created_at, updated_at, summary, content_pointer, artifact_pointers, provenance, freshness,
+    confidence, scope, and privacy_class. Ada/OpenCode reads through a read-only bounded memory adapter/API on idc03,
+    not a host filesystem mount. Retrieval su'
 - at: 2026-11-06 20:22
   from: devin
   text: 'ADA-1010 contract COMPLETE and merged: chaba PR #73 (e89b3bc — envelope schema + validator with unknown-field
