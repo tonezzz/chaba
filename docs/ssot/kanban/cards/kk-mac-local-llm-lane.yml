@@ -412,6 +412,10 @@ comms:
     resource gate, but the existing five-fixture model pack is complete (2/5 exact) and must not be rerun. Current
     sample is 66% free, with Photoshop/Illustrator open, so no run now. Keep video gate unchanged; any new LLM test
     needs a versioned pack, KK idle consent, AC/no competing ren'
+- at: 2026-11-05 15:46
+  from: devin
+  text: 'raised request kk-mac-qwen8-one-shot-memory-floor-20261105: The 80%-free threshold in the Mac SOP applies
+    to MPS/video jobs, not necessarily a small LLM-only call. For one new synt'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -533,6 +537,26 @@ requests:
   - id: same-host
     label: 'Keep the earlier plan: run Hermes Agent and local model together on KK-Mac, only in approved idle windows'
   suggested: bounded-executor
+- id: kk-mac-qwen8-one-shot-memory-floor-20261105
+  ask: The 80%-free threshold in the Mac SOP applies to MPS/video jobs, not necessarily a small LLM-only call. For
+    one new synthetic, read-only Qwen3:8B smoke (the old five-fixture pack is already complete and must not be rerun),
+    may we use a temporary LLM-specific gate of >=60% free memory before model load and abort if free memory falls
+    below 50% or memory pressure rises? Still require KK owner idle consent, AC, no active render/export/competing
+    worker, empty Ollama before start, no model download/external egress, and one task only. The last sample was
+    66% free with Photoshop/Illustrator open, so it is NOT eligible now; this approval would apply only after those
+    apps/workloads clear and a fresh check passes.
+  status: open
+  at: 2026-11-05 15:46
+  from: devin
+  options:
+  - id: allow-once-60-50
+    label: ★ Allow one short Qwen3:8B synthetic LLM-only smoke with a 60%-before/50%-stop memory guard, only after
+      KK confirms idle and all other gates pass
+  - id: wait-for-80
+    label: Wait until free memory is at least 80% before any test
+  - id: hold
+    label: Do not run another inference test yet
+  suggested: allow-once-60-50
 - id: kk-mac-qwen8-one-shot-authorization-20261031
   ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
     answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and
