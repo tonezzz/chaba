@@ -380,6 +380,10 @@ comms:
   from: devin
   text: 'raised request kk-mac-hermes-agent-benchmark-authorization-20261104: To continue from the confirmed same-host
     plan: authorize exactly one Hermes Agent vs OpenClaw/Clawbot framework benchmar'
+- at: 2026-11-05 09:07
+  from: devin
+  text: 'raised request kk-mac-interim-llm-only-20261104: Your new suggestion differs from the earlier same-host
+    Hermes+LLM choice: keep the full agent runtime off KK-Mac and use'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -482,6 +486,25 @@ requests:
   - id: hold
     label: Keep Hermes Agent at design/documentation only for now
   suggested: framework-ab
+- id: kk-mac-interim-llm-only-20261104
+  ask: 'Your new suggestion differs from the earlier same-host Hermes+LLM choice: keep the full agent runtime off
+    KK-Mac and use KK only for inference. Which interim architecture do you want? The existing `kk_mac_local` adapter
+    is a bounded one-shot executor for summary/operator_brief/structured_extract/safe_route, not a generic chat-completions
+    endpoint. A full Hermes Agent running elsewhere would need a private authenticated/metered proxy to KK Ollama;
+    never expose raw :11434. No run/deploy is triggered by this choice.'
+  status: open
+  at: 2026-11-05 09:07
+  from: devin
+  options:
+  - id: bounded-executor
+    label: ★ Keep Hermes/other orchestration off KK and use the existing bounded kk_mac_local executor for simple
+      verified tasks (recommended interim; not full multi-turn Hermes)
+  - id: private-proxy
+    label: Build an authenticated/metered private model proxy so Hermes Agent elsewhere can use KK Ollama for full
+      turns (new service/security work)
+  - id: same-host
+    label: 'Keep the earlier plan: run Hermes Agent and local model together on KK-Mac, only in approved idle windows'
+  suggested: bounded-executor
 - id: kk-mac-qwen8-one-shot-authorization-20261031
   ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
     answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and
