@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 16:42
+updated: 2026-11-05 16:48
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -69,3 +69,9 @@ comms:
     still reveals page existence/pageid metadata, but private content is not readable. Privacy gate for content
     passes; next: add/verify inhouse group membership, then generate private Infrastructure/Hosts rollup + leaves
     and add private Wiki tab.'
+- at: 2026-11-05 16:48
+  from: tony
+  text: 'P0 hierarchy published privately from live host-services dry-run: Infrastructure:Hosts rollup + 7 leaves
+    (tony-dell, tony-omen, idc01, idc03, idc02, mn01, michael-ha), revisions 34-41. Anonymous API parse denied for
+    rollup and sampled leaves; authenticated Ada parse allowed. No public Wiki exposure. Source snapshot: host-services-cms.py
+    --all --dry-run 2026-11-05.'
