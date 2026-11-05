@@ -398,6 +398,13 @@ comms:
     shows only 64% free memory and Photoshop at 39.8% CPU (Illustrator 1.4%); Ollama has no resident model and no
     Nest worker is visible. Treat KK-Mac as owner-busy and DO NOT launch LLM/Hermes work. This confirms the coarse
     admission helper misses GUI-app/memory pressure; a full reso'
+- at: 2026-11-05 15:18
+  from: devin
+  text: 'Fresh Nov 5 safe-to-run check: trusted tony-dell coarse admission is eligible (load_1m=1.37 via SSH fallback,
+    Ollama healthy, disk 42GB), but the full Mac resource check fails the owner/workload gate: AC on, only 68% memory
+    free, Photoshop and Illustrator active, Ollama empty, no Nest/Hermes worker. `node_busy=false` in the heartbeat
+    is not sufficient to override these readings. Do NOT launch LLM/Hermes now. Queue remains 78 packs (71 done,
+    6 failed, 1 incomplete empty folder). The two topology/'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
