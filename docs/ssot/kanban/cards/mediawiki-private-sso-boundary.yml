@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 17:35
+updated: 2026-11-05 17:48
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -35,13 +35,20 @@ comms:
   from: devin
   text: 'raised request oidc-provider-choice: Which identity provider should wiki-internal trust for automatic Tony/Ada
     login? Recommended: reuse the existing Google '
+- at: 2026-11-05 17:48
+  from: tony
+  text: 'answered oidc-provider-choice: google-existing-access-idp — ★ Reuse the existing Google identity/provider
+    used by Cloudflare Access — recommended'
+- at: 2026-11-05 17:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
     existing Google identity behind Cloudflare Access via MediaWiki OpenIDConnect; alternative: configure Cloudflare
     Access as/through an OIDC provider if the account supports it; fallback: MediaWiki-native login (does not meet
     auto-login goal).'
-  status: open
+  status: answered
   at: 2026-11-05 17:35
   from: devin
   options:
@@ -52,3 +59,6 @@ requests:
   - id: mediawiki-native
     label: Use separate MediaWiki login — simplest, but no automatic Tony login
   suggested: google-existing-access-idp
+  answer: google-existing-access-idp — ★ Reuse the existing Google identity/provider used by Cloudflare Access —
+    recommended
+awaiting_action: true
