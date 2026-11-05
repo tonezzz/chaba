@@ -1,7 +1,7 @@
 id: ada-opencode-control-plane-tab
 title: Add protected Ada OpenCode control-plane tab after Board
 column: backlog
-updated: 2026-11-04 19:00
+updated: 2026-11-05 15:04
 brief: Deploy a protected read-only Ada/OpenCode control-plane surface on idc02 and insert it immediately after
   Board in the ada-ha chaba-admin dashboard.
 priority: high
@@ -53,3 +53,10 @@ comms:
     Cloudflare Access JWT now creates the server-side Ada session cookie automatically; no code/redeem page is needed.
     Deployed rebuilt `localhost/ada-enroll:latest` on idc02, restarted `ada-enroll.service`, health remains HTTP
     200/upstream up. Added declared Ada quadlets and regres'
+- at: 2026-11-05 15:04
+  from: devin
+  text: 'Operational learning: OpenCode Web session configuration is project-scoped. The live browser selected project
+    `/home/opencode/.local`, while the initial Ada config lived only under `/workspace/.opencode`, so the UI silently
+    used built-in Build + OpenCode Big Pickle and ran Shell. `default_agent`/`model` only apply when the Web client
+    does not send an explicit per-session selection; existing sessions retain their agent/model. The durable fix
+    is to mirror the `.opencode` config, agents, commands, '
