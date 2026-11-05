@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 14:19
+updated: 2026-11-05 15:45
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -48,3 +48,10 @@ comms:
     allow; (4) add private Wiki hostname/Cloudflare Access path and dashboard tab; (5) build Wiki host-report generator/adapter
     from host-services + audit/loads/disk/timers sources; (6) publish 7-host rollup + leaves only to private namespace;
     (7) verify public News remains readabl'
+- at: 2026-11-05 15:45
+  from: tony
+  text: 'Blocker update: extension bundle was uploaded but Special:Version still shows only MinervaNeue/MonoBook/Springboard/Timeless/Vector.
+    OpenCode-Ada confirmed the Lockdown enable/install flow, but Springboard returned HTTP 502 and no Wiki state
+    changed. Keep SYS-1034 as the parent card; do not create a duplicate. Next private-namespace gate is manual
+    Plesk/LocalSettings work: confirm extensions/Lockdown exists, add wfLoadExtension(Lockdown), define Infrastructure
+    + Infrastructure_talk namespaces an'
