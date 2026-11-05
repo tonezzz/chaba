@@ -1517,7 +1517,7 @@ REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
-    "Cargo", "PageForms",
+    "Cargo", "PageForms", "Lockdown",
 }
 WIKI_API_CALL = None
 

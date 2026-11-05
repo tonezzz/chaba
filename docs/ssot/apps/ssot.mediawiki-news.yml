@@ -273,6 +273,10 @@ extensions:
     requires a LocalSettings.php backup, a dry-run/test page, and a
     Special:Version verification.
   phase_1:
+    - name: Lockdown
+      purpose: namespace-level read/write boundary for private Wiki content
+      risk: high
+      gate: install and verify before publishing Infrastructure/Hosts
     - name: CategoryTree
       purpose: expandable category and News hierarchy navigation
       risk: low
@@ -300,12 +304,10 @@ extensions:
     - name: CirrusSearch
       purpose: Elasticsearch-backed full-text retrieval for larger content
       risk: high
-      prerequisite: Elasticsearch/OpenSearch capacity and backup plan
+      prerequisite: Elasticsearch/OpenSearch capacity + backup plan
   rejected:
-    - name: Graph
-      reason: archived; security issues and no current MediaWiki support
-    - name: Drawio
-      reason: archived; use DrawioEditor only if external draw.io loading is acceptable
+    - "Graph — archived; security issues and no current MediaWiki support"
+    - "Drawio — archived; use DrawioEditor only with external-service approval"
   install_gate:
     current_state: >
       MediaWiki API access is available, but filesystem/Plesk/SSH access for
@@ -341,8 +343,6 @@ related_ssot:
   - docs/ssot/apps/ssot.apps.cms-reports.yml
   - docs/ssot/infrastructure/ssot.reports.yml
   - docs/ssot/kanban/cards/devnest-news-two-lane-pilot.yml
-  - docs/ssot/apps/ssot.wp-boards.yml
-
 related_code:
   - scripts/board/publication.py
   - scripts/board/board-api.py
