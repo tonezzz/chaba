@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 09:56
+updated: 2026-11-05 14:19
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -41,3 +41,10 @@ comms:
   text: 'Implemented + verified live Ada HA dashboard tab: Wiki inserted immediately after DevNest (path=wiki, icon=mdi:book-open-page-variant,
     iframe=https://wiki.h3.gizmo-thailand.com/index.php?title=News&v=1). Synced sanitized snapshot + dashboard SSOT.
     Public News view only for now; full Infrastructure/Hosts remains gated on Lockdown/private access boundary.'
+- at: 2026-11-05 14:19
+  from: tony
+  text: 'Completion gates for exposing host pages: (1) install+verify Lockdown; (2) create Infrastructure custom
+    namespace + talk namespace with subpages; (3) restrict read to inhouse/sysop and test anonymous deny vs authenticated
+    allow; (4) add private Wiki hostname/Cloudflare Access path and dashboard tab; (5) build Wiki host-report generator/adapter
+    from host-services + audit/loads/disk/timers sources; (6) publish 7-host rollup + leaves only to private namespace;
+    (7) verify public News remains readabl'
