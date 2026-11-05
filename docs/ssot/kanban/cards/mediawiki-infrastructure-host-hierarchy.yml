@@ -1,7 +1,7 @@
 id: mediawiki-infrastructure-host-hierarchy
 title: MediaWiki Infrastructure Hosts hierarchy
 column: backlog
-updated: 2026-11-05 09:35
+updated: 2026-11-05 09:40
 brief: Consolidate host, service, timer, load, disk, and audit reports into one Infrastructure/Hosts rollup with
   one consolidated leaf per host, while keeping full topology private.
 priority: high
@@ -29,3 +29,10 @@ comms:
 - at: 2026-11-05 09:35
   from: tony
   text: card captured via board-api
+- at: 2026-11-05 09:40
+  from: tony
+  text: 'Decision proposal: use one MediaWiki instance with two visibility surfaces. Public side exposes only sanitized
+    News/public pages; private in-house side exposes Infrastructure/Hosts/Home/Ops after Lockdown namespace read
+    permissions + Cloudflare Access/Wiki authentication are verified. Add a sibling Wiki tab after DevNest in Ada
+    HA; it is an external full app, not an HA-native panel. Keep full host/service topology private; public derivative
+    only.'
