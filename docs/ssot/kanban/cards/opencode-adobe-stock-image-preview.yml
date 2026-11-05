@@ -1,0 +1,29 @@
+id: opencode-adobe-stock-image-preview
+title: OpenChamber Adobe Stock image preview and asset picker
+column: backlog
+updated: 2026-11-05 17:32
+brief: Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset
+  selection without uploading or mutating Adobe Stock.
+priority: medium
+program: devnest
+tags:
+- opencode
+- openchamber
+- adobe-stock
+- images
+- preview
+spec: 'Integrate the existing read-only /ada adobe_stock reuse report with an OpenCode/OpenChamber-friendly preview
+  contract. Extend bounded Adobe Stock asset index records only where a verified preview_url, thumbnail_url, or
+  local source_ref exists; never invent or scrape arbitrary URLs. Render each reusable asset as a card with thumbnail,
+  asset id, campaign/source_ref, provenance, and a link/open-preview action. The OpenCode tool must remain read-only
+  and must not upload, license, publish, or modify Adobe Stock. If a source is not previewable, show a clear unavailable
+  state and retain metadata. Acceptance: a fixture campaign containing 3 assets produces a report with source-bound
+  preview metadata; OpenChamber displays at least one thumbnail and an unavailable state; clicking an asset opens
+  the approved preview; tests prove no arbitrary path access and mutations_performed remains empty.'
+note: 'Recommended first OpenChamber integration: use existing ada_adobe_stock_reuse as the data source, then add
+  native image/attachment output only after URL preview works.'
+ref: OPS-1036
+comms:
+- at: 2026-11-05 17:32
+  from: tony
+  text: 'card captured from Tony request: continue Adobe Stock image preview in OpenChamber'
