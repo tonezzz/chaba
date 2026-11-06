@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
 column: backlog
-updated: 2026-11-06 18:05
+updated: 2026-11-06 18:18
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -62,6 +62,13 @@ comms:
     KKs-Mac-Studio). kk_mac_admission now eligible=true: disk_free_gb=74, heartbeat_age~10s, load_1m=1.22, ollama_ok=true,
     node_busy=false. net.adanest.kk-llm-worker LaunchAgent loaded, last exit 0. Request floor limits.min_disk_free_gb=30
     satisfied. Awaiting Tony confirmation before stagi'
+- at: 2026-11-06 18:18
+  from: devin
+  text: 'render-002-comparison-b DONE via Nest pack on KK-Mac. First attempt rendered successfully but worker marked
+    failed because pack.yml declared out/render.png while render.py writes out/<output_name>; fixed artifact glob
+    to out/*.png (commit 97e62f5ec) and re-dispatched once — second run wrote done. Verified remote: done marker,
+    out/*.png=1x689964B, verdict pass, sha256 4d5694c0ee3a4249d2fa69cf48d36a7121ce7c4ce01a7f55ce1a0243e535535a,
+    1024x576, model revision 462165984030d82259a11f4367a4eed129e94a7'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
