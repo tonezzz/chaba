@@ -65,7 +65,7 @@ DEFAULT_ROUTES = {
     "milestone": ["job", "board", "telegram"],
     "report": ["report", "board"],
     "lesson": ["lesson"],
-    "news": ["news", "wiki", "board", "telegram"],
+    "news": ["news", "wiki", "wiki-private", "board", "telegram"],
     "alert": ["telegram", "board", "job"],
 }
 
@@ -328,13 +328,16 @@ class MediaWikiSink(Sink):
     """
 
     def __init__(self, api_url: str, username: str, password: str,
-                 template: str = "แม่แบบ:NewsReport", api=None):
-        super().__init__(name="wiki", surface="public", kinds=("news",),
+                 template: str = "แม่แบบ:NewsReport", api=None,
+                 name: str = "wiki", surface: str = "public",
+                 namespace_prefix: str = "News/"):
+        super().__init__(name=name, surface=surface, kinds=("news",),
                          evidence_required=True)
         self.api_url = api_url.rstrip("/")
         self.username = username
         self.password = password
         self.template = template
+        self.namespace_prefix = namespace_prefix
         self._jar = CookieJar()
         self._opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self._jar))
@@ -356,14 +359,24 @@ class MediaWikiSink(Sink):
         except OSError as e:
             raise DeliveryError(f"mediawiki -> {e}")
 
-    @staticmethod
-    def _title(ev: dict) -> str:
+    def _title(self, ev: dict) -> str:
         title = str((ev.get("meta") or {}).get("wiki_title") or "").strip()
         if not title:
             raise Skip("wiki sink needs meta.wiki_title")
-        if not title.startswith("News/") or "\n" in title or "\r" in title:
-            raise Skip("wiki title must be under News/")
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
         return title
+
+    def check(self, ev: dict):
+        reason = super().check(ev)
+        if reason:
+            return reason
+        if self.surface == "private" and ev["visibility"] != "private":
+            return "private Wiki sink accepts private events only"
+        if self.surface == "public" and ev["visibility"] != "public":
+            return "public Wiki sink accepts public events only"
+        return None
 
     def _wikitext(self, ev: dict) -> str:
         meta = ev.get("meta") or {}
@@ -377,7 +390,7 @@ class MediaWikiSink(Sink):
             f"'''Quick summary:''' {summary}", "",
             f"{{{{{self.template}",
             f"|story_id={ev['event_id']}",
-            f"|status={meta.get('status', 'published')}",
+            f"|status={meta.get('status', 'review' if ev['visibility'] == 'private' else 'published')}",
             f"|visibility={ev['visibility']}",
             f"|confidence={ev['confidence']}",
             f"|desk={meta.get('desk', 'DevNest')}",
@@ -394,16 +407,17 @@ class MediaWikiSink(Sink):
             ev["body"], "", "== Evidence ==", "",
         ]
         lines.extend(f"* [{url} {url}]" for url in ev["evidence"])
-        categories = ["News", "News/Desks/DevNest"]
+        categories = [] if ev["visibility"] == "private" else [
+            "News", "News/Desks/DevNest"]
         geo_scope = str(meta.get("geo_scope") or "").strip()
-        if geo_scope == "world":
+        if categories and geo_scope == "world":
             categories.append("News/Geography/World")
         for key in ("region", "country"):
             value = str(meta.get(key) or "").strip()
-            if value:
+            if categories and value:
                 categories.append(f"News/Geography/{value}")
         topic = str(meta.get("topic") or "").strip()
-        if topic:
+        if categories and topic:
             categories.append(f"News/Topics/{topic}")
         lines.extend([""] + [f"[[Category:{category}]]"
                              for category in dict.fromkeys(categories)])

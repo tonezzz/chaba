@@ -101,6 +101,7 @@ hierarchy:
     local: News/Local/<Locality>
     desks: News/Desks/<Desk>
     private_reserved: News/Private/<Desk>
+    private_namespace: PrivateNews/<Scope>/<Leaf>
   devnest_desk:
     root: News/Desks/DevNest
     branches:
@@ -117,7 +118,8 @@ hierarchy:
   title_rules:
     - "ASCII slash-separated paths under News/"
     - "one canonical leaf title per story_id"
-    - "News/Private/* is a reserved naming convention, not an access boundary"
+    - "News/Private/* is legacy reserved naming only; it is not an access boundary"
+    - "PrivateNews:* is the enforced inhouse/sysop review namespace"
     - "generated titles must be supplied as meta.wiki_title"
     - "adapter rejects titles outside News/"
 
@@ -252,6 +254,7 @@ maintenance:
     - "all public leaves have evidence and source timestamps"
     - "all stories have at least one desk/topic/geography classification"
     - "no private content appears in public rollups"
+    - "private review leaves use the protected PrivateNews namespace"
     - "rerunning the same event produces no duplicate page"
   regeneration:
     - "rollups are rebuilt from leaf metadata"
