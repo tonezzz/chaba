@@ -974,6 +974,133 @@ class BoardApiWiringTest(PubTestBase):
         wp_posts = [p for p in posts if p[0] == "/wp/v2/nest_job"]
         self.assertEqual(len(wp_posts), 1)
 
+    # --- /lesson source=wiki read path (card
+    #     wiki-member-knowledge-surface-migrate-wp-3a1cf2, step 4)
+
+    _LESSON_WT_A = (
+        "{{แม่แบบ:Education\n"
+        "|topic=ada-nest-map\n|level=working\n|source=chat\n"
+        "|learned_at=2026-10-20\n|next_review=2026-11-03\n"
+        "|status=open\n|updated=2026-10-20\n|no_th=\n|event_id=ev1\n"
+        "}}\n\nNest hub body text.\n"
+        "[[Category:Education]]\n[[Category:Education/Level/working]]\n")
+    _LESSON_WT_B = (
+        "{{Template:Education\n"
+        "|topic=object storage\n|level=intro\n|source=voice\n"
+        "|learned_at=2026-11-01\n|next_review=2026-12-01\n"
+        "|status=learned\n|updated=2026-11-01\n|no_th=1\n|event_id=ev2\n"
+        "}}\n\nObject storage body.\n[[Category:Education]]\n")
+
+    def _fake_wiki_lesson_api(self, calls, pages,
+                              namespaces=("Education",)):
+        """pages: {title: wikitext}. Serves the siteinfo/allpages/
+        revisions calls the wiki lesson read makes."""
+        def fake(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("siprop") == "namespaces":
+                return {"query": {"namespaces": {
+                    str(3000 + i): {"id": 3000 + i, "*": n,
+                                    "canonical": n}
+                    for i, n in enumerate(namespaces)}}}
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("list") == "allpages":
+                return {"query": {"allpages":
+                                  [{"title": t} for t in sorted(pages)]}}
+            if params.get("prop") == "revisions":
+                return {"query": {"pages": {
+                    t: {"title": t, "revisions": [{
+                        "timestamp": "2026-11-01T00:00:00Z",
+                        "slots": {"main": {"*": pages[t]}}}]}
+                    for t in sorted(pages)}}}
+            return {}
+        self.ba.WIKI_API_CALL = fake
+
+    def test_lesson_read_wiki_list(self):
+        import hashlib
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A,
+            "Education:Index": "generated index, no template",
+            "Education:Object-Storage": self._LESSON_WT_B})
+        r = self.ba.do_lesson(
+            {"op": "list", "source": "wiki"}, "devin")
+        self.assertEqual(r["source"], "wiki")
+        self.assertEqual(r["count"], 2)
+        self.assertEqual(r["skipped_non_lesson"], 1)
+        by_topic = {l["topic"]: l for l in r["lessons"]}
+        a = by_topic["ada-nest-map"]
+        want_slug = "lesson-" + hashlib.md5(
+            b"ada-nest-map").hexdigest()[:12]
+        self.assertEqual(a["slug"], want_slug)   # WP-slug parity
+        self.assertEqual(a["wiki_title"], "Education:Ada-Nest-Map")
+        self.assertEqual(a["next_review"], "2026-11-03")
+        self.assertEqual(a["level"], "working")
+        self.assertFalse(a["no_th"])
+        self.assertIn("wiki.example/wiki/", a["url"])
+        self.assertTrue(by_topic["object storage"]["no_th"])
+
+    def test_lesson_read_wiki_get(self):
+        import hashlib
+        self._wiki_env()
+        self._fake_wiki_lesson_api([], {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A,
+            "Education:Object-Storage": self._LESSON_WT_B})
+        # by wiki_title
+        g = self.ba.do_lesson(
+            {"op": "get", "source": "wiki",
+             "wiki_title": "Education:Ada-Nest-Map"}, "devin")
+        self.assertEqual(g["meta"]["topic"], "ada-nest-map")
+        self.assertEqual(g["meta"]["learned_at"], "2026-10-20")
+        self.assertEqual(g["content"], "Nest hub body text.")
+        self.assertNotIn("Category:", g["content"])
+        # by WP-style slug
+        slug = "lesson-" + hashlib.md5(
+            b"ada-nest-map").hexdigest()[:12]
+        g2 = self.ba.do_lesson(
+            {"op": "get", "source": "wiki", "slug": slug}, "devin")
+        self.assertEqual(g2["wiki_title"], "Education:Ada-Nest-Map")
+        # by topic -> lesson_wiki_title
+        g3 = self.ba.do_lesson(
+            {"op": "get", "source": "wiki",
+             "topic": "object storage"}, "devin")
+        self.assertEqual(g3["wiki_title"], "Education:Object-Storage")
+        self.assertEqual(g3["meta"]["status"], "learned")
+        # missing -> ValueError
+        try:
+            self.ba.do_lesson(
+                {"op": "get", "source": "wiki",
+                 "wiki_title": "Education:Nope"}, "devin")
+        except ValueError as e:
+            self.assertIn("not found", str(e))
+        else:
+            raise AssertionError("expected not-found ValueError")
+
+    def test_lesson_read_source_validation(self):
+        try:
+            self.ba.do_lesson(
+                {"op": "list", "source": "bogus"}, "devin")
+        except ValueError as e:
+            self.assertIn("source", str(e))
+        else:
+            raise AssertionError("expected source ValueError")
+
+    def test_lesson_read_wiki_ns_missing(self):
+        self._wiki_env()
+        self._fake_wiki_lesson_api([], {}, namespaces=("Template",))
+        try:
+            self.ba.do_lesson(
+                {"op": "list", "source": "wiki"}, "devin")
+        except Exception as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace UpstreamError")
+
 
 if __name__ == "__main__":
     unittest.main()

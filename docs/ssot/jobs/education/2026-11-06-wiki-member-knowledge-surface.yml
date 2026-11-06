@@ -167,9 +167,11 @@ migration_mechanics:
       namespace_prefix + template params)"
     - "lesson-add.py, Ada tools, transcript miner: UNCHANGED — they call
       the door, not WP"
-    - "lessons-due.py / education-report.py: retarget reads to wiki API
-      (Cargo query on Education template fields gives next_review for
-      free — Cargo is installed) or keep reading WP until cutover flag"
+    - "lessons-due.py / education-report.py: retarget reads to wiki —
+      DONE 2026-11-06 via /lesson source=wiki (door walk of Education:
+      pages + แม่แบบ:Education param parse; Cargo alternative not
+      needed). lessons-due --dest both dual-writes Education:Due +
+      WP page during transition"
   cutover:
     - "WP lesson CPT -> read-only; permalinks 301 to Education:<title>
       (plugin redirect or stub content)"
@@ -255,14 +257,25 @@ implementation_sequence:
     (door requires actor name)."
   - "3b. DONE live: WIKI_EDUCATION_WRITE=dual enabled — dual-write proven
     (post 4057 -> Education:Education-Wiki-Cutover-Runbook, pageid 175)."
-  - "4. Retarget lessons-due/education-report to wiki — BLOCKED on a wiki
-    read door: /wiki/news-review only reads PrivateNews:; Education:
-    needs either a read mode on /wiki/page (sinks are write-only) or a
-    Cargo query (แม่แบบ:Education is a plain wikitable — no Cargo
-    declaration today; adding {{#cargo_declare}} to the template would
-    give next_review/status queries for free). Small repo-side job."
-  - "5. PARTIAL: anon accessdenied + authed read + dual-write proven.
-    Remaining: due list generates from wiki (depends on step 4)."
+  - "4. DONE repo-side 2026-11-06 (dispatch 201214, tony-macbook):
+    /lesson op=list|get gained source=wiki — _read_lessons_wiki walks
+    Education: via allpages+revisions (bot login — Lockdown ns), parses
+    the แม่แบบ:Education call into the same row shape WP returns and
+    mints identical lesson-<md5(topic)> slugs, so op=get-by-slug and
+    audit/exception keys survive cutover. lessons-due.py retargeted:
+    --source wiki default reads the door; --dest both default writes
+    Education:Due via /wiki/page AND the WP education-due page;
+    education-report.py gained --source (EDU_SOURCE; default wp until
+    cutover). Stale-door guard: a pre-2026-11-06 door answers without
+    source=wiki -> both tools fail loudly instead of auditing the WP
+    corpus under a wiki label. ACTIVATION: same merge + idc03 pull +
+    board-api restart that ships the do_wiki_page fix — one restart
+    covers both."
+  - "5. PARTIAL: anon accessdenied + authed read + dual-write proven;
+    wiki read path + due/report retarget shipped repo-side (step 4).
+    Remaining: after the door restart, lessons-due --dry-run proves
+    Education:Due renders from the live corpus, then flip
+    EDU_SOURCE=wiki in chaba-education-report's env at cutover."
   - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated —
     WP admin step; safe to schedule once step 4 closes the read path.
     Note: Education:Index regenerates on each migrate run — rerun the
