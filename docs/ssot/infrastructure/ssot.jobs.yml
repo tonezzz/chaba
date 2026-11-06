@@ -1056,7 +1056,7 @@ jobs:
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
 - id: chaba-lessons-due
-  name: Education due-review queue -> WP page
+  name: Education due-review queue -> wiki Education:Due + WP page
   host: idc03
   dispatch: systemd
   on_calendar: '*-*-* 07:30:00'
@@ -1064,9 +1064,13 @@ jobs:
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/lessons-due.py
-  note: 'card education-store (OPS-0696) — refreshes the private WP page slug
-    education-due (post 354) with due-now + upcoming lesson reviews read from
-    lesson CPT next_review/status meta. Live unit on idc03 predates this
+  note: 'card education-store (OPS-0696) + wiki-member-knowledge-surface
+    (OPS-1046 step 4) — refreshes Education:Due on wiki.h3 via /wiki/page
+    AND the private WP page slug education-due (post 354) during the
+    migration transition. Defaults --source wiki (reads /lesson
+    op=list source=wiki through the door — needs board-api post
+    2026-11-06 build) and --dest both; LESSON_SOURCE=wp + --dest wp is
+    the pre-migration fallback. Live unit on idc03 predates this
     manifest entry (hand-created 2026-10-15, same schedule+exec) —
     render-jobs.py --host idc03 --install converges it.'
 - id: chaba-lessons-audit
@@ -1106,7 +1110,11 @@ jobs:
     report lands on disk silently. Read-only: never writes /lesson; fixes
     remain the explicit upsert stage, deletion human-gated. Runs after
     chaba-lessons-audit so both the standalone component and the
-    consolidated view stay fresh. Runbook:
+    consolidated view stay fresh. 2026-11-06 (OPS-1046 step 4):
+    --source wiki audits the Education: namespace instead of the WP CPT
+    (EDU_SOURCE env; needs the post-2026-11-06 board-api build). Default
+    stays wp until the lesson CPT goes read-only — flip EDU_SOURCE=wiki
+    in the unit env at cutover. Runbook:
     docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml'
 - id: lesson-drift-check
   name: Lesson drift check — trade docs mtime vs lesson modified

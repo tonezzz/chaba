@@ -2050,16 +2050,31 @@ def _touch_lessons(body: dict, frm: str) -> dict:
 
 def _read_lessons(body: dict, frm: str) -> dict:
     """op=list | op=get — read side of the education door (OPS-0821).
-    Agents/lessons-due get lesson content without WP creds."""
+    Agents/lessons-due get lesson content without WP creds.
+    source=wiki reads the Education: namespace instead of the WP CPT
+    (post-migration store; same row shape, plus wiki_title/url)."""
     op = body.get("op")
+    source = str(body.get("source") or "wp").strip().lower()
+    if source == "wiki":
+        return _read_lessons_wiki(body, frm)
+    if source != "wp":
+        raise ValueError("source must be wp or wiki")
     if op == "list":
-        hits = wp_api("/wp/v2/lesson&status=private&per_page=100"
-                      "&_fields=slug,title,modified,meta")
+        hits, page = [], 1
+        while page <= 5:                # hard cap 500 — same bound as
+            batch = wp_api(             # do_lesson_topics; without
+                "/wp/v2/lesson&status=private&per_page=100"  # paging the
+                f"&page={page}&_fields=slug,title,modified,meta")  # list
+            if not isinstance(batch, list) or not batch:      # silently
+                break                   # truncated at 100 of 124
+            hits += batch               # (found 2026-11-06)
+            if len(batch) < 100:
+                break
+            page += 1
         out = []
-        if isinstance(hits, list):
-            for h in hits:
-                m = h.get("meta") or {}
-                out.append({"slug": h.get("slug"),
+        for h in hits:
+            m = h.get("meta") or {}
+            out.append({"slug": h.get("slug"),
                             "topic": m.get("topic", ""),
                             "level": m.get("level", ""),
                             "modified": h.get("modified"),
@@ -2067,6 +2082,7 @@ def _read_lessons(body: dict, frm: str) -> dict:
                             "status": m.get("status", ""),
                             "no_th": bool(m.get("no_th"))})
         return {"lessons": out, "count": len(out), "via": frm,
+                "source": "wp",
                 "message": f"listed {len(out)} lessons"}
     slug = str(body.get("slug") or "").strip()
     if not slug:
@@ -2078,7 +2094,7 @@ def _read_lessons(body: dict, frm: str) -> dict:
     return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
             "content": (h.get("content") or {}).get("rendered", ""),
             "meta": h.get("meta") or {}, "modified": h.get("modified"),
-            "via": frm, "message": f"get {slug}"}
+            "via": frm, "source": "wp", "message": f"get {slug}"}
 
 
 def _delete_lesson(body: dict, frm: str) -> dict:
@@ -2100,6 +2116,169 @@ def _delete_lesson(body: dict, frm: str) -> dict:
     r = wp_api(f"/wp/v2/lesson/{pid}&force=true", method="DELETE")
     return {"message": f"deleted {slug} (post {pid})", "slug": slug,
             "post_id": pid, "via": frm}
+
+
+# --- source=wiki lesson reads (Education: namespace) -------------------
+# Card wiki-member-knowledge-surface-migrate-wp-3a1cf2: after the
+# 2026-11-06 migration the Education: namespace holds the same corpus
+# the WP lesson CPT does (124 pages + dual-write). op=list/get with
+# source=wiki read it through the same door contract — rows mint the
+# SAME lesson-<md5(topic)> slug WP would, so audit keys, op=get-by-slug
+# and exceptions files stay valid across the cutover.
+
+WIKI_LESSON_NS = "Education"
+_LESSON_TEMPLATE_RE = re.compile(
+    r"\{\{\s*(?:แม่แบบ|Template)\s*:\s*Education\s*(\|.*?)\}\}", re.S)
+_WIKI_CATEGORY_RE = re.compile(
+    r"\[\[\s*(?:Category|หมวดหมู่)\s*:[^\]]*\]\]")
+_WIKI_PARAM_RE = re.compile(r"\|\s*([A-Za-z_][\w-]*)\s*=\s*([^|]*)")
+
+
+def _wiki_namespace_id(api_url: str, opener, name: str):
+    """Numeric ns id for a canonical/local name ('Education' -> 3004),
+    or None when the namespace is not registered."""
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo", "siprop": "namespaces",
+         "format": "json"})
+    want = name.strip().lower()
+    for nsid, ns in (result.get("query", {}).get("namespaces")
+                     or {}).items():
+        names = {str(ns.get("*") or "").strip().lower(),
+                 str(ns.get("canonical") or "").strip().lower()}
+        if want in names:
+            try:
+                return int(nsid)
+            except (TypeError, ValueError):
+                return int(ns.get("id"))
+    return None
+
+
+def _wiki_ns_pages(api_url: str, opener, ns_name: str) -> list:
+    """Every page in a namespace -> [{title, wikitext, modified}]."""
+    nsid = _wiki_namespace_id(api_url, opener, ns_name)
+    if nsid is None:
+        raise UpstreamError(
+            f"wiki namespace {ns_name!r} is not registered — "
+            "LocalSettings step first")
+    titles, cont = [], {}
+    while True:
+        params = {"action": "query", "list": "allpages",
+                  "apnamespace": nsid, "aplimit": "max",
+                  "format": "json"}
+        params.update(cont)
+        r = _wiki_api_call(api_url, opener, params)
+        titles += [p.get("title") for p in
+                   r.get("query", {}).get("allpages", [])
+                   if p.get("title")]
+        if "continue" not in r:
+            break
+        cont = r["continue"]
+    pages = []
+    for i in range(0, len(titles), 50):
+        r = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "titles": "|".join(titles[i:i + 50]),
+             "prop": "revisions", "rvslots": "main",
+             "rvprop": "content|timestamp", "format": "json"})
+        for p in (r.get("query", {}).get("pages") or {}).values():
+            rev = (p.get("revisions") or [{}])[0]
+            pages.append({
+                "title": p.get("title", ""),
+                "wikitext": (rev.get("slots") or {})
+                            .get("main", {}).get("*", ""),
+                "modified": rev.get("timestamp", "")})
+    return pages
+
+
+def _lesson_from_wiki_page(page: dict):
+    """Education: page -> lesson row, or None for non-lesson pages
+    (Index/Due/series hubs carry no Education template call). Template
+    params become the meta dict; body = wikitext minus the template
+    call and category links (values are writer-emitted scalars — a
+    value containing '|' or a nested '{{' would misparse, which the
+    sink never produces)."""
+    m = _LESSON_TEMPLATE_RE.search(page.get("wikitext") or "")
+    if not m:
+        return None
+    params = {pm.group(1): pm.group(2).strip()
+              for pm in _WIKI_PARAM_RE.finditer(m.group(1))}
+    topic = params.get("topic") or page["title"].split(":", 1)[-1]
+    meta = {k: params.get(k, "") for k in
+            ("topic", "level", "source", "learned_at", "next_review",
+             "status", "updated")}
+    meta["topic"] = topic
+    if str(params.get("no_th") or "").strip():
+        meta["no_th"] = True
+    body = _WIKI_CATEGORY_RE.sub(
+        "", page["wikitext"][:m.start()] + page["wikitext"][m.end():]
+    ).strip()
+    slug = "lesson-" + hashlib.md5(
+        topic.lower().encode()).hexdigest()[:12]
+    return {"slug": slug, "wiki_title": page["title"], "topic": topic,
+            "level": params.get("level", ""),
+            "next_review": params.get("next_review", ""),
+            "status": params.get("status", ""),
+            "no_th": bool(meta.get("no_th")),
+            "modified": page.get("modified", ""),
+            "content": body, "meta": meta}
+
+
+def _read_lessons_wiki(body: dict, frm: str) -> dict:
+    """/lesson {op:list|get, source:"wiki"} — the Education: namespace
+    as the lesson store. The namespace is Lockdown-protected, so reads
+    ride the bot login (anon gets accessdenied)."""
+    env, api_url = _wiki_env()
+    opener, _csrf = _wiki_login(api_url, env)
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+
+    def url_of(title):
+        return (f"{host}/wiki/"
+                f"{urllib.parse.quote(title.replace(' ', '_'))}"
+                if host else "")
+
+    lessons, skipped = [], 0
+    for page in _wiki_ns_pages(api_url, opener, WIKI_LESSON_NS):
+        row = _lesson_from_wiki_page(page)
+        if row is None:
+            skipped += 1
+            continue
+        lessons.append(row)
+    if body.get("op") == "list":
+        out = [{"slug": l["slug"], "wiki_title": l["wiki_title"],
+                "url": url_of(l["wiki_title"]),
+                "topic": l["topic"], "level": l["level"],
+                "modified": l["modified"],
+                "next_review": l["next_review"],
+                "status": l["status"], "no_th": l["no_th"]}
+               for l in lessons]
+        out.sort(key=lambda r: r["slug"])
+        return {"lessons": out, "count": len(out),
+                "skipped_non_lesson": skipped,
+                "source": "wiki", "via": frm,
+                "message": f"listed {len(out)} wiki lessons"}
+    wiki_title = str(body.get("wiki_title") or "").strip()
+    slug = str(body.get("slug") or "").strip()
+    topic = str(body.get("topic") or "").strip()
+    if not (wiki_title or slug or topic):
+        raise ValueError("op=get requires slug, topic, or wiki_title")
+    if topic and not wiki_title:
+        wiki_title = pub.lesson_wiki_title(topic)
+    row = next((l for l in lessons
+                if (wiki_title and l["wiki_title"] == wiki_title)
+                or (slug and l["slug"] == slug)
+                or (topic and l["topic"] == topic)), None)
+    if row is None:
+        raise ValueError(
+            f"lesson not found: {wiki_title or slug or topic}")
+    return {"slug": row["slug"], "wiki_title": row["wiki_title"],
+            "url": url_of(row["wiki_title"]),
+            "title": row["topic"], "content": row["content"],
+            "meta": row["meta"], "modified": row["modified"],
+            "source": "wiki", "via": frm,
+            "message": f"get {row['wiki_title']}"}
 
 
 def _lesson_wiki_write(topic: str, level: str, source: str,
