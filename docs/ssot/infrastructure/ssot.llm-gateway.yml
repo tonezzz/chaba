@@ -90,6 +90,20 @@ providers:
     when the session dies the chains fall through, zero regression. First
     verified end-to-end 2026-10-12.
 
+google_ai_pro:
+  status: "verified 2026-11-06"
+  note: >-
+    Google AI Pro (5 TB) subscription raises quotas ONLY inside the AI Studio
+    web UI (Playground/Build). Gemini API keys are governed by project billing
+    tier, not the subscription — no change to gemini-tier keys, LiteLLM
+    chains, or Live lanes. Verified: ~zero 429/RESOURCE_EXHAUSTED across ada
+    units + litellm in the 24h after upgrade; hourly free-tier canary green.
+    API-side lever for higher limits = Cloud Billing Tier 2 ($100 cumulative
+    spend on the billing account). In AI Studio prefer the "Google AI" billing
+    option over "Pay per request" for interactive work so it burns
+    subscription quota. Consumer-side benefits now in use: 5 TB storage,
+    higher NotebookLM limits (nlm/notebooklm MCP, devin-extract-sessions).
+
 # canonical routing table — mirrors stacks/idc03/litellm/config.yaml
 # (model_name = what callers send; chain = ordered upstream fallbacks)
 job_classes:
