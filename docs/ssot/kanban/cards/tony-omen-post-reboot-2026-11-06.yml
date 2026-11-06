@@ -1,0 +1,22 @@
+id: tony-omen-post-reboot-2026-11-06
+title: Complete tony-omen post-reboot maintenance
+column: backlog
+updated: 2026-11-06 11:23
+priority: medium
+blocked_by: Tony approval to repair the GRUB syntax error
+tags:
+- tony-omen
+- ops
+- maintenance
+spec: Run the standard post-reboot verification on tony-omen, then safely vacuum Devin sessions.db and upgrade Chrome/Windsurf/Devin
+  Desktop where updates are available.
+help: 'Verified 2026-11-06: post-boot network, GPU, CPU cap, sensor-reader, timers, Ollama, and mount are healthy.
+  sessions.db is open by active Devin processes and has zero freelist pages, so vacuum is deferred and would reclaim
+  no DB pages. Chrome 157.0.8103.38 is current; windsurf is a transitional package; devin-desktop 3.10.67 has candidate
+  3.11.238. Package config is blocked because linux-image-7.0.0-42 is half-configured: /etc/default/grub line 10
+  has an unterminated quote; update-grub fails. No services or apps stopped; no reboot planned.'
+ref: OPS-1041
+comms:
+- at: 2026-11-06 11:23
+  from: devin
+  text: card captured via board-api
