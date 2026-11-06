@@ -1,0 +1,87 @@
+id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+title: Wiki member-knowledge surface — migrate wp education, structure with news+report
+column: backlog
+updated: 2026-11-06 17:09
+priority: medium
+tags:
+- cms
+- education
+- wp-boards
+- architecture
+spec: 'Idea (2026-11-06, Tony chat): migrate wp/education to a wiki; structure it together with existing news and
+  report surfaces.
+
+
+  CURRENT STATE (verified 2026-11-06):
+
+  - WP lesson CPT (boards.surf-thailand.com/wp/lesson/) = education ledger: private posts, slug lesson-<md5(topic)>,
+  auto-Thai section, meta topic/level/source/learned_at/next_review/status. Written ONLY via board-api POST /lesson
+  (do_lesson -> WP REST upsert); scripts/lesson-add.py thin client; /publish kind=lesson sink. Spaced recall: next_review
+  -> chaba-lessons-due.timer daily page education-due (post 354) + education-report.py. Hub+series convention (ada-nest-map
+  post 1608 + ada-nest-* topic lessons).
+
+  - WP news CPT: ~2,736 published items; hourly news-fetch + embedding digest clustering (news-digest) + situation
+  sweep — a real feed, not knowledge articles.
+
+  - WP report CPT: member-facing report pubs (usage-ledger etc.), meta report_type/period/source_key.
+
+  - ada-cms-pages (MDDB, tailnet): ~388 docs, kind=page|report|archive, domain taxonomy, reports-index; cms-publish-site.py
+  static-publish DORMANT since 2026-10-14. Ada''s report-first surface.
+
+  - Publication layer (scripts/board/publication.py): PublicationEvent -> sinks nest_job/lesson/news/report/telegram/board/json;
+  WP is one adapter via board-api wp_api seam.
+
+
+  PROPOSED STRUCTURE (sort by content physics):
+
+  - EVERGREEN KNOWLEDGE -> wiki. Lessons become wiki pages; series/hub = native wiki pages/subpages; lesson meta
+  maps to page templates/categories (level) + review-date bot; /lesson writer retargets to wiki API behind board-api
+  — callers unchanged (unified mutation door).
+
+  - FEEDS stay in WP news CPT — 2.7k items, hourly ingest, digest trees have no wiki semantics. Optional: wiki News
+  portal page links into WP archives/situations.
+
+  - REPORTS split by audience: internal reports stay ada-cms-pages; member-facing report CPT -> wiki Reports: pages
+  (a report is a document; usage-ledger class = living page machine-overwritten via API).
+
+  - OPS LEDGERS stay WP CPTs (activity/ops_error/nest_job/cam/score/repeat_ask) — records, not knowledge.
+
+  - ada-cms-pages remains the ops/internal store; wiki = member-facing knowledge surface (parallel, like ada-cms-pages
+  vs CMS for internal).
+
+
+  ENGINE OPTIONS (decision on card request):
+
+  A. MediaWiki on the Plesk host beside boards WP (boards.surf-thailand.com/wiki): most wiki-true (categories, templates,
+  subpages, backlinks, bot API); same PHP/LAMP stack + separate DB, no new service topology; Thai = same-page TH
+  section (current convention), no Translate ext needed. Cons: dated UI. RECOMMENDED — lowest friction, fits the
+  writer pattern.
+
+  B. Wiki.js on idc03 (quadlet + Postgres): modern UX, built-in locale trees for TH; more infra — Node service +
+  DB on prod host, new watch.
+
+  C. No wiki product — education as ada-cms-pages domain + re-enable static publish: cheapest, weakest member UX
+  (no links/backlinks, static snapshots, dormant pipeline).
+
+
+  MIGRATION MECHANICS (option-agnostic):
+
+  - Export lessons via WP REST with wp-boards.env (idc03) -> wiki pages; slug -> readable title; preserve meta as
+  template fields/categories.
+
+  - 301 lesson permalinks -> wiki; keep CPT read-only or unregister post-cutover.
+
+  - board-api: do_lesson + /publish lesson sink get a wiki adapter (proves the adapter seam); lesson-add.py untouched.
+
+  - lessons-due/education-report retarget to wiki API or emit wiki index pages.
+
+  - Thai-section convention carries over verbatim.
+
+
+  OPEN QUESTIONS: does news need wiki presence beyond a portal link? should member reports move or stay WP (tiny
+  count)? audience = members-only or public SEO?'
+ref: OPS-1046
+comms:
+- at: 2026-11-06 17:09
+  from: devin
+  text: card captured via board-api
