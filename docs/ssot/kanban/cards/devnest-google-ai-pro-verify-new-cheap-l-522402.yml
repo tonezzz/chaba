@@ -1,0 +1,47 @@
+id: devnest-google-ai-pro-verify-new-cheap-l-522402
+title: DevNest × Google AI Pro — verify new cheap lanes (Jules / Gemini CLI / NotebookLM batch)
+column: backlog
+updated: 2026-11-06 18:44
+priority: medium
+tags:
+- devnest
+- gemini
+- google-ai-pro
+- spike
+spec: 'Tony upgraded his Google account to Google AI Pro (5 TB) on 2026-11-06. Verified same day: subscription raises
+  quotas ONLY inside the AI Studio web UI (Playground/Build) plus consumer benefits (storage, NotebookLM, Gemini
+  app). Gemini API keys are governed by project billing tier — unchanged; see google_ai_pro block in docs/ssot/infrastructure/ssot.llm-gateway.yml.
+
+
+  Spike goal: determine which DevNest-applicable capabilities the plan unlocks, per lane-catalog rules (entry-level
+  prediction, verifier-gated escalation).
+
+
+  Tasks:
+
+  1. Jules — check headless/API access under Pro (jules.google.com UI vs jules.googleapis.com API-key/GCP-billing
+  requirements). If consumer-OAuth headless works, spec a `jules` lane (contained coding task -> PR, verifier =
+  same gate pattern as free-opencode). If API requires paid GCP billing, document and park.
+
+  2. Gemini CLI — verify Pro limits for OAuth-login headless use (`gemini -p`); assess whether a runner (idc03/omen)
+  can hold the auth non-interactively. If viable, spec as free_lane executor alternate; if it collapses to plain
+  API-key quota, park.
+
+  3. NotebookLM — measure new headroom via existing nlm CLI/notebooklm MCP (notebook count, audio-overview quota,
+  sources per notebook). If meaningfully higher, spec a batch lane for edu/lesson/dossier generation (Education
+  plane + report dossiers).
+
+  4. AI Studio eval lane — document the workflow: run model-selection/bench arms in Studio UI on subscription quota;
+  only productionize winners through LiteLLM/API keys.
+
+
+  Done-condition: findings posted as card comms; for each viable item a lane-catalog entry proposal (executor, task_classes,
+  verifier, expected_cost, target_host) or an explicit ''not viable — reason''. SSOT update to ssot.devnest-lanes.yml
+  only for verified lanes.'
+note: 'Spawned from chat 2026-11-06 — ''what can we use it to advance for DevNest?'' Answer: no new API lane, but
+  eval/prototype, NotebookLM batch, and possible Jules/Gemini-CLI async lanes.'
+ref: OPS-1048
+comms:
+- at: 2026-11-06 18:44
+  from: devin
+  text: card captured via board-api
