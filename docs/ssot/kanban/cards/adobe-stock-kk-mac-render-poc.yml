@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
 column: backlog
-updated: 2026-11-06 17:18
+updated: 2026-11-06 17:55
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -48,6 +48,13 @@ comms:
   from: devin
   text: 'raised request kk-mac-disk-for-image-render: KK-Mac has only 15GiB free, below the 30GiB render floor.
     How should we unblock the Adobe Stock comparison-B render?'
+- at: 2026-11-06 17:55
+  from: devin
+  text: 'Update 2026-11-06: safe package/runtime cache cleanup done on KK-Mac (uv 2.6GiB, Homebrew downloads 831MiB,
+    pip, codex-runtimes 1.6GiB). df now shows 18GiB free on /System/Volumes/Data, but the MDDB heartbeat still reports
+    disk_free_gb=15 until the next beat, and kk_mac_admission still returns disk_low. The render request floor is
+    limits.min_disk_free_gb=30.0, so we are still blocked. I did not touch ~/Library/Caches/Adobe (After Effects
+    cache alone is ~59G) or other app caches. Separately: OPS-'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
