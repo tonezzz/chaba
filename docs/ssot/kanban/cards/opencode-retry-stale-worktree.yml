@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: backlog
-updated: 2026-11-04 16:42
+updated: 2026-11-06 20:19
 priority: low
 tags:
 - opencode
@@ -302,6 +302,12 @@ comms:
     OK in 3.82s, 9 total tokens. It is not an S5 branch-code model. Options 1 (grant Claude access) and 3 (mint
     a dedicated strong key) require provider/key authorization changes before they can be benchmarked through the
     runner.'
+- at: 2026-11-06 20:16
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''Yes: run two tiny read-only model probes, bounded tokens/cos'' -> queued for processing'
 action:
   type: dispatch
   repo: chaba
@@ -317,7 +323,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: idle
+  status: queued
   labels:
   - push:chaba
   result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793782503.service:
@@ -327,7 +333,6 @@ action:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-04 16:01
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  verified: false
   llm_key_alias: bench
   button: test-key-alias
 requests:
@@ -349,6 +354,7 @@ requests:
   - id: stop
     label: Keep OPS-1039 held.
   suggested: gemini-3-pro-route
+  escalated_at: 2026-11-06 20:16
 - id: tony-proposes-benchmarking-both-strong-m-ae0fa6
   ask: Tony proposes benchmarking both strong-model routes before choosing one. Should we prepare two bounded provider
     probes without retrying OPS-1039?
@@ -366,4 +372,5 @@ requests:
     label: Do not configure or probe either route.
   suggested: benchmark-both
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
+  executed: 2026-11-06 queue
 claim: {}

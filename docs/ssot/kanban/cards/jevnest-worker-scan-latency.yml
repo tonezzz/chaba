@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-11-04 08:34
+updated: 2026-11-06 20:19
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -53,6 +53,9 @@ comms:
 - at: 2026-11-04 08:34
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''wait-kk — Wait for KK-Mac — required for live worker/LaunchA'' -> put on hold'
 requests:
 - id: kk-mac-is-offline-choose-the-next-safe-e-183153
   ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
@@ -69,4 +72,6 @@ requests:
     label: Use OpenRouter/OR only to review existing evidence or draft analysis; it cannot verify KK-Mac or deploy.
   suggested: omen-replay
   answer: wait-kk — Wait for KK-Mac — required for live worker/LaunchAgent verification.
-awaiting_action: true
+  executed: 2026-11-06 hold
+action:
+  status: idle

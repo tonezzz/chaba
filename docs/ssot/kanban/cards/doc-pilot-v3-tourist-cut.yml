@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
 column: doing
-updated: 2026-11-02 11:03
+updated: 2026-11-06 20:19
 priority: medium
 tags:
 - ada-nest
@@ -312,6 +312,12 @@ comms:
   text: 'Nov 2 refresh: Ollama is empty, but the approved CPU-only static-QC pack''s own prep still sees Adobe Photoshop
     (Beta) open and fails its owner-app gate. The isolated root and pinned inputs remain ready; no worker run, app
     close, or other pack launch. Resume only after the owner app is closed and a fresh preflight passes.'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''approve-docpilot-static-qc — Recommended: stage and run one '' -> queued for processing'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: 4 answered request(s) still unmapped — stays flagged'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -395,4 +401,8 @@ requests:
   answer: 'approve-docpilot-static-qc — Recommended: stage and run one isolated CPU-only read-only asset/QC audit;
     no GPU or model inference.'
   escalated_at: 2026-10-31 08:33
+  executed: 2026-11-06 queue
 awaiting_action: true
+action:
+  type: dispatch
+  status: queued
