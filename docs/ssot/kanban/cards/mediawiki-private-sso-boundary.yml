@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-05 19:06
+updated: 2026-11-06 08:17
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -84,6 +84,12 @@ comms:
     Before debugging provider credentials further, add wiki-internal as a Plesk domain/alias sharing the Wiki document
     root, issue TLS, then put the hostname behind Cloudflare Access. Re-test Special:PluggableAuthLogin only after
     the private hostname serves MediaWiki.'
+- at: 2026-11-06 08:17
+  from: devin
+  text: 'Root cause confirmed from Plesk log: OpenIDConnectStore::findUser fails because table `wiki.openid_connect`
+    does not exist (AH01071). Extensions/config are loaded; MediaWiki schema update was not run after OpenIDConnect
+    installation. Run the MediaWiki 1.46 maintenance update with PHP 8.3 from the Wiki root, then re-test OIDC.
+    `$_SESSION` deprecation is unrelated and should not be fixed in MWDebug.php.'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
