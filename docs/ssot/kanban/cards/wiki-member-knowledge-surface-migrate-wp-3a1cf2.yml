@@ -1,7 +1,7 @@
 id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
 title: Wiki member-knowledge surface — migrate wp education, structure with news+report
-column: doing
-updated: 2026-11-06 18:19
+column: review
+updated: 2026-11-06 18:21
 priority: medium
 tags:
 - cms
@@ -253,6 +253,10 @@ comms:
     meta.format=wikitext|html-convert, title derives from topic; registered as wiki-education in /publish op=sinks.
     (2) do_lesson dual-write behind WIKI_EDUCATION_WRITE=dual in wiki-h3-gizmo.env — ships OFF; wiki failure reports
     result[wiki] and never fails the WP write. (3) script'
+- at: 2026-11-06 18:21
+  from: idc02
+  text: 'finished (ok): exit=0 eady on the card, ns 3004–3007) plus creating `แม่แบบ:Education`, then flag=dual
+    and `migrate --apply`. | devin-t'
 requests:
 - id: which-wiki-engine-should-the-member-know-3c539b
   ask: Which wiki engine should the member-knowledge surface use?
@@ -304,10 +308,12 @@ requests:
   answer: proceed
 action:
   type: dispatch
-  status: running
-  result: 'exit=0  Tony''s A/B/C answer and the LocalSettings admin path — both captured in the request. | devin-task-20261106-174159-idea-2026-11-06-tony-chat-migr.service:
-    Consumed 2min 32.045s CPU time over 8min 24.099s wall clock time, 810.3M memory peak.'
+  status: done
+  result: 'exit=0 eady on the card, ns 3004–3007) plus creating `แม่แบบ:Education`, then flag=dual and `migrate
+    --apply`. | devin-task-20261106-181239-idea-2026-11-06-tony-chat-migr.service: Consumed 31.341s CPU time, 242.2M
+    memory peak, 0B memory swap peak.'
   lane: codemod
   runner: idc02
+  verified: true
 review_kind: verify
 claim: {}
