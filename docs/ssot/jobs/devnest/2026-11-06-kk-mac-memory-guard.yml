@@ -1,0 +1,140 @@
+title: KK-Mac live memory guard for the bounded LLM lane
+subtitle: MEM-1043 — enforce the approved 60/50 memory floors during model load and generation
+icon: shield
+
+planning:
+  goal: >-
+    Close the safety gap exposed by the 2026-11-06 Qwen3:8B smoke: the
+    bounded lane checked memory only at admission, so the model load
+    itself dropped KK-Mac free memory from 72% to 34% — below the
+    approved 50% abort floor — with no live abort path.
+  scope: >-
+    Add a remote-side memory guard that runs ON KK-Mac next to loopback
+    Ollama: >=60% free before model load, poll free memory every ~1s
+    during BOTH model load and generation (streamed /api/generate so the
+    poll covers the silent load window), abort and close below 50% or
+    when memory becomes unmeasurable, and unload with keep_alive=0 only
+    a model this task loaded — never an owner-resident model. Persist
+    pre/during/post snapshots into every result artifact. Cover both
+    lane paths: the fleet-runner executor (kk_mac_llm.call_remote) and
+    the standard kk-mac-llm-pack template that runs on the Mac.
+  success_criteria:
+    - Preflight aborts below 60% free; mid-run aborts below 50% or on unmeasurable memory.
+    - Task-loaded models are unloaded after the run (success AND abort); owner-resident models are never touched.
+    - Memory snapshots (pre/min-during/post, resident_before, unloaded) land in result artifacts.
+    - Unit tests cover threshold crossing, preflight abort, unmeasurable fail-closed, and owner-resident no-unload.
+    - KK_MAC_LANES stays 0; no inference is run by this change.
+  risks:
+    - vm_stat fallback approximates free memory; memory_pressure is the primary probe and failure fails closed.
+    - The pack template duplicates the guard inline (pack code runs standalone on the Mac); the two copies must stay semantically identical.
+    - Auto-unload after each task removes soak warmth — accepted for owner-first safety; keep_alive is now short (10m) instead of 60m.
+  resources:
+    - Board card kk-mac-live-memory-guard / MEM-1043
+    - Smoke evidence: 72% -> 34% -> 55%/62% free-memory trajectory
+    - scripts/devnest/kk_mac_llm.py, kk_mac_executor.py, kk_mac_remote_guard.py (new)
+    - scripts/colab/packs/kk-mac-llm-pack/pack.yml
+  owner: devin
+  estimated_duration: one session
+  related_focus:
+    - label: KK-Mac live memory guard / MEM-1043
+      file: docs/ssot/kanban/cards/kk-mac-live-memory-guard.yml
+    - label: KK-Mac local LLM lane / OPS-0966
+      file: docs/ssot/kanban/cards/kk-mac-local-llm-lane.yml
+
+processing:
+  status: completed
+  started_at: '2026-11-06'
+  steps:
+    - id: 1
+      label: Design remote-side guard placement
+      status: completed
+      notes: >-
+        Memory pressure exists only on KK-Mac, so the guard had to run
+        there — not on the fleet runner. call_remote now pipes
+        scripts/devnest/kk_mac_remote_guard.py to `ssh kk-mac python3 -`
+        with the request payload base64'd in argv. The pack template
+        embeds the same logic inline because pack run code executes
+        standalone on the Mac.
+    - id: 2
+      label: Implement kk_mac_remote_guard.py
+      status: completed
+      notes: >-
+        free_pct() probes memory_pressure ("System-wide memory free
+        percentage") with a vm_stat+hw.memsize fallback; unmeasurable
+        fails closed. generate_guarded() POSTs /api/generate with
+        stream=True inside a worker thread while the caller polls free
+        memory every poll_s — this covers the model-load window where
+        Ollama emits no tokens. On breach it closes the response and
+        records the abort. run() enforces the entry floor, snapshots
+        resident /api/ps models, unloads via keep_alive=0 only when the
+        model was absent beforehand (loaded_by_task), and emits one
+        JSON verdict (ok | preflight_abort | memory_abort |
+        memory_unmeasurable | ollama_error | bad_request).
+    - id: 3
+      label: Wire executor + pack template
+      status: completed
+      notes: >-
+        kk_mac_llm.call_remote defaults memory_guard=True (floors 60/50,
+        unload_after=True); guard declines return a structured verdict
+        instead of raising, and run_task surfaces it as a run_declined
+        reason while preserving the memory block. kk_mac_executor
+        persists result["memory"] on both pass and fallback paths.
+        kk-mac-llm-pack/pack.yml run code now enforces the same floors,
+        writes memory evidence into out/result.json even on abort, and
+        defaults keep_alive to 10m (was 60m) so the lane never pins an
+        owner workstation.
+    - id: 4
+      label: Test threshold crossing and safety cases
+      status: completed
+      notes: >-
+        tests/devnest/test_kk_mac_remote_guard.py (13 cases): free_pct
+        parsing for both probes + unmeasurable, generate_guarded
+        completion/abort/unmeasurable with a fake streaming response,
+        run() preflight abort, fail-closed, success unload,
+        owner-resident no-unload, abort-still-unloads-partial-load,
+        empty-response error. tests/devnest/test_kk_mac_llm.py updated
+        for the stdin guard transport, floor payload, decline verdict
+        propagation, and non-JSON failure. 36 devnest tests green.
+  decisions:
+    - label: Guard runs on KK-Mac via ssh stdin, not a persistent service
+      rationale: >-
+        The runner already reaches Ollama over ssh; piping the guard
+        script per call keeps the Mac free of new services and keeps the
+        guard versioned with the runner's repo checkout.
+      alternatives_considered: LaunchAgent daemon or Ollama proxy — rejected as heavier than needed for a bounded lane.
+    - label: Abort closes the stream rather than killing Ollama
+      rationale: >-
+        Closing the HTTP response stops generation promptly without
+        touching the shared Ollama service or other tenants.
+    - label: keep_alive shortened to 10m in the pack template
+      rationale: >-
+        Task-loaded models are explicitly unloaded; a pre-resident
+        (owner) model must not have its residency extended to 60m by our
+        request.
+  followup:
+    - "Independent live verification still required before any new inference: one supervised guarded smoke must show the abort path works against real memory_pressure output on KK-Mac."
+    - "kk-mac-live-memory-guard card stays open until that verification; KK_MAC_LANES remains 0."
+    - "Hermes Agent benchmark authorization (kk-mac-hermes-agent-benchmark-authorization-20261104) remains a separate open gate."
+
+report:
+  status: partial
+  completed: '2026-11-06'
+  summary: >-
+    The live memory guard is implemented and unit-tested on both lane
+    paths, closing the gap that let the smoke cross the 50% floor
+    undetected. Not yet verified against the real Mac — that needs one
+    supervised guarded run, which is itself gated on the card.
+  evidence:
+    - scripts/devnest/kk_mac_remote_guard.py: remote guard (floors, streamed abort, conditional unload, JSON verdicts)
+    - scripts/devnest/kk_mac_llm.py: stdin transport + verdict propagation
+    - scripts/devnest/kk_mac_executor.py: memory block persisted in artifacts
+    - scripts/colab/packs/kk-mac-llm-pack/pack.yml: inline guard, memory evidence, keep_alive 10m
+    - tests/devnest/test_kk_mac_remote_guard.py + test_kk_mac_llm.py: 36 cases green
+  metrics:
+    tests_passing: 36
+    guard_floors: "entry 60% / abort 50% (approved allow-once-60-50 envelope, now the lane default)"
+    poll_interval_s: 1.0
+    inference_runs: 0
+  lessons:
+    - "Preflight admission alone is insufficient for shared-unified-memory hosts: the model load itself consumed ~38 points of free memory. Live polling must cover the load window, which produces no stream tokens — hence the worker-thread + queue design."
+    - "A guard that only watches a blocking call is blind exactly where it matters; stream=True turns the silent load phase into a pollable window."

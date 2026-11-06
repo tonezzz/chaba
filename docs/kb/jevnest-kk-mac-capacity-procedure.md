@@ -33,6 +33,18 @@ owner/busy gate clear
 
 The executable gate is `scripts/devnest/kk_mac_admission.py`.
 
+Admission alone is necessary but not sufficient for model loads: the
+2026-11-06 smoke passed admission at 72% free and the Qwen3:8B load
+dropped KK-Mac to 34% — under the approved 50% abort floor — with no
+live check. Since MEM-1043 both lane paths enforce the floor ON the
+Mac: `kk_mac_remote_guard.py` (executor path, shipped via ssh stdin)
+and the `kk-mac-llm-pack` template require >=60% free before model
+load, poll every ~1s through load AND generation, abort below 50% or
+when memory is unmeasurable, and unload only a model the task itself
+loaded. Memory snapshots (pre/min/post, resident_before, unloaded)
+land in every result artifact. Do not bypass the guard with
+`memory_guard=False` for admitted lane tasks.
+
 ## Owner-approved capacity window
 
 When Tony explicitly grants an idle window, record the end time and use the

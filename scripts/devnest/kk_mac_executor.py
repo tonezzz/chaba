@@ -201,7 +201,8 @@ def run_contract(task: dict, *, run_task=None,
               "prompt_chars": len(prompt),
               "artifact": art or None, "artifact_written": False,
               "verdict": "fail", "reasons": [], "checks": {},
-              "admission": None, "usage": None, "response": None}
+              "admission": None, "usage": None, "response": None,
+              "memory": None}
     # contract violations fail closed — never silently re-route a task
     # the bounded lane was meant to refuse
     if tc not in TASK_CLASSES:
@@ -234,6 +235,8 @@ def run_contract(task: dict, *, run_task=None,
             f"executor_error:{type(exc).__name__}:{exc}"[:300])
         _persist(result, worktree, taskdir)
         return result
+    if res.get("memory") or res.get("guard"):
+        result["memory"] = res.get("memory") or res.get("guard")
     if not res.get("ok"):
         result["verdict"] = "fallback"
         result["reasons"] = [

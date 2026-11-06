@@ -8,30 +8,212 @@ artifacts:
 run: |
   import json
   import os
+  import queue
+  import re
+  import subprocess
+  import threading
   import time
   import urllib.request
 
+  # MEM-1043 live memory guard — same contract as
+  # scripts/devnest/kk_mac_remote_guard.py, inlined because pack code
+  # runs standalone on KK-Mac. Floors: >=entry% free before model load,
+  # abort+close below abort% during load AND generation, unload only a
+  # model this task loaded (never an owner-resident one).
+  ENTRY_FLOOR = 60.0
+  ABORT_FLOOR = 50.0
+  POLL_S = 1.0
+  _PCT_RE = re.compile(r"memory free percentage:\s*(\d+(?:\.\d+)?)\s*%")
+  _VM_RE = re.compile(r"^Pages\s+(\w+):\s+([\d,]+)\.", re.M)
+
+  def _sh(args, timeout=15):
+      return subprocess.run(args, capture_output=True, text=True,
+                            timeout=timeout)
+
+  def free_pct():
+      try:
+          out = _sh(["memory_pressure"], timeout=10).stdout or ""
+          m = _PCT_RE.search(out)
+          if m:
+              return float(m.group(1)), "memory_pressure"
+      except Exception:
+          pass
+      try:
+          stat = _sh(["vm_stat"], timeout=10).stdout or ""
+          pages = {k.lower(): int(v.replace(",", ""))
+                   for k, v in _VM_RE.findall(stat)}
+          if not pages:
+              return None, "unmeasurable"
+          try:
+              psize = int(_sh(["getconf", "PAGESIZE"],
+                              timeout=5).stdout.strip())
+          except Exception:
+              psize = 16384
+          try:
+              memsize = int(_sh(["sysctl", "-n", "hw.memsize"],
+                                timeout=5).stdout.strip())
+          except Exception:
+              return None, "unmeasurable"
+          avail = sum(pages.get(k, 0) for k in
+                      ("free", "inactive", "speculative", "purgeable"))
+          return round(100.0 * avail * psize / memsize, 1), "vm_stat"
+      except Exception:
+          return None, "unmeasurable"
+
+  def ollama_json(path, payload=None, timeout=15):
+      data = None if payload is None else json.dumps(payload).encode()
+      req = urllib.request.Request(
+          "http://127.0.0.1:11434" + path, data=data,
+          headers={"Content-Type": "application/json"},
+          method="GET" if payload is None else "POST")
+      with urllib.request.urlopen(req, timeout=timeout) as r:
+          return json.loads(r.read().decode())
+
+  def resident_models():
+      try:
+          ps = ollama_json("/api/ps", timeout=10)
+          return {str(m.get("name") or m.get("model") or "")
+                  for m in ps.get("models") or []}
+      except Exception:
+          return set()
+
+  def unload_model(model):
+      try:
+          ollama_json("/api/generate",
+                      {"model": model, "keep_alive": 0,
+                       "prompt": "", "stream": False}, timeout=15)
+          return True
+      except Exception:
+          return False
+
   task = json.load(open(f"{PACK_DIR}/inputs/task.json", encoding="utf-8"))
+  model = task.get("model", "qwen3:8b")
+  entry_floor = float(task.get("memory_entry_pct", ENTRY_FLOOR))
+  abort_floor = float(task.get("memory_abort_pct", ABORT_FLOOR))
+  poll_s = float(task.get("memory_poll_s", POLL_S))
+  unload_after = bool(task.get("unload_after", True))
+  out_path = f"{PACK_DIR}/out/result.json"
+
+  def emit(payload):
+      os.makedirs(os.path.dirname(out_path), exist_ok=True)
+      json.dump(payload, open(out_path, "w", encoding="utf-8"),
+                indent=2, ensure_ascii=False)
+
+  mem = {"entry_floor_pct": entry_floor,
+         "abort_floor_pct": abort_floor, "guard": "kk-mac-llm-pack/2"}
+  pre, src = free_pct()
+  mem.update({"pre_pct": pre, "source": src})
+  if pre is None:
+      emit({"task_id": task.get("task_id", "unknown"),
+            "model": model, "verified": False,
+            "abort_reason": "memory_unmeasurable", "memory": mem})
+      raise RuntimeError("memory_unmeasurable: free memory probe failed")
+  if pre < entry_floor:
+      emit({"task_id": task.get("task_id", "unknown"),
+            "model": model, "verified": False,
+            "abort_reason": "memory_preflight",
+            "memory": mem})
+      raise RuntimeError(
+          f"memory_preflight_abort: free {pre}% < {entry_floor}%")
+
+  resident_before = resident_models()
+  loaded_by_us = model not in resident_before
+  mem["resident_before"] = sorted(resident_before)
+  mem["loaded_by_task"] = loaded_by_us
+
   request_body = {
-      "model": task.get("model", "qwen3:8b"),
+      "model": model,
       "prompt": task["prompt"],
-      "stream": False,
-      "keep_alive": "60m",
+      "stream": True,
+      # short keep_alive: we either unload below or the owner already
+      # had the model — never pin 60m on a shared host
+      "keep_alive": task.get("keep_alive", "10m"),
       "think": False,
       "options": {"temperature": 0},
   }
   if task.get("format"):
       request_body["format"] = task["format"]
-  body = json.dumps(request_body).encode()
-  request = urllib.request.Request(
+
+  req = urllib.request.Request(
       "http://127.0.0.1:11434/api/generate",
-      data=body,
-      headers={"Content-Type": "application/json"},
-  )
+      data=json.dumps(request_body).encode(),
+      headers={"Content-Type": "application/json"}, method="POST")
+
+  lines = queue.Queue()
+  state = {"resp": None, "error": None}
+  DONE = object()
+
+  def worker():
+      try:
+          resp = urllib.request.urlopen(req, timeout=300)
+          state["resp"] = resp
+          for raw in resp:
+              lines.put(raw)
+          lines.put(DONE)
+      except Exception as exc:
+          state["error"] = exc
+          lines.put(DONE)
+
+  threading.Thread(target=worker, daemon=True).start()
+  chunks, usage = [], {}
+  min_pct, aborted = None, None
   started = time.time()
-  with urllib.request.urlopen(request, timeout=300) as response:
-      raw = json.load(response)
-  response_text = raw.get("response", "")
+  last_poll = time.monotonic()
+  while True:
+      wait = max(0.01, poll_s - (time.monotonic() - last_poll))
+      try:
+          raw = lines.get(timeout=wait)
+      except queue.Empty:
+          raw = "__timeout__"
+      if time.monotonic() - last_poll >= poll_s or raw == "__timeout__":
+          last_poll = time.monotonic()
+          pct, _src = free_pct()
+          if pct is None:
+              aborted = aborted or "memory_unmeasurable"
+          else:
+              min_pct = pct if min_pct is None else min(min_pct, pct)
+              if pct < abort_floor:
+                  aborted = aborted or "memory_floor"
+      if aborted:
+          resp = state.get("resp")
+          if resp is not None:
+              try:
+                  resp.close()
+              except Exception:
+                  pass
+          break
+      if raw is DONE:
+          break
+      try:
+          ev = json.loads(raw.decode("utf-8", "replace").strip())
+      except (json.JSONDecodeError, AttributeError):
+          continue
+      if ev.get("response"):
+          chunks.append(ev["response"])
+      for k in ("eval_count", "eval_duration", "load_duration",
+                "total_duration", "done", "done_reason"):
+          if k in ev:
+              usage[k] = ev[k]
+
+  mem["min_during_pct"] = min_pct
+  mem["post_pct"] = free_pct()[0]
+  if unload_after and loaded_by_us:
+      mem["unloaded"] = unload_model(model)
+  else:
+      mem["unloaded"] = False
+
+  response_text = "".join(chunks)
+  if aborted:
+      emit({"task_id": task.get("task_id", "unknown"),
+            "model": model, "response": response_text,
+            "verified": False,
+            "abort_reason": aborted, "memory": mem,
+            "usage": usage})
+      raise RuntimeError(
+          f"{aborted}: free memory guard tripped during generation")
+  if state.get("error"):
+      raise state["error"]
+
   checks = {"response_nonempty": bool(response_text.strip())}
   if task.get("format") == "json":
       candidate = response_text.strip()
@@ -55,24 +237,29 @@ run: |
   for fact in task.get("expect", {}).get("facts", []):
       checks[f"fact:{fact[:40]}"] = fact.lower() in haystack.lower()
   if not all(checks.values()):
+      emit({"task_id": task.get("task_id", "unknown"),
+            "model": model, "response": response_text,
+            "parsed": parsed, "checks": checks, "verified": False,
+            "memory": mem, "usage": usage,
+            "wall_seconds": round(time.time() - started, 3)})
       raise RuntimeError("independent checks failed: " + json.dumps(checks))
   result = {
       "task_id": task.get("task_id", "unknown"),
-      "model": raw.get("model"),
+      "model": model,
       "response": response_text,
       "parsed": parsed,
       "checks": checks,
       "verified": True,
-      "eval_count": raw.get("eval_count"),
-      "eval_duration": raw.get("eval_duration"),
-      "load_duration": raw.get("load_duration"),
+      "memory": mem,
+      "eval_count": usage.get("eval_count"),
+      "eval_duration": usage.get("eval_duration"),
+      "load_duration": usage.get("load_duration"),
       "wall_seconds": round(time.time() - started, 3),
       "read_only": True,
   }
   if not result["response"].strip():
+      emit(result)
       raise RuntimeError("empty model response")
-  out = f"{PACK_DIR}/out/result.json"
-  os.makedirs(os.path.dirname(out), exist_ok=True)
-  json.dump(result, open(out, "w", encoding="utf-8"), indent=2,
-            ensure_ascii=False)
-  print(json.dumps({"task_id": result["task_id"], "wall_seconds": result["wall_seconds"]}))
+  emit(result)
+  print(json.dumps({"task_id": result["task_id"],
+                    "wall_seconds": result["wall_seconds"]}))
