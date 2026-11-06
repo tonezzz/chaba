@@ -275,31 +275,39 @@ extensions:
     Do not install archived Graph or archived Drawio. Every extension change
     requires a LocalSettings.php backup, a dry-run/test page, and a
     Special:Version verification.
-  phase_1:
+  phase_1:  # ALL INSTALLED — verified 2026-11-06 via /wiki/extension list
     - name: Lockdown
       purpose: namespace-level read/write boundary for private Wiki content
       risk: high
       gate: install and verify before publishing Infrastructure/Hosts
+      status: "installed + enforced — anon content read on PrivateNews: and
+        Infrastructure: returns accessdenied (verified 2026-11-06)"
     - name: CategoryTree
       purpose: expandable category and News hierarchy navigation
       risk: low
+      status: installed
     - name: Mermaid
       purpose: text-defined flowcharts, timelines, and architecture diagrams
       risk: low
+      status: installed
     - name: MsUpload
       purpose: drag-and-drop multi-file upload and gallery insertion
       risk: medium
+      status: installed
     - name: MultimediaViewer
       purpose: image lightbox and full-size media browsing
       risk: low
-  phase_2:
+      status: installed
+  phase_2:  # ALL INSTALLED — verified 2026-11-06 via /wiki/extension list
     - name: Cargo
       purpose: structured NewsReport storage and queries
       risk: medium
+      status: installed
     - name: PageForms
       purpose: form-driven creation of structured news pages
       risk: medium
-  phase_3:
+      status: installed
+  phase_3:  # NOT installed (verified 2026-11-06)
     - name: Wanda
       purpose: read-only wiki-grounded AI search/chat with citations
       risk: high
@@ -313,9 +321,14 @@ extensions:
     - "Drawio — archived; use DrawioEditor only with external-service approval"
   install_gate:
     current_state: >
-      MediaWiki API access is available, but filesystem/Plesk/SSH access for
-      extension installation is not. Plesk HTTPS responds on port 8443;
-      no Plesk credential is stored in the Chaba secret set.
+      Superseded 2026-11-06: all phase_1/phase_2 extensions are installed and
+      verified via the board-api /wiki/extension door, which drives the
+      wiki-side Springboard extension over an allowlist — no agent-held
+      filesystem access needed for extension enable/disable. New custom
+      namespaces and Lockdown rules (e.g. Education:/Reports: per
+      docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml)
+      still require a LocalSettings.php edit via the admin/Plesk path —
+      the same path that registered PrivateNews: and Infrastructure:.
     required_access:
       - Plesk login or SSH/SFTP to the wiki webroot
       - write access to extensions/ and LocalSettings.php
@@ -328,23 +341,34 @@ extensions:
       - API publication remains functional
 
 current_state:
-  verified:
+  re_verified_2026-11-06:
     - "main-namespace subpages enabled"
     - "NewsReport template renders"
     - "Ada account can authenticate and edit"
     - "MediaWikiSink delivered Ada's first test publication"
     - "public test leaf News/Desks/DevNest/Ada/First-Publication-Test exists"
+    - "private boundary ENFORCED — anon content read on PrivateNews: and
+      Infrastructure: returns accessdenied (Lockdown); titles remain
+      enumerable via allpages"
+    - "phase_1+2 extensions installed: Lockdown, CategoryTree, Mermaid,
+      MsUpload, MultimediaViewer, Cargo, PageForms"
+    - "Springboard extension installed — /wiki/extension door manages the
+      allowlisted set"
+    - "PluggableAuth + OpenID Connect installed; SSO login live; users
+      Ada / Tony / Tonezzzz@gmail.com"
+    - "namespaces: PrivateNews: (3002, protected), Infrastructure: (3000,
+      protected, hosts tree populated), Form (106)"
+    - "wiki + wiki-private sinks registered live in /publish (9 sinks)"
   not_ready:
-    - "private MediaWiki access boundary"
-    - "CategoryTree installation"
     - "scheduled wiki maintenance worker"
     - "Ada wiki read/search tools"
     - "public rollup generator"
-    - "filesystem/Plesk access for extension installation"
+    - "LocalSettings edit path for new namespaces (admin/Plesk action)"
 
 related_ssot:
   - docs/ssot/apps/ssot.apps.cms-reports.yml
   - docs/ssot/infrastructure/ssot.reports.yml
+  - docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
   - docs/ssot/kanban/cards/devnest-news-two-lane-pilot.yml
 related_code:
   - scripts/board/publication.py
