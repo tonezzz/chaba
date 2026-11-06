@@ -1,0 +1,20 @@
+id: tony-omen-snap-desktop-restart-loop
+title: Fix tony-omen snap desktop integration restart loop
+column: backlog
+updated: 2026-11-06 11:39
+priority: medium
+tags:
+- tony-omen
+- systemd
+- snap
+spec: Find why snap.snapd-desktop-integration.snapd-desktop-integration.service repeatedly fails with Failed to
+  open display on tony-omen, then apply the narrowest durable fix without disabling unrelated Snap applications.
+  Verify the restart count stops growing after reboot.
+help: 'Observed during post-reboot verification on 2026-11-06: unit active but NRestarts=453 in about 1h52; journal
+  repeatedly reports Failed to open display. A 2026-10-24 Omen job trail already noted this as a separate noisy
+  crash loop (~34,580 restarts). No service changes made.'
+ref: OPS-1042
+comms:
+- at: 2026-11-06 11:39
+  from: devin
+  text: card captured via board-api
