@@ -57,3 +57,21 @@ comms:
     at jules.google.com/settings, max 3). Jules in Pro = 100 tasks/day + 15 concurrent + Gemini 3 Pro (vs free 15/day,
     3 conc, 2.5 Pro). Sessions run on GitHub repos -> plan -> PR. Fits DevNest perfectly: contained coding tasks
     become async PRs, verifier = PR exists + existing merge/gate pattern (same shape as free-opencode but stronger '
+- at: 2026-11-06 18:45
+  from: devin
+  text: 'raised request jules-lane-is-verified-viable-but-needs-b0ea6f: Jules lane is verified viable but needs
+    one-time account setup only you can do: (1) install the Jules GitHub app on the '
+requests:
+- id: jules-lane-is-verified-viable-but-needs-b0ea6f
+  ask: 'Jules lane is verified viable but needs one-time account setup only you can do: (1) install the Jules GitHub
+    app on the repos you want it to touch (at minimum tonezzz/chaba; ada-voice optional), (2) mint an API key at
+    jules.google.com/settings, (3) drop it into ~/.config/secrets on the runner (suggest idc03 or omen). Once the
+    key exists I can wire a `jules` lane into dispatch_repos.py and run the first pilot card.'
+  status: open
+  at: 2026-11-06 18:45
+  from: devin
+  options:
+  - Install Jules GH app + mint key, I'll store it in secrets
+  - Install app but hold off on key for now
+  - Skip Jules — park the lane
+  suggested: Install Jules GH app + mint key, I'll store it in secrets
