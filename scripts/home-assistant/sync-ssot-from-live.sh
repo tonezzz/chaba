@@ -34,6 +34,20 @@ PY
     echo "Done. Ada HA chaba-admin snapshot synced with sensitive values redacted."
     exit 0
 fi
+if [[ "${1:-}" == "--instance" && "${2:-}" == "tony-ha" ]]; then
+    python3 "${REPO}/scripts/home-assistant/sync-ada-ha-chaba-admin.py" \
+        --host tony-omen \
+        --remote-path /home/tony/.config/home-assistant/.storage/lovelace.chaba_admin \
+        --output "${REPO}/docs/home-assistant/dashboards/chaba-admin-current.json"
+    (
+        cd "${REPO}"
+        node scripts/ssot-validate-all.mjs \
+            docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml >/dev/null
+        python3 scripts/ssot-validate-refs.py >/dev/null
+    )
+    echo "Done. Tony HA chaba-admin snapshot synced with sensitive values redacted."
+    exit 0
+fi
 if [[ "${1:-}" == "--instance" ]]; then
     echo "Unsupported instance: ${2:-<missing>}" >&2
     exit 2

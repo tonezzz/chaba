@@ -247,14 +247,14 @@ instances:
       - title: Hosts
         path: hosts
         icon: mdi:server
-        cards: horizontal-stack of two entities cards — tony-omen
-          (battery_level/state, cpu_package_temp, gpu_temp) and
-          tony-macbook (switch.mac_plug toggle + battery_level/state/health/
-          temp/voltage/cycles + binary_sensor.tony_macbook_telemetry_fresh).
-          Added 2026-10-20
-          via push-dashboard.py mutate; sensors REST-pushed every 5min by
-          the telemetry-ha-push job (ssot.jobs.yml) mirroring the
-          device-telemetry MDDB beacon.
+        cards: >-
+          Panel vertical-stack: iframe to
+          https://tony-ha.surf-thailand.com/apps/system-report/?view=hosts
+          showing live host-loads (load, RAM, disk, freshness) above device
+          cards for tony-omen and tony-macbook. Device rows use short,
+          view-local labels; no entity IDs or source sensor names change.
+          Fleet data is collected by chaba-host-loads every 5min; the
+          existing telemetry-ha-push still mirrors MacBook battery metrics.
       - note: >-
           chaba-cms iframes embed the dedicated ada-ha-tony 'cms-viewer'
           api_key in the URL (iframes can't set headers) — shared viewer
@@ -535,7 +535,7 @@ manual_steps:
   - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart — direct .storage/lovelace.tony_test edits only take effect after an HA core restart)
   - Add a sidebar dashboard: websocket lovelace/dashboards/create (url_path must contain a hyphen, e.g. dossier); created 2026-09-06 as 'Dossier' (mdi:folder-file).
   - Sidebar order is per-user in .storage/frontend.user_data_<uid> under the 'sidebar' key (panelOrder array); set via websocket frontend/set_user_data with key='sidebar'. Current order: lovelace (Overview), tony-test, dossier, then defaults. michael-dev already had dossier-home under tony-test; michael-ha was set 2026-09-08 to place dossier under tony-test.
-  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh after each WebSocket dashboard mutation; the default sync refreshes tony-test/michael-dev, while `--instance ada-ha` writes a sanitized `ada-ha-chaba-admin-current.json` snapshot with API-key query values redacted
+  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh after each WebSocket dashboard mutation; the default sync refreshes tony-test/michael-dev, `--instance ada-ha` writes the sanitized Ada HA snapshot, and `--instance tony-ha` writes the sanitized `chaba-admin-current.json` snapshot with API-key query values redacted
   - Tab order/titles/paths live in the saved config; use `push-dashboard.py` with an idempotent `mutate(config)` helper, then sync the matching instance snapshot
 conventions:
   full_page_iframe:
