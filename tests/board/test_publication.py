@@ -689,7 +689,8 @@ class BoardApiWiringTest(PubTestBase):
         m = self.ba
         self._saved = {k: getattr(m, k) for k in
                        ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL",
-                        "WIKI_ENV_FILE", "WIKI_API_CALL")}
+                        "WIKI_ENV_FILE", "WIKI_API_CALL",
+                        "_wiki_login", "_wiki_api_call")}
         m.PUB_STATE_DIR = self.tmp / "pub-state"
         m.PUB_TG_URL = "http://127.0.0.1:1/send"   # closed port
         m.WIKI_ENV_FILE = self.tmp / "no-wiki.env"  # absent by default
@@ -906,6 +907,29 @@ class BoardApiWiringTest(PubTestBase):
         r = self.ba.do_wiki_page(
             {"title": "Education:Index", "wikitext": "x"}, "devin")
         self.assertEqual(r["wiki_title"], "Education:Index")
+
+    def test_wiki_page_edit_uses_login_session(self):
+        # Regression (live 502, 2026-11-06): the edit must ride the
+        # opener _wiki_login returns — it holds the session cookies.
+        # Sending it on the pre-login anon opener makes MediaWiki reject
+        # the logged-in csrf token (badtoken -> empty edit result).
+        self._wiki_env()
+        sentinel = object()
+        calls = []
+        self.ba._wiki_login = lambda api, env: (sentinel, "ct")
+
+        def fake_api(api_url, opener, params, post=False):
+            calls.append((opener, dict(params), post))
+            if params.get("action") == "edit":
+                return {"edit": {"result": "Success", "pageid": 1}}
+            return {}
+        self.ba._wiki_api_call = fake_api
+        r = self.ba.do_wiki_page(
+            {"title": "แม่แบบ:Education", "wikitext": "x"}, "devin")
+        self.assertEqual(r["action"], "success")
+        edits = [c for c in calls if c[1].get("action") == "edit"]
+        self.assertTrue(edits)
+        self.assertIs(edits[0][0], sentinel)
 
     def test_report_wp_read_modes(self):
         posts = []
