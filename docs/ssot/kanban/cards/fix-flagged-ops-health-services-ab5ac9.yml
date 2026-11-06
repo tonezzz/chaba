@@ -1,6 +1,6 @@
 id: fix-flagged-ops-health-services-ab5ac9
 title: Fix flagged ops health services
-column: backlog
+column: doing
 updated: 2026-11-06 20:27
 priority: high
 note: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
@@ -31,6 +31,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 20:27
+  from: idc02
+  text: claimed
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
   ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
@@ -52,4 +55,6 @@ spec: Verify and fix flagged health services including open-jev-4b-idc02, ada-pi
   listed services across the relevant hosts without error flags in the ops-health report.
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: codemod
+  runner: idc02
