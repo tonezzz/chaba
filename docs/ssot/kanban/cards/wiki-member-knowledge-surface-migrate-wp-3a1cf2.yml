@@ -106,6 +106,10 @@ comms:
     this card must build on, not duplicate: (1) MediaWikiSink in scripts/board/publication.py (idc03 checkout) —
     Action API login->csrf->edit, public-only, News/ prefix, NewsReport template; (2) ssot.mediawiki-news.yml —
     canonical News hierarchy + visibility contract; (3) protected namespaces'
+- at: 2026-11-06 17:36
+  from: tony
+  text: 'raised request education-visibility-on-the-wiki-public-1021dd: Education visibility on the wiki — public
+    Education/ namespace now, or gated in-house namespace after SEC-1035? Note: WP'
 requests:
 - id: which-wiki-engine-should-the-member-know-3c539b
   ask: Which wiki engine should the member-knowledge surface use?
@@ -121,4 +125,20 @@ requests:
     label: No wiki product — education as ada-cms-pages domain + static publish (cheapest, weakest UX)
   suggested: mediawiki
   answer: mediawiki
+- id: education-visibility-on-the-wiki-public-1021dd
+  ask: 'Education visibility on the wiki — public Education/ namespace now, or gated in-house namespace after SEC-1035?
+    Note: WP lesson posts are private but members have no wp-admin read path today, so lessons are de-facto Tony-only;
+    public wiki would be the first real KK/Nhong read surface.'
+  status: open
+  at: 2026-11-06 17:36
+  from: tony
+  options:
+  - id: public-now
+    label: ★ Public Education/ namespace now — privacy-scan gate per lesson, no SSO dependency, first real member
+      read path
+  - id: inhouse-after-sso
+    label: Gated in-house namespace — waits on SEC-1035 private boundary + needs KK/Nhong read path
+  - id: hybrid
+    label: Hybrid — public default, per-lesson private flag routes to protected ns once it exists
+  suggested: public-now
 awaiting_action: true
