@@ -1,7 +1,7 @@
 id: kk-mac-live-memory-guard
 title: Add live memory guard to KK-Mac bounded LLM executor
 column: backlog
-updated: 2026-11-06 18:53
+updated: 2026-11-06 20:05
 priority: high
 tags:
 - kk-mac
@@ -30,3 +30,13 @@ comms:
     payload b64 argv). Enforces >=60% free before model load; polls free memory every ~1s during BOTH load and generation
     via streamed /api/generate in a worker thread (covers the silent load window the smoke exposed); aborts+closes
     below 50% or when memory is unmeasurabl'
+- at: 2026-11-06 20:05
+  from: devin
+  text: 'Verification staging update: branch fix/kk-mac-memory-guard pushed to origin (commit 0809ead3a). A detached
+    worktree is staged on tony-dell at ~/CascadeProjects/chaba-wt-memguard-verify (keep until the supervised smoke
+    runs — do not let orphan-cleanup remove it).
+
+
+    BLOCKED: kk-mac went offline ~1h ago (tailscale last seen 1h, rx 0; ssh times out even from tony-dell). Live
+    verification of the guard needs the Mac awake with a fresh heartbeat. When it returns: from that worktree run
+    one synthetic st'
