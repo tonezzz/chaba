@@ -16,23 +16,32 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-11-02 08:37
   from: tony
-  text: 'answered the-ops-health-report-lists-sp-a4b0a0: ★ Run diagnostic checks and fixes across all available
-    infrastructure hosts (tony-dell, idc02, idc03, tony-omen, mn01, con01)'
+  text: 'answered the-ops-health-report-lists-sp-a4b0a0: ★ Run diagnostic checks and fixes across all
+    available infrastructure hosts (tony-dell, idc02, idc03, tony-omen, mn01, con01)'
 - at: 2026-11-02 08:37
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-02 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
-  ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
-    nor the repository locations are provided in the card note or recent communications to safely target the fixes.
+  ask: The ops health report lists specific flagged services across multiple potential nodes, but neither
+    the hostnames nor the repository locations are provided in the card note or recent communications
+    to safely target the fixes.
   options:
-  - ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02, idc03, tony-omen,
-    mn01, con01)
+  - ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02, idc03,
+    tony-omen, mn01, con01)
   - Limit investigation strictly to the local host runner and standard systemd user/system scopes
   - Postpone this card until the specific host and path mapping for the flagged services is provided
   status: answered
   at: 2026-11-02 07:20
   from: backlog-spec-enrich
-  answer: ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02, idc03,
-    tony-omen, mn01, con01)
+  answer: ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02,
+    idc03, tony-omen, mn01, con01)
 awaiting_action: true
+spec: Verify and fix flagged health services including open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer,
+  and doc-mirror.timer from the ops-health report. Run diagnostic checks and fixes across all available
+  infrastructure hosts specifically including idc02 and tony-pi environments. The done-condition is verified
+  active and healthy status for all four listed services across the relevant hosts without error flags
+  in the ops-health report.

@@ -36,6 +36,9 @@ comms:
 - ts: '2026-10-23T13:06:51'
   from: chaba
   text: 'lab decision executed: extend — extend 2w — set a new lab.review_by (+14d)'
+- ts: '2026-11-02T09:00:17'
+  from: chaba
+  text: lab review due — promote, retire, or extend?
 requests:
 - id: lab-review
   ask: Lab review_by 2026-10-18 has passed with no outcome — promote, retire, or extend?
@@ -50,3 +53,13 @@ requests:
   escalated_at: 2026-10-22 10:11
   answer: extend — extend 2w — set a new lab.review_by (+14d)
   executed: '2026-10-23'
+- id: lab-review
+  ask: Lab review_by 2026-11-01 has passed with no outcome — promote, retire, or extend?
+  status: open
+  options:
+  - id: promote
+    label: promote → backlog — it earned a real card
+  - id: retire
+    label: retire → done — write the learning in comms first
+  - id: extend
+    label: extend 2w — set a new lab.review_by (+14d)
