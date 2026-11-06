@@ -185,10 +185,19 @@ open_questions:
 
 implementation_sequence:
   - "1. Admin: register Education:/Reports: namespaces + Lockdown rules
-    (Tony/Plesk — real gate, needs the LocalSettings access path)"
-  - "2. Repo: wiki-education sink + do_lesson dual-write behind flag;
-    Education template + categories created on wiki"
-  - "3. scripts/wiki-lesson-migrate.py --dry-run -> review -> run (124 + reports)"
+    (Tony/Plesk — real gate, needs the LocalSettings access path;
+    verified snippet posted to card 2026-11-06 18:13, ns ids 3004-3007)"
+  - "2. DONE repo-side 2026-11-06 (phase 2a dispatch, idc02):
+    WikiLessonSink + html_to_wikitext + lesson_wiki_title in
+    publication.py; 'wiki-education' registered in _pub_sinks;
+    do_lesson dual-write behind WIKI_EDUCATION_WRITE=dual in
+    wiki-h3-gizmo.env (ships OFF — flag on only after step 1);
+    scripts/wiki-lesson-migrate.py (door read -> wikitext ->
+    /publish apply, idempotent) + tests. STILL NEEDED on-wiki:
+    แม่แบบ:Education template page (any authed edit via Ada bot —
+    same API path the sink uses, or hand-create)"
+  - "3. scripts/wiki-lesson-migrate.py --dry-run (verified live 4-lesson
+    sample 2026-11-06) -> review -> --apply (124 + reports)"
   - "4. Retarget lessons-due/education-report (Cargo query or API list)"
   - "5. Verify-by-surface: anon accessdenied on Education:, authed read ok,
     new /lesson write lands on wiki, due list generates"

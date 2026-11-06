@@ -452,6 +452,140 @@ class NoiseTest(PubTestBase):
         self.assertIn("private events only", sink.check(public))
 
 
+class HtmlToWikitextTest(unittest.TestCase):
+    """Lesson-body HTML -> wikitext converter
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2)."""
+
+    def test_basic_markup(self):
+        html = ("<p>Intro <strong>bold</strong> and <em>it</em>.</p>"
+                "<h3>ไทย</h3><p>ไทย body</p><hr>"
+                "<ul><li>one</li><li>two</li></ul>"
+                "<p><a href='https://x/y'>the link</a></p>")
+        wt = pub.html_to_wikitext(html)
+        self.assertIn("'''bold'''", wt)
+        self.assertIn("''it''", wt)
+        self.assertIn("=== ไทย ===", wt)
+        self.assertIn("----", wt)
+        self.assertIn("* one\n* two", wt)
+        self.assertIn("[https://x/y the link]", wt)
+
+    def test_nested_lists_and_ol(self):
+        html = ("<ol><li>a<ul><li>a1</li><li>a2</li></ul></li>"
+                "<li>b</li></ol>")
+        wt = pub.html_to_wikitext(html)
+        self.assertIn("# a", wt)
+        self.assertIn("#* a1\n#* a2", wt)
+        self.assertIn("# b", wt)
+
+    def test_bare_url_link_and_h1(self):
+        wt = pub.html_to_wikitext(
+            "<h1>T</h1><p><a href='https://x/y'>https://x/y</a></p>")
+        self.assertTrue(wt.startswith("== T =="))
+        self.assertIn("[https://x/y]", wt)
+
+    def test_script_style_dropped_unknown_flattened(self):
+        wt = pub.html_to_wikitext(
+            "<p>keep<style>.x{}</style><script>bad()</script>"
+            "<marquee>me</marquee></p>")
+        self.assertIn("keep", wt)
+        self.assertIn("me", wt)
+        self.assertNotIn("bad()", wt)
+        self.assertNotIn(".x{}", wt)
+
+
+class LessonWikiTitleTest(unittest.TestCase):
+    def test_readable_title(self):
+        self.assertEqual(pub.lesson_wiki_title("ada-nest-map"),
+                         "Education:Ada-Nest-Map")
+        self.assertEqual(pub.lesson_wiki_title("cloud object storage"),
+                         "Education:Cloud Object Storage")
+        self.assertEqual(pub.lesson_wiki_title("WP REST API"),
+                         "Education:WP REST API")
+        # forbidden title chars fold to spaces, md5 slug never leaks
+        t = pub.lesson_wiki_title("a<b>[c]|d_{e}")
+        self.assertNotRegex(t, r"[#<>\[\]|{}_]")
+
+
+class WikiLessonSinkTest(PubTestBase):
+    """WikiLessonSink — protected Education: namespace adapter."""
+
+    def _sink(self, calls):
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            return {"edit": {"result": "Success", "pageid": 9,
+                             "newrevid": 10}}
+        return pub.WikiLessonSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _ev(self, body="<p>Block storage <strong>basics</strong>.</p>",
+            **meta):
+        m = {"topic": "cloud object storage", "level": "working",
+             "status": "open", "next_review": "2026-11-15",
+             "wiki_title": "Education:Cloud Object Storage"}
+        m.update(meta)
+        return pub.validate_event(ev(
+            kind="lesson", title="cloud object storage",
+            body=body, visibility="private", meta=m))
+
+    def test_publish_edit_and_metadata(self):
+        calls = []
+        r = self._sink(calls).publish(self._ev())
+        self.assertEqual(r["pageid"], 9)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "Education:Cloud Object Storage")
+        self.assertIn("{{แม่แบบ:Education", edit["text"])
+        self.assertIn("|level=working", edit["text"])
+        self.assertIn("|next_review=2026-11-15", edit["text"])
+        self.assertIn("'''basics'''", edit["text"])   # html converted
+        self.assertIn("[[Category:Education/Level/working]]",
+                      edit["text"])
+        self.assertIn("[[Category:Education/Topics/"
+                      "cloud-object-storage]]", edit["text"])
+
+    def test_wikitext_format_passthrough(self):
+        calls = []
+        self._sink(calls).publish(
+            self._ev(format="wikitext",
+                     body="already '''wiki''' text"))
+        self.assertIn("already '''wiki''' text", calls[-1][0]["text"])
+
+    def test_title_derives_from_topic(self):
+        calls = []
+        e = self._ev()
+        del e["meta"]["wiki_title"]
+        self._sink(calls).publish(e)
+        self.assertEqual(calls[-1][0]["title"],
+                         "Education:Cloud Object Storage")
+
+    def test_gates(self):
+        sink = self._sink([])
+        # wrong kind
+        news = pub.validate_event(ev(
+            kind="news", title="n", body="b",
+            evidence=["https://x"], visibility="private",
+            meta={"wiki_title": "Education:X"}))
+        self.assertIn("unsupported", sink.check(news))
+        # members/public can't reach a private namespace
+        mem = self._ev()
+        mem["visibility"] = "members"
+        self.assertIn("private events only", sink.check(mem))
+        # title outside the namespace
+        bad = self._ev(wiki_title="News/Cloud")
+        try:
+            sink._title(bad)
+        except pub.Skip as e:
+            self.assertIn("Education:", str(e))
+        else:
+            raise AssertionError("expected Skip")
+
+
 class BoardApiWiringTest(PubTestBase):
     """do_publish in board-api: WP adapter + JsonSink receive the same
     canonical event — WP is only one adapter."""
@@ -464,9 +598,11 @@ class BoardApiWiringTest(PubTestBase):
         super().setUp()
         m = self.ba
         self._saved = {k: getattr(m, k) for k in
-                       ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL")}
+                       ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL",
+                        "WIKI_ENV_FILE")}
         m.PUB_STATE_DIR = self.tmp / "pub-state"
         m.PUB_TG_URL = "http://127.0.0.1:1/send"   # closed port
+        m.WIKI_ENV_FILE = self.tmp / "no-wiki.env"  # absent by default
 
     def tearDown(self):
         for k, v in self._saved.items():
@@ -556,6 +692,55 @@ class BoardApiWiringTest(PubTestBase):
         self.assertIn("telegram", res["sinks"])
         self.assertEqual(res["sinks"]["job"]["surface"], "members")
         self.assertTrue(res["sinks"]["news"]["evidence_required"])
+
+    def _wiki_env(self, extra=""):
+        env = self.tmp / "wiki.env"
+        env.write_text(
+            "WIKI_HOST=https://wiki.example\nWIKI_USER=ada\n"
+            f"WIKI_PASSWORD=secret\n{extra}")
+        self.ba.WIKI_ENV_FILE = env
+
+    def test_wiki_education_sink_registers(self):
+        self._wiki_env()
+        res = self.ba.do_publish({"op": "sinks"}, "devin")
+        s = res["sinks"]["wiki-education"]
+        self.assertEqual(s["kinds"], ["lesson"])
+        self.assertEqual(s["surface"], "private")
+
+    def test_do_lesson_dual_write_behind_flag(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=dual\n")
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: (
+            posts.append((route, data)) or {"id": 42} if data else [])
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+
+        class FakeSink:
+            def __init__(self, api, u, p):
+                sent.append(api)
+
+            def publish(self, ev):
+                sent.append(ev)
+                return {"ref": "wiki:x"}
+
+        real = self.ba.pub.WikiLessonSink
+        self.ba.pub.WikiLessonSink = FakeSink
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki dual write", "content": "<p>c</p>",
+                 "no_th": True}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(r["wiki"]["status"], "delivered")
+        self.assertEqual(sent[0], "https://wiki.example/api.php")
+        self.assertEqual(sent[1]["meta"]["wiki_title"],
+                         "Education:Wiki Dual Write")
+        # flag off -> no wiki key at all
+        self._wiki_env("WIKI_EDUCATION_WRITE=off\n")
+        r = self.ba.do_lesson(
+            {"topic": "wiki dual write", "content": "<p>c</p>",
+             "no_th": True}, "devin")
+        self.assertNotIn("wiki", r)
 
     def test_dedupe_across_adapters(self):
         posts = self._fake_wp()

@@ -22,7 +22,9 @@ Kind semantics (the DevNest mapping):
               telegram/news — "do not publish every heartbeat".
   milestone  -> nest_job + board audit + concise telegram.
   report     -> project dossier (ada-cms-pages note) + board audit.
-  lesson     -> Education (WP lesson CPT) — reusable knowledge.
+  lesson     -> Education — reusable knowledge. WP lesson CPT today;
+              dual-write to the protected wiki Education: namespace rides
+              the WikiLessonSink (board-api flag WIKI_EDUCATION_WRITE).
   news       -> member-facing milestone news (WP news CPT) + board +
               telegram. Evidence is REQUIRED; public needs verified.
   alert      -> telegram + board audit + nest_job error state.
@@ -47,6 +49,7 @@ import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from html.parser import HTMLParser
 from http.cookiejar import CookieJar
 
 KINDS = ("progress", "milestone", "report", "lesson", "news", "alert")
@@ -195,6 +198,154 @@ def topic_key(ev: dict) -> str:
             or "t:" + hashlib.sha1(ev["title"].encode()).hexdigest()[:10])
 
 
+# --- html -> wikitext (education corpus) ------------------------------------
+
+_HEADING = {"h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}
+_LESSON_TITLE_BAD = re.compile(r"[#<>\[\]|{}_]")
+
+
+class _HtmlToWikitext(HTMLParser):
+    """Lesson-body HTML -> wikitext (stdlib only).
+
+    Covers the markup lesson writers emit: headings, paragraphs, nested
+    lists, links, bold/italic, code/pre, <hr>. Table-family and unknown
+    tags are flattened — their text content survives."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out = []
+        self.lists = []               # stack of '*' | '#'
+        self._a = None                # (href, out_index) inside <a>
+        self._skip = 0                # inside script/style
+        self._pre = 0
+
+    def _break(self, n):
+        cur = "".join(self.out)
+        if not cur.strip():
+            self.out = []
+            return
+        trailing = len(cur) - len(cur.rstrip("\n"))
+        if trailing < n:
+            self.out.append("\n" * (n - trailing))
+
+    def handle_starttag(self, tag, attrs):
+        if self._skip:
+            self._skip += tag in ("script", "style")
+            return
+        if tag in ("script", "style"):
+            self._skip = 1
+        elif tag in _HEADING or tag == "h1":
+            n = _HEADING.get(tag, 2)          # h1 -> == (page title is h1)
+            self._break(2)
+            self.out.append("=" * n + " ")
+        elif tag in ("p", "div", "section", "article"):
+            self._break(2)
+        elif tag == "br":
+            self.out.append("\n")
+        elif tag == "hr":
+            self._break(2)
+            self.out.append("----")
+            self._break(2)
+        elif tag in ("ul", "ol"):
+            self.lists.append("*" if tag == "ul" else "#")
+            self._break(1)
+        elif tag == "li":
+            self._break(1)
+            self.out.append(("".join(self.lists) or "*") + " ")
+        elif tag == "a":
+            href = (dict(attrs).get("href") or "").strip()
+            self._a = (href, len(self.out)) if href else None
+        elif tag in ("strong", "b"):
+            self.out.append("'''")
+        elif tag in ("em", "i"):
+            self.out.append("''")
+        elif tag == "code" and not self._pre:
+            self.out.append("<code>")
+        elif tag == "pre":
+            self._pre += 1
+            self.out.append("<pre>")
+        elif tag == "blockquote":
+            self._break(1)
+            self.out.append(": ")
+
+    def handle_endtag(self, tag):
+        if self._skip:
+            if tag in ("script", "style"):
+                self._skip = 0
+            return
+        if tag in _HEADING or tag == "h1":
+            n = _HEADING.get(tag, 2)
+            self.out.append(" " + "=" * n)
+            self._break(2)
+        elif tag in ("p", "div", "section", "article"):
+            self._break(2)
+        elif tag in ("ul", "ol"):
+            if self.lists:
+                self.lists.pop()
+            self._break(1)
+        elif tag == "a" and self._a is not None:
+            href, mark = self._a
+            self._a = None
+            label = "".join(self.out[mark:]).strip()
+            del self.out[mark:]
+            self.out.append(f"[{href}]" if not label or label == href
+                            else f"[{href} {label}]")
+        elif tag in ("strong", "b"):
+            self.out.append("'''")
+        elif tag in ("em", "i"):
+            self.out.append("''")
+        elif tag == "code" and not self._pre:
+            self.out.append("</code>")
+        elif tag == "pre":
+            self._pre = max(0, self._pre - 1)
+            self.out.append("</pre>")
+
+    def handle_startendtag(self, tag, attrs):
+        if tag == "br":
+            self.out.append("\n")
+        elif tag == "hr":
+            self._break(2)
+            self.out.append("----")
+            self._break(2)
+
+    def handle_data(self, data):
+        if not self._skip:
+            self.out.append(data)
+
+
+def html_to_wikitext(markup: str) -> str:
+    """Convert lesson-body HTML to wikitext for the Education: pages.
+    Not a general converter — unknown tags flatten to their text."""
+    p = _HtmlToWikitext()
+    p.feed(markup or "")
+    p.close()
+    text = "".join(p.out)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def lesson_wiki_title(topic: str, prefix: str = "Education:") -> str:
+    """Readable Education: page title from a lesson topic — the
+    lesson-<md5> slug never leaks to readers. First letter of each
+    lowercase (hyphen-)word is capitalized; acronyms survive;
+    MediaWiki-forbidden title chars fold to spaces."""
+    t = _LESSON_TITLE_BAD.sub(" ", str(topic or ""))
+    words = []
+    for w in re.split(r"\s+", t):
+        if not w:
+            continue
+        if w.islower():
+            w = "-".join(seg[:1].upper() + seg[1:]
+                         for seg in w.split("-"))
+        words.append(w)
+    return prefix + " ".join(words)
+
+
+def _topic_slug(topic: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(topic).lower()).strip("-")
+
+
 # --- sinks ------------------------------------------------------------------
 
 
@@ -327,6 +478,8 @@ class MediaWikiSink(Sink):
     provide only a canonical event and a safe ``meta.wiki_title``.
     """
 
+    edit_label = "DevNest News"
+
     def __init__(self, api_url: str, username: str, password: str,
                  template: str = "แม่แบบ:NewsReport", api=None,
                  name: str = "wiki", surface: str = "public",
@@ -440,7 +593,7 @@ class MediaWikiSink(Sink):
         })["query"]["tokens"]["csrftoken"]
         edited = self._api({
             "action": "edit", "title": title, "text": self._wikitext(ev),
-            "summary": f"DevNest News {ev['event_id']}",
+            "summary": f"{self.edit_label} {ev['event_id']}",
             "token": csrf, "format": "json"}, post=True).get("edit", {})
         if edited.get("result") not in ("Success", "Nochange"):
             raise DeliveryError("mediawiki edit failed")
@@ -448,6 +601,75 @@ class MediaWikiSink(Sink):
                 "pageid": edited.get("pageid"),
                 "revid": edited.get("newrevid"),
                 "action": edited.get("result", "").lower()}
+
+
+class WikiLessonSink(MediaWikiSink):
+    """Education:-namespace adapter for kind=lesson events
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2).
+
+    surface=private because Education: is a Lockdown-protected
+    staff-only namespace at cutover (Tony 2026-11-06: inhouse-after-sso);
+    members/public events skip with a reason until member wiki accounts
+    exist. meta.wiki_title wins; otherwise the title derives from
+    meta.topic via lesson_wiki_title. meta.format='wikitext' passes the
+    body through verbatim (the migrate path pre-converts); anything else
+    is treated as lesson HTML and converted."""
+
+    edit_label = "Education lesson"
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:Education", api=None,
+                 name: str = "wiki-education", surface: str = "private",
+                 namespace_prefix: str = "Education:"):
+        super().__init__(api_url, username, password, template=template,
+                         api=api, name=name, surface=surface,
+                         namespace_prefix=namespace_prefix)
+        self.kinds = frozenset(("lesson",))
+        self.evidence_required = False
+
+    def _title(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        title = str(meta.get("wiki_title") or "").strip() or \
+            lesson_wiki_title(meta.get("topic") or ev["title"],
+                              self.namespace_prefix)
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
+        return title
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        body = ev["body"]
+        if str(meta.get("format") or "").strip().lower() != "wikitext":
+            body = html_to_wikitext(body)
+        lines = [
+            f"{{{{{self.template}",
+            f"|topic={meta.get('topic', ev['title'])}",
+            f"|level={meta.get('level', '')}",
+            f"|source={meta.get('lesson_source')
+                          or meta.get('source', ev['source'])}",
+            f"|learned_at={meta.get('learned_at', '')}",
+            f"|next_review={meta.get('next_review', '')}",
+            f"|status={meta.get('status', 'open')}",
+            f"|updated={meta.get('updated', ev['occurred_at'][:10])}",
+            f"|no_th={'1' if meta.get('no_th') else ''}",
+            f"|event_id={ev['event_id']}",
+            "}}", "",
+            body, "",
+        ]
+        categories = ["Education"]
+        level = str(meta.get("level") or "").strip()
+        if level:
+            categories.append(f"Education/Level/{level}")
+        status = str(meta.get("status") or "").strip()
+        if status:
+            categories.append(f"Education/Status/{status}")
+        topic = _topic_slug(str(meta.get("topic") or ""))
+        if topic:
+            categories.append(f"Education/Topics/{topic}")
+        lines.extend(f"[[Category:{c}]]"
+                     for c in dict.fromkeys(categories))
+        return "\n".join(lines)
 
 
 # --- noise policy -----------------------------------------------------------
