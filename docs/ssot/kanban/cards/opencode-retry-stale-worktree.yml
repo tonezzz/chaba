@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-06 20:28
+updated: 2026-11-06 20:33
 priority: low
 tags:
 - opencode
@@ -311,6 +311,13 @@ comms:
 - at: 2026-11-06 20:28
   from: idc02
   text: claimed
+- at: 2026-11-06 20:32
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-06 20:33
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -334,10 +341,11 @@ action:
     CPU time.'
   sweep:
     stale_running: 2026-11-04 14:30
-    zero_commit: 2026-11-04 16:01
+    zero_commit: 2026-11-06 20:32
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   llm_key_alias: bench
   button: test-key-alias
+  verified: false
   runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
