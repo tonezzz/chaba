@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
 column: backlog
-updated: 2026-11-06 17:05
+updated: 2026-11-06 17:18
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -38,3 +38,9 @@ comms:
     passed, 1 skipped), nest-pack-submit --dry-run valid. Checked-in inputs/render-request.json is template_disabled,
     so staging it cannot render until an approved request replaces status/owner_approved/approved_by. Actual KK-Mac
     staging must use --remote gdrive:ada-nest-kk-llm, not the sub'
+- at: 2026-11-06 17:18
+  from: devin
+  text: 'Pre-render gate check 2026-11-06: kk_mac_admission is NOT eligible — disk_free_gb=15 (below the 20GiB lane
+    floor and the pack request floor of 30GiB). load_1m=2.11, ollama_ok=true, heartbeat_age~187s, node_busy=false.
+    ssh shows KK console + SSH sessions active. Pack is committed locally (40d04803c) but not pushed/staged; no
+    render was dispatched.'
