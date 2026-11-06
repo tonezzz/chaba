@@ -1,0 +1,33 @@
+id: adobe-stock-kk-mac-render-poc
+title: Adobe Stock KK-Mac supervised image-render POC pack
+column: backlog
+updated: 2026-11-06 17:05
+spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
+
+
+  Context: campaign AS-2026-11-05-REMOTE-WORK-001 already has a KK-Mac SDXL baseline in gdrive:ada-nest-adobe-stock.
+  The missing piece is a controlled pack that can render one approved comparison image and return inspectable artifacts.
+
+
+  Deliverable: scripts/colab/packs/kk-mac-image-render-poc with pack.yml, render.py, and a disabled inputs/render-request.json
+  template. The pack must run on KK-Mac through the existing gdrive:ada-nest-kk-llm Nest queue, use the isolated
+  ~/.local/share/kk-mac-image-renderer venv and pinned SDXL model manifest, render exactly one PNG, and emit preflight.json,
+  render.png, render-manifest.json, and verdict.json. It must fail closed when the request is not approved, owner_approved
+  is false, adobe_upload is not false, model manifest/revision mismatches, load exceeds the request limit, or disk
+  is below the request floor.
+
+
+  Safety: no Adobe upload, no browser/GUI, no credentials, no arbitrary shell, no batch generation, no automatic
+  retry. The checked-in request stays disabled until Tony approves a specific render window.
+
+
+  Next gates: commit/push the pack, stage one approved request to gdrive:ada-nest-kk-llm only during an owner-idle
+  window, verify artifacts + SHA-256, copy the accepted PNG/manifest into the Adobe campaign folder, then run qwen2.5vl
+  QC before any metadata/submission work.'
+note: Spawned from the Adobe Stock remote-work campaign after the first KK-Mac SDXL render landed as comparison
+  baseline A. Worktree branch feat/adobe-stock-render-poc commit 40d04803c adds the pack and stdlib contract tests.
+ref: OPS-1045
+comms:
+- at: 2026-11-06 17:05
+  from: tony
+  text: card captured via board-api
