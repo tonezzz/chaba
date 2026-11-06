@@ -1,7 +1,7 @@
 id: opencode-adobe-stock-image-preview
 title: OpenChamber Adobe Stock image preview and asset picker
 column: backlog
-updated: 2026-11-05 20:11
+updated: 2026-11-06 17:02
 brief: Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset
   selection without uploading or mutating Adobe Stock.
 priority: medium
@@ -41,3 +41,9 @@ comms:
     indexer test proving preview_url/thumbnail_url metadata survives indexing. Verification: 15 pytest tests passed,
     py_compile passed, diff check passed. Still read-only; no upload/license/generation path added. Existing .opencode/opencode.json
     deletion and root opencode.json untracked'
+- at: 2026-11-06 17:02
+  from: devin
+  text: 'Continued with the supervised KK-Mac render POC worktree: added stdlib-only contract tests for the approved-request
+    gate, Adobe-upload=false safety, PNG signature/dimension/size artifact checks, and the checked-in template_disabled
+    request. Targeted tests pass 3/3. The actual --check correctly refuses the disabled template before model imports;
+    no Mac render or Adobe upload was run. Worktree artifacts remain uncommitted for review.'
