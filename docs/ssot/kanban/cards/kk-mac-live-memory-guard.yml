@@ -1,0 +1,21 @@
+id: kk-mac-live-memory-guard
+title: Add live memory guard to KK-Mac bounded LLM executor
+column: backlog
+updated: 2026-11-06 16:30
+priority: high
+tags:
+- kk-mac
+- llm
+- resource-guard
+spec: 'Before another KK-Mac local inference, add a live memory-pressure/free-memory monitor to the bounded executor
+  that covers model load and generation. Enforce the approved 60% pre-load floor and stop below 50% or on pressure;
+  safely unload only a model loaded by this task, never an owner-resident model. Persist pre/during/post snapshots
+  and add tests for threshold crossing. Keep KK_MAC_LANES=0 and automatic routing off until independently verified.
+  Trigger: the approved 2026-11-06 smoke passed its deterministic task checks but free memory measured 34% with
+  Qwen3:8B resident; after unloading the test-loaded model, free memory recovered to 55%.'
+ref: MEM-1043
+comms:
+- at: 2026-11-06 16:30
+  from: tony
+  text: 'Created from the 2026-11-06 Qwen3:8B one-shot: inference passed, but the live 50% memory floor was crossed.
+    Keep the lane off pending a verified memory monitor/abort path.'
