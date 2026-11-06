@@ -23,6 +23,9 @@ requires:
   - "tool:podman — rootless quadlets (jack-ide.network, jack-opencode.container,
      jack-enroll.container; images localhost/jack-enroll + localhost/jack-opencode
      built from enroll-gw/ + opencode/)"
+  - "data: gdrive:ada-nest-adobe-stock — optional host-side rclone copy into
+     ~/.local/share/ada-opencode/gdrive; container consumes it read-only at
+     /data/gdrive"
   - "svc:tailscaled — tailscale serve --https=8448 -> http://127.0.0.1:8377
      (tailnet edge auth + TLS + identity headers)"
   - "svc:litellm gateway 100.102.134.91:4000 — model calls from opencode"
@@ -30,6 +33,7 @@ state:
   - "~/.local/share/jack-ide/state — state.json (sha256 codes/sessions) + audit.jsonl"
   - "~/.local/share/jack-ide/workspace — Jack scratch git workspace (RW)"
   - "~/.local/share/jack-ide/opencode-home — disposable opencode config/session data"
+  - "~/.local/share/ada-opencode/gdrive — read-only rclone-fed Ada Nest tree; container path /data/gdrive"
   - "~/.config/jack-ide/opencode.json — IDE config (litellm provider, no MCP)"
   - "tailscaled serve config — https:8448 listener (persistent in tailscaled state)"
 ports:

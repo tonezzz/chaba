@@ -16,7 +16,10 @@ OpenCode.
 
 The Ada image includes Python and the `mcp` package because the Ada control
 bridge is a local Python MCP server launched by OpenCode. The Jack image is
-not sufficient for this tenant.
+not sufficient for this tenant. Ada's workspace is writable by the OpenCode
+runtime for harmless project metadata and session bookkeeping; the Ada agent
+permissions deny shell/edit tools, and provider secrets remain in the
+separate service `EnvironmentFile`.
 
 ```
 browser ──https──> idc02.taila0626a.ts.net:8448   (tailscale serve: TLS + tailnet auth,
@@ -76,6 +79,42 @@ Workspace reset (files, not auth):
   its workspace + disposable home, `mcp: {}`, 2G RAM / 200% CPU caps.
 - Every mint/enroll/replay/expiry/revoke/reset/denied-proxy/upgrade event is
   audited to `state/audit.jsonl`.
+
+## Ada Nest GDrive source
+
+The Ada OpenCode container has an optional read-only mount:
+
+```text
+host:      ~/.local/share/ada-opencode/gdrive
+container: /data/gdrive
+```
+
+For Adobe Stock, the expected index path is:
+
+```text
+/data/gdrive/ada-nest-adobe-stock/indexes/
+```
+
+The host-side sync process owns the write. OpenCode and the Ada MCP bridge
+must only read this tree. Keep the source absent until the rclone sync has
+been configured and verified; an empty/missing tree is safer than a writable
+Drive credential inside the container.
+
+The safe copy helper is:
+
+```bash
+scripts/sync_ada_nest_gdrive.sh
+```
+
+It copies `gdrive:ada-nest-adobe-stock` into the host-side cache using
+`rclone copy`; it never deletes local files when the remote is missing or
+incomplete. Override the remote or destination only with:
+
+```bash
+ADA_NEST_GDRIVE_REMOTE=gdrive:ada-nest-adobe-stock \
+ADA_NEST_GDRIVE_DIR="$HOME/.local/share/ada-opencode/gdrive/ada-nest-adobe-stock" \
+scripts/sync_ada_nest_gdrive.sh
+```
 
 ## Deploy (first time on idc02)
 
