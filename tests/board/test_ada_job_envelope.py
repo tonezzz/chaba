@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import pytest
+
 from scripts.board.ada_job_envelope import (
-    can_transition, receipt, validate_envelope, validate_result,
+    can_transition, receipt, transition_record, validate_envelope,
+    validate_result, validate_transition,
 )
 
 
@@ -79,3 +82,29 @@ def test_receipt_never_turns_pass_into_approval():
     assert value["verified"] is True
     assert "merge" in value["approval_required"]
     assert "approved" not in value
+
+
+def test_transition_record_is_durable_and_attributed():
+    rec = transition_record(
+        envelope(state="ready"), "claimed",
+        actor="devin", host="tony-dell",
+        evidence=["dispatch-wt-20261106"], at="2026-11-06T13:00:00+00:00")
+    assert rec["job_id"] == "ada-1010-envelope"
+    assert rec["from"] == "ready" and rec["to"] == "claimed"
+    assert rec["actor"] == "devin" and rec["host"] == "tony-dell"
+    assert rec["at"] == "2026-11-06T13:00:00+00:00"
+    assert rec["evidence"] == ["dispatch-wt-20261106"]
+
+
+def test_transition_record_rejects_invalid_or_unattributed():
+    with pytest.raises(ValueError):
+        transition_record(envelope(state="done"), "running",
+                          actor="devin", host="tony-dell")
+    with pytest.raises(ValueError):
+        transition_record(envelope(state="ready"), "claimed",
+                          actor="", host="tony-dell")
+    with pytest.raises(ValueError):
+        transition_record(envelope(state="ready"), "claimed",
+                          actor="devin", host="")
+    with pytest.raises(ValueError):
+        validate_transition("bogus", "ready")

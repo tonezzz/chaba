@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from pathlib import PurePosixPath
 from typing import Any
 
@@ -71,6 +72,32 @@ def validate_transition(current: str, target: str) -> None:
         raise ValueError(f"unknown lifecycle state: {current}")
     if not can_transition(current, target):
         raise ValueError(f"invalid lifecycle transition: {current} -> {target}")
+
+
+def transition_record(envelope: dict[str, Any], target: str, *,
+                      actor: str, host: str,
+                      evidence: list[str] | None = None,
+                      at: str | None = None) -> dict[str, Any]:
+    """Durable record for one lifecycle move: who (actor), where (host),
+    when (at, UTC ISO-8601), and why (evidence receipts). Raises on an
+    invalid transition or a missing actor/host — a state flip without
+    attribution is not evidence."""
+    current = str(envelope.get("state") or "")
+    validate_transition(current, target)
+    if not str(actor or "").strip():
+        raise ValueError("transition requires actor")
+    if not str(host or "").strip():
+        raise ValueError("transition requires host")
+    return {
+        "job_id": envelope.get("job_id"),
+        "card_id": envelope.get("card_id"),
+        "from": current,
+        "to": target,
+        "actor": str(actor),
+        "host": str(host),
+        "at": at or datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "evidence": [str(e) for e in (evidence or [])],
+    }
 
 
 def validate_result(result: dict[str, Any]) -> list[str]:
