@@ -1,6 +1,6 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
-column: backlog
+column: review
 updated: 2026-11-06 18:18
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
@@ -69,6 +69,9 @@ comms:
     to out/*.png (commit 97e62f5ec) and re-dispatched once — second run wrote done. Verified remote: done marker,
     out/*.png=1x689964B, verdict pass, sha256 4d5694c0ee3a4249d2fa69cf48d36a7121ce7c4ce01a7f55ce1a0243e535535a,
     1024x576, model revision 462165984030d82259a11f4367a4eed129e94a7'
+- at: 2026-11-06 18:18
+  from: devin
+  text: moved backlog -> review
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
@@ -81,3 +84,4 @@ requests:
   - approve-safe-cache-cleanup
   - postpone-render
   suggested: free-space-then-render
+review_kind: verify
