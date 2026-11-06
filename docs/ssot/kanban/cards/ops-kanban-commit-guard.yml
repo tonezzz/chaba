@@ -29,6 +29,13 @@ comms:
 - at: 2026-10-30 21:54
   from: chaba
   text: 'commit refused (failure-streak): kanban-commit failed 3+ consecutive ticks — last: commit failed'
+- at: 2026-11-06 19:49
+  from: devin
+  text: 'Related anomaly seen while restarting board-api for the wiki migration (2026-11-06 ~19:40): chaba-board-api.service
+    dead since Nov 4 — door is a hand-started process from the EXEC checkout ~/CascadeProjects/chaba (unit ExecStart
+    targets served chaba-tony-dell, which is ~2300 ahead/~1500 behind origin — matches this card''s failure-streak).
+    Door restarted in-place same cwd/log so it''s up with latest code, but the declared unit+checkout topology is
+    still broken — exec checkout now ~180 unpushed boa'
 - at: 2026-11-06 20:10
   from: chaba
   text: recovered after 667 consecutive failed ticks
