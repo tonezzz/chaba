@@ -1,7 +1,7 @@
 id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
 title: Wiki member-knowledge surface — migrate wp education, structure with news+report
 column: doing
-updated: 2026-11-06 19:37
+updated: 2026-11-06 19:49
 priority: medium
 tags:
 - cms
@@ -352,6 +352,13 @@ comms:
   text: 'dispatch 193421 (phase 3): door still stale (9 sinks — running board-api predates 2a/2b merge). Restarting
     the detached board-api on idc03 (exec checkout now has the code), then templates -> 1-page probe -> anon Lockdown
     check -> full migration per plan.'
+- at: 2026-11-06 19:49
+  from: devin
+  text: 'phase-3 DONE: restarted stale door on idc03 (11 sinks live). Found+fixed a real door bug — do_wiki_page
+    edited via the ANON opener not the login session (badtoken); fix+regression test on this branch, templates bootstrapped
+    via direct API meanwhile. Migration applied: 124 lessons + Ada-Nest hub + Education:Index; 2 reports + Reports:Index.
+    Anon accessdenied VERIFIED on Education:+Reports: (Lockdown). WIKI_EDUCATION_WRITE=dual on — do_lesson dual-write
+    proven (post 4057 -> wiki pageid 175). Remai'
 requests:
 - id: which-wiki-engine-should-the-member-know-3c539b
   ask: Which wiki engine should the member-knowledge surface use?
