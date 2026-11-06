@@ -44,3 +44,19 @@ comms:
     floor and the pack request floor of 30GiB). load_1m=2.11, ollama_ok=true, heartbeat_age~187s, node_busy=false.
     ssh shows KK console + SSH sessions active. Pack is committed locally (40d04803c) but not pushed/staged; no
     render was dispatched.'
+- at: 2026-11-06 17:18
+  from: devin
+  text: 'raised request kk-mac-disk-for-image-render: KK-Mac has only 15GiB free, below the 30GiB render floor.
+    How should we unblock the Adobe Stock comparison-B render?'
+requests:
+- id: kk-mac-disk-for-image-render
+  ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
+    render?
+  status: open
+  at: 2026-11-06 17:18
+  from: devin
+  options:
+  - free-space-then-render
+  - approve-safe-cache-cleanup
+  - postpone-render
+  suggested: free-space-then-render
