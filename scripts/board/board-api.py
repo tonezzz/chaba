@@ -1514,7 +1514,8 @@ MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
-                      "/wiki/extension", "/wiki/news-review"}
+                      "/wiki/extension", "/wiki/news-review",
+                      "/wiki/news-diagnose"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -1691,6 +1692,115 @@ def do_wiki_news_review(body: dict, frm: str) -> dict:
         "wikitext": str(content)[:20000],
         "actor": frm,
         "message": "private News review read",
+    }
+
+
+def do_wiki_news_diagnose(body: dict, frm: str) -> dict:
+    """Return promotion gates without reading or mutating a public page."""
+    private_title = str(body.get("private_wiki_title") or "").strip()
+    public_title = str(body.get("public_wiki_title") or "").strip()
+    if not private_title.startswith("PrivateNews:"):
+        raise ValueError("private_wiki_title must be under PrivateNews:")
+    if not public_title.startswith("News/"):
+        raise ValueError("public_wiki_title must be under News/")
+
+    review = do_wiki_news_review(
+        {"wiki_title": private_title}, frm)
+    checks = [{
+        "id": "private_page",
+        "status": "pass",
+        "revid": review.get("revid"),
+    }]
+    expected_revid = body.get("review_revid")
+    if expected_revid is not None:
+        try:
+            expected_revid = int(expected_revid)
+        except (TypeError, ValueError):
+            expected_revid = -1
+        checks.append({
+            "id": "review_revision",
+            "status": "pass" if expected_revid == review.get("revid")
+            else "blocked",
+            "expected": expected_revid,
+            "actual": review.get("revid"),
+        })
+    else:
+        checks.append({
+            "id": "review_revision",
+            "status": "blocked",
+            "reason": "review_revid is required for promotion",
+        })
+
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    target = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "titles": public_title, "prop": "info",
+         "format": "json"})
+    target_page = next(
+        iter(target.get("query", {}).get("pages", {}).values()), {})
+    checks.append({
+        "id": "public_target",
+        "status": "blocked" if "missing" not in target_page else "pass",
+        "exists": "missing" not in target_page,
+    })
+
+    card_ref = str(body.get("card_ref") or "").strip()
+    if not card_ref:
+        checks.append({
+            "id": "card_authorization",
+            "status": "blocked",
+            "reason": "promotion requires a matching board card",
+        })
+    else:
+        try:
+            card = load(card_path(card_ref))
+            haystack = json.dumps(card, ensure_ascii=False)
+            authorized = private_title in haystack and public_title in haystack
+            checks.append({
+                "id": "card_authorization",
+                "status": "pass" if authorized else "blocked",
+                "card_ref": card_ref,
+                "reason": None if authorized else
+                "card does not name both promotion pages",
+            })
+        except ValueError as exc:
+            checks.append({
+                "id": "card_authorization",
+                "status": "blocked",
+                "card_ref": card_ref,
+                "reason": str(exc),
+            })
+    checks.append({
+        "id": "confirmation",
+        "status": "pending",
+        "reason": "diagnosis never confirms or publishes",
+    })
+    ready = all(c["status"] == "pass" for c in checks
+                if c["id"] != "confirmation")
+    return {
+        "operation": "promote",
+        "ready": ready,
+        "diagnosis_id": "diag-" + hashlib.sha1(
+            f"{private_title}\0{public_title}\0{review.get('revid')}".encode()
+        ).hexdigest()[:16],
+        "checks": checks,
+        "review": review,
+        "actor": frm,
+        "message": "News promotion diagnosis",
     }
 
 
@@ -2821,7 +2931,8 @@ class H(BaseHTTPRequestHandler):
             try:
                 frm = (job_actor(body, ident)
                        if path in ("/job", "/publish", "/wiki/extension",
-                                   "/wiki/news-review")
+                                   "/wiki/news-review",
+                                   "/wiki/news-diagnose")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -2840,6 +2951,8 @@ class H(BaseHTTPRequestHandler):
                         res = do_wiki_extension(body, frm)
                     elif path == "/wiki/news-review":
                         res = do_wiki_news_review(body, frm)
+                    elif path == "/wiki/news-diagnose":
+                        res = do_wiki_news_diagnose(body, frm)
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
