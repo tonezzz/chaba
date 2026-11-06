@@ -322,6 +322,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 20:27
+  from: idc02
+  text: claimed
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -406,7 +409,8 @@ requests:
     no GPU or model inference.'
   escalated_at: 2026-10-31 08:33
   executed: 2026-11-06 queue
-awaiting_action: true
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: codemod
+  runner: idc02
