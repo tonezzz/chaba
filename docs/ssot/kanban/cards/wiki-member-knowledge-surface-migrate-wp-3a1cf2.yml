@@ -1,7 +1,7 @@
 id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
 title: Wiki member-knowledge surface — migrate wp education, structure with news+report
 column: doing
-updated: 2026-11-06 18:14
+updated: 2026-11-06 18:19
 priority: medium
 tags:
 - cms
@@ -246,6 +246,13 @@ comms:
     corrections now present). Building: WikiLessonSink in publication.py (protected Education: ns, kinds=lesson),
     /publish registry + do_lesson dual-write behind flag, scripts/wiki-lesson-migrate.py export tool with --dry-run,
     tests. No live wiki writes — Education: ns still gated on the LocalSettings snippet already posted.'
+- at: 2026-11-06 18:19
+  from: devin
+  text: 'PHASE 2a DONE — all repo-side tooling landed on dispatch/20261106-181239 (43+21 tests green, SSOT valid):
+    (1) WikiLessonSink in publication.py — kinds=lesson, private surface, Education: prefix, แม่แบบ:Education template,
+    meta.format=wikitext|html-convert, title derives from topic; registered as wiki-education in /publish op=sinks.
+    (2) do_lesson dual-write behind WIKI_EDUCATION_WRITE=dual in wiki-h3-gizmo.env — ships OFF; wiki failure reports
+    result[wiki] and never fails the WP write. (3) script'
 requests:
 - id: which-wiki-engine-should-the-member-know-3c539b
   ask: Which wiki engine should the member-knowledge surface use?
