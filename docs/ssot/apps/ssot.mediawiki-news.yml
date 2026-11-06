@@ -101,7 +101,7 @@ hierarchy:
     local: News/Local/<Locality>
     desks: News/Desks/<Desk>
     private_reserved: News/Private/<Desk>
-    private_namespace: PrivateNews/<Scope>/<Leaf>
+    private_namespace: PrivateNews:<Scope>/<Leaf>
   devnest_desk:
     root: News/Desks/DevNest
     branches:
@@ -121,7 +121,7 @@ hierarchy:
     - "News/Private/* is legacy reserved naming only; it is not an access boundary"
     - "PrivateNews:* is the enforced inhouse/sysop review namespace"
     - "generated titles must be supplied as meta.wiki_title"
-    - "adapter rejects titles outside News/"
+    - "each Wiki adapter rejects titles outside its configured namespace prefix"
 
 page_roles:
   index:
