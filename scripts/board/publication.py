@@ -346,6 +346,18 @@ def _topic_slug(topic: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", str(topic).lower()).strip("-")
 
 
+def report_wiki_title(report_type: str, period: str = "",
+                      prefix: str = "Reports:") -> str:
+    """Reports:<Type>/<period> page title — member-facing reports are
+    living pages, machine-overwritten by period (usage-ledger +
+    rolling-14d -> Reports:Usage-Ledger/rolling-14d). Same sanitation
+    rules as lesson_wiki_title."""
+    stem = lesson_wiki_title(report_type or "report", "")
+    leaf = re.sub(r"\s+", "-",
+                  _LESSON_TITLE_BAD.sub(" ", str(period or ""))).strip("-")
+    return prefix + stem + (f"/{leaf}" if leaf else "")
+
+
 # --- sinks ------------------------------------------------------------------
 
 
@@ -667,6 +679,66 @@ class WikiLessonSink(MediaWikiSink):
         topic = _topic_slug(str(meta.get("topic") or ""))
         if topic:
             categories.append(f"Education/Topics/{topic}")
+        lines.extend(f"[[Category:{c}]]"
+                     for c in dict.fromkeys(categories))
+        return "\n".join(lines)
+
+
+class WikiReportSink(MediaWikiSink):
+    """Reports:-namespace adapter for kind=report events — the
+    member-facing half of the report split (card
+    wiki-member-knowledge-surface-migrate-wp-3a1cf2; internal dossiers
+    stay on the 'report' MDDB sink). surface=private because Reports: is
+    a Lockdown-protected staff/member namespace at cutover. Explicit
+    opt-in only — kind=report default routes stay report+board, so a
+    dossier note never lands on the wiki unless a caller names
+    sinks=['wiki-reports']. meta.wiki_title wins; otherwise the title
+    derives from meta.report_type + meta.period via report_wiki_title.
+    meta.format='wikitext' passes the body verbatim."""
+
+    edit_label = "Member report"
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:Report", api=None,
+                 name: str = "wiki-reports", surface: str = "private",
+                 namespace_prefix: str = "Reports:"):
+        super().__init__(api_url, username, password, template=template,
+                         api=api, name=name, surface=surface,
+                         namespace_prefix=namespace_prefix)
+        self.kinds = frozenset(("report",))
+        self.evidence_required = False
+
+    def _title(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        title = str(meta.get("wiki_title") or "").strip() or \
+            report_wiki_title(meta.get("report_type") or ev["title"],
+                              meta.get("period") or "",
+                              self.namespace_prefix)
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
+        return title
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        body = ev["body"]
+        if str(meta.get("format") or "").strip().lower() != "wikitext":
+            body = html_to_wikitext(body)
+        lines = [
+            f"{{{{{self.template}",
+            f"|report_type={meta.get('report_type', '')}",
+            f"|period={meta.get('period', '')}",
+            f"|source_key={meta.get('source_key', ev['source'])}",
+            f"|status={meta.get('status', 'current')}",
+            f"|updated={meta.get('updated', ev['occurred_at'][:10])}",
+            f"|event_id={ev['event_id']}",
+            "}}", "",
+            body, "",
+        ]
+        categories = ["Reports"]
+        rtype = _topic_slug(str(meta.get("report_type") or ""))
+        if rtype:
+            categories.append(f"Reports/Type/{rtype}")
         lines.extend(f"[[Category:{c}]]"
                      for c in dict.fromkeys(categories))
         return "\n".join(lines)

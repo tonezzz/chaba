@@ -586,6 +586,96 @@ class WikiLessonSinkTest(PubTestBase):
             raise AssertionError("expected Skip")
 
 
+class ReportWikiTitleTest(unittest.TestCase):
+    def test_living_page_title(self):
+        self.assertEqual(
+            pub.report_wiki_title("usage-ledger", "rolling-14d"),
+            "Reports:Usage-Ledger/rolling-14d")
+        self.assertEqual(pub.report_wiki_title("usage-ledger"),
+                         "Reports:Usage-Ledger")
+
+    def test_forbidden_chars_fold(self):
+        t = pub.report_wiki_title("a<b>", "p|x_y")
+        self.assertNotRegex(t, r"[#<>\[\]|{}_]")
+
+
+class WikiReportSinkTest(PubTestBase):
+    """WikiReportSink — protected Reports: namespace adapter
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2)."""
+
+    def _sink(self, calls):
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            return {"edit": {"result": "Success", "pageid": 11,
+                             "newrevid": 12}}
+        return pub.WikiReportSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _ev(self, body="<p>Rolling usage <strong>ledger</strong>.</p>",
+            **meta):
+        m = {"report_type": "usage-ledger", "period": "rolling-14d",
+             "source_key": "idc03-usage-feed",
+             "wiki_title": "Reports:Usage-Ledger/rolling-14d"}
+        m.update(meta)
+        return pub.validate_event(ev(
+            kind="report", title="usage-ledger", body=body,
+            visibility="private", meta=m))
+
+    def test_publish_edit_and_metadata(self):
+        calls = []
+        r = self._sink(calls).publish(self._ev())
+        self.assertEqual(r["pageid"], 11)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"],
+                         "Reports:Usage-Ledger/rolling-14d")
+        self.assertIn("{{แม่แบบ:Report", edit["text"])
+        self.assertIn("|report_type=usage-ledger", edit["text"])
+        self.assertIn("|period=rolling-14d", edit["text"])
+        self.assertIn("|source_key=idc03-usage-feed", edit["text"])
+        self.assertIn("'''ledger'''", edit["text"])   # html converted
+        self.assertIn("[[Category:Reports/Type/usage-ledger]]",
+                      edit["text"])
+
+    def test_wikitext_format_passthrough(self):
+        calls = []
+        self._sink(calls).publish(
+            self._ev(format="wikitext",
+                     body="already '''wiki''' text"))
+        self.assertIn("already '''wiki''' text", calls[-1][0]["text"])
+
+    def test_title_derives_from_report_meta(self):
+        calls = []
+        e = self._ev()
+        del e["meta"]["wiki_title"]
+        self._sink(calls).publish(e)
+        self.assertEqual(calls[-1][0]["title"],
+                         "Reports:Usage-Ledger/rolling-14d")
+
+    def test_gates(self):
+        sink = self._sink([])
+        lesson = pub.validate_event(ev(
+            kind="lesson", title="l", body="b", visibility="private",
+            meta={"wiki_title": "Reports:X"}))
+        self.assertIn("unsupported", sink.check(lesson))
+        mem = self._ev()
+        mem["visibility"] = "members"
+        self.assertIn("private events only", sink.check(mem))
+        bad = self._ev(wiki_title="Education:X")
+        try:
+            sink._title(bad)
+        except pub.Skip as e:
+            self.assertIn("Reports:", str(e))
+        else:
+            raise AssertionError("expected Skip")
+
+
 class BoardApiWiringTest(PubTestBase):
     """do_publish in board-api: WP adapter + JsonSink receive the same
     canonical event — WP is only one adapter."""
@@ -599,10 +689,11 @@ class BoardApiWiringTest(PubTestBase):
         m = self.ba
         self._saved = {k: getattr(m, k) for k in
                        ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL",
-                        "WIKI_ENV_FILE")}
+                        "WIKI_ENV_FILE", "WIKI_API_CALL")}
         m.PUB_STATE_DIR = self.tmp / "pub-state"
         m.PUB_TG_URL = "http://127.0.0.1:1/send"   # closed port
         m.WIKI_ENV_FILE = self.tmp / "no-wiki.env"  # absent by default
+        m.WIKI_API_CALL = None
 
     def tearDown(self):
         for k, v in self._saved.items():
@@ -741,6 +832,112 @@ class BoardApiWiringTest(PubTestBase):
             {"topic": "wiki dual write", "content": "<p>c</p>",
              "no_th": True}, "devin")
         self.assertNotIn("wiki", r)
+
+    def test_wiki_reports_sink_registers(self):
+        self._wiki_env()
+        res = self.ba.do_publish({"op": "sinks"}, "devin")
+        s = res["sinks"]["wiki-reports"]
+        self.assertEqual(s["kinds"], ["report"])
+        self.assertEqual(s["surface"], "private")
+
+    def _fake_wiki_api(self, calls, namespaces=()):
+        def fake(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("siprop") == "namespaces":
+                return {"query": {"namespaces": {
+                    str(i): {"id": i, "*": n, "canonical": n}
+                    for i, n in enumerate(namespaces)}}}
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("action") == "edit":
+                return {"edit": {"result": "Success", "pageid": 20,
+                                 "newrevid": 21}}
+            return {}
+        self.ba.WIKI_API_CALL = fake
+
+    def test_wiki_page_template_write(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls)
+        r = self.ba.do_wiki_page(
+            {"title": "แม่แบบ:Education", "wikitext": "{| x |}"},
+            "devin")
+        self.assertEqual(r["action"], "success")
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "แม่แบบ:Education")
+        # template writes never consult the namespace table
+        self.assertFalse(any(c[0].get("siprop") == "namespaces"
+                             for c in calls))
+
+    def test_wiki_page_rejects_unlisted_title(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls)
+        for bad in ("News/x", "PrivateNews:x", "Main Page",
+                    "Template:NewsReport"):
+            try:
+                self.ba.do_wiki_page(
+                    {"title": bad, "wikitext": "x"}, "devin")
+            except ValueError as e:
+                self.assertIn("not allowed", str(e))
+            else:
+                raise AssertionError(f"{bad} should be refused")
+        self.assertFalse(calls)     # nothing reached the wiki
+
+    def test_wiki_page_ns_gate_before_localsettings(self):
+        self._wiki_env()
+        calls = []
+        # Education not yet registered -> refuse, don't litter main ns
+        self._fake_wiki_api(calls, namespaces=["Template"])
+        try:
+            self.ba.do_wiki_page(
+                {"title": "Education:Index", "wikitext": "x"}, "devin")
+        except ValueError as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace gate")
+        # registered -> write goes through
+        calls.clear()
+        self._fake_wiki_api(calls, namespaces=["Template", "Education"])
+        r = self.ba.do_wiki_page(
+            {"title": "Education:Index", "wikitext": "x"}, "devin")
+        self.assertEqual(r["wiki_title"], "Education:Index")
+
+    def test_report_wp_read_modes(self):
+        posts = []
+
+        def fake(route, data=None, method=None):
+            posts.append(route)
+            if "slug=" in route:
+                return [{"slug": "usage-ledger",
+                         "title": {"rendered": "Usage"},
+                         "content": {"rendered": "<p>c</p>"},
+                         "meta": {"report_type": "usage-ledger"},
+                         "modified": "2026-11-06", "status": "private"}]
+            return [{"slug": "usage-ledger",
+                     "title": {"rendered": "Usage"},
+                     "meta": {"report_type": "usage-ledger",
+                              "period": "rolling-14d",
+                              "source_key": "idc03-usage-feed"},
+                     "modified": "2026-11-06", "status": "private"}]
+        self.ba.wp_api = fake
+        r = self.ba.do_report({"mode": "wp-list"}, "devin")
+        self.assertEqual(r["count"], 1)
+        self.assertEqual(r["reports"][0]["report_type"], "usage-ledger")
+        self.assertIn("/wp/v2/report", posts[0])
+        g = self.ba.do_report({"mode": "wp-get", "slug": "usage-ledger"},
+                              "devin")
+        self.assertEqual(g["content"], "<p>c</p>")
+        try:
+            self.ba.do_report({"mode": "wp-get"}, "devin")
+        except ValueError as e:
+            self.assertIn("slug", str(e))
+        else:
+            raise AssertionError("expected slug required")
 
     def test_dedupe_across_adapters(self):
         posts = self._fake_wp()

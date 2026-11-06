@@ -1515,7 +1515,7 @@ MDDB = os.environ.get("MDDB_BASE_URL",
 MDDB_PAGES = "ada-cms-pages"
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
-                      "/wiki/news-diagnose"}
+                      "/wiki/news-diagnose", "/wiki/page"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -1802,6 +1802,117 @@ def do_wiki_news_diagnose(body: dict, frm: str) -> dict:
         "actor": frm,
         "message": "News promotion diagnosis",
     }
+
+
+def _wiki_login(api_url: str, env: dict):
+    """Bot-password login -> (opener, csrf_token). The three do_wiki_*
+    doors above inline this same dance; new code uses the helper."""
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    csrf = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "format": "json"}
+    )["query"]["tokens"]["csrftoken"]
+    return opener, csrf
+
+
+def _wiki_namespaces(api_url: str, opener) -> set:
+    """Registered namespace names (canonical + localized), lowercase —
+    e.g. {'template', 'แม่แบบ', 'privatenews', 'education', ...}."""
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo", "siprop": "namespaces",
+         "format": "json"})
+    names = set()
+    for ns in (result.get("query", {}).get("namespaces") or {}).values():
+        for k in ("*", "canonical"):
+            v = str(ns.get(k) or "").strip().lower()
+            if v:
+                names.add(v)
+    return names
+
+
+def _wiki_page_templates(env: dict) -> set:
+    """The support templates this door may write — configured names +
+    the education/report defaults. Template: is the canonical alias of
+    แม่แบบ: on the Thai wiki."""
+    out = set()
+    for key, default in (("WIKI_EDUCATION_TEMPLATE", "แม่แบบ:Education"),
+                         ("WIKI_REPORT_TEMPLATE", "แม่แบบ:Report")):
+        t = str(env.get(key) or default).strip()
+        if t:
+            out.add(t)
+            if t.startswith("แม่แบบ:"):
+                out.add("Template:" + t.split(":", 1)[1])
+    return out
+
+
+WIKI_PAGE_PREFIXES = ("Education:", "Reports:")
+WIKI_PAGE_TITLE_MAX = 150
+WIKI_PAGE_TEXT_MAX = 200000
+
+
+def do_wiki_page(body: dict, frm: str) -> dict:
+    """POST /wiki/page — guarded raw page write for support pages the
+    kind-gated sinks can't reach: แม่แบบ:Education / แม่แบบ:Report
+    templates and Education:/Reports: index/portal pages
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
+    allowlist keeps this from becoming a generic write backdoor around
+    the News review gate — main space, News/, PrivateNews: and every
+    other namespace are refused. Education:/Reports: writes additionally
+    verify the namespace is actually registered (siteinfo) so a premature
+    call can't litter main space with 'Education:Foo' pages."""
+    title = str(body.get("title") or body.get("wiki_title") or "").strip()
+    text = str(body.get("wikitext") or body.get("text") or "")
+    if not title or "\n" in title or "\r" in title \
+            or len(title) > WIKI_PAGE_TITLE_MAX:
+        raise ValueError("title required (<=150 chars, single line)")
+    if not text.strip():
+        raise ValueError("wikitext required")
+    if len(text) > WIKI_PAGE_TEXT_MAX:
+        raise ValueError(f"wikitext over {WIKI_PAGE_TEXT_MAX} chars")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    if title not in _wiki_page_templates(env):
+        prefix = next((p for p in WIKI_PAGE_PREFIXES
+                       if title.startswith(p)), None)
+        if prefix is None:
+            raise ValueError(
+                "title not allowed — must be an approved template or "
+                f"under {'/'.join(WIKI_PAGE_PREFIXES)}")
+        if prefix[:-1].lower() not in _wiki_namespaces(api_url, opener):
+            raise ValueError(
+                f"namespace {prefix[:-1]!r} is not registered on the "
+                "wiki — LocalSettings step first (card comm 2026-11-06)")
+    _, csrf = _wiki_login(api_url, env)
+    edited = _wiki_api_call(
+        api_url, opener,
+        {"action": "edit", "title": title, "text": text,
+         "summary": str(body.get("summary")
+                        or f"chaba wiki support page ({frm})")[:200],
+         "token": csrf, "format": "json"}, post=True).get("edit", {})
+    if edited.get("result") not in ("Success", "Nochange"):
+        raise UpstreamError("mediawiki edit failed: " +
+                            str(edited.get("info") or edited)[:300])
+    return {"wiki_title": title, "pageid": edited.get("pageid"),
+            "revid": edited.get("newrevid"),
+            "action": edited.get("result", "").lower(),
+            "actor": frm,
+            "message": f"wiki page {edited.get('result', '?').lower()}: "
+                       f"{title}"}
 
 
 def wp_api(route: str, data=None, method: str | None = None):
@@ -2379,11 +2490,52 @@ def report_create_doc(slug: str, title: str, content_md: str,
     return {"slug": slug}
 
 
+def _read_wp_reports(body: dict, frm: str) -> dict:
+    """mode=wp-list | wp-get — read side for the member-facing WP report
+    CPT (usage-ledger class), needed by the wiki Reports: migration
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). Distinct
+    store from the MDDB dossiers the other modes serve — hence the
+    wp- prefix. Runners hold no WP creds; the door reads for them."""
+    mode = str(body.get("mode") or "").strip()
+    if mode == "wp-list":
+        hits = wp_api("/wp/v2/report&status=private,publish&per_page=100"
+                      "&_fields=slug,title,modified,meta,status")
+        out = []
+        if isinstance(hits, list):
+            for h in hits:
+                m = h.get("meta") or {}
+                out.append({"slug": h.get("slug"),
+                            "title": (h.get("title") or {})
+                            .get("rendered", ""),
+                            "wp_status": h.get("status"),
+                            "report_type": m.get("report_type", ""),
+                            "period": m.get("period", ""),
+                            "source_key": m.get("source_key", ""),
+                            "modified": h.get("modified")})
+        return {"reports": out, "count": len(out), "via": frm,
+                "message": f"listed {len(out)} WP report CPT posts"}
+    slug = str(body.get("slug") or "").strip()
+    if not slug:
+        raise ValueError("wp-get requires slug")
+    hits = wp_api(f"/wp/v2/report&slug={slug}&status=private,publish")
+    if not (isinstance(hits, list) and hits):
+        raise ValueError(f"report not found: {slug}")
+    h = hits[0]
+    return {"slug": h.get("slug"),
+            "title": (h.get("title") or {}).get("rendered", ""),
+            "content": (h.get("content") or {}).get("rendered", ""),
+            "meta": h.get("meta") or {}, "modified": h.get("modified"),
+            "wp_status": h.get("status"), "via": frm,
+            "message": f"get {slug}"}
+
+
 def do_report(body: dict, frm: str) -> dict:
     """/report — the report-integration duty as an endpoint. Callers
     search first (query → candidate slugs), then either note-append to an
     existing page (integrate) or create a new one (create). `mode` may be
-    given explicitly; otherwise inferred from the fields present."""
+    given explicitly; otherwise inferred from the fields present.
+    mode=wp-list|wp-get reads the member-facing WP report CPT — a
+    different store from the MDDB dossiers (see _read_wp_reports)."""
     mode = str(body.get("mode") or body.get("do") or "").strip()
     slug = str(body.get("slug") or "").strip()
     note_text = str(body.get("note") or "").strip()
@@ -2391,6 +2543,8 @@ def do_report(body: dict, frm: str) -> dict:
     title = str(body.get("title") or "").strip()
     content_md = str(body.get("content_md") or body.get("content")
                      or "").strip()
+    if mode in ("wp-list", "wp-get"):
+        return _read_wp_reports(body, frm)
     if mode and mode not in ("search", "note", "create"):
         raise ValueError("mode must be search|note|create")
     if not mode:
@@ -2607,6 +2761,12 @@ def _pub_sinks(frm: str) -> dict:
                                        "แม่แบบ:Education"),
                 namespace_prefix=wiki_env.get("WIKI_EDUCATION_PREFIX",
                                               "Education:"))
+            sinks["wiki-reports"] = pub.WikiReportSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_REPORT_TEMPLATE",
+                                       "แม่แบบ:Report"),
+                namespace_prefix=wiki_env.get("WIKI_REPORT_PREFIX",
+                                              "Reports:"))
     except (OSError, KeyError):
         # Optional sink: the news event still follows the configured routes
         # and the missing wiki credentials remain a service-host concern.
@@ -2983,7 +3143,7 @@ class H(BaseHTTPRequestHandler):
                 frm = (job_actor(body, ident)
                        if path in ("/job", "/publish", "/wiki/extension",
                                    "/wiki/news-review",
-                                   "/wiki/news-diagnose")
+                                   "/wiki/news-diagnose", "/wiki/page")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -3004,6 +3164,8 @@ class H(BaseHTTPRequestHandler):
                         res = do_wiki_news_review(body, frm)
                     elif path == "/wiki/news-diagnose":
                         res = do_wiki_news_diagnose(body, frm)
+                    elif path == "/wiki/page":
+                        res = do_wiki_page(body, frm)
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
