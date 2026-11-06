@@ -36,6 +36,36 @@ return to `claimed` after reconciliation; cancelled is terminal.
 
 A heartbeat is progress evidence, not completion. `done` requires the declared artifact bundle and an independent verifier receipt.
 
+## Transition records
+
+Every lifecycle move writes a durable record via `transition_record()`:
+
+```text
+job_id, card_id, from, to, actor, host, at, evidence[]
+```
+
+`actor` is the identity that drove the move (`ada`, `devin`, `tony`, or the
+executor name); `host` is where it ran; `at` is UTC ISO-8601; `evidence`
+carries the receipts that justify the move (verifier output, approval
+reference, dispatch worktree). A state flip without actor/host is rejected —
+attribution is what makes the lifecycle auditable.
+
+## Offline queue and artifact transport
+
+The envelope is transport-agnostic JSON: it can sit in a local queue (a file
+or a card `action` block) until a host is reachable. Executors write the
+result bundle to the declared `output_artifacts`; a sync step carries
+envelope + result + receipt back to the board when connectivity returns.
+`idempotency_key` makes re-delivery safe — a consumer must not re-execute a
+`job_id` it has already claimed.
+
+## Node-RED projection
+
+Node-RED renders lifecycle state read-only by default. Any control (retry,
+approve, cancel) must be an allowlisted, confirmation-gated action writing
+through board-api — never arbitrary shell, restart, delete, deploy, or
+production mutation.
+
 ## Result bundle
 
 Every execution must retain:
