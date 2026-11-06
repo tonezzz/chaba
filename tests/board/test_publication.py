@@ -432,6 +432,25 @@ class NoiseTest(PubTestBase):
         reason = sink.check(e)
         self.assertIn("visibility", reason)
 
+    def test_mediawiki_private_sink_accepts_private_namespace_only(self):
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=lambda *_: {}, name="wiki-private", surface="private",
+            namespace_prefix="PrivateNews:")
+        private = pub.validate_event(ev(
+            kind="news", title="private", body="test",
+            evidence=["https://example/source"], visibility="private",
+            meta={"wiki_title": "PrivateNews/Countries/Thailand/test",
+                  "summary": "Private review test."}))
+        self.assertIsNone(sink.check(private))
+        public = pub.validate_event(ev(
+            kind="news", title="public", body="test",
+            evidence=["https://example/source"], visibility="public",
+            confidence="verified",
+            meta={"wiki_title": "News/Countries/Thailand/test",
+                  "summary": "Public test."}))
+        self.assertIn("private events only", sink.check(public))
+
 
 class BoardApiWiringTest(PubTestBase):
     """do_publish in board-api: WP adapter + JsonSink receive the same

@@ -2398,6 +2398,12 @@ def _pub_sinks(frm: str) -> dict:
                 wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
                 template=wiki_env.get("WIKI_NEWS_TEMPLATE",
                                        "แม่แบบ:NewsReport"))
+            sinks["wiki-private"] = pub.MediaWikiSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_NEWS_TEMPLATE",
+                                       "แม่แบบ:NewsReport"),
+                name="wiki-private", surface="private",
+                namespace_prefix="PrivateNews:")
     except (OSError, KeyError):
         # Optional sink: the news event still follows the configured routes
         # and the missing wiki credentials remain a service-host concern.
