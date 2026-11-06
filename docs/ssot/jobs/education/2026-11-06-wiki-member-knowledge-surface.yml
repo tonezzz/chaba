@@ -1,0 +1,207 @@
+title: Wiki member-knowledge surface — education/reports structure on wiki.h3
+subtitle: >
+  Plan for migrating WP education (lesson CPT) onto the existing MediaWiki
+  surface and structuring it alongside the News desk and report surfaces.
+  Verified live 2026-11-06 — supersedes the card-brief engine analysis,
+  which predates the deployed wiki.
+icon: education
+version: 1
+
+card: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+date: 2026-11-06
+
+verified_state:
+  wiki:
+    host: https://wiki.h3.gizmo-thailand.com
+    api: https://wiki.h3.gizmo-thailand.com/api.php
+    mediawiki: "1.46.2"
+    php: "8.3.36"
+    db: "MariaDB 10.5.29"
+    lang: th (en fallback)
+    topology: >
+      Same managed host (103.99.11.249) as boards.h3.gizmo-thailand.com and
+      chaba.h3.gizmo-thailand.com — i.e. the Plesk host beside boards WP.
+      boards.surf-thailand.com fronts it via Cloudflare. No new service
+      topology is needed for option A; it already exists.
+    namespaces:
+      - "News/ — main-namespace subpage tree (public): DevNest desk leaves"
+      - "PrivateNews: (3002) — protected; anon content read = accessdenied (verified)"
+      - "Infrastructure: (3000) — protected; hosts tree (idc01/02/03, mn01, tony-dell, tony-omen, michael-ha)"
+      - "Form: (106/107) — PageForms"
+    extensions_installed:
+      - Cargo
+      - CategoryTree
+      - Lockdown          # enforced — verified anon accessdenied on PrivateNews:/Infrastructure:
+      - Mermaid
+      - MsUpload
+      - MultimediaViewer
+      - PageForms
+      - PluggableAuth
+      - OpenID Connect    # SSO login button live on Special:UserLogin
+      - Springboard       # server-side extension manager driven by board-api
+    users: [Ada (writer bot), Tony, Tonezzzz@gmail.com (OIDC)]
+  board_api:
+    sinks_live: 9 — job, lesson, report, news, board, telegram, json,
+      wiki (public, News/, kinds=[news]), wiki-private (private, PrivateNews:, kinds=[news])
+    wiki_doors:
+      - "POST /wiki/extension — list|install|enable|disable over an allowlist
+        (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
+        Lockdown) via MediaWiki 'springboard' action"
+      - "POST /wiki/news-review — protected PrivateNews: read for Ada review"
+      - "POST /wiki/news-diagnose — private->public promotion gate,
+        card-authorized"
+    creds: "~/.config/secrets/wiki-h3-gizmo.env on idc03 (WIKI_HOST/USER/PASSWORD)"
+  wp_boards:
+    lessons: "124 posts (door /lesson op=topics count, 2026-11-06)"
+    news_cpt: "~2,736 published items — feed store, stays"
+    report_cpt: "small member-facing set (usage-ledger etc.)"
+    ops_ledgers: "activity/ops_error/nest_job/cam/score/repeat_ask — stay"
+  ada_cms_pages: "~388 docs, internal store, static publish dormant — stays"
+  ssot_drift_noted: >
+    docs/ssot/apps/ssot.mediawiki-news.yml still records extensions as
+    uninstalled and the private boundary as not_ready; both are deployed
+    and verified. See that file's updated current_state.
+
+correction_to_card_brief:
+  brief_said: "Engine options A/B/C — A = install MediaWiki beside boards WP (recommended)."
+  reality: >
+    Option A is already built and integrated. wiki.h3 IS MediaWiki on the
+    Plesk host beside boards WP, with the writer seam (MediaWikiSink),
+    credentials, protected-namespace pattern (Lockdown), extension
+    management (Springboard door), private->public promotion workflow,
+    and SSO auth all live. The remaining decision is visibility/scope,
+    not engine. Wiki.js (B) and ada-cms-pages (C) are effectively dead
+    options — they would orphan a deployed, standard-compliant stack.
+
+content_physics:
+  evergreen_knowledge: "wiki (Education: ns) — lessons, series/hubs, procedures"
+  feeds: "WP news CPT stays — 2.7k items, hourly ingest, digest trees; wiki
+    keeps only the public DevNest News desk (existing standard)"
+  reports_internal: "ada-cms-pages stays — ops/internal"
+  reports_member: "wiki Reports: ns (protected) — small CPT set migrates;
+    usage-ledger class = living page machine-overwritten via API"
+  ops_ledgers: "WP CPTs stay — records, not knowledge"
+
+proposed_structure:
+  namespaces:
+    Education:
+      id_suggestion: "3004 (+ talk 3005)"
+      protection: "Lockdown — same pattern as PrivateNews:/Infrastructure:
+        (read+edit restricted to staff/member group)"
+      pages:
+        - "Education:<Topic-Title> — one page per lesson (124)"
+        - "Education:Ada-Nest — hub (absorbs post-1608 hub convention)"
+        - "Education:Ada-Nest/<leaf> — ada-nest-* series subpages"
+        - "Education:Index / Education:Due — generated index/review pages"
+      template: "แม่แบบ:Education {topic, level, source, learned_at,
+        next_review, status, updated, no_th}"
+      categories:
+        - "Category:Education/Level/<intro|working|deep>"
+        - "Category:Education/Status/<open|learned|...>"
+        - "Category:Education/Topics/<topic-slug>"
+      thai: "same-page TH section convention carries over verbatim"
+    Reports:
+      id_suggestion: "3006 (+ talk 3007)"
+      protection: "Lockdown — member group"
+      pages:
+        - "Reports:<report_type>/<period> — e.g. Reports:Usage-Ledger/rolling-14d
+          (living page, API-overwritten)"
+        - "Reports:Index — generated rollup"
+    prerequisite: >
+      New namespaces + Lockdown rules are LocalSettings.php changes —
+      admin/Plesk action (the same access path that created PrivateNews:
+      and Infrastructure:). Not agent-automatable today; springboard only
+      manages extensions, not LocalSettings.
+
+migration_mechanics:
+  export: >
+    One-shot scripts/wiki-lesson-migrate.py on idc03 — /lesson op=list+get
+    via the door (no WP creds on the runner), slug lesson-<md5> -> readable
+    Education:<topic> title (meta.topic), body HTML -> wikitext (pandoc or
+    small converter), meta -> Education template fields + categories.
+    --dry-run first; ~124 pages + ~5 report pages.
+  writers_retarget:
+    - "board-api do_lesson: add wiki adapter path — MediaWikiSink variant
+      kinds=('lesson',), namespace_prefix='Education:', template
+      แม่แบบ:Education, surface matching the namespace boundary. Keep WP
+      write during a dual-write transition, then wiki-primary."
+    - "/publish kind=lesson sink: same retarget — proves the adapter seam
+      absorbs a second wiki namespace (the sink already takes
+      namespace_prefix + template params)"
+    - "lesson-add.py, Ada tools, transcript miner: UNCHANGED — they call
+      the door, not WP"
+    - "lessons-due.py / education-report.py: retarget reads to wiki API
+      (Cargo query on Education template fields gives next_review for
+      free — Cargo is installed) or keep reading WP until cutover flag"
+  cutover:
+    - "WP lesson CPT -> read-only; permalinks 301 to Education:<title>
+      (plugin redirect or stub content)"
+    - "education-due page (354) -> wiki Education:Due living page"
+    - "education-report.py -> reads via door/wiki API; artifacts path unchanged"
+  series_hub: "ada-nest-map post 1608 -> Education:Ada-Nest hub; ada-nest-*
+    topic lessons -> subpages; hub lists children (PageForms/Cargo query
+    or manual index)"
+
+news_surface: >
+  No change needed — the News standard already governs wiki presence:
+  public News/ desk leaves + PrivateNews: review lane + card-authorized
+  promotion. WP news CPT stays the feed store. Optional later: a News
+  portal section linking WP archives/situations — cheap, not blocking.
+
+decisions_for_tony:
+  - id: D1-education-placement
+    ask: "Education on wiki.h3 in a protected Education: namespace (like
+      PrivateNews:/Infrastructure:), vs public Education tree, vs stay in WP?"
+    options:
+      A: "★ protected Education: ns — mirrors deployed pattern; ~half the
+        corpus is ops-internal by topic; promotion-to-public remains
+        available via the existing review workflow"
+      B: "public Education tree — needs per-lesson visibility split;
+        leaks the ops-lesson subset only if split is wrong"
+      C: "keep WP — zero migration, wiki stays news+infra only"
+    recommendation: A
+  - id: D2-readers
+    ask: "Who holds read access to protected namespaces — staff-only
+      (Tony+Ada+agents, current Lockdown group) or boards members too?"
+    note: "Members need wiki accounts (local or SSO/OIDC — already
+      installed); WP/FluentCRM accounts do not carry over."
+    recommendation: "staff-only at cutover; member invites later"
+  - id: D3-reports
+    ask: "Move member-facing report CPT to protected Reports: ns (tiny
+      set) or leave in WP?"
+    recommendation: "move with education — same boundary, one surface"
+  - id: D4-wp-post-cutover
+    ask: "WP lesson CPT after cutover — keep read-only + 301s, or unregister?"
+    recommendation: "keep read-only + 301s — history preserved, cheap"
+
+open_questions:
+  - "LocalSettings access: who edits LocalSettings.php for new namespaces
+    + Lockdown rules (Plesk/admin path that installed the current set)?"
+  - "Does news need any wiki presence beyond the existing News/ desk —
+    e.g. a portal section linking WP archives/situations? (default: no)"
+  - "Audience end-state: members-only reading, or public SEO for a
+    public-safe knowledge subset later? (affects whether a public
+    Education mirror lane is ever built)"
+
+implementation_sequence:
+  - "1. Admin: register Education:/Reports: namespaces + Lockdown rules
+    (Tony/Plesk — real gate, needs the LocalSettings access path)"
+  - "2. Repo: wiki-education sink + do_lesson dual-write behind flag;
+    Education template + categories created on wiki"
+  - "3. scripts/wiki-lesson-migrate.py --dry-run -> review -> run (124 + reports)"
+  - "4. Retarget lessons-due/education-report (Cargo query or API list)"
+  - "5. Verify-by-surface: anon accessdenied on Education:, authed read ok,
+    new /lesson write lands on wiki, due list generates"
+  - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated"
+
+related:
+  ssot: "docs/ssot/apps/ssot.mediawiki-news.yml (news standard; a broader
+    ssot.mediawiki.yml should eventually absorb surface-level config)"
+  code:
+    - scripts/board/publication.py::MediaWikiSink
+    - scripts/board/board-api.py (do_lesson, do_publish, do_wiki_*)
+    - scripts/lesson-add.py, scripts/lessons-due.py, scripts/education-report.py
+  cards:
+    - wiki-member-knowledge-surface-migrate-wp-3a1cf2
+    - devnest-news-two-lane-pilot
+    - education-store
