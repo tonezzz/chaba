@@ -205,3 +205,34 @@ related:
     - wiki-member-knowledge-surface-migrate-wp-3a1cf2
     - devnest-news-two-lane-pilot
     - education-store
+
+localsettings_snippet:
+  note: >
+    For the Plesk panel step (Tony). Paste at end of LocalSettings.php in the
+    wiki docroot. IDs 3004-3007 verified free via api.php siteinfo
+    (3000-3003 = Infrastructure/PrivateNews pairs). Mirror the group list used
+    by the existing PrivateNews:/Infrastructure: lockdown lines — keep them
+    identical. inhouse is the planned group (SEC-1035 OIDC maps Tony+Ada).
+  php: |
+    $wgExtraNamespaces[3004] = 'Education';
+    $wgExtraNamespaces[3005] = 'Education_talk';
+    $wgExtraNamespaces[3006] = 'Reports';
+    $wgExtraNamespaces[3007] = 'Reports_talk';
+
+    $wgNamespacesWithSubpages[3004] = true;
+    $wgNamespacesWithSubpages[3005] = true;
+    $wgNamespacesWithSubpages[3006] = true;
+    $wgNamespacesWithSubpages[3007] = true;
+
+    $wgNamespacePermissionLockdown['Education']['read']     = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Education_talk']['read'] = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Reports']['read']       = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Reports_talk']['read']   = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Education']['edit']     = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Education_talk']['edit'] = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Reports']['edit']       = ['inhouse', 'sysop', 'bureaucrat'];
+    $wgNamespacePermissionLockdown['Reports_talk']['edit']   = ['inhouse', 'sysop', 'bureaucrat'];
+  verify_after_save:
+    - "api.php?meta=siteinfo&siprop=namespaces -> 3004-3007 present"
+    - "anon GET Education:Index -> accessdenied once a page exists"
+    - "grep LocalSettings for PrivateNews — mirror any create lines too"
