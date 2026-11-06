@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-06 08:49
+updated: 2026-11-06 09:05
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -104,6 +104,13 @@ comms:
     private-host SSO cannot be created programmatically yet. Need Cloudflare dashboard/account that owns ada-ha
     Access, then create protected application for wiki-internal.h3.gizmo-thailand.com using the existing Google
     allowlist.'
+- at: 2026-11-06 09:05
+  from: devin
+  text: 'Progress: found existing Cloudflare token on tony-dell and created DNS CNAME wiki-internal.surf-thailand.com
+    -> wiki.h3.gizmo-thailand.com (proxied) plus CF Access self-hosted app `wiki-internal` with existing Tony allowlist
+    (app id 189b0d42-1b10-4ef8-a336-c23e0ad0306c). Access challenge verified. Private Wiki dashboard tab now targets
+    wiki-internal.surf-thailand.com. Remaining: add exact new Google OIDC callback for wiki-internal.surf-thailand.com
+    and ensure MediaWiki host allowlist/config acce'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
