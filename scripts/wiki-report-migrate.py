@@ -37,7 +37,11 @@ def post(api, path, body):
     req = urllib.request.Request(
         f"{api}{path}", data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=120).read())
+    try:
+        return json.loads(urllib.request.urlopen(req, timeout=120).read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"{path} -> {e.code}: "
+                           f"{e.read()[:300].decode('utf-8', 'replace')}")
 
 
 def inventory(api):
@@ -93,6 +97,7 @@ def apply_page(api, p):
     ev = {"kind": "report", "title": p["wiki_title"][8:],
           "body": p["wikitext"],
           "source": "wiki-migrate", "visibility": "private",
+          "from": "devin",
           "sinks": ["wiki-reports"],
           "meta": {"wiki_title": p["wiki_title"], "format": "wikitext",
                    **p["meta"]}}

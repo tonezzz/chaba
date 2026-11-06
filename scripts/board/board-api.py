@@ -1897,16 +1897,20 @@ def do_wiki_page(body: dict, frm: str) -> dict:
             raise ValueError(
                 f"namespace {prefix[:-1]!r} is not registered on the "
                 "wiki — LocalSettings step first (card comm 2026-11-06)")
-    _, csrf = _wiki_login(api_url, env)
-    edited = _wiki_api_call(
+    # The edit MUST go through the login opener — it carries the session
+    # cookies; the anon opener above gets badtoken on a logged-in csrf.
+    opener, csrf = _wiki_login(api_url, env)
+    result = _wiki_api_call(
         api_url, opener,
         {"action": "edit", "title": title, "text": text,
          "summary": str(body.get("summary")
                         or f"chaba wiki support page ({frm})")[:200],
-         "token": csrf, "format": "json"}, post=True).get("edit", {})
+         "token": csrf, "format": "json"}, post=True)
+    edited = result.get("edit", {})
     if edited.get("result") not in ("Success", "Nochange"):
+        err = result.get("error") or {}
         raise UpstreamError("mediawiki edit failed: " +
-                            str(edited.get("info") or edited)[:300])
+                            str(err.get("info") or edited or result)[:300])
     return {"wiki_title": title, "pageid": edited.get("pageid"),
             "revid": edited.get("newrevid"),
             "action": edited.get("result", "").lower(),

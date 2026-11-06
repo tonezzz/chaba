@@ -47,7 +47,11 @@ def post(api, path, body):
     req = urllib.request.Request(
         f"{api}{path}", data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=120).read())
+    try:
+        return json.loads(urllib.request.urlopen(req, timeout=120).read())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"{path} -> {e.code}: "
+                           f"{e.read()[:300].decode('utf-8', 'replace')}")
 
 
 def inventory(api):
@@ -128,6 +132,7 @@ def index_page(pages):
 def apply_page(api, p):
     ev = {"kind": "lesson", "title": p["topic"], "body": p["wikitext"],
           "source": "wiki-migrate", "visibility": "private",
+          "from": "devin",
           "sinks": ["wiki-education"],
           "meta": {"wiki_title": p["wiki_title"], "topic": p["topic"],
                    "format": "wikitext", **p["meta"]}}

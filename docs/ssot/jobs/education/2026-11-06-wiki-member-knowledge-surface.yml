@@ -47,15 +47,35 @@ verified_state:
     users: [Ada (writer bot), Tony, Tonezzzz@gmail.com (OIDC)]
     lockdown_group: "inhouse (+ sysop) — anon content read on
       Infrastructure: = accessdenied (re-verified 2026-11-06)"
-    templates_missing: "แม่แบบ:Education, แม่แบบ:Report (verified absent
-      2026-11-06); แม่แบบ:NewsReport exists (pageid 12)"
+    templates: "แม่แบบ:Education (pageid 42) + แม่แบบ:Report (pageid 44)
+      created 2026-11-06 ~20:00 +07 — via direct MW API on idc03, NOT the
+      /wiki/page door (do_wiki_page had a live bug: edit was sent on the
+      anonymous opener instead of the login-session opener -> badtoken;
+      fixed repo-side this dispatch + regression test; door works after
+      next merge+restart). แม่แบบ:NewsReport = pageid 12."
+    lockdown_verified: "anon accessdenied on Education:Dispatch-Probe,
+      Education:Devnest-News-Pageforms-Workflow, Education:Index,
+      Reports:Dispatch-Probe — both new namespaces enforce the inhouse
+      boundary (verified post-write 2026-11-06, the first-write probe)."
   board_api:
-    sinks_live: "9 in the RUNNING process (pre-2a — no wiki-education yet,
-      verified /publish op=sinks 2026-11-06 ~18:50 +07): job, lesson,
-      report, news, board, telegram, json, wiki (News/), wiki-private
-      (PrivateNews:). Code on master registers 11 (+wiki-education,
-      +wiki-reports) — service restart on idc03 is required before
-      migrate --apply."
+    sinks_live: "11 live since 2026-11-06 ~19:40 +07 (dispatch 193421
+      restarted the detached board-api on idc03 — see anomalies below):
+      job, lesson, report, news, board, telegram, json, wiki (News/),
+      wiki-private (PrivateNews:), wiki-education (Education:),
+      wiki-reports (Reports:)."
+    dual_write: "WIKI_EDUCATION_WRITE=dual set in wiki-h3-gizmo.env on
+      idc03 2026-11-06 ~20:05 +07 — do_lesson now writes WP + Education:
+      per call (proven: lesson post 4057 -> Education:Education-Wiki-Cutover-Runbook
+      pageid 175). WP stays canonical until cutover."
+    anomalies_2026_11_06: >
+      Found while restarting the door (separate ops issue, commented on
+      ops-kanban-commit-guard): chaba-board-api.service has been dead
+      since Nov 4 — the door is a hand-started process from the EXEC
+      checkout ~/CascadeProjects/chaba (unit ExecStart points at the
+      served chaba-tony-dell, which is ~2300 ahead / ~1500 behind
+      origin — kanban-commit pull failure-streak). Restart was done
+      in-place, same cwd/log path; the declared topology is still broken
+      and needs its own card-level attention.
     wiki_doors:
       - "POST /wiki/extension — list|install|enable|disable over an allowlist
         (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
@@ -224,14 +244,30 @@ implementation_sequence:
     (creates both templates) + scripts/wiki-report-migrate.py;
     +11 tests green (54 total). STILL NEEDED: board-api restart on
     idc03 to pick up 2a+2b code; then wiki-support-pages.py --apply."
-  - "3. scripts/wiki-lesson-migrate.py --dry-run (verified live 4-lesson
-    sample 2026-11-06) -> review -> ONE-PAGE probe --apply, anon
-    accessdenied check on it (Lockdown verification), then full
-    --apply (124) + wiki-report-migrate.py --apply (report CPT)"
-  - "4. Retarget lessons-due/education-report (Cargo query or API list)"
-  - "5. Verify-by-surface: anon accessdenied on Education:, authed read ok,
-    new /lesson write lands on wiki, due list generates"
-  - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated"
+  - "3. DONE live 2026-11-06 (dispatch 193421, idc02): board-api restarted
+    (detached process, exec checkout — see anomalies), 11 sinks live;
+    templates bootstrapped via direct API (door bug found+fixed, see
+    templates note); 1-page probe -> anon accessdenied verified -> full
+    migration: 124 lessons + Education:Ada-Nest hub + Education:Index
+    (126 pages, 0 failures) + Reports:Control/2026-10 +
+    Reports:Deploy/2026-10-14 + Reports:Index (3 pages). Probe pages
+    deleted. Also fixed apply-path bugs: migrate scripts sent no 'from'
+    (door requires actor name)."
+  - "3b. DONE live: WIKI_EDUCATION_WRITE=dual enabled — dual-write proven
+    (post 4057 -> Education:Education-Wiki-Cutover-Runbook, pageid 175)."
+  - "4. Retarget lessons-due/education-report to wiki — BLOCKED on a wiki
+    read door: /wiki/news-review only reads PrivateNews:; Education:
+    needs either a read mode on /wiki/page (sinks are write-only) or a
+    Cargo query (แม่แบบ:Education is a plain wikitable — no Cargo
+    declaration today; adding {{#cargo_declare}} to the template would
+    give next_review/status queries for free). Small repo-side job."
+  - "5. PARTIAL: anon accessdenied + authed read + dual-write proven.
+    Remaining: due list generates from wiki (depends on step 4)."
+  - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated —
+    WP admin step; safe to schedule once step 4 closes the read path.
+    Note: Education:Index regenerates on each migrate run — rerun the
+    migrate script after future lessons or add an index-refresh step to
+    the due-list job."
 
 related:
   ssot: "docs/ssot/apps/ssot.mediawiki-news.yml (news standard; a broader
