@@ -27,6 +27,11 @@ verified_state:
       - "News/ — main-namespace subpage tree (public): DevNest desk leaves"
       - "PrivateNews: (3002) — protected; anon content read = accessdenied (verified)"
       - "Infrastructure: (3000) — protected; hosts tree (idc01/02/03, mn01, tony-dell, tony-omen, michael-ha)"
+      - "Education: (3004) + Education talk: (3005) — REGISTERED
+        (siteinfo verified 2026-11-06 ~18:45 +07, dispatch 184016);
+        Lockdown enforcement unverifiable on an empty ns — first-write
+        probe required"
+      - "Reports: (3006) + Reports talk: (3007) — REGISTERED (same check)"
       - "Form: (106/107) — PageForms"
     extensions_installed:
       - Cargo
@@ -40,9 +45,17 @@ verified_state:
       - OpenID Connect    # SSO login button live on Special:UserLogin
       - Springboard       # server-side extension manager driven by board-api
     users: [Ada (writer bot), Tony, Tonezzzz@gmail.com (OIDC)]
+    lockdown_group: "inhouse (+ sysop) — anon content read on
+      Infrastructure: = accessdenied (re-verified 2026-11-06)"
+    templates_missing: "แม่แบบ:Education, แม่แบบ:Report (verified absent
+      2026-11-06); แม่แบบ:NewsReport exists (pageid 12)"
   board_api:
-    sinks_live: 9 — job, lesson, report, news, board, telegram, json,
-      wiki (public, News/, kinds=[news]), wiki-private (private, PrivateNews:, kinds=[news])
+    sinks_live: "9 in the RUNNING process (pre-2a — no wiki-education yet,
+      verified /publish op=sinks 2026-11-06 ~18:50 +07): job, lesson,
+      report, news, board, telegram, json, wiki (News/), wiki-private
+      (PrivateNews:). Code on master registers 11 (+wiki-education,
+      +wiki-reports) — service restart on idc03 is required before
+      migrate --apply."
     wiki_doors:
       - "POST /wiki/extension — list|install|enable|disable over an allowlist
         (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
@@ -50,6 +63,10 @@ verified_state:
       - "POST /wiki/news-review — protected PrivateNews: read for Ada review"
       - "POST /wiki/news-diagnose — private->public promotion gate,
         card-authorized"
+      - "POST /wiki/page — guarded support-page write (added phase 2b):
+        allowlisted templates (แม่แบบ:Education/Report) + Education:/
+        Reports: titles; siteinfo-verifies the target namespace is
+        registered before writing"
     creds: "~/.config/secrets/wiki-h3-gizmo.env on idc03 (WIKI_HOST/USER/PASSWORD)"
   wp_boards:
     lessons: "124 posts (door /lesson op=topics count, 2026-11-06)"
@@ -184,9 +201,11 @@ open_questions:
     Education mirror lane is ever built)"
 
 implementation_sequence:
-  - "1. Admin: register Education:/Reports: namespaces + Lockdown rules
-    (Tony/Plesk — real gate, needs the LocalSettings access path;
-    verified snippet posted to card 2026-11-06 18:13, ns ids 3004-3007)"
+  - "1. DONE 2026-11-06 (Tony/Plesk): Education:+talk 3004/3005 and
+    Reports:+talk 3006/3007 registered — the exact ids from the card
+    snippet. Lockdown rules for the new namespaces NOT yet verified:
+    an empty ns can't be anon-probed; first write must be followed by
+    an anon accessdenied check before the corpus migrates."
   - "2. DONE repo-side 2026-11-06 (phase 2a dispatch, idc02):
     WikiLessonSink + html_to_wikitext + lesson_wiki_title in
     publication.py; 'wiki-education' registered in _pub_sinks;
@@ -196,8 +215,19 @@ implementation_sequence:
     /publish apply, idempotent) + tests. STILL NEEDED on-wiki:
     แม่แบบ:Education template page (any authed edit via Ada bot —
     same API path the sink uses, or hand-create)"
+  - "2b. DONE repo-side 2026-11-06 (dispatch 184016, idc02):
+    WikiReportSink + report_wiki_title ('wiki-reports', Reports:,
+    แม่แบบ:Report); /report mode=wp-list|wp-get (member report CPT
+    door read); /wiki/page guarded support-page door (allowlisted
+    templates + Education:/Reports: titles, siteinfo-verifies the ns
+    is registered before writing); scripts/wiki-support-pages.py
+    (creates both templates) + scripts/wiki-report-migrate.py;
+    +11 tests green (54 total). STILL NEEDED: board-api restart on
+    idc03 to pick up 2a+2b code; then wiki-support-pages.py --apply."
   - "3. scripts/wiki-lesson-migrate.py --dry-run (verified live 4-lesson
-    sample 2026-11-06) -> review -> --apply (124 + reports)"
+    sample 2026-11-06) -> review -> ONE-PAGE probe --apply, anon
+    accessdenied check on it (Lockdown verification), then full
+    --apply (124) + wiki-report-migrate.py --apply (report CPT)"
   - "4. Retarget lessons-due/education-report (Cargo query or API list)"
   - "5. Verify-by-surface: anon accessdenied on Education:, authed read ok,
     new /lesson write lands on wiki, due list generates"

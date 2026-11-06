@@ -1,0 +1,119 @@
+title: Wiki education surface — phase 2b (Reports sink + page door + WP read)
+subtitle: >
+  WikiReportSink for the Reports: namespace, the guarded /wiki/page
+  support-page write door, the WP report-CPT door read, and the two
+  scripts that use them. Built after verifying the Education:/Reports:
+  namespaces are now registered on wiki.h3 — no live wiki writes made
+  (door process still runs pre-2a code).
+icon: education
+version: 1
+
+card: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+date: 2026-11-06
+dispatch: 20261106-184016-idea-2026-11-06-tony-chat-migr
+
+summary: |
+  Phase 2b of the wp/education -> wiki migration (plan doc:
+  docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml).
+  Verified live this session: Education:+talk (3004/3005) and
+  Reports:+talk (3006/3007) are REGISTERED on wiki.h3 — Tony's
+  LocalSettings step landed, matching the ids in the card snippet.
+  Templates แม่แบบ:Education/แม่แบบ:Report are still missing; Lockdown
+  on the new namespaces is unverifiable on empty namespaces and needs
+  the first-write probe. The running board-api on idc03 still serves
+  the pre-2a build (9 sinks, no wiki-education) — a service restart is
+  required after this branch merges before any migrate --apply.
+
+shipped:
+  publication.py:
+    - >-
+      report_wiki_title() — Reports:<Type>/<period> living-page title
+      (usage-ledger + rolling-14d -> Reports:Usage-Ledger/rolling-14d);
+      same forbidden-char sanitation as lesson_wiki_title.
+    - >-
+      WikiReportSink(MediaWikiSink) — kinds=('report',),
+      surface='private', namespace_prefix='Reports:' (env
+      WIKI_REPORT_PREFIX), template แม่แบบ:Report (env
+      WIKI_REPORT_TEMPLATE). Explicit opt-in only: kind=report default
+      routes stay report+board, so MDDB dossier notes never land on
+      the wiki unless a caller names sinks=['wiki-reports'].
+      meta.format='wikitext' passes the body verbatim.
+  board-api.py:
+    - >-
+      _wiki_login() helper + do_wiki_page() at POST /wiki/page —
+      guarded raw page write for support pages the kind-gated sinks
+      can't reach. Allowlist: configured templates
+      (WIKI_EDUCATION_TEMPLATE/WIKI_REPORT_TEMPLATE, Template: alias
+      included) + anything under Education:/Reports:. Prefix titles
+      additionally verify the namespace is registered via siteinfo —
+      a premature call can't litter main space with 'Education:Foo'
+      pages. Main space, News/, PrivateNews: refused (News review gate
+      stays the only public path).
+    - >-
+      _wiki_namespaces() — siprop=namespaces table (canonical +
+      localized names).
+    - >-
+      do_report mode=wp-list|wp-get — read side for the member-facing
+      WP report CPT (report_type/period/source_key meta), closing the
+      'no door read exists for the report CPT' gap from the 2a notes.
+  scripts:
+    - >-
+      wiki-support-pages.py — declares แม่แบบ:Education +
+      แม่แบบ:Report wikitext in-repo; --apply writes them via
+      /wiki/page (idempotent; Template ns always exists, so this is
+      runnable the moment the new door is live).
+    - >-
+      wiki-report-migrate.py — door read (/report wp-list/wp-get) ->
+      Reports:<type>/<period> pages + generated Reports:Index ->
+      /publish sinks=['wiki-reports']; idempotent, --dry-run default.
+      Mirror of wiki-lesson-migrate.py.
+
+verification:
+  - "python3 -m unittest tests.board.test_publication -> OK 54
+    (was 43; +ReportWikiTitleTest 2, WikiReportSinkTest 4,
+    wiring +5: sink registration, template write, title refuse,
+    namespace gate, wp read modes)"
+  - "python3 -m unittest tests.board.test_board_api_mutations -> OK 21"
+  - "wiki-support-pages.py dry-run prints both templates;
+    wiki-report-migrate.py --help sane"
+  - "LIVE (read-only): siteinfo shows Education/Education talk
+    (3004/3005) + Reports/Reports talk (3006/3007); anon content read
+    on Infrastructure:Hosts/idc03 = accessdenied (inhouse group);
+    /publish op=sinks on idc03 = 9 sinks (pre-2a process)"
+
+not_done_yet:
+  - "board-api on idc03 must be restarted to register wiki-education +
+    wiki-reports sinks and the /wiki/page + wp-read endpoints (running
+    process predates phase 2a)."
+  - "wiki-support-pages.py --apply once the door is live — creates both
+    templates."
+  - "Lockdown verification: first Education:/Reports: write must be
+    followed by an anon accessdenied check before the corpus migrates
+    (empty ns can't be probed)."
+  - "WIKI_EDUCATION_WRITE=dual in wiki-h3-gizmo.env on idc03 (service-
+    host env edit)."
+  - "Full --apply runs: wiki-lesson-migrate.py (124) then
+    wiki-report-migrate.py (~5)."
+  - "lessons-due / education-report still read WP — retarget at cutover."
+
+cutover_checklist:
+  - "1. DONE: namespaces registered (3004-3007)."
+  - "2. Merge this branch; restart board-api on idc03 (repo-sync pulls
+    code; process restart is the step that registers the new code)."
+  - "3. scripts/wiki-support-pages.py --apply (templates)."
+  - "4. One-page probe: wiki-lesson-migrate.py --limit 1 --apply ->
+    anon accessdenied check on that page (Lockdown) -> full --apply.
+    If the probe page is anon-readable, STOP — Lockdown rules are
+    missing; card it back to Tony."
+  - "5. WIKI_EDUCATION_WRITE=dual; new /lesson writes land on both."
+  - "6. wiki-report-migrate.py --apply; WP report CPT read-only after."
+  - "7. WP lesson CPT read-only + 301s; lessons-due/education-report
+    retarget."
+
+related:
+  plan: docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+  phase2a: docs/ssot/jobs/education/2026-11-06-wiki-education-sink-tooling.yml
+  code:
+    - scripts/board/publication.py::WikiReportSink
+    - scripts/board/board-api.py (do_wiki_page, _read_wp_reports, _pub_sinks)
+    - scripts/wiki-support-pages.py, scripts/wiki-report-migrate.py
