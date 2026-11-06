@@ -1,6 +1,6 @@
 id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
 title: Wiki member-knowledge surface — migrate wp education, structure with news+report
-column: backlog
+column: doing
 updated: 2026-11-06 19:34
 priority: medium
 tags:
@@ -341,6 +341,9 @@ comms:
 - at: 2026-11-06 19:34
   from: tony
   text: queued for processing
+- at: 2026-11-06 19:34
+  from: idc02
+  text: claimed
 requests:
 - id: which-wiki-engine-should-the-member-know-3c539b
   ask: Which wiki engine should the member-knowledge surface use?
@@ -392,10 +395,11 @@ requests:
   answer: proceed
 action:
   type: dispatch
-  status: queued
+  status: running
   result: 'exit=0 e templates, one-page Lockdown probe, then the full migration and the `WIKI_EDUCATION_WRITE=dual`
     flag. | devin-task-20261106-184016-idea-2026-11-06-tony-chat-migr.service: Consumed 31.479s CPU time, 349.9M
     memory peak, 0B memory swap peak.'
   lane: codemod
+  runner: idc02
 review_kind: verify
 claim: {}
