@@ -1675,8 +1675,8 @@ def do_wiki_news_review(body: dict, frm: str) -> dict:
         raise UpstreamError("mediawiki login failed")
     result = _wiki_api_call(
         api_url, opener,
-        {"action": "query", "titles": title, "prop": "info|revisions",
-         "rvprop": "ids|timestamp", "rvslots": "main",
+         {"action": "query", "titles": title, "prop": "info|revisions",
+         "rvprop": "ids|timestamp|content", "rvslots": "main",
          "format": "json"})
     page = next(iter(result.get("query", {}).get("pages", {}).values()), {})
     if "missing" in page:
