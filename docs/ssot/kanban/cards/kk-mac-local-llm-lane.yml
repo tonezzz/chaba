@@ -423,6 +423,14 @@ comms:
     is empty and disk ~70GB. Photoshop/Illustrator remain open but their sampled CPU was below the configured 1
     CPU-s/10s cap; HID input was ~163s idle and is informational under the current resource-based gate. Resource
     conditions now pass for a single LLM-only smoke, but the B'
+- at: 2026-11-06 09:36
+  from: tony
+  text: 'answered kk-mac-qwen8-one-shot-memory-floor-20261105: allow-once-60-50 — approved for one synthetic read-only
+    Qwen3:8B LLM-only smoke after the fresh resource/owner gate; 60% free before model load, abort below 50% free
+    or on pressure. No Hermes Agent in'
+- at: 2026-11-06 09:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -552,7 +560,7 @@ requests:
     worker, empty Ollama before start, no model download/external egress, and one task only. The last sample was
     66% free with Photoshop/Illustrator open, so it is NOT eligible now; this approval would apply only after those
     apps/workloads clear and a fresh check passes.
-  status: open
+  status: answered
   at: 2026-11-05 15:46
   from: devin
   options:
@@ -564,6 +572,9 @@ requests:
   - id: hold
     label: Do not run another inference test yet
   suggested: allow-once-60-50
+  answer: allow-once-60-50 — approved for one synthetic read-only Qwen3:8B LLM-only smoke after the fresh resource/owner
+    gate; 60% free before model load, abort below 50% free or on pressure. No Hermes Agent installation, model download,
+    external egress, or automatic routing.
 - id: kk-mac-qwen8-one-shot-authorization-20261031
   ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
     answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and
