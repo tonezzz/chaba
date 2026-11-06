@@ -1514,7 +1514,7 @@ MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
-                      "/wiki/extension"}
+                      "/wiki/extension", "/wiki/news-review"}
 WIKI_EXTENSION_ALLOWLIST = {
     "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
     "Cargo", "PageForms", "Lockdown",
@@ -1650,6 +1650,48 @@ def do_wiki_extension(body: dict, frm: str) -> dict:
             "after": after, "verified": name in after,
             "actor": frm,
             "message": f"wiki extension {action}: {name}"}
+
+
+def do_wiki_news_review(body: dict, frm: str) -> dict:
+    """Read one protected PrivateNews page for Ada's review workflow."""
+    title = str(body.get("wiki_title") or "").strip()
+    if (not title.startswith("PrivateNews:") or
+            "\n" in title or "\r" in title):
+        raise ValueError("wiki_title must be under PrivateNews:")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "titles": title, "prop": "info|revisions",
+         "rvprop": "ids|timestamp", "rvslots": "main",
+         "format": "json"})
+    page = next(iter(result.get("query", {}).get("pages", {}).values()), {})
+    if "missing" in page:
+        raise ValueError("private News page does not exist")
+    revision = (page.get("revisions") or [{}])[0]
+    content = (revision.get("slots") or {}).get("main", {}).get("*", "")
+    return {
+        "wiki_title": title,
+        "pageid": page.get("pageid"),
+        "revid": revision.get("revid"),
+        "timestamp": revision.get("timestamp"),
+        "wikitext": str(content)[:20000],
+        "actor": frm,
+        "message": "private News review read",
+    }
 
 
 def wp_api(route: str, data=None, method: str | None = None):
@@ -2778,7 +2820,8 @@ class H(BaseHTTPRequestHandler):
         if path in REMOTE_WRITE_PATHS:
             try:
                 frm = (job_actor(body, ident)
-                       if path in ("/job", "/publish", "/wiki/extension")
+                       if path in ("/job", "/publish", "/wiki/extension",
+                                   "/wiki/news-review")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -2795,6 +2838,8 @@ class H(BaseHTTPRequestHandler):
                             render_async()   # board audit -> cards.json
                     elif path == "/wiki/extension":
                         res = do_wiki_extension(body, frm)
+                    elif path == "/wiki/news-review":
+                        res = do_wiki_news_review(body, frm)
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
