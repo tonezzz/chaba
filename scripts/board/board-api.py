@@ -1987,6 +1987,47 @@ def _delete_lesson(body: dict, frm: str) -> dict:
             "post_id": pid, "via": frm}
 
 
+def _lesson_wiki_write(topic: str, level: str, source: str,
+                       content: str, meta: dict):
+    """Education: dual-write behind WIKI_EDUCATION_WRITE=dual in the wiki
+    env file (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
+    namespace + template must exist on wiki.h3 first — registering
+    Education: is the Tony/Plesk LocalSettings step, so the flag ships
+    OFF. A wiki failure never fails the WP write: the lesson ledger
+    stays canonical until cutover and the miss reports on the response."""
+    try:
+        env = _load_env_file(WIKI_ENV_FILE)
+    except OSError:
+        return None
+    if str(env.get("WIKI_EDUCATION_WRITE") or "").strip().lower() != "dual":
+        return None
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+    api = (env.get("WIKI_API_URL") or f"{host}/api.php").rstrip("/")
+    if not (host and env.get("WIKI_USER") and env.get("WIKI_PASSWORD")):
+        return {"status": "skipped", "reason": "wiki creds incomplete"}
+    try:
+        ev = pub.validate_event({
+            "kind": "lesson", "title": topic, "body": content,
+            "source": "lesson-door", "visibility": "private",
+            "meta": {
+                "wiki_title": pub.lesson_wiki_title(topic),
+                "topic": topic, "level": level, "lesson_source": source,
+                "learned_at": meta.get("learned_at", ""),
+                "next_review": meta.get("next_review", ""),
+                "status": meta.get("status", "open"),
+                "updated": meta.get("updated", ""),
+                "no_th": bool(meta.get("no_th")),
+                "format": "html"}})
+        sink = pub.WikiLessonSink(api, env["WIKI_USER"],
+                                  env["WIKI_PASSWORD"])
+        r = sink.publish(ev)
+        return {"status": "delivered", **r}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)[:300]}
+
+
 def do_lesson(body: dict, frm: str) -> dict:
     """/lesson — the remote write half of the lesson-capture duty: upsert
     the WP lesson CPT by topic slug (re-asked topics update in place, WP
@@ -2073,9 +2114,13 @@ def do_lesson(body: dict, frm: str) -> dict:
     else:
         r = wp_api("/wp/v2/lesson", payload)
         action = "created"
-    return {"message": f"{action} {slug} (post {r.get('id')})",
-            "slug": slug, "post_id": r.get("id"), "action": action,
-            "th": th_ok}
+    result = {"message": f"{action} {slug} (post {r.get('id')})",
+              "slug": slug, "post_id": r.get("id"), "action": action,
+              "th": th_ok}
+    wiki = _lesson_wiki_write(topic, level, source, content, meta)
+    if wiki is not None:
+        result["wiki"] = wiki
+    return result
 
 
 def do_lesson_topics() -> dict:
@@ -2556,6 +2601,12 @@ def _pub_sinks(frm: str) -> dict:
                                        "แม่แบบ:NewsReport"),
                 name="wiki-private", surface="private",
                 namespace_prefix="PrivateNews:")
+            sinks["wiki-education"] = pub.WikiLessonSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_EDUCATION_TEMPLATE",
+                                       "แม่แบบ:Education"),
+                namespace_prefix=wiki_env.get("WIKI_EDUCATION_PREFIX",
+                                              "Education:"))
     except (OSError, KeyError):
         # Optional sink: the news event still follows the configured routes
         # and the missing wiki credentials remain a service-host concern.
