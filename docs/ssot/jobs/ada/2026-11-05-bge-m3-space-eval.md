@@ -242,3 +242,40 @@ changes due ordering and silently omits the section when the report is
 missing or stale. The change is dry-run verified locally (`67` due lessons
 received related suggestions); deployment still follows the normal served
 checkout sync path.
+
+## Judged-union benchmark — final (2026-11-07)
+
+The provisional `.408/.849` hybrid probe only judged BGE's top-10 plus a
+partial BM25 pool, so it was directional. `scripts/ada/bge-hybrid-judged.py`
+ran the proper version: dense top-50 across all collections + BM25 top-100
+per query, union candidate pools LLM-judged into `qrels-bge-hybrid.json`
+(4,800 new candidates across 48 queries, 0 judge/vector errors), then every
+arm rescored on the expanded relevance set.
+
+Overall (48 queries, expanded qrels — relevant-pool denominators are much
+larger than the first-pass judgments, so absolute recall numbers drop for
+every arm):
+
+| arm | r@1 | r@3 | r@5 | MRR |
+|---|---|---|---|---|
+| gemini | .086 | .186 | .244 | .893 |
+| nomic_en | .072 | .162 | .237 | .877 |
+| **bge_dense** | .047 | .135 | .224 | .767 |
+| hybrid_w25 | .048 | .118 | .197 | .717 |
+| hybrid_w50 | .040 | .104 | .173 | .610 |
+| hybrid_w75 | .038 | .100 | .154 | .584 |
+| bm25 | .015 | .052 | .104 | .371 |
+
+Thai: bge_dense r@5 **.272** vs gemini **.255**, MRR **.946** vs **.964** —
+BGE remains the strongest local arm on Thai. English: bge_dense r@5 .204
+vs gemini .240, MRR .693 vs .863 — still the weak split.
+
+**Verdict: hybrid RRF does not beat BGE dense alone on the expanded
+judgments.** The provisional gain was a narrow-judgment artifact —
+promoting lexical hits into the top-5 displaced other relevant docs once
+the relevant pool was fully counted. Best local arm stays raw BGE dense:
+92% of Gemini r@5 overall, better on Thai, but MRR and English still trail
+meaningfully. Production cutover remains unjustified; the BGE sidecars
+(education shadow, read-only adapters) stay valuable on their own merits.
+Artifacts: `2026-11-07-bge-hybrid-judged-union.{json,md}`, script +
+raw-hit capture in `bge-hybrid-judged.py`.
