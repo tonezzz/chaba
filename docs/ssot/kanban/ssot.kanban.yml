@@ -158,6 +158,13 @@ card_schema:
               in origin/<default>; explicit false = checked and NOT
               verified. The review-column badge prefers it over the comms
               heuristic"
+  # optional — recoverability class for unattended work (KNB-0928,
+  # ssot.devin-autonomy.yml waiting_cards). Required before a card may
+  # run on an unattended path; the class is the WORST data the card can
+  # touch. R3 (secrets/identity/accounts) and R4 (prod/destructive/
+  # deploy) are never autonomous regardless of backups.
+  recoverability: "R0 | R1 | R2 | R3 | R4 — see
+    docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards"
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
   # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
   # normalizes it to the status block on first run:
