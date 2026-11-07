@@ -43,6 +43,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.request
 from pathlib import Path
 
@@ -56,6 +57,10 @@ API = os.environ.get("BOARD_API", "http://127.0.0.1:8787")
 RUN_LOCK = Path("/tmp/deploy-preflight.lock")
 SSH = os.environ.get("DEPLOY_PREFLIGHT_SSH", "ssh -o BatchMode=yes")
 DEPLOY_TIMEOUT = int(os.environ.get("DEPLOY_TIMEOUT_S", "1200"))
+# Post-deploy health verify window — ada needs ~60-90s to answer ok
+# after restart; single-shot verify false-failed the first live deploy.
+VERIFY_WINDOW_S = int(os.environ.get("DEPLOY_VERIFY_WINDOW_S", "180"))
+VERIFY_INTERVAL_S = int(os.environ.get("DEPLOY_VERIFY_INTERVAL_S", "10"))
 
 # Deploy target registry — the ONLY deployable surfaces. A card selects
 # by name; it cannot inject commands, hosts, or URLs.
@@ -176,17 +181,32 @@ def run_deploy(dep: dict) -> dict:
 
 
 def verify_surface(tgt: dict) -> dict:
-    try:
-        with urllib.request.urlopen(tgt["verify_url"], timeout=15) as r:
-            body = r.read().decode(errors="replace")
-            ok_key = tgt.get("verify_ok_key")
-            ok = r.status == 200 and (
-                ok_key is None
-                or f'"{ok_key}": true' in body
-                or f'"{ok_key}":true' in body)
-            return {"ok": ok, "status": r.status, "body_head": body[:200]}
-    except Exception as e:
-        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+    # Post-restart warmup: deploy-ada.sh returns once units are active,
+    # but the app needs tens of seconds before /api/health answers ok.
+    # First live run false-failed on exactly this (2026-11-07) — retry
+    # for VERIFY_WINDOW_S before declaring failure.
+    deadline = time.time() + VERIFY_WINDOW_S
+    last = {"ok": False, "error": "no attempt"}
+    while True:
+        try:
+            with urllib.request.urlopen(tgt["verify_url"],
+                                        timeout=15) as r:
+                body = r.read().decode(errors="replace")
+                ok_key = tgt.get("verify_ok_key")
+                ok = r.status == 200 and (
+                    ok_key is None
+                    or f'"{ok_key}": true' in body
+                    or f'"{ok_key}":true' in body)
+                last = {"ok": ok, "status": r.status,
+                        "body_head": body[:200]}
+                if ok or time.time() >= deadline:
+                    return last
+        except Exception as e:
+            last = {"ok": False,
+                    "error": f"{type(e).__name__}: {e}"}
+        if time.time() >= deadline:
+            return last
+        time.sleep(VERIFY_INTERVAL_S)
 
 
 def deploy_request(card: dict, cid: str) -> dict | None:
