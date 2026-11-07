@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-07 12:08
+updated: 2026-11-07 16:19
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,6 +29,7 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-dell
+  status: queued
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -60,3 +61,6 @@ comms:
     + artifact/verifier + no open requests + recoverability + preflight), R0-R4 recoverability classes with worst-class
     rule (R3 secrets/accounts and R4 prod/destructive NEVER autonomous — backups do not apply), preflight checklist
     (runner health, queu'
+- at: 2026-11-07 16:19
+  from: tony
+  text: queued for processing
