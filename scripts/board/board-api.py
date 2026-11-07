@@ -1988,6 +1988,46 @@ def _litellm_translation_key() -> str:
     return ""
 
 
+# Translation cache (card board-api-lesson-post-flood, KNB-1076): the
+# free-tier Thai call is the expensive part of every /lesson write —
+# re-filed lessons with identical content re-translated every time, and
+# a flooding producer burned the whole free-tier RPM budget. Content is
+# deterministic input, so sha256 -> Thai is a safe memo; only non-empty
+# results are cached so a transient failure can still retry.
+_TH_CACHE_PATH = Path(os.environ.get(
+    "BOARD_LESSON_TH_CACHE",
+    str(Path.home() / ".local/state/board-api/lesson-th-cache.json")))
+_TH_CACHE_MAX = 2000
+_th_cache: dict | None = None
+_th_cache_lock = threading.Lock()
+
+
+def _th_cache_get() -> dict:
+    global _th_cache
+    if _th_cache is None:
+        try:
+            _th_cache = json.loads(_TH_CACHE_PATH.read_text() or "{}")
+            if not isinstance(_th_cache, dict):
+                _th_cache = {}
+        except Exception:
+            _th_cache = {}
+    return _th_cache
+
+
+def _th_cache_put(h: str, th: str) -> None:
+    with _th_cache_lock:
+        c = _th_cache_get()
+        c[h] = th
+        if len(c) > _TH_CACHE_MAX:
+            for k in list(c)[:len(c) - _TH_CACHE_MAX]:
+                c.pop(k, None)
+        try:
+            _TH_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            _TH_CACHE_PATH.write_text(json.dumps(c))
+        except Exception:
+            pass
+
+
 def _gemini_thai(html_text: str) -> str:
     """Free-only LiteLLM translation; failure degrades to English-only."""
     global _gemini_mod
@@ -2006,6 +2046,10 @@ def _gemini_thai(html_text: str) -> str:
     key = _litellm_translation_key()
     if not key:
         return ""
+    h = hashlib.sha256(html_text.encode()).hexdigest()[:24]
+    cached = _th_cache_get().get(h)
+    if cached:
+        return cached
     try:
         # Do not fall through to a paid provider when the free tier is capped.
         th = _gemini_mod.generate(
@@ -2017,7 +2061,10 @@ def _gemini_thai(html_text: str) -> str:
                 "BOARD_API_LITELLM_URL", "http://100.102.134.91:4000"),
             timeout=12, max_attempts=1, label="board-api-lesson-th",
             tags="service=board-api,job=lesson-translation,route=free-only")
-        return (th or "").strip()
+        th = (th or "").strip()
+        if th:
+            _th_cache_put(h, th)
+        return th
     except Exception:
         return ""
 
