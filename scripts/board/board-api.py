@@ -201,7 +201,8 @@ LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
-               "subject_host", "llm_key_alias")
+               "subject_host", "llm_key_alias", "nlm_notebook",
+               "nlm_source_file", "nlm_source_text", "nlm_source_url")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
