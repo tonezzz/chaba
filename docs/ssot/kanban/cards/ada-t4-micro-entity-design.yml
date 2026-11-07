@@ -1,7 +1,7 @@
 id: ada-t4-micro-entity-design
 title: Ada T4 design — first micro-entity that finishes real jobs (bounded card class + own bench)
 column: done
-updated: 2026-11-07 15:48
+updated: 2026-11-07 15:54
 priority: high
 tags:
 - ada
@@ -48,5 +48,12 @@ comms:
     never read for action. Worker pulled to idc03 exec checkout. Real finding from this pass: verify cards need
     genuine check tools, not just card reads — expanding the lane means giving her real probes (HTTP/systemctl),
     which is the next design step. Tagging a real card remains '
+- at: 2026-11-07 15:54
+  from: devin
+  text: '[probe tool landed — 2nd card self-finished] verify_worker now runs REAL checks: extracts http(s) URLs
+    the card declares, GETs them (allowlist: tailnet/loopback/LAN only, read-only, model cannot steer elsewhere),
+    feeds live_checks into her decision, matrix still enforced in code. Live proof: ADA-1096 (litellm liveliness)
+    — she fetched http://100.102.134.91:4000/health/liveliness herself, cited HTTP 200 I am alive as evidence, closed
+    review->done. Master 16d420a29. Timer on idc03 still inert-by-d'
 action:
   status: done
