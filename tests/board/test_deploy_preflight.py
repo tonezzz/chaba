@@ -213,8 +213,41 @@ class DeployPreflightCase(unittest.TestCase):
                 return b'{"ok": false}'
 
         with mock.patch.object(dp.urllib.request, "urlopen",
-                               return_value=BadResp()):
+                               return_value=BadResp()), \
+                mock.patch.object(dp, "VERIFY_WINDOW_S", 0):
             self.assertFalse(dp.verify_surface(tgt)["ok"])
+
+    def test_verify_surface_retries_through_warmup(self):
+        # Regression: post-restart /api/health needs ~60-90s; the first
+        # live deploy false-failed on a single-shot verify (2026-11-07).
+        tgt = {"verify_url": "http://x", "verify_ok_key": "ok"}
+
+        class Resp:
+            status = 200
+            def __init__(self, body):
+                self._body = body
+            def read(self):
+                return self._body
+            def __enter__(self):
+                return self
+            def __exit__(self, *a):
+                return False
+
+        calls = []
+
+        def flaky(url, timeout=0):
+            calls.append(1)
+            if len(calls) < 3:
+                raise ConnectionRefusedError("warming up")
+            return Resp(b'{"ok": true}')
+
+        with mock.patch.object(dp.urllib.request, "urlopen",
+                               side_effect=flaky), \
+                mock.patch.object(dp, "VERIFY_WINDOW_S", 60), \
+                mock.patch.object(dp, "VERIFY_INTERVAL_S", 0), \
+                mock.patch.object(dp.time, "sleep", lambda s: None):
+            self.assertTrue(dp.verify_surface(tgt)["ok"])
+            self.assertEqual(len(calls), 3)
 
 
 if __name__ == "__main__":
