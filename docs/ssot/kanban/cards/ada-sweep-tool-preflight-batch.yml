@@ -1,7 +1,7 @@
 id: ada-sweep-tool-preflight-batch
 title: ada_sweep tool — batch preflight/dispatch of eligible backlog cards by voice
 column: backlog
-updated: 2026-11-07 17:25
+updated: 2026-11-07 17:59
 priority: medium
 tags:
 - ada
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-07 17:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 17:59
+  from: devin
+  text: 'IMPLEMENTED on ada-voice feat/ada-sweep-tool: backend/tools.d/ada_sweep.py + manifest entry (policy confirmed,
+    secondary_allowed:false, timeout 120s). Walks /cards?column=backlog -> filters action.executor=opencode + type=dispatch,
+    skips already queued/running/claimed, runs ada_opencode_control.preflight per candidate, queues ready ones via
+    POST /action do=queue under the single tool confirmation (no per-card receipts — envelope already on card).
+    Args: executor/column/dry_run/limit(20 cap). Veri'
