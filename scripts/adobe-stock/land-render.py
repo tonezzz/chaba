@@ -49,6 +49,28 @@ def png_size(data: bytes) -> tuple[int, int] | None:
     return w, h
 
 
+def jpeg_size(data: bytes) -> tuple[int, int] | None:
+    """Minimal JPEG SOF scan for pixel dimensions."""
+    if data[:3] != b"\xff\xd8\xff":
+        return None
+    i = 2
+    while i + 9 < len(data):
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker = data[i + 1]
+        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                      0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+            h, w = struct.unpack(">HH", data[i + 5:i + 9])
+            return w, h
+        if marker in (0xD8, 0xD9) or 0xD0 <= marker <= 0xD7:
+            i += 2
+            continue
+        seg = struct.unpack(">H", data[i + 2:i + 4])[0]
+        i += 2 + seg
+    return None
+
+
 def rclone(*args: str) -> str:
     r = subprocess.run(["rclone", *args], capture_output=True,
                        text=True, timeout=120)
@@ -69,6 +91,51 @@ def fetch_omen(job_id: str, port: int) -> dict:
     return {"status": "completed",
             "png_bytes": base64.b64decode(images[0]["b64_json"]),
             "meta": {"job": job}}
+
+
+def fetch_cf(model: str, prompt: str, negative: str,
+             width: int, height: int) -> dict:
+    """Cloudflare Workers AI image lane — synchronous, returns image
+    bytes either raw or base64 inside result.image. Needs
+    CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN in env."""
+    import os
+    acct = os.environ.get("CF_API_ACCOUNT_ID")
+    tok = os.environ.get("CF_API_WORKER_TOKEN")
+    if not (acct and tok):
+        return {"status": "failed", "error": "cf_credentials_missing"}
+    payload = {"prompt": prompt}
+    if negative:
+        payload["negative_prompt"] = negative
+    if width and height:
+        payload["width"] = width
+        payload["height"] = height
+    req = urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{acct}"
+        f"/ai/run/{model}",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {tok}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            raw = r.read()
+            ct = r.headers.get("Content-Type", "")
+    except Exception as exc:
+        return {"status": "failed",
+                "error": f"cf_http:{type(exc).__name__}:{exc}"[:200]}
+    if raw[:4] == b"\x89PNG" or raw[:3] == b"\xff\xd8\xff" or "image" in ct:
+        return {"status": "completed", "png_bytes": raw,
+                "meta": {"cf_model": model}}
+    try:
+        d = json.loads(raw)
+        res = d.get("result", d)
+        img = res.get("image") if isinstance(res, dict) else None
+        if img:
+            return {"status": "completed",
+                    "png_bytes": base64.b64decode(img),
+                    "meta": {"cf_model": model}}
+    except Exception:
+        pass
+    return {"status": "failed", "error": "cf_unexpected_response"}
 
 
 def fetch_pack(remote: str, pack: str) -> dict:
@@ -123,25 +190,30 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
     png = res["png_bytes"]
     sha = hashlib.sha256(png).hexdigest()
     dims = png_size(png)
+    fmt = "png"
+    if dims is None and png[:3] == b"\xff\xd8\xff":
+        dims = jpeg_size(png)
+        fmt = "jpeg"
     if dims is None:
-        raise RuntimeError("artifact is not a valid PNG")
+        raise RuntimeError("artifact is not a valid PNG/JPEG")
+    ext = "png" if fmt == "png" else "jpg"
     root = f"{remote}/campaigns/{campaign}"
     raw = f"{root}/30-generated-raw"
     manifest = {
         "asset_id": asset_id, "campaign": campaign,
         "request_id": request_id, "provider": lane, "job_id": job,
         "dimensions": f"{dims[0]}x{dims[1]}", "bytes": len(png),
-        "sha256": sha, "output_format": "png",
+        "sha256": sha, "output_format": fmt,
         "landed_at": now_iso(), "adobe_upload": False,
         "meta": {k: v for k, v in (res.get("meta") or {}).items()
                  if k != "job"},
     }
     with tempfile.TemporaryDirectory() as td:
-        p_png = Path(td) / f"{asset_id}.png"
+        p_png = Path(td) / f"{asset_id}.{ext}"
         p_man = Path(td) / f"{asset_id}.manifest.json"
         p_png.write_bytes(png)
         p_man.write_text(json.dumps(manifest, indent=1) + "\n")
-        rclone("copyto", str(p_png), f"{raw}/{asset_id}.png")
+        rclone("copyto", str(p_png), f"{raw}/{asset_id}.{ext}")
         rclone("copyto", str(p_man), f"{raw}/{asset_id}.manifest.json")
     # SESSION.json update
     try:
@@ -167,7 +239,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
         rclone("copy", f"{root}/40-qc-review.md", td)
         qp = Path(td) / "40-qc-review.md"
         note = (f"\n## {asset_id} — {lane} lane (landed {now_iso()})\n\n"
-                f"- File: `30-generated-raw/{asset_id}.png` "
+                f"- File: `30-generated-raw/{asset_id}.{ext}` "
                 f"({dims[0]}x{dims[1]}, {len(png)} bytes)\n"
                 f"- SHA-256: `{sha}`\n- Job: `{job}`\n\n"
                 "QC checklist vs prior candidates: sharpness, artifacts, "
@@ -181,7 +253,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
     return {"ok": True, "asset_id": asset_id, "lane": lane,
             "job_id": job, "sha256": sha,
             "dimensions": f"{dims[0]}x{dims[1]}", "bytes": len(png),
-            "artifact": f"{raw}/{asset_id}.png",
+            "artifact": f"{raw}/{asset_id}.{ext}",
             "qc_status": "pending_tony", "adobe_upload": False,
             "at": now_iso()}
 
@@ -189,10 +261,15 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--lane", required=True,
-                   choices=["omen-sd", "kk-mac-nest"])
-    p.add_argument("--job", required=True)
+                   choices=["omen-sd", "kk-mac-nest", "cf-workers-ai"])
+    p.add_argument("--job", required=True,
+                   help="job id / pack name / CF model id")
     p.add_argument("--port", type=int, default=8399)
     p.add_argument("--pack", default="")
+    p.add_argument("--prompt", default="")
+    p.add_argument("--negative", default="")
+    p.add_argument("--width", type=int, default=0)
+    p.add_argument("--height", type=int, default=0)
     p.add_argument("--campaign", required=True)
     p.add_argument("--asset-id", default="")
     p.add_argument("--request-id", default="")
@@ -201,8 +278,12 @@ def main() -> int:
     p.add_argument("--timeout-s", type=int, default=TIMEOUT_S)
     args = p.parse_args()
 
-    res = wait_result(args.lane, args.job, args.port, args.remote,
-                      args.pack, args.status_only, args.timeout_s)
+    if args.lane == "cf-workers-ai":
+        res = fetch_cf(args.job, args.prompt, args.negative,
+                       args.width, args.height)
+    else:
+        res = wait_result(args.lane, args.job, args.port, args.remote,
+                          args.pack, args.status_only, args.timeout_s)
     if args.status_only or res.get("status") != "completed":
         print(json.dumps({"lane": args.lane, "job": args.job,
                           "status": res.get("status"),
