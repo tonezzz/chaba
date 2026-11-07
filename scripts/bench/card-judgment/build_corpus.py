@@ -46,10 +46,19 @@ OBSERVE_RES = [
     re.compile(r"verified .{0,60}(still|remains|healthy|matches|intact|present)", re.I),
     re.compile(r"no action (needed|taken|required)|nothing needed|no changes? (needed|made)", re.I),
 ]
-# A pure observe changes nothing — reject completion/landing claims.
+# A pure observe changes nothing — reject completion/landing claims AND
+# card-state changes (verify-close sweeps are gold=act, not observe:
+# closing a card on verified evidence IS the right action to score).
 OBSERVE_REJECT = re.compile(
     r"\bDONE\b|\bdone:|landed|merged|committed|fixed|deployed|built|shipped|"
-    r"implemented|rendered|created|moved \w+ ->|auto-close|closing", re.I)
+    r"implemented|rendered|created|moved \w+ ->|auto-close|closing|closed\b", re.I)
+
+# Verify-close sweeps — the right move was to act on evidence (close via
+# the rails). Mining these as 'observe' taught the corpus that closing a
+# verified card is passive; it isn't.
+VERIFY_CLOSE_RE = re.compile(
+    r"verified (evidence present|\+ no open requests| — |.{0,30}closed)|"
+    r"merge-sweep: verified|auto-closed \(column", re.I)
 QUEUE_RE = re.compile(r"queued for processing|retry requested")
 RAISED_RE = re.compile(r"raised request")
 
@@ -146,8 +155,19 @@ def cases_for(card):
                "snapshot": snapshot(card, idx)}
         return
 
-    # 4. Observe comm → check-and-report was the right move. The matched
-    # comm must describe a check only — no completion/landing claims.
+    # 4. Verify-close sweep → acting on verified evidence was right.
+    idx, text = find_comm(cl, [VERIFY_CLOSE_RE])
+    if idx >= 0 and idx > 0:
+        yield {"card_id": cid, "category": "act", "confidence": "med",
+               "decision_point": "card in review with verified evidence — close it through the sweep",
+               "evidence": text[:300],
+               "proven_right": f"verified then closed: {text[:220]}",
+               "snapshot": snapshot(card, idx)}
+        return
+
+    # 5. Observe comm → check-and-report was the right move. The matched
+    # comm must describe a check only — no completion/landing claims and
+    # no card-state change (verify-close is gold=act above).
     idx, text = find_comm(cl, OBSERVE_RES)
     if idx >= 0 and idx > 0 and not OBSERVE_REJECT.search(text):
         yield {"card_id": cid, "category": "observe", "confidence": "med",
@@ -157,7 +177,7 @@ def cases_for(card):
                "snapshot": snapshot(card, idx)}
         return
 
-    # 5. Verified action, no decisions needed → act was the right move.
+    # 6. Verified action, no decisions needed → act was the right move.
     act = card.get("action") or {}
     qi, _ = find_comm(cl, [QUEUE_RE], skip_from=("chaba",))
     if act.get("verified") and qi >= 0:
