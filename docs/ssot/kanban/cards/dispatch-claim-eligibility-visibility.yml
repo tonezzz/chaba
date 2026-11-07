@@ -1,0 +1,32 @@
+id: dispatch-claim-eligibility-visibility
+title: Surface why a queued dispatch card is unclaimable (label/host mismatch starves silently)
+column: backlog
+updated: 2026-11-07 16:00
+priority: high
+program: chaba-ci
+tags:
+- kanban-dispatch
+- claim
+- eligibility
+- labels
+- observability
+- ada-finishes-jobs
+spec: 'Confirmed 2026-11-07: three dispatch rollout cards sat queued ~3h. Per kanban-dispatch.py, a card action.labels
+  must ALL be satisfied by the claiming host MY_LABELS (KANBAN_HOST_LABELS env); target_host check runs separately.
+  Failure mode is INVISIBLE: a card whose labels match no runner (or whose target_host lacks the declared labels/creds)
+  sits queued forever — queue_starve_warn only covers action.type=manual, and per-host skip logs name target_host
+  but not label mismatches. Fix: on queue and on dispatch eval, compute unclaimable reasons (label∩runner empty,
+  target_host has no runner, push:<repo> cred guard would fail) and write a chaba comms line + awaiting_action on
+  the card — same pattern as the manual-type warning. Then Ada/triage sees exactly why a card starves and can fix
+  labels or re-route instead of Devin debugging the queue. Precedent for why this matters: ops0790-rollout-* cards
+  with labels:[exec] never claimed on idc03.'
+action:
+  type: manual
+ref: OPS-1097
+comms:
+- at: 2026-11-07 16:00
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 16:00
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
