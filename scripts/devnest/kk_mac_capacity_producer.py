@@ -15,6 +15,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from kk_mac_admission import snapshot
@@ -105,6 +106,21 @@ def stage_task(
     return pack_name
 
 
+def pack_listing(remote: str) -> tuple[set[str], set[str]]:
+    """One recursive lsf -> (live pack dir names, terminal pack names).
+    A pack dir always contains files, so only entries with a '/' count."""
+    entries = [
+        x for x in rclone("lsf", f"{remote}/packs", "--recursive")
+        .splitlines() if x.strip()
+    ]
+    dirs = {x.split("/", 1)[0] for x in entries if "/" in x}
+    terminal = {
+        x.split("/", 1)[0] for x in entries
+        if x.endswith("/done") or x.endswith("/failed")
+    }
+    return dirs, terminal
+
+
 def produce(
     *,
     remote: str = "gdrive:ada-nest-kk-llm",
@@ -112,7 +128,12 @@ def produce(
     max_new: int = 3,
     template: Path | None = None,
     dry_run: bool = False,
+    budget_s: float = 90.0,
 ) -> dict:
+    started = time.monotonic()
+
+    def expired() -> bool:
+        return time.monotonic() - started >= budget_s
     template = template or (
         Path(__file__).resolve().parents[1] / "colab" / "packs" /
         "kk-mac-llm-pack"
@@ -132,16 +153,21 @@ def produce(
     if not result["eligible"]:
         result["skipped"].append("admission_gate")
         return result
-    result["queue_before"] = queue_depth(remote)
+    if expired():
+        result["skipped"].append("budget_exhausted")
+        return result
+    # one recursive listing yields both queue depth and staged-pack names;
+    # rclone calls are the hang surface (each can block up to 60s)
+    dirs, terminal = pack_listing(remote)
+    result["queue_before"] = len(dirs - terminal)
     if result["queue_before"] >= max_depth:
         result["skipped"].append("queue_at_capacity")
         return result
-    existing_packs = {
-        x.rstrip("/") for x in rclone(
-            "lsf", f"{remote}/packs"
-        ).splitlines() if x.strip()
-    }
+    existing_packs = {x.rstrip("/") for x in dirs}
     for filename in task_files(remote):
+        if expired():
+            result["skipped"].append("budget_exhausted")
+            break
         if len(result["staged"]) >= min(
             max_new, max_depth - result["queue_before"]
         ):
@@ -167,12 +193,16 @@ def main() -> int:
     parser.add_argument("--max-depth", type=int, default=3)
     parser.add_argument("--max-new", type=int, default=3)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--budget-s", type=float, default=90.0,
+                        help="overall wall-clock budget; rclone calls can "
+                             "each block ~60s so the loop must self-limit")
     args = parser.parse_args()
     print(json.dumps(produce(
         remote=args.remote,
         max_depth=args.max_depth,
         max_new=args.max_new,
         dry_run=args.dry_run,
+        budget_s=args.budget_s,
     ), indent=2))
     return 0
 
