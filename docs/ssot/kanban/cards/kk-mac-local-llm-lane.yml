@@ -453,6 +453,14 @@ comms:
 - at: 2026-11-07 14:15
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 14:15
+  from: tony
+  text: 'answered kk-mac-interim-llm-only-20261104: bounded-executor — ★ Keep Hermes/other orchestration off KK
+    and use the existing bounded kk_mac_local executor for simple verified tasks (recommended interim; not full
+    multi-turn Hermes)'
+- at: 2026-11-07 14:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -560,7 +568,7 @@ requests:
     is a bounded one-shot executor for summary/operator_brief/structured_extract/safe_route, not a generic chat-completions
     endpoint. A full Hermes Agent running elsewhere would need a private authenticated/metered proxy to KK Ollama;
     never expose raw :11434. No run/deploy is triggered by this choice.'
-  status: open
+  status: answered
   at: 2026-11-05 09:07
   from: devin
   options:
@@ -573,6 +581,8 @@ requests:
   - id: same-host
     label: 'Keep the earlier plan: run Hermes Agent and local model together on KK-Mac, only in approved idle windows'
   suggested: bounded-executor
+  answer: bounded-executor — ★ Keep Hermes/other orchestration off KK and use the existing bounded kk_mac_local
+    executor for simple verified tasks (recommended interim; not full multi-turn Hermes)
 - id: kk-mac-qwen8-one-shot-memory-floor-20261105
   ask: The 80%-free threshold in the Mac SOP applies to MPS/video jobs, not necessarily a small LLM-only call. For
     one new synthetic, read-only Qwen3:8B smoke (the old five-fixture pack is already complete and must not be rerun),
