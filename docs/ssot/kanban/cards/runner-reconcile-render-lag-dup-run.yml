@@ -1,0 +1,24 @@
+id: runner-reconcile-render-lag-dup-run
+title: runner-agent reconcile re-fires on render-lagged /cards — duplicate task runs
+column: backlog
+updated: 2026-11-07 18:38
+priority: low
+tags:
+- runner-agent
+- board-api
+- race
+spec: 'Demonstrated 2026-11-07 (OPS-1107 debug, ada-opencode-live-demo-opsread): finish POST commits do_finish (status
+  done->review) at 18:35:04, but the runner /cards view serves cards.json which lags YAML writes by tens of seconds.
+  The NEXT pass''s reconcile_pass still saw status=running+runner=idc02 with no state entry -> restarted the zombie
+  claim AGAIN -> a full duplicate opencode run (~30k tokens) whose finish then correctly 400d ''not running (status=done)''.
+  Two related latency/race issues seen in the same window: (1) claim POST took >30s server-side (save+render under
+  flock) vs runner POST timeout=30 -> the OPS-1071 lost-response zombie in the first place — board-api-write-latency-60s
+  card is marked done but writes still take 30-90s under load; (2) a claim retry also 400d on a stale queued view
+  61s after the claim committed. Fixes to weigh: reconcile only fires for claims older than the render lag (e.g.
+  action.claimed_at or updated staleness check); runner treats claim HTTP-timeout as maybe-committed and reconciles
+  instead of blind-retrying; board-api responds before the render step rather than after.'
+ref: OPS-1114
+comms:
+- at: 2026-11-07 18:38
+  from: tony
+  text: card captured via board-api
