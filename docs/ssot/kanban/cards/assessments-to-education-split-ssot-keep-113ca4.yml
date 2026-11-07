@@ -1,7 +1,7 @@
 id: assessments-to-education-split-ssot-keep-113ca4
 title: 'Assessments-to-Education split: SSOT keeps verdict+pointer, lesson dual-writes to MDDB, SSOT cleanup pass'
 column: doing
-updated: 2026-11-07 17:06
+updated: 2026-11-07 17:11
 priority: medium
 tags:
 - knowledge-management
@@ -44,6 +44,13 @@ comms:
     read mode + delete propagation; scripts/board/lesson-mddb-backfill.py backfilled all 132 wiki lessons — retrieval
     verified via /v1/search. (3) smell check scripts/ssot-prose-smell.py finds exactly 6 prose offenders >40 lines;
     cleaning next.'
+- at: 2026-11-07 17:11
+  from: devin
+  text: 'ALL DONE. (1) chaba-lessons collection on mddb-cms: /lesson dual-writes at capture (all 3 store paths;
+    non-fatal receipt), source=mddb read mode, delete propagates; backfill ran live — 135 lessons indexed, 0 failed.
+    (2) AGENTS.md codified + scripts/ssot-prose-smell.py. (3) 6 ssot yml cleaned: 3 lessons filed (gold-thb-usd-vector-analysis,
+    ada-speaker-id-rebind-layers, phonon2-audiocpp-stt-deploy) + 3 kb docs (notebooklm-reauth, yt-dub-qc-gate, improvement-impact-scoring);
+    smell check now reports'
 action:
   type: dispatch
   status: running
