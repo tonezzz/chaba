@@ -218,6 +218,11 @@ JULES_LANE_DAILY_CAP = int(os.environ.get("JULES_LANE_DAILY_CAP",
                                          "20"))
 JULES_LANE_TIMEOUT = int(os.environ.get("JULES_LANE_TIMEOUT",
                                        "3600"))
+# JULES_AUTO_MERGE=1 (precedent approved by Tony 2026-11-07,
+# OPS-1049): squash-merge a delivered Jules PR via the deploy key
+# when the session is COMPLETED and the PR is clean. Off = PR
+# lands for a human merge (verified=False review).
+JULES_AUTO_MERGE = os.environ.get("JULES_AUTO_MERGE", "0") == "1"
 
 
 def card_profile(card: dict) -> str:
@@ -598,6 +603,18 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     if dr is None:
         return None, ["auto-merge skipped: dispatch_repos module not "
                       "found on this host — merge by hand"]
+    # jules lane: the merge already happened on GitHub inside
+    # finish_jules_lane (PR squash-merge via deploy key) — there is no
+    # local dispatch worktree to merge.
+    tid0 = ent.get("tid") or (ent.get("unit") or "").removeprefix("devin-task-")
+    mfile = (Path.home() / ".local/share/devin-dispatch/tasks" / tid0 /
+             "meta.json")
+    try:
+        if json.loads(mfile.read_text()).get("executor") == "jules":
+            return True, ["jules: PR merged on GitHub — nothing local "
+                          "to merge"]
+    except Exception:
+        pass
     a = card.get("action") or {}
     pseudo = {"id": cid,
               "expected_goals": card.get("expected_goals"),
@@ -1982,6 +1999,53 @@ def start_jules_lane(card: dict, unit: str) -> tuple:
     return u2, tid, ""
 
 
+def jules_merge_pr(repo: str, head_ref: str, tid: str,
+                   title: str) -> tuple:
+    """Squash-merge a delivered Jules PR head into origin/<default_branch>
+    via a throwaway worktree + deploy-key push (no gh on runners).
+    Returns (merged: bool, note: str). Conflicts/failures -> False and the
+    card stays on the human-merge path."""
+    dr = dr_module()
+    ent = (dr.repos().get(repo) if dr else None) or {}
+    root = Path(ent.get("path") or "")
+    branch = ent.get("default_branch") or "master"
+    if not root.is_dir() or not head_ref:
+        return False, "merge skipped: no local checkout or empty headRef"
+    wt = Path.home() / ".local/share/devin-dispatch/jules-merge" / tid
+    if wt.exists():
+        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
+            "--force"], timeout=30)
+    try:
+        if sh(["git", "-C", str(root), "fetch", "-q", "origin",
+               branch, head_ref], timeout=90).returncode:
+            return False, "merge failed: git fetch"
+        r = sh(["git", "-C", str(root), "worktree", "add", str(wt),
+                f"origin/{branch}"], timeout=60)
+        if r.returncode:
+            return False, f"merge failed: worktree {(r.stderr or '')[:120]}"
+        r = sh(["git", "-C", str(wt), "merge", "--squash",
+                f"origin/{head_ref}"], timeout=60)
+        if r.returncode:
+            return False, ("merge failed: conflict "
+                           f"{(r.stderr or r.stdout or '')[:160]}")
+        r = sh(["git", "-C", str(wt), "commit", "-q", "-m",
+                f"{title or 'jules lane task'}\n\n"
+                f"Jules lane auto-merge (JULES_AUTO_MERGE)"],
+               timeout=30)
+        if r.returncode:
+            return False, f"merge failed: commit {(r.stderr or '')[:120]}"
+        r = sh(["git", "-C", str(wt), "push", "-q", "origin",
+                f"HEAD:{branch}"], timeout=90)
+        if r.returncode:
+            return False, ("merge failed: push — likely raced; human "
+                           "rebase+merge the PR "
+                           f"{(r.stderr or '')[:120]}")
+        return True, f"PR head {head_ref} squash-merged to {branch}"
+    finally:
+        sh(["git", "-C", str(root), "worktree", "remove", str(wt),
+            "--force"], timeout=30)
+
+
 def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
     """Jules closeout — runs BEFORE close_out_merge like the other
     executor closeouts. There is no local worktree, so 'merged' here
@@ -2026,9 +2090,25 @@ def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
     surl = (sess.get("url")
             or (f"https://jules.google.com/session/{sid}" if sid else ""))
     if state == "COMPLETED" and pr:
-        notes = [f"jules session {sid or '?'} COMPLETED — PR {pr} "
-                 "opened; squash-merge it, then close this card "
-                 "(PR auto-merge is a follow-up opt-in)"]
+        head_ref = ""
+        for o in sess.get("outputs") or []:
+            if (o.get("pullRequest") or {}).get("url") == pr:
+                head_ref = o["pullRequest"].get("headRef") or ""
+        if JULES_AUTO_MERGE:
+            repo = str(meta.get("repo") or "chaba")
+            merged, mnote = jules_merge_pr(
+                repo, head_ref, tid,
+                str(card.get("title") or ""))
+            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr}; "
+                     f"{mnote}"]
+            if merged:
+                return True, notes
+            notes.append("auto-merge did not land — PR stays open for "
+                         "a human squash-merge")
+        else:
+            notes = [f"jules session {sid or '?'} COMPLETED — PR {pr} "
+                     "opened; squash-merge it, then close this card "
+                     "(JULES_AUTO_MERGE=1 enables lane auto-merge)"]
     elif state == "COMPLETED":
         notes = [f"jules session {sid or '?'} COMPLETED but produced no "
                  f"PR ({surl}) — check whether it yielded a changeset "
