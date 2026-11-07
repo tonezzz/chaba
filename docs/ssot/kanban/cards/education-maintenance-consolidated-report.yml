@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-11-07 11:12
+updated: 2026-11-07 11:39
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -118,6 +118,13 @@ comms:
     education-due HTML), reads BGE_EDU_SHADOW_REPORT read-only, ignores stale (>48h)/missing/malformed reports,
     and leaves due ordering authoritative. Verified: py_compile, diff --check, fresh/stale/missing report matrix,
     self-hit + non-lesson key filtering. Remaining: served checkout pick'
+- at: 2026-11-07 11:39
+  from: devin
+  text: 'DEPLOYED end-to-end: #75 (BGE suggestions in lessons-due, both wiki+wp dests) + #76 (shadow tooling + eval
+    doc on master) + #78 (chaba-bge-education-shadow.timer declared+installed on idc03, daily 07:00). First live
+    run: 124 lessons synced, snapshot rebuilt (24 colls/9857 docs/0 errs), report written to ~/.cache/bge-education-shadow-v2.json
+    — BUT 73/111 queries hit vector_errors under the burst (pool healthy now: idc03 237ms, idc02 429ms, con01 1.2s;
+    Omen down >10s). Follow-up worth doing: retry'
 review_kind: verify
 claim: {}
 auto_close:
