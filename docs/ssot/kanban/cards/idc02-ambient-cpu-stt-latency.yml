@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
 column: review
-updated: 2026-11-07 19:52
+updated: 2026-11-07 19:53
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -67,6 +67,9 @@ comms:
   from: devin
   text: 'raised request nice10-escalation: Residual: con01 prod RTF still ~1.7-3.0 under load ~10/8 after CPUWeight=1000
     (validated fix). Escalate to system-unit N'
+- at: 2026-11-07 19:53
+  from: chaba
+  text: ran under executor=devin provider=devin
 action:
   type: dispatch
   status: done
