@@ -96,7 +96,7 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(err, "")
         self.assertEqual(card["action"]["lane"], "paid_frontier")
         self.assertEqual(card["action"]["model"],
-                         "litellm/or-claude-fable-5.1")
+                         "litellm/gemini-2.5-flash")
 
     def test_unset_lane_classified_free_lane_uses_opencode(self):
         self.mod.OPENCODE_LANES = True
@@ -292,7 +292,7 @@ class ClaimPassLaneTest(unittest.TestCase):
         bodies = self._claim_bodies()
         self.assertEqual(bodies[0]["lane"], "paid_frontier")
         self.assertEqual(bodies[0]["model"],
-                         "litellm/or-claude-fable-5.1")
+                         "litellm/gemini-2.5-flash")
         self.assertEqual(self.classified, ["lane-card"])
 
 

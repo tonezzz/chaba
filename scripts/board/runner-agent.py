@@ -2645,6 +2645,107 @@ def finish_pass(st: dict) -> bool:
     return changed
 
 
+def units_for_card(cid: str) -> list:
+    """devin-task-* units whose tid starts with this card id — the unit
+    name embeds the tid (<cid>-<epoch>[-fuN]), so the prefix match is
+    exact. Returns unit names without the .service suffix, newest
+    first isn't guaranteed — callers take [0]."""
+    r = sh(["systemctl", "--user", "list-units", "--all", "--no-legend",
+            "--plain", "devin-task-*"], timeout=15)
+    out = []
+    for line in (r.stdout or "").splitlines():
+        parts = line.split()
+        if not parts:
+            continue
+        unit = parts[0].removesuffix(".service")
+        if unit.startswith(f"devin-task-{cid}-"):
+            out.append(unit)
+    return out
+
+
+def reconcile_pass(st: dict) -> bool:
+    """Adopt or restart 'running' claims this host owns but doesn't track.
+
+    Zombie claims (OPS-1071): the claim POST commits server-side
+    (status=running, runner=HOST, comms 'claimed') but the response is
+    lost to a timeout — api() returns {'error': ...}, claim_pass moves
+    on, no unit is ever started, and nothing tracks the card. It sits
+    'running' forever because claimable() only looks at queued cards
+    and the dead-runner sweep only fires for unreachable hosts.
+
+    Each pass, any card with action.status=running AND
+    action.runner=HOST that is absent from state is reconciled:
+
+      - a devin-task-<cid>-* unit exists (active or just exited) ->
+        adopt it into state; finish_pass closes it out normally, which
+        also covers runner restarts that lost state.json.
+      - no unit exists -> the task never started; start_task now under
+        the same claim (CAP permitting) and track it. If the restart
+        itself fails the claim is finished ok:false so the card
+        doesn't zombie a second time.
+
+    Runs regardless of CAP/overload for ADOPTION (free — the unit is
+    already running); restarts respect CAP. Other hosts' claims,
+    kanban-dispatch claims (action.task_id / claim.session — tracked
+    by that process), and cards already in state are untouched."""
+    changed = False
+    cards = (api("/cards") or {}).get("cards") or []
+    for c in cards:
+        cid = c.get("id") or ""
+        a = c.get("action") or {}
+        if not cid or cid in st:
+            continue
+        if a.get("status") != "running" or a.get("runner") != HOST:
+            continue
+        # kanban-dispatch claims carry action.task_id + claim.session
+        # and are tracked by that process, not this one — adopting them
+        # would double-report finishes on hosts running both.
+        if a.get("task_id") or (c.get("claim") or {}).get("session"):
+            continue
+        units = units_for_card(cid)
+        if units:
+            unit = units[0]
+            # base tid — followup units (-fuN) share the base task dir
+            tid = re.sub(r"-fu\d+$", "",
+                         unit.removeprefix("devin-task-")
+                         .removesuffix(".service"))
+            st[cid] = {"unit": unit,
+                       "type": a.get("type") or "dispatch",
+                       "tid": tid, "at": int(time.time()),
+                       "adopted": True}
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": f"adopted running claim {unit} on "
+                                     f"{HOST} — runner state was lost "
+                                     "(OPS-1071 reconcile)"})
+            changed = True
+            print(f"{cid}: adopted {unit}")
+            continue
+        if len(st) >= CAP:
+            continue  # no free slot — the next pass retries
+        typ = a.get("type") or "dispatch"
+        unit, tid, err = start_task(c, typ)
+        if err or not unit:
+            api("/action", {"id": cid, "do": "finish", "host": HOST,
+                            "ok": False,
+                            "result": "zombie claim: restart failed: "
+                                      f"{err or 'no unit'}"})
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": "zombie claim released — task "
+                                     "restart failed"})
+            changed = True
+            print(f"{cid}: zombie claim released ({err or 'no unit'})")
+            continue
+        st[cid] = {"unit": unit, "type": typ, "tid": tid,
+                   "at": int(time.time()), "restarted": True}
+        api("/comment", {"id": cid, "from": "chaba",
+                         "text": f"restarted zombie claim as {unit} on "
+                                 f"{HOST} — claim committed but the "
+                                 "response was lost (OPS-1071)"})
+        changed = True
+        print(f"{cid}: restarted zombie claim as {unit}")
+    return changed
+
+
 def overloaded() -> bool:
     """5-min load per core above MAX_LOAD_PC → don't claim new work."""
     if MAX_LOAD_PC <= 0:
@@ -2875,7 +2976,8 @@ def _self_update():
 def main() -> int:
     _self_update()
     st = load_state()
-    changed = finish_pass(st) | watchdog_pass(st) | claim_pass(st)
+    changed = (finish_pass(st) | watchdog_pass(st)
+               | reconcile_pass(st) | claim_pass(st))
     verdict_pass(st)
     if changed:
         save_state(st)
