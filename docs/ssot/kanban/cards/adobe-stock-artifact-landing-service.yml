@@ -1,0 +1,26 @@
+id: adobe-stock-artifact-landing-service
+title: Typed artifact-landing service for render lanes
+column: backlog
+updated: 2026-11-07 15:36
+brief: Replace the ad-hoc decode/hash/rclone/session-update command chain with one typed landing call per render.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- nest
+- ada
+- token-efficiency
+- pipeline
+spec: 'Problem: every generated candidate currently costs ~7 shell calls and risks printing MB-scale base64 into
+  agent context. Build scripts/adobe-stock/land-render.py: inputs {lane, job_id|pack_name, campaign_id, asset_id,
+  request_id}; lane adapters normalize sd-server jobs (GET /sdcpp/v1/jobs/{id}), Nest pack done markers, and Gemini
+  results into RenderResult; core streams b64 to PNG without printing, computes sha256+dimensions, writes manifest,
+  rclone-copies to campaign 30-generated-raw/, updates SESSION.json and appends 40-qc-review.md section atomically,
+  returns compact receipt JSON. Later wrappers: board-api endpoint + Ada MCP tool adobe_stock_land_render so Ada
+  runs land->QC-prompt in one call. Acceptance: landing candidate D (job_6aeee1d0) via the script produces identical
+  artifacts to the manual flow with <30 lines of tool output. No upload, no auto-QC-decision.'
+ref: ADA-1092
+comms:
+- at: 2026-11-07 15:36
+  from: tony
+  text: card captured via board-api
