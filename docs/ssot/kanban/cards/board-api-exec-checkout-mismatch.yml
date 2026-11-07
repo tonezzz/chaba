@@ -1,7 +1,7 @@
 id: board-api-exec-checkout-mismatch
 title: board-api running from exec checkout — card writes not reaching served/web board
 column: done
-updated: 2026-11-07 16:49
+updated: 2026-11-07 16:57
 brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
   sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
   kanban page.'
@@ -38,6 +38,12 @@ comms:
 - at: 2026-11-07 16:49
   from: devin
   text: closed by devin
+- at: 2026-11-07 16:57
+  from: devin
+  text: 'CORRECTION to my close note: chaba-board-api.service is a USER unit on idc03 — systemctl --user shows it
+    active since 15:45 ICT running the served-checkout process (my earlier ''unit inactive / hand-started'' read
+    was system-scope). Door is properly declared+systemd-managed. Residual gap (no health coverage) is carded on
+    fix-flagged-ops-health-services-ab5ac9.'
 review_kind: verify
 action:
   status: done
