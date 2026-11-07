@@ -1,7 +1,7 @@
 id: deploy-gate-api-gaps
 title: deploy-preflight gaps found in first live rehearsal
 column: backlog
-updated: 2026-11-07 18:51
+updated: 2026-11-07 19:07
 priority: medium
 note: 'First real gate run (ADA-1113, 2026-11-07) surfaced two contract gaps: (1) board-api /card silently drops
   the deploy: block — not a whitelisted spawn field, had to hand-edit card YAML on the served checkout; add deploy
@@ -13,3 +13,9 @@ comms:
 - at: 2026-11-07 18:51
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 19:07
+  from: devin
+  text: 'BOTH FIXED + DEPLOYED (PR chaba#95). (1) /card now accepts deploy:{target,note} — do_create shape-validates
+    deploy.target as registry-key pattern; deploy-preflight keeps the target-registry check. Live on served checkout,
+    board-api restarted. (2) find_merge_sha falls back to non-merge commits naming the card id — squash-merged ada-voice
+    PRs now resolve. Tests: deploy passthrough+rejects, squash lookup — 78 board tests green.'
