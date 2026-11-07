@@ -1,7 +1,7 @@
 id: fix-flagged-ops-health-services-ab5ac9
 title: Fix flagged ops health services
-column: review
-updated: 2026-11-07 17:14
+column: done
+updated: 2026-11-07 17:18
 priority: high
 note: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
   from ops-health report
@@ -130,6 +130,9 @@ comms:
 - at: 2026-11-07 17:14
   from: chaba
   text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-07 17:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
   ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
@@ -160,3 +163,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-07 17:18
+  note: verified — evidence checks green, closing itself
