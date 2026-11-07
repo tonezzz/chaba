@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
-column: review
-updated: 2026-11-07 15:44
+column: done
+updated: 2026-11-07 15:48
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -359,6 +359,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-opencode-executor-routing-smoke-1794041021,
     branch dispatch/opencode-executor-routing-smoke-1794041021'
+- at: 2026-11-07 15:48
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
@@ -377,3 +380,7 @@ requests:
     label: Choose a different model/cost envelope before rerun
   suggested: rerun-free-readonly
   answer: rerun-free-readonly
+auto_close:
+  by: merge-sweep
+  at: 2026-11-07 15:48
+  note: verified — evidence checks green, closing itself
