@@ -1,7 +1,7 @@
 id: ada-opencode-live-demo-opsread
 title: Live demo — Ada→OpenCode ops-readonly dispatch
 column: backlog
-updated: 2026-11-07 17:01
+updated: 2026-11-07 17:03
 priority: medium
 tags:
 - demo
@@ -17,11 +17,22 @@ action:
   profile: ops-readonly
   target_host: idc02
   artifact: evals/opencode-lane/out/ops-readonly-health.json
-  prompt: Produce a JSON health snapshot of host idc02. Run python3 scripts/devnest/host_snapshot.py once, then
-    emit ONLY its JSON object as your final message — the runner writes the artifact for you. Read-only commands
-    only.
+  prompt: Produce a JSON health snapshot of host idc02 via scripts/devnest/host_snapshot.py, emit only its JSON
+    as final message.
   lane: free_lane
   llm_key_alias: ada
+  expect:
+    required_keys:
+    - artifact
+    - tests
+    - verifier
+    facts:
+    - budget_usd<=0.1
+    - max_turns=40
+    - max_tokens=200000
+    - max_wall_time_s=600
+    - max_retries=1
+  status: queued
 note: 'Live demo of the Ada agent card-processing path (2026-11-07). Fixture: ops-readonly host health snapshot
   on idc02.'
 ref: ADA-1102
@@ -29,3 +40,6 @@ comms:
 - at: 2026-11-07 17:01
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 17:03
+  from: ada
+  text: re-spawned from report page
