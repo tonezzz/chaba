@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:42
+updated: 2026-11-07 18:48
 priority: low
 action:
   type: manual
@@ -70,6 +70,28 @@ comms:
 - at: 2026-11-07 18:42
   from: chaba
   text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
+- at: 2026-11-07 18:48
+  from: chaba
+  text: 'deploy gate: DEPLOYED — rc=0 verify=True
+
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+    1733 passed, 72 warnings, 31 subtests passed in 243.92s (0:04:03)
+
+    [deploy] drain: no live ws sessions
+
+    [deploy] restarting: ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-pi-pwa ada-dev ada-kk-dev
+    ada-kk ada-line-relay ada-tg-relay
+
+    [deploy] active: ada-ha-tony
+
+    [deploy] active: ada-ai-kraut
+
+    [deploy] active: ada-tg-relay-kk
+
+    [deploy] active: ada-tg-relay-mn
+
+    [deploy] active: '
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
@@ -85,8 +107,14 @@ deploy:
     - 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
     - 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
   request_id: deploy-ada-tool-guide-lesson-sweep
-  status: preflight
+  status: deployed
   retry_note: re-run after verify-retry fix; prior run rc=0 verify=false(warmup)
+  deployed_at: 2026-11-07 18:48
+  deploy_rc: 0
+  verify:
+    ok: true
+    status: 200
+    body_head: '{"ok":true,"conversation_memory":{"summary_cached":false,"summary_ts":0.0,"recall_running":false,"gemini":{"keys_configured":1,"exhausted_key_models":0,"reset_at":"2026-11-08T15:00:00+07:00","simulate'
 requests:
 - id: deploy-ada-tool-guide-lesson-sweep
   ask: 'Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
