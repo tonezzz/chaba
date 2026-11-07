@@ -1,7 +1,7 @@
 id: unified-media-pack-layout
 title: Define unified durable media pack layout and local-cache contract
 column: backlog
-updated: 2026-11-04 18:37
+updated: 2026-11-07 11:29
 brief: Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive
   dataset/job/pack contract with local scratch processing and immutable manifests.
 tags:
@@ -30,3 +30,9 @@ comms:
     test passes; 3 focused tests pass. Drive remains durable source/artifact tier; local scratch is disposable.
     Generalized layout covers datasets, projects, jobs, and packs for Gaussian/video/audio/document lanes. Full
     Drive upload/round-trip and PR merge remain explicit ne
+- at: 2026-11-07 11:29
+  from: devin
+  text: 'Chaba PR #77 merged (284434b47e): pack_manifest init/hash/verify/summarize + image_set_eval + mcp-kornia
+    on master. Ada PR #2 merged earlier. idc02 staging: fixture staged, ada-lab env set, /api/tools/call gs_capture_eval
+    returns 14 images / train_baseline_then_review_masks. Full ws scenario blocked by lab Gemini prepayment quota
+    (402/1011); Drive round-trip still pending.'
