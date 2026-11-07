@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790-tonydell
 title: Scope rendered timer installation for OPS-0790 rollout
 column: doing
-updated: 2026-10-30 15:25
+updated: 2026-11-07 11:13
 brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
 priority: high
 tags:
@@ -49,3 +49,10 @@ comms:
 - at: 2026-10-30 15:25
   from: tony-dell
   text: claimed
+- at: 2026-11-07 11:13
+  from: devin
+  text: '2026-11-07 tony-omen in-session (dispatch had twice produced zero artifacts): implemented --ids selector
+    on branch fix/ops-0993-selective-install at origin/master (5de6a6c57). render_host(man,host,ids) emits only
+    selected job pairs; chaba-jobs.* excluded under --ids; unknown ids -> ERR rc2 before any write; timer_units()
+    keeps .timer suffix — found the bare-name enable was resolving to .service, so --install never actually armed
+    timers. Verified accidentally on tony-omen, cleaned up (reset-faile'
