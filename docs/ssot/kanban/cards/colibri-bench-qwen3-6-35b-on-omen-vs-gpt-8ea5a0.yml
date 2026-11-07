@@ -1,7 +1,7 @@
 id: colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0
 title: 'colibri-bench: Qwen3.6-35B on omen vs gpt-oss:20b lanes'
-column: backlog
-updated: 2026-11-07 19:07
+column: doing
+updated: 2026-11-07 19:08
 brief: 'Tony ask 2026-10-24. Colibri (JustVugg/colibri) runs MoE models with experts streamed from disk; Qwen3.6-35B-A3B
   fits omen (30GB RAM, 83GB free disk, CUDA 1650 build ~30 tok/s vs gpt-oss:20b''s 5 tok/s CPU). Test: install colibri
   + qwen36-35b on omen, run the edu-manage corpus through its OpenAI endpoint (:8000/v1), compare p50 latency +
@@ -30,6 +30,12 @@ comms:
 - at: 2026-11-07 19:07
   from: tony
   text: queued for processing
+- at: 2026-11-07 19:08
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  runner: idc02
