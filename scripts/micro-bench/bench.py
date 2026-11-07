@@ -100,7 +100,7 @@ def run_fixture(variant, fx, timeout):
     try:
         r = providers.chat(
             variant["downstream"],
-            [{"role": "system", "content": lib.DOWNSTREAM_SYSTEM},
+            [{"role": "system", "content": lib.downstream_system(fx)},
              {"role": "user", "content": sent}],
             timeout)
     except Exception as e:

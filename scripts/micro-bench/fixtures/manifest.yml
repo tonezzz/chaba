@@ -338,3 +338,135 @@ fixtures:
     gold: asdkfj alskdjf
     preserve: []
     expected_tool_call: null
+  # --- dispatch_cmd (ADA-1088): Tony-style dev commands through Ada's
+  #     dispatch surface. protocol: dispatch selects the dev tool surface;
+  #     gold = canonical command; polish prompt = dispatch_spec_v1 rewrites
+  #     to spec-grade English. ---
+  - id: disp-en-runner-selfupdate
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: hey can you have devin look at the runner agent self update again it still feels flaky
+    gold: Dispatch a Devin session to investigate and fix flakiness in runner-agent self-update.
+    preserve: [runner]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-en-card-polish
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: card this for later check why the wiki edu index is stale sometimes
+    gold: Create a kanban card to investigate why the wiki education index is sometimes stale.
+    preserve: [wiki]
+    expected_tool_call: {name: create_card}
+  - id: disp-en-ops-card
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: have devin check OPS-1039 stale worktree cleanup on idc02
+    gold: Dispatch a Devin session to check OPS-1039 stale worktree cleanup on idc02.
+    preserve: [OPS-1039, idc02]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-typo-litellm
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: dispatch a devin task to fix the litellm key rotation scrpt
+    gold: Dispatch a Devin task to fix the LiteLLM key rotation script.
+    preserve: [litellm]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-mix-thai
+    lang: mixed
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: ช่วยให้ devin แก้ bug ใน board api หน่อย
+    gold: Dispatch a Devin session to fix the bug in the board API.
+    preserve: [devin, board api]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-opencode-readonly
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: run this through opencode readonly on idc02 check why mddb embed queue drops docs
+    gold: Run an OpenCode read-only check on idc02 for why the MDDB embed queue drops documents.
+    preserve: [opencode, idc02, mddb]
+    expected_tool_call: {name: dispatch_opencode}
+  - id: disp-en-lesson-post
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: get devin to write a lesson about the litellm gateway and post it to education
+    gold: Dispatch a Devin session to write a lesson about the LiteLLM gateway and post it to Education.
+    preserve: [lesson, litellm, education]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-clean-card
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: Create a kanban card for the printer queue diagnosis follow-up
+    gold: Create a kanban card for the printer queue diagnosis follow-up.
+    preserve: [printer]
+    expected_tool_call: {name: create_card}
+  - id: disp-question-status
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: what's the status of the ada opencode dispatches
+    gold: What's the status of the ada opencode dispatches?
+    preserve: [ada, opencode]
+    expected_tool_call: null
+  - id: disp-question-progress
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: did the dispatch for the memory guard finish yet
+    gold: Did the dispatch for the memory guard finish yet?
+    preserve: []
+    expected_tool_call: null
+  - id: disp-amb-fix-thing
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: fix the thing from yesterday
+    gold: fix the thing from yesterday
+    preserve: []
+    expected_tool_call: null
+  - id: disp-amb-make-better
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: make it better
+    gold: make it better
+    preserve: []
+    expected_tool_call: null
+  - id: disp-messy-runner
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: pls have devin 2 look at why runner-agent self update keeps failing on the dell host again
+    gold: Dispatch a Devin session to investigate why runner-agent self-update keeps failing on the dell host.
+    preserve: [runner-agent, dell]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-messy-card-th
+    lang: mixed
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: ช่วย card ไว้ก่อนนะ เรื่อง litellm key หมด ตัง แล้ว agent ตอบ 403
+    gold: Create a kanban card about the LiteLLM key running out of funds causing agent 403s.
+    preserve: [litellm, 403]
+    expected_tool_call: {name: create_card}
+  - id: disp-messy-frag
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: devin fix kanban dispatch zero commit sessions pls OPS-0941
+    gold: Dispatch a Devin session to fix the kanban dispatch zero-commit session issue, card OPS-0941.
+    preserve: [OPS-0941]
+    expected_tool_call: {name: dispatch_devin}
+  - id: disp-messy-typo-route
+    lang: en
+    category: dispatch_cmd
+    protocol: dispatch
+    raw: can u ask ada to rember that the printer ip is 192.168.2.78 not .75
+    gold: Ask Ada to remember that the printer IP is 192.168.2.78, not 192.168.2.75.
+    preserve: [192.168.2.78, 192.168.2.75]
+    expected_tool_call: null

@@ -33,6 +33,26 @@ Rules: if the request is ambiguous or has no referent, answer asking for
 clarification. Never fabricate entity names. Preserve every name, number,
 and device id from the utterance exactly."""
 
+# Dispatch protocol (card ada1088-command-polish / ADA-1088): the receiving
+# AI is Ada's dev-intake — the same JSON reply shape but a dev-work tool
+# surface instead of HA devices. Fixtures opt in with protocol: dispatch.
+DISPATCH_DOWNSTREAM_SYSTEM = """\
+You are Ada, a voice/text assistant with a development dispatch surface.
+The user gives you one utterance — possibly messy, code-switched, or a
+fragment. Reply with EXACTLY one JSON object, no other text:
+  {"tool_call": {"name": "<tool>", "args": {...}}}   — to act
+  {"answer": "<short reply>"}                        — to answer, chat back, \
+or ask for clarification
+
+Available tools (names and args are exact — do not invent others):
+  dispatch_devin(task)          hand a coding/ops task to a Devin session
+  dispatch_opencode(task)       hand a bounded read-only task to OpenCode
+  create_card(title, note)      capture work on the kanban board
+Rules: if the request is ambiguous or has no referent, answer asking for
+clarification. Never fabricate card refs, hosts, repos, or task scope.
+Preserve every name, number, card id, and host from the utterance exactly.
+A status/question about existing work is an answer, not a dispatch."""
+
 POLISH_PROMPTS = {
     "normalize_v1": """\
 You are an input normalizer for a voice assistant. Rewrite the user's
@@ -44,11 +64,39 @@ code-switched Thai/English, and fragments. Rules:
   invent a referent or guess a command.
 - Reply in the same language as the input (Thai stays Thai).
 - Output ONLY the rewritten utterance — no quotes, no explanation.""",
+    # Dispatch-bound polish (ADA-1088): unlike normalize_v1 this REWRITES
+    # into a canonical English dispatch command — the receiving AI is a
+    # dev executor, not a voice agent, so spec-grade phrasing wins over
+    # same-language fidelity. Still never invents scope.
+    "dispatch_spec_v1": """\
+You are a command refiner for a development-dispatch assistant. Rewrite
+the user's command into one precise, canonical English instruction that a
+coding agent can execute. Rules:
+- Preserve every name, number, card id (ADA-/OPS-/etc), host, repo, and
+  file path EXACTLY.
+- Preserve the requested route: if the user addressed a specific agent
+  or surface (devin, ada, opencode, kanban/card, education), keep that
+  addressee in the rewrite — "have devin check X" must stay a Devin
+  dispatch, not become a generic "check X".
+- Make implicit scope explicit only when the command already implies it
+  (e.g. "fix the bug" stays "fix the bug" — never invent the bug).
+- If the command is a question or status check, keep it a question.
+- If the command is ambiguous or has no referent, return it UNCHANGED.
+- Output ONLY the rewritten command — one or two sentences, no quotes,
+  no explanation, no preamble.""",
 }
 
 CATEGORIES = ("asr_noise_en", "asr_noise_th", "thai_eng_mix", "typo",
               "fragment", "clean", "entity_heavy", "chit_chat",
-              "ambiguous", "gibberish")
+              "ambiguous", "gibberish", "dispatch_cmd")
+
+
+def downstream_system(fx):
+    """Per-fixture downstream protocol — dispatch_cmd fixtures get the
+    dev-dispatch tool surface, everything else the HA surface."""
+    if fx.get("protocol") == "dispatch":
+        return DISPATCH_DOWNSTREAM_SYSTEM
+    return DOWNSTREAM_SYSTEM
 
 
 class HarnessError(Exception):

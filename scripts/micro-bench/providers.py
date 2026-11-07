@@ -115,11 +115,20 @@ def chat(cfg, messages, timeout=60):
                 "ms": round((time.monotonic() - start) * 1000)}
 
     if provider == "openai_compat":
+        headers = {}
+        key_env = cfg.get("api_key_env")
+        if key_env:
+            key = os.environ.get(key_env, "")
+            if not key:
+                raise RuntimeError(
+                    f"openai_compat: env {key_env} is not set")
+            headers["Authorization"] = f"Bearer {key}"
         body = _post(
             cfg["base_url"].rstrip("/") + "/chat/completions",
             {"model": cfg["model"], "messages": messages,
-             "temperature": 0, "stream": False, "max_tokens": 256},
-            timeout)
+             "temperature": 0, "stream": False,
+             "max_tokens": int(cfg.get("max_tokens") or 256)},
+            timeout, headers=headers)
         msg = body["choices"][0]["message"]
         # llama.cpp may put reasoning in reasoning_content; content wins
         text = msg.get("content") or msg.get("reasoning_content") or ""
