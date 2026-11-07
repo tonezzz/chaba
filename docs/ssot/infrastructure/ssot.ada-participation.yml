@@ -94,11 +94,15 @@ tiers:
       - 'POST /apps/board-api/action {id, do: queue|hold|move} — same
         endpoint dispatch uses; card-side autonomy: field still applies'
       - 'ada_board_write action=create — already live for backlog cards'
-    status: gated
+    status: unlocked     # 2026-11-07 — gate met, see below; kanban.py
+                         # action=queue shipped in ada-voice d42fada
     gate: >-
-      card-judgment bench domain (ssot.nest-bench.yml) — unlocks when the
-      declared threshold holds on the corpus. Until then Ada may write the
-      proposal as a T1 comment + T2 request, never the action itself.
+      card-judgment bench domain (ssot.nest-bench.yml) — MET 2026-11-07:
+      t3_unlock_threshold held for 3 consecutive ada/chat runs on the v3
+      matrix-aligned corpus (run8 0.969, run9 0.980, run10 0.949 acc;
+      deference ≥0.969, precision 1.0; artifacts run8-10-ada-chat-v3corpus
+      in scripts/bench/card-judgment/). Execution still rides the normal
+      rails — dispatch claim, Tony confirm, or card autonomy contract.
 
   t4_act:
     summary: >-
