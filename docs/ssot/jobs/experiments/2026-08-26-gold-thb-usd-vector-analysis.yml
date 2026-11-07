@@ -113,98 +113,15 @@ processing:
       status: completed
       completed_at: "2026-08-26"
       notes: |
-        Implemented trended_graph.py and tune_graph.py. Grid search over LOOKBACK
-        (252, 504), MAX_LAG (1, 2, 3, 5) and P_THRESHOLD (0.01, 0.05, 0.10, 0.20)
-        found the best combination as LOOKBACK=504, MAX_LAG=2, P_THRESHOLD=0.01.
-        Tuned out-of-sample 2014-2026:
-        - Sharpe: 2.20
-        - Annual return: 19.5%
-        - Annual vol: 8.9%
-        - Max drawdown: -8.0%
-        - Win rate: 10.1%
-        The stricter p=0.01 and longer 504-day lookback make the edge filter more
-        conservative, cutting more false-positive trades and reducing drawdown. This
-        is the best result in the entire research branch.
-
-        Follow-up: combine the graph edge filter with the k-NN pattern matcher.
-        tune_graph_knn.py searched WINDOW (2-5), K (10-50), P_THRESHOLD (0.01, 0.05)
-        and EDGE_LOOKBACK (252, 504). The best settings are WINDOW=2, K=30,
-        P_THRESHOLD=0.01, EDGE_LOOKBACK=504. trended_graph_knn.py now uses these
-        defaults. Tuned out-of-sample 2014-2026:
-        - Sharpe: 2.77
-        - Annual return: 22.1%
-        - Annual vol: 8.0%
-        - Max drawdown: -7.5%
-        - Win rate: 12.4%
-        The combination is the best result in the entire research branch: it
-        retains k-NN's return power while the graph filter cuts the worst
-        drawdowns.
-
-        Follow-up: add volatility-targeted position sizing in
-        trended_graph_knn_vol.py. The position size is scaled by
-        target_vol / trailing realized XAU volatility, capped at MAX_LEVERAGE.
-        With TARGET_VOL=0.20, the OOS 2014-2026 result is:
-        - Sharpe: 3.01
-        - Annual return: 26.4%
-        - Annual vol: 8.8%
-        - Max drawdown: -5.2%
-        - Win rate: 12.4%
-        This becomes the new best in the branch: the same edge and k-NN forecast,
-        but reduced exposure during volatile XAU periods. app/vector-analysis-ideas.js
-        is updated to show the new equity curve.
-
-        Follow-up: test alternative k-NN distance metrics in
-        trended_graph_knn_dist.py (correlation, cosine, manhattan). Results:
-        - Euclidean (baseline): Sharpe 2.77, ann ret 22.1%, vol 8.0%, max DD -7.5%
-        - Manhattan: Sharpe 2.51, ann ret 24.7%, vol 9.9%, max DD -7.2%
-        - Cosine: Sharpe 2.28, ann ret 16.8%, vol 7.4%, max DD -6.9%
-        - Correlation: Sharpe 1.63, ann ret 12.3%, vol 7.6%, max DD -10.7%
-        Euclidean remains the best.
-
-        Follow-up: combine XAG/silver and volatility targeting in
-        trended_graph_knn_vol_silver.py. The feature vector includes THB, XAU,
-        and XAG returns, and the position is sized by realized XAU volatility.
-        With TARGET_VOL=0.20, the OOS 2014-2026 result is:
-        - Sharpe: 3.46
-        - Annual return: 39.5%
-        - Annual vol: 11.4%
-        - Max drawdown: -5.4%
-        - Win rate: 15.6%
-        This is now the new best in the branch. The app/vector-analysis-ideas.js
-        is updated to include the combined equity curve.
-
-        Follow-up: add silver (XAG/USD) returns to the graph+k-NN feature vector
-        in trended_graph_knn_silver.py. The k-NN now uses (thb_ret, xau_ret,
-        xag_ret). Walk-forward OOS 2014-2026:
-        - Sharpe: 3.29
-        - Annual return: 34.0%
-        - Annual vol: 10.3%
-        - Max drawdown: -7.2%
-        - Win rate: 15.6%
-        This becomes the new best in the branch. Silver is closely related to
-        gold and provides an additional cross-asset signal that the k-NN can
-        exploit. app/vector-analysis-ideas.js is updated to show the new curve.
-
-        Follow-up: test multiscale k-NN history in
-        trended_graph_knn_multiscale.py. Instead of one flat window of daily
-        returns, use M blocks of N consecutive daily returns (M*N total lookback).
-        Results:
-        - M=2, N=2: Sharpe 2.96, ann ret 28.5%, vol 9.6%, max DD -3.9%
-        - M=3, N=2: Sharpe 2.86, ann ret 28.0%, vol 9.8%, max DD -6.5%
-        The block structure improves max drawdown but does not beat the flat
-        silver feature vector on Sharpe. The app is left on the silver curve.
-
-        Follow-up: run a full grid search over WINDOW, K, P_THRESHOLD and
-        EDGE_LOOKBACK for the silver graph+k-NN in tune_graph_knn_silver.py.
-        The new best settings are WINDOW=2, K=10, P_THRESHOLD=0.01,
-        EDGE_LOOKBACK=504. trended_graph_knn_silver.py is updated to default
-        K=10. Walk-forward OOS 2014-2026:
-        - Sharpe: 3.43
-        - Annual return: 34.0%
-        - Annual vol: 9.9%
-        - Max drawdown: -6.7%
-        - Win rate: 15.1%
-        This is the new best in the branch.
+        Best of the whole branch: graph edge filter + k-NN + silver features
+        with volatility-targeted sizing — Sharpe 3.46, ann ret 39.5%, walk-
+        forward OOS 2014-2026 (tune_graph_knn_silver best: WINDOW=2, K=10,
+        P_THRESHOLD=0.01, EDGE_LOOKBACK=504). Tuning ladder — graph alone
+        Sharpe 2.20 -> +k-NN 2.77 -> +vol 3.01 -> +silver+vol 3.46 (Euclidean
+        best distance; multiscale blocks lost on Sharpe).
+        Full grid-search trail moved to Education (verdict+pointer split,
+        2026-11-07): see lesson 'gold-thb-usd-vector-analysis'
+        (lesson-32518e35af20, Education:Gold-Thb-Usd-Vector-Analysis).
     - id: 6
       label: Wavelet coherence
       status: completed
