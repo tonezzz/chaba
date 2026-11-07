@@ -63,7 +63,7 @@ jobs:
   persistent: true
   timeout: 15m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada-jobs/verify_worker.py --once --max 5
-  env_file: %h/.config/secrets/cloudflare.env
+  env_file: "%h/.config/secrets/cloudflare.env"
   note: INERT BY DEFAULT — only touches review/verify cards tagged
     'ada-verify' (opt-in per card). Untagged cards are never read for
     action. Brain = CF Workers AI llama-3.3-70b (free lane); authority
