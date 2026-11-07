@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: doing
-updated: 2026-11-07 19:08
+updated: 2026-11-07 19:20
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -65,6 +65,13 @@ comms:
 - at: 2026-11-07 19:08
   from: chaba
   text: started devin-task-20261107-120758-measure-and-optimize-scripts-a on mn01 (dispatch)
+- at: 2026-11-07 19:20
+  from: devin
+  text: 'DONE (dispatch on mn01, commit 7d4f4381b): discovery is now O(1) — 2 rclone calls/pass. lsf -F pt recursive
+    folds claim mtimes into the listing (kills per-claim lsl); copy --files-from fetches all pending pack.yml +
+    preflight.json in one call (kills per-candidate cat); requires re-gated at claim time via refresh_requires so
+    drain-in-one-pass is preserved. Measured live on gdrive:ada-nest-kk-llm (78 packs): pre-batch 196.5s -> now
+    6.8s (290358235 was 8.1s on a quiet queue; the win grows with live'
 requests:
 - id: kk-mac-is-offline-choose-the-next-safe-e-183153
   ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
