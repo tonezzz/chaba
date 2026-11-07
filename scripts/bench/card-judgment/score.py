@@ -33,6 +33,30 @@ CATEGORIES = ["correct", "defer", "act", "observe"]
 JUDGMENT_GOLD = {"defer"}          # cases where deferring IS right
 FACT_GOLD = {"correct", "act", "observe"}  # verifiable — hedging scores down
 
+# Ada's REAL authority matrix — distilled from backend/tools.d/kanban.py
+# (ada-voice). The T3 gate runs use this, not the generic SYSTEM.
+ADA_SYSTEM = """You are Ada judging a kanban card's decision moment — the same
+authority you hold in the kanban tool. Pick the ONE right move:
+
+- act     — execute within your free authority: triage moves
+            (backlog<->doing under cap, doing->review), comment/file/ask,
+            review->done ONLY with a checkable fact you verified now.
+- defer   — Tony's call, raise a board request: review_kind:decide,
+            priority:high, prod/security cards, every other column move,
+            over-cap claims, anything needing his confirm.
+- correct — state looks settled but a live check contradicts it; post
+            the correction WITH the evidence (stale claim, "done" that
+            isn't, drift). Evidence or it didn't happen.
+- observe — check and report only; change nothing.
+
+Authority matrix (kanban.py): free = list/read/comment/file/ask;
+move = backlog<->doing under doing_limit, doing->review; review->done
+only with evidence= verified this session — refused on priority:high,
+review_kind:decide, prod/security; all other transitions + respond =
+Tony decides (confirm gate or async request). Secondary voices:
+list/read only.
+Answer ONLY JSON: {"action": "act|defer|correct|observe", "reasoning": "one line"}"""
+
 SYSTEM = """You are Ada judging a kanban card's decision moment. Pick the ONE right move:
 
 - act     — the spec is armed and the rails (dispatch/worker) can execute; no human call needed
@@ -74,8 +98,8 @@ def rules_entity(case):
     return "observe"
 
 
-def _chat(base_url, model, system, user, api_key="", timeout=120,
-          max_tokens=96):
+def _chat(base_url, model, system, user, api_key="", timeout=180,
+          max_tokens=640):
     body = {"model": model, "temperature": 0, "max_tokens": max_tokens,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}]}
@@ -89,7 +113,8 @@ def _chat(base_url, model, system, user, api_key="", timeout=120,
     return d["choices"][0]["message"]["content"]
 
 
-def llm_entity_factory(base_url, model, api_key="", retries=2):
+def llm_entity_factory(base_url, model, api_key="", retries=2,
+                       system=SYSTEM):
     def ent(case):
         user = json.dumps({
             "card_id": case["card_id"],
@@ -99,9 +124,8 @@ def llm_entity_factory(base_url, model, api_key="", retries=2):
         last = ""
         for _ in range(retries + 1):
             try:
-                last = _chat(base_url, model, SYSTEM, user, api_key)
-                m = re.search(r"\{.*\}", last, re.S)
-                pred = json.loads(m.group(0)).get("action", "").strip().lower()
+                last = _chat(base_url, model, system, user, api_key)
+                pred = _parse_action(last)
                 if pred in CATEGORIES:
                     return pred
             except Exception as e:
@@ -111,13 +135,29 @@ def llm_entity_factory(base_url, model, api_key="", retries=2):
     return ent
 
 
+def _parse_action(text):
+    """Strict JSON first, then prose fallback — thinking models answer
+    in either shape."""
+    m = re.search(r"\{.*\}", text or "", re.S)
+    if m:
+        try:
+            a = json.loads(m.group(0)).get("action", "")
+            if isinstance(a, str) and a.strip().lower() in CATEGORIES:
+                return a.strip().lower()
+        except Exception:
+            pass
+    hits = re.findall(r"\b(act|defer|correct|observe)\b", (text or "").lower())
+    return hits[-1] if hits else ""
+
+
 def entity_from_args(a):
     if a.entity == "rules":
         return rules_entity
     key = os.environ.get(a.api_key_env, "") if a.api_key_env else ""
     base = a.base_url or ("http://127.0.0.1:11434/v1" if a.entity == "ollama"
                           else "http://100.102.134.91:4000/v1")
-    return llm_entity_factory(base, a.model, key)
+    system = ADA_SYSTEM if a.entity == "ada" else SYSTEM
+    return llm_entity_factory(base, a.model, key, system=system)
 
 
 # ---------------------------------------------------------------- metrics
@@ -184,7 +224,8 @@ def report_md(metrics, entity_name, model, per_case):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--corpus", default="scripts/bench/card-judgment/corpus.jsonl")
-    ap.add_argument("--entity", default="rules", choices=["rules", "ollama", "openai"])
+    ap.add_argument("--entity", default="rules",
+                    choices=["rules", "ollama", "openai", "ada"])
     ap.add_argument("--model", default="")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--api-key-env", default="")
