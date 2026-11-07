@@ -50,7 +50,15 @@ def main():
     parser.add_argument("--base",
                         default="http://100.102.134.91:11028/v1")
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--collections", default="bge-lessons-shadow",
+        help="comma-separated collection allowlist for the dense leg "
+             "(default: bge-lessons-shadow — only lesson/* hits are "
+             "consumed downstream, so fanning out to the whole bank "
+             "wastes ~24x embed calls and saturates the pool)")
     args = parser.parse_args()
+    colls = [c for c in (s.strip() for s in args.collections.split(","))
+             if c] or None
     adapter = load_adapter(args.adapter)
     with open(args.index) as source:
         snapshot = json.load(source)
@@ -61,7 +69,8 @@ def main():
     for row in rows:
         query = row.get("topic") or row.get("slug") or ""
         result = adapter.query_loaded(
-            args.base, snapshot, bm25, query, 30, 50, 5, 1.0, 0.75)
+            args.base, snapshot, bm25, query, 30, 50, 5, 1.0, 0.75,
+            collections=colls)
         results.append({
             "slug": row.get("slug"),
             "topic": row.get("topic"),

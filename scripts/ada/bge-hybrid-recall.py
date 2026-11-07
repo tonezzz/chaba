@@ -133,11 +133,22 @@ class BM25:
 
 def vector_collection(base, collection, query, limit):
     started = time.monotonic()
-    payload = request_json(
-        f"{base}/vector-search",
-        {"collection": collection, "query": query, "topK": limit,
-         "includeContent": False},
-        timeout=45)
+    payload = None
+    last_exc = None
+    for attempt in range(3):
+        if attempt:
+            time.sleep(min(2.0, 0.5 * attempt))
+        try:
+            payload = request_json(
+                f"{base}/vector-search",
+                {"collection": collection, "query": query, "topK": limit,
+                 "includeContent": False},
+                timeout=45)
+            break
+        except Exception as exc:
+            last_exc = exc
+    else:
+        raise last_exc
     hits = []
     for rank, hit in enumerate(payload.get("results") or [], start=1):
         document = hit.get("document") or {}
@@ -147,7 +158,7 @@ def vector_collection(base, collection, query, limit):
 
 
 def query_loaded(base, snapshot, bm25, text, dense_k, lexical_k, top_k,
-                 dense_weight, lexical_weight):
+                 dense_weight, lexical_weight, collections=None):
     docs = snapshot.get("docs") or []
     by_id = {doc["id"]: doc for doc in docs}
     started = time.monotonic()
@@ -155,12 +166,14 @@ def query_loaded(base, snapshot, bm25, text, dense_k, lexical_k, top_k,
     dense = []
     errors = []
     latencies = []
+    colls = collections if collections is not None else (
+        snapshot.get("collections") or [])
     # Keep fan-out below MDDB's search concurrency ceiling. Eight parallel
     # collection calls intermittently return 503 under a warm local bank.
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         futures = [pool.submit(vector_collection, base, collection, text,
                                 dense_k)
-                   for collection in snapshot.get("collections") or []]
+                   for collection in colls]
         for future in concurrent.futures.as_completed(futures):
             try:
                 _collection, hits, elapsed = future.result()
@@ -201,12 +214,13 @@ def query_loaded(base, snapshot, bm25, text, dense_k, lexical_k, top_k,
 
 
 def query(base, index_path, text, dense_k, lexical_k, top_k,
-          dense_weight, lexical_weight):
+          dense_weight, lexical_weight, collections=None):
     with open(index_path) as source:
         snapshot = json.load(source)
     return query_loaded(
         base, snapshot, BM25(snapshot.get("docs") or []), text, dense_k,
-        lexical_k, top_k, dense_weight, lexical_weight)
+        lexical_k, top_k, dense_weight, lexical_weight,
+        collections=collections)
 
 
 def main():
@@ -220,7 +234,12 @@ def main():
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--dense-weight", type=float, default=1.0)
     parser.add_argument("--lexical-weight", type=float, default=0.75)
+    parser.add_argument("--collections", default="",
+                        help="comma-separated collection allowlist "
+                             "(default: all collections in the snapshot)")
     args = parser.parse_args()
+    colls = [c for c in (s.strip() for s in args.collections.split(","))
+             if c] or None
     if args.build:
         return build_index(args.base, args.index)
     if not args.query:
@@ -229,7 +248,8 @@ def main():
         parser.error(f"index missing; run --build first: {args.index}")
     print(json.dumps(query(
         args.base, args.index, args.query, args.dense_k, args.lexical_k,
-        args.top_k, args.dense_weight, args.lexical_weight),
+        args.top_k, args.dense_weight, args.lexical_weight,
+        collections=colls),
         ensure_ascii=False, indent=2))
     return 0
 
