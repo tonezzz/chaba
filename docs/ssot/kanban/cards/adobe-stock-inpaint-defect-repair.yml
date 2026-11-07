@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: backlog
-updated: 2026-11-07 17:35
+updated: 2026-11-07 18:12
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -19,3 +19,10 @@ comms:
 - at: 2026-11-07 17:35
   from: tony
   text: card captured via board-api
+- at: 2026-11-07 18:12
+  from: devin
+  text: 'Spike findings 2026-11-07: (1) omen sd-server has NO inpaint HTTP endpoint — only /sdcpp/v1/img_gen|jobs|upscale|vid_gen|capabilities.
+    Inpainting exists only in sd-cli (--mask + init image + inpaint_padding/denoising_strength args) — usable but
+    CLI-only and CPU-slow (~hours under load). (2) BONUS discovery: /sdcpp/v1/upscale endpoint exists but needs
+    --upscale-model (ESRGAN weights) configured on the server — currently unset; also rejects plain b64 (wants different
+    image encoding). Candidate for'
