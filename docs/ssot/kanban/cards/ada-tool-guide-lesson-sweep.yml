@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:19
+updated: 2026-11-07 18:22
 priority: low
 action:
   type: manual
@@ -21,6 +21,21 @@ comms:
 - at: 2026-11-07 18:19
   from: devin
   text: closed by devin
+- at: 2026-11-07 18:22
+  from: chaba
+  text: 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
+  status: error
+  preflight:
+    at: 2026-11-07 18:22
+    merge_sha: null
+    files: '?'
+    tests: see card comms (close-out gate)
+    comms_tail:
+    - card captured via board-api
+    - 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+    - closed by devin
+  request_id: deploy-ada-tool-guide-lesson-sweep
+  error: 'request raise failed: HTTP Error 400: Bad Request'
