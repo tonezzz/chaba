@@ -1,6 +1,6 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
-column: backlog
+column: doing
 updated: 2026-11-07 14:48
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
@@ -32,7 +32,7 @@ action:
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: queued
+  status: running
   sweep:
     session_gone: 2026-10-28 10:18
     failed_noted: 2026-11-07 11:52
@@ -43,6 +43,7 @@ action:
   result: 'exit=0 ffe1QFAmNvQG8VkyD","type":"step-finish","tokens":{"total":33003,"input":2189,"output":228,"reasoning":0,"cache":{"write":0,"read":30586}},"cost":0}}
     | devin-task-opencode-executor-routing-smoke-1794032384.service: Consumed 15.919s CPU time.'
   verified: false
+  runner: idc02
 expected_goals:
 - id: artifact-landed
   check: file-exists evals/opencode-lane/out/executor-contract-smoke.json
@@ -290,6 +291,9 @@ comms:
 - at: 2026-11-07 14:48
   from: devin
   text: re-spawned from report page
+- at: 2026-11-07 14:48
+  from: idc02
+  text: claimed
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
