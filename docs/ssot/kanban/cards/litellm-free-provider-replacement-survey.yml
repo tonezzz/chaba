@@ -1,0 +1,38 @@
+id: litellm-free-provider-replacement-survey
+title: Survey free hosted LLM providers to replace GitHub Models in litellm
+column: backlog
+updated: 2026-11-07 14:17
+priority: medium
+tags:
+- infra
+- llm
+- litellm
+- cloudflare
+spec: 'Context: GitHub Models retired 2026-07-30. idc03 litellm needs a free/low-cost hosted provider set for Ada/infra
+  calls that used to route there.
+
+
+  Candidates to evaluate (OpenAI-compat preferred — litellm drop-in):
+
+  1. Cloudflare Workers AI — REST /ai/v1/chat/completions is OpenAI-compatible; free 10,000 neurons/day. BLOCKER:
+  neither existing CF token has Workers AI perm — verified 2026-11-07: cfut_ (tony-omen/tony-dell, Workers Scripts
+  only) and cfat_ (idc01/02/03, Zone DNS+Workers Scripts) both get auth error 10000 on /ai/models/search. NEED:
+  new CF API token with Account > Workers AI permission (or edit cfat_ in dashboard).
+
+  2. Gemini API free tier (AI Studio key).
+
+  3. Groq free tier.
+
+  4. OpenRouter free models (:free variants).
+
+  5. Local Ollama (already in infra — baseline, not hosted).
+
+
+  Deliverable: comparison table (free limits, model list, OpenAI-compat, litellm config snippet), recommended provider
+  set, config diff for idc03 litellm. Update ssot.secrets.yml if a new CF token is minted.'
+note: Spawned from chat 2026-11-07 — GitHub Models retirement follow-up.
+ref: SYS-1086
+comms:
+- at: 2026-11-07 14:17
+  from: devin
+  text: card captured via board-api
