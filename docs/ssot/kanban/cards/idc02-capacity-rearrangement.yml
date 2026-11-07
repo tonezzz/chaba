@@ -1,0 +1,23 @@
+id: idc02-capacity-rearrangement
+title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
+column: backlog
+updated: 2026-11-07 12:46
+brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
+  Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
+  OOM, runner load-gate stalls, board-api flock storm.'
+priority: high
+tags:
+- idc02
+- capacity
+- ollama
+- infra
+spec: '1) Clamp Ollama: OLLAMA_MAX_LOADED_MODELS=1, OLLAMA_KEEP_ALIVE=5m, OLLAMA_NUM_PARALLEL=1 via systemd override.
+  2) Assess open-jev: consolidate onto Ollama or park if experimental — frees ~4GB+CPU. 3) Move embed/lesson batch
+  fleet (embed-lane-lessons, bge-shadow, lessons-audit) to tony-dell (8c/14G, headroom). 4) Route chat-local inference
+  to kk-macbook ollama-*kkmac lanes; shrink idc02 Ollama to embed-only or retire. Keep idc02 as edge+runner (OPENCODE_LANES,
+  jack IDE, ada gateway).'
+ref: SYS-1082
+comms:
+- at: 2026-11-07 12:46
+  from: tony
+  text: card captured via board-api
