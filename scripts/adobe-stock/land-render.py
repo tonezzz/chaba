@@ -138,6 +138,57 @@ def fetch_cf(model: str, prompt: str, negative: str,
     return {"status": "failed", "error": "cf_unexpected_response"}
 
 
+def fetch_gemini(model: str, prompt: str, init_image: str) -> dict:
+    """Gemini image lane (generateContent with image output).
+    --job carries the model id (e.g. gemini-2.5-flash-image).
+    --init-image optionally supplies an image-edit input (PNG/JPEG path).
+    Key/base via GEMINI_API_KEY + GEMINI_BASE_URL (LiteLLM gateway ok),
+    same convention as scripts/ada/gemini_rest.py."""
+    import os
+    key = (os.environ.get("GEMINI_API_KEY")
+           or os.environ.get("GOOGLE_API_KEY"))
+    if not key:
+        return {"status": "failed", "error": "gemini_credentials_missing"}
+    base = os.environ.get("GEMINI_BASE_URL",
+                          "https://generativelanguage.googleapis.com")
+    if not base.endswith("/v1beta"):
+        base += "/v1beta"
+    parts: list[dict] = []
+    if init_image:
+        p = Path(init_image)
+        if not p.exists():
+            return {"status": "failed",
+                    "error": f"init_image_missing:{init_image}"}
+        mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+        parts.append({"inline_data": {
+            "mime_type": mime,
+            "data": base64.b64encode(p.read_bytes()).decode()}})
+    parts.append({"text": prompt})
+    body = {"contents": [{"parts": parts}],
+            "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
+    req = urllib.request.Request(
+        f"{base}/models/{model}:generateContent",
+        data=json.dumps(body).encode(),
+        headers={"x-goog-api-key": key,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            d = json.loads(r.read())
+    except Exception as exc:
+        return {"status": "failed",
+                "error": f"gemini_http:{type(exc).__name__}:{exc}"[:200]}
+    for cand in d.get("candidates") or []:
+        for part in (cand.get("content") or {}).get("parts") or []:
+            blob = part.get("inlineData") or part.get("inline_data")
+            if blob and blob.get("data"):
+                return {"status": "completed",
+                        "png_bytes": base64.b64decode(blob["data"]),
+                        "meta": {"gemini_model": model,
+                                 "mime": blob.get("mimeType")
+                                 or blob.get("mime_type")}}
+    return {"status": "failed", "error": "gemini_no_image"}
+
+
 def fetch_pack(remote: str, pack: str) -> dict:
     """Nest lane: pack dir under <remote>/packs/<pack> with done marker
     and out/*.png artifact."""
@@ -261,13 +312,16 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--lane", required=True,
-                   choices=["omen-sd", "kk-mac-nest", "cf-workers-ai"])
+                   choices=["omen-sd", "kk-mac-nest", "cf-workers-ai",
+                            "gemini-image"])
     p.add_argument("--job", required=True,
-                   help="job id / pack name / CF model id")
+                   help="job id / pack name / CF or Gemini model id")
     p.add_argument("--port", type=int, default=8399)
     p.add_argument("--pack", default="")
     p.add_argument("--prompt", default="")
     p.add_argument("--negative", default="")
+    p.add_argument("--init-image", default="",
+                   help="gemini-image: path to source image for editing")
     p.add_argument("--width", type=int, default=0)
     p.add_argument("--height", type=int, default=0)
     p.add_argument("--campaign", required=True)
@@ -281,6 +335,8 @@ def main() -> int:
     if args.lane == "cf-workers-ai":
         res = fetch_cf(args.job, args.prompt, args.negative,
                        args.width, args.height)
+    elif args.lane == "gemini-image":
+        res = fetch_gemini(args.job, args.prompt, args.init_image)
     else:
         res = wait_result(args.lane, args.job, args.port, args.remote,
                           args.pack, args.status_only, args.timeout_s)
