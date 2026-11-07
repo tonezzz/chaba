@@ -45,6 +45,9 @@ comms:
     dispatch). 17h running with no live unit = dead claim; no artifact/report produced. Clearing mentally-stale
     running state — card needs re-queue or spec review before another claim (spec is a broad diagnostics sweep;
     suggest scoping before re-dispatch).'
+- at: 2026-11-07 16:24
+  from: tony
+  text: retry requested
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
   ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
@@ -66,6 +69,6 @@ spec: Verify and fix flagged health services including open-jev-4b-idc02, ada-pi
   listed services across the relevant hosts without error flags in the ops-health report.
 action:
   type: dispatch
-  status: running
+  status: queued
   lane: codemod
-  runner: idc02
+  attempts: 1
