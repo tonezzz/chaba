@@ -1,0 +1,24 @@
+id: board-api-write-latency-60s-under-load-r-939aed
+title: board-api write latency >60s under load — requests queue behind serialized card commits
+column: backlog
+updated: 2026-11-07 12:09
+priority: medium
+blocked_by: '[''idc03-served-checkout-convergence-unbloc-0acb20'']'
+tags:
+- board-api
+- latency
+- ops
+spec: 'Observed 2026-11-07: POST /comment exceeded 60s (client timed out twice, both writes landed — duplicate comms
+  on education-maintenance-consolidated-report). Root cause: every card write performs an immediate git commit inside
+  the served checkout, which is pathologically slow while that checkout is diverged+dirty; /tmp/board-api.lock serializes
+  all writes, so one slow commit stalls every writer. Server is already ThreadingHTTPServer so reads mostly proceed,
+  but write-path contention makes the door feel hung. Related done card: board-api-write-latency-10s-client-timeo-3e4d83
+  (same class at ~6x severity). Fix candidates, in order: (1) converge the served checkout (OPS-1074) — removes
+  the slow-commit root cause; (2) then re-measure; if still slow, options: 202-accept writes with async commit,
+  move immediate-commit out of the request thread, or batch commits under a short debounce. Verify after convergence
+  before building (2).'
+ref: OPS-1075
+comms:
+- at: 2026-11-07 12:09
+  from: devin
+  text: card captured via board-api
