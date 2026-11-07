@@ -1,7 +1,7 @@
 id: fix-flagged-ops-health-services-ab5ac9
 title: Fix flagged ops health services
 column: review
-updated: 2026-11-07 17:12
+updated: 2026-11-07 17:14
 priority: high
 note: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
   from ops-health report
@@ -108,6 +108,9 @@ comms:
     deployed on con01+idc03 (last run synced 100 pages); open-jev probe timeout 30->60s (cold 4b load=33s); added
     chaba-board-api unit + /queue probe per KNB-1098. ada-pi-pwa verified on idc03 (unit+HTTP 200 — no tony-pi host
     exists on tailnet). Trail: docs/ssot/jobs/infrastru'
+- at: 2026-11-07 17:14
+  from: chaba
+  text: ran under executor=devin provider=devin
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
   ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
