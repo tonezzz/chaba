@@ -1,0 +1,21 @@
+id: omen-sdxl-full-model-experiment
+title: Test non-Lightning SDXL checkpoint on omen sd-server
+column: backlog
+updated: 2026-11-07 12:32
+brief: Determine whether omen painterly output is the Lightning checkpoint or Q4 quantization.
+priority: medium
+program: adobe-stock
+tags:
+- adobe-stock
+- image-gen
+- omen
+spec: 'Candidate C (job_6aeea32e) rendered painterly on sdxl-lightning-4step.q4_0.gguf despite 20 steps/CFG7 — distilled+quantized
+  ceiling. Experiment: pull a full sdxl-base GGUF (Q6_K or Q8_0, ~6.5-8GB) to tony-omen, run same remote-work prompt
+  through /sdcpp/v1/img_gen, compare photorealism vs Lightning. Cost: disk + slower render (omen already load~29).
+  Gate: confirm sd-server supports model swap without disrupting other jobs. Fallback: document omen as illustration-tier
+  lane only.'
+ref: OPS-1078
+comms:
+- at: 2026-11-07 12:32
+  from: tony
+  text: card captured via board-api
