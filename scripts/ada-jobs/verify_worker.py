@@ -36,6 +36,26 @@ API = os.environ.get("BOARD_API",
 CF_BASE = "https://api.cloudflare.com/client/v4/accounts/%s/ai/v1"
 BLOCKED_TAGS = {"prod", "security", "prod-security", "production"}
 
+CLEANUP_PROMPT = """You are Ada's ada-jobs-cleanup lane — a scoped sweeper
+assessing ONE old kanban card for board hygiene. Your whole authority
+(enforced in code after you):
+
+- comment — post [cleanup] verdict + one-line reason (stale|superseded|
+  dead|alive). The assessment IS the deliverable.
+- close   — ONLY review-column cards that are clearly dead WITH evidence
+  (e.g. superseded by card X, work verified done elsewhere, surface
+  retired per docs). NEVER backlog cards, NEVER priority:high, NEVER
+  review_kind:decide — those are Tony's calls.
+- request — dead-ish but not provable? defer to Tony with a close/keep
+  question. When unsure, this is the right move.
+- skip    — card is alive/current; no action needed.
+
+You may NEVER delete/archive anything — closes and requests only.
+Evidence or it didn't happen. Card is below. Answer ONLY JSON:
+{"action":"close|comment|request|skip","verdict":"dead|stale|alive",
+"evidence":"concrete proof","comment":"[cleanup] ...","request":"question for Tony"}
+"""
+
 PROMPT = """You are Ada's ada-jobs-verify lane — a scoped worker finishing ONE
 verify-class kanban card. Your whole authority (enforced in code after you):
 
@@ -113,7 +133,7 @@ def probe_urls(card, limit=3, timeout=8):
     return found
 
 
-def llm_action(card, base_url, model, key):
+def llm_action(card, base_url, model, key, system=PROMPT):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
@@ -121,7 +141,7 @@ def llm_action(card, base_url, model, key):
     if probes:
         snap["live_checks"] = probes
     body = {"model": model, "temperature": 0, "max_tokens": 800,
-            "messages": [{"role": "system", "content": PROMPT},
+            "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": json.dumps(
                              snap, ensure_ascii=False)[:6000]}]}
     req = urllib.request.Request(
@@ -153,20 +173,60 @@ def enforce(action, card):
     return "skip", {}
 
 
+import datetime
+
+
+def _age_days(card):
+    try:
+        up = str(card.get("updated") or "")[:10]
+        d = datetime.date.fromisoformat(up)
+        return (datetime.date.today() - d).days
+    except Exception:
+        return 0
+
+
+def eligible_cleanup(card, min_age=21):
+    """Old cards she may assess. Hard exclusions: done, claimed,
+    priority:high, review_kind:decide, open requests — those are Tony's."""
+    if card.get("column") not in ("backlog", "review"):
+        return False
+    if _age_days(card) < min_age:
+        return False
+    if card.get("priority") == "high" or card.get("review_kind") == "decide":
+        return False
+    if card.get("claim"):
+        return False
+    reqs = [r for r in (card.get("requests") or [])
+            if str(r.get("status", "")).lower() not in
+            ("answered", "resolved", "closed")]
+    return not reqs
+
+
 def run_once(args):
     cards = get_cards()
-    targets = ([c for c in cards if c.get("id") == args.card]
-               if args.card else [c for c in cards if eligible(c)][:args.max])
+    cleanup = args.sweep == "cleanup"
+    if args.card:
+        targets = [c for c in cards if c.get("id") == args.card]
+    elif cleanup:
+        targets = [c for c in cards if eligible_cleanup(c, args.min_age)][:args.max]
+    else:
+        targets = [c for c in cards if eligible(c)][:args.max]
     if not targets:
-        print("no eligible cards (need tag 'ada-verify' + review/verify "
-              "+ not-high-priority + no open requests)")
+        print("no eligible cards")
         return
+    elig = eligible_cleanup if cleanup else (lambda c: eligible(c))
     for card in targets:
         cid = card.get("id")
-        print(f"[card] {cid}")
-        if not eligible(card):
+        print(f"[card] {cid} (age {_age_days(card)}d)")
+        if not elig(card):
             print("  not eligible under matrix — skip"); continue
-        raw = llm_action(card, args.base_url, args.model, args.api_key)
+        raw = llm_action(card, args.base_url, args.model, args.api_key,
+                         system=CLEANUP_PROMPT if cleanup else PROMPT)
+        if cleanup and (raw.get("action") or "").lower() == "close" \
+                and card.get("column") != "review":
+            raw["action"] = "request"   # backlog closes are Tony's — degrade to ask
+            raw["request"] = raw.get("request") or \
+                "cleanup suggests dead — close or keep?"
         action, payload = enforce(raw, card)
         print(f"  ada decides: {action} -> {json.dumps(payload)[:160]}")
         if args.dry_run:
@@ -194,6 +254,8 @@ def main():
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--card", default="")
+    ap.add_argument("--sweep", choices=["", "cleanup"], default="")
+    ap.add_argument("--min-age", type=int, default=21)
     ap.add_argument("--max", type=int, default=3)
     ap.add_argument("--model", default=os.environ.get(
         "ADA_JOBS_MODEL", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"))
