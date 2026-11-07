@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-07 14:15
+updated: 2026-11-07 16:52
 priority: medium
 tags:
 - telegram
@@ -121,6 +121,11 @@ comms:
 - at: 2026-11-07 14:15
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] Tony answered household-bot-membership-retest today: fix-new-memberships — add each new bot
+    to its target group + host-only allowlists, keep old relays until tests pass. The bot-to-group adds are Telegram
+    admin actions — needs the group-side adds before relay cutover. Keeping in review pending that work.'
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
