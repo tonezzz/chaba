@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: review
-updated: 2026-11-07 14:49
+updated: 2026-11-07 14:51
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -311,6 +311,13 @@ comms:
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (required fields=True; read_only
     true=True; artifact host is this host=True; artifact host == target_host=True)
+- at: 2026-11-07 14:51
+  from: devin
+  text: 'Contract-PASS closeout (5 runs total). Executor lane proven end-to-end every run: claim on pinned host
+    idc02, dispatch worktree+branch, ops-readonly profile render, headless opencode run, artifact landed at evals/opencode-lane/out/executor-contract-smoke.json,
+    held-out verifier executed, merge gate held when checks failed. Run-by-run: (1) flash-lite paid — real host
+    facts, hallucinated collected_at 2026-04-06, verifier fail; (2) retry — same stale timestamp; (3) gemini-3.5-flash
+    — model not in o'
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
