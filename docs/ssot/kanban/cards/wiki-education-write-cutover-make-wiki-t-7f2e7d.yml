@@ -1,0 +1,47 @@
+id: wiki-education-write-cutover-make-wiki-t-7f2e7d
+title: wiki-education-write-cutover — make wiki the sole lesson store
+column: backlog
+updated: 2026-11-07 15:47
+brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
+  wp/lesson 301s at edge level; verify no stray WP lesson writers
+tags:
+- wiki
+- education
+- cutover
+spec: 'Follow-up to OPS-1046 (wiki-member-knowledge-surface, DONE — 124 lessons + 2 reports migrated to Education:/Reports:,
+  dual-write live, read path + Education:Due verified).
+
+
+  GOAL (Tony''s stated end-state): WP stops storing newly-created lessons; wiki Education: is authoritative.
+
+
+  SCOPE:
+
+  1. WIKI-PRIMARY WRITE: today do_lesson (scripts/board/board-api.py ~line 2329) is WP-primary — it always wp_api
+  POSTs the lesson CPT, then _lesson_wiki_write adds the wiki page only when WIKI_EDUCATION_WRITE=dual. Add a wiki-primary
+  mode (e.g. WIKI_EDUCATION_WRITE=wiki): skip the WP payload entirely, write via WikiLessonSink, return wiki result.
+  Preserve semantics: slug-equivalent upsert by wiki_title (re-asked topics update in place), learned_at/next_review/status
+  preservation on re-file, Thai section handling (no_th), next_review override. If WikiLessonSink doesn''t merge
+  meta on existing pages, add that. WP fallback: keep dual as rollback path.
+
+  2. WP LESSON CPT READ-ONLY: after flip, WP lesson posts are archive-only. Verify no other writer hits /wp/v2/lesson
+  (lesson-add.py goes through the door; check Ada tools + jobs).
+
+  3. 301 REDIRECTS wp/lesson/* -> wiki Education pages: choose edge-level (idc02 Caddy, repo-managed — PREFERRED,
+  FTP to WP docroot is unavailable; wiki FTP user is jailed to MediaWiki root) vs WP mu-plugin (needs Tony/WP-admin).
+  Needs slug->wiki_title mapping — deterministic via pub.lesson_wiki_title(topic) but WP only stores slug lesson-<md5>;
+  may need a lookup table generated at cutover or a redirect map file.
+
+  4. VERIFY-BY-SURFACE: new /lesson write lands ONLY on wiki (no new WP post id), re-ask updates same wiki page
+  preserving learned_at, lessons-due still renders, anon still denied.
+
+
+  HARD LIMITS: don''t break other sinks/doors; don''t delete WP lesson posts; KK/Nhong accounts stay on SEC-1035;
+  rollback = flag back to dual.'
+action:
+  type: dispatch
+ref: OPS-1095
+comms:
+- at: 2026-11-07 15:47
+  from: devin
+  text: card captured via board-api
