@@ -383,6 +383,20 @@ _merge_fallback() {
   return 1
 }
 
+# No-op fast path (2026-11-07 wedge): when upstream is already an
+# ancestor of HEAD, a pull would only autostash + pop for no benefit —
+# and the board lock would sit held across the whole mutating phase for
+# nothing, stalling board-api writers behind routine ticks. Skip the
+# phase entirely then; the EXIT-trap reconcile and the stash GC still
+# run below (reconcile self-locks when it has work). A still-open
+# rebase or the NO_REBASE test knob always needs the phase.
+_pull_needed() {
+  _rebase_in_progress && return 0
+  [ "${SAFE_PULL_NO_REBASE:-0}" = "1" ] && return 0
+  git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 || return 0
+  ! git merge-base --is-ancestor "$UPSTREAM" HEAD 2>/dev/null
+}
+
 # Hold the board write flock for the whole worktree-mutating phase —
 # untracked-collision resolution, pull --rebase --autostash, pop
 # resolution, column guard, and the exit-trap reconcile. board-api.py
@@ -392,6 +406,7 @@ _merge_fallback() {
 # board-api-writes-eaten-by-autostash-pops-515009). The fd stays open
 # until exit, which also covers the EXIT-trap reconcile. Bounded wait:
 # a wedged board-api must not deadlock convergence — log and proceed.
+_pull_phase() {
 BOARD_LOCK="${SAFE_PULL_BOARD_LOCK-/tmp/board-api.lock}"
 SAFE_PULL_LOCK_FD=""
 if [ -n "$BOARD_LOCK" ] && command -v flock >/dev/null 2>&1; then
@@ -460,10 +475,6 @@ if [ -n "$rebase_failed" ] || [ "${SAFE_PULL_NO_REBASE:-0}" = "1" ]; then
   _merge_fallback "${rebase_failed:-rebase skipped}" || exit 1
 fi
 
-# Every pull doubles as the periodic GC tick — dell's kanban-commit.timer
-# runs this every ~15min, satellites hit it through git-safe-push.
-_gc_autostash
-
 # Autostash pops merge cleanly even when they shouldn't — the stash's
 # stale card `column:` fields re-apply over the rebased tree while newer
 # comms land at the bottom (resurrection waves, card
@@ -471,6 +482,19 @@ _gc_autostash
 # else the pop merged stays.
 COLGUARD="$REPO/scripts/board/card-column-guard.py"
 [ -f "$COLGUARD" ] && python3 "$COLGUARD" "$REPO" || true
+}
+
+if _pull_needed; then
+  _pull_phase
+else
+  echo "git-safe-pull: upstream already in HEAD — skipped board lock + pull phase" >&2
+fi
+
+# Every pull doubles as the periodic GC tick — dell's kanban-commit.timer
+# runs this every ~15min, satellites hit it through git-safe-push. Stash
+# refs only, never touches the worktree or board files — safe outside
+# the board lock and on no-op ticks.
+_gc_autostash
 
 # Success means upstream is now an ancestor of HEAD (or unresolvable).
 if git rev-parse --verify -q "$UPSTREAM" >/dev/null 2>&1 \
