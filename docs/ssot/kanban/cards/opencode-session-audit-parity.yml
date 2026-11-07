@@ -29,6 +29,8 @@ action:
     Consumed 1min 16.136s CPU time over 18min 28.946s wall clock time, 528.7M memory peak, 39.1M memory swap peak.'
   lane: devin
   runner: idc02
+  sweep:
+    stale_running: 2026-11-07 19:18
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -110,6 +112,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261027-163705-build-a-read-only-opencode-ses no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-07 19:18
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-163705-build-a-read-only-opencode-ses on
+    idc02 — if the work was never pushed it may be gone'
 review_kind: verify
 claim: {}
 auto_close:
