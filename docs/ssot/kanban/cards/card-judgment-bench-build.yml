@@ -1,7 +1,7 @@
 id: card-judgment-bench-build
 title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
 column: done
-updated: 2026-11-07 12:28
+updated: 2026-11-07 14:33
 priority: high
 tags:
 - ada
@@ -43,5 +43,12 @@ comms:
 - at: 2026-11-07 12:28
   from: devin
   text: closed by devin
+- at: 2026-11-07 14:33
+  from: devin
+  text: '[run 2 — production-adjacent model] gemini-3.5-flash-lite via gateway (~$0.02): action_accuracy 0.574 |
+    deference 0.60 | corr_precision 0.938 | recall 0.50. vs llama3.2:3b local (0.739/0.965/0.966/0.933) the paid
+    model is WORSE — its failure is symmetric: over-defers (act->defer 18/30, correct->defer 14/30) where llama3.2
+    over-acted (observe->act 23/25). Neither passes t3 gate. Artifacts run2-flashlite-paid.{md,json} on master (d72091c77).
+    Watcher armed for kk-mac eval (KNB-1087) — fires on next'
 action:
   status: done
