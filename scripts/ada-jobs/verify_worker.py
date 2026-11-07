@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+"""verify_worker.py — the 'ada-jobs-verify' micro-entity (card
+ada-t4-micro-entity-design / ADA-1091).
+
+First T4 lane: Ada finishes ONE bounded card class herself —
+verify/observe cards. Loop: pull eligible review cards -> give her the
+card -> she returns ONE action -> the matrix is enforced IN CODE -> the
+action lands via board-api as from: ada audit lines.
+
+Opt-in contract (never touches an unmarked card):
+  column=review AND review_kind=verify AND tag 'ada-verify'
+  AND NOT priority:high AND NOT review_kind:decide AND no prod/security tags
+  AND no open requests[]
+
+Her allowed actions (all already inside kanban-tool authority):
+  close    review->done — only when she supplies evidence= (a checkable
+           fact she verified this run); refused on priority:high /
+           decide / prod-security by BOTH prompt and code.
+  comment  post an evidence/status comms line.
+  request  defer to Tony — raise a board request (her safe failure mode).
+  skip     nothing to do this pass.
+
+Default brain: CF Workers AI llama-3.3-70b (free, always-on) —
+override with --model/--base-url/--api-key-env (e.g. local ollama
+llama3.2:3b, the current bench gate-passer).
+
+Usage:
+  verify_worker.py --once                 # process up to --max cards once
+  verify_worker.py --once --card <id>     # one named card (probe/pilot)
+  verify_worker.py --dry-run --card <id>  # decide but don't write
+"""
+import argparse, json, os, re, sys, urllib.request
+
+API = os.environ.get("BOARD_API",
+                     "https://idc03.taila0626a.ts.net:10000")
+CF_BASE = "https://api.cloudflare.com/client/v4/accounts/%s/ai/v1"
+BLOCKED_TAGS = {"prod", "security", "prod-security", "production"}
+
+PROMPT = """You are Ada's ada-jobs-verify lane — a scoped worker finishing ONE
+verify-class kanban card. Your whole authority (enforced in code after you):
+
+- close   — move review->done ONLY with evidence: a checkable fact you
+            verified (HTTP status, service state, file/field present).
+            HARD REFUSED on priority:high, review_kind:decide, prod/security.
+- comment — post an evidence/status note. The evidence IS the comment.
+- request — defer to Tony (a request he answers on the board). When in
+            ANY doubt, this is the right move — never guess.
+- skip    — genuinely nothing to verify right now.
+
+Card is below. Answer ONLY JSON:
+{"action":"close|comment|request|skip","evidence":"the checkable fact",
+"comment":"text to post","request":"the question for Tony"}
+"""
+
+
+def post(path, body):
+    req = urllib.request.Request(API + path, data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    return json.loads(urllib.request.urlopen(req, timeout=75).read())
+
+
+def get_cards():
+    req = urllib.request.Request(API + "/cards")
+    d = json.loads(urllib.request.urlopen(req, timeout=60).read())
+    return d if isinstance(d, list) else d.get("cards", [])
+
+
+def eligible(card):
+    if card.get("column") != "review" or card.get("review_kind") != "verify":
+        return False
+    tags = set(card.get("tags") or [])
+    if "ada-verify" not in tags and card.get("ada_job") != "verify":
+        return False
+    if card.get("priority") == "high" or card.get("review_kind") == "decide":
+        return False
+    if tags & BLOCKED_TAGS:
+        return False
+    reqs = [r for r in (card.get("requests") or [])
+            if str(r.get("status", "")).lower() not in
+            ("answered", "resolved", "closed")]
+    return not reqs
+
+
+def llm_action(card, base_url, model, key):
+    snap = {k: card.get(k) for k in
+            ("id", "title", "brief", "note", "spec", "expected_goals")}
+    snap["comms_tail"] = (card.get("comms") or [])[-6:]
+    body = {"model": model, "temperature": 0, "max_tokens": 800,
+            "messages": [{"role": "system", "content": PROMPT},
+                         {"role": "user", "content": json.dumps(
+                             snap, ensure_ascii=False)[:6000]}]}
+    req = urllib.request.Request(
+        base_url.rstrip("/") + "/chat/completions",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json",
+                 **({"Authorization": f"Bearer {key}"} if key else {})})
+    d = json.loads(urllib.request.urlopen(req, timeout=180).read())
+    text = d["choices"][0]["message"]["content"]
+    m = re.search(r"\{.*\}", text, re.S)
+    return json.loads(m.group(0)) if m else {"action": "skip",
+                                           "comment": f"unparseable: {text[:120]}"}
+
+
+def enforce(action, card):
+    """The authority matrix in code — the prompt can't widen it."""
+    a = (action.get("action") or "skip").lower()
+    if a == "close":
+        if card.get("priority") == "high" or card.get("review_kind") == "decide":
+            return "request", {"ask": "close requested but card is "
+                "priority:high/decide — your call", "options": ["close", "hold"]}
+        if not (action.get("evidence") or "").strip():
+            return "comment", {"text": "[verify] attempted close without "
+                "evidence — refused by matrix"}
+        return "close", {"evidence": action["evidence"],
+                         "comment": action.get("comment")}
+    if a in ("comment", "request", "skip"):
+        return a, action
+    return "skip", {}
+
+
+def run_once(args):
+    cards = get_cards()
+    targets = ([c for c in cards if c.get("id") == args.card]
+               if args.card else [c for c in cards if eligible(c)][:args.max])
+    if not targets:
+        print("no eligible cards (need tag 'ada-verify' + review/verify "
+              "+ not-high-priority + no open requests)")
+        return
+    for card in targets:
+        cid = card.get("id")
+        print(f"[card] {cid}")
+        if not eligible(card):
+            print("  not eligible under matrix — skip"); continue
+        raw = llm_action(card, args.base_url, args.model, args.api_key)
+        action, payload = enforce(raw, card)
+        print(f"  ada decides: {action} -> {json.dumps(payload)[:160]}")
+        if args.dry_run:
+            print("  dry-run — not writing"); continue
+        if action == "close":
+            post("/comment", {"id": cid, "from": "ada",
+                 "text": f"[verify] {payload['comment'] or payload['evidence']} "
+                         f"(evidence: {payload['evidence'][:180]})"})
+            post("/action", {"id": cid, "do": "close", "from": "ada",
+                             "evidence": payload["evidence"]})
+            print("  closed review->done with evidence")
+        elif action == "comment":
+            post("/comment", {"id": cid, "from": "ada",
+                 "text": f"[verify] {payload.get('comment') or payload.get('text','')}"})
+        elif action == "request":
+            body = {"id": cid, "from": "ada",
+                    "ask": payload.get("ask") or payload.get("request") or "needs Tony"}
+            if payload.get("options"):
+                body["options"] = payload["options"]
+            post("/request", body)
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--card", default="")
+    ap.add_argument("--max", type=int, default=3)
+    ap.add_argument("--model", default=os.environ.get(
+        "ADA_JOBS_MODEL", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"))
+    ap.add_argument("--base-url", default=os.environ.get(
+        "ADA_JOBS_BASE_URL",
+        CF_BASE % os.environ.get("CF_API_ACCOUNT_ID", "MISSING")))
+    ap.add_argument("--api-key-env", default="CF_API_WORKER_TOKEN")
+    args = ap.parse_args()
+    args.api_key = os.environ.get(args.api_key_env, "")
+    run_once(args)
+
+
+if __name__ == "__main__":
+    main()
