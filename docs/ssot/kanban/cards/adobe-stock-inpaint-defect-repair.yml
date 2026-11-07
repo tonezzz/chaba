@@ -1,0 +1,21 @@
+id: adobe-stock-inpaint-defect-repair
+title: Inpaint-based defect repair lane for stock candidates
+column: backlog
+updated: 2026-11-07 17:35
+brief: Mask-repair localized QC defects instead of full re-rolls.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- inpainting
+- image-edit
+spec: 'Build an inpaint lane for the Nest Adobe Stock pipeline: input = approved-ish candidate + defect mask (box/polygon
+  from QC note) + repair prompt; output = patched image landed via land-render.py. Lanes to evaluate: @cf/runwayml/stable-diffusion-v1-5-inpainting
+  (Workers AI, probed working), SDXL inpaint via diffusers on KK-Mac/omen, FLUX.1-Fill local. First test: repair
+  comparison-b floor/chair or comparison-e wall corner. Deliverable: lane comparison + repaired candidate + QC note.
+  Education: lesson compositional-image-generation-layers-inpainting (post 4162).'
+ref: OPS-1109
+comms:
+- at: 2026-11-07 17:35
+  from: tony
+  text: card captured via board-api
