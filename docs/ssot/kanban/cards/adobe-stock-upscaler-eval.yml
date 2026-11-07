@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: backlog
-updated: 2026-11-07 12:32
+updated: 2026-11-07 18:39
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -20,3 +20,10 @@ comms:
 - at: 2026-11-07 12:32
   from: tony
   text: card captured via board-api
+- at: 2026-11-07 18:39
+  from: devin
+  text: 'Scaffold landed on feat/ops-1077-upscaler-eval: scripts/adobe-stock/upscale-eval.py — backend=real esrgan-ncnn
+    (ncnn binary, CPU/Vulkan), metrics = laplacian sharpness + roundtrip PSNR/SSIM (self-consistency; no ground
+    truth for generated images) + optional --unsharp post-pass + JSON receipt. Metric fns verified (blur < roundtrip
+    ordering correct). Live dogfood in progress: realesrgan-x4plus x4 on comparison-d running on tony-dell (~70min
+    CPU). Still TODO: spandrel/diffusion backends (SeeSR/SUPI'
