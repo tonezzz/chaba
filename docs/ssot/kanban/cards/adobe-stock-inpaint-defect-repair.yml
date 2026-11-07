@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: backlog
-updated: 2026-11-07 18:12
+updated: 2026-11-07 19:25
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -26,3 +26,10 @@ comms:
     CLI-only and CPU-slow (~hours under load). (2) BONUS discovery: /sdcpp/v1/upscale endpoint exists but needs
     --upscale-model (ESRGAN weights) configured on the server — currently unset; also rejects plain b64 (wants different
     image encoding). Candidate for'
+- at: 2026-11-07 19:25
+  from: devin
+  text: 'UPDATE: gemini-image lane is LIVE (direct Google key works — earlier 402 was LiteLLM gateway budget, not
+    the AI key). land-render.py now has --lane gemini-image with --init-image editing (no mask needed). First dogfood:
+    comparison-e-gemini-wallfix.png landed (1024x1024, gemini-2.5-flash-image, edit prompt targeted wall corner
+    only). This may obsolete the mask-inpaint path for defect repair — Gemini edit preserves composition semantically.
+    CF inpainting still queued for neuron reset as the masked'
