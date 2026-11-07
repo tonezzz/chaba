@@ -450,6 +450,25 @@ jobs:
     optimize-gate warnings) into reports/qc-scoreboard/*.md + CMS page
     qc-scoreboard. After daily-brief (07:05/19:05) so its numbers ride the
     freshest producer state. Added 2026-10-15.'
+- id: deploy-preflight
+  name: Deploy-preflight gate (merged cards -> Tony approval -> prod deploy)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:07/5:00'
+  persistent: true
+  timeout: 25m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/deploy-preflight.py
+  note: 'card KNB-1090 — the R4 human-gated deploy stage. Scans served card
+    dir for column review|done + action.status=done + a top-level
+    deploy.target naming a DEPLOY_TARGETS registry entry (card ada-deploy-
+    preflight-gate). Raises a board request (approve/hold/abort, default
+    hold) with merge sha + diff stat + rollback plan; only an explicit
+    approve answer runs the registry deploy command and then verifies the
+    declared health surface (producer exit 0 AND consumer GET ok). Card
+    YAML writes under /tmp/board-api.lock; deploy exec outside the lock;
+    /tmp/deploy-preflight.lock prevents overlap. Fail-closed: unknown
+    targets error, t4 skipped, unparsed answers hold, failed deploys do
+    not loop. Added 2026-11-07.'
 - id: board-invariants
   name: Board invariants scan (every 4h)
   host: idc03   # moved 2026-10-16/17 OPS-0725
