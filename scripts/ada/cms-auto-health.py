@@ -9,7 +9,8 @@ instead of a silently stale page.
 Card lifecycle (the auto-improve loop):
   unhealthy        -> column=review, note = last_error + staleness
   still unhealthy  -> note updated in place (card history = incident log)
-  recovered        -> column=done, note records the recovery time
+  recovered        -> column=done after GREEN_WINDOWS consecutive healthy
+                      ticks (flap guard), note records the recovery time
   interval_min=0   -> manual-trigger pages; no staleness check
 
 Runs anywhere with MDDB access; writes into a chaba checkout. Committing
@@ -39,6 +40,10 @@ GRACE_S = 30 * 60
 # a card open this long gets priority bumped to high — an automation that
 # nobody fixes for half a day deserves attention, not just presence.
 ESCALATE_H = 12
+# an open card doesn't close on the first healthy tick — boundary-flapping
+# automations (registry stale but page alternately judged fresh) would
+# thrash review<->done every sync; require consecutive green windows.
+GREEN_WINDOWS = 2
 
 
 def _post(path: str, payload: dict, timeout: int = 30) -> dict | list:
@@ -187,19 +192,30 @@ def main() -> int:
                          "generator command in the registry doc."),
                 "updated": opened,
             })
+            card.pop("ok_streak", None)
             write_card(path, card)
         else:
             n_ok += 1
-            # auto-close: unhealthy card whose automation recovered
+            # auto-close: unhealthy card whose automation stayed healthy
+            # for GREEN_WINDOWS consecutive ticks
             if exists and card.get("column") == "review" and \
                     card.get("generated") == "cms-auto-health":
-                card["column"] = "done"
-                card["note"] = (f"Auto-recovered {today}: {slug} healthy "
-                                f"again (status={cfg.get('last_status')}, "
-                                f"state={state}).")
-                card["updated"] = today
+                streak = int(card.get("ok_streak") or 0) + 1
+                if streak >= GREEN_WINDOWS:
+                    card["column"] = "done"
+                    card.pop("ok_streak", None)
+                    card["note"] = (f"Auto-recovered {today}: {slug} "
+                                    f"healthy for {streak} consecutive "
+                                    f"ticks (status={cfg.get('last_status')}"
+                                    f", state={state}).")
+                    card["updated"] = today
+                    n_recovered += 1
+                else:
+                    card["ok_streak"] = streak
+                    card["note"] = (f"Recovering: {slug} healthy for "
+                                    f"{streak}/{GREEN_WINDOWS} ticks — "
+                                    "auto-closes when the streak holds.")
                 write_card(path, card)
-                n_recovered += 1
     print(f"cms-auto-health: {n_bad} unhealthy, {n_ok} ok/manual, "
           f"{n_recovered} auto-recovered")
     return 0
