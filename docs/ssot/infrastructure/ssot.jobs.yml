@@ -533,6 +533,21 @@ jobs:
     /inbox entry when data is >26h old or idc02 is unreachable. Kills
     the corpse-display failure mode (Oct-19 freeze: 3-day-old page, no
     alert).'
+- id: served-checkout-watchdog
+  name: Served-checkout divergence watchdog (idc03 writer health)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/served-checkout-watchdog.py
+  note: 'OPS-1117 — watches the single-writer checkout
+    ~/CascadeProjects/chaba-tony-dell on idc03: files a deduped board-api
+    /inbox entry when behind>50, ahead>200, dirty>50, or unmerged paths
+    exist. OPS-1075 lesson: board-api write latency tracks served-checkout
+    health — the OPS-1074 divergence sat for days before surfacing as
+    >60s writes. Alerts deduped 12h; state
+    ~/.local/state/served-checkout-watchdog.json.'
 - id: podman-lock-watchdog
   name: Podman lock-wedge watchdog (probe + stale-lock self-heal)
   host: tony_dell
