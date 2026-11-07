@@ -93,12 +93,20 @@ providers:
   openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
   ollama-idc02: >-
-    ollama_chat/* + ollama/* @ http://100.123.163.11:11434 — podman on
-    idc02 (free-lane compute OFF prod): qwen2.5:7b-instruct +
-    nomic-embed-text. Deployed 2026-10-15 (card chat-local-free-lane).
-    ollama-nomic-embed is deployed under the same model_name on BOTH
-    hosts — LiteLLM load-balances idc02+idc03, halving embed traffic
-    off prod.
+    REMOVED from LiteLLM routing 2026-11-07 (SYS-1082): idc02 was
+    overcommitted (edge + OpenCode runner + two inference stacks).
+    chat-local/qwen7b moved to ollama-tonydell; the nomic-embed LB
+    leg moved to tony-dell too. idc02 ollama stays running for
+    direct/local consumers only — clamped
+    (MAX_LOADED_MODELS=1, KEEP_ALIVE=5m, NUM_PARALLEL=2).
+  ollama-tonydell: >-
+    ollama_chat/* + ollama/* @ http://127.0.0.1:11446 on idc03 —
+    ssh tunnel tonydell-ollama-tunnel.service -> tony-dell:11434
+    (loopback-bound, same pattern as kkmac-ollama-tunnel). Serves
+    qwen2.5:7b-instruct (chat-local, ollama-qwen7b) +
+    nomic-embed-text (ollama-nomic-embed LB leg). 8c/14G batch host.
+    Route dies when tony-dell sleeps — chat-local keeps its
+    llama3.2@ollama fallback; embed leg failures surface as LB errors.
   colab: >-
     ollama_chat/gemma3:12b @ http://127.0.0.1:11434 — ephemeral Colab T4 worker,
     reverse-SSH'd onto idc03 loopback by scripts/colab/colab-serve-worker.ipynb
@@ -140,7 +148,7 @@ job_classes:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
   chat-local:
-    chain: [qwen2.5:7b-instruct@ollama-idc02, llama3.2:3b@ollama, gemma3:12b@colab]
+    chain: [qwen2.5:7b-instruct@ollama-tonydell, llama3.2:3b@ollama, gemma3:12b@colab]
     note: >-
       FREE background-turn lane (card chat-local-free-lane, 2026-10-15/16) —
       EN summarize/classify work where local 7B quality suffices; Thai-facing
@@ -151,7 +159,7 @@ job_classes:
       scripts/ada/litellm_chat.py (mddb-gemini.env creds) — every adopter
       keeps a deterministic/gemini fallback so a dead lane never stalls a
       job.
-      Throughput reality (tuned 2026-10-22): idc02 = 4 CPU cores, qwen7b
+      Throughput reality (tuned 2026-10-22, host moved 2026-11-07): idc02 = 4 CPU cores, qwen7b
       evals ~20 tok/s → full-size digest payloads ran 5-7min and every
       caller timed out. Ollama now OLLAMA_NUM_PARALLEL=2 (short calls
       interleave instead of head-of-line blocking; ollama.container);
