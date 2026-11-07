@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-10-28 22:46
+updated: 2026-11-07 12:08
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -52,3 +52,10 @@ comms:
 - at: 2026-10-28 22:46
   from: tony
   text: moved backlog -> doing
+- at: 2026-11-07 12:08
+  from: devin
+  text: 'Progress 2026-11-07: codified the procedure in SSOT rather than a parallel queue, per spec. docs/ssot/infrastructure/ssot.devin-autonomy.yml
+    gains waiting_cards: unattended eligibility gate (action.type dispatch/script/container + executor + tier<=max
+    + artifact/verifier + no open requests + recoverability + preflight), R0-R4 recoverability classes with worst-class
+    rule (R3 secrets/accounts and R4 prod/destructive NEVER autonomous — backups do not apply), preflight checklist
+    (runner health, queu'
