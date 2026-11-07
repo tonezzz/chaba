@@ -1,7 +1,7 @@
 id: runner-reconcile-render-lag-dup-run
 title: runner-agent reconcile re-fires on render-lagged /cards — duplicate task runs
 column: backlog
-updated: 2026-11-07 18:41
+updated: 2026-11-07 18:48
 priority: low
 tags:
 - runner-agent
@@ -27,3 +27,10 @@ comms:
   text: 'Another instance just now: a /comment POST that curl reported as timeout (exit 28) had already committed
     server-side — retry produced a duplicate comms line on cards-render-stale-queued-invisible at 18:37 (both entries
     visible). Same lost-response write latency class as the zombie claim.'
+- at: 2026-11-07 18:48
+  from: devin
+  text: 'Runner-side SHIPPED 2026-11-07 ~19:05 (Tony-scoped: runner only, board-api latency stays separate). PR
+    tonezzz/chaba#94 merged + deployed to idc02 (snapshot self-updated, md5 verified): (1) reconcile restart paths
+    skip cards with updated < RUNNER_RENDER_SETTLE_S=150s — the render-lag window; real zombies heal one pass later,
+    mid-flight cards stop looking like zombies; (2) api() POST timeout 30->75s — the 30s timeout is what manufactured
+    lost-response zombies under write load; (3) claim-POST fail'
