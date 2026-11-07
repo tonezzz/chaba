@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
 column: backlog
-updated: 2026-11-06 20:19
+updated: 2026-11-07 19:07
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -56,6 +56,9 @@ comms:
 - at: 2026-11-06 20:19
   from: chaba
   text: 'answer-sweep: executed ''wait-kk — Wait for KK-Mac — required for live worker/LaunchA'' -> put on hold'
+- at: 2026-11-07 19:07
+  from: tony
+  text: queued for processing
 requests:
 - id: kk-mac-is-offline-choose-the-next-safe-e-183153
   ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
@@ -74,4 +77,5 @@ requests:
   answer: wait-kk — Wait for KK-Mac — required for live worker/LaunchAgent verification.
   executed: 2026-11-06 hold
 action:
-  status: idle
+  status: queued
+  type: dispatch
