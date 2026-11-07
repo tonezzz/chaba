@@ -38,6 +38,8 @@ action:
   result: 'exit=0 fffeCVe3ej6BKJbj9F","type":"step-finish","tokens":{"total":30437,"input":3703,"output":201,"reasoning":0,"cache":{"write":0,"read":26533}},"cost":0}}
     | devin-task-ada-opencode-live-demo-opsread-1794051240.service: Consumed 13.306s CPU time.'
   verified: false
+  sweep:
+    dirty: 1
 note: 'Live demo of the Ada agent card-processing path (2026-11-07). Fixture: ops-readonly host health snapshot
   on idc02.'
 ref: ADA-1102
@@ -107,6 +109,10 @@ comms:
     is CORRECT: run 1 failed ''required fields'' (card expect.required_keys=[artifact,tests,verifier] doesn''t match
     the ops-readonly artifact shape — fixture spec issue); run 2 (reconcile dup on render-lagged /cards, OPS-1114)
     passed fields but hit a bash allowlist denial (python3 '
+- at: 2026-11-07 18:48
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-ada-opencode-live-demo-opsread-1794051240 on idc02 still dirty — 1 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
 - at: 2026-11-07 18:48
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-ada-opencode-live-demo-opsread-1794051240 on idc02 still dirty — 1 uncommitted
