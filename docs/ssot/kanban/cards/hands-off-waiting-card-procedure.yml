@@ -26,8 +26,9 @@ spec: 'Define and implement the hands-off waiting-card procedure. Separate queue
   checklist. Update existing kanban-act-loop/DevNest procedures rather than inventing a parallel queue. Validate
   with five read-only pilot cards and record evidence/metrics.'
 action:
-  type: manual
-  status: queued
+  type: dispatch
+  repo: chaba
+  target_host: tony-dell
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
