@@ -14,16 +14,21 @@ comms:
   text: raised a decision request — spec needs owner input
 - at: 2026-11-07 14:15
   from: tony
-  text: 'answered the-card-requests-continuous-t-382f24: Postpone the card until a dedicated monitoring pipeline
-    and notification sink are defined'
+  text: 'answered the-card-requests-continuous-t-382f24: Postpone the card until a dedicated monitoring
+    pipeline and notification sink are defined'
 - at: 2026-11-07 14:15
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 19:20
+  from: backlog-spec-enrich
+  text: skipped — Tony answered on 2026-11-07 to postpone the card until a dedicated monitoring pipeline
+    and notification sink are defined.
 requests:
 - id: the-card-requests-continuous-t-382f24
-  ask: The card requests continuous tracking of Bangkok flooding and traffic advisories, but lacks any designated
-    technical infrastructure, target execution host, or communication channel for alerts. Without these specifics,
-    an automated agent cannot determine where to run the scraper/monitor or where to dispatch the generated warnings.
+  ask: The card requests continuous tracking of Bangkok flooding and traffic advisories, but lacks any
+    designated technical infrastructure, target execution host, or communication channel for alerts. Without
+    these specifics, an automated agent cannot determine where to run the scraper/monitor or where to
+    dispatch the generated warnings.
   options:
   - ★ Use repo chaba on host con01 to poll public APIs and log alerts locally
   - Use repo gods-eye-view on host idc02 to aggregate and publish flood tracking data
