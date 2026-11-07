@@ -1,7 +1,7 @@
 id: card-judgment-bench-build
 title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
 column: done
-updated: 2026-11-07 15:07
+updated: 2026-11-07 18:18
 priority: high
 tags:
 - ada
@@ -64,5 +64,12 @@ comms:
     0.768 / def 0.80 / corr-prec 0.968 / recall 1.0. Better than generic-prompt flash-lite (0.495) but still over-defers
     on act (17/30). Standings v2: llama3.2:3b 0.884 (only pass so far) > ada-chat 0.768 > flash-lite 0.495 > rules
     0.43. Parser hardened: thinking models blew the 96-token'
+- at: 2026-11-07 18:18
+  from: devin
+  text: '[v3 corpus + T3 gate MET] Found a label bug: v2 gold encoded what the system DID (sweep closes), not what
+    Ada MAY do — 18/30 act cases were priority:high review->done closes that kanban.py _gate_reason reserves for
+    Tony. Under matrix-aligned labels (c8fec5f3e): run5 ada/chat rescores 0.768->0.947; llama3.2:3b run3 INVERTS
+    to 0.716/0.562 fail (its pass was over-acting rewarded by bad gold). Fresh ada/chat runs on v3 (98 cases, gateway):
+    run8 0.969/0.980/1.0 PASS, run9 0.980/0.980/1.0 PASS, run10 '
 action:
   status: done
