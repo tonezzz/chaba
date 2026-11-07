@@ -2054,9 +2054,15 @@ def _read_lessons(body: dict, frm: str) -> dict:
     """op=list | op=get — read side of the education door (OPS-0821).
     Agents/lessons-due get lesson content without WP creds.
     source=wiki reads the Education: namespace instead of the WP CPT
-    (post-migration store; same row shape, plus wiki_title/url)."""
+    (post-migration store; same row shape, plus wiki_title/url).
+    Unset source follows the write flag: under
+    WIKI_EDUCATION_WRITE=wiki the WP CPT is a frozen archive, so the
+    default read must come from the store new writes land in."""
     op = body.get("op")
-    source = str(body.get("source") or "wp").strip().lower()
+    source = str(body.get("source") or "").strip().lower()
+    if not source:
+        mode, _wenv = _lesson_write_env()
+        source = "wiki" if mode == "wiki" else "wp"
     if source == "wiki":
         return _read_lessons_wiki(body, frm)
     if source != "wp":
@@ -2118,6 +2124,43 @@ def _delete_lesson(body: dict, frm: str) -> dict:
     r = wp_api(f"/wp/v2/lesson/{pid}&force=true", method="DELETE")
     return {"message": f"deleted {slug} (post {pid})", "slug": slug,
             "post_id": pid, "via": frm}
+
+
+def _delete_lesson_wiki(body: dict, frm: str) -> dict:
+    """op=delete under WIKI_EDUCATION_WRITE=wiki — the Education: page
+    IS the store, so delete targets it (the frozen WP archive is left
+    alone). slug lookups walk the namespace minting the same
+    lesson-<md5(topic)> slugs the read path uses; topic/wiki_title
+    resolve directly."""
+    if frm not in ("devin", "tony"):
+        raise ValueError("delete requires devin/tony actor")
+    slug = str(body.get("slug") or "").strip()
+    topic = str(body.get("topic") or "").strip()
+    wiki_title = str(body.get("wiki_title") or "").strip()
+    if topic and not wiki_title:
+        wiki_title = pub.lesson_wiki_title(topic)
+    if not (slug or wiki_title):
+        raise ValueError("delete requires slug, topic, or wiki_title")
+    env, api_url = _wiki_env()
+    opener, csrf = _wiki_login(api_url, env)
+    if not wiki_title:
+        for page in _wiki_ns_pages(api_url, opener, WIKI_LESSON_NS):
+            row = _lesson_from_wiki_page(page)
+            if row and row["slug"] == slug:
+                wiki_title = page["title"]
+                break
+        if not wiki_title:
+            raise ValueError(f"lesson not found: {slug}")
+    r = _wiki_api_call(
+        api_url, opener,
+        {"action": "delete", "title": wiki_title, "token": csrf,
+         "format": "json"}, post=True)
+    if "error" in r:
+        raise UpstreamError(
+            "mediawiki delete failed: " +
+            str(r["error"].get("info") or r["error"])[:300])
+    return {"message": f"deleted {wiki_title}", "wiki_title": wiki_title,
+            "via": frm, "store": "wiki"}
 
 
 # --- source=wiki lesson reads (Education: namespace) -------------------
@@ -2232,14 +2275,9 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
     ride the bot login (anon gets accessdenied)."""
     env, api_url = _wiki_env()
     opener, _csrf = _wiki_login(api_url, env)
-    host = env.get("WIKI_HOST", "").rstrip("/")
-    if host.endswith("/v0"):
-        host = host[:-3]
 
     def url_of(title):
-        return (f"{host}/wiki/"
-                f"{urllib.parse.quote(title.replace(' ', '_'))}"
-                if host else "")
+        return _wiki_page_url(env, title)
 
     lessons, skipped = [], 0
     for page in _wiki_ns_pages(api_url, opener, WIKI_LESSON_NS):
@@ -2286,45 +2324,146 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
             "message": f"get {row['wiki_title']}"}
 
 
-def _lesson_wiki_write(topic: str, level: str, source: str,
-                       content: str, meta: dict):
-    """Education: dual-write behind WIKI_EDUCATION_WRITE=dual in the wiki
-    env file (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
-    namespace + template must exist on wiki.h3 first — registering
-    Education: is the Tony/Plesk LocalSettings step, so the flag ships
-    OFF. A wiki failure never fails the WP write: the lesson ledger
-    stays canonical until cutover and the miss reports on the response."""
+def _wiki_page_url(env: dict, title: str) -> str:
+    """Human URL for a wiki page. wiki.h3 has no $wgArticlePath short
+    URLs — /wiki/<t> 404s live (verified 2026-11-07); the canonical form
+    is /index.php?title=<t>."""
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+    return (f"{host}/index.php?title="
+            f"{urllib.parse.quote(title.replace(' ', '_'))}"
+            if host else "")
+
+
+def _lesson_write_env() -> tuple:
+    """-> (mode, env) — WIKI_EDUCATION_WRITE in the wiki env file:
+    off/absent = WP only; dual = WP + Education:; wiki = wiki-primary
+    (Education: is the only store; card
+    wiki-education-write-cutover-make-wiki-t-7f2e7d)."""
     try:
         env = _load_env_file(WIKI_ENV_FILE)
     except OSError:
-        return None
-    if str(env.get("WIKI_EDUCATION_WRITE") or "").strip().lower() != "dual":
-        return None
+        return "off", {}
+    return (str(env.get("WIKI_EDUCATION_WRITE")
+                or "").strip().lower(), env)
+
+
+def _wiki_lesson_sink(env: dict):
+    """-> (sink, api_url); sink is None when creds are incomplete.
+    Honors the same template/prefix overrides _pub_sinks uses."""
     host = env.get("WIKI_HOST", "").rstrip("/")
     if host.endswith("/v0"):
         host = host[:-3]
     api = (env.get("WIKI_API_URL") or f"{host}/api.php").rstrip("/")
     if not (host and env.get("WIKI_USER") and env.get("WIKI_PASSWORD")):
+        return None, api
+    return pub.WikiLessonSink(
+        api, env["WIKI_USER"], env["WIKI_PASSWORD"],
+        template=env.get("WIKI_EDUCATION_TEMPLATE",
+                          "แม่แบบ:Education"),
+        namespace_prefix=env.get("WIKI_EDUCATION_PREFIX",
+                                 "Education:")), api
+
+
+def _lesson_event(topic: str, level: str, source: str, content: str,
+                  meta: dict) -> dict:
+    """The canonical lesson event both wiki write paths share."""
+    return pub.validate_event({
+        "kind": "lesson", "title": topic, "body": content,
+        "source": "lesson-door", "visibility": "private",
+        "meta": {
+            "wiki_title": pub.lesson_wiki_title(topic),
+            "topic": topic, "level": level, "lesson_source": source,
+            "learned_at": meta.get("learned_at", ""),
+            "next_review": meta.get("next_review", ""),
+            "status": meta.get("status", "open"),
+            "updated": meta.get("updated", ""),
+            "no_th": bool(meta.get("no_th")),
+            "format": "html"}})
+
+
+def _lesson_wiki_write(topic: str, level: str, source: str,
+                       content: str, meta: dict):
+    """Education: dual-write behind WIKI_EDUCATION_WRITE=dual in the wiki
+    env file (card wiki-member-knowledge-surface-migrate-wp-3a1cf2).
+    A wiki failure never fails the WP write: the WP lesson ledger is
+    still canonical in dual mode and the miss reports on the response."""
+    mode, env = _lesson_write_env()
+    if mode != "dual":
+        return None
+    sink, _api = _wiki_lesson_sink(env)
+    if sink is None:
         return {"status": "skipped", "reason": "wiki creds incomplete"}
     try:
-        ev = pub.validate_event({
-            "kind": "lesson", "title": topic, "body": content,
-            "source": "lesson-door", "visibility": "private",
-            "meta": {
-                "wiki_title": pub.lesson_wiki_title(topic),
-                "topic": topic, "level": level, "lesson_source": source,
-                "learned_at": meta.get("learned_at", ""),
-                "next_review": meta.get("next_review", ""),
-                "status": meta.get("status", "open"),
-                "updated": meta.get("updated", ""),
-                "no_th": bool(meta.get("no_th")),
-                "format": "html"}})
-        sink = pub.WikiLessonSink(api, env["WIKI_USER"],
-                                  env["WIKI_PASSWORD"])
-        r = sink.publish(ev)
+        r = sink.publish(_lesson_event(topic, level, source,
+                                       content, meta))
         return {"status": "delivered", **r}
     except Exception as e:
         return {"status": "failed", "reason": str(e)[:300]}
+
+
+def _wiki_page(api_url: str, opener, title: str):
+    """One page -> {title, wikitext, modified}, or None when it doesn't
+    exist."""
+    r = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "titles": title, "prop": "revisions",
+         "rvslots": "main", "rvprop": "content|timestamp",
+         "format": "json"})
+    for p in (r.get("query", {}).get("pages") or {}).values():
+        if "missing" in p:
+            return None
+        rev = (p.get("revisions") or [{}])[0]
+        return {"title": p.get("title") or title,
+                "wikitext": (rev.get("slots") or {})
+                            .get("main", {}).get("*", ""),
+                "modified": rev.get("timestamp", "")}
+    return None
+
+
+def _lesson_wiki_primary(body: dict, frm: str, slug: str, topic: str,
+                         level: str, source: str, content: str,
+                         meta: dict, th_ok: bool, thai_free: bool,
+                         env: dict) -> dict:
+    """WIKI_EDUCATION_WRITE=wiki — Education: is the ONLY store; the WP
+    CPT is never touched. Same semantics as the WP path: upsert by
+    wiki_title (the slug-equivalent — a re-asked topic resolves to the
+    same page via lesson_wiki_title), learned_at/next_review/status
+    preserved from the existing page on re-file, no_th carried when a
+    Thai-free re-file meets a prior exemption, explicit next_review
+    wins. There is no second store to hide a failure behind, so a wiki
+    error raises (502) instead of degrading to a receipt field."""
+    sink, api = _wiki_lesson_sink(env)
+    if sink is None:
+        raise UpstreamError(
+            "WIKI_EDUCATION_WRITE=wiki but wiki credentials are "
+            "incomplete — no fallback store for the lesson")
+    wiki_title = pub.lesson_wiki_title(topic)
+    opener, _csrf = _wiki_login(api, env)
+    page = _wiki_page(api, opener, wiki_title)
+    action = "created"
+    if page is not None:
+        action = "updated"
+        old_meta = ((_lesson_from_wiki_page(page) or {}).get("meta")
+                    or {})
+        # preserve first-learn provenance + review state on re-file
+        # (identical rule to the WP branch; explicit next_review is the
+        # spaced-review advance override — KNB-0830)
+        override_review = str(body.get("next_review") or "").strip()
+        for k in ("learned_at", "next_review", "status"):
+            if k == "next_review" and override_review:
+                meta[k] = override_review
+            elif old_meta.get(k):
+                meta[k] = old_meta[k]
+        if thai_free and old_meta.get("no_th"):
+            meta["no_th"] = True
+    r = sink.publish(_lesson_event(topic, level, source, content, meta))
+    return {"message": f"{action} {slug} ({wiki_title})",
+            "slug": slug, "wiki_title": wiki_title,
+            "url": _wiki_page_url(env, wiki_title),
+            "wiki": {"status": "delivered", **r},
+            "action": action, "th": th_ok, "store": "wiki"}
 
 
 def do_lesson(body: dict, frm: str) -> dict:
@@ -2334,6 +2473,12 @@ def do_lesson(body: dict, frm: str) -> dict:
     first-learn provenance + review state on re-file. Identical semantics
     to the old lesson-add.py — which is now a thin client of this door.
 
+    Write store follows WIKI_EDUCATION_WRITE in the wiki env file:
+    off = WP only; dual = WP + Education: page (same merged meta);
+    wiki = wiki-primary — the Education: page is the ONLY store, the
+    WP CPT is not touched and the result carries wiki_title instead of
+    post_id (rollback = flag back to dual).
+
     op:"touch" — bump the WP modified timestamp of every lesson (or the
     slugs given) without touching content, so admin sort-by-last-modified
     reflects re-files (Tony 2026-10-24; WP only auto-bumps modified when
@@ -2342,6 +2487,9 @@ def do_lesson(body: dict, frm: str) -> dict:
         if body.get("op") == "touch":
             return _touch_lessons(body, frm)
         if body.get("op") == "delete":
+            mode, _wenv = _lesson_write_env()
+            if mode == "wiki":
+                return _delete_lesson_wiki(body, frm)
             return _delete_lesson(body, frm)
         return _read_lessons(body, frm)
     topic = str(body.get("topic") or "").strip()
@@ -2381,6 +2529,14 @@ def do_lesson(body: dict, frm: str) -> dict:
     thai_free = not re.search(r"[\u0e00-\u0e7f]", content)
     if body.get("no_th") and thai_free:
         meta["no_th"] = True
+    write_mode, wenv = _lesson_write_env()
+    if write_mode == "wiki":
+        # cutover mode (card wiki-education-write-cutover-make-wiki-t-
+        # 7f2e7d): Education: is the only store — no WP post at all.
+        # Rollback = flag back to dual.
+        return _lesson_wiki_primary(body, frm, slug, topic, level,
+                                    source, content, meta, th_ok,
+                                    thai_free, wenv)
     payload = {"title": f"Education — {topic}"[:160], "slug": slug,
                "status": "private", "content": content, "meta": meta}
     hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
@@ -2422,12 +2578,28 @@ def do_lesson(body: dict, frm: str) -> dict:
     return result
 
 
-def do_lesson_topics() -> dict:
+def do_lesson_topics(body: dict = None, frm: str = "?") -> dict:
     """/lesson {op:"topics"} — READ op on the write door: the lesson
     store's existing topic titles + slugs so callers (lesson-miner
     classify, bench agents) can reuse names instead of forking slugs —
     the turn-3 store-awareness fix. WP keeps the creds here; callers
-    hold none."""
+    hold none. source=wiki lists the Education: namespace; unset
+    follows the write flag (post-cutover the store-awareness list must
+    name the topics the write will upsert into)."""
+    body = body or {}
+    source = str(body.get("source") or "").strip().lower()
+    if not source:
+        mode, _wenv = _lesson_write_env()
+        source = "wiki" if mode == "wiki" else "wp"
+    if source == "wiki":
+        r = _read_lessons_wiki({"op": "list"}, frm)
+        out = [{"topic": l["topic"], "slug": l["slug"],
+                "wiki_title": l["wiki_title"]}
+               for l in r.get("lessons") or []]
+        return {"message": f"{len(out)} lesson topics", "topics": out,
+                "source": "wiki"}
+    if source != "wp":
+        raise ValueError("source must be wp or wiki")
     out = []
     page = 1
     while page <= 5:                    # hard cap 500 lessons
@@ -2443,7 +2615,8 @@ def do_lesson_topics() -> dict:
         if len(hits) < 100:
             break
         page += 1
-    return {"message": f"{len(out)} lesson topics", "topics": out}
+    return {"message": f"{len(out)} lesson topics", "topics": out,
+            "source": "wp"}
 
 
 JOB_STATUSES = {"queued", "claimed", "running", "done", "failed",
@@ -2829,7 +3002,8 @@ def _pub_lesson_send(ev: dict, frm: str) -> dict:
         body["no_th"] = True
     r = do_lesson(body, frm)
     return {"ref": f"lesson:{r['slug']}", "post_id": r.get("post_id"),
-            "action": r["action"], "th": r.get("th")}
+            "wiki_title": r.get("wiki_title"), "action": r["action"],
+            "th": r.get("th")}
 
 
 def _pub_report_send(ev: dict, frm: str) -> dict:
@@ -3336,7 +3510,7 @@ class H(BaseHTTPRequestHandler):
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
                     if path == "/lesson":
-                        res = (do_lesson_topics()
+                        res = (do_lesson_topics(body, frm)
                                if body.get("op") == "topics"
                                else do_lesson(body, frm))
                     elif path == "/job":
