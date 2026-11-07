@@ -1,7 +1,7 @@
 id: ada-opencode-live-demo-opsread
 title: Live demo — Ada→OpenCode ops-readonly dispatch
 column: backlog
-updated: 2026-11-07 17:06
+updated: 2026-11-07 17:18
 priority: medium
 tags:
 - demo
@@ -50,3 +50,14 @@ comms:
     active (queued)'' (first ReadTimeout attempt had actually landed). Learnings: (1) /card sanitizer drops max_*/verifier
     from action — pass as preflight/dispatch args (receipt binds them); (2) card_reference wants card id, not ADA
     ref; (3) gate re-preflights at dispatch'
+- at: 2026-11-07 17:18
+  from: devin
+  text: 'Diagnosis + fixes 2026-11-07 ~17:30:
+
+    (1) RECEIPT GATE FIXED in backend/tools.d/ada_opencode_dispatch.py — was: dispatch re-preflighted with fresh
+    issued_at and demanded the caller''s receipt match → same-second race, flaky voice flow. Now: recomputes expected
+    digest with caller''s claimed issued_at (TTL-bounded, same card+limits+task binding). Verified: 5s-delayed receipt
+    passes; already-queued card correctly returns preflight_failed. UNCOMMITTED on live checkout — needs commit+backend
+    restart.
+
+    (2'
