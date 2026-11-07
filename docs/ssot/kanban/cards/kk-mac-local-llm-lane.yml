@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-06 20:16
+updated: 2026-11-07 14:15
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -446,6 +446,13 @@ comms:
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-11-07 14:15
+  from: tony
+  text: 'answered kk-mac-hermes-agent-benchmark-authorization-20261104: framework-ab — ★ Authorize one bounded synthetic
+    framework A/B after all gates (Hermes Agent vs OpenClaw, same local Qwen3:8B; recommended)'
+- at: 2026-11-07 14:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: done
@@ -533,7 +540,7 @@ requests:
     tool allowlist/verifier, no external egress, model download, personal files, live channels, or automatic routing?
     This is separate from the prior Qwen model-only pilot. Run only after ready-aware worker deployment, fresh KK
     owner-idle/resource preflight, and admission passes.'
-  status: open
+  status: answered
   at: 2026-11-04 19:56
   from: devin
   options:
@@ -545,6 +552,8 @@ requests:
   - id: hold
     label: Keep Hermes Agent at design/documentation only for now
   suggested: framework-ab
+  answer: framework-ab — ★ Authorize one bounded synthetic framework A/B after all gates (Hermes Agent vs OpenClaw,
+    same local Qwen3:8B; recommended)
 - id: kk-mac-interim-llm-only-20261104
   ask: 'Your new suggestion differs from the earlier same-host Hermes+LLM choice: keep the full agent runtime off
     KK-Mac and use KK only for inference. Which interim architecture do you want? The existing `kk_mac_local` adapter
