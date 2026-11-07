@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-10-15 12:14
+updated: 2026-11-07 12:32
 priority: medium
 ref: MEM-0695
 comms:
@@ -62,6 +62,13 @@ comms:
 - at: 2026-10-15 12:14
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-07 12:32
+  from: devin
+  text: 'JUDGED-UNION BENCHMARK DONE (#82): dense top-50 + BM25 top-100 per query, 4800 union candidates LLM-judged
+    into qrels-bge-hybrid.json, all arms rescored on expanded qrels. VERDICT: hybrid RRF does NOT beat BGE dense
+    alone (best hybrid .197 r@5 vs dense .224, MRR also lower) — the provisional .408/.849 was a narrow-judgment
+    artifact. BGE dense = best local arm: 92% of Gemini r@5 (.224 vs .244), BETTER on Thai (.272 vs .255, MRR .946
+    vs .964), but English (.204 vs .240) + MRR (.767 vs .893) still '
 action:
   type: dispatch
   status: done
