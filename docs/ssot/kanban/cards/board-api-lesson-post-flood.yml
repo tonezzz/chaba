@@ -1,7 +1,7 @@
 id: board-api-lesson-post-flood
 title: board-api /lesson POST flood starves wp.lock and Ollama
 column: backlog
-updated: 2026-11-07 12:13
+updated: 2026-11-07 17:15
 brief: 'Observed 2026-11-07 ~11:20-11:45 ICT: ~1.6 POST /lesson/sec sustained against board-api on idc03, driving
   LiteLLM->Ollama chat-local inference that saturated idc02 CPU (load5/core 2.4) and tripped every runner load gate.
   Source likely the lesson/embed job fleet mass-enabled at 11:21 (embed-lane-lessons, bge-lessons-shadow, lessons-audit).'
@@ -18,3 +18,10 @@ comms:
 - at: 2026-11-07 12:13
   from: tony
   text: card captured via board-api
+- at: 2026-11-07 17:15
+  from: devin
+  text: 'DIAGNOSED + FIXED. Producer: bursty /lesson POST batches (~20/min, ~270/2h) correlated with job starts
+    — embed-lane-lessons at 15:45 (~120 reads), a 17:00-17:08 batch of lesson upserts (real lessons re-filed: phonon-stt,
+    speaker-id, thb-xau). Flood self-stopped ~17:08. Root damage: do_lesson calls _gemini_thai on EVERY write incl.
+    identical re-files -> each POST burned a gemini-3.5-flash-lite-free call against the 15 RPM cap + serialized
+    wp.lock. FIX (PR chaba#87, 21daad65): sha256(content)->Tha'
