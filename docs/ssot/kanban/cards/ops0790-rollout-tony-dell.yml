@@ -1,0 +1,31 @@
+id: ops0790-rollout-tony-dell
+title: 'OPS-0790 rollout: install migrated timers on tony_dell'
+column: backlog
+updated: 2026-11-07 11:54
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+- rollout
+- tony-dell
+spec: 'OPS-0790 host rollout on tony_dell — Tony-approved deploy step (2026-11-07). Prereq: chaba repo at commit
+  7b5f86014 or later (origin/master). Steps: (1) python3 scripts/render-jobs.py --host tony_dell --ids mcp-debug-h3-sync,tony-dell-health-snapshot,network-scan-tony,lesson-drift-check
+  --install — writes only those unit pairs to ~/.config/systemd/user, daemon-reload, enables --now exactly those
+  4 .timer units. (2) Verify each: systemctl --user list-timers <id>.timer shows armed; then one forced run per
+  job: systemctl --user start <id>.service and check status/journal — a job runtime failure is data, not a blocker:
+  record it, leave the timer armed. (3) Do NOT touch chaba-jobs.timer or any other unit; no other systemctl verbs;
+  no package installs. (4) Commit a short rollout note to docs/reports/ops0790-rollout-tony-dell.md with per-job
+  armed+first-run results; push or patch-relay per runner capability.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - exec
+  target_host: tony-dell
+  artifact: docs/reports/ops0790-rollout-tony-dell.md
+ref: OPS-1072
+comms:
+- at: 2026-11-07 11:54
+  from: tony
+  text: card captured via board-api
