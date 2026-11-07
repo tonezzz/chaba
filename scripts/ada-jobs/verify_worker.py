@@ -47,7 +47,9 @@ verify-class kanban card. Your whole authority (enforced in code after you):
             ANY doubt, this is the right move — never guess.
 - skip    — genuinely nothing to verify right now.
 
-Card is below. Answer ONLY JSON:
+Card is below. If live_checks is present it is REAL probe output you ran
+this turn (url/status/body) — cite it as your evidence, never invent a
+check you didn't run. Answer ONLY JSON:
 {"action":"close|comment|request|skip","evidence":"the checkable fact",
 "comment":"text to post","request":"the question for Tony"}
 """
@@ -81,10 +83,43 @@ def eligible(card):
     return not reqs
 
 
+PROBE_ALLOW = re.compile(
+    r"https?://(127\.0\.0\.1|localhost|100\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|"
+    r"[a-z0-9.-]+\.taila0626a\.ts\.net)(:\d+)?(/[^\s'\"`]*)?", re.I)
+
+
+def probe_urls(card, limit=3, timeout=8):
+    """Bounded check tool: GET each http(s) URL the card itself declares,
+    tailnet/loopback/LAN hosts only. Read-only, fixed allowlist — the
+    model can't steer it to arbitrary hosts."""
+    text = " ".join(str(card.get(k) or "") for k in ("spec", "brief", "note"))
+    text += " ".join(str(m.get("text", "")) for m in (card.get("comms") or [])[-8:])
+    found, seen = [], set()
+    for m in PROBE_ALLOW.finditer(text):
+        u = m.group(0).rstrip(".,);]")
+        if u in seen:
+            continue
+        seen.add(u)
+        try:
+            r = urllib.request.urlopen(
+                urllib.request.Request(u, headers={"User-Agent": "ada-verify"}),
+                timeout=timeout)
+            body = r.read(300).decode("utf-8", "replace")
+            found.append({"url": u, "status": r.status, "body": body[:200]})
+        except Exception as e:
+            found.append({"url": u, "status": "ERR", "body": str(e)[:160]})
+        if len(found) >= limit:
+            break
+    return found
+
+
 def llm_action(card, base_url, model, key):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
+    probes = probe_urls(card)
+    if probes:
+        snap["live_checks"] = probes
     body = {"model": model, "temperature": 0, "max_tokens": 800,
             "messages": [{"role": "system", "content": PROMPT},
                          {"role": "user", "content": json.dumps(
