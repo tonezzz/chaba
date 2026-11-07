@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
 column: doing
-updated: 2026-10-31 09:27
+updated: 2026-11-07 16:52
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -59,3 +59,7 @@ comms:
     default (rejects intervals below 30s) plus 3 tests. Applied the generated plist on KK-Mac; launchd now reports
     run interval=60s and worker state=running. No worker code or claim/verifier semantics changed. Follow-up: monitor
     queue latency/load and quarantine old failed packs separately.'
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] applied on kk-mac (launchd interval=60s verified) but the code sits on origin/fix/ops-1036 —
+    unmerged to master. Needs merge/PR before it can close.'
