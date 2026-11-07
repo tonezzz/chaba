@@ -1,7 +1,7 @@
 id: wire-jules-executor-lane-into-devnest-di-c588c3
 title: Wire `jules` executor lane into DevNest dispatch (runner-agent + merge path)
 column: done
-updated: 2026-11-07 11:39
+updated: 2026-11-07 11:55
 priority: medium
 blocked_by: OPS-1048
 tags:
@@ -76,6 +76,12 @@ comms:
 - at: 2026-11-07 11:39
   from: devin
   text: moved backlog -> done
+- at: 2026-11-07 11:55
+  from: devin
+  text: 'AUTO-MERGE LIVE (b18133687 + 14f506e85): JULES_AUTO_MERGE=1 on idc03 runner. Verified on KNB-1068: session
+    COMPLETED -> finish_jules_lane squash-merged PR #80 head to master via gh-chaba deploy key -> close_out verified=True.
+    Fix during verify: https origin has no push creds — push now via gh-chaba ssh alias (JULES_PUSH_URL override).
+    Residual: sweeper still races jules closeouts (OPS-1066).'
 action:
   type: dispatch
   status: done
