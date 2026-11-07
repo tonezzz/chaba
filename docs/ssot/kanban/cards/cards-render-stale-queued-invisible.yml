@@ -1,7 +1,7 @@
 id: cards-render-stale-queued-invisible
 title: 'BUG: queued cards missing from GET /cards — runner never claims them'
 column: review
-updated: 2026-11-07 17:59
+updated: 2026-11-07 18:03
 priority: high
 tags:
 - bug
@@ -28,4 +28,11 @@ comms:
 - at: 2026-11-07 17:59
   from: devin
   text: moved backlog -> review
+- at: 2026-11-07 18:03
+  from: devin
+  text: 'MERGED to master (896511274) + LANDED: kanban-commit pulled to served checkout 18:01, board-api try-restarted
+    18:02:22 onto the fix. Verified: /cards?compact=1 exposes action_status (ada-opencode-live-demo-opsread shows
+    queued), /cards?action_status=queued returns 3 cards, /queue consistent, health 200. Restart hook will keep
+    the service current on future merges — this first hop needed a manual try-restart because the running script
+    predated the hook. Closing.'
 review_kind: verify
