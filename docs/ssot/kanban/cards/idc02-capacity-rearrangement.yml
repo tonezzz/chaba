@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: backlog
-updated: 2026-11-07 12:46
+updated: 2026-11-07 17:20
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -21,3 +21,10 @@ comms:
 - at: 2026-11-07 12:46
   from: tony
   text: card captured via board-api
+- at: 2026-11-07 17:20
+  from: devin
+  text: 'REASSESSMENT 2026-11-07 ~17:20. Done: Ollama clamped (MAX_LOADED_MODELS=1, KEEP_ALIVE=5m, NUM_PARALLEL=2)
+    — idc02 now load ~1.8/4c, 8.5G avail, all services active. OpenJEV kept (active /v1/systemone consumer, torch-only
+    backend). BLOCKED migration paths measured: (1) kk-macbook offline — kkmac-ollama-tunnel restart counter >18000,
+    ssh timeout; all ollama-*kkmac LiteLLM routes dead until it wakes. (2) idc03 CANNOT absorb: load ~8/4c, 2.2G
+    avail — worse than idc02. (3) idc03 ollama lacks qwen2.5:'
