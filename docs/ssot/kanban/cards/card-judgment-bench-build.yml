@@ -1,7 +1,7 @@
 id: card-judgment-bench-build
 title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
 column: done
-updated: 2026-11-07 14:33
+updated: 2026-11-07 14:48
 priority: high
 tags:
 - ada
@@ -50,5 +50,12 @@ comms:
     model is WORSE — its failure is symmetric: over-defers (act->defer 18/30, correct->defer 14/30) where llama3.2
     over-acted (observe->act 23/25). Neither passes t3 gate. Artifacts run2-flashlite-paid.{md,json} on master (d72091c77).
     Watcher armed for kk-mac eval (KNB-1087) — fires on next'
+- at: 2026-11-07 14:48
+  from: devin
+  text: '[v2 corpus + runs 3-4] Label fix: verify-close sweeps (verified evidence present — closed) were mislabeled
+    observe — closing on evidence IS act. v2 corpus 95 cases (act30/correct30/defer30/observe5-pure). Results on
+    v2: llama3.2:3b 0.884 acc / 0.937 def / 0.968 prec / 1.0 recall — FIRST ALL-GATE PASS (single run; T3 still
+    needs 3 consecutive vs Ada real topology). flash-lite paid: 0.495 acc / 0.558 def — over-defers harder on clean
+    labels (act->defer 20/30). Caveat recorded in trail: scorer prom'
 action:
   status: done
