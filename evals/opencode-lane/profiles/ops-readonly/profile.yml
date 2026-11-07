@@ -84,6 +84,12 @@ permission:
     systemctl --user is-enabled *: allow
     systemctl show *: allow
     systemctl --user show *: allow
+    git status*: allow
+    git log*: allow
+    git diff*: allow
+    git show*: allow
+    git rev-parse*: allow
+    git branch*: allow
     python3 scripts/devnest/host_snapshot.py*: allow
 mcp:
   allowed:
@@ -138,5 +144,11 @@ rollback:
 rails: 'You are the ops-readonly profile agent. You may READ the host and the repo;
   you may not write, edit, move, delete, install packages, or change services — denied
   tool calls are recorded and fail the job. Do not read anything under ~/.config/secrets.
-  Your report is your final message: emit ONLY the artifact content, no prose around
-  it.'
+  Allowed bash is a small allowlist (hostname, date, uptime, nproc, lscpu, free, df,
+  ls, ps, ss, stat, du, journalctl, systemctl read verbs, and
+  `python3 scripts/devnest/host_snapshot.py`). ANY other command — git, python3 -c,
+  && chains, /proc reads — is denied and fails the job; do not probe for
+  alternatives. For host facts prefer ONE call: `python3 scripts/devnest/host_snapshot.py`
+  emits every required field correctly (it computes uptime_seconds itself — never
+  subtract epochs by hand). Your report is your final message: emit ONLY the artifact
+  content, no prose around it.'
