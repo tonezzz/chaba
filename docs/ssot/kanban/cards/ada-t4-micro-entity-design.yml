@@ -1,7 +1,7 @@
 id: ada-t4-micro-entity-design
 title: Ada T4 design — first micro-entity that finishes real jobs (bounded card class + own bench)
 column: done
-updated: 2026-11-07 15:44
+updated: 2026-11-07 15:48
 priority: high
 tags:
 - ada
@@ -41,5 +41,12 @@ comms:
 - at: 2026-11-07 15:44
   from: devin
   text: closed by devin
+- at: 2026-11-07 15:48
+  from: devin
+  text: '[scheduler live] ada-jobs-verify.timer installed on idc03 (systemd --user, every 30min, declared in ssot.jobs.yml,
+    master 91bad24c5). INERT BY DEFAULT — only acts on review/verify cards tagged ada-verify; untagged cards are
+    never read for action. Worker pulled to idc03 exec checkout. Real finding from this pass: verify cards need
+    genuine check tools, not just card reads — expanding the lane means giving her real probes (HTTP/systemctl),
+    which is the next design step. Tagging a real card remains '
 action:
   status: done
