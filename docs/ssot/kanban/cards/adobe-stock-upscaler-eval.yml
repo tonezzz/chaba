@@ -1,0 +1,22 @@
+id: adobe-stock-upscaler-eval
+title: Evaluate open-source upscalers for stock pipeline
+column: backlog
+updated: 2026-11-07 12:32
+brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- image-quality
+- eval
+spec: 'Goal: choose the standard upscale step for the Nest Adobe Stock pipeline. Candidates: Real-ESRGAN (fast,
+  deterministic, CPU-viable, -dn denoise), SwinIR/HAT (lightweight SOTA), SeeSR/OSEDiff (diffusion prior, semantics-aware,
+  hallucination risk), SUPIR (best open quality, GPU-heavy). Test on AS-2026-11-05-REMOTE-WORK-001 assets (comparison-b
+  1024x576 photographic). Metrics: sharpness, artifact rate, semantic drift vs source, wall time, host fit (KK-Mac
+  MLX / idc03 CPU / omen GPU). Deliverable: eval report + recommended default + worker integration plan. Education:
+  lesson ai-image-quality-ladder-upscaling-restoration (post 4130).'
+ref: OPS-1077
+comms:
+- at: 2026-11-07 12:32
+  from: tony
+  text: card captured via board-api
