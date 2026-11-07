@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: doing
-updated: 2026-11-07 12:01
+updated: 2026-11-07 12:06
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -32,19 +32,15 @@ action:
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: failed
+  status: queued
   sweep:
     session_gone: 2026-10-28 10:18
     failed_noted: 2026-11-07 11:52
-  last_failure: 'exit=0 .6, deepseek-v4-pro | devin-task-20261028-101547-smoke-card-for-opencode-explic.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-20261028-101547-smoke-card-for-opencode-explic.service:
-    Failed with result ''exit-code''.'
-  attempts: 1
-  result: 'exit=1  Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794027309.service:
+  last_failure: 'exit=1  Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794027309.service:
     Failed with result ''exit-code''. | devin-task-opencode-executor-routing-smoke-1794027309.service: Consumed
     20.947s CPU time.'
+  attempts: 2
   llm_key_alias: ada
-  runner: idc02
 expected_goals:
 - id: artifact-landed
   check: file-exists evals/opencode-lane/out/executor-contract-smoke.json
@@ -171,6 +167,9 @@ comms:
 - at: 2026-11-07 12:01
   from: idc02
   text: 'finished (failed): exit=1  Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794027309.servi'
+- at: 2026-11-07 12:06
+  from: tony
+  text: retry requested
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
