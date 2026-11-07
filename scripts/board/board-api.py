@@ -74,7 +74,11 @@ Endpoints (after prefix strip):
                   existing topic list for store-aware classifiers
                   topics update in place) + auto-Thai section. The remote
                   write half of the lesson-capture duty; lesson-add.py is
-                  now a thin CLI client of this endpoint.
+                  now a thin CLI client of this endpoint. Every write also
+                  mirrors into the MDDB chaba-lessons collection — the
+                  retrieval surface agents search to get lessons back
+                  (card assessments-to-education-split-ssot-keep-113ca4);
+                  {op:list|get, source:"mddb"} reads it.
   POST /job      {slug, title?, status?, comms?|note?, parent?, kind?,
                   host?, pack?, runner?, result_ref?, error?} — nest_job
                   CPT upsert by slug: queue-mgr mirrors the ada-nest Drive
@@ -1515,6 +1519,12 @@ INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
+# lesson corpus mirror on the content plane (card
+# assessments-to-education-split-ssot-keep-113ca4): /lesson dual-writes
+# here so agents can retrieve what they file via MDDB search — without
+# it, Education knowledge is thin-and-invisible to every agent.
+MDDB_LESSONS = os.environ.get("BOARD_API_MDDB_LESSONS",
+                              "chaba-lessons")
 REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
                       "/wiki/extension", "/wiki/news-review",
                       "/wiki/news-diagnose", "/wiki/page"}
@@ -2065,8 +2075,10 @@ def _read_lessons(body: dict, frm: str) -> dict:
         source = "wiki" if mode == "wiki" else "wp"
     if source == "wiki":
         return _read_lessons_wiki(body, frm)
+    if source == "mddb":
+        return _read_lessons_mddb(body, frm)
     if source != "wp":
-        raise ValueError("source must be wp or wiki")
+        raise ValueError("source must be wp, wiki, or mddb")
     if op == "list":
         hits, page = [], 1
         while page <= 5:                # hard cap 500 — same bound as
@@ -2105,6 +2117,53 @@ def _read_lessons(body: dict, frm: str) -> dict:
             "via": frm, "source": "wp", "message": f"get {slug}"}
 
 
+def _read_lessons_mddb(body: dict, frm: str) -> dict:
+    """op=list | op=get with source=mddb — the chaba-lessons mirror read:
+    the retrieval surface the mirror exists for (agents search MDDB
+    directly too; this keeps door-shaped reads working)."""
+    op = body.get("op")
+    docs = _mddb_post("search", {"collection": MDDB_LESSONS,
+                                 "limit": 500})
+    if not isinstance(docs, list):
+        docs = docs.get("result", docs.get("docs", []))
+    if op == "list":
+        out = []
+        for d in docs:
+            m = d.get("meta") or {}
+            out.append({"slug": d.get("key"),
+                        "topic": _meta_first(m, "topic"),
+                        "wiki_title": _meta_first(m, "wiki_title"),
+                        "url": _meta_first(m, "url"),
+                        "level": _meta_first(m, "level"),
+                        "modified": d.get("updated_at") or
+                        _meta_first(m, "updated"),
+                        "next_review": _meta_first(m, "next_review"),
+                        "status": _meta_first(m, "status"),
+                        "no_th": bool(m.get("no_th"))})
+        out.sort(key=lambda r: r["slug"])
+        return {"lessons": out, "count": len(out), "via": frm,
+                "source": "mddb",
+                "message": f"listed {len(out)} lessons"}
+    slug = str(body.get("slug") or "").strip()
+    if not slug:
+        raise ValueError("op=get requires slug")
+    for d in docs:
+        if d.get("key") == slug:
+            m = d.get("meta") or {}
+            return {"slug": slug,
+                    "title": _meta_first(m, "title"),
+                    "wiki_title": _meta_first(m, "wiki_title"),
+                    "url": _meta_first(m, "url"),
+                    "content": d.get("contentMd") or
+                    d.get("content_md", ""),
+                    "meta": m,
+                    "modified": d.get("updated_at") or
+                    _meta_first(m, "updated"),
+                    "via": frm, "source": "mddb",
+                    "message": f"get {slug}"}
+    raise ValueError(f"lesson not found: {slug}")
+
+
 def _delete_lesson(body: dict, frm: str) -> dict:
     """op=delete — remove a lesson by slug (guarded: devin/tony only).
     KNB-0830: the door had no delete; junk probes (id 2259/2261) were
@@ -2123,7 +2182,8 @@ def _delete_lesson(body: dict, frm: str) -> dict:
     # so '?' would be %-encoded into the route path -> rest_no_route.
     r = wp_api(f"/wp/v2/lesson/{pid}&force=true", method="DELETE")
     return {"message": f"deleted {slug} (post {pid})", "slug": slug,
-            "post_id": pid, "via": frm}
+            "post_id": pid, "mddb": _lesson_mddb_delete(slug),
+            "via": frm}
 
 
 def _delete_lesson_wiki(body: dict, frm: str) -> dict:
@@ -2151,6 +2211,11 @@ def _delete_lesson_wiki(body: dict, frm: str) -> dict:
                 break
         if not wiki_title:
             raise ValueError(f"lesson not found: {slug}")
+    if not slug:
+        # mirror delete needs the md5 slug; fetch the page's lesson row
+        page = _wiki_page(api_url, opener, wiki_title)
+        row = _lesson_from_wiki_page(page or {})
+        slug = (row or {}).get("slug", "")
     r = _wiki_api_call(
         api_url, opener,
         {"action": "delete", "title": wiki_title, "token": csrf,
@@ -2159,8 +2224,11 @@ def _delete_lesson_wiki(body: dict, frm: str) -> dict:
         raise UpstreamError(
             "mediawiki delete failed: " +
             str(r["error"].get("info") or r["error"])[:300])
-    return {"message": f"deleted {wiki_title}", "wiki_title": wiki_title,
-            "via": frm, "store": "wiki"}
+    result = {"message": f"deleted {wiki_title}",
+              "wiki_title": wiki_title, "via": frm, "store": "wiki"}
+    if slug:
+        result["mddb"] = _lesson_mddb_delete(slug)
+    return result
 
 
 # --- source=wiki lesson reads (Education: namespace) -------------------
@@ -2383,6 +2451,69 @@ def _lesson_event(topic: str, level: str, source: str, content: str,
             "format": "html"}})
 
 
+def lesson_mddb_doc(slug: str, topic: str, level: str, source: str,
+                    body_text: str, meta: dict, wiki_title: str = "",
+                    store: str = "wiki", post_id=None,
+                    url: str = "") -> dict:
+    """chaba-lessons add payload — the ONE doc shape both the capture-time
+    dual-write and the backfill use. body_text is readable text (lesson
+    HTML pre-flattened via pub.html_to_wikitext, or wiki-source wikitext
+    verbatim). Meta follows the ada-cms-pages list-values contract."""
+    m = {"slug": [slug], "kind": ["lesson"], "bank": ["education"],
+         "title": [f"Education — {topic}"[:160]], "topic": [topic],
+         "level": [level], "lesson_source": [source],
+         "learned_at": [str(meta.get("learned_at", ""))],
+         "next_review": [str(meta.get("next_review", ""))],
+         "status": [str(meta.get("status", "open"))],
+         "updated": [str(meta.get("updated", ""))],
+         "store": [store], "format": ["wikitext"],
+         "written_by": ["board-api /lesson"], "lang": ["en"]}
+    if meta.get("no_th"):
+        m["no_th"] = ["1"]
+    if wiki_title:
+        m["wiki_title"] = [wiki_title]
+    if post_id:
+        m["post_id"] = [str(post_id)]
+    if url:
+        m["url"] = [url]
+    head = (f"# {topic}\n\n*{level} lesson · learned "
+            f"{meta.get('learned_at', '')} · review "
+            f"{meta.get('next_review', '')}*\n\n")
+    return {"collection": MDDB_LESSONS, "key": slug, "lang": "en",
+            "contentMd": head + (body_text or "").strip(), "meta": m}
+
+
+def _lesson_mddb_write(slug: str, topic: str, level: str, source: str,
+                       content: str, meta: dict, wiki_title: str = "",
+                       post_id=None, url: str = "", store: str = "wiki"):
+    """chaba-lessons mirror — every /lesson write lands here as well as
+    its primary store, so agents retrieve filed lessons through MDDB
+    search (card assessments-to-education-split-ssot-keep-113ca4). The
+    mirror is a retrieval index, NOT the store, so a failure degrades to
+    a receipt instead of a 502 (a mirror miss is visible, not fatal)."""
+    try:
+        doc = lesson_mddb_doc(slug, topic, level, source,
+                              pub.html_to_wikitext(content), meta,
+                              wiki_title=wiki_title, store=store,
+                              post_id=post_id, url=url)
+        _mddb_post("add", doc, timeout=30)
+        return {"status": "delivered", "collection": MDDB_LESSONS,
+                "key": slug}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)[:300]}
+
+
+def _lesson_mddb_delete(slug: str):
+    """Mirror-side delete for op=delete — best effort, receipt only."""
+    try:
+        _mddb_post("delete", {"collection": MDDB_LESSONS, "key": slug,
+                              "lang": "en"}, timeout=30)
+        return {"status": "deleted", "collection": MDDB_LESSONS,
+                "key": slug}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)[:300]}
+
+
 def _lesson_wiki_write(topic: str, level: str, source: str,
                        content: str, meta: dict):
     """Education: dual-write behind WIKI_EDUCATION_WRITE=dual in the wiki
@@ -2463,6 +2594,10 @@ def _lesson_wiki_primary(body: dict, frm: str, slug: str, topic: str,
             "slug": slug, "wiki_title": wiki_title,
             "url": _wiki_page_url(env, wiki_title),
             "wiki": {"status": "delivered", **r},
+            "mddb": _lesson_mddb_write(
+                slug, topic, level, source, content, meta,
+                wiki_title=wiki_title,
+                url=_wiki_page_url(env, wiki_title)),
             "action": action, "th": th_ok, "store": "wiki"}
 
 
@@ -2572,6 +2707,10 @@ def do_lesson(body: dict, frm: str) -> dict:
     result = {"message": f"{action} {slug} (post {r.get('id')})",
               "slug": slug, "post_id": r.get("id"), "action": action,
               "th": th_ok}
+    result["mddb"] = _lesson_mddb_write(
+        slug, topic, level, source, content, meta,
+        wiki_title=pub.lesson_wiki_title(topic),
+        post_id=r.get("id"), store="wp")
     wiki = _lesson_wiki_write(topic, level, source, content, meta)
     if wiki is not None:
         result["wiki"] = wiki

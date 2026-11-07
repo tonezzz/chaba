@@ -117,10 +117,15 @@ When Tony asks a knowledge question worth retaining — an explainer, a
 comparison, a "what is X / how does Y work" — the answer does not stay in
 chat. File it: `python3 scripts/lesson-add.py --topic "<topic>" --level
 <intro|working|deep> --source <chat|voice|link> --content-file <html>`
-on a host with `~/.config/secrets/wp-boards.env` (idc03 works). The WP
-`lesson` CPT upserts by slug so re-asked topics update in place; Thai
-translation is automatic. If the write fails, say so — a lesson that only
-lived in the reply is a miss, and misses are counted in
+on a host with `~/.config/secrets/wp-boards.env` (idc03 works). The
+`/lesson` door upserts by topic slug so re-asked topics update in place;
+Thai translation is automatic. Every write also mirrors into the MDDB
+`chaba-lessons` collection (mddb-cms content plane) — that mirror is the
+retrieval surface: agents read lessons back via MDDB `search` on
+`chaba-lessons` or `POST /lesson {op:list|get, source:"mddb"}`
+(source `wiki`/`wp` read the other stores). Backfill:
+`scripts/board/lesson-mddb-backfill.py`. If the write fails, say so — a
+lesson that only lived in the reply is a miss, and misses are counted in
 `docs/ssot/ssot.repeat-asks.yml` (check + increment it when Tony flags a
 repeat).
 
@@ -130,6 +135,13 @@ Research depth (benchmarks, background, options analysis) belongs in
 Education, where spaced review surfaces it; not as prose buried in SSOT
 YAML or card comms. Applies to assessments, evals, and "what's out there"
 research — operational state stays in SSOT as before.
+
+Quantified (Tony direction 2026-11-07): github/website/repo assessments
+live in Education (wiki lessons + MDDB `chaba-lessons`) or `docs/kb`;
+SSOT keeps ONLY the verdict row + pointer link (`ref:`/`see:`). Research
+prose >~40 lines inside `ssot.*.yml` is a smell — lintable check:
+`python3 scripts/ssot-prose-smell.py` (flags string scalars >40 lines
+where sentence-like lines dominate; exit 1 on any hit).
 
 Lesson series convention (added 2026-10-20): multi-part education lives
 as a topic family, e.g. Ada Nest = hub lesson `ada-nest-map` (post 1608)

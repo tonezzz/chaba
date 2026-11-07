@@ -1,0 +1,71 @@
+# Tony direction 2026-11-07: github/website/repo assessments live in
+# Education (wiki lessons + docs/kb); SSOT keeps ONLY the verdict row +
+# pointer. Research prose >~40 lines inside ssot.*.yml is a smell.
+# Card: assessments-to-education-split-ssot-keep-113ca4.
+title: Lesson MDDB mirror + SSOT research-prose split
+job: lesson-mddb-mirror-and-ssot-split
+date: 2026-11-07
+host: tony-macbook
+card: assessments-to-education-split-ssot-keep-113ca4
+
+gap_verified_2026_11_07: >-
+  Wiki lessons were NOT in MDDB — no lesson/wiki/education collection;
+  /lesson wrote WP CPT + wiki page only, so agents could not retrieve
+  what they filed. Retrieval had to exist BEFORE the split, else
+  knowledge moves from bloated-but-findable to thin-and-invisible.
+
+shipped:
+  dual_write: >-
+    board-api do_lesson: every write (wiki-primary, dual, wp paths) now
+    also mirrors into MDDB collection chaba-lessons on the mddb-cms
+    content plane via _lesson_mddb_write / lesson_mddb_doc — receipt in
+    result["mddb"], failure degrades (mirror != store). op=delete
+    propagates via _lesson_mddb_delete. scripts/board/board-api.py.
+  read_door: >-
+    /lesson {op:list|get, source:"mddb"} reads the mirror back through
+    the same door contract; agents may also query MDDB
+    /v1/{search,semantic_search} on chaba-lessons directly.
+  backfill: >-
+    scripts/board/lesson-mddb-backfill.py reads every lesson via
+    /lesson {op:list|get, source:wiki} and upserts the identical doc
+    shape (key=lesson-<md5(topic)>). Ran live: 132 wiki lessons +
+    3 lessons filed by this split = 135 docs, 0 failed; /v1/search
+    verified returning content.
+  lint: >-
+    scripts/ssot-prose-smell.py — flags string scalars >40 lines where
+    sentence-like lines dominate (code/config-shaped blocks ignored);
+    exit 1 on any hit; --warn/--lines/--all flags. Post-clean status:
+    0 flagged.
+  agnets_codified: >-
+    AGENTS.md lesson-capture duty now names the retrieval surface
+    (chaba-lessons + source:mddb reads + backfill script); split rule
+    gained the >~40-lines quantified smell + lint pointer.
+
+cleaned_files:
+  - >-
+      docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+      — 93-line tuning ladder -> lesson gold-thb-usd-vector-analysis
+      (lesson-32518e35af20)
+  - >-
+      docs/ssot/jobs/ada/2026-10-10-speaker-id-owner-rebind.yml
+      — 55-line decision rationale -> lesson ada-speaker-id-rebind-layers
+      (lesson-0eb6a7a7329c)
+  - >-
+      docs/ssot/focus-inbox/2026-10-16-033559-phonon2-audiocpp-stt-assessment.yml
+      — 44-line deploy narrative -> lesson phonon2-audiocpp-stt-deploy
+      (lesson-227dddf98997)
+  - >-
+      docs/ssot/infrastructure/ssot.devin.maintenance.yml
+      — 50-line reauth runbook -> docs/kb/notebooklm-reauth.md
+  - >-
+      docs/ssot/jobs/yt-dub/2026-10-07-yt-voice-dub-qc.yml
+      — 71-line QC gate spec -> docs/kb/yt-dub-qc-gate.md
+  - >-
+      docs/ssot/ssot.improvements.yml
+      — 92-line impact rubric -> docs/kb/improvement-impact-scoring.md
+
+verify:
+  - python3 scripts/ssot-prose-smell.py  # 0 flagged
+  - POST /v1/search {collection: chaba-lessons} -> 135 docs
+  - POST /lesson {op:list, source:mddb} via board-api (post-deploy)
+  - python3 scripts/board/board-api.py --selftest  # ok
