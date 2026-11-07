@@ -95,7 +95,7 @@ LANE_MODELS = {
     "paid_frontier": "litellm/gemini-2.5-flash",
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None,
-                "jules": "jules"}
+                "jules": "jules", "nlm_batch": "nlm_batch"}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 
 # ------------------------------------------------- executor contract
@@ -142,7 +142,7 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules"}
+            "jules", "nlm_batch"}
 # Bounded task classes the kk_mac_local executor may ever run — mirrors
 # scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
 # validates the contract without importing the devnest package).

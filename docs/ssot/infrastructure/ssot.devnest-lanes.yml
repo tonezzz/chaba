@@ -44,6 +44,8 @@ routing:
     JULES_LANES: "1 = executor=jules / lane=jules cards claimable
       on this runner (needs scripts/jules/jules.py + filled
       ~/.config/secrets/jules.env)"
+    NLM_LANES: "1 = executor=nlm_batch cards claimable (needs
+      ~/.local/bin/nlm + ~/.notebooklm profile)"
   never_dispatched: manual (Tony's hands — hardware, spend, accounts)
 
 lanes:
@@ -292,6 +294,68 @@ lanes:
       retries — never the only path to a gate
     measured: "pilot OPS-1048 2026-11-06: create->PR in ~5.5min on
       tonezzz/chaba (docs/reports/jules-pilot-2026-11-06.md, PR #72)"
+
+  nlm_batch:
+    label: NotebookLM batch lane — Google AI Pro quota executor
+    status: live (OPS-1048 finding #3; wired 2026-11-07)
+    plane: work
+    executor: >-
+      action.executor=nlm_batch (or action.lane=nlm_batch). runner-agent
+      start_nlm_lane shells scripts/nlm/nlm_batch.py — create/reuse a
+      notebook, optional source add (text/file/url), one query, answer
+      -> artifact file in the task dir. Auth: nlm CLI profile
+      (~/.local/bin/nlm + ~/.notebooklm). Pro quota: 500 notebooks,
+      300 sources/nb, 500 chats/day, 20 audio/day. Optional action
+      fields: artifact (bare filename, default result.md), nlm_notebook,
+      nlm_source_file/text/url.
+    task_classes:
+      - "edu dossiers + lesson enrichment, report research, transcript digestion"
+      - "single-query doc Q&A over a provided source"
+      - "NOT repo writes, NOT infra mutation — output is a text artifact"
+    verifier: >-
+      declared artifact file exists + non-empty in the task dir; missing
+      -> verified=False review with run.log tail. No merge step (no git
+      work); card lands review for a human read.
+    target_host: >-
+      runners with NLM_LANES=1 + nlm authed (tony-omen today); pin with
+      action.target_host if needed
+    expected_cost: "$0 marginal — NotebookLM Pro subscription quota"
+    expected_tokens: "n/a — chat/source quota, not token metering"
+    evidence_artifact: "taskdir/<artifact> file + run.log + meta.json"
+    escalation: >-
+      auth expiry/quota window -> verified=False review, human reruns
+      or reroutes; never a silent devin fallback
+
+  nlm_batch:
+    label: NotebookLM batch lane — Google AI Pro quota executor
+    status: live (OPS-1048 finding #3; wired 2026-11-07)
+    plane: work
+    executor: >-
+      action.executor=nlm_batch (or action.lane=nlm_batch). runner-agent
+      start_nlm_lane shells scripts/nlm/nlm_batch.py — create/reuse a
+      notebook, optional source add (text/file/url), one query, answer
+      -> artifact file in the task dir. Auth: nlm CLI profile
+      (~/.local/bin/nlm + ~/.notebooklm). Pro quota: 500 notebooks,
+      300 sources/nb, 500 chats/day, 20 audio/day. Optional action
+      fields: artifact (bare filename, default result.md), nlm_notebook,
+      nlm_source_file/text/url.
+    task_classes:
+      - "edu dossiers + lesson enrichment, report research, transcript digestion"
+      - "single-query doc Q&A over a provided source"
+      - "NOT repo writes, NOT infra mutation — output is a text artifact"
+    verifier: >-
+      declared artifact file exists + non-empty in the task dir; missing
+      -> verified=False review with run.log tail. No merge step (no git
+      work); card lands review for a human read.
+    target_host: >-
+      runners with NLM_LANES=1 + nlm authed (tony-omen today); pin with
+      action.target_host if needed
+    expected_cost: "$0 marginal — NotebookLM Pro subscription quota"
+    expected_tokens: "n/a — chat/source quota, not token metering"
+    evidence_artifact: "taskdir/<artifact> file + run.log + meta.json"
+    escalation: >-
+      auth expiry/quota window -> verified=False review, human reruns
+      or reroutes; never a silent devin fallback
 
   devin:
     label: Devin default — fallback + heavy lane

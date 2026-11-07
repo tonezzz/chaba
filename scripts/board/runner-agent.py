@@ -186,7 +186,7 @@ LANE_PROFILES = {
 # dispatch_repos.EXECUTORS — kept local because this file deploys as a
 # single file and may run where dispatch_repos isn't importable.
 EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
-            "jules"}
+            "jules", "nlm_batch"}
 # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
 # bounded read-only LLM lane on KKs-Mac-Studio. Try-first, not strict —
 # the admitted task classes mirror kk_mac_llm.ALLOWED_TASKS; a card the
@@ -218,6 +218,15 @@ JULES_LANE_DAILY_CAP = int(os.environ.get("JULES_LANE_DAILY_CAP",
                                          "20"))
 JULES_LANE_TIMEOUT = int(os.environ.get("JULES_LANE_TIMEOUT",
                                        "3600"))
+# nlm_batch executor (OPS-1048 finding #3): NotebookLM batch lane on
+# Google AI Pro quota (500 notebooks / 500 chats-day / 20 audio-day).
+# NLM_LANES=1 on hosts with `nlm` installed + authed profile
+# (~/.local/bin/nlm + ~/.notebooklm). Output is an artifact file — no
+# repo write, no push creds, so push_capable() does not gate it.
+NLM_LANES = os.environ.get("NLM_LANES", "0") == "1"
+NLM_BIN = Path(os.environ.get("NLM_BIN",
+                              str(Path.home() / ".local/bin/nlm")))
+NLM_PROFILE = Path.home() / ".notebooklm"
 # JULES_AUTO_MERGE=1 (precedent approved by Tony 2026-11-07,
 # OPS-1049): squash-merge a delivered Jules PR via the deploy key
 # when the session is COMPLETED and the PR is clean. Off = PR
@@ -923,6 +932,15 @@ def _claimable(card: dict) -> tuple:
                 # lane is live elsewhere — leave for it
                 return "", ("kk_mac lane is live but this host can't "
                             "serve it")
+        if ex == "nlm_batch" or (not ex and a.get("lane") == "nlm_batch"):
+            # Declared nlm_batch executor / lane pin: needs nlm installed
+            # + authed on this host. No repo checkout or push creds —
+            # output is an artifact file in the task dir.
+            if not NLM_LANES:
+                return "", "executor=nlm_batch but NLM_LANES=0"
+            if not nlm_available():
+                return "", "executor=nlm_batch but no nlm/profile"
+            return "dispatch", ""
         if ex == "jules" or (not ex and a.get("lane") == "jules"):
             # Declared jules executor / lane pin: claimable only where
             # the lane can actually run — JULES_LANES=1, the client +
@@ -1020,6 +1038,11 @@ def executor_defer_reason(card: dict) -> str:
                         "for a kk_mac-capable runner")
             # lane ineligible — this host claims it as a next-lane run,
             # so no defer note (nothing is actually waiting on kk_mac)
+    if ex == "nlm_batch" or (not ex and a.get("lane") == "nlm_batch"):
+        if (a.get("type") or "dispatch") == "dispatch" and not nlm_available():
+            return ("executor=nlm_batch declared but this runner lacks "
+                    "nlm — the card stays queued for a NotebookLM-capable "
+                    "runner; it will never silently fall back to devin")
     if ex == "jules" or (not ex and a.get("lane") == "jules"):
         if (a.get("type") or "dispatch") == "dispatch":
             missing = []
@@ -1087,6 +1110,11 @@ def jules_keyed() -> bool:
     except OSError:
         pass
     return False
+
+
+def nlm_available() -> bool:
+    """nlm CLI installed and an auth profile exists."""
+    return NLM_BIN.is_file() and NLM_PROFILE.is_dir()
 
 
 def jules_repo_slug(repo: str) -> str:
@@ -1918,6 +1946,196 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     return f"devin-task-{tid}", tid, ""
 
 
+def start_nlm_lane(card: dict, unit: str) -> tuple:
+    """Run a NotebookLM batch task as a dispatch executor (OPS-1048 #3).
+
+    Shells scripts/nlm/nlm_batch.py inside the task dir: create/reuse a
+    notebook, optional source add, one query, answer -> artifact file.
+    The artifact is the evidence (finish_nlm_lane)."""
+    if not NLM_LANES:
+        return "", "", ("NLM_LANES=0 on this runner — the nlm_batch "
+                        "executor is disabled; the card needs an "
+                        "nlm-capable runner, not a devin run")
+    if not nlm_available():
+        return "", "", ("nlm_batch lane needs ~/.local/bin/nlm + "
+                        "~/.notebooklm profile")
+    a = card.get("action") or {}
+    cid = card.get("id") or ""
+    repo = str(a.get("repo") or "chaba")
+    dr = dr_module()
+    ent = (dr.repos().get(repo) if dr else None) or {}
+    root = Path(ent.get("path") or "")
+    script = root / "scripts" / "nlm" / "nlm_batch.py"
+    if not script.is_file():
+        return "", "", f"scripts/nlm/nlm_batch.py missing in {root}"
+    spec = (card.get("spec") or "").strip() or card.get("title", "")
+    tid = unit.removeprefix("runner-")
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        taskdir.mkdir(parents=True, exist_ok=True)
+        (taskdir / "prompt.txt").write_text(spec)
+        (taskdir / "meta.json").write_text(json.dumps({
+            "card": cid, "task": tid, "host": HOST,
+            "executor": "nlm_batch", "repo": repo,
+            "model": "notebooklm (Google AI Pro)"}, indent=1))
+    except OSError as e:
+        return "", "", f"taskdir: {e}"
+    out = str(a.get("artifact") or "result.md")
+    if "/" in out or out.startswith(".."):
+        return "", "", f"action.artifact {out!r} must be a bare filename"
+    argv_n = (["python3", str(script), "--prompt-file", "prompt.txt",
+               "--out", out,
+               "--title", str(card.get("title") or "")[:80]])
+    nb = str(a.get("nlm_notebook") or "").strip()
+    if nb:
+        argv_n += ["--notebook", nb]
+    for k, flag in (("nlm_source_file", "--source-file"),
+                    ("nlm_source_text", "--source-text"),
+                    ("nlm_source_url", "--source-url")):
+        v = str(a.get(k) or "").strip()
+        if v:
+            argv_n += [flag, v]
+    shell = (f"cd {shlex.quote(str(taskdir))} && "
+             f"{shlex.join(argv_n)} > run.log 2>&1")
+    u2 = f"devin-task-{tid}"
+    argv = (["systemd-run", "--user", f"--unit={u2}", "--collect",
+             "--description", f"runner {cid} nlm {repo}"]
+            + task_run_props() + ["bash", "-lc", shell])
+    r = sh(argv, timeout=180)
+    if r.returncode:
+        return "", "", (r.stderr or r.stdout).strip()[:240]
+    return u2, tid, ""
+
+
+def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
+    """nlm_batch closeout: artifact file in the task dir is the
+    evidence. Returns (may_merge, notes) — always False (no merge
+    exists) so finish posts verified=False review with the artifact
+    path + first lines in comms."""
+    tid = ent.get("tid") or ""
+    if not tid:
+        u = ent.get("unit") or ""
+        tid = (u[len("devin-task-"):]
+               if u.startswith("devin-task-") else "")
+    if not tid:
+        return True, []
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+    except Exception:
+        return True, []
+    if str(meta.get("executor") or "") != "nlm_batch":
+        return True, []
+    out = str((card.get("action") or {}).get("artifact") or "result.md")
+    art = taskdir / out
+    if art.is_file() and art.stat().st_size:
+        head = art.read_text()[:400].replace("\n", " ")
+        return False, [f"nlm_batch artifact {art} "
+                       f"({art.stat().st_size}B): {head[:300]}"]
+    log = ""
+    try:
+        log = (taskdir / "run.log").read_text()[-300:]
+    except OSError:
+        pass
+    return False, [f"nlm_batch produced no artifact {out} — "
+                   f"run.log tail: {log or '(none)'}"]
+
+
+def start_nlm_lane(card: dict, unit: str) -> tuple:
+    """Run a NotebookLM batch task as a dispatch executor (OPS-1048 #3).
+
+    Shells scripts/nlm/nlm_batch.py inside the task dir: create/reuse a
+    notebook, optional source add, one query, answer -> artifact file.
+    The artifact is the evidence (finish_nlm_lane)."""
+    if not NLM_LANES:
+        return "", "", ("NLM_LANES=0 on this runner — the nlm_batch "
+                        "executor is disabled; the card needs an "
+                        "nlm-capable runner, not a devin run")
+    if not nlm_available():
+        return "", "", ("nlm_batch lane needs ~/.local/bin/nlm + "
+                        "~/.notebooklm profile")
+    a = card.get("action") or {}
+    cid = card.get("id") or ""
+    repo = str(a.get("repo") or "chaba")
+    dr = dr_module()
+    ent = (dr.repos().get(repo) if dr else None) or {}
+    root = Path(ent.get("path") or "")
+    script = root / "scripts" / "nlm" / "nlm_batch.py"
+    if not script.is_file():
+        return "", "", f"scripts/nlm/nlm_batch.py missing in {root}"
+    spec = (card.get("spec") or "").strip() or card.get("title", "")
+    tid = unit.removeprefix("runner-")
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        taskdir.mkdir(parents=True, exist_ok=True)
+        (taskdir / "prompt.txt").write_text(spec)
+        (taskdir / "meta.json").write_text(json.dumps({
+            "card": cid, "task": tid, "host": HOST,
+            "executor": "nlm_batch", "repo": repo,
+            "model": "notebooklm (Google AI Pro)"}, indent=1))
+    except OSError as e:
+        return "", "", f"taskdir: {e}"
+    out = str(a.get("artifact") or "result.md")
+    if "/" in out or out.startswith(".."):
+        return "", "", f"action.artifact {out!r} must be a bare filename"
+    argv_n = (["python3", str(script), "--prompt-file", "prompt.txt",
+               "--out", out,
+               "--title", str(card.get("title") or "")[:80]])
+    nb = str(a.get("nlm_notebook") or "").strip()
+    if nb:
+        argv_n += ["--notebook", nb]
+    for k, flag in (("nlm_source_file", "--source-file"),
+                    ("nlm_source_text", "--source-text"),
+                    ("nlm_source_url", "--source-url")):
+        v = str(a.get(k) or "").strip()
+        if v:
+            argv_n += [flag, v]
+    shell = (f"cd {shlex.quote(str(taskdir))} && "
+             f"{shlex.join(argv_n)} > run.log 2>&1")
+    u2 = f"devin-task-{tid}"
+    argv = (["systemd-run", "--user", f"--unit={u2}", "--collect",
+             "--description", f"runner {cid} nlm {repo}"]
+            + task_run_props() + ["bash", "-lc", shell])
+    r = sh(argv, timeout=180)
+    if r.returncode:
+        return "", "", (r.stderr or r.stdout).strip()[:240]
+    return u2, tid, ""
+
+
+def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
+    """nlm_batch closeout: artifact file in the task dir is the
+    evidence. Returns (may_merge, notes) — always False (no merge
+    exists) so finish posts verified=False review with the artifact
+    path + first lines in comms."""
+    tid = ent.get("tid") or ""
+    if not tid:
+        u = ent.get("unit") or ""
+        tid = (u[len("devin-task-"):]
+               if u.startswith("devin-task-") else "")
+    if not tid:
+        return True, []
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+    except Exception:
+        return True, []
+    if str(meta.get("executor") or "") != "nlm_batch":
+        return True, []
+    out = str((card.get("action") or {}).get("artifact") or "result.md")
+    art = taskdir / out
+    if art.is_file() and art.stat().st_size:
+        head = art.read_text()[:400].replace("\n", " ")
+        return False, [f"nlm_batch artifact {art} "
+                       f"({art.stat().st_size}B): {head[:300]}"]
+    log = ""
+    try:
+        log = (taskdir / "run.log").read_text()[-300:]
+    except OSError:
+        pass
+    return False, [f"nlm_batch produced no artifact {out} — "
+                   f"run.log tail: {log or '(none)'}"]
+
+
 def start_jules_lane(card: dict, unit: str) -> tuple:
     """Run a Jules REST session as a dispatch executor (OPS-1049).
 
@@ -2203,6 +2421,18 @@ def start_task(card: dict, typ: str) -> tuple:
             except Exception as e:
                 # contract failures fail the task — never a devin fallback
                 return "", "", f"opencode executor: {e}"
+        if ex == "nlm_batch" or (not ex and
+                                 str(a.get("lane") or "") == "nlm_batch"):
+            try:
+                return start_nlm_lane(card, unit)
+            except Exception as e:
+                return "", "", f"nlm_batch executor: {e}"
+        if ex == "nlm_batch" or (not ex and
+                                 str(a.get("lane") or "") == "nlm_batch"):
+            try:
+                return start_nlm_lane(card, unit)
+            except Exception as e:
+                return "", "", f"nlm_batch executor: {e}"
         if ex == "jules" or (not ex and
                              str(a.get("lane") or "") == "jules"):
             try:
@@ -2386,6 +2616,12 @@ def finish_pass(st: dict) -> bool:
             elif may_merge:
                 may_merge, jules_notes = finish_jules_lane(cid, ent, card)
                 notes += jules_notes
+                if may_merge:
+                    may_merge, nlm_notes = finish_nlm_lane(cid, ent, card)
+                    notes += nlm_notes
+                if may_merge:
+                    may_merge, nlm_notes = finish_nlm_lane(cid, ent, card)
+                    notes += nlm_notes
                 if may_merge:
                     verified, merge_notes = close_out_merge(cid, ent, card)
                     notes += merge_notes

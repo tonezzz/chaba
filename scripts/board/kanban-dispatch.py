@@ -786,7 +786,7 @@ def main() -> int:
                 # Tony's hands, anything unknown fails closed. Never
                 # silently run them on devin.
                 ex = str(a.get("executor") or "").strip()
-                if str(a.get("lane") or "").strip() == "jules":
+                if str(a.get("lane") or "").strip() in ("jules", "nlm_batch"):
                     # lane pin routes to a JULES_LANES runner —
                     # this dispatcher only runs devin claims
                     print(f"{card['id']}: skipped — lane=jules "

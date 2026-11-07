@@ -720,7 +720,7 @@ def do_claim(card: dict, body: dict) -> str:
     model = str(body.get("model") or "").strip()
     if lane:
         if lane not in {"codemod", "free_lane", "paid_frontier", "devin",
-                        "manual", "jules"}:
+                        "manual", "jules", "nlm_batch"}:
             raise ValueError("invalid action lane")
         a["lane"] = lane
     if model:
