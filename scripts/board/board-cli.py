@@ -38,12 +38,14 @@ def call(method: str, path: str, payload: dict | None,
     body = json.dumps(payload).encode() if payload is not None else None
     if ssh_host:
         # board-api binds localhost on the remote host; the same script
-        # exists there via chaba-repo-sync — __api mode does a raw call.
+        # exists there via chaba-repo-sync. JSON envelope on stdin avoids
+        # shell mangling of '&' in query strings.
+        env = json.dumps({"method": method, "path": path,
+                          "payload": payload}).encode()
         r = subprocess.run(
             ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
-             ssh_host, "python3", REMOTE_SCRIPT, "__api",
-             method, path],
-            input=body or b"", capture_output=True, timeout=90)
+             ssh_host, "python3", REMOTE_SCRIPT, "__api"],
+            input=env, capture_output=True, timeout=90)
         if r.returncode:
             raise RuntimeError(
                 (r.stderr or r.stdout or b"ssh failed").decode()[:300])
@@ -55,10 +57,18 @@ def call(method: str, path: str, payload: dict | None,
         return json.loads(r.read() or "{}")
 
 
-def api_mode(method: str, path: str) -> int:
-    """__api METHOD PATH — raw board-api call on localhost; JSON payload
-    on stdin, JSON response on stdout. Used by --ssh transport."""
-    body = sys.stdin.buffer.read() or None
+def api_mode() -> int:
+    """__api — raw board-api call on localhost. stdin carries a JSON
+    envelope {method, path, payload}; response JSON on stdout. Used by
+    the --ssh transport (keeps '&' in query strings intact)."""
+    try:
+        env = json.loads(sys.stdin.buffer.read() or b"{}")
+    except json.JSONDecodeError:
+        env = {}
+    method = env.get("method") or "GET"
+    path = env.get("path") or "/cards"
+    payload = env.get("payload")
+    body = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(
         "http://127.0.0.1:8787" + path, data=body, method=method,
         headers={"Content-Type": "application/json"})
@@ -73,8 +83,8 @@ def api_mode(method: str, path: str) -> int:
 
 def main() -> int:
     # hidden raw-API mode used by --ssh transport
-    if len(sys.argv) >= 4 and sys.argv[1] == "__api":
-        return api_mode(sys.argv[2], sys.argv[3])
+    if len(sys.argv) >= 2 and sys.argv[1] == "__api":
+        return api_mode()
     ap = argparse.ArgumentParser()
     ap.add_argument("--ssh", default=None,
                     help="run the API call on this host (e.g. idc03)")
