@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:33
+updated: 2026-11-07 18:36
 priority: low
 action:
   type: manual
@@ -45,10 +45,32 @@ comms:
 - at: 2026-11-07 18:33
   from: chaba
   text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
+- at: 2026-11-07 18:36
+  from: chaba
+  text: 'deploy gate: FAILED — rc=0 verify=False
+
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+    1733 passed, 72 warnings, 31 subtests passed in 190.44s (0:03:10)
+
+    [deploy] drain: no live ws sessions
+
+    [deploy] restarting: ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-pi-pwa ada-dev ada-kk-dev
+    ada-kk ada-line-relay ada-tg-relay
+
+    [deploy] active: ada-ha-tony
+
+    [deploy] active: ada-ai-kraut
+
+    [deploy] active: ada-tg-relay-kk
+
+    [deploy] active: ada-tg-relay-mn
+
+    [deploy] active: a'
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
-  status: preflight
+  status: failed
   preflight:
     at: 2026-11-07 18:27
     merge_sha: null
@@ -62,6 +84,12 @@ deploy:
     - 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
   request_id: deploy-ada-tool-guide-lesson-sweep
   error: 'request raise failed: HTTP Error 400: Bad Request'
+  deployed_at: 2026-11-07 18:36
+  failed_at: 2026-11-07 18:36
+  deploy_rc: 0
+  verify:
+    ok: false
+    error: 'URLError: <urlopen error [Errno 111] Connection refused>'
 requests:
 - id: deploy-ada-tool-guide-lesson-sweep
   ask: 'Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
