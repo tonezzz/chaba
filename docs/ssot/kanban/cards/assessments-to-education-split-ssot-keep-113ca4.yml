@@ -1,0 +1,27 @@
+id: assessments-to-education-split-ssot-keep-113ca4
+title: 'Assessments-to-Education split: SSOT keeps verdict+pointer, lesson dual-writes to MDDB, SSOT cleanup pass'
+column: backlog
+updated: 2026-11-07 16:51
+priority: medium
+tags:
+- knowledge-management
+- ssot
+- education
+spec: 'Tony direction 2026-11-07: github/website/repo assessments live in Education (wiki lessons + docs/kb), SSOT
+  keeps ONLY the verdict row + pointer link. Research prose >~40 lines inside ssot.*.yml is a smell.
+
+
+  VERIFIED GAP (mddb get_stats 2026-11-07): wiki lessons are NOT in MDDB — no lesson/wiki/education collection;
+  /lesson writes WP CPT + wiki page only, so agents cannot retrieve what they file. Retrieval must exist BEFORE
+  the split, else knowledge moves from bloated-but-findable to thin-and-invisible.
+
+
+  WORK: (1) wiki->MDDB retrieval — dual-write /lesson into an  MDDB collection at capture time (or a sync job mirroring
+  the lesson CPT); backfill existing lesson posts. (2) codify the rule in AGENTS.md lesson-capture/split text +
+  a lintable smell check (>40 lines prose in ssot yml). (3) FINAL: thorough assess+clean pass over all ssot/*.yml
+  — move research depth to lessons/kb, leave verdict+pointer in place; report files touched.'
+ref: KNB-1101
+comms:
+- at: 2026-11-07 16:51
+  from: devin
+  text: card captured via board-api
