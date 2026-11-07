@@ -1,6 +1,6 @@
 id: ada-backlog-sweep-command
 title: 'Ada command: "process oldest N cards" — triage + queue dispatch-eligible + report'
-column: backlog
+column: done
 updated: 2026-11-07 18:59
 priority: high
 program: chaba-ci
@@ -19,6 +19,7 @@ spec: 'Tony wants to say "process the oldest 5 kanban cards" and have Ada drive 
   queueing fails.'
 action:
   type: manual
+  status: done
 ref: ADA-1115
 comms:
 - at: 2026-11-07 18:48
@@ -34,3 +35,6 @@ comms:
     gained /ada attention and /ada sweep commands. Container restarted; both tools verified loaded + ada_attention
     reaches board-api (pending=0, oldest works). RESIDUAL: sweep step "fix action shape + queue" is still not tool-exposed
     to Ada — queue mutations go through ada_preflight/ada_'
+- at: 2026-11-07 18:59
+  from: tony
+  text: closed by tony
