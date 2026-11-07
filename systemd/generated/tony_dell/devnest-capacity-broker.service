@@ -1,0 +1,8 @@
+[Unit]
+Description=DevNest shared capacity broker (job:devnest-capacity-broker, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=300
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_capacity_broker.py
+Environment="DEVNEST_KK_MAC_ENABLED=true"

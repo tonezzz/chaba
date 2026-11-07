@@ -183,6 +183,67 @@ class ContractGuards(unittest.TestCase):
                       units["chaba-jobs.service"])
 
 
+class SelectiveInstall(unittest.TestCase):
+    """--ids must scope render/install to only the requested job pairs so a
+    host-by-host rollout cannot enable unrelated timers (OPS-0993)."""
+
+    def test_ids_select_only_the_requested_jobs_units(self):
+        man = manifest()
+        units = mod.render_host(man, "tony_dell", ids={"mcp-debug-h3-sync"})
+        self.assertEqual(
+            sorted(units),
+            ["mcp-debug-h3-sync.service", "mcp-debug-h3-sync.timer"])
+
+    def test_ids_never_emit_other_timers_for_enable(self):
+        # install enables every *.timer in the rendered set — an unrelated
+        # timer name in `units` would get armed by systemctl enable --now.
+        man = manifest()
+        units = mod.render_host(
+            man, "tony_dell",
+            ids={"mcp-debug-h3-sync", "network-scan-tony"})
+        timers = {n for n in units if n.endswith(".timer")}
+        self.assertEqual(
+            timers, {"mcp-debug-h3-sync.timer", "network-scan-tony.timer"})
+        self.assertNotIn("tony-dell-health-snapshot.timer", units)
+        self.assertNotIn("lesson-drift-check.timer", units)
+
+    def test_ids_exclude_dispatcher_meta_units(self):
+        # chaba-jobs.* is not a per-job pair; a selective install must not
+        # rewrite or re-enable the dispatcher tick mid-rollout.
+        man = {"config": {"repo": {"h1": "%h/x"},
+                          "dispatcher_tick": "1min"},
+               "jobs": [{"id": "d", "name": "d", "host": "h1",
+                         "dispatch": "dispatcher", "every": "5m",
+                         "exec": "/bin/true"},
+                        {"id": "s", "name": "s", "host": "h1",
+                         "dispatch": "systemd", "every": "5m",
+                         "exec": "/bin/true"}]}
+        units = mod.render_host(man, "h1", ids={"s"})
+        self.assertEqual(sorted(units), ["s.service", "s.timer"])
+        # and the unfiltered render still carries the tick units
+        full = mod.render_host(man, "h1")
+        self.assertIn("chaba-jobs.timer", full)
+
+    def test_ids_none_preserves_full_host_render(self):
+        man = manifest()
+        self.assertEqual(
+            mod.render_host(man, "tony_dell"),
+            mod.render_host(man, "tony_dell", ids=None))
+
+    def test_ids_on_wrong_host_render_nothing(self):
+        man = manifest()
+        # mcp-debug-h3-sync lives on tony_dell, not idc03
+        self.assertEqual(
+            mod.render_host(man, "idc03", ids={"mcp-debug-h3-sync"}), {})
+
+    def test_timer_units_keeps_timer_suffix(self):
+        # `systemctl enable --now <bare>` resolves to .service — the install
+        # path must pass full .timer names or it arms nothing.
+        units = {"a.service": "", "a.timer": "", "b.service": "",
+                 "b.timer": "", "notes.txt": ""}
+        self.assertEqual(mod.timer_units(units), ["a.timer", "b.timer"])
+
+
 class GeneratedTree(unittest.TestCase):
     """systemd/generated/<host> must equal render(manifest) exactly —
     catches host moves / manifest edits that forget to re-render."""
