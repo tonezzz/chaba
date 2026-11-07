@@ -1,7 +1,7 @@
 id: fix-flagged-ops-health-services-ab5ac9
 title: Fix flagged ops health services
 column: doing
-updated: 2026-11-07 16:57
+updated: 2026-11-07 17:06
 priority: high
 note: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
   from ops-health report
@@ -66,6 +66,13 @@ comms:
     — it''s a long-running user unit (the canonical kanban write door) and its Nov-4 death sat unnoticed ~2 days
     until the kanban-commit wedge surfaced it. Suggest: add ''chaba-board-api'' to SERVICES + an HTTP probe probe(''board-api'',
     lambda: get(''http://127.0.0.1:8787/queue'')) — unit-active alone misses a wedged process. (KNB-1098 sweep finding)'
+- at: 2026-11-07 17:06
+  from: devin
+  text: 'DONE — ops-health now HEALTHY/0 flags (16:49Z report). Fixes: (1) report script on idc03 now checks jev-bench+doc-mirror
+    timers on con01 via ssh — they moved there 10-22; (2) REAL doc-mirror failure fixed: documents collection is
+    on mddb :11027 since the split — MDDB_BASE added to con01 unit + idc03 doc-archive.env, repo defaults updated;
+    manual run synced 100 pages across 100 archives (verified on tony-dell HA www). ada-pi-pwa + open-jev-4b-idc02
+    were already healthy; probe timeout bumped 30s->'
 requests:
 - id: the-ops-health-report-lists-sp-a4b0a0
   ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
