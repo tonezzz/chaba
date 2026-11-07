@@ -1,7 +1,7 @@
 id: opencode-ops-readonly-tool-discipline
 title: ops-readonly profile — models probe outside bash allowlist (denials fail closeout)
-column: backlog
-updated: 2026-11-07 15:47
+column: done
+updated: 2026-11-07 15:48
 brief: OpenCode executor smoke showed flash-lite models gather real data but probe non-allowlisted commands (git
   status, python3 -c /proc/uptime). Any denial fails the merge closeout even when all verifier data checks pass.
   Tighten the profile prompt or add pre-denial guidance so executor models stay in-lane.
@@ -40,3 +40,8 @@ comms:
     at python3 scripts/devnest/host_snapshot.py; prompt.md fast-path-first; permission.bash += read-only git. Verification
     run: opencode-executor-routing-smoke re-queued on litellm/gemini-3.5-flash-lite — verdict.json PASS, zero denials,
     all 11 data checks true, auto-merged a2d3c461 to origin/master. First fully-green OpenCode executor closeout.'
+- at: 2026-11-07 15:48
+  from: devin
+  text: closed by devin
+action:
+  status: done
