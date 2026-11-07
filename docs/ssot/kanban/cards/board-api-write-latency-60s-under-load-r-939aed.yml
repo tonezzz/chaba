@@ -1,7 +1,7 @@
 id: board-api-write-latency-60s-under-load-r-939aed
 title: board-api write latency >60s under load — requests queue behind serialized card commits
 column: done
-updated: 2026-11-07 12:11
+updated: 2026-11-07 18:49
 priority: medium
 blocked_by: '[''idc03-served-checkout-convergence-unbloc-0acb20'']'
 tags:
@@ -31,6 +31,13 @@ comms:
 - at: 2026-11-07 12:11
   from: tony
   text: moved backlog -> done
+- at: 2026-11-07 18:49
+  from: devin
+  text: 'Regression evidence 2026-11-07 (OPS-1107/OPS-1114 debugging): this card is marked done but writes still
+    serialize at 30-90s under load — a /action claim POST took ~30s server-side (runner timeout manufactured the
+    OPS-1071 zombie it then healed); a /comment POST committed at ~60s after the client had already timed out (curl
+    exit 28), producing a duplicate comms line on retry. Runner-side mitigations shipped in PR #94 (POST timeout
+    75s, render-settle guard), but the write-path serialization itself'
 action:
   status: done
 claim: {}
