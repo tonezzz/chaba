@@ -59,10 +59,13 @@ class DoorTestBase(unittest.TestCase):
         m = self.mod
         self._saved = {k: getattr(m, k) for k in
                        ("wp_api", "_gemini_thai", "_mddb_post", "_crn",
-                        "INBOX_DIR")}
+                        "INBOX_DIR", "_th_cache", "_TH_CACHE_PATH")}
         self.tmp = Path(tempfile.mkdtemp())
         m.INBOX_DIR = self.tmp / "focus-inbox"
         m.INBOX_DIR.mkdir()
+        # isolate the lesson-translation cache per test (KNB-1076)
+        m._TH_CACHE_PATH = self.tmp / "lesson-th-cache.json"
+        m._th_cache = {}
 
     def tearDown(self):
         for k, v in self._saved.items():
@@ -112,6 +115,22 @@ class LessonDoorTest(DoorTestBase):
         self.assertEqual(kwargs["base_url_override"],
                          "http://gateway.test:4000")
         self.assertEqual(kwargs["max_attempts"], 1)
+
+    def test_gemini_thai_caches_identical_content(self):
+        """KNB-1076: re-filed lessons must not re-burn a translation
+        call — sha256(content) hits the persisted cache."""
+        generate = Mock(return_value="<p>แปล</p>")
+        with patch.object(self.mod, "_gemini_mod",
+                          SimpleNamespace(generate=generate)), \
+                patch.object(self.mod, "_litellm_translation_key",
+                             return_value="k"):
+            first = self.mod._gemini_thai("<p>Same</p>")
+            second = self.mod._gemini_thai("<p>Same</p>")
+            other = self.mod._gemini_thai("<p>Different</p>")
+        self.assertEqual(first, "<p>แปล</p>")
+        self.assertEqual(second, "<p>แปล</p>")
+        self.assertEqual(other, "<p>แปล</p>")
+        self.assertEqual(generate.call_count, 2)  # cached hit skipped
 
     def test_gemini_thai_without_virtual_key_degrades_to_english(self):
         generate = Mock(return_value="<p>unexpected translation</p>")
