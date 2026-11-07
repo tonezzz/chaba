@@ -1,7 +1,7 @@
 id: embed-bench-blocked-20261107
 title: embed-bench 403 + embed-probe down — casting bench gate closed
 column: backlog
-updated: 2026-11-07 17:51
+updated: 2026-11-07 19:21
 priority: medium
 tags:
 - ada
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-07 17:51
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 19:21
+  from: devin
+  text: '[triage] (a) embed-probe RECOVERED on its own — mddb-embed-probe.service ran green 19:00+19:15 (''up: 3
+    hits, indexSize=357''); the 02:00 down-state was transient, so ada-bench-casting''s preflight gate is open again
+    for the next run. (b) ada-embed-bench 403 — unit uses ~/.config/secrets/mddb-gemini.env; HTTP 403 = Gemini key
+    forbidden, consistent with the LiteLLM quota pressure in the ops digest (RESOURCE_EXHAUSTED). Needs a key check/rotation
+    or a provider swap for the embed lane — next scheduled'
