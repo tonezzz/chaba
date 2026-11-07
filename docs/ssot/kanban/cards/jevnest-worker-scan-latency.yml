@@ -1,7 +1,7 @@
 id: jevnest-worker-scan-latency
 title: Reduce JevNest remote queue scan latency
-column: doing
-updated: 2026-11-07 19:20
+column: review
+updated: 2026-11-07 19:21
 brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
   Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
   gates.
@@ -72,6 +72,10 @@ comms:
     preflight.json in one call (kills per-candidate cat); requires re-gated at claim time via refresh_requires so
     drain-in-one-pass is preserved. Measured live on gdrive:ada-nest-kk-llm (78 packs): pre-batch 196.5s -> now
     6.8s (290358235 was 8.1s on a quiet queue; the win grows with live'
+- at: 2026-11-07 19:21
+  from: mn01
+  text: 'finished (ok): exit=0 ard comment posted; no second worker, no LaunchAgent changes, nothing deployed or
+    pushed. | devin-task-20261107-1'
 requests:
 - id: kk-mac-is-offline-choose-the-next-safe-e-183153
   ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
@@ -90,6 +94,11 @@ requests:
   answer: wait-kk — Wait for KK-Mac — required for live worker/LaunchAgent verification.
   executed: 2026-11-06 hold
 action:
-  status: running
+  status: done
   type: dispatch
   runner: mn01
+  result: 'exit=0 ard comment posted; no second worker, no LaunchAgent changes, nothing deployed or pushed. | devin-task-20261107-120758-measure-and-optimize-scripts-a.service:
+    Consumed 28.302s CPU time over 12min 44.799s wall clock time, 656.3M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
