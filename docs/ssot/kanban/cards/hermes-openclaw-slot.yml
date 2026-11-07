@@ -24,6 +24,10 @@ comms:
 - at: 2026-11-07 16:18
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 16:18
+  from: ada
+  text: 'raised request cleanup-verdict-dead-close-this-card-or-a731ea: cleanup verdict: dead — close this card
+    or keep it?'
 ref: OPS-0400
 requests:
 - id: cleanup-suggests-dead-close-or-keep-6d47fa
@@ -35,4 +39,15 @@ requests:
   - proceed
   - hold
   answer: superseded — reraised with buttons
+- id: cleanup-verdict-dead-close-this-card-or-a731ea
+  ask: 'cleanup verdict: dead — close this card or keep it?'
+  status: open
+  at: 2026-11-07 16:18
+  from: ada
+  options:
+  - id: close
+    label: Close — verdict is right
+  - id: keep
+    label: Keep — still alive
+  suggested: close
 awaiting_action: true
