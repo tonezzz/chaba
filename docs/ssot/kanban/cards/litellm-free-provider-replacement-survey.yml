@@ -1,7 +1,7 @@
 id: litellm-free-provider-replacement-survey
 title: Survey free hosted LLM providers to replace GitHub Models in litellm
 column: backlog
-updated: 2026-11-07 15:11
+updated: 2026-11-07 15:39
 priority: medium
 tags:
 - infra
@@ -66,3 +66,15 @@ comms:
     qwq-32b, nemotron-3-120b, mistral-small-3.1-24b, deepseek-r1-distill-32b (reasoning models return reasoning_content
     not content — parsers must handle). PAYWALLED on Free: glm-5.x, kimi-k2.x, deepseek-v4.x. Embeddings bge-m3
     works (1024-dim, multilingual — returned vector for Thai+E'
+- at: 2026-11-07 15:39
+  from: devin
+  text: 'Shadow-eval vs CF lanes (2026-11-07, tony-dell opencode arm, fixture host-health):
+
+    - CONTROL gemini-3.5-flash-lite: PASS 23.4s
+
+    - cf-llama-70b: FAIL 163s — bash-statelessness loop: 32 tool calls retrying `export VAR`/`echo $VAR` (never
+    learned each bash call is a fresh shell), produced EMPTY health.json.
+
+    - cf-gpt-oss-120b: FAIL 99.7s — only 4 tool calls, spent budget reasoning, never wrote the artifact.
+
+    Plumbing fixed en route: dell ~/.config/opencode/opencode.json litellm provider (openai-compat'
