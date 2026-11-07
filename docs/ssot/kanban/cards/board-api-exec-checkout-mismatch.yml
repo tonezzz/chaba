@@ -1,7 +1,7 @@
 id: board-api-exec-checkout-mismatch
 title: board-api running from exec checkout — card writes not reaching served/web board
 column: review
-updated: 2026-11-07 11:11
+updated: 2026-11-07 16:49
 brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
   sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
   kanban page.'
@@ -30,4 +30,9 @@ comms:
 - at: 2026-11-07 11:08
   from: devin
   text: moved backlog -> review
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] verified: live board-api process on idc03 runs from served checkout ~/CascadeProjects/chaba-tony-dell
+    (pgrep -af). Writes reach master. Note: chaba-board-api.service unit still inactive — door is a hand-started
+    process from the right path; tracked under ops hygiene, not this card. Closing.'
 review_kind: verify
