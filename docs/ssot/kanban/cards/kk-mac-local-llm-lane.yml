@@ -354,6 +354,95 @@ comms:
   from: devin
   text: 'raised request kk-mac-hermes-agent-scope-20261104: For the next KK-Mac evaluation, now that Hermes means
     Hermes Agent (framework), which scope should we prepare? The old H'
+- at: 2026-11-04 18:09
+  from: tony
+  text: 'answered kk-mac-bot-hosting-topology-20261030: same-host — Hermes Agent and its local Qwen3:8B LLM backend
+    run together on KK-Mac in the isolated adanest one-shot lane; local-only, no OpenRouter/remote inference. This
+    is the intended benchmark tar'
+- at: 2026-11-04 18:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-04 19:53
+  from: devin
+  text: 'Clarification/continued unblock (2026-11-04): yes, the target is Hermes Agent running on KK-Mac with a
+    KK-local LLM backend (Qwen3:8B first), same-host and no OpenRouter. Do not confuse this with the hermes3:8b
+    model lane. `kk_mac_admission.py` run from the production/trusted tony-dell hop succeeds via its read-only SSH
+    fallback (heartbeat ~126s, load_1m 2.6, Ollama healthy, disk 28GB); the `load_unknown` seen from tony-macbook
+    was a client-path false negative. This is only the coarse admission '
+- at: 2026-11-04 19:55
+  from: devin
+  text: 'Admission correction 2026-11-04: `load_unknown` was a false negative from running the probe on tony-macbook,
+    whose SSH key is not authorized. Running the unchanged admission helper from the production/trusted tony-dell
+    host now succeeds via its read-only SSH fallback: eligible=true, load_1m=2.6, heartbeat age ~126s, Ollama healthy,
+    disk 28GB. The heartbeat document itself still omits load_1m, so a KK-local heartbeat refresh remains useful
+    for diagnostics but is not required for the tony-dell pro'
+- at: 2026-11-04 19:56
+  from: devin
+  text: 'raised request kk-mac-hermes-agent-benchmark-authorization-20261104: To continue from the confirmed same-host
+    plan: authorize exactly one Hermes Agent vs OpenClaw/Clawbot framework benchmar'
+- at: 2026-11-05 09:07
+  from: devin
+  text: 'raised request kk-mac-interim-llm-only-20261104: Your new suggestion differs from the earlier same-host
+    Hermes+LLM choice: keep the full agent runtime off KK-Mac and use'
+- at: 2026-11-05 09:15
+  from: devin
+  text: 'Fresh read-only status 2026-11-05: trusted tony-dell admission is eligible (heartbeat ~90s, load_1m=1.4
+    via SSH fallback, Ollama healthy, disk 46GB). The separate member-workstation preflight is NOT clear: AC is
+    on, but free memory is 76%, Photoshop/Illustrator processes are active, Ollama has no resident model, and no
+    Nest worker is running. Hold all KK inference until owner-idle/resource gates pass. Queue census: 78 packs (71
+    done, 6 failed, 1 incomplete empty staging folder), no model run sta'
+- at: 2026-11-05 14:56
+  from: devin
+  text: 'Fresh Nov 5 preflight correction: coarse `kk_mac_admission.py` from tony-dell says eligible=true (heartbeat
+    age 130s, load_1m=2.7 via SSH fallback, Ollama healthy, disk 42GB), but a direct read-only Mac resource sample
+    shows only 64% free memory and Photoshop at 39.8% CPU (Illustrator 1.4%); Ollama has no resident model and no
+    Nest worker is visible. Treat KK-Mac as owner-busy and DO NOT launch LLM/Hermes work. This confirms the coarse
+    admission helper misses GUI-app/memory pressure; a full reso'
+- at: 2026-11-05 15:18
+  from: devin
+  text: 'Fresh Nov 5 safe-to-run check: trusted tony-dell coarse admission is eligible (load_1m=1.37 via SSH fallback,
+    Ollama healthy, disk 42GB), but the full Mac resource check fails the owner/workload gate: AC on, only 68% memory
+    free, Photoshop and Illustrator active, Ollama empty, no Nest/Hermes worker. `node_busy=false` in the heartbeat
+    is not sufficient to override these readings. Do NOT launch LLM/Hermes now. Queue remains 78 packs (71 done,
+    6 failed, 1 incomplete empty folder). The two topology/'
+- at: 2026-11-05 15:46
+  from: devin
+  text: 'Threshold clarification 2026-11-05: the 80%-free memory gate in the Mac SOP is specifically for MPS/video
+    model loads; it is not a universal LLM threshold. A one-off local Qwen3:8B smoke could use a separate LLM-only
+    resource gate, but the existing five-fixture model pack is complete (2/5 exact) and must not be rerun. Current
+    sample is 66% free, with Photoshop/Illustrator open, so no run now. Keep video gate unchanged; any new LLM test
+    needs a versioned pack, KK idle consent, AC/no competing ren'
+- at: 2026-11-05 15:46
+  from: devin
+  text: 'raised request kk-mac-qwen8-one-shot-memory-floor-20261105: The 80%-free threshold in the Mac SOP applies
+    to MPS/video jobs, not necessarily a small LLM-only call. For one new synt'
+- at: 2026-11-06 07:25
+  from: devin
+  text: 'Fresh Nov 5 one-shot resource recheck (read-only): `mac-owner-resource-gate.py` returned `resource_candidate`;
+    AC power, ~91% free memory, system CPU 5.3%, owner-app CPU delta 0.41 CPU-s/10s, no render/export process. Ollama
+    is empty and disk ~70GB. Photoshop/Illustrator remain open but their sampled CPU was below the configured 1
+    CPU-s/10s cap; HID input was ~163s idle and is informational under the current resource-based gate. Resource
+    conditions now pass for a single LLM-only smoke, but the B'
+- at: 2026-11-06 09:36
+  from: tony
+  text: 'answered kk-mac-qwen8-one-shot-memory-floor-20261105: allow-once-60-50 — approved for one synthetic read-only
+    Qwen3:8B LLM-only smoke after the fresh resource/owner gate; 60% free before model load, abort below 50% free
+    or on pressure. No Hermes Agent in'
+- at: 2026-11-06 09:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 16:30
+  from: devin
+  text: '2026-11-06 one-shot: synthetic Qwen3:8B extraction passed 7/7 deterministic checks; artifact landed at
+    /home/tony/evals/results/kk-mac-qwen8-smoke-20261106/workspace/reports/kk-mac-lane/out/kk-mac-qwen8-smoke-20261106-01.json.
+    Pre-run free memory 72%; post-run it fell to 34% with the test-loaded model resident (<50% floor). Unloaded
+    only that model; Ollama is empty and free memory recovered to 55%. Partial safety result: no rerun until kk-mac-live-memory-guard
+    is verified. No Hermes, download, e'
+- at: 2026-11-06 16:34
+  from: devin
+  text: 'Post-unload follow-up check: KK-Mac free memory recovered further to 62%; AC remains on, Ollama /api/ps
+    is empty, and no Nest/video/Hermes worker is visible. No additional inference was run. Lane remains gated on
+    MEM-1043.'
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
@@ -436,8 +525,68 @@ requests:
   - id: model-only
     label: Benchmark local model only first; no bot-agent integration yet
   suggested: same-host
-  answer: same-host — Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
   escalated_at: 2026-10-31 08:33
+  answer: same-host — Run bot loop and local LLM on KK-Mac in one isolated one-shot pack (recommended)
+- id: kk-mac-hermes-agent-benchmark-authorization-20261104
+  ask: 'To continue from the confirmed same-host plan: authorize exactly one Hermes Agent vs OpenClaw/Clawbot framework
+    benchmark on KK-Mac, using the already-cached local Qwen3:8B backend and synthetic read-only fixtures, identical
+    tool allowlist/verifier, no external egress, model download, personal files, live channels, or automatic routing?
+    This is separate from the prior Qwen model-only pilot. Run only after ready-aware worker deployment, fresh KK
+    owner-idle/resource preflight, and admission passes.'
+  status: open
+  at: 2026-11-04 19:56
+  from: devin
+  options:
+  - id: framework-ab
+    label: ★ Authorize one bounded synthetic framework A/B after all gates (Hermes Agent vs OpenClaw, same local
+      Qwen3:8B; recommended)
+  - id: hermes-smoke
+    label: Authorize only a one-time Hermes Agent synthetic smoke on KK-Mac; no comparison or routing
+  - id: hold
+    label: Keep Hermes Agent at design/documentation only for now
+  suggested: framework-ab
+- id: kk-mac-interim-llm-only-20261104
+  ask: 'Your new suggestion differs from the earlier same-host Hermes+LLM choice: keep the full agent runtime off
+    KK-Mac and use KK only for inference. Which interim architecture do you want? The existing `kk_mac_local` adapter
+    is a bounded one-shot executor for summary/operator_brief/structured_extract/safe_route, not a generic chat-completions
+    endpoint. A full Hermes Agent running elsewhere would need a private authenticated/metered proxy to KK Ollama;
+    never expose raw :11434. No run/deploy is triggered by this choice.'
+  status: open
+  at: 2026-11-05 09:07
+  from: devin
+  options:
+  - id: bounded-executor
+    label: ★ Keep Hermes/other orchestration off KK and use the existing bounded kk_mac_local executor for simple
+      verified tasks (recommended interim; not full multi-turn Hermes)
+  - id: private-proxy
+    label: Build an authenticated/metered private model proxy so Hermes Agent elsewhere can use KK Ollama for full
+      turns (new service/security work)
+  - id: same-host
+    label: 'Keep the earlier plan: run Hermes Agent and local model together on KK-Mac, only in approved idle windows'
+  suggested: bounded-executor
+- id: kk-mac-qwen8-one-shot-memory-floor-20261105
+  ask: The 80%-free threshold in the Mac SOP applies to MPS/video jobs, not necessarily a small LLM-only call. For
+    one new synthetic, read-only Qwen3:8B smoke (the old five-fixture pack is already complete and must not be rerun),
+    may we use a temporary LLM-specific gate of >=60% free memory before model load and abort if free memory falls
+    below 50% or memory pressure rises? Still require KK owner idle consent, AC, no active render/export/competing
+    worker, empty Ollama before start, no model download/external egress, and one task only. The last sample was
+    66% free with Photoshop/Illustrator open, so it is NOT eligible now; this approval would apply only after those
+    apps/workloads clear and a fresh check passes.
+  status: answered
+  at: 2026-11-05 15:46
+  from: devin
+  options:
+  - id: allow-once-60-50
+    label: ★ Allow one short Qwen3:8B synthetic LLM-only smoke with a 60%-before/50%-stop memory guard, only after
+      KK confirms idle and all other gates pass
+  - id: wait-for-80
+    label: Wait until free memory is at least 80% before any test
+  - id: hold
+    label: Do not run another inference test yet
+  suggested: allow-once-60-50
+  answer: allow-once-60-50 — approved for one synthetic read-only Qwen3:8B LLM-only smoke after the fresh resource/owner
+    gate; 60% free before model load, abort below 50% free or on pressure. No Hermes Agent installation, model download,
+    external egress, or automatic routing.
 - id: kk-mac-qwen8-one-shot-authorization-20261031
   ask: Education lesson 3180 records the local-only, same-host plan. May we supersede the existing deterministic-only
     answer for exactly one bounded KK-Mac Qwen3:8B pilot, only after the current MPS/video work is complete and

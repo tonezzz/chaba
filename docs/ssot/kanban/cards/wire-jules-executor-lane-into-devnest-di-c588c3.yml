@@ -1,0 +1,57 @@
+id: wire-jules-executor-lane-into-devnest-di-c588c3
+title: Wire `jules` executor lane into DevNest dispatch (runner-agent + merge path)
+column: backlog
+updated: 2026-11-06 20:10
+priority: medium
+blocked_by: OPS-1048
+tags:
+- devnest
+- jules
+- dispatch
+- lane
+spec: 'Follow-up to OPS-1048 (Jules pilot green 2026-10-06). Jules REST lane is proven: scripts/jules/jules.py on
+  master, JULES_API_KEY in ~/.config/secrets/jules.env on idc03+omen, AUTO_CREATE_PR yields GitHub PRs (~5.5min
+  for a trivial task, Pro quota 100 tasks/day + 15 concurrent).
+
+
+  Work: add a `jules` executor to the DevNest lane catalog (docs/ssot/infrastructure/ssot.devnest-lanes.yml) and
+  wire it in scripts/board/ (dispatch_repos.py LANE_MODELS/LANE_EXECUTORS + runner-agent.py), modeled on start_opencode_lane.
+
+
+  Design decisions to make (spec-gathering duty — pick with reasoning, flag to Tony if ambiguous):
+
+  1. Executor shape: systemd-run unit running `jules.py create --auto-pr` then `wait --approve`; on COMPLETED record
+  session url + PR url in action.result. Poll interval ~45s, timeout ~1h, escalate to paid_frontier/devin on FAILED
+  or timeout.
+
+  2. Merge path — KEY DECISION: Jules PRs land on GitHub master directly, bypassing local dispatch worktrees + merge-sweep.
+  Options: (a) auto-merge via gh/API after CI-green for whitelisted card classes, (b) route PR to review column
+  for human merge, (c) hybrid — auto-merge only cards with action.lane=jules AND a declared verifier artifact. Recommend
+  (c) to start.
+
+  3. Quota guard: lane must check daily task count (GET /sessions) and refuse/queue beyond a cap (suggest 20/day
+  lane cap, well under Pro 100).
+
+  4. Repo whitelist: JULES_REPOS env (default tonezzz/chaba); dispatch_repos.repos mapping owner/name -> sources/github/<owner>/<repo>.
+
+  5. Verifier: same gate pattern as free-opencode — declared artifact must exist; for jules the artifact IS the
+  merged PR + card done-condition; missing PR = fail not false-done.
+
+
+  Done: lane live for at least one real card end-to-end (card -> jules session -> PR -> merged -> card comms), lane-savings.py
+  counts it, ssot.devnest-lanes.yml updated.'
+ref: OPS-1049
+comms:
+- at: 2026-11-06 20:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-06 20:09
+  from: devin
+  text: queued for processing
+- at: 2026-11-06 20:10
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+action:
+  type: dispatch
+  status: queued

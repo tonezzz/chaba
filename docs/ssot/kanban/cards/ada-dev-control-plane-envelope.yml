@@ -101,6 +101,50 @@ comms:
     unchanged. Direct Ada MCP `ada_memory_search("Ada development control plane memory workflow")` returned ok=true
     with 3 Education hits, 3 Devin-session hits, and no errors. Ada and Devin now share a practical imported-summary
     memory path, while board/artifact workflow receipts remain the'
+- at: 2026-11-04 18:19
+  from: devin
+  text: '[hardening evidence] Follow-up commit 255dabea15 pushed on feat/ada-next-card-procedure. Fixed review findings:
+    runtime validator now rejects unknown fields to match additionalProperties=false; envelope requires explicit
+    state; lifecycle models failed/stalled/cancelled with bounded recovery transitions. Re-ran envelope + executor
+    contract suite: 65 passed. Still review-only; no merge/deploy/self-approval.'
+- at: 2026-11-04 19:24
+  from: devin
+  text: 'Ada should become the main responder by making the Ada HA/voice/Telegram channels the only user-facing
+    intake for work orchestration. The OpenCode tab is an operator/review surface, not the control plane. Current
+    state: Ada already owns the HA-native user UI, conversation policy, board-first capture, memory retrieval, approvals,
+    and Devin dispatch; OpenCode currently owns the reverse path (OpenCode -> ada-control MCP via `.opencode/ada_mcp.py`).
+    Missing path: Ada -> bounded OpenCode executor. Ne'
+- at: 2026-11-04 19:39
+  from: tony
+  text: '[approval] Tony approved ADA-1010 for merge after hardening. Approval covers the contract/schema/tests
+    implementation only; deployment remains separately gated.'
+- at: 2026-11-04 19:51
+  from: devin
+  text: Implemented and deployed Ada as the orchestration front door for bounded OpenCode work. ada-voice now exposes
+    read-only `ada_opencode` actions (preflight/status/receipts) plus confirm-gated `ada_opencode_dispatch`; the
+    adapter reads exact cards via board-api and requires explicit repo, model, LiteLLM key alias, profile, target
+    host, artifact, max USD, turns, tokens, wall time, and retries. Ada instructions now state OpenCode is an executor,
+    plain questions stay in Ada, and no silent route/key/mo
+- at: 2026-11-05 15:34
+  from: devin
+  text: 'Recommended long-term Devin-compatible memory design: tony-omen remains the ingestion source; `sync-devin-summaries`
+    normalizes summaries into the canonical MDDB Devin memory collection with memory_id, source, record_type, card_id,
+    workflow_id, job_id, created_at, updated_at, summary, content_pointer, artifact_pointers, provenance, freshness,
+    confidence, scope, and privacy_class. Ada/OpenCode reads through a read-only bounded memory adapter/API on idc03,
+    not a host filesystem mount. Retrieval su'
+- at: 2026-11-05 15:54
+  from: devin
+  text: 'Long-term memory implementation progressed: Ada OpenCode now queries canonical MDDB `ada-ha-bank-devin-tony`
+    on port 11023 first, then bounded local read-only summary fallback. idc02 has a read-only 2,077-file snapshot
+    from tony-omen for rollback/parity. Real OpenCode/LiteLLM test returned 3 `storage:mddb` Devin records with
+    source=freshness labels and no shell; Education returned alongside it. The previous port 11027 was CMS/report
+    data and returned no Devin records, so the adapter now separate'
+- at: 2026-11-05 16:48
+  from: devin
+  text: '[preflight evidence 2026-11-05] DevNest-ada-agent commit b14d5ea adds bounded canonical Devin-MDDB memory
+    recall, Education fallback, Adobe reuse safeguards, and receipt tests; 12 OpenCode bridge tests pass. ADA preflight
+    correctly refused to start because the card has no typed dispatch envelope: missing repo/executor/model/profile/target_host/artifact/verifier.
+    No mutation or dispatch performed; explicit fields are required before a smoke executor run.'
 - at: 2026-11-06 20:22
   from: devin
   text: 'ADA-1010 contract COMPLETE and merged: chaba PR #73 (e89b3bc — envelope schema + validator with unknown-field
