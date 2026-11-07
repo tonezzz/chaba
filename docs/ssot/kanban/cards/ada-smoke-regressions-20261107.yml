@@ -1,0 +1,20 @@
+id: ada-smoke-regressions-20261107
+title: Smoke tier regressions — 4 fails surfaced after runner repair
+column: backlog
+updated: 2026-11-07 17:51
+priority: medium
+tags:
+- ada
+- scenario-runner
+- regression
+spec: 'First live smoke run in 11 days (after mount fix 2026-11-07) surfaced 4 real fails on ada-dev: (1) ada_opencode_control
+  turn3 — Ada narrated correctly but routed to kanban instead of ada_opencode_dispatch; (2) auto-report-worthy turn1
+  — answered via cms_read without calling ada_memory_search; (3) cms_public_url_lane turn4 — chat_send carried surf-thailand.com/tony-ha/...
+  for a kk-lane page (lane mixup) + publish confirm-gate repeated-tool error + cleanup delete HTTP 400s; (4) cms-translate
+  — see report docs. Full detail: MDDB ada-ha-scenario-reports report/*-20261107-*. Triage each: tool-declaration
+  drift, routing change, or expectation rot (11 days of upstream commits landed while the suite was dead).'
+ref: ADA-1110
+comms:
+- at: 2026-11-07 17:51
+  from: devin
+  text: card captured via board-api
