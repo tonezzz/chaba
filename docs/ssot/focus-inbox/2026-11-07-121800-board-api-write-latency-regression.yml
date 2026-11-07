@@ -1,0 +1,39 @@
+title: Focus Inbox Item
+subtitle: Profile board-api write-path latency regression
+icon: inbox
+
+focus:
+  label: board-api write latency regression
+  text: >-
+    Card board-api-write-latency-60s-under-load-r-939aed is marked done, but
+    writes still serialize at 30-90s under load (observed 2026-11-07 during
+    OPS-1107/1114 debugging): a claim POST took ~30s server-side (manufactured
+    an OPS-1071 zombie), a comment committed ~60s after client timeout (dup
+    comms on retry). Runner-side mitigations shipped in PR #94; the write path
+    itself (flock + save + render per request) is untouched. Profile where the
+    30-90s goes: render step inside the write path, save() YAML round-trip,
+    flock queue depth — then decide: respond-before-render, write batching, or
+    render debounce.
+  priority: medium
+  status: draft
+  tags: [board-api, latency, runner-agent]
+  missing_info:
+    - Where the write time goes — render_async vs save() vs flock contention
+  safe_to_parallel:
+    value: true
+    reason: Read-mostly profiling on idc03; does not touch runner claim paths
+  subtasks:
+    - label: Instrument board-api write path timings (flock wait, save, render)
+      status: not_started
+    - label: Decide fix shape (respond-before-render / batching / debounce)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: devin-ops1107-runner-claim
+  locked: false
+  lock_reason: ""
+
+source:
+  session: devin-ops1107-runner-claim
+  date: 2026-11-07
