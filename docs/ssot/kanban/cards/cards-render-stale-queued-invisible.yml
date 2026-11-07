@@ -1,6 +1,6 @@
 id: cards-render-stale-queued-invisible
 title: 'BUG: queued cards missing from GET /cards — runner never claims them'
-column: review
+column: done
 updated: 2026-11-07 18:03
 priority: high
 tags:
@@ -35,4 +35,10 @@ comms:
     queued), /cards?action_status=queued returns 3 cards, /queue consistent, health 200. Restart hook will keep
     the service current on future merges — this first hop needed a manual try-restart because the running script
     predated the hook. Closing.'
+- at: 2026-11-07 18:03
+  from: devin
+  text: moved review -> done
 review_kind: verify
+action:
+  status: done
+claim: {}
