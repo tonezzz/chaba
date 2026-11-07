@@ -1,0 +1,29 @@
+id: ada-backlog-sweep-command
+title: 'Ada command: "process oldest N cards" — triage + queue dispatch-eligible + report'
+column: backlog
+updated: 2026-11-07 18:48
+priority: high
+program: chaba-ci
+tags:
+- ada
+- kanban
+- sweep
+- hands-off
+spec: 'Tony wants to say "process the oldest 5 kanban cards" and have Ada drive them. Today there is no such command:
+  kanban-dispatch claims by its own sort order and Ada has no standing backlog-sweep instruction. Deliverable: a
+  defined Ada command that (1) lists the N oldest backlog cards by updated, (2) per card triages: verified-done
+  -> close, needs-Tony -> raises/keeps request with options, dispatchable -> fixes action shape (type=dispatch,
+  target_host on a push-capable host, NO stray labels — the 2026-11-07 starvation lesson) and queues, unsafe/human
+  -> holds with comms, (3) reports the per-card verdict back. Sister to hands-off-waiting-card-procedure (defines
+  the unattended envelope); this is the Ada-facing trigger. Depends on OPS-1097 for skip-reason visibility when
+  queueing fails.'
+action:
+  type: manual
+ref: ADA-1115
+comms:
+- at: 2026-11-07 18:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 18:48
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
