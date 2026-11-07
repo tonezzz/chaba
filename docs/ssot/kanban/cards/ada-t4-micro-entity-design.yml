@@ -1,0 +1,33 @@
+id: ada-t4-micro-entity-design
+title: Ada T4 design — first micro-entity that finishes real jobs (bounded card class + own bench)
+column: backlog
+updated: 2026-11-07 15:34
+priority: high
+tags:
+- ada
+- t4
+- nest
+- micro-entity
+- design
+spec: 'T4 per ssot.ada-participation.yml = micro-entity scope: a nest brain that owns a narrow card class with its
+  own bench — NOT general agent work. The gap analysis from the bench work (2026-11-07): Ada can already read/comment/ask/move-with-evidence
+  (T0-T2 live, kanban tool verified); what''s missing for ''finish jobs'' is the EXECUTION LOOP — a driver that
+  hands her a card, runs her turn with a bounded toolset, captures the artifact+evidence, moves the card. Proposed
+  first micro-entity ''ada-jobs-verify'': owns ONE card class = verify/observe cards (check a surface, post evidence
+  comms, move review->done with evidence=). All steps already in her authority — no new power. Driver = a runner
+  (systemd or nest pack) that feeds cards tagged class:verify to a scoped Ada session (toolset = kanban + health/HTTP
+  checks only, her real authority matrix). Gates to pilot: (1) card-judgment bench 3 consecutive passes vs her production
+  topology (standings now: llama3.2 0.884 pass x1, ada-chat 0.768, cf-70b 0.695 — needs a passing entity first,
+  candidate = llama3.2-family or the winner of upcoming kk-mac/CF runs); (2) per-class bench = verify-class corpus
+  subset; (3) Tony picks the card class (this proposal''s default). Failure containment: doing_limit applies, no
+  prod writes beyond card comms/moves, every action lands from:ada audit line.'
+note: 'Key finding that shapes this design: capability is NOT the constraint — 3B local beats paid flash on judgment;
+  Ada''s failure mode is over-deferral (safe, correctable via prompt+corpus). The T4 path is a LOOP problem, not
+  a brain problem. CF Workers AI (llama-3.3-70b free tier, verified live 2026-11-07) gives a free always-on brain
+  + free bench runs — candidate executor model. Depends on: card-judgment-bench-build (done), kk-mac-card-judgment-eval
+  (KNB-1087 armed), T3 production proof. Decision f'
+ref: ADA-1091
+comms:
+- at: 2026-11-07 15:34
+  from: tony
+  text: card captured via board-api
