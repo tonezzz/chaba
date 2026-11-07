@@ -1,7 +1,7 @@
 id: kk-mac-local-llm-lane
 title: 'KK-Mac local LLM lane: Metal inference benchmark and DevNest routing'
 column: review
-updated: 2026-11-07 14:15
+updated: 2026-11-07 14:20
 brief: Evaluate KK-Mac M4 Max as a local inference worker for DevNest; start read-only and benchmark before routing
   work.
 priority: high
@@ -469,6 +469,12 @@ comms:
 - at: 2026-11-07 14:15
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 14:20
+  from: devin
+  text: '[link 2026-11-07] kk-mac-card-judgment-eval (KNB-1087) armed: scripts/bench/card-judgment/kkmac_eval.sh
+    gates on ssh+ollama and runs the 115-case card-judgment corpus on kk-mac''s pulled models — the concrete ''can
+    it replace paid side-call lanes'' measurement, zero spend. Trigger = next live heartbeat window (Mac offline
+    19h). Capacity-loop producer could queue it.'
 action:
   type: dispatch
   status: done
