@@ -1,0 +1,11 @@
+[Unit]
+Description=BGE education shadow refresh (lesson sync + snapshot + report) (job:chaba-bge-education-shadow, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-lessons-shadow.py --sync
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --build
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py --adapter %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --index %h/.local/share/bge-hybrid/docs.json --output %h/.cache/bge-education-shadow-v2.json
+WorkingDirectory=%h/CascadeProjects/chaba
