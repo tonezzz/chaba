@@ -1156,6 +1156,21 @@ jobs:
     stays wp until the lesson CPT goes read-only — flip EDU_SOURCE=wiki
     in the unit env at cutover. Runbook:
     docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml'
+- id: chaba-host-ready-check
+  name: R7 host software readiness probe
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 06:00:00'
+  persistent: true
+  timeout: 10m
+  cwd: '%h/CascadeProjects/chaba'
+  condition_path: '%h/CascadeProjects/chaba/scripts/host-ready-check.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/host-ready-check.py --json-out %h/var/chaba/jobs/host-ready-check.json
+  note: 'card r7-host-software-baseline (OPS-1105) — weekly R7 probe:
+    ssh-checks every declared capability in ssot.host-software.yml on
+    every host (python/venv/python_ml/ollama models/node/podman).
+    Nonzero exit on any fail. Follow-up: focus-inbox flagging when the
+    fail-set changes (lesson-drift-check pattern). Added 2026-11-07.'
 - id: chaba-bge-education-shadow
   name: BGE education shadow refresh (lesson sync + snapshot + report)
   host: idc03
