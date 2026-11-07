@@ -1,7 +1,7 @@
 id: wire-jules-executor-lane-into-devnest-di-c588c3
 title: Wire `jules` executor lane into DevNest dispatch (runner-agent + merge path)
 column: backlog
-updated: 2026-11-07 11:11
+updated: 2026-11-07 11:39
 priority: medium
 blocked_by: OPS-1048
 tags:
@@ -66,6 +66,13 @@ comms:
 - at: 2026-11-07 11:11
   from: devin
   text: put on hold
+- at: 2026-11-07 11:39
+  from: devin
+  text: 'DONE 2026-11-07: jules executor wired end-to-end. Commit 356b031b3: dispatch_repos EXECUTORS+LANE_EXECUTORS+=jules;
+    board-api claim lane set; kanban-dispatch skips lane=jules; runner-agent start_jules_lane/finish_jules_lane
+    + JULES_LANES/JULES_REPO_MAP/daily-cap gates; jules.py usage counter; ssot.devnest-lanes.yml jules lane entry
+    (env_gates JULES_LANES). E2E: OPS-1065 claimed on idc03 (JULES_LANES=1 drop-in on runner-agent) -> Jules session
+    -> PR #79 merged -> card done. Merge path v1 = human '
 action:
   type: dispatch
   status: idle
