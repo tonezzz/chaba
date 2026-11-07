@@ -1,7 +1,7 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
 column: doing
-updated: 2026-11-07 15:53
+updated: 2026-11-07 16:02
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
 tags:
@@ -64,3 +64,10 @@ comms:
     merge); (2) read default source follows the flag so op=list/get/topics track the authoritative store; (3) edge
     redirect = generated Caddy fragment import inside the live boards.surf-thailand.com block on idc02 (site is
     confirmed CF->idc02 caddy-edge->Plesk); map via /lesson op'
+- at: 2026-11-07 16:02
+  from: devin
+  text: 'DONE (worktree, not deployed). WIKI_EDUCATION_WRITE=wiki shipped on dispatch branch: do_lesson wiki-primary
+    (zero WP writes, wiki_title upsert, learned_at/next_review/status preserved, no_th kept, rollback=dual); op=delete
+    targets the Education page; read default + op=topics follow the flag so sourceless consumers retarget; url_of
+    bugfix (/wiki/<t> 404s live -> index.php?title=). WikiLessonSink merges sparse meta from existing pages. Redirects:
+    stacks/idc02/boards-lesson-redirects.caddy (131 map'
