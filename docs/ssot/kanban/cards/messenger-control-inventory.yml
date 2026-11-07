@@ -1,7 +1,7 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
 column: review
-updated: 2026-11-06 20:16
+updated: 2026-11-07 14:15
 priority: medium
 tags:
 - telegram
@@ -114,6 +114,13 @@ comms:
 - at: 2026-11-06 20:16
   from: chaba
   text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-11-07 14:15
+  from: tony
+  text: 'answered household-bot-membership-retest-20261104: fix-new-memberships — Recommended: add each new bot
+    to its target group and configure host-only allowlists; keep old relays until tests pass.'
+- at: 2026-11-07 14:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -183,7 +190,7 @@ requests:
     to its intended group and ensure the correct target is in idc03's host-only allowlist (do not post raw chat
     IDs or tokens here). Keep the old relays active until new group membership and a /send smoke pass. Then reply
     groups-ready and I will retest.
-  status: open
+  status: answered
   at: 2026-11-04 13:44
   from: devin
   options:
@@ -196,5 +203,7 @@ requests:
     label: Give a different lane/group mapping.
   suggested: fix-new-memberships
   escalated_at: 2026-11-06 20:16
+  answer: 'fix-new-memberships — Recommended: add each new bot to its target group and configure host-only allowlists;
+    keep old relays until tests pass.'
 review_kind: verify
 awaiting_action: true
