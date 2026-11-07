@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
-column: doing
-updated: 2026-11-07 19:47
+column: review
+updated: 2026-11-07 19:49
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -32,7 +32,15 @@ comms:
     idc02:8914 is standby only, and con01 itself is loaded (load ~9-11/8vcpu, RTF 2.1-2.6 pre-fix). Results: busy0
     saturation RTF 3.4-9.9 → nice -10 restores 0.69-1.39 (BEST); CPUWeight=1000 (rootless) restores 0.8-1.14 vs
     in-slice tenants but not system/session bursts;'
+- at: 2026-11-07 19:49
+  from: tony-macbook
+  text: 'finished (ok): exit=0  test rig left at `idc02:~/stt-contention-test` for re-runs. | devin-task-20261107-190904-found-during-local-stt-'
 action:
   type: dispatch
-  status: running
+  status: done
   runner: tony-macbook
+  result: 'exit=0  test rig left at `idc02:~/stt-contention-test` for re-runs. | devin-task-20261107-190904-found-during-local-stt-lane-ev.service:
+    Consumed 1min 38.027s CPU time over 38min 52.159s wall clock time, 517.9M memory peak, 58.3M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
