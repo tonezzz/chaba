@@ -141,6 +141,23 @@ def cmd_result(a):
         print("outputs: none")
 
 
+def cmd_usage(a):
+    """Sessions created today (UTC) — the lane's daily-quota counter."""
+    today = time.strftime("%Y-%m-%dT", time.gmtime())
+    count, token = 0, None
+    while True:
+        path = "/sessions?pageSize=100" \
+            + (f"&pageToken={token}" if token else "")
+        d = req("GET", path)
+        for s in d.get("sessions", []):
+            if str(s.get("createTime", "")).startswith(today):
+                count += 1
+        token = d.get("nextPageToken")
+        if not token:
+            break
+    print(count)
+
+
 def cmd_list(a):
     print(json.dumps(req("GET", f"/sessions?pageSize={a.page_size}"), indent=2))
 
@@ -178,6 +195,9 @@ def main():
     s.add_argument("--approve", action="store_true",
                    help="auto-approve pending plans")
     s.set_defaults(f=cmd_wait)
+
+    s = sub.add_parser("usage")
+    s.set_defaults(f=cmd_usage)
 
     s = sub.add_parser("list")
     s.add_argument("--page-size", type=int, default=20)
