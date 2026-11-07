@@ -117,18 +117,25 @@ def comms(card_id: str, text: str) -> None:
 
 
 def find_merge_sha(repo_path: Path, cid: str) -> str | None:
-    """Latest merge on the default branch whose message names the card id
-    (dispatch close-out merges --no-ff branches dispatch/<cid>-<tid>)."""
-    try:
-        r = subprocess.run(
-            ["git", "-C", str(repo_path), "log", "--merges",
-             "--format=%H %s", "-40"],
-            capture_output=True, text=True, timeout=30)
-    except Exception:
-        return None
-    for line in (r.stdout or "").splitlines():
-        if cid in line:
-            return line.split()[0]
+    """Latest commit on the default branch whose message names the card id.
+
+    Dispatch close-out merges are --no-ff (merge commits); GitHub PRs are
+    squash-merged, leaving a regular commit whose subject carries the id
+    (OPS-1116 — first live rehearsal got merge_sha=null on a squash).
+    Prefer merge commits, then fall back to any commit."""
+    for merges_only in (True, False):
+        cmd = ["git", "-C", str(repo_path), "log",
+               "--format=%H %s", "-80"]
+        if merges_only:
+            cmd.insert(4, "--merges")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               timeout=30)
+        except Exception:
+            return None
+        for line in (r.stdout or "").splitlines():
+            if cid in line:
+                return line.split()[0]
     return None
 
 

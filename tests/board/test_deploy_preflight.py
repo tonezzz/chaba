@@ -12,6 +12,7 @@ lives in a tmpdir via monkeypatched CARD_DIR/LOCK.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -248,6 +249,29 @@ class DeployPreflightCase(unittest.TestCase):
                 mock.patch.object(dp.time, "sleep", lambda s: None):
             self.assertTrue(dp.verify_surface(tgt)["ok"])
             self.assertEqual(len(calls), 3)
+
+    def test_find_merge_sha_finds_squash_commit(self):
+        # OPS-1116: GitHub squash-merges leave no merge commit — the
+        # card id lands in a regular commit subject.
+        repo = Path(tempfile.mkdtemp())
+        env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
+               "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        (repo / "f").write_text("x")
+        subprocess.run(["git", "add", "f"], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-qm", "init"], cwd=repo,
+                       check=True, env={**__import__("os").environ, **env})
+        (repo / "f").write_text("y")
+        subprocess.run(["git", "add", "f"], cwd=repo, check=True)
+        subprocess.run(
+            ["git", "commit", "-qm",
+             "docs: thing (ada-tool-guide-lesson-sweep)"],
+            cwd=repo, check=True,
+            env={**__import__("os").environ, **env})
+        sha = dp.find_merge_sha(repo, "ada-tool-guide-lesson-sweep")
+        self.assertIsNotNone(sha)
+        self.assertEqual(len(sha), 40)
+        self.assertIsNone(dp.find_merge_sha(repo, "no-such-card"))
 
 
 if __name__ == "__main__":

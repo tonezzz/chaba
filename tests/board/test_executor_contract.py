@@ -480,6 +480,30 @@ class BoardApiContractTest(unittest.TestCase):
                                  "model": "x; rm -rf /"}},
                      "action.model")
 
+    def test_create_preserves_deploy_block(self):
+        # OPS-1116: /card used to drop deploy: silently — the first live
+        # gate rehearsal had to hand-edit card YAML.
+        self.mod.do_create(
+            {"id": "c-dep", "title": "t",
+             "deploy": {"target": "ada-voice-prod",
+                        "note": "deploy after merge"}}, "devin")
+        import yaml
+        saved = yaml.safe_load((Path(self.td.name) / "c-dep.yml")
+                               .read_text())
+        self.assertEqual(saved["deploy"]["target"], "ada-voice-prod")
+        self.assertEqual(saved["deploy"]["note"], "deploy after merge")
+
+    def test_create_validates_deploy_block(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": "ada-voice-prod"},
+                     "deploy must be an object")
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": {"target": "Bad Target!"}},
+                     "deploy.target")
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": {}},
+                     "deploy.target")
+
     def test_queue_warns_manual_executor(self):
         card = {"id": "c-em", "column": "backlog",
                 "action": {"type": "dispatch", "executor": "manual"}}
