@@ -1347,6 +1347,23 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError("action.model must be a model id "
                                  "([a-zA-Z0-9._/-], max 80)")
             card["action"]["model"] = model
+    dep = body.get("deploy")
+    if dep is not None:
+        # deploy-preflight contract (OPS-1116): the write door used to
+        # drop deploy: silently — first live rehearsal hand-edited YAML.
+        # Shape-validate here; deploy-preflight still owns the target
+        # registry check (unknown targets stamp deploy.status=error).
+        if not isinstance(dep, dict):
+            raise ValueError("deploy must be an object")
+        tgt = str(dep.get("target") or "").strip()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,40}", tgt):
+            raise ValueError(
+                "deploy.target must be a registry key ([a-z0-9-], "
+                "max 41)")
+        card["deploy"] = {"target": tgt}
+        dnote = str(dep.get("note") or "").strip()
+        if dnote:
+            card["deploy"]["note"] = dnote[:300]
     if body.get("queue"):
         a = card.setdefault("action", {})
         a.setdefault("type", "dispatch")
