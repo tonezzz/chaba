@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: review
-updated: 2026-11-07 12:14
+updated: 2026-11-07 12:15
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -32,7 +32,7 @@ action:
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: queued
+  status: held
   sweep:
     session_gone: 2026-10-28 10:18
     failed_noted: 2026-11-07 11:52
@@ -192,6 +192,9 @@ comms:
 - at: 2026-11-07 12:14
   from: tony
   text: retry requested
+- at: 2026-11-07 12:15
+  from: chaba
+  text: dispatch parked after 3 attempts (policy retries_per_card=2) — re-queue to retry
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
