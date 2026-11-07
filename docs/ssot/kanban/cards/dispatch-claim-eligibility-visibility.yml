@@ -1,7 +1,7 @@
 id: dispatch-claim-eligibility-visibility
 title: Surface why a queued dispatch card is unclaimable (label/host mismatch starves silently)
 column: backlog
-updated: 2026-11-07 16:00
+updated: 2026-11-07 16:08
 priority: high
 program: chaba-ci
 tags:
@@ -24,6 +24,7 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-dell
+  status: queued
 ref: OPS-1097
 comms:
 - at: 2026-11-07 16:00
@@ -32,3 +33,6 @@ comms:
 - at: 2026-11-07 16:00
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 16:08
+  from: tony
+  text: queued for processing
