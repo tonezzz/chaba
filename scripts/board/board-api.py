@@ -23,7 +23,8 @@ Endpoints (after prefix strip):
       filters:   id=<card-id>, column=<col>, action_status=<s>,
                  since=<updated string> (lexicographic, same format)
       projection: fields=a,b,c (top-level keys; unknown ignored),
-                 compact=1 -> {id,title,column,updated,priority,ref}
+                 compact=1 -> {id,title,column,updated,priority,ref,
+                               action_status}
       pagination: limit=<n> (cap 1000), offset=<n>
   GET  /card/<id>[?fields=|compact=1] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
@@ -3456,7 +3457,12 @@ CARDS_JSON = REPO / "stacks/web/public/apps/board/cards.json"
 # The read-side contract (AUD-1033, card ops-manual-command-api-mcp-
 # efficiency-audit): one small filtered/projected surface so neither
 # agents nor daemons pay the whole-board dump for a single fact.
-COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref")
+# action_status is synthesized in _project from action.status — compact
+# and fields= readers must be able to see queued/claimed state without
+# paying for the whole action dict (OPS-1107: clients filtering client-
+# side on a projection that lacked action saw "no queued cards").
+COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref",
+                  "action_status")
 CARDS_MAX_LIMIT = 1000
 
 
@@ -3485,8 +3491,12 @@ def _field_set(q: dict) -> set:
 
 
 def _project(card: dict, fields: set) -> dict:
-    return ({k: card.get(k) for k in fields if k in card}
-            if fields else card)
+    if not fields:
+        return card
+    out = {k: card.get(k) for k in fields if k in card}
+    if "action_status" in fields:
+        out["action_status"] = (card.get("action") or {}).get("status")
+    return out
 
 
 def card_query(cards: list, q: dict) -> dict:

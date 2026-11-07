@@ -842,11 +842,14 @@ def main():
     card_dir = REPO / man["card_dir"]
     out_path = REPO / "stacks/web/public/apps/board2/index.html"
 
+    state_hash = None
     if "--if-changed" in sys.argv:
-        h = _rb.dir_hash(card_dir)
-        if STATE.exists() and STATE.read_text().strip() == h and out_path.exists():
+        state_hash = _rb.dir_hash(card_dir)
+        if STATE.exists() and STATE.read_text().strip() == state_hash \
+                and out_path.exists():
             return 0
-        STATE.write_text(h + "\n")
+        # STATE advances only after the render lands (see render-board.py
+        # — a crashed render must not poison the skip-set, OPS-1107).
 
     cards = _rb.load_cards(man)
     rank = {"high": 0, "medium": 1, "low": 3}
@@ -875,6 +878,8 @@ def main():
     json_path = out_path.with_name("cards.json")
     json_path.write_text(json.dumps(payload, ensure_ascii=False, default=str))
     out_path.write_text(page)
+    if state_hash is not None:
+        STATE.write_text(state_hash + "\n")
     print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
     return 0
 

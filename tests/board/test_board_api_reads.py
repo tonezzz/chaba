@@ -94,6 +94,28 @@ class CardQueryTest(unittest.TestCase):
         self.assertNotIn("spec", r["cards"][0])
         self.assertNotIn("comms", r["cards"][0])
 
+    def test_compact_exposes_action_status(self):
+        # OPS-1107 — queue state must survive the slim projection or
+        # client-side claimable scans see "no queued cards".
+        r = self.q(compact="1")
+        by_id = {c["id"]: c for c in r["cards"]}
+        self.assertEqual(by_id["c-one"]["action_status"], "queued")
+        self.assertEqual(by_id["c-two"]["action_status"], "running")
+        self.assertEqual(by_id["c-three"]["action_status"], "closed")
+        self.assertIsNone(by_id["c-four"]["action_status"])
+        self.assertNotIn("action", by_id["c-one"])
+
+    def test_fields_action_status(self):
+        r = self.mod.card_query(
+            FIXTURE_CARDS, {"fields": ["id,action_status"]})
+        self.assertEqual(r["cards"][0],
+                         {"id": "c-one", "action_status": "queued"})
+
+    def test_fields_action_status_missing(self):
+        r = self.mod.card_query(
+            FIXTURE_CARDS, {"id": ["c-four"], "fields": ["id,action_status"]})
+        self.assertIsNone(r["cards"][0]["action_status"])
+
     def test_compact_beats_fields(self):
         r = self.mod.card_query(
             FIXTURE_CARDS, {"compact": ["1"], "fields": ["spec"]})

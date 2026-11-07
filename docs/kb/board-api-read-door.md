@@ -30,8 +30,11 @@ that answers the question.
 - **filters** (AND): `id`, `column`, `action_status`, `since`
   (lexicographic compare vs `updated` — same "YYYY-MM-DD HH:MM" format).
 - **projection**: `fields=a,b,c` — top-level keys only; absent keys are
-  dropped, unknown ignored. `compact=1` is the canned slim set
-  `{id,title,column,updated,priority,ref}` and wins over `fields`.
+  dropped, unknown ignored — except `action_status`, synthesized from
+  `action.status` so queue checks don't need the full action dict.
+  `compact=1` is the canned slim set
+  `{id,title,column,updated,priority,ref,action_status}` and wins over
+  `fields`.
 - **pagination**: `limit` (cap 1000), `offset`; `truncated:true` means
   more pages exist. Order: filters → pagination → projection, so
   `total` is the filtered count.
