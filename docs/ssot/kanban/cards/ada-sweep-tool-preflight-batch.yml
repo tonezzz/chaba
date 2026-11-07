@@ -1,0 +1,19 @@
+id: ada-sweep-tool-preflight-batch
+title: ada_sweep tool — batch preflight/dispatch of eligible backlog cards by voice
+column: backlog
+updated: 2026-11-07 17:25
+priority: medium
+tags:
+- ada
+- opencode
+- tools
+spec: 'New tools.d/ada_sweep.py (board_client pattern like wiki_extension): iterate backlog cards with action.executor=opencode
+  (and/or queued dispatch cards), preflight each via ada_opencode_control.preflight, report per-card missing/errors,
+  queue ready ones under ONE confirmation. policy: confirmed, secondary_allowed:false. Requires the cards-render
+  fix (cards-render-stale-queued-invisible) to see queued state correctly. Lets Tony say ''Ada, sweep my opencode
+  cards'' instead of per-card rounds.'
+ref: ADA-1108
+comms:
+- at: 2026-11-07 17:25
+  from: devin
+  text: card captured via board-api
