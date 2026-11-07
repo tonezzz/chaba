@@ -1,0 +1,19 @@
+id: embed-bench-blocked-20261107
+title: embed-bench 403 + embed-probe down — casting bench gate closed
+column: backlog
+updated: 2026-11-07 17:51
+priority: medium
+tags:
+- ada
+- bench
+- credentials
+spec: 'Two related failures on idc03: (a) ada-embed-bench.service fails with HTTP 403 Forbidden (Gemini/OpenRouter
+  key) — weekly Sat 06:00; (b) preflight-bench reports embed-probe state=down, so ada-bench-casting gates NOT READY
+  and the casting suite never gets its daily rerun. Likely quota/credential exhaustion (LiteLLM RESOURCE_EXHAUSTED
+  lines in infra digest) or a dead embed endpoint. Check the probe target, the key in use, and whether the 403 is
+  rotation-related.'
+ref: ADA-1111
+comms:
+- at: 2026-11-07 17:51
+  from: devin
+  text: card captured via board-api
