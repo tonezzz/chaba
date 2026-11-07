@@ -1,7 +1,7 @@
 id: merge-sweep-verify-durable-work-after-di-b32582
 title: 'Merge-sweep: verify durable work after dispatch session disappears'
 column: review
-updated: 2026-10-31 13:50
+updated: 2026-11-07 16:49
 brief: The session_gone path currently emits “if work was never pushed it may be gone” after no runner probe/relay
   head, without checking an exact durable origin branch or declared outcome artifact. Add a conservative evidence
   inspection so cards are held accurately and never closed on absence of a session alone.
@@ -100,6 +100,10 @@ comms:
 - at: 2026-10-31 13:50
   from: chaba
   text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261027-102925-extend-scripts-board-merge-swe'
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] verified: merge-sweep.py on master carries the durable-work logic — ''a verified card needs
+    no session — gone is the EXPECTED'' + no_repo/no_session paths. Closing.'
 action:
   type: dispatch
   status: done
