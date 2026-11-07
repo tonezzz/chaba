@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:27
+updated: 2026-11-07 18:29
 priority: low
 action:
   type: manual
@@ -39,6 +39,9 @@ comms:
 - at: 2026-11-07 18:27
   from: chaba
   text: 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
+- at: 2026-11-07 18:29
+  from: tony
+  text: 'answered deploy-ada-tool-guide-lesson-sweep: approve — run the deploy now'
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
@@ -70,7 +73,7 @@ requests:
 
 
     Preflight: merge=? files=? tests=see card comms (close-out gate)'
-  status: open
+  status: answered
   at: 2026-11-07 18:27
   from: chaba
   options:
@@ -78,3 +81,4 @@ requests:
   - hold — keep merged, do not deploy
   - abort — do not deploy
   suggested: hold — keep merged, do not deploy
+  answer: approve — run the deploy now
