@@ -1,0 +1,193 @@
+project: solar-system-kk-tourist-v3
+version: visual-storyboard-draft-v2-2026-10-26
+status: pre-render-review
+source_script: gdrive:ada-nest/packs/doc-vo-v3/inputs/script-v3-tourist.yml
+visual_manifest: gdrive:ada-nest/doc-pilot/review/visual-manifest-v3-draft.yml
+format:
+  resolution: 640x384
+  fps: 24
+  timing: measured v3 VO WAV duration per shot; add only natural transitions
+  release: private review only
+global_direction:
+  - Reuse the original logo-free layer at gdrive:ada-nest/doc-pilot/review/v3-assets/tour-ship-silhouette-v1.svg and the cockpit-window overlay; do not assign the craft a real-world scale.
+  - Keep every factual label as a composited overlay sourced from the approved script; never ask the video model to render text.
+  - Cinematic planet sizes and distances are illustrative, not to scale; preserve the explicit map disclaimer.
+  - Use NASA/JPL plates only after exact caption, credit, and rights checks; the candidate asset list is not a clearance.
+  - Preserve the existing v4/v6 cuts. Do not overwrite prior scripts, renders, or approved versions.
+shots:
+  - shot: 1
+    beat: board_the_ship
+    method: cpu-composite
+    visual: A small shuttle silhouette glides into a dark starfield; a cockpit-window rim frames the view.
+    camera: Slow push toward the window; no planet flyby or implied travel-time claim.
+    assets: [tour-ship-silhouette-v1.png, cockpit-window-frame-v1.png, procedural-starfield]
+    gpu_required: false
+    continuity: Establish the same shuttle profile and warm cabin accent used later.
+  - shot: 2
+    beat: earth_home
+    method: NASA-2p5d
+    visual: Blue Marble Earth rotates gently behind the recurring ship-window foreground.
+    assets: [GSFC_20171208_Archive_e001016]
+    overlays: [Earth distance and diameter callout from approved script]
+    gpu_required: false
+    rights_gate: Reuse only under the existing private-proof credit; recheck before public release.
+  - shot: 3
+    beat: moon_flyby
+    method: NASA-still-2p5d-or-LTX
+    visual: The Moon drifts past the window at a respectful distance; do not show a landing.
+    assets: [PIA00075-candidate-false-color]
+    overlays: [Earth-Moon average distance and Moon diameter]
+    gpu_required: false
+    rights_gate: Confirm exact caption/credit; if the false-color plate looks misleading, use a more natural-looking candidate.
+  - shot: 4
+    beat: sun_map
+    method: layered-map-or-LTX
+    visual: A safe-distance view of the Sun with restrained radial glow and a simple scale marker.
+    overlays: [Sun role and approximate diameter]
+    gpu_required: optional
+    safety: No close approach, surface landing, or implied actual route.
+  - shot: 5
+    beat: mercury
+    method: NASA-still-2p5d-or-LTX
+    visual: Mercury rotates slowly with cratered terminator lighting; avoid presenting a processed color map as natural color.
+    assets: [PIA18108-candidate-three-color-mosaic]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: false
+    rights_gate: Confirm caption/credit and whether the mosaic is suitable for a globe crop.
+  - shot: 6
+    beat: venus
+    method: LTX-cloud-view-with-optional-map-inset
+    visual: Dense cloud deck and soft atmospheric glow; no exposed surface as the main view.
+    assets: [PIA00270-surface-map-candidate-for-inset-only]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: optional
+    science_gate: Retain the sulfuric-acid-cloud and hottest-planet facts from the approved script.
+  - shot: 7
+    beat: mars
+    method: NASA-2p5d-or-LTX
+    visual: Rust-colored globe turns from day into dusk; the shuttle remains a small foreground anchor.
+    assets: [PIA02992-candidate-mars-mosaic]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: false
+    rights_gate: Verify mosaic processing/caption and credit before use.
+  - shot: 8
+    beat: jupiter
+    method: LTX-dynamic
+    visual: Slow orbital approach across Jupiter's banded clouds; hold a stable wide composition for the callout.
+    reference_only: [PIA04866-candidate]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: true
+    target_duration_s: 2.98
+    ltx_prompt: >-
+      Scientific documentary background plate of Jupiter from a distant orbit,
+      slowly moving sideways across layered cream, ochre and muted brown cloud
+      bands. Stable wide composition, restrained cinematic lighting, natural
+      atmospheric texture, no rapid cuts. Leave clear negative space at lower
+      left for a separately composited Thai fact card. The recurring ship and
+      cockpit window will be added as a consistent overlay in post.
+    negative_prompt: >-
+      text, captions, logos, watermarks, generated spacecraft, people, rings,
+      surface terrain, flames, impact, rapid camera shake, abrupt cuts,
+      distorted planet disk
+    generation: LTX background only; add the shared ship/callout layers after render.
+  - shot: 9
+    beat: great_red_spot
+    method: LTX-dynamic
+    visual: Controlled move toward the Great Red Spot; show it as a changing atmospheric storm, not a solid object.
+    reference_only: [PIA01509-candidate]
+    overlays: [Storm wider than Earth; acknowledge its changing size and shape]
+    gpu_required: true
+    target_duration_s: 3.40
+    ltx_prompt: >-
+      Scientific documentary background plate of Jupiter's Great Red Spot
+      embedded in broad, gently flowing cloud bands. A slow, distant camera
+      arc reveals the storm's changing oval shape; keep the whole feature
+      atmospheric and never make it look like a solid object. Leave lower
+      left clear for a separately composited Thai fact card. Add no spacecraft;
+      the same fictional tour-ship window will be composited later.
+    negative_prompt: >-
+      text, captions, logos, watermarks, generated spacecraft, people, rings,
+      solid red island, surface terrain, flames, rapid camera shake, abrupt
+      cuts, distorted planet disk
+    generation: LTX background only; target the measured VO duration and trim/hold only briefly.
+  - shot: 10
+    beat: saturn
+    method: NASA-2p5d
+    visual: Saturn and rings drift across the window with a restrained parallax move.
+    assets: [PIA06193]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: false
+    rights_gate: Use the recorded NASA/JPL/SSI credit; confirm for public release.
+  - shot: 11
+    beat: saturn_rings
+    method: NASA-2p5d-closeup-or-LTX
+    visual: Ring plane crosses frame; separate icy and rocky particles with subtle depth.
+    assets: [PIA06193-reference]
+    overlays: [Rings contain ice and rock particles]
+    gpu_required: optional
+    continuity: Keep the same ring orientation as shot 10.
+  - shot: 12
+    beat: uranus
+    method: NASA-still-2p5d
+    visual: Uranus rotates with its extreme axial tilt clearly visible; avoid a side-on orbit that looks like a collision.
+    assets: [PIA18182-candidate]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: false
+    rights_gate: Confirm NASA/JPL-Caltech caption/credit.
+  - shot: 13
+    beat: neptune
+    method: NASA-still-2p5d
+    visual: Neptune's blue disk emerges from a dark starfield with a gentle camera drift.
+    assets: [PIA00046-candidate]
+    overlays: [Mean solar distance and diameter]
+    gpu_required: false
+    rights_gate: Confirm NASA/JPL caption/credit and image-processing note.
+  - shot: 14
+    beat: pluto
+    method: NASA-still-2p5d-or-LTX
+    visual: Pluto appears as a distant icy dwarf planet; keep the ship at a safe illustrative distance.
+    assets: [PIA20201-candidate]
+    overlays: [Dwarf-planet label, mean solar distance, approximate diameter]
+    gpu_required: optional
+    rights_gate: Verify candidate reachability and NASA/JHUAPL/SwRI credit; do not use PIA19857 (prior 403).
+  - shot: 15
+    beat: kuiper_belt
+    method: deterministic-2d-region-map
+    visual: Sparse icy-body markers beyond Neptune, with a highlighted main-belt band; no single oversized object.
+    assets: [NASA-Kuiper-Oort-diagram-reference]
+    overlays: [Main belt 30-50 AU; no single region diameter]
+    gpu_required: false
+    scale: Schematic only; do not imply a dense ring or exact population count.
+  - shot: 16
+    beat: scale_map
+    method: deterministic-2d-vector
+    visual: Clean Sun-to-outer-system distance track with a moving marker and clear unit labels.
+    assets: [approved-script-object-table]
+    overlays: [Mean-distance frame; not-to-scale notice]
+    gpu_required: false
+  - shot: 17
+    beat: pale_blue_dot
+    method: NASA-still-with-window-layer
+    visual: Earth is a tiny point in the Voyager view; retain the original scattered-light context.
+    assets: [PIA00452-candidate]
+    overlays: [Pale Blue Dot caption and source credit]
+    gpu_required: false
+    rights_gate: Confirm NASA/JPL caption and credit; no NASA logo or endorsement.
+  - shot: 18
+    beat: return_home
+    method: cpu-composite
+    visual: Reuse the Earth plate and shuttle silhouette; warm sunrise closes the tour.
+    assets: [GSFC_20171208_Archive_e001016, original-shuttle-silhouette-to-create]
+    overlays: [Closing line from approved script]
+    gpu_required: false
+qa:
+  - Verify every VO clip decodes and its measured duration controls the shot hold.
+  - Keep subtitles, callouts, and image credits as separate composited layers.
+  - Review the full cut for ship continuity, readable Thai labels, factual framing, and no frozen-tail padding.
+  - Keep this a private review cut until Tony and KK approve it.
+ltx_probe_plan:
+  scope: [shot-8-jupiter, shot-9-great-red-spot]
+  output: private two-shot background plate preview before the full render batch
+  proven_baseline: 640x384, 73 frames, 40 steps on a T4 (existing doc-render-ss1 pack)
+  postprocess: trim to measured VO; composite the reusable ship/window/callouts outside LTX
+  gate: run only on the approved Colab T4 pack; no paid provider fallback
