@@ -15,8 +15,10 @@ pack code must use those, never hardcode /content/drive.
 
 Usage: nest-worker.py [--once] [--remote gdrive:ada-nest]
                       [--workdir /tmp/nest-worker] [--stale-claim-min 60]
+                      [--scan-only]
 """
-import argparse, glob, json, os, re, shutil, signal, subprocess, sys, time
+import argparse, datetime, glob, json, os, shutil, signal, subprocess
+import sys, tempfile, time
 
 REMOTE = 'gdrive:ada-nest'
 # /tmp on managed hosts is a small tmpfs (dell: 7.5G) — venvs + synced
@@ -45,17 +47,31 @@ def lsf(path, recursive=False):
 
 
 def pack_inventory(remote_root):
-    """Return one remote listing grouped by pack.
+    """One remote listing grouped by pack: {pack: {relpath: mtime|None}}.
 
     Drive/rclone latency dominates small queues when each pack is listed
-    separately. A single recursive listing keeps claim semantics unchanged
-    while making newly staged packs visible promptly.
+    separately. A single recursive listing — with modtimes folded into the
+    same call — keeps claim/stale-claim semantics unchanged while making
+    newly staged packs visible promptly.
     """
     inventory = {}
-    for line in lsf(f'{remote_root}/packs', recursive=True):
-        parts = line.split('/', 1)
-        if len(parts) == 2:
-            inventory.setdefault(parts[0], set()).add(parts[1])
+    for line in rc('lsf', f'{remote_root}/packs', '--recursive',
+                   '--format', 'pt', check=False).stdout.splitlines():
+        path, _, ts = line.rpartition(';')
+        parts = path.rstrip('/').split('/', 1)
+        if len(parts) == 1:
+            # empty pack dir (half-staged) — keep it visible so the scan
+            # still reports 'no pack.yml — skip' like the old per-pack lsf
+            if parts[0]:
+                inventory.setdefault(parts[0], {})
+            continue
+        mtime = None
+        try:
+            mtime = datetime.datetime.strptime(
+                ts.strip().split('.')[0], '%Y-%m-%d %H:%M:%S').timestamp()
+        except ValueError:
+            pass
+        inventory.setdefault(parts[0], {})[parts[1]] = mtime
     return inventory
 
 
@@ -109,18 +125,28 @@ def norm_requires(spec):
     return []
 
 
-def requires_unmet(spec, remote_root):
+def requires_unmet(spec, remote_root, inv=None, meta=None):
     """Claim gate for `requires:` — same contract as the Colab
     queue-runner: every required pack needs a done marker; a *-preflight
     requirement also needs a readable preflight.json verdict pass|warn.
     A failed release preflight therefore blocks dependents on fleet
-    workers exactly as on Colab."""
+    workers exactly as on Colab.
+
+    inv/meta let callers pass the batched inventory + metadata fetch
+    ({pack: {rel: mtime}}, {rel: text}); without them this falls back to
+    one lsf/cat per requirement — the pre-batch behaviour."""
     for req in norm_requires(spec):
-        entries = lsf(f'{remote_root}/packs/{req}')
+        if inv is not None:
+            entries = inv.get(req) or {}
+        else:
+            entries = lsf(f'{remote_root}/packs/{req}')
         if 'done' not in entries:
             return f'requires {req}: not done'
         if 'preflight.json' in entries:
-            pj = cat(f'{remote_root}/packs/{req}/preflight.json')
+            if meta is not None:
+                pj = meta.get(f'{req}/preflight.json', '')
+            else:
+                pj = cat(f'{remote_root}/packs/{req}/preflight.json')
             try:
                 verdict = json.loads(pj).get('verdict')
             except Exception:
@@ -133,6 +159,117 @@ def requires_unmet(spec, remote_root):
         elif req.endswith('-preflight'):
             return f'requires {req}: done but preflight.json missing'
     return ''
+
+
+def fetch_pack_meta(remote_root, inventory, pending):
+    """One batched fetch of every pending pack.yml plus every
+    preflight.json on the store — the only metadata discovery needs.
+    Returns {relpath: text}; falls back to per-pack cat for pending
+    pack.yml if the batch copy fails."""
+    want = [f'{d}/pack.yml' for d in pending]
+    want += [f'{d}/preflight.json' for d, entries in inventory.items()
+             if 'preflight.json' in entries and d not in pending]
+    texts = {}
+    tmp = tempfile.mkdtemp(prefix='nest-scan-')
+    try:
+        lst = os.path.join(tmp, 'files.txt')
+        with open(lst, 'w') as f:
+            f.write('\n'.join(sorted(want)) + '\n')
+        r = rc('copy', f'{remote_root}/packs', tmp,
+               '--files-from', lst, check=False)
+        if r.returncode == 0:
+            for rel in want:
+                fp = os.path.join(tmp, rel)
+                if os.path.isfile(fp):
+                    with open(fp) as f:
+                        texts[rel] = f.read()
+        else:
+            say(f'  meta fetch failed: {r.stderr.strip()[:200]}'
+                ' — per-pack fallback')
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    for d in pending:
+        key = f'{d}/pack.yml'
+        if key not in texts:
+            texts[key] = cat(f'{remote_root}/packs/{key}')
+    return texts
+
+
+def refresh_requires(spec, remote_root, inventory, meta):
+    """Re-list each required pack so a dependency that finished mid-pass
+    (our own earlier claim, or another worker's) still unblocks dependents
+    in the same pass — drain-in-one-pass, as before batching."""
+    for req in norm_requires(spec):
+        entries = lsf(f'{remote_root}/packs/{req}')
+        inventory[req] = {e: None for e in entries}
+        key = f'{req}/preflight.json'
+        if 'preflight.json' in entries and key not in meta:
+            meta[key] = cat(f'{remote_root}/packs/{key}')
+
+
+def plan_pass(remote_root, stale_claim_min):
+    """Queue discovery in ~2 rclone calls regardless of pack count: one
+    recursive listing (names+mtimes) + one batched metadata fetch.
+
+    Returns (candidates, releases, inventory, meta): candidates are
+    [(pack, spec)] in scan order, gated only on static facts (markers,
+    claims, pack.yml, needs) — `requires` is re-evaluated at claim time
+    so mid-pass completions still unblock dependents. releases are
+    [(pack, claim, age_s)] stale claims to drop before claiming.
+    inventory/meta are the scan-time snapshot main() refreshes per
+    requirement at claim time."""
+    inventory = pack_inventory(remote_root)
+    now = time.time()
+    releases, pending = [], []
+    for d in sorted(inventory):
+        entries = inventory[d]
+        if 'done' in entries or 'failed' in entries:
+            continue
+        claims = {rel.split('/', 1)[1]: ts
+                  for rel, ts in entries.items()
+                  if rel.startswith('claim/')}
+        live = False
+        for c, ts in claims.items():
+            if ts is not None and now - ts > stale_claim_min * 60:
+                releases.append((d, c, now - ts))
+            else:
+                live = True
+        if not live:
+            pending.append(d)
+    # pack.yml presence is already known from the inventory — only packs
+    # that have one go into the batched fetch (no per-pack cat at all)
+    staged = []
+    for d in pending:
+        if 'pack.yml' not in inventory[d]:
+            say(f'{d}: no pack.yml — skip')
+        else:
+            staged.append(d)
+    meta = fetch_pack_meta(remote_root, inventory, staged)
+    import yaml
+    candidates = []
+    for d in staged:
+        py = meta.get(f'{d}/pack.yml', '')
+        if not py:
+            say(f'{d}: no pack.yml — skip')
+            continue
+        try:
+            spec = yaml.safe_load(py) or {}
+        except Exception as e:
+            say(f'{d}: bad pack.yml {e} — skip')
+            continue
+        if not isinstance(spec, dict):
+            say(f'{d}: bad pack.yml (not a mapping) — skip')
+            continue
+        spec.setdefault('name', d)
+        # requires is intentionally NOT gated here — it is re-evaluated
+        # per pack at claim time so a dependency finished earlier in the
+        # pass still unblocks dependents (drain-in-one-pass)
+        why = fits(spec.get('needs'))
+        if why:
+            say(f'{d}: needs unmet ({why}) — skip')
+            continue
+        candidates.append((d, spec))
+    return candidates, releases, inventory, meta
 
 
 def say(msg):
@@ -276,6 +413,9 @@ def main():
     ap.add_argument('--remote', default=REMOTE)
     ap.add_argument('--workdir', default=WORKDIR)
     ap.add_argument('--stale-claim-min', type=int, default=60)
+    ap.add_argument('--scan-only', action='store_true',
+                    help='report discovery plan without claiming — safe '
+                         'measurement mode, never touches the queue')
     args = ap.parse_args()
     WORKDIR = args.workdir
     host = subprocess.run(['hostname'], capture_output=True,
@@ -284,55 +424,35 @@ def main():
     CAPS = caps()
     say(f'nest-worker {WORKER} caps={CAPS}')
 
-    for d, inventory_entries in sorted(
-            pack_inventory(args.remote).items()):
+    t0 = time.time()
+    candidates, releases, inventory, meta = plan_pass(
+        args.remote, args.stale_claim_min)
+    say(f'discovery: {len(candidates)} pending, {len(releases)} stale '
+        f'claims, {time.time() - t0:.1f}s')
+    if args.scan_only:
+        for d, c, age in releases:
+            say(f'{d}: stale claim {c} ({age:.0f}s) — would release')
+        for d, spec in candidates:
+            say(f'{d}: pending')
+        say('scan complete (no claims made)')
+        return
+
+    for d, c, age in releases:
+        say(f'{d}: releasing stale claim {c} ({age:.0f}s)')
+        rc('deletefile', f'{args.remote}/packs/{d}/claim/{c}', check=False)
+    for d, spec in candidates:
         pdir = f'{args.remote}/packs/{d}'
-        entries = inventory_entries
-        if 'done' in entries or 'failed' in entries:
-            continue
-        claims = [
-            e.removeprefix('claim/')
-            for e in entries
-            if e.startswith('claim/') and e != 'claim/'
-        ]
-        if claims:
-            # stale-claim release: claim file older than N min + no done
-            # → previous worker died. lsl gives us mtime.
-            stale = False
-            for c in claims:
-                r = rc('lsl', f'{pdir}/claim/{c}', check=False).stdout
-                m = re.match(r'\s*\d+\s+(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2})', r)
-                if m:
-                    import datetime
-                    ts = datetime.datetime.strptime(
-                        f'{m.group(1)} {m.group(2)}', '%Y-%m-%d %H:%M:%S')
-                    age = time.time() - ts.timestamp()
-                    if age > args.stale_claim_min * 60:
-                        say(f'{d}: releasing stale claim {c} ({age:.0f}s)')
-                        rc('deletefile', f'{pdir}/claim/{c}', check=False)
-                        stale = True
-            if not stale and claims:
-                continue
-            if lsf(f'{pdir}/claim'):
-                continue
-        py = cat(f'{pdir}/pack.yml')
-        if not py:
-            say(f'{d}: no pack.yml — skip')
-            continue
-        try:
-            import yaml
-            spec = yaml.safe_load(py) or {}
-        except Exception as e:
-            say(f'{d}: bad pack.yml {e} — skip')
-            continue
-        spec.setdefault('name', d)
-        unmet = requires_unmet(spec, args.remote)
+        # requires is re-evaluated at claim time: a dependency finished
+        # mid-pass (by this pass or another worker) unblocks dependents —
+        # preserves the pre-batch drain-in-one-pass behaviour
+        refresh_requires(spec, args.remote, inventory, meta)
+        unmet = requires_unmet(spec, args.remote, inventory, meta)
         if unmet:
             say(f'{d}: requires unmet ({unmet}) — skip')
             continue
-        why = fits(spec.get('needs'))
-        if why:
-            say(f'{d}: needs unmet ({why}) — skip')
+        # don't contest a claim that landed after the inventory snapshot
+        if lsf(f'{pdir}/claim'):
+            say(f'{d}: claimed meanwhile — skip')
             continue
         # claim: write worker file, settle, verify first-claimer wins
         rcat(f'{pdir}/claim/{WORKER}', str(int(time.time())))
