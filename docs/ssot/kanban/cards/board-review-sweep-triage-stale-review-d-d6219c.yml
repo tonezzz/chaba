@@ -1,0 +1,20 @@
+id: board-review-sweep-triage-stale-review-d-d6219c
+title: Board review sweep — triage stale review/doing cards to verified closes
+column: backlog
+updated: 2026-11-07 16:00
+priority: medium
+tags:
+- sweep
+- board-hygiene
+spec: 'Run the sweep duty loop over the kanban review + doing columns. For each card: (1) verify real state — merged
+  commits on master, deployed units, live evidence, not memory; (2) verified-done -> close with evidence in comms;
+  (3) provably-failed -> honest fail note + retry or block; (4) still-blocked -> leave with a requests entry naming
+  what is needed; (5) stale CMS automation/digest alerts -> check the unit/page and close or card the fix. Report
+  once at the end: fixed / carded / awaiting-Tony. Do NOT force-close anything without evidence (OPS-0731: producer
+  proof AND consumer proof).'
+note: Deferred from the 2026-11-07 AI-Pro/DevNest session; board has many stale review cards.
+ref: KNB-1098
+comms:
+- at: 2026-11-07 16:00
+  from: devin
+  text: card captured via board-api
