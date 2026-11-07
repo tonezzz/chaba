@@ -55,6 +55,19 @@ conventions:
 
     '
 jobs:
+- id: ada-jobs-verify
+  name: Ada Jobs — verify lane (micro-entity ADA-1091)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:0/30:00'
+  persistent: true
+  timeout: 15m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada-jobs/verify_worker.py --once --max 5
+  env_file: %h/.config/secrets/cloudflare.env
+  note: INERT BY DEFAULT — only touches review/verify cards tagged
+    'ada-verify' (opt-in per card). Untagged cards are never read for
+    action. Brain = CF Workers AI llama-3.3-70b (free lane); authority
+    matrix enforced in code (close needs evidence, high/decide refused).
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725
