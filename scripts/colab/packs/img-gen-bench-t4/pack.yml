@@ -1,0 +1,161 @@
+# img-gen-bench-t4 — GPU arm of BEN-0815 (img-gen-bench).
+# con01 CPU baseline exists (~20 min/img, packs/img-gen-bench done
+# 2026-10-24); this pack runs the SAME engine (colibri +
+# qwen-image-2.1) on a Colab T4 CUDA backend to answer whether the
+# disk-streaming approach becomes practical on GPU.
+# Plan: docs/ssot/jobs/nest/2026-10-25-ada-nest-real-job-seq.yml job4 —
+# fires only inside an already-awake runtime; never a reason to start one.
+name: img-gen-bench-t4
+needs:
+  gpu_gb: 14         # T4 (doc-render-ss1 used the same floor)
+  disk_gb: 40        # ~33GB model pull + staging
+  egress_only_ok: true
+timeout_s: 10800     # 33GB pull + engine load + up to 20 gens (3h hard cap)
+requires:
+  - gaussian-splat-edu-smoke-v2
+  - t4-gpu-baseline
+  - t4-llm-direct-bench
+artifacts:
+  - packs/img-gen-bench-t4/out/img-*.png
+  - packs/img-gen-bench-t4/out/img-gen-t4.json
+  - packs/img-gen-bench-t4/out/img-gen-report.md
+prep: |
+  set -e
+  CLB=$HOME/colibri
+  [ -d $CLB/.git ] || git clone --depth 1 https://github.com/JustVugg/colibri $CLB
+  cd $CLB
+  mkdir -p $PACK_DIR/model
+  export TMPDIR=$HOME/tmp && mkdir -p $TMPDIR
+  nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || true
+  ./start-here.sh --yes --model qwen-image-2.1 --backend cuda --dir $PACK_DIR/model 2>&1 | tail -15
+  ./c/coli stop >/dev/null 2>&1 || true
+  nohup ./c/coli serve > $HOME/colibri-img-t4-serve.log 2>&1 &
+  sleep 30
+  curl -sf http://127.0.0.1:8000/v1/models >/dev/null \
+    && echo COLIBRI-IMG-T4-SERVE-OK || tail -20 $HOME/colibri-img-t4-serve.log
+run: |
+  import os, json, time, base64, urllib.request, threading, subprocess
+
+  OUT = f'{PACK_DIR}/out'; os.makedirs(OUT, exist_ok=True)
+  URL = "http://127.0.0.1:8000/v1/images/generations"
+  STYLE = ("photoreal cinematic space documentary, volumetric sunlight, "
+           "deep black space, subtle film grain")
+  # 7 doc-pilot (solar-system-kk storyboard) + 3 standard controls,
+  # 2 samples each, matching the job4 spec (10 prompts x 2 samples).
+  PROMPTS = {
+    'dp-earth-approach': "a slow orbital approach toward planet Earth, the blue marble with swirling white clouds glowing against pitch black space, a thin glowing line of atmosphere on the rim, " + STYLE,
+    'dp-sun': "the Sun filling the frame, a colossal roiling sphere of golden plasma, fine surface granulation, a slow solar flare arc rising from the limb, " + STYLE,
+    'dp-mars': "the rusty red deserts of Mars, a sweeping horizon of dunes and canyons under a butterscotch sky, a distant giant volcano on the horizon, " + STYLE,
+    'dp-jupiter': "Jupiter's massive banded disc, cream and rust cloud bands slowly churning, a tiny moon crossing in front, " + STYLE,
+    'dp-saturn': "Saturn and its luminous ring system seen at a low graceful angle, icy rings glowing backlit against black space, " + STYLE,
+    'dp-neptune': "deep blue Neptune with a dark storm spot and thin white cirrus clouds, the farthest world glowing faintly in dim light, " + STYLE,
+    'dp-pale-blue-dot': "the vast darkness of space, and in the center of frame a single tiny pale blue dot, Earth seen from the edge of the solar system, " + STYLE,
+    'ctl-red-mug': "a red ceramic mug on a wooden table beside an open book, soft morning window light, shallow depth of field",
+    'ctl-hummingbird': "a minimalist illustration of a hummingbird over a teal gradient, flat design",
+    'ctl-thai-market': "photorealistic Thai street food market at dusk, lanterns, steam",
+  }
+  SAMPLES = 2
+  CON01_BASELINE = {'doc-style-1': 1275, 'doc-style-2': 1190,
+                    'generic-1': 1207, 'generic-2': 1219,
+                    'note': 'con01 CPU, 768x512, ~20 min/img'}
+
+  _vram_peak = [0.0]
+  _stop = threading.Event()
+  def _vram_watcher():
+      while not _stop.is_set():
+          try:
+              out = subprocess.run(
+                  ['nvidia-smi', '--query-gpu=memory.used',
+                   '--format=csv,noheader,nounits'],
+                  capture_output=True, text=True, timeout=10).stdout.strip()
+              for tok in out.split():
+                  _vram_peak[0] = max(_vram_peak[0], float(tok))
+          except Exception:
+              pass
+          _stop.wait(5)
+  wt = threading.Thread(target=_vram_watcher, daemon=True)
+  wt.start()
+
+  def _gen(prompt):
+      body = {"model": "qwen-image-2.1-colibri", "prompt": prompt,
+              "size": "768x512"}
+      req = urllib.request.Request(URL, data=json.dumps(body).encode(),
+          headers={"Content-Type": "application/json"})
+      return json.load(urllib.request.urlopen(req, timeout=2400))
+
+  rows = []
+  t_pack = time.time()
+  budget_done = False
+  for name, prompt in PROMPTS.items():
+      for s in range(1, SAMPLES + 1):
+          if time.time() - t_pack > 9000:   # leave headroom inside timeout_s
+              print('time budget reached, stopping early', flush=True)
+              budget_done = True
+              break
+          key = f'{name}-s{s}'
+          t0 = time.time()
+          try:
+              r = _gen(prompt)
+              dt = time.time() - t0
+              open(f'{OUT}/raw-{key}.json', 'w').write(
+                  json.dumps(r, ensure_ascii=False))
+              b64 = (r.get('data') or [{}])[0].get('b64_json', '')
+              if b64:
+                  open(f'{OUT}/img-{key}.png', 'wb').write(
+                      base64.b64decode(b64))
+                  note = 'ok'
+              else:
+                  note = 'no image in response'
+              rows.append({'name': key, 'sec': round(dt, 1),
+                           'vram_mib_peak': _vram_peak[0], 'note': note})
+              print(f'{key}: {note}, {dt:.0f}s', flush=True)
+          except Exception as e:
+              rows.append({'name': key, 'sec': round(time.time() - t0, 1),
+                           'note': f'{type(e).__name__}: {str(e)[:120]}'})
+              print(f'{key}: FAIL {e}', flush=True)
+      if budget_done:
+          break
+  _stop.set()
+
+  ok = [r['sec'] for r in rows if r['note'] == 'ok']
+  ok.sort()
+  def pct(p):
+      return round(ok[int((len(ok)-1)*p)], 1) if ok else None
+  summary = {'pack': 'img-gen-bench-t4', 'host': 'colab-t4',
+             'n_ok': len(ok), 'n_total': len(rows),
+             'p50_s': pct(0.5), 'p95_s': pct(0.95),
+             'vram_mib_peak': _vram_peak[0],
+             'con01_cpu_baseline': CON01_BASELINE,
+             'rows': rows}
+  open(f'{OUT}/img-gen-t4.json', 'w').write(json.dumps(summary, indent=1))
+
+  md = ['# img-gen-bench-t4 — Qwen-Image-2.1 via colibri CUDA (Colab T4)',
+        '',
+        f"images ok: {len(ok)}/{len(rows)} | p50 {pct(0.5)}s | "
+        f"p95 {pct(0.95)}s | VRAM peak {_vram_peak[0]:.0f} MiB", '',
+        '| prompt | sec | note |', '|---|---|---|']
+  md += [f"| {r['name']} | {r['sec']} | {r['note']} |" for r in rows]
+  md += ['', '## vs con01 CPU baseline', '',
+         '| host | sec/img |', '|---|---|']
+  md += [f"| con01 cpu ({k}) | {v} |" for k, v in CON01_BASELINE.items()
+         if k != 'note']
+  md += [f"| t4 p50 | {pct(0.5)} |", f"| t4 p95 | {pct(0.95)} |"]
+  open(f'{OUT}/img-gen-report.md', 'w').write('\n'.join(md) + '\n')
+
+  # contact sheet (PIL is preinstalled on Colab; degrade silently)
+  try:
+      from PIL import Image
+      pngs = sorted(f for f in os.listdir(OUT)
+                    if f.startswith('img-') and f.endswith('.png'))
+      if pngs:
+          ims = [Image.open(f'{OUT}/{f}').convert('RGB') for f in pngs]
+          w, h = ims[0].size
+          cols = 4
+          rows_n = (len(ims) + cols - 1) // cols
+          sheet = Image.new('RGB', (w*cols, h*rows_n), (10, 10, 10))
+          for i, im in enumerate(ims):
+              sheet.paste(im, ((i % cols)*w, (i // cols)*h))
+          sheet.save(f'{OUT}/contact-sheet.jpg', quality=85)
+  except Exception as e:
+      print(f'contact sheet skipped: {e}', flush=True)
+  print('img-gen-bench-t4 complete', flush=True)
