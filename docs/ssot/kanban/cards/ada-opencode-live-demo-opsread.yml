@@ -1,7 +1,7 @@
 id: ada-opencode-live-demo-opsread
 title: Live demo — Ada→OpenCode ops-readonly dispatch
-column: doing
-updated: 2026-11-07 18:34
+column: review
+updated: 2026-11-07 18:35
 priority: medium
 tags:
 - demo
@@ -32,9 +32,12 @@ action:
     - max_tokens=200000
     - max_wall_time_s=600
     - max_retries=1
-  status: running
+  status: done
   agent_profile: ops-readonly
   runner: idc02
+  result: 'exit=0 fffeCVe3ej6BKJbj9F","type":"step-finish","tokens":{"total":30437,"input":3703,"output":201,"reasoning":0,"cache":{"write":0,"read":26533}},"cost":0}}
+    | devin-task-ada-opencode-live-demo-opsread-1794051240.service: Consumed 13.306s CPU time.'
+  verified: false
 note: 'Live demo of the Ada agent card-processing path (2026-11-07). Fixture: ops-readonly host health snapshot
   on idc02.'
 ref: ADA-1102
@@ -70,3 +73,8 @@ comms:
   from: chaba
   text: restarted zombie claim as devin-task-ada-opencode-live-demo-opsread-1794051240 on idc02 — claim committed
     but the response was lost (OPS-1071)
+- at: 2026-11-07 18:35
+  from: idc02
+  text: 'finished (ok): exit=0 fffeCVe3ej6BKJbj9F","type":"step-finish","tokens":{"total":30437,"input":3703,"output":201,"reasoning":0,"cache":'
+review_kind: verify
+claim: {}
