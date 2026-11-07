@@ -2786,10 +2786,27 @@ def _claim_order(cards: list) -> list:
     return sorter(cards, starve_hours=STARVE_HOURS)
 
 
-def claim_pass(st: dict) -> bool:
+def _capacity_reason(st: dict) -> str:
+    """"" when this host may claim now, else the refusal reason —
+    shared by claim_pass (journal line) and verdict_pass (/ready
+    projection) so a capacity-blocked card stops reporting 'eligible'
+    while the runner silently skips it (OPS-1107)."""
     if len(st) >= CAP:
-        return False
+        return f"runner at cap ({len(st)}/{CAP})"
     if overloaded():
+        try:
+            lp = os.getloadavg()[1] / (os.cpu_count() or 1)
+        except OSError:
+            lp = -1
+        return (f"host overloaded (5m load/core {lp:.2f} > "
+                f"{MAX_LOAD_PC})")
+    return ""
+
+
+def claim_pass(st: dict) -> bool:
+    cap = _capacity_reason(st)
+    if cap:
+        print(f"claim pass skipped: {cap}")
         return False
     cards = _claim_order((api("/cards") or {}).get("cards") or [])
     by_id = {c.get("id"): c for c in cards}
@@ -2895,18 +2912,23 @@ def verdict_pass(st: dict) -> None:
             if not cid or (c.get("action") or {}).get("status") != "queued":
                 continue
             typ, reason = _claimable(c)
-            if typ:
-                g = gpu_preflight(c)
-                verdicts[cid] = {"ok": not g, "reason": g or ""}
-                if not g:
-                    continue
-                blocker = by_id.get(c.get("blocked_by") or "") or {}
-                if c.get("blocked_by") and not blocker_released(blocker):
-                    verdicts[cid] = {
-                        "ok": False,
-                        "reason": f"blocked_by {c['blocked_by']}"}
-            else:
+            if not typ:
                 verdicts[cid] = {"ok": False, "reason": reason}
+                continue
+            # verdicts mirror claim_pass's real gate order so /queue's
+            # eligible/blocked projection matches what a pass would do:
+            # capacity -> blocked_by -> gpu preflight
+            cap = _capacity_reason(st)
+            if cap:
+                verdicts[cid] = {"ok": False, "reason": cap}
+                continue
+            blocker = by_id.get(c.get("blocked_by") or "") or {}
+            if c.get("blocked_by") and not blocker_released(blocker):
+                verdicts[cid] = {"ok": False,
+                                 "reason": f"blocked_by {c['blocked_by']}"}
+                continue
+            g = gpu_preflight(c)
+            verdicts[cid] = {"ok": not g, "reason": g or ""}
         active = [{"id": cid, "unit": v.get("unit", ""),
                    "at": v.get("at", 0)} for cid, v in st.items()]
         h = hashlib.sha1(json.dumps(
