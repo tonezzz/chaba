@@ -20,10 +20,12 @@ Usage: lessons-due.py [--dry-run] [--source wiki|wp] [--dest wiki|wp|both]
                       [--api BASE]
 
 Env: LESSON_SOURCE (default wiki) · LESSON_DUE_DEST (default both) ·
-     BOARD_API / RUNNER_API door base (default: idc03 tailnet)
+     BOARD_API / RUNNER_API door base (default: idc03 tailnet) ·
+     BGE_EDU_SHADOW_REPORT (optional read-only BGE shadow report; a
+     fresh one appends related-lesson suggestions to both dests)
 """
-import argparse, base64, json, os, sys, urllib.parse, urllib.request
-from datetime import date
+import argparse, base64, html, json, os, sys, urllib.parse, urllib.request
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "board"))
@@ -37,6 +39,10 @@ except Exception:
 ENV_PATH = Path.home() / ".config/secrets/wp-boards.env"
 DUE_SLUG = "education-due"
 DUE_WIKI_TITLE = "Education:Due"
+BGE_SHADOW_REPORT = os.environ.get(
+    "BGE_EDU_SHADOW_REPORT",
+    str(Path.home() / ".cache" / "bge-education-shadow-v2.json"),
+)
 
 
 def load_env(p):
@@ -148,7 +154,40 @@ def _wiki_link(r: dict) -> str:
     return r["topic"]
 
 
-def due_wikitext(due: list, upcoming: list, today: str) -> str:
+def load_bge_related(due: list) -> dict:
+    """-> {due_slug: [related_slug, ...]} from a fresh read-only BGE
+    shadow report. {} on missing, stale (>48h), or malformed reports."""
+    try:
+        report = json.loads(Path(BGE_SHADOW_REPORT).read_text())
+        run = datetime.fromisoformat(
+            str(report["run"]).replace("Z", "+00:00"))
+        if (datetime.now(timezone.utc) - run).total_seconds() > 48 * 3600:
+            return {}
+        due_slugs = {r["slug"] for r in due}
+        related = {}
+        for row in report.get("results") or []:
+            slug = row.get("slug")
+            if slug not in due_slugs:
+                continue
+            names = []
+            for hit in (row.get("result") or {}).get("results") or []:
+                key = str(hit.get("key") or "")
+                if key.startswith("lesson/") and key != f"lesson/{slug}":
+                    names.append(key.removeprefix("lesson/"))
+            if names:
+                related[slug] = names[:3]
+        return related
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return {}
+
+
+def _related_row(rows_by_slug: dict, slug: str) -> dict:
+    return rows_by_slug.get(slug) or {"topic": slug, "wiki_title": ""}
+
+
+def due_wikitext(due: list, upcoming: list, today: str,
+                 related: dict = None, rows_by_slug: dict = None) -> str:
+    rows_by_slug = rows_by_slug or {}
     lines = [f"== Due now ({len(due)}) ==", ""]
     if due:
         lines += [f"* {_wiki_link(r)} — due {r['next_review']} "
@@ -158,6 +197,15 @@ def due_wikitext(due: list, upcoming: list, today: str) -> str:
     lines += ["", "== Upcoming ==", ""]
     lines += [f"* {_wiki_link(r)} — {r['next_review']}"
               for r in upcoming[:10]]
+    if related:
+        lines += ["", "== Related lesson suggestions (BGE shadow) ==", ""]
+        for r in due:
+            names = related.get(r["slug"])
+            if names:
+                links = ", ".join(
+                    _wiki_link(_related_row(rows_by_slug, s))
+                    for s in names)
+                lines.append(f"* {_wiki_link(r)} — related: {links}")
     lines += ["",
               f"Updated {today} — mark a lesson status=learned or push "
               "next_review to clear it.",
@@ -165,7 +213,9 @@ def due_wikitext(due: list, upcoming: list, today: str) -> str:
     return "\n".join(lines)
 
 
-def due_html(due: list, upcoming: list, today: str) -> str:
+def due_html(due: list, upcoming: list, today: str,
+             related: dict = None, rows_by_slug: dict = None) -> str:
+    rows_by_slug = rows_by_slug or {}
     lis = "".join(
         f'<li><a href="{r["href"]}">{r["topic"]}</a> — due '
         f'{r["next_review"]} ({r["level"]})</li>' for r in due)
@@ -173,8 +223,19 @@ def due_html(due: list, upcoming: list, today: str) -> str:
         lis = "<li>Nothing due — all caught up.</li>"
     up = "".join(f'<li>{r["topic"]} — {r["next_review"]}</li>'
                  for r in upcoming[:10])
+    items = []
+    for r in due:
+        names = (related or {}).get(r["slug"])
+        if names:
+            topics = ", ".join(
+                html.escape(_related_row(rows_by_slug, s)["topic"])
+                for s in names)
+            items.append(f"<li>{html.escape(r['topic'])}: {topics}</li>")
+    related_html = (
+        "<h3>Related lesson suggestions (BGE shadow)</h3><ul>"
+        + "".join(items) + "</ul>" if items else "")
     return (f"<h3>Due now ({len(due)})</h3><ul>{lis}</ul>"
-            f"<h3>Upcoming</h3><ul>{up}</ul>"
+            f"<h3>Upcoming</h3><ul>{up}</ul>{related_html}"
             f"<p><small>Updated {today} — mark a lesson status=learned "
             f"or push next_review to clear it.</small></p>")
 
@@ -211,25 +272,31 @@ def main():
     today = date.today().isoformat()
     rows = fetch_rows(a.source, a.api)
     due, upcoming = bucket_rows(rows, today)
+    related = load_bge_related(due)
+    rows_by_slug = {r["slug"]: r for r in rows}
 
     print(f"source={a.source} due={len(due)} upcoming={len(upcoming)}")
     for r in due:
         print(f"  {r['next_review']}  {r['topic'][:70]}")
+    if related:
+        print(f"bge_related={len(related)}")
     if a.dry_run:
         print("\n--- Education:Due wikitext ---")
-        print(due_wikitext(due, upcoming, today))
+        print(due_wikitext(due, upcoming, today, related, rows_by_slug))
         return 0
 
     fails = 0
     if a.dest in ("wiki", "both"):
         try:
-            print(f"wiki: {write_wiki(a.api, due_wikitext(due, upcoming, today))}")
+            print(f"wiki: {write_wiki(a.api, due_wikitext(
+                due, upcoming, today, related, rows_by_slug))}")
         except Exception as e:
             fails += 1
             print(f"wiki dest failed: {e}", file=sys.stderr)
     if a.dest in ("wp", "both"):
         try:
-            print(f"wp: {write_wp(WP(), due_html(due, upcoming, today))}")
+            print(f"wp: {write_wp(WP(), due_html(
+                due, upcoming, today, related, rows_by_slug))}")
         except Exception as e:
             fails += 1
             print(f"wp dest failed: {e}", file=sys.stderr)
