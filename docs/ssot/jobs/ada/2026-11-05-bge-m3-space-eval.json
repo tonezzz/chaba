@@ -1,0 +1,98 @@
+{
+  "run": "2026-11-05",
+  "model": "bge-m3",
+  "endpoint": "http://idc03:11028/v1/vector-search",
+  "queries": 48,
+  "language_split": {
+    "en": 34,
+    "th": 14
+  },
+  "local_bank": {
+    "documents": 9740,
+    "collections": 23,
+    "embedded_documents": 9740,
+    "queue_depth": 0,
+    "dropped": 0
+  },
+  "judgments": {
+    "expanded_for_bge_candidates": true,
+    "qrels_source": "/tmp/embedeval/qrels-bge.json"
+  },
+  "metrics": {
+    "overall": {
+      "gemini": {
+        "recall_at_1": 0.142,
+        "recall_at_3": 0.273,
+        "recall_at_5": 0.356,
+        "mrr": 0.855
+      },
+      "nomic": {
+        "recall_at_1": 0.103,
+        "recall_at_3": 0.214,
+        "recall_at_5": 0.292,
+        "mrr": 0.697
+      },
+      "nomic_en": {
+        "recall_at_1": 0.133,
+        "recall_at_3": 0.241,
+        "recall_at_5": 0.347,
+        "mrr": 0.839
+      },
+      "bge_m3": {
+        "recall_at_1": 0.079,
+        "recall_at_3": 0.214,
+        "recall_at_5": 0.348,
+        "mrr": 0.740
+      }
+    },
+    "en": {
+      "gemini_recall_at_5": 0.360,
+      "bge_m3_recall_at_5": 0.337,
+      "bge_m3_mrr": 0.655
+    },
+    "th": {
+      "gemini_recall_at_5": 0.347,
+      "bge_m3_recall_at_5": 0.377,
+      "bge_m3_mrr": 0.946
+    }
+  },
+  "latency_seconds": {
+    "p50": 0.293,
+    "p95": 0.678,
+    "max": 0.746
+  },
+  "errors": 0,
+  "shadow_replay": {
+    "arm": "bge_m3_plus_bm25_rrf",
+    "queries": 48,
+    "dense_top_k": 50,
+    "lexical_top_k": 100,
+    "dense_weight": 1.0,
+    "lexical_weight": 0.75,
+    "completed": 48,
+    "vector_errors": 0,
+    "wall_seconds": 395,
+    "latency_p50_seconds": 0.402,
+    "latency_p95_seconds": 1.205
+  },
+  "nest_pack": {
+    "name": "bge-hybrid-shadow",
+    "worker": "con01",
+    "completed": 48,
+    "vector_errors": 0,
+    "pack_wall_seconds": 927,
+    "job_wall_seconds": 896.8,
+    "latency_p50_seconds": 2.447,
+    "latency_p95_seconds": 2.752,
+    "remote_artifacts": "gdrive:ada-nest/packs/bge-hybrid-shadow/out/",
+    "idc03_retry": {
+      "pack": "bge-hybrid-shadow-idc03-v2",
+      "completed": 48,
+      "vector_errors": 0,
+      "pack_wall_seconds": 547,
+      "latency_p50_seconds": 0.216,
+      "latency_p95_seconds": 0.991,
+      "remote_artifacts": "gdrive:ada-nest/packs/bge-hybrid-shadow-idc03-v2/out/"
+    }
+  }
+}
