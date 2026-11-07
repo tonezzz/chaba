@@ -1,7 +1,7 @@
 id: card-judgment-bench-build
 title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
 column: done
-updated: 2026-11-07 14:48
+updated: 2026-11-07 15:07
 priority: high
 tags:
 - ada
@@ -57,5 +57,12 @@ comms:
     v2: llama3.2:3b 0.884 acc / 0.937 def / 0.968 prec / 1.0 recall — FIRST ALL-GATE PASS (single run; T3 still
     needs 3 consecutive vs Ada real topology). flash-lite paid: 0.495 acc / 0.558 def — over-defers harder on clean
     labels (act->defer 20/30). Caveat recorded in trail: scorer prom'
+- at: 2026-11-07 15:07
+  from: devin
+  text: '[run 5 — Ada REAL topology] score.py now has --entity ada: her actual kanban.py authority matrix as system
+    prompt, run via chaba key on the chat lane (gemini-3.5-flash — her real REST path). Result on v2 corpus: acc
+    0.768 / def 0.80 / corr-prec 0.968 / recall 1.0. Better than generic-prompt flash-lite (0.495) but still over-defers
+    on act (17/30). Standings v2: llama3.2:3b 0.884 (only pass so far) > ada-chat 0.768 > flash-lite 0.495 > rules
+    0.43. Parser hardened: thinking models blew the 96-token'
 action:
   status: done
