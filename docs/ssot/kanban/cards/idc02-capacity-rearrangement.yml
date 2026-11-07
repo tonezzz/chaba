@@ -1,7 +1,7 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
 column: backlog
-updated: 2026-11-07 17:20
+updated: 2026-11-07 18:39
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
   OOM, runner load-gate stalls, board-api flock storm.'
@@ -32,13 +32,21 @@ comms:
   from: devin
   text: 'raised request durable-idc02-offload-needs-a-decision-m-9d2581: Durable idc02 offload needs a decision
     — measured options on card comment.'
+- at: 2026-11-07 18:39
+  from: tony
+  text: 'answered durable-idc02-offload-needs-a-decision-m-9d2581: ollama-on-tony-dell'
+- at: 2026-11-07 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
-  status: open
+  status: answered
   at: 2026-11-07 17:20
   from: devin
   options:
   - wait-kk-mac
   - ollama-on-tony-dell
   - accept-post-clamp
+  answer: ollama-on-tony-dell
+awaiting_action: true
