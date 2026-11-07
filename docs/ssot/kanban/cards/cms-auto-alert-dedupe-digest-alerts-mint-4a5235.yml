@@ -1,7 +1,7 @@
 id: cms-auto-alert-dedupe-digest-alerts-mint-4a5235
 title: CMS auto-alert dedupe — digest alerts mint new cards instead of reopening one
 column: backlog
-updated: 2026-11-07 16:26
+updated: 2026-11-07 16:41
 priority: medium
 tags:
 - board-hygiene
@@ -15,3 +15,12 @@ comms:
 - at: 2026-11-07 16:26
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 16:41
+  from: devin
+  text: 'Ran it — premise correction: the writer already dedupes. Producer is scripts/ada/cms-auto-health.py via
+    kanban-sync.timer on idc03 (15m); it upserts in place per automation key (deterministic cms-auto-<slug>.yml,
+    one card per automation, note rewritten each tick). The ~30-card pile was ~30 DISTINCT digest automations red
+    simultaneously — shared digest generator outage (cms-auto-nest-tony-dell shows 18d overdue), not duplicate minting.
+
+
+    What was missing vs spec: close happened on the FIRST health'
