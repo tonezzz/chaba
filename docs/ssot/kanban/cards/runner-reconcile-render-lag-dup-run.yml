@@ -1,7 +1,7 @@
 id: runner-reconcile-render-lag-dup-run
 title: runner-agent reconcile re-fires on render-lagged /cards — duplicate task runs
-column: backlog
-updated: 2026-11-07 18:48
+column: done
+updated: 2026-11-07 18:49
 priority: low
 tags:
 - runner-agent
@@ -34,3 +34,9 @@ comms:
     skip cards with updated < RUNNER_RENDER_SETTLE_S=150s — the render-lag window; real zombies heal one pass later,
     mid-flight cards stop looking like zombies; (2) api() POST timeout 30->75s — the 30s timeout is what manufactured
     lost-response zombies under write load; (3) claim-POST fail'
+- at: 2026-11-07 18:49
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}
