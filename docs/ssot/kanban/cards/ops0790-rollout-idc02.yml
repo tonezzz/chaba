@@ -1,0 +1,31 @@
+id: ops0790-rollout-idc02
+title: 'OPS-0790 rollout: install migrated timer on idc02'
+column: backlog
+updated: 2026-11-07 11:51
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+- rollout
+- idc02
+spec: 'OPS-0790 host rollout on idc02 — Tony-approved deploy step (2026-11-07). Prereq: chaba repo at commit 7b5f86014
+  or later (origin/master). Steps: (1) python3 scripts/render-jobs.py --host idc02 --ids embed-lane-banks --install
+  — writes only that unit pair to ~/.config/systemd/user, daemon-reload, enables --now embed-lane-banks.timer. (2)
+  Verify: systemctl --user list-timers embed-lane-banks.timer shows armed; then one forced run: systemctl --user
+  start embed-lane-banks.service and check status/journal — a job runtime failure is data, not a blocker: record
+  it, leave the timer armed. (3) Do NOT touch chaba-jobs.timer or any other unit; no other systemctl verbs; no package
+  installs. (4) Commit a short rollout note to docs/reports/ops0790-rollout-idc02.md with armed+first-run result;
+  push or patch-relay per runner capability.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - exec
+  target_host: idc02
+  artifact: docs/reports/ops0790-rollout-idc02.md
+ref: OPS-1070
+comms:
+- at: 2026-11-07 11:51
+  from: tony
+  text: card captured via board-api
