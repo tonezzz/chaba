@@ -1,7 +1,7 @@
 id: ada-deploy-preflight-gate
 title: Deploy-preflight gate — review-ready → preflight → Tony approval → deploy → verify
 column: backlog
-updated: 2026-11-07 15:00
+updated: 2026-11-07 15:08
 brief: 'Last missing piece of the Ada dev-control-plane loop. Cards currently merge to done with no production-deploy
   stage. Build the gate: card declares deploy target, system collects preflight evidence, Tony approves explicitly,
   deploy runs, post-deploy surface is verified.'
@@ -43,3 +43,10 @@ comms:
 - at: 2026-11-07 15:00
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 15:08
+  from: devin
+  text: 'Implemented + merged + installed. PR tonezzz/chaba#83 squash-merged as 9658c8bf0. scripts/board/deploy-preflight.py:
+    review|done + action.status=done + deploy.target registry key -> preflight evidence (merge sha/diff stat/rollback)
+    -> board request approve|hold|abort (default hold) -> only explicit approve runs registry deploy command ->
+    verify producer rc=0 AND consumer GET ok. Fail-closed: unknown target errors, t4 skipped, unparsed=hold, failed
+    deploys dont loop; card YAML under board-api loc'
