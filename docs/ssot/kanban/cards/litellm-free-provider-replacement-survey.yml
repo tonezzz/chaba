@@ -1,7 +1,7 @@
 id: litellm-free-provider-replacement-survey
 title: Survey free hosted LLM providers to replace GitHub Models in litellm
 column: backlog
-updated: 2026-11-07 14:51
+updated: 2026-11-07 15:00
 priority: medium
 tags:
 - infra
@@ -50,3 +50,12 @@ comms:
     (gemini/claude-fable-5.1/nemotron-nano/gemma-4-31b incl :free variants), ollama x3 backends (idc03 local :11434,
     kkmac tunnel :11445, idc02 :11434) with role aliases tool-call/chat/summary/voice-aux/classify/bench. GAPS:
     GROQ_API_KEY exists in ~/.config/secrets/groq.env but is '
+- at: 2026-11-07 15:00
+  from: devin
+  text: 'CF update 2026-11-07 ~16:00: Tony reports Workers AI permission added, but BOTH stored tokens still auth-denied
+    on /ai/models/search, /ai/run, and /ai/v1 (tested on tony-omen cfut_ + idc03 cfat_). No new token file on any
+    host. Likely edited a different token, or added Workers Scripts/AI Gateway perm instead of Account>Workers AI.
+    Needs: verify dashboard token whose value MATCHES the env string has Workers AI perm.
+
+
+    Meanwhile — live catalog pulled (73 models, today''s snapshot via ai.flared.au/ll'
