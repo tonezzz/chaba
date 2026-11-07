@@ -1,7 +1,7 @@
 id: cards-render-stale-queued-invisible
 title: 'BUG: queued cards missing from GET /cards — runner never claims them'
 column: done
-updated: 2026-11-07 18:03
+updated: 2026-11-07 18:05
 priority: high
 tags:
 - bug
@@ -38,6 +38,13 @@ comms:
 - at: 2026-11-07 18:03
   from: devin
   text: moved review -> done
+- at: 2026-11-07 18:05
+  from: devin
+  text: 'Verify 2026-11-07 ~17:55: render half CONFIRMED FIXED — /cards regenerated 17:49 and queued card ada-opencode-live-demo-opsread
+    now appears WITH full action envelope (executor/model/target_host/artifact/limits). BUT claim still does not
+    fire: ~15+ poll cycles after card became visible, action.status stays queued, runner=None, no devin-task-* unit
+    on idc02, no claim attempt in runner-agent journal. _claimable() returns (''dispatch'','''') under unit env
+    so the gate passes — bug is downstream in the c'
 review_kind: verify
 action:
   status: done
