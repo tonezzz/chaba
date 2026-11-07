@@ -1,6 +1,6 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
-column: backlog
+column: doing
 updated: 2026-11-07 12:14
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
@@ -68,3 +68,6 @@ comms:
     = blocked on rclone; each call can hang ~60s and the loop made many sequential listings). Fix pushed on branch
     fix/jevnest-producer-budget (ad1e4ba44): single recursive pack listing feeds queue depth + dedupe, overall --budget-s
     90 self-limits the loop, and ssot.jobs.yml args corrected '
+- at: 2026-11-07 12:14
+  from: devin
+  text: moved backlog -> doing
