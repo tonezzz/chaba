@@ -63,6 +63,10 @@ comms:
   text: 'zombie-claim re-run 19:49 — re-verified live state, no new work needed: CPUWeight=1000 persisted on idc02+idc03+con01
     (drop-in files). idc02 warm RTF 0.50-0.82 (load ~0.8, quiet now). con01 prod RTF 1.7-3.0 under load ~10/8 —
     consistent with post-weight range; all 4 fixture clips transcribed correctly on both hosts. Fix holds.'
+- at: 2026-11-07 19:52
+  from: devin
+  text: 'raised request nice10-escalation: Residual: con01 prod RTF still ~1.7-3.0 under load ~10/8 after CPUWeight=1000
+    (validated fix). Escalate to system-unit N'
 action:
   type: dispatch
   status: done
@@ -72,3 +76,15 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+requests:
+- id: nice10-escalation
+  ask: 'Residual: con01 prod RTF still ~1.7-3.0 under load ~10/8 after CPUWeight=1000 (validated fix). Escalate
+    to system-unit Nice=-10 (validated RTF 0.69-1.39 under total saturation on idc02; needs sudo, covers journalctl/system.slice
+    bursts too) or accept current latency for the TG voice-note batch lane?'
+  status: open
+  at: 2026-11-07 19:52
+  from: devin
+  options:
+  - ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
+  - escalate — convert ada-stt to system unit with Nice=-10 on con01 (+idc02/idc03)
+  suggested: ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
