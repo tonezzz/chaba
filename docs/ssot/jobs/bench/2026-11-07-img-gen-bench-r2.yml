@@ -1,0 +1,72 @@
+id: jobs/bench/2026-11-07-img-gen-bench-r2
+title: img-gen-bench r2 — con01 extension run + img-gen-bench-t4 pack staged
+card: img-gen-bench-qwen-image-2-1-via-colibri-42f98f   # BEN-0815
+date: 2026-11-07
+runner: tony-macbook (dispatch worktree; generation on con01 via the
+        resident colibri server, artifacts to gdrive:ada-nest)
+status: done
+
+host_gate:
+  mn01:   '7 GB total — fails ram_gb 18'
+  idc03:  '15 GB total, 3 GB avail — fails ram_gb 18'
+  omen:   '30 GB but LA ~37 (card-judgment benches) — skipped'
+  con01:  '24 GB — only fleet host that fits; colibri qwenimage server
+           RESIDENT since Oct 24 (14.7 GB RSS, /health ok) — the >3h
+           model-load cost was already paid, so the extension ran there'
+  tony-macbook: '15 GB — runner host, below floor'
+
+r2_run:
+  endpoint: 'POST con01:8000/v1/images/generations {model, prompt, size}'
+  images:
+    doc-pilot-sun:    1329   # s, 768x512 steps=8
+    doc-pilot-saturn: 1358
+    doc-pilot-mars:   1232
+    generic-3:        1262
+  scheduler: '10 admitted / 8 completed / 0 failed across r1+r2'
+  ram: 'engine resident 14.7 GB RSS constant; mem-avail dipped to ~4 GB
+        mid-gen on the 24 GB host — validates the 18 GB needs floor'
+  disk: '31 GB model dir; ~0.5 MB/img; 160 GB free'
+  quality_qc: >-
+    generic-3 excellent; sun+mars style-coherent; saturn NEAR-BLACK —
+    "deep black space" + "backlit" under-exposes dim subjects; space-doc
+    prompts need an exposure cue or more steps for dark scenes.
+
+combined_con01_baseline:
+  n: 8
+  mean_s: 1260        # ~21 min/img, uniform, prompt-independent
+  p50_s: 1247
+  p95_s: 1354
+  verdict: >-
+    CPU disk-streaming works but is batch-only (~21 min/img). GPU is the
+    practical lane — unchanged from r1, now better-evidenced.
+
+artifacts:
+  store:
+    - gdrive:ada-nest/packs/img-gen-bench/out/img-doc-pilot-{sun,saturn,mars}.png
+    - gdrive:ada-nest/packs/img-gen-bench/out/img-generic-3.png
+    - gdrive:ada-nest/packs/img-gen-bench/out/img-gen-r2-report.md
+    - gdrive:ada-nest/packs/img-gen-bench/out/r2-rows.json + metrics-{pre,post}.json
+  staged_pack:
+    - gdrive:ada-nest/packs/img-gen-bench-t4/pack.yml  # NEW
+    - repo: scripts/colab/packs/img-gen-bench-t4/pack.yml
+
+t4_arm:
+  what: >-
+    NEW pack img-gen-bench-t4 implements job4 of
+    docs/ssot/jobs/nest/2026-10-25-ada-nest-real-job-seq.yml: same engine
+    on Colab T4 CUDA — 10 prompts (7 doc-pilot scenes + 3 controls) x 2
+    samples, VRAM watcher, p50/p95 + con01-baseline comparison row,
+    contact sheet.
+  gate: >-
+    needs gpu_gb 14, disk_gb 40; requires [gaussian-splat-edu-smoke-v2,
+    t4-gpu-baseline, t4-llm-direct-bench] — all three done, so it claims
+    on the NEXT awake T4 window. Queue heartbeat was ~9 days stale at
+    staging; no runtime was started for it (per the never-start-a-runtime
+    rule).
+
+followups:
+  - 'con01 qwenimage server still resident (14.7 GB RSS since Oct 24).
+    Keep until img-gen-bench-t4 lands (live fallback for more prompts),
+    then ./c/coli stop and reclaim RAM.'
+  - 'Space-doc prompts: add exposure cue or raise steps for dark scenes
+    (saturn near-black).'
