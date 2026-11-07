@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-07 17:51
+updated: 2026-11-07 19:21
 priority: medium
 tags:
 - ada
@@ -18,3 +18,10 @@ comms:
 - at: 2026-11-07 17:51
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 19:21
+  from: devin
+  text: '[triage] Per-failure verdicts: (1) ada_opencode_control — largely SELF-HEALED: the 19:00 run shows her
+    correctly calling ada_opencode_dispatch (new tool decls landed with the pull); tool does return ''card not found''
+    (ada_opencode_dispatch.py:53) — residual fails are arg-shape misses. Watch next hourly. (2) cms_public_url_lane
+    — REAL tool issue: cms_publish_page confirm-gate rejected repeated confirms (''confirmation gate error''), publish
+    never completed; plus earlier-run lane mixup (tony-ha URL f'
