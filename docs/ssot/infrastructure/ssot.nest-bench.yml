@@ -39,12 +39,20 @@ domains:
   card-judgment:
     # NEW 2026-10-07 (card ada-card-loop-tiers): the domain that gates
     # Ada's T3 (queue) tier — see ssot.ada-participation.yml.
+    # BUILT 2026-11-07 (card card-judgment-bench-build / ADA-1073):
+    #   corpus miner scripts/bench/card-judgment/build_corpus.py +
+    #   scorer scripts/bench/card-judgment/score.py + corpus.jsonl (115 cases,
+    #   balanced act/correct/defer/observe) + run-1 report.
     corpus: >-
       Historical kanban cards with known-good outcomes —
       docs/ssot/kanban/cards/*.yml (column: done) + their comms/requests
       history, frozen as cases: the state snapshot, the stale assertion or
       open question, and the action that proved right.
-    status: spec           # corpus + scorer to be built; shadow-mode first
+      Built artifact: scripts/bench/card-judgment/corpus.jsonl —
+      rebuild with build_corpus.py (deterministic seed, high-confidence
+      extraction patterns only).
+    status: live           # corpus + scorer built; shadow-mode runs accrue
+    scorer: scripts/bench/card-judgment/score.py   # entities: rules|ollama|openai
     case_shape:
       card_snapshot: 'title, note, column, priority, comms at decision time'
       evidence: 'the live check result available at the moment
@@ -129,7 +137,8 @@ cross_domain:
   corpus_as_brain: >-
     Bench corpora are portable-brain blobs (role: corpus) —
     orch-bench-corpus is already a registered entity in ssot.nest-brains.yml;
-    card-judgment's corpus joins it when built.
+    card-judgment's corpus (scripts/bench/card-judgment/corpus.jsonl) joins
+    it — registered as a corpus-role blob candidate.
   failure_rule: >-
     A domain with no scorer is spec-only; a scorer with no corpus is dead
     code. Both halves land together or the card stays open.

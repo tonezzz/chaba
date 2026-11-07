@@ -1,0 +1,57 @@
+id: jobs/bench/2026-11-07-card-judgment-bench-run1
+title: Card-judgment bench — corpus + scorer built, shadow run 1
+card: card-judgment-bench-build
+ref: ADA-1073
+date: 2026-11-07
+host: tony-omen
+session: devin-wt-20261107-card-judgment-bench
+status: delivered
+
+built:
+  miner: scripts/bench/card-judgment/build_corpus.py
+    # scans column:done cards, freezes one decision moment per card —
+    # comms truncated BEFORE the decisive event so proven_right can't leak.
+    # Extractors (first match wins, high-confidence patterns only):
+    #   review_kind:decide -> defer | answered requests[] -> defer
+    #   correction comm (stale claim / "not actually done" / drift) -> correct
+    #   check-only comm (verify/sweep, no completion claims) -> observe
+    #   verified action + queued comm -> act
+  scorer: scripts/bench/card-judgment/score.py
+    # entities: rules (authority-table baseline) | ollama | openai-compatible.
+    # Computes action_accuracy, appropriate_deference, correction_precision,
+    # correction_recall vs ssot.nest-bench.yml t3_unlock_threshold.
+  corpus: scripts/bench/card-judgment/corpus.jsonl  # 115 cases, seed 7
+  corpus_dist: {act: 30, correct: 30, defer: 30, observe: 25}
+  corpus_source: 941 done cards scanned -> 459 mined -> 115 kept (max 30/cat)
+
+run1:
+  entity: ollama
+  model: llama3.2:3b        # local tony-omen ollama — zero spend.
+    # LiteLLM gateway NOT used: chaba virtual key over its $25 budget
+    # ($25.24 spent) — hard 422, not raised (spend decision is Tony's).
+  artifacts:
+    - scripts/bench/card-judgment/run1-llama32-3b.md
+    - scripts/bench/card-judgment/run1-llama32-3b.json
+  metrics:
+    action_accuracy: 0.7391        # gate >= 0.85 -> MISS
+    appropriate_deference: 0.9652  # gate >= 0.90 -> PASS
+    correction_precision: 0.9655   # gate >= 0.80 -> PASS
+    correction_recall: 0.9333      # report-only
+    parse_failures: 2
+  dominant_miss: >-
+    observe -> predicted act (23/25 observe cases). The model executes
+    where the proven-right move was check-and-report. Weakest label class
+    (med confidence, verify-sweep closures) — and the least dangerous
+    confusion for T3, but action_accuracy gates regardless.
+  baseline_contrast: >-
+    rules entity scores 0.304 action_accuracy — naive heuristics fail;
+    the bench discriminates.
+
+verdict:
+  t3_unlock: no            # accuracy < 0.85 AND unlock needs 3 consecutive
+                           # passing runs vs the REAL Ada topology anyway
+  next: >-
+    Run Ada's actual configuration (kanban-tool system context + her
+    production model, not a 3B stand-in) as an entity; grow corpus via
+    corpus_feed (every real correction event appends a case); consider
+    hardening observe labels (split verify-close from pure observe).
