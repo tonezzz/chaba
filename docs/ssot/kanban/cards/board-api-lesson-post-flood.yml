@@ -1,0 +1,20 @@
+id: board-api-lesson-post-flood
+title: board-api /lesson POST flood starves wp.lock and Ollama
+column: backlog
+updated: 2026-11-07 12:13
+brief: 'Observed 2026-11-07 ~11:20-11:45 ICT: ~1.6 POST /lesson/sec sustained against board-api on idc03, driving
+  LiteLLM->Ollama chat-local inference that saturated idc02 CPU (load5/core 2.4) and tripped every runner load gate.
+  Source likely the lesson/embed job fleet mass-enabled at 11:21 (embed-lane-lessons, bge-lessons-shadow, lessons-audit).'
+priority: medium
+tags:
+- board-api
+- lessons
+- bug
+spec: Find the looping client (check which job/script POSTs /lesson in a tight loop — possibly a retry-on-failure
+  bug or missing batching), add rate-limit/backoff, and verify lesson writes dedupe/idempotent so a flood cannot
+  DoS the board-api WP lock and downstream Ollama.
+ref: KNB-1076
+comms:
+- at: 2026-11-07 12:13
+  from: tony
+  text: card captured via board-api
