@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
-column: doing
-updated: 2026-11-07 19:23
+column: review
+updated: 2026-11-07 19:24
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -24,14 +24,16 @@ spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice tr
 action:
   type: dispatch
   repo: chaba
-  status: running
-  result: 'exit=0 d audit section — all read-only, nothing pushed or deployed. | devin-task-20261027-163705-build-a-read-only-opencode-ses.service:
-    Consumed 1min 16.136s CPU time over 18min 28.946s wall clock time, 528.7M memory peak, 39.1M memory swap peak.'
+  status: done
+  result: 'exit=0 dit`), and everything is committed on the dispatch branch — no session deletions or model changes.
+    | devin-task-20261107-190846-build-a-read-only-opencode-ses.service: Consumed 1min 30.682s CPU time, 246.2M
+    memory peak, 0B memory swap peak.'
   lane: devin
   runner: idc02
   sweep:
     stale_running: 2026-11-07 19:18
     session_gone: 2026-11-07 19:18
+  verified: true
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -124,6 +126,10 @@ comms:
     8 finding cards filed (4 artifact-miss, 1 deny-storm, 3 profile-scope mutations). Ledger-vs-benchmark reconciled:
     independent executions, flash-lite non-deterministic, not a ledger error. 0 ungated profile runs; 13/13 lane
     runs linked, token deltas 0.'
+- at: 2026-11-07 19:24
+  from: idc02
+  text: 'finished (ok): exit=0 dit`), and everything is committed on the dispatch branch — no session deletions
+    or model changes. | devin-task-2'
 review_kind: verify
 claim: {}
 auto_close:
