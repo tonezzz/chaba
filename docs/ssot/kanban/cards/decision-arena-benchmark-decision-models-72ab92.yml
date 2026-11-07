@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
-column: backlog
-updated: 2026-11-07 19:07
+column: doing
+updated: 2026-11-07 19:08
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -42,6 +42,12 @@ comms:
 - at: 2026-11-07 19:07
   from: tony
   text: queued for processing
+- at: 2026-11-07 19:08
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: idc02
