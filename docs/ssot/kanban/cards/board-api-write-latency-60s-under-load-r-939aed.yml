@@ -1,7 +1,7 @@
 id: board-api-write-latency-60s-under-load-r-939aed
 title: board-api write latency >60s under load — requests queue behind serialized card commits
 column: backlog
-updated: 2026-11-07 12:09
+updated: 2026-11-07 12:11
 priority: medium
 blocked_by: '[''idc03-served-checkout-convergence-unbloc-0acb20'']'
 tags:
@@ -22,3 +22,9 @@ comms:
 - at: 2026-11-07 12:09
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 12:11
+  from: devin
+  text: Root cause removed with OPS-1074 — post-convergence + board-api restart, a live /comment write now completes
+    in 0.35s (measured 2026-11-07 12:1x, was >60s this morning). The slow commits were the diverged checkout state,
+    not the door design. No code change needed; keeping this as the record that write latency tracks served-checkout
+    health.
