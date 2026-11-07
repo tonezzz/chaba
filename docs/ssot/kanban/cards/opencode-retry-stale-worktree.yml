@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-06 20:47
+updated: 2026-11-07 14:15
 priority: low
 tags:
 - opencode
@@ -329,6 +329,13 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-opencode-retry-stale-worktree-1793771349 failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/opencode-retry-stale-worktree-1793771349 by hand.'
+- at: 2026-11-07 14:15
+  from: tony
+  text: 'answered the-first-real-opencode-dispatch-reached-163fd0: gemini-3-pro-route — Configure and verify a served
+    Gemini 3 Pro strong-tier route on LiteLLM; spend/API configuration may be required.'
+- at: 2026-11-07 14:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: chaba
@@ -363,7 +370,7 @@ requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
     the next route before any retry.
-  status: open
+  status: answered
   at: 2026-11-04 13:15
   from: devin
   options:
@@ -379,6 +386,8 @@ requests:
     label: Keep OPS-1039 held.
   suggested: gemini-3-pro-route
   escalated_at: 2026-11-06 20:16
+  answer: gemini-3-pro-route — Configure and verify a served Gemini 3 Pro strong-tier route on LiteLLM; spend/API
+    configuration may be required.
 - id: tony-proposes-benchmarking-both-strong-m-ae0fa6
   ask: Tony proposes benchmarking both strong-model routes before choosing one. Should we prepare two bounded provider
     probes without retrying OPS-1039?
@@ -398,3 +407,4 @@ requests:
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
 claim: {}
+awaiting_action: true
