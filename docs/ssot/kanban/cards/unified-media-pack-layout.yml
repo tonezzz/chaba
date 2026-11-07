@@ -1,7 +1,7 @@
 id: unified-media-pack-layout
 title: Define unified durable media pack layout and local-cache contract
 column: backlog
-updated: 2026-11-07 11:29
+updated: 2026-11-07 12:01
 brief: Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive
   dataset/job/pack contract with local scratch processing and immutable manifests.
 tags:
@@ -36,3 +36,10 @@ comms:
     on master. Ada PR #2 merged earlier. idc02 staging: fixture staged, ada-lab env set, /api/tools/call gs_capture_eval
     returns 14 images / train_baseline_then_review_masks. Full ws scenario blocked by lab Gemini prepayment quota
     (402/1011); Drive round-trip still pending.'
+- at: 2026-11-07 12:01
+  from: devin
+  text: 'MED-1032 acceptance verified: built nest-media-pack-v1 dataset pack for Hibiscus (16 files, 21111849 bytes,
+    hash_status=hashed, verdict=train_baseline_then_review_masks), uploaded to gdrive:ada-nest/datasets/gaussian/hibiscus-v1
+    (17 objects incl manifest.json), hydrated fresh to ~/.local/share/ada/nest-hydration/hibiscus-v1-20261107T0445Z,
+    and pack_manifest verify returned ok with missing=[] changed=[]. Local source/eval fixtures were not deleted.
+    Outside this card: live Ada ws scenario is quota'
