@@ -1,0 +1,17 @@
+id: ada-verify-probe-board-api-alive
+title: 'Verify: board-api /cards endpoint is alive and serving cards'
+column: review
+updated: 2026-11-07 15:42
+priority: medium
+review_kind: verify
+tags:
+- ada-verify
+- probe
+spec: 'Probe card for the ada-jobs-verify micro-entity pilot (ADA-1091). The verification: GET https://idc03.taila0626a.ts.net:10000/cards
+  returns a JSON list with >1000 cards — board-api is alive. If confirmed, this card may be closed review->done
+  with the evidence cited.'
+ref: ADA-1093
+comms:
+- at: 2026-11-07 15:42
+  from: tony
+  text: card captured via board-api
