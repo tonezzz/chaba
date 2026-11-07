@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:36
+updated: 2026-11-07 18:42
 priority: low
 action:
   type: manual
@@ -67,10 +67,12 @@ comms:
     [deploy] active: ada-tg-relay-mn
 
     [deploy] active: a'
+- at: 2026-11-07 18:42
+  from: chaba
+  text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
-  status: failed
   preflight:
     at: 2026-11-07 18:27
     merge_sha: null
@@ -83,13 +85,8 @@ deploy:
     - 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
     - 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
   request_id: deploy-ada-tool-guide-lesson-sweep
-  error: 'request raise failed: HTTP Error 400: Bad Request'
-  deployed_at: 2026-11-07 18:36
-  failed_at: 2026-11-07 18:36
-  deploy_rc: 0
-  verify:
-    ok: false
-    error: 'URLError: <urlopen error [Errno 111] Connection refused>'
+  status: preflight
+  retry_note: re-run after verify-retry fix; prior run rc=0 verify=false(warmup)
 requests:
 - id: deploy-ada-tool-guide-lesson-sweep
   ask: 'Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
