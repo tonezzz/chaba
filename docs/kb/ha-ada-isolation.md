@@ -37,11 +37,20 @@ Shared-fate vectors (one failure hits every lane):
   `ada-bankq-student` gets `CPUQuota=200%` for inference headroom), plus
   journald rate caps (`30s/1000`). A runaway process can no longer starve
   the HA containers.
-- **Old Tony OWNER LLAT is still live** — it remains in
-  `chaba-guest.env`, `nodered-ha.env`, `home-assistant-token.env` on
-  tony-dell (verified 2026-10-15). Ada lanes no longer use it; revoking it
-  is a separate follow-up — it must not happen until those consumers get
-  their own svc tokens.
+- **Owner LLATs purged from consumer envs 2026-10-27** (card
+  `ha-owner-llat-co-use-split`). Three distinct Tony owner tokens were
+  found across slots — fp 8d1a7d29a3 (the shared Ada-era one),
+  6e6553888f, and 0362b97704 (`client_name=tony-devin`, idc03+mn01
+  scripts). Every live env slot now holds a dedicated non-admin svc
+  token: `svc-chaba-guest` → chaba-guest.env, `svc-nodered` →
+  nodered-ha.env (per-host lanes omen/dell), `svc-chaba-scripts` →
+  home-assistant-token.env (per-host lanes omen/dell/idc03/mn01),
+  `svc-ada` standby lanes → ada-ha-tony.env (mn01) + ada-pi-pwa.env
+  (dell). All three owner LLATs deleted via `auth/delete_refresh_token`.
+  .bak-* copies of the old env files still hold the (now dead) owner
+  strings — inert. NB: `system_log/list` is admin-gated, so
+  `ha-auth-watch.py` falls back to the `http-login` persistent
+  notification for non-admin tokens.
 - **HA→Ada direction is clean** (verified in tony-ha config: no
   rest_command/shell_command to Ada). Voice cards and chaba-nest CMS
   iframes fail soft — blank card, not a control-plane failure.
@@ -79,7 +88,7 @@ Shared-fate vectors (one failure hits every lane):
 |---|---|---|
 | Gemini quota/reconnect storm | all 5 instances starved on the shared key | contained to the offending pool — tony-lane storm can't starve kk/michael/dev; `ada-gemini-quota-breaker` stops the storm itself |
 | tool-call / actuation loop | toggled real devices on prod tony-ha with **owner** perms | tony lanes use non-admin svc token; allowlisted domains; logbook attributes every call. michael lane still owner — pending Phase B |
-| ada HA token leak / rotation | owner token = full prod admin; revoking breaks anything else sharing it | svc token only; revoke kills Ada, nothing else. NB: the old owner LLAT still lives in chaba-guest/nodered envs — revoke is a follow-up, see below |
+| ada HA token leak / rotation | owner token = full prod admin; revoking breaks anything else sharing it | svc tokens only everywhere (all owner LLATs revoked 2026-10-27); revoke kills exactly one consumer, nothing else |
 | bad ada-voice deploy | all backends restarted onto broken code together; ada-kk silently stayed old | canary order hits dev lanes first; all units in SERVICES |
 | ada mem/cpu leak on idc03 | starved kk-ha + michael-dev + mddb | cgroup caps contain it (2G / 150%) |
 | ada log storm | could fill idc03 disk → everything on host | per-unit journald caps (30s/1000) |
@@ -110,10 +119,13 @@ Phase B — prod-gated (explicit approval — touches tony-ha):
 3. `~/.config/secrets/ada-ha-tony.env` + `ada-pi-pwa.env`
    `HOME_ASSISTANT_TOKEN` swapped, units restarted; `auth/current_user`
    verifies `svc-ada` / `is_admin=false` — **done 2026-10-15**.
-4. Revoke the old Tony LLAT — **deferred**: the same token is also in
-   `chaba-guest.env`, `nodered-ha.env`, `home-assistant-token.env` on
-   tony-dell. Follow-up card: give those consumers their own svc tokens,
-   then revoke.
+4. Revoke the old Tony LLAT — **done 2026-10-27** (card
+   `ha-owner-llat-co-use-split`). All consumer env slots moved to
+   dedicated svc-* users (svc-chaba-guest / svc-nodered /
+   svc-chaba-scripts, per-host LLAT client_names); three owner LLATs
+   deleted (`auth/delete_refresh_token`), verified 401. chaba-guest +
+   ha-live (declared-active on tony-omen since the LAN migration) were
+   started as part of the swap; chaba-guest-lan stays staged per SSOT.
 5. Same pattern on michael-ha — **pending Tony approval** (request on the
    card); kk-ha gets `svc-kaewta` if/when ada-kk ever receives HA creds.
 

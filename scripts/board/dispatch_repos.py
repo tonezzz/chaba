@@ -89,10 +89,129 @@ def dispatch_dir() -> Path:
 # by runner-agent always launched on the devin default model.
 LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
-    "paid_frontier": "litellm/or-claude-fable-5.1",
+    # was litellm/or-claude-fable-5.1 — that alias was never deployed
+    # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
+    # gemini-3.5-flash is the strongest served non-lite model
+    "paid_frontier": "litellm/gemini-2.5-flash",
 }
 LANE_EXECUTORS = {"codemod": "script", "manual": None}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
+
+# ------------------------------------------------- executor contract
+#
+# Card opencode-explicit-executor-routing: `action.executor` is the
+# card's DECLARED executor — who the work must run under:
+#
+#   opencode — the profile-scoped OpenCode lane (runner-agent
+#              start_opencode_lane). Requires OPENCODE_LANES=1 on the
+#              claiming host, an opencode binary, and a resolvable task
+#              profile (action.agent_profile — action.profile accepted
+#              as the pre-contract alias — else the LANE_PROFILES map).
+#              A card that can't get all three must NEVER fall back to
+#              devin: it stays queued with a defer note, or the claim
+#              fails closed with the reason recorded.
+#   kk_mac_local — the bounded read-only LLM lane on KKs-Mac-Studio
+#              (card kk-mac-jev-adapter-integration). The OPPORTUNISTIC
+#              executor: cards carry action.task_class in
+#              KK_MAC_TASK_CLASSES (+ optional action.prompt /
+#              action.expect / action.artifact), execute through
+#              scripts/devnest/kk_mac_executor.py, and the run is
+#              verified only after its usage/admission/response artifact
+#              lands AND the independent verifier passes. Unlike the
+#              strict executors this one is try-first: when KK-Mac is
+#              stale/unavailable/overloaded or returns invalid output it
+#              fails closed and the SAME claim falls back to the normal
+#              lane — it never starves the card and never runs outside
+#              the admitted task classes. Serving requires KK_MAC_LANES=1
+#              on the runner (off by default until the supervised
+#              dispatch passes).
+#   devin    — devin-dispatch, regardless of lane tables/env.
+#   script   — the action.script block via the runner's script path.
+#   manual   — Tony's hands; automation never claims it.
+#
+# Unset = pre-contract behavior: the lane classifier decides (the safe
+# classifier fallback — devin when nothing cheaper resolves). An
+# executor value outside EXECUTORS is unintelligible — claimants fail
+# closed rather than guess.
+EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local"}
+# Bounded task classes the kk_mac_local executor may ever run — mirrors
+# scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
+# validates the contract without importing the devnest package).
+KK_MAC_TASK_CLASSES = {
+    "summary", "operator_brief", "structured_extract", "safe_route"}
+# roots the kk_mac_local persisted artifact may land under — mirrors
+# kk_mac_executor.ARTIFACT_ROOTS
+KK_MAC_ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/",
+                         "docs/reports/")
+MODEL_ID_RE = re.compile(r"^[a-zA-Z0-9._/-]{1,80}$")
+PROFILE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,60}$")
+HOST_ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
+
+
+def card_executor(card: dict) -> str:
+    """Declared executor contract, '' when the card carries none."""
+    return str((card.get("action") or {}).get("executor") or "").strip()
+
+
+def card_profile(card: dict) -> str:
+    """Declared OpenCode task profile: action.agent_profile (the
+    contract name) wins; action.profile is the pre-contract alias."""
+    a = card.get("action") or {}
+    return str(a.get("agent_profile") or a.get("profile") or "").strip()
+
+
+def card_target_host(card: dict) -> str:
+    """Declared executor host pin (action.target_host) — independent of
+    action.host; both must be satisfied for a claim."""
+    return str((card.get("action") or {}).get("target_host") or "").strip()
+
+
+def card_subject_host(card: dict) -> str:
+    """Declared diagnosis SUBJECT (action.subject_host) — the host the
+    task inspects, distinct from where it executes (OPS-1025: remote-read
+    profiles diagnose a remote host while running locally; hijacking
+    target_host for that collided with the claim pin and made the card
+    unclaimable fleet-wide)."""
+    return str((card.get("action") or {}).get("subject_host") or "").strip()
+
+
+def card_task_class(card: dict) -> str:
+    """Declared bounded task class (action.task_class) — required when
+    executor=kk_mac_local; ignored by every other executor."""
+    return str((card.get("action") or {}).get("task_class") or "").strip()
+
+
+def model_provider(model: str) -> str:
+    """Provider prefix of a model id — 'litellm/x' -> 'litellm';
+    a bare id ('swe-2-high') -> 'devin'; '' for no model."""
+    m = (model or "").strip()
+    if not m:
+        return ""
+    return m.split("/", 1)[0] if "/" in m else "devin"
+
+
+def executor_blurb(card: dict) -> str:
+    """Short executor/provider/model/profile phrase for comms lines —
+    'executor=opencode provider=litellm model=litellm/g-3.5 profile=ops'
+    or '' when nothing is declared."""
+    a = card.get("action") or {}
+    bits = []
+    ex = card_executor(card)
+    if ex:
+        bits.append(f"executor={ex}")
+    model = str(a.get("model") or "").strip()
+    prov = model_provider(model)
+    if prov:
+        bits.append(f"provider={prov}")
+    if model:
+        bits.append(f"model={model}")
+    prof = card_profile(card)
+    if prof:
+        bits.append(f"profile={prof}")
+    tc = card_task_class(card)
+    if tc:
+        bits.append(f"task={tc}")
+    return " ".join(bits)
 
 # Keyword lane classifier — deterministic, validated on the lane corpus
 # (evals/results/jev/). Keyword hits run first; jevos is the fallback.
@@ -117,7 +236,8 @@ LANE_KW = {
               "quadlet", "warm standby", "repoint", "failing", "dep fix",
               "dependency"],
     "free_lane": ["install", "try", "launch", "write the", "design doc",
-                  "plan", "evaluate", "gui", "probe", "report", "fixture"],
+                  "docs-only", "documentation", "docs/", "checklist", "testable", "unit test", "python helper", "small code", "plan",
+                  "evaluate", "gui", "probe", "report", "fixture"],
 }
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
@@ -240,6 +360,12 @@ def session(card: dict) -> dict:
     if a.get("type") != "dispatch" or not tid:
         return out
     meta = task_meta(tid)
+    # executor contract fields the launcher stamped into meta.json
+    # (devin-dispatch.sh _meta_write / runner-agent start_opencode_lane)
+    # — rides the session record so close-out notes and reviewers can
+    # see who actually ran the work.
+    for k in ("executor", "provider", "model", "profile", "card"):
+        out[k] = str(meta.get(k) or "")
     out["repo_name"] = meta.get("repo") or a.get("repo") or ""
     out["branch"] = meta.get("branch") or f"dispatch/{tid}"
     wt = Path(meta.get("worktree") or
@@ -314,6 +440,69 @@ def dirty_count(worktree: Path) -> int | None:
     if r.returncode != 0:
         return None
     return sum(1 for ln in r.stdout.splitlines() if ln.strip())
+
+
+def unit_exit_evidence(task_id: str) -> tuple:
+    """(True|False|None, detail) — did devin-task-<task_id> exit 0.
+
+    Evidence precedence (the same order merge-sweep's verified gate
+    uses; this is the local side — merge-sweep collects the same
+    fields over ssh in REMOTE_SESSION_PROBE):
+
+      1. <task_dir>/exit_code — written by the devin-dispatch wrapper
+         for every run incl. followups; survives systemd --collect GC
+      2. meta.json result — devin-dispatch-watch's stamp
+      3. the unit's ExecMainStatus/Result — ONLY while LoadState is
+         'loaded'. A --collect'ed or never-loaded unit reports
+         ExecMainStatus=0/Result=success defaults: reading those as
+         'ok' is exactly how 2026-10-25/26 'Failed with result
+         exit-code' sessions recorded 'finished (ok)'
+         (dispatch-empty-closeout-verification-gap)
+      4. journal Succeeded/Failed lines — outlive --collect, not
+         rotation
+
+    None = no usable record: unproven, NOT a success. Callers must
+    never treat it as ok — a session whose exit cannot be proven is a
+    human-look case, not a clean finish."""
+    if not task_id:
+        return None, "no task_id"
+    td = dispatch_dir() / "tasks" / task_id
+    try:
+        ecp = td / "exit_code"
+        if ecp.is_file():
+            ec = ecp.read_text().strip()
+            if ec:
+                return (ec == "0"), f"exit_code={ec}"
+    except Exception:
+        pass
+    meta = task_meta(task_id)
+    mres = str(meta.get("result") or "").strip()
+    if mres and mres != "unknown":
+        return (mres == "success"), f"meta.result={mres}"
+    unit = str(meta.get("unit") or f"devin-task-{task_id}")
+    if not unit.endswith(".service"):
+        unit += ".service"
+    r = sh(["systemctl", "--user", "show", unit,
+            "-p", "ExecMainStatus", "-p", "Result", "-p", "LoadState"],
+           timeout=15)
+    kv = dict(ln.split("=", 1) for ln in (r.stdout or "").splitlines()
+              if "=" in ln)
+    if kv.get("LoadState") == "loaded":
+        ok = kv.get("Result") == "success" \
+            and str(kv.get("ExecMainStatus")) == "0"
+        return ok, (f"unit ExecMainStatus={kv.get('ExecMainStatus') or '?'} "
+                    f"Result={kv.get('Result') or '?'}")
+    # journal covers the base unit AND followups (devin-task-<id>-fuN):
+    # --user-unit takes a unit-name glob
+    j = sh(["journalctl", "--user-unit", f"devin-task-{task_id}*",
+            "--no-pager", "-o", "cat"], timeout=20)
+    hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'",
+                      j.stdout or "")
+    if hits:
+        jr = ("success" if hits[-1] == "Succeeded."
+              else hits[-1].split("'")[1])
+        return (jr == "success"), f"journal={jr}"
+    return None, "no exit record"
 
 
 def guard(card: dict) -> dict:
@@ -851,15 +1040,108 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
             "failed": failed[:8] or tail or ["pytest exited nonzero"]}
 
 
-def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
-    """Do not blame a change for a failure already present on base.
+def _gate_failfast_strip(cmd: str) -> str:
+    """The gate command without -x/--exitfast so a red suite enumerates
+    EVERY failure, not just the first. -rf is appended when the command
+    carries no -r summary flag — without it pytest may not print the
+    FAILED nodeid lines the parser reads."""
+    parts = [p for p in shlex.split(cmd)
+             if p not in ("-x", "--exitfirst")]
+    if not any(re.fullmatch(r"-r[A-Za-z]*", p) for p in parts):
+        parts.append("-rf")
+    return " ".join(shlex.quote(p) for p in parts)
 
-    A branch is still rejected when it introduces a new failing test or
-    changes the failure set. The baseline run is isolated in a temporary
-    detached worktree and removed after the comparison.
+
+def _gate_failures(wt: Path, repo_name: str) -> tuple:
+    """Complete failing-nodeid set under the repo's gate command
+    (failfast stripped). (set, meta) — set() only when the run actually
+    proved emptiness (suite green); None when it can't prove anything
+    (timeout, pytest missing, infra) and the caller must keep the hold.
+    """
+    cfg = test_gate_config(repo_name)
+    cmd = cfg.get("command")
+    if not cmd:
+        return None, {"skipped": "no test config"}
+    if not _PY_LEAD_RE.match(cmd):
+        # enumeration is pytest-shaped — a make/npm/custom gate gets no
+        # baseline compare; the branch result stands
+        return None, {"command": cmd, "skipped": "non-pytest gate"}
+    cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
+    cmd = _gate_failfast_strip(cmd)
+    try:
+        r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
+                           capture_output=True, text=True,
+                           timeout=int(cfg["timeout"]))
+    except subprocess.TimeoutExpired:
+        return None, {"command": cmd,
+                      "error": f"enumeration timed out after "
+                               f"{cfg['timeout']}s"}
+    out = f"{r.stdout or ''}\n{r.stderr or ''}"
+    if r.returncode != 0 and re.search(
+            r"No module named .?pytest|command not found", out):
+        return None, {"command": cmd, "skipped": "pytest unavailable"}
+    return set(_FAILED_SUMMARY_RE.findall(out)), {
+        "command": cmd, "python": py or "python3", "rc": r.returncode}
+
+
+def _baseline_failures(base_wt: Path, repo_name: str,
+                       nodeids: list) -> "set | None":
+    """Which of the branch's failing `nodeids` also fail on the
+    baseline tree — the same focused failures run against base. A
+    nodeid pytest can't collect there (new test file, renamed case) is
+    absent from the result and therefore counts as NEW. None = can't
+    prove (timeout / pytest missing) — the hold must stand."""
+    if not nodeids:
+        return set()
+    cfg = test_gate_config(repo_name)
+    if not cfg.get("command") or \
+            not _PY_LEAD_RE.match(cfg["command"]):
+        return None
+    _, py = _resolve_gate_cmd(cfg["command"], base_wt, repo_name, cfg)
+    interp = py or "python3"
+    # nodeids run ONE PER pytest call: a single missing pathspec (a
+    # branch-only test file) makes pytest exit 4 and run nothing,
+    # which would misclassify every pre-existing failure as new.
+    failed = set()
+    deadline = time.time() + int(cfg["timeout"])
+    for nodeid in nodeids[:48]:      # beyond this the suite is red
+        if time.time() > deadline:   # enough that no compare is safe
+            return None
+        cmd = " ".join([shlex.quote(interp), "-m", "pytest", "-q",
+                        "-rf", "--tb=no", shlex.quote(nodeid)])
+        try:
+            r = subprocess.run(["bash", "-c", cmd], cwd=str(base_wt),
+                               capture_output=True, text=True,
+                               timeout=120)
+        except subprocess.TimeoutExpired:
+            return None
+        out = f"{r.stdout or ''}\n{r.stderr or ''}"
+        if r.returncode != 0 and re.search(
+                r"No module named .?pytest|command not found", out):
+            return None
+        if nodeid in _FAILED_SUMMARY_RE.findall(out):
+            failed.add(nodeid)
+    return failed
+
+
+def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
+    """Do not blame a change for failures already present on base —
+    and never let a pre-existing failure hide a new one.
+
+    The -x gate reports only the FIRST failure, so a red branch run is
+    re-enumerated without failfast (a new failure sorting after a
+    pre-existing one would otherwise ride in unseen — the 2026-10-26
+    OpenCode README-marker incident class). The same focused nodeids
+    then run on a detached baseline worktree: failures identical to
+    base are classified pre-existing; anything absent on base still
+    holds the merge. Any comparison step that can't prove its set
+    leaves the hold in place — suppression needs evidence, not doubt.
     """
     branch = run_test_gate(wt, repo_name)
     if branch.get("ok") or not branch.get("ran") or not base_ref:
+        return branch
+    enum, meta = _gate_failures(wt, repo_name)
+    if not enum:
         return branch
     root = _repo_root(Path(wt))
     if root is None:
@@ -870,7 +1152,8 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
                 str(base_wt), base_ref], timeout=120)
         if r.returncode:
             return branch
-        base = run_test_gate(base_wt, repo_name)
+        base_failed = _baseline_failures(base_wt, repo_name,
+                                         sorted(enum))
     finally:
         sh(["git", "-C", str(root), "worktree", "remove", "--force",
             str(base_wt)], timeout=60)
@@ -878,14 +1161,20 @@ def baseline_aware_test_gate(wt: Path, repo_name: str, base_ref: str) -> dict:
             base_wt.rmdir()
         except OSError:
             pass
-    branch_failed = set(branch.get("failed") or [])
-    base_failed = set(base.get("failed") or [])
-    if branch.get("ran") and base.get("ran") and not base.get("ok") \
-            and branch_failed and branch_failed == base_failed:
-        branch = dict(branch)
-        branch.update(ok=True, baseline_failed=sorted(base_failed),
-                      skipped="pre-existing baseline test failure")
-    return branch
+    if base_failed is None:
+        return branch
+    new = sorted(enum - base_failed)
+    out = dict(branch)
+    out.update(command=meta.get("command") or branch.get("command"),
+               baseline_failed=sorted(enum & base_failed))
+    if new:
+        out["failed"] = new[:8]
+        out["error"] = (f"{len(new)} new failure(s) vs base "
+                        f"({len(enum & base_failed)} pre-existing)")
+    else:
+        out.update(ok=True,
+                   skipped="pre-existing baseline test failure")
+    return out
 
 
 # ---------------------------------------------------------- shadow guard
@@ -1032,10 +1321,13 @@ def close_out(card: dict) -> dict:
     checkpoint, pushed/push_error, gate, conflicts, shadows (pre-push
     gitignored-dir shadow guard), merged_sha,
     tests/test_failures (post-merge test gate), skipped|error, note,
-    session."""
+    session, executor/provider/model/profile (from task meta)."""
     out: dict = {"merged": False}
     s = session(card)
     out["session"] = s
+    for k in ("executor", "provider", "model", "profile"):
+        if s.get(k):
+            out[k] = s[k]
     if not s.get("task_id") and not s.get("branch"):
         out.update(noop=True, skipped="not a dispatch session")
         return out
@@ -1076,10 +1368,18 @@ def close_out(card: dict) -> dict:
         out.update(skipped=m["error"])
         return out
     if m["ancestor"]:
-        if s["head"] == _rev_parse(repo, s["base_ref"]):
-            # head == base tip: the session produced no commits — that is
-            # NOT merged work; verify would stamp a false positive.
-            out.update(noop=True,
+        if m.get("on_first_parent"):
+            # head is ON the base's first-parent chain — the tip itself
+            # or an old base commit: zero commits ahead of merge-base,
+            # i.e. the session produced nothing (the branch push just
+            # re-recorded base). That is NOT merged work — returning
+            # merged=True here stamped verified on empty dispatches and
+            # auto-closed them (dispatch-empty-closeout-verification-
+            # gap, 2026-10-25/26: 'Failed with result exit-code' +
+            # head == master base still auto-closed). Only a head that
+            # entered base through a merge's non-first parent counts
+            # as landed work.
+            out.update(noop=True, empty_session=True,
                        skipped="session produced no commits")
             return out
         out.update(merged=True, noop=True,
@@ -1159,6 +1459,19 @@ def close_out_notes(res: dict) -> list:
     """Comms lines for a close_out() result — shared by kanban-dispatch
     (local cards) and runner-agent (remote cards)."""
     notes = []
+    # executor contract audit line (opencode-explicit-executor-routing):
+    # the run's real executor/provider/model/profile rides the close-out
+    # so the card trail proves who did the work — never silent on this.
+    se = res.get("session") or {}
+    if se.get("executor"):
+        bits = [f"executor={se['executor']}"]
+        if se.get("provider"):
+            bits.append(f"provider={se['provider']}")
+        if se.get("model"):
+            bits.append(f"model={se['model']}")
+        if se.get("profile"):
+            bits.append(f"profile={se['profile']}")
+        notes.append("ran under " + " ".join(bits))
     cp = res.get("checkpoint") or {}
     if cp.get("committed"):
         notes.append(f"session-end checkpoint {cp['sha'][:8]}: "
@@ -1178,6 +1491,14 @@ def close_out_notes(res: dict) -> list:
     elif rl.get("error"):
         notes.append(f"push failed AND patch-relay failed: "
                      f"{rl['error']} — rescue the branch by hand")
+    if res.get("empty_session"):
+        # an EMPTY dispatch is not a silent no-op — it is the failure
+        # mode that used to auto-close invisible
+        # (dispatch-empty-closeout-verification-gap): say it plainly so
+        # the card trail shows the session delivered nothing.
+        notes.append("session produced no commits — the branch head is "
+                     "just an old base commit; NOT verified (merge-sweep "
+                     "counts this a failed dispatch attempt)")
     if res.get("noop"):
         return notes  # no commits to merge — silent per spec
     gate = res.get("gate") or {}
@@ -1197,17 +1518,24 @@ def close_out_notes(res: dict) -> list:
                      + ", ".join(res["conflicts"][:8])
                      + " — card stays in review for manual resolution")
         return notes
+    tests = res.get("tests") or {}
     if res.get("test_failures"):
         # names ride this note into action.last_failure via the caller —
         # the retry session starts knowing exactly what broke
         names = ", ".join(str(f) for f in res["test_failures"][:6])
-        notes.append(f"test gate failed — merge held: {names}")
+        pre = len(tests.get("baseline_failed") or [])
+        notes.append(f"test gate failed — merge held: {names}"
+                     + (f" (+{pre} pre-existing baseline failure(s))"
+                        if pre else ""))
         return notes
-    tests = res.get("tests") or {}
     if tests.get("skipped"):
         notes.append(f"test gate skipped: {tests['skipped']}")
     if res.get("merged"):
-        if tests.get("ran"):
+        if tests.get("baseline_failed"):
+            notes.append("test gate: failure(s) identical to base "
+                         "(pre-existing) — not blocking: "
+                         + ", ".join(tests["baseline_failed"][:6]))
+        elif tests.get("ran"):
             notes.append(f"test gate passed ({tests['command']}, "
                          f"{tests.get('elapsed', '?')}s)")
         notes.append(res.get("note") or "auto-merged")

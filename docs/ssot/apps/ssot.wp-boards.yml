@@ -1,7 +1,7 @@
 title: WP Boards — Member Info Surface
 subtitle: boards.surf-thailand.com — post types, taxonomy axes, title standard, watchdog topology
 version: 1
-last_updated: "2026-10-15"
+last_updated: "2026-10-27"
 
 # ssot.wp-boards — WordPress member-info surface (boards.surf-thailand.com)
 #
@@ -22,6 +22,54 @@ site:
   # index.php — clicks land clean via the edge bounce.
   rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost; /wp/wp-json/* is edge-rewritten to index.php and also works
   app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
+
+sites:
+  # Registry of LINE-managed WP sites — one entry per site the lanes
+  # can maintain. Customer sites append here per the onboarding
+  # runbook (docs/kb/wp-customer-site-onboarding.md); the model was
+  # approved 2026-10-27 (Tony "proceed" on the card's lane/group open
+  # question). Preflight before registering:
+  #   python3 scripts/wp-boards/site-preflight.py <url> [--env-file ...]
+  boards:
+    public_base: https://boards.surf-thailand.com/wp
+    origin_base: https://boards.h3.gizmo-thailand.com/wp
+    env_file: wp-boards.env        # under ~/.config/secrets/ on writer hosts
+    lanes: [tony, kk]              # ada lanes whose env carries these creds
+    person_tags: [tony, kk, nhong] # post_tag person axis for this site
+    line_groups: [kk-ha shared multihome, tony-ha]   # ssot.line-groups.yml
+  # customer template — copy and fill at onboarding:
+  # <slug>:                      # short site key, also the env suffix
+  #   public_base / origin_base / rest_route_style
+  #   env_file: wp-<slug>.env    # per-site app password (Option A)
+  #   lane: ada-<slug>           # dedicated lane instance (kk-clone)
+  #   line_group: <group-id>     # dedicated customer group, pinned persona
+  #   owner_person: <persons.yml key>
+
+customer_onboarding:
+  # Approved model (2026-10-27, card line-wp-site-manager): dedicated
+  # LINE group per customer-site, routed through the existing
+  # tony/kk-style lane pattern, backend holds a per-site revocable WP
+  # Application Password — Option A identity map. The customer never
+  # sees credentials; nothing goes into LINE where it persists in
+  # history/Yomi. Rejected: split-creds-across-chats (both halves end
+  # up indexed), per-chat passwords, WP admin password.
+  isolation: |
+    wp tools are single-site by construction — backend/wp_client reads
+    WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD from the lane's process env,
+    so a lane can only reach the one site its env file names. There is
+    no `site` parameter for the model to aim at another customer's
+    creds. Fleet scripts pin a site the same way via WP_BOARDS_ENV
+    (env file path), so per-site writes stay explicit.
+  lane_shape: |
+    Customer lane = ada-kk clone (ssot.apps.ada-persona-lanes.yml):
+    own instance/port/env_file/keys_file/bank, NO ha_upstream (customer
+    sites have no HA), tool profile = member-site set — wp_read +
+    wp_update (confirm-gated publish) + wp_post + chat_send + core
+    memory/search; no home-control, no internal ops tools. The LINE
+    group hard-pins to the lane persona via LINE_GROUP_PERSONA
+    (ssot.line-groups.yml); the customer's LINE userId gets a
+    LINE_USER_CALLERS entry.
+  runbook: docs/kb/wp-customer-site-onboarding.md
 
 post_types:
   post:          member posts from LINE asks (wp_post) — free-form human titles
@@ -76,7 +124,8 @@ post_types:
   # repo-pending (folded into 0.7.x next deploy): saved_by meta on asset/expense/
   # contact/reminder (+ 'By' admin column) — cpt_post attributes each
   # LINE save to a member. Card line-cpt-writer-router.
-  # v0.8.0 (repo, pending deploy 2026-10-23): activity CPT — durable
+  # v0.8.0 (DEPLOYED 2026-10-26 via deploy-plugin-zip.sh on tony-omen,
+  # folded into the 0.9.0 zip): activity CPT — durable
   # tool-execution records (card wp-activity-cpt-timeline-links, ADA-0650).
   # Hierarchical like news: parent = session/turn (kind=session), children =
   # one per tool call (kind=tool); has_archive /wp/activity/. status
@@ -89,7 +138,9 @@ post_types:
   # Writer: scripts/ada/activity-posts.py (activity-posts job, idc03).
   # Timeline dedupe: line-chat-timeline.py links these posts via
   # artifact_url/event_id instead of re-inlining media.
-  # v0.9.0 (repo, pending deploy): nest_job CPT — the ada-nest offload
+  # v0.9.0 (DEPLOYED 2026-10-26 via deploy-plugin-zip.sh on tony-omen,
+  # Tony gate 'proceed' on card repair-wp-nest-job-cpt-drift): nest_job
+  # CPT — the ada-nest offload
   # queue mirrored to the member surface (card
   # nest-api-unified-mutation-service). Hierarchical like activity —
   # parent jobs own child jobs/packs (job trees); has_archive
@@ -98,6 +149,18 @@ post_types:
   # error/comms(JSON append log [{at,from,text}])/updated. ONLY writer:
   # board-api POST /job on idc03 (queue-mgr on dell mirrors Drive
   # queue/packs state -> CPT through the door).
+  # DRIFT FOUND+REPAIRED 2026-10-26 (card repair-wp-nest-job-cpt-drift):
+  # live plugin was ~v0.7.x — /wp/v2/nest_job AND /wp/v2/activity both
+  # 404 rest_no_route; the v0.8.0/v0.9.0 deploys had never run (not a
+  # revert — KNB-0659 verified v0.3.3, predating both CPTs). Repaired by
+  # deploying integrations/wp-boards/dist/chaba-boards-0.9.0.zip via
+  # deploy-plugin-zip.sh on tony-omen after Tony's 'proceed' gate.
+  # Verified live: both CPTs in /wp/v2/types (31 types), anon GET
+  # /wp/v2/nest_job 200 [] (private model intact), board-api /job
+  # parent/child upsert + meta merge round-trip (posts 2603-2606).
+  # Regression probes: wp-nest-job-cpt + wp-activity-cpt in
+  # ssot.health.home.web.yml; re-verify any time with
+  # scripts/wp-boards/verify-nest-job.sh.
   # Verified 2026-10-14 (KNB-0657 audit follow-up): /wp/v2/plugins reports
   # chaba-boards 0.3.3 active; all 10 CPTs in /wp/v2/types; private sample
   # post per core CPT seeded via REST (ids 266-271) proving the fleet-writer
@@ -224,6 +287,21 @@ writers:
                   lane's member. contact/asset upsert by slug
                   (<kind>-<name>), expense/reminder always create.
                   Needs wp_client slug patch (staged drop 11)."
+  wp_read:        "read-only browse (card line-wp-site-manager P2) —
+                  ada-voice tools.d/wp_read: action=list posts/pages/CPT
+                  (status/person-tag/search filters), action=get by id
+                  or slug returns title + body TEXT — the draft preview
+                  (members have no wp-admin login). Tag lookup is a GET,
+                  never ensure_tag."
+  wp_update:      "confirm-gated writes to posts/pages (card
+                  line-wp-site-manager P3) — tools.d/wp_update,
+                  manifest policy:confirmed (dispatch enforces
+                  confirmed=true/confirm_token). GET-then-POST:
+                  transition report 'draft -> publish'; posts+pages
+                  only — CPT records keep their writer tools'
+                  slug/meta contract. Confirm-before-publish flow:
+                  wp_post publish=false -> wp_read get -> wp_update
+                  status=publish."
   place_report:   place + person tag            # maps links / place names
   trip_calendar:  trip parent+children + person # --public flag
   line-chat-timeline.py: "timeline_block rebuilds (journal+ops-events);

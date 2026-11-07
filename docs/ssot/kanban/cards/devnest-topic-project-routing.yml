@@ -1,0 +1,84 @@
+id: devnest-topic-project-routing
+title: Route DevNest Supergroup topics to projects and lanes
+column: done
+updated: 2026-10-26 19:31
+brief: Use Telegram forum topics as the human follow-up surface for multiple DevNest projects without making Telegram
+  the source of truth.
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- topics
+- project-routing
+spec: 'Add a durable topic registry for TG/DevNestHA. Permanent topics: General, Inbox, Control, Ops, Research,
+  Education, Archive. Project topics use `PRJ <project-id> — <short title>`. Persist message_thread_id -> project_id/card_ref/lane/visibility;
+  never infer identity from display title alone. On successful PDF intake, create a project topic via Telegram createForumTopic
+  or return a manual topic setup instruction, bind the topic to the project manifest and board card, and route all
+  project replies/notifications to that thread. Mirror only milestone summaries to General. Unknown topics are quarantined.
+  Add topic-aware tests, same-topic PDF intake, project handoff from Inbox to project topic, milestone mirror, restart
+  persistence, and rollback/no topic deletion. Keep board/project artifacts as source of truth; Telegram topics
+  are the human collaboration surface.'
+ref: OPS-0915
+comms:
+- at: 2026-10-26 18:52
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 19:07
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 19:08
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 19:08
+  from: idc02
+  text: claimed
+- at: 2026-10-26 19:08
+  from: chaba
+  text: started devin-task-20261026-190844-add-a-durable-topic-registry-f on idc02 (dispatch)
+- at: 2026-10-26 19:14
+  from: devin
+  text: claimed by dispatch on idc02 — implementing durable topic registry in devnest-tg-relay.py (permanent topics,
+    PRJ naming, thread->project binding, quarantine, milestone mirror) + tests
+- at: 2026-10-26 19:23
+  from: devin
+  text: 'DONE in worktree, commit 111c3586b (not pushed — dispatch cannot push). devnest-tg-relay.py now keeps durable
+    topics.json registry: permanent topics + PRJ <id> — <title> convention, thread_id->project/card/lane/visibility
+    bindings, forum_topic_* events self-register, unknown threads quarantined, PDF intake creates+binds project
+    topic (manual-instruction fallback), same-topic PDF attaches to bound project, /send routes by project/card
+    and mirrors only milestones to General, deleteForumTopic hard-'
+- at: 2026-10-26 19:24
+  from: idc02
+  text: 'finished (ok): exit=0  restart `devnest-tg-relay.service`, create/rename the permanent topics, and resend
+    the KK PDF in Inbox. | devin-'
+- at: 2026-10-26 19:24
+  from: chaba
+  text: pushed dispatch/20261026-190844-add-a-durable-topic-registry-f to origin
+- at: 2026-10-26 19:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 19:24
+  from: chaba
+  text: auto-merged b3735bd4 (dispatch/20261026-190844-add-a-durable-topic-registry-f) → origin/master
+- at: 2026-10-26 19:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-190844-add-a-durable-topic-registry-f,
+    branch dispatch/20261026-190844-add-a-durable-topic-registry-f'
+- at: 2026-10-26 19:31
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0  restart `devnest-tg-relay.service`, create/rename the permanent topics, and resend the KK PDF
+    in Inbox. | devin-task-20261026-190844-add-a-durable-topic-registry-f.service: Consumed 37.311s CPU time, 91.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 19:31
+  note: verified — evidence checks green, closing itself

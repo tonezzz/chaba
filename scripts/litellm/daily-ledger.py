@@ -30,6 +30,33 @@ WHERE "startTime" >= now() - interval '24 hours'
 GROUP BY 1,2 ORDER BY spend_usd DESC;
 """
 
+BUDGET_SQL = """
+SELECT coalesce(key_alias,'<unnamed>'), max_budget, budget_duration,
+       round(spend::numeric, 4), budget_reset_at
+FROM "LiteLLM_VerificationToken" ORDER BY key_alias;
+"""
+
+
+def budgets_via_psql() -> list[dict]:
+    """Live per-key budget table — replaces the hardcoded caps line that
+    drifted out of date (found stale in the 2026-10-28 audit)."""
+    out = subprocess.run(
+        ["podman", "exec", "litellm-db", "psql", "-U", "litellm",
+         "-d", "litellm", "-At", "-F", "|", "-c", BUDGET_SQL],
+        capture_output=True, text=True, timeout=30)
+    if out.returncode != 0:
+        raise RuntimeError(out.stderr.strip()[:200])
+    rows = []
+    for line in out.stdout.strip().splitlines():
+        alias, cap, dur, spend, reset = (line.split("|") + [""] * 5)[:5]
+        cap_f = float(cap) if cap else None
+        spend_f = float(spend or 0)
+        rows.append({"key": alias, "max_budget": cap_f,
+                     "duration": dur or "-", "spend": spend_f,
+                     "pct": (spend_f / cap_f * 100) if cap_f else None,
+                     "reset": reset or "-"})
+    return rows
+
 
 def spend_via_psql():
     out = subprocess.run(
@@ -83,6 +110,24 @@ def main():
         body_rows = "\n".join(
             f"| {r['key']} | {r['model']} | {r['calls']} | {r['tokens']} | ${r['spend_usd']} |"
             for r in rows) or "| – | – | 0 | 0 | $0 |"
+        try:
+            budget_rows = "\n".join(
+                f"| {b['key']} | {b['duration']} | "
+                + (f"${b['max_budget']:g}" if b['max_budget'] is not None
+                   else "uncapped")
+                + f" | ${b['spend']:.4f} | "
+                + (f"{b['pct']:.0f}%" if b['pct'] is not None else "–")
+                + f" | {b['reset']} |"
+                for b in budgets_via_psql())
+            budget_section = f"""
+## Key budgets (live LiteLLM_VerificationToken)
+
+| key | window | cap | spend | used | reset |
+|---|---|---|---|---|---|
+{budget_rows}
+"""
+        except Exception as e:
+            budget_section = f"\n_Key budget table unavailable: {e}_\n"
         body = f"""# LLM Gateway Spend Ledger
 
 {rep['run']} — trailing 24h, source `{source}`.
@@ -93,8 +138,8 @@ Gateway: `http://100.102.134.91:4000` (idc03, tailnet-only). Admin UI: `/ui`.
 | key | model | calls | tokens | spend |
 |---|---|---|---|---|
 {body_rows}
-
-Caps: proxy $50/30d; ada $10/30d; chaba $5/30d; bench $2/30d.
+{budget_section}
+Proxy ceiling: $50/30d (litellm_settings.max_budget).
 Routing: docs/ssot/infrastructure/ssot.llm-gateway.yml
 """
         req = urllib.request.Request(f"{MDDB}/add",

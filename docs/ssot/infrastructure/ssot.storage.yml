@@ -123,6 +123,34 @@ categories:
       - Restore npm disk copy: rm -f ~/.npm && mv ~/.npm.disk ~/.npm
       - Force resync: systemctl --user restart ms-playwright-ram-cache.service npm-cache-ram-cache.service
 
+  - id: model-cache
+    label: DevNest LLM model cache (content-addressed Ollama/GGUF blobs)
+    paths:
+      - "con01:~/var/cache/devnest/models  (primary origin)"
+      - "idc03:~/var/cache/devnest/models  (TH-side mirror)"
+    current_size: 18G   # con01 ~9.1G (store+tmp) + idc03 mirror 9G — all sha256-verified 2026-10-29
+    breakdown:
+      "qwen3:0.6b": 523M
+      "qwen3:1.7b": 1.4G
+      "qwen3:4b": 2.5G
+      "qwen3:8b": 5.2G
+    tier: cache   # R6 — disposable + re-derivable, but preserved as the
+                  # fleet model origin; prune via index.json entries +
+                  # orphaned-blob sweep, never hand-edit blobs/
+    threshold:
+      warning: 60G
+      critical: 100G
+    status: stable
+    retention: >-
+      Models persist until removed from index.json; quarantine/*.part is
+      always safe to delete (failed/in-flight only). Runbook:
+      docs/kb/devnest-model-cache.md; job:
+      docs/ssot/jobs/models/2026-10-29-llm-model-cache.yml.
+    cleanup:
+      - "quarantine/*.part — always disposable"
+      - "tmp/ollama-extract on con01 — disposable ollama binary for isolated serves"
+      - "remove model = delete index entry + blobs no manifest references (verify first)"
+
   - id: claude
     label: Claude Desktop data
     paths:

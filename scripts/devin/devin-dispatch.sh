@@ -117,14 +117,39 @@ _meta_get() { python3 -c "import json,sys;print(json.load(open('$1')).get('$2') 
 
 _meta_write() { # dir repo worktree branch unit default_branch
   python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
-import json, sys
+import json, os, sys
 from datetime import datetime, timezone
 d, repo, wt, branch, unit, dbranch = sys.argv[1:7]
+now = datetime.now(timezone.utc).isoformat()
 meta = {"repo": repo, "worktree": wt, "branch": branch, "unit": unit,
         "default_branch": dbranch,
         "base": f"origin/{dbranch}" if dbranch else "",
-        "permission_mode": "see prompt", "started_at": datetime.now(timezone.utc).isoformat()}
+        "permission_mode": "see prompt", "started_at": now}
+# Executor contract (opencode-explicit-executor-routing): record who
+# actually ran the work so dispatch_repos.session() and the close-out
+# can prove it. Callers (kanban-dispatch, runner-agent) pass the card's
+# declared contract via DISPATCH_* env; defaults are the plain devin
+# executor. The devin CLI's default model is still a devin model, so
+# provider is "devin" even when no model id is set.
+model = os.environ.get("DISPATCH_MODEL", "")
+executor = os.environ.get("DISPATCH_EXECUTOR", "") or "devin"
+provider = os.environ.get("DISPATCH_PROVIDER") or \
+    (model.split("/", 1)[0] if "/" in model else "devin")
+meta["executor"] = executor
+meta["card"] = os.environ.get("DISPATCH_CARD", "")
+meta["provider"] = provider
+meta["model"] = model
+meta["profile"] = os.environ.get("DISPATCH_PROFILE", "")
+if os.environ.get("DISPATCH_TARGET_HOST"):
+    meta["target_host"] = os.environ["DISPATCH_TARGET_HOST"]
 json.dump(meta, open(f"{d}/meta.json", "w"), indent=1)
+# usage.json — the durable accounting surface. It exists even when the
+# provider reports no usage (the contract fields ARE the evidence).
+tid = d.rstrip("/").rsplit("/", 1)[-1]
+usage = {"task_id": tid, "card": meta["card"], "unit": unit,
+         "executor": executor, "provider": provider, "model": model,
+         "profile": meta["profile"], "started_at": now}
+json.dump(usage, open(f"{d}/usage.json", "w"), indent=1)
 PY
 }
 

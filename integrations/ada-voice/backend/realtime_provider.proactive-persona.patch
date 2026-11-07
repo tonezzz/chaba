@@ -1,0 +1,22 @@
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 063f59b..dc85777 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -1419,7 +1419,16 @@ def _builtin_declarations() -> list[dict[str, Any]]:
+                     },
+                     "to": {
+                         "type": "string",
+-                        "description": "Optional explicit LINE userId, Telegram chat_id, or webchat chat_id (web-<member>); default = the chat this turn came from, else owner.",
++                        "description": "Optional explicit LINE userId, Telegram chat_id, or webchat chat_id (web-<member>); default = the chat this turn came from, else owner. A member display name ('nhong') resolves server-side to that member's DM.",
++                    },
++                    "mention": {
++                        "type": "string",
++                        "description": "LINE only, group targets: member name(s) to @-ping with a real LINE mention — 'nhong' or 'nhong,kk'. Names resolve via the member registry; display name comes from the group member profile.",
++                    },
++                    "intent": {
++                        "type": "string",
++                        "enum": ["reply", "proactive"],
++                        "description": "Declare 'proactive' when YOU initiate contact nobody asked for — engaging a member, following up unprompted. Relay-side rate limits apply (allowlisted lanes only, debounce + daily cap); a denied send returns an error you must say aloud.",
+                     },
+                     "say": {
+                         "type": "string",

@@ -1,0 +1,210 @@
+title: DevNest free-lane savings pilot — class definitions, card contract,
+  run-record schema, baseline comparison
+subtitle: OPS-0885 — three supervised pilot jobs on OpenCode +
+  gemini-3.5-flash-lite measured against matched Devin-lane history;
+  enablement gated on OPS-0846 (now proven) + a supervised push-capable host
+icon: route
+version: 1
+
+card: devnest-free-lane-savings-pilot
+date: 2026-10-26
+dispatch: 20261026-164611-pilot-classes-1-docs-config-ch
+
+spec_source: |
+  Pilot classes: (1) docs/config change, (2) small testable code fix, (3)
+  read-only report/lesson update. Each card must declare target_host, base
+  ref, verifier, expected artifact, and stop condition. Capture model,
+  prompt/session timestamps, LiteLLM spend delta, input/output tokens if
+  available, wall time, gate result, human intervention minutes, merge
+  success, and escalation. Compare cost per passed gate against Devin
+  baseline; no paid-frontier lane yet. Enable only on a supervised
+  push-capable host after OPS-0846 proof.
+
+enablement_gate: |
+  OPS-0846 (card opencode-lane-branch-closeout) is PROVEN as of
+  2026-10-26 07:00 — the Dell-pinned OpenCode marker job produced a
+  dispatch-compatible worktree + branch, ran opencode with flash-lite,
+  pushed, passed the baseline-aware test gate, and auto-merged to
+  origin/master. Remaining gate from the spec: "supervised push-capable
+  host". Supervised = Tony (or delegate) watches the run and records
+  human_intervention_min; push-capable = runner push guard passes for
+  repo chaba (push:chaba label + git push --dry-run). OPENCODE_LANES=1
+  must be set in that host's runner-agent unit env — per-host declared
+  change, not fleet-wide. Proven host: tony-dell (OPS-0846 probe ran
+  there). idc02 has opencode installed but OPENCODE_LANES is unset in
+  runner-agent.service env — alternate only after the env is declared.
+
+pilot_classes:
+  - class: docs-config-change
+    card: devnest-fl-pilot-doc
+    shape: >-
+      single artifact write — docs/reports/devnest-fl-pilot-1-doc.md
+      (purpose / lane / model / metrics checklist). Mirrors
+      devnest-free-pilot-doc (OPS-0895) so the earlier devin-lane run is a
+      matched baseline pair.
+    why_this_class: >-
+      cheapest possible verified change — write-then-fill prompt order,
+      heading checklist verifier, zero code risk.
+  - class: small-testable-code-fix
+    card: devnest-fl-pilot-code
+    shape: >-
+      scripts/ops/pilot_metrics.py pure helper cost_per_passed_gate() +
+      tests/ops/test_pilot_metrics.py. Mirrors devnest-free-pilot-code
+      (OPS-0896) — again a matched devin-lane baseline pair — and produces
+      the helper this pilot's own metric needs.
+    why_this_class: >-
+      tests the lane on the smallest real code+test loop; pytest is the
+      verifier, no judgment call.
+  - class: readonly-report-lesson-update
+    card: devnest-fl-pilot-report
+    shape: >-
+      read ssot.devnest-lanes.yml + the three pilot cards -> write
+      docs/reports/devnest-fl-pilot-3-report.md (lane table + pilot
+      status). Read-only besides the one artifact.
+    why_this_class: >-
+      adds a read->transform->write step; still single-shot, but the
+      verifier checks content coverage (all 7 lane ids present), not
+      just file existence.
+
+card_contract: |
+  Every pilot card declares, in a top-level `pilot:` block AND repeated
+  in the spec text (flash-lite reads spec, tooling reads YAML):
+    target_host        action.host — pinned claim host (tony-dell)
+    base_ref           origin/master — dispatch worktree branches from it
+    verifier           the done-gate a supervisor/merge-sweep re-checks
+    expected_artifact  the file that must exist post-merge
+    stop_condition     when the run must halt / not count as a datapoint
+  Lane pinning: action.lane: free_lane + action.model:
+  litellm/gemini-3.5-flash-lite are set in the card YAML itself — the
+  OPS-0885 misses (two runs classified `devin`) were caused by relying
+  on claim-time keyword classification. Explicit lane removes classifier
+  variance from the experiment; runner-agent honors explicit action.lane
+  before classifying.
+  Queueing: cards are created in backlog with action.status unset — they
+  are NOT self-claiming. The supervisor queues via POST
+  /apps/board-api/action {"do":"queue"} only after confirming
+  OPENCODE_LANES=1 on the pinned host.
+
+run_record:
+  convention: >-
+    one YAML per completed run at
+    docs/ssot/jobs/devnest/pilot-runs/<YYYY-MM-DD>-<card_id>.yml,
+    assembled by the supervisor (or a follow-up assembler card) from the
+    sources below; schema doubles as the OPS-0885 capture list.
+  fields:
+    card_id: card id
+    pilot_class: docs-config-change | small-testable-code-fix | readonly-report-lesson-update
+    executor: opencode | devin  (from meta.json executor field; devin =
+      the DISPATCH_MODEL fallback — still recordable, flagged non-opencode)
+    model: litellm model id from action.model / claim body / meta
+    prompt_at: meta.json started_at (task kick)
+    session_start: unit ActiveEnterTimestamp
+    session_end: unit ActiveExitTimestamp / finish comms `at`
+    litellm_spend_delta_usd: >-
+      LiteLLM SpendLogs delta for the run's virtual key + model between
+      session_start and session_end — scripts/litellm/daily-ledger.py
+      (CMS ledger) or proxy /spend/logs; free tier expects ~0 and the
+      measurement PROVES it
+    tokens_in: 'opencode step-finish "tokens":{"input":N} captured into
+      action.result / unit journal --format json stream'
+    tokens_out: 'same, "output"'
+    wall_time_s: unit result "wall clock time" (finish result string)
+    gate_result: pass|fail + which verifier ran (heading check, pytest,
+      lane-table coverage) + baseline-aware test-gate note
+    human_intervention_min: supervisor-measured minutes beyond queueing
+      (re-prompts, manual fixes, manual merge); target 0
+    merge_success: merge-sweep verified + merge sha (or hold reason)
+    escalation: none | paid_frontier | devin | manual + reason
+    cost_per_passed_gate_usd: 'litellm_spend_delta_usd / gates_passed
+      (helper: pilot_metrics.cost_per_passed_gate, delivered by the
+      class-2 job itself)'
+
+baseline_comparison: |
+  Devin baseline = matched devin-lane runs of the same task shapes:
+    devnest-free-pilot-doc  — wall 57.9s, merged, 0 intervention
+    devnest-free-pilot-code — wall 66.1s, merged, 0 intervention
+  Token baseline per session: scripts/devin/devin-usage.py reads each
+  task's transcript.json final_metrics (prompt/cached/completion) —
+  Devin plan models are allowance-priced so the honest comparator is
+  tokens + sessions + wall + intervention, plus an OPTIONAL list-price
+  equivalent using PRICES for a named frontier model (clearly labeled
+  estimate, never "actual Devin $").
+  Report: extend scripts/board/lane-savings.py run or a manual table in
+  the run record — cost_per_passed_gate per lane per class; claim
+  savings only where usage evidence exists (hard rule already in
+  lane-savings.py). No paid-frontier arm in this pilot.
+
+run0: |
+  Pilot job 0 already exists: the Dell OpenCode closeout probe
+  (OPS-0846 proof, 2026-10-26 ~07:00) ran flash-lite in a dispatch
+  worktree with push + baseline-aware gate + auto-merge — first real
+  free-lane datapoint. Its run record should be assembled retroactively
+  from the opencode-closeout-probe-dell card + unit journal.
+
+pilot_results: |
+  Executed 2026-10-26 17:42–17:52 +07 under supervision (Tony answered
+  "queue all three on tony-dell now — I am watching"; runner-agent run
+  manually on tony-dell with JEV_LANE=0 OPENCODE_LANES=1 — JEV_LANE=0
+  avoided a claim_pass bug that re-classified pinned lanes; fixed this
+  dispatch). All three jobs: executor opencode:free_lane, model
+  litellm/gemini-3.5-flash-lite, 0 human-intervention minutes, 0
+  escalations.
+    doc    wall 36s  tok_in 35,070  tok_out 409   merged 8ea5303d
+    code   wall 46s  tok_in 80,999  tok_out 816   merged b9ede30a
+    report wall 38s  tok_in 56,656  tok_out 826   pushed 874a9924
+  LiteLLM SpendLogs delta (list-price equivalent, not billed):
+  doc+code shared window $0.0447 (321,831 tok), report $0.0253
+  (254,675 tok) → $0.0700 total / 3 passed gates = $0.0233 per gate.
+  Devin baseline (matched shapes, same day): doc 57.9s, code 66.1s —
+  free lane was 30–38% faster on wall time with identical merge
+  trajectory. Devin sessions are allowance-priced, so per the
+  lane-savings hard rule the honest claim is tokens+wall+intervention,
+  not dollars. Run records: docs/ssot/jobs/devnest/pilot-runs/2026-10-26-*.yml
+
+deliverables:
+  - docs/ssot/jobs/devnest/2026-10-26-free-lane-savings-pilot.yml (this file)
+  - docs/ssot/kanban/cards/devnest-fl-pilot-doc.yml (class 1, backlog, supervised-only)
+  - docs/ssot/kanban/cards/devnest-fl-pilot-code.yml (class 2, backlog, supervised-only)
+  - docs/ssot/kanban/cards/devnest-fl-pilot-report.yml (class 3, backlog, supervised-only)
+  - docs/ssot/infrastructure/ssot.devnest-lanes.yml — OPS-0846 marked
+    proven; free-opencode status + open_gaps + references updated
+
+verify:
+  - "python3 yaml.safe_load on all new/changed YAML — parses"
+  - "card contract fields present in all three pilot cards (pilot block + action.host/lane/model)"
+  - "action.status absent on all three cards — nothing auto-claims on merge"
+
+gaps_remaining: |
+  - RESOLVED 2026-10-26: OPENCODE_LANES=1 confirmed on tony-dell — but as
+    a drop-in (runner-agent.service.d/jev-lane.conf) for a unit that
+    DOESN'T EXIST. tony-dell has no runner-agent.service/timer and
+    kanban-dispatch is parked (2026-10-04): claims there only happen when
+    a supervisor runs runner-agent.py by hand. That IS the supervised
+    model — but the orphan drop-in is a host-hygiene flag, and a real
+    runner-agent unit (or an ssot.jobs dispatcher job) would let queued
+    cards pinned to tony-dell drain unattended. Decide: declare a unit,
+    or declare dell a manual-only runner.
+  - RESOLVED 2026-10-26 (this dispatch): runner-agent claim_pass
+    re-classified lanes unconditionally under JEV_LANE=1, clobbering
+    pinned action.lane — the doc card would have gone codemod, the code
+    card paid_frontier (real spend). Fixed: explicit lane wins. The
+    supervised run additionally ran with JEV_LANE=0 as a guard since
+    dell's checkout carried the pre-fix code at run time.
+  - RESOLVED 2026-10-26 (this dispatch): merge-sweep TASK_ID_RE only
+    matched devin-dispatch tids (YYYYMMDD-HHMMSS-*); OpenCode-lane tids
+    (<card-id>-<epoch>) never resolve from comms, so once finish_pass
+    consumes runner state.json a held opencode merge is invisible to the
+    sweep — devnest-fl-pilot-report's branch sat pushed-but-unmerged
+    past a sweep tick. Fixed: regex accepts both shapes.
+  - Run-record assembly is manual per the field->source table; a small
+    assembler (cards + meta.json + unit journal + SpendLogs) is natural
+    follow-up work — the class-2 helper lands the metric function.
+  - LiteLLM SpendLogs attribution: calls log under the shared gateway
+    key; attribute by model+time window (works — done in pilot-runs).
+    Note SpendLogs spend is LIST-PRICE compute, not billed amount —
+    Gemini free-tier billing is not visible in the proxy.
+  - merge-sweep withheld `verified` on all three pilot cards (work
+    present vs base but exit-evidence tier undecidable) — cards hold in
+    review; verifiers were re-run manually and passed. Worth
+    understanding why the opencode closeout doesn't carry the exit
+    evidence tier the gate prefers (taskdir exit_code).

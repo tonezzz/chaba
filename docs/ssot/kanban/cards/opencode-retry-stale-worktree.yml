@@ -1,0 +1,400 @@
+id: opencode-retry-stale-worktree
+title: 'runner-agent: GC stale dispatch worktree on opencode retry'
+column: doing
+updated: 2026-11-06 20:47
+priority: low
+tags:
+- opencode
+- runner-agent
+- hygiene
+spec: 'OPS-1021 proved it: when an opencode run is held (verifier fail / merge held), the dispatch worktree dispatch-wt-<task-id>
+  stays behind. The task-id is deterministic per card, so EVERY retry fails with "start failed: worktree already
+  exists" until a human removes the dir (4 manual removals needed this session). Fix: in start_opencode_lane, if
+  the worktree path exists and the previous task is finished (taskdir has verdict.json/exit_code), git worktree
+  remove --force it before creating — the prior run''s evidence is already durable in the taskdir. If the task is
+  still running, defer instead.'
+ref: OPS-1039
+comms:
+- at: 2026-11-02 11:18
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 14:59
+  from: devin
+  text: 'Recommended as the first supervised Ada -> OpenCode real-fix canary: OPS-1039 is narrow, deterministic,
+    regression-testable, reversible, and has no secrets/deploy/destructive scope. Ada should produce the handoff
+    only; OpenCode works in an isolated branch/worktree; tests + independent verifier run; Tony reviews the patch.
+    Do not auto-merge or let Ada dispatch directly until ADA-1010 typed dispatch gates exist.'
+- at: 2026-11-04 10:27
+  from: devin
+  text: 'Prepared the Tony-approved supervised branch-code pilot profile in PR #64: https://github.com/tonezzz/chaba/pull/64.
+    It pins idc02, keeps unattended=false, permits Claude Fable 5.1 or Gemini 3 Pro, requires isolated worktree/tests/independent
+    verifier/rollback, and does not queue or deploy. CI is pending. Next gates: merge/review PR #64, configure OPENCODE_LANES
+    + runner-agent on idc02, then populate the OPS-1039 action envelope and queue only with auto-merge/deploy disabled.'
+- at: 2026-11-04 12:48
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 12:48
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-04 12:49
+  from: tony
+  text: put on hold
+- at: 2026-11-04 12:49
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 12:49
+  from: idc02
+  text: claimed
+- at: 2026-11-04 12:49
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793771349 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/claude-fable-5.1)
+- at: 2026-11-04 12:50
+  from: idc02
+  text: 'finished (failed): exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793771349.se'
+- at: 2026-11-04 12:51
+  from: devin
+  text: put on hold
+- at: 2026-11-04 12:52
+  from: devin
+  text: First real Ada -> OpenCode dispatch attempted on idc02 under branch-code-supervised-pilot with model litellm/claude-fable-5.1.
+    Runner/worktree/profile gates passed, but OpenCode exited 1 immediately with an UnknownError. idc02 LiteLLM
+    config does not serve claude-fable-5.1 or gemini-3-pro; only Gemini 2.5/3.5 aliases, local Ollama, and OpenRouter
+    Gemini aliases are configured. Card held; no artifact, tests, verifier, merge, or deploy. Do not retry until
+    a supported strong model route is explicit
+- at: 2026-11-04 12:59
+  from: devin
+  text: 'Model-route verification 2026-11-04: idc02 LiteLLM `/v1/models` lists Gemini 2.5/3.5 aliases, OpenRouter
+    3.5/free aliases, and KK-Mac Ollama aliases, but no `claude-fable-5.1` and no `gemini-3-pro`. Liveness probes:
+    `gemini-3.5-flash-free` HTTP 200 (~8.1s, low token cap yielded no text); `or-free-nemotron-nano` HTTP 200 (~0.6s,
+    cost=0, low token cap yielded reasoning only); KK-Mac `qwen3:8b` HTTP 200 (~6.1s). The branch-code S5 profile
+    only permits strong models, so none of these routes is curre'
+- at: 2026-11-04 13:15
+  from: devin
+  text: 'raised request the-first-real-opencode-dispatch-reached-163fd0: The first real OpenCode dispatch reached
+    idc02 but the approved strong model route is unavailable. Choose the next route'
+- at: 2026-11-04 13:17
+  from: devin
+  text: 'raised request tony-proposes-benchmarking-both-strong-m-ae0fa6: Tony proposes benchmarking both strong-model
+    routes before choosing one. Should we prepare two bounded provider probes w'
+- at: 2026-11-04 14:08
+  from: tony
+  text: 'answered tony-proposes-benchmarking-both-strong-m-ae0fa6: Yes: run two tiny read-only model probes, bounded
+    tokens/cost, no card dispatch.'
+- at: 2026-11-04 14:08
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-04 14:08
+  from: devin
+  text: 'Bounded provider benchmark completed before any OPS-1039 retry (direct OpenRouter probes from idc03; no
+    tools, no worktree, no card dispatch). Claude: `anthropic/claude-fable-5.1` returned OK in 2.55s, 30 tokens,
+    cost $0.000460. Gemini closest available route: `google/gemini-3.1-pro-preview` returned OK in 2.57s, 69 tokens,
+    cost $0.000728 (58 reasoning tokens). Exact `google/gemini-3-pro` was not listed; only Gemini 3 Pro image variants
+    appeared. Both provider routes are reachable via OpenRouter'
+- at: 2026-11-04 14:14
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 14:18
+  from: idc02
+  text: claimed
+- at: 2026-11-04 14:18
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793776717 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 14:19
+  from: idc02
+  text: 'finished (failed): exit=1 vice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793776717.se'
+- at: 2026-11-04 14:20
+  from: tony
+  text: put on hold
+- at: 2026-11-04 14:20
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 14:21
+  from: idc02
+  text: claimed
+- at: 2026-11-04 14:21
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793776903 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 14:30
+  from: chaba
+  text: 'merge-sweep: devin-task-opencode-retry-stale-worktree-1793771349 no longer active on idc02 but card still
+    says running — sweeping its branch'
+- at: 2026-11-04 14:30
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 14:31
+  from: idc02
+  text: claimed
+- at: 2026-11-04 14:31
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793777463 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 14:45
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 14:46
+  from: idc02
+  text: claimed
+- at: 2026-11-04 14:46
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793778387 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 14:47
+  from: tony
+  text: 'Execution focus: implement only OPS-1039. Inspect `start_opencode_lane` and existing `tests/board/test_worktree_gc.py`/runner
+    tests. If worktree exists, remove it only when taskdir has verdict.json or exit_code; if active, defer. Add
+    a focused regression test, run targeted tests, and write the declared JSON artifact `evals/opencode-lane/out/ops-1039.json`.
+    Do not inventory unrelated files/cards or spend time reading the whole runner; stop after artifact + tests.'
+- at: 2026-11-04 14:47
+  from: chaba
+  text: comment saved but session delivery skipped (bad task_id)
+- at: 2026-11-04 14:48
+  from: idc02
+  text: 'finished (failed): exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793778387.ser'
+- at: 2026-11-04 14:50
+  from: devin
+  text: put on hold
+- at: 2026-11-04 14:50
+  from: devin
+  text: 'Pilot halted after model route failure. OpenRouter returned HTTP 402: Anthropic credit balance too low
+    / in-flight budget exhausted (key spend ~$17.29 of $25). No code artifact, tests, verifier, merge, or deploy
+    was produced. Card held; do not auto-retry until credits/budget are explicitly resolved or a zero-cost benchmark
+    route/profile is selected.'
+- at: 2026-11-04 15:08
+  from: devin
+  text: 'Spend analysis 2026-11-04: LiteLLM SpendLogs show openrouter/anthropic/claude-fable-5.1 = 87 calls, 7,251,765
+    tokens, $12.244296 in the trailing 24h. Breakdown by OpenCode task session: `ses_e5a908127ffeg9Cy42dCJL1es4`
+    31 calls / 2,839,691 tokens / $6.163997 (07:21–07:35Z); `ses_e5a87f78bffe6WcUaMuBPV21cL` 44 / 3,958,424 / $5.238886
+    (07:31–07:45Z); `ses_e5a79e097ffesm50rjVCEDJE5K` 11 / 453,625 / $0.841003 (07:46–07:48Z); one 25-token probe
+    $0.000410. Root cause: branch-code runs repeatedly read '
+- at: 2026-11-04 15:14
+  from: devin
+  text: put on hold
+- at: 2026-11-04 15:14
+  from: devin
+  text: 'HOLDING OPS-1039 to stop retry/spend churn. Verified blocker: branch-code pilot has no supported strong
+    model on idc02; OpenRouter Fable route returned HTTP 402 after ~87 calls / 7.25M tokens / ~$12.24 trailing 24h,
+    with key spend around $17.29/$25. No code artifact/tests/verifier/merge produced. Do not requeue until a funded/approved
+    strong route or a supervised zero-cost route is explicitly selected.'
+- at: 2026-11-04 15:32
+  from: devin
+  text: queued for processing
+- at: 2026-11-04 15:33
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:33
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793781214 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:44
+  from: devin
+  text: 'Budget check after OpenRouter refill: LiteLLM VerificationToken `chaba` is capped at $25 per 30 days and
+    currently shows $21.8133 spent, reset 2026-12-01. Only ~$3.19 remains at the LiteLLM key layer, independent
+    of OpenRouter account credit. OPS-1039 must not retry Claude until Tony explicitly raises/changes the LiteLLM
+    chaba budget or selects a lower-cost route; card remains held.'
+- at: 2026-11-04 15:45
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 15:45
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/ops-1039.json
+- at: 2026-11-04 15:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-04 15:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (field:task=True; field:branch=True;
+    field:worktree=True; field:files_changed=True)
+- at: 2026-11-04 15:46
+  from: devin
+  text: 'Verified after OpenRouter refill: LiteLLM `chaba` virtual key remains capped at $25/30d and now shows $22.2458
+    spent (about $2.75 remaining; reset 2026-12-01). OpenRouter credit does not raise this LiteLLM cap. OPS-1039
+    remains held; no retry performed. To continue, explicitly raise the LiteLLM chaba budget or authorize a separate
+    low-budget benchmark key/profile.'
+- at: 2026-11-04 15:46
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:46
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793782012 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:53
+  from: tony
+  text: put on hold
+- at: 2026-11-04 15:54
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 15:55
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:55
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793782503 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:56
+  from: idc02
+  text: 'finished (failed): exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793782503.ser'
+- at: 2026-11-04 15:56
+  from: tony
+  text: put on hold
+- at: 2026-11-04 15:56
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 15:57
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:57
+  from: tony
+  text: put on hold
+- at: 2026-11-04 15:57
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 15:57
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793782627 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:58
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:58
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793782688 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 15:58
+  from: tony
+  text: put on hold
+- at: 2026-11-04 15:58
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-04 15:59
+  from: idc02
+  text: claimed
+- at: 2026-11-04 15:59
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793782748 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-04 16:00
+  from: devin
+  text: put on hold
+- at: 2026-11-04 16:01
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 16:01
+  from: devin
+  text: put on hold
+- at: 2026-11-04 16:01
+  from: devin
+  text: 'Separate `bench` LiteLLM key wiring was tested on idc02. The runner correctly selected `LITELLM_KEY_BENCH`,
+    but OpenRouter/LiteLLM returned HTTP 403: requested model `or-claude-fable-5.1` is not available for this API
+    key. Card is held again; no artifact/tests/verifier. The separate key exists but lacks Claude model access.
+    Do not retry until the bench key is granted the model or the envelope uses a model it is authorized to access.'
+- at: 2026-11-04 16:42
+  from: devin
+  text: 'Bench-key verification: option 2 is currently usable. LiteLLM key `bench` sees only job aliases (`bench`,
+    `chat`, `tool-call`, etc.); `bench` maps to paid Gemini 3.5 Flash Lite. A bounded probe returned HTTP 200 /
+    OK in 3.82s, 9 total tokens. It is not an S5 branch-code model. Options 1 (grant Claude access) and 3 (mint
+    a dedicated strong key) require provider/key authorization changes before they can be benchmarked through the
+    runner.'
+- at: 2026-11-06 20:16
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''Yes: run two tiny read-only model probes, bounded tokens/cos'' -> queued for processing'
+- at: 2026-11-06 20:28
+  from: idc02
+  text: claimed
+- at: 2026-11-06 20:32
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-06 20:33
+  from: idc02
+  text: claimed
+- at: 2026-11-06 20:33
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1793971989 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-claude-fable-5.1)
+- at: 2026-11-06 20:34
+  from: idc02
+  text: 'finished (failed): exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793971989.ser'
+- at: 2026-11-06 20:47
+  from: chaba
+  text: 'merge-sweep: devin-task-opencode-retry-stale-worktree-1793771349 failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/opencode-retry-stale-worktree-1793771349 by hand.'
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/or-claude-fable-5.1
+  executor: opencode
+  agent_profile: branch-code-supervised-pilot
+  target_host: idc02
+  artifact: evals/opencode-lane/out/ops-1039.json
+  expect:
+    required_keys:
+    - task_id
+    - tests_run
+    - tests_passed
+    - verifier_pass
+    - artifact
+  status: failed
+  labels:
+  - push:chaba
+  result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793971989.service:
+    Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793971989.service: Consumed 12.350s
+    CPU time.'
+  sweep:
+    stale_running: 2026-11-04 14:30
+    zero_commit: 2026-11-06 20:32
+    failed_noted: 2026-11-06 20:47
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  llm_key_alias: bench
+  button: test-key-alias
+  verified: false
+  runner: idc02
+requests:
+- id: the-first-real-opencode-dispatch-reached-163fd0
+  ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
+    the next route before any retry.
+  status: open
+  at: 2026-11-04 13:15
+  from: devin
+  options:
+  - id: gemini-3-pro-route
+    label: Configure and verify a served Gemini 3 Pro strong-tier route on LiteLLM; spend/API configuration may
+      be required.
+  - id: claude-route
+    label: Configure and verify litellm/claude-fable-5.1 on LiteLLM; paid strong-model route.
+  - id: benchmark-free
+    label: Run a separate non-code benchmark profile using an already served free/KK-Mac model; do not treat it
+      as OPS-1039 code execution.
+  - id: stop
+    label: Keep OPS-1039 held.
+  suggested: gemini-3-pro-route
+  escalated_at: 2026-11-06 20:16
+- id: tony-proposes-benchmarking-both-strong-m-ae0fa6
+  ask: Tony proposes benchmarking both strong-model routes before choosing one. Should we prepare two bounded provider
+    probes without retrying OPS-1039?
+  status: answered
+  at: 2026-11-04 13:17
+  from: devin
+  options:
+  - id: benchmark-both
+    label: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
+  - id: gemini-only
+    label: Probe Gemini route only.
+  - id: claude-only
+    label: Probe Claude route only.
+  - id: stop
+    label: Do not configure or probe either route.
+  suggested: benchmark-both
+  answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
+  executed: 2026-11-06 queue
+claim: {}

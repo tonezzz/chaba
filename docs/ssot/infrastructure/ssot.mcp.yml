@@ -39,6 +39,14 @@ profiles:
       helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.mobile.yml
     system_config: ssot.mysystem.mobile.yml
+hosts:
+  tony_omen: {}
+  tony_dell: {}
+  mn01: {}
+  idc01: {}
+  idc02: {}
+  idc03: {}
+  michael-ha: {}
 servers:
   github:
     name: GitHub Integration
@@ -200,10 +208,17 @@ servers:
     filter: none
     args: []
     single_instance: false
-    status: operational
+    status: retired-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
+    notes: 'RETIRED 2026-10-26 (card dead-mcp-servers-triage, AUD-0886). Server dies on
+      startup trying to auto-install Playwright browsers; local index stale since
+      2026-09-12. Coverage: mddb kb-system bank + ssot-search + plain rg cover the
+      chaba docs corpus; docs-trade (@devista/docs-mcp) is a different server and
+      stays. Removed from mcp_config.json on tony-omen/tony-dell.
+'
+
   docs-trade:
     name: Documentation Search (Trade)
     description: Full-text search across trade project documentation
@@ -249,15 +264,22 @@ servers:
       WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba-tony-dell/workflows
       WORKFLOWS_LOG_LEVEL: INFO
     single_instance: false
-    status: operational
+    status: retired-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
+    notes: 'RETIRED 2026-10-26 (card dead-mcp-servers-triage, AUD-0886). No container,
+      image, or unit on any host (dell image missing pre-migration; omen unit disabled+dead).
+      Zero scheduled consumers — all 7 custom YAML under workflows/ are demo health
+      checks whose functions are covered by dedicated units; orchestration moved to
+      board-api queue/action/pipeline verbs. Removed from mcp_config.json.
+'
+
   mddb:
     name: MDDB Knowledge Base
     description: Personal Knowledge Base system with document management and semantic
       search
-    implementation: docker chaba/mddb-page-tools:latest (container mddb)
+    implementation: streamable-HTTP mddbd on idc03 (previously docker chaba/mddb-page-tools on tony-dell)
     wrapper: /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
     filter: bridge
     filtered_tools:
@@ -267,7 +289,7 @@ servers:
     - get_stats
     - aggregate
     - semantic_search
-    url: http://100.68.142.13:9000/mcp
+    url: http://100.102.134.91:9000/mcp
     single_instance: false
     status: operational
     config_files:
@@ -275,7 +297,8 @@ servers:
     - windsurf: false
     notes: 'MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
 
-      Container on tony-dell uses host networking and listens on port 9000
+      mddbd serves streamable-HTTP on idc03:9000/mcp (X-API-Key in runtime config);
+      moved off tony-dell container + stdio bridge per AUD-0886 (2026-10-26).
 
       Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
 
@@ -332,62 +355,77 @@ servers:
     wrapper: none
     filter: none
     single_instance: true
-    status: operational
+    status: retired-2026-10-26
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'Runs on tony-dell so the canonical SSOT on tony-dell is used for focus
-      queries.
-
-      '
+    notes: 'RETIRED 2026-10-26 (card dead-mcp-servers-triage). Superseded: last logged
+      mcp_focus session action 2026-09-09; focus intake now via board-api /inbox
+      (focus-inbox YAML) and the overnight focus-dispatcher edits files directly.
+      The identical mcp_focus tool remains exposed by the mcp-debug server, so no
+      capability is lost. Also stale: the ssh wrapper targets chaba-tony-dell on
+      dell, which since OPS-0725 is a pull-only mirror — writes there would be
+      stomped by the hourly mirror sync. Removed from mcp_config.json.
+'
   home-assistant:
     name: Home Assistant Main
-    description: Main Home Assistant MCP bridge on tony-dell
-    implementation: http://tony-dell:9584/<PRIVATE_TOKEN>
+    description: Main Home Assistant MCP bridge on tony-omen (evacuated tony-dell
+      -> omen 2026-10-19/20)
+    implementation: http://tony-omen:9584/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:9584/<PRIVATE_TOKEN>
+    url: http://tony-omen:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell -> tony-omen 2026-10-26 (card ha-mcp-endpoint-repoint);
+      verified mcp_list_tools.
 
       '
   michael-dev:
     name: Michael Dev Home Assistant
-    description: Development Home Assistant instance MCP bridge
-    implementation: http://tony-dell:9585/<PRIVATE_TOKEN>
+    description: Development Home Assistant instance MCP bridge on idc03 (container
+      migrated tony-dell -> idc03 2026-10-09)
+    implementation: http://idc02:9585/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:9585/<PRIVATE_TOKEN>
+    url: http://idc02:9585/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell -> idc03 2026-10-26 (card ha-mcp-endpoint-repoint); port
+      9585 published on idc02 tailnet IP + loopback via michael-dev quadlet (moved from idc03 2026-10-26).
 
       '
   michael-ha:
     name: Michael Home Assistant
-    description: Michael production Home Assistant MCP bridge
-    implementation: http://tony-dell:19584/<PRIVATE_TOKEN>
+    description: Michael production Home Assistant MCP bridge, direct on michael-ha
+      host (100.80.105.88)
+    implementation: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     wrapper: none
     filter: none
-    url: http://tony-dell:19584/<PRIVATE_TOKEN>
+    url: http://100.80.105.88:9584/<PRIVATE_TOKEN>
     single_instance: false
     status: operational
     config_files:
     - devin: true
     - windsurf: false
     notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
+      Repointed tony-dell:19584 ssh-tunnel -> direct http://100.80.105.88:9584
+      2026-10-26 (card ha-mcp-endpoint-repoint); tunnel no longer required.
+      A secondary forward also answers at tony-omen:19584.
 
       '
   notebooklm:
     name: NotebookLM
-    description: NotebookLM MCP/CLI bridge on tony-dell
+    description: NotebookLM MCP/CLI bridge — persistent container on mn01 (moved off
+      tony-dell)
     implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
     wrapper: podman-ssh
     filter: none
@@ -396,17 +434,41 @@ servers:
     config_files:
     - devin: true
     - windsurf: false
-    notes: 'Persistent rootless Podman container on tony-dell. Mounts auth state from
-      /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli.
+    notes: 'Persistent rootless Podman container on MN01 (quadlet ~/.config/containers/systemd/notebooklm-mcp.container;
+      up since 2026-10-20, verified authed 2026-10-26 — `nlm notebook list` works).
+      Mounts auth state from /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli on mn01.
 
-      `nlm notebook list` verified from tony-omen. Devin uses stdio via mcp-notebooklm-ssh.sh.
+      2026-10-26 repoint (card dead-mcp-servers-triage, AUD-0886): dell quadlets
+      notebooklm-mcp + notebooklm-rest were left in ~/.config/containers/systemd/migrated-off/
+      but the podman quadlet generator scans subdirs — both crash-looped (~36k restarts)
+      pulling missing localhost images. Both masked on dell. All consumers now ssh
+      to mn01: mcp-notebooklm-ssh.sh / mcp-notebooklm.sh wrappers and the
+      ~/.local/bin/nlm CLI shim on omen+dell (arg-safe via printf %q). This also
+      repairs the nightly notebooklm-kb-sync.timer on omen which was exit-0 while
+      logging ~22 errors/run against the dead local container.
+
+      notebooklm-rest (the :3011 FastAPI facade for nbapi/web app) was NOT rebuilt
+      on mn01 — no active consumers found; mask it if it resurfaces.
+'
+  mcp-colab:
+    name: Colab Pack Control Plane
+    description: Submit/status/result and managed-session queue control for an already-started consumer Colab T4; no runtime provisioning
+    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-colab/server.py
+    wrapper: none
+    pattern: mcp-colab/server.py
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Uses the Dell exec checkout, not the frozen served mirror. Concurrent instances
+      are safe: submissions refuse overwrite, and queue-start requests are unique/idempotent
+      against the queue lease. Consumer Colab runtime start/stop remains UI-only; this MCP
+      controls only managed Drive sessions and cannot enumerate uninstrumented account
+      sessions. No Colab Enterprise/GCP runtime provisioning.
 
       '
-    per_host:
-      tony_omen:
-        implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
-      tony_dell:
-        implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm.sh
   google-home-lan:
     name: Google Home LAN
     description: Local-network control of Google Cast devices (Chromecast, Android
@@ -473,6 +535,19 @@ scripts:
   utilities:
     switch-profile: switch-profile.sh
 decisions:
+  fleet_audit_2026_10_26:
+    card: AUD-0886
+    report: devin-kb docs/tools/mcp-fleet-audit.md
+    findings:
+    - 'dead at probe: home-assistant(9584), michael-dev(9585), michael-ha(19584), workflows, docs, notebooklm'
+    - 'mcp-llama superseded by LiteLLM gateway (retire/repoint recommended)'
+    - 'alphavantage schema ~5.6k lines - allowlist or per-session profile recommended'
+    - 'mddb moved to idc03 streamable-HTTP + X-API-Key'
+    - 'mcp-colab added to this registry'
+    - 'triage 2026-10-26 (card dead-mcp-servers-triage): notebooklm REPAIRED by repoint
+      to live mn01 container (dell units masked); workflows/docs/mcp-focus RETIRED
+      and removed from mcp_config.json on omen+dell. See
+      docs/ssot/jobs/infrastructure/2026-10-26-dead-mcp-triage.yml'
   mcp_filter_disabled:
     date: 2026-08-07
     reason: Compatibility issues with mcp-filter implementation

@@ -1,0 +1,83 @@
+id: opencode-task-agent-profiles
+title: Add scoped OpenCode agents for ops, SSOT research, storage, and branch work
+column: done
+updated: 2026-10-27 20:47
+brief: Replace generic build behavior with task-scoped OpenCode agent profiles and independent safety/verifier contracts.
+priority: high
+program: ai-workforce
+tags:
+- opencode
+- agents
+- safety
+- mcp
+- devnest
+spec: 'Add task-scoped OpenCode agent profiles, keeping the generic build agent out of unattended routing. Profiles:
+  ops-readonly (host/MCP reports, no repo writes), ssot-research (read-only SSOT/education retrieval, citations
+  required), storage-dryrun (inventory/classification only, no deletion), and branch-code (isolated worktree, strong
+  model, tests and review required). Each profile must declare allowed MCP tools, denied tools, allowed paths, target_host
+  requirement, artifact schema, verifier, escalation, and rollback. Render/use profiles from DevNest task envelopes;
+  keep global OpenCode MCP surface minimal. Add smoke tests for denied tools/path writes and one fixture per profile.
+  Do not enable branch-code or cleanup apply in this card. Acceptance: profile config validates, ops-readonly and
+  ssot-research run one real read-only job each, storage-dryrun refuses unsafe automatic candidates, and metrics
+  land durably.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 vnest/2026-10-27-opencode-task-agent-profiles.yml`; committed on the dispatch branch, not pushed.
+    | devin-task-20261027-194243-add-task-scoped-opencode-agent.service: Consumed 4min 30.663s CPU time, 1002.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
+note: OpenCode has successfully used generic build for read-only jobs, but a scoped agent profile is the next safety
+  and efficiency improvement before increasing volume.
+ref: OPS-0956
+comms:
+- at: 2026-10-27 19:42
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 19:42
+  from: idc02
+  text: claimed
+- at: 2026-10-27 19:42
+  from: chaba
+  text: started devin-task-20261027-194243-add-task-scoped-opencode-agent on idc02 (dispatch)
+- at: 2026-10-27 19:49
+  from: devin
+  text: 'started on idc02: read lane_gate/shadow_eval/runner-agent + OPS-0902 lane docs. Plan: profile policy yamls
+    under evals/opencode-lane/profiles/, renderer+runner in scripts/devnest/opencode_profiles.py, envelope profile
+    field + missing_profile denial in lane_gate, runner-agent start_opencode_lane requires profile + --agent (build
+    agent out of unattended). Real S1 jobs on idc02 for ops-readonly + ssot-research.'
+- at: 2026-10-27 20:41
+  from: devin
+  text: 'DONE (dispatch-wt idc02, branch dispatch/20261027-194243). 4 task profiles committed: ops-readonly + ssot-research
+    + storage-dryrun enabled S1-S3; branch-code defined-but-disabled (denies every axis, unmapped). Generic build
+    agent out of unattended routing: lane_gate missing/unknown/disabled profile denials; runner-agent reaches opencode
+    only via resolved profile (action.profile else LANE_PROFILES free_lane->ops-readonly), else Devin path. Rendered
+    run-local opencode.json disables build/plan/gen'
+- at: 2026-10-27 20:43
+  from: idc02
+  text: 'finished (ok): exit=0 vnest/2026-10-27-opencode-task-agent-profiles.yml`; committed on the dispatch branch,
+    not pushed. | devin-task-20'
+- at: 2026-10-27 20:43
+  from: chaba
+  text: pushed dispatch/20261027-194243-add-task-scoped-opencode-agent to origin
+- at: 2026-10-27 20:43
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 20:43
+  from: chaba
+  text: auto-merged eefbf27d (dispatch/20261027-194243-add-task-scoped-opencode-agent) → origin/master
+- at: 2026-10-27 20:43
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-194243-add-task-scoped-opencode-agent,
+    branch dispatch/20261027-194243-add-task-scoped-opencode-agent'
+- at: 2026-10-27 20:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 20:47
+  note: verified — evidence checks green, closing itself

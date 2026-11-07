@@ -1,0 +1,31 @@
+{
+ "note": "frozen fixture input — representative MCP surface, not live config",
+ "servers": [
+  {"name": "mcp-debug-readonly",
+   "tools": ["mcp_health", "mcp_debug"],
+   "declared_mode": "read-only"},
+  {"name": "home-assistant",
+   "tools": ["ha_get_overview", "ha_search", "ha_call_read_tool",
+             "ha_call_write_tool", "ha_call_delete_tool",
+             "ha_config_set_automation", "ha_manage_backup"],
+   "declared_mode": "mixed"},
+  {"name": "postgres",
+   "tools": ["query", "execute"],
+   "declared_mode": "unknown"},
+  {"name": "github",
+   "tools": ["get_me", "search_issues", "create_pull_request",
+             "add_comment_to_pending_review", "pull_request_review_write"],
+   "declared_mode": "mixed"},
+  {"name": "yomi",
+   "tools": ["collect_messages", "search_messages", "get_insight",
+             "exclude_chats", "include_chats"],
+   "declared_mode": "mixed"},
+  {"name": "mddb",
+   "tools": ["search", "get", "put"],
+   "declared_mode": "unknown"}
+ ],
+ "policy": {
+  "shadow_mode": "only read-only tools may be invoked during shadow runs",
+  "conservative_rule": "unknown or unlisted tools classify as NOT read-only"
+ }
+}

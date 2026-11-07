@@ -1,0 +1,29 @@
+id: worktree-safety
+title: Worktree isolation audit for shadow runs
+class: read_only
+needs_llm: false
+timeout_s: 420
+artifact: worktree-safety.json
+description: >-
+  Audit `git worktree list` of the current repository and emit the
+  isolation invariants shadow mode must hold: unique paths, unique
+  branches, no shadow branch on the default branch, no shadow branch
+  merged into the default branch.
+contract:
+  required_fields:
+    host: "hostname"
+    collected_at: "ISO-8601"
+    worktrees: "list of {path, branch|null, head} from git worktree list"
+    invariants: "{unique_paths, unique_branches, shadow_branches_present,
+                  no_shadow_on_default, no_shadow_merged}"
+    verdict: "pass|fail — pass only if all invariants hold"
+    read_only: "must be true"
+  rules:
+    - run git commands read-only only (worktree list, branch --merged, status)
+    - never git worktree remove/add/prune, never checkout, never merge
+l0:
+  script: l0.py
+arms:
+  - l0
+  - opencode
+  - devin

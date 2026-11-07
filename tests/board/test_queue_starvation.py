@@ -102,6 +102,35 @@ class BoardApiQueueWarnTest(unittest.TestCase):
             self.assertTrue(any("starve" in c["text"]
                                 for c in saved["comms"]))
 
+    def test_requeue_updates_approved_executor_envelope(self):
+        with tempfile.TemporaryDirectory() as td:
+            self.mod.CARD_DIR = Path(td)
+            _write_card(Path(td), "c-re",
+                        column="backlog",
+                        action={"type": "dispatch", "status": "done"})
+            self.mod.do_create(
+                {"id": "c-re", "title": "re", "on_exists": "queue",
+                 "action": {
+                     "type": "dispatch",
+                     "repo": "chaba",
+                     "executor": "opencode",
+                     "agent_profile": "branch-code-supervised-pilot",
+                     "model": "litellm/claude-fable-5.1",
+                     "target_host": "idc02",
+                     "artifact": "evals/opencode-lane/out/ops-1039.json",
+                     "lane": "free_lane",
+                 }}, "tony")
+            import yaml
+            saved = yaml.safe_load((Path(td) / "c-re.yml").read_text())
+            action = saved["action"]
+            self.assertEqual(action["status"], "queued")
+            self.assertEqual(action["executor"], "opencode")
+            self.assertEqual(action["agent_profile"],
+                             "branch-code-supervised-pilot")
+            self.assertEqual(action["target_host"], "idc02")
+            self.assertEqual(action["artifact"],
+                             "evals/opencode-lane/out/ops-1039.json")
+
 
 class DispatchSkipLogTest(unittest.TestCase):
     """kanban-dispatch prints a skip reason for a non-dispatch queued

@@ -6,10 +6,20 @@ ref: KNB-0577
 comms:
 - at: 2026-10-13 15:41
   from: devin
-  text: 'Problem observed in 2026-10-13 backlog sweep: 30+ timer-alert-* cards sat in backlog — several were already
-    healed (mddb-embed-probe Result=success) or shared one root cause (str-entry bug killed 3 dell report timers).
-    Alerts file but never resolve, so the backlog fills with ghosts.
+  text: 'Problem observed in 2026-10-13 backlog sweep: 30+ timer-alert-* cards sat in backlog — several
+    were already healed (mddb-embed-probe Result=success) or shared one root cause (str-entry bug killed
+    3 dell report timers). Alerts file but never resolve, so the backlog fills with ghosts.
 
 
-    Spec: alert cards carry the unit name in the id (timer-alert-<host>-<unit>). Add a reconcile step (in audit-hosts
-    or a small sweeper): for each open timer-alert card, check systemctl Result — if the unit''s last run '
+    Spec: alert cards carry the unit name in the id (timer-alert-<host>-<unit>). Add a reconcile step
+    (in audit-hosts or a small sweeper): for each open timer-alert card, check systemctl Result — if the
+    unit''s last run '
+- at: 2026-10-26 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: The goal is to prevent timer-alert cards from accumulating in the backlog by automatically closing
+  them when the corresponding systemd unit run succeeds. The host and repository context must be derived
+  from the existing chaba or infrastructure management scripts where audit-hosts or a sweeper runs. Constraints
+  require verifying the unit's last run status via systemctl before closing the card. The testable done-condition
+  is that open timer-alert-<host>-<unit> cards with a currently succeeding systemd Result automatically
+  transition to closed during the next reconciliation sweep.

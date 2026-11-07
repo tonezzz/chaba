@@ -1,0 +1,22 @@
+id: gev-google-maps-key-suspect-dead-verify-be569a
+title: gev-google-maps key suspect dead — verify GEV Google layers + renew
+column: backlog
+updated: 2026-10-27 16:10
+priority: low
+tags:
+- gev
+- secrets
+- maps
+spec: 'Found via card map-embed-tool (2026-10-27): the GOOGLE_MAPS_API_KEY in ~/.config/secrets/gev-google-maps.env
+  AND ~/gods-eye-view/.env on tony-dell (same AQ.Ab8… 53-char value, fingerprint-verified identical) is rejected
+  by every Maps Platform endpoint probed — Embed 403 / Static 403 / Geocode REQUEST_DENIED / Routes 401, with and
+  without a GEV referer — all saying The provided API key is invalid. Unknown whether the key is dead or its GCP
+  project lacks those APIs. Open: (1) does GEV still render Google layers today or is it silently on the keyless
+  Esri fallback its .env doc describes? (2) whichever GCP project owns that key — enable Maps APIs on it or mint
+  a replacement; the ada map_embed lane wants a working key too (its own request on card map-embed-tool). secrets
+  SSOT entry gev-google-maps already flagged TESTED INVALID.'
+ref: MED-0937
+comms:
+- at: 2026-10-27 16:10
+  from: devin
+  text: card captured via board-api

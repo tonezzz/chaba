@@ -1,0 +1,95 @@
+id: runner-readiness-projection
+title: Runner-reported claim readiness projection — per-card eligible hosts + blocking reason
+column: review
+updated: 2026-10-30 17:45
+priority: medium
+tags:
+- board
+- dispatch
+- monitoring
+spec: 'Goal: make ''is this queued card claimable, by which host, and if not why'' a queryable property instead
+  of state that only exists inside each runner''s head.
+
+
+  Context: scripts/board/runner-agent.py evaluates every queued card each pass against ~8 gates (claimable() — status/runner/host/target_host
+  pins, labels subset, lane!=manual, executor availability; push_guard_reason() — live git push --dry-run; gpu_preflight();
+  executor_defer_reason()). Defer reasons today surface only as debounced free-text comms. No read API answers ''the
+  ready package in claim order + per-card blocking gate'' — dispatch_repos.claim_sort_key defines the order (starved>=12h,
+  then priority, then oldest updated) but nothing projects it centrally.
+
+
+  Deliverables:
+
+  1. runner-agent.py: after each evaluation pass, POST a compact per-card verdict to board-api — {card_id, host,
+  claimable: bool, reason} (only for cards it evaluated; batch endpoint acceptable). Debounce so unchanged verdicts
+  don''t rewrite.
+
+  2. board-api: accept the verdicts and store a `readiness:` block on the card (or a side projection file) — last_evaluated_at,
+  per-host verdicts, computed eligible_hosts, blocking_reason summary, queue_position hint via claim_sort_key. New
+  read surface: GET /queue (ordered ready package + non-ready cards with reasons), or embed readiness in GET /cards.
+
+  3. Truthful-by-construction: report actual runner decisions including live push-probe/GPU results — never a re-simulated
+  gate on another host. Stale verdicts (>N min without a pass) flagged rather than trusted.
+
+
+  Verify: queued cards accumulate readiness blocks; a push-cred-gated card shows the correct eligible-host set;
+  a manual-lane card shows lane=manual as blocking reason; GET /queue output matches claim_sort_key order; stale
+  verdicts are marked, not silent.
+
+
+  Feeds: the Cline ready-package mirror and future pipeline views; also gives backlog-audit a mechanical ''waiting
+  on what'' bucket.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261030-151847-goal-make-is-this-queued-card-.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261030-151847-goal-make-is-this-queued-card-.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-30 15:33
+ref: KNB-1007
+comms:
+- at: 2026-10-30 15:18
+  from: tony
+  text: carded from chaba session — readiness projection is the UI-agnostic data layer behind the 'ready package'
+    visualization Tony asked for
+- at: 2026-10-30 15:18
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-30 15:18
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-30 15:18
+  from: chaba
+  text: started devin-task-20261030-151847-goal-make-is-this-queued-card- on tony-macbook (dispatch)
+- at: 2026-10-30 15:19
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261030-151847-goal-make-is-this-queued-card-.service:
+    Main process exited, cod'
+- at: 2026-10-30 15:19
+  from: chaba
+  text: pushed dispatch/20261030-151847-goal-make-is-this-queued-card- to origin
+- at: 2026-10-30 15:19
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-30 15:19
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261030-151847-goal-make-is-this-queued-card-,
+    branch dispatch/20261030-151847-goal-make-is-this-queued-card-'
+- at: 2026-10-30 15:33
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261030-151847-goal-make-is-this-queued-card- on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-30 17:45
+  from: devin
+  text: 'DONE + deployed + verified live (commit d2146addf): board-api accepts runner verdicts at POST /ready (off-repo
+    state ~/.local/state/board-api-ready/, own flock, never touches cards) and serves GET /queue — the ready package
+    in claim-drain order with per-card verdicts {eligible, blocked, unreported} + in-flight claims. runner-agent.py:
+    claimable() refactored to _claimable() returning (typ, reason) so wait-reasons come from the same gates that
+    claim (pins, labels, executor incl. kk_mac_local, push'
+review_kind: verify
+claim: {}

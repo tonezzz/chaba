@@ -13,6 +13,19 @@
 //   ws_url:   wss://idc03.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
 //   height:   log height (default 260px)
 //   api_key:  <key>   optional — normally unset, card self-mints
+//   member:   <name>  optional — pins the webchat thread id
+//
+// Push binding (card ada-chat-card-cannot-receive-pushed-medi): the ws
+// connects with &channel=web&chat_id=web-<member-or-device> so the lane's
+// webchat_deliver (chat_send channel=web / POST /api/webchat/send) can
+// push into this card — chat_push frames render as Ada bubbles with
+// <img>/<video controls> for image_url/video_url. Member resolves in
+// order: config.member → the lane's name for this api key
+// (/api/auth/status — member/invite keys carry the member's name) → the
+// HA login's linked person.<slug> → config.instance (the lane's own
+// member) → a device id. channel=web stays on the Live provider — it is
+// not in ADA_TEXT_ONLY_CHANNELS — so text turns behave exactly as
+// before; the binding only adds push delivery + web-channel journaling.
 //
 // Attach: the 📎 button uploads a photo/document to
 // POST {api_base}/api/documents/intake (client-downscaled to ~2400px first),
@@ -407,6 +420,36 @@ class AdaChatCard extends HTMLElement {
     }
   }
 
+  // Push bubble for chat_push frames — same look as an Ada turn, with
+  // pushed media rendered under the text. Empty pushes (no text and no
+  // usable media url) drop quietly.
+  _chatPush(ev) {
+    const { el, body } = this._bubble("ada", "");
+    if (ev.text) this._fillBubble(body, ev.text);
+    for (const u of [{ url: ev.image_url }, { url: ev.video_url, video: true }]) {
+      if (!u.url || !/^https?:\/\//.test(u.url)) continue;
+      const tag = document.createElement(u.video ? "video" : "img");
+      tag.className = "acc-media";
+      tag.src = u.url;
+      tag.style.cssText =
+        "display:block;max-width:100%;max-height:260px;border-radius:8px;margin:4px 0";
+      if (u.video) {
+        tag.controls = true;
+        tag.muted = true;
+        tag.playsInline = true;
+      } else {
+        tag.loading = "lazy";
+        tag.alt = "pushed image";
+        tag.style.cursor = "pointer";
+        tag.onclick = () => window.open(u.url, "_blank");
+      }
+      body.appendChild(tag);
+    }
+    if (!body.textContent && !body.children.length) return;
+    this._log.appendChild(el);
+    this._scrollDown(true);
+  }
+
   _showTyping() {
     if (!this._typing) return;
     this._typing.style.display = "flex";
@@ -591,6 +634,13 @@ class AdaChatCard extends HTMLElement {
       case "live_reconnecting":
         this._setStatus("Reconnecting…");
         break;
+      case "chat_push":
+        // Outbound push (chat_send channel=web / /api/webchat/send) —
+        // a proactive Ada message or one flushed from the offline
+        // parked queue at connect. Renders as an Ada bubble; image_url
+        // and video_url inline as <img>/<video controls>.
+        this._chatPush(ev);
+        break;
       case "error":
         this._system(ev.stage === "provider_connect"
           ? `Upstream provider refused: ${ev.message}`
@@ -614,7 +664,8 @@ class AdaChatCard extends HTMLElement {
       if (!this._wsBase) this._wsBase = await accResolveWs(this._config);
       const wsUrl = `${this._wsBase}`
         + `?device_id=${encodeURIComponent(this._deviceId())}`
-        + `&api_key=${encodeURIComponent(this._apiKey())}`;
+        + `&api_key=${encodeURIComponent(this._apiKey())}`
+        + `&channel=web&chat_id=${encodeURIComponent(await this._pushChatId())}`;
       let opened = false;
       this._socket = new WebSocket(wsUrl);
       this._socket.binaryType = "arraybuffer";
@@ -643,8 +694,12 @@ class AdaChatCard extends HTMLElement {
           this._setStatus("Key rejected — paste a key below");
         } else if (e.code !== 1000) {
           // abnormal close with no error frame — keep the code visible so
-          // "just stopped" is diagnosable (e.g. 1011 = upstream/provider error)
-          this._system(`ws close code=${e.code}${e.reason ? ` reason=${e.reason}` : ""}`);
+          // "just stopped" is diagnosable (e.g. 1011 = upstream/provider
+          // error; 4403 = the key lacks the 'chat' capability needed for
+          // channel=web — view-only keys can't open a chat lane)
+          this._system(e.code === 4403
+            ? "key lacks the 'chat' capability — use a voice/chat key"
+            : `ws close code=${e.code}${e.reason ? ` reason=${e.reason}` : ""}`);
           this._state = "error";
           this._setStatus(`Disconnected (code ${e.code}${e.reason ? ` — ${e.reason}` : ""})`);
         }
@@ -851,6 +906,43 @@ class AdaChatCard extends HTMLElement {
       localStorage.setItem("acc.chat_id", id);
     }
     return id;
+  }
+
+  // web-<member-or-device> chat_id for the ws bind — the thread
+  // webchat_deliver pushes into. Member when this session maps to one:
+  // config.member → the lane's caller name for this key (member/invite
+  // keys carry the member's name; minted ha-<dev8> keys and 'admin'
+  // don't) → the HA login's linked person.<slug> → the lane member
+  // (instance). Anything else is a per-device thread.
+  async _pushChatId() {
+    const clean = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+    let m = clean(this._config.member);
+    if (!m && this._apiKey()) {
+      try {
+        const r = await fetch(
+          `${this._apiBase()}/api/auth/status`
+          + `?device_id=${encodeURIComponent(this._deviceId())}`,
+          { headers: { "X-API-Key": this._apiKey() },
+            signal: AbortSignal.timeout(4000) });
+        const n = clean((await r.json()).name);
+        if (n && n !== "admin" && !/^ha-[0-9a-f]{6,}$/.test(n)) m = n;
+      } catch (_) {}
+    }
+    if (!m) {
+      try {
+        const uid = this._hass && this._hass.user && this._hass.user.id;
+        for (const [eid, st] of Object.entries(
+            (this._hass && this._hass.states) || {})) {
+          if (uid && eid.startsWith("person.")
+              && st.attributes.user_id === uid) {
+            m = clean(eid.slice(7).replace(/_/g, "-"));
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+    if (!m) m = clean(this._config.instance || "tony");
+    return `web-${m || clean(this._deviceId().slice(0, 8)) || "device"}`;
   }
 
   _screenUrl() {

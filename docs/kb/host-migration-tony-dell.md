@@ -9,7 +9,7 @@ Context: 2026-10-16 collapse — 5400rpm HDD + 97% disk + unbounded podman healt
 77 user services + 41 system + 19 containers + 80 timers. No serial radios — everything is software-migratable. Only physically-pinned items:
 
 - Ralink MT7601U USB WiFi adapter → `chaba-guest-lan` / `ha-guest-lan` / dnsmasq guest AP. Dies with the box unless the adapter moves to omen.
-- Desktop session services (gvfs, pipewire, keyring, xfce-seat, evolution, barrier-client, at-spi, xdg-*) — die intentionally; they ARE the desktop.
+- Desktop session services (gvfs, pipewire, keyring, xfce-seat, evolution, at-spi, xdg-*) — die intentionally; they ARE the desktop. Barrier KVM was retired 2026-10-25.
 
 ## Target map
 

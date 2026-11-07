@@ -5,7 +5,7 @@ instances:
   dev:
     name: tony-test
     instance_ssot: ssot.home-assistant.michael.dev.yml
-    base_url: https://idc03.taila0626a.ts.net:8124/tony-test
+    base_url: https://idc02.taila0626a.ts.net:8124/tony-test
     active_view: V0
     storage_path: /home/tony/.config/michael-dev/.storage/lovelace.tony_test
     repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
@@ -65,6 +65,11 @@ instances:
       CMS category views (iframe → public /cms/ edge with ?tab= deep-link);
       `monitor` iframes the L3 system report app
       (/apps/system-report/ — public mirror: monitor.surf-thailand.com).
+      Since 2026-10-26 the app leads with a live "Host loads" table
+      (sys-mon, card sys-mon-system-monitor-de88ff): the page fetches
+      data/host-loads.yml — written every 5 min by chaba-host-loads.timer
+      on idc02 straight into the web edge data dir — falling back to the
+      host_loads block embedded in system-report.yml (daily cadence).
       `agents` (2026-10-20) iframes /apps/roster/ — contacts-rail console
       mounting one <ada-webchat-card> per ada lane (chaba/kaewta/kraut/dev)
       over the idc03 tailnet mounts, member=tony → chat_id web-tony;
@@ -242,20 +247,37 @@ instances:
       - title: Hosts
         path: hosts
         icon: mdi:server
-        cards: horizontal-stack of two entities cards — tony-omen
-          (battery_level/state, cpu_package_temp, gpu_temp) and
-          tony-macbook (switch.mac_plug toggle + battery_level/state/health/
-          temp/voltage/cycles + binary_sensor.tony_macbook_telemetry_fresh).
-          Added 2026-10-20
-          via push-dashboard.py mutate; sensors REST-pushed every 5min by
-          the telemetry-ha-push job (ssot.jobs.yml) mirroring the
-          device-telemetry MDDB beacon.
+        cards: >-
+          Panel vertical-stack: iframe to
+          https://tony-ha.surf-thailand.com/apps/system-report/?view=hosts
+          showing live host-loads (load, RAM, disk, freshness) above device
+          cards for tony-omen and tony-macbook. Device rows use short,
+          view-local labels; no entity IDs or source sensor names change.
+          Fleet data is collected by chaba-host-loads every 5min; the
+          existing telemetry-ha-push still mirrors MacBook battery metrics.
       - note: >-
           chaba-cms iframes embed the dedicated ada-ha-tony 'cms-viewer'
           api_key in the URL (iframes can't set headers) — shared viewer
           key, device='*', works from any browser; revocable via the Pair
           tab. Use push-dashboard.py, never .storage edits (a HA restart
           flushes .storage edits — learned 2026-09-23).
+  chaba_admin_ada:
+    name: chaba-admin
+    instance: ada-ha
+    title: Chaba admin (Ada)
+    icon: mdi:shield-crown
+    url: https://ada-ha.surf-thailand.com/chaba-admin/board
+    require_admin: true
+    storage_path: /home/tony/.config/ada-ha/.storage/lovelace.chaba_admin
+    repo_snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+    note: >-
+      Ada HA lab copy of chaba-admin, distinct from the tony-ha dashboard
+      above. Live view order: Pair → Board → Cline → DevNest → Ada Pages →
+      Monitor → Events → Log → Obsidian. Cline is a full-page panel iframe
+      to https://cline.surf-thailand.com/?v=1; its Cloudflare Access app
+      reuses Ada HA's allowlist and session, and its Tailnet proxy verifies
+      the signed app-specific JWT. The snapshot redacts existing CMS api_key
+      query values.
   ai:
     name: ai                 # url_path "ai" — renamed from chaba-ai
                              # 2026-10-12 (Tony: /ai/chaba pattern, mirrors
@@ -419,12 +441,12 @@ tabs:
       title: V0
       path: p0
       note: New first tab (sunsynk card).
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/p0
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0
     - order: 1
       title: V1
       path: p0-2
       note: Second sunsynk card view.
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/p0-2
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/p0-2
     - order: 2
       title: G1
       path: g1
@@ -432,22 +454,22 @@ tabs:
         30-day 3D surface of sensor.inverters_1_pv_power (PV power, 0-10kW,
         scale 0.001) rendered with pfg_charts type 'surface3d' (echarts-gl,
         vendored /local libs, hover plane + click-to-pin).
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/g1
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/g1
     - order: 3
       title: TPL
       path: tpl
       note: Template/pfg card experiment.
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl
     - order: 4
       title: TPL2
       path: tpl2
       note: Template variant 2.
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl2
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl2
     - order: 5
       title: TPL_SOLIS
       path: tpl_solis
       note: Solis template view.
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl_solis
+      test_url: https://idc02.taila0626a.ts.net:8124/tony-test/tpl_solis
     - order: 6
       title: Data
       path: data
@@ -513,7 +535,8 @@ manual_steps:
   - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart — direct .storage/lovelace.tony_test edits only take effect after an HA core restart)
   - Add a sidebar dashboard: websocket lovelace/dashboards/create (url_path must contain a hyphen, e.g. dossier); created 2026-09-06 as 'Dossier' (mdi:folder-file).
   - Sidebar order is per-user in .storage/frontend.user_data_<uid> under the 'sidebar' key (panelOrder array); set via websocket frontend/set_user_data with key='sidebar'. Current order: lovelace (Overview), tony-test, dossier, then defaults. michael-dev already had dossier-home under tony-test; michael-ha was set 2026-09-08 to place dossier under tony-test.
-  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh (copies .storage to docs/home-assistant/dashboards/tony-test-current.json and refreshes bundle version); tab order/titles/paths live in the saved config — to add a tab, push via websocket mutate or the HA UI, then snapshot
+  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh after each WebSocket dashboard mutation; the default sync refreshes tony-test/michael-dev, `--instance ada-ha` writes the sanitized Ada HA snapshot, and `--instance tony-ha` writes the sanitized `chaba-admin-current.json` snapshot with API-key query values redacted
+  - Tab order/titles/paths live in the saved config; use `push-dashboard.py` with an idempotent `mutate(config)` helper, then sync the matching instance snapshot
 conventions:
   full_page_iframe:
     # Standard for embedding a full app page as a dashboard tab
@@ -527,6 +550,6 @@ conventions:
     examples: [chaba-admin/chaba-cms, chaba-admin/board]
 
 status:
-  last_updated: "2026-10-02"
-  last_verified: "2026-09-25"
+  last_updated: "2026-10-29"
+  last_verified: '2026-10-29'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

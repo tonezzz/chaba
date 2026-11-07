@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
 column: backlog
-updated: 2026-10-25 14:44
+updated: 2026-10-26 07:54
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -38,3 +38,10 @@ comms:
     the embed queue. Key lesson: backfill "copied" != "indexed"; only embedded_documents==total_documents means
     done. Pool is degraded: omen down (maintenance), idc02 now loaded ~6 (qwen2.5 chat) — idc03 carries ~90% of
     embeds at ~7s each. Drain ETA ~6h at current speed, or ~15-20min once'
+- at: 2026-10-26 07:54
+  from: devin
+  text: '[2026-10-26 06:30 ICT] Embed queue DRAINED: 2561/2561 docs embedded, 0 dropped. Watcher-fired golden eval
+    on complete index: first pass scored 0% due to an eval bug — bank keys are devin-session/<name>, goldens use
+    bare names. After key-normalization fix: retrieval@1=3/36 (8.3%), retrieval@3=6/36 (16.7%). Weak absolute score;
+    Gemini baseline still needed to judge the 5pp gate — blocked on Gemini/OR quota. Eval: /tmp/eval2-fixed.py on
+    idc03.'

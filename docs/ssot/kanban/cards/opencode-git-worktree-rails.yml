@@ -1,0 +1,51 @@
+id: opencode-git-worktree-rails
+title: Align OpenCode branch-code Git rails with the isolated-worktree contract
+column: review
+updated: 2026-10-29 14:17
+brief: Fix the branch-code prompt/allowlist contradiction so a future disabled-by-default code profile can commit
+  only inside its isolated worktree.
+priority: high
+program: devnest
+tags:
+- opencode
+- git
+- safety
+- worktree
+spec: 'The branch-code profile currently permits git add/commit in its bash allowlist while the generated generic
+  prompt says no commits. Fix the mismatch without enabling the profile or running inference. Scope: (1) branch-code-specific
+  prompt rails allow git status/diff/log and scoped git add/commit only inside the provided worktree; explicitly
+  deny push, merge, rebase, branch/worktree management, network, services, secrets. (2) Narrow bash patterns to
+  allowed repository roots; reject git add . or out-of-scope paths. (3) Add tests proving branch-code permits the
+  scoped local Git contract and read-only profiles still deny Git mutation. Keep branch-code status disabled and
+  paid strong default untouched; no OPENCODE_LANES enablement. Done only after profile lint + targeted tests + independent
+  diff review; actual model/canary run remains a separate approval-gated step.'
+ref: OPS-0976
+comms:
+- at: 2026-10-29 14:07
+  from: tony
+  text: Created from Tony's 2026-10-29 request to advance OpenCode Git capability. No model call or profile enablement
+    is authorized by this card.
+- at: 2026-10-29 14:12
+  from: devin
+  text: 'Implementation update: fixed the generated-prompt contradiction and narrowed branch-code git add roots;
+    added regression tests. The profile remains disabled and no OpenCode run/model inference occurred. Correction
+    to my earlier chat: ops-readonly does NOT allow git commands; only the disabled branch-code profile has Git
+    commands in its allowlist. This change fixes that profile path but does not enable it or permit push/merge.
+    Independent review and a separate non-paid model canary remain require'
+- at: 2026-10-29 14:14
+  from: devin
+  text: 'Implementation is locally complete in the isolated branch: generated prompt now grants local git add/commit
+    only for the disabled branch-code profile; staging patterns are limited to scripts/, tests/, docs/kb/, docs/reports/,
+    docs/ssot/jobs/, and evals/. Push/merge/rebase/branch/worktree/network actions remain denied. ops-readonly remains
+    non-writing. Validation: 99 profile/lane tests pass; all five profiles lint clean; 3,260 SSOT files validate
+    with zero errors. Branch-code is still disabled; n'
+- at: 2026-10-29 14:17
+  from: devin
+  text: 'Code fix committed and pushed as `feat/opencode-git-rails` (`07625d70a`), PR #60 opened: https://github.com/tonezzz/chaba/pull/60.
+    It resolves the prompt/allowlist mismatch and narrows Git staging roots. Validation: 99 profile/lane tests pass,
+    all profiles lint, SSOT 3260/3260 valid, refs 3265 with no broken links. Branch-code stays disabled; no OpenCode
+    job, model inference, push/merge by OpenCode, or host change occurred. Awaiting independent PR review/CI.'
+- at: 2026-10-29 14:17
+  from: devin
+  text: moved doing -> review
+review_kind: verify

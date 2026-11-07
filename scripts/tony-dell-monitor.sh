@@ -153,14 +153,6 @@ for name, (url, expect) in local_http.items():
     res["action"] = "log"
     results.append(res)
 
-res = process_check("barrier-client", ["pgrep", "-a", "barrierc"], r"barrierc")
-res["timestamp"] = TS
-res["source"] = "tony-dell"
-res["service"] = "barrier-client"
-res["action"] = "log"
-res["url"] = ""
-results.append(res)
-
 # mddb binlog canary — result line from scripts/mddb-binlog-canary.py (run above)
 if CANARY_LINE:
     try:

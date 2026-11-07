@@ -1,0 +1,9 @@
+[Unit]
+Description=Education consolidated maintenance report (audit+drift+due+trend) (job:chaba-education-report, rendered from ssot.jobs.yml — do not edit)
+ConditionPathExists=%h/CascadeProjects/chaba-tony-dell/scripts/education-report.py
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/education-report.py --post board,tg
+WorkingDirectory=%h/CascadeProjects/chaba-tony-dell

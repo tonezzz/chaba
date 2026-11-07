@@ -1,8 +1,9 @@
 title: Host Capacity & Placement Registry
 subtitle: >-
   Per-host capacity snapshot + placement policy for the Chaba ecosystem.
-  Re-measured 2026-10-20 post-phase-5 full dell evacuation (LAN cohort → tony-omen);
-  2026-10-19 post-constellation (pg+yomi+redis+trade→idc03). Refresh on each
+  Main fleet re-measured 2026-10-20 post-phase-5 full dell evacuation
+  (LAN cohort → tony-omen); idc03 post-constellation (pg+yomi+redis+trade).
+  con01 refreshed 2026-10-27 after the Cline Kanban pilot. Refresh on each
   service deployment/migration phase or via health-check.
 icon: "\ud83d\udcbb"
 version: 1
@@ -19,7 +20,7 @@ hosts:
       ada-ha, go2rtc, node-red, guests, yolo, playlive, cast timers, jobs).
       All migrated units .parked + audit expected_absent. Still runs: `web`
       compat edge shim (tailnet serve :443 → caddy :80), dnsmasq-postgre,
-      desktop plumbing (xorg/xfce/barrier/xvfb), dell-* monitors. Owns LAN
+      desktop plumbing (xorg/xfce/xvfb), dell-* monitors. Owns LAN
       IP 192.168.2.67 until power-off — guest-lan proxies staged-but-stopped
       on omen pending that IP handoff. Webcams (/dev/video0/1) still
       attached — tony-ha runs without them until physical move.
@@ -60,7 +61,7 @@ hosts:
     gpu: none
     note: >-
       Ada backends, MDDB leader, secondary edge (api.surf-thailand.com),
-      kk-ha (:8126), michael-dev (:8124), kanban writer family + board-api
+      kk-ha (:8126), kanban writer family + board-api
       (:8787, serve :10000), runner-agent lane. SATURATION WATCH: 4 cores
       carrying the fleet's write path — reserve for MDDB-local/board-local
       work; new VPS placements default to idc02. Borrows chaba deploy key
@@ -91,8 +92,8 @@ hosts:
   con01:
     role: dr-absorber   # new 2026-10-22 — replaces retired idc01's DR tier (OPS-0763)
     cpu_cores: 8
-    mem_gb: 23        # 23GiB, ~22G avail — fresh box
-    disk_gb: {total: 290, free: 288}
+    mem_gb: 23        # 23GiB total; 6.3GiB available after Cline pilot (2026-10-27)
+    disk_gb: {total: 290, free: 224}  # measured after pinned Node/Kanban image build
     gpu: none
     note: >-
       Contabo Cloud VPS 8, EU (France) region — ~189ms from BKK, fine for
@@ -102,6 +103,14 @@ hosts:
       Roles per idc04-contabo-vps8-provision — live 2026-10-22: mddb-follower
       #2 (replaces idc01 DR), standby caddy-edge (cert-sync target), ada-stt
       migrated off idc02 (:8914, RTF~0.5), secrets-backup 3rd target.
+      Cline Kanban v0.1.70 tailnet-only UI pilot live 2026-10-27; idle
+      container about 291MiB, no provider calls. Post-start load
+      1.20/1.16/1.17 across 8 vCPU.
+      DevNest model-cache origin live 2026-10-29 (OPS-0969):
+      ~/var/cache/devnest/models = content-addressed Ollama blob store
+      (qwen3 0.6b/1.7b/4b/8b, ~9G), idc03 TH-side mirror at same path.
+      Runbook docs/kb/devnest-model-cache.md — fetch once here, verified
+      pull to Mac/fleet workers; prod ollama.service untouched.
       Pending: offload timers (vector-reindex, doc-mirror, jev-bench), runner
       lane + lab sandbox. 3rd provider/geo failure domain
       (Contabo AS51167 vs Siamdata AS56309).
@@ -142,4 +151,4 @@ procedure:
 
 related: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
 status: active
-updated: 2026-10-23
+updated: 2026-10-27

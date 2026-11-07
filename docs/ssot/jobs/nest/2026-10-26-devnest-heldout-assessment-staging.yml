@@ -1,0 +1,81 @@
+title: DevNest held-out assessment — defined, ordered, and staged on Drive (OPS-0880)
+date: 2026-10-26
+card: devnest-colab-assessment-first-cache-pre-cb223c
+session: dispatch-wt-20261026-043602-standard-sequence-stage-all-jo (mn01)
+
+decision:
+  assessment: "devnest-heldout-assessment (JOBS.py entry, scope env)"
+  slot: "between assets-stage and save-hf-cache — its GPU run hides the
+        multi-minute hf-hub.tar.zst repack prep (the second un-hideable
+        window; the warmup covers the first)"
+  why_not:
+    - "devnest-host-assessment skill — SSH/read-only fleet CPU work,
+      cannot occupy a T4 window"
+    - "DevNest replay benchmark fixtures — five safe fixtures + held-out
+      verifiers are UNFROZEN; this job is a worker/queue assessment and
+      is never reported as a benchmark pass"
+    - "a pack — would run AFTER all JOBS and could not sit before the
+      cache prep in manifest order; packs also get claimed by fleet
+      nest-workers which have no T4 to assess"
+  design:
+    - "cache-independent: zero downloads; torch ships with the Colab
+      runtime image, audit reads only Drive-side logs"
+    - "held-out: fixed battery params (fp16/bf16 4096x4096 x20, 256MiB
+      H2D/D2H) + production queue logs — never fitted to what it measures"
+    - "artifacts gate: queue/assessments/devnest-heldout-<boot_id>.{json,md}
+      (verify-before-mark, boot_id expansion)"
+    - "battery verdicts: gpu_battery pass>=5 TFLOPs fp16, prep_overlap
+      counts bg preps inside run windows, artifact_gate/history info"
+
+staging_2026-10-26:                  # rclone deploy, all md5-verified
+  deployed:
+    - "queue/JOBS.py            <- scripts/colab/JOBS.py (+assessment entry)"
+    - "queue/runner.py          <- scripts/colab/queue-runner.py (was rev-old,
+                                  no runner.id/QUEUE_PENDING)"
+    - "queue/runtime_registry.py   NEW on Drive (cells import it)"
+    - "queue/preflight-cell.py"
+    - "queue/queue-launcher-cell.py"
+    - "queue/ada-nest-job-console.ipynb (was old thin-cell build)"
+    - "queue/nest-worker.py     (identical after repo 900s-timeout port)"
+    - "queue/nest-efficiency.py (repo version newer — graceful rc timeout)"
+  purged: "queue/__pycache__  (stale JOBS bytecode could shadow the new manifest)"
+  packs: "rclone check repo->Drive = 0 diffs, 42 files; doc-vo-v3 is the
+         only undone pack = the next T4 package"
+  drift_backported_to_repo:          # Drive live patches > repo copies
+    - "packs/doc-vo-ss1/pack.yml   (v6-canonical beats: fact-check shots 6/7,
+                                   shot-15 pacing)"
+    - "packs/nasa-embeds-ss1/pack.yml (keep_workdir, fetch_timeout_s,
+                                    publish_timeout_s, T5TokenizerFast fallback)"
+
+queue_state_at_stage:
+  heartbeat: "exit exit ~6h stale — no live runner held a stale snapshot"
+  queued_pack: "doc-vo-v3 (f5-tts-th v3 narration, artifacts
+               packs/doc-vo-v3/out/v3-vo-*.wav + vo-report.md)"
+  expected_order_next_launch:
+    - "t4-session-warmup        (hides restore-hf-cache prep)"
+    - "restore-hf-cache / deps / assets-stage"
+    - "devnest-heldout-assessment (hides save-hf-cache repack prep)"
+    - "save-hf-cache"
+    - "packs: doc-vo-v3 (+ any staged before launch)"
+
+verification:
+  - "python3 compile JOBS.py; _HELDOUT_RUN exec'd in sandbox ns on mn01 —
+    cpu-only path degrades cleanly, audit parses run windows correctly
+    (bg_preps_in_run_window, hidden_prep_upper_s, artifact_fails)"
+  - "python3 -m unittest discover -s tests/colab -> 30 tests pass"
+  - "rclone md5 spot-checks: all deployed files match local sources"
+  - "rclone check packs: 0 differences"
+
+docs:
+  - "docs/kb/colab-mcp-jobs.md — 'Standard launch sequence' subsection
+    (stage-first + assessment-slot + durable-artifact gates)"
+  - "Education lesson colab-gpu-worker (post 2231) appended in place"
+  - "JOBS.py header comments document the slot"
+
+open:
+  - "next console launch runs the sequence end-to-end; verify
+    queue/assessments/devnest-heldout-<boot>.{json,md} + doc-vo-v3 done
+    marker land on Drive, then close the loop on the card"
+  - "replay-benchmark fixture freeze remains its own card
+    (devnest-devin-replay-benchmark) — do not reuse this assessment's
+    numbers there"

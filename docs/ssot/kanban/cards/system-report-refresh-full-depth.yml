@@ -1,13 +1,14 @@
 id: system-report-refresh-full-depth
 title: api/refresh depth=full — re-run L1 audit-hosts before consolidating
-column: review
-updated: 2026-10-23 14:24
+column: done
+updated: 2026-10-26 07:18
 spec: 'Today: POST api/refresh re-ran the report subtree (rollups/digests) but L1 audit-hosts/* inputs stayed from
   the 06:45 run — a stale macbook unreachable persisted all day. Extend report-api.py refresh handling: depth=full
   re-runs audit-hosts.py --host for each declared host first, then consolidates + report-system.py as today. Keep
   depth=subtree as the default (fast path).'
 action:
   type: manual
+  status: done
 ref: KNB-0787
 comms:
 - at: 2026-10-23 14:09
@@ -26,4 +27,8 @@ comms:
 - at: 2026-10-23 14:24
   from: tony
   text: moved doing -> review
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
 review_kind: verify
+claim: {}

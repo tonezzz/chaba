@@ -1,7 +1,7 @@
 id: audit-degraded-cast-to-screen
 title: 'Ada session audit: degraded:cast_to_screen (4d seen)'
-column: backlog
-updated: 2026-10-15 05:30
+column: done
+updated: 2026-10-26 18:40
 brief: 'Recurring session-audit signature ''degraded:cast_to_screen'': cast_to_screen -> degraded — 2x on 2026-10-14,
   seen on 4 day(s).'
 priority: medium
@@ -26,3 +26,72 @@ comms:
 - at: 2026-10-15 05:30
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 17:28
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 17:29
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:39
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 17:39
+  from: chaba
+  text: started devin-task-20261026-173945-investigate-ada-session-audit- on tony-macbook (dispatch)
+- at: 2026-10-26 17:45
+  from: devin
+  text: 'VERDICT: tool bug — already diagnosed+fixed (staged) under ADA-0684 drop 10. cast_to_screen returns relay
+    /pub ACK verbatim: ok:true+delivered:0 (display offline) narrated as success. Live occurrences: 4x 10-10, 2x
+    10-14 (session 4029a6447f), 1x 10-17; ZERO since — quiet because the offline-screen path hasnt been hit, NOT
+    because fixed. Verified live idc03 ada-voice @59562cf: no _pub_truth, none of drop 10 deployed. Staged screens.delivered-zero.patch
+    still applies cleanly (3/3 hunks vs main). A'
+- at: 2026-10-26 17:46
+  from: devin
+  text: 'raised request approve-deploying-ada-voice-drop-10-ada-e1fe9b: Approve deploying ada-voice drop 10 (ADA-0684,
+    staged 2026-10-15, never landed)? screens.delivered-zero converts deliver'
+- at: 2026-10-26 17:46
+  from: tony
+  text: closed by tony
+- at: 2026-10-26 17:48
+  from: chaba
+  text: 'session-end checkpoint 4245eecd: 1 leftover file(s) committed'
+- at: 2026-10-26 17:48
+  from: chaba
+  text: pushed dispatch/20261026-173945-investigate-ada-session-audit- to origin
+- at: 2026-10-26 17:48
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 17:48
+  from: chaba
+  text: auto-merged 8509d8af (dispatch/20261026-173945-investigate-ada-session-audit-) → origin/master
+- at: 2026-10-26 17:48
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-173945-investigate-ada-session-audit-,
+    branch dispatch/20261026-173945-investigate-ada-session-audit-'
+- at: 2026-10-26 18:40
+  from: tony
+  text: 'answered approve-deploying-ada-voice-drop-10-ada-e1fe9b: deploy — Deploy drop 10 — apply at tony-dell edit
+    point + deploy-ada.sh idc03'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+requests:
+- id: approve-deploying-ada-voice-drop-10-ada-e1fe9b
+  ask: 'Approve deploying ada-voice drop 10 (ADA-0684, staged 2026-10-15, never landed)? screens.delivered-zero
+    converts delivered:0 phantom-success into honest fail; plus 5 sibling patches (unavailable-precheck, goal-loop
+    breaker, target-fidelity, cast-loop instructions). Verified: all hunks still apply to main@59562cf, 1467 tests
+    passed at staging. Install = apply at tony-dell edit point, push main, deploy-ada.sh idc03 --restart.'
+  status: answered
+  at: 2026-10-26 17:46
+  from: devin
+  options:
+  - id: deploy
+    label: Deploy drop 10 — apply at tony-dell edit point + deploy-ada.sh idc03
+  - id: defer
+    label: Defer — sig is quiet since 10-17; revisit if delivered:0 recurs
+  - id: partial
+    label: Deploy only screens.delivered-zero (signature fix), hold the other 5
+  suggested: deploy
+  answer: deploy — Deploy drop 10 — apply at tony-dell edit point + deploy-ada.sh idc03

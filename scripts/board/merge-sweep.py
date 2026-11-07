@@ -82,6 +82,17 @@ For each card in doing/review with action.type=dispatch:
      anything this misses (unreachable runner, card already out of
      scope). KANBAN_WTGC=0 disables.
 
+Closed cards are out of scope (card merge-sweep-resurrects-closed-
+cards, the 2026-10-26 nest-node-hardware incident): terminal columns
+are skipped outright even when action.status regressed to running, a
+verified card with a gone session re-runs the close decision instead
+of drawing stale_running/session_gone noise, and a recorded
+human/lifecycle reopen marker suppresses that re-drain — the sweep
+only repairs UNMARKED regressions. Bookkeeping stamps never bump
+`updated` and refuse terminal cards under the lock — under
+card-union's newer-updated scalar rule a stamped stale file would
+otherwise crown its resurrected workflow fields.
+
 Zombie lane: devin-task-* units on dell + the recorded runners +
 MERGE_SWEEP_HOSTS running > ZOMBIE_AGE_H (6h) with no activity >
 ZOMBIE_IDLE_MIN (60min) get one card comms flag — never auto-killed
@@ -155,7 +166,57 @@ SWEEP_HOSTS = [h.strip() for h in os.environ.get(
 
 ZOMBIE_AGE_S = float(os.environ.get("ZOMBIE_AGE_H", "6")) * 3600
 ZOMBIE_IDLE_S = float(os.environ.get("ZOMBIE_IDLE_MIN", "60")) * 60
-TASK_ID_RE = re.compile(r"devin-task-([0-9]{8}-[0-9]{6}[a-z0-9-]*)")
+# devin-dispatch tids look like 20261026-173617-<slug>; runner-agent's
+# OpenCode lanes name them <card-id>-<epoch> (e.g.
+# devnest-fl-pilot-report-1793011692) — accept either or a held opencode
+# merge can never resolve its session once finish_pass consumed
+# state.json (the 2026-10-26 devnest-fl-pilot-report stranded branch).
+TASK_ID_RE = re.compile(
+    r"devin-task-((?:[0-9]{8}-[0-9]{6}|[a-z0-9][a-z0-9-]*?[0-9]{9,})"
+    r"[a-z0-9-]*)")
+
+# Terminal columns — the sweep never rewrites workflow fields on a card
+# that already closed (the 2026-10-26 nest-node-hardware resurrection:
+# a card-union/stale-write regression made a verified+auto_closed card
+# read doing+running again, and the stale-session pass re-stamped it,
+# crowning the stale scalars with a fresh `updated`). 'done' is the only
+# terminal column in the schema; 'verified'/'parked' ride along for
+# forward-compat.
+TERMINAL_COLUMNS = frozenset({"done", "verified", "parked"})
+
+
+def terminal(card: dict) -> bool:
+    return str(card.get("column") or "") in TERMINAL_COLUMNS
+
+
+# Close/reopen markers for drain_verified's regression guard: a verified
+# card found in an open column is re-closed ONLY when no deliberate
+# reopen is recorded — a human 'moved done ->' or the lifecycle guard's
+# '[lifecycle] bounced done->' means a person/guard owns the workflow
+# fields now. Union-merge resurrections and stale whole-card writes
+# leave no such comms, so an unmarked regression is safe to re-drain.
+_CLOSE_RE = re.compile(r"auto-closed|->\s*done\b")
+_REOPEN_RE = re.compile(r"moved done\b|bounced done\b|reopen", re.I)
+
+
+def reopened_after_close(card: dict) -> bool:
+    """True when comms record a deliberate reopen after the card's last
+    close — auto_close.at, else the newest close-shaped comms line."""
+    since = str((card.get("auto_close") or {}).get("at") or "")
+    comms = [m for m in (card.get("comms") or []) if isinstance(m, dict)]
+    if not since:
+        for m in reversed(comms):
+            if _CLOSE_RE.search(str(m.get("text") or "")):
+                since = str(m.get("at") or "")
+                break
+    if not since:
+        return False  # never closed — an open column is normal flow
+    for m in comms:
+        if str(m.get("at") or "") < since:
+            continue
+        if _REOPEN_RE.search(str(m.get("text") or "")):
+            return True
+    return False
 
 
 def now() -> str:
@@ -529,9 +590,17 @@ def api_post(path: str, body: dict) -> dict:
         return {"error": f"{type(e).__name__}: {e}"}
 
 
-def locked_edit(cid: str, fn) -> bool:
+def locked_edit(cid: str, fn, touch: bool = True) -> bool:
     """Locked card-YAML mutation — the sweep fallback/mutation channel
-    (board-api holds the same flock for its own writes)."""
+    (board-api holds the same flock for its own writes).
+
+    touch=True bumps `updated` — use it ONLY for writes that change the
+    card's workflow state (fail_attempt, drain_verified, a request).
+    Bookkeeping writes (sweep stamps, comms) pass touch=False: on a
+    fabricated-newer `updated` makes this card win the card-union merge
+    driver's scalar resolution, possibly restoring stale doing/running
+    fields over a newer close from another writer. KNB-0893: a read-only
+    mirror's session_gone stamp once rewrote a done card back to doing."""
     p = CARD_DIR / f"{cid}.yml"
     if not p.exists():
         return False
@@ -542,7 +611,8 @@ def locked_edit(cid: str, fn) -> bool:
             return False
         if fn(card) is False:
             return False
-        card["updated"] = now()
+        if touch:
+            card["updated"] = now()
         p.write_text(yaml.safe_dump(card, allow_unicode=True,
                                     sort_keys=False, width=110))
         return True
@@ -560,7 +630,7 @@ def card_note(cid: str, text: str, dry: bool) -> None:
     def add(c):
         c.setdefault("comms", []).append(
             {"at": now(), "from": "chaba", "text": text[:500]})
-    locked_edit(cid, add)
+    locked_edit(cid, add, touch=False)
 
 
 def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
@@ -593,13 +663,18 @@ def card_request(cid: str, rid: str, ask: str, dry: bool) -> None:
 
 
 def stamp(cid: str, key: str, val, dry: bool) -> None:
-    """action.sweep bookkeeping stamps — once-per-condition flags."""
+    """action.sweep bookkeeping stamps — once-per-condition flags. Never
+    lands on a card that went terminal between the pass's scan and the
+    locked write, and never bumps `updated` (a bookkeeping stamp must
+    not crown stale workflow fields in a later card-union merge)."""
     if dry:
         return
     def add(c):
+        if terminal(c):
+            return False
         a = c.setdefault("action", {})
         a.setdefault("sweep", {})[key] = val
-    locked_edit(cid, add)
+    locked_edit(cid, add, touch=False)
 
 
 def open_conflict_req(card: dict) -> bool:
@@ -802,7 +877,7 @@ def verify_gate(card: dict, probe: dict, repo: Path, head: str,
     ok_b, why_b = produced_work(repo, head, base_tip, m, tid)
     ok_a, why_a = unit_exit(probe, card)
     if ok_b is False:
-        return {"fail": True,
+        return {"fail": True, "zero_commit": True,
                 "why": f"no delivered work — {why_b}; unit: {why_a}"}
     if ok_a is False and not m["ancestor"]:
         return {"fail": True,
@@ -827,19 +902,26 @@ def verify_gate(card: dict, probe: dict, repo: Path, head: str,
             "why": f"{why_a}; {why_b}" + (f"; {why_c}" if why_c else "")}
 
 
-def fail_attempt(card: dict, why: str, dry: bool) -> bool:
+def fail_attempt(card: dict, why: str, dry: bool,
+                 zero_commit: bool = False) -> bool:
     """verified-gate failure: verified=False + requeue on the same
     path kanban-dispatch's merge step uses (attempts/max_attempts cap,
-    last_failure carries the evidence into the next run's RETRY_RAILS)."""
+    last_failure carries the evidence into the next run's RETRY_RAILS).
+    zero_commit stamps action.sweep.zero_commit — the QC scoreboard's
+    empty-dispatch counter reads it."""
     cid = card.get("id") or "?"
     if dry:
         print(f"  [dry] {cid}: verified gate failed — {why[:110]}")
         return True
 
     def apply(c):
+        if terminal(c):
+            return False  # closed mid-pass — never rewrite a done card
         a = c.setdefault("action", {})
         a["verified"] = False  # checked, and NOT verified
         a["last_failure"] = why[:280]
+        if zero_commit:
+            a.setdefault("sweep", {})["zero_commit"] = now()
         c.setdefault("claim", {}).pop("session", None)
         # attempts is counted at claim time (mark_start) — a gate failure
         # requeues while attempts_used < max_attempts (max_attempts =
@@ -1077,9 +1159,12 @@ def runner_for(card: dict, tid: str) -> str:
 def flag_once(card: dict, key: str, text: str, dry: bool,
               val=None) -> bool:
     """Post comms only the first time a condition is seen (action.sweep
-    stamp); returns True when it fired."""
+    stamp); returns True when it fired. Silent on terminal cards — the
+    sweep does not annotate cards it did not open."""
     a = card.get("action") or {}
     if (a.get("sweep") or {}).get(key):
+        return False
+    if terminal(card):
         return False
     card_note(card["id"], text, dry)
     stamp(card["id"], key, val if val is not None else now(), dry)
@@ -1116,9 +1201,15 @@ def drain_verified(card: dict, dry: bool) -> bool:
     (or absent) closes itself: status->done, column->done, an
     auto_close record. Human-gated cards (close_hold_reason) move
     to/stay in review with one comms note. Idempotent: no card
-    change, no output — a held card doesn't re-report every pass."""
+    change, no output — a held card doesn't re-report every pass.
+    Reopen-aware: a card whose column regressed is re-closed ONLY when
+    no deliberate reopen is recorded (reopened_after_close) — the
+    drain repairs union-merge/stale-write resurrections but never
+    fights a human or lifecycle-guard reopen."""
     cid = card.get("id") or "?"
-    if card.get("column") == "done":
+    if terminal(card):
+        return False
+    if reopened_after_close(card):
         return False
     if dry:
         hold = close_hold_reason(card)
@@ -1129,6 +1220,11 @@ def drain_verified(card: dict, dry: bool) -> bool:
     out = {}
 
     def apply(c):
+        # re-check under the lock — the card may have closed or been
+        # deliberately reopened since the pass loaded it
+        if terminal(c) or reopened_after_close(c):
+            out["skip"] = True
+            return False
         a = c.setdefault("action", {})
         changed = a.get("status") != "done"
         a["status"] = "done"
@@ -1174,25 +1270,44 @@ def sweep_card(card: dict, active: dict, dry: bool,
     a = card.get("action") or {}
     cid = card.get("id") or "?"
     st = a.get("status")
+    if card.get("column") not in ("doing", "review"):
+        # terminal/out-of-scope — a closed card is never re-touched
+        # (KNB-0893: the stale-session path rewrote a done card's
+        # workflow fields; even scope-filter changes must not re-open
+        # the door)
+        return False
     if st in ("queued", "starting"):
         return False
-    if st == "done" and a.get("verified") is True:
+    if terminal(card):
+        # a closed card is never sweep work — even when action.status
+        # regressed to running (a stale whole-card write or a card-union
+        # merge can resurrect workflow fields; the 2026-10-26
+        # nest-node-hardware resurrection)
+        return False
+    verified = a.get("verified") is True
+    if st == "done" and verified:
         # already landed — drain the column decision without git work
         # (verified implies merged; covers close_out-stamped cards and
         # stragglers from before the drain existed)
         return drain_verified(card, dry)
     tid = task_id_for(card, str(a.get("runner") or ""))
     if not tid:
-        return False
+        # a verified card needs no session — 'gone' is the EXPECTED
+        # post-delivery state. Run the close decision instead of ever
+        # flagging session_gone on a delivered card.
+        return drain_verified(card, dry) if verified else False
     runner = runner_for(card, tid)
     if st == "running" and tid in active:
         return False  # in-flight — zombie lane watches it, not merge
-    if st == "running":
+    if st == "running" and not verified:
+        # verified+running is NOT a stale session — it's a workflow-field
+        # regression on a delivered card; the verified branch below runs
+        # the close decision (and never the stale-running scare note)
         flag_once(card, "stale_running",
                   f"merge-sweep: devin-task-{tid} no longer active on "
                   f"{runner or HOST} but card still says running — "
                   "sweeping its branch", dry)
-    if st == "failed":
+    if st == "failed" and not verified:
         flag_once(card, "failed_noted",
                   f"merge-sweep: devin-task-{tid} failed — its branch "
                   f"isn't auto-merged (unverified partial work). Retry "
@@ -1204,6 +1319,8 @@ def sweep_card(card: dict, active: dict, dry: bool,
                  or a.get("repo") or "")
     repo = served_repo(repo_name)
     if repo is None:
+        if verified:
+            return drain_verified(card, dry)
         flag_once(card, "no_repo",
                   f"merge-sweep: no served checkout for repo "
                   f"'{repo_name or '?'}' — can't land devin-task-{tid}",
@@ -1214,6 +1331,13 @@ def sweep_card(card: dict, active: dict, dry: bool,
         # patch relay (runner-push-cred-gap) may still carry its head
         probe = inbox_relay(repo, card)
         if not probe.get("head"):
+            if verified:
+                # verified means the work provably landed — a gone
+                # session is the normal end state, not 'work may be
+                # gone'. Run the close decision; a deliberate reopen
+                # (human move / lifecycle bounce) is honoured inside
+                # drain_verified.
+                return drain_verified(card, dry)
             flag_once(card, "session_gone",
                       f"merge-sweep: no session/worktree found for "
                       f"devin-task-{tid} on {runner or HOST} — if the "
@@ -1294,7 +1418,8 @@ def sweep_card(card: dict, active: dict, dry: bool,
     g = verify_gate(card, probe, repo, head, base_tip, m, tid,
                     by_id or {cid: card})
     if g.get("fail"):
-        return fail_attempt(card, g["why"], dry)
+        return fail_attempt(card, g["why"], dry,
+                            bool(g.get("zero_commit")))
 
     def stamp_gate_result(merged_txt: str) -> bool:
         """Apply the gate verdict after a merge/already-merged check."""
@@ -1319,6 +1444,12 @@ def sweep_card(card: dict, active: dict, dry: bool,
             held = {}
 
             def mark(c):
+                # the card may have closed or been deliberately
+                # reopened between the scan and this locked write —
+                # the sweep never rewrites workflow fields on a card
+                # it did not open
+                if terminal(c) or reopened_after_close(c):
+                    return False
                 a = c.setdefault("action", {})
                 a["verified"] = True
                 a["status"] = "done"
@@ -1445,8 +1576,32 @@ def sweep_zombies(host_units: dict, cards_by_tid: dict,
     return flagged
 
 
+def checkout_role(repo: Path) -> str:
+    """<gitdir>/chaba-role (install-hooks.sh --role) — '' when unset."""
+    r = sh(["git", "-C", str(repo), "rev-parse", "--absolute-git-dir"],
+           timeout=15)
+    if r.returncode != 0 or not r.stdout.strip():
+        return ""
+    try:
+        return (Path(r.stdout.strip()) / "chaba-role").read_text().strip()
+    except OSError:
+        return ""
+
+
 def main() -> int:
     dry = "--dry-run" in sys.argv
+    role = checkout_role(CHABA_REPO)
+    if role and role != "served":
+        # KNB-0893: on a non-writer checkout (readonly mirror, exec/job
+        # tree) the board lags up to a sync cycle — every card decision
+        # here would be on stale state and its writes race upstream's
+        # through the card-union driver. Only the served checkout may
+        # sweep. No role file = an unstamped checkout we can't prove
+        # stale — proceed as before.
+        print(f"merge-sweep: {CHABA_REPO} is chaba-role={role}, not the "
+              "writer — refusing to sweep a stale board "
+              "(merge-sweep-resurrects-closed-cards)")
+        return 0
     card_files = sorted(CARD_DIR.glob("*.yml"))
     if not card_files:
         print(f"merge-sweep: no cards in {CARD_DIR}")

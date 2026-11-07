@@ -1,0 +1,81 @@
+title: chat_send page=<slug> — CMS page images attached server-side in one batch
+id: 2026-10-26-chat-send-page-images
+card: chat-send-page-images
+ref: ADA-0511
+date: 2026-10-26
+status: staged-drop (integrations/ada-voice drop 15; ada-voice install + deploy pending — not pushed, not deployed)
+
+summary: |
+  Prod probe 2026-10-12 showed Kaewta's photo-ask path nondeterministic:
+  cms_read + image_url + deliver sometimes worked, sometimes invented
+  URLs (surf-thailand.com/kk/…, unsplash → all 404), sometimes produced
+  text-only phantom sends naming the page. Instruction-level fixes
+  helped but could not enforce. The structural fix is page=<slug> on
+  chat_send: the tool reads the CMS doc via mddb inside its background
+  job, extracts every embedded image, and pushes the whole batch through
+  the relay — one call cannot invent URLs or skip the read. Result notes
+  report sent/failed per asset so her voice stays honest.
+
+change:
+  tool_runner: |
+    backend/tool_runner/chat.py — chat_send gains `page: str = ""`.
+    `_chat_send_page` queues `_chat_send_page_run` (same 'queued'
+    contract). `_page_image_urls` extracts markdown ![..](..) + HTML
+    <img src> in document order, dedupes, resolves site-relative and
+    bare paths against LINE_URL_BASE (same default
+    http://100.102.134.91:11023 the relay uses), caps at
+    ADA_CHAT_PAGE_IMG_MAX (default 10). The job POSTs
+    {text, image_urls:[...], caption, to, chat_id, instance} per relay;
+    the response `images` list drives a per-asset sent/failed summary.
+    `web` channel loops _chat_send_web per asset. say= rides the same
+    payload. _chat_say_audio + _chat_notify factored out of
+    _chat_send_run — no plain-path behaviour change.
+  line_relay: |
+    backend/line_relay.py /send accepts image_urls: each URL becomes
+    its own image bubble via _image_msgs (fetch failures keep the
+    honest "(image failed)" text bubble). Delivery chunks into
+    consecutive <=5-msg pushes — the old msgs[:5] truncate silently
+    dropped the tail of any stacked payload. Bulk class now parks the
+    full msg list (_merge_msgs already re-chunks on flush). Response
+    gains images:[{url, ok, status}] — delivered|parked|failed|
+    fetch-failed per asset.
+  tg_relay: |
+    backend/tg_relay.py /send accepts image_urls → one send_photo per
+    asset (each has its own failure→text fallback); send_photo now
+    returns bool for the same `images` report shape.
+  surface: |
+    backend/realtime_provider.py — `page` added to the chat_send
+    declaration (required: additionalProperties=false would reject the
+    arg); image_url description now points CMS-image asks at page=.
+    backend/tool_guide.yml — chat_send entry documents page='<slug>'.
+    No tool-count change → no ssot.tool-surface count_cap bump.
+
+deliverables:
+  - integrations/ada-voice/backend/tool_runner.page-images.patch
+  - integrations/ada-voice/backend/line_relay.page-images.patch
+  - integrations/ada-voice/backend/tg_relay.page-images.patch
+  - integrations/ada-voice/backend/realtime_provider.page-images.patch
+  - integrations/ada-voice/backend/tool_guide.page-images.patch
+  - integrations/ada-voice/tests/test_chat_send_page.py   # ada-voice suite
+  - integrations/ada-voice/README.md                      # drop 15 section
+  - tests/ada/test_chat_send_page.py                      # chaba-side drop gate
+  - docs/ssot/jobs/ada/2026-10-26-chat-send-page-images.yml
+
+verified:
+  - "ada-voice main @ 56c67c1 + patches (clone in .scratch/): new suite
+    17/17; neighbours test_tool_runner+test_line_relay_group+
+    test_line_relay_quota+test_line_reply_context+test_tg_relay_* =
+    361 passed; scripts/tool-lint.py clean."
+  - "chaba: pytest tests/ada/test_chat_send_page.py — 6 pass, 2 skipped
+    (no ada-voice checkout on mn01 runner; apply-gates run where one
+    exists)."
+  - "NOT live-verified: no real LINE push — first page=sa-beach-photos
+    send after deploy is the smoke (relay log 'send: inst=… msgs=N' +
+    note's per-asset count)."
+
+residual:
+  - "Restart order: a new lane against an old relay degrades to
+    'delivered (no per-asset report)' — deploy lanes + ada-line-relay +
+    ada-tg-relay together."
+  - "page= + photo=/doc= combined: first match wins (photo > doc >
+    page > plain) — same precedence the absorbed flows already had."

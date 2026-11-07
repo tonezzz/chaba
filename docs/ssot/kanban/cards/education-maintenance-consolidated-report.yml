@@ -1,0 +1,134 @@
+id: education-maintenance-consolidated-report
+title: Consolidate Education maintenance audit, drift, due review, and trend report
+column: done
+updated: 2026-11-06 19:56
+brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
+  recurring maintenance artifact.
+priority: medium
+program: chaba-ci
+tags:
+- education
+- lesson
+- audit
+- drift
+- review
+- devnest
+spec: 'Build the next safe improvement to the Education maintenance loop. Reuse scripts/lessons-audit.py, scripts/lessons-drift.py,
+  scripts/lessons-due.py, board-api /lesson read/write, and existing lesson-polish policy; do not create a parallel
+  system. Produce one machine-readable JSON and one concise Markdown report containing total lessons, policy flags
+  by dimension, source drift/source-gone rows, due/upcoming review counts, intentional no_th exceptions, human-review-pending
+  items, before/after compliance trend, and links/refs to the Education page/card. Default read-only; lesson fixes
+  remain a separate explicit /lesson upsert stage; deletion remains human-gated. Add deterministic verifier/tests,
+  recurring report schedule integration, and board/TG summary only after the report passes. Document failure/hold
+  conditions and keep the existing daily audit working. Acceptance: report reproducible, counts agree with component
+  scripts, no mutation in audit mode, flagged rows explainable, and a sample report lands durably.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 `/lesson` upsert is the deliberate next stage, not this card. | devin-task-20261027-132225-build-the-next-safe-improvemen.service:
+    Consumed 1min 37.430s CPU time over 22min 18.202s wall clock time, 418M memory peak, 145.6M memory swap peak.'
+  verified: true
+note: Tony asked to card the improvements. Existing daily audit is live, but the maintenance surface is fragmented
+  across audit, drift, due-review, and polish reports. This card consolidates observability without weakening safety.
+ref: AUD-0930
+comms:
+- at: 2026-10-27 13:21
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 13:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 13:22
+  from: chaba
+  text: started devin-task-20261027-132225-build-the-next-safe-improvemen on tony-macbook (dispatch)
+- at: 2026-10-27 13:40
+  from: devin
+  text: 'education-maintenance 2026-10-27: 92 lessons, 26 flagged, compliance 0.9643 (Δ+0.0000), drift 3/gone 40,
+    due 14 — docs/reports/education-maintenance/latest.md
+
+    digest b4e31b30c8d97884'
+- at: 2026-10-27 13:44
+  from: devin
+  text: 'SHIPPED on dispatch branch: scripts/education-report.py consolidator (read-only, one /lesson fetch feeds
+    lessons-audit/lessons-drift/lessons-due internals), 12-test verifier, job chaba-education-report daily 07:50
+    idc03 (condition_path until merge), kanban-commit sweeps docs/reports/education-maintenance/. Sample report
+    verified live: 92 lessons, 26 flagged, compliance 0.9643, drift 3/gone 40, due 14 — counts parity-checked vs
+    standalone lessons-audit.py. Door patch: meta.no_th now persisted (cl'
+- at: 2026-10-27 13:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 `/lesson` upsert is the deliberate next stage, not this card. | devin-task-20261027-132225-build-the-next-safe-im'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'session-end checkpoint ffe49ccb: 1 leftover file(s) committed'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: pushed dispatch/20261027-132225-build-the-next-safe-improvemen to origin
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: auto-merged 68c4a8b7 (dispatch/20261027-132225-build-the-next-safe-improvemen) → origin/master
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 13:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-27 14:29
+  from: devin
+  text: 'raised request education-report-schedule-notifications-20261027: Live check: the consolidated Education
+    report produced a verified latest artifact, but chaba-education-report.timer/serv'
+- at: 2026-10-27 14:32
+  from: devin
+  text: 'Control-surface review (2026-10-27): keep storage split (Git SSOT for policy/evidence; WP lesson CPT for
+    lesson body/review state). Board-api /lesson is already the single machine write/read door. education-report.py
+    is the right unified operator status artifact (audit + source drift + due + exemptions + human queue + trend)
+    and latest.md verified pass, but its systemd timer/service are NOT installed on idc03; only generated units
+    exist. Open request education-report-schedule-notifications-20261'
+- at: 2026-10-27 15:37
+  from: tony
+  text: 'answered education-report-schedule-notifications-20261027: daily 07:50; report artifact plus Board only
+    (recommended)'
+- at: 2026-10-28 07:36
+  from: devin
+  text: 'Tony selected daily 07:50, artifact + Board only. I prepared the SSOT/job-record/generated-unit change
+    in isolated branch fix/education-report-board-only; both edited YAMLs and render-jobs --check pass. Full SSOT
+    validation is currently blocked by unrelated existing errors in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml
+    (syntax) and docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml (missing title); these are open in the
+    separate Cline worktree, so I did not touch them or '
+- at: 2026-11-06 19:49
+  from: devin
+  text: 'BGE education shadow integration is prepared and locally committed as 0aedce89f1 (feat(education): add
+    optional BGE shadow suggestions). Dry-run verified: 67 due lessons receive related suggestions when the <48h
+    shadow report is present; due ordering remains authoritative and stale/missing reports omit the section. Deployment
+    is blocked only on the served idc03 checkout being heavily dirty/diverged (ahead 2322, behind 1479); git apply
+    --check passes against it. Do not hand-edit served; converge '
+- at: 2026-11-06 19:56
+  from: devin
+  text: 'Deployment prep advanced: created clean branch feat/bge-education-shadow-deploy from current origin/master,
+    applied and compiled the focused lessons-due patch, committed as 0e1796fee6, and pushed to origin. PR URL: https://github.com/tonezzz/chaba/pull/new/feat/bge-education-shadow-deploy.
+    Live served checkout remains untouched pending normal review/convergence.'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 13:46
+  note: verified — evidence checks green, closing itself
+requests:
+- id: education-report-schedule-notifications-20261027
+  ask: 'Live check: the consolidated Education report produced a verified latest artifact, but chaba-education-report.timer/service
+    are not installed on idc03 (systemd reports not-found; only generated unit files exist). Choose whether to activate
+    the recurring report. Current manifest would post to Board and Telegram; no timer will be installed until this
+    choice because recurring notifications are an external side effect.'
+  status: answered
+  at: 2026-10-27 14:29
+  from: devin
+  options:
+  - keep on-demand; leave timer disabled
+  - daily 07:50; report artifact plus Board only (recommended)
+  - daily 07:50; Board plus Telegram (current manifest)
+  suggested: daily 07:50; report artifact plus Board only (recommended)
+  answer: daily 07:50; report artifact plus Board only (recommended)

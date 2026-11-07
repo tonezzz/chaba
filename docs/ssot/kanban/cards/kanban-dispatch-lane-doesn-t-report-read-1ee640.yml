@@ -1,0 +1,22 @@
+id: kanban-dispatch-lane-doesn-t-report-read-1ee640
+title: kanban-dispatch lane doesn't report /ready verdicts (tony-dell invisible in queue view)
+column: backlog
+updated: 2026-10-30 18:21
+priority: medium
+tags:
+- kanban
+- readiness
+- ops
+spec: 'Follow-up from KNB-1007 deploy (2026-10-30). runner-agent hosts all POST /ready verdicts now, but tony-dell
+  claims via kanban-dispatch (local cap-3 dispatch lane), which never posts — so GET /queue ''hosts'' omits tony-dell
+  entirely and queued cards show ''unreported'' rather than a real verdict from the fleet''s highest-cap claimer.
+  Its in-flight cards still surface via card action state (claimed section works — verified live: render-jobs-ops0790
+  showed [tony-dell]). Fix: add the same verdict report to kanban-dispatch''s claim pass (evaluate queued cards
+  against its local caps/repo set, POST {host:''tony-dell'',verdicts,active} to /ready, debounced like runner-agent''s
+  verdict_pass). Verify: GET /queue hosts includes tony-dell with fresh age and a verdict for at least one queued
+  card.'
+ref: KNB-1012
+comms:
+- at: 2026-10-30 18:21
+  from: tony
+  text: card captured via board-api

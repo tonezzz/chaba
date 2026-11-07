@@ -1,0 +1,124 @@
+# DevNest Telegram durable topic registry (card
+# devnest-topic-project-routing / OPS-0915)
+#
+# devnest-tg-relay.service on idc03 now keeps a durable registry that maps
+# Telegram forum message_thread_id -> lane/project binding, routes project
+# traffic to 'PRJ <project-id> — <short title>' topics, quarantines unknown
+# topics, and mirrors only milestone summaries to General.
+title: DevNest Telegram durable topic registry
+job: devnest-tg-topic-registry
+date: 2026-10-26
+host: idc03
+unit: devnest-tg-relay.service
+source: scripts/devnest/devnest-tg-relay.py
+card: devnest-topic-project-routing
+ref: OPS-0915
+
+registry:
+  file: ~/.local/share/devnest/telegram/topics.json   # STATE_DIR/topics.json
+  atomic_write: tmp+replace (same pattern as state.json offset)
+  entry_per_thread_id:
+    kind: "permanent | project | quarantine"
+    name: "display title at registration time (never re-parsed later)"
+    lane: "home | inbox | control | ops | research | education | archive | project | unknown"
+    visibility: "public | private | archive | project | quarantine"
+    project_id: "<project slug, project topics only>"
+    card_ref_and_card_id: "board binding (project topics only)"
+    status: "active | closed | rolled_back"
+    also: "thread_id / created_at / bound_at / notified / created_by"
+  permanent_topics: "General(->home,public) Inbox Control Ops Research
+    Education Archive(->archive). General = no message_thread_id
+    (Telegram also reports it as thread_id 1 — both forms normalised to
+    'general')."
+  project_topic_name: "PRJ <project-id> — <short title>"  # <=128 chars
+  source_of_truth: >-
+    board card + project manifest (PROJECTS_DIR/<id>/project.json) stay
+    canonical; topics.json is the index onto thread ids. On a registry
+    miss the relay reconciles from manifests (topic.thread_id), so a
+    lost/corrupt topics.json self-heals. Identity is ALWAYS the
+    registered thread_id — never inferred from a topic's display title
+    (Telegram doesn't send the title with ordinary messages anyway).
+  registration_paths:
+    - >-
+      forum_topic_created/forum_topic_edited service messages classify
+      the name: permanent name -> permanent, 'PRJ <id> — <t>' -> project
+      (manifest + card comment bound when a manifest exists), anything
+      else -> quarantine. This is the ONLY place names are parsed.
+    - >-
+      renaming an existing topic fires forum_topic_edited -> registers
+      pre-existing topics without redeploy (ops path for topics made
+      before this phase)
+    - "ops may also seed topics.json directly (state file, not code)"
+  quarantine: >-
+    messages in a thread with no active binding are recorded
+    (updates.jsonl topic_status=unknown|quarantine), answered once with a
+    policy notice, and get NO commands/intake/capture-ack. closed and
+    rolled_back bindings quarantine the same way.
+  never_deleted: >-
+    deleteForumTopic is hard-blocked in _api (FORBIDDEN_API_METHODS).
+    Rollback = status:'rolled_back' on the registry entry; the entry and
+    the Telegram topic both survive.
+
+pdf_intake_flow:
+  in_general_or_permanent: >-
+    download -> kk-video-<sha12> project + idempotent board card ->
+    createForumTopic 'PRJ <id> — <title>' -> registry bind + manifest
+    topic{thread_id,chat_id,name,status:active,bound_at} + board-api
+    /comment 'TG topic bound: thread_id=N' -> ack in origin topic naming
+    the new thread + 'project open' announcement inside the PRJ topic.
+  topic_api_fails: >-
+    intake still stands; manifest topic.status='manual_pending' with the
+    exact suggested_name, and the reply carries a one-line manual
+    instruction. When Tony creates that topic, forum_topic_created
+    completes the same bind automatically.
+  in_project_topic: >-
+    PDF attaches to the bound project — file into <id>/source/, manifest
+    sources[] entry (sha-deduped), 'INTAKE attached' ack. No new card,
+    no new topic.
+  in_quarantined_topic: refused before any work.
+
+send_endpoint:  # loopback /send, unchanged for plain callers
+  routing: >-
+    {text, chat_id?, message_thread_id?} as before; OR {project_id} /
+    {card_ref|card_id} resolves the bound project thread through the
+    registry — an unbound project is a 404 LookupError, never a silent
+    post to General.
+  milestone_mirror: >-
+    milestone=true (or mirror='general') additionally posts the same text
+    to General (no thread). This is the only path that writes outside the
+    project topic — routine project notifications never mirror.
+
+audit_results_added:
+  topic_created / topic_edited / topic_closed / topic_reopened
+  topic_quarantined / topic_manual_pending / topic_rolled_back
+record_fields_added: topic_status (general|permanent|project|quarantine|unknown)
+
+invariants:
+  - never infer project/topic identity from display title — registry
+    thread_id binding only; names are classified exactly once, on the
+    forum_topic_* service event
+  - no deleteForumTopic, ever — history is part of the project record
+  - manifest + board card are source of truth; registry reconciles from
+    manifests on miss and at startup
+  - only milestone-flagged sends mirror to General
+  - all board mutations still go through board-api HTTP; comment actor
+    'devnest-tg'
+  - conversation files are written under _safe_filename(topic) — a
+    hostile topic name cannot path-traverse
+
+tests: tests/test_devnest_tg_relay.py  # 40 tests, pytest
+verification:
+  - pytest 40/40 on this worktree (python3 -m pytest)
+  - py_compile clean
+  - topic-aware: permanent/PRJ/unknown-name registration, edit-promotion
+  - same-topic PDF intake attaches (no /card, no createForumTopic)
+  - handoff: Inbox PDF -> PRJ topic -> bind manifest+card -> attach flow
+  - milestone mirror to General; unbound project send -> LookupError
+  - restart persistence: registry reload + manifest reconcile rebuild
+  - rollback marks entry, deleteForumTopic hard-blocked
+deploy_note: >-
+  Same as OPS-0911/OPS-0912: this worktree cannot push; deploy = sync the
+  merged commit into the idc03 exec checkout + systemctl --user restart
+  devnest-tg-relay.service. Live gate after deploy: Tony creates the
+  permanent topics (or renames existing ones to fire forum_topic_edited),
+  then resends the KK PDF in Inbox — expect PRJ topic + bind comment.

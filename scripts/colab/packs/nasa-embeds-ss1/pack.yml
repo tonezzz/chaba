@@ -9,9 +9,12 @@
 name: nasa-embeds-ss1
 needs:
   gpu_gb: 0       # cpu-ok: fits() treats 0 as no requirement
-  ram_gb: 13       # T5-XXL bf16 load peaks ~12GB - OOM risk on 12GB hosts
+  ram_gb: 13      # T5-XXL CPU path needs more than a 12GB worker
   disk_gb: 30
 venv: true
+keep_workdir: true    # retain the fetched T5 archive after transient failures
+fetch_timeout_s: 3600 # the ~9GB archive can exceed rclone's default timeout
+publish_timeout_s: 3600
 timeout_s: 3600   # dominated by the first-run ~10GB HF pull
 fetch:
   - model-archive/t5xxl/          # after first run: local, skip HF
@@ -26,7 +29,7 @@ run: |
   import os, time
   import torch
   import yaml
-  from transformers import T5EncoderModel, AutoTokenizer
+  from transformers import T5EncoderModel, AutoTokenizer, T5TokenizerFast
   IN = f'{PACK_DIR}/inputs'
   OUT = f'{PACK_DIR}/embeds'; os.makedirs(OUT, exist_ok=True)
   ARC_LOCAL = f'{PACK_DIR}/model-archive/t5xxl'
@@ -38,20 +41,26 @@ run: |
          torch.cuda.get_device_properties(0).total_memory >= 12e9
          else 'cpu')   # T5-XXL bf16 ~9.5GB — small GPUs (1650) go CPU
   t0 = time.time()
-  if os.path.exists(f'{ARC_FETCH}/encoder/config.json'):
+  archive_exists = os.path.exists(f'{ARC_FETCH}/encoder/config.json')
+  if archive_exists:
       src_tok, src_enc = f'{ARC_FETCH}/tokenizer', f'{ARC_FETCH}/encoder'
+      if (os.path.isfile(f'{src_tok}/tokenizer.json') and
+              not os.path.isfile(f'{src_tok}/spiece.model')):
+          # The archived fast tokenizer is self-contained even when the
+          # sentencepiece sidecar was omitted by a prior save_pretrained.
+          tok = T5TokenizerFast(tokenizer_file=f'{src_tok}/tokenizer.json')
+          print('loaded T5 fast tokenizer from tokenizer.json '
+                '(spiece.model absent)', flush=True)
+      else:
+          tok = AutoTokenizer.from_pretrained(src_tok)
+      enc = T5EncoderModel.from_pretrained(src_enc, torch_dtype=torch.bfloat16,
+                                           low_cpu_mem_usage=True)
   else:
       print('no t5xxl archive — pulling from HF (~10GB)', flush=True)
       src_tok = src_enc = 'Lightricks/LTX-Video'
       tok = AutoTokenizer.from_pretrained(src_tok, subfolder='tokenizer')
       enc = T5EncoderModel.from_pretrained(src_enc, subfolder='text_encoder',
                                            torch_dtype=torch.bfloat16,
-                                           low_cpu_mem_usage=True)
-  if src_enc == 'Lightricks/LTX-Video':
-      pass  # already loaded above
-  else:
-      tok = AutoTokenizer.from_pretrained(src_tok)
-      enc = T5EncoderModel.from_pretrained(src_enc, torch_dtype=torch.bfloat16,
                                            low_cpu_mem_usage=True)
   enc = enc.to(dev).eval()
   print(f't5xxl ready {time.time()-t0:.0f}s dev={dev}', flush=True)
@@ -77,14 +86,15 @@ run: |
                   'negative_prompt_embeds': neg_e,
                   'negative_prompt_attention_mask': neg_m}, out)
       print(f'shot{s["shot"]} embedded {time.time()-t0:.0f}s', flush=True)
-  # bonus: persist the t5xxl archive for future runs (best-effort —
-  # disk-tight hosts skip; embeds are the deliverable, already on disk)
-  try:
-      os.makedirs(ARC_LOCAL, exist_ok=True)
-      tok.save_pretrained(f'{ARC_LOCAL}/tokenizer')
-      enc.save_pretrained(f'{ARC_LOCAL}/encoder')
-      print('t5xxl archive saved', flush=True)
-  except Exception as e:
-      print(f'archive save skipped: {type(e).__name__}: {str(e)[:120]}',
-            flush=True)
+  # Persist only after the first HF download. Re-saving a shared 9GB
+  # encoder on every retry creates a pointless Drive upload.
+  if not archive_exists:
+      try:
+          os.makedirs(ARC_LOCAL, exist_ok=True)
+          tok.save_pretrained(f'{ARC_LOCAL}/tokenizer')
+          enc.save_pretrained(f'{ARC_LOCAL}/encoder')
+          print('t5xxl archive saved', flush=True)
+      except Exception as e:
+          print(f'archive save skipped: {type(e).__name__}: {str(e)[:120]}',
+                flush=True)
   print('nasa-embeds-ss1 complete', flush=True)

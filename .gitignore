@@ -80,3 +80,19 @@ stacks/web/public/apps/route-health.json
 edge/claw-channel/wrangler.deploy.toml
 ada-pi-wt/
 .bench-tools/
+media/
+
+# dispatch worktree scratch (scratch clones, throwaway envs)
+.scratch/
+
+# devnest shadow-eval: per-host run worktrees + staged probe cache
+evals/shadow/runs/
+evals/shadow/staged/
+
+# opencode lane gate: legacy per-checkout state dir — live state now at
+# ${XDG_STATE_HOME:-~/.local/state}/opencode-lane (AUD-0950); keep this
+# ignored so a stale in-repo dir is never committed
+evals/opencode-lane/state/
+
+# per-run opencode session render — lives in dispatch worktrees, not repo
+.opencode-profile/

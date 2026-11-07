@@ -1,0 +1,57 @@
+id: mcp-schema-allowlist-heavy-servers-7c22e9
+title: mcp-schema-allowlist-heavy-servers
+column: review
+updated: 2026-11-04 07:45
+priority: medium
+spec: 'Apply mcp-allowlist.py to alphavantage (~5.6k lines/~15k tokens schema — allowlist ~6 core fns: TIME_SERIES_DAILY,
+  FX_DAILY, quote, plus top-3 used) and playlive (~30 tools — allowlist ~10 core: create/navigate/click/fill/screenshot/eval/close/list/status).
+  Pattern proven on github/postgres/yomi. Est: ~20k+ tokens saved per session.'
+note: 'AUD-0886 finding #1 — biggest free token save in the fleet.'
+ref: OPS-0889
+comms:
+- at: 2026-10-26 07:43
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-03 11:48
+  from: tony
+  text: queued for processing
+- at: 2026-11-03 11:48
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-03 11:48
+  from: chaba
+  text: started devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph on tony-macbook (dispatch)
+- at: 2026-11-03 11:52
+  from: tony-macbook
+  text: 'finished (ok): exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve
+    all tools. | devin-task-202611'
+- at: 2026-11-03 11:52
+  from: chaba
+  text: pushed dispatch/20261103-114841-apply-mcp-allowlist-py-to-alph to origin
+- at: 2026-11-03 11:52
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-03 11:52
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261103-114841-apply-mcp-allowlist-py-to-alph,
+    branch dispatch/20261103-114841-apply-mcp-allowlist-py-to-alph'
+- at: 2026-11-03 11:57
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-11-04 07:45
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 . Running in non-interactive mode. Use --permission-mode dangerous to auto-approve all tools.
+    | devin-task-20261103-114841-apply-mcp-allowlist-py-to-alph.service: Consumed 38.582s CPU time over 3min 4.580s
+    wall clock time, 1.1G memory peak.'
+  sweep:
+    session_gone: 2026-11-03 11:57
+    no_repo: 2026-11-04 07:45
+review_kind: verify
+claim: {}

@@ -1,0 +1,68 @@
+title: job-dispatcher failure isolation — per-job backoff + critical policy
+subtitle: >-
+  a failing dispatcher job can no longer starve due jobs, fail the
+  chaba-jobs.service tick every minute, or retry-hammer; failures back off
+  exponentially and alert once per episode via board-api /inbox
+icon: clock
+version: 1
+
+card: fix-chaba-jobs-network-scan-failure-isolation
+date: 2026-10-27
+
+wound: |
+  On tony_dell, network-scan-tony (every:15m) crashed inside
+  scripts/network-scan.py --push at a subprocess check=True. Under the old
+  dispatcher the failure left last_run untouched, so the job was retried
+  EVERY 1-min tick, and every tick exited 1 — chaba-jobs.service logged
+  failures continuously and the failure count drowned the real signal.
+  (Other due jobs did still run, but any dispatcher-level exception —
+  bad cwd, pre-clean crash — would have aborted the whole loop.)
+
+policy: |
+  Dispatcher jobs are NONCRITICAL by default. `critical: true` in
+  ssot.jobs.yml opts a job back into exit-nonzero semantics (systemd sees
+  the tick fail). Promote sparingly — dispatcher jobs are the cheap
+  interval tail; heavyweight/alert-worthy work belongs on dispatch:
+  systemd with its own unit. network-scan-tony carries explicit
+  `critical: false` (2026-10-27) so the stance is visible.
+
+mechanism: |
+  - Per-job try/except in scripts/job-dispatcher.py tick(): a job's
+    subprocess failure, timeout (exit 124) or dispatcher-level error
+    (exit 70, EXEC_ERR) is recorded and the loop continues.
+  - Backoff: delay = interval * backoff_factor**(failure_count-1),
+    floored at the job's own interval (first failure retries on normal
+    cadence — no silent slow-down), capped at
+    config.failure_policy.backoff_cap (default 4h, factor 2). The cap can
+    never go below the interval — a daily job never retries faster than
+    daily.
+  - State (~/var/chaba/jobs/state.json, per job): last_run (last attempt),
+    last_success, last_failure, failure_count, next_retry, alerted,
+    ok, exit_code. Old-format state files migrate transparently.
+  - Evidence: every attempt still appends to the results timeline
+    (config.results) — now with critical/failure_count/backoff_s/err.
+  - Alert: first failure of an episode files ONE focus-inbox entry via
+    board-api /inbox (priority high if critical, else medium); when the
+    API is unreachable it degrades to a local
+    docs/ssot/focus-inbox/job-fail-<host>-<jid>.yml that self-heals
+    (unlinked) on recovery. st['alerted'] dedupes; success resets it.
+  - Exit policy: tick exits 1 iff a critical job failed this run;
+    noncritical failures never fail the service.
+
+verification: |
+  - tests/ops/test_job_dispatcher.py — 12 tests: isolation (fail + ok on
+    same tick, dispatcher exception contained), backoff (interval floor,
+    doubling, cap, reset on success), state persistence across ticks,
+    results-record fields, exit policy (noncritical -> 0, critical -> 1),
+    alert once-per-episode + file fallback + self-heal, dry-run purity.
+    Run: python3 -m unittest tests.ops.test_job_dispatcher
+  - python3 scripts/job-dispatcher.py --host <h> --dry-run — due/backoff
+    lines, no state or results writes.
+
+followups: |
+  - Dispatcher jobs ignore manifest env_file / condition_path today
+    (embed-lane-news on idc03 declares env_file litellm-chaba.env — the
+    dispatcher never loads it). Worth a separate card: either honor both
+    in the dispatcher or render them out of dispatcher jobs.
+  - deploy: tony_dell exec checkout picks this up via chaba-repo-sync;
+    no unit re-render needed (chaba-jobs.service ExecStart unchanged).

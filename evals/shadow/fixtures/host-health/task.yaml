@@ -1,0 +1,32 @@
+id: host-health
+title: Read-only host health snapshot
+class: read_only
+needs_llm: false
+timeout_s: 420
+artifact: health.json
+description: >-
+  Collect a read-only health snapshot of the local host into
+  evals/shadow/task/artifacts/health.json. No mutations of any kind.
+contract:
+  required_fields:
+    host: "hostname string, non-empty"
+    collected_at: "ISO-8601 timestamp"
+    uptime_seconds: "float >= 0"
+    load1: "float >= 0"
+    load5: "float >= 0"
+    load15: "float >= 0"
+    cpu_count: "int >= 1"
+    mem_total_mb: "int > 0"
+    mem_available_mb: "int >= 0 and <= mem_total_mb"
+    disk_root_pct: "int 0..100, used percent of the / filesystem"
+    failed_units: "list of failed systemd unit names (may be empty)"
+    read_only: "must be true"
+  tolerances:
+    disk_root_pct: 3
+    mem_total_mb_pct: 5
+l0:
+  script: l0.py
+arms:
+  - l0
+  - opencode
+  - devin

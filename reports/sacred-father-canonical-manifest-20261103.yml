@@ -1,0 +1,49 @@
+project_id: kk-video-c9f99fee6146
+manifest_version: final-preview-v4-clean
+source:
+  pdf: OST_-_v1_01.pdf
+  sha256: 5a6ef65431865b1b4957b70023d3e83cbdcaf19a5ebaa4896c6f2cd31ad06d34
+scope: private_teaser_preview
+renderer:
+  engine: ltx-mlx
+  model: ltxv-2b-0.9.8-distilled
+  host: kk-mac
+  concurrency: 1
+shots:
+  count: 10
+  frame_count: 73
+  fps: 24
+  width: 640
+  height: 384
+  ids:
+    - shot01
+    - shot02
+    - shot03
+    - shot04
+    - shot05
+    - shot06
+    - shot07
+    - shot08
+    - shot09
+    - shot10
+review:
+  variant: final-preview-v4-clean
+  overlays: false
+  narration: thai
+  subtitles:
+    - thai
+    - english
+artifacts:
+  video: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.mp4
+  thai_subtitles: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.th.srt
+  english_subtitles: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v4-clean.en.srt
+qc:
+  decode: passed
+  audio: aac
+  duration_seconds: 59.916667
+  frames: 720
+  public_release: false
+next:
+  - visual_review
+  - approve_private_preview
+  - publish_only_after_owner_approval

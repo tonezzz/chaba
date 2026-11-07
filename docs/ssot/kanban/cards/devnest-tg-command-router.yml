@@ -1,0 +1,120 @@
+id: devnest-tg-command-router
+title: Add DevNest Telegram card-explain and approval routing
+column: done
+updated: 2026-10-26 19:03
+brief: 'Extend the live DevNest Telegram relay beyond capture-only: explain card refs and route explicit approvals
+  through board-api.'
+priority: high
+program: devnest
+tags:
+- devnest
+- telegram
+- board-api
+- jev
+- verification
+spec: Implement the next OPS-0905 slice in the chaba repo. The DevNest Telegram relay must normalize messages such
+  as 'explain 0905' to OPS-0905, fetch the live card through board-api GET, and return a deterministic same-topic
+  summary containing status, current phase, verified evidence, next step, and open ask. Add explicit APPROVE <card/ref>
+  and REJECT <card/ref> parsing only for the allowlisted Tony sender; resolve an exact card/ref and use board-api's
+  sanctioned /respond or approval path, never direct YAML or shell execution. Unknown or ambiguous refs must be
+  refused and audited. Preserve chat_id/message_thread_id routing. Add unit tests for normalization, read-only explanation,
+  approval authorization, unknown ref, and topic-preserving reply. Verify with pytest, then deploy/restart the idc03
+  relay under the existing EnvironmentFile and run a real Telegram smoke test for 'explain 0905' plus a harmless
+  approval fixture. Do not add Ada credentials or direct devnest-ha control.
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 sh-safe until merge, and card request `tg-live-smoke` stays open for Tony''s organic APPROVE confirmation.
+    | devin-task-20261026-171856-implement-the-next-ops-0905-sl.service: Consumed 41.551s CPU time, 1.6G memory
+    peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-26 17:47
+ref: OPS-0911
+comms:
+- at: 2026-10-26 17:18
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 17:18
+  from: idc02
+  text: claimed
+- at: 2026-10-26 17:18
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:18
+  from: chaba
+  text: started devin-task-20261026-171856-implement-the-next-ops-0905-sl on idc02 (dispatch)
+- at: 2026-10-26 17:24
+  from: devin
+  text: 'Implementing command router slice: explain/status + APPROVE/REJECT parsing, ref normalization (0905->OPS-0905),
+    board-api GET /cards resolution, /respond + /action sanctioned paths, audit.jsonl trail, same-topic replies.
+    Tests next.'
+- at: 2026-10-26 17:29
+  from: devin
+  text: 'raised request tg-live-smoke: Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA
+    group please send: explain 0905 (expect s'
+- at: 2026-10-26 17:32
+  from: devin
+  text: 'DONE + DEPLOYED on idc03. devnest-tg-relay now routes board commands: explain|status <ref|id> -> deterministic
+    summary (status/phase/verified/next/ask) via board-api GET /cards; APPROVE/REJECT gated to TELEGRAM_APPROVER_IDS
+    -> /respond (open ask/1 request) or /action close|hold (review). Unknown/ambiguous refs refused + audit.jsonl.
+    Verified: pytest 19/19; organic live proof — your explain 0905 (update 954573590) answered in-group at 17:30;
+    harmless fixture APPROVE OPS-0912 refused+audited. Bran'
+- at: 2026-10-26 17:34
+  from: idc02
+  text: 'finished (ok): exit=0 sh-safe until merge, and card request `tg-live-smoke` stays open for Tony''s organic
+    APPROVE confirmation. | devin'
+- at: 2026-10-26 17:34
+  from: chaba
+  text: pushed dispatch/20261026-171856-implement-the-next-ops-0905-sl to origin
+- at: 2026-10-26 17:34
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 17:34
+  from: chaba
+  text: auto-merged 13c85c8c (dispatch/20261026-171856-implement-the-next-ops-0905-sl) → origin/master
+- at: 2026-10-26 17:34
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-171856-implement-the-next-ops-0905-sl,
+    branch dispatch/20261026-171856-implement-the-next-ops-0905-sl'
+- at: 2026-10-26 17:34
+  from: devin
+  text: 'Persona + command UX decision: use the lane tag on every outbound reply, matching kk-ha: `[devnestha]`
+    from TG_SPEAKER_TAG; keep TG_PERSONA_NAME=DevNestHA for human-facing identity. Recommend hybrid input: natural
+    language for read-only/explanatory requests (`explain 0905`, `what is 0905?`), slash commands for explicit state
+    changes and control (`/approve OPS-0912`, `/reject OPS-0912`, `/status OPS-0905`, `/help`). Natural-language
+    approval can be recognized only as a proposal/confirmation promp'
+- at: 2026-10-26 17:47
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''tg-live-smoke''] block close)'
+- at: 2026-10-26 18:39
+  from: tony
+  text: 'answered tg-live-smoke: confirmed — replies arrived'
+- at: 2026-10-26 18:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+requests:
+- id: tg-live-smoke
+  ask: 'Command router is live on idc03 (devnest-tg-relay restarted). In the DevNestHA group please send: explain
+    0905 (expect status/phase/verified/next/ask summary) and APPROVE OPS-0912 (expect refusal, no such card). Confirm
+    replies landed?'
+  status: answered
+  at: 2026-10-26 17:29
+  from: devin
+  options:
+  - confirmed — replies arrived
+  - something looks wrong
+  - send later
+  answer: confirmed — replies arrived
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 18:46
+  note: verified — evidence checks green, closing itself

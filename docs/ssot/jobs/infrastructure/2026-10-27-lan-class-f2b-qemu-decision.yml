@@ -1,0 +1,71 @@
+title: lan-class policy decision — fail2ban enabled, qemu-guest-agent declared n/a (bare metal)
+subtitle: >-
+  Resolves the second half of card host-hardening-residuals: for home-lan
+  hosts, fail2ban ships enabled with a never-self-lockout ignoreip and
+  qemu-guest-agent is a declared exception on bare-metal hosts.
+icon: shield
+id: 2026-10-27-lan-class-f2b-qemu-decision
+status: done
+owner: devin-dispatch
+project: chaba
+card: host-hardening-residuals
+branch: dispatch/20261027-102931-host-hardening-residuals-macbo
+started: "2026-10-27"
+completed: "2026-10-27"
+
+context:
+  user_request: >
+    Leftovers from the 2026-10-22 fleet hardening sweep
+    (docs/kb/host-hardening-baseline.md): tony-omen + mn01 had fail2ban
+    inactive and no qemu-guest-agent. Baseline leaves both optional for
+    class home-lan — the card asked for a decision: enable, or record as
+    intentional exceptions in ssot.security.<host>.yml.
+
+decision:
+  fail2ban: >-
+    ENABLE on all home-lan hosts. Rationale: baseline audit procedure §2
+    lists "fail2ban install" among apply-freely class-A fixes (additive,
+    reversible), and enabled-as-tripwire beats a declared exception: on a
+    NATed LAN host with key-only sshd the stock jail normally never fires,
+    but if sshd ever sees non-local exposure (router port-forward, NAT
+    hairpin, policy regression) it provides immediate brute-force cover.
+    Required guardrail: jail.local ignoreip must cover loopback + RFC1918
+    + 100.64.0.0/10 (tailnet) so LAN/tailnet sources can NEVER be banned —
+    a client offering many keys can otherwise self-lockout on "Too many
+    authentication failures", which on mn01 (tailnet-only, no OOB console)
+    means a 10-minute lockout with no recovery path.
+  qemu_guest_agent: >-
+    DECLARED EXCEPTION on home-lan hosts that are bare metal. Verified
+    systemd-detect-virt=none on tony-omen (HP 15-BC) and mn01 (FUJITSU
+    ESPRIMO Q556/2) — a QEMU guest agent is meaningless off QEMU. If a
+    lan-class host is ever re-provisioned as a QEMU/KVM guest, install it
+    then (B5 applies to actual guests only).
+
+applied:
+  - host: tony-omen
+    changes: >-
+      apt install fail2ban (1.1.0-9); /etc/fail2ban/jail.local written
+      (ignoreip = 127.0.0.1/8 ::1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+      100.64.0.0/10, sshd jail enabled); systemctl enable --now +
+      restart; fail2ban-client confirms jail up and ignoreip loaded.
+  - host: mn01
+    changes: "same as tony-omen."
+
+ssot_updates:
+  - docs/ssot/infrastructure/ssot.security.tony-omen.yml — baseline_applied entry + qemu-guest-agent deviation (con01-style {item, reason, last_verified})
+  - docs/ssot/infrastructure/ssot.security.mn01.yml — same
+  - docs/ssot/infrastructure/ssot.security.tony-macbook.yml — sshd password_auth needs-verification → "yes" (verified stock, hardening pending)
+
+remaining: >-
+  tony-macbook sshd dropins + /etc/sysctl.d/90-tuning.conf — the host has
+  no passwordless sudo so the dispatch could not apply it; one paste-block
+  was posted to the card comms and a board request raised for Tony to run
+  it (also collects `ufw status verbose` for the D2 check). Linger already
+  yes; ufw unit is enabled but rules could not be verified without sudo.
+
+verify: |
+  ssh tony-omen 'sudo fail2ban-client status sshd'   # jail up, ignoreip lists LAN+tailnet CIDRs
+  ssh mn01 'systemctl is-active fail2ban'            # active
+  # after Tony's paste-block on tony-macbook:
+  ssh macbook 'sudo sshd -T | grep passwordauthentication'   # → no
+  ssh macbook 'sysctl net.ipv4.tcp_congestion_control'       # → bbr

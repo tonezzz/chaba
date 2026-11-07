@@ -1,0 +1,170 @@
+title: WP read + confirm-gated update tools for the LINE boards loop
+subtitle: wp_read (list/preview) + wp_update (retitle/publish/trash,
+  policy:confirmed) close the member site-maintenance loop
+icon: tools
+version: 1
+
+card: line-wp-site-manager
+date: 2026-10-27
+dispatch: 20261027-140223-p0-wp-live-on-plesk-boards-sit
+runner: tony-macbook
+
+planning:
+  goal: |
+    Card line-wp-site-manager (OPS-0640) P2+P3: LINE-driven WordPress
+    maintenance needs the read and update halves — wp_post/cpt_post
+    only create. P2 = read-only tool to list posts/pages and preview a
+    draft. P3 = create/update via LINE with confirm-before-publish.
+    P0 (site live + /wp-json reachable) was already true and was
+    re-verified this session; P1 (revocable app password, never master
+    creds in LINE) was settled 2026-10-14 (Option A identity-based —
+    backend holds wp-boards.env; members never see credentials).
+  scope: |
+    ada-voice staged drop-in only (integrations/ada-voice/) + SSOT
+    updates. No push, no deploy from this worktree — tools.d drops
+    land on ada-voice via the normal drop-apply + deploy-ada.sh path
+    on idc03.
+  success_criteria:
+    - wp_read action=list returns id/title/status/link rows for
+      posts/pages/CPTs with status/person-tag/search filters
+    - wp_read action=get returns title + body text as the draft
+      preview (members have no wp-admin login — text is the preview)
+    - wp_update edits posts/pages only; GET-then-POST reports the
+      status transition; manifest policy:confirmed enforces the
+      confirm-before-publish gate at dispatch, not self-asserted
+    - publish flow composes — wp_post publish=false -> wp_read get ->
+      member yes -> wp_update status=publish
+    - drop tests green; persons include lists + ssot.wp-boards writers
+      updated
+  risks:
+    - wp_update's confirmed gate only blocks the dispatch path —
+      DECLARATION must list `confirmed` as a property (never required;
+      the gate pops it pre-validation) so the model knows to send it
+    - person= filter uses read-only GET tags — reusing wp.ensure_tag
+      would mint tags from a read tool (tested)
+    - post_type rides the REST route — charset-validated; CPT kinds
+      excluded from wp_update so a blind retitle can't desync the
+      cpt_post slug/upsert contract
+  resources:
+    - ada-voice checkout ~/CascadeProjects/ada-voice (tools.d,
+      tool_runner gates, tools_loader policies)
+    - integrations/ada-voice/backend/tools.d/cpt_post.py + drop 11 as
+      the convention precedent
+    - boards.surf-thailand.com /wp/wp-json verified 2026-10-27
+  owner: devin (dispatch)
+  estimated_duration: 1 session
+
+processing:
+  status: completed
+  started_at: 2026-10-27T14:10:00
+  steps:
+    - id: 1
+      label: Verify P0 live state
+      detail: >-
+        GET /wp/ = 200, /wp/wp-json/ = 200 ('Chaba web boards', 219
+        routes, chaba/v1+cptui+wp/v2). The 2026-10-14/15 301-loop and
+        timeout watcher alerts are resolved. Side finding: /wp/v2/users
+        is anonymously enumerable (admin id=1) — default WP posture,
+        flagged on the card.
+    - id: 2
+      label: Write tools.d/wp_read.py + manifest + guide
+      detail: >-
+        action=list|get; filters post_type/status/person/search/limit;
+        read-only tag resolution (GET tags?slug — never ensure_tag);
+        _fields projection on list; 1200-char preview unless full=true;
+        draft results carry a 'read the text back' note.
+    - id: 3
+      label: Write tools.d/wp_update.py + manifest + guide
+      detail: >-
+        id + title/content/status; posts+pages allowlist; GET before
+        POST for the transition report + honest 404; manifest
+        policy:confirmed + secondary_allowed (member lane maintainers,
+        still confirm-gated).
+    - id: 4
+      label: tests/ada/test_wp_read_update_drop.py — 18/18 green
+      detail: >-
+        Stubbed wp_client + httpx (same harness as cpt_post drop):
+        guards, list params, read-only tag resolution, get by id/slug,
+        truncation, transition reporting, payload scoping, manifest
+        policy assertions, declaration shape (confirmed declared, not
+        required).
+    - id: 5
+      label: SSOT — persons include lists + wp-boards writers
+      detail: >-
+        persons.tony + persons.kk include wp_read/wp_update; writers:
+        table documents both tools and the draft->confirm->publish
+        flow.
+
+decisions:
+  - summary: Read and update ship as two new tools.d drops, not wp_post
+      extensions.
+    detail: >-
+      Same call as the cpt_post precedent: wp_post keeps its
+      member-posts contract. wp_read is policy:read +
+      secondary_allowed (safe everywhere); wp_update is
+      policy:confirmed so the confirm-before-publish requirement is
+      enforced by the dispatch layer's bound-token gate — not by a
+      self-asserted flag inside the tool.
+  - summary: "Preview = body text in chat, not a link."
+    detail: >-
+      WP draft permalinks only render inside wp-admin sessions;
+      members authenticate via LINE, not WP. wp_read get returns the
+      rendered body as plain text — that is the preview surface.
+  - summary: wp_update limited to posts+pages.
+    detail: >-
+      CPT records (expense/contact/reminder/asset/place/trip) carry a
+      slug/meta contract owned by their writer tools; a generic
+      retitle would fork upserts. Revisit only with a per-kind update
+      path.
+  - summary: Alternatives considered.
+    detail: >-
+      One wp_manage tool covering read+update — rejected: mixing a
+      confirmed-gated surface with reads would either gate reads or
+      ship a per-action gate the manifest can't express. Patching
+      wp_post to update — rejected: its DECLARATION says 'post';
+      overloading id= semantics invites wrong-turn calls.
+
+verification:
+  - >-
+    uvx --with pytest --with pyyaml --with httpx python -m pytest
+    tests/ada/test_wp_read_update_drop.py -> 18/18
+  - >-
+    curl https://boards.surf-thailand.com/wp/ -> 200;
+    /wp/wp-json/ -> 200
+  - >-
+    yaml.safe_load on both manifest fragments; guide keys match tool
+    names
+
+follow_ups:
+  - >-
+    Merge this drop into ada-voice (tools.d + manifest + tool_guide),
+    deploy-ada.sh on idc03, then smoke: kk lane 'what is on my site'
+    -> wp_read list; 'publish the draft' -> wp_update denied until
+    confirmed=true
+  - >-
+    Open card Q: which lane fronts a real CUSTOMER site + does the
+    customer get a dedicated LINE group — raised as a board request
+  - >-
+    Optional: wp/v2/users anonymous enumeration is WP-default
+    posture; if we want it closed, a chaba-boards filter or edge deny
+    — not urgent (only exposes slugs already in author archives)
+
+files:
+  - file: integrations/ada-voice/backend/tools.d/wp_read.py
+    what: New read-only tool — list/get for posts/pages/CPTs
+  - file: integrations/ada-voice/backend/tools.d/wp_update.py
+    what: New confirm-gated update tool — posts/pages only
+  - file: integrations/ada-voice/backend/tools.d/manifest.wp_read.yml
+    what: policy:read + secondary_allowed fragment
+  - file: integrations/ada-voice/backend/tools.d/manifest.wp_update.yml
+    what: policy:confirmed + secondary_allowed fragment
+  - file: integrations/ada-voice/backend/tool_guide.wp_read.yml
+    what: Model-facing usage guide
+  - file: integrations/ada-voice/backend/tool_guide.wp_update.yml
+    what: Model-facing usage guide incl. publish flow
+  - file: tests/ada/test_wp_read_update_drop.py
+    what: 18-test drop verification
+  - file: docs/ssot/apps/ssot.apps.ada-persons.yml
+    what: wp_read/wp_update into persons.tony + persons.kk includes
+  - file: docs/ssot/apps/ssot.wp-boards.yml
+    what: writers-table entries for both tools

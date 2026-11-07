@@ -1,0 +1,73 @@
+title: sys-mon — live Host loads on chaba-admin/monitor (sampler re-homed dell→idc02)
+subtitle: >
+  Card sys-mon-system-monitor-de88ff (OPS-0369). Assessed the existing
+  sys-mon pipeline and folded it into the existing monitor surface — no
+  new app. The chaba-admin `monitor` tab already iframed
+  /apps/system-report/; what was missing was (a) a live view — host
+  loads only appeared inside the daily-regenerated SYSTEM-REPORT.md —
+  and (b) a running producer: the sampler had been piggybacked on
+  tony-dell-monitor.service and went dark when dell was drained
+  (2026-10-23 was its last sample).
+icon: monitor
+date: 2026-10-26
+slug: sys-mon-monitor-page
+card: sys-mon-system-monitor-de88ff
+ref: OPS-0369
+kind: surface-merge
+dispatch: dispatch-wt-20261026-071051-assess-sys-mon-system-monitor- (idc02)
+
+assessment: >
+  sys-mon = scripts/host-loads.py — one SSH probe per host
+  (loadavg/meminfo/df, macOS sysctl branch too) writing
+  reports/host-loads/host-loads.yml + meta.host-loads.yml, already a
+  registered L1 node in ssot.reports.yml and already rendered as the
+  "Host loads" section of SYSTEM-REPORT.md by report-system.py (with a
+  24h audit-hosts fallback). The only missing pieces were producer
+  placement after the dell drain and a live render on the page.
+
+changes:
+  - "stacks/web/public/apps/system-report/{index.html,app.js}: new \"Host
+    loads\" table between the status cards and the node registry —
+    fetches data/host-loads.yml every 60s (page already self-refreshes),
+    falls back to the host_loads block inside system-report.yml when the
+    live file is absent. Load-1m bar, mem used/total, disk %, sample age,
+    unreachable pill."
+  - "ssot.jobs.yml: new job chaba-host-loads (idc02, every 5min,
+    dispatch: systemd) — runs the sampler then installs host-loads.yml
+    into both the exec checkout's app data dir and
+    ~/web-srv/public/apps/system-report/data/ (the idc02 web edge
+    webroot, served by the `web` container behind tailnet-serve :8088
+    and the public caddy-edge tony-ha.surf-thailand.com /
+    monitor.surf-thailand.com)."
+  - "systemd/generated/idc02/chaba-host-loads.{service,timer}: rendered."
+  - "ssot.reports.yml host-loads node: generator now
+    chaba-host-loads.timer (was tony-dell-monitor.service)."
+  - "Live: dashboard chaba-admin monitor view iframe URL bumped ?v=6→?v=7
+    via push-dashboard.py on tony-omen (cache-bust convention); snapshot
+    docs/home-assistant/dashboards/chaba-admin-current.json re-synced."
+
+deploy_notes: >
+  App files shipped out-of-band (dispatch branches don't push):
+  ~/web-srv/public/apps/system-report/ on idc02 (instant) and
+  idc03:~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/system-report/
+  (kanban-commit sweeps it into master; hourly web-srv-sync would
+  otherwise revert the edge copy). Timer installed to
+  ~/.config/systemd/user/ + enable --now; first run sampled 6/9 hosts
+  (kk-mac, macbook, michael-ha unreachable — same set as the last
+  dell-era sample, not a regression).
+
+verify:
+  - curl -s https://idc02.taila0626a.ts.net/apps/system-report/data/host-loads.yml | head
+  - open https://tony-ha.surf-thailand.com/chaba-admin/monitor — Host
+    loads table on top shows live load/mem/disk per host, "sampled Nm ago"
+  - systemctl --user list-timers chaba-host-loads.timer  (5min cadence)
+
+followups:
+  - kk-mac/macbook/michael-ha SSH reachability from idc02 (same three
+    dark under dell; macbook has no DNS name — relies on tailscale_ip).
+  - "chaba-system-report.timer lives on con01 whose exec checkout never
+    gets fresh host-loads.yml (reports/ is gitignored) — its daily Host
+    loads section keeps rendering the audit-hosts fallback. Harmless —
+    the page's live table supersedes it."
+  - tony-dell-monitor.sh still invokes host-loads.py on dell — dead
+    path, left for the dell teardown card.

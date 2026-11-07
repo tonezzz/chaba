@@ -1,0 +1,97 @@
+id: 2026-10-26-opencode-mcp-debug-readonly-lane
+title: OpenCode mcp-debug read-only lane — Phase 1 verified, Phase 2 evidence, Phase 3 gated
+card: opencode-mcp-debug-readonly-lane
+ref: OPS-0902
+date: 2026-10-26
+runner: tony-macbook
+status: phase-1-verified / phase-2-evidence-collected / phase-3-gated
+
+what_was_built:
+  summary: >-
+    The existing mcp-debug MCP server (tony-dell via mcp-debug-ssh.sh) is now
+    exposed to OpenCode through the existing mcp-allowlist.py stdio proxy,
+    restricted to 8 read-only tools. Config is a reversible user-level
+    OpenCode MCP entry on tony-macbook; Devin's mcp_config.json untouched.
+  files:
+    - ~/.config/opencode/opencode.json  # NEW — user-level OpenCode config: litellm provider + mcp entry "mcp-debug-readonly"
+    - ~/.config/opencode/allowlist.mcp-debug-readonly.json  # NEW — proxy allowfile (command + allow list)
+    - ~/.config/secrets/litellm-keys.env  # copied from idc03 (LITELLM_KEY_* virtual keys, mode 600)
+    - /home/tony/.local/node/bin/opencode  # npm i -g opencode-ai@1.19.4
+    - /home/tony/.local/bin/opencode -> ../node/bin/opencode  # PATH symlink for runner-agent shutil_which
+  upstream_command: /bin/bash ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh
+    (ssh tony-dell, python3 -m mcp_debug.server in the chaba-tony-dell readonly mirror)
+
+allowlist:
+  allowed_tools: [mcp_debug, mcp_health, mcp_get_file, mcp_read_ssot, mcp_search_ssot, mcp_ssot_query, mcp_ssot_get, mcp_mddb_doc]
+  note: >-
+    mcp_debug = registered compact debug commands only (server-side registry,
+    no raw shell). Everything not listed is denied by omission — includes
+    mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append, mcp_clipboard_set,
+    mcp_clipboard_get, mcp_clipboard_image_get, mcp_eget, mcp_screenshot,
+    mcp_window_list, mcp_preset_run, mcp_adaptive, mcp_stats, mcp_vet,
+    mcp_savings, mcp_diff, mcp_logs*, mcp_net, mcp_env, mcp_gpu, mcp_system,
+    mcp_transform, mcp_report, mcp_context, mcp_session_summary,
+    mcp_preprocess, mcp_focus, mcp_query_ssot, mcp_debug_audit,
+    mcp_preset_list, mcp_preset_savings.
+
+verification:
+  tools_list:
+    cmd: MCP_ALLOWFILE=~/.config/opencode/allowlist.mcp-debug-readonly.json python3 ~/.config/devin/mcp-scripts/mcp-allowlist.py --list-only
+    result: "8 tools exactly = the allowlist (no extras, no missing)"
+  denied_calls:
+    method: piped initialize + tools/call through the proxy in serve mode
+    result: >-
+      mcp_raw, mcp_put_file, mcp_remediate, mcp_ssot_append, mcp_clipboard_set,
+      mcp_eget, mcp_screenshot all returned JSON-RPC error -32601 from the
+      proxy itself — never reached the upstream server (no passthrough).
+  mcp_health_tony_dell: "ok:true rc:0 — mcp-debug binary reachable on tony_dell"
+  opencode_run1:
+    task: write-then-fill health-report.json for tony_dell via 3 MCP calls
+    model: litellm/gemini-3.5-flash-lite (LITELLM_KEY_ADA)
+    tokens: {total_cumulative: 35979, cache_read: 32620, steps: 4}
+    verdict: pass (verdict-run1.json — all 5 field checks green)
+  opencode_run2_phase2:
+    task: "real read-only health report job on tony_dell (6 MCP calls:
+      health, uptime, free -h, df -h, systemctl list-units, ssot search)"
+    model: litellm/gemini-3.5-flash-lite
+    tokens: {total_cumulative: 38282, cache_read: 34661, steps: 4}
+    artifact: tony-dell-health-2026-10-26.md — verdict HEALTHY, all sections filled
+    verdict: pass (verdict-run2.json)
+    note: >-
+      Ran under dispatch supervision (this session) rather than live human
+      watch — the job class is read-only so risk is nil; broader
+      "supervised" rollout still needs a human-watched run before the lane
+      is declared graduated.
+  quirks:
+    - opencode resolved --dir to the project root, so run2's report landed in
+      the worktree root (moved into evals/results/opencode-mcp-readonly/).
+    - LITELLM_KEY_BENCH cannot call gemini-3.5-flash-lite (model not on that
+      virtual key's allowlist) — use LITELLM_KEY_ADA/CHABA on this runner.
+    - First prompt attempt needed no retry otherwise; flash-lite handled
+      write-then-fill cleanly both runs.
+
+evidence:
+  dir: evals/results/opencode-mcp-readonly/
+  files: [events-run1.jsonl, events-run2.jsonl, health-report.json,
+          tony-dell-health-2026-10-26.md, usage-run1.json, usage-run2.json,
+          verdict-run1.json, verdict-run2.json]
+
+gates:
+  opencode_lanes: >-
+    UNCHANGED — OPENCODE_LANES stays unset/gated on tony-macbook (per card:
+    gated for broad work until OPS-0846 closeout + this lane's metrics
+    review). runner-agent still runs the devin default.
+  phase3_criteria: >-
+    Consider additional tools only after pass-rate, retry-rate, verifier,
+    and token measurements across more runs. Baseline so far: 2/2 pass,
+    0 retries, ~36-38k cumulative tokens/run (86-90% cache-read),
+    verifier artifacts deterministic.
+
+rollback: >-
+  Remove the "mcp-debug-readonly" block from ~/.config/opencode/opencode.json
+  (or set "enabled": false), and delete
+  ~/.config/opencode/allowlist.mcp-debug-readonly.json. Optionally also
+  remove ~/.local/bin/opencode symlink, litellm-keys.env, and
+  `npm uninstall -g opencode-ai`. Devin MCP config was never touched.
+
+no_production_mutation: true

@@ -211,6 +211,61 @@ class Case(unittest.TestCase):
              "master"], capture_output=True, text=True).stdout.strip()
         self.assertEqual(before, after)
 
+    def test_empty_session_on_moved_base_fails_and_stamps(self):
+        # the exact 2026-10-25/26 burn (dispatch-empty-closeout-
+        # verification-gap): zero commits, origin/master moved on after
+        # the worktree was cut — the head is an old base commit on the
+        # first-parent chain, NOT delivered work. The gate fails the
+        # attempt, requeues, and stamps sweep.zero_commit for the QC
+        # scoreboard.
+        commit(self.served, "moved.txt", "upstream moved\n", "upstream")
+        r = git(self.served, "push", "-q", "origin", "master")
+        assert r.returncode == 0, r.stderr
+        card = self.write_card()  # wt head == old base commit
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        a = c["action"]
+        self.assertIs(a.get("verified"), False)
+        self.assertEqual(a.get("status"), "queued")
+        self.assertTrue((a.get("sweep") or {}).get("zero_commit"),
+                        a.get("sweep"))
+        self.assertIn("nothing committed",
+                      str(a.get("last_failure") or ""))
+
+    def test_terminal_column_preserves_action_state(self):
+        # KNB-0893: a card already in done is terminal — the sweep must
+        # not rewrite its workflow fields even when action.status
+        # disagrees (a stale checkout shows exactly this shape).
+        card = self.write_card(
+            column="done",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba"})
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "running")
+
+    def test_bookkeeping_write_preserves_updated(self):
+        # KNB-0893 vector: a stamp/comms write must NOT fabricate a
+        # newer `updated` — on a stale checkout that stamp then wins
+        # the card-union scalar merge and resurrects upstream's newer
+        # column/status. Workflow mutations (fail_attempt) still bump.
+        card = self.write_card(
+            column="review",
+            updated="2026-10-20 00:00",
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba"})
+        ms.stamp("test-card", "probe_flag", "x", dry=False)
+        c = self.read_card()
+        self.assertEqual(c.get("updated"), "2026-10-20 00:00")
+        self.assertEqual((c["action"].get("sweep") or {})
+                         .get("probe_flag"), "x")
+        # a real workflow mutation still touches updated
+        self.assertTrue(ms.fail_attempt(card, "gate evidence", dry=False))
+        c = self.read_card()
+        self.assertNotEqual(c.get("updated"), "2026-10-20 00:00")
+        self.assertIs(c["action"].get("verified"), False)
+
     def test_failed_unit_work_not_merged_requeued(self):
         # unit crashed after committing — unmerged partial work is not
         # auto-merged; the card requeues with the exit evidence.
@@ -337,7 +392,9 @@ class Case(unittest.TestCase):
     def test_verified_stale_running_drains(self):
         # the observed stuck state: merged+verified but status still
         # 'running' and column 'doing' — the already-merged path runs
-        # the same close decision and flips both.
+        # the same close decision and flips both. Post-2026-10-26:
+        # verified+running is a field regression, not a stale session —
+        # NO stale_running flag/noise on a delivered card.
         card = self.write_card(
             column="doing",
             action={"type": "dispatch", "status": "running",
@@ -346,8 +403,75 @@ class Case(unittest.TestCase):
         c = self.read_card()
         self.assertEqual(c["column"], "done")
         self.assertEqual(c["action"]["status"], "done")
-        self.assertTrue((c["action"].get("sweep") or {})
-                        .get("stale_running"))
+        self.assertNotIn("stale_running",
+                         c["action"].get("sweep") or {})
+
+    def test_verified_session_gone_drains_not_flags(self):
+        # the 2026-10-26 nest-node-hardware resurrection: auto-merged +
+        # auto-closed at 07:16, then a union-merge/stale-write
+        # regression flipped the file back to doing+running while the
+        # runner's worktree was already GC'd. The sweep must re-close
+        # the card — never stamp stale_running/session_gone on a
+        # delivered one (merge-sweep-resurrects-closed-cards).
+        self._kill_session()
+        card = self.write_card(
+            column="doing",
+            auto_close={"by": "merge-sweep", "at": "2026-10-26 07:16",
+                        "note": "verified — closing itself"},
+            comms=[{"at": "2026-10-26 07:16", "from": "chaba",
+                    "text": "merge-sweep: verified — auto-closed "
+                            "(column -> done)"}],
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertTrue(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "done")
+        self.assertEqual(c["action"]["status"], "done")
+        sweep = c["action"].get("sweep") or {}
+        self.assertNotIn("stale_running", sweep)
+        self.assertNotIn("session_gone", sweep)
+        self.assertFalse(any("may be gone" in m.get("text", "")
+                             for m in c.get("comms") or []), c["comms"])
+        # healed — the next pass leaves it alone
+        self.assertFalse(ms.sweep_card(self.read_card(), {}, dry=False))
+
+    def test_terminal_column_never_touched(self):
+        # a done card is out of scope even when action.status regressed
+        # to running — the sweep must not stamp, comment, or rewrite
+        # workflow fields on a card it did not open.
+        self.write_card(
+            column="done",
+            action={"type": "dispatch", "status": "running",
+                    "task_id": TID, "repo": "chaba"})
+        before = (self.cards / "test-card.yml").read_text()
+        card = self.read_card()
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        self.assertEqual((self.cards / "test-card.yml").read_text(),
+                         before)
+
+    def test_deliberate_reopen_not_redrained(self):
+        # a verified card reopened on purpose — the lifecycle guard's
+        # '[lifecycle] bounced done->doing' (or a human 'moved done
+        # ->') — owns its workflow fields; the drain must not fight it.
+        self._kill_session()
+        card = self.write_card(
+            column="doing",
+            auto_close={"by": "merge-sweep", "at": "2026-10-26 07:16",
+                        "note": "verified — closing itself"},
+            comms=[
+                {"at": "2026-10-26 07:16", "from": "chaba",
+                 "text": "merge-sweep: verified — auto-closed "
+                         "(column -> done)"},
+                {"at": "2026-10-26 08:49", "from": "chaba",
+                 "text": "[lifecycle] bounced done->doing — card "
+                         "declares a `verify:` criterion but closed "
+                         "with no evidence comms."}],
+            action={"type": "dispatch", "status": "done",
+                    "task_id": TID, "repo": "chaba", "verified": True})
+        self.assertFalse(ms.sweep_card(card, {}, dry=False))
+        c = self.read_card()
+        self.assertEqual(c["column"], "doing")
+        self.assertNotIn("session_gone", c["action"].get("sweep") or {})
 
     def test_verified_decide_card_holds_in_review(self):
         # review_kind:decide is Tony's call — verified but never
@@ -727,6 +851,41 @@ class Case(unittest.TestCase):
                                 "idle_s": 60}]}       # …but still alive
         n = ms.sweep_zombies(host_units, {TID: card}, dry=False)
         self.assertEqual(n, 0)
+
+
+class TaskIdReTest(unittest.TestCase):
+    """TASK_ID_RE must resolve both tid shapes from comms: devin-dispatch
+    20261026-173617-<slug> AND runner-agent OpenCode lanes
+    <card-id>-<epoch> (the 2026-10-26 devnest-fl-pilot-report stranded
+    branch — finish consumed state.json before the sweep merged, and the
+    comms fallback couldn't parse the opencode tid)."""
+
+    def _hit(self, text):
+        m = ms.TASK_ID_RE.search(text)
+        return m.group(1) if m else None
+
+    def test_devin_dispatch_tid(self):
+        self.assertEqual(
+            self._hit("started devin-task-20261026-173617-pilot-classes-1"
+                      "-docs-config-ch on idc02 (dispatch)"),
+            "20261026-173617-pilot-classes-1-docs-config-ch")
+
+    def test_opencode_lane_tid(self):
+        self.assertEqual(
+            self._hit("started devin-task-devnest-fl-pilot-report-"
+                      "1793011692 on tony-dell (dispatch)"),
+            "devnest-fl-pilot-report-1793011692")
+
+    def test_opencode_probe_tid(self):
+        self.assertEqual(
+            self._hit("devin-task-opencode-closeout-probe-dell-"
+                      "1792968507"),
+            "opencode-closeout-probe-dell-1792968507")
+
+    def test_no_false_positives(self):
+        for s in ("devin-task-short-123", "devin-task-abc",
+                  "no unit here", "devin-task-123"):
+            self.assertIsNone(self._hit(s))
 
 
 if __name__ == "__main__":

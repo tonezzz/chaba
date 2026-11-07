@@ -1,7 +1,7 @@
 id: omen-barrier-kvm-server-loops-waiting-fo-f2f93c
 title: Omen Barrier KVM server loops waiting for X0 after boot
 column: done
-updated: 2026-10-25 16:31
+updated: 2026-10-26 13:28
 action:
   type: manual
   status: done
@@ -44,6 +44,32 @@ comms:
 - at: 2026-10-25 16:31
   from: chaba
   text: 'answer-sweep: executed ''Retire the Barrier KVM server/client and its enforcement/wat'' -> moved to done'
+- at: 2026-10-26 11:35
+  from: devin
+  text: Barrier KVM retirement deployed from commit 9c559fced. On Omen, barriers.service and the stale barrier-client
+    unit are disabled/removed; on Dell, barrier-client, enforce-LAN and watchdog units/timers, legacy barrierc.service,
+    and the autostart entry are removed. No barrierd/barrierc processes or TCP/24800 listeners remain. barrier-pin-vt.timer
+    remains only for the physical Xorg/CRD seat; clipboard pollers remain independent. UFW still allows 24800 on
+    Omen; I did not use sudo without approval.
+- at: 2026-10-26 11:35
+  from: devin
+  text: 'raised request approve-removing-the-unused-omen-ufw-all-13ebf8: Approve removing the unused Omen UFW allow
+    rule for TCP/24800 (IPv4 and IPv6)? No service is listening now; removing the'
+- at: 2026-10-26 11:37
+  from: devin
+  text: 'Runtime retirement verified after 9c559fced: no Barrier KVM units, processes, autostart entries, or TCP/24800
+    listeners on Omen/Dell. Dell barrier-pin-vt.timer remains active only for its Xorg physical seat. The separate
+    Omen UFW allow rule still exists; request approve-removing-the-unused-omen-ufw-all-13ebf8 is open because removing
+    it requires sudo.'
+- at: 2026-10-26 11:37
+  from: devin
+  text: 'Correction to the previous note: I left the separate clip-sync definitions untouched, but live checks show
+    both clip-sync units are currently inactive/not installed on Omen and Dell. No clipboard sync is currently running;
+    that is separate from the Barrier KVM retirement.'
+- at: 2026-10-26 13:28
+  from: tony
+  text: 'answered approve-removing-the-unused-omen-ufw-all-13ebf8: Approve the elevated UFW rule removal on Omen
+    (recommended).'
 requests:
 - id: omen-barriers-service-expects-x0-but-onl-e0cc66
   ask: Omen barriers.service expects X0 but only X20 exists after boot. Which display should the Barrier server
@@ -61,4 +87,15 @@ requests:
   answer: Retire the Barrier KVM server/client and its enforcement/watchdog. I do not need Barrier while working
     on MacBook. Preserve unrelated Xfce/CRD physical-seat support.
   executed: 2026-10-25 close
+- id: approve-removing-the-unused-omen-ufw-all-13ebf8
+  ask: Approve removing the unused Omen UFW allow rule for TCP/24800 (IPv4 and IPv6)? No service is listening now;
+    removing the rule prevents future exposure if Barrier is accidentally restored.
+  status: answered
+  at: 2026-10-26 11:35
+  from: devin
+  options:
+  - Approve the elevated UFW rule removal on Omen (recommended).
+  - Leave the rule for now; no listener is active.
+  suggested: Approve the elevated UFW rule removal on Omen (recommended).
+  answer: Approve the elevated UFW rule removal on Omen (recommended).
 claim: {}

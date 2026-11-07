@@ -102,7 +102,7 @@
          with (VOICE_CORPUS_DIR / "manifest.jsonl").open("a") as fh:
              fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
          logger.info("chat %s saved %s clip %s (%ds)",
-@@ -934,6 +985,50 @@
+@@ -934,6 +985,52 @@
                      + " — try again.", [])
              finally:
                  stop.set(); pulse.cancel()
@@ -135,6 +135,7 @@
 +            stop = asyncio.Event()
 +            pulse = asyncio.ensure_future(
 +                self._turn_progress(chat_id, reply_to, stop))
++            turn_ok = False
 +            try:
 +                cap = (msg.get("caption") or "").strip()
 +                reply, images = await sess.send_turn(
@@ -142,6 +143,7 @@
 +                    f"{_media_desc(msg, other)} — content not viewable "
 +                    "here]"
 +                    + (f" Their caption: {cap}" if cap else ""))
++                turn_ok = True
 +            except Exception as exc:
 +                logger.warning("chat %s %s turn failed: %s",
 +                               chat_id, other, exc)

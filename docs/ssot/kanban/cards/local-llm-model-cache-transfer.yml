@@ -1,0 +1,104 @@
+id: local-llm-model-cache-transfer
+title: Cache local LLM artifacts on IDC/Con and transfer to KK-Mac
+column: done
+updated: 2026-10-29 21:29
+brief: Use a fast Linux host as the download/cache origin, then transfer verified model artifacts to KK-Mac and
+  reuse them across lanes.
+priority: high
+program: devnest
+tags:
+- model-cache
+- kk-mac
+- ollama
+- idc03
+- con01
+spec: Use idc03 or con01 as a download/cache host rather than repeatedly downloading from KK-Mac. Prefer a content-addressed
+  GGUF/Ollama blob cache with model name, quantization, source URL, sha256, byte size, license, created_at, and
+  compatibility metadata. Transfer only after checksum verification, preserve the cache on a declared data tier,
+  and import into KK-Mac Ollama/MLX without moving credentials. First candidate qwen3:0.6b for runtime smoke, then
+  qwen3:8b or a coder model after benchmark. Reuse cache for other Mac/fleet workers. Keep incomplete downloads
+  quarantined; never expose model URLs/tokens in chat. Measure download time, transfer time, disk use, load time,
+  tokens/sec, and verifier quality.
+ref: OPS-0969
+comms:
+- at: 2026-10-28 22:06
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-29 13:21
+  from: devin
+  text: 'Verified 2026-10-29: con01 downloaded qwen3:0.6b at ~68 MB/s into ~/var/cache/devnest/models/ollama-models;
+    source model blob sha256 7f4030143c1c477224c5434f8272c662a8b042079a0a584f0a27a1684fe2e1fa. Transferred all Ollama
+    blobs+manifest to KK-Mac via temporary Tailscale HTTP path; KK checksum matches. Isolated Ollama server on port
+    11435 listed qwen3:0.6b and completed inference: total 1.938s, load 1.054s, eval 231 tokens/0.768s (~301 tok/s).
+    Temporary servers stopped; no persistent DevNest LLM '
+- at: 2026-10-29 16:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-29 16:32
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-29 16:32
+  from: mn01
+  text: claimed
+- at: 2026-10-29 16:33
+  from: chaba
+  text: started devin-task-20261029-093301-use-idc03-or-con01-as-a-downlo on mn01 (dispatch)
+- at: 2026-10-29 16:37
+  from: devin
+  text: 'Session 2026-10-29 (mn01 dispatch): formalizing con01 cache into durable tooling — scripts/models/model-cache.py
+    (content-addressed store, quarantine, sha256 gate, metadata index), declared cache tier, runbook + measurements.
+    Existing qwen3 0.6b/4b/8b blobs on con01 will be adopted into the index.'
+- at: 2026-10-29 16:50
+  from: devin
+  text: 'Durable cache live on con01: index.json adopted over qwen3 0.6b/4b/8b + fresh fetch qwen3:1.7b (42.3 MB/s,
+    quarantine->sha256->promote). verify: 253 MB/s. Isolated serve lists all 4 zero-copy; 0.4 tok/s under load 6.7/8
+    (inference not this hosts job). idc03 TH-mirror pulling (~4.6 MB/s ssh leg) — 0.6b already verified + ephemeral-podman
+    smoke listed it read-only. Tool: scripts/models/model-cache.py; runbook docs/kb/devnest-model-cache.md.'
+- at: 2026-10-29 17:09
+  from: devin
+  text: 'Done + committed on dispatch branch (not pushed). Final state: con01 primary cache (qwen3 0.6b/1.7b/4b/8b
+    Q4_K_M, Apache-2.0, all sha256-verified, 253 MB/s verifier) + idc03 TH mirror fully pulled and verify-clean
+    (23 blobs, 9.6 GB, 249 MB/s, quarantine empty). scripts/models/model-cache.py covers fetch/quarantine/promote/verify/index/serve/pull/export-gguf/metrics.
+    OLLAMA_MODELS-native store — isolated serves list models zero-copy; import paths to Ollama + MLX documented
+    for kk-mac/fleet with z'
+- at: 2026-10-29 17:10
+  from: mn01
+  text: 'finished (ok): exit=0  con01 would simplify kk-mac imports, and the coder-model pick awaits its benchmark
+    card. | devin-task-20261029-0'
+- at: 2026-10-29 17:10
+  from: chaba
+  text: pushed dispatch/20261029-093301-use-idc03-or-con01-as-a-downlo to origin
+- at: 2026-10-29 17:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-29 17:10
+  from: chaba
+  text: auto-merged d6af0a0a (dispatch/20261029-093301-use-idc03-or-con01-as-a-downlo) → origin/master
+- at: 2026-10-29 17:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261029-093301-use-idc03-or-con01-as-a-downlo,
+    branch dispatch/20261029-093301-use-idc03-or-con01-as-a-downlo'
+- at: 2026-10-29 17:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-29 21:29
+  from: devin
+  text: 'Home-network cache plan confirmed: tony-dell has only ~39G free and is not suitable for a 22G MLX mirror;
+    tony-omen has /data with ~168G free and existing /data/ollama-models. After IDC03 MLX mirror completes, add
+    Omen /data/devnest-model-cache/ltx-mlx as the home-LAN cache, then import KK-Mac over the local/Tailscale path.
+    KK-Mac remains the active local runtime; Omen is the home cache origin; IDC03/Con01 remain remote origins/mirrors.
+    No new sync started while the IDC03 transfer is active.'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0  con01 would simplify kk-mac imports, and the coder-model pick awaits its benchmark card. | devin-task-20261029-093301-use-idc03-or-con01-as-a-downlo.service:
+    Consumed 27.752s CPU time over 36min 25.053s wall clock time, 359.9M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-29 17:18
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,79 @@
+id: opencode-memory-bank-readonly-eval
+title: Evaluate staged read-only memory access for OpenCode
+column: done
+updated: 2026-10-28 09:41
+brief: Give OpenCode incremental read-only memory access with retrieval benchmarks, provenance, privacy gates, and
+  token measurement.
+priority: high
+program: ai-workforce
+tags:
+- opencode
+- memory
+- mddb
+- ssot
+- privacy
+- benchmark
+spec: 'Design and evaluate staged OpenCode memory access. Phase 0: frozen golden recall fixtures from past verified
+  jobs, no live memory. Phase 1: read-only curated Chaba/DevNest SSOT and public procedure documents through a scoped
+  memory profile; no raw filesystem, private Ada banks, secrets, or arbitrary collection access. Phase 2: read-only
+  MDDB/lesson retrieval with explicit collection allowlist, result limits, source IDs, modified timestamps, redaction,
+  and prompt-injection filtering. Phase 3: memory-assisted report jobs with independent verifier. Phase 4: write
+  proposals only (board/lesson/inbox draft), human approval required; no autonomous memory writes. Benchmark no-memory
+  vs memory arms on frozen questions: recall@k, precision/citation correctness, stale-source detection, contradiction
+  handling, sensitive-data leakage, tool denials, latency, context tokens, cache tokens, and human correction minutes.
+  Audit every retrieval and record memory sources in artifacts. Acceptance: privacy/allowlist tests, held-out recall
+  benchmark, token delta report, durable JSON/Markdown report, and rollback by disabling the memory profile.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-185419-design-and-evaluate-staged-ope.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-185419-design-and-evaluate-staged-ope.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-27 19:02
+note: OpenCode already has a verified read-only MCP profile. Memory should be added incrementally as a scoped retrieval
+  capability, not by exposing all MDDB/Ada banks or putting the entire knowledge base in every prompt.
+ref: MEM-0953
+comms:
+- at: 2026-10-27 18:53
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 18:54
+  from: idc02
+  text: claimed
+- at: 2026-10-27 18:54
+  from: chaba
+  text: started devin-task-20261027-185419-design-and-evaluate-staged-ope on idc02 (dispatch)
+- at: 2026-10-27 18:55
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-185419-design-and-evaluate-staged-ope.service:
+    Main process exited, cod'
+- at: 2026-10-27 18:55
+  from: chaba
+  text: pushed dispatch/20261027-185419-design-and-evaluate-staged-ope to origin
+- at: 2026-10-27 18:55
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-27 18:55
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-185419-design-and-evaluate-staged-ope,
+    branch dispatch/20261027-185419-design-and-evaluate-staged-ope'
+- at: 2026-10-27 19:02
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-185419-design-and-evaluate-staged-ope on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-27 19:30
+  from: tony
+  text: closed by tony
+- at: 2026-10-28 09:41
+  from: tony
+  text: 'Architecture decision for MEM-0953: share canonical memory/SSOT, not separate truth databases. Chaba SSOT
+    = operational truth; Kanban = task state; Education/KB = reviewed explanations; artifacts/reports = evidence;
+    private MDDB banks = policy-scoped memory. OpenCode/Devin/Cline should use adapters/profiles via MCP + board-api
+    /lesson,/inbox,/comment, with read-only retrieval first and write proposals/human-gated upserts later. Add parity
+    tests: same query/source IDs, update visibility, stale-so'
+review_kind: verify
+claim: {}

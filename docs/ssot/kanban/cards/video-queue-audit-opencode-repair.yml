@@ -1,0 +1,77 @@
+id: video-queue-audit-opencode-repair
+title: 'OpenCode artifact repair: video queue audit'
+column: review
+updated: 2026-11-03 12:27
+brief: Retry ADA-1046 with a write-capable artifact contract so the queue audit report lands and verifies.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- opencode
+- artifact-write
+spec: Run scripts/devnest/video_queue_status.py read-only against both video roots, write reports/video-queue-status-opencode.md
+  with counts, stale claim ages, canonical Sacred Father packages, and safe recommendations. Do not release claims
+  or start renders.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: reports/video-queue-status-opencode.md
+  prompt: Run the existing queue status tool read-only, write the declared report artifact, and preserve evidence.
+    Do not delete/release claims or start renders.
+  expect:
+    facts:
+    - stale claims
+    - canonical
+    - read-only
+    - recommendation
+  lane: free_lane
+  status: done
+  agent_profile: artifact-write
+  runner: idc02
+  result: 'exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"write":0,"read":38794}},"cost":0}}
+    | devin-task-video-queue-audit-opencode-repair-1793682775.service: Consumed 14.057s CPU time.'
+  verified: false
+  sweep:
+    dirty: 1
+ref: AUD-1048
+comms:
+- at: 2026-11-03 12:11
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 12:11
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 12:12
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 12:12
+  from: idc02
+  text: claimed
+- at: 2026-11-03 12:12
+  from: chaba
+  text: started devin-task-video-queue-audit-opencode-repair-1793682775 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 12:13
+  from: idc02
+  text: 'finished (ok): exit=0 fetnai5s7HVsDT7B","type":"step-finish","tokens":{"total":41160,"input":2332,"output":34,"reasoning":0,"cache":{"w'
+- at: 2026-11-03 12:13
+  from: chaba
+  text: opencode artifact landed reports/video-queue-status-opencode.md
+- at: 2026-11-03 12:13
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 12:13
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False; unmergeable
+    path=reports/video-queue-status-opencode.md is gitignored)
+- at: 2026-11-03 12:27
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-video-queue-audit-opencode-repair-1793682775 on idc02 still dirty — 1
+    uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+review_kind: verify
+claim: {}

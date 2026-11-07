@@ -89,6 +89,12 @@ persons:
         - trip_calendar
         - doc_read
         - place_report
+        # map_embed (2026-10-27, card map-embed-tool): POI pins + route
+        # -> embed iframe / static image + open_url snippet for the trip
+        # pages this lane builds (southafrica family). Needs the ada-voice
+        # drop installed first + GOOGLE_MAPS_API_KEY in the lane env for
+        # interactive/Google-static output (keyless OSM path works without).
+        - map_embed
         # wp_post (2026-10-14): LINE ask -> boards.surf-thailand.com post —
         # the public member surface; tony keeps cms writers alongside for
         # internal reports (unlike persons.kk where they were removed).
@@ -98,6 +104,12 @@ persons:
         # reminder/asset). Needs ada-voice drop 11 installed first —
         # keep out of lanes that haven't applied it.
         - cpt_post
+        # wp_read/wp_update (2026-10-27, card line-wp-site-manager P2+P3):
+        # read-only browse + confirm-gated update/publish on the boards
+        # site. wp_update is manifest policy:confirmed — dispatch enforces
+        # confirmed=true before it runs. Needs the tools.d drop applied.
+        - wp_read
+        - wp_update
         # tony-lane additions — evidenced by ada-ha-tony function_call
         # logs (7d: get_rk600_weather ~1507, cast_to_screen ~814) plus the
         # admin/ops surface this lane's owner sessions exercise.
@@ -181,6 +193,11 @@ persons:
         # meta, private status, saved_by=kk on her lane (KK is boss of
         # kk-home). Needs ada-voice drop 11 installed on the lane first.
         - cpt_post
+        # wp_read/wp_update (2026-10-27, card line-wp-site-manager P2+P3):
+        # 'what is on my site' / 'publish that draft' — members maintain
+        # their own board; wp_update is confirm-gated server-side.
+        - wp_read
+        - wp_update
         - chat_send
         # Calendar/tasks un-excluded 2026-10-11: her own calendar-kk.json +
         # kk-ha task list are live (ADA_CALENDAR_FILE) — the cross-lane leak
@@ -481,6 +498,10 @@ bench_profiles:
       # public place page; exercises the publish path the bench cares
       # about. Needs the ada-voice drop installed on the lane.
       - place_report
+      # map_embed (2026-10-27, card map-embed-tool): map snippet builder
+      # for the cms writers this profile exercises. Needs the ada-voice
+      # drop installed on the lane first.
+      - map_embed
     exclude:
       - ada_memory_search
       - ada_remember

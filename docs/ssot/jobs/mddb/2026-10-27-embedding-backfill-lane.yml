@@ -1,0 +1,137 @@
+title: Embedding backfill lane — nomic sidecar spaces + bge-m3 bank sync
+subtitle: lessons/news vectors ride litellm ollama-nomic-embed (idc02+idc03
+  LB); MDDB banks sync into the mddb-embed bge-m3 bank via embed-pool
+icon: layers
+version: 1
+
+card: embedding-backfill-lanes
+ref: MEM-0710
+date: 2026-10-27
+dispatch: 20261027-053659-embedding-backfill-lane-nomic- (idc02)
+
+# ---------------------------------------------------------------- lane
+lane: |
+  The "idle idc cores" embedding lane has TWO spaces, deliberately —
+  the card asked for nomic, and the bank-side space settled on bge-m3
+  when MEM-0805 deployed embed-pool-shim (2026-10-25, after the card
+  was written):
+
+  * nomic-embed-text (768d) — via LiteLLM `ollama-nomic-embed`, a
+    duplicated model_name over idc02+idc03 ollama so traffic
+    load-balances off prod. Used by news-digest clustering (live),
+    the lessons sidecar store, and the news title cache.
+  * bge-m3 (1024d) — the mddb-embed :11028 self-owned bank
+    (MEM-0788): same collection names as the leader, embeds through
+    embed-pool-shim :11436 racing idc02/idc03/omen ollama. This is
+    the realized "MDDB bank reindex" lane.
+
+  HARD RULE (card note + embed-space-eval): nomic != gemini-embedding-2
+  and bge-m3 != either — these sidecar spaces are never silently
+  wired into production retrieval. The gemini bank stays the prod
+  space (eval verdict 2026-10-15: nomic+translate = 86% of gemini
+  recall@5, outside the ~5% band).
+
+jobs:
+  - id: embed-lane-news
+    what: >
+      news CPT titles -> ~/.local/share/embed-lane/news-nomic.jsonl
+      on idc03. Vectors are the EXACT norm(title) strings
+      news-digest.py embeds (no nomic prefix — symmetric clustering),
+      hashed sha1(norm(title))[:16] for resume-safe dedup.
+    consumed_by: >
+      news-digest.py cluster() — reads the store via NEWS_VEC_CACHE
+      (default path ~/.local/share/embed-lane/news-nomic.jsonl, no
+      unit env needed). Cache hits skip the per-run embed call;
+      misses embed via litellm and append back, so the store
+      self-heals even if a refresh is skipped.
+    refresh: dispatcher every 1h on idc03, --hours 26 window
+      (covers the 36h digest horizon after fetch lag).
+    seed: "2026-10-27: 1657 published titles embedded from idc02,
+      file scp'd to idc03 (~7.5MB)."
+
+  - id: embed-lane-lessons
+    what: >
+      WP lesson CPT -> ~/.local/share/embed-lane/lessons-nomic.jsonl.
+      board-api /lesson op=list + op=get (no WP creds on the job
+      host — unified-mutation-door rule). Title+content stripped,
+      chunked ~1500c, embedded WITH `search_document:` prefix —
+      asymmetric retrieval for edu-review recall.
+    consumed_by: >
+      `embed-lane.py recall --store lessons --query "..."` — the
+      edu-review recall probe. Verified from idc03: "thai gold price
+      factors" -> trade-gold-thb / trade-data-sources top-2.
+      Surfacing it inside the education-due page / Ada tools is the
+      follow-up consumer, not this job.
+    refresh: dispatcher every 1d on idc03.
+    seed: "2026-10-27: 89 lessons -> 506 chunks embedded (~2.5MB)."
+
+  - id: embed-lane-banks
+    what: >
+      Copies the 24 vector-searched BANK_COLLS collections
+      (leader :11023 + CMS plane :11027 — same routing map as
+      embed-space-eval) into mddb-embed :11028. Docs arrive via /add
+      and embed async through the instance's own queue onto the
+      embed-pool. Throttled: pauses /add while the queue depth
+      >= 3000 (cap 4000) so bulk copies can't overflow-drop.
+    notes: >
+      Extends scripts/nest/mddb-embed-backfill.py's pattern from
+      one hardcoded collection to the whole retrieval surface.
+      Resume-safe by key, --force re-adds for queue-drop repair.
+      Ops-routed collections (recall-summary, scenario-reports)
+      intentionally absent — keyword-ranked, no vectors needed.
+    refresh: dispatcher every 1d on idc02 (driver off idc03).
+    seed: "2026-10-27: full-surface backfill delivered from idc02 —
+      7179 docs copied across 23 collections, 0 failed, 0 queue drops
+      (devin-tony bank was already 2561/2561 from MEM-0805; instance
+      totals 9740 docs). Embedding drains async through the pool —
+      ~7K embedded within the hour, tail finishes unattended."
+
+store_format: |
+  One JSON object per line:
+    {"key","space","model","prefix","hash","text","meta","v"}
+  key   — lesson "<slug>#<chunk_idx>" or news "<slug>"
+  space — always "nomic-embed-text" (the pin; a different space must
+          never land in these files)
+  model — "ollama-nomic-embed" (the litellm deployment)
+  prefix— "" (news, symmetric clustering) | "search_document: " (lessons)
+  hash  — sha1(text)[:16] of the UNPREFIXED text — resume key
+  v     — base64 little-endian float32 vector (768 dims)
+
+gotchas: |
+  * WP `after` on /wp/v2/news compares GMT — pass UTC ISO. Do NOT
+    pre-quote it: the route is quoted once when wrapped in
+    index.php?rest_route=, double-encoding silently returns 0 rows.
+  * Public news REST needs a UA header — Cloudflare 403s bare
+    urllib occasionally.
+  * mddb has NO vector-ingest endpoint (MEM-0805 verified) — vectors
+    only come through each instance's own embed queue, which is why
+    `banks` copies docs instead of pushing vectors.
+  * The embed queue on :11028 is 4000 chunks deep; earlier sessions
+    learned "copied != indexed" — only
+    /v1/vector-stats embedded_documents == total_documents means done.
+    The daily banks job is the completion mechanism, not a one-shot.
+
+files:
+  - scripts/embed/embed-lane.py — the lane runner (lessons|news|banks|recall|stats)
+  - scripts/ada/news-digest.py — NEWS_VEC_CACHE consumer wiring
+  - docs/ssot/infrastructure/ssot.jobs.yml — embed-lane-{news,lessons,banks}
+    dispatcher jobs (condition_path-gated until merge)
+
+verify: |
+  python3 scripts/embed/embed-lane.py stats
+  python3 scripts/embed/embed-lane.py recall --query "<topic>" --top 5
+  NEWS_VEC_CACHE=~/.local/share/embed-lane/news-nomic.jsonl \
+    python3 scripts/ada/news-digest.py --dry-run   # "embed cache: N/M hits"
+  curl -s -X POST http://100.102.134.91:11028/v1/vector-stats \
+    -d '{}' | python3 -m json.tool   # queue depth + per-coll counts
+
+follow_up: |
+  * edu-review recall consumer — wire `recall` into the
+    education-due page build (lessons-due.py) or an Ada tool;
+    the space exists and is queryable, the surface is unbuilt.
+  * wp-news-digest systemd unit is a hand unit — declare it in
+    ssot.jobs.yml with NEWS_VEC_CACHE explicitly when it's next
+    touched (it works by default path already).
+  * If the digest window outgrows 26h or titles get edited,
+    --force semantics for news is just deleting the file and
+    re-seeding (~5min on the lane).

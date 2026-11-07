@@ -1,0 +1,24 @@
+id: audit-miss-ada-chaba-home-snapshot
+title: 'Audit miss: Ada HA chaba-home snapshot is missing but SSOT still references it'
+column: backlog
+updated: 2026-10-29 11:27
+brief: The Ada HA chaba-home dashboard is live, but its documented sanitized snapshot is absent from origin/master.
+priority: medium
+program: home-assistant
+tags:
+- audit
+- artifact-landing
+- home-assistant
+- dashboard-snapshot
+spec: Reconcile the live Ada HA chaba-home dashboard with its SSOT snapshot reference. On 2026-10-29, a read-only
+  HA WebSocket lookup returned the live chaba-home views (ai, chat, calendar, gesture, report, nobito). The referenced
+  docs/home-assistant/dashboards/ada-ha-chaba-home-current.json was deleted in commit 86ae90671 because the dashboard
+  was believed to no longer exist, but the live dashboard exists now. Either regenerate a sanitized snapshot through
+  a supported read-only sync path or intentionally remove/update the stale SSOT reference with rationale. Do not
+  mutate the live dashboard. Verify no credential values or private calendar data are newly committed; run SSOT
+  validation.
+ref: AUD-0972
+comms:
+- at: 2026-10-29 11:27
+  from: tony
+  text: Found by the 2026-10-29 missed-job sweep; this is an artifact/SSOT mismatch, not a live dashboard failure.

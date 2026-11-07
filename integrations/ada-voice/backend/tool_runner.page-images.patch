@@ -1,0 +1,316 @@
+diff --git a/backend/tool_runner/chat.py b/backend/tool_runner/chat.py
+index fc7f8eb..35fe0ca 100644
+--- a/backend/tool_runner/chat.py
++++ b/backend/tool_runner/chat.py
+@@ -10,6 +10,48 @@ from __future__ import annotations
+ 
+ from .common import *  # noqa: F401,F403
+ 
++# chat_send page= mode (card chat-send-page-images): markdown image
++# syntax and HTML <img src> — every asset a CMS page embeds.
++_PAGE_IMG_MD_RE = re.compile(
++    r"!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+[\"'][^\"')]*[\"'])?\s*\)")
++_PAGE_IMG_TAG_RE = re.compile(
++    r"<img\b[^>]*?\bsrc\s*=\s*[\"']([^\"']+)[\"']", re.I)
++
++
++def _chat_page_img_max() -> int:
++    try:
++        return max(1, int(os.environ.get("ADA_CHAT_PAGE_IMG_MAX", "10")))
++    except (TypeError, ValueError):
++        return 10
++
++
++def _page_image_urls(content: str, limit: int) -> tuple[list[str], int]:
++    """Every image asset embedded in a CMS page body -> absolute fetch
++    URLs, document order, dupes dropped. Absolute http(s) pass through;
++    //host goes https; site-relative paths (/api/documents/x.jpg, bare
++    'media/x.jpg') resolve against LINE_URL_BASE — the same base the
++    relay resolves them against at fetch time. data: URIs are skipped.
++    Returns (urls[:limit], skipped_over_cap)."""
++    base = os.environ.get(
++        "LINE_URL_BASE", "http://100.102.134.91:11023").rstrip("/")
++    matches = [*_PAGE_IMG_MD_RE.finditer(content or ""),
++               *_PAGE_IMG_TAG_RE.finditer(content or "")]
++    matches.sort(key=lambda m: m.start())
++    urls: list[str] = []
++    for m in matches:
++        u = m.group(1).strip()
++        if not u or u.startswith("data:"):
++            continue
++        if u.startswith("//"):
++            u = "https:" + u
++        elif u.startswith("/"):
++            u = base + u
++        elif not u.startswith(("http://", "https://")):
++            u = base + "/" + u.lstrip("/")
++        if u not in urls:
++            urls.append(u)
++    return urls[:limit], max(0, len(urls) - limit)
++
+ 
+ class ChatMixin:
+ 
+@@ -21,7 +63,8 @@ class ChatMixin:
+                         to: str = "", photo: str = "", doc: str = "",
+                         key: str = "", op: str = "",
+                         session_id: str = "", screen: int = 0,
+-                        show: bool = True, say: str = "") -> dict[str, Any]:
++                        show: bool = True, say: str = "",
++                        page: str = "") -> dict[str, Any]:
+         """Queue an outbound LINE/Telegram message in the background and
+         return immediately. camera names a VMS channel (snapped on the
+         shim); image_url is any fetchable image (camwall thumb, cast_url).
+@@ -37,9 +80,17 @@ class ChatMixin:
+         process_document_upload / doc_upload_card_action — key= names a
+         held /api/documents/intake key (default: newest), op= carries a
+         card button ('archive'/'print' re-dispatch through execute() so
+-        the ada_doc_* confirm gates still apply)."""
++        the ada_doc_* confirm gates still apply).
++
++        page='<cms slug>' (card chat-send-page-images) reads the page
++        server-side and sends every image it embeds as one batch — the
++        model never copies a URL, so the whole
++        read-page-then-send-each-image failure class (invented hosts,
++        404s, phantom sends) goes away. image_url stays for ad-hoc
++        URLs."""
+         photo = str(photo or "").strip().lower()
+         doc = str(doc or "").strip().lower()
++        page = str(page or "").strip()
+         if doc.startswith("doc/"):
+             # A bare intake key in the doc slot means "show that one".
+             key = key or doc
+@@ -53,6 +104,9 @@ class ChatMixin:
+             return await self._chat_send_doc(
+                 doc, channel=channel, text=text, to=to,
+                 key=str(key or ""), op=str(op or ""))
++        if page:
++            return await self._chat_send_page(
++                page, channel=channel, text=text, to=to, say=say)
+         return await self._chat_send_queue(
+             channel=channel, text=text, image_url=image_url,
+             video_url=video_url, camera=camera, to=to, say=say)
+@@ -72,6 +126,154 @@ class ChatMixin:
+                         "message is being sent — a system note will report "
+                         "success or failure when it finishes."}
+ 
++    async def _chat_send_page(self, slug: str, *, channel: str,
++                              text: str, to: str,
++                              say: str = "") -> dict[str, Any]:
++        """page= flow (card chat-send-page-images): same 'queued'
++        contract as a plain send — the mddb read + per-asset delivery
++        happen in the background job and the outcome lands as a system
++        note."""
++        import asyncio
++        import secrets
++        job_id = "chat-" + secrets.token_hex(4)
++        asyncio.create_task(self._chat_send_page_run(
++            job_id, slug, channel=channel, text=text, to=to, say=say))
++        return {"status": "queued", "job_id": job_id, "channel": channel,
++                "page": slug,
++                "note": "Reading the page and sending its images in the "
++                        "background — a system note will report "
++                        "sent/failed per asset when it finishes."}
++
++    async def _chat_send_page_run(self, job_id: str, slug: str,
++                                  channel: str, text: str, to: str,
++                                  say: str = "") -> None:
++        """cms_get_page the slug, extract every embedded image, push the
++        batch through the relay /send image_urls contract. Per-asset
++        sent/failed comes back in the relay's 'images' report — the
++        summary note stays honest instead of narrating a count it never
++        verified."""
++        import urllib.request
++        summary_bits: list[str] = []
++        ok_any = False
++        try:
++            doc = await self.cms_get_page(slug)
++        except Exception as exc:
++            doc = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
++        if not isinstance(doc, dict) or doc.get("ok") is False \
++                or doc.get("error"):
++            err = (doc or {}).get("error") or "page read failed"
++            await self._chat_notify(
++                job_id, False,
++                [f"page '{slug}': {err} — nothing sent"])
++            return
++        title = str(doc.get("title") or slug)
++        urls, skipped = _page_image_urls(
++            str(doc.get("content") or ""), _chat_page_img_max())
++        if skipped:
++            summary_bits.append(
++                f"{skipped} page assets over the "
++                f"{_chat_page_img_max()}-image cap — not sent")
++        text = str(text or "")
++        if not urls and not text.strip():
++            summary_bits.append(f"page '{slug}' embeds no images")
++            await self._chat_notify(job_id, False, summary_bits)
++            return
++        if not urls:
++            summary_bits.append(f"page '{slug}' embeds no images")
++        relays = [c for c in (channel or "line").lower().split(",")
++                  if c.strip()]
++        if "both" in relays or "all" in relays:
++            relays = ["line", "telegram"]
++        audio_b64, duration_ms = await self._chat_say_audio(
++            say, relays, summary_bits)
++        for svc in relays:
++            svc = svc.strip()
++            if svc == "web":
++                tgt = (str(to or "").strip()
++                       or session_chat_id(self, "web"))
++                if text.strip():
++                    res = await self._chat_send_web(
++                        tgt, text=text, image_url="", video_url="")
++                    if res.get("ok"):
++                        ok_any = True
++                    else:
++                        summary_bits.append(
++                            f"web: text failed ({res.get('error', '?')})")
++                sent = 0
++                for u in urls:
++                    r = await self._chat_send_web(
++                        tgt, text="", image_url=u, video_url="")
++                    if r.get("ok"):
++                        sent += 1
++                        ok_any = True
++                    else:
++                        summary_bits.append(
++                            f"web: failed {u} ({r.get('error', '?')})")
++                if urls:
++                    summary_bits.append(
++                        f"web: {sent}/{len(urls)} images delivered")
++                continue
++            if svc == "line":
++                ep = os.environ.get("ADA_LINE_SEND_URL",
++                                    "http://127.0.0.1:8912/send")
++            elif svc in ("telegram", "tg"):
++                ep = os.environ.get("ADA_TG_SEND_URL",
++                                    "http://127.0.0.1:8911/send")
++            else:
++                summary_bits.append(f"unknown channel '{svc}'")
++                continue
++            # In-context default: a bare chat_send answers in the chat
++            # the turn came from (session ?chat_id= binding), not the
++            # lane's default room — an explicit to= still wins.
++            to_eff = str(to or "").strip()
++            if not to_eff:
++                to_eff = session_chat_id(
++                    self, "telegram" if svc in ("telegram", "tg") else svc)
++            payload = {"text": text, "image_urls": urls,
++                       "caption": text or title, "to": to_eff,
++                       "chat_id": to_eff,
++                       "instance": os.environ.get(
++                           "ADA_INSTANCE_ID", "")}
++            if audio_b64 and svc in ("line", "telegram", "tg"):
++                payload.update({"audio_b64": audio_b64,
++                                "audio_mime": "audio/wav",
++                                "duration_ms": duration_ms})
++            try:
++                req = urllib.request.Request(
++                    ep, data=json.dumps(payload).encode(),
++                    headers={"Content-Type": "application/json"})
++                with urllib.request.urlopen(req, timeout=150) as r:
++                    res = json.load(r)
++                if not res.get("ok"):
++                    summary_bits.append(
++                        f"{svc}: failed ({res.get('error', '?')})")
++                    continue
++                ok_any = True
++                imgs = res.get("images")
++                if not isinstance(imgs, list) or not imgs:
++                    # Old relay without the batch report — the push
++                    # landed but per-asset detail is unknown.
++                    summary_bits.append(
++                        f"{svc}: delivered ({len(urls)} assets, "
++                        "no per-asset report)")
++                    continue
++                sent = sum(1 for i in imgs
++                           if i.get("status") == "delivered")
++                parked = sum(1 for i in imgs
++                             if i.get("status") == "parked")
++                bit = f"{svc}: {sent}/{len(urls)} images delivered"
++                if parked:
++                    bit += f", {parked} parked"
++                summary_bits.append(bit)
++                for i in imgs:
++                    if i.get("status") not in ("delivered", "parked"):
++                        summary_bits.append(
++                            f"{svc}: failed {i.get('url')} "
++                            f"({i.get('status') or 'error'})")
++            except Exception as exc:
++                summary_bits.append(f"{svc}: failed ({exc})")
++        await self._chat_notify(job_id, ok_any, summary_bits)
++
+     async def _chat_send_photo(self, action: str, *, channel: str,
+                                text: str, to: str, session_id: str,
+                                screen: int, show: bool) -> dict[str, Any]:
+@@ -240,27 +442,8 @@ class ChatMixin:
+                   if c.strip()]
+         if "both" in relays or "all" in relays:
+             relays = ["line", "telegram"]
+-        audio_b64, duration_ms = "", 0
+-        say_text = str(say or "").strip()
+-        want_voice = ("line" in relays or "telegram" in relays
+-                      or "tg" in relays)
+-        if say_text and want_voice:
+-            try:
+-                from backend import tts as ada_tts
+-                pcm = await ada_tts.synth_pcm(
+-                    say_text, mddb=self.mddb, tool="chat_send_say",
+-                    session_id=str(self.session_id or ""))
+-                if pcm:
+-                    import base64 as _b64
+-                    audio_b64 = _b64.b64encode(
+-                        ada_tts.pcm_to_wav(pcm)).decode()
+-                    duration_ms = ada_tts.pcm_duration_ms(pcm)
+-                else:
+-                    summary_bits.append("voice: tts failed (text only)")
+-            except Exception as exc:
+-                summary_bits.append(f"voice: tts error ({exc})")
+-        elif say_text:
+-            summary_bits.append("voice: line/telegram only — skipped")
++        audio_b64, duration_ms = await self._chat_say_audio(
++            say, relays, summary_bits)
+         for svc in relays:
+             svc = svc.strip()
+             if svc == "web":
+@@ -323,6 +506,38 @@ class ChatMixin:
+                         f"{svc}: failed ({res.get('error', '?')})")
+             except Exception as exc:
+                 summary_bits.append(f"{svc}: failed ({exc})")
++        await self._chat_notify(job_id, ok_any, summary_bits)
++
++    async def _chat_say_audio(self, say: str, relays: list[str],
++                              summary_bits: list[str]
++                              ) -> tuple[str, int]:
++        """say= voice note -> (wav_b64, duration_ms) for line/tg
++        payloads; notes + skips channels that can't carry audio."""
++        say_text = str(say or "").strip()
++        if not say_text:
++            return "", 0
++        if not ("line" in relays or "telegram" in relays
++                or "tg" in relays):
++            summary_bits.append("voice: line/telegram only — skipped")
++            return "", 0
++        try:
++            from backend import tts as ada_tts
++            pcm = await ada_tts.synth_pcm(
++                say_text, mddb=self.mddb, tool="chat_send_say",
++                session_id=str(self.session_id or ""))
++            if pcm:
++                import base64 as _b64
++                return (_b64.b64encode(ada_tts.pcm_to_wav(pcm)).decode(),
++                        ada_tts.pcm_duration_ms(pcm))
++            summary_bits.append("voice: tts failed (text only)")
++        except Exception as exc:
++            summary_bits.append(f"voice: tts error ({exc})")
++        return "", 0
++
++    async def _chat_notify(self, job_id: str, ok_any: bool,
++                           summary_bits: list[str]) -> None:
++        """Background-job outcome -> the live session via /api/notify."""
++        import urllib.request
+         note = (f"[job {job_id}] chat_send "
+                 f"{'DONE' if ok_any else 'FAILED'} — "
+                 + "; ".join(summary_bits))

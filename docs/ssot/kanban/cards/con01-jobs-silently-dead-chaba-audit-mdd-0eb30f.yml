@@ -1,0 +1,91 @@
+id: con01-jobs-silently-dead-chaba-audit-mdd-0eb30f
+title: con01 jobs silently dead — chaba-audit, mddb-vector-reindex, devin-bank-distill fail every run
+column: review
+updated: 2026-10-31 13:49
+priority: high
+tags:
+- ops
+- jobs
+- con01
+- alerting
+spec: 'Found 2026-10-30 during KNB-1008 deploy (render-jobs --install Persistent catchup fired them): journalctl
+  shows chaba-audit 7 fails/7d, mddb-vector-reindex 6/7d, devin-bank-distill 6/7d — ZERO successful finishes in
+  30d on con01. Audit dies ~8s into run-and-ship.sh (Node v22.22.1), vector-reindex hits TimeoutError, distill exits
+  nonzero after ~4s. They fail silently — no alert surfaces ''job never succeeds''. Scope: (1) diagnose each job''s
+  env/deps on con01 vs its last-known-good host run, (2) fix or re-home, (3) bigger gap: nothing alerts when a declared
+  job fails N consecutive runs — consider a job-health sweep (journalctl failure count -> board card) so the next
+  dead job doesn''t sit silent for a month. Verify: each named job exits 0 or is re-declared correctly; propose
+  the consecutive-failure alert as a follow-on card.'
+ref: OPS-1013
+comms:
+- at: 2026-10-30 18:21
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-30 18:21
+  from: tony
+  text: queued for processing
+- at: 2026-10-30 18:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-30 18:22
+  from: chaba
+  text: started devin-task-20261030-182224-found-2026-10-30-during-knb-10 on tony-macbook (dispatch)
+- at: 2026-10-30 18:22
+  from: devin
+  text: Session started on tony-macbook. Diagnosing chaba-audit, mddb-vector-reindex, devin-bank-distill on con01.
+- at: 2026-10-30 18:26
+  from: devin
+  text: '[progress] root causes found: (1) chaba-audit/kb-audit/audit-full — node_modules never installed on con01
+    exec checkout, run.mjs dies on js-yaml import; (2) mddb-vector-reindex — timer is DISABLED on con01 (never fires
+    daily), todays runs were manual catchup, /v1/stats timeout was transient (answers 200 in 0.9s now); (3) devin-bank-distill
+    — chaba-paid GCP project hit monthly spend cap, direct 429 RESOURCE_EXHAUSTED, fix = route via LiteLLM gateway
+    per KNB-0611 recipe.'
+- at: 2026-10-30 18:41
+  from: devin
+  text: '[done] all 3 jobs verified exit 0 on con01. (1) chaba-audit: npm ci in exec checkout — node_modules was
+    never installed after the 10-26 move; js-yaml now a real package.json dep; full suite ran 10.5min exit 0 (standardization/doc-links
+    are reported findings, exit 0 by design). Same fix cures chaba-audit-full + chaba-kb-audit. (2) mddb-vector-reindex:
+    .timer was systemctl-DISABLED since onboarding — never fired; re-enabled, verified sweep exit 0 (18175 skipped,
+    index healthy; todays timeouts were'
+- at: 2026-10-30 18:41
+  from: tony-macbook
+  text: 'finished (ok): exit=0 24-found-2026-10-30-during-knb-10.md` with board comms posted. | devin-task-20261030-182224-found-2026-10-30-duri'
+- at: 2026-10-30 18:41
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261030-182224-found-2026-10-30-during-knb-10\
+    \ is 12 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-10-30 18:41
+  from: chaba
+  text: pushed dispatch/20261030-182224-found-2026-10-30-during-knb-10 to origin
+- at: 2026-10-30 18:41
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-30 18:41
+  from: chaba
+  text: 'worktree kept: dirty — 6 uncommitted file(s)'
+- at: 2026-10-30 18:48
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261030-182224-found-2026-10-30-during-knb-10 on tony-macbook still
+    dirty — 6 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-30 20:07
+  from: devin
+  text: 'DIAGNOSIS (devin inline — opencode remote-diagnosis profile does not exist yet, OPS-1025): mddb-vector-reindex
+    + devin-bank-distill both SUCCEEDED on latest runs (12:29/12:31, earlier failures transient). chaba-audit-full
+    js-yaml ERR_MODULE_NOT_FOUND self-healed (import resolves now; node_modules populated after the failure window).
+    chaba-audit exits 0 but reports REAL audit findings (standardization, doc-links) — repo content issues, not
+    job failures. Remaining defect: no alerting on consecutiv'
+- at: 2026-10-31 13:49
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261030-182224-found-2026-10-30-during-knb-10'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 24-found-2026-10-30-during-knb-10.md` with board comms posted. | devin-task-20261030-182224-found-2026-10-30-during-knb-10.service:
+    Consumed 1min 34.365s CPU time over 18min 52.644s wall clock time, 1.2G memory peak, 84.4M memory swap peak.'
+  sweep:
+    dirty: 6
+    no_repo: 2026-10-31 13:49
+review_kind: verify
+claim: {}

@@ -1,0 +1,8 @@
+[Unit]
+Description=Education CPT policy audit (R1/R3/R4) -> report (job:chaba-lessons-audit, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/lessons-audit.py
+WorkingDirectory=%h/CascadeProjects/chaba-tony-dell

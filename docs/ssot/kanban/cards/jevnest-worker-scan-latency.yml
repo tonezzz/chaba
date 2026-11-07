@@ -1,0 +1,77 @@
+id: jevnest-worker-scan-latency
+title: Reduce JevNest remote queue scan latency
+column: backlog
+updated: 2026-11-06 20:19
+brief: The KK-Mac worker eventually processed new packages, but a single --once scan took several minutes over 25+
+  Drive packs before claiming newly staged work. Make queue discovery bounded and prompt without weakening claim/fallback
+  gates.
+priority: medium
+program: ai-workforce
+tags:
+- jevnest
+- nest-worker
+- rclone
+- latency
+- kk-mac
+spec: Measure and optimize scripts/ada/nest-worker.py against gdrive:ada-nest-kk-llm. Preserve first-writer claim,
+  stale-claim release, needs/admission, independent verification, done/failed markers, and serial concurrency. Prefer
+  one recursive listing or an index/priority path over one rclone call per historical pack. Add a regression fixture/benchmark
+  for package discovery latency. Do not start a second worker or bypass the LaunchAgent.
+ref: OPS-1003
+comms:
+- at: 2026-10-30 14:37
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-30 14:39
+  from: devin
+  text: 'DONE: scripts/ada/nest-worker.py now performs one recursive rclone pack inventory per pass instead of one
+    lsf per historical pack, while preserving claim races, stale claim release, needs gates, verifier, and done/failed
+    markers. KK-Mac checkout synced and LaunchAgent restarted. New broker-smoke package completed (qwen3:8b wall
+    ~4.6s); worker-activity package also completed, with one expected lost-claim race from the manual verification
+    run. Commit 290358235.'
+- at: 2026-11-03 20:45
+  from: devin
+  text: 'Proposed Ada-assisted continuation for OPS-1003, gated by phase: (1) read-only evidence pack verifies commit
+    290358235 and current KK-Mac worker/LaunchAgent state; (2) Ada reconciles DONE comms vs card column and reports
+    verify-only vs implementation-retry, but does not mutate workflow fields; (3) typed handoff records selected
+    route; (4) if retry is required, allowed_paths explicitly include scripts/ada/nest-worker.py + tests and executor
+    remains OpenCode/review-only; (5) deterministic discover'
+- at: 2026-11-03 21:24
+  from: devin
+  text: 'Read-only evidence preflight attempted 2026-11-03: SSH BatchMode to kk-mac timed out on port 22, so commit
+    290358235, scripts/ada/nest-worker.py, LaunchAgent state, and recent worker evidence could not be independently
+    re-read. No retry, service change, queue action, or mutation performed. Keep OPS-1003 in verify-only/blocked
+    state until KK-Mac reachability returns; do not infer DONE from historical comms.'
+- at: 2026-11-03 21:25
+  from: devin
+  text: 'raised request kk-mac-is-offline-choose-the-next-safe-e-183153: KK-Mac is offline. Choose the next safe
+    evidence path for OPS-1003.'
+- at: 2026-11-04 08:34
+  from: tony
+  text: 'answered kk-mac-is-offline-choose-the-next-safe-e-183153: wait-kk — Wait for KK-Mac — required for live
+    worker/LaunchAgent verification.'
+- at: 2026-11-04 08:34
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''wait-kk — Wait for KK-Mac — required for live worker/LaunchA'' -> put on hold'
+requests:
+- id: kk-mac-is-offline-choose-the-next-safe-e-183153
+  ask: KK-Mac is offline. Choose the next safe evidence path for OPS-1003.
+  status: answered
+  at: 2026-11-03 21:25
+  from: devin
+  options:
+  - id: wait-kk
+    label: Wait for KK-Mac — required for live worker/LaunchAgent verification.
+  - id: omen-replay
+    label: 'Recommended: run a deterministic/synthetic discovery-latency replay on tony-omen; do not claim KK-Mac
+      live state.'
+  - id: or-analysis
+    label: Use OpenRouter/OR only to review existing evidence or draft analysis; it cannot verify KK-Mac or deploy.
+  suggested: omen-replay
+  answer: wait-kk — Wait for KK-Mac — required for live worker/LaunchAgent verification.
+  executed: 2026-11-06 hold
+action:
+  status: idle

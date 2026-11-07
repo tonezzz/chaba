@@ -1,0 +1,71 @@
+id: devnest-continuous-improvement-standard
+title: Standardize DevNest QA/QC/audit/benchmark feedback loop
+column: done
+updated: 2026-10-27 05:37
+brief: 'Make DevNest advance at the same pace as the rest of Chaba: every delegated job must be specified, routed,
+  isolated, verified, audited, measured, and fed back into JEV/skills/education.'
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- qa
+- qc
+- audit
+- ci
+- benchmark
+- continuous-improvement
+spec: 'Define SSOT procedure and registry lane for DevNest checks. Lifecycle: discover -> card -> target_host+done
+  gate -> JEV route -> isolated execute -> independent verify -> merge/review -> artifact land -> telemetry -> feedback
+  label -> weekly regression/replay -> monthly lane/cost review. Gates: no unattended destructive jobs; baseline-aware
+  tests; stale/claim watchdog; evidence required before done. Integrate host-assessment->Education, Devin replay
+  corpus, T4 pack artifacts, JEV confusion matrix, OpenCode closeout metrics.'
+ref: AUD-0899
+comms:
+- at: 2026-10-26 09:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 11:35
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 11:35
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 11:40
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 11:40
+  from: chaba
+  text: started devin-task-20261026-114025-define-ssot-procedure-and-regi on tony-macbook (dispatch)
+- at: 2026-10-26 11:41
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-114025-define-ssot-procedure-and-regi.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-26 11:41
+  from: chaba
+  text: pushed dispatch/20261026-114025-define-ssot-procedure-and-regi to origin
+- at: 2026-10-26 11:41
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-114025-define-ssot-procedure-and-regi,
+    branch dispatch/20261026-114025-define-ssot-procedure-and-regi'
+- at: 2026-10-26 11:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-114025-define-ssot-procedure-and-regi on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-27 05:36
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 05:37
+  from: tony
+  text: closed by tony
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-114025-define-ssot-procedure-and-regi.service: Failed with result ''exit-code''.
+    | devin-task-20261026-114025-define-ssot-procedure-and-regi.service: Consumed 2.844s CPU time over 1.448s wall
+    clock time, 46.5M memory peak.'
+  sweep:
+    session_gone: 2026-10-26 11:46
+review_kind: verify
+claim: {}

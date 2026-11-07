@@ -1,0 +1,102 @@
+diff --git a/backend/line_relay.py b/backend/line_relay.py
+index e4ca8dd..f7c8bf5 100644
+--- a/backend/line_relay.py
++++ b/backend/line_relay.py
+@@ -2425,10 +2425,15 @@ class LineRelay:
+ 
+         async def send(request):
+             """Outbound push API for Ada's chat_send tool — loopback only
+-            (127.0.0.1 listen). {to?, text?, image_url?, caption?,
+-            class?='urgent'|'bulk', priority? (alias)} — the image is
+-            fetched + publicly hosted via _image_msgs so LINE's CDN can
+-            pull it. class='bulk' payloads (digests, rollups, watch
++            (127.0.0.1 listen). {to?, text?, image_url?, image_urls?,
++            caption?, class?='urgent'|'bulk', priority? (alias)} — the
++            image is fetched + publicly hosted via _image_msgs so LINE's
++            CDN can pull it. image_urls carries a batch (chat_send page=
++            sends every CMS asset in one call); each becomes its own
++            image bubble and the response's 'images' list reports
++            per-URL status. Batches past the 5-bubble push cap ride
++            consecutive pushes — nothing is silently dropped.
++            class='bulk' payloads (digests, rollups, watch
+             deltas) park and flush bundled — they don't burn quota
+             head-on, and none while the monthly block is set."""
+             try:
+@@ -2514,16 +2519,37 @@ class LineRelay:
+                 if inst and uid.startswith("C"):
+                     text = f"[{inst}] " + text
+                 msgs += [{"type": "text", "text": text[:4900]}]
++            # Image batch (card chat-send-page-images): image_urls sends
++            # every asset as its own bubble in this one /send; img_res
++            # tracks each URL's fetched-ok and msg position so the
++            # response can report sent/failed per asset. Failures stay
++            # honest in-chat too — _image_msgs emits "(image failed)".
++            img_res: list[dict] = []
++            img_pos: list[int] = []
+             if body.get("image_url"):
+-                msgs += await self._image_msgs(
++                produced = await self._image_msgs(
+                     str(body["image_url"]), str(body.get("caption") or ""))
++                img_pos.append(len(msgs))
++                img_res.append({
++                    "url": str(body["image_url"]),
++                    "ok": any(m.get("type") == "image" for m in produced)})
++                msgs += produced
++            for u in [str(x).strip() for x in body.get("image_urls") or []
++                      if str(x).strip()]:
++                produced = await self._image_msgs(u, "")
++                img_pos.append(len(msgs))
++                img_res.append({
++                    "url": u,
++                    "ok": any(m.get("type") == "image" for m in produced)})
++                msgs += produced
+             if body.get("video_url"):
+                 msgs += await self._video_link_msgs(
+                     str(body["video_url"]), str(body.get("caption") or ""))
+             msgs += await self._mined_msgs(
+                 str(body.get("text") or ""),
+                 {str(body.get("image_url") or ""),
+-                 str(body.get("video_url") or "")})
++                 str(body.get("video_url") or ""),
++                 *(str(x).strip() for x in body.get("image_urls") or [])})
+             if body.get("audio_b64"):
+                 msgs += self._audio_msgs(
+                     str(body["audio_b64"]),
+@@ -2544,8 +2570,8 @@ class LineRelay:
+             logger.info("send: inst=%s to=%s class=%s msgs=%d",
+                         inst or "-", uid, cls, len(msgs))
+             if cls == "bulk":
+-                _parked_add(uid, msgs[:5])
+-                self._ledger_add(parked_msgs=len(msgs[:5]))
++                _parked_add(uid, msgs)
++                self._ledger_add(parked_msgs=len(msgs))
+                 if self._quota_blocked > time.time():
+                     return JSONResponse({"ok": True, "to": uid,
+                                          "parked": True,
+@@ -2555,10 +2581,24 @@ class LineRelay:
+                                      "parked": True,
+                                      "flush_in_s": LINE_BULK_COALESCE_S})
+             try:
+-                st = await self._deliver(uid, msgs[:5], None)
+-                out = {"ok": True, "to": uid}
++                # LINE caps a push at 5 bubbles — a page= batch (or any
++                # stacked payload) rides consecutive 5-msg pushes; the
++                # old msgs[:5] truncate silently dropped the tail.
++                sts = [await self._deliver(uid, msgs[i:i + 5], None)
++                       for i in range(0, len(msgs), 5)]
++                st = ("failed" if "failed" in sts
++                      else "parked" if "parked" in sts else "delivered")
++                out: dict[str, Any] = {"ok": True, "to": uid}
+                 if st == "parked":
+                     out["parked"] = True
++                if img_res:
++                    # Per-asset honesty for chat_send page= — each URL's
++                    # bubble position maps to the push chunk that carried
++                    # it; a fetch failure reports as such, not "failed".
++                    for r, pos in zip(img_res, img_pos):
++                        r["status"] = ("fetch-failed" if not r["ok"]
++                                       else sts[pos // 5])
++                    out["images"] = img_res
+                 return JSONResponse(out)
+             except Exception as exc:
+                 return JSONResponse({"ok": False, "error": str(exc)},

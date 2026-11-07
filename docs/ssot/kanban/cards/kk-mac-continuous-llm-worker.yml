@@ -1,0 +1,102 @@
+id: kk-mac-continuous-llm-worker
+title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
+column: backlog
+updated: 2026-11-06 18:18
+brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
+  packages arrive without manual one-off commands.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- nest
+- llm
+- continuous
+- queue
+- launchd
+spec: Build a dedicated KK-Mac LLM Nest queue/worker, separate from generic GPU/video packs. Unit = bounded task
+  pack with task_class {summary, operator_brief, structured_extract, safe_route}, prompt/evidence, expect verifier,
+  artifact path, model, timeout. Producer stages packages to a dedicated queue path; KK-Mac launchd/user worker
+  polls/claims one or two at a time, checks ada-nest heartbeat + Ollama + macOS load + disk + owner/busy gate, executes
+  scripts/devnest/kk_mac_executor.py, persists result/usage/admission/verdict, writes done/fallback, and releases
+  claims safely. Worker must not claim video/GPU/coding/destructive packs. Offline/stale/invalid output falls back
+  or holds without blocking other lanes. Use existing rclone/model cache and local Ollama; never use Drive as active
+  model filesystem. Add launchd rollback, stale claim recovery, metrics (queue wait, wall, tokens, verifier, fallback,
+  intervention), tests, and one 10-package supervised soak before automatic JEV promotion.
+ref: OPS-0997
+comms:
+- at: 2026-10-30 09:40
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-30 10:11
+  from: devin
+  text: 'Continuous worker rollout advanced: dedicated queue gdrive:ada-nest-kk-llm staged; user-level launchd worker
+    active on KK-Mac; first pack initially timed out due qwen thinking/worker raw request, then pack fixed with
+    think=false + 600s timeout. Smoke now passed: kk-mac-llm-pack DONE in ~1s. Ten-package supervised soak staged;
+    soak-01 claimed and DONE in 0.509s, remaining packs are draining one at a time. The worker is real and continuously
+    consuming packages.'
+- at: 2026-10-30 10:29
+  from: devin
+  text: 'Soak progress 2026-10-30: smoke DONE, kk-mac-llm-soak-01 through -09 DONE (each ~0.49-0.51s); -10 is currently
+    active. After the think=false/600s pack fix, no new timeouts occurred. LaunchAgent worker is continuously claiming
+    and closing packages one at a time.'
+- at: 2026-10-30 10:34
+  from: devin
+  text: 'SOAK PASS 2026-10-30: all 10 dedicated KK-Mac LLM packages completed via LaunchAgent worker. 10/10 responses/artifacts,
+    0 timeouts, 0 fallbacks, serial concurrency=1, qwen3:8b, mean wall 0.500s (0.490-0.514), 231 eval tokens total.
+    Aggregate artifact: /home/tony/evals/results/kk-mac-llm-soak-20261030.json. Worker is ready for a supervised
+    steady queue; automatic JEV promotion still requires policy review/verification mapping.'
+- at: 2026-10-30 11:11
+  from: devin
+  text: 'SEMANTIC SOAK PASS 2026-10-30: all 10 packages verified. 10/10 JSON/schema/fact contracts passed; 0 failures,
+    0 timeouts, 0 fallbacks; mean wall 0.907s; 460 eval tokens total; every checks map passed. This is stronger
+    than the transport-only soak. Ready for review of automatic JEV promotion for the four read-only classes, subject
+    to heartbeat/load fallback.'
+- at: 2026-10-30 13:35
+  from: devin
+  text: 'Current count: dedicated gdrive:ada-nest-kk-llm queue has 22 unique package jobs DONE (smoke + 10 transport
+    soak + 10 semantic soak + 1 real cache-status task); 0 queued/claimed. There were 4 earlier failed timeout attempts
+    of the original smoke pack before the think=false fix. General ada-nest KK one-shot packs add 5 more DONE packages
+    (readonly/cpu/TTS/approval/shortlist). Direct kk_mac_llm adapter has 26 completed calls recorded separately,
+    plus 5 safely denied stale-admission calls. Counts a'
+- at: 2026-11-02 11:03
+  from: devin
+  text: 'Fresh Nov 2 read-only queue census: 77 package dirs, 71 `done`, 6 `failed` (3 timeouts, 3 terminal semantic-verifier
+    failures), none queued/claimed. LaunchAgent is loaded but no worker process is active; `ollama ps` is empty.
+    This is a dedicated bounded queue, not general Chaba job routing.'
+- at: 2026-11-02 11:05
+  from: devin
+  text: 'Fresh Nov 2 read-only queue check: 77 package directories total, 71 done and 6 failed (3 timeouts, 3 semantic-verifier
+    failures), with no queued/claimed work. The KK-Mac LaunchAgent is loaded but idle; Ollama is empty. The dedicated
+    queue is not general routing, and automatic JEV promotion remains off. The worker/soak appears ready for human
+    review, with the six terminal failures and promotion gate still to review; I am not marking it done.'
+- at: 2026-11-02 11:05
+  from: tony
+  text: moved backlog -> review
+- at: 2026-11-02 11:08
+  from: devin
+  text: 'Fresh Nov 2 lane census for review: dedicated `ada-nest-kk-llm` has 77 pack folders (71 done, 6 failed:
+    3 timeouts + 3 semantic-verifier failures), with no queued/claimed packages. LaunchAgent is loaded but idle;
+    Ollama is empty. This supports a bounded dedicated lane, not a global job route; inspect the six failures before
+    any promotion.'
+- at: 2026-11-03 17:30
+  from: devin
+  text: 'Recommended completion plan: Ada orchestrates but does not run unbounded work. (1) finish OPS-0997 worker
+    heartbeat/load/claim/verify contract; (2) run one fresh OPS-0986/0988 supervised read-only probe with durable
+    artifact and no stale/session-gone ambiguity; (3) run 3 repeated summary/structured-extract/safe-route jobs;
+    (4) verify queue wait, wall time, fallback, owner-impact, and artifact pass; (5) only then enable KK_MAC_LANES
+    for bounded JevNest work. Video/Gaussian GPU work stays in expli'
+- at: 2026-11-05 09:07
+  from: devin
+  text: 'Fresh read-only queue census (2026-11-04): dedicated `gdrive:ada-nest-kk-llm` contains 78 pack directories:
+    71 done, 6 failed, and 1 incomplete empty staging directory (`kk-mac-task-report-review-a8ff708e96d4`); inbox
+    has 76 task JSON specs. This is a bounded local-LLM pack queue, not a full Hermes Agent runtime or generic OpenAI-compatible
+    model endpoint. The existing `kk_mac_local` executor can keep orchestration on a fleet runner and send only
+    allowlisted one-shot prompts to KK-Mac Ollama ove'
+- at: 2026-11-06 18:18
+  from: devin
+  text: '2026-11-06 follow-up: the dedicated LaunchAgent `net.adanest.kk-llm-worker` is installed and runs `nest-worker.py
+    --once` on a 60s interval; current launchd state is `not running` between intervals (last exit 0). Current census:
+    79 pack dirs, 72 done, 6 failed, 1 empty/incomplete; no claimed-not-done packs. Trusted tony-dell admission
+    is eligible (load ~0.9, disk ~68GB, Ollama OK). The standard package remains model-only (one `/api/generate`
+    call + deterministic checks), not a full agent framewo'
+review_kind: verify

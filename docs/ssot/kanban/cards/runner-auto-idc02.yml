@@ -7,7 +7,7 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/runner-agent sha 5fce5a0933d1b875 != repo 842506794f62faf6
+note: 'Failing: ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca != repo 71a2c26532c597f4
   — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
   — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok —
   declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates);
@@ -19,9 +19,9 @@ note: 'Failing: ~/.local/bin/runner-agent sha 5fce5a0933d1b875 != repo 842506794
   /home/tony/.local/bin/devin (devin 3000.10.35 (dfa4a2d6)).'
 help: 'Per-check fixes:
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
-  && ssh <host> chmod +x ~/.local/bin/runner-agent'
-updated: '2026-10-25'
+  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
+  && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
+updated: '2026-11-06'
 review_kind: triage
 action:
   status: done
@@ -62,4 +62,7 @@ comms:
   from: devin
   text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands.
     Fix card: git-autostash-column-guard.'
+- at: 2026-10-31 08:17
+  from: tony
+  text: closed by tony
 ref: OPS-0406

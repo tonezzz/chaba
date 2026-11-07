@@ -1,0 +1,81 @@
+title: traffic report automation check — pipeline healthy, DOH upstreams down
+subtitle: Recurring card re-verified live — camwall traffic report generates on schedule; ~8/43 cams live due to upstream DOH/iTIC outage
+icon: camera
+card: check-traffic-report-automation-a9645b
+ref: KNB-0429
+date: 2026-10-26
+dispatch: 20261026-184105-check-traffic-report-automatio
+runner: idc02
+
+question: |
+  Tony forwarded a traffic alert (Ada conv, 2026-10-10): "Is the traffic
+  report generation working?" Third pass on this card — 10-10 check found
+  no report automation; 10-24 free-lane pilot re-verified; this run checks
+  the LIVE surfaces, not just repo contents.
+
+what_the_traffic_report_is: |
+  The "traffic report" surface = camwall traffic pages + live wall:
+  - cam-wall-pull-vps.timer (30s) pulls zone thumbs (traffic, rama9,
+    burapha, chonburi, dohweb) -> ~/.local/share/camwall/data/<zone>/
+  - cam-wall-cms-vps.timer (15min) renders camwall-<zone> pages into
+    MDDB ada-cms-pages
+  - camwall-edge (idc02 100.123.163.11:8380, quadlet) serves /data/*;
+    public via https://tony-dell.taila0626a.ts.net/apps/camwall/?zone=traffic
+  - traffic-snap.service (:8378, mn01/idc03/tony-dell) = on-demand
+    snapshot shim, installed but inactive — standby by design
+  - Ada voice path: ada_camera_snapshot -> ada-voice
+    backend/traffic_camera.py (in-process; the shim integration is a
+    pending follow-up). 2026-10-26 audit: no_result:ada_camera_snapshot
+    reclassified session-teardown (correct-by-design).
+
+verified_2026_10_26: |
+  Producer proof:
+  - idc02: cam-wall-pull-vps.timer last tick 18:43:30 (+30s cadence),
+    camwall-edge.service active 3w3d (caddy :8380 tailnet)
+  - idc03: cam-wall-pull-vps.timer last tick 18:43:36,
+    cam-wall-cms-vps.timer last tick 18:32:00 — all Result=success
+  Consumer proof:
+  - mddb ada-cms-pages|camwall-traffic|en updated 2026-10-26T11:32:01Z
+    (=18:32 +07) via http://100.102.134.91:11027 — fresh on the 15-min tick
+  - https://tony-dell.taila0626a.ts.net/apps/camwall/?zone=traffic -> 200;
+    /data/traffic/montage.jpg -> 200, 232KB, mtime 18:37
+  - Page honestly reports "4/11 cams live, 2 stale, 5 dead" + per-cam
+    status cards — the guaranteed-image contract is working as designed
+
+upstream_state_2026_10_26: |
+  ~8/43 traffic-zone cams live:
+  - traffic 3-4/11 ok, rama9 2/6, burapha 2/11, chonburi 0/9, dohweb 0/6
+  - DOH Wowza http://180.180.242.207:1935 returns 404 for every PER_*
+    playlist probed (7ms — server up, streams unpublished/gone);
+    180.180.242.208 times out on connect
+  - itic pass/ proxy mirrors the same 404 (it proxies dead DOH upstream)
+  - itic jpeg2.php endpoints returning 403 for rama9 stills
+  - Same failure class documented in traffic-cam README (2026-10-05:
+    DOH refuses intermittently) — today it is broader, looks like a
+    DOH-side outage or stream republish. Not an automation bug.
+
+gaps: |
+  - kk lane: ada-cms-pages-kk|camwall-traffic stale since 2026-10-20T03:07Z.
+    cam-wall-cms-kk.timer was retired on tony-dell (OPS-0749 straggler
+    cleanup, card timer-alert-tony-dell-cam-wall-cms-kk closed done) but
+    no -kk unit was ever armed on idc02/idc03 despite ssot.jobs.yml note
+    "job now maps to idc02/idc03". ssot.apps.camwall.yml still documents
+    "kk lane twin on tony-dell" — doc stale too. Needs re-arm decision.
+  - No standalone traffic-alert -> digest/report automation exists.
+    Tony's 2026-10-11 board answer parked it as backlog feature; if the
+    forwarded alert was meant to trigger a generated report, that feature
+    is still unbuilt.
+
+verdict: |
+  The traffic report IS generating — pull + render + edge + page all live
+  and fresh as of 18:43 +07 2026-10-26. What is NOT working is the
+  majority of upstream camera feeds (DOH-side outage; itic partially).
+  The report correctly shows cameras as down/stale rather than hiding
+  them — this is the designed honest-staleness behavior, not a
+  generation failure.
+
+verify: |
+  - curl http://100.102.134.91:11027/v1/get -d '{"collection":"ada-cms-pages","key":"camwall-traffic","lang":"en"}' -> meta.updated ~15min old
+  - ssh idc03 'systemctl --user list-timers cam-wall-pull-vps.timer cam-wall-cms-vps.timer'
+  - curl -I https://tony-dell.taila0626a.ts.net/apps/camwall/data/traffic/montage.jpg -> 200
+  - python3 -c json.load ~/.local/share/camwall/data/traffic/manifest-traffic.json -> ok count vs upstream

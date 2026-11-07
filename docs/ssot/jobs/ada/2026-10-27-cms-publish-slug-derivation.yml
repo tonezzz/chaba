@@ -1,0 +1,46 @@
+title: cms_publish_page slug derivation — slug= optional, derived from title
+id: 2026-10-27-cms-publish-slug-derivation
+card: fix-cms-publish-page-slug-argument-missi-96152a
+ref: KNB-0624
+date: 2026-10-27
+status: staged-not-deployed
+summary: |
+  Card's audit trail: "Error in cms_publish_page call - slug argument
+  not found" (Ada, 2026-10-14). Root cause is a schema-shape mismatch:
+  cms_publish_page's declaration requires slug, but the model often
+  calls with title+content only — the lazy-schema gate answers
+  SchemaError "missing required 'slug'" and the publish dies BEFORE the
+  confirm handshake registers. A pure UX-of-the-tool problem: the title
+  already implies the page id.
+
+  Fix shipped as ada-voice Drop 16 (patch cms-slug-derivation.patch,
+  base main @ 56c67c1):
+  1. CmsMixin._cms_slugify — derives a _SLUG_RE-legal hyphenated slug
+     from free text ('Pool Notes 2026!' -> 'pool-notes-2026'; accents
+     stripped, 60-char word-cut). A Thai-only title yields "" and the
+     method raises a plain ValueError naming the fix.
+  2. cms_publish_page — slug/title/content gain "" defaults; an empty
+     slug falls back to slugify(title). Explicit slug still wins.
+  3. pending-confirm key (tool_runner/__init__.py) — the register/confirm
+     handshake keys by slug:lang; it now derives the same way so a
+     no-slug register call and its resubmit share the key instead of
+     landing on ':en' vs derived mismatches.
+  4. Declaration (realtime_provider.py) — 'slug' leaves required;
+     description says "omit to derive it from the title". The report
+     meta contract (summary/domain/fresh_for/confidence) is untouched —
+     still required, still gated before the handshake.
+  5. tool_guide entry leads with the optional slug.
+
+verify: |
+  - git apply --check on ada-voice main @ 56c67c1: APPLIES-CLEAN.
+  - py_compile clean on all touched backend files.
+  - ada-voice suite adds tests/test_cms_slug_derivation.py (slugify
+    shapes, derive+pending-key match, explicit slug wins, Thai-only
+    error) — runs at the deploy gate on tony-dell (no local venv here).
+  - chaba side: tests/ada/test_cms_slug_derivation_drop.py guards the
+    staged artifacts and re-checks applyability vs ~/CascadeProjects/
+    ada-voice.
+install: |
+  cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/
+  cms-slug-derivation.patch — then deploy-ada.sh gates (tool-lint +
+  pytest) and lane restarts. Backend-only; relays untouched.

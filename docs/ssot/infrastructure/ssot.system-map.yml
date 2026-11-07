@@ -56,7 +56,7 @@ homes:
   - id: mn-ha-dev
     label: Michael dev twin (was michael-dev — renamed for mn-ha parity 2026-10-16)
     host: idc03
-    ha_url: https://idc03.taila0626a.ts.net:8124
+    ha_url: https://idc02.taila0626a.ts.net:8124
     public_url: null                 # tailnet-only by decision 2026-10-07
     voice_backend: null
     note: underlying resources still named michael-dev — unit michael-dev.service,
@@ -146,7 +146,7 @@ edges:
     gate: cloudflare-access            # one self-hosted app per hostname
     tailnet_front:                     # OPS-0725 ph1 — stable internal names; upstreams flip here on migration
       https: "idc02.taila0626a.ts.net (serve -> caddy :8088) — LOCAL web origin since 2026-10-19 (OPS-0731): web.service rootless caddy :8099 serving /apps/*, /api/*; dell passthrough retired 2026-10-20"
-      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha->omen, 8124 michael-dev->idc03:8124, 8125 ada-ha->omen, 8444 ha-live->omen, 8446 RETIRED (mcp-debug-sse), 9230 input-bridge->idc03:3010} — bind tailnet IP, http; 3002 monitoring LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1)"
+      shadow_ports: "idc02.taila0626a.ts.net:{8123 tony-ha->omen, 8124 michael-dev LOCAL (moved to idc02 2026-10-26; caddy shadow block removed — tailscale serve :8124 is the front), 8125 ada-ha->omen, 8444 ha-live->omen, 8446 RETIRED (mcp-debug-sse), 9230 input-bridge->idc03:3010} — bind tailnet IP, http; 3002 monitoring LOCAL to idc02 (migrated 2026-10-17, MON_HOST=127.0.0.1)"
       rule: "internal consumers reference the front, never tony-dell.* — upstreams repoint per migration phase"
   - id: caddy-edge-idc03
     role: api.surf-thailand.com — LINE/TG webhooks, PWA redeem, ada-ws

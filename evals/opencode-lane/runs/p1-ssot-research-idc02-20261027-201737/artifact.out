@@ -1,0 +1,8 @@
+{
+ "answer": "The standard write path for kanban card mutations from a non-writer host is through board-api (`POST /apps/board-api/{card,comment,request,respond,action,pipeline}` on idc03; governed by AGENTS.md line 24 and `docs/kb/board-api-write-door.md` lines 1-32). Card files that arrive via dispatch worktree merges are converged by the `card-union` custom git merge driver (`scripts/board/merge-card-yaml.py`), which is bound to `docs/ssot/kanban/cards/*.yml` (governed by AGENTS.md line 24 and `docs/kb/host-migration-tony-dell.md`).",
+ "citations": [
+  "AGENTS.md line 24",
+  "docs/kb/board-api-write-door.md lines 1-32",
+  "docs/kb/host-migration-tony-dell.md"
+ ]
+}

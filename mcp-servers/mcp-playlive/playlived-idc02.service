@@ -1,0 +1,19 @@
+[Unit]
+Description=Playlive headless browser daemon on idc02
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+# Port 9240 — :9230 on idc02's tailnet IP is owned by caddy-edge (vcast signaling).
+Environment=PLAYLIVED_PORT=9240
+Type=simple
+WorkingDirectory=/home/tony/.local/playlive
+ExecStart=/home/tony/.local/node/bin/node /home/tony/.local/playlive/playlived.mjs
+Restart=always
+RestartSec=5
+Nice=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

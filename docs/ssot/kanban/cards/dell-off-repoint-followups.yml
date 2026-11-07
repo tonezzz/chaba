@@ -1,7 +1,7 @@
 id: dell-off-repoint-followups
 title: Dell-off repoint follow-ups (ssh MCPs, h3 publish, webcams, workflows-mcp)
-column: backlog
-updated: 2026-10-22 10:30
+column: done
+updated: 2026-10-31 09:37
 ref: OPS-0748
 comms:
 - at: 2026-10-20 10:17
@@ -36,3 +36,18 @@ comms:
     to tailnet names: gev units->idc02, cast/yt-live->omen, relay->idc03:3010, gev page/ws->dell caddy (still fronts
     /apps). Also: build-dossier-devices tony-ha ws->wss://omen, board_notify HA url->https://omen, dropped idc01
     from log fleet, added idc03 loopback ssh key. runboo'
+- at: 2026-10-29 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-31 09:37
+  from: tony
+  text: closed by tony
+spec: The goal is to complete the remaining repointing and follow-up work resulting from the tony-dell power-off,
+  including updating ssh-hosted MCP servers in ~/.config/devin/mcp_config.json, updating DOC_PRINT_SSH in idc03
+  secrets, addressing cms-h3-publish path requirements, and verifying probe/job host assumptions. The work involves
+  hosts idc02, idc03, and tony-omen, and targets configuration files and scripts. Constraints require ensuring all
+  dependencies are correctly pointed away from tony-dell to their new hosts (such as idc03, omen, and caddy). The
+  testable done-condition is that consumer-canary remains clean with zero skips, all specified MCPs and jobs function
+  without referencing tony-dell, and health probes successfully target their correct new host destinations.
+action:
+  status: done

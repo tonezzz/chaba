@@ -1,0 +1,32 @@
+id: wiki-extension-control-plane
+title: Controlled MediaWiki extension management for Ada/OpenCode
+column: backlog
+updated: 2026-11-04 20:15
+brief: Expose a safe, confirm-gated extension-management path so OpenCode-Ada can install the approved Wiki bundle
+  without arbitrary Springboard/API or shell access.
+priority: high
+program: devnest
+tags:
+- mediawiki
+- springboard
+- ada
+- opencode
+- security
+- extensions
+spec: Create a controlled wiki_extension capability for the OpenCode-Ada tab. Keep Springboard as the server-side
+  installer but never expose its raw API or arbitrary repository/branch/commit/delete parameters to an agent. Add
+  a board-api /wiki/extension mutation door backed by the service-host Wiki credentials; allow only list|install|enable|disable
+  and the approved names CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms. Install one extension
+  per request, require explicit confirmation for mutations, validate the Springboard permission/API response, record
+  before/after Special:Version and a receipt, and return an honest failure without claiming installation. Add Ada
+  tools.d wiki_extension with policy=confirmed, tests for allowlist/confirmation/error/receipt, and OpenCode-Ada
+  tab tool-surface/scenario coverage. After the control plane is verified, install CategoryTree and Mermaid first
+  and verify the existing Extensions-Readiness-Test and Mermaid-Flow-Test pages. Do not expose WIKI_PASSWORD to
+  Ada/OpenCode; do not install Graph, Drawio, or arbitrary third-party repos. Done when the OpenCode-Ada tab can
+  list extensions, requests install CategoryTree with confirmation, receives a verified result, and the test pages
+  render without breaking DevNest News.
+ref: ADA-1033
+comms:
+- at: 2026-11-04 20:15
+  from: tony
+  text: card captured via board-api

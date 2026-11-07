@@ -1,0 +1,45 @@
+id: jack-ide
+host: idc02
+description: >-
+  Isolated Jack OpenCode IDE behind a VCAST-style one-time enrollment
+  gateway. jack-enroll (loopback :8377, tailnet-fronted at
+  https://idc02.taila0626a.ts.net:8448) mints/burns single-use codes,
+  issues Secure/HttpOnly/SameSite session cookies, and proxies the
+  session-gated OpenCode route on the private jack-ide podnet —
+  jack-opencode has no published ports. Codes and sessions are stored
+  sha256-only with TTLs; re-mint revokes the prior session
+  (re-registration). LiteLLM/MCP/host creds stay container-side.
+verify: >-
+  curl -sf http://127.0.0.1:8377/health | python3 -c
+  'import json,sys; d=json.load(sys.stdin); assert d["ok"] and d["upstream"]=="up"'
+secrets:
+  - "~/.config/secrets/jack-ide.env — OPENCODE_SERVER_PASSWORD + LITELLM_KEY (600)"
+  - "~/.config/secrets/jack-enroll.env — JACK_ADMIN_TOKEN + JACK_UPSTREAM_PASSWORD (600)"
+  - "~/.local/share/jack-ide/opencode-home/.local/share/opencode/auth.json —
+     LiteLLM key in the container auth store (600). NOT in opencode.json:
+     /config echoes resolved apiKey to the browser (leak found+fixed
+     2026-10-27)."
+requires:
+  - "tool:podman — rootless quadlets (jack-ide.network, jack-opencode.container,
+     jack-enroll.container; images localhost/jack-enroll + localhost/jack-opencode
+     built from enroll-gw/ + opencode/)"
+  - "svc:tailscaled — tailscale serve --https=8448 -> http://127.0.0.1:8377
+     (tailnet edge auth + TLS + identity headers)"
+  - "svc:litellm gateway 100.102.134.91:4000 — model calls from opencode"
+state:
+  - "~/.local/share/jack-ide/state — state.json (sha256 codes/sessions) + audit.jsonl"
+  - "~/.local/share/jack-ide/workspace — Jack scratch git workspace (RW)"
+  - "~/.local/share/jack-ide/opencode-home — disposable opencode config/session data"
+  - "~/.config/jack-ide/opencode.json — IDE config (litellm provider, no MCP)"
+  - "tailscaled serve config — https:8448 listener (persistent in tailscaled state)"
+ports:
+  - "127.0.0.1:8377 — jack-enroll gateway (loopback only)"
+  - "idc02.taila0626a.ts.net:8448 https — tailscale serve -> :8377 (tailnet only)"
+restore: >-
+  systemctl --user stop jack-enroll jack-opencode; rebuild images from this
+  dir; daemon-reload; start. Fresh state is fine — mint a new code after
+  restore. `sudo tailscale serve --https=8448 http://127.0.0.1:8377` if the
+  serve route was lost.
+related_cards: [jack-opencode-podman-ide, jack-opencode-enrollment-gateway]
+status: deployed
+deployed: 2026-10-27

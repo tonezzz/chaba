@@ -1,0 +1,334 @@
+title: Cline Kanban Nest worker adapter
+subtitle: Submit one isolated Nest task to the con01 Cline Kanban runtime and verify its returned artifact
+icon: workflow
+
+planning:
+  goal: >-
+    Let a Nest-pack job submit and run one disposable task on the con01 Cline
+    Kanban host, then publish task state and a verified patch as durable Nest
+    artifacts without using a paid model provider.
+  scope: >-
+    Build a one-host pilot adapter pack and driver. The pack runs on con01,
+    creates or reuses a task by idempotency key using the local Kanban CLI,
+    starts it with Cline Kanban's Cline agent configured for the existing
+    Omen Ollama qwen3:4b model, polls to review/completion, and copies task
+    status plus a non-empty diff into pack artifacts. Stage and run it only
+    under the isolated gdrive:ada-nest-cline-pilot root. No live Chaba repo,
+    auto-commit, auto-PR, hosted API key, paid inference, or public route.
+  success_criteria:
+    - Nest worker claims only the pilot pack from its isolated queue root.
+    - A single Cline Kanban task appears and runs in the disposable con01 workspace.
+    - The task reaches review/completion and writes the expected smoke file.
+    - A non-empty patch and task-state JSON are verified in the remote pack directory before done.
+    - No model-provider API charge, Git commit, or push occurs.
+  risks:
+    - Cline Kanban's remote-mode task CLI fails; keep its backend on a private container bridge and publish ingress only through the authenticated Tailnet proxy.
+    - The Nest worker uses podman exec to the Cline container and is therefore con01-specific in this pilot.
+    - qwen3:4b is a small local model; tool use or task quality may be insufficient even though the model supports tools.
+    - The smoke task consumes Omen GPU/CPU briefly through its Tailnet Ollama endpoint.
+    - The Tailnet proxy uses a separate Basic Auth secret in its own container; it is not mounted into the Cline app container.
+  resources:
+    - con01 rootless Podman, rclone, Nest worker, and disposable Git workspace
+    - Cline Kanban v0.1.70 CLI inside the local container
+    - tony-omen Ollama endpoint 100.75.102.88:11434, model qwen3:4b (already cached)
+    - Dedicated Drive root gdrive:ada-nest-cline-pilot
+    - No model API credentials
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Cline Kanban pilot on con01
+      file: docs/ssot/jobs/infrastructure/2026-10-27-cline-kanban-con01-pilot.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-10-27T14:00:00+07:00'
+  steps:
+    - id: inspect
+      label: Verify Cline Kanban CLI/task API behavior and free model option
+      status: done
+      notes: >-
+        kanban task create/start/list exist. The remote-mode CLI fails in
+        v0.1.70; the adapter will use the Cline runtime's local listener
+        from inside the same container. Omen has cached qwen3:4b with tool
+        capability; con01 can reach Ollama over Tailnet.
+    - id: declare
+      label: Create isolated adapter card and lifecycle record
+      status: done
+      notes: KNB-0932 created; this lifecycle record captures the one-host pilot scope.
+    - id: implement
+      label: Add idempotent Nest pack submitter and task/result verifier
+      status: done
+      notes: >-
+        Added a con01-guarded pack that reuses tasks by job-key marker,
+        starts only the pinned Ollama model in /workspace, waits for Review,
+        and requires both task-state JSON and a non-empty patch.
+    - id: validate
+      label: Run local tests and SSOT/pack preflight
+      status: done
+      notes: >-
+        Proxy tests 7/7, Nest adapter tests 7/7, Nest pack --dry-run valid,
+        full SSOT validation 3218 files/0 errors, and cross-references pass.
+        Optimizer reports 45 warnings; the baseline records the two known
+        card-size warnings and the reviewed `chaba` key-alias false positive.
+    - id: secure-runtime
+      label: Separate the Cline app and credential-gated proxy on a private network
+      status: done
+      notes: >-
+        PR #48 replaced the unsupported Podman pod with separate app/proxy
+        containers on the private bridge. The network stack is deployed;
+        preflight passes, unauthenticated UI returns 401, authenticated UI
+        succeeds, WebSocket returns 101, and the host audit has no
+        Cline-specific delta. The proxy secret remains isolated.
+    - id: ci-tool-registry
+      label: Restore SSOT/server parity for the structured mcp_files tools
+      status: done
+      notes: >-
+        PR validation exposed four existing mcp_files_* handlers in
+        scripts/mcp_debug/server.py that were missing from
+        ssot.mcp-debug.yml. Added the four names to the canonical tool list;
+        the smoke validator now reports 44 wired tools.
+    - id: configure-model
+      label: Configure local Ollama provider/model without API credentials
+      status: done
+      notes: >-
+        Cline settings now use Ollama at http://100.75.102.88:11434/v1 with
+        qwen3:4b; no API key is stored. Model catalog refresh and /v1/models
+        both returned 200. The earlier root-path /chat/completions attempts
+        returned 404. After adding /v1, a Cline request to /v1/chat/completions
+        returned 200 in 6m33s; its turn was canceled before shell tools, with
+        no workspace files changed.
+    - id: test
+      label: Stage isolated pack, claim once, and verify task/patch artifacts
+      status: in_progress
+      notes: >-
+        Three isolated worker attempts ran. Task fd918 produced one local
+        qwen3:4b session with exit_code 0 but no tool call or expected file;
+        its retry created no new session. After the shutdown guard deployed,
+        Tony authorized one fresh-key attempt: task f49b1 and job key
+        `cline-nest-smoke-20261028-ada-r1`. Its qwen3:4b session also
+        completed exit_code 0 without a tool call or expected file. The
+        fresh worktree remains in_progress and clean except for README.md.
+        No result JSON, patch, or done marker was produced; do not retry again
+        without Tony's approval.
+    - id: resume-existing-task
+      label: Resume the existing disposable smoke task and publish verified artifacts
+      status: done
+      notes: >-
+        Fix the adapter to call `task start` for both backlog and in_progress
+        tasks. The CLI start operation is idempotent when a session is already
+        running and starts the session when the task was only moved to
+        in_progress. The approved task key is
+        `cline-nest-smoke-20261028-093509`; Cline task fd918 already carries
+        that marker. Code and unit tests are merged in PRs #50 and #51; the
+        deployed task still failed to create a fresh session after its prior
+        session completed.
+    - id: preserve-task-worktrees
+      label: Prevent task worktree cleanup when the Cline app restarts
+      status: done
+      notes: >-
+        The app's default shutdown cleanup moved all in-progress tasks to
+        Trash and deleted their worktrees. PR #52 adds the supported
+        `--skip-shutdown-cleanup` option and a regression assertion. The
+        guard is deployed on con01; the running app command includes the
+        flag and post-deploy stack verification passes.
+    - id: posix-shell-prep
+      label: Make the pack launcher compatible with the fleet worker shell
+      status: done
+      notes: >-
+        The first con01 worker pass invoked run_sh through /bin/sh and failed
+        immediately because dash rejects `set -o pipefail`. Changed the
+        prelude to POSIX `set -eu`; the failure occurred before the bridge
+        ran, so no Cline task session or model inference was started.
+  decisions:
+    - label: Resume an existing in-progress task through the idempotent CLI start operation
+      rationale: >-
+        The current Nest task is already in_progress but has no session; the
+        adapter previously skipped `task start` unless the column was backlog,
+        leaving it stuck. The CLI safely no-ops for a running session and
+        starts one if absent.
+      alternatives_considered: >-
+        Creating a new task would duplicate the approved smoke and violate the
+        job-key idempotency contract. Manually moving the task back to backlog
+        would mutate live task state unnecessarily.
+    - label: Use localhost runtime mode behind proxy Basic Auth
+      rationale: >-
+        Cline Kanban's CLI task API is reliable in local mode; remote-mode
+        task commands fail even when host and port environment overrides are
+        set. The proxy keeps the browser on Tailnet, enforces Basic Auth and
+        exact Host/Origin, and the backend port is not published. The app and
+        proxy run as separate containers on a dedicated rootless bridge; only
+        the proxy publishes ingress and receives the secret EnvironmentFile.
+        The Cline app container cannot read the proxy credential.
+      alternatives_considered: >-
+        Host networking was rejected because it would let an agent container
+        reach con01 loopback services. Blind Host/Origin rewriting without an
+        external allowlist was rejected. Quadlet `Pod=` was rejected after
+        con01's generator reported it unsupported.
+    - label: Use existing local Omen qwen3:4b for one smoke task
+      rationale: >-
+        It is already cached, advertises tool support, and needs no model
+        download or API key. One small task is a better free trial than adding
+        another inference service to con01, which has 6.3 GiB available RAM.
+      alternatives_considered: >-
+        OpenRouter Free is available but adds a third-party API key, variable
+        rate limits/model routing, and external code transfer. A local model
+        download on con01 is deferred because its available memory is limited.
+    - label: Keep the first adapter single-host and create-only-once
+      rationale: >-
+        Cline Kanban tasks run on the host owning their worktree; remote-mode
+        task CLI is broken. The pilot queue is isolated and the worker acts
+        only on con01. This validates Nest integration without claiming a
+        shared multi-host Cline board.
+      alternatives_considered: >-
+        A distributed pool of independent Cline runtimes requires a separate
+        worker enrollment and result/board synchronization design.
+  changes:
+    - file: stacks/con01/cline-kanban/Containerfile
+      summary: Added a role-selecting entrypoint for the local Cline app and separate proxy container.
+    - file: stacks/con01/cline-kanban/entrypoint.sh
+      summary: Keep Cline task worktrees on shutdown with --skip-shutdown-cleanup.
+    - file: stacks/con01/cline-kanban/cline-kanban.container
+      summary: Put the Cline app on a private bridge without publishing its backend port.
+    - file: stacks/con01/cline-kanban/cline-kanban-proxy.container
+      summary: Added a separate bridge-connected Basic Auth proxy that alone publishes Tailnet ingress and receives the secret EnvironmentFile.
+    - file: stacks/con01/cline-kanban/proxy.mjs
+      summary: Added external Basic Auth and strict Host/Origin checks, stripping auth before forwarding.
+    - file: stacks/con01/cline-kanban/cline-kanban.network
+      summary: Uses a dedicated rootless bridge shared only by the app and proxy.
+    - file: stacks/con01/cline-kanban/stack.yml
+      summary: Declared the proxy secret, authenticated health verification, and shutdown-guard rollback.
+    - file: stacks/con01/cline-kanban/verify.sh
+      summary: Verified all Quadlet units and both unauthenticated/authenticated HTTP behavior.
+    - file: docs/ssot/infrastructure/ssot.audit.hosts.yml
+      summary: Declared the proxy and bridge-network units in con01 expectations.
+    - file: scripts/colab/packs/cline-kanban-nest-bridge/
+      summary: Added an idempotent Nest pack for one local Cline task and verified patch output.
+    - file: scripts/colab/packs/cline-kanban-nest-bridge/bridge.py
+      summary: Resume a matching backlog or in-progress task using the idempotent Cline CLI start operation.
+    - file: docs/ssot/infrastructure/ssot.mcp-debug.yml
+      summary: Registered the four already-implemented mcp_files tools so the server/SSOT wiring check passes.
+    - file: .github/workflows/ssot.yml
+      summary: Added CI coverage for Cline proxy and Nest adapter tests.
+    - file: tests/test_cline_kanban_proxy.mjs
+      summary: Added Basic Auth, header stripping, network separation, credential isolation, and shutdown-guard checks.
+    - file: tests/ada/test_cline_kanban_nest_bridge.py
+      summary: Added input, idempotency, provider pinning, and task-worktree selection tests.
+    - file: scripts/colab/packs/cline-kanban-nest-bridge/pack.yml
+      summary: Use POSIX shell options because fleet workers execute run_sh with /bin/sh.
+    - file: scripts/ssot-validate-all.mjs
+      summary: Use a process-specific repo-cache batch file instead of a shared /tmp path.
+
+followup:
+  verification:
+    - Adapter unit tests cover input validation, idempotent lookup, CLI calls, and artifact requirements.
+    - An existing in-progress task with no session is resumed rather than left waiting until timeout.
+    - Cline task CLI list/create/start is tested in localhost runtime mode.
+    - Nest done is written only after task reaches review/completion and remote artifacts verify non-empty.
+    - Confirm the disposable test repository is unchanged outside the Cline task worktree.
+  rollback_plan:
+    - Stop the Nest-worker one-shot and leave the Cline pilot service running.
+    - Remove only the isolated gdrive:ada-nest-cline-pilot test root after separate approval.
+    - Roll back the shutdown guard with the preserved network-topology image; retain task worktrees and pilot data.
+    - Revert the adapter code and restore the previous Cline proxy/backend configuration through the repository sync path.
+  handoff:
+    - >-
+      PRs #45, #46, #48, #50, #51, #52, #53, and #57 are merged. The network-based
+      Cline stack and shutdown-cleanup guard are deployed on con01. The
+      image rebuild fetched public kanban@0.1.70 from npm as Tony approved;
+      the pre-change image remains tagged for rollback. Preflight,
+      authenticated HTTP, WebSocket, and host audit verification pass.
+      Both recorded local qwen3:4b sessions completed without tool output
+      or the smoke file; no pack artifacts were published. The fresh task
+      f49b1 remains in_progress with its worktree preserved. The earlier
+      restart incident moved fd918, bbd43, and 62aaf to Trash and removed
+      their worktrees; 62aaf contained nest-cline-smoke.txt. Do not start
+      another model run without Tony's approval.
+    - >-
+      OpenRouter free-only route was approved, but LITELLM_KEY_BENCH is over
+      its $2/30d budget. The direct-key response in the board is redacted
+      and unusable; do not use or expose it. Require a fresh key in the
+      proxy-only secret file before enabling OpenRouter; paid model IDs
+      remain blocked.
+  deferred:
+    - Multi-host Cline execution pool and shared board/task synchronization.
+    - Paid hosted-provider comparison.
+
+  report:
+  status: in_progress
+  completed_at: null
+  summary: >-
+    PRs #45, #46, #48, #50, #51, #52, #53, and #57 are merged. The no-Pod Cline
+    app/proxy stack and `--skip-shutdown-cleanup` guard are deployed and
+    verified on con01. The approved build fetched public kanban@0.1.70
+    from npm; the previous network-topology image remains as a rollback.
+    PR #57 adds the Ada HA Cline Access route; its proxy guard is deployed
+    without restarting the Cline app. The Nest smoke remains unsuccessful:
+    both local qwen3:4b sessions completed without a tool call or expected
+    file, and no result JSON or patch was published. Fresh task f49b1 remains
+    in_progress with its clean worktree preserved. The earlier restart
+    cleanup moved fd918, bbd43, and 62aaf to Trash and removed their
+    worktrees; 62aaf contained nest-cline-smoke.txt. No further model run is
+    authorized. OpenRouter remains blocked by the exhausted benchmark key.
+  metrics:
+    - metric: proxy policy tests
+      value: 7 passed
+    - metric: Nest adapter tests
+      value: 9 passed
+    - metric: pack schema dry-run
+      value: valid
+    - metric: SSOT validation
+      value: 3253 files, 0 errors
+    - metric: SSOT references
+      value: 3258 files parsed; no broken references
+    - metric: SSOT optimizer warnings
+      value: 46 warnings; one unrelated open-request recommendation warning
+    - metric: local model provider
+      value: Ollama qwen3:4b at /v1; /v1/models 200; chat completion 200 in 6m33s
+    - metric: OpenRouter key
+      value: LITELLM_KEY_BENCH returned 422 budget_exceeded at $2.00844621/$2.00; no inference call
+    - metric: dispatch attempt
+      value: tony-macbook failed before execution with unknown Devin model litellm/or-claude-fable-5.1
+    - metric: Cline adapter PR
+      value: #45/#46/#48/#50/#51/#52/#53/#57 merged; #49 remains open with dirty merge state
+    - metric: Quadlet compatibility
+      value: con01 Podman 4.9.3 rejects Pod=; rollback restored old unit and Tailnet HTTP 200
+    - metric: Nest pack claims
+      value: Three isolated worker attempts, two qwen3:4b sessions; no done marker or artifacts
+    - metric: user Cline task
+      value: fd918 and f49b1 sessions exited 0 without tool calls/files; f49b1 remains in_progress
+    - metric: shutdown cleanup safeguard
+      value: PR #52 merged/deployed; running app command includes --skip-shutdown-cleanup
+    - metric: Cline image build
+      value: Public npm fetch of kanban@0.1.70 succeeded; pre-shutdown-guard image tag retained for rollback
+    - metric: service after requested restart
+      value: New image app/proxy/network active; preflight PASS; HTTP 401/200 and WebSocket 101 on 100.72.146.39:3484
+    - metric: host audit
+      value: No Cline-specific delta; seven unrelated failed services remain
+    - metric: shutdown cleanup incident
+      value: fd918, bbd43, and 62aaf moved to Trash with worktrees removed; 62aaf smoke file lost
+    - metric: OpenRouter benchmark key
+      value: 422 budget_exceeded at $2.00844621/$2.00; no inference call
+  links:
+    - title: Adapter card
+      url: https://idc03.taila0626a.ts.net/apps/board2/?card=cline-kanban-nest-worker-adapter
+    - title: Adapter PR
+      url: https://github.com/tonezzz/chaba/pull/45
+    - title: Cline host pilot
+      url: https://github.com/tonezzz/chaba/pull/41
+  kb_review:
+    - >-
+      Updated WP Education lesson "Cline Kanban vs WordPress board apps"
+      (post 2675, lesson-bf6ce090216d) with local-model cost, OpenRouter
+      free-tier caveats, the existing shadow-eval procedure, and the
+      observed Ollama /chat/completions 404 with the /v1 Base URL correction.
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-10-27'
+  last_updated: '2026-10-27'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - scripts/ada/nest-worker.py
+    - scripts/colab/packs/

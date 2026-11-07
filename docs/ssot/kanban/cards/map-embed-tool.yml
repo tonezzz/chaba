@@ -1,7 +1,7 @@
 id: map-embed-tool
 title: map_embed tool — Google Maps POI+route on CMS pages
-column: backlog
-updated: 2026-10-13 15:40
+column: done
+updated: 2026-10-27 18:33
 priority: medium
 tags:
 - ada-pi
@@ -25,3 +25,155 @@ comms:
   from: devin
   text: 'POI-on-CMS-page part now covered by place_report (KNB-0574): staticmap image + Google/OSM links on meta.public
     pages. Route-drawing remains uncovered — keep open if routes wanted.'
+- at: 2026-10-27 14:01
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 14:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 14:02
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 14:02
+  from: chaba
+  text: started devin-task-20261027-140229-tony-2026-10-13-wants-map-tool on tony-macbook (dispatch)
+- at: 2026-10-27 14:12
+  from: devin
+  text: 'map_embed drop staged in dispatch worktree (drop 17): tools.d module + manifest/tool_guide fragments +
+    smoke scenario + count_cap 112→113 patch; persons.tony + kk-cms-only include lines added. Design: kind=interactive
+    -> Embed API iframe (needs key), kind=static -> Google Static image w/ Routes API polyline, or keyless OSM multi-pin
+    + always a keyless open-in-Maps link. 21 in-worktree tests pass. Not deployed — install steps in integrations/ada-voice/README.md.'
+- at: 2026-10-27 14:12
+  from: devin
+  text: 'raised request google-maps-api-key-gate-for-ada-lanes-r-025db9: GOOGLE_MAPS_API_KEY gate for ada lanes:
+    reuse the gev key (~/.config/secrets/gev-google-maps.env on tony-dell) if its GC'
+- at: 2026-10-27 14:13
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ard for the key decision (reuse the gev key vs new ada-lane key). | devin-task-20261027-140229-tony-2026-10-13-wa'
+- at: 2026-10-27 14:13
+  from: chaba
+  text: 'session-end checkpoint e4d763b8: 2 leftover file(s) committed'
+- at: 2026-10-27 14:13
+  from: chaba
+  text: pushed dispatch/20261027-140229-tony-2026-10-13-wants-map-tool to origin
+- at: 2026-10-27 14:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 14:13
+  from: chaba
+  text: auto-merged 4c1af59d (dispatch/20261027-140229-tony-2026-10-13-wants-map-tool) → origin/master
+- at: 2026-10-27 14:13
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 14:17
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''google-maps-api-key-gate-for-a''] block close)'
+- at: 2026-10-27 15:38
+  from: tony
+  text: 'answered google-maps-api-key-gate-for-ada-lanes-r-025db9: proceed'
+- at: 2026-10-27 15:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 15:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-27 15:48
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-10-27 15:58
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 15:58
+  from: chaba
+  text: started devin-task-20261027-155816-tony-2026-10-13-wants-map-tool on tony-macbook (dispatch)
+- at: 2026-10-27 16:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261027-140229-tony-2026-10-13-wants-map-tool on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 16:09
+  from: devin
+  text: '2nd dispatch executing the proceed answer. Key probe done on tony-dell (status codes only, value never
+    printed): the gev GOOGLE_MAPS_API_KEY (AQ.Ab8…, same newer key shape as the Gemini keys) is REJECTED by every
+    Maps Platform endpoint — Embed 403, Static 403, Geocode REQUEST_DENIED, Routes 401, with and without a GEV referer.
+    Cant tell externally if the key is dead or its project lacks the APIs; either way no existing key works and
+    no host has gcloud/GCP creds, so mint-or-enable is a Tony conso'
+- at: 2026-10-27 16:09
+  from: devin
+  text: 'raised request google-maps-api-key-needs-a-mint-gev-key-ee1fc7: GOOGLE_MAPS_API_KEY needs a mint — gev
+    key verified dead/unsuitable, no GCP creds on any host, so this one is a console '
+- at: 2026-10-27 16:11
+  from: tony-macbook
+  text: 'finished (ok): exit=0 hold) — the card stays held by that open request until Tony acts. | devin-task-20261027-155816-tony-2026-10-13-wa'
+- at: 2026-10-27 16:11
+  from: chaba
+  text: 'session-end checkpoint 88ca86e6: 2 leftover file(s) committed'
+- at: 2026-10-27 16:11
+  from: chaba
+  text: pushed dispatch/20261027-155816-tony-2026-10-13-wants-map-tool to origin
+- at: 2026-10-27 16:11
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 16:11
+  from: chaba
+  text: auto-merged 8b3abeef (dispatch/20261027-155816-tony-2026-10-13-wants-map-tool) → origin/master
+- at: 2026-10-27 16:11
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 18:15
+  from: tony
+  text: 'answered google-maps-api-key-needs-a-mint-gev-key-ee1fc7: key-in-env-idc03 — minted and dropped into tony-ha/backend.env
+    on idc03 myself'
+- at: 2026-10-27 18:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 18:17
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 hold) — the card stays held by that open request until Tony acts. | devin-task-20261027-155816-tony-2026-10-13-wants-map-tool.service:
+    Consumed 40.428s CPU time over 12min 52.564s wall clock time, 293.4M memory peak, 83.3M memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-27 14:17
+    dirty: 1
+requests:
+- id: google-maps-api-key-gate-for-ada-lanes-r-025db9
+  ask: 'GOOGLE_MAPS_API_KEY gate for ada lanes: reuse the gev key (~/.config/secrets/gev-google-maps.env on tony-dell)
+    if its GCP project has Maps Embed + Maps Static + Routes APIs enabled, or mint a new restricted key for the
+    ada backend env on idc03? The tool ships useful without it (OSM static images + keyless open-in-Maps links work
+    today); the key unlocks interactive iframes, Google basemaps, and road-route polylines.'
+  status: answered
+  at: 2026-10-27 14:12
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-10-27 queue
+- id: google-maps-api-key-needs-a-mint-gev-key-ee1fc7
+  ask: 'GOOGLE_MAPS_API_KEY needs a mint — gev key verified dead/unsuitable, no GCP creds on any host, so this one
+    is a console step. Click-path: console.cloud.google.com -> project with billing -> APIs & Services -> enable
+    Maps Embed API + Maps Static API + Routes API -> Credentials -> Create API key -> restrict to those 3 APIs (server-side
+    use, no referrer restriction). Drop-in: add GOOGLE_MAPS_API_KEY=<key> to ~/.config/secrets/tony-ha/backend.env
+    on idc03, then I restart ada-ha-tony. If instead the gev keys project is alive, enabling those 3 APIs on it
+    revives reuse — pick enabled-gev-project and I will retest. Until then drop 17 works keyless the moment it lands
+    on ada-voice (OSM static image + open-in-Maps link).'
+  status: answered
+  at: 2026-10-27 16:09
+  from: devin
+  options:
+  - key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
+  - enabled-gev-project — enabled the 3 APIs on the gev keys project, retest it
+  - hold — leave keyless for now
+  suggested: key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
+  answer: key-in-env-idc03 — minted and dropped into tony-ha/backend.env on idc03 myself
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 18:17
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,135 @@
+title: Wiki education read door — /lesson source=wiki + due/report retarget
+subtitle: >
+  Step 4 of the wiki member-knowledge-surface plan: a read path over the
+  Education: namespace through the existing /lesson door, and the
+  lessons-due / education-report retarget. Ships OFF until the running
+  board-api on idc03 is restarted on the merged build (same restart as
+  the do_wiki_page session fix from dispatch 193421).
+icon: education
+version: 1
+
+card: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+date: 2026-11-06
+dispatch: 20261106-201214-idea-2026-11-06-tony-chat-migr (tony-macbook)
+
+what_shipped:
+  board_api:
+    file: scripts/board/board-api.py
+    changes:
+      - "_read_lessons accepts source=wp|wiki (default wp); anything else
+        is a ValueError. WP responses now carry source:'wp'."
+      - "FIX — op=list now paginates WP to 500 (same bound as
+        do_lesson_topics): verified live 2026-11-06 it silently
+        truncated at 100 of 124 lessons, so education-report's daily
+        audit was missing ~24 lessons."
+      - "_read_lessons_wiki — op=list|get over the Education: namespace:
+        siteinfo resolves the ns id (LocalSettings 3004), allpages lists
+        titles, revisions fetch batches of 50. Reads ride _wiki_login —
+        the namespace is Lockdown-protected so anon gets accessdenied."
+      - "_lesson_from_wiki_page — parses the แม่แบบ:Education/Template:
+        Education call into params -> meta {topic, level, source,
+        learned_at, next_review, status, updated, no_th}; body = wikitext
+        minus the template call and [[Category:]] links. Pages without
+        the template (Education:Index, :Due, series hubs) are skipped and
+        counted in skipped_non_lesson."
+      - "Slug parity: wiki rows mint slug = lesson-<md5(topic.lower())12>
+        — the exact slug WP assigns — so op=get-by-slug, audit keys and
+        scripts/lesson-thai-exceptions.yml keep working across cutover."
+      - "list rows add wiki_title + url ({WIKI_HOST}/wiki/<quoted>); get
+        accepts slug | wiki_title | topic (topic -> lesson_wiki_title)."
+  lessons_due:
+    file: scripts/lessons-due.py
+    changes:
+      - "Reads via the door instead of direct WP REST: --source wiki
+        (default; LESSON_SOURCE env) calls /lesson op=list source=wiki;
+        --source wp keeps the old wp-boards.env REST path as fallback."
+      - "--dest both (default; LESSON_DUE_DEST env): writes
+        Education:Due via /wiki/page (allowlisted Education: title)
+        AND the legacy private WP page slug education-due; per-dest
+        failures are reported independently, nonzero exit if any leg
+        fails."
+      - "Stale-door guard: a door that predates the wiki read path
+        ignores source=wiki and answers a WP-shaped list — fetch_rows
+        raises RuntimeError rather than silently auditing the WP corpus
+        under a wiki label."
+      - "due_wikitext renders == Due now / == Upcoming == with
+        [[Education:X|topic]] internal links + [[Category:Education]];
+        due_html preserves the old WP page markup."
+  education_report:
+    file: scripts/education-report.py
+    changes:
+      - "--source wp|wiki (EDU_SOURCE env, default wp — WP stays
+        canonical until cutover). fetch_all sends source on both ops
+        and hard-fails a wiki request answered without source:'wiki'."
+      - "Content handed to the audit/drift components is wikitext under
+        source=wiki — the R1-R5 and source_refs regexes are
+        format-agnostic (Thai block, hub words, docs/scripts paths all
+        match plain wikitext)."
+      - "report['source'] records which store was audited; stdout line
+        is prefixed education-report[wp|wiki]."
+  tests:
+    - "tests/board/test_publication.py — 4 new tests (wiki list parse +
+      slug parity + skipped_non_lesson; get by wiki_title/slug/topic +
+      not-found; source validation; unregistered-namespace refusal).
+      59 tests OK."
+    - "tests/test_lessons_due.py — NEW, 8 tests: review_bucket edges,
+      bucket sort/exclusion, wikitext+html render, door contract
+      (source flag, stale-door RuntimeError, /wiki/page payload, from
+      injection)."
+    - "tests/test_education_report.py — fetch_all sends source +
+      stale-door raise. 11 tests OK."
+    - "tests/board/test_board_api_mutations.py — 21 tests OK (no
+      regressions)."
+  manifest:
+    - "ssot.jobs.yml chaba-lessons-due: name + note updated (wiki
+      Education:Due + WP dual dest; --source wiki default; fallback
+      flags); generated idc03 unit re-rendered (Description only)."
+    - "ssot.jobs.yml chaba-education-report: note documents --source /
+      EDU_SOURCE=wiki flip at cutover. Exec unchanged."
+
+design_notes:
+  door_not_cargo: >
+    The plan offered Cargo queries as the alternative read path — the
+    /lesson source=wiki door won because it keeps callers on the
+    unified education door (agents never learn the store moved), needs
+    no live template edit ({{#cargo_declare}}), and preserves WP slug
+    identity so downstream keys don't migrate. Cargo remains available
+    later for on-wiki query pages (Education:Due could become a
+    {{#cargo_query}} page instead of a machine-written one — both work;
+    the machine write needs no extension).
+  transition_state: >
+    WP lesson CPT is still write-canonical; the wiki is the read-canonical
+    surface for lessons-due from the moment the door restarts. Dual-write
+    (WIKI_EDUCATION_WRITE=dual, live since phase 3) keeps both stores in
+    sync, so reading either is correct — wiki default exercises the new
+    surface daily before cutover.
+  activation_gate: >
+    The running board-api on idc03 predates this code AND the
+    do_wiki_page session fix (dispatch 193421). One merge -> chaba
+    repo-sync pull -> board-api restart activates both. Until then:
+    /lesson source=wiki falls back to WP rows silently (door ignores
+    unknown keys) — hence the source:'wiki' echo guard in both tools;
+    /wiki/page 502s (pre-fix build) so lessons-due --dest wiki fails
+    its wiki leg while the wp leg still lands.
+
+verify_after_restart:
+  - "POST /lesson {op:list, source:wiki} -> source:'wiki', ~124 lessons,
+    skipped_non_lesson >= 2 (Index + Ada-Nest hub)."
+  - "python3 scripts/lessons-due.py --dry-run on idc03 -> prints
+    Education:Due wikitext built from the live wiki corpus."
+  - "python3 scripts/lessons-due.py -> 'wiki: success Education:Due
+    rev=...' + 'wp: updated page 354'; anon accessdenied on
+    Education:Due confirms the boundary."
+  - "EDU_SOURCE=wiki python3 scripts/education-report.py -> report
+    audits the wiki corpus (compare compliance vs the wp run — small
+    drift is expected: wikitext bodies measure slightly differently)."
+
+remaining_for_cutover:
+  - "Step 6 (WP admin/Tony): lesson CPT read-only + permalinks 301 to
+    Education:<title>; then --dest wp can drop and EDU_SOURCE=wiki
+    becomes the report default."
+  - "Education:Index refreshes only on wiki-lesson-migrate.py reruns —
+    fold index-refresh into lessons-due or a small weekly job."
+  - "WikiLessonSink emits plain template params — a {{#cargo_declare}}
+    on แม่แบบ:Education would make next_review/status queryable
+    on-wiki (optional polish, not required for cutover)."

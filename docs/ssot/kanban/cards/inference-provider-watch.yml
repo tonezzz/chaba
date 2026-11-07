@@ -1,7 +1,7 @@
 id: inference-provider-watch
 title: Inference-provider market watch — iterate the living research + eval new brains on the dev-AI fleet
-column: backlog
-updated: 2026-10-25 11:50
+column: review
+updated: 2026-10-31 13:50
 brief: 'Living doc: devin-kb/docs/tools/inference-provider-market.md (iter 1, 2026-10-25). Each iteration: refresh
   prices/free tiers, add providers, and — per Tony — try candidates on the dev-AI fleet itself: eval-bed (new LiteLLM
   model group + config.<name>.yaml + cli-compare run vs bench baseline) AND live-task trials (route real chores/dispatch
@@ -44,3 +44,51 @@ comms:
     measured: free TPM caps (8k/7k ITPM) sit BELOW one mid-session opencode request (~7.7-11.9k tokens) — hard fail,
     not throttle; litellm bug #47931 (reasoning_content echoed to Groq turn2+ → 400); qwen3.8 max_tokens cap 16384.
     Verdict: groq-free is for small-prompt latency-critical'
+- at: 2026-10-26 07:25
+  from: devin
+  text: 'DevNest research is now filed in Education post 2504. Existing eval evidence: Zen DeepSeek V4.1 Flash free
+    4/4 @15.8s, GLM-5.3 Flash free 4/4 @19.9s, Gemini bench 4/4 @27s, local Qwen3:8B 0/4 timeouts. New follow-up
+    OPS-087? created as devnest-cache-tokenization-bench to measure prefix/cache/tokenization performance rather
+    than speculate.'
+- at: 2026-10-26 07:25
+  from: devin
+  text: 'Correction: the cache/tokenization follow-up is BEN-0884 (devnest-cache-tokenization-bench).'
+- at: 2026-10-27 14:22
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 14:22
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 14:22
+  from: chaba
+  text: started devin-task-20261027-142254-queued-experiments-from-iter-1 on tony-macbook (dispatch)
+- at: 2026-10-27 14:23
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-142254-queued-experiments-from-iter-1.service:
+    Main process exited, cod'
+- at: 2026-10-27 14:23
+  from: chaba
+  text: pushed dispatch/20261027-142254-queued-experiments-from-iter-1 to origin
+- at: 2026-10-27 14:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-142254-queued-experiments-from-iter-1,
+    branch dispatch/20261027-142254-queued-experiments-from-iter-1'
+- at: 2026-10-27 14:32
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-142254-queued-experiments-from-iter-1 on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-31 13:50
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261027-142254-queued-experiments-from-iter-1'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-142254-queued-experiments-from-iter-1.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-142254-queued-experiments-from-iter-1.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-27 14:32
+    no_repo: 2026-10-31 13:50
+review_kind: verify
+claim: {}

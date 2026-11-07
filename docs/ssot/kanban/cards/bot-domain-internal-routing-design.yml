@@ -1,0 +1,46 @@
+id: bot-domain-internal-routing-design
+title: Evaluate bot.surf-thailand.com as Telegram ingress and routing gateway
+column: doing
+updated: 2026-10-27 05:33
+brief: Decide whether a dedicated bot.surf-thailand.com edge should front Telegram webhook ingress without exposing
+  internal relay controls.
+priority: medium
+program: devnest
+tags:
+- telegram
+- routing
+- caddy
+- cloudflare
+- security
+spec: 'Assess bot.surf-thailand.com as a dedicated Telegram bot ingress/routing domain. Compare against current
+  architecture: api.surf-thailand.com public Ada API/webhook edge on idc03, per-lane loopback relays on idc03, polling
+  for DevNest. Design a safe option where public ingress accepts only Telegram webhook paths, validates Telegram
+  secret_token, routes by bot/path to isolated lane relays, rate-limits/log-redacts, and never exposes /send or
+  internal MCP/board APIs. Include Cloudflare/Caddy TLS, webhook-vs-polling migration, one-consumer-per-bot rule,
+  failover, rollback, monitoring, and threat model. Recommend whether to keep DevNest polling for now or migrate
+  it later. No DNS, webhook, Caddy, or production changes in the design phase.'
+action:
+  type: manual
+  status: done
+note: 'Current verified state: api.surf-thailand.com already fronts Ada public API/webhook; Ada/KK/MN loopback relays
+  are live on idc03; DevNest relay is not yet deployed. Need design before adding a second public ingress.'
+ref: SEC-0910
+comms:
+- at: 2026-10-26 16:57
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-26 16:57
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-26 19:08
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 19:08
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-27 05:33
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 05:33
+  from: tony
+  text: moved done -> doing

@@ -1,7 +1,7 @@
 id: colab-runtime-identity-and-duplicate-ses-11a426
 title: Colab runtime identity and duplicate-session guard
-column: backlog
-updated: 2026-10-25 20:38
+column: doing
+updated: 2026-10-26 19:41
 brief: A second Colab session is possible without the current notebook/MCP knowing. The `colab` MCP controls one
   attached notebook; `mcp-colab` reports Drive pack state, not account-wide runtime sessions. This risks paying
   for an idle/duplicate T4 or starting a queue on a CPU runtime.
@@ -37,3 +37,164 @@ comms:
     runtime/GPU/Drive, checks managed-session heartbeats and queue lease, and never stops or kills another runtime.
     Account-wide discovery/stop is still limited to Colab Runtime > Manage sessions; the optional stop-tool request
     remains an explicit follow-up decision.
+- at: 2026-10-26 14:17
+  from: devin
+  text: 'Capability check 2026-10-26: the live `colab` MCP can manipulate cells in an already attached browser notebook,
+    but has no tool to create/select a T4 runtime or enumerate/stop account-wide sessions. Live `mcp-colab` exposes
+    pack status/submit/result, tunnel and model probes; `colab_session_status` exists in source but is absent from
+    the live tool list. The notebook starts the detached shared queue inside an already-running Colab VM; Cell 2
+    drains JOBS.py + all eligible packs, not one selected jo'
+- at: 2026-10-26 14:17
+  from: devin
+  text: 'raised request which-control-boundary-do-you-want-for-t-3ffc0d: Which control boundary do you want for
+    the next step? Full runtime auto-start/stop needs an officially supported API and'
+- at: 2026-10-26 14:18
+  from: devin
+  text: 'Additional 2026-10-26 blocker: scripts/colab/preflight-cell.py currently starts the runtime heartbeat thread
+    before checking rr.peers(); on a duplicate refusal, that thread can keep the rejected VM record fresh. Move
+    heartbeat start after the peer gate (and test refusal cleanup) before relying on hands-off launches. Live mcp-colab
+    tool list is also stale: source defines colab_session_status, deployed server does not expose it. I did not
+    run the notebook or change Drive.'
+- at: 2026-10-26 15:00
+  from: devin
+  text: 'Tony confirmed the target is hands-off control from Devin/Dell via mcp-colab. Current boundary: `colab`
+    MCP can run cells only in an already attached browser notebook; it cannot create a T4 runtime or enumerate/stop
+    account-wide sessions. `mcp-colab` can submit/list packs, read results, and probe the tunnel/model; the live
+    tool list still lacks source-defined colab_session_status. The notebook queue launcher runs all eligible JOBS/packs
+    inside an already-running VM, not a selected job. Full life'
+- at: 2026-10-26 15:14
+  from: tony
+  text: 'answered which-control-boundary-do-you-want-for-t-3ffc0d: Investigate officially supported runtime auto-start/stop;
+    only control a managed runtime and require a max session duration/budget before any live start/stop.'
+- at: 2026-10-26 15:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 15:24
+  from: devin
+  text: 'raised request what-hard-runtime-limit-should-any-futur-4feda6: What hard runtime limit should any future
+    automatic Colab lifecycle control enforce? Please specify maximum hours and wh'
+- at: 2026-10-26 16:26
+  from: devin
+  text: 'Official API research (2026-10-26): Google documents `gcloud colab runtimes create/list/start/stop/delete`
+    and REST runtime APIs for Colab Enterprise. These manage project/region runtimes, not consumer Colab account
+    sessions. Enterprise needs a GCP project, runtime template, IAM permissions, billing, and charges for VM/GPU
+    plus disks (even stopped runtimes retain disk charges); docs specify idle shutdown and automatic deletion defaults.
+    Consumer Colab remains UI-started; no supported account-wid'
+- at: 2026-10-26 16:26
+  from: devin
+  text: 'raised request which-platform-should-the-hands-off-cont-860ab1: Which platform should the hands-off controller
+    target? Colab Enterprise enables official runtime APIs but is billable an'
+- at: 2026-10-26 16:27
+  from: devin
+  text: 'Official Google docs research: Colab Enterprise has supported project-scoped runtime APIs/CLI (`gcloud
+    colab runtimes create/list/start/stop/delete`; REST under notebooks.googleapis.com). It requires a GCP project,
+    region, runtime template and IAM permissions. Runtimes are billable for VM/GPU and storage; official docs show
+    default idle shutdown (180 min) and auto-delete (18 h), with disk charges while stopped. This is the supported
+    route for hands-off runtime lifecycle, but it does not manage c'
+- at: 2026-10-26 16:32
+  from: devin
+  text: 'Local safety improvement landed: commit edb3ecd10 moves peer detection ahead of registration/heartbeat
+    in the console preflight, so a refused duplicate does not leave a fresh managed-runtime record. Regression test
+    added; 21 Colab unittest cases pass. This does not create/manage Google runtimes; full lifecycle still needs
+    an approved runtime platform, budget cap, and deployment of the current MCP server.'
+- at: 2026-10-26 16:45
+  from: tony
+  text: 'answered what-hard-runtime-limit-should-any-futur-4feda6: Auto-start/stop only with a hard cap; specify
+    max hours and compute budget.'
+- at: 2026-10-26 16:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 17:06
+  from: tony
+  text: 'answered which-platform-should-the-hands-off-cont-860ab1: Keep consumer Colab: manual T4 start, automate
+    queue/status only (no new GCP billing).'
+- at: 2026-10-26 17:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 17:18
+  from: chaba
+  text: 'answer-sweep: executed ''Keep consumer Colab: manual T4 start, automate queue/status '' -> put on hold'
+- at: 2026-10-26 17:18
+  from: chaba
+  text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-26 18:52
+  from: devin
+  text: 'Tony clarified: do not upgrade Colab or use Colab Enterprise. Proceed with the existing consumer Colab
+    account only: manual T4 runtime start/stop, MCP visibility/control for managed runtimes and queue after preflight,
+    no GCP provisioning or new billing. Account-wide consumer sessions not instrumented by our notebook remain visible
+    only in Google Manage Sessions.'
+- at: 2026-10-26 18:53
+  from: tony
+  text: moved backlog -> doing
+- at: 2026-10-26 18:54
+  from: devin
+  text: 'Tony decision 2026-10-26: stay on current consumer Colab; no Colab Enterprise/GCP upgrade or new billing.
+    Scope is managed-session visibility and hands-off queue control after a user manually starts a T4. Runtime start/stop
+    and uninstrumented sessions remain Google UI responsibilities. Proceeding with the no-upgrade implementation;
+    no jobs will auto-launch without an explicit queue-start action.'
+- at: 2026-10-26 19:35
+  from: devin
+  text: 'Consumer-only control implemented (no Colab Enterprise/GCP upgrade): cell 1 now registers a managed runtime
+    and runs a Drive command watcher; live mcp-colab tool list exposes colab_session_status, colab_queue_start (exact
+    boot_id + confirm=true), and colab_queue_request_status. Start is refused for stale/non-T4/non-Drive sessions
+    or when runner.id/heartbeat/lease indicates an active queue. Runtime create/stop and uninstrumented consumer
+    sessions remain Google-UI-only. The new preflight/notebook '
+- at: 2026-10-26 19:39
+  from: devin
+  text: 'No-upgrade consumer control implementation is now on master (4a625fddf + a09e91405) and deployed: the Drive
+    notebook preflight starts a boot-targeted request watcher, and live mcp-colab now exposes colab_session_status,
+    colab_queue_start (requires exact boot UUID + confirm=true), and colab_queue_request_status. Dell exec checkout
+    is the configured MCP source; no Enterprise/GCP runtime provisioning or auto-stop is enabled. Notebook/preflight
+    MD5s match Drive; 30 Colab tests pass. Current runtime '
+- at: 2026-10-26 19:41
+  from: devin
+  text: 'No-upgrade consumer path is implemented and live-verified (2026-10-26): Dell MCP now exposes colab_session_status,
+    colab_queue_start, and colab_queue_request_status; queue start requires a fresh managed boot_id and confirm=true,
+    and cell 1 runs the matching-boot Drive watcher. The notebook/preflight were re-synced to Drive and MD5-verified.
+    30 Colab tests pass. No runtime or queue was started. Remaining live test: reconnect a consumer T4, run cell
+    1, then explicitly invoke colab_queue_start; con'
+requests:
+- id: which-control-boundary-do-you-want-for-t-3ffc0d
+  ask: Which control boundary do you want for the next step? Full runtime auto-start/stop needs an officially supported
+    API and an explicit compute time/budget cap.
+  status: answered
+  at: 2026-10-26 14:17
+  from: devin
+  options:
+  - Keep T4 runtime start manual; improve MCP queue, status, results, and safe preflight only (recommended; no new
+    compute spend).
+  - Investigate officially supported runtime auto-start/stop; only control a managed runtime and require a max session
+    duration/budget before any live start/stop.
+  - Consider moving the queue to an always-on/self-managed GPU worker instead of Colab.
+  suggested: Keep T4 runtime start manual; improve MCP queue, status, results, and safe preflight only (recommended;
+    no new compute spend).
+  answer: Investigate officially supported runtime auto-start/stop; only control a managed runtime and require a
+    max session duration/budget before any live start/stop.
+- id: what-hard-runtime-limit-should-any-futur-4feda6
+  ask: What hard runtime limit should any future automatic Colab lifecycle control enforce? Please specify maximum
+    hours and whether paid compute is allowed.
+  status: answered
+  at: 2026-10-26 15:24
+  from: devin
+  options:
+  - Manual T4 start only (no automatic runtime creation or stop).
+  - Auto-start/stop only with a hard cap; specify max hours and compute budget.
+  - Prefer a self-managed GPU worker instead of Colab.
+  answer: Auto-start/stop only with a hard cap; specify max hours and compute budget.
+- id: which-platform-should-the-hands-off-cont-860ab1
+  ask: Which platform should the hands-off controller target? Colab Enterprise enables official runtime APIs but
+    is billable and project-scoped; consumer Colab stays UI-started.
+  status: answered
+  at: 2026-10-26 16:26
+  from: devin
+  options:
+  - 'Keep consumer Colab: manual T4 start, automate queue/status only (no new GCP billing).'
+  - 'Evaluate Colab Enterprise: project-level runtime create/list/start/stop, with explicit GCP project/region and
+    compute cap.'
+  - Use a self-managed GPU worker instead of Colab.
+  suggested: 'Keep consumer Colab: manual T4 start, automate queue/status only (no new GCP billing).'
+  answer: 'Keep consumer Colab: manual T4 start, automate queue/status only (no new GCP billing).'
+  executed: 2026-10-26 hold
+action:
+  status: idle
+awaiting_action: true

@@ -1,0 +1,38 @@
+name: kk-mac-cpu-smoke
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 120
+artifacts:
+  - packs/kk-mac-cpu-smoke/out/cpu-bench.json
+run: |
+  import hashlib
+  import json
+  import os
+  import platform
+  import socket
+  import time
+
+  rounds = 200000
+  start = time.perf_counter()
+  digest = b""
+  for i in range(rounds):
+      digest = hashlib.sha256(digest + str(i).encode()).digest()
+  elapsed = time.perf_counter() - start
+
+  out = os.path.join(PACK_DIR, "out", "cpu-bench.json")
+  os.makedirs(os.path.dirname(out), exist_ok=True)
+  result = {
+      "hostname": socket.gethostname(),
+      "platform": platform.platform(),
+      "machine": platform.machine(),
+      "python": platform.python_version(),
+      "rounds": rounds,
+      "elapsed_seconds": round(elapsed, 4),
+      "hash_prefix": digest.hex()[:16],
+      "read_only": True,
+  }
+  with open(out, "w", encoding="utf-8") as fh:
+      json.dump(result, fh, indent=2, sort_keys=True)
+      fh.write("\n")
+  print("wrote bounded CPU benchmark", flush=True)

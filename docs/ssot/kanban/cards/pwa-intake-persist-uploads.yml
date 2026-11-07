@@ -1,7 +1,7 @@
 id: pwa-intake-persist-uploads
 title: PWA doc intake loses uploads — persist originals before RAM-held result
 column: backlog
-updated: 2026-10-13 18:44
+updated: 2026-10-27 05:32
 brief: 'Found via UPS card OPS-0420: /api/documents/intake holds results in process RAM (document_check._held, cap
   20) and nothing persists the ORIGINAL upload — restart loses it forever. Tony lost 2 UPS photos this way (Oct
   10, unrecoverable). Fix: on intake, write the raw blob to a durable dir (e.g. ~/.local/share/ada/intake/<key>.<ext>
@@ -17,3 +17,25 @@ comms:
 - at: 2026-10-13 18:44
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 19:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-10-27 05:32
+  from: tony
+  text: 'answered the-pwa-document-intake-featur-096c1f: ★ use repo ada-voice on host tony-dell'
+- at: 2026-10-27 05:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: the-pwa-document-intake-featur-096c1f
+  ask: The PWA document intake feature loses uploaded files because originals are not persisted before holding the
+    result in RAM, but the target repository and host are not specified in the card details.
+  options:
+  - ★ use repo ada-voice on host tony-dell
+  - use repo ada-pi on host tony-dell
+  - postpone
+  status: answered
+  at: 2026-10-26 19:20
+  from: backlog-spec-enrich
+  answer: ★ use repo ada-voice on host tony-dell
+awaiting_action: true

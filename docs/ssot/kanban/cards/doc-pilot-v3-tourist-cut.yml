@@ -1,0 +1,421 @@
+id: doc-pilot-v3-tourist-cut
+title: doc-pilot v3 — tourist-ship cut production (approved scope)
+column: doing
+updated: 2026-11-06 20:46
+priority: medium
+tags:
+- ada-nest
+- video
+- pipeline
+- education
+spec: 'Produce the v3 tourist-ship cut of the solar-system doc for KK (epic: doc-pilot-short-film). Scope+viewpoint
+  approved by Tony 2026-10-26 (approve-proposed-scope; go-v3 ordered 09:23 — skip v6 polish). Source of truth: scripts/colab/packs/doc-vo-v3/inputs/script-v3-tourist.yml
+  in chaba (mirror of gdrive:ada-nest/doc-pilot/review/script-v3-tourist-review.yml). Already in flight: doc-vo-v3
+  pack staged to gdrive:ada-nest/packs/ (18 TH beats, VYNCX v2 + tony-ref, non-finite guard added). Remaining steps:
+  (1) verify v3 VO lands in doc-pilot/vo-v3 — 18 finite wavs ~3-4s, report clean; (2) storyboard v3 per script visual_method
+  — NASA-2.5D static shots, LTX dynamic (jupiter/red-spot), 2d scale map shot 16, recurring ship silhouette/window
+  layer, Thai fact callouts baked per shot; (3) NASA asset+rights check for moon/pluto/kuiper/pale-blue-dot (earth/saturn
+  cleared in 2.5D proof v1; Pluto PIA19857 403 deferred — pick alternate or LTX); (4) renders via nest packs (CPU
+  2.5D on Omen; LTX needs Colab T4); (5) assembly — holds matched to VO durations, TH soft-subs+SRT, callouts, ship
+  overlay; QC with the flow-assessment-v1 rubric; (6) update private Education post 2157 with the v3 cut link; stays
+  private until Tony/KK approve. Do NOT touch the shipped v6 cut or v0/v1 script assets.'
+ref: OPS-0904
+comms:
+- at: 2026-10-26 09:46
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 11:19
+  from: devin
+  text: '[status 2026-10-26] v3 Thai VO pack `doc-vo-v3` is staged in gdrive:ada-nest/packs and appears queued in
+    the Colab pack queue; `doc-pilot/vo-v3` output is still empty. Pack declares GPU 3GB / disk 4GB (T4 fits). This
+    is the next GPU gate; connect the Colab T4 to run VO. No LTX rendering or public publishing started. CPU/NASA
+    storyboard and rights checks can proceed while waiting.'
+- at: 2026-10-26 12:03
+  from: devin
+  text: '[preproduction 2026-10-26] Created and YAML-validated the 18-shot v3 visual execution manifest: gdrive:ada-nest/doc-pilot/review/visual-manifest-v3-draft.yml
+    (Drive ID 1tWYvv_oHO-PK4H0nTyJHTeetUQHinX0V). Updated Education post 2157 in place and Ada Nest hub 1608 to
+    link the v3 status. `doc-vo-v3` remains queued with no output; needs Colab T4 (GPU 3GB/disk 4GB). CPU storyboard/rights
+    prep can continue; no new render or public sharing change.'
+- at: 2026-10-26 13:16
+  from: devin
+  text: '[GPU gate 2026-10-26] `doc-vo-v3` remains queued with no output. `colab_tunnel_check` returned TUNNEL DOWN
+    (HTTP 500); the gateway''s `colab-qwen3` probe could not connect to its Ollama backend on :11434. No pack run,
+    model switch, paid call, or service/config change made. CPU-only storyboard and per-asset rights prep can continue
+    while waiting.'
+- at: 2026-10-26 13:16
+  from: devin
+  text: 'raised request doc-v3-colab-gpu-next-step: The approved v3 VO pack is queued but Colab tunnel verification
+    failed (HTTP 500, colab-qwen3 cannot reach Ollama :11434'
+- at: 2026-10-26 13:20
+  from: devin
+  text: '[asset preflight 2026-10-26] CPU-only source review added candidate NASA/JPL IDs to the manifest for Moon
+    (PIA00075, processed-color caveat), Mercury (PIA18108), Venus (PIA00270 surface map only), Mars (PIA02992),
+    Uranus (PIA18182), Neptune (PIA00046), Pluto alternative (PIA20201), Kuiper-region diagram and Pale Blue Dot
+    (PIA00452). None were downloaded or rights-cleared in this pass; PIA19857 stays excluded after its 403. Earth/PIA
+    and Saturn/PIA sources remain the only existing private-proof p'
+- at: 2026-10-26 13:38
+  from: devin
+  text: '[VO stage complete 2026-10-26] Colab pack `doc-vo-v3` DONE. Verified 18/18 WAVs (24 kHz PCM, 1.91–4.52s
+    each), pack report `fails: none`; copied to `gdrive:ada-nest/doc-pilot/vo-v3/`. Provisional SRT and timing manifest
+    are there too. Total spoken audio is 61.73s, shorter than the script''s 72–82s estimate; assembly must use measured
+    durations and avoid padding with long holds. Education post 2157 now records the result. The prior GPU-next-step
+    request is superseded by the successful pack run; it'
+- at: 2026-10-26 13:42
+  from: devin
+  text: '[production progress 2026-10-26] VO stage verified and landed: 18/18 24kHz WAVs, `fails: none`, 61.73s
+    total; private destination has the Thai SRT and timing manifest. Education post 2157 updated. Draft 18-shot
+    storyboard is now in gdrive:ada-nest/doc-pilot/review/visual-storyboard-v3-draft.yml; visual manifest links
+    it. No v3 video renders yet. Next: rights-check/crop the static NASA candidates and build ship/scale-map layers
+    on CPU, then prepare T4 LTX shots 8-9. Runtime 72-82s was only an est'
+- at: 2026-10-26 13:54
+  from: devin
+  text: '[opening preview 2026-10-26] Produced a private 7.33s CPU animatic for approved v3 shots 1-2, using VO
+    clips 01-02, a new logo-free shuttle silhouette, the existing private Earth 2.5D plate, and the Thai Earth callout.
+    H.264/AAC 640x384@24. Drive: https://drive.google.com/file/d/1KjMIYV4nElR4jooA_2Xk6reBfbZS5Lfx/view. Not the
+    full cut; LTX/Jupiter shots and rights-cleared remaining plates are pending. Education post 2157 now has the
+    preview embed. The earlier Colab decision request is superseded'
+- at: 2026-10-26 13:57
+  from: devin
+  text: '[animatic preview 2026-10-26] Private 2-shot opening animatic is complete: https://drive.google.com/file/d/1KjMIYV4nElR4jooA_2Xk6reBfbZS5Lfx/view
+    (7.33s, H.264/AAC 640x384@24; approved VO clips 1-2, original ship silhouette, NASA Goddard Earth plate and
+    Thai size/distance callout). It is only a storyboard preview; rest of the v3 visuals and LTX Jupiter/Red Spot
+    shots remain. The prior Colab-next-step request is superseded by `doc-vo-v3` completion; no diagnosis or paid
+    fallback was used.'
+- at: 2026-10-26 13:59
+  from: tony
+  text: 'answered doc-v3-colab-gpu-next-step: please proceed'
+- at: 2026-10-26 13:59
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 14:01
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-10-26 14:16
+  from: devin
+  text: '[full animatic progress 2026-10-26] Produced and verified a private 18-shot storyboard animatic from all
+    measured VO clips: https://drive.google.com/file/d/1lVazy9tWMz32Fe8cvfr1yhCetqfcmqE_/view. 61.728s H.264/AAC
+    640x384@24, decode pass. Earth/Saturn use existing private NASA proof plates; the remaining bodies/regions are
+    schematic placeholders. No LTX renders or new NASA assets yet. Report: https://drive.google.com/file/d/14XPurOYJF5ijjC7cCGx921cy2OmX1rwM/view.
+    Education post 2157 links/embeds'
+- at: 2026-10-26 15:46
+  from: devin
+  text: '[reuse check 2026-10-26] Inspected the old `doc-render-ss1` LTX source clips: shot08 is red desert terrain
+    (not Jupiter), and shot09 is generic Jupiter without the Great Red Spot. They are not suitable as v3 reuse plates,
+    so I will not alter/reuse the v6 cut or v0/v1 story assets. The v3 storyboard now contains fresh Jupiter/Red
+    Spot background prompts for a new two-shot LTX probe; embeddings must be prepared on the safe CPU lane first,
+    then T4 can render.'
+- at: 2026-10-26 15:49
+  from: devin
+  text: '[LTX embedding resource gate 2026-10-26] Omen read-only check: CPU max 2.0GHz, 8.2GiB RAM available (T5-XXL
+    embed pack declares 13GiB RAM), package ~60C and PCH ~69C. I did not start T5 embedding to avoid memory/thermal
+    pressure. The T4 renders LTX from embeddings but cannot safely replace the CPU T5 stage. Direct JPL Photojournal
+    `.jpg` probes returned HTML, not image bytes; no new assets were downloaded. The full animatic remains usable
+    for pacing review.'
+- at: 2026-10-26 15:49
+  from: devin
+  text: 'raised request doc-v3-ltx-embed-host: For the two planned LTX shots (Jupiter and Great Red Spot), the current
+    Omen T5 embedding lane has only 8.2GiB available'
+- at: 2026-10-26 16:00
+  from: devin
+  text: '[reusable layer progress 2026-10-26] Created and stored the original unbranded tour-ship SVG + PNG and
+    cockpit-window frame in private `gdrive:ada-nest/doc-pilot/review/v3-assets/`. The visual manifest now records
+    their Drive IDs/hashes; Education post 2157 links them. This turns the animatic silhouette into a reusable production
+    layer with no real-world size claim. No new model/media sharing changes.'
+- at: 2026-10-26 16:45
+  from: tony
+  text: 'answered doc-v3-ltx-embed-host: check-alternate-cpu-host — Recommended: authorize read-only RAM/thermal
+    checks on candidate CPU hosts; report first and do not run anything until a safe host is confirmed'
+- at: 2026-10-26 16:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 19:05
+  from: devin
+  text: '[read-only embed-host check 2026-10-26] T5-XXL pack requires ~13GiB RAM. Available RAM snapshots: Omen
+    8.2GiB (CPU cap 2GHz), tony-dell 4.3GiB, idc03 5.5GiB, idc02 4.0GiB, mn01 2.5GiB, current tony-macbook 1.4GiB.
+    None is safe for this embedding job; no T5 process started. Colab T4 is the render stage, not a substitute for
+    the missing T5 embedding memory. New path decision needed before any workaround.'
+- at: 2026-10-26 19:05
+  from: devin
+  text: 'raised request doc-v3-ltx-next-path: Read-only checks found no host with the 13GiB free RAM required for
+    T5-XXL embeddings for LTX shots 8-9. No embedding jo'
+- at: 2026-10-26 19:13
+  from: tony
+  text: 'answered doc-v3-ltx-next-path: static-only-while-waiting'
+- at: 2026-10-26 19:13
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 19:32
+  from: devin
+  text: '[static assets progress 2026-10-26] Following the approved `static-only-while-waiting` path, downloaded
+    seven NASA Images API small renditions for private review only, verified hashes/credits, and built `v3-static-asset-animatic-v2.mp4`
+    (61.728s H.264/AAC 640x384@24). Drive: https://drive.google.com/file/d/1Ck5vs8Tg-FJ8yETQfE_DpjMJDsUKC89n/view;
+    report: https://drive.google.com/file/d/1FOr4ZpLIns9QWhXGOX2_YuXKkAWoEZDR/view. It uses NASA plates for Moon,
+    Mercury, Mars, Uranus, Neptune, Pluto, Pal'
+- at: 2026-10-26 19:37
+  from: devin
+  text: '[workflow note 2026-10-26] OPS-0904 remains in `doing`; all decision requests are answered. This is manual
+    media production in the current session, so `action` is intentionally null (no dispatch runner to arm). Any
+    generic awaiting-action nudge is not a reopened user request. Static-only-while-waiting is the selected path.'
+- at: 2026-10-27 06:58
+  from: devin
+  text: '[static animatic v3 2026-10-26] Improved the shot-16 schematic by labeling the Sun and all nine planet/dwarf-planet
+    markers in Thai; still explicitly not to scale. New private review file: https://drive.google.com/file/d/121RQLgZZ16aTBiWdpssDqbRryP1t4Yi2/view;
+    report: https://drive.google.com/file/d/11O8ru5yAfUWCEWFHfT-xn8xOTs849iq2/view. V2 is retained for comparison;
+    LTX shots remain placeholders pending safe embedding RAM.'
+- at: 2026-10-27 08:00
+  from: devin
+  text: '[design assessment 2026-10-27] The new static asset v3 is inspectable and fact-complete, but its NASA stills
+    are framed as image cards, so it reads more like a storyboard deck than a cinematic documentary. A CPU-only
+    full-bleed 2.5D pass (larger planet plate, parallax background, recurring ship/window foreground, separate fact
+    and subtitle layers) is the highest-value visual polish while LTX waits. The existing animatics will remain
+    immutable; I am asking for the layout direction before recompos'
+- at: 2026-10-27 08:00
+  from: devin
+  text: 'raised request doc-v3-static-layout: For the next private static-only review pass, should I recompose the
+    18-shot plates as cinematic full-bleed 2.5D, or kee'
+- at: 2026-10-27 08:27
+  from: tony
+  text: 'answered doc-v3-static-layout: full-bleed-2p5d'
+- at: 2026-10-27 08:27
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 08:34
+  from: devin
+  text: '[full-bleed static pass 2026-10-27] Built a private CPU-only full-frame 2.5D review version after the approved
+    layout choice: https://drive.google.com/file/d/1e6RZs6VpJLFqFV0zWN9EX8bDEUAR3UaZ/view; report https://drive.google.com/file/d/1DJtkc0bJmDZrDLaBthd0ZethK-quiM_z/view.
+    61.728s H.264/AAC, full decode passed. NASA plates are full-frame with ship/window/callout/subtitle overlays;
+    LTX shots 8-9 are still schematic placeholders. V2/v3 static animatics are preserved; Education post 2157 links
+    t'
+- at: 2026-10-27 08:49
+  from: devin
+  text: '[static-only first cut package 2026-10-27] Added a provisional title slate and status/rights end slate
+    to the full-bleed review pass. Private cut: https://drive.google.com/file/d/1gTbJbxFAS62VYAmtLXRnmI8qfOWzKoWd/view
+    (65.625s, H.264/AAC, full decode passed); report: https://drive.google.com/file/d/16Cdhw6aWWF-pHFT7icADI8wKIgDHgMAF/view;
+    shifted Thai SRT: https://drive.google.com/file/d/1k8v32bd3kUS4JLqjJS8a41O-2PeU3SzS/view. Title is explicitly
+    provisional. Jupiter/Red Spot remain placeholders;'
+- at: 2026-10-29 11:33
+  from: devin
+  text: 'Missed-job sweep 2026-10-29: private static review cuts and reports are recorded in comms, but the earlier
+    doc-align-v3 pack source remains only in a local dispatch worktree, not origin/master. Current cut still notes
+    placeholders; this is not a final release. No pack was dispatched or published by this audit.'
+- at: 2026-10-30 20:12
+  from: devin
+  text: 'raised request docpilot-kk-mac-static-qc-consent: No existing cross-project package is currently both unfinished
+    and safe to dispatch. The best new candidate is a one-sho'
+- at: 2026-10-31 07:21
+  from: devin
+  text: 'Status check 2026-10-30: the latest DocPilot Solar System v3 review asset is the private 65.625s static
+    review cut v2 (`gdrive:ada-nest/doc-pilot/review/v3-static-review-cut-v2.mp4`), H.264/AAC 640x384@24, decode
+    passed, 18 measured VO cues. Jupiter and Great Red Spot remain schematic placeholders; no LTX or music bed.
+    Existing shipped v6 remains untouched. No assets were staged to KK-Mac; `docpilot-kk-mac-static-qc-consent`
+    remains open and covers only CPU/read-only static QC, not LTX rendering'
+- at: 2026-10-31 07:32
+  from: tony
+  text: 'answered docpilot-kk-mac-static-qc-consent: approve-docpilot-static-qc — Recommended: stage and run one
+    isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+- at: 2026-10-31 07:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 08:20
+  from: devin
+  text: 'Tony''s latest instruction supersedes the prior static-only deferral for private Solar System v3 LTX work:
+    prepare Jupiter/Great Red Spot background renders on KK-Mac when it is reachable, using the already archived
+    T5-XXL model (no HF download), then composite the existing ship/window/callout layers separately. Shots 8/9
+    remain private placeholders until those renders pass QC; no public release. Current Mac heartbeat/SSH is stale,
+    so this comment is planning only and no render has run.'
+- at: 2026-10-31 08:33
+  from: devin
+  text: 'New direct direction from Tony (2026-10-31): proceed toward private Mac LTX background plates for DocPilot
+    v3 shots08 Jupiter and09 Great Red Spot; the earlier `static-only-while-waiting` decision is superseded for
+    these two scenes. Use the already archived T5-XXL weights and cached LTX-MLX/MPS model only—no HF download,
+    no public release, no changes to shipped v6. KK-Mac is presently offline, so I am staging isolated, hash-bound
+    packs; no render starts until a fresh trusted-host/AC/memory/cache'
+- at: 2026-10-31 08:33
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-31 08:57
+  from: devin
+  text: 'Solar System Mac preparation: the approved CPU-only static QC pack and private v3 T5-embedding/MPS shot08→shot09
+    packs are staged in the isolated `ada-nest-kk-mac-video-pilot` root. The existing T5-XXL archive (9,524,648,592
+    bytes; MD5 d97cc9cae59e20c95f925eb79a0c3717) was copied from the shared archive and `rclone check` found zero
+    differences; the v3 visual/VO manifests and static-cut/report inputs are hash-pinned. MPS is selected for full
+    positive/negative conditioning; cached model only, no '
+- at: 2026-10-31 09:09
+  from: devin
+  text: 'Fresh KK-Mac admission update 2026-10-31: the node is reachable through the trusted idc03 hop, on AC, 69%
+    memory free, 79 GiB disk, and no owner video/editor app. Qwen3:8B is still resident for about 9 minutes, so
+    no pack was launched and I did not unload it. The new private LTX shot08/09 packs and static QC are staged;
+    shots08/09 wait for the T5 embed pack''s `done`. After Qwen expires, one one-shot pass can run static QC + T5
+    embeddings + Sacred Father S04–S10; Solar System shots08/09 then need'
+- at: 2026-10-31 09:12
+  from: devin
+  text: Read-only Mac preflight now confirms the trusted idc03→Mac route, AC power, 69% free memory, 79 GiB free
+    disk, no editor/compute process, MPS available, required LTX snapshot files present, and Torch/Transformers/Diffusers/ffmpeg
+    imports available. Qwen3:8B remains resident for ~7 minutes; I will not unload it or start any package until
+    it expires and a fresh preflight confirms the no-model gate.
+- at: 2026-10-31 09:22
+  from: devin
+  text: 'Updated live gate: KK-Mac is reachable via idc03 and AC/memory/cache/dependency checks look good, but the
+    latest `ollama ps` shows `qwen2.5:32b` resident (24 GiB GPU; `Stopping...`). I did not unload it or start the
+    worker. Wait for it to disappear naturally, then run the fresh full preflight; static QC, T5 embed, and S04
+    are the only currently claimable packs, with LTX shots08/09 dependent on embeddings.'
+- at: 2026-10-31 09:23
+  from: devin
+  text: 'Live host update: trusted idc03→KK-Mac route remains reachable, but a fresh `ollama ps` now shows `qwen2.5:32b`
+    active for ~4 more minutes (24 GiB GPU). No packs have run; we do not unload the owner model. After natural
+    expiry, repeat the full AC/memory/Ollama/process preflight and then start the isolated one-shot worker if clear.'
+- at: 2026-10-31 09:28
+  from: devin
+  text: 'The four new DocPilot Mac pack sources are committed locally as `4c60fe639` on `feat/docpilot-mac-ltx-v3-20261031`
+    (not pushed); matching manifests/scripts are already staged in the isolated Drive root with zero-difference
+    checks. Runtime remains safely held: Qwen2.5:32B is still present/`Stopping...`; wait until `ollama ps` is empty,
+    then rerun full admission before any one-shot worker.'
+- at: 2026-10-31 09:56
+  from: devin
+  text: 'Processing the approved `docpilot-kk-mac-static-qc-consent`: copied only the static-QC pack, its approval
+    sentinel, and the pinned video/report inputs to isolated root `gdrive:ada-nest-kk-mac-docpilot-static-qc-ops0904-20261031`;
+    all three rclone checks report zero differences, shared source root untouched. Fresh KK-Mac preflight: AC, 23%
+    memory free, 78 GiB disk, no matching owner video process, QC venv ready; however qwen2.5:32b is still `Stopping...`.
+    No worker was started. Waiting for it to '
+- at: 2026-10-31 10:09
+  from: devin
+  text: 'Status for the approved static QC: the one-pack isolated Drive root is staged and verified (0 differences).
+    Fresh preflight at 10:03+07 had AC, 22% free memory, 78 GiB disk, no matching owner video process, QC venv ready,
+    but qwen2.5:32b was still `Stopping...`. No worker was started; waiting for Ollama to become empty naturally,
+    then I will rerun the gates and run only this pack.'
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Progress record: the isolated static-QC staging and fresh no-run preflight are recorded in `docs/ssot/jobs/nest/2026-10-31-docpilot-static-qc.yml`
+    (local branch commit `c45de0df0`). It is not pushed yet. The QC remains blocked while qwen2.5:32b is still `Stopping...`;
+    I will not unload it or start the worker until the Ollama-empty gate passes.'
+- at: 2026-10-31 10:51
+  from: devin
+  text: 'Fresh KK-Mac read: AC power and trusted route are good, but `qwen3:8b` is resident for ~50 minutes and
+    only 68% memory is free. The offline/cache-only worker is held; no model will be unloaded or displaced. Static
+    QC, T5 embeddings, Solar System shots08/09, S04-S10, and the 30-panel sequence remain staged/blocked by the
+    no-resident-model gate.'
+- at: 2026-10-31 10:58
+  from: devin
+  text: 'Fresh live check: Mac is reachable/on AC, but Qwen3:8B is resident (7.2GB GPU, lease ~45min; 67% system
+    memory free). No static QC/T5/LTX pack has a claim/done/failed/out marker; no worker has run. DocPilot shots08/09,
+    the approved Sacred Father S04-S10 chain, and the new 30-panel sequence are all staged privately. Dispatch waits
+    for the owner model to unload naturally and a fresh preflight to pass.'
+- at: 2026-11-02 11:02
+  from: devin
+  text: 'Fresh Nov 2 admission update: Ollama is now empty; KK-Mac is on AC, memory 90% free, disk 35 GiB, QC venv
+    ready. The static pack still cannot run because Adobe Photoshop (Beta) is open and its owner-workload prep gate
+    blocks. I did not close the app or start the worker. The isolated pack/root remains verified; the job note is
+    committed locally as `f21eaa12c` on the docpilot branch (not pushed). Next check only after the owner app is
+    closed.'
+- at: 2026-11-02 11:03
+  from: devin
+  text: 'Nov 2 refresh: Ollama is empty, but the approved CPU-only static-QC pack''s own prep still sees Adobe Photoshop
+    (Beta) open and fails its owner-app gate. The isolated root and pinned inputs remain ready; no worker run, app
+    close, or other pack launch. Resume only after the owner app is closed and a fresh preflight passes.'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''approve-docpilot-static-qc — Recommended: stage and run one '' -> queued for processing'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: 4 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-06 20:27
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 20:27
+  from: idc02
+  text: claimed
+- at: 2026-11-06 20:28
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+requests:
+- id: doc-v3-colab-gpu-next-step
+  ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
+    Ollama :11434). How should I proceed with the GPU gate?
+  status: answered
+  at: 2026-10-26 13:16
+  from: devin
+  options:
+  - id: reconnect-colab
+    label: 'Recommended: reconnect the Colab T4; then I will verify the tunnel and let the queued VO pack run'
+  - id: readonly-diagnose
+    label: Authorize read-only diagnosis of the Colab/LiteLLM tunnel path before retry; no config or service changes
+  - id: cpu-prep-only
+    label: Keep doing CPU-only storyboard/asset-rights prep and leave VO queued
+  suggested: reconnect-colab
+  answer: please proceed
+- id: doc-v3-ltx-embed-host
+  ask: For the two planned LTX shots (Jupiter and Great Red Spot), the current Omen T5 embedding lane has only 8.2GiB
+    available vs the 13GiB pack requirement. How should I proceed without switching hosts or methods silently?
+  status: answered
+  at: 2026-10-26 15:49
+  from: devin
+  options:
+  - id: check-alternate-cpu-host
+    label: 'Recommended: authorize read-only RAM/thermal checks on candidate CPU hosts; report first and do not
+      run anything until a safe host is confirmed'
+  - id: wait-for-omen-headroom
+    label: Keep the LTX shots queued until Omen has at least 13GiB available; continue CPU-only work
+  - id: static-only-defer-ltx
+    label: Finish the cut with static/approved plates and keep Jupiter/Red Spot schematic placeholders; defer LTX
+  suggested: check-alternate-cpu-host
+  answer: 'check-alternate-cpu-host — Recommended: authorize read-only RAM/thermal checks on candidate CPU hosts;
+    report first and do not run anything until a safe host is confirmed'
+- id: doc-v3-ltx-next-path
+  ask: Read-only checks found no host with the 13GiB free RAM required for T5-XXL embeddings for LTX shots 8-9.
+    No embedding job has run. Which safe path should I take?
+  status: answered
+  at: 2026-10-26 19:05
+  from: devin
+  options:
+  - id: static-only-while-waiting
+    label: 'Recommended: continue CPU-only NASA/private-proof plates, original ship and scale-map layers; keep Jupiter/Red
+      Spot as animatic placeholders until a larger-memory node is available'
+  - id: research-smaller-encoder
+    label: Research a smaller compatible prompt-embedding path offline; do not run a generation or change services
+      yet
+  - id: wait-for-memory-node
+    label: Pause LTX work until a host with at least 13GiB free RAM is available
+  suggested: static-only-while-waiting
+  answer: static-only-while-waiting
+- id: doc-v3-static-layout
+  ask: For the next private static-only review pass, should I recompose the 18-shot plates as cinematic full-bleed
+    2.5D, or keep the current image-card layout? Existing v2/v3 animatics remain preserved.
+  status: answered
+  at: 2026-10-27 08:00
+  from: devin
+  options:
+  - id: full-bleed-2p5d
+    label: 'Recommended: make planet plates full-frame with subtle parallax, recurring ship/window foreground, separate
+      Thai callouts/subtitles; CPU-only, no LTX'
+  - id: keep-image-cards
+    label: Keep the current framed NASA images and callout panel; only polish credits/typography
+  - id: wait-for-review
+    label: Pause additional layout work until I review the current animatic with KK
+  suggested: full-bleed-2p5d
+  answer: full-bleed-2p5d
+- id: docpilot-kk-mac-static-qc-consent
+  ask: No existing cross-project package is currently both unfinished and safe to dispatch. The best new candidate
+    is a one-shot CPU-only, read-only static-asset/QC audit for DocPilot v3 on KK-Mac. It would stage only the existing
+    static cut and manifest to an isolated job root; no LTX, Qwen, service changes, publication, or edits. Do you
+    authorize that cross-project asset transfer and audit, or should KK-Mac stay idle?
+  status: answered
+  at: 2026-10-30 20:12
+  from: devin
+  options:
+  - id: approve-docpilot-static-qc
+    label: 'Recommended: stage and run one isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+  - id: hold-mac
+    label: Keep KK-Mac idle; do not stage another project's assets.
+  suggested: approve-docpilot-static-qc
+  answer: 'approve-docpilot-static-qc — Recommended: stage and run one isolated CPU-only read-only asset/QC audit;
+    no GPU or model inference.'
+  escalated_at: 2026-10-31 08:33
+  executed: 2026-11-06 queue
+action:
+  type: dispatch
+  status: running
+  lane: codemod
+  runner: idc02
+awaiting_action: true

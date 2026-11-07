@@ -1,0 +1,295 @@
+title: Wiki member-knowledge surface — education/reports structure on wiki.h3
+subtitle: >
+  Plan for migrating WP education (lesson CPT) onto the existing MediaWiki
+  surface and structuring it alongside the News desk and report surfaces.
+  Verified live 2026-11-06 — supersedes the card-brief engine analysis,
+  which predates the deployed wiki.
+icon: education
+version: 1
+
+card: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+date: 2026-11-06
+
+verified_state:
+  wiki:
+    host: https://wiki.h3.gizmo-thailand.com
+    api: https://wiki.h3.gizmo-thailand.com/api.php
+    mediawiki: "1.46.2"
+    php: "8.3.36"
+    db: "MariaDB 10.5.29"
+    lang: th (en fallback)
+    topology: >
+      Same managed host (103.99.11.249) as boards.h3.gizmo-thailand.com and
+      chaba.h3.gizmo-thailand.com — i.e. the Plesk host beside boards WP.
+      boards.surf-thailand.com fronts it via Cloudflare. No new service
+      topology is needed for option A; it already exists.
+    namespaces:
+      - "News/ — main-namespace subpage tree (public): DevNest desk leaves"
+      - "PrivateNews: (3002) — protected; anon content read = accessdenied (verified)"
+      - "Infrastructure: (3000) — protected; hosts tree (idc01/02/03, mn01, tony-dell, tony-omen, michael-ha)"
+      - "Education: (3004) + Education talk: (3005) — REGISTERED
+        (siteinfo verified 2026-11-06 ~18:45 +07, dispatch 184016);
+        Lockdown enforcement unverifiable on an empty ns — first-write
+        probe required"
+      - "Reports: (3006) + Reports talk: (3007) — REGISTERED (same check)"
+      - "Form: (106/107) — PageForms"
+    extensions_installed:
+      - Cargo
+      - CategoryTree
+      - Lockdown          # enforced — verified anon accessdenied on PrivateNews:/Infrastructure:
+      - Mermaid
+      - MsUpload
+      - MultimediaViewer
+      - PageForms
+      - PluggableAuth
+      - OpenID Connect    # SSO login button live on Special:UserLogin
+      - Springboard       # server-side extension manager driven by board-api
+    users: [Ada (writer bot), Tony, Tonezzzz@gmail.com (OIDC)]
+    lockdown_group: "inhouse (+ sysop) — anon content read on
+      Infrastructure: = accessdenied (re-verified 2026-11-06)"
+    templates: "แม่แบบ:Education (pageid 42) + แม่แบบ:Report (pageid 44)
+      created 2026-11-06 ~20:00 +07 — via direct MW API on idc03, NOT the
+      /wiki/page door (do_wiki_page had a live bug: edit was sent on the
+      anonymous opener instead of the login-session opener -> badtoken;
+      fixed repo-side this dispatch + regression test; door works after
+      next merge+restart). แม่แบบ:NewsReport = pageid 12."
+    lockdown_verified: "anon accessdenied on Education:Dispatch-Probe,
+      Education:Devnest-News-Pageforms-Workflow, Education:Index,
+      Reports:Dispatch-Probe — both new namespaces enforce the inhouse
+      boundary (verified post-write 2026-11-06, the first-write probe)."
+  board_api:
+    sinks_live: "11 live since 2026-11-06 ~19:40 +07 (dispatch 193421
+      restarted the detached board-api on idc03 — see anomalies below):
+      job, lesson, report, news, board, telegram, json, wiki (News/),
+      wiki-private (PrivateNews:), wiki-education (Education:),
+      wiki-reports (Reports:)."
+    dual_write: "WIKI_EDUCATION_WRITE=dual set in wiki-h3-gizmo.env on
+      idc03 2026-11-06 ~20:05 +07 — do_lesson now writes WP + Education:
+      per call (proven: lesson post 4057 -> Education:Education-Wiki-Cutover-Runbook
+      pageid 175). WP stays canonical until cutover."
+    anomalies_2026_11_06: >
+      Found while restarting the door (separate ops issue, commented on
+      ops-kanban-commit-guard): chaba-board-api.service has been dead
+      since Nov 4 — the door is a hand-started process from the EXEC
+      checkout ~/CascadeProjects/chaba (unit ExecStart points at the
+      served chaba-tony-dell, which is ~2300 ahead / ~1500 behind
+      origin — kanban-commit pull failure-streak). Restart was done
+      in-place, same cwd/log path; the declared topology is still broken
+      and needs its own card-level attention.
+    wiki_doors:
+      - "POST /wiki/extension — list|install|enable|disable over an allowlist
+        (CategoryTree, Mermaid, MsUpload, MultimediaViewer, Cargo, PageForms,
+        Lockdown) via MediaWiki 'springboard' action"
+      - "POST /wiki/news-review — protected PrivateNews: read for Ada review"
+      - "POST /wiki/news-diagnose — private->public promotion gate,
+        card-authorized"
+      - "POST /wiki/page — guarded support-page write (added phase 2b):
+        allowlisted templates (แม่แบบ:Education/Report) + Education:/
+        Reports: titles; siteinfo-verifies the target namespace is
+        registered before writing"
+    creds: "~/.config/secrets/wiki-h3-gizmo.env on idc03 (WIKI_HOST/USER/PASSWORD)"
+  wp_boards:
+    lessons: "124 posts (door /lesson op=topics count, 2026-11-06)"
+    news_cpt: "~2,736 published items — feed store, stays"
+    report_cpt: "small member-facing set (usage-ledger etc.)"
+    ops_ledgers: "activity/ops_error/nest_job/cam/score/repeat_ask — stay"
+  ada_cms_pages: "~388 docs, internal store, static publish dormant — stays"
+  ssot_drift_noted: >
+    docs/ssot/apps/ssot.mediawiki-news.yml still records extensions as
+    uninstalled and the private boundary as not_ready; both are deployed
+    and verified. See that file's updated current_state.
+
+correction_to_card_brief:
+  brief_said: "Engine options A/B/C — A = install MediaWiki beside boards WP (recommended)."
+  reality: >
+    Option A is already built and integrated. wiki.h3 IS MediaWiki on the
+    Plesk host beside boards WP, with the writer seam (MediaWikiSink),
+    credentials, protected-namespace pattern (Lockdown), extension
+    management (Springboard door), private->public promotion workflow,
+    and SSO auth all live. The remaining decision is visibility/scope,
+    not engine. Wiki.js (B) and ada-cms-pages (C) are effectively dead
+    options — they would orphan a deployed, standard-compliant stack.
+
+content_physics:
+  evergreen_knowledge: "wiki (Education: ns) — lessons, series/hubs, procedures"
+  feeds: "WP news CPT stays — 2.7k items, hourly ingest, digest trees; wiki
+    keeps only the public DevNest News desk (existing standard)"
+  reports_internal: "ada-cms-pages stays — ops/internal"
+  reports_member: "wiki Reports: ns (protected) — small CPT set migrates;
+    usage-ledger class = living page machine-overwritten via API"
+  ops_ledgers: "WP CPTs stay — records, not knowledge"
+
+proposed_structure:
+  namespaces:
+    Education:
+      id_suggestion: "3004 (+ talk 3005)"
+      protection: "Lockdown — same pattern as PrivateNews:/Infrastructure:
+        (read+edit restricted to staff/member group)"
+      pages:
+        - "Education:<Topic-Title> — one page per lesson (124)"
+        - "Education:Ada-Nest — hub (absorbs post-1608 hub convention)"
+        - "Education:Ada-Nest/<leaf> — ada-nest-* series subpages"
+        - "Education:Index / Education:Due — generated index/review pages"
+      template: "แม่แบบ:Education {topic, level, source, learned_at,
+        next_review, status, updated, no_th}"
+      categories:
+        - "Category:Education/Level/<intro|working|deep>"
+        - "Category:Education/Status/<open|learned|...>"
+        - "Category:Education/Topics/<topic-slug>"
+      thai: "same-page TH section convention carries over verbatim"
+    Reports:
+      id_suggestion: "3006 (+ talk 3007)"
+      protection: "Lockdown — member group"
+      pages:
+        - "Reports:<report_type>/<period> — e.g. Reports:Usage-Ledger/rolling-14d
+          (living page, API-overwritten)"
+        - "Reports:Index — generated rollup"
+    prerequisite: >
+      New namespaces + Lockdown rules are LocalSettings.php changes —
+      admin/Plesk action (the same access path that created PrivateNews:
+      and Infrastructure:). Not agent-automatable today; springboard only
+      manages extensions, not LocalSettings.
+
+migration_mechanics:
+  export: >
+    One-shot scripts/wiki-lesson-migrate.py on idc03 — /lesson op=list+get
+    via the door (no WP creds on the runner), slug lesson-<md5> -> readable
+    Education:<topic> title (meta.topic), body HTML -> wikitext (pandoc or
+    small converter), meta -> Education template fields + categories.
+    --dry-run first; ~124 pages + ~5 report pages.
+  writers_retarget:
+    - "board-api do_lesson: add wiki adapter path — MediaWikiSink variant
+      kinds=('lesson',), namespace_prefix='Education:', template
+      แม่แบบ:Education, surface matching the namespace boundary. Keep WP
+      write during a dual-write transition, then wiki-primary."
+    - "/publish kind=lesson sink: same retarget — proves the adapter seam
+      absorbs a second wiki namespace (the sink already takes
+      namespace_prefix + template params)"
+    - "lesson-add.py, Ada tools, transcript miner: UNCHANGED — they call
+      the door, not WP"
+    - "lessons-due.py / education-report.py: retarget reads to wiki —
+      DONE 2026-11-06 via /lesson source=wiki (door walk of Education:
+      pages + แม่แบบ:Education param parse; Cargo alternative not
+      needed). lessons-due --dest both dual-writes Education:Due +
+      WP page during transition"
+  cutover:
+    - "WP lesson CPT -> read-only; permalinks 301 to Education:<title>
+      (plugin redirect or stub content)"
+    - "education-due page (354) -> wiki Education:Due living page"
+    - "education-report.py -> reads via door/wiki API; artifacts path unchanged"
+  series_hub: "ada-nest-map post 1608 -> Education:Ada-Nest hub; ada-nest-*
+    topic lessons -> subpages; hub lists children (PageForms/Cargo query
+    or manual index)"
+
+news_surface: >
+  No change needed — the News standard already governs wiki presence:
+  public News/ desk leaves + PrivateNews: review lane + card-authorized
+  promotion. WP news CPT stays the feed store. Optional later: a News
+  portal section linking WP archives/situations — cheap, not blocking.
+
+decisions_for_tony:
+  - id: D1-education-placement
+    ask: "Education on wiki.h3 in a protected Education: namespace (like
+      PrivateNews:/Infrastructure:), vs public Education tree, vs stay in WP?"
+    options:
+      A: "★ protected Education: ns — mirrors deployed pattern; ~half the
+        corpus is ops-internal by topic; promotion-to-public remains
+        available via the existing review workflow"
+      B: "public Education tree — needs per-lesson visibility split;
+        leaks the ops-lesson subset only if split is wrong"
+      C: "keep WP — zero migration, wiki stays news+infra only"
+    recommendation: A
+  - id: D2-readers
+    ask: "Who holds read access to protected namespaces — staff-only
+      (Tony+Ada+agents, current Lockdown group) or boards members too?"
+    note: "Members need wiki accounts (local or SSO/OIDC — already
+      installed); WP/FluentCRM accounts do not carry over."
+    recommendation: "staff-only at cutover; member invites later"
+  - id: D3-reports
+    ask: "Move member-facing report CPT to protected Reports: ns (tiny
+      set) or leave in WP?"
+    recommendation: "move with education — same boundary, one surface"
+  - id: D4-wp-post-cutover
+    ask: "WP lesson CPT after cutover — keep read-only + 301s, or unregister?"
+    recommendation: "keep read-only + 301s — history preserved, cheap"
+
+open_questions:
+  - "LocalSettings access: who edits LocalSettings.php for new namespaces
+    + Lockdown rules (Plesk/admin path that installed the current set)?"
+  - "Does news need any wiki presence beyond the existing News/ desk —
+    e.g. a portal section linking WP archives/situations? (default: no)"
+  - "Audience end-state: members-only reading, or public SEO for a
+    public-safe knowledge subset later? (affects whether a public
+    Education mirror lane is ever built)"
+
+implementation_sequence:
+  - "1. DONE 2026-11-06 (Tony/Plesk): Education:+talk 3004/3005 and
+    Reports:+talk 3006/3007 registered — the exact ids from the card
+    snippet. Lockdown rules for the new namespaces NOT yet verified:
+    an empty ns can't be anon-probed; first write must be followed by
+    an anon accessdenied check before the corpus migrates."
+  - "2. DONE repo-side 2026-11-06 (phase 2a dispatch, idc02):
+    WikiLessonSink + html_to_wikitext + lesson_wiki_title in
+    publication.py; 'wiki-education' registered in _pub_sinks;
+    do_lesson dual-write behind WIKI_EDUCATION_WRITE=dual in
+    wiki-h3-gizmo.env (ships OFF — flag on only after step 1);
+    scripts/wiki-lesson-migrate.py (door read -> wikitext ->
+    /publish apply, idempotent) + tests. STILL NEEDED on-wiki:
+    แม่แบบ:Education template page (any authed edit via Ada bot —
+    same API path the sink uses, or hand-create)"
+  - "2b. DONE repo-side 2026-11-06 (dispatch 184016, idc02):
+    WikiReportSink + report_wiki_title ('wiki-reports', Reports:,
+    แม่แบบ:Report); /report mode=wp-list|wp-get (member report CPT
+    door read); /wiki/page guarded support-page door (allowlisted
+    templates + Education:/Reports: titles, siteinfo-verifies the ns
+    is registered before writing); scripts/wiki-support-pages.py
+    (creates both templates) + scripts/wiki-report-migrate.py;
+    +11 tests green (54 total). STILL NEEDED: board-api restart on
+    idc03 to pick up 2a+2b code; then wiki-support-pages.py --apply."
+  - "3. DONE live 2026-11-06 (dispatch 193421, idc02): board-api restarted
+    (detached process, exec checkout — see anomalies), 11 sinks live;
+    templates bootstrapped via direct API (door bug found+fixed, see
+    templates note); 1-page probe -> anon accessdenied verified -> full
+    migration: 124 lessons + Education:Ada-Nest hub + Education:Index
+    (126 pages, 0 failures) + Reports:Control/2026-10 +
+    Reports:Deploy/2026-10-14 + Reports:Index (3 pages). Probe pages
+    deleted. Also fixed apply-path bugs: migrate scripts sent no 'from'
+    (door requires actor name)."
+  - "3b. DONE live: WIKI_EDUCATION_WRITE=dual enabled — dual-write proven
+    (post 4057 -> Education:Education-Wiki-Cutover-Runbook, pageid 175)."
+  - "4. DONE repo-side 2026-11-06 (dispatch 201214, tony-macbook):
+    /lesson op=list|get gained source=wiki — _read_lessons_wiki walks
+    Education: via allpages+revisions (bot login — Lockdown ns), parses
+    the แม่แบบ:Education call into the same row shape WP returns and
+    mints identical lesson-<md5(topic)> slugs, so op=get-by-slug and
+    audit/exception keys survive cutover. lessons-due.py retargeted:
+    --source wiki default reads the door; --dest both default writes
+    Education:Due via /wiki/page AND the WP education-due page;
+    education-report.py gained --source (EDU_SOURCE; default wp until
+    cutover). Stale-door guard: a pre-2026-11-06 door answers without
+    source=wiki -> both tools fail loudly instead of auditing the WP
+    corpus under a wiki label. ACTIVATION: same merge + idc03 pull +
+    board-api restart that ships the do_wiki_page fix — one restart
+    covers both."
+  - "5. PARTIAL: anon accessdenied + authed read + dual-write proven;
+    wiki read path + due/report retarget shipped repo-side (step 4).
+    Remaining: after the door restart, lessons-due --dry-run proves
+    Education:Due renders from the live corpus, then flip
+    EDU_SOURCE=wiki in chaba-education-report's env at cutover."
+  - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated —
+    WP admin step; safe to schedule once step 4 closes the read path.
+    Note: Education:Index regenerates on each migrate run — rerun the
+    migrate script after future lessons or add an index-refresh step to
+    the due-list job."
+
+related:
+  ssot: "docs/ssot/apps/ssot.mediawiki-news.yml (news standard; a broader
+    ssot.mediawiki.yml should eventually absorb surface-level config)"
+  code:
+    - scripts/board/publication.py::MediaWikiSink
+    - scripts/board/board-api.py (do_lesson, do_publish, do_wiki_*)
+    - scripts/lesson-add.py, scripts/lessons-due.py, scripts/education-report.py
+  cards:
+    - wiki-member-knowledge-surface-migrate-wp-3a1cf2
+    - devnest-news-two-lane-pilot
+    - education-store

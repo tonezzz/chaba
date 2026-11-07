@@ -1,0 +1,79 @@
+title: lesson-drift-check — flag lessons whose source docs changed
+subtitle: dispatcher job every:1d on tony_dell; docs-mcp lastModified vs WP
+  lesson modified; deduped flag to focus-inbox. Flag-only by spec decision.
+icon: education
+version: 1
+
+card: lesson-drift-check-flag-lessons-whose-so-dd7ed2
+ref: OPS-0794
+date: 2026-10-26
+dispatch: 20261026-084906-topics-trade-map-hub-trade-arc
+
+job:
+  id: lesson-drift-check
+  manifest: docs/ssot/infrastructure/ssot.jobs.yml
+  host: tony_dell          # ~/CascadeProjects/trade docs + .docs-mcp index live here
+  dispatch: dispatcher
+  every: 1d
+  timeout: 90s
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/lesson-drift-check.py
+
+files:
+  - scripts/lesson-drift-check.py — the checker
+  - >-
+    scripts/lesson-drift-map.yml — declared coverage: lesson slug -> docs-mcp
+    page paths; family_prefix + hub_slug for the unmapped-topic check
+
+mechanism: |
+  1. Page mtimes: reads ~/CascadeProjects/trade/.docs-mcp/documents.json —
+     the same lastModified the docs-trade MCP returns from get_page — then
+     stats docs_root/<page>.md and keeps the NEWER of the two, so edits not
+     yet re-indexed still count. A mapped page absent from both = "missing".
+  2. Lesson mtimes: POST board-api /lesson {op:"list"} — slugs, topics,
+     modified. No WP creds on the job host (unified-mutation-door rule).
+  3. Stale when doc_mtime > lesson_modified + grace (default 8h; covers WP
+     site-tz-vs-UTC slop since the door returns naive `modified`).
+  4. Family check: any lesson topic matching family_prefix (trade-) with no
+     map entry flags the HUB (trade-map) — its inventory is out of date.
+  5. Output: ONE focus-inbox entry via board-api /inbox, filed ONLY when
+     the stale-set fingerprint differs from
+     ~/var/chaba/jobs/lesson-drift-check.json — daily runs don't spam.
+     "hub lesson comms" from the spec resolved to focus-inbox: WP lesson
+     posts have no comms channel behind the door.
+
+decision:
+  flag_only_over_auto_regen: |
+    Card spec asked flag-only vs auto-regenerate. Flag-only, per the spec's
+    own recommendation: an auto-regen pass writes worse prose than a
+    session that actually re-learned the material, and the whole point of
+    the lesson ledger is captured understanding, not refreshed text. The
+    inbox entry names the stale pages; a dispatch/session re-learns and
+    re-files via /lesson (same slug upserts in place).
+
+coverage: |
+  trade-map hub (lesson-f429ea4f886c): INDEX, PORTAL
+  trade-architecture (lesson-9f0e2e9c9fc3): core/ARCHITECTURE, API_GUIDE,
+    DEPLOYMENT, TROUBLESHOOTING, knowledge/architecture/*
+  trade-data-sources (lesson-31699555790b): data/DATA_SOURCES,
+    knowledge/commodity-validation-sources, kb/metal-price-api-research,
+    kb/thai-holiday-data-gap-analysis-2026-08-14
+  trade-signals-backtest (lesson-7a6008c91bfd): features/signals/* (3),
+    features/backtesting/* (2), features/websocket/* (2)
+  trade-gold-thb (lesson-af0d0f5afc28): DATA_SOURCES + the two kb/* +
+    commodity-validation-sources
+
+maintain:
+  add_lesson: append its slug + page list to scripts/lesson-drift-map.yml
+    (slugs from /lesson op:list); unmapped family topics self-flag the hub.
+  rescan_docs: new docs-mcp pages need a map line to be watched — the
+    checker only compares pages declared for a lesson.
+  verify: >
+    python3 scripts/lesson-drift-check.py --dry-run --json
+    python3 scripts/job-dispatcher.py --host tony_dell --dry-run | grep drift
+    cat ~/var/chaba/jobs/lesson-drift-check.json
+
+tested: |
+  2026-10-26 on tony-dell worktree: live run against board-api + real
+  index — 5/5 lessons resolved, 21 mapped pages all present, 0 stale
+  (docs last touched Aug; lessons filed Oct-24), 0 unmapped topics.
+  Negative-grace run forced all 5 stale to prove detection + report shape.

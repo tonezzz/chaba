@@ -1,0 +1,101 @@
+id: kk-video-devnest-topic-event-feed
+title: Route Sacred Father project activity to DevNestHA topic
+column: backlog
+updated: 2026-10-29 11:33
+spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
+  preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
+  generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
+  to that thread. Keep messages concise and members/private; do not send raw source text or media binaries; suppress
+  per-heartbeat progress and do not mirror routine events to General. Ensure PublicationEvent/TelegramSink routes
+  by project or card reference through the relay''s project binding (not only a hard-coded tg_thread_id). Verify
+  project manifest + topic registry + active relay version, and use mocked/dry-run delivery first; do not post a
+  test message or change sharing permissions. Related: OPS-0915, OPS-0912, OPS-0914.'
+ref: OPS-0927
+comms:
+- at: 2026-10-27 12:33
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-27 12:50
+  from: devin
+  text: '[routing verification 2026-10-27] Found Tony''s DevNestHA thread_id 33 (chat -1003998821809); it was previously
+    recorded as `lane=unknown`. Bound that existing thread to `kk-video-c9f99fee6146` in the project manifest, preserved
+    its visible Telegram title, restarted `devnest-tg-relay.service`, and verified `/health` reports one topic plus
+    registry thread 33 -> project. No Telegram test message was sent. The isolated code branch now forwards PublicationEvent
+    `project`/`card` refs to the relay and '
+- at: 2026-10-27 12:53
+  from: devin
+  text: '[state update 2026-10-27] Topic binding is live: project manifest + topic registry map DevNestHA chat -1003998821809/thread
+    33 to kk-video-c9f99fee6146; relay /health reports one registered topic. No title change or test message. I
+    attempted the canonical /publish alert for the actual preview failure, but the live board-api returned 404,
+    so no Telegram alert was delivered and I did not bypass it with direct /send. The isolated branch fix/telegram-project-event-routing
+    forwards project/card refs;'
+- at: 2026-10-27 12:56
+  from: devin
+  text: 'raised request live-publication-route: The Sacred Father topic is now bound, but the live board-api POST
+    /publish returns 404. Its served checkout is dirty and'
+- at: 2026-10-27 12:56
+  from: devin
+  text: '[code checkpoint 2026-10-27] Project/card-aware TelegramSink routing is committed locally as `fix/telegram-project-event-routing`
+    commit `8742eba6e`; `tests.board.test_publication` passed 31/31 and SSOT validation passed. This forwards project_id/card_ref
+    to the relay (explicit tg_thread_id still overrides). It is not deployed because live board-api `/publish` is
+    404 and the served checkout is dirty/divergent. The single deployment/fallback decision is now recorded as request
+    `live-publication-r'
+- at: 2026-10-27 12:57
+  from: devin
+  text: '[handoff checkpoint 2026-10-27] Thread 33 is bound and relay restart verified. The project-ref TelegramSink
+    patch is locally committed (`8742eba6e`, tests 31/31) and the deployment blocker is recorded in SSOT commit
+    `a5b46e72c`. Live board-api `/publish` returns 404; the served checkout is dirty/divergent, so I did not restart
+    it or bypass the event door. No Telegram status message was sent. Request `live-publication-route` asks how
+    to proceed; recommended: wait for served-checkout reconciliatio'
+- at: 2026-10-27 13:03
+  from: tony
+  text: 'answered live-publication-route: wait-clean-deploy — fix the live board-api through the standard deployment
+    after the served checkout is reconciled; do not use direct /send as a workaround.'
+- at: 2026-10-27 13:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 13:11
+  from: devin
+  text: '[board-api fix 2026-10-27] Reconciled the served checkout with `scripts/git-safe-pull.sh` (autostash GC
+    disabled), then restarted `chaba-board-api.service` using the existing /publish code. Tailnet POST /publish
+    {op:sinks,from:devin} now returns 200 with 7 sinks. Published the verified Sacred Father preview failure alert
+    to thread 33; receipts: Telegram delivered `tg:33`, board delivered, nest_job updated `kk-video-c9f99fee6146-preview`
+    (post 2648). No direct /send fallback. The additional proje'
+- at: 2026-10-27 13:13
+  from: devin
+  text: '[board-api fix verified 2026-10-27] Safe-pulled the served checkout and restarted `chaba-board-api.service`;
+    tailnet `POST /publish {op:sinks, from:devin}` now returns HTTP 200 with 7 registered sinks. The Sacred Father
+    preview-failure alert was delivered to DevNestHA thread 33, the project card, and nest_job post 2648 (event
+    evt-c20dfebef6d01245). The project-ref TelegramSink change remains local/unmerged (`8742eba6e`; 31 tests pass)
+    and is needed for automatic project_id/card_ref routing witho'
+- at: 2026-10-27 13:18
+  from: chaba
+  text: 'answer-sweep: executed ''wait-clean-deploy — fix the live board-api through the stand'' -> put on hold'
+- at: 2026-10-29 11:33
+  from: devin
+  text: 'Missed-job sweep 2026-10-29: the related job SSOT file exists only in /tmp/chaba-wt-kk-video-topic-event-feed
+    and is absent from origin/master. The card is already held in Backlog per the answered wait-clean-deploy decision;
+    no live publication or route change was made.'
+requests:
+- id: live-publication-route
+  ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
+    is dirty and 5 commits ahead/1 behind origin, so I did not restart or promote it. How should I enable generated/status
+    notifications to the topic?
+  status: answered
+  at: 2026-10-27 12:56
+  from: devin
+  options:
+  - id: wait-clean-deploy
+    label: Wait for served checkout reconciliation, then use the standard board-api deploy (recommended; preserves
+      the canonical audited /publish path)
+  - id: direct-relay-interim
+    label: Approve a project-scoped direct DevNest relay /send path as an interim workaround (bypasses /publish
+      outbox/audit)
+  - id: pause-notifications
+    label: Keep the thread bound for intake, but defer generated/status notifications until /publish is live
+  suggested: wait-clean-deploy
+  answer: wait-clean-deploy — fix the live board-api through the standard deployment after the served checkout is
+    reconciled; do not use direct /send as a workaround.
+  executed: 2026-10-27 hold
+action:
+  status: idle

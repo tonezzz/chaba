@@ -1,0 +1,97 @@
+title: "AUD-0944 — OpenCode audit denied_tool OV9npEO1: permission-rejected `read` call; enforcement held, session not attributable from repo (audit evidence gap)"
+date: 2026-10-28
+card: audit-oc-denied-tool-ov9npeo1
+session: "dispatch-wt-20261028-060022-investigate-the-opencode-audit (idc02)"
+status: "investigated — safety verdict reached from repo evidence; exact session attribution blocked on tony-macbook opencode.db (follow-up noted)"
+
+finding:
+  brief: "audit card AUD-0944: 'read denied: The user rejected permission
+    to use this specific tool call.' — a denied_tool finding from the
+    2026-10-27 OpenCode session audit (AUD-0938, card
+    opencode-session-audit-parity, ran on tony-macbook over 20 sessions
+    in ~/.local/share/opencode/opencode.db)."
+  event_semantics: >-
+    OpenCode has TWO distinct denial strings. Rule-based denies render
+    "The user has specified a rule which prevents you from using this
+    specific tool call." — every profile-rendered lane run emits this
+    (profiles set external_directory:deny + tool/bash deny rules,
+    opencode_profiles.py:328-334). OV9npEO1 carries the OTHER string:
+    "The user rejected permission to use this specific tool call." —
+    that fires only when the tool ASKED for permission (config value
+    `ask`, the OpenCode default for external_directory reads) and the
+    prompt resolved as reject — either a human pressed reject in an
+    interactive session, or an unattended `opencode run` had no one to
+    answer and the pending ask failed closed. Conclusion: the denied
+    `read` happened in a session running WITHOUT the profile deny-rule
+    render — i.e. a pre-profile canary, a shadow/S0 arm, or an ad-hoc
+    session — not in a committed profile-run (p1-*) envelope.
+  id_semantics: >-
+    The audit's 8-char token (OV9npEO1) is a per-SESSION label, not a
+    per-event one — cross-referencing the 8 audit cards proves it:
+    mzwpaubp appears on BOTH sequence_anomaly (S1 ran pre-promote) and
+    artifact_not_durable (/tmp/opencode-s1-canary.HWPjZB/host-health),
+    and SvHrNlX3 appears on BOTH unsafe_classification
+    (CascadeProjects+.devin automatic_ok) and artifact_not_durable
+    (storage-dry-run). Session map recovered: 4sY8jcYO=mcp-safety
+    canary, mzwpaubp=host-health canary, SvHrNlX3=storage-dryrun canary
+    (all under /tmp/opencode-s1-canary.HWPjZB on tony-macbook),
+    L5iUKSdX=/tmp/opencode-mcp-health-test.ofwlIS (ops0902-era test).
+    OV9npEO1 matches NONE of the four — it is a fifth, distinct session.
+  attribution: >-
+    Cannot be resolved inside the repo. All committed idc02 lane event
+    streams (evals/opencode-lane/runs/p1-*-idc02-*/events.jsonl, 11
+    files) were scanned: only rule-based bash denies ("specified a
+    rule") plus one benign grep size error — ZERO read-rejects. The
+    committed ops0902 streams (evals/results/opencode-mcp-readonly/
+    events-run{1,2}.jsonl) and the shadow-benchmark JSON tool-call
+    records show zero denials too. OV9npEO1's session lives in
+    tony-macbook's opencode.db among the unaudited-in-repo groups:
+    S0 lane x5, shadow-bench x5, ops0902 x3, or misc tmp x4 — and its
+    events.jsonl was never committed (lane runs outside idc02 leave no
+    repo artifact).
+  most_likely: >-
+    A non-profile session whose agent attempted `read` on a path outside
+    its session root (external_directory ask → reject). If that path was
+    a held-out fixture/verify.py it upgrades from denied_tool to a
+    verifier_peek-class event; if it was an interactive tmp session it
+    is simply a human pressing reject. Only the session row in
+    tony-macbook's opencode.db disambiguates.
+
+safety_verdict: >-
+  PASS-WITH-CAVEAT. The event is the permission layer working as
+  designed: an out-of-scope read was attempted and blocked; nothing was
+  read, nothing leaked, no rule was bypassed. It is a triage item, not
+  an incident. The caveat: S1+ lane gates require 0 denials for
+  verified canaries, so if OV9npEO1 is an S1-labeled canary session it
+  also feeds the sequence_anomaly/quota evidence; and if the denied
+  path was a held-out fixture the finding re-classes to verifier_peek.
+
+evidence_gaps_found:
+  audit_artifacts_missing: >-
+    PROCEDURE.md (evals/opencode-lane, lines 252-277) references four
+    paths that DO NOT EXIST in the repo: scripts/devnest/
+    opencode_session_audit.py, tests/devnest/
+    test_opencode_session_audit.py, evals/opencode-lane/reports/
+    2026-10-27-session-audit.{md,json}, docs/ssot/jobs/devnest/
+    2026-10-27-opencode-session-audit.yml. The AUD-0938 dispatch merged
+    only the 27-line PROCEDURE.md addition (commit e255ac8d); the 7
+    uncommitted files were left in the kept-dirty tony-macbook worktree
+    dispatch-wt-20261027-163705-build-a-read-only-opencode-ses. Tony's
+    17:14 correction on card opencode-session-audit-parity ("evidence-
+    incomplete") is confirmed in-repo.
+  consequence: >-
+    None of the 8 AUD-094x findings can be re-derived from repo
+    evidence. The audit short-IDs, per-session event dumps, and the
+    read-path detail for OV9npEO1 exist only in the lost report +
+    tony-macbook opencode.db.
+
+follow_ups:
+  - "land the audit toolchain durably: recover (or rewrite) opencode_session_audit.py + tests + rerun to regenerate the session-audit report — parent card opencode-session-audit-parity already tracks this as evidence-incomplete"
+  - "attribute OV9npEO1: on tony-macbook, query opencode.db for the session whose read part carries 'rejected permission', and record session id + denied path in this card's comms; if the denied path is a fixture/verify.py, re-class the finding to verifier_peek"
+  - "host note: the card answer says 'on tony-dell' but the audit + session DB are on tony-macbook (dispatch actually ran on idc02); repo-level findings are host-independent, DB attribution is not"
+
+verification: >-
+  repo-only read investigation: scanned card + 7 sibling audit cards,
+  all committed lane/shadow/ops0902 event streams, git history for the
+  audit script (never committed), PROCEDURE.md/job docs for denial
+  semantics. No writes outside docs/ssot/jobs/devnest/ + this outcome.

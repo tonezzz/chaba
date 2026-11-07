@@ -1,0 +1,56 @@
+# HF Pro cost-benefit assessment for the Colab/DevNest queue (card
+# hugging-face-pro-cost-benefit-for-colab-b22c9e / OPS-0881)
+#
+# Bounded assessment run WITHOUT subscription or pay-as-you-go: real Colab
+# queue artifacts + free anonymous probes + official HF pages re-checked.
+# Verdict: defer Pro — PAYG Jobs is cheaper at measured utilization and
+# ZeroGPU cannot host the pack runner.
+title: HF Pro vs Colab DevNest cost-benefit — measured assessment
+job: hf-pro-cost-benefit-assessment
+date: 2026-10-27
+host: idc02   # runner host; Drive read via rclone gdrive:
+card: hugging-face-pro-cost-benefit-for-colab-b22c9e
+ref: OPS-0881
+report: docs/reports/hf-pro-vs-colab-devnest-2026-10-27.md
+
+measured:
+  colab_t4_battery: >-
+    devnest-heldout-assessment on real boots 63c5ba23 (Oct 26) and
+    bd3b5509 (Oct 27): Tesla T4, fp16 21.0 TFLOPs, bf16 2.2-2.4 TFLOPs,
+    H2D 12.3 GB/s, D2H 13.0 GB/s; battery run 5-6 s. Artifacts:
+    gdrive:ada-nest/queue/assessments/devnest-heldout-*.{json,md}
+  gpu_job_hours_oct23_27: 4.62    # summed DONE durations in all 45 queue/log-*.txt
+  packs_done_all_time: 42         # every done marker is Oct 23-27; queue now drained
+  monthly_t4_job_hours_est: "15-30 (0.9 h/day pack-era cadence)"
+  cold_cache:
+    hf_cdn_anon_to_idc02_mbps: 40.8    # 988 MB Qwen2.5-0.5B shard, live probe
+    drive_pull_to_idc02_mbps: 28.9     # 1 GiB slice of hf-hub.tar.zst via rclone
+    drive_to_colab_restore: "12.6 GB hf-hub.tar.zst ~223 s (~56 MB/s incl zstd)"
+  artifact_landing:
+    drive_rclone_api: "64 MB up in 9.2 s (6.9 MB/s), server-visible +2.6 s"
+    drivefs_fuse_on_colab: "~60 s listing lag; 13 GB tar lost once on early VM restart"
+    hf_hub_upload: "durable at API return (documented; no token to probe)"
+
+hf_facts_2026_10_27:            # re-checked official pages today
+  pro: "$9/mo — 1TB private Hub, $2/mo compute credits, 40 min/day ZeroGPU (highest pri), 10 hosted ZeroGPU Spaces"
+  jobs: "positive credit balance required — NO free tier; cpu-basic $0.01/h, t4-small $0.40/h, per-minute billing, ephemeral 50 GB, no inter-job cache"
+  zerogpu: "anonymous 2 min/day, free acct 5 min/day, Pro 40 min/day; Gradio-SDK Spaces only — cannot run queue/runner.py"
+
+cost_math_at_measured_utilization:
+  colab_pro_marginal: "~$0 (prepaid ~100 CU/mo; ~56 CU needed at ~2 CU/T4-h)"
+  hf_jobs_payg: "$6-12/mo (15-30 h x $0.40)"
+  hf_pro_total: "$16-21/mo ($9 + overage) — algebraically >=$7/mo worse than PAYG on Jobs spend alone at any usage"
+  breakeven_rule: "Pro only wins when ZeroGPU quota / >100GB private Hub / hosted Spaces are actually consumed"
+
+blocked_probe: >-
+  Live HF-side run not executed: hf jobs needs a token (none on fleet
+  secrets — Colab runtimes hold the only one) AND a positive credit
+  balance, which is pay-as-you-go spend gated on Tony's approval. A
+  bounded probe would cost ~$0.01-0.07 (cpu-basic / 10-min t4-small).
+
+verdict: >-
+  DEFER HF Pro. Keep Drive as queue/control-plane SSOT. Optional free-tier
+  use: pinned private Hub artifacts/checkpoints (~30 GB need today).
+  Revisit if PAYG Jobs spend would exceed ~$9/mo with Pro extras used, a
+  hosted ZeroGPU Space product exists, private artifacts outgrow free
+  storage, or Colab Pro lapses. Decision request posted on the card.

@@ -1,0 +1,34 @@
+title: 'job-fail: network-scan-tony on tony_dell'
+subtitle: Focus inbox item
+icon: inbox
+focus:
+  label: 'job-fail: network-scan-tony on tony_dell'
+  text: "Dispatcher job 'Tony LAN Network Scan' (network-scan-tony) failed on tony_dell at 2026-10-27T14:55:51+0700:\
+    \ exit 1\ncommand: /home/tony/CascadeProjects/chaba/venv/bin/python3 scripts/network-scan.py --push\nstderr\
+    \ tail: s.executable, str(push), \"tony-ha\"], check=True)\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\
+    \  File \"/usr/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n\
+    \                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['/home/tony/CascadeProjects/chaba/venv/bin/python3',\
+    \ '/home/tony/CascadeProjects/chaba/scripts/build-dossier-devices.py', 'tony-ha']' returned non-zero exit status\
+    \ 1.\n\n\nfailure_count=1 — dispatcher backs off exponentially (next retry 2026-10-27T15:10:28) and this is\
+    \ the only alert for the episode; recovery clears the flag. Policy: noncritical — other jobs unaffected. See\
+    \ scripts/job-dispatcher.py + ssot.jobs.yml failure_policy."
+  priority: medium
+  status: draft
+  tags:
+  - ops
+  - chaba-jobs
+  - job-failure
+  - tony_dell
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: ''
+  subtasks: []
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: chaba-jobs-dispatcher
+  date: '2026-10-27'

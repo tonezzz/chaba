@@ -1,0 +1,92 @@
+id: 2026-10-26-dead-mcp-triage
+title: Repair-vs-retire triage for AUD-0886 dead MCPs
+date: 2026-10-26
+card: dead-mcp-servers-triage-cd54fe
+ref: AUD-0886
+runner: idc02 dispatch worktree
+
+decisions:
+  notebooklm:
+    verdict: repair-repoint
+    evidence:
+      - "mn01 podman notebooklm-mcp container Up 5d, MCP initialize OK (gemini-notebook-mcp 4.0.3)"
+      - "mn01 auth valid: `nlm notebook list` returns real notebooks (Tony-Memory 100 sources etc.)"
+      - "dell: notebooklm-mcp.service + notebooklm-rest.service crash-looping ~35.8k restarts —
+         quadlets moved to ~/.config/containers/systemd/migrated-off/ but the podman
+         quadlet generator SCANS SUBDIRECTORIES, so they still generated units that
+         pull localhost/<image> (missing) forever"
+      - "omen: notebooklm-kb-sync.timer fires daily 00:00, exits 0 but logs ~21-23
+         errors/run — `nlm` did `podman exec` locally where no container exists
+         (silent degradation; manifest still touches)"
+    actions:
+      - "dell: systemctl --user stop+mask notebooklm-mcp.service notebooklm-rest.service; reset-failed"
+      - "omen+dell: ~/.local/bin/nlm repointed to `ssh mn01 podman exec -i notebooklm-mcp nlm` (printf %q arg-safe); .bak kept"
+      - "omen: ~/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh -> ssh mn01; dell: mcp-notebooklm.sh -> ssh mn01"
+      - "verified: mcp initialize via new wrapper on omen OK; `nlm notebook list` OK from omen+dell"
+    leftovers:
+      - "notebooklm-rest (:3011 FastAPI facade for nbapi/web app) NOT rebuilt on mn01 —
+         no active consumers found (v0 app is a static reference page). Masked on dell.
+         Rebuild from stacks/tony-dell/notebooklm-rest/ on mn01 only if requested."
+
+  workflows:
+    verdict: retire
+    evidence:
+      - "dell: unit+image+container all absent (image was missing pre-migration)"
+      - "omen: workflows-mcp.service exists but disabled+dead, no container/image"
+      - "mn01/idc01/idc03: nothing; no timer or crontab invokes workflows-mcp anywhere"
+      - "all 7 custom YAML in workflows/ are demo health-checks (gpu-health-check,
+         system-cleanup, universal-health-check) — functions live in dedicated units;
+         orchestration/queueing moved to board-api /action /pipeline + kanban verbs"
+    actions:
+      - "removed 'workflows' from ~/.config/devin/mcp_config.json on omen+dell (backups .bak-20261026)"
+      - "ssot.mcp.yml status retired-2026-10-26; ssot.mcp-wrappers.yml retired; removed
+         workflows-mcp check from ssot.health.home.mcp.yml; ssot.automation.yml
+         workflow_automation marked retired; registry entry marked retired"
+    leftovers:
+      - "workflows/ templates + stacks/podman/Containerfile.workflows-mcp kept as
+         reference; omen's dead ~/.config/systemd/user/workflows-mcp.service file can be deleted"
+
+  docs:
+    verdict: retire
+    evidence:
+      - "server dies at startup: 'Failed to install Playwright browsers automatically'"
+      - "local index stale: ~/.local/share/docs-mcp-server/documents.db last written 2026-09-12"
+      - "corpus covered: mddb kb-system bank + ssot-search skill + plain rg"
+      - "repair cost (chromium+deps install) lands on dell, a host being wound down — not worth it"
+    actions:
+      - "removed 'docs' from ~/.config/devin/mcp_config.json on omen+dell"
+      - "ssot.mcp.yml status retired-2026-10-26; mcp-docs-ssh wrapper marked retired"
+    leftovers:
+      - "docs-trade (@devista/docs-mcp, trade repo) unaffected — different server, stays"
+      - "~/.local/share/docs-mcp-server/ index dir left in place (harmless)"
+
+  mcp-focus:
+    verdict: retire
+    evidence:
+      - "last mcp_focus-sourced session log entry: 2026-09-09 (ssot.focus.sessions.yml)"
+      - "ssot.focus.current.active.yml untouched since 2026-10-18; focus files now
+         written by board-api /inbox (new entry today 08:00) and focus-dispatcher-overnight
+         (direct file edits, fires 03:00 on idc03)"
+      - "the same mcp_focus tool remains exposed by mcp-debug (scripts/mcp_debug/server.py)
+         — the standalone server was a second SSH hop to the same code"
+      - "stale anyway: wrapper ssh->dell edits chaba-tony-dell, which post-OPS-0725 is a
+         pull-only mirror — any mcp_focus write there is stomped by hourly mirror sync"
+    actions:
+      - "removed 'mcp-focus' from ~/.config/devin/mcp_config.json on omen+dell"
+      - "ssot.mcp.yml status retired-2026-10-26; mcp-focus-ssh wrapper marked retired"
+    leftovers:
+      - "scripts/mcp_focus/ + mcp_debug/focus.py kept (tool still reachable via mcp-debug);
+         mcp-debug/mcp-focus ssh->dell targets tracked by card dell-off-repoint-followups"
+
+side_fixes:
+  - "ssot.mcp.yml: added hosts: section (tony_omen/tony_dell/mn01/idc01-03/michael-ha) —
+     validate_per_host_keys was already failing on google-home-lan's pre-existing
+     per_host mn01 key; generator couldn't run at all until this landed"
+  - "verified: scripts/generate-mcp-config.py --host tony-omen now emits 18 servers,
+     skips docs/workflows/mcp-focus, notebooklm -> mcp-notebooklm-ssh.sh"
+
+verification:
+  - "ssh tony-omen 'nlm notebook list' works (via mn01)"
+  - "initialize probe via omen mcp-notebooklm-ssh.sh returns gemini-notebook-mcp 4.0.3"
+  - "dell: systemctl --user is-enabled notebooklm-mcp notebooklm-rest -> masked, inactive"
+  - "omen+dell mcp_config.json no longer list docs/workflows/mcp-focus"

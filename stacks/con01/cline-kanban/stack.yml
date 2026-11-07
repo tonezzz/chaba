@@ -1,0 +1,39 @@
+id: cline-kanban
+host: con01
+unit: cline-kanban-proxy.service
+description: >-
+  Disposable Cline Kanban v0.1.70 research-preview pilot. Rootless Podman
+  app and proxy containers share a dedicated bridge network; only the proxy
+  publishes HTTP/WebSocket port 3484 on con01's Tailscale IPv4 address. The
+  separate Cline Access host is fronted by idc02 Caddy and the proxy verifies
+  Cloudflare Access JWTs before forwarding; the backend remains private.
+verify: >-
+  bash ~/CascadeProjects/chaba/stacks/con01/cline-kanban/verify.sh
+secrets:
+  - "~/.config/secrets/cline-kanban.env — CLINE_PROXY_PASSCODE; never log the value"
+requires:
+  - "tool:podman"
+  - "tool:git"
+  - "tcp:registry-1.docker.io:443"
+  - "tcp:registry.npmjs.org:443"
+  - "tcp:chaba-team.cloudflareaccess.com:443 — JWKS for Access JWT verification"
+state:
+  - "~/.local/share/cline-kanban/data — disposable application/session state; no secrets or production work"
+  - "~/cline-kanban-pilot/workspace — disposable seeded Git smoke-test project"
+  - "~/.cache/nest-worker/cline-kanban-pilot — isolated Nest-pack work cache"
+ports:
+  - "100.72.146.39:3484 — Basic Auth and strict Host/Origin proxy for UI/WebSocket; Tailscale only"
+  - "cline.surf-thailand.com — Cloudflare Access + Caddy edge to the Tailnet proxy; Access JWT verification at proxy"
+restore: >-
+  To roll back only the shutdown-cleanup guard, retag the preserved
+  localhost/cline-kanban:0.1.70-pre-shutdown-guard image as
+  localhost/cline-kanban:0.1.70, reload systemd, and restart the app and proxy
+  units while retaining the network topology. Preserve task worktrees and all
+  pilot state. The pre-pr45 image is a separate full rollback to the old
+  single-container topology; use it only with explicit approval.
+related_cards:
+  - cline-kanban-con01-pilot
+  - cline-kanban-nest-worker-adapter
+  - cline-chaba-admin-tab
+status: deployed
+deployed: '2026-10-28'

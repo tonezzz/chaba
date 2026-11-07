@@ -1,7 +1,7 @@
 id: line-wp-site-manager
 title: LINE-driven WordPress site maintenance (customer via LINE chat)
-column: backlog
-updated: 2026-10-15 23:19
+column: done
+updated: 2026-10-30 15:31
 brief: 'Tony''s idea: a customer maintains their WordPress site by chatting in LINE — Ada receives the message and
   drives WP REST API. Testbed: boards.surf-thailand.com -> boards.h3.gizmo-thailand.com proxy (wired 2026-10-14;
   WP itself not serving yet — Plesk default page).'
@@ -833,3 +833,137 @@ comms:
 - at: 2026-10-15 23:19
   from: devin
   text: '[watcher idc02] usage-pull heartbeat check failed: The read operation timed out (checked 2026-10-15T16:19:18+00:00Z)'
+- at: 2026-10-27 14:01
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 14:01
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 14:02
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 14:02
+  from: chaba
+  text: started devin-task-20261027-140223-p0-wp-live-on-plesk-boards-sit on tony-macbook (dispatch)
+- at: 2026-10-27 14:10
+  from: devin
+  text: '[P0 verified 2026-10-27] boards.surf-thailand.com/wp/ = 200, /wp/wp-json/ = 200 (Chaba web boards, 219
+    routes, chaba/v1 + cptui + wp/v2 namespaces). Old 301 loop resolved — idc02 edge rewrite working. Building P2
+    wp_read + P3 wp_update tools.d drops next.'
+- at: 2026-10-27 14:17
+  from: devin
+  text: 'raised request open-q-from-spec-when-a-real-customer-si-952fee: Open Q from spec: when a real CUSTOMER
+    site onboards (not kk/nhong testbed), which lane fronts it — tony lane tools reus'
+- at: 2026-10-27 14:17
+  from: devin
+  text: '[P2+P3 staged 2026-10-27] wp_read (list/get posts+pages+CPTs, draft preview as text — members have no wp-admin)
+    + wp_update (retitle/rewrite/status on posts+pages, manifest policy:confirmed — dispatch-bound confirm gate,
+    not self-asserted). Publish flow: wp_post publish=false -> wp_read preview -> member yes -> wp_update publish.
+    18 drop tests green; tony+kk includes + writers SSOT updated; design doc docs/ssot/jobs/ada/2026-10-27-wp-read-update-tools.yml.
+    On branch d0c6034c3 — NOT deployed: nee'
+- at: 2026-10-27 14:19
+  from: tony-macbook
+  text: 'finished (ok): exit=0 est; the drops land on ada-voice via the normal drop-apply + deploy-ada.sh path on
+    idc03. | devin-task-20261027-1'
+- at: 2026-10-27 14:19
+  from: chaba
+  text: 'session-end checkpoint c2e7b180: 1 leftover file(s) committed'
+- at: 2026-10-27 14:19
+  from: chaba
+  text: pushed dispatch/20261027-140223-p0-wp-live-on-plesk-boards-sit to origin
+- at: 2026-10-27 14:19
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 14:19
+  from: chaba
+  text: auto-merged d208ac44 (dispatch/20261027-140223-p0-wp-live-on-plesk-boards-sit) → origin/master
+- at: 2026-10-27 14:19
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 14:32
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''open-q-from-spec-when-a-real-c''] block close)'
+- at: 2026-10-27 15:37
+  from: tony
+  text: 'answered open-q-from-spec-when-a-real-customer-si-952fee: proceed'
+- at: 2026-10-27 15:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 15:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-27 15:48
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
+- at: 2026-10-27 15:58
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 15:58
+  from: chaba
+  text: started devin-task-20261027-155810-p0-wp-live-on-plesk-boards-sit on tony-macbook (dispatch)
+- at: 2026-10-27 16:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261027-140223-p0-wp-live-on-plesk-boards-sit on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 16:07
+  from: devin
+  text: '[proceed executed 2026-10-27] Open-Q answer implemented as the customer-site standard: sites: registry
+    + customer_onboarding model in ssot.wp-boards.yml (Option A — dedicated LINE group per site, dedicated ada-<slug>
+    lane, per-site wp-<slug>.env app password; isolation is env-binding, no site param exists for the model to abuse).
+    New: docs/kb/wp-customer-site-onboarding.md runbook + scripts/wp-boards/site-preflight.py verifier (tested live
+    vs boards site: front 200, REST 200/219 routes, users/me'
+- at: 2026-10-27 16:08
+  from: tony-macbook
+  text: 'finished (ok): exit=0 drop-apply + deploy-ada.sh on idc03 before any lane can call them. | devin-task-20261027-155810-p0-wp-live-on-ple'
+- at: 2026-10-27 16:08
+  from: chaba
+  text: 'session-end checkpoint 86000e6d: 5 leftover file(s) committed'
+- at: 2026-10-27 16:08
+  from: chaba
+  text: pushed dispatch/20261027-155810-p0-wp-live-on-plesk-boards-sit to origin
+- at: 2026-10-27 16:08
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 16:08
+  from: chaba
+  text: auto-merged 3a4e082b (dispatch/20261027-155810-p0-wp-live-on-plesk-boards-sit) → origin/master
+- at: 2026-10-27 16:08
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 16:17
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-30 15:31
+  from: devin
+  text: '[watcher idc02] WP front page unreachable: HTTP Error 502: Bad Gateway (checked 2026-10-30T08:31:00+00:00Z)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 drop-apply + deploy-ada.sh on idc03 before any lane can call them. | devin-task-20261027-155810-p0-wp-live-on-plesk-boards-sit.service:
+    Consumed 54.185s CPU time over 9min 34.657s wall clock time, 402.5M memory peak, 24.9M memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-27 14:32
+    dirty: 1
+requests:
+- id: open-q-from-spec-when-a-real-customer-si-952fee
+  ask: 'Open Q from spec: when a real CUSTOMER site onboards (not kk/nhong testbed), which lane fronts it — tony
+    lane tools reused, or a dedicated per-customer lane? And does the customer get a dedicated LINE group per site?
+    Default proposal: dedicated LINE group per customer-site, routed through the existing tony/kk-style lane pattern
+    with a per-site wp-<customer>.env app password (Option A identity map). Reply or edit card.'
+  status: answered
+  at: 2026-10-27 14:17
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+  executed: 2026-10-27 queue
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 16:17
+  note: verified — evidence checks green, closing itself

@@ -13,6 +13,10 @@ entries — goes through board-api over HTTP. Agents and runners never hold
 WP app passwords or mddb credentials; only the service host has
 `~/.config/secrets/wp-boards.env`. Same reason Colab stays credential-free.
 
+Reads are the mirror image: `docs/kb/board-api-read-door.md` — never
+pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
+`/cards?<filters>&fields=` cover the narrow questions.
+
 ## Endpoints (after prefix strip)
 
 | Path | Body | Writes |
@@ -28,6 +32,7 @@ WP app passwords or mddb credentials; only the service host has
 | **`/job`** | `{slug, title?, status?, comms?|note?, parent?, kind?, host?, pack?, runner?, result_ref?, error?, meta?}` | WP `nest_job` CPT upsert (ada-nest queue mirror) |
 | **`/report`** | `{query}` \| `{slug, note, lang?}` \| `{title|slug, content_md, meta?}` | ada-cms-pages search / session-log append / create |
 | **`/inbox`** | `{text, label?, priority?, tags?, missing_info?, subtasks?, session?, owner?, safe_to_parallel?}` | `docs/ssot/focus-inbox/<ts>-<slug>.yml` + commit |
+| **`/publish`** | canonical `PublicationEvent` (below) \| `{op:"sinks"}` \| `{op:"drain"}` | fan-out to sink adapters: `job`/`lesson`/`report`/`news`/`telegram`/`board`/`json` |
 
 ## Endpoint notes
 
@@ -42,6 +47,12 @@ WP app passwords or mddb credentials; only the service host has
   `learned_at`/`next_review`/`status` preserved on re-file, Thai section
   appended unless `no_th` (gemini flash-lite, best-effort — a translation
   failure returns EN-only, never a failed write).
+  The board-api Thai translation now uses the LiteLLM virtual key
+  `LITELLM_KEY_MDDB` and the explicit free-only deployment
+  `gemini-3.5-flash-lite-free`; it has no paid fallback. The Gemini REST
+  helper accepts a per-call gateway URL override so this path does not
+  depend on a process-global `GEMINI_BASE_URL`. Missing key, gateway error,
+  or free-tier quota exhaustion still degrades to an English-only lesson.
 - **`/report`** — the report-integration duty: `mode` optional, inferred
   from fields. `query` → candidate slugs; `slug+note` → session-log append
   (reuses `cms-report-note.py` logic — managed block + writer-contract
@@ -50,14 +61,74 @@ WP app passwords or mddb credentials; only the service host has
   shape; runs under the card flock with the same atomic-write +
   immediate-commit discipline as cards.
 
+## /publish — the provider-neutral publication door
+
+`POST /publish` takes one canonical `PublicationEvent` and fans it out
+to registered sink adapters (`scripts/board/publication.py`). The
+legacy endpoints are the compatibility adapters onto the same provider
+writes — `/publish` routes through `do_job`/`do_lesson`/`do_report`
+themselves, so WP is only one adapter and any second sink receives the
+same event. Agents still never call WP REST or hold credentials.
+
+**Event:** `kind` (progress|milestone|report|lesson|news|alert),
+`title`, `source` (producer, required), `body` (required for
+lesson/report/news), `project`/`job`/`card` refs, `parent`,
+`evidence[]` (required for `news`), `confidence`
+(observed|measured|verified — `public` news requires `verified`),
+`visibility` (private|members|public — **private-first default**),
+`audience[]`, `media[]`, `occurred_at`, `event_id`,
+`idempotency_key` (auto-derived if absent — identical events dedupe),
+`sinks[]` (explicit subset; else kind defaults), `force`, `meta{}`
+(provider extras: `job_status`, `topic`, `level`, `report_slug`,
+`tg_thread_id`, …).
+
+**Kind → sinks (defaults):**
+
+| kind | sinks | note |
+|---|---|---|
+| progress | `job`, `board` | heartbeat-class: throttled, never TG |
+| milestone | `job`, `board`, `telegram` | |
+| report | `report`, `board` | dossier needs `project` slug |
+| lesson | `lesson` | Education CPT |
+| news | `news`, `board`, `telegram` | evidence required |
+| alert | `telegram`, `board`, `job` | |
+
+**Guards:** idempotent on `idempotency_key` (deduped replies carry the
+stored receipts); outbox under `~/.local/state/board-api-publish/`
+retries failed sinks (30s×2ⁿ ≤30m, dead-letter after 5); capability
+checks per sink (`{op:"sinks"}` reports surfaces/kinds/evidence);
+noise policy throttles progress per (sink,topic) 15m, telegram floor
+10m/topic, identical alerts 60s (`force:true` bypasses noise only —
+never visibility); visibility gates sinks by surface class (private →
+board+json only; members → +WP private posts/TG; public → +publish
+status). Receipts are per-sink `delivered|queued|skipped|suppressed`
+with reasons — a `502` still means the door itself failed.
+
+State: `$BOARD_API_PUB_STATE` (default `~/.local/state/board-api-publish/`):
+`delivered.json`, `events.jsonl` (ledger), `outbox.jsonl`, `dead.jsonl`,
+`noise.json`. Env: `PUB_TELEGRAM_URL`, `PUB_PROGRESS_MIN_S`,
+`PUB_TG_MIN_S`, `PUB_ALERT_MIN_S`.
+
+```bash
+curl -sX POST https://idc03.taila0626a.ts.net:10000/publish \
+  -H 'Content-Type: application/json' -d '{
+    "kind":"milestone","title":"Pilot A passed","job":"fl-pilot-a",
+    "card":"devnest-fl-pilot-report","project":"devnest",
+    "source":"devin","visibility":"members","confidence":"verified",
+    "body":"Free lane merged with zero tokens.",
+    "evidence":["docs/reports/devnest-free-lane-pilot-a.md"]}'
+```
+
 ## Auth, locks, errors
 
 - Same write gate as cards: `Tailscale-User-Login` (tailnet), loopback
   caller, or the CF edge key. Machine-to-machine tailnet calls carry the
   node identity automatically.
-- Remote-backed endpoints (`/lesson`, `/job`, `/report`) serialize under
-  `/tmp/board-api-wp.lock` — NOT the card flock — so a 45s WP round-trip
-  never stalls `/comment`. `/inbox` uses the card flock (repo write).
+- Remote-backed endpoints (`/lesson`, `/job`, `/report`, `/publish`)
+  serialize under `/tmp/board-api-wp.lock` — NOT the card flock — so a
+  45s WP round-trip never stalls `/comment`. `/inbox` uses the card
+  flock (repo write); `/publish`'s `board` sink takes the card flock
+  nested inside WP_LOCK (order is always WP_LOCK→LOCK, never reversed).
 - Errors: `400` validation, `403` identity, `502` upstream (WP/mddb down —
   the body names the failing route), `500` unexpected. WP credentials are
   read lazily per call — a missing `wp-boards.env` fails only the

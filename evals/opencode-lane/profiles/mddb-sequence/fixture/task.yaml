@@ -1,0 +1,41 @@
+id: mddb-sequence
+title: MEM-0871 mddb prune/compact — checkable preflight plan
+class: read_only
+timeout_s: 600
+artifact: evals/opencode-lane/out/mddb-sequence-plan.json
+description: >-
+  Produce the read-only preflight for the MEM-0871 prune/compact
+  runbook: live bank inventory, retention eligibility, guard-stack
+  gaps, and a sequenced plan in which every step carries a
+  machine-checkable `check`. The agent emits the JSON as its final
+  message; the runner writes it. Nothing in the plan is executed.
+contract:
+  required_fields:
+    job: "string — MUST equal the envelope job id"
+    card: "string — MUST equal the envelope card id"
+    runbook: "must be docs/kb/mddb-prune-compact.md"
+    generated_at: "ISO-8601 timestamp"
+    read_only: "must be true"
+    banks: >-
+      list covering EVERY reachable bank in the probe map; each
+      {name, url, status, mode, free_bytes, collections:[{name,
+      documents, embedded_documents}]} — collection inventory must be
+      complete per reported bank
+    retention: >-
+      one row per live policy collection {bank, collection, ts_key,
+      days, expired, scanned, complete} — ts_key/days must match the
+      runbook POLICY for that collection
+    plan: >-
+      ordered steps {seq, procedure, target, action, mutating,
+      executor, check} — every step has a non-empty check; every
+      mutating step has executor != "opencode"; procedure B never
+      targets a vector-bearing bank
+  tolerances:
+    documents_abs: 10
+    documents_pct: 2
+    embedded_abs: 10
+    embedded_pct: 2
+    expired_abs: 25
+    expired_pct: 10
+    scanned_abs: 5000
+    free_bytes_pct: 25

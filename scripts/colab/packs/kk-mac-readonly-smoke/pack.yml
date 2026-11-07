@@ -1,0 +1,32 @@
+name: kk-mac-readonly-smoke
+needs:
+  disk_gb: 1
+  egress_only_ok: false
+timeout_s: 120
+artifacts:
+  - packs/kk-mac-readonly-smoke/out/worker-facts.json
+run: |
+  import json
+  import os
+  import platform
+  import shutil
+  import socket
+  import sys
+  import time
+
+  out = os.path.join(PACK_DIR, "out", "worker-facts.json")
+  os.makedirs(os.path.dirname(out), exist_ok=True)
+  total, used, free = shutil.disk_usage(os.path.expanduser("~"))
+  facts = {
+      "hostname": socket.gethostname(),
+      "platform": platform.platform(),
+      "machine": platform.machine(),
+      "python": platform.python_version(),
+      "home_free_bytes": free,
+      "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+      "read_only": True,
+  }
+  with open(out, "w", encoding="utf-8") as fh:
+      json.dump(facts, fh, indent=2, sort_keys=True)
+      fh.write("\n")
+  print("wrote read-only worker facts", flush=True)

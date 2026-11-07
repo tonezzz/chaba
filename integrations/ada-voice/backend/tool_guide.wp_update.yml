@@ -1,0 +1,28 @@
+# tool_guide.yml snippet — append at top level
+# (<ada-voice>/backend/tool_guide.yml).
+#
+# wp_update (2026-10-27, card line-wp-site-manager P3): confirmed
+# writes to an existing boards post/page — the publish/retitle/trash
+# half of the LINE maintenance loop.
+
+wp_update: >-
+  Change ONE existing post or page on the boards site — find the id
+  with wp_read first. Confirmed write: describe the exact change
+  ("publish the draft 'X'", "retitle post 21 to 'Y'"), get an explicit
+  yes, then call with confirmed=true — a bare call is denied and a
+  confirm_token from the denial may be passed back instead. Fields:
+  id= (required), post_type='posts'|'pages' (default posts — CPT
+  records like expense/contact/place/trip stay with their own tools),
+  title= replaces the title, content= REPLACES the whole body (it is
+  not appended — fetch the current text with wp_read first when the
+  edit is an addition), status='publish|draft|private|trash' moves
+  visibility — publish a previewed draft with status='publish', pull a
+  live post back with 'draft'/'private', 'trash' is restorable.
+  Publish flow: wp_post publish=false -> wp_read get the draft (the
+  returned content is the preview — members have no wp-admin login) ->
+  member says yes -> wp_update status=publish. The result carries
+  transition='draft -> publish' — narrate that, and only claim a link
+  is live when status=publish. If ok:false says 'no posts entry with
+  id', re-list with wp_read — ids come from the site, not memory. If
+  it mentions missing credentials the site key isn't configured —
+  don't retry.

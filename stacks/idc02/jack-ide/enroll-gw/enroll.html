@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jack IDE — enroll</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100dvh; display: grid; place-items: center;
+         font: 15px/1.5 system-ui, sans-serif; background: #0b0e14; color: #e6e9ef; }
+  .card { width: min(420px, 92vw); background: #131826; border: 1px solid #232c44;
+          border-radius: 14px; padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #9aa4bd; font-size: 13px; margin: 0 0 20px; }
+  label { display: block; font-size: 12px; color: #9aa4bd; margin-bottom: 6px; }
+  input { width: 100%; box-sizing: border-box; padding: 12px 14px; font: 16px/1.2 ui-monospace, monospace;
+          letter-spacing: .06em; color: #e6e9ef; background: #0b0e14; border: 1px solid #2a3552;
+          border-radius: 8px; }
+  input:focus { outline: 2px solid #4d7cff; border-color: transparent; }
+  button { margin-top: 16px; width: 100%; padding: 12px; font: 600 15px system-ui;
+           color: #fff; background: #3b63d8; border: 0; border-radius: 8px; cursor: pointer; }
+  button:hover { background: #4d7cff; }
+  .err { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: 13px;
+         background: #3a1720; border: 1px solid #5d2432; color: #ffb4be; display: none; }
+  .hint { margin-top: 14px; font-size: 12px; color: #6f7a94; }
+</style>
+</head>
+<body>
+  <main class="card">
+    <h1>Jack's OpenCode IDE</h1>
+    <p class="sub">One-time enrollment — paste the code or redeem link you were given.</p>
+    <form method="post" action="/enroll" autocomplete="off">
+      <label for="code">Enrollment code</label>
+      <input id="code" name="code" value="{{CODE}}" placeholder="JCK-XXXX-XXXX-XXXX-XXXX"
+             required autofocus inputmode="latin" />
+      <button type="submit">Enroll</button>
+    </form>
+    <div class="err" id="err"></div>
+    <p class="hint">Codes are single-use and expire quickly. A fresh code signs out
+      any previous session. Nothing secret is stored in your browser — the IDE
+      session lives in an HttpOnly cookie.</p>
+  </main>
+  <script>
+    const e = "{{ERR}}";
+    const msgs = {
+      invalid_code: "That code isn't valid — check for typos or ask for a fresh one.",
+      code_used: "That code was already used — ask for a fresh enrollment code.",
+      code_expired: "That code expired — ask for a fresh enrollment code.",
+      session_required: "Your session expired or was reset — enroll again.",
+      edge_auth_required: "Reach this page over the tailnet URL.",
+    };
+    if (e) { const d = document.getElementById("err");
+      d.textContent = msgs[e] || ("Enrollment failed: " + e); d.style.display = "block"; }
+    const next = new URLSearchParams(location.search).get("next");
+    if (next && next.startsWith("/"))
+      document.querySelector("form").action = "/enroll?next=" + encodeURIComponent(next);
+  </script>
+</body>
+</html>

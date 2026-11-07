@@ -1,0 +1,140 @@
+id: kk-mac-live-probe-idc03-20261030
+title: Run one supervised KK-Mac JEV probe from idc03
+column: review
+updated: 2026-10-31 10:12
+brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
+  SSH key; do not enable automatic KK-Mac routing.
+priority: high
+tags:
+- kk-mac
+- jev
+- supervised-probe
+- ops-0978
+spec: One task-class summary inference only via scripts/devnest/kk_mac_executor.py. Use the fresh admission gate
+  and the verified kk-mac SSH alias. Persist the executor result under evals/kk-mac-lane/out/ and require the deterministic
+  verifier to pass. Do not set persistent KK_MAC_LANES=1. No shell, code mutation, secrets, or external provider
+  calls. This is the single supervised live test from OPS-0978; leave the broader lane disabled pending review.
+action:
+  type: dispatch
+  repo: chaba
+  host: idc03
+  executor: kk_mac_local
+  target_host: idc03
+  artifact: evals/kk-mac-lane/out/kk-mac-live-jev-probe-idc03-20261030.json
+  task_class: summary
+  prompt: 'Summarize this supervised, read-only DevNest executor smoke in one or two sentences. Verified context:
+    KK-Mac is the local host; qwen3:8b runs through Ollama; this task is a read-only summary and made no system,
+    file, or card mutations. Include the exact phrases ''KK-Mac'', ''read-only'', and ''no mutations''. Do not claim
+    anything beyond that context.'
+  expect:
+    facts:
+    - KK-Mac
+    - read-only
+    - no mutations
+  status: done
+  last_failure: ' finished (unknown) — see `devin-dispatch logs `'
+  attempts: 2
+  runner: idc03
+  result: ' finished (unknown) — see `devin-dispatch logs `'
+ref: OPS-0991
+comms:
+- at: 2026-10-30 01:15
+  from: devin
+  text: Queued after Tony authorized the idc03 key on OPS-0984. One-shot only; persistent KK_MAC_LANES remains off.
+- at: 2026-10-30 01:16
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-30 01:20
+  from: idc03
+  text: claimed
+- at: 2026-10-30 01:21
+  from: chaba
+  text: run ended with no exit record (no task_id) — the verified gate decides from the deliverable
+- at: 2026-10-30 01:21
+  from: chaba
+  text: run finished (unknown) → review
+- at: 2026-10-30 01:24
+  from: devin
+  text: 'Verified outcome: `kk_mac_executor.py` returned `verdict=fallback`; SSH to `kk-mac:22` timed out after
+    the admission snapshot passed. There was no model response and no probe pass. The idc03 key is now authorized,
+    but the Mac is currently unreachable from both idc03 and tony-dell; keep KK_MAC_LANES=0 and do not count this
+    as completed.'
+- at: 2026-10-30 01:25
+  from: tony
+  text: put on hold
+- at: 2026-10-30 01:25
+  from: devin
+  text: 'raised request kk-mac-ssh-reachable-after-fallback: The authorized key is installed, but idc03 and tony-dell
+    both timed out connecting to KK-Mac SSH; the one-shot probe pro'
+- at: 2026-10-30 08:39
+  from: tony
+  text: 'answered kk-mac-ssh-reachable-after-fallback: reachable — Recommended: KK-Mac is awake and SSH/Tailscale
+    responds; rerun the one bounded probe.'
+- at: 2026-10-30 08:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-30 15:07
+  from: tony
+  text: retry requested
+- at: 2026-10-30 15:07
+  from: idc03
+  text: claimed
+- at: 2026-10-30 15:07
+  from: chaba
+  text: run ended with no exit record (no task_id) — the verified gate decides from the deliverable
+- at: 2026-10-30 15:07
+  from: chaba
+  text: run finished (unknown) → review
+- at: 2026-10-30 15:09
+  from: chaba
+  text: 'patch-relay: dispatch/kk-mac-live-probe-retry-20261030 from idc03 — 1379B bundle in patch-inbox (kk-mac-live-probe-idc03-20261030-1f16965029.bundle);
+    merge-sweep will land it'
+- at: 2026-10-30 15:16
+  from: devin
+  text: Retry after the `reachable` answer passed the supervised local probe. `kk_mac_executor.py` reported `verdict=pass`;
+    deterministic checks passed for non-empty/bounded response plus KK-Mac/read-only/no-mutations facts. Local Ollama
+    qwen3:8b usage was 265 eval tokens; no external provider and no persistent KK_MAC_LANES change. Commit `1f1696502`
+    is relayed through patch-inbox; merge-sweep still needs to land the artifact before I mark this verified.
+- at: 2026-10-30 15:21
+  from: tony
+  text: retry requested
+- at: 2026-10-30 15:21
+  from: idc03
+  text: claimed
+- at: 2026-10-30 15:22
+  from: chaba
+  text: run ended with no exit record (no task_id) — the verified gate decides from the deliverable
+- at: 2026-10-30 15:22
+  from: chaba
+  text: run finished (unknown) → review
+- at: 2026-10-31 10:09
+  from: devin
+  text: The reachable answer led to a retry, but the current action is still `finished (unknown)` with no task_id.
+    Earlier comms report a local verifier pass and patch bundle `1f1696502` in patch-inbox, but I cannot find a
+    durable result artifact in origin/master. Keeping this in review until the patch/result is landed and the verified
+    gate is supported by evidence; no new inference run without a fresh idle-window preflight.
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Kanban review note: the `reachable` answer has been followed by the bounded retry, but the latest action
+    ended `unknown`/no task_id. The earlier verifier-pass result is only in a patch-inbox relay and no result artifact
+    is present in origin/master; keeping this in review until the artifact is landed and checked. No additional
+    model run without a fresh idle-window preflight.'
+review_kind: verify
+claim: {}
+requests:
+- id: kk-mac-ssh-reachable-after-fallback
+  ask: The authorized key is installed, but idc03 and tony-dell both timed out connecting to KK-Mac SSH; the one-shot
+    probe produced no model output. Please wake/restore KK-Mac Tailscale + Remote Login and tell me when it is reachable,
+    or defer the probe.
+  status: answered
+  at: 2026-10-30 01:25
+  from: devin
+  options:
+  - id: reachable
+    label: 'Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+  - id: defer
+    label: Keep the JEV lane off and wait for a later idle window.
+  suggested: reachable
+  answer: 'reachable — Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+awaiting_action: true

@@ -1,0 +1,10 @@
+[Unit]
+Description=ada-nest queue health mirror every 2 min
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=2min
+Unit=nest-queue-health.service
+
+[Install]
+WantedBy=timers.target

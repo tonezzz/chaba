@@ -1,0 +1,80 @@
+title: DevNest shadow-eval mode + rainy-day fallback ladder
+date: 2026-10-27
+card: devnest-rainy-day-parallel-eval
+session: dispatch-wt-20261027-132834-build-a-shadow-evaluation-mode (tony-macbook)
+
+what:
+  harness: scripts/devnest/shadow_eval.py
+  fixtures: evals/shadow/fixtures/<id>/{task.yaml,prompt.md,l0.py,verify.py,inputs/}
+  runs: "evals/shadow/runs/<run-id>/<arm>-<fixture>/{wt,run.json,verdict.json,
+         events.jsonl,stderr.log}  (gitignored, per-host)"
+  reports: evals/shadow/reports/<date>-*.{md,json}
+  tests: tests/devnest/test_shadow_eval.py (20 tests)
+  runbook: docs/kb/devnest-shadow-eval.md
+
+fixture_set:            # 5 paired fixtures — frozen, read-only, needs_llm=false
+  - host-health         # /proc+df+systemctl --failed snapshot -> health.json
+  - storage-dryrun      # df + bounded stale-candidate scan, deletions=[]
+  - mcp-safety          # frozen MCP tool surface -> safety matrix (conservative)
+  - worktree-safety     # git worktree list -> isolation invariants
+  - backup-freshness    # newest file per declared root vs fresh_hours
+
+arms:
+  l0:       fixture's own deterministic script; PATH-only env, no secrets
+  opencode: "opencode run --format json --dir <wt> --model <m> (litellm/
+            gemini-3.5-flash-lite default = L2; zen free = L3; ollama/* = L1)"
+  devin:    "devin --respect-workspace-trust false --permission-mode smart -p
+            (env override SHADOW_DEVIN_PERMISSIONS; nested-run notes below)"
+
+isolation:                          # enforced + verified
+  - "git worktree add -b shadow/<run>-<arm>-<fixture> per arm; same run-id
+     shares nothing; existing path = hard refusal"
+  - "sparse-checkout excludes evals/ -> fixtures/verify.py absent from the
+     arm's tree (held-out for real, not just by convention)"
+  - "audit: event-log scan for verifier peeks (filePath/reader-verb
+     adjacency), mutating-command denylist, post-run git-status scope check"
+  - "shadow/* branches are never merged; report asserts invariant;
+     clean --run-id extracts artifacts then removes worktrees+branches"
+
+rainy_day_ladder:                   # cheapest-sufficient entry, not blind climb
+  L0:  "deterministic local scripts — no net, no secrets, always available"
+  L1:  "local opencode+ollama (loopback) — small prompts only (<=4000c)"
+  L2:  "LAN/tailnet LiteLLM idc03:4000 — needs gateway + authed key"
+  L3:  "remote LiteLLM/OpenCode Zen — WAN"
+  L4:  "Devin cloud — WAN + api.devin.ai + devin cli"
+  MANUAL: "Tony gate — manual keywords or all rungs blocked"
+
+measured_2026-10-27_tony-macbook:
+  capability: "L0 PASS, L1 BLOCKED (no local ollama), L2 PASS, L3 PASS,
+               L4 PASS, MANUAL PASS"
+  l0:          "5/5 pass, ~6s each, 0 tokens"
+  opencode:    "2/5 pass (flash-lite early-stop: no artifact x2; used_pct
+               float contract miss x1); 35k-328k tokens, 27-83s"
+  devin:       "5/5 pass across permission modes; ~26-60s; print-mode
+               writes need >=smart, git-plumbing tasks need dangerous;
+               tokens not emitted by -p (recorded null)"
+  sim:         "offline + airgap simulations PASS — every fixture routes
+               L0, llm-tasks -> MANUAL, secrets loader refuses offline"
+  impossible_without_network:
+    - "L2+ rungs (tailnet LiteLLM, Zen, Devin cloud)"
+    - "L1 needs a pre-pulled local ollama daemon — absent on macbook"
+    - "anything needs_llm=true under airgap -> MANUAL by design"
+
+acceptance_status:
+  five_paired_fixtures: done
+  independent_verifier_results: "done — l0 5/5, opencode 2/5, devin 5/5
+      (see evals/shadow/reports/2026-10-27-shadow-benchmark.md)"
+  offline_simulation: "done — reports/2026-10-27-offline-simulation-{offline,airgap}.{md,json}"
+  fallback_selection_test: "done — 20 tests, tests/devnest/test_shadow_eval.py"
+  no_mutations: "verified — mutating_commands=[], scope_violations=[],
+      deletions=[] across all arms"
+  impossible_list: "see measured_*.impossible_without_network + report"
+
+open:
+  - "real paired Devin runs via devin-dispatch (nested devin -p is
+     DEGRADED vs a full session: no token telemetry, permission-mode
+     quirks). Proper pair = dispatch a twin session on the same fixture."
+  - "fixture expansion beyond the 5 read-only starters (needs_llm=true
+     paired fixtures for lane comparison)"
+  - "opencode arm token parse is opencode --format json specific; other
+     executors need their own usage adapters"

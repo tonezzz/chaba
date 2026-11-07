@@ -1,0 +1,79 @@
+title: nest_job CPT drift — live chaba-boards plugin behind repo (v0.7.x vs v0.9.0)
+date: 2026-10-26
+card: repair-wp-nest-job-cpt-drift
+domain: wp-boards / board-api
+status: deployed-verified
+
+summary: >
+  board-api POST /job fails upstream with WP REST 404 rest_no_route on
+  /wp/v2/nest_job. Root cause is NOT a registration-code bug and NOT a
+  revert — the live plugin was never advanced past ~v0.7.x — both the
+  v0.8.0 (activity CPT) and v0.9.0 (nest_job CPT) deploys were left
+  gated on Tony approval and never executed. The KNB-0659
+  "all CPTs registered" claim (2026-10-14) was true at v0.3.3 — it
+  predates both CPTs; nothing regressed on the live side, the deploy
+  simply never happened.
+
+evidence:
+  - "anon GET /wp/index.php?rest_route=/wp/v2/types -> 21 CPTs; nest_job
+     and activity absent; asset..score/xlate present => live < v0.8.0"
+  - "anon GET /wp/v2/nest_job&per_page=1 -> 404 rest_no_route; same for
+     /wp/v2/activity; /wp/v2/lesson + /wp/v2/score -> 200 []"
+  - "board-api POST /job -> 502 surfacing wp /wp/v2/nest_job -> 404"
+  - repo plugin integrations/wp-boards/chaba-boards.php = v0.9.0
+    (unchanged since cdecf8cca, 2026-10-23); php -l clean (verified on
+    tony-omen)
+  - "tests/board/test_board_api_mutations.py — 17/17 OK: /job contract
+     (slug upsert, parent slug->id, comms JSON-append, meta merge) intact"
+
+repair:
+  zip: "integrations/wp-boards/dist/chaba-boards-0.9.0.zip
+       (chaba-boards/{chaba-boards.php,usage-pull-cron.php},
+        md5 97bc092147e1d559f071c55e71e29d77, staged at
+        tony-omen:/tmp/chaba-boards-0.9.0.zip)"
+  command: "ssh tony-omen 'bash ~/CascadeProjects/chaba/scripts/wp-boards/
+            deploy-plugin-zip.sh /tmp/chaba-boards-0.9.0.zip'"
+  gate: "Tony approval via board request
+         live-chaba-boards-plugin-is-v0-7-x-wp-v2-0dc69c (wp-admin upload
+         overwrites in place; active state kept; flush_rewrite_rules
+         fires once on the version bump). Deploy ONLY after a 'proceed'
+         answer; 'I'll upload via wp-admin/Plesk' also works — same zip."
+  safety:
+    - "all 16 CPTs in the v0.9.0 file are a superset of live — nothing
+       removed, nothing deleted, private-status model unchanged"
+    - "adds activity (v0.8.0 — unblocks scripts/ada/activity-posts.py
+       on idc03 which has presumably been 404ing) + nest_job (v0.9.0)"
+    - "rollback: redeploy any older dist zip the same way; or wp-admin
+       Plugins -> deactivate chaba-boards (CPTs vanish, data stays)"
+
+post_deploy_verified:
+  at: "2026-10-26 19:26 (dispatch 20261026-192455)"
+  checks:
+  - "/wp/v2/plugins (authed, idc03 creds): chaba-boards 0.9.0, status
+     active — repo and live plugin now match"
+  - "/wp/v2/types: 31 types, nest_job + activity present"
+  - "anon GET /wp/v2/nest_job + /wp/v2/activity -> 200 [] (private
+     posts invisible — privacy model intact)"
+  - "verify-nest-job.sh PASS: parent repair-verify-202610261925-parent
+     (post 2605), child -child (post 2606, parent=2605 via slug
+     resolution), parent update action=updated"
+  - "authed meta read-back: post 2605 meta status=done,
+     result_ref=probe://verify-ok, comms JSON log has both appended
+     entries — write+meta merge+read round-trip complete"
+  - "both health probes (wp-nest-job-cpt, wp-activity-cpt) answer 200"
+  - "ssot.wp-boards.yml v0.8.0/v0.9.0 flipped to DEPLOYED 2026-10-26"
+
+regression_probe:
+  - "docs/ssot/infrastructure/ssot.health.home.web.yml gained
+     wp-nest-job-cpt + wp-activity-cpt http checks (expected_status 200
+     on the anonymous collection routes). A plugin regression/deactivate
+     flips them to error -> mcp-health -> focus-inbox, before any
+     DevNest job needs /job."
+
+followups:
+  - "activity-posts.timer on idc03 is disabled+inactive (checked
+     2026-10-26) — enabling it is a separate decision; the activity CPT
+     now exists so its POSTs would succeed"
+  - "consider adding board-api /job read op (or /wp/v2 read proxy) so
+     meta round-trip can be verified without WP creds — today only the
+     writer path is exercised end-to-end"

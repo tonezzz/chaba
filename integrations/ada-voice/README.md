@@ -1,7 +1,7 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Fourteen drops live here:
+chaba dispatches. Seventeen drops live here:
 
 1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
@@ -39,6 +39,16 @@ chaba dispatches. Fourteen drops live here:
     2026-10-17)
 14. tg forward provenance gaps — hidden-origin flagging + forwarded
     other-media turns — card `tg-forward-provenance` (2026-10-17)
+15. `chat_send` page= — a CMS page's images attached server-side in one
+    batch — card `chat-send-page-images` (ADA-0511, 2026-10-26)
+16. `cms_publish_page` slug derivation — `slug=` optional, derived from
+    the title — card `fix-cms-publish-page-slug-argument-missi-96152a`
+    (KNB-0624, 2026-10-27)
+17. `map_embed` — Google Maps POI pins + routes as CMS-ready snippets —
+    card `map-embed-tool` (2026-10-27)
+18. LINE proactive persona sends — `chat_send` `intent='proactive'` +
+    `mention=` member pings — card `line-proactive-persona`
+    (2026-10-27)
 
 ---
 
@@ -1130,3 +1140,347 @@ drop closes the remaining card-spec gaps on top of that base:
 - Full TG document ingest (download + archive + doc_read parity with
   LINE's `file-doc-ingest` drop) is a separate card — this drop only
   guarantees a forwarded doc is acknowledged with provenance.
+
+---
+
+## Drop 15 — chat_send page= (CMS page images, attached server-side)
+
+Card `chat-send-page-images` (Tony 2026-10-12, ADA-0511): a probe showed
+Kaewta handles "send me the <page> photos" asks nondeterministically —
+sometimes cms_read + image_url + deliver, sometimes invented URLs
+(`surf-thailand.com/kk/…`, unsplash → all 404), sometimes text-only
+phantom sends naming the page. Instruction fixes helped but can't
+enforce; this is the structural fix: `chat_send(page='<slug>')` reads
+the CMS doc server-side, extracts every embedded image, and attaches
+the batch in one tool call — the model never touches a URL, so the
+whole invent/404/phantom failure class is gone. `image_url=` stays for
+ad-hoc URLs.
+
+### Files
+
+- `backend/tool_runner.page-images.patch` — `chat_send` gains
+  `page: str = ""`; a page call short-circuits to
+  `_chat_send_page`/`_chat_send_page_run` (same 'queued' contract —
+  the mddb read + delivery run in the background job). Module helper
+  `_page_image_urls` extracts markdown `![..](..)` + HTML `<img src>`
+  in document order, dedupes, resolves site-relative and bare paths
+  against `LINE_URL_BASE` (same default `http://100.102.134.91:11023`
+  the relay resolves against), caps at `ADA_CHAT_PAGE_IMG_MAX`
+  (default 10). The job posts `{text, image_urls:[...]}` to the lane
+  relay; the response's `images` list drives a per-asset sent/failed
+  summary note. `say=` voice notes ride the same payload; `web`
+  channel delivers per-asset via `_chat_send_web`. The say/notify
+  tails of `_chat_send_run` are factored into shared
+  `_chat_say_audio`/`_chat_notify` helpers — no behaviour change on
+  the plain path.
+- `backend/line_relay.page-images.patch` — `/send` accepts
+  `image_urls: [...]`; each URL becomes its own image bubble
+  (`_image_msgs`, failures keep the honest `(image failed)` text
+  bubble), `image_url` still works. Delivery now chunks into
+  consecutive ≤5-msg pushes — the old `msgs[:5]` truncate silently
+  dropped the tail (stacked payloads, not just batches). Bulk-class
+  parks the full list (`_parked_add`/`_merge_msgs` already re-chunk).
+  Response gains `images: [{url, ok, status}]` — status per asset:
+  `delivered` | `parked` | `failed` | `fetch-failed`.
+- `backend/tg_relay.page-images.patch` — `/send` accepts `image_urls`
+  → one `send_photo` per asset (same `images` report shape);
+  `send_photo` now returns delivery bool (callers ignore it).
+- `backend/realtime_provider.page-images.patch` — `page` added to the
+  chat_send declaration (required — `additionalProperties: false`
+  would reject the arg); `image_url` description now points CMS image
+  asks at `page=`.
+- `backend/tool_guide.page-images.patch` — chat_send guide entry
+  documents `page='<cms slug>'`.
+- `tests/test_chat_send_page.py` — ada-voice suite: extraction order/
+  dedupe/resolution/cap, the page job (payload, per-asset note,
+  missing/empty page honesty, legacy-relay degrade), the relay batch
+  (chunked pushes, per-URL report, fetch-failure honesty), the tg
+  batch.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && for p in tool_runner line_relay tg_relay realtime_provider tool_guide; do git apply <chaba>/integrations/ada-voice/backend/$p.page-images.patch; done`
+   — base `main` @ `56c67c1`; if a hunk rots, re-dispatch the card
+   rather than hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/test_chat_send_page.py tests/`
+3. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes +
+   `ada-line-relay` / `ada-tg-relay` (the relay contract changed).
+   Restart order note: a lane running new chat.py against an old relay
+   still works — the relay just returns no `images` report and the
+   note degrades to 'delivered (no per-asset report)'.
+
+### Contract
+
+- `chat_send(page='<slug>', to=?, text=?, channel=?, say=?)` →
+  `{'status': 'queued', 'page': <slug>}`; the system note reports
+  e.g. `line: 4/5 images delivered; failed <url> (fetch-failed)` or
+  `page '<slug>': no page … — nothing sent`.
+- page= is a plain send for gates: not secondary-blocked, not in the
+  Drive bank scope (the `photo`/`doc` carve-outs already exempt the
+  non-picker path).
+- Relay `/send` `image_urls` is additive — old callers unaffected;
+  `image_url` also gains an `images` report entry for free.
+
+### Verified
+
+- ada-voice `main` @ `56c67c1` + patches (clone under chaba worktree
+  `.scratch/`): new `tests/test_chat_send_page.py` 17/17; neighbouring
+  suites `test_tool_runner` `test_line_relay_group` `test_line_relay_quota`
+  `test_line_reply_context` `test_tg_relay_*` — 361 passed;
+  `tool-lint` clean.
+- Chaba side: `pytest tests/ada/test_chat_send_page.py` — 6 pass, 2
+  skipped (no ada-voice checkout on the mn01 runner; the apply-gate
+  tests exercise on hosts that carry one).
+- NOT verified live: no real LINE push — first `page=sa-beach-photos`
+  send after deploy is the smoke (check the relay log `send: inst=
+  … msgs=N` + the note's per-asset count).
+
+## Drop 16 — cms_publish_page slug derivation
+
+Card `fix-cms-publish-page-slug-argument-missi-96152a` (KNB-0624): the
+session audit kept flagging `fail:cms_publish_page` — the model sends
+`title`+`content` and no `slug`, the lazy-schema gate answers
+`SchemaError: missing required 'slug'`, and the publish dies before the
+confirm handshake. The title already implies the id, so the call now
+derives instead of rejecting.
+
+### Files
+
+- `backend/cms-slug-derivation.patch` — one patch, five files:
+  - `backend/tool_runner/cms.py` — new `CmsMixin._cms_slugify` derives a
+    hyphenated `_SLUG_RE`-legal slug from free text (accent strip,
+    60-char word-cut); `cms_publish_page`'s `slug`/`title`/`content`
+    params gain `""` defaults and an empty slug falls back to the
+    title-derived one — a title with no Latin letters/digits still
+    raises a plain `ValueError` naming the fix.
+  - `backend/tool_runner/__init__.py` — the pending-confirm key uses
+    the same derivation (`slug or slugify(title)`), so a no-slug
+    register call and its confirmed resubmit share the key — no
+    'confirmed without pending' mismatch.
+  - `backend/realtime_provider.py` — `slug` leaves the declaration's
+    `required` list; its description and the tool blurb say "omit to
+    derive from the title".
+  - `backend/tool_guide.yml` — guide entry leads with the optional slug.
+  - `tests/test_cms_slug_derivation.py` — ada-voice suite: slugify
+    shapes (basic/accents/Thai-empty/60-char word cut), publish with no
+    slug deriving + pending-key match, explicit slug still winning,
+    Thai-only title erroring plainly.
+- `tests/test_cms_slug_derivation.py` — repo-of-record copy of the
+  ada-voice test file above.
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && git apply <chaba>/integrations/ada-voice/backend/cms-slug-derivation.patch`
+   — base `main` @ `56c67c1`; if a hunk rots, re-dispatch the card
+   rather than hand-merging.
+2. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes
+   (backend-only change — relays untouched).
+
+### Contract
+
+- `cms_publish_page(slug?, title, content, summary, domain, fresh_for,
+  confidence, …)` — `required` loses only `slug`; the report meta
+  contract is unchanged.
+- No slug → derived from `title` (e.g. `'Pool Notes 2026!'` →
+  `pool-notes-2026`); explicit `slug` still wins verbatim.
+- The two-step confirm handshake is untouched — register, ask, resubmit
+  `confirmed=true`.
+
+## Drop 17 — map_embed tool (POI pins + routes as CMS-ready snippets)
+
+Card `map-embed-tool` (Tony 2026-10-13): trip/report pages need real maps —
+POIs and a route (the southafrica trip pages). `place_report` covers the
+single-place case; this is the multi-POI + route builder. The tool writes
+nothing itself: it composes the map URL and returns snippet artifacts
+(`markdown`, `iframe_html`, `image_url`, `open_url`) that the model hands
+to `cms_publish_page`/`cms_edit` or sends in chat.
+
+### Files
+
+- `backend/tools.d/map_embed.py` — the tool.
+- `backend/tools.d/manifest.map_embed.yml` — merge under `tools:`.
+- `backend/tool_guide.map_embed.yml` — append to `tool_guide.yml`.
+- `tests/scenarios-live/map_embed.yaml` — smoke scenario (lint bars new
+  tools without a scenario reference).
+- `docs/ssot/ssot.tool-surface.map_embed.patch` — count_cap 112→113
+  (must land in the same ada-voice commit — the ratchet).
+
+### Install (ada-voice worktree)
+
+1. `cp <chaba>/integrations/ada-voice/backend/tools.d/map_embed.py
+   backend/tools.d/map_embed.py`
+2. Merge `manifest.map_embed.yml`'s `map_embed:` block into
+   `backend/tools.d/manifest.yml` under `tools:`.
+3. Append `backend/tool_guide.map_embed.yml` to `backend/tool_guide.yml`.
+4. `cp <chaba>/integrations/ada-voice/tests/scenarios-live/map_embed.yaml
+   tests/scenarios-live/`
+5. `git apply <chaba>/integrations/ada-voice/docs/ssot/ssot.tool-surface.map_embed.patch`
+   — base count_cap 112; if it no longer applies (another drop landed
+   first), bump `count_cap` by one in the same commit instead.
+6. Tool profiles already updated in this repo —
+   `docs/ssot/apps/ssot.apps.ada-persons.yml` adds `map_embed` to
+   `persons.tony.tools.include` and the `kk-cms-only` bench profile
+   (persons.kk/kk-parity skip it — that lane has no cms_* writers to
+   consume the snippet; adding it there later is one line each).
+   Re-run `scripts/ada/render-tool-profiles.py` for `ada-kk-dev.env` /
+   tony lane env **after** the ada-voice deploy.
+7. Env: `GOOGLE_MAPS_API_KEY` in the lane's env enables interactive
+   embeds + Google static + Routes API polylines. The tony-dell gev key
+   in `~/.config/secrets/gev-google-maps.env` was probed 2026-10-27 and
+   is NOT usable — Embed/Static/Geocode/Routes all return "The provided
+   API key is invalid" (dead key or APIs off on its project; ssot
+   secrets entry gev-google-maps). A fresh restricted key (or enabling
+   those APIs on a live project) is the gate — drop-in point is
+   `GOOGLE_MAPS_API_KEY=…` in `~/.config/secrets/tony-ha/backend.env`
+   on idc03 + `systemctl --user restart ada-ha-tony`.
+   The tool is still useful without it: `kind=static` falls back to an
+   OpenStreetMap multi-pin image (Nominatim geocoding), `open_url`
+   always works, and `kind=interactive` returns an honest `needs_key`
+   error rather than a dead iframe.
+8. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q` — deploy-ada.sh runs both; then restart the lanes.
+
+### Contract
+
+- `map_embed(places?, route?, kind?, chain?, title?, center?, zoom?,
+  size?, maptype?)` — `places` are `{name, lat?, lon?}` (bare strings
+  tolerated); `route` is `{origin, destination, waypoints[], mode}`.
+- `kind=interactive` → `embed_url` + `iframe_html` (Embed API:
+  directions / place / chained-directions / view). Several places with
+  no route chain into a directions map — the only way the embed API
+  shows them all (warning flags it). Needs `GOOGLE_MAPS_API_KEY`; the
+  no-key return is `ok:false` + `needs_key` + `open_url` +
+  `static_fallback`, never a dead iframe.
+- `kind=static` → `image_url`. With the key: Maps Static API — lettered
+  markers + a Routes API road-route polyline (straight-line fallback is
+  flagged in `warnings`). Without: OSM staticmap pins (name-only
+  entries geocoded via Nominatim; no route line — flagged).
+- `open_url` always returns — a keyless maps/dir or maps/search link
+  for the live map; `markdown` is the ready block for the CMS call.
+- Route calls also return `distance_km` / `duration_min` when the
+  Routes API answered.
+- Verified in-worktree by `tests/ada/test_map_embed_drop.py` (chaba
+  side): normalization, all URL builders, both env forks, Routes API +
+  Nominatim fakes, and the registry fragments — 21 passed.
+- NOT verified live: no real Google key exercised — first
+  `kind=interactive`/`kind=static`+route call after deploy + env is the
+  smoke; the OSM path is keyless and covered by the unit suite.
+---
+
+## Drop 18 — LINE proactive persona sends (card line-proactive-persona)
+
+The relay was reply-only: a persona could answer a routed turn but
+couldn't INITIATE contact with a member. This drop adds the outbound
+path end-to-end — backend tool -> relay /send -> LINE push — plus the
+two things that make it safe: in-group member addressing and a
+relay-owned rate policy.
+
+Scenario driver (from the card): Tony asks kaewta for the kk-car photo
+-> kaewta serves it -> kaewta then engages nhong about it herself,
+drawing on her own memory bank.
+
+### What changes
+
+- `chat_send` gains `mention='<member name>'` and
+  `intent='reply'|'proactive'`. `to=` still takes a member display
+  name (now resolved through a much longer chain). mention= pings the
+  member in the room the turn came from with a real LINE mention
+  object — their LINE notifies. `to='nhong'` (no mention) opens her
+  DM. `intent='proactive'` declares a persona-initiated contact.
+- Relay `/send`: `mention=` builds the mention object
+  (`@<displayName>` prefix + `mention.mentionees[]`, positions in
+  UTF-16 code units) — display name via the per-member group/room
+  profile endpoint, falling back to the label cache / member dir.
+  `intent='proactive'` runs the policy gate AFTER target resolution
+  but BEFORE any media fetch.
+- Member-name resolution (`_member_uid`): label cache ->
+  `LINE_USER_CALLERS` -> `LINE_PERSON_ALIASES` -> persisted
+  `MEMBERS_FILE` (learned from profile fetches + first-seen registry
+  writes — survives restarts) -> one throttled mddb
+  `line-user-registry` scan (`LINE_REGISTRY_LOOKUP_TTL_S`, 300s). This
+  also fixes `to=<name>` for members who spoke before the process came
+  up.
+- Policy (`_proactive_gate`): instance must sit in
+  `LINE_PROACTIVE_ALLOW` (empty = all proactive sends denied — the
+  backend-declared-intent gate); per (instance, chat) and per
+  (instance, member) debounce `LINE_PROACTIVE_DEBOUNCE_S` (600s
+  default); `LINE_PROACTIVE_DAY_CAP` (8) per (instance, chat). State
+  write-through to `LINE_PROACTIVE_STATE` — a restart can't reset the
+  limits. Decisions log `proactive_sent|denied|debounced` +
+  `mention_failed` ops events and `proactive_msgs` joins the
+  send-ledger rollup.
+- Owner-tier on the tool side: on a secondary (identified guest) turn,
+  `chat_send` with `mention=`, `intent='proactive'`, or `to=` other
+  than the bound chat raises PermissionError — a guest can converse
+  but can't make a persona ping someone. `LINE_LANE_ALLOW`/`LOCK`
+  still vet every resolved target regardless.
+
+### Files
+
+- `backend/line_relay.proactive-persona.patch` — `backend/line_relay.py`
+  (base `56c67c1`): env doc block, `LINE_PROACTIVE_*` + `MEMBERS_FILE`
+  constants, `_member_uid`/`_registry_scan`/`_member_note`/`_mention_wrap`
+  + `_proactive_*` methods, `/send` mention + intent handling, member
+  notes hooked into `_fetch_profile_name`/`_register_member`,
+  `proactive_msgs` in the ledger rollup.
+- `backend/tool_runner_chat.proactive-persona.patch` —
+  `backend/tool_runner/chat.py`: `chat_send(mention=, intent=)` plumbed
+  through the queue/photo/doc paths into the LINE /send payload
+  (LINE-only; tg sends note the drop).
+- `backend/tool_runner.proactive-persona.patch` —
+  `backend/tool_runner/__init__.py`: the secondary-turn carve-out
+  extends to `chat_reach_out` (mention / intent='proactive' / to= !=
+  bound chat).
+- `backend/realtime_provider.proactive-persona.patch` — `chat_send`
+  declaration gains `mention` + `intent` params.
+- `backend/tool_guide.proactive-persona.patch` — `chat_send` guide
+  entry documents the proactive contract (honest denial reporting, no
+  retry loops).
+- `docs/kb/msg-lane-multihome-routing.proactive-persona.patch` — the
+  multihome runbook gains the proactive-sends section +
+  `LINE_PROACTIVE_ALLOW` checklist entry.
+- `tests/test_line_proactive.py` — new ada-voice test file (20 tests:
+  member-uid chain, mention object + UTF-16 offsets, gate
+  allowlist/debounce/cap/persistence, runner-side owner-tier gate,
+  payload plumbing).
+
+### Install (ada-voice worktree)
+
+1. `cd <ada-voice> && for p in line_relay realtime_provider tool_guide tool_runner tool_runner_chat; do git apply <chaba>/integrations/ada-voice/backend/$p.proactive-persona.patch; done && git apply <chaba>/integrations/ada-voice/docs/kb/msg-lane-multihome-routing.proactive-persona.patch`
+   — base `main` @ `56c67c1`. NOTE ordering: drop 15 (`page=`) also
+   touches `tool_runner/chat.py` — if it lands first and the chat.py
+   hunk rots, re-dispatch rather than hand-merging.
+2. `cp <chaba>/integrations/ada-voice/tests/test_line_proactive.py <ada-voice>/tests/`
+3. Relay unit env (idc03 `ada-line-relay`): set
+   `LINE_PROACTIVE_ALLOW=ada,kaewta` (only lanes allowed proactive;
+   unset = deny-all). Optional: `LINE_PROACTIVE_DEBOUNCE_S`,
+   `LINE_PROACTIVE_DAY_CAP`, `LINE_PROACTIVE_STATE`,
+   `LINE_MEMBER_NAMES`, `LINE_REGISTRY_LOOKUP_TTL_S`.
+4. Gates: `python3 scripts/tool-lint.py`, `.venv/bin/python -m pytest
+   tests/ -x -q`, then restart `ada-line-relay` + the persona backends
+   (both sides change).
+
+### Verify
+
+- `python -m unittest tests.test_line_proactive` (20 tests).
+- Live: from an allowlisted persona, `chat_send(mention='nhong',
+  intent='proactive', text='...')` — nhong's LINE pings with a real
+  mention in the group; a repeat inside 600s comes back `debounced`;
+  `to='nhong', intent='proactive'` lands in her DM. Watch
+  `proactive_sent` in the ops ledger.
+
+### Contract notes / limits
+
+- The gate only restricts declared `intent='proactive'` — an
+  undeclared send to a member DM keeps today's rules (the runner's
+  owner-tier check still covers secondary turns). The relay can't see
+  turn semantics; declaration is the contract.
+- LINE `mention` objects need a group/room target and a resolvable
+  member — else 400. Proactive payloads stay class=urgent under the
+  quota scheme (they're user-facing, not bulk noise); a spent month
+  still parks them on 429 like any push.
+- `LINE_BULK_LANES`-demoted lanes CAN still send proactive (class is
+  orthogonal) — a lane that shouldn't speak proactively just stays out
+  of `LINE_PROACTIVE_ALLOW`.

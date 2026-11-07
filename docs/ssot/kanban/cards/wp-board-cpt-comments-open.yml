@@ -6,13 +6,22 @@ priority: medium
 tags:
 - by:wp-comment-sync
 - wp
-note: 'wp-comment-sync (card wp-comment-sync-suggestion-inbox, built 2026-10-15) routes member comments on boards.surf-thailand.com
-  posts into suggestion lanes — but probing live shows comment_status CLOSED on every board CPT: place, trip, ops-event
-  return rest_comment_closed (comment_status null), and asset/cam/bench/render_job have no posts yet to check. Only
-  news + posts accept comments today. The member-comment channel Tony called for 2026-10-14 cannot work on the routed
-  types until comments are en'
+note: 'wp-comment-sync (card wp-comment-sync-suggestion-inbox, built 2026-10-15) routes member comments
+  on boards.surf-thailand.com posts into suggestion lanes — but probing live shows comment_status CLOSED
+  on every board CPT: place, trip, ops-event return rest_comment_closed (comment_status null), and asset/cam/bench/render_job
+  have no posts yet to check. Only news + posts accept comments today. The member-comment channel Tony
+  called for 2026-10-14 cannot work on the routed types until comments are en'
 ref: KNB-0697
 comms:
 - at: 2026-10-15 10:30
   from: devin
   text: card captured via board-api
+- at: 2026-10-27 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: The goal is to open comment_status on board Custom Post Types (place, trip, ops-event, asset, cam,
+  bench, render_job) on boards.surf-thailand.com so member comments can reach wp-comment-sync lanes. Host
+  and repo must be derived strictly from available configuration since none were asserted in the card.
+  Constraints require enabling comments on all board CPTs without disrupting existing news and posts behavior.
+  The testable done-condition is that probing the REST API for board CPT posts returns a valid comment
+  status other than rest_comment_closed.

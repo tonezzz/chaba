@@ -1,7 +1,7 @@
 id: hugging-face-pro-cost-benefit-for-colab-b22c9e
 title: Hugging Face Pro cost-benefit for Colab and DevNest
-column: backlog
-updated: 2026-10-26 06:54
+column: done
+updated: 2026-10-27 16:03
 brief: Evaluate whether a Hugging Face Pro subscription adds value beyond the existing Drive-backed Colab cache;
   do not purchase without Tony’s explicit approval.
 priority: medium
@@ -37,3 +37,97 @@ comms:
   text: Education lesson 2231 (`colab-gpu-worker`) updated in place with the assessment-first queue procedure and
     official HF Pro cost/benefit references; next review remains 2026-10-31. Cards remain backlog with their requests
     open; no assessment job or subscription was started.
+- at: 2026-10-26 08:24
+  from: devin
+  text: HF Pro facts and decision summary are now in `docs/kb/colab-mcp-jobs.md` and Education post 2231, with official
+    links. Recommendation remains defer unless we will use HF Jobs/ZeroGPU or private artifact storage regularly.
+    No subscription or paid job was started; pilot/defer request remains open.
+- at: 2026-10-27 13:36
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 13:36
+  from: idc02
+  text: claimed
+- at: 2026-10-27 13:37
+  from: chaba
+  text: started devin-task-20261027-133700-official-hf-pages-checked-2026 on idc02 (dispatch)
+- at: 2026-10-27 13:37
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 13:37
+  from: devin
+  text: 'dispatch started on idc02: gathering DevNest/Colab context, will run bounded HF Hub/ZeroGPU probe (no paid
+    Jobs, no subscription) and produce utilization math + recommendation'
+- at: 2026-10-27 13:44
+  from: devin
+  text: 'Assessment complete (no spend, no subscription). Measured: Colab heldout battery on real T4 boots = fp16
+    21.0 TFLOPs, 5-6s; queue did 4.62 GPU-job-hours Oct 23-27 across 42 pack completions → ~15-30 T4h/mo. Cost math:
+    equivalent HF Jobs PAYG $6-12/mo vs Pro $16-21/mo — Pro is >=$7/mo worse than PAYG at ANY usage on Jobs spend
+    alone (its $2 credits ≈ 5 T4h). ZeroGPU cannot run the pack runner (Gradio-Spaces calls only); Hub cache is
+    ephemeral per job anyway. Probes: HF CDN anon 40.8MB/s vs Drive '
+- at: 2026-10-27 13:44
+  from: devin
+  text: 'raised request hf-pro-decision-after-measured-assessmen-0dd468: HF Pro decision after measured assessment
+    — pick one: (a) DEFER Pro, no live HF probe — verdict stands on measured utili'
+- at: 2026-10-27 13:45
+  from: idc02
+  text: 'finished (ok): exit=0 fit-assessment.yml`, board comment + a decision request on the card (★ defer / ≤$1
+    PAYG probe / free-token-only),'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'session-end checkpoint 3fded2e4: 3 leftover file(s) committed'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: pushed dispatch/20261027-133700-official-hf-pages-checked-2026 to origin
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 13:45
+  from: chaba
+  text: auto-merged a90b69e2 (dispatch/20261027-133700-official-hf-pages-checked-2026) → origin/master
+- at: 2026-10-27 13:45
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-133700-official-hf-pages-checked-2026,
+    branch dispatch/20261027-133700-official-hf-pages-checked-2026'
+- at: 2026-10-27 13:47
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''hf-pro-decision-after-measured''] block close)'
+- at: 2026-10-27 15:37
+  from: tony
+  text: 'answered hf-pro-decision-after-measured-assessmen-0dd468: c'
+- at: 2026-10-27 15:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-27 15:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 fit-assessment.yml`, board comment + a decision request on the card (★ defer / ≤$1 PAYG probe
+    / free-token-only), and the dispatch outcome file. | devin-task-20261027-133700-official-hf-pages-checked-2026.service:
+    Consumed 52.910s CPU time.'
+  verified: true
+  sweep:
+    close_held: 2026-10-27 13:47
+requests:
+- id: hf-pro-decision-after-measured-assessmen-0dd468
+  ask: 'HF Pro decision after measured assessment — pick one: (a) DEFER Pro, no live HF probe — verdict stands on
+    measured utilization ~15-30 T4h/mo (recommended ★); (b) approve bounded PAYG probe ≤$1 — one t4-small HF Job
+    running the devnest-heldout battery (~$0.07) + HF token in ~/.config/secrets; (c) approve a free HF account/token
+    only — enables free-tier ZeroGPU/Hub probes with zero spend, no paid jobs'
+  status: answered
+  at: 2026-10-27 13:44
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: c
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 15:47
+  note: verified — evidence checks green, closing itself

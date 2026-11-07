@@ -1,7 +1,7 @@
 id: audit-no-result-ada-camera-snapshot
 title: 'Ada session audit: no_result:ada_camera_snapshot (2d seen)'
-column: backlog
-updated: 2026-10-15 05:30
+column: done
+updated: 2026-10-26 17:46
 brief: 'Recurring session-audit signature ''no_result:ada_camera_snapshot'': ada_camera_snapshot call got no result
   in-window — 1x on 2026-10-14, seen on 2 day(s).'
 priority: medium
@@ -26,3 +26,61 @@ comms:
 - at: 2026-10-15 05:30
   from: devin
   text: card captured via board-api
+- at: 2026-10-26 17:27
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 17:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:36
+  from: idc02
+  text: claimed
+- at: 2026-10-26 17:36
+  from: chaba
+  text: started devin-task-20261026-173622-investigate-ada-session-audit- on idc02 (dispatch)
+- at: 2026-10-26 17:37
+  from: devin
+  text: 'investigating: pulling ada-ha-tony journal around 2026-10-14 23:26:01 to see why the ada_camera_snapshot
+    call has no result line'
+- at: 2026-10-26 17:44
+  from: devin
+  text: 'VERDICT: correct-by-design friction + audit observability gap. Both occurrences (10-10 18:08, 10-14 23:26)
+    are ada_camera_snapshot calls cancelled mid-flight when their sessions ended - tools run inline in the provider
+    receive loop, so teardown cancels the await and no result line can ever be written. The tool itself is well-bounded
+    (45s cap + stale-frame fallback). FIX landed in this dispatch worktree: session-audit.py now joins pwa_server''s
+    ''session=<sid> closed'' line - a no_result <=90s befor'
+- at: 2026-10-26 17:45
+  from: idc02
+  text: 'finished (ok): exit=0 card carries the verdict comment — deploy note: the fix goes live on tony-dell via
+    `install-session-audit.sh` (no'
+- at: 2026-10-26 17:45
+  from: chaba
+  text: pushed dispatch/20261026-173622-investigate-ada-session-audit- to origin
+- at: 2026-10-26 17:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 17:45
+  from: chaba
+  text: auto-merged 77f0ea35 (dispatch/20261026-173622-investigate-ada-session-audit-) → origin/master
+- at: 2026-10-26 17:45
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-173622-investigate-ada-session-audit-,
+    branch dispatch/20261026-173622-investigate-ada-session-audit-'
+- at: 2026-10-26 17:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 card carries the verdict comment — deploy note: the fix goes live on tony-dell via `install-session-audit.sh`
+    (not deployed per dispatch scope). | devin-task-20261026-173622-investigate-ada-session-audit-.service: Consumed
+    28.959s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 17:46
+  note: verified — evidence checks green, closing itself

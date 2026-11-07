@@ -1,0 +1,99 @@
+title: Customer-site lanes — per-site LINE group + app password (Option A)
+subtitle: The approved model for onboarding real customer WP sites to
+  LINE-driven maintenance — registry, isolation argument, runbook
+icon: account-group
+version: 1
+
+card: line-wp-site-manager
+date: 2026-10-27
+dispatch: 20261027-155810-p0-wp-live-on-plesk-boards-sit
+runner: tony-macbook
+supersedes_open_q: open-q-from-spec-when-a-real-customer-si-952fee
+
+context:
+  decision: |
+    Tony answered "proceed" (2026-10-27 15:37) to the card's open-Q
+    request — the default proposal is now the standard: dedicated LINE
+    group per customer-site, routed through the existing tony/kk-style
+    lane pattern, backend holds a per-site revocable WP Application
+    Password (~/.config/secrets/wp-<slug>.env). Option A identity map:
+    LINE group/user -> lane -> site; the customer never sees
+    credentials.
+  why_not_the_alternatives: |
+    - Split creds across two chats — rejected 2026-10-14 already: both
+      halves persist in LINE history + the Yomi index, so the split
+      protects nothing.
+    - Per-customer password sent in chat (Option B) — fallback only;
+      still puts a live credential in an indexed channel.
+    - WP admin/master password anywhere near chat — never.
+    - One shared "customers" lane with a site parameter — rejected:
+      wp_client resolves creds from process env, so a `site` argument
+      would let one customer's lane aim at another's site. Env binding
+      is the isolation boundary; keep it.
+
+model:
+  topology: |
+    customer LINE group --LINE_GROUP_PERSONA--> ada-<slug> lane
+    (idc03, kk-clone) --env wp-<slug>.env--> WP REST on the
+    customer's site. One lane instance per site; per-site app
+    password minted on a dedicated low-privilege WP user, revocable
+    in the customer's wp-admin without touching anything else.
+  lane_profile: |
+    Member-site tool set: wp_read, wp_update (policy:confirmed —
+    dispatch-bound confirm gate, not self-asserted), wp_post,
+    chat_send, cms_read + core memory/search. No HA tools (no
+    ha_upstream for customer lanes), no internal ops tools. Optional
+    own CMS collection only if the customer gets reports.
+  isolation_proof: |
+    wp_read/wp_update/wp_post all call backend/wp_client, which reads
+    WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD from the lane's env. No
+    tool exposes a site parameter — cross-site access is impossible
+    by construction, not by filter. Fleet scripts pin sites via
+    WP_BOARDS_ENV the same way.
+
+artifacts:
+  - file: docs/ssot/apps/ssot.wp-boards.yml
+    what: "sites: registry (boards entry + customer template) and
+      customer_onboarding: model section"
+  - file: docs/kb/wp-customer-site-onboarding.md
+    what: "End-to-end checklist: WP/Plesk setup -> app password ->
+      env file -> lane clone -> LINE group wiring -> consumer-surface
+      verification"
+  - file: scripts/wp-boards/site-preflight.py
+    what: "Onboarding verifier — front page + REST index (pretty vs
+      index.php?rest_route= auto-detect), anon users-enumeration
+      posture, unauth users/me=401 gate, --env-file auth round-trip
+      (users/me 200 as bot user), --write-env writes the 0600 env file
+      without echoing the password. Tested live against
+      boards.surf-thailand.com (200/200, 219 routes, 401 unauth)."
+  - file: docs/ssot/apps/ssot.line-groups.yml
+    what: "notes: customer-group convention (dedicated group, persona
+      pin, callers entry)"
+  - file: docs/ssot/infrastructure/ssot.secrets.yml
+    what: "wp-boards-app-password entry — registers wp-boards.env
+      (was unregistered) + declares the wp-<slug>.env per-site
+      convention and rotation path"
+
+verification:
+  - >-
+    python3 scripts/wp-boards/site-preflight.py
+    https://boards.surf-thailand.com/wp -> exit 0 (front 200, REST
+    200 'Chaba web boards' 219 routes, users/me unauth 401,
+    anon-enumeration warning as expected)
+  - >-
+    index.php?rest_route= fallback exercised directly against the
+    boards origin style -> 200, 31 types
+
+follow_ups:
+  - >-
+    First real customer onboarding executes the runbook; the only
+    human gate is minting the app password in the customer's wp-admin
+    (secrets policy: Tony/customer does it, agent receives via
+    secret-drop or direct file edit — never chat).
+  - >-
+    The wp_read/wp_update drops still await drop-apply + deploy-ada.sh
+    on idc03 before any lane can call them (staged in
+    integrations/ada-voice, merged to master 2026-10-27).
+  - >-
+    Optional hardening noted earlier: /wp/v2/users anonymous
+    enumeration is WP-default — preflight warns per site.

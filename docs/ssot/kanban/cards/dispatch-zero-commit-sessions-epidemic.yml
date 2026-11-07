@@ -1,0 +1,91 @@
+id: dispatch-zero-commit-sessions-epidemic
+title: dispatch sessions produce zero commits at high rate — root cause
+column: review
+updated: 2026-10-27 17:02
+spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
+  defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
+  lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
+  ends Failed-exit-code yet reported ok. Held victims: ada-text-lane-metering-gap (no branch pushed at all), devnest-cache-tokenization-bench,
+  devnest-news-watch-procedure, eval-ide-opencode-interactive, eval-ide-openhands-gui, eval-ide-zed-acp, gaussian-splat-edu-smoke,
+  grand-rename, household-kanban-appliance, inference-provider-watch. Investigate: why do sessions exit 0 with no
+  work — prompt too thin? model lane dying mid-session? worktree setup broken on some hosts? Sample a failed session
+  journal on tony-macbook + idc02, find the common signature, fix it. Until then every dispatch is a coin flip on
+  producing nothing.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  sweep:
+    stale_running: 2026-10-27 16:47
+    zero_commit: 2026-10-27 16:47
+    session_gone: 2026-10-27 17:02
+  verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
+  runner: tony-macbook
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service:
+    Failed with result ''exit-code''.'
+ref: OPS-0941
+comms:
+- at: 2026-10-27 16:44
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 16:45
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 16:45
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 16:46
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 16:46
+  from: chaba
+  text: started devin-task-20261027-164615-ops-0894-fixed-the-closeout-ga on tony-macbook (dispatch)
+- at: 2026-10-27 16:47
+  from: chaba
+  text: 'merge-sweep: devin-task-20261027-164615-ops-0894-fixed-the-closeout-ga no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-27 16:47
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-10-27 16:47
+  from: chaba
+  text: pushed dispatch/20261027-164615-ops-0894-fixed-the-closeout-ga to origin
+- at: 2026-10-27 16:47
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-27 16:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-164615-ops-0894-fixed-the-closeout-ga,
+    branch dispatch/20261027-164615-ops-0894-fixed-the-closeout-ga'
+- at: 2026-10-27 16:48
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 16:48
+  from: chaba
+  text: started devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga on tony-macbook (dispatch)
+- at: 2026-10-27 16:49
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-164816-ops-0894-fixed-the-closeout-ga.service:
+    Main process exited, cod'
+- at: 2026-10-27 16:49
+  from: chaba
+  text: pushed dispatch/20261027-164816-ops-0894-fixed-the-closeout-ga to origin
+- at: 2026-10-27 16:49
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-27 16:49
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-164816-ops-0894-fixed-the-closeout-ga,
+    branch dispatch/20261027-164816-ops-0894-fixed-the-closeout-ga'
+- at: 2026-10-27 17:02
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-164615-ops-0894-fixed-the-closeout-ga on
+    tony-macbook — if the work was never pushed it may be gone'
+claim: {}
+review_kind: verify

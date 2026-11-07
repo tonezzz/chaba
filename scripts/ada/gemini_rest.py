@@ -13,6 +13,8 @@ LiteLLM gateway on idc03 is a pure env change — no code:
   GEMINI_API_KEY   Google AI key for direct calls; a LITELLM_KEY_*
                    virtual key (e.g. LITELLM_KEY_CHABA) when BASE_URL
                    points at the gateway.
+  base_url_override  per-call gateway override for services that must not
+                     change the process-wide GEMINI_BASE_URL.
 
 Routing table / budgets: docs/ssot/infrastructure/ssot.llm-gateway.yml.
 """
@@ -35,19 +37,41 @@ def via_gateway() -> bool:
     return not base_url().startswith(DIRECT_BASE)
 
 
-def endpoint(model: str) -> str:
-    base = base_url()
+def endpoint(model: str, base_url_override: str | None = None) -> str:
+    base = (base_url_override or base_url()).rstrip("/")
     if not base.endswith("/v1beta"):
         base += "/v1beta"
     return f"{base}/models/{model}:generateContent"
 
 
+def _litellm_headers(base: str, tags, metadata) -> dict:
+    """x-litellm-tags / x-litellm-metadata headers for gateway calls —
+    how SpendLogs rows get lane/tool/job attribution (same header
+    contract ada gemini_pool uses). Direct Google calls never see them."""
+    if base.rstrip("/").startswith(DIRECT_BASE):
+        return {}
+    h = {}
+    if tags:
+        h["x-litellm-tags"] = (tags if isinstance(tags, str)
+                               else ",".join(str(t) for t in tags))
+    if metadata:
+        h["x-litellm-metadata"] = json.dumps(metadata)
+    return h
+
+
 def generate(prompt: str, model: str, *, key: str | None = None,
              generation_config: dict | None = None,
              timeout: int = 120, label: str = "gemini",
-             max_attempts: int = 4) -> str | None:
+             base_url_override: str | None = None,
+             max_attempts: int = 4,
+             tags: str | list | None = None,
+             litellm_metadata: dict | None = None) -> str | None:
     """One generateContent call -> text or None. Retries 429/5xx with
-    linear backoff; other HTTP errors fail fast with a printed reason."""
+    linear backoff; other HTTP errors fail fast with a printed reason.
+
+    tags/litellm_metadata only take effect against a LiteLLM gateway
+    base (env GEMINI_BASE_URL or base_url_override) — e.g.
+    tags="service=news-digest,job=wp-news-digest,route=brief_th"."""
     key = (key or os.environ.get("GEMINI_API_KEY")
            or os.environ.get("GOOGLE_API_KEY"))
     if not key:
@@ -57,12 +81,14 @@ def generate(prompt: str, model: str, *, key: str | None = None,
     if generation_config:
         body["generationConfig"] = generation_config
     data = json.dumps(body).encode()
+    base = (base_url_override or base_url()).rstrip("/")
+    headers = {"Content-Type": "application/json", "x-goog-api-key": key,
+               **_litellm_headers(base, tags, litellm_metadata)}
     for attempt in range(max_attempts):
         try:
             req = urllib.request.Request(
-                endpoint(model), data=data,
-                headers={"Content-Type": "application/json",
-                         "x-goog-api-key": key})
+                endpoint(model, base_url_override), data=data,
+                headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 payload = json.loads(r.read())
             parts = (payload.get("candidates") or [{}])[0].get(
@@ -91,12 +117,13 @@ def generate(prompt: str, model: str, *, key: str | None = None,
 
 
 def generate_json(prompt: str, model: str, *, key: str | None = None,
-                  timeout: int = 120) -> dict | None:
+                  timeout: int = 120, **kw) -> dict | None:
     """JSON-mode variant — asks for application/json and parses the
     reply. Raises ValueError on unparseable output (same failure surface
-    as the callers this replaces)."""
+    as the callers this replaces). Extra kwargs (tags,
+    litellm_metadata, ...) forward to generate()."""
     text = generate(
-        prompt, model, key=key, timeout=timeout,
+        prompt, model, key=key, timeout=timeout, **kw,
         generation_config={"response_mime_type": "application/json",
                            "temperature": 0.2})
     if text is None:

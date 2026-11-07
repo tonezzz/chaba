@@ -1,0 +1,529 @@
+diff --git a/backend/line_relay.py b/backend/line_relay.py
+index e4ca8dd..54b0d64 100644
+--- a/backend/line_relay.py
++++ b/backend/line_relay.py
+@@ -88,6 +88,32 @@ Env:
+                                  interview-room persona pins so a relay
+                                  restart doesn't silently fall back to
+                                  LINE_DEFAULT_PERSONA
++    LINE_PROACTIVE_ALLOW       — comma list of /send `instance` values
++                                 allowed intent='proactive' (persona-
++                                 initiated contact: member DM or in-group
++                                 @mention). Empty = every proactive send
++                                 is denied; the allowlist is the
++                                 backend-declared-intent gate (card
++                                 line-proactive-persona)
++    LINE_PROACTIVE_DEBOUNCE_S  — default 600: minimum gap between
++                                 proactive sends per (instance, chat) —
++                                 and per (instance, pinged member) — so a
++                                 persona can't spam a room or one member
++    LINE_PROACTIVE_DAY_CAP     — default 8: proactive sends per
++                                 (instance, chat) per day
++    LINE_PROACTIVE_STATE       — default ~/.local/share/ada/
++                                 line-proactive.json: write-through
++                                 debounce/cap state — a restart can't
++                                 reset the rate limits
++    LINE_MEMBER_NAMES          — default ~/.local/share/ada/
++                                 line-member-names.json: persisted
++                                 userId->displayName directory learned
++                                 from profile fetches + the registry —
++                                 /send to=<name> and mention=<name>
++                                 resolve through it across restarts
++    LINE_REGISTRY_LOOKUP_TTL_S — default 300: the mddb registry scan
++                                 behind member-name resolution is cached
++                                 this long
+     LINE_VOICE_CORPUS_DIR      — default ~/.local/share/ada-voice-corpus/line;
+                                  audio clips from enrolled senders land here
+                                  (local only — like tg_relay's voice rule)
+@@ -140,6 +166,15 @@ session opens with &chat_id=<originating chat> so a chat_send the
+ persona fires mid-turn lands in the chat that asked — not the lane
+ default room or the owner's DM. Explicit to= still wins, and the
+ LINE_LANE_ALLOW/LOCK gates vet the bound target like any other.
++
++Proactive turns (card line-proactive-persona): a persona INITIATES
++contact by posting /send with intent='proactive' — to=<member name>
++reaches a member DM, mention=<name> @-pings them inside the group with
++a real LINE mention object (display name via the group member profile
++endpoint). The relay owns the policy: the instance must sit in
++LINE_PROACTIVE_ALLOW, (instance, chat) debounces for
++LINE_PROACTIVE_DEBOUNCE_S, each member target debounces the same, and
++LINE_PROACTIVE_DAY_CAP bounds the daily volume per room.
+ """
+ from __future__ import annotations
+ 
+@@ -267,6 +302,42 @@ LINE_REGISTRY_COLL = os.environ.get(
+ LINE_REGISTRY_RETRY_S = float(
+     os.environ.get("LINE_REGISTRY_RETRY_S", "300"))
+ 
++# Proactive persona sends (card line-proactive-persona): a persona
++# INITIATES contact — a member DM or an in-group @mention — by posting
++# /send with intent='proactive'. The backend tool layer keeps this
++# owner-tier (a secondary speaker can't declare it) and the relay
++# enforces its own policy on top: the sending instance must sit in
++# LINE_PROACTIVE_ALLOW, the (instance, chat) pair and each engaged
++# member debounce for LINE_PROACTIVE_DEBOUNCE_S, and the (instance,
++# chat) day cap bounds the room's proactive volume. State write-through
++# to PROACTIVE_STATE_FILE so a restart can't reset the rate limits;
++# every decision lands in the ops ledger as proactive_*.
++LINE_PROACTIVE_ALLOW = frozenset(
++    x.strip() for x in
++    os.environ.get("LINE_PROACTIVE_ALLOW", "").split(",") if x.strip())
++LINE_PROACTIVE_DEBOUNCE_S = float(
++    os.environ.get("LINE_PROACTIVE_DEBOUNCE_S", "600"))
++LINE_PROACTIVE_DAY_CAP = int(
++    os.environ.get("LINE_PROACTIVE_DAY_CAP", "8"))
++PROACTIVE_STATE_FILE = Path(os.environ.get(
++    "LINE_PROACTIVE_STATE",
++    str(Path.home() / ".local" / "share" / "ada" /
++        "line-proactive.json")))
++
++# Member directory (same card): userId -> display name persisted to
++# MEMBERS_FILE, learned from group profile fetches and the first-seen
++# registry, so /send to=<name> and mention=<name> resolve across
++# restarts and for members who spoke before the process came up. On a
++# miss the name falls back to one throttled mddb line-user-registry
++# scan (LINE_REGISTRY_LOOKUP_TTL_S) — the registry knows members the
++# file predates.
++MEMBERS_FILE = Path(os.environ.get(
++    "LINE_MEMBER_NAMES",
++    str(Path.home() / ".local" / "share" / "ada" /
++        "line-member-names.json")))
++LINE_REGISTRY_LOOKUP_TTL_S = float(
++    os.environ.get("LINE_REGISTRY_LOOKUP_TTL_S", "300"))
++
+ _registry_mddb: Any = None
+ 
+ 
+@@ -1008,6 +1079,20 @@ class LineRelay:
+         # cooldown before a failed write re-arms).
+         self._reg_seen: set[str] = set()
+         self._reg_try: dict[str, float] = {}
++        # Proactive-send policy state (card line-proactive-persona),
++        # write-through to PROACTIVE_STATE_FILE: last = {"inst|chat":
++        # epoch}, member_last = {"inst|uid": epoch}, day + counts =
++        # {"inst|chat": n} capped by LINE_PROACTIVE_DAY_CAP.
++        self._proactive: dict[str, Any] = {
++            "last": {}, "member_last": {}, "day": "", "counts": {}}
++        self._proactive_loaded = False
++        # Member directory: userId -> display name (persisted to
++        # MEMBERS_FILE, lazily loaded); _reg_lookup caches the last mddb
++        # registry scan's name -> userId map for LINE_REGISTRY_LOOKUP_TTL_S.
++        self._member_dir: dict[str, str] = {}
++        self._member_dir_loaded = False
++        self._reg_lookup: dict[str, str] = {}
++        self._reg_lookup_at = 0.0
+ 
+     def _verify(self, body: bytes, signature: str) -> bool:
+         mac = hmac.new(CHANNEL_SECRET.encode(), body, hashlib.sha256)
+@@ -1150,7 +1235,8 @@ class LineRelay:
+         ledger — one 'send_rollup' event per nonzero day."""
+         row = self._ledger.get(day) or {}
+         if any(row.get(k) for k in
+-               ("push_msgs", "reply_msgs", "parked_msgs", "push_failed")):
++               ("push_msgs", "reply_msgs", "parked_msgs", "push_failed",
++                "proactive_msgs")):
+             _ops_event("send_rollup", "info", day=day, **row)
+ 
+     def _ledger_rollover_check(self) -> None:
+@@ -1712,7 +1798,10 @@ class LineRelay:
+                 f"/member/{user_id}",
+                 headers={"Authorization": f"Bearer {CHANNEL_TOKEN}"})
+             if r.status_code == 200:
+-                return str(r.json().get("displayName") or "")
++                name = str(r.json().get("displayName") or "")
++                if name:
++                    self._member_note(user_id, name)
++                return name
+         except Exception as exc:
+             logger.info("group profile %s/%s failed: %s",
+                         group_id, user_id, exc)
+@@ -1771,6 +1860,7 @@ class LineRelay:
+                                                   kind)
+             if name:
+                 self._names.setdefault(user_id, name)
++                self._member_note(user_id, name)
+             now = datetime.now().isoformat(timespec="seconds")
+             # prefer_leader: a lagging follower missing the just-written
+             # doc would regress first_seen to this later read.
+@@ -1822,6 +1912,251 @@ class LineRelay:
+         except Exception as exc:
+             logger.info("member registry %s failed: %s", user_id, exc)
+ 
++    # -- member directory: name -> userId resolution for /send --
++
++    def _member_note(self, user_id: str, name: str) -> None:
++        """Persist userId -> display name to MEMBERS_FILE — the
++        directory /send to=/mention= resolves through on later sends,
++        restarts included. Only real display names land here (profile
++        fetches, the first-seen registry) — caller-key fallbacks are not
++        directory material."""
++        name = str(name or "").strip()
++        if not name or not user_id.startswith("U"):
++            return
++        if not self._member_dir_loaded:
++            self._member_dir_load()
++        if self._member_dir.get(user_id) == name:
++            return
++        self._member_dir[user_id] = name
++        try:
++            MEMBERS_FILE.parent.mkdir(parents=True, exist_ok=True)
++            MEMBERS_FILE.write_text(json.dumps(
++                self._member_dir, sort_keys=True))
++        except Exception:
++            logger.info("member-dir save failed")
++
++    def _member_dir_load(self) -> None:
++        self._member_dir_loaded = True
++        try:
++            if MEMBERS_FILE.is_file():
++                data = json.loads(MEMBERS_FILE.read_text())
++                if isinstance(data, dict):
++                    self._member_dir.update(
++                        {str(k): str(v) for k, v in data.items()})
++                    logger.info("member dir loaded: %d name(s)",
++                                len(self._member_dir))
++        except Exception:
++            logger.info("member-dir load failed")
++
++    async def _registry_scan(self) -> dict[str, str]:
++        """lowered display_name/caller -> userId from the mddb
++        line-user-registry — the fallback for a name the local
++        directory doesn't know (member predates MEMBERS_FILE). Cached
++        for LINE_REGISTRY_LOOKUP_TTL_S so a run of unknown names can't
++        hammer mddb; the scan is a bounded listing, not per-doc gets."""
++        if self._reg_lookup_at and time.monotonic() - \
++                self._reg_lookup_at < LINE_REGISTRY_LOOKUP_TTL_S:
++            return self._reg_lookup
++        self._reg_lookup_at = time.monotonic()
++        mddb = _registry_store()
++        if mddb is None:
++            return self._reg_lookup
++        try:
++            docs = await mddb.search_documents(
++                LINE_REGISTRY_COLL, limit=500)
++            out: dict[str, str] = {}
++            for d in docs or []:
++                uid = str(d.get("key") or "")
++                meta = d.get("meta") or {}
++                for field in ("display_name", "caller"):
++                    for n in meta.get(field) or []:
++                        n = str(n).strip().lower()
++                        if n and uid:
++                            out.setdefault(n, uid)
++            self._reg_lookup = out
++        except Exception as exc:
++            logger.info("registry lookup scan failed: %s", exc)
++        return self._reg_lookup
++
++    async def _member_uid(self, name: str) -> str:
++        """Resolve a member display name / caller / alias to a LINE
++        userId — the /send to= and mention= chain. Order: 'owner'/'me'
++        alias, the _names label cache, LINE_USER_CALLERS,
++        LINE_PERSON_ALIASES, the persisted MEMBERS_FILE directory, then
++        one throttled mddb registry scan. '' when nothing knows the
++        name — the caller decides whether to error or let LINE 400."""
++        lookup = str(name or "").strip().lower()
++        if not lookup:
++            return ""
++        if lookup.startswith("person."):
++            lookup = lookup.split(".", 1)[1]
++        if lookup in ("owner", "me"):
++            # 'owner' is a standing alias — lanes saying to=owner mean
++            # the relay owner, not a literal id.
++            return next(iter(_allowed_users()), "")
++        hit = next((k for k, v in self._names.items()
++                    if v.lower() == lookup), "")
++        if not hit:
++            hit = next((u for u, n in _user_callers().items()
++                        if n.lower() in (lookup, f"user-{lookup}")), "")
++        if not hit:
++            # LINE_PERSON_ALIASES="tony=user-tonezzzz,kk=user-kk"
++            aliases = dict(p.split("=", 1) for p in
++                           os.environ.get("LINE_PERSON_ALIASES",
++                                          "").split(",") if "=" in p)
++            target = aliases.get(lookup, "")
++            if target:
++                hit = next((u for u, n in _user_callers().items()
++                            if n.lower() == target.lower()), "")
++        if not hit:
++            self._member_dir_load()
++            hit = next((u for u, n in self._member_dir.items()
++                        if n.lower() == lookup), "")
++        if not hit:
++            hit = (await self._registry_scan()).get(lookup, "")
++        return hit
++
++    # -- proactive sends: mention build + policy gate --
++
++    @staticmethod
++    def _u16len(s: str) -> int:
++        """LINE mention index/length are UTF-16 code-unit offsets —
++        len() undercounts astral chars (emoji, some Thai text)."""
++        return len(s.encode("utf-16-le")) // 2
++
++    async def _mention_wrap(self, text: str, names: list[str],
++                            chat_id: str) -> tuple[str, list, list]:
++        """Prepend '@display ' placeholders to a room-bound text and
++        build LINE's mention object. Returns (text, mentionees,
++        member_uids) — each mentionee is {index, length, type:'user',
++        userId} with positions in UTF-16 code units. Display names come
++        from the per-member group/room profile endpoint, falling back
++        to the caches/directory. A name that resolves nowhere raises
++        ValueError — the send aborts rather than dropping a ping the
++        model believes it made."""
++        kind = "room" if chat_id.startswith("R") else "group"
++        prefix, mentionees, uids = "", [], []
++        for name in names[:4]:
++            uid = name if re.match(r"^U[0-9a-f]{10,}$", name) \
++                else await self._member_uid(name)
++            if not uid.startswith("U"):
++                raise ValueError(
++                    f"unknown member '{name}' — cannot address the "
++                    "mention (not in callers, member dir, or registry)")
++            disp = await self._fetch_profile_name(uid, chat_id, kind) \
++                or self._names.get(uid) \
++                or self._member_dir.get(uid) or name.lstrip("@")
++            tag = f"@{disp}"
++            mentionees.append({"index": self._u16len(prefix),
++                               "length": self._u16len(tag),
++                               "type": "user", "userId": uid})
++            uids.append(uid)
++            prefix += tag + " "
++        return prefix + text, mentionees, uids
++
++    def _proactive_load(self) -> None:
++        if self._proactive_loaded:
++            return
++        self._proactive_loaded = True
++        try:
++            if PROACTIVE_STATE_FILE.is_file():
++                data = json.loads(PROACTIVE_STATE_FILE.read_text())
++                if isinstance(data, dict):
++                    for k in ("last", "member_last", "counts"):
++                        if isinstance(data.get(k), dict):
++                            self._proactive[k].update(
++                                {str(a): b for a, b in data[k].items()})
++                    self._proactive["day"] = str(data.get("day") or "")
++                    logger.info("proactive state loaded: %d lane(s)",
++                                len(self._proactive["last"]))
++        except Exception:
++            logger.info("proactive-state load failed")
++
++    def _proactive_save(self) -> None:
++        try:
++            PROACTIVE_STATE_FILE.parent.mkdir(parents=True,
++                                              exist_ok=True)
++            PROACTIVE_STATE_FILE.write_text(json.dumps(
++                self._proactive, sort_keys=True))
++        except Exception:
++            logger.info("proactive-state save failed")
++
++    def _proactive_gate(self, inst: str, chat_id: str,
++                        member_ids: list[str]) -> tuple[int, dict] | None:
++        """Policy for intent='proactive' /send payloads (card
++        line-proactive-persona). None = pass, else (status, body) the
++        endpoint answers. Rules:
++          - the instance must sit in LINE_PROACTIVE_ALLOW — the
++            backend-declared intent still needs an allowlisted lane;
++          - one proactive send per (instance, chat) per
++            LINE_PROACTIVE_DEBOUNCE_S, and the same gap per engaged
++            member (DM target or mention) — a persona can't evade the
++            room debounce by rotating targets;
++          - LINE_PROACTIVE_DAY_CAP per (instance, chat) per day.
++        Passing records the send: timestamps, day counter, a ledger
++        proactive_msgs tick and a proactive_sent ops event, all
++        write-through so a restart keeps the limits."""
++        self._proactive_load()
++        now = time.time()
++        if inst not in LINE_PROACTIVE_ALLOW:
++            _ops_event("proactive_denied", "warn", instance=inst,
++                       chat_id=chat_id, reason="allowlist")
++            logger.warning("proactive send denied: instance %r not in "
++                           "LINE_PROACTIVE_ALLOW", inst)
++            return 403, {"ok": False,
++                         "error": f"proactive sends are not enabled for "
++                                  f"instance '{inst or '(none)'}' — the "
++                                  "lane needs LINE_PROACTIVE_ALLOW on "
++                                  "the relay"}
++        day = datetime.now().strftime("%Y-%m-%d")
++        if self._proactive.get("day") != day:
++            self._proactive["day"] = day
++            self._proactive["counts"] = {}
++        key = f"{inst}|{chat_id}"
++        gap = LINE_PROACTIVE_DEBOUNCE_S - (
++            now - float(self._proactive["last"].get(key) or 0))
++        if gap > 0:
++            _ops_event("proactive_debounced", "info", instance=inst,
++                       chat_id=chat_id, retry_in_s=int(gap))
++            return 429, {"ok": False, "debounced": True,
++                         "retry_in_s": int(gap),
++                         "error": f"proactive debounce — wait "
++                                  f"{int(gap)}s before this lane pings "
++                                  "this chat again"}
++        for mid in member_ids:
++            mgap = LINE_PROACTIVE_DEBOUNCE_S - (
++                now - float(
++                    self._proactive["member_last"].get(
++                        f"{inst}|{mid}") or 0))
++            if mgap > 0:
++                _ops_event("proactive_debounced", "info", instance=inst,
++                           member=mid, retry_in_s=int(mgap))
++                return 429, {"ok": False, "debounced": True,
++                             "retry_in_s": int(mgap),
++                             "error": "proactive debounce — this member "
++                                      "was engaged less than "
++                                      f"{int(LINE_PROACTIVE_DEBOUNCE_S)}s "
++                                      "ago"}
++        used = int(self._proactive["counts"].get(key) or 0)
++        if used >= LINE_PROACTIVE_DAY_CAP:
++            _ops_event("proactive_denied", "warn", instance=inst,
++                       chat_id=chat_id, reason="day-cap", used=used)
++            return 429, {"ok": False,
++                         "error": f"daily proactive cap reached for this "
++                                  f"chat ({used}/"
++                                  f"{LINE_PROACTIVE_DAY_CAP}) — park the "
++                                  "thought until tomorrow"}
++        self._proactive["last"][key] = now
++        for mid in member_ids:
++            self._proactive["member_last"][f"{inst}|{mid}"] = now
++        self._proactive["counts"][key] = used + 1
++        self._ledger_add(proactive_msgs=1)
++        self._proactive_save()
++        _ops_event("proactive_sent", "info", instance=inst,
++                   chat_id=chat_id, members=member_ids or None,
++                   day_used=used + 1)
++        return None
++
+     async def _refuse_group_member(self, chat_id: str, user_id: str,
+                                    reply_token: str | None) -> None:
+         """Rate-limited 'not authorized' for an unmapped room member —
+@@ -2426,11 +2761,17 @@ class LineRelay:
+         async def send(request):
+             """Outbound push API for Ada's chat_send tool — loopback only
+             (127.0.0.1 listen). {to?, text?, image_url?, caption?,
+-            class?='urgent'|'bulk', priority? (alias)} — the image is
++            class?='urgent'|'bulk', priority? (alias),
++            mention?='name,...', intent?='proactive'} — the image is
+             fetched + publicly hosted via _image_msgs so LINE's CDN can
+             pull it. class='bulk' payloads (digests, rollups, watch
+             deltas) park and flush bundled — they don't burn quota
+-            head-on, and none while the monthly block is set."""
++            head-on, and none while the monthly block is set.
++            mention= @-pings room members with a real LINE mention object
++            (names resolve through _member_uid; group/room targets only).
++            intent='proactive' declares a persona-initiated send — the
++            LINE_PROACTIVE_* policy (allowlist, debounce, day cap) gates
++            it before anything is spent."""
+             try:
+                 body = await request.json()
+             except Exception:
+@@ -2438,34 +2779,12 @@ class LineRelay:
+                                      "error": "bad json"}, status_code=422)
+             uid = str(body.get("to") or body.get("chat_id") or "").strip()
+             # Display-name shortcut: personas pass 'to=กุ้ง' meaning a room
+-            # member — resolve through the profile-name cache, else leave
+-            # it (a bad id makes LINE 400 either way, but resolving keeps
+-            # the message deliverable).
++            # member — resolve through the member chain (label cache ->
++            # callers -> aliases -> member dir -> registry scan), else
++            # leave it (a bad id makes LINE 400 either way, but resolving
++            # keeps the message deliverable).
+             if uid and not re.match(r"^[UCR][0-9a-f]{10,}$", uid):
+-                lookup = uid.lower()
+-                if lookup.startswith("person."):
+-                    lookup = lookup.split(".", 1)[1]
+-                if lookup in ("owner", "me"):
+-                    # 'owner' is a standing alias — lanes saying
+-                    # to=owner mean the relay owner, not a literal id.
+-                    hit = next(iter(_allowed_users()), "")
+-                    if hit:
+-                        uid = hit
+-                hit = next((k for k, v in self._names.items()
+-                            if v.lower() == lookup), "")
+-                if not hit:
+-                    hit = next((u for u, n in _user_callers().items()
+-                                if n.lower() in
+-                                (lookup, f"user-{lookup}")), "")
+-                if not hit:
+-                    # LINE_PERSON_ALIASES="tony=user-tonezzzz,kk=user-kk"
+-                    aliases = dict(p.split("=", 1) for p in
+-                                   os.environ.get("LINE_PERSON_ALIASES",
+-                                                  "").split(",") if "=" in p)
+-                    target = aliases.get(lookup, "")
+-                    if target:
+-                        hit = next((u for u, n in _user_callers().items()
+-                                    if n.lower() == target.lower()), "")
++                hit = await self._member_uid(uid)
+                 if hit:
+                     uid = hit
+             inst = str(body.get("instance") or "").strip()
+@@ -2506,14 +2825,66 @@ class LineRelay:
+                     {"ok": False,
+                      "error": f"target {uid} outside lane allowlist"},
+                     status_code=403)
++            # mention= names room members to @-ping (card
++            # line-proactive-persona): each resolves to a userId and
++            # lands as a real LINE mention object on the text bubble —
++            # group/room targets only.
++            mention_names = [m.strip().lstrip("@") for m in str(
++                body.get("mention") or "").split(",") if m.strip()]
++            mention_uids: list[str] = []
+             msgs: list[dict] = []
+-            if body.get("text"):
+-                text = str(body["text"])
++            if body.get("text") or mention_names:
++                text = str(body.get("text") or "")
+                 # Who's-talking label: queued sends carry no persona tag
+                 # unlike turn replies — prefix [instance] on room targets.
+                 if inst and uid.startswith("C"):
+                     text = f"[{inst}] " + text
+-                msgs += [{"type": "text", "text": text[:4900]}]
++                tmsg: dict[str, Any] = {"type": "text",
++                                        "text": text[:4900]}
++                if mention_names:
++                    if uid[:1] not in ("C", "R"):
++                        return JSONResponse(
++                            {"ok": False,
++                             "error": "mention= needs a group/room "
++                                      "target — a member DM is plain "
++                                      "to=<name>"},
++                            status_code=400)
++                    try:
++                        wrapped, mentionees, mention_uids = \
++                            await self._mention_wrap(
++                                str(tmsg["text"]), mention_names, uid)
++                    except ValueError as exc:
++                        _ops_event("mention_failed", "warn",
++                                   instance=inst or None,
++                                   chat_id=uid, detail=str(exc)[:200])
++                        return JSONResponse(
++                            {"ok": False, "error": str(exc)},
++                            status_code=400)
++                    tmsg["text"] = wrapped[:4900]
++                    tmsg["mention"] = {"mentionees": mentionees}
++                msgs += [tmsg]
++            # intent='proactive' declares a persona-INITIATED send — the
++            # gate (LINE_PROACTIVE_ALLOW + debounce + day cap) runs after
++            # the target and mentions resolve but before any media fetch
++            # spends work. Undeclared sends keep the class= rules
++            # unchanged — the gate only restricts.
++            intent = str(body.get("intent") or "").strip().lower()
++            if str(body.get("proactive") or "").strip().lower() in (
++                    "1", "true", "yes"):
++                intent = "proactive"
++            if intent == "proactive":
++                gate = self._proactive_gate(
++                    inst, uid,
++                    mention_uids or
++                    ([uid] if uid.startswith("U") else []))
++                if gate is not None:
++                    status, gout = gate
++                    return JSONResponse(gout, status_code=status)
++            elif intent and intent != "reply":
++                return JSONResponse(
++                    {"ok": False,
++                     "error": f"unknown intent '{intent}'"},
++                    status_code=400)
+             if body.get("image_url"):
+                 msgs += await self._image_msgs(
+                     str(body["image_url"]), str(body.get("caption") or ""))

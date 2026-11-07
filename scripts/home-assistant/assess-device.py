@@ -31,7 +31,7 @@ INSTANCES = {
     },
     "michael-dev": {
         "url_env": "DEV_URL",
-        "default_url": "https://tony-dell.taila0626a.ts.net:8124",
+        "default_url": "https://idc02.taila0626a.ts.net:8124",
         "token_envs": ["DEV_TOKEN", "HASS_TOKEN"],
         "token_files": ["~/.config/secrets/ha-michael-dev.env"],
     },

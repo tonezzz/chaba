@@ -1,0 +1,59 @@
+title: "AUD-0950 — OpenCode lane state dir lost with dispatch worktree; state moved to host-stable XDG path + review embeds ledger + restore cmd"
+date: 2026-10-27
+card: audit-oc-lane-state-missing-lane
+session: "dispatch-wt-20261027-115440-opencode-audit-lane-state-miss (mn01)"
+status: "confirmed + fixed in branch; operator restore step pending on tony-macbook"
+
+finding:
+  brief: "promotion reviews committed under evals/opencode-lane/reports/
+    but the ledger that produced them (stage.json + metrics.jsonl) is
+    absent — verified-job aggregate cannot be re-derived"
+  root_cause: "lane_gate.py resolved STATE = <repo>/evals/opencode-lane/state
+    from __file__ — inside a dispatch worktree that is the EPHEMERAL
+    worktree path. The S0 run (2026-10-27, tony-macbook) wrote stage.json
+    (S0->S1 promotion) and metrics.jsonl (10 records) into a worktree
+    that was later deleted; the dir is gitignored so nothing was ever
+    committed. Side effect: any fresh checkout silently re-initialises
+    the lane at S0 (fails closed, but loses promotion history + quotas)."
+  evidence: "card opencode-session-audit-parity comms 16:39 — 'Lane
+    state dir lived only in now-deleted dispatch worktrees';
+    .gitignore:93; git log shows only envelopes/reports/PROCEDURE
+    committed under evals/opencode-lane/"
+  recoverability: "per-job ledger records are UNRECOVERABLE from git —
+    only the aggregate survives in the committed review JSON. The
+    session audit (AUD-0938) reconciled it against the opencode session
+    DB on tony-macbook."
+
+fix:
+  state_dir: "lane_gate.py state_dir() resolves
+    $OPENCODE_LANE_STATE, else ${XDG_STATE_HOME:-~/.local/state}/opencode-lane
+    — stable across checkouts on a host; a surviving legacy in-repo
+    state dir is migrated once via copytree"
+  review_ledger: "review() now embeds the stage's lane-arm records under
+    'ledger:' — every committed promotion-review JSON is self-contained
+    evidence, re-derivable without the state dir"
+  restore: "new subcommand — lane_gate.py restore <S> --from-review
+    <committed review.json>; refuses unless review.decision=promote and
+    promote_to=<S>; records the restore in stage history"
+  tests: "test_lane_gate.py — OPENCODE_LANE_STATE pinned to a tempdir
+    (tests never touch host state); +6 tests (env override, XDG +
+    legacy migration, ledger embed, restore accept/refuse). 40 lane
+    tests, 60 devnest total — all green"
+  docs: "PROCEDURE.md state path + new 'State-dir loss & recovery'
+    section; .gitignore comment updated (repo path kept ignored — it is
+    now the legacy location); graduated-routing job yml state/ledger
+    lines corrected"
+
+operator_step_pending:
+  on_tony_macbook: "after merge, run:
+    python3 scripts/devnest/lane_gate.py restore S1 \\
+      --from-review evals/opencode-lane/reports/2026-10-27-promotion-review.json
+    — rebuilds stage.json at S1 with evidence-cited history. The S0
+    metrics.jsonl itself is not recreated (unrecoverable; the review's
+    embedded ledger + AUD-0938 session-DB reconciliation is the record)."
+
+residual_risk: "state remains host-local (single runner is the design —
+  S1+ requires OPENCODE_LANES=1 on one watched runner). If tony-macbook
+  dies, the ledger is lost again but every weekly review is now
+  self-contained; a periodic state-dir backup to the served checkout is
+  a candidate follow-up, not done here."

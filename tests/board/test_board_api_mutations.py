@@ -16,8 +16,10 @@ import json
 import os
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 import yaml
 
@@ -76,6 +78,52 @@ class DoorTestBase(unittest.TestCase):
 
 
 class LessonDoorTest(DoorTestBase):
+    def test_litellm_translation_key_uses_scoped_virtual_key(self):
+        with patch.dict(os.environ, {"LITELLM_KEY_MDDB": ""}), \
+                patch.object(self.mod, "_load_env_file",
+                             side_effect=[
+                                 {"LITELLM_KEY_MDDB": "mddb-virtual-key"}
+                             ]):
+            self.assertEqual(self.mod._litellm_translation_key(),
+                             "mddb-virtual-key")
+
+    def test_litellm_translation_key_supports_existing_mddb_env(self):
+        with patch.dict(os.environ, {"LITELLM_KEY_MDDB": ""}), \
+                patch.object(self.mod, "_load_env_file",
+                             side_effect=[{}, {"LITELLM_KEY": "mddb-key"}]):
+            self.assertEqual(self.mod._litellm_translation_key(), "mddb-key")
+
+    def test_gemini_thai_uses_free_litellm_route(self):
+        generate = Mock(return_value="<p>แปล</p>")
+        with patch.object(self.mod, "_gemini_mod",
+                          SimpleNamespace(generate=generate)), \
+                patch.object(self.mod, "_litellm_translation_key",
+                             return_value="virtual-md-db-key"), \
+                patch.dict(os.environ,
+                           {"BOARD_API_LITELLM_URL":
+                            "http://gateway.test:4000"}):
+            result = self.mod._gemini_thai("<p>English</p>")
+
+        self.assertEqual(result, "<p>แปล</p>")
+        args, kwargs = generate.call_args
+        self.assertIn("<p>English</p>", args[0])
+        self.assertEqual(args[1], "gemini-3.5-flash-lite-free")
+        self.assertEqual(kwargs["key"], "virtual-md-db-key")
+        self.assertEqual(kwargs["base_url_override"],
+                         "http://gateway.test:4000")
+        self.assertEqual(kwargs["max_attempts"], 1)
+
+    def test_gemini_thai_without_virtual_key_degrades_to_english(self):
+        generate = Mock(return_value="<p>unexpected translation</p>")
+        with patch.object(self.mod, "_gemini_mod",
+                          SimpleNamespace(generate=generate)), \
+                patch.object(self.mod, "_litellm_translation_key",
+                             return_value=""):
+            result = self.mod._gemini_thai("<p>English</p>")
+
+        self.assertEqual(result, "")
+        generate.assert_not_called()
+
     def test_validation(self):
         d = self.mod.do_lesson
         self.rejects(lambda: d({}, "devin"), "topic required")

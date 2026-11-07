@@ -1,0 +1,29 @@
+# S0 shadow-replay envelope — frozen fixture storage-dryrun (card
+# opencode-graduated-routing-standard). Admitted only while the lane is
+# at stage S0; pairs the deterministic l0 arm with the opencode arm.
+id: s0-storage-dryrun
+card: opencode-graduated-routing-standard
+task_class: shadow_replay
+stage: S0
+target_host: tony-macbook
+executor: opencode
+fixture: storage-dryrun
+pair_arms: [l0, opencode]
+model: litellm/gemini-3.5-flash-lite
+provider: litellm
+mcp_allowlist: []
+allowed_paths: [evals/shadow/task/]
+artifact:
+  path: evals/shadow/task/artifacts/storage-dryrun.json
+  schema: evals/shadow/fixtures/storage-dryrun/task.yaml#contract.required_fields
+verifier:
+  type: held_out_py
+  ref: evals/shadow/fixtures/storage-dryrun/verify.py
+escalation:
+  on_fail: manual
+  max_retries: 1
+rollback:
+  kind: worktree-drop
+  ref: shadow/<run>-<arm>-storage-dryrun branch+worktree dropped by shadow_eval clean
+heartbeat:
+  required: false

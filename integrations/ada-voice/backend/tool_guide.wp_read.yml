@@ -1,0 +1,25 @@
+# tool_guide.yml snippet — append at top level
+# (<ada-voice>/backend/tool_guide.yml).
+#
+# wp_read (2026-10-27, card line-wp-site-manager P2): the read side of
+# the boards WP surface — before this the lanes could only write.
+
+wp_read: >-
+  Read-only view of the boards WordPress site — use it whenever the
+  member asks what is on their site, whether something is up, or to
+  read back a post/draft. action=list returns id/title/status/link
+  rows: default is the 10 newest published posts; post_type='pages'
+  for pages or a CPT kind (expense/contact/reminder/asset/place/trip/
+  news/lesson) for records; status='draft'/'private'/'trash'/'any' to
+  see non-public entries; person='tony|kk|nhong' filters posts by
+  member tag; search= does a WP search; limit= up to 20. action=get
+  fetches one entry by id= or slug= and returns the title + body TEXT
+  — that text is the draft preview (members have no wp-admin login, so
+  a draft link does not render for them — read the content aloud or
+  paste it in chat instead of sending the link). full=true returns the
+  whole body when the ~1200-char preview is not enough. To publish a
+  draft the member approved: wp_update id=<id> status='publish' (a
+  confirmed write — get the explicit yes first). Result links are
+  public when status=publish; anything else is login-gated — say so
+  instead of handing out a dead link. If ok:false mentions missing
+  credentials, the site key isn't configured — don't retry.

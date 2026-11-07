@@ -1,0 +1,130 @@
+{
+ "at": "2026-10-27T06:38:34.903294+00:00",
+ "host": "tony-macbook",
+ "probe": {
+  "host": "tony-macbook",
+  "at": "2026-10-27T06:38:34.903294+00:00",
+  "simulated": null,
+  "tools": {
+   "opencode": true,
+   "devin": true,
+   "ollama": false,
+   "git": true,
+   "python3": true
+  },
+  "net": {
+   "litellm": true,
+   "litellm_authed": true,
+   "ollama_idc02": true,
+   "ollama_idc03": true,
+   "ollama_local": false,
+   "tailnet": true,
+   "wan": true,
+   "devin_cloud": true
+  },
+  "secrets": {
+   "litellm_keys_env": true,
+   "litellm_chaba_env": false
+  },
+  "models": {
+   "litellm": [
+    "bench",
+    "chat",
+    "chat-local",
+    "classify",
+    "colab-gemma3",
+    "colab-qwen3",
+    "embedding",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-free",
+    "gemini-2.5-flash-lite",
+    "gemini-2.5-flash-lite-free",
+    "gemini-3.1-flash-image",
+    "gemini-3.1-flash-lite-image",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-free",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash-lite-free",
+    "gemini-embedding-2",
+    "groq-gpt-oss-120b",
+    "groq-gpt-oss-20b",
+    "groq-qwen3.8-27b",
+    "image",
+    "ollama-gemma12b",
+    "ollama-gptoss",
+    "ollama-hermes8b",
+    "ollama-llama3.2",
+    "ollama-moondream",
+    "ollama-nomic-embed",
+    "ollama-qwen3",
+    "ollama-qwen7b",
+    "or-claude-fable-5.1",
+    "or-gemini-2.5-flash",
+    "or-gemini-2.5-flash-lite",
+    "or-gemini-3.1-flash-image",
+    "or-gemini-3.5-flash",
+    "or-gemini-3.5-flash-lite",
+    "or-gemini-embedding-2",
+    "summary",
+    "tool-call",
+    "vision",
+    "voice-aux"
+   ],
+   "ollama": [
+    "bge-m3:latest",
+    "nomic-embed-text:latest",
+    "qwen2.5:7b-instruct"
+   ]
+  }
+ },
+ "matrix": [
+  {
+   "rung": "L0",
+   "label": "deterministic local scripts",
+   "status": "PASS",
+   "why": [
+    "ok"
+   ]
+  },
+  {
+   "rung": "L1",
+   "label": "local OpenCode + local Ollama (small prompts)",
+   "status": "BLOCKED",
+   "why": [
+    "unreachable: ollama_local"
+   ]
+  },
+  {
+   "rung": "L2",
+   "label": "LAN/tailnet LiteLLM gateway",
+   "status": "PASS",
+   "why": [
+    "ok"
+   ]
+  },
+  {
+   "rung": "L3",
+   "label": "remote LiteLLM / OpenCode Zen (WAN)",
+   "status": "PASS",
+   "why": [
+    "ok"
+   ]
+  },
+  {
+   "rung": "L4",
+   "label": "Devin cloud",
+   "status": "PASS",
+   "why": [
+    "ok"
+   ]
+  },
+  {
+   "rung": "MANUAL",
+   "label": "Tony / manual gate",
+   "status": "PASS",
+   "why": [
+    "always available"
+   ]
+  }
+ ]
+}

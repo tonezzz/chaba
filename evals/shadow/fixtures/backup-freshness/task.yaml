@@ -1,0 +1,28 @@
+id: backup-freshness
+title: Backup freshness survey — newest artifact age per declared root
+class: read_only
+needs_llm: false
+timeout_s: 420
+artifact: backup-freshness.json
+description: >-
+  For each declared backup root, find the newest file and its age.
+  Report which roots are fresh against their declared threshold.
+contract:
+  required_fields:
+    host: "hostname"
+    collected_at: "ISO-8601"
+    roots: "list of {path, label, exists, newest_file, newest_mtime,
+                     age_hours, fresh}"
+    stale_roots: "labels of roots whose newest file exceeds fresh_hours"
+    verdict: "pass if every existing root is fresh OR no roots exist;
+              fail if any existing root is stale"
+    read_only: "must be true"
+  rules:
+    - absent roots are recorded with exists=false, not treated as stale
+    - age_hours = (now - newest_mtime) / 3600, float
+l0:
+  script: l0.py
+arms:
+  - l0
+  - opencode
+  - devin

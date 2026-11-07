@@ -1,0 +1,101 @@
+id: devnest-colab-t4-model-slot-adapter
+title: Colab T4 DevNest model-slot adapter for frozen shadow fixtures
+column: backlog
+updated: 2026-10-29 13:42
+brief: Prepare a bounded local-model evaluation pack for the next Colab T4 window; keep it distinct from the worker/queue
+  held-out battery and from the existing Mac local-LLM lane.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- colab
+- nest
+- model-evaluation
+spec: Build a reusable, local-only Colab T4 model-slot pack with a 30-minute default cap (60 minutes only after
+  a passing first slot). The five read-only S0 fixtures are frozen under evals/shadow/fixtures (DEV-0861), but scripts/devnest/shadow_eval.py
+  currently exercises L0/OpenCode/Devin; it has no Colab T4 local-model arm. Choose and implement either a model-only
+  inference arm with independent synthetic structured-output checks (report only throughput/format smoke, not replay
+  quality), or a full tool-using shadow_eval port that preserves the held-out verifier boundary. Pin model/revision
+  and only reuse pre-staged weights; no paid API, secrets, personal data, production mutation, or model download
+  during the paid slot. Stage the complete pack before queue launch, order it immediately before the render pack
+  so only CPU/I/O prep overlaps, and verify metrics/report artifacts remotely. Do not launch while the current render/prep
+  queue is active.
+ref: OPS-0971
+comms:
+- at: 2026-10-28 23:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-28 23:15
+  from: devin
+  text: 'raised request choose-colab-t4-model-arm: Choose the first Colab model-slot arm before I stage a runnable
+    pack. The T4 adapter is not in the existing shadow harne'
+- at: 2026-10-29 08:36
+  from: tony
+  text: 'answered choose-colab-t4-model-arm: model-only — Model-only local HF 7–8B inference with synthetic JSON
+    fixtures; 30m throughput/format smoke only (recommended, fastest/safest)'
+- at: 2026-10-29 08:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 10:03
+  from: devin
+  text: 'Final model-only HF package staged: `devnest-qwen3-8b-hf-prestage` (pinned Qwen/Qwen3-8B revision, 20 GiB
+    RAM/40 GiB disk; T4 cannot claim) plus `devnest-model-slot-30m` (30-minute NF4 T4 pack, requires pre-stage done).
+    Source and queue helper checks are 0-diff on Drive. The 16 GiB model snapshot is not downloaded yet; no worker/cell/inference
+    launched. Run the pre-stage on an idle high-RAM CPU worker before Colab Launch.'
+- at: 2026-10-29 10:11
+  from: devin
+  text: '[Colab attempt 2026-10-29 run-20261029-0254] Queue acquired and drained without inference. `devnest-qwen3-8b-hf-prestage`
+    was skipped because runtime RAM is 13.6 GiB (<20 GiB); `devnest-model-slot-30m` then skipped its unmet dependency.
+    Additional contract mismatch found: the slot runner calls Ollama `/api/generate` for `qwen3:8b`, while the prerequisite
+    pack downloads a Transformers HF snapshot; that artifact will not satisfy Ollama `/api/tags`. No model download
+    occurred. Do not relaunch until'
+- at: 2026-10-29 13:41
+  from: devin
+  text: 'raised request the-approved-colab-model-only-hf-slot-is-35fbcc: The approved Colab model-only HF slot is
+    blocked until a pinned Qwen3-8B snapshot is pre-staged. This is a one-time ~16G'
+- at: 2026-10-29 13:42
+  from: devin
+  text: 'answered the-approved-colab-model-only-hf-slot-is-35fbcc: Withdrawn as premature by Devin: the current
+    slot runner calls Ollama qwen3:8b, while the pre-stage produces a Transformers HF snapshot. Fix and verify that
+    contract before any model download. This re'
+- at: 2026-10-29 13:42
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+requests:
+- id: choose-colab-t4-model-arm
+  ask: Choose the first Colab model-slot arm before I stage a runnable pack. The T4 adapter is not in the existing
+    shadow harness.
+  status: answered
+  at: 2026-10-28 23:15
+  from: devin
+  options:
+  - id: model-only
+    label: Model-only local HF 7–8B inference with synthetic JSON fixtures; 30m throughput/format smoke only (recommended,
+      fastest/safest)
+  - id: agent-replay
+    label: Port full shadow_eval agent/tool replay to Colab and run the five frozen S0 fixtures with held-out verification
+      (higher effort)
+  - id: mac-first
+    label: Hold Colab model work; finish the KK-Mac local Ollama lane (OPS-0966) first
+  suggested: model-only
+  answer: model-only — Model-only local HF 7–8B inference with synthetic JSON fixtures; 30m throughput/format smoke
+    only (recommended, fastest/safest)
+- id: the-approved-colab-model-only-hf-slot-is-35fbcc
+  ask: The approved Colab model-only HF slot is blocked until a pinned Qwen3-8B snapshot is pre-staged. This is
+    a one-time ~16GiB public Hugging Face download to the private Drive cache on a >=20GiB RAM/40GiB disk CPU host;
+    KK-Mac would only stage the cache, with no inference there. SSH host key is trusted but runner authentication
+    is currently denied. Do you authorize this pre-stage and the approved runner-key setup, or should the T4 slot
+    remain held?
+  status: answered
+  at: 2026-10-29 13:41
+  from: devin
+  options:
+  - id: approve-prestage
+    label: Approve one-time pinned ~16GiB HF snapshot pre-stage to private Drive on KK-Mac; no KK-Mac inference.
+  - id: hold
+    label: Hold the Colab slot; no model download or cache staging.
+  suggested: approve-prestage
+  answer: 'Withdrawn as premature by Devin: the current slot runner calls Ollama qwen3:8b, while the pre-stage produces
+    a Transformers HF snapshot. Fix and verify that contract before any model download. This response is not Tony
+    approval; no download or inference has been authorized by this request.'
+awaiting_action: true

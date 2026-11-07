@@ -1,0 +1,24 @@
+id: kk-mac-litellm-tunnel-lane
+title: Optional LiteLLM facade for KK-Mac qwen3:8b
+column: backlog
+updated: 2026-10-29 22:29
+brief: Add KK-Mac as an optional metered LiteLLM model without exposing loopback Ollama directly.
+priority: medium
+program: devnest
+tags:
+- kk-mac
+- litellm
+- ssh-tunnel
+- fallback
+- security
+spec: Keep direct kk_mac_llm.py as the safety/admission path. If central clients need LiteLLM compatibility, create
+  an authenticated/reverse SSH tunnel from KK-Mac Ollama loopback :11434 to an IDC03 loopback port, add model alias
+  kk-qwen3-8b to LiteLLM, health-check the tunnel, and place it in only approved summary/classification chains.
+  Do not bind KK Ollama publicly. Tunnel loss must fall back immediately. Record zero model cost, tokens, latency,
+  and upstream identity. Require one supervised end-to-end smoke and rollback by removing the tunnel/model alias.
+  No secrets in chat or commits.
+ref: SEC-0985
+comms:
+- at: 2026-10-29 22:29
+  from: devin
+  text: card captured via board-api

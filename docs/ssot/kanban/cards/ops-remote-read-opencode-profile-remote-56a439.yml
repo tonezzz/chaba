@@ -1,0 +1,21 @@
+id: ops-remote-read-opencode-profile-remote-56a439
+title: ops-remote-read opencode profile — remote-target read-only diagnosis (verifier not host-pinned)
+column: backlog
+updated: 2026-10-30 20:06
+priority: medium
+blocked_by: update-ai-lane-delegation-md-for-the-exe-40ae04
+tags:
+- opencode
+- profile
+- routing
+spec: 'OPS-1021 exposed the gap: ops-readonly''s held-out verifier pins artifact.host==runner host, so remote-target
+  diagnosis can never pass. Needed: a sibling profile (task_classes read_only/report) where the agent collects remote
+  facts via the mcp_debug allowlist (ssh surface) and the verifier checks declared required_fields + mcp usage evidence
+  — NOT host==this. Contract: action.artifact (json, reports/) + action.target_host required + result names a failure
+  class with journal evidence. Then OPS-1013-class diagnoses route executor=opencode lane=free_lane target_host=<host>
+  for real. Gate: profile lands + one live remote diagnosis card passes its verifier.'
+ref: OPS-1025
+comms:
+- at: 2026-10-30 20:06
+  from: tony
+  text: card captured via board-api

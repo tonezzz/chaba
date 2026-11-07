@@ -1,0 +1,46 @@
+title: Dedicated image-gen Gemini key — verified superseded, do not mint
+id: 2026-10-27-imagegen-dedicated-key-superseded
+card: gemini-imagegen-dedicated-key
+ref: ADA-0471
+date: 2026-10-27
+status: verified-superseded
+summary: |
+  Card asked for a dedicated free-tier AI Studio key for persona
+  image-gen (ADA_IMAGE_GEN_KEY) because the shared fleet GEMINI_API_KEY
+  429'd on gemini-2.5-flash-image (2026-10-11). Verification on this
+  dispatch found the premise dead on two counts:
+  (1) gemini-2.5-flash-image was retired upstream by Google on
+      2026-10-11 — the same day the 429 was observed. A free-tier key
+      minted today has no image model to call: the current image model
+      gemini-3.1-flash-image is paid-only upstream ("no free tier").
+  (2) The image lane was rebuilt 2026-10-13/14 (card ada-render-image-v2,
+      ADA-0643): ada_render_image now calls the LiteLLM gateway 'image'
+      class — chain gemini-3.1-flash-image@paid ->
+      gemini-3.1-flash-lite-image@paid -> or-gemini-3.1-flash-image —
+      with per-lane virtual keys (LITELLM_KEY_KK -> ada-kk, $5/30d
+      budget caps). Quota contention with voice/chat cannot recur:
+      voice runs Live API direct on per-lane paid GEMINI_API_KEY_*
+      keys, image spends through the metered gateway.
+  Conclusion: mint nothing, add no env var. Nothing in the codebase
+  references ADA_IMAGE_GEN_KEY (the only mention is the card spec
+  itself). The kk car-photo driver is already unblocked — v2 render
+  was live-verified on kk-dev 2026-10-14.
+
+evidence:
+  - docs/ssot/infrastructure/ssot.llm-gateway.yml — image class chain
+    + "paid-only upstream — no free tier"; live_keys per-lane map;
+    "gemini-2.5-flash-image retired upstream 2026-10-11"
+  - stacks/idc03/litellm/config.yaml — image alias ->
+    gemini/gemini-3.1-flash-image, fallbacks lite-image + openrouter
+  - docs/ssot/kanban/cards/ada-render-image-v2.yml — done, deployed
+    d8a7b0f..d62276b, live-verified render on kk-dev 2026-10-14
+  - docs/ssot/kanban/cards/gemini-imagegen-dedicated-key.yml — carries
+    SUPERSEDED comm 2026-10-14 recommending closure
+  - repo-wide grep: ADA_IMAGE_GEN_KEY appears only in the card spec
+
+decision:
+  action: none — close card as superseded
+  if_free_image_model_returns: >
+    Revisit only if Google ships a new free-tier image model; then a
+    dedicated free key could isolate quota again. Recard at that time
+    rather than pre-minting a key with no model to call.

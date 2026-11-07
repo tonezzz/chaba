@@ -1,0 +1,27 @@
+id: openchamber-ada-card-preview-harness
+title: OpenChamber Preview harness for Ada image and video chat cards
+column: backlog
+updated: 2026-11-05 17:32
+brief: Use OpenChamber Preview to validate Ada chat-card media rendering against a deterministic local harness.
+priority: medium
+program: devnest
+tags:
+- openchamber
+- preview
+- ada
+- image
+- video
+- browser-test
+spec: 'Build a small local browser harness for stacks/tony-dell/ada-ha/www/ada-chat-card.js and exercise text URLs,
+  image_url chat_push, video_url chat_push, broken/expired URLs, streaming re-render, click-to-open, download behavior,
+  and narrow/mobile layouts. Run the harness through OpenChamber Preview and capture screenshots/browser errors
+  as durable evidence. Acceptance: fixture tests cover image-only, video-only, mixed, empty, broken, and non-http
+  inputs; OpenChamber Preview can inspect the rendered element and the browser console is clean; no HA production
+  deployment is required.'
+note: The card already renders image_url/video_url in _chatPush and URL images in _fillBubble; this is the browser-level
+  verification gap.
+ref: ADA-1037
+comms:
+- at: 2026-11-05 17:32
+  from: tony
+  text: card captured as a later OpenChamber testing feature

@@ -1,0 +1,42 @@
+title: "Audit AUD-0949 sequence_anomaly — CONFIRMED true positive, low harm; root fixes tracked by sibling audit cards"
+date: 2026-10-28
+card: audit-oc-sequence-anomaly-mzwpaubp
+session: "dispatch-wt-20261028-055950-conduct-an-audit-for-sequence- (tony-macbook)"
+status: "audited — anomaly confirmed, adjudicated, report committed"
+
+subject:
+  flag: sequence_anomaly (AUD-0949)
+  detector: "scripts/devnest/opencode_session_audit.py reconcile: stage-labeled session created < promote_at[stage]"
+  sessions:
+    - "ses_e83b3ac19ffegilqt0mzwpaubp — /tmp/opencode-s1-canary.HWPjZB/host-health — 2026-10-27T07:38:59Z"
+    - "ses_e83b34f1affe5mILN5SvHrNlX3 — …/storage-dry-run — 07:39:23Z"
+    - "ses_e83b2f143ffesgzo9Y4sY8jcYO — …/mcp-safety — 07:39:47Z"
+  promote_at_S1: "2026-10-27T07:48:47.642Z (evals/opencode-lane/reports/2026-10-27-promotion-review.json; only promote_to=S1 review in history)"
+
+finding:
+  verdict: "TRUE POSITIVE — S1-labeled runs executed ~9-10 min before the S1 stage opened"
+  context: "informal pre-flight probes at the top of the lane-builder dispatch (20261027-143512); ran as raw `opencode run` in /tmp before lane_gate was even committed — no envelope, no admit, no ledger record, no human watch, no OPENCODE_LANES env"
+  harm: "none destructive — 0 denials, 0 mutations, writes confined to own /tmp dirs; but invisible to the lane ledger + ephemeral artifacts + one unsafe automatic_ok classification (AUD-0947)"
+  not_a_false_positive_because: "single promote_to=S1 review ever (no map-overwrite), UTC-vs-UTC compare, and the 5 S0 sessions in the same window were correctly NOT flagged"
+  evidence_superseded_by: "real S1 canary evidence = gated profile runs p1-*-idc02-20261027-20* (docs/ssot/jobs/devnest/2026-10-27-opencode-task-agent-profiles.yml)"
+
+host_facts:
+  execution_host: tony-macbook (opencode.db, /tmp dir, events.jsonl all present)
+  tony_dell_role: "MCP probe target only — its DB (178 sessions) has zero canary sessions; exec checkout has lane_gate + review but NOT the audit script (AUD-0938 correction still open)"
+
+checks:
+  - "test_opencode_session_audit: 12/12 OK (sibling worktree copy — tool not yet on master)"
+  - "test_lane_gate: 43/43 OK (master)"
+  - "opencode.db stage-label census macbook(20)+dell(178): 3 anomalies, 0 missed, 0 extra"
+
+recommendations:
+  - "no detector change — correct flag + human adjudication worked"
+  - "pre-gate probes must not use lane stage labels (use pilot-/probe- prefix)"
+  - "land opencode_session_audit.py+tests+reports durably before the kept-dirty worktree is pruned (AUD-0938 carry-over)"
+
+report: evals/opencode-lane/reports/2026-10-28-sequence-anomaly-audit.md
+related_cards:
+  - audit-oc-unsafe-classification-svhrnlx3 (AUD-0947 — the unsafe output)
+  - audit-oc-artifact-not-durable-{mzwpaubp,svhrnlx3,4sy8jcyo} (ephemeral /tmp artifacts)
+  - audit-oc-lane-state-missing-lane (AUD-0950 — fixed)
+  - opencode-session-audit-parity (AUD-0938 — audit-artifact durability still open)

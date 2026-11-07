@@ -11,9 +11,12 @@ requires:
   - "tool:podman"
 state:
   - "~/apps/input-bridge — app code"
-  - "~/.local/share/input-bridge — runtime state"
+  - "~/.local/share/input-bridge — runtime state (displays/camwall/
+     percussion + nodes.json fleet enroll registry)"
 ports:
-  - "3010 — bridge API (wildcard)"
+  - "3010 — bridge API (wildcard); POST /enroll is the public fleet
+     report-back (api./app.surf-thailand.com/enroll via caddy-edge),
+     GET /nodes reads the enrolled-node registry"
 restore: "Standby copy on idc01 (stopped)."
 related_cards: [idc01-return-role]
 status: deployed

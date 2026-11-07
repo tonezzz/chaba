@@ -1,0 +1,102 @@
+title: "dispatch close-out: 'ok' must mean the session exited 0 AND produced commits"
+subtitle: >-
+  a --collect'ed unit's systemctl defaults no longer read as success; a
+  zero-commit branch head (old base commit on first-parent) no longer
+  stamps verified; empty dispatches are stamped + counted on the QC
+  scoreboard
+icon: 🛡️
+id: 2026-10-26-dispatch-empty-closeout-verification
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-empty-closeout-verification-gap
+related_cards:
+  - merge-sweep-resurrects-closed-cards  # KNB-0893 — same file, fixed here
+started: "2026-10-26"
+completed: "2026-10-26"
+
+context:
+  incident: >-
+    Proven twice on the same cards (2026-10-25/26): sessions exited with
+    `service: Failed with result exit-code`, the branch push landed a head
+    EQUAL to master base (zero commits), yet the pipeline recorded
+    `finished (ok)` and merge-sweep wrote `verified — auto-closed`. Cards
+    burned: answer-auto-verb-triage-impl (mn01 then tony-macbook),
+    vcast-program-design (mn01 then tony-macbook), voice-600ms (mn01
+    then idc02 — tony closed by hand). `ok` meant "the wrapper exited",
+    not that work landed.
+  root_causes:
+    exit_evidence: >-
+      devin-task units run under systemd-run --collect: at exit the unit
+      is unloaded and `systemctl show` thereafter reports DEFAULTS
+      (ExecMainStatus=0, Result=success). runner-agent.collect() read
+      exactly those fields → every collected unit reported ok; journal
+      was fetched only as decoration. kanban-dispatch.finish_one used
+      `is-active` — a collected unit reads inactive/unknown → "treat as
+      finished". The task-dir exit_code file (written by the
+      devin-dispatch wrapper precisely because --collect hides the
+      Result) was never consulted on either finish path.
+    empty_merge: >-
+      dispatch_repos.close_out() merged-state check: for an ancestor
+      head it only special-cased head == base tip. Once origin/master
+      advanced past the commit the worktree was cut from, a zero-commit
+      session head was still an ancestor → close_out returned
+      merged=True+noop → the caller stamped verified=True → drain +
+      auto-close. merge_state already computed on_first_parent/
+      empty_session for this shape; close_out ignored it.
+    resurrection (KNB-0893): >-
+      merge-sweep's locked_edit bumped `updated` on EVERY mutation incl.
+      bookkeeping stamps. On a stale checkout (e.g. dell's readonly
+      chaba-tony-dell mirror) a session_gone stamp rewrote the whole
+      stale card with a fresh `updated`; the card-union merge driver
+      resolves scalars by newer `updated` → the stale column=doing /
+      status=running beat upstream's done at the next pull.
+
+design:
+  exit_evidence: >-
+    One precedence everywhere (new dr.unit_exit_evidence; runner-agent
+    collect() mirrors it inline since remote hosts may run a stale
+    dispatch_repos): task-dir exit_code > meta.json result >
+    systemctl fields ONLY while LoadState=loaded > journal
+    Succeeded/Failed lines > None=unproven. Unproven is NOT ok —
+    runner-agent reports ok=False; kanban-dispatch finishes to review
+    with an explicit 'no exit record' comms note and lets the verified
+    gate weigh the deliverable.
+  empty_dispatch: >-
+    close_out's ancestor branch now checks merge_state.on_first_parent:
+    a head on base's first-parent chain is an old base commit — zero
+    commits ahead of merge-base — so it returns noop+empty_session,
+    never merged. Only a head that entered base through a merge's
+    non-first parent counts as landed work. verified=True stamps
+    (kanban-dispatch merge_pending_one) additionally require proven
+    unit exit — a merge whose session failed/unproven withholds
+    verified and lets merge-sweep's gate hold the card.
+  scoreboard: >-
+    verify_gate marks produced_work=False failures zero_commit=True;
+    fail_attempt stamps action.sweep.zero_commit on the card;
+    qc-scoreboard.py counts it (plus last_failure text fallback) as
+    'Zero-commit dispatches' with card ids.
+  stale_board (KNB-0893): >-
+    two layers: (a) locked_edit(touch=False) for bookkeeping writes
+    (stamps, comms fallback) — no fabricated `updated`, so the
+    card-union driver keeps upstream's scalars; workflow mutations
+    (fail_attempt, drain_verified, requests) still bump it. (b)
+    sweep_card skips cards whose column isn't doing/review, and main()
+    refuses to run when CHABA_REPO's <gitdir>/chaba-role exists and
+    isn't 'served' — a non-writer checkout's board is stale by
+    definition. Role-less checkouts proceed (can't prove stale).
+
+verification:
+  tests: >-
+    tests/board: test_empty_session_on_moved_base_is_noop_not_merged +
+    test_ancestor_via_real_merge_still_reports_merged (close_out),
+    CollectTest x6 (runner-agent evidence precedence), finish_one x3,
+    merge-withheld x2, test_empty_session_on_moved_base_fails_and_stamps
+    (sweep zero_commit), test_terminal_column_never_touched,
+    test_bookkeeping_write_preserves_updated. 79 pass; 2 pre-existing
+    baseline-test-gate failures unchanged on unmodified HEAD.
+  watch: >-
+    next empty dispatch should land: finish (failed) at close-out,
+    'verified gate failed — no delivered work' + auto-retry in comms,
+    action.sweep.zero_commit on the card, 'Zero-commit dispatches' row
+    on the QC scoreboard.

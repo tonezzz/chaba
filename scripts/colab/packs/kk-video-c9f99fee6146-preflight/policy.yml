@@ -1,0 +1,61 @@
+# pack-preflight policy — kk-video-c9f99fee6146 (Sacred Father) release.
+# Non-private by design: check names, thresholds and token lists only.
+# The project docs themselves stay out of git (fetched/mirrored at run).
+project_id: kk-video-c9f99fee6146
+self_pack: kk-video-c9f99fee6146-preflight
+
+# source binary is optional in the materialized project dir — manifest
+# sha256 + the project-id suffix binding still prove provenance. Set true
+# to hard-require source/<filename> present for a full re-hash.
+source_required: false
+
+# --- planning package contract (brief/scene/prompt/rights/qc) ----------
+required_files:
+  - {path: brief/creative-brief.md, min_bytes: 200}
+  - {path: story/scene-plan.md, min_bytes: 200}
+  - {path: shots/prompt-pack-v1.md, min_bytes: 200}
+  - {path: assets/rights-matrix.md, min_bytes: 100}
+  - {path: qc/preflight.md, min_bytes: 100}
+  - {path: packs/preview-plan.yml, min_bytes: 50}
+
+# --- fact-vs-dream separation (Tony: real memories vs dream interp.) ---
+fact_dream:
+  files: [story/scene-plan.md, shots/prompt-pack-v1.md]
+  require_labels: [fact, dream]
+
+# --- symbolic identity policy (Tony: mixed — symbolic default, real
+#     likeness only where explicitly approved) -------------------------
+identity:
+  evidence_files: [assets/rights-matrix.md]
+  required_terms: [symbolic]
+  allowed_values: [symbolic, mixed]
+  manifest_keys: [identity_policy, likeness_policy]
+
+# --- audio/subtitle decision (Tony: Thai narration + Thai & English
+#     subtitles) -------------------------------------------------------
+audio:
+  evidence_files:
+    - qc/preflight.md
+    - packs/preview-plan.yml
+    - brief/creative-brief.md
+    - story/scene-plan.md
+  narration_re: '(?i)thai.{0,80}narrat|narrat.{0,80}thai|th-TH'
+  subtitle_res:
+    th: '(?i)\bth(ai)?\b.{0,60}(subtitle|srt|caption)|(subtitle|srt|caption).{0,60}\bth(ai)?\b'
+    en: '(?i)\ben(glish)?\b.{0,60}(subtitle|srt|caption)|(subtitle|srt|caption).{0,60}\ben(glish)?\b'
+
+# --- dependent packs gated behind this preflight -----------------------
+packs:
+  - kk-video-c9f99fee6146-embeds
+  - kk-video-c9f99fee6146-preview
+
+# --- paid-service / public-publish denylist ---------------------------
+# word-boundary, case-insensitive; 'facebook' deliberately absent —
+# 9:16/Facebook-Reels is a target FORMAT in the brief, not a publish flag.
+banned_tokens: [youtube, yt_upload, tiktok, instagram, twitter,
+                public_publish, publish_public, stripe, billing, paid,
+                kling, runway, pika, luma, sora, veo]
+banned_keys: [public, publish_public, public_url, paid, spend]
+artifact_prefixes: [packs/, renders/, voice-bench/, model-archive/, projects/]
+publish_prefixes: [packs/, renders/, model-archive/, projects/, voice-bench/, doc-pilot/]
+banned_prefixes: [public/, www/, web/, stacks/, http://, https://, /, ..]

@@ -1,7 +1,7 @@
 id: lab-yolo-ha-detect
 title: 'Lab: YOLO object detect on HA cams'
 brief: An experiment to run object detection on the home camera feeds. Sitting in the backlog — no action needed.
-column: review
+column: done
 lab:
   hypothesis: Local YOLO on camera snapshots gives useful detections (person/vehicle/package) fast enough for Ada
     camera answers
@@ -9,7 +9,7 @@ lab:
   review_by: '2026-10-25'
 note: 'Experiment dir: experiments/ultralytics-yolo-ha. Candidate runner: omen GPU or mn01; feeds cms-auto-cctv-*
   cards if it promotes.'
-updated: 2026-10-23 16:57
+updated: 2026-10-26 07:18
 comms:
 - at: 2026-10-06 06:45
   from: tony
@@ -129,6 +129,9 @@ comms:
     — bench.py, labels, 2969-line results.json, notes). The gate failure was test_podman_lock_watchdog::test_dead_pause_pid_removed
     on the omen runner — all 7 tests in that file pass clean on macbook (runner-env flake, not a regression). The
     kept worktree on tony-omen can be reaped — its HEAD is now in master.'
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
 spec: 'Lab bench: local YOLO object detect on home camera snapshots. Create experiments/ultralytics-yolo-ha in this
   chaba worktree (script + notes + results json). Pull ~20 snapshots: use HA camera entities (michael-dev REST snapshot
   endpoint is fine, token in ~/.config/secrets/ha-michael-dev.env) and/or the xmeye vms-snap shim on tony-dell (:8377/snap?ch=).

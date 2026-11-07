@@ -1,0 +1,95 @@
+id: cline-kanban-con01-pilot
+title: Pilot Cline Kanban host on con01
+column: doing
+updated: 2026-10-30 14:56
+priority: medium
+tags:
+- cline-kanban
+- con01
+- pilot
+- nest
+spec: Stand up Cline Kanban v0.1.70 on con01 as an isolated rootless Podman/Quadlet service, bound only to con01
+  tailnet IPv4 and protected by its remote-access passcode. Use a disposable Git workspace and persistent app data;
+  do not mount live Chaba repos, copy secrets, or enable auto-commit/auto-PR. Verify HTTP/UI assets, WebSocket/origin
+  behavior, tailnet reachability, and host resource impact. No external-provider model calls or large model downloads
+  without Tony approval. Declare stack, service, health/audit expectations, and rollback.
+ref: KNB-0925
+comms:
+- at: 2026-10-27 10:55
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 12:07
+  from: devin
+  text: '2026-10-27 12:02 +07: Service image built and Quadlet started, but the first tailnet HTTP probe returned
+    403: Cline v0.1.70 rejects the forwarded Host header. I am keeping the container bridge-isolated and adding
+    a strict same-origin proxy (no host networking); the external listener remains tailnet-only. No agent task/model
+    call has run.'
+- at: 2026-10-27 13:11
+  from: devin
+  text: '2026-10-27: Final UI smoke passed. con01 service is active; port 3484 listens only on 100.72.146.39. HTTP
+    root=200; Chrome passcode login loaded the workspace and /api/runtime/ws returned 101. stack-preflight --apply-verify
+    passed. audit-hosts found no Cline-specific delta; six unrelated existing failed units remain. UI currently
+    reports "No agent configured"; no model/provider call or coding-agent task has run.'
+- at: 2026-10-27 13:11
+  from: devin
+  text: 'raised request the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5: The Cline host/UI is ready, but the UI
+    says "No agent configured." con01 has only bge-m3 embeddings and 6.3 GiB RAM avai'
+- at: 2026-10-27 13:36
+  from: tony
+  text: 'answered the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5: nest-adapter — Design a Nest worker adapter before
+    running agents'
+- at: 2026-10-27 13:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-28 12:12
+  from: devin
+  text: 'Read-only identity/auth finding (2026-10-28): direct unauthenticated GET to the declared tailnet endpoint
+    http://100.72.146.39:3484/ returned HTTP 200 with the Kanban page; the stack verify contract expects unauthenticated
+    401. Tailscale status maps 100.72.146.39 to online con01. Endpoint is tailnet-only, but its declared Basic Auth
+    gate is not verified/enforced on the live path. No login, credentials, service changes, or content writes performed.
+    Before sharing/adding this URL to lesson 2737, i'
+- at: 2026-10-28 13:24
+  from: tony
+  text: status?
+- at: 2026-10-28 13:42
+  from: devin
+  text: 'AUTH SURFACE RESOLVED (2026-10-28, probed live): unauthenticated GET / returns the 1.4KB login shell ONLY
+    — every real API surface is passcode-gated: /api/runtime/status, /api/sessions, /api/tasks, /api/kanban/cards,
+    /api/config, /api/runtime/ws all return 401. This is correct web-app behavior; the verify contract''s ''expect
+    401 on /'' is wrong — it should check / for the login shell AND /api/* for the 401 gate. NOT a security hole;
+    contract needs updating, not the deployment.
+
+
+    NEST-ADAPTER DESIGN'
+- at: 2026-10-28 14:45
+  from: devin
+  text: 'STATUS UPDATE (2026-10-28): the stalled triage is resolved — all work continued under KNB-0932 (adapter
+    PR #45 merged, now DEPLOYED on con01 and verified). Auth finding from this morning is also resolved: the new
+    proxy enforces BasicAuth BEFORE the app, so unauthenticated / now 401s (stricter than the old contract). The
+    app''s own passcode was disabled (--no-passcode, upstream flag patched) — the proxy is the declared auth layer;
+    app :3485 unpublished on private bridge. First end-to-end smoke ran'
+- at: 2026-10-30 14:56
+  from: devin
+  text: 'Linked initiative: the OpenCode->Cline proposal-workflow pilot (card opencode-cline-idea-proposal-workflow)
+    ran a bounded analysis-only canary through the deployed con01 path today. Live verification held: unauth 401
+    on / and /api/tasks; Ollama tony-omen provider live (qwen2.5:7b+qwen3:4b). Lane card cline-proposal-pilot-edu-no-th
+    carries the snapshot analysis; report at reports/2026-10-30-cline-proposal-pilot.md.'
+requests:
+- id: the-cline-host-ui-is-ready-but-the-ui-sa-d60ba5
+  ask: The Cline host/UI is ready, but the UI says "No agent configured." con01 has only bge-m3 embeddings and 6.3
+    GiB RAM available. For one real smoke task, which route do you want? Hosted provider will make a small billable
+    inference call; a local model download would compete with con01 DR/STT and is not recommended; a Nest adapter
+    is extra development and still needs a generation model.
+  status: answered
+  at: 2026-10-27 13:11
+  from: devin
+  options:
+  - id: hosted-smoke
+    label: Authorize one small hosted-provider smoke task
+  - id: ui-only
+    label: Keep this UI-only pilot for now
+  - id: nest-adapter
+    label: Design a Nest worker adapter before running agents
+  suggested: hosted-smoke
+  answer: nest-adapter — Design a Nest worker adapter before running agents
+awaiting_action: true

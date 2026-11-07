@@ -9,9 +9,10 @@ standard is **fast detection**.
 
 - Per-job timers stay per-job (isolation, `Persistent` catchup,
   journald tags). Do NOT collapse to one mega-timer.
-- `chaba-jobs.timer` is the single tick for `dispatch: dispatcher`
-  interval jobs (`ssot.jobs.yml`); heavyweight/calendar jobs render
-  their own `<id>.timer`.
+- `chaba-jobs.timer` is the legacy single tick for `dispatch: dispatcher`
+  interval jobs (`ssot.jobs.yml`). After the 2026-10-29 OPS-0790
+  migration no dispatcher jobs remain — every job renders its own
+  `<id>.timer`; the tick retires once replacement timers are verified.
 - **Every live fleet timer must be declared** `expected_state: active`
   in `ssot.audit.hosts.yml` under the host's `expected_services`.
   Daily `audit-hosts.py` (drift-reconcile) then flags "expected timer
@@ -36,10 +37,12 @@ standard is **fast detection**.
 
 ## Hardening rule (job containers)
 
-Dispatcher job commands that `podman run --name X` get a pre-clean
-(`podman rm -f X`) in `job-dispatcher.py` — a timeout-killed client
-leaves the name behind and `--rm` never fires; one crash used to brick
-a recurring job forever.
+Job commands that `podman run --name X` get a best-effort pre-clean
+(`ExecStartPre=-/usr/bin/podman rm -f X`) emitted by `render-jobs.py` —
+a timeout-killed client leaves the name behind and `--rm` never fires;
+one crash used to brick a recurring job forever. (Before the OPS-0790
+migration the same guard lived as a subprocess preclean in
+`job-dispatcher.py`.)
 
 ## Exit-code contract (OPS-0581, decided 2026-10-13)
 

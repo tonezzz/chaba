@@ -30,8 +30,8 @@ mcp:
   bind_host: 0.0.0.0
   secret_path: /private_CtYuVkJEl28cp8qA8yXNCQ
   webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
-  local_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
-  tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
+  local_url: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
+  tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_omen.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
   webhook: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_tony")}/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6'
   caddy:
     host_path: /apps/ha/tony-ha/

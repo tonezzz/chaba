@@ -22,23 +22,33 @@
 #
 # PACKS (nest-pack v2): ada-nest/packs/<name>/ is a self-contained job
 # bundle — pack.yml {name, needs:{gpu_gb,disk_gb,egress_only_ok}, prep, run,
-# artifacts, scope, timeout_s} plus optional inputs/. Packs run AFTER the
-# JOBS manifest, are claimed optimistically (packs/<name>/claim/<worker>),
-# and mark done at packs/<name>/done — so ANY worker on ANY store can pick
-# them up. needs is a capability floor: this worker advertises gpu via
-# nvidia-smi, disk via statvfs, egress_only_ok=True always.
+# artifacts, scope, timeout_s, requires} plus optional inputs/. Packs run
+# AFTER the JOBS manifest, are claimed optimistically (packs/<name>/claim/
+# <worker>), and mark done at packs/<name>/done — so ANY worker on ANY
+# store can pick them up. needs is a capability floor: this worker
+# advertises gpu via nvidia-smi, disk via statvfs, egress_only_ok=True
+# always. requires: [pack-names] is a CLAIM GATE (2026-10-27,
+# kk-video-preflight-stage): dependents can't claim until each required
+# pack's done marker exists, and a *-preflight requirement must also show
+# a readable preflight.json verdict pass|warn. Discovered packs are
+# emitted requires-first so a CPU preflight lands before its GPU
+# dependents inside one launch — stage the whole release before launch;
+# mid-run uploads were never picked up anyway.
 #
 # Observability (all on Drive, readable via rclone from fleet hosts):
 #   queue/run-<ts>.out.log   — every byte this process prints incl. job runs
 #   queue/prep-<name>.log    — per-job prep stdout/stderr
 #   queue/heartbeat          — rewritten every 15s: <epoch> <job> <phase>
-#   queue/runner.pid         — running pid, removed on clean exit
+#   queue/runner.pid         — running pid, removed on clean exit (legacy)
+#   queue/runner.id          — JSON {pid,boot_id,worker,epoch,ts} — the
+#                            — boot-scoped identity; a pid on shared Drive is
+#                            — NOT a process handle on any other VM
 #   queue/done/<name>.done   — per-job completion markers (work scope)
 #   queue/env-done/<boot>/   — env markers, scoped to this VM's boot_id
 import os, sys, time, subprocess, traceback, threading, signal, glob
 
-Q = '/content/drive/MyDrive/ada-nest/queue'
-ROOT = '/content/drive/MyDrive/ada-nest'
+ROOT = os.environ.get('NEST_ROOT', '/content/drive/MyDrive/ada-nest')
+Q = os.environ.get('NEST_QUEUE', f'{ROOT}/queue')
 DONE = f'{Q}/done'
 try:
     BOOT_ID = open('/proc/sys/kernel/random/boot_id').read().strip()
@@ -55,8 +65,45 @@ importlib.reload(jobs_mod)          # pick up manifest edits without restart
 JOBS = jobs_mod.JOBS
 
 PACKS = f'{ROOT}/packs'
+
+def norm_requires(job):
+    """requires: pack names this pack may not claim ahead of. Accepts a
+    single string or a list; anything else is treated as none — the
+    pack-side validator (pack-preflight) flags bad types at release."""
+    reqs = job.get('requires')
+    if isinstance(reqs, str):
+        return [reqs]
+    if isinstance(reqs, (list, tuple)):
+        return [r for r in reqs if isinstance(r, str)]
+    return []
+
+def order_packs(specs):
+    """Deterministic requires-first ordering (Kahn over the discovered
+    set): a pack always sorts after every SAME-RELEASE pack it requires,
+    so a CPU preflight gate lands before its GPU dependents in one pass.
+    Requires on absent/foreign packs change nothing here — the claim-time
+    gate (requires_unmet) arbitrates those."""
+    names = {s['name'] for s in specs}
+    emitted = []
+    emitted_names = set()
+    held = list(specs)                    # already name-sorted
+    while held:
+        progressed = False
+        for s in list(held):
+            reqs = [r for r in norm_requires(s) if r in names]
+            if all(r in emitted_names for r in reqs):
+                emitted.append(s)
+                emitted_names.add(s['name'])
+                held.remove(s)
+                progressed = True
+        if not progressed:
+            emitted.extend(held)          # dependency cycle — keep sort
+            break                         # order; the gate still blocks
+    return emitted
+
 def load_packs():
-    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts."""
+    """Discover ada-nest/packs/<name>/pack.yml → normalized job dicts,
+    dependency-ordered (see order_packs)."""
     out = []
     if not os.path.isdir(PACKS):
         return out
@@ -77,7 +124,7 @@ def load_packs():
         spec.setdefault('name', d)
         spec['_pack'] = True
         out.append(spec)
-    return out
+    return order_packs(out)
 
 log = open(f'{Q}/log-{time.strftime("%Y%m%d-%H%M")}.txt', 'a', buffering=1)
 def say(msg):
@@ -119,6 +166,17 @@ def fenced_out(my_epoch, worker):
 
 # heartbeat: lets fleet-side checks flag a stall without any notebook access
 state = {'job': 'boot', 'phase': 'boot'}
+
+def _registry_refresh():
+    """Keep this VM's managed-runtime record fresh while the queue runs —
+    the console's duplicate-session gate reads queue/runtime-sessions/. Best-effort:
+    runtime_registry.py may be absent on older Drive trees."""
+    try:
+        import runtime_registry as rr
+        rr.register()
+    except Exception:
+        pass
+
 def heartbeat():
     while True:
         try:
@@ -131,6 +189,7 @@ def heartbeat():
                     f.write(json.dumps(
                         {'worker': WORKER, 'epoch': EPOCH,
                          'ts': int(time.time())}))
+            _registry_refresh()
         except OSError:
             pass
         time.sleep(15)
@@ -155,10 +214,38 @@ say(f'lease acquired: {WORKER} epoch {EPOCH}')
 threading.Thread(target=heartbeat, daemon=True).start()
 threading.Thread(target=fence_watch, daemon=True).start()
 
+# runner.id — boot-scoped identity. runner.pid is kept for fleet tooling but
+# is attribution-free; anything that wants to SIGNAL a runner must match
+# runner.id's boot_id to its own /proc boot_id first (PID-collision lesson).
+def write_runner_id():
+    try:
+        with open(f'{Q}/runner.id', 'w') as f:
+            f.write(json.dumps({'pid': os.getpid(), 'boot_id': BOOT_ID,
+                                'worker': WORKER, 'epoch': EPOCH,
+                                'ts': int(time.time())}) + '\n')
+    except OSError:
+        pass
+
+write_runner_id()
 open(f'{Q}/runner.pid', 'w').write(str(os.getpid()))
+
+def remove_own_runner_marks():
+    """Delete our identity files only when they still name US — a fenced-out
+    zombie must not strip the identity of the runner that beat it."""
+    try:
+        if open(f'{Q}/runner.pid').read().strip() == str(os.getpid()):
+            os.unlink(f'{Q}/runner.pid')
+    except OSError:
+        pass
+    try:
+        d = json.loads(open(f'{Q}/runner.id').read())
+        if d.get('pid') == os.getpid() and d.get('boot_id') == BOOT_ID:
+            os.unlink(f'{Q}/runner.id')
+    except Exception:
+        pass
+
 def bye(*a):
-    try: os.unlink(f'{Q}/runner.pid')
-    except OSError: pass
+    remove_own_runner_marks()
     sys.exit(1)
 signal.signal(signal.SIGTERM, bye)
 signal.signal(signal.SIGINT, bye)
@@ -232,6 +319,32 @@ def fits(job):
             return f'{k} {CAPS.get(k,0):.1f} < {v}'
     return ''
 
+def requires_unmet(job):
+    """Claim gate for `requires:` — a dependent pack may not claim until
+    every required pack's done marker exists. A *-preflight requirement
+    additionally binds its verdict artifact: preflight.json must be
+    present, readable, and not verdict 'fail' — this is what makes a
+    failed release preflight block its embed/render dependents. Missing
+    verdict file on a *-preflight requirement = unmet (fail closed)."""
+    for req in norm_requires(job):
+        d = f'{PACKS}/{req}'
+        if not os.path.isfile(f'{d}/done'):
+            return f'requires {req}: not done'
+        pj = f'{d}/preflight.json'
+        if os.path.isfile(pj):
+            try:
+                verdict = json.load(open(pj)).get('verdict')
+            except Exception as e:
+                return f'requires {req}: preflight.json unreadable ({e})'
+            if req.endswith('-preflight'):
+                if verdict not in ('pass', 'warn'):
+                    return f'requires {req}: preflight verdict {verdict!r}'
+            elif verdict == 'fail':
+                return f'requires {req}: preflight verdict fail'
+        elif req.endswith('-preflight'):
+            return f'requires {req}: done but preflight.json missing'
+    return ''
+
 def markpath(job):
     if job.get('_pack'):
         return f"{PACKS}/{job['name']}/done"
@@ -274,7 +387,9 @@ def verify_artifacts(job, timeout=180):
     best in-VM signal (server-side truth is the fleet watchdog's job), but it
     still catches run-returned-but-wrote-nothing — the failure that made a
     false save-hf-cache.done while the tar never landed (2026-10-23)."""
-    pats = job.get('artifacts') or []
+    # {boot_id} expands so env-scope jobs can declare boot-scoped artifacts
+    pats = [p.replace('{boot_id}', BOOT_ID)
+            for p in (job.get('artifacts') or [])]
     if not pats:
         return True, ''
     deadline = time.time() + timeout
@@ -314,6 +429,9 @@ try:
             say(f'== {name}: SKIP (done marker)')
             continue
         if job.get('_pack'):
+            why = requires_unmet(job)
+            if why:
+                say(f'== {name}: SKIP requires unmet ({why})'); continue
             why = fits(job)
             if why:
                 say(f'== {name}: SKIP needs unmet ({why})'); continue
@@ -359,6 +477,12 @@ try:
                 else:
                     ns['PACK_DIR'] = pack_dir
                     ns['NEST_ROOT'] = ROOT
+                    ns['BOOT_ID'] = BOOT_ID
+                    # (name, logfile, Popen) of the next job's bg prep — lets
+                    # a run (e.g. t4-session-warmup) keep the GPU busy exactly
+                    # until that prep exits. None when nothing is pending.
+                    ns['QUEUE_PENDING'] = pending
+                    ns['QUEUE_STATE'] = state
                     exec(compile(job['run'], f'<{name}>', 'exec'), ns)
             finally:
                 signal.alarm(0)
@@ -385,11 +509,11 @@ try:
     # before the VM idles/recycles. Marker content already recorded sizes so
     # a fleet-side rclone check can confirm.
     state['phase'] = 'flush-settle'
-    say('QUEUE-DRAINED — settling 120s for DriveFS flush')
-    time.sleep(120)
+    settle = float(os.environ.get('NEST_QUEUE_SETTLE_S', '120'))
+    say(f'QUEUE-DRAINED — settling {settle:.0f}s for DriveFS flush')
+    time.sleep(settle)
 finally:
     state['job'] = 'exit'; state['phase'] = 'exit'
     if current:
         release_claim(current)      # died mid-pack — don't poison the pack
-    try: os.unlink(f'{Q}/runner.pid')
-    except OSError: pass
+    remove_own_runner_marks()

@@ -1,7 +1,7 @@
 id: capacity-move-michael-dev
 title: 'capacity: move michael-dev HA node idc03 -> idc02'
-column: backlog
-updated: 2026-10-15 13:04
+column: done
+updated: 2026-10-26 18:02
 brief: 'Next move under capacity-adjust procedure. idc03 co-locates two HA nodes with Ada backends+MDDB; member/dev
   nodes without LAN deps prefer idc02/idc03 per placement policy — idc02 has 11.9G/220G free and is the designated
   relief valve. michael-dev chosen before kk-ha: dev lane, lower blast radius. Stateful move: HA config dir + .storage,
@@ -22,3 +22,52 @@ comms:
 - at: 2026-10-15 13:04
   from: tony
   text: moved doing -> backlog
+- at: 2026-10-26 17:27
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 17:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 17:39
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 17:39
+  from: chaba
+  text: started devin-task-20261026-173929-move-michael-dev-ha-instance-i on tony-macbook (dispatch)
+- at: 2026-10-26 17:40
+  from: devin
+  text: 'starting move idc03:8124 -> idc02:8124. Phase0: config 1.4G on idc03; idc02 has 168G disk/9G mem free.
+    Now ref-sweep.'
+- at: 2026-10-26 17:46
+  from: devin
+  text: 'Phase1 sweep done: consumers = idc02 caddy (surf + :8124 shadow), mha-state-push.svc, mcp_config idc03:9585,
+    repo scripts, SSOT. Config+secrets already staged on idc02, image pulled, quadlet installed. Cutting over now.'
+- at: 2026-10-26 18:00
+  from: devin
+  text: 'DONE — michael-dev live on idc02. Verified: :8124 200 local+tailnet (https://idc02...:8124), ws auth_ok,
+    MCP :9585 initialize->ha-mcp 8.7.0, surf URL ->302 CF, /apps/ha/michael-dev->idc02, mha-state-push mirroring
+    60 ids. idc03 unit masked+stopped (24h rollback), serve :8124 removed. Repointed: caddy-edge surf+shadow, web
+    origin, mn01 caddy, mcp_config x3, scripts, 19 SSOT files + job trail 2026-10-26-michael-dev-idc02-move.yml.
+    Found+fixed: internal_url was still stale tony-dell since the 10-09'
+- at: 2026-10-26 18:00
+  from: devin
+  text: moved doing -> done
+- at: 2026-10-26 18:02
+  from: chaba
+  text: pushed dispatch/20261026-173929-move-michael-dev-ha-instance-i to origin
+- at: 2026-10-26 18:02
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 18:02
+  from: chaba
+  text: auto-merged b99f33f7 (dispatch/20261026-173929-move-michael-dev-ha-instance-i) → origin/master
+- at: 2026-10-26 18:02
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-173929-move-michael-dev-ha-instance-i,
+    branch dispatch/20261026-173929-move-michael-dev-ha-instance-i'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+claim: {}

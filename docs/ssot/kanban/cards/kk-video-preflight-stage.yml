@@ -1,0 +1,83 @@
+id: kk-video-preflight-stage
+title: Add lightweight KK video preflight pack before GPU work
+column: done
+updated: 2026-10-27 15:47
+brief: Validate KK project inputs and preview-pack policy before expensive GPU work, without consuming the active
+  runtime snapshot.
+priority: medium
+program: devnest
+tags:
+- devnest
+- kk
+- video
+- colab
+- preflight
+- qc
+spec: Add a lightweight preflight stage to the KK video queue release. Validate source/project manifest, SHA-256/provenance,
+  brief/scene/prompt/rights files, fact-vs-dream labels, symbolic identity policy, Thai narration + Thai/English
+  subtitle decision, pack.yml syntax, artifact globs, output privacy, GPU/disk/timeout declarations, and no paid/public-publish
+  flags. Write a deterministic preflight.json and report before embedding/render packs. It must be CPU-safe, idempotent,
+  and run before GPU work in the next queue release; it must not be injected into a running queue snapshot. A failed
+  preflight must prevent dependent packs from claiming. Add tests and a release/pack hash reference.
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 ct docs to `ada-nest/projects/` and re-submit the three packs. | devin-task-20261027-152625-add-a-lightweight-preflight-st.service:
+    Consumed 1min 244ms CPU time over 14min 13.202s wall clock time, 421.1M memory peak, 62.9M memory swap peak.'
+  verified: true
+ref: OPS-0936
+comms:
+- at: 2026-10-27 15:25
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 15:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 15:26
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 15:26
+  from: chaba
+  text: started devin-task-20261027-152625-add-a-lightweight-preflight-st on tony-macbook (dispatch)
+- at: 2026-10-27 15:32
+  from: devin
+  text: 'design settled: (1) canonical CPU-safe validator scripts/colab/pack-preflight.py emits deterministic preflight.json/.md;
+    (2) new pack kk-video-c9f99fee6146-preflight (gpu_gb:0) staged with the release; (3) queue-runner + nest-worker
+    gain a requires: claim gate (done marker + verdict!=fail); (4) embeds+preview packs declare requires on it;
+    (5) tests + hash reference. no live Drive writes — staging is a documented release step.'
+- at: 2026-10-27 15:40
+  from: devin
+  text: 'DONE (worktree): pack-preflight.py validator (manifest/sha256-provenance/brief-scene-prompt-rights/fact-vs-dream/symbolic-identity/thai-narration+th-en-subtitles/pack.yml/artifact-globs/privacy/needs+timeout/no-paid-public
+    flags) + kk-video-c9f99fee6146-preflight pack (gpu_gb:0) + requires: claim gate in queue-runner.py AND nest-worker.py
+    (fail closed; *-preflight needs verdict pass|warn) + requires-first ordering so CPU gate drains before GPU packs
+    in one launch. embeds->preflight, preview->[pr'
+- at: 2026-10-27 15:41
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ct docs to `ada-nest/projects/` and re-submit the three packs. | devin-task-20261027-152625-add-a-lightweight-pre'
+- at: 2026-10-27 15:41
+  from: chaba
+  text: 'session-end checkpoint 76f245fd: 5 leftover file(s) committed'
+- at: 2026-10-27 15:41
+  from: chaba
+  text: pushed dispatch/20261027-152625-add-a-lightweight-preflight-st to origin
+- at: 2026-10-27 15:41
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 15:41
+  from: chaba
+  text: auto-merged 125dea33 (dispatch/20261027-152625-add-a-lightweight-preflight-st) → origin/master
+- at: 2026-10-27 15:41
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 15:47
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 15:47
+  note: verified — evidence checks green, closing itself

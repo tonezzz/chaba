@@ -1,0 +1,60 @@
+diff --git a/docs/kb/msg-lane-multihome-routing.md b/docs/kb/msg-lane-multihome-routing.md
+index 9aa7683..9bc7b0c 100644
+--- a/docs/kb/msg-lane-multihome-routing.md
++++ b/docs/kb/msg-lane-multihome-routing.md
+@@ -136,6 +136,44 @@ The voice rule from tg_relay, applied in-channel:
+    channel (their DM lane with the bot) so the speaker has a private
+    copy — `LINE_VOICE_DM_MIRROR=0` disables.
+ 
++## Proactive sends — persona-initiated outreach (card line-proactive-persona)
++
++Replies answer a turn; a **proactive** send starts one. The backend
++tool (`chat_send`) declares `intent='proactive'` and the relay owns the
++policy — a persona can engage a member without being spoken to, e.g.
++kaewta pings nhong about the kk car photo she just served Tony.
++
++- **Member DM:** `chat_send(to='nhong', intent='proactive', ...)` —
++  `to=` resolves a display name / caller / alias / member-directory /
++  mddb-registry hit to a userId, so `nhong` lands in her DM with the
++  bot. (`to='owner'` still aliases the relay owner.)
++- **In-group ping:** `chat_send(mention='nhong', text=...)` — the relay
++  prepends `@<displayName>` (per-member group profile endpoint) and
++  attaches LINE's `mention` object, so the member's LINE actually
++  pings. `mention=` needs a group/room target — bare `to=` unset means
++  the chat the turn came from.
++- **Policy (relay-enforced):** `intent='proactive'` is honored only
++  when the sending `instance` sits in `LINE_PROACTIVE_ALLOW` — the
++  backend-declared-intent gate; unset env denies every proactive send.
++  Per (instance, chat) and per (instance, member) debounce
++  `LINE_PROACTIVE_DEBOUNCE_S` (600s), per (instance, chat) day cap
++  `LINE_PROACTIVE_DAY_CAP` (8); state write-through to
++  `LINE_PROACTIVE_STATE` so restarts don't reset. Denials answer
++  403/429 with `{ok:false}` — the backend surfaces it to the model, so
++  a persona cannot "sent it anyway" narrate.
++- **Owner-tier on the tool side:** a secondary (identified guest) turn
++  can't declare `intent='proactive'`, `mention=`, or `to=<other chat>`
++  — `PermissionError` at the gate. Member lanes keep their
++  `LINE_LANE_ALLOW` ceiling regardless.
++- **Member directory:** `LINE_MEMBER_NAMES` persists
++  userId→displayName learned from profile fetches/registry writes so
++  name resolution survives restarts; the mddb registry scan
++  (`LINE_REGISTRY_LOOKUP_TTL_S`, 300s) covers members the file
++  predates.
++- Audit: `proactive_sent` / `proactive_denied` / `proactive_debounced`
++  / `mention_failed` ops events + `proactive_msgs` in the send ledger
++  rollup.
++
+ ## Ops checklist (idc03 `ada-line-relay` unit)
+ 
+ - `LINE_CHANNEL_ACCESS_TOKEN`, `LINE_CHANNEL_SECRET` — chaba bot
+@@ -147,6 +185,10 @@ The voice rule from tg_relay, applied in-channel:
+ - `LINE_PUBLIC_IMG_BASE` — public edge for relay-hosted images; repo
+   default tracks the idc03 edge (`157.85.102.125.sslip.io/relay-img`).
+ - `LINE_DEFAULT_PERSONA` — leave unset (spec: ignore unaddressed).
++- `LINE_PROACTIVE_ALLOW` — comma list of instances allowed
++  `intent='proactive'` (e.g. `ada,kaewta`); unset = all proactive
++  sends denied. Optional knobs: `LINE_PROACTIVE_DEBOUNCE_S` (600),
++  `LINE_PROACTIVE_DAY_CAP` (8).
+ - Webhook: LINE console → Messaging API → webhook URL
+   `https://157.85.102.125.sslip.io/webhook/line` (repointed idc01→idc03
+   2026-10-11); Caddy proxies `/webhook/line` to `LINE_WEBHOOK_LISTEN`.

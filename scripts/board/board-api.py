@@ -15,7 +15,17 @@ column moves (board-api-writes-eaten-by-autostash-pops-515009).
 
 Endpoints (after prefix strip):
   GET  /health                       -> {"ok": true}
-  GET  /cards                        -> cards.json payload
+  GET  /cards                        -> cards.json payload (legacy full dump)
+  GET  /cards?<query>                -> projected/filtered card read
+      (AUD-1033) so callers stop paying the multi-MB full dump for one
+      card or a claim poll. Envelope {ok, count, total, offset,
+      truncated, cards[]}; bare /cards keeps the raw payload shape.
+      filters:   id=<card-id>, column=<col>, action_status=<s>,
+                 since=<updated string> (lexicographic, same format)
+      projection: fields=a,b,c (top-level keys; unknown ignored),
+                 compact=1 -> {id,title,column,updated,priority,ref}
+      pagination: limit=<n> (cap 1000), offset=<n>
+  GET  /card/<id>[?fields=|compact=1] -> {"ok", card} | 404
   POST /action   {id, do, column?, host?}   do: queue|close|hold|retry|claim|move|finish
       close/move->done runs the merge guard (dispatch_repos.guard): a
       dispatch card whose session branch still has commits not in
@@ -78,6 +88,19 @@ Endpoints (after prefix strip):
   POST /inbox    {label?, text, priority?, tags?, missing_info?,
                   session?, owner?} — focus-inbox YAML entry under the
                   card flock with the same immediate-commit discipline.
+  POST /publish  {canonical PublicationEvent} — provider-neutral
+                  publication door (card devnest-publication-adapter-layer,
+                  scripts/board/publication.py): one event fans out to
+                  sink adapters — nest_job (execution state), lesson CPT
+                  (Education), report dossier (ada-cms-pages), news CPT,
+                  telegram, card comms (audit), json ledger. Idempotent
+                  (idempotency_key), outbox-retried, noise-policed,
+                  private-first visibility. {op:"sinks"} returns the
+                  capability table; {op:"drain"} retries the outbox.
+                  The legacy /job /lesson /report /comment endpoints
+                  remain as compatibility adapters — /publish routes
+                  through the SAME writer functions, so WP is only one
+                  adapter and any second sink receives the same event.
   POST /card     {id?, title, column?, note?, help?, text?, from?,
                   spec?, report?, action?, queue?, brief?, priority?,
                   tags?, program?, blocked_by?, on_exists?}
@@ -133,20 +156,23 @@ import re
 import subprocess
 import sys
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from http.cookiejar import CookieJar
 from datetime import date, datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from ipaddress import ip_address, ip_network
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote
 
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
 import board_notify as bn
+import publication as pub
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -169,9 +195,13 @@ REPORT_SPAWN_TEMPLATE = (
 )
 PRIORITIES = {"high", "medium", "low"}
 ACTION_TYPES = {"dispatch", "manual"}
+LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 # action keys a caller may set — status/runner/task_id are board-owned and
 # silently dropped so a spawn can't fake a running card
-ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model")
+ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
+               "executor", "agent_profile", "profile", "target_host",
+               "artifact", "task_class", "prompt", "expect", "lane",
+               "subject_host", "llm_key_alias")
 
 # --- write gate (card board-api-auth) ------------------------------------
 LOOPBACK_NETS = [ip_network("127.0.0.0/8"), ip_network("::1/128")]
@@ -586,9 +616,15 @@ def queue_starve_warn(card: dict) -> str:
     action.type == dispatch. Queueing a card typed manual/devin/self/
     container silently starves it (2026-10-13 zombie-sweep: 6 cards
     queued for days, zero claims). Warn the queuer — never auto-flip the
-    type, a manual card queued by hand may mean 'not for dispatch'."""
-    t = str((card.get("action") or {}).get("type") or "dispatch")
+    type, a manual card queued by hand may mean 'not for dispatch'.
+    Same for the executor contract: executor=manual means Tony's hands —
+    automation never claims it."""
+    a = card.get("action") or {}
+    t = str(a.get("type") or "dispatch")
     if t == "dispatch":
+        if str(a.get("executor") or "") == "manual":
+            return ("WARNING: action.executor=manual — never claimed by "
+                    "automation; this card will starve in queue")
         return ""
     return (f"WARNING: action.type={t} — kanban-dispatch claims only "
             "type=dispatch; this card will starve in queue")
@@ -687,9 +723,35 @@ def do_claim(card: dict, body: dict) -> str:
             raise ValueError("invalid action lane")
         a["lane"] = lane
     if model:
-        if not re.fullmatch(r"[a-zA-Z0-9._/-]{1,80}", model):
+        if not dr.MODEL_ID_RE.match(model):
             raise ValueError("invalid action model")
         a["model"] = model
+    # Executor contract (opencode-explicit-executor-routing): the claim
+    # may carry the resolved executor/profile/target_host so a remote
+    # claimer's routing persists atomically with the claim. A declared
+    # action.executor is the contract — a claim that disagrees with it
+    # is refused, not silently rewritten.
+    ex = str(body.get("executor") or "").strip()
+    if ex:
+        if ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"invalid action executor (one of {sorted(dr.EXECUTORS)})")
+        if a.get("executor") and str(a["executor"]) != ex:
+            raise ValueError(
+                f"card declares executor={a['executor']} — a claim "
+                "can't change the contract")
+        a["executor"] = ex
+    prof = str(body.get("agent_profile") or body.get("profile")
+               or "").strip()
+    if prof:
+        if not dr.PROFILE_ID_RE.match(prof):
+            raise ValueError("invalid action agent_profile")
+        a["agent_profile"] = prof
+    th = str(body.get("target_host") or "").strip()
+    if th:
+        if not dr.HOST_ID_RE.match(th):
+            raise ValueError("invalid action target_host")
+        a["target_host"] = th
     a["runner"] = host
     a["status"] = "running"  # claimed = running from the board's view;
     # the runner's finish call (or a sweeper) is the only way out
@@ -1106,6 +1168,98 @@ def do_create(body: dict, frm: str) -> dict:
         if repo and repo not in dr.repos():
             raise ValueError(
                 f"action.repo {repo!r} is not in the dispatch whitelist")
+        # executor contract (opencode-explicit-executor-routing) —
+        # the declared executor is first-class: bad values are refused
+        # here so a misspelled executor never routes silently.
+        ex = str(act.get("executor") or "").strip()
+        if ex and ex not in dr.EXECUTORS:
+            raise ValueError(
+                f"action.executor must be one of {sorted(dr.EXECUTORS)}")
+        # lane is a first-class routing knob too (executor=opencode +
+        # lane=free_lane -> ops-readonly via LANE_PROFILES). Whitelist it
+        # or the write door silently drops the declaration — the first
+        # OPS-1021 claims failed closed on exactly that (2026-10-30).
+        ln = str(act.get("lane") or "").strip()
+        if ln and ln not in (set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS)):
+            raise ValueError(
+                f"action.lane must be one of "
+                f"{sorted(set(dr.LANE_MODELS) | set(dr.LANE_EXECUTORS))}")
+        for pk in ("agent_profile", "profile"):
+            pv = str(act.get(pk) or "").strip()
+            if pv and not dr.PROFILE_ID_RE.match(pv):
+                raise ValueError(
+                    f"action.{pk} must be a profile id "
+                    "([a-z0-9][a-z0-9-], max 61)")
+        key_alias = str(act.get("llm_key_alias") or "").strip().lower()
+        if key_alias and key_alias not in LLM_KEY_ALIASES:
+            raise ValueError(
+                f"action.llm_key_alias must be one of "
+                f"{sorted(LLM_KEY_ALIASES)}")
+        th = str(act.get("target_host") or "").strip()
+        if th and not dr.HOST_ID_RE.match(th):
+            raise ValueError(
+                "action.target_host must be a host id "
+                "([a-z0-9][a-z0-9.-], max 63)")
+        # subject_host is the diagnosis subject, NOT an execution pin —
+        # remote-read profiles need it without pinning the claim
+        # (OPS-1021 third defer storm: every host read target_host=con01
+        # as 'run on con01' and deferred, 2026-11-02)
+        sh = str(act.get("subject_host") or "").strip()
+        if sh and not dr.HOST_ID_RE.match(sh):
+            raise ValueError(
+                "action.subject_host must be a host id "
+                "([a-z0-9][a-z0-9.-], max 63)")
+        ap = str(act.get("artifact") or "").strip()
+        if ap and (ap.startswith("/") or ".." in ap.split("/")
+                   or len(ap) > 200):
+            raise ValueError(
+                "action.artifact must be a safe repo-relative path")
+        # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
+        # the bounded task class is part of the contract — a card must
+        # declare one of the admitted classes, and no other executor
+        # takes a task_class.
+        tc = str(act.get("task_class") or "").strip()
+        if tc and ex != "kk_mac_local":
+            raise ValueError(
+                "action.task_class is only valid with "
+                "executor=kk_mac_local")
+        if ex == "kk_mac_local" and tc not in dr.KK_MAC_TASK_CLASSES:
+            raise ValueError(
+                "executor=kk_mac_local requires action.task_class in "
+                f"{sorted(dr.KK_MAC_TASK_CLASSES)}")
+        if ex == "kk_mac_local" and ap:
+            if not any(ap.lstrip("/").startswith(r)
+                       for r in dr.KK_MAC_ARTIFACT_ROOTS):
+                raise ValueError(
+                    "kk_mac_local artifact must live under "
+                    + "/".join(r.rstrip("/") for r in
+                               dr.KK_MAC_ARTIFACT_ROOTS))
+        pr = str(act.get("prompt") or "")
+        if len(pr) > 6000:
+            raise ValueError("action.prompt exceeds the 6000-char "
+                             "read-only lane limit")
+        xp = act.get("expect")
+        if xp is not None:
+            if not isinstance(xp, dict):
+                raise ValueError("action.expect must be an object")
+            for k in ("required_keys", "facts"):
+                v = xp.get(k)
+                if v is not None and (not isinstance(v, list)
+                                      or len(v) > 20
+                                      or any(not isinstance(s, str)
+                                             or len(s) > 200
+                                             for s in v)):
+                    raise ValueError(
+                        f"action.expect.{k} must be a list of <=20 "
+                        "short strings")
+            enums = xp.get("enums")
+            if enums is not None and (
+                    not isinstance(enums, dict) or len(enums) > 20
+                    or any(not isinstance(v, list) or len(v) > 20
+                           for v in enums.values())):
+                raise ValueError(
+                    "action.expect.enums must be an object of small "
+                    "lists")
     on_exists = str(body.get("on_exists") or "error").strip()
     if on_exists not in ("error", "queue"):
         raise ValueError("on_exists must be error|queue")
@@ -1126,6 +1280,13 @@ def do_create(body: dict, frm: str) -> dict:
         if st in ("queued", "running"):
             return {"message": f"card {cid} already active ({st})",
                     "id": cid, "status": st}
+        # A re-queue may carry a freshly approved executor envelope. Preserve
+        # board-owned lifecycle fields, but update only caller-owned action
+        # fields after the same validation used for new cards.
+        if act is not None:
+            for key in ACTION_KEYS:
+                if key in act:
+                    a[key] = act[key]
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue
@@ -1175,9 +1336,9 @@ def do_create(body: dict, frm: str) -> dict:
             card["action"]["labels"] = [str(x)[:40] for x in labels][:10]
         if "model" in card["action"]:
             model = str(card["action"]["model"]).strip()
-            if not re.fullmatch(r"[a-zA-Z0-9._-]{1,40}", model):
+            if not dr.MODEL_ID_RE.match(model):
                 raise ValueError("action.model must be a model id "
-                                 "([a-zA-Z0-9._-], max 40)")
+                                 "([a-zA-Z0-9._/-], max 80)")
             card["action"]["model"] = model
     if body.get("queue"):
         a = card.setdefault("action", {})
@@ -1345,11 +1506,46 @@ WP_LOCK = Path(os.environ.get("BOARD_API_WP_LOCK",
 WP_ENV_FILE = Path(os.environ.get(
     "BOARD_API_WP_ENV",
     str(Path.home() / ".config/secrets/wp-boards.env")))
+WIKI_ENV_FILE = Path(os.environ.get(
+    "BOARD_API_WIKI_ENV",
+    str(Path.home() / ".config/secrets/wiki-h3-gizmo.env")))
 INBOX_DIR = REPO / "docs/ssot/focus-inbox"
 MDDB = os.environ.get("MDDB_BASE_URL",
                       "http://100.102.134.91:11027/v1").rstrip("/")
 MDDB_PAGES = "ada-cms-pages"
-REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report"}
+REMOTE_WRITE_PATHS = {"/lesson", "/job", "/report", "/publish",
+                      "/wiki/extension", "/wiki/news-review",
+                      "/wiki/news-diagnose", "/wiki/page"}
+WIKI_EXTENSION_ALLOWLIST = {
+    "CategoryTree", "Mermaid", "MsUpload", "MultimediaViewer",
+    "Cargo", "PageForms", "Lockdown",
+}
+WIKI_API_CALL = None
+
+# --- publication layer (devnest-publication-adapter-layer) ------------------
+# State lives off-repo on the service host; tests redirect via env.
+PUB_STATE_DIR = Path(os.environ.get(
+    "BOARD_API_PUB_STATE",
+    str(Path.home() / ".local/state/board-api-publish")))
+PUB_TG_URL = os.environ.get("PUB_TELEGRAM_URL",
+                            "http://127.0.0.1:8919/send")
+PUB_PROGRESS_MIN_S = int(os.environ.get("PUB_PROGRESS_MIN_S", "900"))
+PUB_TG_MIN_S = int(os.environ.get("PUB_TG_MIN_S", "600"))
+PUB_ALERT_MIN_S = int(os.environ.get("PUB_ALERT_MIN_S", "60"))
+
+# --- runner readiness projection (runner-readiness-projection, KNB-1007) --
+# Verdicts live off-repo on the service host: each runner POSTs its own
+# claimability verdicts + active claims, so GET /queue reports
+# runner-observed truth instead of a central simulation of host state.
+READY_STATE_DIR = Path(os.environ.get(
+    "BOARD_API_READY_STATE",
+    str(Path.home() / ".local/state/board-api-ready")))
+READY_FILE = READY_STATE_DIR / "verdicts.json"
+READY_LOCK = Path(os.environ.get("BOARD_API_READY_LOCK",
+                                 "/tmp/board-api-ready.lock"))
+READY_STALE_S = int(os.environ.get("BOARD_API_READY_STALE_S", "900"))
+READY_HOST_TTL_S = int(os.environ.get("BOARD_API_READY_HOST_TTL_S",
+                                      str(7 * 86400)))
 
 
 class UpstreamError(RuntimeError):
@@ -1365,6 +1561,362 @@ def _load_env_file(p: Path) -> dict:
             k, v = ln.split("=", 1)
             env[k.strip()] = v.strip().strip('"').strip("'")
     return env
+
+
+def _wiki_env() -> tuple[dict, str]:
+    """Load the Wiki service credentials and normalize its API URL."""
+    env = _load_env_file(WIKI_ENV_FILE)
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+    api = (env.get("WIKI_API_URL") or f"{host}/api.php").rstrip("/")
+    if not host or not env.get("WIKI_USER") or not env.get("WIKI_PASSWORD"):
+        raise UpstreamError("wiki credentials unavailable")
+    return env, api
+
+
+def _wiki_api_call(api_url: str, opener, params: dict, post: bool = False):
+    """Call MediaWiki Action API; tests may replace WIKI_API_CALL."""
+    if WIKI_API_CALL is not None:
+        return WIKI_API_CALL(params, post)
+    data = urllib.parse.urlencode(params).encode() if post else None
+    url = api_url if post else api_url + "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(
+        url, data=data, headers={"User-Agent": "chaba-board-api/1.0"})
+    try:
+        return json.loads(opener.open(req, timeout=30).read())
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace")
+        raise UpstreamError(f"mediawiki -> {e.code}: {detail}")
+    except OSError as e:
+        raise UpstreamError(f"mediawiki -> {e}")
+
+
+def _wiki_installed(api_url: str, opener) -> list[str]:
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo",
+         "siprop": "extensions", "format": "json"})
+    return sorted(x.get("name", "")
+                  for x in result.get("query", {}).get("extensions", []))
+
+
+def do_wiki_extension(body: dict, frm: str) -> dict:
+    """List or confirm-gated install/enable/disable of approved extensions."""
+    action = str(body.get("action") or "list").strip().lower()
+    name = str(body.get("name") or "").strip()
+    if action not in {"list", "install", "enable", "disable"}:
+        raise ValueError("action must be list|install|enable|disable")
+    if action != "list" and name not in WIKI_EXTENSION_ALLOWLIST:
+        raise ValueError(
+            f"name is not approved (choose {sorted(WIKI_EXTENSION_ALLOWLIST)})")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    before = _wiki_installed(api_url, opener)
+    if action == "list":
+        return {"action": "list", "installed": before,
+                "approved": sorted(WIKI_EXTENSION_ALLOWLIST),
+                "message": "wiki extension list"}
+
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    csrf = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "format": "json"}
+    )["query"]["tokens"]["csrftoken"]
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "springboard", "sbaction": action,
+         "sbtype": "extension", "sbname": name, "token": csrf,
+         "format": "json"}, post=True)
+    if "error" in result:
+        raise UpstreamError("springboard: " +
+                            str(result["error"].get("info") or
+                                result["error"].get("code")))
+    after = _wiki_installed(api_url, opener)
+    if action == "install" and name not in after:
+        raise UpstreamError(f"{name} install was not visible after request")
+    return {"action": action, "name": name, "before": before,
+            "after": after, "verified": name in after,
+            "actor": frm,
+            "message": f"wiki extension {action}: {name}"}
+
+
+def do_wiki_news_review(body: dict, frm: str) -> dict:
+    """Read one protected PrivateNews page for Ada's review workflow."""
+    title = str(body.get("wiki_title") or "").strip()
+    if (not title.startswith("PrivateNews:") or
+            "\n" in title or "\r" in title):
+        raise ValueError("wiki_title must be under PrivateNews:")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    result = _wiki_api_call(
+        api_url, opener,
+         {"action": "query", "titles": title, "prop": "info|revisions",
+         "rvprop": "ids|timestamp|content", "rvslots": "main",
+         "format": "json"})
+    page = next(iter(result.get("query", {}).get("pages", {}).values()), {})
+    if "missing" in page:
+        raise ValueError("private News page does not exist")
+    revision = (page.get("revisions") or [{}])[0]
+    content = (revision.get("slots") or {}).get("main", {}).get("*", "")
+    return {
+        "wiki_title": title,
+        "pageid": page.get("pageid"),
+        "revid": revision.get("revid"),
+        "timestamp": revision.get("timestamp"),
+        "wikitext": str(content)[:20000],
+        "actor": frm,
+        "message": "private News review read",
+    }
+
+
+def do_wiki_news_diagnose(body: dict, frm: str) -> dict:
+    """Return promotion gates without reading or mutating a public page."""
+    private_title = str(body.get("private_wiki_title") or "").strip()
+    public_title = str(body.get("public_wiki_title") or "").strip()
+    if not private_title.startswith("PrivateNews:"):
+        raise ValueError("private_wiki_title must be under PrivateNews:")
+    if not public_title.startswith("News/"):
+        raise ValueError("public_wiki_title must be under News/")
+
+    review = do_wiki_news_review(
+        {"wiki_title": private_title}, frm)
+    checks = [{
+        "id": "private_page",
+        "status": "pass",
+        "revid": review.get("revid"),
+    }]
+    expected_revid = body.get("review_revid")
+    if expected_revid is not None:
+        try:
+            expected_revid = int(expected_revid)
+        except (TypeError, ValueError):
+            expected_revid = -1
+        checks.append({
+            "id": "review_revision",
+            "status": "pass" if expected_revid == review.get("revid")
+            else "blocked",
+            "expected": expected_revid,
+            "actual": review.get("revid"),
+        })
+    else:
+        checks.append({
+            "id": "review_revision",
+            "status": "blocked",
+            "reason": "review_revid is required for promotion",
+        })
+
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    target = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "titles": public_title, "prop": "info",
+         "format": "json"})
+    target_page = next(
+        iter(target.get("query", {}).get("pages", {}).values()), {})
+    checks.append({
+        "id": "public_target",
+        "status": "blocked" if "missing" not in target_page else "pass",
+        "exists": "missing" not in target_page,
+    })
+
+    card_ref = str(body.get("card_ref") or "").strip()
+    if not card_ref:
+        checks.append({
+            "id": "card_authorization",
+            "status": "blocked",
+            "reason": "promotion requires a matching board card",
+        })
+    else:
+        try:
+            card = load(card_path(card_ref))
+            haystack = json.dumps(card, ensure_ascii=False)
+            authorized = private_title in haystack and public_title in haystack
+            checks.append({
+                "id": "card_authorization",
+                "status": "pass" if authorized else "blocked",
+                "card_ref": card_ref,
+                "reason": None if authorized else
+                "card does not name both promotion pages",
+            })
+        except ValueError as exc:
+            checks.append({
+                "id": "card_authorization",
+                "status": "blocked",
+                "card_ref": card_ref,
+                "reason": str(exc),
+            })
+    checks.append({
+        "id": "confirmation",
+        "status": "pending",
+        "reason": "diagnosis never confirms or publishes",
+    })
+    ready = all(c["status"] == "pass" for c in checks
+                if c["id"] != "confirmation")
+    return {
+        "operation": "promote",
+        "ready": ready,
+        "diagnosis_id": "diag-" + hashlib.sha1(
+            f"{private_title}\0{public_title}\0{review.get('revid')}".encode()
+        ).hexdigest()[:16],
+        "checks": checks,
+        "review": review,
+        "actor": frm,
+        "message": "News promotion diagnosis",
+    }
+
+
+def _wiki_login(api_url: str, env: dict):
+    """Bot-password login -> (opener, csrf_token). The three do_wiki_*
+    doors above inline this same dance; new code uses the helper."""
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    login = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "type": "login",
+         "format": "json"})
+    login_token = login["query"]["tokens"]["logintoken"]
+    logged = _wiki_api_call(
+        api_url, opener,
+        {"action": "login", "lgname": env["WIKI_USER"],
+         "lgpassword": env["WIKI_PASSWORD"], "lgtoken": login_token,
+         "format": "json"}, post=True).get("login", {})
+    if logged.get("result") != "Success":
+        raise UpstreamError("mediawiki login failed")
+    csrf = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "tokens", "format": "json"}
+    )["query"]["tokens"]["csrftoken"]
+    return opener, csrf
+
+
+def _wiki_namespaces(api_url: str, opener) -> set:
+    """Registered namespace names (canonical + localized), lowercase —
+    e.g. {'template', 'แม่แบบ', 'privatenews', 'education', ...}."""
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo", "siprop": "namespaces",
+         "format": "json"})
+    names = set()
+    for ns in (result.get("query", {}).get("namespaces") or {}).values():
+        for k in ("*", "canonical"):
+            v = str(ns.get(k) or "").strip().lower()
+            if v:
+                names.add(v)
+    return names
+
+
+def _wiki_page_templates(env: dict) -> set:
+    """The support templates this door may write — configured names +
+    the education/report defaults. Template: is the canonical alias of
+    แม่แบบ: on the Thai wiki."""
+    out = set()
+    for key, default in (("WIKI_EDUCATION_TEMPLATE", "แม่แบบ:Education"),
+                         ("WIKI_REPORT_TEMPLATE", "แม่แบบ:Report")):
+        t = str(env.get(key) or default).strip()
+        if t:
+            out.add(t)
+            if t.startswith("แม่แบบ:"):
+                out.add("Template:" + t.split(":", 1)[1])
+    return out
+
+
+WIKI_PAGE_PREFIXES = ("Education:", "Reports:")
+WIKI_PAGE_TITLE_MAX = 150
+WIKI_PAGE_TEXT_MAX = 200000
+
+
+def do_wiki_page(body: dict, frm: str) -> dict:
+    """POST /wiki/page — guarded raw page write for support pages the
+    kind-gated sinks can't reach: แม่แบบ:Education / แม่แบบ:Report
+    templates and Education:/Reports: index/portal pages
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
+    allowlist keeps this from becoming a generic write backdoor around
+    the News review gate — main space, News/, PrivateNews: and every
+    other namespace are refused. Education:/Reports: writes additionally
+    verify the namespace is actually registered (siteinfo) so a premature
+    call can't litter main space with 'Education:Foo' pages."""
+    title = str(body.get("title") or body.get("wiki_title") or "").strip()
+    text = str(body.get("wikitext") or body.get("text") or "")
+    if not title or "\n" in title or "\r" in title \
+            or len(title) > WIKI_PAGE_TITLE_MAX:
+        raise ValueError("title required (<=150 chars, single line)")
+    if not text.strip():
+        raise ValueError("wikitext required")
+    if len(text) > WIKI_PAGE_TEXT_MAX:
+        raise ValueError(f"wikitext over {WIKI_PAGE_TEXT_MAX} chars")
+    env, api_url = _wiki_env()
+    opener = urllib.request.build_opener(
+        urllib.request.HTTPCookieProcessor(CookieJar()))
+    if title not in _wiki_page_templates(env):
+        prefix = next((p for p in WIKI_PAGE_PREFIXES
+                       if title.startswith(p)), None)
+        if prefix is None:
+            raise ValueError(
+                "title not allowed — must be an approved template or "
+                f"under {'/'.join(WIKI_PAGE_PREFIXES)}")
+        if prefix[:-1].lower() not in _wiki_namespaces(api_url, opener):
+            raise ValueError(
+                f"namespace {prefix[:-1]!r} is not registered on the "
+                "wiki — LocalSettings step first (card comm 2026-11-06)")
+    # The edit MUST go through the login opener — it carries the session
+    # cookies; the anon opener above gets badtoken on a logged-in csrf.
+    opener, csrf = _wiki_login(api_url, env)
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "edit", "title": title, "text": text,
+         "summary": str(body.get("summary")
+                        or f"chaba wiki support page ({frm})")[:200],
+         "token": csrf, "format": "json"}, post=True)
+    edited = result.get("edit", {})
+    if edited.get("result") not in ("Success", "Nochange"):
+        err = result.get("error") or {}
+        raise UpstreamError("mediawiki edit failed: " +
+                            str(err.get("info") or edited or result)[:300])
+    return {"wiki_title": title, "pageid": edited.get("pageid"),
+            "revid": edited.get("newrevid"),
+            "action": edited.get("result", "").lower(),
+            "actor": frm,
+            "message": f"wiki page {edited.get('result', '?').lower()}: "
+                       f"{title}"}
 
 
 def wp_api(route: str, data=None, method: str | None = None):
@@ -1413,34 +1965,29 @@ def _mddb_post(path: str, payload: dict, timeout: int = 30):
 _gemini_mod = None
 
 
-def _gemini_key() -> str:
-    key = os.environ.get("GEMINI_API_KEY_FREE")
+def _litellm_translation_key() -> str:
+    """Return the scoped virtual key for free-only lesson translation."""
+    key = os.environ.get("LITELLM_KEY_MDDB")
     if key:
         return key
-    found = {}
-    for f in (Path.home() / ".config/secrets/mddb-gemini.env",
-              Path.home() / ".config/secrets/gemini-keys.env",
-              Path.home() / ".config/secrets/gemini-api-key.env"):
+    sources = (
+        (Path.home() / ".config/secrets/litellm-keys.env",
+         "LITELLM_KEY_MDDB"),
+        (Path.home() / ".config/secrets/mddb-gemini.env",
+         "LITELLM_KEY"),
+    )
+    for path, variable in sources:
         try:
-            for ln in f.read_text().splitlines():
-                m = re.match(
-                    r"^(GEMINI_API_KEY_FREE|GOOGLE_API_KEY|GEMINI_API_KEY)"
-                    r"=(.*)$", ln.strip())
-                if m:
-                    found.setdefault(
-                        m.group(1), m.group(2).strip().strip('"').strip("'"))
+            key = _load_env_file(path).get(variable, "")
         except OSError:
-            pass
-    return (found.get("GEMINI_API_KEY_FREE") or found.get("GOOGLE_API_KEY")
-            or found.get("GEMINI_API_KEY")
-            or os.environ.get("GEMINI_API_KEY")
-            or os.environ.get("GOOGLE_API_KEY") or "")
+            continue
+        if key:
+            return key
+    return ""
 
 
 def _gemini_thai(html_text: str) -> str:
-    """Thai translation for lessons — the same gemini_rest flash-lite lane
-    lesson-add.py used. Best-effort: any failure returns '' so a quota or
-    edge hiccup degrades to EN-only instead of failing the write."""
+    """Free-only LiteLLM translation; failure degrades to English-only."""
     global _gemini_mod
     if _gemini_mod is None:
         import importlib.util
@@ -1454,20 +2001,20 @@ def _gemini_thai(html_text: str) -> str:
             _gemini_mod = False
     if not _gemini_mod:
         return ""
-    key = _gemini_key()
+    key = _litellm_translation_key()
     if not key:
         return ""
     try:
-        # Hard timeout (OPS-0813): a slow/capped Gemini lane must not hang
-        # the lesson write for minutes — degrade to EN-only instead. The
-        # gemini_rest.generate default is 120s; that is too long for a
-        # synchronous board-api request.
+        # Do not fall through to a paid provider when the free tier is capped.
         th = _gemini_mod.generate(
             "Translate the following HTML lesson to natural Thai. "
             "Keep HTML tags, code, URLs, and proper names verbatim. "
             "Output ONLY the translated HTML.\n\n" + html_text,
-            "gemini-3.5-flash-lite", key=key, timeout=12,
-            max_attempts=1)
+            "gemini-3.5-flash-lite-free", key=key,
+            base_url_override=os.environ.get(
+                "BOARD_API_LITELLM_URL", "http://100.102.134.91:4000"),
+            timeout=12, max_attempts=1, label="board-api-lesson-th",
+            tags="service=board-api,job=lesson-translation,route=free-only")
         return (th or "").strip()
     except Exception:
         return ""
@@ -1503,22 +2050,39 @@ def _touch_lessons(body: dict, frm: str) -> dict:
 
 def _read_lessons(body: dict, frm: str) -> dict:
     """op=list | op=get — read side of the education door (OPS-0821).
-    Agents/lessons-due get lesson content without WP creds."""
+    Agents/lessons-due get lesson content without WP creds.
+    source=wiki reads the Education: namespace instead of the WP CPT
+    (post-migration store; same row shape, plus wiki_title/url)."""
     op = body.get("op")
+    source = str(body.get("source") or "wp").strip().lower()
+    if source == "wiki":
+        return _read_lessons_wiki(body, frm)
+    if source != "wp":
+        raise ValueError("source must be wp or wiki")
     if op == "list":
-        hits = wp_api("/wp/v2/lesson&status=private&per_page=100"
-                      "&_fields=slug,title,modified,meta")
+        hits, page = [], 1
+        while page <= 5:                # hard cap 500 — same bound as
+            batch = wp_api(             # do_lesson_topics; without
+                "/wp/v2/lesson&status=private&per_page=100"  # paging the
+                f"&page={page}&_fields=slug,title,modified,meta")  # list
+            if not isinstance(batch, list) or not batch:      # silently
+                break                   # truncated at 100 of 124
+            hits += batch               # (found 2026-11-06)
+            if len(batch) < 100:
+                break
+            page += 1
         out = []
-        if isinstance(hits, list):
-            for h in hits:
-                m = h.get("meta") or {}
-                out.append({"slug": h.get("slug"),
+        for h in hits:
+            m = h.get("meta") or {}
+            out.append({"slug": h.get("slug"),
                             "topic": m.get("topic", ""),
                             "level": m.get("level", ""),
                             "modified": h.get("modified"),
                             "next_review": m.get("next_review", ""),
-                            "status": m.get("status", "")})
+                            "status": m.get("status", ""),
+                            "no_th": bool(m.get("no_th"))})
         return {"lessons": out, "count": len(out), "via": frm,
+                "source": "wp",
                 "message": f"listed {len(out)} lessons"}
     slug = str(body.get("slug") or "").strip()
     if not slug:
@@ -1530,7 +2094,7 @@ def _read_lessons(body: dict, frm: str) -> dict:
     return {"slug": h.get("slug"), "title": (h.get("title") or {}).get("rendered", ""),
             "content": (h.get("content") or {}).get("rendered", ""),
             "meta": h.get("meta") or {}, "modified": h.get("modified"),
-            "via": frm, "message": f"get {slug}"}
+            "via": frm, "source": "wp", "message": f"get {slug}"}
 
 
 def _delete_lesson(body: dict, frm: str) -> dict:
@@ -1552,6 +2116,210 @@ def _delete_lesson(body: dict, frm: str) -> dict:
     r = wp_api(f"/wp/v2/lesson/{pid}&force=true", method="DELETE")
     return {"message": f"deleted {slug} (post {pid})", "slug": slug,
             "post_id": pid, "via": frm}
+
+
+# --- source=wiki lesson reads (Education: namespace) -------------------
+# Card wiki-member-knowledge-surface-migrate-wp-3a1cf2: after the
+# 2026-11-06 migration the Education: namespace holds the same corpus
+# the WP lesson CPT does (124 pages + dual-write). op=list/get with
+# source=wiki read it through the same door contract — rows mint the
+# SAME lesson-<md5(topic)> slug WP would, so audit keys, op=get-by-slug
+# and exceptions files stay valid across the cutover.
+
+WIKI_LESSON_NS = "Education"
+_LESSON_TEMPLATE_RE = re.compile(
+    r"\{\{\s*(?:แม่แบบ|Template)\s*:\s*Education\s*(\|.*?)\}\}", re.S)
+_WIKI_CATEGORY_RE = re.compile(
+    r"\[\[\s*(?:Category|หมวดหมู่)\s*:[^\]]*\]\]")
+_WIKI_PARAM_RE = re.compile(r"\|\s*([A-Za-z_][\w-]*)\s*=\s*([^|]*)")
+
+
+def _wiki_namespace_id(api_url: str, opener, name: str):
+    """Numeric ns id for a canonical/local name ('Education' -> 3004),
+    or None when the namespace is not registered."""
+    result = _wiki_api_call(
+        api_url, opener,
+        {"action": "query", "meta": "siteinfo", "siprop": "namespaces",
+         "format": "json"})
+    want = name.strip().lower()
+    for nsid, ns in (result.get("query", {}).get("namespaces")
+                     or {}).items():
+        names = {str(ns.get("*") or "").strip().lower(),
+                 str(ns.get("canonical") or "").strip().lower()}
+        if want in names:
+            try:
+                return int(nsid)
+            except (TypeError, ValueError):
+                return int(ns.get("id"))
+    return None
+
+
+def _wiki_ns_pages(api_url: str, opener, ns_name: str) -> list:
+    """Every page in a namespace -> [{title, wikitext, modified}]."""
+    nsid = _wiki_namespace_id(api_url, opener, ns_name)
+    if nsid is None:
+        raise UpstreamError(
+            f"wiki namespace {ns_name!r} is not registered — "
+            "LocalSettings step first")
+    titles, cont = [], {}
+    while True:
+        params = {"action": "query", "list": "allpages",
+                  "apnamespace": nsid, "aplimit": "max",
+                  "format": "json"}
+        params.update(cont)
+        r = _wiki_api_call(api_url, opener, params)
+        titles += [p.get("title") for p in
+                   r.get("query", {}).get("allpages", [])
+                   if p.get("title")]
+        if "continue" not in r:
+            break
+        cont = r["continue"]
+    pages = []
+    for i in range(0, len(titles), 50):
+        r = _wiki_api_call(
+            api_url, opener,
+            {"action": "query", "titles": "|".join(titles[i:i + 50]),
+             "prop": "revisions", "rvslots": "main",
+             "rvprop": "content|timestamp", "format": "json"})
+        for p in (r.get("query", {}).get("pages") or {}).values():
+            rev = (p.get("revisions") or [{}])[0]
+            pages.append({
+                "title": p.get("title", ""),
+                "wikitext": (rev.get("slots") or {})
+                            .get("main", {}).get("*", ""),
+                "modified": rev.get("timestamp", "")})
+    return pages
+
+
+def _lesson_from_wiki_page(page: dict):
+    """Education: page -> lesson row, or None for non-lesson pages
+    (Index/Due/series hubs carry no Education template call). Template
+    params become the meta dict; body = wikitext minus the template
+    call and category links (values are writer-emitted scalars — a
+    value containing '|' or a nested '{{' would misparse, which the
+    sink never produces)."""
+    m = _LESSON_TEMPLATE_RE.search(page.get("wikitext") or "")
+    if not m:
+        return None
+    params = {pm.group(1): pm.group(2).strip()
+              for pm in _WIKI_PARAM_RE.finditer(m.group(1))}
+    topic = params.get("topic") or page["title"].split(":", 1)[-1]
+    meta = {k: params.get(k, "") for k in
+            ("topic", "level", "source", "learned_at", "next_review",
+             "status", "updated")}
+    meta["topic"] = topic
+    if str(params.get("no_th") or "").strip():
+        meta["no_th"] = True
+    body = _WIKI_CATEGORY_RE.sub(
+        "", page["wikitext"][:m.start()] + page["wikitext"][m.end():]
+    ).strip()
+    slug = "lesson-" + hashlib.md5(
+        topic.lower().encode()).hexdigest()[:12]
+    return {"slug": slug, "wiki_title": page["title"], "topic": topic,
+            "level": params.get("level", ""),
+            "next_review": params.get("next_review", ""),
+            "status": params.get("status", ""),
+            "no_th": bool(meta.get("no_th")),
+            "modified": page.get("modified", ""),
+            "content": body, "meta": meta}
+
+
+def _read_lessons_wiki(body: dict, frm: str) -> dict:
+    """/lesson {op:list|get, source:"wiki"} — the Education: namespace
+    as the lesson store. The namespace is Lockdown-protected, so reads
+    ride the bot login (anon gets accessdenied)."""
+    env, api_url = _wiki_env()
+    opener, _csrf = _wiki_login(api_url, env)
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+
+    def url_of(title):
+        return (f"{host}/wiki/"
+                f"{urllib.parse.quote(title.replace(' ', '_'))}"
+                if host else "")
+
+    lessons, skipped = [], 0
+    for page in _wiki_ns_pages(api_url, opener, WIKI_LESSON_NS):
+        row = _lesson_from_wiki_page(page)
+        if row is None:
+            skipped += 1
+            continue
+        lessons.append(row)
+    if body.get("op") == "list":
+        out = [{"slug": l["slug"], "wiki_title": l["wiki_title"],
+                "url": url_of(l["wiki_title"]),
+                "topic": l["topic"], "level": l["level"],
+                "modified": l["modified"],
+                "next_review": l["next_review"],
+                "status": l["status"], "no_th": l["no_th"]}
+               for l in lessons]
+        out.sort(key=lambda r: r["slug"])
+        return {"lessons": out, "count": len(out),
+                "skipped_non_lesson": skipped,
+                "source": "wiki", "via": frm,
+                "message": f"listed {len(out)} wiki lessons"}
+    wiki_title = str(body.get("wiki_title") or "").strip()
+    slug = str(body.get("slug") or "").strip()
+    topic = str(body.get("topic") or "").strip()
+    if not (wiki_title or slug or topic):
+        raise ValueError("op=get requires slug, topic, or wiki_title")
+    if topic and not wiki_title:
+        wiki_title = pub.lesson_wiki_title(topic)
+    row = next((l for l in lessons
+                if (wiki_title and l["wiki_title"] == wiki_title)
+                or (slug and l["slug"] == slug)
+                or (topic and l["topic"] == topic)), None)
+    if row is None:
+        raise ValueError(
+            f"lesson not found: {wiki_title or slug or topic}")
+    return {"slug": row["slug"], "wiki_title": row["wiki_title"],
+            "url": url_of(row["wiki_title"]),
+            "title": row["topic"], "content": row["content"],
+            "meta": row["meta"], "modified": row["modified"],
+            "source": "wiki", "via": frm,
+            "message": f"get {row['wiki_title']}"}
+
+
+def _lesson_wiki_write(topic: str, level: str, source: str,
+                       content: str, meta: dict):
+    """Education: dual-write behind WIKI_EDUCATION_WRITE=dual in the wiki
+    env file (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). The
+    namespace + template must exist on wiki.h3 first — registering
+    Education: is the Tony/Plesk LocalSettings step, so the flag ships
+    OFF. A wiki failure never fails the WP write: the lesson ledger
+    stays canonical until cutover and the miss reports on the response."""
+    try:
+        env = _load_env_file(WIKI_ENV_FILE)
+    except OSError:
+        return None
+    if str(env.get("WIKI_EDUCATION_WRITE") or "").strip().lower() != "dual":
+        return None
+    host = env.get("WIKI_HOST", "").rstrip("/")
+    if host.endswith("/v0"):
+        host = host[:-3]
+    api = (env.get("WIKI_API_URL") or f"{host}/api.php").rstrip("/")
+    if not (host and env.get("WIKI_USER") and env.get("WIKI_PASSWORD")):
+        return {"status": "skipped", "reason": "wiki creds incomplete"}
+    try:
+        ev = pub.validate_event({
+            "kind": "lesson", "title": topic, "body": content,
+            "source": "lesson-door", "visibility": "private",
+            "meta": {
+                "wiki_title": pub.lesson_wiki_title(topic),
+                "topic": topic, "level": level, "lesson_source": source,
+                "learned_at": meta.get("learned_at", ""),
+                "next_review": meta.get("next_review", ""),
+                "status": meta.get("status", "open"),
+                "updated": meta.get("updated", ""),
+                "no_th": bool(meta.get("no_th")),
+                "format": "html"}})
+        sink = pub.WikiLessonSink(api, env["WIKI_USER"],
+                                  env["WIKI_PASSWORD"])
+        r = sink.publish(ev)
+        return {"status": "delivered", **r}
+    except Exception as e:
+        return {"status": "failed", "reason": str(e)[:300]}
 
 
 def do_lesson(body: dict, frm: str) -> dict:
@@ -1598,6 +2366,16 @@ def do_lesson(body: dict, frm: str) -> dict:
             or str(date.today() + timedelta(days=7)),
             "status": str(body.get("status") or "open").strip()[:40],
             "updated": today}
+    # Persist intentional no-Thai (card
+    # education-maintenance-consolidated-report; the lesson-polish job's
+    # documented gap): meta.no_th marks a Thai-free lesson filed on
+    # purpose, so audits tell '--no-th intent' from 'missing
+    # translation'. Only when the write both skips Thai AND lands
+    # Thai-free — polish passes set no_th to preserve an existing Thai
+    # section and must not mark the lesson exempt.
+    thai_free = not re.search(r"[\u0e00-\u0e7f]", content)
+    if body.get("no_th") and thai_free:
+        meta["no_th"] = True
     payload = {"title": f"Education — {topic}"[:160], "slug": slug,
                "status": "private", "content": content, "meta": meta}
     hits = wp_api(f"/wp/v2/lesson&slug={slug}&status=private")
@@ -1613,6 +2391,11 @@ def do_lesson(body: dict, frm: str) -> dict:
                 meta[k] = override_review
             elif old_meta.get(k):
                 meta[k] = old_meta[k]
+        # a re-file that lands Thai-free again keeps a prior exemption
+        # even when this write didn't ask for no_th (e.g. a Thai
+        # backfill attempt whose translation failed upstream)
+        if thai_free and old_meta.get("no_th"):
+            meta["no_th"] = True
         # explicit modified bump — WP only auto-updates it when content
         # bytes change; re-filed lessons with identical content kept the
         # ORIGINAL date, so admin sort-by-last-modified was useless
@@ -1625,9 +2408,13 @@ def do_lesson(body: dict, frm: str) -> dict:
     else:
         r = wp_api("/wp/v2/lesson", payload)
         action = "created"
-    return {"message": f"{action} {slug} (post {r.get('id')})",
-            "slug": slug, "post_id": r.get("id"), "action": action,
-            "th": th_ok}
+    result = {"message": f"{action} {slug} (post {r.get('id')})",
+              "slug": slug, "post_id": r.get("id"), "action": action,
+              "th": th_ok}
+    wiki = _lesson_wiki_write(topic, level, source, content, meta)
+    if wiki is not None:
+        result["wiki"] = wiki
+    return result
 
 
 def do_lesson_topics() -> dict:
@@ -1657,7 +2444,7 @@ def do_lesson_topics() -> dict:
 JOB_STATUSES = {"queued", "claimed", "running", "done", "failed",
                 "stalled", "cancelled"}
 JOB_META_KEYS = ("kind", "status", "host", "pack", "runner",
-                 "result_ref", "error", "updated")
+                 "result_ref", "error", "updated", "event_id")
 JOB_COMMS_CAP = 200
 JOB_FROM_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,40}$")
 
@@ -1886,11 +2673,52 @@ def report_create_doc(slug: str, title: str, content_md: str,
     return {"slug": slug}
 
 
+def _read_wp_reports(body: dict, frm: str) -> dict:
+    """mode=wp-list | wp-get — read side for the member-facing WP report
+    CPT (usage-ledger class), needed by the wiki Reports: migration
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2). Distinct
+    store from the MDDB dossiers the other modes serve — hence the
+    wp- prefix. Runners hold no WP creds; the door reads for them."""
+    mode = str(body.get("mode") or "").strip()
+    if mode == "wp-list":
+        hits = wp_api("/wp/v2/report&status=private,publish&per_page=100"
+                      "&_fields=slug,title,modified,meta,status")
+        out = []
+        if isinstance(hits, list):
+            for h in hits:
+                m = h.get("meta") or {}
+                out.append({"slug": h.get("slug"),
+                            "title": (h.get("title") or {})
+                            .get("rendered", ""),
+                            "wp_status": h.get("status"),
+                            "report_type": m.get("report_type", ""),
+                            "period": m.get("period", ""),
+                            "source_key": m.get("source_key", ""),
+                            "modified": h.get("modified")})
+        return {"reports": out, "count": len(out), "via": frm,
+                "message": f"listed {len(out)} WP report CPT posts"}
+    slug = str(body.get("slug") or "").strip()
+    if not slug:
+        raise ValueError("wp-get requires slug")
+    hits = wp_api(f"/wp/v2/report&slug={slug}&status=private,publish")
+    if not (isinstance(hits, list) and hits):
+        raise ValueError(f"report not found: {slug}")
+    h = hits[0]
+    return {"slug": h.get("slug"),
+            "title": (h.get("title") or {}).get("rendered", ""),
+            "content": (h.get("content") or {}).get("rendered", ""),
+            "meta": h.get("meta") or {}, "modified": h.get("modified"),
+            "wp_status": h.get("status"), "via": frm,
+            "message": f"get {slug}"}
+
+
 def do_report(body: dict, frm: str) -> dict:
     """/report — the report-integration duty as an endpoint. Callers
     search first (query → candidate slugs), then either note-append to an
     existing page (integrate) or create a new one (create). `mode` may be
-    given explicitly; otherwise inferred from the fields present."""
+    given explicitly; otherwise inferred from the fields present.
+    mode=wp-list|wp-get reads the member-facing WP report CPT — a
+    different store from the MDDB dossiers (see _read_wp_reports)."""
     mode = str(body.get("mode") or body.get("do") or "").strip()
     slug = str(body.get("slug") or "").strip()
     note_text = str(body.get("note") or "").strip()
@@ -1898,6 +2726,8 @@ def do_report(body: dict, frm: str) -> dict:
     title = str(body.get("title") or "").strip()
     content_md = str(body.get("content_md") or body.get("content")
                      or "").strip()
+    if mode in ("wp-list", "wp-get"):
+        return _read_wp_reports(body, frm)
     if mode and mode not in ("search", "note", "create"):
         raise ValueError("mode must be search|note|create")
     if not mode:
@@ -1943,6 +2773,223 @@ def do_report(body: dict, frm: str) -> dict:
             "slug": r["slug"]}
 
 
+# --- /publish — provider-neutral publication door ---------------------------
+# One canonical PublicationEvent fans out to sink adapters (see
+# scripts/board/publication.py for schema/policy/outbox). Each adapter
+# below translates the event into the SAME writer call the compat
+# endpoint uses — WP (nest_job/lesson/news), mddb report dossier,
+# telegram relay, card comms audit, json ledger are peer adapters.
+
+
+def _pub_job_send(ev: dict, frm: str) -> dict:
+    """progress|milestone|alert -> nest_job live execution state."""
+    slug = ev["job"] or ev["project"] or ev["card"]
+    if not slug:
+        raise pub.Skip("job sink needs a job|project|card ref")
+    meta = ev.get("meta") or {}
+    status = str(meta.get("job_status") or
+                 {"progress": "running", "milestone": "done",
+                  "alert": "stalled"}.get(ev["kind"], ""))
+    body = {"slug": slug, "title": ev["title"],
+            "comms": ev["body"] or ev["title"],
+            "kind": str(meta.get("job_kind") or ev["kind"]),
+            "event_id": ev["event_id"]}
+    if status:
+        body["status"] = status
+    if ev["evidence"]:
+        body["result_ref"] = ev["evidence"][0]
+    if ev["kind"] == "alert":
+        body["error"] = ev["title"][:300]
+    if ev["parent"]:
+        body["parent"] = ev["parent"]
+    for k in ("host", "pack", "runner"):
+        if meta.get(k):
+            body[k] = str(meta[k])
+    r = do_job(body, frm)
+    return {"ref": f"nest_job:{r['slug']}", "post_id": r.get("post_id"),
+            "action": r["action"]}
+
+
+def _pub_lesson_send(ev: dict, frm: str) -> dict:
+    """lesson -> WP lesson CPT (Education — reusable knowledge)."""
+    meta = ev.get("meta") or {}
+    body = {"topic": str(meta.get("topic") or ev["title"]),
+            "content": ev["body"] or f"<p>{ev['title']}</p>"}
+    for k in ("level", "next_review", "status"):
+        if meta.get(k):
+            body[k] = str(meta[k])
+    if meta.get("lesson_source"):
+        body["source"] = str(meta["lesson_source"])
+    if meta.get("no_th"):
+        body["no_th"] = True
+    r = do_lesson(body, frm)
+    return {"ref": f"lesson:{r['slug']}", "post_id": r.get("post_id"),
+            "action": r["action"], "th": r.get("th")}
+
+
+def _pub_report_send(ev: dict, frm: str) -> dict:
+    """report|milestone -> project dossier (ada-cms-pages note)."""
+    slug = ev["project"] or str(
+        (ev.get("meta") or {}).get("report_slug") or "")
+    if not slug:
+        raise pub.Skip("report sink needs a project ref (dossier slug)")
+    line = ev["title"]
+    if ev["body"]:
+        line += f" — {ev['body'][:160]}"
+    line += f" [{ev['event_id']}]"
+    r = do_report({"slug": slug, "note": line}, frm)
+    return {"ref": f"report:{r['slug']}"}
+
+
+def _pub_news_send(ev: dict, frm: str) -> dict:
+    """news -> WP news CPT. Evidence rides inside content (news meta
+    keys aren't REST-registered); visibility maps to the post status —
+    members stays the private member surface, public flips to publish
+    (validation already required confidence=verified for that)."""
+    slug = "pub-" + ev["event_id"][4:]
+    links = "".join(f'<li><a href="{e}">{e}</a></li>'
+                    for e in ev["evidence"])
+    content = (
+        ev["body"] + "\n<h4>Evidence</h4><ul>" + links + "</ul>"
+        f"<p><small>confidence: {ev['confidence']} · "
+        f"source: {ev['source']} · event: {ev['event_id']}"
+        "</small></p>")
+    status = "publish" if ev["visibility"] == "public" else "private"
+    hits = wp_api(f"/wp/v2/news&slug={slug}&status=private,publish")
+    payload = {"title": ev["title"], "slug": slug, "status": status,
+               "content": content}
+    if isinstance(hits, list) and hits:
+        r = wp_api(f"/wp/v2/news/{hits[0]['id']}", payload)
+        action = "updated"
+    else:
+        r = wp_api("/wp/v2/news", payload)
+        action = "created"
+    return {"ref": f"news:{slug}", "post_id": r.get("id"),
+            "action": action, "wp_status": status}
+
+
+def _pub_board_send(ev: dict, frm: str) -> dict:
+    """any kind -> card comms (operational audit trail)."""
+    cid = ev["card"]
+    if not cid:
+        raise pub.Skip("board sink needs a card ref")
+    global _pending_label
+    _pending_label = f"publish {ev['event_id']}"
+    # lock order WP_LOCK -> LOCK; no path takes LOCK then WP_LOCK, so
+    # this nested take cannot deadlock.
+    with LOCK.open("w") as lf:
+        fcntl.flock(lf, fcntl.LOCK_EX)
+        try:
+            p = card_path(cid)
+        except ValueError as e:
+            raise pub.Skip(str(e))
+        card = load(p)
+        text = f"pub {ev['kind']}: {ev['title']}"
+        if ev["body"]:
+            text += f" — {ev['body'][:160]}"
+        text += f" [{ev['event_id']}]"
+        comms_add(card, frm, text)
+        card["updated"] = now()
+        save(p, card)
+    return {"ref": f"card:{cid}"}
+
+
+def _pub_sinks(frm: str) -> dict:
+    """The adapter registry — WP is only one adapter among peers; the
+    'json' ledger proves a second sink receives the same event."""
+    sinks = {
+        "job": pub.FuncSink(
+            "job", surface="members",
+            kinds=("progress", "milestone", "alert"),
+            send=lambda ev: _pub_job_send(ev, frm)),
+        "lesson": pub.FuncSink(
+            "lesson", surface="members", kinds=("lesson",),
+            send=lambda ev: _pub_lesson_send(ev, frm)),
+        "report": pub.FuncSink(
+            "report", surface="members",
+            kinds=("report", "milestone"),
+            send=lambda ev: _pub_report_send(ev, frm)),
+        "news": pub.FuncSink(
+            "news", surface="members", kinds=("news",),
+            evidence_required=True,
+            send=lambda ev: _pub_news_send(ev, frm)),
+        "board": pub.FuncSink(
+            "board", surface="private", kinds=pub.KINDS,
+            send=lambda ev: _pub_board_send(ev, frm)),
+        "telegram": pub.TelegramSink(PUB_TG_URL),
+        "json": pub.JsonSink(PUB_STATE_DIR / "published.jsonl"),
+    }
+    try:
+        wiki_env = _load_env_file(WIKI_ENV_FILE)
+        wiki_host = wiki_env.get("WIKI_HOST", "").rstrip("/")
+        if wiki_host.endswith("/v0"):
+            wiki_host = wiki_host[:-3]
+        wiki_api = (wiki_env.get("WIKI_API_URL") or
+                    f"{wiki_host}/api.php").rstrip("/")
+        if wiki_host and wiki_env.get("WIKI_USER") and \
+                wiki_env.get("WIKI_PASSWORD"):
+            sinks["wiki"] = pub.MediaWikiSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_NEWS_TEMPLATE",
+                                       "แม่แบบ:NewsReport"))
+            sinks["wiki-private"] = pub.MediaWikiSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_NEWS_TEMPLATE",
+                                       "แม่แบบ:NewsReport"),
+                name="wiki-private", surface="private",
+                namespace_prefix="PrivateNews:")
+            sinks["wiki-education"] = pub.WikiLessonSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_EDUCATION_TEMPLATE",
+                                       "แม่แบบ:Education"),
+                namespace_prefix=wiki_env.get("WIKI_EDUCATION_PREFIX",
+                                              "Education:"))
+            sinks["wiki-reports"] = pub.WikiReportSink(
+                wiki_api, wiki_env["WIKI_USER"], wiki_env["WIKI_PASSWORD"],
+                template=wiki_env.get("WIKI_REPORT_TEMPLATE",
+                                       "แม่แบบ:Report"),
+                namespace_prefix=wiki_env.get("WIKI_REPORT_PREFIX",
+                                              "Reports:"))
+    except (OSError, KeyError):
+        # Optional sink: the news event still follows the configured routes
+        # and the missing wiki credentials remain a service-host concern.
+        pass
+    return sinks
+
+
+def do_publish(body: dict, frm: str) -> dict:
+    """POST /publish — canonical event in, per-sink receipts out.
+    {op:"sinks"} reports the capability table, {op:"drain"} retries
+    the outbox on demand. A real event validates, dedupes on
+    idempotency_key, routes by kind (or explicit sinks), and delivers;
+    a failed sink queues to the outbox instead of failing the call."""
+    box = pub.Outbox(PUB_STATE_DIR)
+    noise = pub.NoisePolicy(
+        PUB_STATE_DIR / "noise.json",
+        progress_min_s=PUB_PROGRESS_MIN_S,
+        alert_min_s=PUB_ALERT_MIN_S,
+        telegram_min_s=PUB_TG_MIN_S)
+    op = str(body.get("op") or "").strip()
+    if op == "sinks":
+        sinks = _pub_sinks(frm)
+        return {"message": f"{len(sinks)} sinks registered",
+                "sinks": {n: s.capabilities()
+                          for n, s in sinks.items()},
+                "pending": box.pending_count()}
+    if op == "drain":
+        res = box.drain(_pub_sinks(frm))
+        return {"message": f"drained: {len(res['delivered'])} delivered, "
+                           f"{res['retrying']} retrying, "
+                           f"{res['dead']} dead, {res['pending']} pending",
+                **res}
+    sinks = _pub_sinks(frm)
+    drained = box.drain(sinks)   # piggyback retry on every publish
+    res = pub.publish_event(body, sinks, box, noise, frm)
+    if drained["delivered"] or drained["dead"]:
+        res["drained"] = drained
+    return res
+
+
 _render_flag = threading.Event()
 _render_worker_started = False
 
@@ -1985,6 +3032,214 @@ def render() -> None:
         )
 
 
+def _ready_load() -> dict:
+    try:
+        return json.loads(READY_FILE.read_text())
+    except Exception:
+        return {}
+
+
+def _ready_save(state: dict) -> None:
+    READY_STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = READY_STATE_DIR / "verdicts.json.tmp"
+    tmp.write_text(json.dumps(state, ensure_ascii=False))
+    tmp.replace(READY_FILE)
+
+
+def do_ready(body: dict) -> str:
+    """/ready — a runner's complete claimability report for this pass.
+
+    {host, verdicts:{card_id:{ok,reason}}, active:[{id,unit,at}]} — the
+    host block is replaced wholesale; a runner always reports its full
+    current view, so missing verdicts mean "not queued anymore", not
+    drift. Card files are never touched (off-repo state, no re-render)."""
+    host = str(body.get("host") or "").strip()
+    if not dr.HOST_ID_RE.match(host):
+        raise ValueError("host must be a valid host id")
+    verdicts_in = body.get("verdicts") or {}
+    if not isinstance(verdicts_in, dict) or len(verdicts_in) > 2000:
+        raise ValueError("verdicts must be an object of card -> verdict")
+    now_ts = time.time()
+    verdicts = {}
+    for cid, v in verdicts_in.items():
+        if not isinstance(cid, str) or len(cid) > 120:
+            continue
+        v = v or {}
+        verdicts[cid] = {"ok": bool(v.get("ok")),
+                         "reason": str(v.get("reason") or "")[:300],
+                         "at": now_ts}
+    active = []
+    for a in (body.get("active") or [])[:50]:
+        if isinstance(a, dict) and a.get("id"):
+            active.append({"id": str(a["id"])[:120],
+                           "unit": str(a.get("unit") or "")[:160],
+                           "at": int(a.get("at") or now_ts)})
+    state = _ready_load()
+    hosts = state.setdefault("hosts", {})
+    hosts[host] = {"at": now_ts, "verdicts": verdicts, "active": active}
+    # prune hosts silent > READY_HOST_TTL_S so a retired fleet member
+    # doesn't keep voting on claimability forever
+    for h in list(hosts):
+        if now_ts - ((hosts[h] or {}).get("at") or 0) > READY_HOST_TTL_S:
+            del hosts[h]
+    _ready_save(state)
+    return f"readiness recorded for {host} ({len(verdicts)} verdicts)"
+
+
+CARDS_JSON = REPO / "stacks/web/public/apps/board/cards.json"
+
+# The read-side contract (AUD-1033, card ops-manual-command-api-mcp-
+# efficiency-audit): one small filtered/projected surface so neither
+# agents nor daemons pay the whole-board dump for a single fact.
+COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref")
+CARDS_MAX_LIMIT = 1000
+
+
+def load_cards() -> dict:
+    """Parsed rendered board payload; {} when the file is absent/corrupt
+    (readers degrade to empty results, never a 500)."""
+    try:
+        return json.loads(CARDS_JSON.read_text()) or {}
+    except Exception:
+        return {}
+
+
+def _q1(q: dict, name: str, default: str = "") -> str:
+    v = q.get(name)
+    return v[0] if v else default
+
+
+def _truthy(v: str) -> bool:
+    return v.strip().lower() in ("1", "true", "yes", "on")
+
+
+def _field_set(q: dict) -> set:
+    if _truthy(_q1(q, "compact")):
+        return set(COMPACT_FIELDS)
+    return {f.strip() for f in _q1(q, "fields").split(",") if f.strip()}
+
+
+def _project(card: dict, fields: set) -> dict:
+    return ({k: card.get(k) for k in fields if k in card}
+            if fields else card)
+
+
+def card_query(cards: list, q: dict) -> dict:
+    """Filtered/projected read over rendered cards (AUD-1033 contract):
+    filters -> pagination -> field projection, in that order, so count/
+    total describe the filtered set and truncation is honest."""
+    out = list(cards)
+    cid = _q1(q, "id")
+    if cid:
+        out = [c for c in out if c.get("id") == cid]
+    col = _q1(q, "column")
+    if col:
+        out = [c for c in out if c.get("column") == col]
+    st = _q1(q, "action_status")
+    if st:
+        out = [c for c in out
+               if (c.get("action") or {}).get("status") == st]
+    since = _q1(q, "since")
+    if since:
+        out = [c for c in out if str(c.get("updated") or "") >= since]
+    total = len(out)
+    try:
+        off = max(0, int(_q1(q, "offset", "0")))
+    except ValueError:
+        off = 0
+    try:
+        lim = int(_q1(q, "limit", "0"))
+    except ValueError:
+        lim = 0
+    lim = min(lim, CARDS_MAX_LIMIT) if lim else 0
+    page = out[off: off + lim if lim else None]
+    fields = _field_set(q)
+    page = [_project(c, fields) for c in page]
+    return {"ok": True, "count": len(page), "total": total,
+            "offset": off, "truncated": off + len(page) < total,
+            "cards": page}
+
+
+def queue_view() -> dict:
+    """GET /queue — the ready-package projection (KNB-1007): queued cards
+    in claim-drain order with per-runner verdicts and in-flight claims.
+    Read-only; verdicts fresher than READY_STALE_S count as live."""
+    cards = (load_cards().get("cards") or [])
+    now_ts = time.time()
+    hosts_in = (_ready_load().get("hosts") or {})
+    hosts = {}
+    for h, hb in hosts_in.items():
+        age = now_ts - ((hb or {}).get("at") or 0)
+        hosts[h] = {"at": (hb or {}).get("at"),
+                    "age_s": int(age),
+                    "stale": age > READY_STALE_S,
+                    "active": (hb or {}).get("active") or []}
+
+    def verdicts_for(cid: str) -> dict:
+        return {h: v for h, hb in hosts_in.items()
+                for cv in [((hb or {}).get("verdicts") or {}).get(cid)]
+                if cv is not None
+                for v in [cv]}
+
+    queued = [c for c in cards
+              if (c.get("action") or {}).get("status") == "queued"]
+    try:
+        queued = dr.sort_claimable(queued)
+    except Exception:
+        pass  # dr unavailable -> keep board order; still truthful
+
+    out_q = []
+    for i, c in enumerate(queued, 1):
+        cid = c.get("id") or ""
+        a = c.get("action") or {}
+        v = verdicts_for(cid)
+        fresh = {h: x for h, x in v.items()
+                 if now_ts - (x.get("at") or 0) <= READY_STALE_S}
+        out_q.append({
+            "pos": i, "id": cid, "ref": c.get("ref") or "",
+            "title": c.get("title") or "",
+            "priority": c.get("priority") or "",
+            "updated": c.get("updated") or "",
+            "action": {k: a.get(k) for k in
+                       ("repo", "type", "lane", "executor", "model",
+                        "labels", "host", "target_host", "runner")
+                       if a.get(k) not in (None, "", [])},
+            "eligible": sorted(h for h, x in fresh.items()
+                               if x.get("ok")),
+            "blocked": {h: (x.get("reason") or "blocked")
+                        for h, x in fresh.items() if not x.get("ok")},
+            "verdicts": v,
+            "unreported": sorted(
+                h for h, hb in hosts.items()
+                if not hb["stale"] and h not in v)})
+
+    # in-flight: card action.status plus the runner's own active report
+    # (richer — unit name + start epoch) when one exists
+    active_by_card = {}
+    for h, hb in hosts_in.items():
+        for a in (hb or {}).get("active") or []:
+            if a.get("id"):
+                active_by_card[a["id"]] = {"host": h, **a}
+    claimed = []
+    for c in cards:
+        a = c.get("action") or {}
+        if a.get("status") not in ("claimed", "running"):
+            continue
+        cid = c.get("id") or ""
+        rep = active_by_card.get(cid) or {}
+        claimed.append({
+            "id": cid, "ref": c.get("ref") or "",
+            "title": c.get("title") or "",
+            "status": a.get("status"),
+            "host": rep.get("host") or a.get("runner")
+                    or (c.get("claim") or {}).get("host") or "",
+            "unit": rep.get("unit") or a.get("task_id") or "",
+            "at": rep.get("at") or "",
+            "repo": a.get("repo") or ""})
+    return {"ok": True, "at": now(), "stale_after_s": READY_STALE_S,
+            "hosts": hosts, "queued": out_q, "claimed": claimed}
+
+
 class H(BaseHTTPRequestHandler):
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False).encode()
@@ -1998,14 +3253,38 @@ class H(BaseHTTPRequestHandler):
         sys.stderr.write("board-api %s\n" % (fmt % args))
 
     def do_GET(self):
-        path = urlparse(self.path).path
+        url = urlparse(self.path)
+        path = url.path
         if path == "/health":
             return self._send(200, {"ok": True})
         if path == "/cards":
-            j = REPO / "stacks/web/public/apps/board/cards.json"
-            if j.exists():
-                return self._send(200, json.loads(j.read_text()))
-            return self._send(404, {"error": "no cards.json yet"})
+            payload = load_cards()
+            if not payload:
+                return self._send(404, {"error": "no cards.json yet"})
+            q = parse_qs(url.query)
+            if not q:
+                return self._send(200, payload)
+            return self._send(
+                200, card_query(payload.get("cards") or [], q))
+        if path == "/card" or path == "/card/":
+            return self._send(400, {
+                "error": "missing card id",
+                "hint": "use /card/<id> or /cards?id=<id>"})
+        if path.startswith("/card/"):
+            cid = unquote(path[len("/card/"):])
+            hit = next((c for c in (load_cards().get("cards") or [])
+                        if c.get("id") == cid), None)
+            if hit is None:
+                return self._send(404, {"error": "card not found",
+                                        "id": cid})
+            return self._send(200, {
+                "ok": True,
+                "card": _project(hit, _field_set(parse_qs(url.query)))})
+        if path == "/queue":
+            try:
+                return self._send(200, queue_view())
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
         self._send(404, {"error": "not found"})
 
     def do_POST(self):
@@ -2025,12 +3304,29 @@ class H(BaseHTTPRequestHandler):
             "board-api write %s id=%s via=%s\n"
             % (path, body.get("id") or body.get("card"), ident))
 
+        # runner readiness reports (KNB-1007) — off-repo state under its
+        # own flock; no card writes, no re-render, no upstream calls
+        if path == "/ready":
+            try:
+                with READY_LOCK.open("w") as lf:
+                    fcntl.flock(lf, fcntl.LOCK_EX)
+                    msg = do_ready(body)
+                return self._send(200, {"ok": True, "message": msg,
+                                        "via": ident})
+            except ValueError as e:
+                return self._send(400, {"error": str(e)})
+            except Exception as e:
+                return self._send(500, {"error": str(e)})
+
         # remote-backed mutation endpoints (WP/MDDB) — separate flock so a
         # slow upstream call never stalls card writes; no board re-render
         # needed (cards.json untouched)
         if path in REMOTE_WRITE_PATHS:
             try:
-                frm = (job_actor(body, ident) if path == "/job"
+                frm = (job_actor(body, ident)
+                       if path in ("/job", "/publish", "/wiki/extension",
+                                   "/wiki/news-review",
+                                   "/wiki/news-diagnose", "/wiki/page")
                        else actor(body))
                 with WP_LOCK.open("w") as lf:
                     fcntl.flock(lf, fcntl.LOCK_EX)
@@ -2040,6 +3336,19 @@ class H(BaseHTTPRequestHandler):
                                else do_lesson(body, frm))
                     elif path == "/job":
                         res = do_job(body, frm)
+                    elif path == "/publish":
+                        res = do_publish(body, frm)
+                        if (res.get("receipts") or {}).get(
+                                "board", {}).get("status") == "delivered":
+                            render_async()   # board audit -> cards.json
+                    elif path == "/wiki/extension":
+                        res = do_wiki_extension(body, frm)
+                    elif path == "/wiki/news-review":
+                        res = do_wiki_news_review(body, frm)
+                    elif path == "/wiki/news-diagnose":
+                        res = do_wiki_news_diagnose(body, frm)
+                    elif path == "/wiki/page":
+                        res = do_wiki_page(body, frm)
                     else:
                         res = do_report(body, frm)
                 msg = res.pop("message")
@@ -2661,6 +3970,27 @@ def _selftest() -> None:
         assert payload["meta"]["next_review"] == "2026-01-08"
         assert payload["meta"]["status"] == "learned"
         assert "ไทย" not in payload["content"]
+        # Thai-free --no-th write records the exemption (meta.no_th)
+        assert payload["meta"]["no_th"] is True
+        # re-file carrying Thai clears the exemption marker
+        wp2b = FakeWP([{"id": 42, "meta": {"no_th": True}}])
+        globals()["wp_api"] = wp2b
+        globals()["_gemini_thai"] = lambda h: "<p>แปล</p>"
+        do_lesson({"topic": "Object Storage", "content": "<p>v3</p>"},
+                  "devin")
+        _, payload = wp2b.posts[-1]
+        assert "ไทย" in payload["content"]
+        assert "no_th" not in payload["meta"]
+        # re-file landing Thai-free keeps a prior exemption even when
+        # this write didn't ask for no_th (translation failed upstream)
+        wp2c = FakeWP([{"id": 42, "meta": {"no_th": True}}])
+        globals()["wp_api"] = wp2c
+        globals()["_gemini_thai"] = lambda h: ""
+        do_lesson({"topic": "Object Storage", "content": "<p>v4</p>"},
+                  "devin")
+        _, payload = wp2c.posts[-1]
+        assert "ไทย" not in payload["content"]
+        assert payload["meta"]["no_th"] is True
 
         # /job — validation + create/update + comms log + parent
         assert job_actor({}, "local") == "local"
@@ -2766,11 +4096,88 @@ def _selftest() -> None:
         assert res["slug"] == "new-report"
         assert adds[0][0] == "add" and adds[0][1]["key"] == "new-report"
         assert adds[0][1]["meta"]["subject"] == ["new-report"]
+
+        # /publish — provider-neutral door (devnest-publication-adapter-layer)
+        pstate = tmp / "pub-state"
+        globals()["PUB_STATE_DIR"] = pstate
+        real_tg_url = PUB_TG_URL
+        # closed port -> telegram deliveries deterministically queue
+        globals()["PUB_TG_URL"] = "http://127.0.0.1:1/send"
+        # validation — bad kind, news needs evidence, public needs verified
+        rejects(lambda: do_publish({"kind": "heartbeat", "title": "t",
+                                    "source": "devin"}, "devin"),
+                "kind must be one of")
+        rejects(lambda: do_publish({"kind": "news", "title": "t",
+                                    "body": "b", "source": "devin"},
+                                   "devin"), "news requires")
+        rejects(lambda: do_publish(
+            {"kind": "news", "title": "t", "body": "b", "source": "devin",
+             "evidence": ["http://x"], "visibility": "public",
+             "confidence": "observed"}, "devin"),
+            "public news requires")
+        # capability report — the registry is visible to callers
+        res = do_publish({"op": "sinks"}, "devin")
+        assert "job" in res["sinks"] and "json" in res["sinks"]
+        assert res["sinks"]["telegram"]["surface"] == "members"
+        # progress event to members -> job (WP) + json both receive the
+        # SAME canonical event — WP is only one adapter
+        wp4 = FakeWP()
+        globals()["wp_api"] = wp4
+        res = do_publish(
+            {"kind": "progress", "title": "Pack thonburian-bench 50%",
+             "job": "thonburian-bench", "source": "queue-mgr",
+             "visibility": "members", "confidence": "measured",
+             "sinks": ["job", "json"]}, "queue-mgr")
+        assert res["receipts"]["job"]["status"] == "delivered"
+        assert res["receipts"]["json"]["status"] == "delivered"
+        route, payload = wp4.posts[-1]
+        assert route == "/wp/v2/nest_job"
+        assert payload["slug"] == "thonburian-bench"
+        assert payload["meta"]["status"] == "running"
+        assert payload["meta"]["event_id"] == res["event_id"]
+        jlines = (pstate / "published.jsonl").read_text().splitlines()
+        jev = json.loads(jlines[-1])["event"]
+        assert jev["event_id"] == res["event_id"]
+        assert jev["kind"] == "progress" and jev["job"] == "thonburian-bench"
+        # retry of the same logical event dedupes — no second WP post
+        res2 = do_publish(
+            {"kind": "progress", "title": "Pack thonburian-bench 50%",
+             "job": "thonburian-bench", "source": "queue-mgr",
+             "visibility": "members", "confidence": "measured",
+             "sinks": ["job", "json"]}, "queue-mgr")
+        assert res2["deduped"] is True
+        assert res2["idempotency_key"] == res["idempotency_key"]
+        assert len([p for p in wp4.posts if p[0] == "/wp/v2/nest_job"]) == 1
+        # private visibility gates members surfaces — job skipped,
+        # json (private surface) still delivers
+        res3 = do_publish(
+            {"kind": "progress", "title": "private note", "job": "j1",
+             "source": "devin", "sinks": ["job", "json"]}, "devin")
+        assert res3["receipts"]["job"]["status"] == "skipped"
+        assert "visibility" in res3["receipts"]["job"]["reason"]
+        assert res3["receipts"]["json"]["status"] == "delivered"
+        # unknown sink is a 400, not a silent drop
+        rejects(lambda: do_publish(
+            {"kind": "alert", "title": "t", "source": "devin",
+             "sinks": ["carrier-pigeon"]}, "devin"), "unknown sink")
+        # outbox: a sink that throws queues for retry, drain delivers
+        res4 = do_publish(
+            {"kind": "milestone", "title": "m1", "job": "j1",
+             "source": "devin", "visibility": "members",
+             "sinks": ["telegram"]}, "devin")
+        assert res4["receipts"]["telegram"]["status"] == "queued"
+        assert (pstate / "outbox.jsonl").exists()
+        res5 = do_publish({"op": "drain"}, "devin")
+        assert res5["pending"] == 1     # not yet due (30s base delay)
     finally:
         globals()["wp_api"] = real_wp
         globals()["_gemini_thai"] = real_th
         globals()["_mddb_post"] = real_mddb
         globals()["_crn"] = real_crn
+        globals()["PUB_TG_URL"] = real_tg_url
+        globals()["PUB_STATE_DIR"] = Path(os.environ.get(
+            "BOARD_API_PUB_STATE",
+            str(Path.home() / ".local/state/board-api-publish")))
         globals()["INBOX_DIR"] = REPO / "docs/ssot/focus-inbox"
 
     print("selftest ok")

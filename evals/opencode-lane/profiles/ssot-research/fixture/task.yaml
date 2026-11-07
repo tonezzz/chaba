@@ -1,0 +1,18 @@
+id: ssot-research
+title: SSOT research question with mandatory citations
+class: read_only
+timeout_s: 420
+artifact: evals/opencode-lane/out/ssot-research-answer.json
+description: >-
+  Answer a research question from the checkout's SSOT sources only.
+  Every claim must cite a resolvable repo path. Artifact is the agent's
+  final message; the runner writes it.
+contract:
+  required_fields:
+    question: "the research question, echoed"
+    answer: "prose answer — 'not documented' is a valid answer"
+    citations: "list of {path, note} — every path MUST exist in the
+                checkout; >= 2 entries"
+    sources_consulted: "list of paths actually read (>= 1 under docs/)"
+    read_only: "must be true"
+  citation_roots: [docs/, AGENTS.md, scripts/, evals/]

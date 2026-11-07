@@ -1,0 +1,110 @@
+title: Gold/THB/USD Lab — First Scored Window
+subtitle: Directional-accuracy scoring of the small THB->XAU causality model for card lab-gold-thb-causality
+icon: target
+
+report:
+  status: completed
+  completed_at: "2026-10-27"
+  summary: |
+    First scored window for lab card lab-gold-thb-causality (metric: OOS
+    directional accuracy > 60% over 30 daily predictions). The card note says
+    "data collection running" — this is stale: the price CSVs were fetched once
+    on 2026-08-26 via the Alpha Vantage MCP and no collector job, fetch script,
+    or scheduled unit exists. Data ends 2026-08-25, so the last scorable
+    prediction is 2026-08-24 (needs the next day's return).
+
+    score_window.py runs the walk-forward THB->XAU direction rule
+    (monthly-recalibrated threshold on the prior 252 days, same rule as
+    walkforward.py) plus a threshold-0 "always predict" variant, and scores the
+    most recent 30 predictions of each against realized next-day XAU direction.
+
+    Both variants technically pass the card metric on the latest window —
+    threshold model 70.0% (21/30, 2026-07-07..2026-08-24), always model 66.7%
+    (20/30, 2026-07-13..2026-08-24). However the naive always-up baseline scores
+    63.3% and 66.7% on the same days, so the model's edge over "predict up" is
+    not significant (binomial p vs naive: 0.29 and 0.58). Over the full
+    2015-2026 OOS span the mean rolling-30 accuracy is 58.2% / 56.2% and only
+    ~35% of windows clear 60% — the latest window is above average.
+
+    Review guidance for 2026-11-01: metric technically met on the first scored
+    window, but evidence for a real edge over a naive baseline is weak, and the
+    data is ~2 months stale. If the lab is to continue, a real daily collector
+    (scheduled fetch + scored-window append) is the missing piece — the
+    hypothesis can then be re-scored on genuinely fresh days.
+  metrics:
+    - variant: threshold (walkforward.py rule)
+      window: 2026-07-07..2026-08-24
+      n_predictions: 30
+      directional_accuracy: 0.700
+      wilson90_ci: [0.551, 0.816]
+      p_value_vs_50pct: 0.0214
+      naive_always_up_same_days: 0.633
+      p_value_vs_naive: 0.2893
+      oos_accuracy_2015_2026: 0.584
+      rolling30_mean: 0.582
+      rolling30_share_above_60pct: 0.366
+      meets_metric: true
+    - variant: always (threshold=0, predict every day)
+      window: 2026-07-13..2026-08-24
+      n_predictions: 30
+      directional_accuracy: 0.667
+      wilson90_ci: [0.517, 0.789]
+      p_value_vs_50pct: 0.0494
+      naive_always_up_same_days: 0.667
+      p_value_vs_naive: 0.5848
+      oos_accuracy_2015_2026: 0.564
+      rolling30_mean: 0.562
+      rolling30_share_above_60pct: 0.342
+      meets_metric: true
+    - data_end: "2026-08-25"
+    - last_scorable_prediction: "2026-08-24"
+    - collector_status: "no collector exists — card note 'data collection running' is stale"
+  links:
+    - experiments/gold-thb-usd-causality/score_window.py
+    - experiments/gold-thb-usd-causality/data/scored_window.json
+    - experiments/gold-thb-usd-causality/data/predictions.csv
+    - docs/ssot/kanban/cards/lab-gold-thb-causality.yml
+  lessons_learned:
+    - The 60%-over-30-days accuracy bar is easily cleared by luck in a rising
+      market — always-up scored 63-67% on the same window; compare against a
+      naive baseline, not just 50%.
+    - Data collection running needs a declared collector (job + unit) to be
+      true; a one-time fetch is not collection.
+    - Directional accuracy ignores flat days — the threshold model only calls
+      about 71% of days (2000 predictions over 2834 OOS days).
+  kb_review:
+    - docs/ssot/jobs/experiments/2026-10-27-gold-thb-usd-scored-window.yml
+    - experiments/gold-thb-usd-causality/score_window.py
+
+processing:
+  status: completed
+  started_at: "2026-10-27"
+  completed_at: "2026-10-27"
+  steps:
+    - id: 1
+      label: Rebuild analysis artifacts (aligned.csv, returns.csv, results.json)
+      status: completed
+      completed_at: "2026-10-27"
+      notes: analyze.py re-run under a fresh .venv; reproduces 3076 aligned
+        observations 2014-11-07..2026-08-25 and the original Granger findings.
+    - id: 2
+      label: Write and run score_window.py
+      status: completed
+      completed_at: "2026-10-27"
+      notes: Walk-forward scoring with monthly threshold recalibration; writes
+        data/predictions.csv and data/scored_window.json.
+    - id: 3
+      label: Verify data freshness / collector status
+      status: completed
+      completed_at: "2026-10-27"
+      notes: No fetch script, no ssot.jobs entry, no MCP alphavantage, no API
+        key in env — data is frozen at 2026-08-25.
+
+config:
+  version: 1
+  created_at: "2026-10-27"
+  last_updated: "2026-10-27"
+  maintainer: devin
+  related_files:
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+    - docs/ssot/kanban/cards/lab-gold-thb-causality.yml

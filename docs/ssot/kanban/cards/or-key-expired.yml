@@ -1,7 +1,7 @@
 id: or-key-expired
 title: OpenRouter key expired - embedding OR leg dead
 column: backlog
-updated: 2026-10-12 13:19
+updated: 2026-10-26 07:36
 ref: SEC-0505
 comms:
 - at: 2026-10-12 13:19
@@ -10,15 +10,24 @@ comms:
 - at: 2026-10-26 01:20
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-10-26 07:36
+  from: tony
+  text: 'answered the-openrouter-api-key-used-fo-63157a: Attempt to scan all managed hosts for OpenRouter environment
+    variables or config files.'
+- at: 2026-10-26 07:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-openrouter-api-key-used-fo-63157a
-  ask: The OpenRouter API key used for embedding has expired, causing the embedding or OpenRouter leg
-    to fail, but no target host, repository, or key storage mechanism is specified in the card context.
-    To proceed safely, the owner needs to indicate where the OpenRouter API key should be updated.
+  ask: The OpenRouter API key used for embedding has expired, causing the embedding or OpenRouter leg to fail, but
+    no target host, repository, or key storage mechanism is specified in the card context. To proceed safely, the
+    owner needs to indicate where the OpenRouter API key should be updated.
   options:
   - ★ Ask the owner for the target host/repository and the new OpenRouter API key to update the configuration.
   - Attempt to scan all managed hosts for OpenRouter environment variables or config files.
   - Assume the key is managed in the main chaba repository and update it there.
-  status: open
+  status: answered
   at: 2026-10-26 01:20
   from: backlog-spec-enrich
+  answer: Attempt to scan all managed hosts for OpenRouter environment variables or config files.
+awaiting_action: true

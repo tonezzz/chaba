@@ -35,7 +35,7 @@
 | Board/CMS ops | board-statics-sync, chaba-cms-reflect, chaba-jobs, chaba-repo-sync*, chaba-served-mirror-sync, chaba-services-regen, chaba-system-report, check-serve-config, cms-h3-publish, devin-dispatch-prune, mcp-debug-h3-sync, ssot-optimization-snapshot, staleness-sentinel, timer-sentinel, ops-percussion, chaba-route-health | **M → idc03** (*repo-sync: retire — it exists to sync dell's exec checkout) |
 | HA-adjacent | ha-auth-watch, network-scan-tony | **M** — ha-auth-watch → idc03; network-scan-tony (home-LAN scan) → **mn01** |
 | Dell-health | chaba-dell-health-agent, tony-dell-health-snapshot, tony-dell-mcp-health, tony-dell-monitor | **R** — retire (spare box doesn't need the agent fleet) or collapse to one lightweight check |
-| KVM/display | barrier-client-watchdog, barrier-enforce-lan, barrier-pin-vt | **R** — drops with KVM stack |
+| KVM/display | Barrier client/watchdog/enforcement retired; barrier-pin-vt remains a physical-seat helper | **R** — only the KVM stack is retired |
 | Log shipping | log-shipper, log-shipper-mha, log-shipper-severe, log-shipper-severe-mha | **M → destination of log pipeline** (likely idc03) — verify targets first |
 | Stock | ubuntu-insights-*, launchpadlib-cache-clean, snap.firmware-notifier | **R** — stock, drop from tracking |
 
@@ -48,7 +48,7 @@
 | dnsmasq-postgre | DNS alias for postgres | **R** — follows postgres off |
 | rclone-gdrive | gdrive FUSE mount serving media corpus | **M → idc02** (with media caddy) — no disk cost (remote mount) |
 | tailscale-serve-8080 | tailnet serve for board | **M → idc03** with web |
-| xfce-seat, xvfb-99, barrier-client | physical/headless display + KVM | **R** — CRD covers remote display |
+| xfce-seat, xvfb-99 | physical/headless display | **R** — CRD covers remote display |
 | xrdp, xrdp-sesman, xorg-seat | RDP stack | **R** — CRD suffices |
 | chrome-remote-desktop-env | remote desktop | **K** — minimal base |
 | sync-to-hdd (system) | old HDD-backup sync | **R** — obsolete post-NVMe (or repurpose NVMe→HDD backup — Tony call) |

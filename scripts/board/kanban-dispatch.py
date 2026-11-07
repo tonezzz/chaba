@@ -462,6 +462,31 @@ def finish_one(path: Path, card: dict) -> str:
         card.setdefault("claim", {}).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
         return "failed"
+    # Units run under systemd-run --collect: a failed unit is unloaded
+    # and is-active can no longer see Result=exit-code — so 'not active'
+    # alone is NOT proof of success (the 2026-10-25/26
+    # dispatch-empty-closeout-verification-gap burns: 'Failed with
+    # result' sessions still recorded 'finished (ok)'). Check the real
+    # exit evidence before calling anything finished.
+    ex_ok, ex_ev = (dr.unit_exit_evidence(tid) if tid
+                    else (None, "no task_id"))
+    if ex_ok is False:
+        a["status"] = "failed"
+        a["result"] = (f"{tid} FAILED ({ex_ev}) — see "
+                       f"`devin-dispatch logs {tid}`")
+        card.setdefault("claim", {}).pop("session", None)
+        comms_add(card, "chaba",
+                  f"run failed ({ex_ev}) — check logs, then retry")
+        return "failed"
+    if ex_ok is None:
+        # unproven exit — not 'ok', but not provably failed either:
+        # finish to review and let the close-out/merge-sweep verified
+        # gate weigh the deliverable (a killed session can still leave
+        # real, mergeable work; verified stays withheld either way —
+        # merge_pending_one requires a proven exit for the stamp).
+        comms_add(card, "chaba",
+                  f"run ended with no exit record ({ex_ev}) — the "
+                  "verified gate decides from the deliverable")
     # unit left the active state — treat as finished
     a["status"] = "done"
     a["result"] = f"{tid} finished ({state}) — see `devin-dispatch logs {tid}`"
@@ -523,8 +548,12 @@ def start_pending(path: Path) -> str:
     a = card["action"]
     repo = a.get("repo", "chaba")
     task = build_task(card)
+    ex = str(a.get("executor") or "").strip()
     lane = str(a.get("lane") or "")
-    if not lane and JEV_LANE:
+    # An explicit executor is itself the routing decision — lane
+    # classification stays out (executor=devin pins the devin path and
+    # keeps action.model as the native devin id it declared).
+    if not lane and JEV_LANE and not ex:
         lane = classify_lane(card)
         if lane:
             a["lane"] = lane
@@ -542,6 +571,17 @@ def start_pending(path: Path) -> str:
         env["DISPATCH_MODEL"] = str(a["model"])  # -> devin --model
     elif lane in LANE_MODELS:
         env["DISPATCH_MODEL"] = LANE_MODELS[lane]  # cheapest lane
+    # Executor-contract context for the launcher's task meta + usage:
+    # the card that declared it, the resolved executor/provider, and the
+    # profile id — devin-dispatch._meta_write persists them.
+    env["DISPATCH_CARD"] = card.get("id") or path.stem
+    env["DISPATCH_EXECUTOR"] = ex or "devin"
+    env["DISPATCH_PROVIDER"] = dr.model_provider(
+        env.get("DISPATCH_MODEL") or "") or "devin"
+    if dr.card_profile(card):
+        env["DISPATCH_PROFILE"] = dr.card_profile(card)
+    if a.get("target_host"):
+        env["DISPATCH_TARGET_HOST"] = str(a["target_host"])
     r = sh([DISPATCH, "start", repo, task], timeout=120, env=env)
 
     def apply():
@@ -559,7 +599,10 @@ def start_pending(path: Path) -> str:
         a["runner"] = HOST
         card.setdefault("claim", {})["session"] = task_id
         card["claim"]["since"] = now()
-        comms_add(card, "chaba", f"dispatched {task_id} on {repo}")
+        blurb = dr.executor_blurb(card)
+        comms_add(card, "chaba",
+                  f"dispatched {task_id} on {repo}"
+                  + (f" ({blurb})" if blurb else ""))
         if LAST_PRIMER_LINES:
             comms_add(
                 card, "chaba",
@@ -581,13 +624,28 @@ def merge_pending_one(path: Path) -> str:
     # the head is provably on origin (never dirty/unmerged; runs outside
     # the card lock like the merge itself)
     gc_notes = dr.gc_session(res)
+    # exit evidence for the verified stamp — probed OUTSIDE the lock
+    # (systemctl/journalctl are the slow part, same rule as the merge).
+    ex_ok, ex_ev = dr.unit_exit_evidence(
+        str(((res.get("session") or {}).get("task_id")) or ""))
 
     def apply():
         card = load_card(path)
         a = card.get("action") or {}
         a.pop("merge_pending", None)
         if res.get("merged"):
-            a["verified"] = True
+            # verified = "the dispatch delivered": a merge whose session
+            # FAILED or left no exit record still withholds the stamp —
+            # merge-sweep's gate then holds it for a human instead of
+            # auto-closing (dispatch-empty-closeout-verification-gap).
+            if ex_ok is True:
+                a["verified"] = True
+            else:
+                comms_add(
+                    card, "chaba",
+                    f"merged but verified withheld — unit exit "
+                    f"{'failed' if ex_ok is False else 'unproven'} "
+                    f"({ex_ev}); merge-sweep's gate will review")
         elif res.get("conflicts") or res.get("test_failures") \
                 or res.get("shadows") or (
                 res.get("gate") and not res["gate"]["ok"]):
@@ -705,6 +763,26 @@ def main() -> int:
                     print(f"{card['id']}: skipped — action.type "
                           f"{a.get('type')!r} is not dispatchable "
                           "(claims are type=dispatch only)")
+                    continue
+                # Executor contract (opencode-explicit-executor-routing):
+                # this dispatcher's only executor is devin. A declared
+                # executor other than devin routes elsewhere — opencode/
+                # script cards are runner-agent territory, manual is
+                # Tony's hands, anything unknown fails closed. Never
+                # silently run them on devin.
+                ex = str(a.get("executor") or "").strip()
+                if ex and ex != "devin":
+                    why = ("not a known executor"
+                           if ex not in dr.EXECUTORS
+                           else "Tony's hands — never claimed"
+                           if ex == "manual"
+                           else f"routes to the {ex} executor, not devin")
+                    print(f"{card['id']}: skipped — executor={ex} "
+                          f"({why})")
+                    continue
+                th = str(a.get("target_host") or "").strip()
+                if th and th != HOST:
+                    print(f"{card['id']}: skipped — target_host={th}")
                     continue
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:

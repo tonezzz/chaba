@@ -1,0 +1,98 @@
+id: jobs/nest/2026-10-26-colab-job-console
+title: >-
+  Colab job console — canonical notebook + session guard + warmup,
+  landed in chaba repo
+card: colab-single-notebook-job-console-with-c-2528c5   # OPS-0874
+date: 2026-10-26
+runner: mn01 (dispatch worktree — repo landing only, no Drive/host mutations)
+status: delivered
+
+# Re-implementation of the never-pushed fix/colab-session-control work
+# (commits 3f4dcabbb/660ebf546/20c89df3a lived only on an idc03 checkout).
+# Naming matches the already-deployed Drive tree + lesson 2231:
+# queue/runtime-sessions/, ada-nest-job-console.ipynb, t4-session-warmup.
+
+deliverables:
+  notebook:
+    path: scripts/colab/ada-nest-job-console.ipynb
+    built_by: scripts/colab/build-job-console.py
+    deploy_to: gdrive:ada-nest/queue/ada-nest-job-console.ipynb
+    shape: instruction markdown + 2 code cells, no per-job cells
+  cells:
+    preflight: scripts/colab/preflight-cell.py      # cell 1
+    launcher: scripts/colab/queue-launcher-cell.py  # cell 2
+  shared:
+    registry: scripts/colab/runtime_registry.py
+    runner: scripts/colab/queue-runner.py
+    manifest: scripts/colab/JOBS.py
+  mcp: mcp-servers/mcp-colab/server.py  # session status + managed queue-start request
+  procedure: docs/kb/colab-mcp-jobs.md  # job-console section + warmup rule
+  lesson: colab-gpu-worker (post 2231, updated in place via board-api /lesson)
+
+session_guard:
+  registry_file: queue/runtime-sessions/<boot_id>.json
+  registry_fields: '{gpu, gpu_gb, ram_gb, drive_mounted, ts, runner}'
+  ttl_s: '300 (NEST_RUNTIME_TTL_S)'
+  rules:
+    - 'cell 1 registers + heartbeats this VM; refuses while another managed runtime record is fresh (ambiguous duplicate)'
+    - 'cell 2 refuses on: Drive unmounted, no GPU, fresh peer runtime, or a fresh queue heartbeat owned by another boot'
+    - 'cell 1 starts a Drive command watcher; mcp-colab can request queue start for the exact managed boot_id after explicit confirm'
+    - 'deliberate dual-VM: ALLOW_SECOND_RUNTIME = True; queue lease remains the final writer arbiter'
+    - 'never auto-stops anything; Google Runtime > Manage Sessions is authoritative for uninstrumented notebooks'
+    - 'consumer Colab runtime start/stop remains manual; no account upgrade or Enterprise runtime API is assumed'
+  pid_safety:
+    - 'queue/runner.id {pid,boot_id,worker,epoch,ts} is the only signalable identity; legacy runner.pid is never os.kill''d (PID numbers are per-VM on a shared Drive file)'
+    - 'same-VM zombie (live pid + stale heartbeat) is reaped; foreign records untouched; runner removes its marks only while they still name it'
+
+warmup_contract:
+  job: t4-session-warmup (JOBS[0], scope env)
+  behavior: >-
+    GPU matmul smoke (CPU-spin fallback) runs >=WARMUP_MIN_S (30) and
+    until the next job's bg prep exits, capped at WARMUP_MAX_S (300) —
+    the runner injects QUEUE_PENDING (name,log,Popen) so run code polls
+    the pending restore-hf-cache extract. Stats -> queue/warmup/<boot>.json,
+    gated via artifacts glob {boot_id} expansion.
+  live_numbers_2026-10-25: warmup 61.4s / 431k matmuls / 0.02GiB peak,
+    overlapped a 223s hf-cache restore on boot 326f1d48
+
+tests:
+  files: [tests/colab/test_runtime_registry.py,
+          tests/colab/test_job_console.py,
+          tests/colab/test_mcp_colab_control.py]
+  count: 30 (5 registry + 20 console/warmup/control integration + 5 MCP control)
+  covers:
+    - CPU runtime + missing Drive -> queue start refused
+    - fresh T4 + empty registry -> preflight + launch pass
+    - fresh peer record -> launch blocked, peer boot_id named
+    - refused preflight leaves no heartbeat; targeted queue-start requests are acked and idempotent
+    - control watcher rejects requests without the explicit-confirmation bit
+    - mcp queue-start requires confirm, a fresh managed T4, no live runner, and reports its ack
+    - foreign runner.id pid never signaled (PID collision); same-VM
+      zombie reaped; foreign runner.id survives our runner's exit
+    - mcp-colab rejects stale sessions or a present runner identity and formats legacy registry records safely
+    - warmup waits for pending prep, honors min floor + max cap
+    - 'end-to-end runner drain: env jobs then packs in one VM'
+  env_overrides_for_sandbox:
+    NEST_ROOT, NEST_QUEUE, NEST_RUNTIME_TTL_S, NEST_QUEUE_SETTLE_S,
+    WARMUP_MIN_S, WARMUP_MAX_S, PATH (nvidia-smi stub)
+
+deployment:
+  drive_sync: >-
+    Verified 2026-10-26: runtime_registry.py, preflight-cell.py,
+    queue-launcher-cell.py, JOBS.py, runner.py, and
+    ada-nest-job-console.ipynb match gdrive:ada-nest/queue/. Only
+    preflight-cell.py and the notebook differed and were copied. Before sync,
+    the queue heartbeat and lease were stale, runner.id was absent, and
+    managed runtime records were beyond the 300s TTL; no queue markers or
+    packs were changed.
+  mcp_server: >-
+    MCP config uses Dell's exec checkout; live tools verified:
+    colab_session_status, colab_queue_start, colab_queue_request_status.
+  queue_run: none; no queue command was issued during deployment.
+limitations:
+  - Consumer Colab runtime creation and stopping remain manual UI actions.
+  - Only runtimes registered by notebook cell 1 are visible to mcp-colab; uninstrumented sessions remain in Google Runtime > Manage Sessions.
+verify: >-
+  python3 -m unittest tests.colab.test_runtime_registry
+  tests.colab.test_job_console tests.colab.test_mcp_colab_control
+  (30 tests OK, consumer-only MCP queue start, 2026-10-26)

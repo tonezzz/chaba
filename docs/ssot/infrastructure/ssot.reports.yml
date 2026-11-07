@@ -322,9 +322,11 @@ nodes:
   - id: host-loads
     layer: L1-producer
     purpose: Lightweight fleet load/mem/disk sampler (one SSH probe per host,
-      piggybacked on tony-dell-monitor's ~5-min cycle); feeds the Host loads
-      section of the system report — fresher than audit-hosts snapshots
-    generator: scripts/host-loads.py via tony-dell-monitor.service
+      own 5-min timer on idc02 since 2026-10-26 — was piggybacked on the now-retired
+      tony-dell-monitor); feeds the live Host loads table on the system-report
+      monitor page (published to the web edge data dir) and the daily report's
+      Host loads section — fresher than audit-hosts snapshots
+    generator: scripts/host-loads.py via chaba-host-loads.timer (idc02, 5 min)
     cadence: 30m
     output: reports/host-loads
     artifact_pattern: "host-loads.yml"

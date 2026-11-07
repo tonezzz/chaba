@@ -1,23 +1,73 @@
 id: board-project-rollup
-title: 'Board: project rollup view — group/filter cards by `project:` tag with stage
-  chips'
-column: backlog
+title: 'Board: project rollup view — group/filter cards by `project:` tag with stage chips'
+column: done
 priority: medium
 tags:
 - kanban-ux
 - board
 created: '2026-10-11'
-brief: 'The project-lifecycle SOP makes `project: <slug>` a first-class tag, but the
-  board has no way to see "all cards of project X grouped by pipeline stage". Add
-  a project filter/rollup to render-board.py and/or board-api: filter by tag, show
-  stage chips (idea→product), count linked cards. This is the view Tony watches projects
-  through.'
-spec: 'Filter cards where tags contains "project:<slug>" (or a dedicated project field
-  if added); render per-project rollup: stage (from linked CMS page or card column),
-  card list w/ columns, next-action line. Surface in render-board.py HTML + board-api
-  query param.'
+brief: 'The project-lifecycle SOP makes `project: <slug>` a first-class tag, but the board has no way to see "all
+  cards of project X grouped by pipeline stage". Add a project filter/rollup to render-board.py and/or board-api:
+  filter by tag, show stage chips (idea→product), count linked cards. This is the view Tony watches projects through.'
+spec: 'Filter cards where tags contains "project:<slug>" (or a dedicated project field if added); render per-project
+  rollup: stage (from linked CMS page or card column), card list w/ columns, next-action line. Surface in render-board.py
+  HTML + board-api query param.'
 comms:
 - at: 2026-10-11 11:45
   from: devin
-  text: filed from lifecycle-SOP gap review — the missing view that makes projects
-    visible on the board
+  text: filed from lifecycle-SOP gap review — the missing view that makes projects visible on the board
+- at: 2026-10-26 19:08
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 19:08
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 19:08
+  from: chaba
+  text: started devin-task-20261026-190851-filter-cards-where-tags-contai on tony-macbook (dispatch)
+- at: 2026-10-26 19:24
+  from: devin
+  text: 'built: scripts/lib/projects.py (tag+field extraction, rollup) + projects band in BOTH board views (board2
+    live, classic parity) — click a slug to filter the board to project:<slug>. board-api GET /cards?project=<slug>
+    + ?projects (CMS stage via mddb, column-derived fallback). POST /card takes project field. 19 unit tests + selftest
+    green; HTTP-smoked ?projects/?project/404.'
+- at: 2026-10-26 19:25
+  from: tony-macbook
+  text: 'finished (ok): exit=0 erge for the new GET handler; renders pick up via the 60s timer. | devin-task-20261026-190851-filter-cards-where-'
+- at: 2026-10-26 19:25
+  from: chaba
+  text: 'session-end checkpoint d485cbda: 10 leftover file(s) committed'
+- at: 2026-10-26 19:25
+  from: chaba
+  text: pushed dispatch/20261026-190851-filter-cards-where-tags-contai to origin
+- at: 2026-10-26 19:25
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/board-api.py — card stays in review for manual resolution'
+- at: 2026-10-26 19:25
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-26 19:31
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261026-190851-filter-cards-where-tags-contai on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 06:31
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 06:31
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 06:31
+  from: tony
+  text: closed by tony
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 erge for the new GET handler; renders pick up via the 60s timer. | devin-task-20261026-190851-filter-cards-where-tags-contai.service:
+    Consumed 2min 42.115s CPU time over 15min 45.454s wall clock time, 595M memory peak, 11M memory swap peak.'
+  verified: false
+  sweep:
+    dirty: 1
+updated: 2026-10-27 06:31
+review_kind: verify
+claim: {}

@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: backlog
-updated: 2026-10-13 19:37
+updated: 2026-10-26 11:20
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -62,4 +62,9 @@ comms:
     (home: TONY-WIFI/_5G/_2.4G). mnhome needs NO entry — mn01 LAN != tony-dell local, all access stays tailnet (decision,
     not a fix). Displays: monitors.xml auto-persists per monitor-set (Philips 276E7 + Dell P2425H docked verified
     10-11) — nothing manual to save.'
+- at: 2026-10-26 11:20
+  from: devin
+  text: Tony clarified on 2026-10-25 that Barrier KVM is no longer needed while working from MacBook. Do not install
+    the planned `barrier-client` on MacBook; that spec line is superseded. Keep the separate Dell CRD/physical-seat
+    helpers out of this change.
 ref: SYS-0452

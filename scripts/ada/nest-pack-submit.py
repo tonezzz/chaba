@@ -15,7 +15,8 @@ Usage:
 """
 import argparse, os, re, subprocess, sys
 
-NEED_KEYS = {'gpu_gb', 'disk_gb', 'egress_only_ok'}
+NEED_KEYS = {'gpu_gb', 'disk_gb', 'ram_gb', 'egress_only_ok'}
+NAME_RE = re.compile(r'[a-z0-9][a-z0-9-]{0,60}')
 
 
 def die(msg):
@@ -53,6 +54,28 @@ def validate(spec, dirname):
     has_run = bool(spec.get('run')) ^ bool(spec.get('run_sh'))
     if not has_run:
         errs.append('exactly one of run / run_sh required')
+    reqs = spec.get('requires')
+    if reqs is not None:
+        if not (isinstance(reqs, list)
+                and all(isinstance(r, str) for r in reqs)):
+            errs.append('requires must be a list of pack-name strings')
+        else:
+            for r in reqs:
+                if not NAME_RE.fullmatch(r):
+                    errs.append(f'requires entry {r!r} is not a valid '
+                                'pack name')
+                if r == name:
+                    errs.append('requires must not self-reference')
+    fetch = spec.get('fetch')
+    if fetch is not None and not (isinstance(fetch, list)
+                                  and all(isinstance(f, str)
+                                          for f in fetch)):
+        errs.append('fetch must be a list of store-relative paths')
+    pub = spec.get('publish')
+    if pub is not None and not all(
+            isinstance(k, str) and isinstance(v, str)
+            for k, v in (pub or {}).items()):
+        errs.append('publish must be a str->str map')
     arts = spec.get('artifacts')
     if arts is not None and not (isinstance(arts, list) and all(
             isinstance(a, str) for a in arts)):

@@ -42,6 +42,7 @@ Comprehensive guides for systems and workflows:
 - **[playwright-vs-playlive.md](kb/playwright-vs-playlive.md)** - Playwright vs PlayLive comparison
 - **[raceman-worktree-scope.md](kb/raceman-worktree-scope.md)** - Raceman worktree scope and refactoring
 - **[subagent-focus-dispatch-safd.md](kb/subagent-focus-dispatch-safd.md)** - Sub-Agent Focus Dispatch (SAFD) convention for delegating work to sub-agents
+- **[short-command-recognition-research.md](kb/short-command-recognition-research.md)** - Short command recognition research program — tiered T0/T1/T2 recognizer design space, in-system inventory, prototype at `docs/prototypes/short-command/`
 - **[token-optimization.md](kb/token-optimization.md)** - Token optimization implementation overview
 - **[token-optimization-maintenance.md](kb/token-optimization-maintenance.md)** - Token optimization monitoring and maintenance
 - **[token-optimization-procedures.md](kb/token-optimization-procedures.md)** - Token optimization operational procedures (Headroom proxy, MCP config)

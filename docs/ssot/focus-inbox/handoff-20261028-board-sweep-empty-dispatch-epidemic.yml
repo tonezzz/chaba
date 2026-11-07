@@ -1,0 +1,59 @@
+title: Handoff — board sweep + zero-commit dispatch epidemic
+subtitle: State left by the Oct 26–28 backlog/review audit session
+icon: inbox
+
+focus:
+  label: Board sweep aftermath — empty-dispatch epidemic + parked victims
+  text: >-
+    The backlog-audit procedure (scripts/ops/backlog-audit.py, --column
+    review) drained two sweeps. It surfaced a systemic defect: dispatch
+    sessions across hosts/lanes produce ZERO commits yet used to report
+    ok + auto-close. OPS-0894 fixed the closeout GATE (empty branches
+    now hold in review instead of closing). OPS-0941 (queued, high) is
+    the ROOT CAUSE card — why sessions exit clean with no work. Until it
+    lands, 10 flagged victims sit in review; do not bulk-requeue them —
+    the same pipe will empty them again.
+  priority: high
+  status: draft
+  tags: [handoff, dispatch, kanban]
+  missing_info:
+    - OPS-0941 root cause — journal forensics on an empty session
+      (tony-macbook + idc02 both produced empties).
+    - Whether requeueing the 10 victims is worthwhile before the fix.
+  safe_to_parallel:
+    value: true
+    reason: >-
+      OPS-0941 is an investigation card; requeues can wait for it.
+  subtasks:
+    - label: OPS-0941 lands + verify empty-dispatch rate drops
+      status: in_progress
+    - label: Requeue the 10 flagged victims once root cause is fixed
+      status: not_started
+      # victims: ada-text-lane-metering-gap, devnest-cache-tokenization-bench,
+      # devnest-news-watch-procedure, eval-ide-opencode-interactive,
+      # eval-ide-openhands-gui, eval-ide-zed-acp, gaussian-splat-edu-smoke,
+      # grand-rename, household-kanban-appliance, inference-provider-watch
+    - label: Tony answers 4 fresh decision-assist asks (ex-circular cards)
+      status: not_started
+      # devin-research-short-command-recognition, fix-phantom-state-in-media-
+      # control, implement-and-track-devin-telegram-repor, standardize-devin-
+      # workflows-error-handli — real options + ★ now on each
+    - label: Deploy gate — line-proactive-persona (Drop 18, merged f62602956)
+      status: not_started
+      # needs LINE_PROACTIVE_ALLOW=ada,kaewta on idc03 + deploy-ada.sh;
+      # touches free-tier LINE push quota policy — Tony decision
+    - label: map-embed-tool — Tony mints GOOGLE_MAPS_API_KEY in GCP console
+      status: not_started
+    - label: ~12 waiting-human review cards (Tony is triaging)
+      status: in_progress
+    - label: Re-run backlog-audit.py --column all weekly or per sweep
+      status: not_started
+
+ownership:
+  owner: tony
+  locked: false
+  lock_reason: ""
+
+source:
+  session: board-sweep-2026-10-26to28
+  date: 2026-10-28

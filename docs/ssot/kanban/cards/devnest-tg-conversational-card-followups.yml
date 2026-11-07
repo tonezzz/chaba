@@ -1,0 +1,90 @@
+id: devnest-tg-conversational-card-followups
+title: Add contextual card-explain follow-ups in DevNest Telegram
+column: done
+updated: 2026-10-28 10:17
+brief: Let Tony ask easier, Thai, evidence, next, and why follow-ups after explaining a card without repeating the
+  card reference.
+priority: high
+program: devnest
+tags:
+- telegram
+- devnest
+- card-explain
+- conversation
+- ux
+spec: 'Improve scripts/devnest/devnest-tg-relay.py card command UX. Current explain/status accepts only anchored
+  whole-message `explain|status <exact ref>` and replies with deterministic status/phase/verified/next/ask; follow-ups
+  like ''easier'', ''in Thai'', ''what evidence?'', and ''what next?'' are refused/captured because no per-topic
+  conversation context exists. Add a durable per-topic last-card context (card id/ref, timestamp, sender) with expiry
+  and audit. Support safe read-only follow-ups: explain/status <ref>; easier/simple; in Thai; why; evidence; next/what
+  next; history; spec. If no context or ambiguous context, ask for a card ref. Fetch current board state for every
+  response; never trust cached card text. Keep APPROVE/REJECT explicit and Tony-gated; follow-ups must never mutate.
+  Add tests for exact command, context follow-up, expiry, wrong sender/topic, unknown ref, Thai/simple rendering,
+  and audit entries. Preserve General/topic routing and redaction. Verify against real OPS-0959 conversation with
+  one English summary, one simpler follow-up, one Thai follow-up, and evidence/next response.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 s.yml` and the full outcome is in `dispatch-outcome-20261028-095414-improve-scripts-devnest-devnes.md`.
+    | devin-task-20261028-095414-improve-scripts-devnest-devnes.service: Consumed 30.082s CPU time, 197.6M memory
+    peak, 0B memory swap peak.'
+  verified: true
+note: 'Live audit 2026-10-28: relay explained opencode-explicit-executor-routing, then refused follow-ups ''easier.'',
+  ''in Thai'', and ''0959 with easy language.'' Current updates/audit/conversation files are durable; the missing
+  capability is contextual follow-up routing.'
+ref: KNB-0960
+comms:
+- at: 2026-10-28 09:53
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-28 09:54
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-28 09:54
+  from: idc02
+  text: claimed
+- at: 2026-10-28 09:54
+  from: chaba
+  text: started devin-task-20261028-095414-improve-scripts-devnest-devnes on idc02 (dispatch)
+- at: 2026-10-28 09:58
+  from: devin
+  text: 'dispatch on idc02: implementing durable per-topic card context + read-only follow-ups (easier/thai/why/evidence/next/history/spec)
+    in devnest-tg-relay.py with tests'
+- at: 2026-10-28 10:04
+  from: devin
+  text: 'done on idc02: durable per-topic card context (card-context.json, TTL 2h, per-sender, audited) + read-only
+    follow-ups easier/thai/why/evidence/next/history/spec with optional embedded ref. 55 tests pass; verified live
+    vs OPS-0959 — explain summary, easier., in Thai, what evidence?, what next?, and the exact refused msg 0959-with-easy-language
+    all answer now. No board mutations; APPROVE/REJECT unchanged. Trail: docs/ssot/jobs/devnest/2026-10-28-tg-card-conversational-followups.yml'
+- at: 2026-10-28 10:05
+  from: idc02
+  text: 'finished (ok): exit=0 s.yml` and the full outcome is in `dispatch-outcome-20261028-095414-improve-scripts-devnest-devnes.md`.
+    | devin-t'
+- at: 2026-10-28 10:05
+  from: chaba
+  text: 'session-end checkpoint b76f9c8d: 4 leftover file(s) committed'
+- at: 2026-10-28 10:05
+  from: chaba
+  text: pushed dispatch/20261028-095414-improve-scripts-devnest-devnes to origin
+- at: 2026-10-28 10:05
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-28 10:05
+  from: chaba
+  text: auto-merged e467a4f4 (dispatch/20261028-095414-improve-scripts-devnest-devnes) → origin/master
+- at: 2026-10-28 10:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261028-095414-improve-scripts-devnest-devnes,
+    branch dispatch/20261028-095414-improve-scripts-devnest-devnes'
+- at: 2026-10-28 10:17
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-28 10:17
+  note: verified — evidence checks green, closing itself

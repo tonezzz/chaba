@@ -1,0 +1,46 @@
+title: DevNest Telegram conversational card follow-ups (per-topic context)
+date: 2026-10-28
+card: devnest-tg-conversational-card-followups
+session: dispatch-wt-20261028-095414-improve-scripts-devnest-devnes (idc02)
+
+what:
+  script: scripts/devnest/devnest-tg-relay.py
+  state: STATE_DIR/card-context.json — durable per-topic last-card context
+         keyed '<chat_id>:<thread_id|0>' -> {card_id, card_ref, at,
+         sender_id, sender_label, topic, uses}
+  ttl: DEVNEST_CARD_CONTEXT_TTL seconds, default 7200 (inactivity-based;
+       refreshed on every successful card reply)
+  tests: tests/test_devnest_tg_relay.py (55 tests, +15 new)
+
+followups:                    # anchored whole-message, filler words stripped
+  simple:   easier | simpler | simple | easy language | eli5 | layman terms
+  thai:     in thai | thai | ภาษาไทย | แปลไทย
+  why:      why | reason | rationale | what for
+  evidence: evidence | what evidence | proof | verify
+  next:     next | what next | what's next | next steps
+  history:  history | card history | log | activity
+  spec:     spec | the spec | requirements
+
+semantics:
+  - "explain/status <ref> sets the topic context; every reply re-fetches the
+     board (context stores card identity only, never cached card text)"
+  - "an embedded OPS-style ref overrides context: '0959 with easy language',
+     'explain 0959 in thai', 'spec ops-0905'; bare digits limited to 0?\\d{3}
+     so '2026' is not a ref"
+  - "no/expired/corrupt/wrong-sender context -> 'name a ref' (audit
+     result=need_ref); sender mismatch is ambiguous, never guessed"
+  - "bare explain/status uses the context card; no context -> ask for ref"
+  - "explain <phrase> prefers the follow-up reading ('explain easier' =
+     context card in plain terms, not a card named 'easier')"
+  - "APPROVE/REJECT unchanged: explicit ref operand + approver gate; context
+     never feeds mutating verbs; follow-ups make zero board writes"
+  - "audit: result=explained|followup_ok|need_ref|refused with kind,
+     ref_source, context, context_ref, context_age_s"
+
+verified:
+  - "pytest tests/test_devnest_tg_relay.py: 55 passed"
+  - "live OPS-0959 (opencode-explicit-executor-routing) via board-api
+     idc03:10000 — 'explain OPS-0959' English summary, 'easier.' plain
+     terms, 'in Thai' Thai-labelled summary, 'what evidence?' evidence,
+     'what next?' next, '0959 with easy language.' simple w/ explicit ref,
+     'spec'/'history'/'why' — all followup_ok in audit"

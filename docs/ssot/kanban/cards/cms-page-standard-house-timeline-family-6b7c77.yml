@@ -1,7 +1,7 @@
 id: cms-page-standard-house-timeline-family-6b7c77
 title: cms-page-standard + house-timeline family
-column: backlog
-updated: 2026-10-13 09:00
+column: done
+updated: 2026-10-26 19:01
 brief: 'Standard CMS page/report structure for the household + house-timeline parent page aggregating per-device
   timeline leaves. Spec (Tony 2026-10-13): report index on tony-ha at kaewta parity; documented standard for page
   anatomy (text/media/diagram) + report quality bar; house timeline page querying lesser per-device timeline pages.
@@ -25,3 +25,78 @@ comms:
     docs, 0 parse failures). Pages: #/house-timeline in the CMS app; external leaves can join via meta.parent=house-timeline.
 
     3. reports-index parity: tony already has reports-index regenerating on every write — kaewt'
+- at: 2026-10-26 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-10-26 18:40
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 18:41
+  from: idc02
+  text: claimed
+- at: 2026-10-26 18:41
+  from: chaba
+  text: started devin-task-20261026-184108-define-the-standard-anatomy-me on idc02 (dispatch)
+- at: 2026-10-26 18:41
+  from: devin
+  text: 'Started: researching ada-cms-pages + house-timeline family conventions before drafting docs/kb/cms-page-standard.md'
+- at: 2026-10-26 18:45
+  from: devin
+  text: 'done — cms-page-standard.md promoted draft→defined with explicit house-timeline family contract (§4: ada-ha-events-tony
+    source, 25-leaf cap, meta.parent=house-timeline adoption, index parity). Also patched house-timeline-update.py
+    v1.1.0 to match: qc parent→rollup, regen_reports_index added (was the only producer missing it), rollup links
+    qc. Dry-run verified vs live mddb. Side-note: newest ada-ha-events-tony doc is 2026-10-13 — events feed looks
+    stale, separate issue. Branch dispatch/20261026-1'
+- at: 2026-10-26 18:46
+  from: idc02
+  text: 'finished (ok): exit=0 28` on the dispatch branch with a jobs-trail record at `docs/ssot/jobs/cms/2026-10-26-cms-page-standard-house-tim'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'session-end checkpoint 2fdba808: 1 leftover file(s) committed'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: pushed dispatch/20261026-184108-define-the-standard-anatomy-me to origin
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: auto-merged 7e2cadd4 (dispatch/20261026-184108-define-the-standard-anatomy-me) → origin/master
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-184108-define-the-standard-anatomy-me,
+    branch dispatch/20261026-184108-define-the-standard-anatomy-me'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-184108-define-the-standard-anatomy-me no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-26 18:46
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-184108-define-the-standard-anatomy-me on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-26 19:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+spec: Define the standard anatomy, meta contract, quality bar, parent/leaf/qc family pattern, publish gate, and
+  review checklist for cms-page-standard in docs/kb/cms-page-standard.md. Ensure alignment with the house-timeline
+  family where 25 device leaves, rollups, and qc run from ada-ha-events-tony, supporting external leaves via meta.parent=house-timeline
+  and reports-index parity on writes. Host is tony-dell and repo is chaba. The done-condition is verified when docs/kb/cms-page-standard.md
+  exists in the chaba repository, explicitly documenting the standard page anatomy and the house-timeline family
+  integration contract.
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 28` on the dispatch branch with a jobs-trail record at `docs/ssot/jobs/cms/2026-10-26-cms-page-standard-house-timeline.yml`;
+    no push, no deploy. | devin-task-20261026-184108-define-the-standard-anatomy-me.service: Consumed 14.087s CPU
+    time.'
+  verified: true
+  sweep:
+    stale_running: 2026-10-26 18:46
+    session_gone: 2026-10-26 18:46
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 19:01
+  note: verified — evidence checks green, closing itself

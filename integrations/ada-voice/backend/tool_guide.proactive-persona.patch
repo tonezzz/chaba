@@ -1,0 +1,21 @@
+diff --git a/backend/tool_guide.yml b/backend/tool_guide.yml
+index 7c57834..f0ee1f3 100644
+--- a/backend/tool_guide.yml
++++ b/backend/tool_guide.yml
+@@ -170,6 +170,16 @@ chat_send: >-
+   upload's summary (key= intake key);
+   'process' returns its intake assessment; 'card' + op='archive' files
+   it into the document archive (confirmation-gated).
++  Proactive outreach (LINE): to engage a member nobody asked you about,
++  set intent='proactive' — to='<member name>' opens their DM, or leave
++  to= unset and pass mention='<member name>' to @-ping them in the
++  group this turn came from (a real LINE mention — their LINE pings).
++  Proactive sends only run from relay-allowlisted lanes, debounce per
++  room AND per member (~10min), and sit under a small daily cap — a
++  denied/debounced send returns an error: say it honestly, do NOT retry
++  in a loop, and never narrate the outreach as done. Proactive is for
++  something genuinely worth interrupting for (a follow-up a member
++  would want, an owner-asked engagement), never chatter.
+ 
+ vcast_gesture: >-
+   mode='room' = wake-on-motion, 'hand' = MediaPipe hand tracking on

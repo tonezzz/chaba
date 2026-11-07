@@ -31,9 +31,9 @@ sections:
       - label: /home/tony/CascadeProjects/ada-voice/backend/instance.py
         text: "ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start."
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
-        text: Runs uvicorn on 127.0.0.1:8002 on idc03 with env /home/tony/.config/secrets/ada-ha-tony.env (mn01 + idc01 units exist as stopped/masked standby).
+        text: Runs uvicorn on 127.0.0.1:8002 on idc03 with env /home/tony/.config/secrets/tony-ha/backend.env (mn01 + idc01 units exist as stopped/masked standby).
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
-        text: Runs uvicorn on 127.0.0.1:8003 on idc03 with env /home/tony/.config/secrets/ada-ha-michael.env (mn01 + idc01 standby as above).
+        text: Runs uvicorn on 127.0.0.1:8003 on idc03 with env /home/tony/.config/secrets/michael-ha/backend.env (mn01 + idc01 standby as above).
       - label: /home/tony/.config/caddy/Caddyfile.mn01 + Caddyfile.tony-dell
         text: Both alias /apps/ha/ada-tony|ada-michael/* to https://idc03.taila0626a.ts.net (legacy paths kept working).
   - title: Deployment
