@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: backlog
-updated: 2026-10-30 21:29
+updated: 2026-11-07 12:14
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -61,3 +61,10 @@ comms:
     was streamed to the shared inbox, routed, staged, and completed on KK-Mac. Done/result readback: 11/11 JSON/key/literal-fact
     checks true, 2.525s, 65 eval tokens. No persistent service/timer changes; no duplicate task was launched. Procedure
     index is now verified. Empty-expect report summaries remain human-review drafts.'
+- at: 2026-11-07 12:14
+  from: devin
+  text: 'Code-side pass 2026-11-07. Found the producer was silently dead: jevnest-kk-mac-capacity-producer.timer
+    is disabled/inactive and the service timed out at the 4m unit limit repeatedly on Oct 31 (8s CPU / 4min wall
+    = blocked on rclone; each call can hang ~60s and the loop made many sequential listings). Fix pushed on branch
+    fix/jevnest-producer-budget (ad1e4ba44): single recursive pack listing feeds queue depth + dedupe, overall --budget-s
+    90 self-limits the loop, and ssot.jobs.yml args corrected '
