@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: doing
-updated: 2026-10-26 17:42
+updated: 2026-11-07 13:20
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -101,3 +101,10 @@ comms:
     the hard way: /v1/backup and /v1/restore are FILE-level copies — they do NOT compact; the only physical-shrink
     paths are (a) export->re-add on a fresh db (drops vectors, telemetry-only) as done for ops, or (b) offline bbolt
     compact (vector-safe) as done for main. ~10-15min downtime'
+- at: 2026-11-07 13:20
+  from: devin
+  text: '2026-11-07 verify pass: prune-old-docs.timer EXISTS on idc03 and ticks daily (last run 09:30 today) — the
+    relocation item is DONE. But the verify clause is NOT met: ops host-logs = 457,191 docs / 17G (vs ~250k enumeration
+    limit); today`s prune logged "host-logs: list failed — Remote end closed connection" then deleted 0/0 — retention
+    cannot enumerate, so the sweep cannot bite and ops regrew to ~policy steady-state (~1.2G/day x 14d). Probed
+    /v1/set-ttl — endpoint exists but every field combo retu'
