@@ -70,8 +70,8 @@ def main():
         print(nlm("source", "add", nb, "--file", a.source_file, "--wait"))
     elif a.source_url:
         print(nlm("source", "add", nb, "--url", a.source_url, "--wait"))
-    elif a.source_text:
-        st = a.source_text
+    elif a.source_text or (prompt and not a.notebook):
+        st = a.source_text or prompt
         if Path(st).is_file() and len(st) < 200:
             st = Path(st).read_text()[:50000]
         print(nlm("source", "add", nb, "--text", st[:50000],
