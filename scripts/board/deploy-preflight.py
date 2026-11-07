@@ -211,7 +211,11 @@ def raise_request(cid: str, dep: dict, ev: dict) -> None:
     api_post("/request", {
         "id": cid, "from": "chaba", "to": "tony",
         "request_id": f"deploy-{cid}", "ask": ask,
-        "options": REQUEST_OPTS, "suggested": 1,  # default hold
+        "options": REQUEST_OPTS,
+        # suggested must be an option string verbatim — do_request
+        # rejects anything not in options[] (int 1 400'd the first live
+        # raise, 2026-11-07). Default is hold.
+        "suggested": REQUEST_OPTS[1],
     })
 
 

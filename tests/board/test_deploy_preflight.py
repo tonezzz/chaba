@@ -148,6 +148,21 @@ class DeployPreflightCase(unittest.TestCase):
         self.assertEqual(action, "held")
         self.assertEqual(card["deploy"]["status"], "held")
 
+    def test_raise_request_payload_is_api_valid(self):
+        # Regression: suggested=1 400'd the first live raise — do_request
+        # requires suggested to be one of options[] verbatim.
+        seen = {}
+
+        def fake_post(path, payload):
+            seen.update(payload)
+
+        with mock.patch.object(dp, "api_post", fake_post):
+            dp.raise_request("cid-x", {"target": "ada-voice-prod"},
+                             {"merge_sha": "abc", "files": "f",
+                              "tests": "t"})
+        self.assertIn(seen["suggested"], seen["options"])
+        self.assertEqual(seen["request_id"], "deploy-cid-x")
+
     def test_unparsed_answer_holds_not_deploys(self):
         p = make_card(self.tmp, "weird-card", requests=[{
             "id": "deploy-weird-card", "ask": "Deploy?",
