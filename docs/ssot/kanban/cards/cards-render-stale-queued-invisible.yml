@@ -1,7 +1,7 @@
 id: cards-render-stale-queued-invisible
 title: 'BUG: queued cards missing from GET /cards — runner never claims them'
 column: backlog
-updated: 2026-11-07 17:25
+updated: 2026-11-07 17:59
 priority: high
 tags:
 - bug
@@ -18,3 +18,10 @@ comms:
 - at: 2026-11-07 17:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 17:59
+  from: devin
+  text: 'ROOT CAUSE (verified in journal): no single render bug — the ~76s gap between queue flip (17:02:47) and
+    next completed render (17:04:03) was render contention: chaba-board-render.timer ran an 85s render 17:02:00-17:03:25
+    concurrent with board-api async render, plus render-board2 rc=1 crash at 17:01:17 (transient empty card file
+    -> NoneType.setdefault). Also found: --if-changed STATE advanced before render (crash poisons skip-set), autostash
+    flap regressed 1232->1228 at 17:16:29 during kanban-com'
