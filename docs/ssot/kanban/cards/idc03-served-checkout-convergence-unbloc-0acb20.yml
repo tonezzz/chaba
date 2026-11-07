@@ -1,7 +1,7 @@
 id: idc03-served-checkout-convergence-unbloc-0acb20
 title: idc03 served checkout convergence — unblock board-api wiki door, due page, repo-sync
 column: backlog
-updated: 2026-11-07 12:09
+updated: 2026-11-07 12:10
 priority: high
 tags:
 - ops
@@ -22,3 +22,10 @@ comms:
 - at: 2026-11-07 12:09
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 12:10
+  from: devin
+  text: 'RESOLVED — card filed on stale data. Re-measured live: served checkout converged itself via kanban-commit
+    cycles — 0 behind origin/master, 21 ahead (all recent board-api card writes, normal), no conflicts, dirty state
+    is only benign writer churn (.render-state, review-digest, out/). The actual remaining gap was the RUNNING board-api
+    still executing pre-restart code from 20:13 yesterday. Done now: restarted chaba-board-api (12:10), verified
+    /lesson source=wiki returns 126 wiki lessons with md5 sl'
