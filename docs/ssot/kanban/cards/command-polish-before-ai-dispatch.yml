@@ -1,0 +1,68 @@
+id: command-polish-before-ai-dispatch
+title: Command-polish layer — improve Tony's English commands before they reach Devin/Ada/OpenCode
+column: backlog
+updated: 2026-11-07 14:25
+priority: medium
+program: ai-workforce
+tags:
+- ada
+- devin
+- jevteam
+- micro-ai
+- dispatch
+spec: 'GOAL: when Tony issues a development-ish command (to Ada by voice/text, or bound for Devin/OpenCode dispatch),
+  a polish stage rewrites it into the precise canonical form the receiving AI performs best on — clearer English,
+  resolved fragments, explicit acceptance hints — WITHOUT changing intent.
+
+
+  EXISTING PIECES (do not rebuild):
+
+  - backend/input_polish.py (ada-voice, card micro-ai-input-polish/BEN-0465, done): gate -> gemini-3.5-flash-lite
+  polish -> lang_preserve post-gate, hooked in live_manager.send_text_turn for LINE/TG/PWA/relay. ADA_INPUT_POLISH=1,
+  enabled on ada-dev only — prod lanes still gated on soak. Bench-proven shape: ungated polish = ~56% net-token
+  tax; local llama3.2:3b REJECTED (match-rate dropped).
+
+  - scripts/micro-bench/ harness + 40 fixtures + reports/micro-polish/ — the measurement path already exists.
+
+  - backend/devteam.py — draft -> 4-expert panel (security_privacy, standards, qa, scope) -> revised spec -> GO/BLOCK
+  verdict, DEVTEAM_MODEL env. Reusable pattern for a command-review stage.
+
+  - JevTeam decision plane: open-jev 8777 (gemma-3-4b, async/audit) + open-jev-student 8778 (gemma-3-1b, ~2.6s,
+  hot bounded classification) on tony-omen — card jevteam-omen-or-lane-admission (BEN-1050) defines the lane-admission
+  ladder.
+
+
+  PROPOSED SHAPE:
+
+  1. EXTEND input_polish (or sibling module) with a ''dispatch-bound'' mode: fires only when the turn is headed
+  for devin_dispatch / ada_opencode_dispatch / card capture, not for chit-chat. Gate stays cheap (wordlist/Jev student
+  classification); polish model = stronger than flash-lite for spec-grade output (candidate: gemini-3.5-flash ''chat''
+  alias or consult tool from ADA-1084).
+
+  2. JEVTEAM ROLE: open-jev-student 8778 as the cheap ''needs-polish?'' classifier + ambiguity detector; devteam-style
+  expert panel as optional second pass for high-stakes dispatches (new card types, production hosts, irreversible
+  ops) — panel verdict attaches to the dispatch as advisory evidence, never blocks silently. open-jev 8777 audits
+  polish decisions offline for the jev-corpus.
+
+  3. DEVIN-SIDE: the same polish can run chaba-side at dispatch composition (runner-agent/board-api task field)
+  so prompts Tony types directly into Devin sessions also get normalized — but Ada intake is the primary surface
+  since she sees the raw utterance first.
+
+  4. BENCH: extend micro-bench fixtures with a ''tony-command'' class — real dispatch prompts from card comms/sessions
+  as input, canonical spec-prompt as gold; measure intent-preservation (fabrication rate), entity preservation,
+  downstream dispatch success. Adopt gate identical to micro-ai-input-polish: match-rate >= baseline AND net-token/latency
+  neutral-or-better.
+
+
+  BOUNDARIES: never invent intent or referents; preserve names/numbers/card refs verbatim; fail open to the raw
+  command; secrets never enter polish prompts; polish output is advisory text the user can see/edit before dispatch
+  (no silent rewrite of what Devin receives on confirmed dispatches — show diff or require confirm).'
+note: 'Related: micro-ai-input-polish (done, ada-dev soak pending), ada-expert-consult-tool (ADA-1084 — stronger-model
+  consult could power the polish model), ada-devteam-pipeline (done, expert-panel pattern), jevteam-omen-or-lane-admission
+  (BEN-1050 — lane ladder this plugs into).'
+ref: ADA-1088
+comms:
+- at: 2026-11-07 14:25
+  from: devin
+  text: carded from tony-macbook chat 2026-11-07 — Tony recalled mentioning this for Devin; exploration shows it
+    belongs in Ada's intake and partially exists already
