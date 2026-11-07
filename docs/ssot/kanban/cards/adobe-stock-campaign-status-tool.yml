@@ -1,7 +1,7 @@
 id: adobe-stock-campaign-status-tool
 title: campaign-status.py one-call campaign state
 column: backlog
-updated: 2026-11-07 17:07
+updated: 2026-11-07 17:08
 brief: 'One call returns full campaign state: session, assets, pending decisions, render jobs, QC status.'
 priority: high
 program: adobe-stock
@@ -17,3 +17,9 @@ comms:
 - at: 2026-11-07 17:07
   from: tony
   text: card captured via board-api
+- at: 2026-11-07 17:08
+  from: devin
+  text: 'Done — merged to master (6460265e4). scripts/adobe-stock/campaign-status.py --campaign ID returns one compact
+    JSON receipt: session status/stage, asset_ids, generated_files, pending_decisions, comparison block (baseline/candidate/QC
+    decisions/lane/job/last_landed), last 6 QC decision lines, comparison-run files, adobe_upload=false. Verified
+    live on AS-2026-11-05-REMOTE-WORK-001 (~45 lines vs previous 3-5 rclone calls + manual parsing).'
