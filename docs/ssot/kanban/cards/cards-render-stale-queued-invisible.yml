@@ -1,0 +1,20 @@
+id: cards-render-stale-queued-invisible
+title: 'BUG: queued cards missing from GET /cards — runner never claims them'
+column: backlog
+updated: 2026-11-07 17:25
+priority: high
+tags:
+- bug
+- board-api
+- runner
+- opencode
+spec: 'Reproduced 2026-11-07: card ada-opencode-live-demo-opsread queued via /card (on_exists:queue) at ~17:05 but
+  GET /cards still showed generated:17:01 with no card present. runner-agent on idc02 polls /cards every 60s → sees
+  nothing → silent skip (verified _claimable returns (''dispatch'','''') under unit env, so claim would pass). Diagnose:
+  does the /card write path trigger cards.json render on action.status flips? Does the compact card schema strip
+  queued action fields? Verify with a card whose status flips queued→running→done and watch /cards regenerated timestamp.'
+ref: OPS-1107
+comms:
+- at: 2026-11-07 17:25
+  from: devin
+  text: card captured via board-api
