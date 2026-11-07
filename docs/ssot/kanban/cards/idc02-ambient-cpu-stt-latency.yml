@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
 column: doing
-updated: 2026-11-07 19:09
+updated: 2026-11-07 19:47
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -25,6 +25,13 @@ comms:
   from: devin
   text: claimed — running quiet-vs-busy RTF measurement on idc02 before choosing among (a) nice/cpuset (b) threads=3
     (c) accept (d) move host
+- at: 2026-11-07 19:47
+  from: devin
+  text: 'DONE — contention matrix in docs/ssot/jobs/voice/2026-11-07-stt-cpu-contention-matrix.yml (rig: idc02:~/stt-contention-test).
+    Correction: prod STT left idc02 2026-10-22 (OPS-0763) — idc03 relay env TG_WHISPER_URL=con01:8914 verified;
+    idc02:8914 is standby only, and con01 itself is loaded (load ~9-11/8vcpu, RTF 2.1-2.6 pre-fix). Results: busy0
+    saturation RTF 3.4-9.9 → nice -10 restores 0.69-1.39 (BEST); CPUWeight=1000 (rootless) restores 0.8-1.14 vs
+    in-slice tenants but not system/session bursts;'
 action:
   type: dispatch
   status: running
