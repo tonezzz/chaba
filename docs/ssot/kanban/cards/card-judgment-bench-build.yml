@@ -1,0 +1,24 @@
+id: card-judgment-bench-build
+title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
+column: doing
+updated: 2026-11-07 12:00
+priority: high
+tags:
+- ada
+- nest-bench
+- card-judgment
+- t3-gate
+spec: 'Build the card-judgment bench domain declared in ssot.nest-bench.yml (currently status: spec) — the gate
+  for Ada''s T3 queue tier (ssot.ada-participation.yml). Deliverables: (1) corpus miner scripts/bench/card-judgment/build_corpus.py
+  — freeze >=50 cases from docs/ssot/kanban/cards/*.yml done cards (snapshot/evidence/proven_right/category per
+  case_shape); (2) scorer scripts/bench/card-judgment/score.py — entity-pluggable, computes action_accuracy, appropriate_deference,
+  correction_precision, correction_recall vs t3_unlock_threshold; (3) first shadow-mode run on the real corpus with
+  metrics report; (4) ssot.nest-bench.yml card-judgment status spec->live + jobs trail. Unlock itself needs 3 consecutive
+  passing runs — this card delivers machinery + run 1.'
+note: 'Tony approved in session 2026-11-07: file + finish. Ada T0-T2 kanban participation already live (kanban tool
+  verified ada-dev 2026-10-08); this bench is the single declared blocker for T3.'
+ref: ADA-1073
+comms:
+- at: 2026-11-07 12:00
+  from: tony
+  text: card captured via board-api
