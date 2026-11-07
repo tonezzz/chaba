@@ -1,6 +1,6 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
-column: backlog
+column: doing
 updated: 2026-11-07 15:48
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
@@ -40,7 +40,9 @@ spec: 'Follow-up to OPS-1046 (wiki-member-knowledge-surface, DONE — 124 lesson
   rollback = flag back to dual.'
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: devin
+  runner: idc02
 ref: OPS-1095
 comms:
 - at: 2026-11-07 15:47
@@ -49,3 +51,6 @@ comms:
 - at: 2026-11-07 15:48
   from: tony
   text: queued for processing
+- at: 2026-11-07 15:48
+  from: idc02
+  text: claimed
