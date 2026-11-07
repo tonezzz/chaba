@@ -462,6 +462,21 @@ def finish_one(path: Path, card: dict) -> str:
         card.setdefault("claim", {}).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
         return "failed"
+    # Executor-owned closeout (OPS-1066): tasks run by runner-agent's
+    # non-devin executors (jules, opencode, kk_mac_local) own their finish
+    # path — the runner's finish_pass calls finish_<executor>_lane for
+    # the artifact/verified evidence. This sweeper knows none of that;
+    # it used to finish the card first ("no exit record") and the real
+    # closeout then bounced off status=done. Defer when the task meta
+    # names a runner-owned executor so the claiming runner reports.
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta_ex = str(json.loads(
+            (taskdir / "meta.json").read_text()).get("executor") or "")
+    except Exception:
+        meta_ex = ""
+    if meta_ex and meta_ex not in ("devin", "devin-dispatch"):
+        return f"deferred — executor={meta_ex} closeout is the runner's"
     # Units run under systemd-run --collect: a failed unit is unloaded
     # and is-active can no longer see Result=exit-code — so 'not active'
     # alone is NOT proof of success (the 2026-10-25/26
