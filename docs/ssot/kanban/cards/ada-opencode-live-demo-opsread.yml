@@ -1,7 +1,7 @@
 id: ada-opencode-live-demo-opsread
 title: Live demo — Ada→OpenCode ops-readonly dispatch
 column: review
-updated: 2026-11-07 18:36
+updated: 2026-11-07 18:40
 priority: medium
 tags:
 - demo
@@ -100,5 +100,12 @@ comms:
   from: chaba
   text: merge held — executor contract requires declared artifact + verifier pass (required fields=True; read_only
     true=True; artifact host is this host=True; artifact host == target_host=True)
+- at: 2026-11-07 18:40
+  from: devin
+  text: 'Reviewer note (OPS-1107 closeout): the run exercised the full contract — claim (lost-response zombie ->
+    OPS-1071 reconcile) -> opencode execute (exit 0, 13s) -> artifact landed -> verifier -> comms -> finish. verified:false
+    is CORRECT: run 1 failed ''required fields'' (card expect.required_keys=[artifact,tests,verifier] doesn''t match
+    the ops-readonly artifact shape — fixture spec issue); run 2 (reconcile dup on render-lagged /cards, OPS-1114)
+    passed fields but hit a bash allowlist denial (python3 '
 review_kind: verify
 claim: {}
