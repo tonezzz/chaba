@@ -19,8 +19,10 @@ gdrive:ada-nest/
 
 Every candidate has a unique `path_id`; candidates are never overwritten.
 `manifest.json` records hashes, tool versions, device, config, seed, outputs,
-metrics, verifier, verdict, privacy, and retention. `scripts/nest/pack_manifest.py`
-provides the storage-neutral `init`, `hash`, and `verify` operations.
+metrics, verifier, verdict, privacy, retention, and path_id.
+`scripts/nest/pack_manifest.py` provides the storage-neutral `init`, `hash`,
+`verify`, and `summarize` operations. `summarize` emits the compact manifest
+summary used by Ada/JevTeam without rehashing the pack.
 
 Workers should use:
 

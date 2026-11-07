@@ -24,3 +24,14 @@ def test_hash_and_verify_round_trip(tmp_path, capsys):
     assert pack_manifest.verify_pack(args) == 0
     result = json.loads(capsys.readouterr().out)
     assert result == {"ok": True, "missing": [], "changed": [], "files": 1}
+
+    assert pack_manifest.summarize_pack(args) == 0
+    summary = json.loads(capsys.readouterr().out)
+    assert summary["pack_id"] == "hibiscus-v1"
+    assert summary["asset_type"] == "gaussian"
+    assert summary["path_id"] == "original-v1"
+    assert summary["privacy"] == "private"
+    assert summary["file_count"] == 1
+    assert summary["total_bytes"] == len(b"hibiscus")
+    assert summary["hash_status"] == "hashed"
+    assert summary["verdict"] is None
