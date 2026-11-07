@@ -1,7 +1,7 @@
 id: ada-tool-guide-lesson-sweep
 title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
 column: done
-updated: 2026-11-07 18:22
+updated: 2026-11-07 18:27
 priority: low
 action:
   type: manual
@@ -27,12 +27,21 @@ comms:
 - at: 2026-11-07 18:22
   from: chaba
   text: 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
+- at: 2026-11-07 18:27
+  from: chaba
+  text: 'raised request deploy-ada-tool-guide-lesson-sweep: Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
+
+    repo: ada-voice on idc03
+
+    command: ~/.local/bin/deploy-ada.sh
+
+    rollb'
 deploy:
   target: ada-voice-prod
   note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
-  status: error
+  status: preflight
   preflight:
-    at: 2026-11-07 18:22
+    at: 2026-11-07 18:27
     merge_sha: null
     files: '?'
     tests: see card comms (close-out gate)
@@ -40,5 +49,29 @@ deploy:
     - card captured via board-api
     - 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
     - closed by devin
+    - 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
+    - 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
   request_id: deploy-ada-tool-guide-lesson-sweep
   error: 'request raise failed: HTTP Error 400: Bad Request'
+requests:
+- id: deploy-ada-tool-guide-lesson-sweep
+  ask: 'Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
+
+    repo: ada-voice on idc03
+
+    command: ~/.local/bin/deploy-ada.sh
+
+    rollback: git revert the merge commit on ada-voice (see comms)
+
+    verify: GET http://127.0.0.1:8002/api/health must return ok
+
+
+    Preflight: merge=? files=? tests=see card comms (close-out gate)'
+  status: open
+  at: 2026-11-07 18:27
+  from: chaba
+  options:
+  - approve — run the deploy now
+  - hold — keep merged, do not deploy
+  - abort — do not deploy
+  suggested: hold — keep merged, do not deploy
