@@ -1,7 +1,7 @@
 id: ada-sweep-tool-preflight-batch
 title: ada_sweep tool — batch preflight/dispatch of eligible backlog cards by voice
 column: review
-updated: 2026-11-07 17:59
+updated: 2026-11-07 18:03
 priority: medium
 tags:
 - ada
@@ -27,4 +27,9 @@ comms:
 - at: 2026-11-07 17:59
   from: devin
   text: moved backlog -> review
+- at: 2026-11-07 18:03
+  from: devin
+  text: 'MERGED to ada-voice main (ebd1594). Tool ships in backend/tools.d/ada_sweep.py + manifest (confirmed, secondary_allowed:false).
+    OPS-1107 dependency landed on idc03 same session — compact reads expose action_status=queued. PENDING: production
+    deploy (deploy-ada.sh on idc03 restarts ada-ha-* lanes, drains live /ws ~45s). Staying in review until deployed.'
 review_kind: verify
