@@ -1,7 +1,7 @@
 id: opencode-executor-routing-smoke
 title: Executor-contract smoke — explicit OpenCode read-only end-to-end
 column: doing
-updated: 2026-11-07 12:29
+updated: 2026-11-07 12:50
 brief: Read-only smoke proving the explicit executor contract end to end — declared executor=opencode, pinned host,
   profile-scoped run, landed artifact, verifier pass, then close-out merge. No writes beyond the runner-landed artifact.
 priority: medium
@@ -28,11 +28,11 @@ action:
   type: dispatch
   executor: opencode
   agent_profile: ops-readonly
-  model: litellm/gemini-3.5-flash-free
+  model: litellm/gemini-3.5-flash
   target_host: idc02
   artifact: evals/opencode-lane/out/executor-contract-smoke.json
   repo: chaba
-  status: failed
+  status: queued
   sweep:
     session_gone: 2026-10-28 10:18
     failed_noted: 2026-11-07 11:52
@@ -43,7 +43,6 @@ action:
   result: 'exit=1 : Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794029325.service:
     Failed with result ''exit-code''. | devin-task-opencode-executor-routing-smoke-1794029325.service: Consumed
     4.046s CPU time.'
-  runner: idc02
 expected_goals:
 - id: artifact-landed
   check: file-exists evals/opencode-lane/out/executor-contract-smoke.json
@@ -225,6 +224,9 @@ comms:
 - at: 2026-11-07 12:29
   from: idc02
   text: 'finished (failed): exit=1 : Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794029325.serv'
+- at: 2026-11-07 12:50
+  from: devin
+  text: re-spawned from report page
 claim: {}
 requests:
 - id: the-explicit-opencode-smoke-is-held-afte-063faa
