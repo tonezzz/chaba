@@ -1,7 +1,7 @@
 id: opencode-adobe-stock-image-preview
 title: OpenChamber Adobe Stock image preview and asset picker
 column: backlog
-updated: 2026-11-06 17:02
+updated: 2026-11-07 17:06
 brief: Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset
   selection without uploading or mutating Adobe Stock.
 priority: medium
@@ -47,3 +47,10 @@ comms:
     gate, Adobe-upload=false safety, PNG signature/dimension/size artifact checks, and the checked-in template_disabled
     request. Targeted tests pass 3/3. The actual --check correctly refuses the disabled template before model imports;
     no Mac render or Adobe upload was run. Worktree artifacts remain uncommitted for review.'
+- at: 2026-11-07 17:06
+  from: devin
+  text: 'Shipped in DevNest-ada-agent@162f83d (feat(ada): add Adobe Stock reuse planning lane): preview_url/thumbnail_url
+    normalization with http(s)-only validation, preview status (available/thumbnail-only/unavailable), warnings,
+    preview_summary, and openchamber_preview_markdown block for thumbnail+full-preview rendering. 15 tests green.
+    Remaining before done: real approved preview URLs in a fixture/production assets.json, index rebuild, and one
+    live OpenChamber render check of /ada adobe_stock output. '
