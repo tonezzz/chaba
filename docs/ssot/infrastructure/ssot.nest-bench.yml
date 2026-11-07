@@ -52,7 +52,18 @@ domains:
       rebuild with build_corpus.py (deterministic seed, high-confidence
       extraction patterns only).
     status: live           # corpus + scorer built; shadow-mode runs accrue
-    scorer: scripts/bench/card-judgment/score.py   # entities: rules|ollama|openai
+    scorer: scripts/bench/card-judgment/score.py   # entities: rules|ollama|openai|ada
+    jobs_trail:
+      # v3 (2026-11-07, c8fec5f3e): gold relabeled to Ada's authority matrix
+      # (kanban.py _gate_reason — gated closes are defer, not act). v2 had
+      # 18/30 act cases that were matrix-forbidden priority:high closes.
+      - run: 'run8-10 ada/chat on v3 (98 cases): 0.969|0.980|0.949 acc,
+              0.980|0.980|0.969 def, 1.0 prec — 3 consecutive PASS =
+              t3_unlock_threshold met. Flip pending Tony decision
+              (ssot.ada-participation t3_queue.status + kanban tool-side).'
+      - run: 'runs 1-7 on v2 corpus (invalid gold): rules 0.30, llama3.2:3b
+              0.884 artifact-pass, flash-lite 0.495, ada/chat 0.768,
+              CF-70b 0.695 — see card card-judgment-bench-build comms.'
     case_shape:
       card_snapshot: 'title, note, column, priority, comms at decision time'
       evidence: 'the live check result available at the moment
