@@ -1027,12 +1027,17 @@ class BoardApiWiringTest(PubTestBase):
         self._fake_wiki_lesson_api(calls, {
             "Education:Ada-Nest-Map": self._LESSON_WT_A,
             "Education:Index": "generated index, no template",
-            "Education:Object-Storage": self._LESSON_WT_B})
+            "Education:Object-Storage": self._LESSON_WT_B,
+            # sink-written support page: carries the template but
+            # status=index marks it generated, not a lesson
+            "Education:Roller-Index": self._LESSON_WT_A.replace(
+                "ada-nest-map", "roller index").replace(
+                "status=open", "status=index")})
         r = self.ba.do_lesson(
             {"op": "list", "source": "wiki"}, "devin")
         self.assertEqual(r["source"], "wiki")
         self.assertEqual(r["count"], 2)
-        self.assertEqual(r["skipped_non_lesson"], 1)
+        self.assertEqual(r["skipped_non_lesson"], 2)
         by_topic = {l["topic"]: l for l in r["lessons"]}
         a = by_topic["ada-nest-map"]
         want_slug = "lesson-" + hashlib.md5(

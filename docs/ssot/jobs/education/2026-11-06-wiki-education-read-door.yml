@@ -113,13 +113,18 @@ design_notes:
     its wiki leg while the wp leg still lands.
 
 verify_after_restart:
-  - "POST /lesson {op:list, source:wiki} -> source:'wiki', ~124 lessons,
-    skipped_non_lesson >= 2 (Index + Ada-Nest hub)."
-  - "python3 scripts/lessons-due.py --dry-run on idc03 -> prints
-    Education:Due wikitext built from the live wiki corpus."
-  - "python3 scripts/lessons-due.py -> 'wiki: success Education:Due
-    rev=...' + 'wp: updated page 354'; anon accessdenied on
-    Education:Due confirms the boundary."
+  - "DONE 2026-11-07: POST /lesson {op:list, source:wiki} -> source:'wiki',
+    127 rows. NOTE skipped_non_lesson was 0 — the running door parses
+    any template-bearing page as a lesson, so the sink-written
+    Education:Index + synthetic hubs (status=index) were counted; a
+    2026-11-07 door-side status=index filter restores the >=2 skip
+    count on next door restart (lessons-due filters client-side too)."
+  - "DONE 2026-11-07: lessons-due --dry-run on tony-macbook renders
+    Education:Due + Education:Index from the live wiki corpus
+    (111 due / 14 upcoming / 125 lessons after index filtering)."
+  - "DONE 2026-11-07: lessons-due --dest wiki -> 'wiki: success
+    Education:Due rev=186' + 'wiki index: success Education:Index
+    rev=187'; anon pretty-URL read -> 404 (Lockdown boundary holds)."
   - "EDU_SOURCE=wiki python3 scripts/education-report.py -> report
     audits the wiki corpus (compare compliance vs the wp run — small
     drift is expected: wikitext bodies measure slightly differently)."
@@ -127,9 +132,12 @@ verify_after_restart:
 remaining_for_cutover:
   - "Step 6 (WP admin/Tony): lesson CPT read-only + permalinks 301 to
     Education:<title>; then --dest wp can drop and EDU_SOURCE=wiki
-    becomes the report default."
-  - "Education:Index refreshes only on wiki-lesson-migrate.py reruns —
-    fold index-refresh into lessons-due or a small weekly job."
+    becomes the report default. The slug->wiki_title map for the 301
+    table is derivable from /lesson {op:list, source:wiki} rows."
+  - "DONE 2026-11-07: Education:Index now refreshes daily inside
+    lessons-due (--dest wiki), closing the stale-index gap; migrate
+    rerun still writes it on demand. See
+    2026-11-07-wiki-education-due-index.yml."
   - "WikiLessonSink emits plain template params — a {{#cargo_declare}}
     on แม่แบบ:Education would make next_review/status queryable
     on-wiki (optional polish, not required for cutover)."

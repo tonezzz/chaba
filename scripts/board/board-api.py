@@ -2243,7 +2243,10 @@ def _read_lessons_wiki(body: dict, frm: str) -> dict:
     lessons, skipped = [], 0
     for page in _wiki_ns_pages(api_url, opener, WIKI_LESSON_NS):
         row = _lesson_from_wiki_page(page)
-        if row is None:
+        # status=index marks generated support pages written through
+        # the sink (Education:Index, synthetic series hubs) — they
+        # carry the Education template but are not lessons.
+        if row is None or row["status"] == "index":
             skipped += 1
             continue
         lessons.append(row)
