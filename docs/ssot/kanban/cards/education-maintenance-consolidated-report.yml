@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-11-06 19:56
+updated: 2026-11-07 11:12
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -111,6 +111,13 @@ comms:
   text: 'Deployment prep advanced: created clean branch feat/bge-education-shadow-deploy from current origin/master,
     applied and compiled the focused lessons-due patch, committed as 0e1796fee6, and pushed to origin. PR URL: https://github.com/tonezzz/chaba/pull/new/feat/bge-education-shadow-deploy.
     Live served checkout remains untouched pending normal review/convergence.'
+- at: 2026-11-07 11:12
+  from: devin
+  text: 'MERGED: PR #75 squash-merged to master (695563e7c0). The BGE shadow suggestion block was re-ported onto
+    the post-migration lessons-due.py — it now feeds BOTH destinations (Education:Due wikitext with [[links]], WP
+    education-due HTML), reads BGE_EDU_SHADOW_REPORT read-only, ignores stale (>48h)/missing/malformed reports,
+    and leaves due ordering authoritative. Verified: py_compile, diff --check, fresh/stale/missing report matrix,
+    self-hit + non-lesson key filtering. Remaining: served checkout pick'
 review_kind: verify
 claim: {}
 auto_close:
