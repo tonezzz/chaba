@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
 column: review
-updated: 2026-11-07 19:53
+updated: 2026-11-07 20:02
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -86,6 +86,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261107-194934-found-during-local-stt-lane-ev,
     branch dispatch/20261107-194934-found-during-local-stt-lane-ev'
+- at: 2026-11-07 20:02
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''nice10-escalation''] block close)'
 action:
   type: dispatch
   status: done
