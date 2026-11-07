@@ -69,3 +69,17 @@ verify:
   - POST /v1/search {collection: chaba-lessons} -> 135 docs
   - POST /lesson {op:list, source:mddb} via board-api (post-deploy)
   - python3 scripts/board/board-api.py --selftest  # ok
+
+verification_pass_2026_11_07_session2: >-
+  Second dispatch (171225) re-verified end-to-end: ssot-prose-smell.py
+  -> 0 flagged; mddb-cms chaba-lessons held 136 docs including all 3
+  split lessons (lesson-32518e35af20, lesson-0eb6a7a7329c,
+  lesson-227dddf98997); board-api --selftest ok. Cleaned the flagged
+  stray probe doc lesson-0eb6ad2333e2 ("Object Storage", body "v4") —
+  absent from both wp and wiki sources so no backfill resurrection;
+  chaba-lessons now 135 docs. Wired the smell check into
+  .github/workflows/ssot.yml so the >40-line rule is enforced in CI,
+  not just lintable by hand. Sub-40-line blocks (37 values at 25-39
+  lines, e.g. job findings/measured/report.summary and focus-inbox
+  handoff texts) reviewed — operational job records, not assessment
+  research; left in place per "operational state stays in SSOT".
