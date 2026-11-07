@@ -4,14 +4,19 @@ Produce a JSON health snapshot of THIS host (`{{HOST}}`). Emit ONLY the
 JSON object as your final message — the runner writes it for you; you
 hold no write tools and any denied tool call fails the job.
 
+FAST PATH (preferred): run `python3 scripts/devnest/host_snapshot.py`
+once — it emits every required field with correct values (including
+uptime_seconds). Then emit its JSON as your final message. Only fall
+back to the manual commands below if that call is denied.
+
 Collect with read-only commands only (everything else is denied):
 
 - hostname / current time: `hostname`, `date -Iseconds`
 - uptime + load averages: `uptime` (load1/load5/load15 from the output).
   For `uptime_seconds`: call `uptime -s` (boot timestamp) and `date +%s`
   (epoch now) as two separate calls, then subtract the two numbers
-  YOURSELF — `python3`/`expr`/`bc` are not allowlisted and will be
-  denied. NEVER try `/proc/*` — reads outside the checkout are denied
+  YOURSELF — `python3 -c`/`expr`/`bc` are not allowlisted and will be
+  denied (only `python3 scripts/devnest/host_snapshot.py` is). NEVER try `/proc/*` — reads outside the checkout are denied
   and count against the job.
 - cpu count: `nproc` or `lscpu`
 - memory: `free -m` (values in MB)
