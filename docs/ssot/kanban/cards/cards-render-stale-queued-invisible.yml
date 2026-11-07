@@ -1,7 +1,7 @@
 id: cards-render-stale-queued-invisible
 title: 'BUG: queued cards missing from GET /cards — runner never claims them'
 column: done
-updated: 2026-11-07 18:05
+updated: 2026-11-07 18:37
 priority: high
 tags:
 - bug
@@ -45,6 +45,13 @@ comms:
     fire: ~15+ poll cycles after card became visible, action.status stays queued, runner=None, no devin-task-* unit
     on idc02, no claim attempt in runner-agent journal. _claimable() returns (''dispatch'','''') under unit env
     so the gate passes — bug is downstream in the c'
+- at: 2026-11-07 18:37
+  from: devin
+  text: 'OPS-1107 runner-claim half RESOLVED 2026-11-07 ~18:36. Root cause: idc02 5m load/core ~1.3 (mddbd+openjev+ollama
+    baseline on 4 cores) > RUNNER_MAX_LOAD_PC=1.0 -> claim_pass early-returned with ZERO journal output and /ready
+    still reported cards eligible -> invisible starvation. Fix in PR tonezzz/chaba#92 (merged): claim_pass now logs
+    capacity skips; verdict_pass mirrors claim order (capacity->blocked_by->gpu) so /queue shows blocked+reason
+    instead of false eligible; also fixed blocked_by never e'
 review_kind: verify
 action:
   status: done
