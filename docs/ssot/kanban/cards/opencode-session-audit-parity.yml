@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
 column: backlog
-updated: 2026-10-29 11:13
+updated: 2026-11-07 19:07
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -24,11 +24,9 @@ spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice tr
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  runner: tony-macbook
+  status: queued
   result: 'exit=0 d audit section — all read-only, nothing pushed or deployed. | devin-task-20261027-163705-build-a-read-only-opencode-ses.service:
     Consumed 1min 16.136s CPU time over 18min 28.946s wall clock time, 528.7M memory peak, 39.1M memory swap peak.'
-  verified: true
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -97,6 +95,9 @@ comms:
 - at: 2026-10-29 11:13
   from: devin
   text: put on hold
+- at: 2026-11-07 19:07
+  from: tony
+  text: queued for processing
 review_kind: verify
 claim: {}
 auto_close:
