@@ -1,7 +1,7 @@
 id: r7-host-software-baseline-declared-capab-ab6a48
 title: R7 host software baseline — declared capabilities + readiness check + bootstrap recipes
 column: doing
-updated: 2026-11-07 17:11
+updated: 2026-11-07 17:21
 priority: high
 tags:
 - ops
@@ -21,3 +21,10 @@ comms:
 - at: 2026-11-07 17:11
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 17:21
+  from: devin
+  text: 'DONE + live-verified (#88 + #90). host-ready-check.py probed the fleet and immediately caught real drift:
+    tony-omen+con01 missing python_ml (bootstrapped both to ~/.local/share/chaba-ml-venv, torch 2.15.0+cpu), ollama
+    probe needed tailnet-IP fix (all embed hosts now pass), kk-mac offline, kk-macbook DNS stale (informational
+    laptop). Weekly timer declared for idc03 Sun 06:00 — installs on next repo-sync. Follow-up: focus-inbox flagging
+    on fail-set change.'
