@@ -1,0 +1,19 @@
+id: adobe-stock-campaign-status-tool
+title: campaign-status.py one-call campaign state
+column: backlog
+updated: 2026-11-07 17:07
+brief: 'One call returns full campaign state: session, assets, pending decisions, render jobs, QC status.'
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- token-efficiency
+- pipeline
+spec: 'scripts/adobe-stock/campaign-status.py --campaign ID: fetch SESSION.json, lsl 30-generated-raw/, list 35-comparison-run/,
+  summarize 40-qc-review.md decision lines, report pending render jobs per lane. Output = compact JSON receipt (<40
+  lines). Replaces 3-5 rclone calls per status check.'
+ref: MED-1103
+comms:
+- at: 2026-11-07 17:07
+  from: tony
+  text: card captured via board-api
