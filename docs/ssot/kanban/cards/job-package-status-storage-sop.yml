@@ -1,7 +1,7 @@
 id: job-package-status-storage-sop
 title: Define job package status lifecycle and storage standard
 column: review
-updated: 2026-10-30 20:10
+updated: 2026-11-07 16:49
 spec: 'Write the SOP doc for job-package status lifecycle + storage. REAL FACTS to use (do not invent): nest_job
   CPT status enum = {queued, claimed, running, done, failed, stalled, cancelled}; writes go through board-api POST
   /job {slug, status, kind, host, pack, runner, result_ref, error} which upserts one WP post per slug (meta keys:
@@ -185,6 +185,10 @@ comms:
     `deterministic-only`) and Sacred Father `preview-v2` (explicit hold on OPS-0952). S1 frame extraction/i2v and
     DocPilot assembly/VO/render packs are already done; Golden Hour is final; Gaussian splat has only synthetic
     smoke, real PLY/photos not staged. `scripts/ada/nest-queue-sta'
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] verified: deliverable satisfied upstream — docs/kb/job-package-status-sop.md on master (422f7fe34),
+    supersedes the cline draft. Closing.'
 tags:
 - cline
 cline:
