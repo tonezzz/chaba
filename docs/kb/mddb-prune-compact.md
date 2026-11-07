@@ -16,7 +16,9 @@ reduction. This is the reference for any "mddb is too big" work.
 ## Guard stack (keep it armed, always)
 
 - `prune-old-docs.timer` on idc03 — daily 09:30, `scripts/ada/prune-old-docs.py`.
-  Policy: ops `host-logs` >14d (`ts`), `ada-ha-events-*`/`ada-ha-snapshots-*` >30d.
+  Policy: ops `host-logs` >3d (`ts`; was 14d — 14d ≈ 530k docs broke the
+  ~250k `/v1/search` paging limit and silently disabled the sweep, MEM-0871
+  2026-11-07), `ada-ha-events-*`/`ada-ha-snapshots-*` >30d.
   OPS_COLLECTIONS routes host-logs to `MDDB_OPS_URL`; everything else hits the leader :11023.
 - `maxRevisions` per collection (`PUT /v1/collection-config`) — ops 3/10/5, cms 5, embed 3, main 20.
 - `mddb-restart.timer` Sun 05:00 — all 5 containers (bounds RSS; restarts are seconds now).
