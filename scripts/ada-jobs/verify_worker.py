@@ -244,8 +244,13 @@ def run_once(args):
         elif action == "request":
             body = {"id": cid, "from": "ada",
                     "ask": payload.get("ask") or payload.get("request") or "needs Tony"}
-            if payload.get("options"):
-                body["options"] = payload["options"]
+            opts = payload.get("options") or [
+                {"id": "close", "label": "Close — cleanup verdict is right"},
+                {"id": "keep", "label": "Keep — still alive, dismiss verdict"}]
+            body["options"] = opts
+            sug = payload.get("suggested")
+            if sug:
+                body["suggested"] = sug
             post("/request", body)
 
 
