@@ -1,7 +1,7 @@
 id: ada-backlog-sweep-command
 title: 'Ada command: "process oldest N cards" — triage + queue dispatch-eligible + report'
 column: backlog
-updated: 2026-11-07 18:48
+updated: 2026-11-07 18:59
 priority: high
 program: chaba-ci
 tags:
@@ -27,3 +27,10 @@ comms:
 - at: 2026-11-07 18:48
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 18:59
+  from: devin
+  text: 'DONE 2026-11-07: ada_mcp.py (idc02 ada-opencode workspace, :4096) gained ada_attention (lists cards with
+    unanswered requests + N oldest backlog) and ada_respond (two-call confirmed mutation posting /respond). ada.md
+    gained /ada attention and /ada sweep commands. Container restarted; both tools verified loaded + ada_attention
+    reaches board-api (pending=0, oldest works). RESIDUAL: sweep step "fix action shape + queue" is still not tool-exposed
+    to Ada — queue mutations go through ada_preflight/ada_'
