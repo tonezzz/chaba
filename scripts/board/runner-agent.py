@@ -2034,7 +2034,13 @@ def jules_merge_pr(repo: str, head_ref: str, tid: str,
                timeout=30)
         if r.returncode:
             return False, f"merge failed: commit {(r.stderr or '')[:120]}"
-        r = sh(["git", "-C", str(wt), "push", "-q", "origin",
+        # deploy-key push — exec checkouts carry https origin (no
+        # creds); the gh-chaba ssh alias is the write path on runners
+        # with chaba deploy keys. JULES_PUSH_URL overrides.
+        slug = JULES_REPO_MAP.get(repo, "")
+        purl = os.environ.get("JULES_PUSH_URL") or \
+            (f"gh-chaba:{slug}.git" if slug else "origin")
+        r = sh(["git", "-C", str(wt), "push", "-q", purl,
                 f"HEAD:{branch}"], timeout=90)
         if r.returncode:
             return False, ("merge failed: push — likely raced; human "
