@@ -1,6 +1,6 @@
 id: board-api-lesson-post-flood
 title: board-api /lesson POST flood starves wp.lock and Ollama
-column: backlog
+column: done
 updated: 2026-11-07 17:15
 brief: 'Observed 2026-11-07 ~11:20-11:45 ICT: ~1.6 POST /lesson/sec sustained against board-api on idc03, driving
   LiteLLM->Ollama chat-local inference that saturated idc02 CPU (load5/core 2.4) and tripped every runner load gate.
@@ -25,3 +25,8 @@ comms:
     speaker-id, thb-xau). Flood self-stopped ~17:08. Root damage: do_lesson calls _gemini_thai on EVERY write incl.
     identical re-files -> each POST burned a gemini-3.5-flash-lite-free call against the 15 RPM cap + serialized
     wp.lock. FIX (PR chaba#87, 21daad65): sha256(content)->Tha'
+- at: 2026-11-07 17:15
+  from: devin
+  text: closed by devin
+action:
+  status: done
