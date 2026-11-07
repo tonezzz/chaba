@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
 column: doing
-updated: 2026-11-07 19:18
+updated: 2026-11-07 19:23
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -31,6 +31,7 @@ action:
   runner: idc02
   sweep:
     stale_running: 2026-11-07 19:18
+    session_gone: 2026-11-07 19:18
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
   audit target.
@@ -116,6 +117,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261027-163705-build-a-read-only-opencode-ses on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-07 19:23
+  from: devin
+  text: 'AUD-0938 re-landed durably on idc02: scripts/devnest/opencode_session_audit.py + 20 unittests (green),
+    full-store audit of 276 sessions -> evals/opencode-lane/reports/2026-11-07-session-audit.{md,json}, marker set,
+    8 finding cards filed (4 artifact-miss, 1 deny-storm, 3 profile-scope mutations). Ledger-vs-benchmark reconciled:
+    independent executions, flash-lite non-deterministic, not a ledger error. 0 ungated profile runs; 13/13 lane
+    runs linked, token deltas 0.'
 review_kind: verify
 claim: {}
 auto_close:
