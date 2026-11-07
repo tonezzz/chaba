@@ -1116,6 +1116,30 @@ jobs:
     stays wp until the lesson CPT goes read-only — flip EDU_SOURCE=wiki
     in the unit env at cutover. Runbook:
     docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml'
+- id: chaba-bge-education-shadow
+  name: BGE education shadow refresh (lesson sync + snapshot + report)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 07:00:00'
+  persistent: true
+  timeout: 15m
+  cwd: '%h/CascadeProjects/chaba'
+  condition_path: '%h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py'
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-lessons-shadow.py --sync
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --build
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py --adapter %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --index %h/.local/share/bge-hybrid/docs.json --output %h/.cache/bge-education-shadow-v2.json
+  note: 'card education-maintenance-consolidated-report + embed-space-eval —
+    keeps the BGE shadow report inside the 48h freshness window that
+    lessons-due.py (#75) requires before rendering "Related lesson
+    suggestions (BGE shadow)". Three chained steps: sync WP lessons into
+    the isolated bge-lessons-shadow collection on mddb-embed, rebuild the
+    BM25 lexical snapshot, then run the due-lesson shadow queries and
+    write the JSON report lessons-due reads by default. Read-only on the
+    production side — writes only to mddb-embed + ~/.cache. Runs 30 min
+    before chaba-lessons-due so the report is fresh when the due page
+    renders. Slugs stay aligned post wiki-migration: wiki mints the same
+    lesson-md5(topic) slug WP does. Added 2026-11-07.'
 - id: lesson-drift-check
   name: Lesson drift check — trade docs mtime vs lesson modified
   host: tony_dell
