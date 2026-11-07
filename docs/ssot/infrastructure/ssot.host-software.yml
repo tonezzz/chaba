@@ -23,11 +23,11 @@ capabilities:
     note: durable shared ML venv at ~/.local/share/chaba-ml-venv —
       NOT /tmp (cleared on reboot and by cleanup jobs)
   ollama_bge_m3:
-    probe: 'curl -fsS --max-time 10 http://127.0.0.1:11434/api/tags | grep -q bge-m3'
+    probe: 'curl -fsS --max-time 10 "http://$(tailscale ip -4 2>/dev/null || hostname -I | awk \"{print \$1}\"):11434/api/tags" | grep -q bge-m3'
     bootstrap: ollama_pull_bge_m3
     note: ollama service running AND bge-m3 model present
   node:
-    probe: 'test -x $HOME/.local/bin/node && $HOME/.local/bin/node --version'
+    probe: 'node --version || $HOME/.local/bin/node --version'
     bootstrap: node
     note: user-space node per new-host-onboarding §3 — ssot-validate + dispatch need it
   podman:
