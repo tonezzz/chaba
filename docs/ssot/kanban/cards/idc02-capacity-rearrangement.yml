@@ -1,6 +1,6 @@
 id: idc02-capacity-rearrangement
 title: 'idc02 capacity: consolidate local LLM, clamp Ollama, move batch jobs'
-column: backlog
+column: done
 updated: 2026-11-07 19:07
 brief: 'idc02 (4c/16G) runs 40 services + 22 timers + TWO local-LLM stacks (open-jev ~4GB torch + ollama 5-7GB).
   Inference spikes OOM-kill llama-server and starve the OpenCode runner + all services. Observed 2026-11-07: ollama
@@ -45,6 +45,9 @@ comms:
     -> tony-dell:11434, kkmac pattern). LiteLLM config deployed: chat-local + ollama-qwen7b -> tunnel; ollama-nomic-embed
     LB leg idc02 -> tunnel; idc02 fully out of LiteLLM routing. VERIFIED: embed 768d x4 + chat-local OK through
     gateway; qwen generate OK via tunnel. idc02 chat m'
+- at: 2026-11-07 19:07
+  from: devin
+  text: closed by devin
 requests:
 - id: durable-idc02-offload-needs-a-decision-m-9d2581
   ask: Durable idc02 offload needs a decision — measured options on card comment.
@@ -56,4 +59,5 @@ requests:
   - ollama-on-tony-dell
   - accept-post-clamp
   answer: ollama-on-tony-dell
-awaiting_action: true
+action:
+  status: done
