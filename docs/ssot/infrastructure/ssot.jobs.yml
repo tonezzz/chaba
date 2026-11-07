@@ -1056,7 +1056,7 @@ jobs:
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
 - id: chaba-lessons-due
-  name: Education due-review queue -> wiki Education:Due + WP page
+  name: Education due-review queue + index -> wiki Education:Due/Index + WP page
   host: idc03
   dispatch: systemd
   on_calendar: '*-*-* 07:30:00'
@@ -1065,14 +1065,17 @@ jobs:
   cwd: '%h/CascadeProjects/chaba'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/lessons-due.py
   note: 'card education-store (OPS-0696) + wiki-member-knowledge-surface
-    (OPS-1046 step 4) — refreshes Education:Due on wiki.h3 via /wiki/page
-    AND the private WP page slug education-due (post 354) during the
-    migration transition. Defaults --source wiki (reads /lesson
-    op=list source=wiki through the door — needs board-api post
-    2026-11-06 build) and --dest both; LESSON_SOURCE=wp + --dest wp is
-    the pre-migration fallback. Live unit on idc03 predates this
-    manifest entry (hand-created 2026-10-15, same schedule+exec) —
-    render-jobs.py --host idc03 --install converges it.'
+    (OPS-1046 step 4) — refreshes Education:Due AND Education:Index on
+    wiki.h3 via /wiki/page (index-refresh added 2026-11-07 so do_lesson
+    dual-writes show up without a migrate rerun; --no-index /
+    LESSON_INDEX=0 skips) plus the private WP page slug education-due
+    (post 354) during the migration transition. Defaults --source wiki
+    (reads /lesson op=list source=wiki through the door — needs
+    board-api post 2026-11-06 build) and --dest both; LESSON_SOURCE=wp
+    + --dest wp is the pre-migration fallback. Live unit on idc03
+    predates this manifest entry (hand-created 2026-10-15, same
+    schedule+exec) — render-jobs.py --host idc03 --install converges
+    it.'
 - id: chaba-lessons-audit
   name: Education CPT policy audit (R1/R3/R4) -> report
   host: idc03

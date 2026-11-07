@@ -271,16 +271,24 @@ implementation_sequence:
     corpus under a wiki label. ACTIVATION: same merge + idc03 pull +
     board-api restart that ships the do_wiki_page fix — one restart
     covers both."
-  - "5. PARTIAL: anon accessdenied + authed read + dual-write proven;
-    wiki read path + due/report retarget shipped repo-side (step 4).
-    Remaining: after the door restart, lessons-due --dry-run proves
-    Education:Due renders from the live corpus, then flip
-    EDU_SOURCE=wiki in chaba-education-report's env at cutover."
+  - "5. DONE live 2026-11-07 (dispatch 114216, tony-macbook): door probe
+    shows /lesson source=wiki already live on idc03 (127 rows, source
+    echoed); lessons-due --dry-run renders from the wiki corpus and the
+    real --dest wiki run wrote Education:Due rev=186 + Education:Index
+    rev=187 — the daily job now refreshes BOTH generated pages
+    (index-refresh folded into lessons-due, closing the stale-index
+    note below). Two live bugs found+fixed repo-side: lessons-due sent
+    actor 'lessons-due' which the door 400s (job scripts must use
+    'chaba' — today's 07:30 run would have failed once synced), and
+    sink-written status=index pages (Education:Index, synthetic hubs)
+    were counted as lessons — door + client now filter them (door fix
+    lands on next restart; lessons-due filters client-side meanwhile)."
   - "6. WP CPT read-only + 301s; card + ssot.wp-boards + this doc updated —
-    WP admin step; safe to schedule once step 4 closes the read path.
-    Note: Education:Index regenerates on each migrate run — rerun the
-    migrate script after future lessons or add an index-refresh step to
-    the due-list job."
+    WP admin step; safe to schedule now that the read path + due/index
+    jobs run on the wiki surface. EDU_SOURCE=wiki flip for
+    chaba-education-report stays gated on this step per its manifest
+    note. Redirect map: /lesson {op:list, source:wiki} rows carry
+    slug + wiki_title/url — the 301 table is derivable from the door."
 
 related:
   ssot: "docs/ssot/apps/ssot.mediawiki-news.yml (news standard; a broader

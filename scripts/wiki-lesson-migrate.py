@@ -119,7 +119,9 @@ def index_page(pages):
         groups.setdefault(p["meta"].get("level") or "other",
                           []).append(line)
     parts = ["Machine-generated index of the Education ledger — "
-             "rebuilt by scripts/wiki-lesson-migrate.py; do not hand-edit."]
+             "rebuilt daily by chaba-lessons-due "
+             "(scripts/lessons-due.py) and on demand by "
+             "scripts/wiki-lesson-migrate.py; do not hand-edit."]
     for lvl in ("intro", "working", "deep", "other"):
         if groups.get(lvl):
             parts.append(f"\n== {lvl.title()} ==\n" + "\n".join(groups[lvl]))

@@ -78,6 +78,23 @@ class RenderTest(unittest.TestCase):
         self.assertIn('href="https://x/a"', html)
         self.assertIn("beta — 2026-12-01", html)
 
+    def test_index_wikitext(self):
+        wt = ld.index_wikitext(ROWS, TODAY)
+        self.assertIn("Machine-generated index", wt)
+        self.assertIn("== Intro ==", wt)
+        self.assertIn("== Deep ==", wt)
+        self.assertIn("== Working ==", wt)
+        self.assertIn("[[Education:Alpha|alpha]] — next review "
+                      "2026-11-01", wt)
+        self.assertIn("* delta\n", wt)            # no wiki_title -> plain
+        self.assertIn("Updated 2026-11-06 — 4 lessons.", wt)
+        self.assertIn("[[Category:Education]]", wt)
+
+    def test_index_wikitext_orders_by_topic(self):
+        wt = ld.index_wikitext(ROWS, TODAY)
+        # alpha sorts before delta inside the intro group
+        self.assertLess(wt.index("alpha"), wt.index("delta"))
+
 
 class DoorContractTest(unittest.TestCase):
     def _fake_door(self, response):
@@ -90,12 +107,17 @@ class DoorContractTest(unittest.TestCase):
 
     def test_fetch_rows_wiki(self):
         sent, fake = self._fake_door({
-            "source": "wiki", "count": 1,
+            "source": "wiki", "count": 2,
             "lessons": [{"slug": "lesson-a", "topic": "alpha",
                          "level": "intro", "next_review": "2026-11-01",
                          "status": "open",
                          "wiki_title": "Education:Alpha",
-                         "url": "https://wiki/x"}]})
+                         "url": "https://wiki/x"},
+                        {"slug": "lesson-idx", "topic": "education index",
+                         "level": "", "next_review": "",
+                         "status": "index",
+                         "wiki_title": "Education:Index",
+                         "url": "https://wiki/i"}]})
         real = ld.door_post
         ld.door_post = fake
         try:
@@ -106,6 +128,7 @@ class DoorContractTest(unittest.TestCase):
         self.assertEqual(sent[0][1]["op"], "list")
         self.assertEqual(sent[0][1]["source"], "wiki")
         self.assertEqual(rows[0]["href"], "https://wiki/x")
+        self.assertEqual(len(rows), 1)   # status=index rows filtered
 
     def test_fetch_rows_wiki_stale_door(self):
         # A door that predates the wiki read path ignores "source" and
@@ -159,7 +182,7 @@ class DoorContractTest(unittest.TestCase):
             ur.urlopen = real
         self.assertTrue(r["ok"])
         self.assertEqual(sent["url"], "http://door/lesson")
-        self.assertEqual(sent["body"]["from"], "lessons-due")
+        self.assertEqual(sent["body"]["from"], "chaba")
         self.assertEqual(sent["body"]["source"], "wiki")
 
 

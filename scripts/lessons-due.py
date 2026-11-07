@@ -16,10 +16,17 @@ runner). --source wiki is the default post-migration; a door that
 predates the wiki read path answers without source=wiki and this
 script fails loudly instead of silently auditing the WP corpus.
 
+On the wiki dest it also refreshes Education:Index (the level-grouped
+rollup wiki-lesson-migrate.py writes once on --apply) — with
+do_lesson dual-write on, the index would otherwise go stale between
+manual migrate runs. --no-index / LESSON_INDEX=0 skips it; index is
+wiki-source only.
+
 Usage: lessons-due.py [--dry-run] [--source wiki|wp] [--dest wiki|wp|both]
-                      [--api BASE]
+                      [--no-index] [--api BASE]
 
 Env: LESSON_SOURCE (default wiki) · LESSON_DUE_DEST (default both) ·
+     LESSON_INDEX (default 1; 0/off/no skips the Education:Index refresh) ·
      BOARD_API / RUNNER_API door base (default: idc03 tailnet) ·
      BGE_EDU_SHADOW_REPORT (optional read-only BGE shadow report; a
      fresh one appends related-lesson suggestions to both dests)
@@ -39,6 +46,7 @@ except Exception:
 ENV_PATH = Path.home() / ".config/secrets/wp-boards.env"
 DUE_SLUG = "education-due"
 DUE_WIKI_TITLE = "Education:Due"
+INDEX_WIKI_TITLE = "Education:Index"
 BGE_SHADOW_REPORT = os.environ.get(
     "BGE_EDU_SHADOW_REPORT",
     str(Path.home() / ".cache" / "bge-education-shadow-v2.json"),
@@ -75,7 +83,10 @@ class WP:
 
 
 def door_post(api_base: str, path: str, body: dict) -> dict:
-    body = {"from": "lessons-due", **body}
+    # actor must be one of the door's logins (ada|chaba|devin|tony) —
+    # job scripts use "chaba" (merge-sweep convention); anything else
+    # 400s at the door.
+    body = {"from": "chaba", **body}
     req = urllib.request.Request(
         f"{api_base}{path}", data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json"})
@@ -108,6 +119,11 @@ def fetch_rows(source: str, api_base: str):
                 "restart on idc03 first)")
         rows = []
         for l in r.get("lessons") or []:
+            if l.get("status") == "index":
+                # generated support pages (Education:Index, synthetic
+                # hubs) — the post-2026-11-07 door filters these too;
+                # kept here so this job is right against an older door
+                continue
             rows.append({"slug": l.get("slug", ""),
                          "topic": l.get("topic", ""),
                          "level": l.get("level", ""),
@@ -240,11 +256,36 @@ def due_html(due: list, upcoming: list, today: str,
             f"or push next_review to clear it.</small></p>")
 
 
-def write_wiki(api_base: str, wikitext: str) -> str:
+def index_wikitext(rows: list, today: str) -> str:
+    """Education:Index — level-grouped rollup of the live corpus.
+    Same shape wiki-lesson-migrate.py writes on --apply; this job
+    refreshes it daily so do_lesson dual-writes show up without a
+    manual migrate rerun."""
+    groups = {}
+    for r in sorted(rows, key=lambda r: r["topic"].lower()):
+        line = f"* {_wiki_link(r)}"
+        if r.get("next_review"):
+            line += f" — next review {r['next_review']}"
+        groups.setdefault(r.get("level") or "other", []).append(line)
+    parts = ["Machine-generated index of the Education ledger — "
+             "rebuilt daily by chaba-lessons-due "
+             "(scripts/lessons-due.py) and on demand by "
+             "scripts/wiki-lesson-migrate.py; do not hand-edit."]
+    for lvl in ("intro", "working", "deep", "other"):
+        if groups.get(lvl):
+            parts.append(f"\n== {lvl.title()} ==\n" + "\n".join(groups[lvl]))
+    parts += ["", f"Updated {today} — {len(rows)} lessons.",
+              "", "[[Category:Education]]", ""]
+    return "\n".join(parts)
+
+
+def write_wiki(api_base: str, wikitext: str,
+               title: str = DUE_WIKI_TITLE,
+               summary: str = "education due-review refresh") -> str:
     r = door_post(api_base, "/wiki/page",
-                  {"title": DUE_WIKI_TITLE, "wikitext": wikitext,
-                   "summary": "education due-review refresh"})
-    return (f"{r.get('action', '?')} {r.get('wiki_title', DUE_WIKI_TITLE)}"
+                  {"title": title, "wikitext": wikitext,
+                   "summary": summary})
+    return (f"{r.get('action', '?')} {r.get('wiki_title', title)}"
             f" rev={r.get('revid')}")
 
 
@@ -266,6 +307,9 @@ def main():
                     default=os.environ.get("LESSON_SOURCE", "wiki"))
     ap.add_argument("--dest", choices=["wiki", "wp", "both"],
                     default=os.environ.get("LESSON_DUE_DEST", "both"))
+    ap.add_argument("--no-index", dest="index", action="store_false",
+                    default=os.environ.get("LESSON_INDEX", "1").lower()
+                            not in ("0", "off", "no"))
     ap.add_argument("--api", default=API_BASE)
     a = ap.parse_args()
 
@@ -280,9 +324,14 @@ def main():
         print(f"  {r['next_review']}  {r['topic'][:70]}")
     if related:
         print(f"bge_related={len(related)}")
+    want_index = a.index and a.source == "wiki" \
+        and a.dest in ("wiki", "both")
     if a.dry_run:
         print("\n--- Education:Due wikitext ---")
         print(due_wikitext(due, upcoming, today, related, rows_by_slug))
+        if want_index:
+            print("\n--- Education:Index wikitext ---")
+            print(index_wikitext(rows, today))
         return 0
 
     fails = 0
@@ -293,6 +342,15 @@ def main():
         except Exception as e:
             fails += 1
             print(f"wiki dest failed: {e}", file=sys.stderr)
+        if want_index:
+            try:
+                print(f"wiki index: {write_wiki(
+                    a.api, index_wikitext(rows, today),
+                    title=INDEX_WIKI_TITLE,
+                    summary='education index refresh')}")
+            except Exception as e:
+                fails += 1
+                print(f"wiki index failed: {e}", file=sys.stderr)
     if a.dest in ("wp", "both"):
         try:
             print(f"wp: {write_wp(WP(), due_html(
