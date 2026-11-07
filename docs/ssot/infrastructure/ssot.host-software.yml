@@ -1,0 +1,55 @@
+# ssot.host-software.yml — declared per-host software capabilities (R7)
+#
+# The service-layer twin of ssot.audit.hosts.yml. Services are
+# declared-or-dead; this file makes the same true for runtimes one
+# layer down: a host either HAS a declared capability or it does not —
+# nothing in between (card r7-host-software-baseline-declared-capab-ab6a48).
+#
+# Each capability has a probe (a shell snippet run over ssh) and a
+# bootstrap recipe key (scripts/host-capability-bootstrap.sh <cap>).
+# host-ready-check.py runs the probes and reports drift.
+
+capabilities:
+  python3:
+    probe: 'python3 --version'
+    expect_re: 'Python 3\.(9|1[0-9])\.'
+  venv:
+    probe: 'python3 -m venv /tmp/.r7-venv-check && rm -rf /tmp/.r7-venv-check'
+    bootstrap: venv
+    note: ensurepip must work — pip-less hosts can only run stdlib
+  python_ml:
+    probe: '$HOME/.local/share/chaba-ml-venv/bin/python -c "import torch, transformers"'
+    bootstrap: python_ml
+    note: durable shared ML venv at ~/.local/share/chaba-ml-venv —
+      NOT /tmp (cleared on reboot and by cleanup jobs)
+  ollama_bge_m3:
+    probe: 'curl -fsS --max-time 10 http://127.0.0.1:11434/api/tags | grep -q bge-m3'
+    bootstrap: ollama_pull_bge_m3
+    note: ollama service running AND bge-m3 model present
+  node:
+    probe: 'test -x $HOME/.local/bin/node && $HOME/.local/bin/node --version'
+    bootstrap: node
+    note: user-space node per new-host-onboarding §3 — ssot-validate + dispatch need it
+  podman:
+    probe: 'podman --version'
+    bootstrap: manual
+    note: quadlet/container tasks — install is sudo, out of bootstrap scope
+
+hosts:
+  tony-dell:
+    capabilities: [python3, venv, node, podman]
+  tony-omen:
+    capabilities: [python3, venv, python_ml, ollama_bge_m3]
+  con01:
+    capabilities: [python3, venv, python_ml, ollama_bge_m3]
+  idc02:
+    capabilities: [python3, venv, ollama_bge_m3]
+  idc03:
+    capabilities: [python3, venv, ollama_bge_m3, podman]
+  kk-mac:
+    capabilities: [python3, venv, ollama_bge_m3]
+  kk-macbook:
+    capabilities: [python3, venv]
+    note: laptop — often offline; unreachable is informational, not a defect
+  mn01:
+    capabilities: [python3, venv]
