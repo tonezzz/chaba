@@ -1,7 +1,7 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
 column: doing
-updated: 2026-11-07 15:48
+updated: 2026-11-07 15:53
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
 tags:
@@ -57,3 +57,10 @@ comms:
 - at: 2026-11-07 15:48
   from: chaba
   text: started devin-task-20261107-154850-follow-up-to-ops-1046-wiki-mem on idc02 (dispatch)
+- at: 2026-11-07 15:53
+  from: devin
+  text: 'dispatch 154850 started: repo recon done. Plan — (1) WIKI_EDUCATION_WRITE=wiki mode in do_lesson (wiki-primary,
+    no WP write; preserve learned_at/next_review/status/no_th from existing page; WikiLessonSink gains sparse-meta
+    merge); (2) read default source follows the flag so op=list/get/topics track the authoritative store; (3) edge
+    redirect = generated Caddy fragment import inside the live boards.surf-thailand.com block on idc02 (site is
+    confirmed CF->idc02 caddy-edge->Plesk); map via /lesson op'
