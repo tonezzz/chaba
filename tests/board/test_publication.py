@@ -564,6 +564,100 @@ class WikiLessonSinkTest(PubTestBase):
         self.assertEqual(calls[-1][0]["title"],
                          "Education:Cloud Object Storage")
 
+    _OLD_PAGE = (
+        "{{แม่แบบ:Education\n"
+        "|topic=cloud object storage\n|level=working\n|source=voice\n"
+        "|learned_at=2026-01-01\n|next_review=2026-02-01\n"
+        "|status=learned\n|updated=2026-01-01\n|no_th=1\n"
+        "|event_id=ev-old\n}}\n\nold body\n[[Category:Education]]\n")
+
+    def _sink_with_page(self, calls, page_wikitext):
+        """fake_api additionally answers the existing-page fetch the
+        meta-merge makes (page_wikitext=None -> missing page)."""
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("prop") == "revisions":
+                if page_wikitext is None:
+                    return {"query": {"pages": {"-1": {"missing": ""}}}}
+                return {"query": {"pages": {"1": {
+                    "title": "Education:Cloud Object Storage",
+                    "revisions": [{"slots": {
+                        "main": {"*": page_wikitext}}}]}}}}
+            return {"edit": {"result": "Success", "pageid": 9,
+                             "newrevid": 10}}
+        return pub.WikiLessonSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _queries(self, calls):
+        return [c[0] for c in calls
+                if c[0].get("prop") == "revisions"]
+
+    def test_sparse_meta_inherits_existing_state(self):
+        calls = []
+        e = self._ev()
+        for k in ("learned_at", "next_review", "status", "level"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|learned_at=2026-01-01", text)
+        self.assertIn("|next_review=2026-02-01", text)
+        self.assertIn("|status=learned", text)
+        self.assertIn("|level=working", text)
+        self.assertIn("|source=voice", text)     # lesson_source merged
+
+    def test_explicit_meta_wins_over_existing(self):
+        calls = []
+        e = self._ev(next_review="2026-12-31", status="open",
+                     learned_at="2026-11-07", level="intro",
+                     lesson_source="chat", no_th=True)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|next_review=2026-12-31", text)
+        self.assertIn("|learned_at=2026-11-07", text)
+        self.assertIn("|status=open", text)
+        self.assertNotIn("|status=learned", text)
+
+    def test_no_th_exemption_carried_on_thai_free_refile(self):
+        calls = []
+        e = self._ev()          # Thai-free body, no explicit no_th
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertIn("|no_th=1", calls[-1][0]["text"])
+
+    def test_no_th_exemption_dropped_when_thai_lands(self):
+        calls = []
+        e = self._ev(body="<p>มีไทยแล้ว</p>")
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertIn("|no_th=\n", calls[-1][0]["text"])
+
+    def test_full_meta_skips_existing_page_fetch(self):
+        calls = []
+        e = self._ev(learned_at="2026-11-07", lesson_source="chat",
+                     no_th=True)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertFalse(self._queries(calls))
+        self.assertIn("|learned_at=2026-11-07", calls[-1][0]["text"])
+
+    def test_missing_page_no_merge(self):
+        calls = []
+        e = self._ev()
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, None).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|next_review=\n", text)
+        self.assertNotIn("2026-02-01", text)
+
     def test_gates(self):
         sink = self._sink([])
         # wrong kind
@@ -808,7 +902,7 @@ class BoardApiWiringTest(PubTestBase):
         sent = []
 
         class FakeSink:
-            def __init__(self, api, u, p):
+            def __init__(self, api, u, p, **kw):
                 sent.append(api)
 
             def publish(self, ev):
@@ -833,6 +927,159 @@ class BoardApiWiringTest(PubTestBase):
             {"topic": "wiki dual write", "content": "<p>c</p>",
              "no_th": True}, "devin")
         self.assertNotIn("wiki", r)
+
+    # --- WIKI_EDUCATION_WRITE=wiki — wiki-primary write (card
+    #     wiki-education-write-cutover-make-wiki-t-7f2e7d) -------------
+
+    def _wiki_primary_rig(self, sent, page_wikitext=None):
+        """Fake sink + login + single-page fetch for the wiki-primary
+        path. sent collects (api, published events)."""
+        class FakeSink:
+            def __init__(self, api, u, p, **kw):
+                sent.append(("sink-api", api))
+
+            def publish(self, ev):
+                sent.append(ev)
+                return {"ref": f"wiki:{ev['meta']['wiki_title']}",
+                        "pageid": 9}
+        self.ba.pub.WikiLessonSink = FakeSink
+        self.ba._wiki_login = lambda api, env: (object(), "ct")
+
+        def fake_api(api_url, opener, params, post=False):
+            if params.get("prop") == "revisions":
+                if page_wikitext is None:
+                    return {"query": {"pages": {"-1": {"missing": ""}}}}
+                return {"query": {"pages": {"1": {
+                    "title": params["titles"],
+                    "revisions": [{
+                        "timestamp": "2026-01-02T00:00:00Z",
+                        "slots": {"main": {"*": page_wikitext}}}]}}}}
+            return {}
+        self.ba._wiki_api_call = fake_api
+
+    def test_do_lesson_wiki_primary_create(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        wp_calls = []
+        self.ba.wp_api = lambda route, data=None, method=None: \
+            wp_calls.append(route) or []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent)
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>c</p>",
+                 "no_th": True}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertFalse(wp_calls)              # WP never touched
+        self.assertEqual(r["action"], "created")
+        self.assertEqual(r["store"], "wiki")
+        self.assertEqual(r["wiki_title"], "Education:Wiki Primary Write")
+        self.assertNotIn("post_id", r)
+        self.assertIn("index.php?title=", r["url"])
+        self.assertEqual(sent[0], ("sink-api",
+                                   "https://wiki.example/api.php"))
+        self.assertEqual(sent[1]["meta"]["learned_at"],
+                         str(__import__("datetime").date.today()))
+
+    _WIKI_PRIMARY_OLD = (
+        "{{แม่แบบ:Education\n"
+        "|topic=wiki primary write\n|level=working\n|source=voice\n"
+        "|learned_at=2026-01-01\n|next_review=2026-02-01\n"
+        "|status=learned\n|updated=2026-01-01\n|no_th=1\n"
+        "|event_id=ev-old\n}}\n\nold body\n[[Category:Education]]\n")
+
+    def test_do_lesson_wiki_primary_refile_preserves_state(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent, self._WIKI_PRIMARY_OLD)
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>v2</p>"},
+                "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(r["action"], "updated")
+        meta = sent[-1]["meta"]
+        # first-learn provenance + review state carried from the page
+        self.assertEqual(meta["learned_at"], "2026-01-01")
+        self.assertEqual(meta["next_review"], "2026-02-01")
+        self.assertEqual(meta["status"], "learned")
+        # Thai-free re-file keeps the prior exemption
+        self.assertTrue(meta["no_th"])
+
+    def test_do_lesson_wiki_primary_next_review_override(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent, self._WIKI_PRIMARY_OLD)
+        try:
+            self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>v2</p>",
+                 "next_review": "2026-12-31"}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(sent[-1]["meta"]["next_review"], "2026-12-31")
+        self.assertEqual(sent[-1]["meta"]["learned_at"], "2026-01-01")
+
+    def test_do_lesson_wiki_primary_creds_missing_fails(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\nWIKI_USER=\n"
+                       "WIKI_PASSWORD=\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        try:
+            self.ba.do_lesson(
+                {"topic": "t", "content": "<p>x</p>"}, "devin")
+        except Exception as e:
+            self.assertIn("no fallback store", str(e))
+        else:
+            raise AssertionError("expected UpstreamError")
+
+    def test_lesson_read_default_follows_write_mode(self):
+        # flag=wiki -> bare op=list reads Education:, not the WP archive
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A})
+        r = self.ba.do_lesson({"op": "list"}, "devin")
+        self.assertEqual(r["source"], "wiki")
+        self.assertEqual(r["count"], 1)
+        # op=topics follows too
+        t = self.ba.do_lesson_topics({}, "devin")
+        self.assertEqual(t["source"], "wiki")
+        self.assertEqual(t["topics"][0]["topic"], "ada-nest-map")
+        # explicit source=wp still reads the archive
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: (
+            posts.append(route) or [] if data is None else [])
+        r = self.ba.do_lesson({"op": "list", "source": "wp"}, "devin")
+        self.assertEqual(r["source"], "wp")
+        self.assertTrue(posts)
+
+    def test_lesson_delete_wiki_mode_targets_wiki_page(self):
+        # wiki mode: op=delete removes the Education: page (live store),
+        # never the WP archive post
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A})
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: \
+            posts.append(route)
+        r = self.ba.do_lesson(
+            {"op": "delete", "topic": "ada-nest-map"}, "devin")
+        self.assertEqual(r["store"], "wiki")
+        self.assertEqual(r["wiki_title"], "Education:Ada-Nest-Map")
+        deletes = [c[0] for c in calls
+                   if c[0].get("action") == "delete"]
+        self.assertEqual(deletes[0]["title"], "Education:Ada-Nest-Map")
+        self.assertFalse(posts)
 
     def test_wiki_reports_sink_registers(self):
         self._wiki_env()
@@ -1047,7 +1294,9 @@ class BoardApiWiringTest(PubTestBase):
         self.assertEqual(a["next_review"], "2026-11-03")
         self.assertEqual(a["level"], "working")
         self.assertFalse(a["no_th"])
-        self.assertIn("wiki.example/wiki/", a["url"])
+        # canonical page URL — /wiki/<t> 404s on wiki.h3 (no
+        # $wgArticlePath); the door emits the index.php?title= form
+        self.assertIn("wiki.example/index.php?title=", a["url"])
         self.assertTrue(by_topic["object storage"]["no_th"])
 
     def test_lesson_read_wiki_get(self):

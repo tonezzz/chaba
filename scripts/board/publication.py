@@ -202,6 +202,8 @@ def topic_key(ev: dict) -> str:
 
 _HEADING = {"h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}
 _LESSON_TITLE_BAD = re.compile(r"[#<>\[\]|{}_]")
+_TEMPLATE_PARAM_RE = re.compile(r"\|\s*([A-Za-z_][\w-]*)\s*=\s*([^|]*)")
+_THAI_RE = re.compile("[\u0e00-\u0e7f]")
 
 
 class _HtmlToWikitext(HTMLParser):
@@ -588,6 +590,12 @@ class MediaWikiSink(Sink):
                              for category in dict.fromkeys(categories)])
         return "\n".join(lines)
 
+    def _prepare_event(self, ev: dict, title: str) -> dict:
+        """Pre-edit hook riding the authenticated session — WikiLessonSink
+        merges preserved meta from the existing page here. Base: pass
+        through."""
+        return ev
+
     def publish(self, ev: dict) -> dict:
         title = self._title(ev)
         login = self._api({
@@ -603,6 +611,7 @@ class MediaWikiSink(Sink):
         csrf = self._api({
             "action": "query", "meta": "tokens", "format": "json"
         })["query"]["tokens"]["csrftoken"]
+        ev = self._prepare_event(ev, title)
         edited = self._api({
             "action": "edit", "title": title, "text": self._wikitext(ev),
             "summary": f"{self.edit_label} {ev['event_id']}",
@@ -682,6 +691,56 @@ class WikiLessonSink(MediaWikiSink):
         lines.extend(f"[[Category:{c}]]"
                      for c in dict.fromkeys(categories))
         return "\n".join(lines)
+
+    # meta keys a sparse event inherits from the existing page — the
+    # wiki-side half of do_lesson's re-file preservation, so a caller
+    # that only sends new content can't stomp provenance/review state
+    # (card wiki-education-write-cutover). The door merges explicitly
+    # against the same keys when it runs wiki-primary; this is the
+    # safety net for direct /publish and migrate callers.
+    _MERGE_KEYS = {"topic": "topic", "level": "level",
+                   "lesson_source": "source", "learned_at": "learned_at",
+                   "next_review": "next_review", "status": "status"}
+
+    def _template_call_re(self):
+        base = re.escape(self.template.split(":", 1)[-1])
+        return re.compile(
+            r"\{\{\s*(?:แม่แบบ|Template)\s*:\s*" + base +
+            r"\s*(\|.*?)\}\}", re.S)
+
+    def _existing_params(self, title: str):
+        """Education template params on the existing page, else None."""
+        r = self._api({"action": "query", "titles": title,
+                       "prop": "revisions", "rvslots": "main",
+                       "rvprop": "content", "format": "json"})
+        for p in (r.get("query", {}).get("pages") or {}).values():
+            if "missing" in p:
+                return None
+            rev = (p.get("revisions") or [{}])[0]
+            text = (rev.get("slots") or {}).get("main", {}).get("*", "")
+            m = self._template_call_re().search(text or "")
+            if not m:
+                return None
+            return {pm.group(1): pm.group(2).strip()
+                    for pm in _TEMPLATE_PARAM_RE.finditer(m.group(1))}
+        return None
+
+    def _prepare_event(self, ev: dict, title: str) -> dict:
+        meta = dict(ev.get("meta") or {})
+        thai_free = not _THAI_RE.search(ev.get("body") or "")
+        if all(str(meta.get(k) or "").strip()
+               for k in self._MERGE_KEYS) \
+                and (meta.get("no_th") or not thai_free):
+            return ev
+        old = self._existing_params(title)
+        if not old:
+            return ev
+        for mk, pk in self._MERGE_KEYS.items():
+            if not str(meta.get(mk) or "").strip() and old.get(pk):
+                meta[mk] = str(old[pk])
+        if thai_free and not meta.get("no_th") and old.get("no_th"):
+            meta["no_th"] = True
+        return {**ev, "meta": meta}
 
 
 class WikiReportSink(MediaWikiSink):

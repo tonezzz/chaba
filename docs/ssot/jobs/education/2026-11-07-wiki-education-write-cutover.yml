@@ -1,0 +1,135 @@
+title: Wiki education write cutover — WIKI_EDUCATION_WRITE=wiki
+subtitle: >
+  Follow-up to OPS-1046 (wiki-member-knowledge-surface). Flips the
+  /lesson door from WP-primary + dual-write to wiki-primary so WP stops
+  storing newly-created lessons; Education: becomes authoritative.
+icon: education
+version: 1
+
+card: wiki-education-write-cutover-make-wiki-t-7f2e7d
+date: 2026-11-07
+dispatch: dispatch/20261107-154850-follow-up-to-ops-1046-wiki-mem
+
+goal: "WP stops storing newly-created lessons; wiki Education: is
+  authoritative (Tony's stated end-state)."
+
+flag_semantics:
+  env: "WIKI_EDUCATION_WRITE in ~/.config/secrets/wiki-h3-gizmo.env on
+    idc03 (read per request — flag flips need no restart once the new
+    code is live)"
+  off:  "absent/other — WP lesson CPT only (legacy default)"
+  dual: "WP post + Education: page per write; WP canonical, wiki failure
+    reports on the response (pre-cutover state, live since 2026-11-06)"
+  wiki: "wiki-primary — Education: is the ONLY store; do_lesson never
+    calls /wp/v2/lesson. A wiki failure raises (502) instead of
+    degrading — there is no second store to hide behind."
+  rollback: "set the flag back to dual — code paths coexist"
+
+what_shipped:
+  board_api:
+    - "do_lesson wiki-primary branch (scripts/board/board-api.py
+      _lesson_wiki_primary): upsert by wiki_title = slug-equivalent
+      (deterministic pub.lesson_wiki_title(topic)); learned_at/
+      next_review/status preserved from the existing page's Education
+      template params — identical merge rule to the WP branch; explicit
+      next_review wins (KNB-0830 override); no_th carried when a
+      Thai-free re-file meets a prior exemption; action created|updated
+      reported from page existence; result carries wiki_title + url +
+      store:'wiki', no post_id."
+    - "_wiki_lesson_sink(env) shared ctor honors WIKI_EDUCATION_TEMPLATE /
+      WIKI_EDUCATION_PREFIX overrides (previously only _pub_sinks did)."
+    - "Read default follows the flag: /lesson op=list|get|topics with no
+      source resolves wiki when WRITE=wiki, else wp. Explicit
+      source=wp still reads the archive. Consumers that never pass
+      source (embed-lane, bge-lessons-shadow) retarget automatically."
+    - "op=topics gained source param + wiki listing (lesson-miner
+      store-awareness must name the topics the write will upsert into)."
+    - "BUGFIX url_of(): emitted {host}/wiki/<t> which 404s live —
+      wiki.h3 has no $wgArticlePath. Now /index.php?title=<t> (the
+      canonical form, verified 200 vs 404 on 2026-11-07). Affected the
+      read path's url field + lessons-due hrefs."
+  publication_sink:
+    - "WikiLessonSink._prepare_event merges sparse meta from the
+      existing page before edit (door path populates everything so the
+      fetch is skipped there; direct /publish + migrate callers are
+      covered): topic/level/source/learned_at/next_review/status fill
+      when unset; no_th inherits only when the new body is Thai-free —
+      a Thai landing drops the exemption, same as WP semantics."
+  redirects:
+    - "stacks/idc02/boards-lesson-redirects.caddy — generated Caddy
+      fragment (131 lessons live in Education: at generation time).
+      path_regexp captures the slug under BOTH /wp/lesson/<slug> and
+      /wp/index.php/lesson/<slug> (immune to ordering vs the site's
+      clean-URL rewrite); map -> 301 to
+      wiki.h3/index.php?title=<wiki_title>; unmapped slugs default to
+      Education:Index; bare archive /wp/lesson[/] -> Education:Index.
+      Validated with `caddy validate` + `caddy adapt` (docker
+      caddy:2)."
+    - "scripts/wiki-lesson-redirect-map.py — regenerates the fragment
+      from /lesson op=list source=wiki (the slug->wiki_title table is
+      not derivable from lesson-<md5> alone). Run after new lessons
+      land wiki-primary."
+    - "INSTALL (ops step, not done by dispatch): add
+      `import /home/tony/CascadeProjects/chaba/stacks/idc02/boards-lesson-redirects.caddy`
+      inside the boards.surf-thailand.com site block in
+      ~/.config/caddy/Caddyfile on idc02, then `caddy reload`.
+      boards.surf-thailand.com is CF -> idc02 caddy-edge -> Plesk
+      boards.h3 origin (ssot.wp-boards.yml) — edge-level, no
+      WP/mu-plugin needed. The WP docroot is not writable (no FTP),
+      the wiki FTP user is jailed to MediaWiki — the edge was the only
+      repo-manageable layer."
+
+wp_lesson_cpt_read_only_audit:
+  writers: "board-api do_lesson is the ONLY writer of /wp/v2/lesson —
+    every producer goes through the door: scripts/lesson-add.py,
+    scripts/ada/lesson-miner.py, scripts/wiki-lesson-migrate.py,
+    _pub_lesson_send (/publish kind=lesson). Ada tools call the door
+    or lesson-add.py (ada-voice repo — same pattern, no WP creds
+    outside the door host)."
+  still_wp_but_ok:
+    - "_touch_lessons (op=touch) — WP-admin maintenance on the frozen
+      archive, not a new-lesson write."
+    - "op=delete in wiki mode deletes the Education: PAGE (the live
+      store — slug resolves via the same lesson-<md5> mint, topic and
+      wiki_title resolve directly); the WP archive post is left alone.
+      In dual/off mode it still deletes the WP post."
+    - "scripts/lessons-due.py writes /wp/v2/pages education-due —
+      the transition surface, not the lesson CPT. --dest wp can be
+      retired when the WP due page stops being checked."
+  readers: "explicit source=wp remains available for archive reads;
+    anything without source follows the flag."
+
+verify_by_surface_checklist:
+  - "flag=wiki: POST /lesson new topic -> result has wiki_title +
+    store:wiki, NO post_id; Education:<title> page exists; WP lesson
+    count unchanged."
+  - "re-file same topic -> SAME wiki page updated, learned_at +
+    next_review + status preserved; explicit next_review advances."
+  - "lessons-due still renders (it reads source=wiki already; daily
+    timer unaffected)."
+  - "anon denied: /index.php?title=Education:<t> unauthenticated ->
+    Lockdown page (not the content)."
+  - "redirect: curl -sI https://boards.surf-thailand.com/wp/lesson/
+    <slug>/ -> 301 -> wiki.h3 index.php?title=Education:<t> (after
+    the import step)."
+
+post_cutover_followups:
+  - "flip WIKI_EDUCATION_WRITE=dual -> wiki in wiki-h3-gizmo.env on
+    idc03 after merge+restart; verify one live write then card it."
+  - "chaba-education-report job: flip EDU_SOURCE=wp -> wiki (manifest
+    note already gates on this step)."
+  - "import the redirect fragment + caddy reload on idc02."
+  - "lessons-drift-check.py audits wiki-page-vs-WP-modified drift —
+    post-cutover WP modified freezes so its 'WP newer' signal is
+    permanently stale; audit semantics need a revisit (card it if the
+    job starts flagging)."
+  - "WP education-due page (354) — retire --dest wp when nobody reads
+    it."
+  - "KK/Nhong member accounts stay on SEC-1035 — Education: is
+    staff-only at cutover by design."
+
+hard_limits_respected:
+  - "no other sinks/doors touched (job/report/news/board/telegram/json
+      unchanged; wiki + wiki-private + wiki-reports unchanged)"
+  - "no WP lesson posts deleted"
+  - "rollback = flag back to dual"
