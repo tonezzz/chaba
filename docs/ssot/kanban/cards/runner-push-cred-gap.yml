@@ -1,7 +1,7 @@
 id: runner-push-cred-gap
 title: Runners without repo push creds strand dispatch branches (macbook, idc03)
 column: done
-updated: 2026-10-16 17:56
+updated: 2026-11-07 11:57
 spec: 'ADA-0673 hit the documented failure mode: tony-macbook claimed an ada-pi dispatch, finished, checkpoint committed
   — but its SSH key is a chaba-only deploy key, so the branch never reached origin; card still marked done+verified
   (misleading). Same gap on idc03 (daa0e0a stranded). Options: (a) add ada-voice deploy keys to each runner host;
@@ -61,6 +61,12 @@ comms:
 - at: 2026-10-16 17:56
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-07 11:57
+  from: devin
+  text: '2026-11-07: tony-omen also has no push:chaba — gh token for github.com/tonezzz is invalid (gh auth status:
+    token invalid), no SSH key for git@github.com, credential.helper is gh-only. Landed a commit via ssh tony-dell
+    + push FETCH_HEAD:master instead. Same gap class as idc02 — worth adding tony-omen to the cred-fix list or documenting
+    the ssh-via-dell path as the workaround.'
 action:
   type: dispatch
   status: done
