@@ -1,7 +1,7 @@
 id: board-api-exec-checkout-mismatch
 title: board-api running from exec checkout — card writes not reaching served/web board
 column: backlog
-updated: 2026-11-06 17:55
+updated: 2026-11-07 11:03
 brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
   sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
   kanban page.'
@@ -20,3 +20,10 @@ comms:
 - at: 2026-11-06 17:55
   from: devin
   text: card captured via board-api
+- at: 2026-11-07 11:03
+  from: devin
+  text: 'FIXED 2026-11-06. Root cause was two stacked faults: (1) served checkout chaba-tony-dell on idc03 was wedged
+    ~7d on an autostash-pop conflict in stacks/idc03/litellm/config.yaml — every kanban-commit failed ''unmerged
+    files'' since Oct 30 21:24, stranding 2324 commits; resolved keeping upstream (stash held only an older comment),
+    git-safe-pull archived the stash patch, pushed e89b3bcc4..7ad5879a4. (2) chaba-board-api.service was dead; a
+    manual nohup kept respawning board-api.py from exec checkout '
