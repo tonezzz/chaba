@@ -1,0 +1,20 @@
+id: served-checkout-watchdog
+title: served-checkout watchdog — alert on idc03 writer divergence/dirty before board-api writes degrade
+column: doing
+updated: 2026-11-07 19:19
+tags:
+- ops
+- served-checkout
+- watchdog
+- board-api
+spec: 'Follow-up of OPS-1075 (board-api write latency >60s). Detection gap: the OPS-1074 served-checkout divergence
+  (~2300 ahead / ~1500 behind / unresolved conflict) accumulated for days and was only found via user-facing write
+  timeouts; check-single-writer.sh is manual-only. Build: hourly user timer on idc03 running scripts/ops/served-checkout-watchdog.py
+  against ~/CascadeProjects/chaba-tony-dell — alerts via board-api /inbox (deduped, system-report-watchdog pattern)
+  when commits-behind >50, commits-ahead >200, dirty files >50, or any unmerged paths exist. Acceptance: job declared
+  in ssot.jobs.yml, rendered+installed on idc03, timer enabled, one live run verified, alert path proven.'
+ref: OPS-1117
+comms:
+- at: 2026-11-07 19:19
+  from: tony
+  text: card captured via board-api
