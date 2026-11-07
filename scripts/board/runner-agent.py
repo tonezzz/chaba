@@ -490,7 +490,11 @@ def api(path: str, body: dict | None = None) -> dict:
         req = urllib.request.Request(
             url, data=json.dumps(body).encode(),
             headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=30) as r:
+        # write path serializes under the api flock + render and has been
+        # observed at 30-60s+ under load; a client timeout leaves the
+        # committed write looking lost (OPS-1071 zombie). 75s still
+        # bounds a truly hung connection.
+        with urllib.request.urlopen(req, timeout=75) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         return {"error": e.read().decode()[:300] or str(e)}
@@ -2645,6 +2649,27 @@ def finish_pass(st: dict) -> bool:
     return changed
 
 
+# cards.json renders lag the YAML writes by tens of seconds: a card
+# mutated inside that window can still read 'running' after its finish
+# already committed — restarting it as a 'zombie' ran the whole task a
+# second time (OPS-1114, 2026-11-07). A claim older than the settle
+# window is a real zombie; a fresh `updated` just means the render
+# hasn't caught up, so leave it for the next pass.
+RENDER_SETTLE_S = int(os.environ.get("RUNNER_RENDER_SETTLE_S", "150"))
+
+
+def _card_age_s(card: dict) -> float:
+    """Seconds since the card's last board mutation (minute-resolution
+    `updated` stamp, server-local time). +inf when unparseable — a card
+    we can't date is treated as settled rather than never healed."""
+    u = str(card.get("updated") or "").strip()
+    try:
+        return max(0.0, time.time() -
+                   datetime.strptime(u, "%Y-%m-%d %H:%M").timestamp())
+    except (ValueError, TypeError):
+        return float("inf")
+
+
 def units_for_card(cid: str) -> list:
     """devin-task-* units whose tid starts with this card id — the unit
     name embeds the tid (<cid>-<epoch>[-fuN]), so the prefix match is
@@ -2702,6 +2727,9 @@ def reconcile_pass(st: dict) -> bool:
         # would double-report finishes on hosts running both.
         if a.get("task_id") or (c.get("claim") or {}).get("session"):
             continue
+        if _card_age_s(c) < RENDER_SETTLE_S:
+            continue  # render may lag a just-committed finish/move —
+                      # re-check next pass rather than rerun the task
         units = units_for_card(cid)
         if units:
             unit = units[0]
@@ -2872,6 +2900,9 @@ def claim_pass(st: dict) -> bool:
             claim_body["model"] = a.get("model", "")
         resp = api("/action", claim_body)
         if resp.get("error"):
+            # rejections (lost race, already running on a stale view)
+            # and lost responses were previously invisible in the journal
+            print(f"{cid}: claim POST failed: {resp['error'][:160]}")
             continue  # lost the race or rejected — next card
         unit, tid, err = start_task(card, typ)
         if err:
