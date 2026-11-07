@@ -272,6 +272,10 @@ python3 scripts/devnest/opencode_session_audit.py --all      # full store
 python3 -m unittest tests.devnest.test_opencode_session_audit
 ```
 
-First audit (2026-10-27): 20 sessions — see
-`evals/opencode-lane/reports/2026-10-27-session-audit.{md,json}` and
-`docs/ssot/jobs/devnest/2026-10-27-opencode-session-audit.yml`.
+First durable audit (2026-11-07, idc02): 276 sessions — see
+`evals/opencode-lane/reports/2026-11-07-session-audit.{md,json}` and
+`docs/ssot/jobs/devnest/2026-11-07-opencode-session-audit.yml`. The
+original 2026-10-27 run on tony-macbook produced the same artifacts
+but the dispatch worktree was kept dirty and pruned before they
+landed (AUD-0938 evidence-incomplete correction); the marker +
+`--all` full-store pass re-covered the window.
