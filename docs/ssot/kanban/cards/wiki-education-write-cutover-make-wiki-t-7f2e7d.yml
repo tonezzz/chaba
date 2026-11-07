@@ -1,7 +1,7 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
-column: doing
-updated: 2026-11-07 16:02
+column: review
+updated: 2026-11-07 16:04
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
 tags:
@@ -40,9 +40,13 @@ spec: 'Follow-up to OPS-1046 (wiki-member-knowledge-surface, DONE — 124 lesson
   rollback = flag back to dual.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261107-154850-follow-up-to-ops-1046-wiki-mem.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261107-154850-follow-up-to-ops-1046-wiki-mem.service:
+    No such file or directory'
+  verified: true
 ref: OPS-1095
 comms:
 - at: 2026-11-07 15:47
@@ -71,3 +75,9 @@ comms:
     targets the Education page; read default + op=topics follow the flag so sourceless consumers retarget; url_of
     bugfix (/wiki/<t> 404s live -> index.php?title=). WikiLessonSink merges sparse meta from existing pages. Redirects:
     stacks/idc02/boards-lesson-redirects.caddy (131 map'
+- at: 2026-11-07 16:04
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261107-154850-follow-up-to-ops-1046-wiki-mem.service:
+    Failed to ope'
+review_kind: verify
+claim: {}
