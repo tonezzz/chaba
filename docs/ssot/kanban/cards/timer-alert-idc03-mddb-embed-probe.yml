@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-09 03:30
+updated: 2026-11-09 03:40
 priority: high
 tags:
 - timer-alert
@@ -206,6 +206,10 @@ comms:
 - at: 2026-11-09 03:30
   from: devin
   text: '[still suspicious] Last run (11-09 03:15) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-09 03:40
+  from: devin
+  text: '[still suspicious] Last run (11-09 03:30) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: queued
