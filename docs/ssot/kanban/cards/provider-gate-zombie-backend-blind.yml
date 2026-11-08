@@ -1,0 +1,23 @@
+id: provider-gate-zombie-backend-blind
+title: scenario-provider-gate passes a zombie backend — is-active=active + zero journal output verdicts healthy
+column: backlog
+updated: 2026-11-08 10:52
+brief: Gate checks is-active and journal quota lines only; a backend that is systemd-active but serving nothing
+  passes as healthy, then the whole suite fails in 0s.
+priority: medium
+tags:
+- ada
+- timers
+- idc03
+spec: "Found during timer-alert-idc03-ada-scenario-research investigation (2026-11-08).\n\nEvidence — idc03, 2026-11-02\
+  \ 05:00 smoke gate output:\n  unit_active: ada-dev=active\n  quota_probe: journal_lines=1 in 70min, healthy_markers=0,\
+  \ rest_served=0\n  verdict: \"ok — provider healthy — run proceeds\"\nada-dev produced ZERO journal lines all\
+  \ of 2026-11-02 yet is-active=active (zombie uvicorn). The research suite then ran 05:55 and all 7 scenarios failed\
+  \ in ~0.4s each.\n\nFix direction (pick in implementation): treat healthy_markers==0 && rest_served==0 && journal_lines\
+  \ below a floor as inconclusive->infra (clean skip), or add a cheap live probe (GET /health or one ws connect)\
+  \ before returning ok. Gate lives at scripts/ada/scenario-provider-gate.py; verdict logic ~line 490-513."
+ref: ADA-1168
+comms:
+- at: 2026-11-08 10:52
+  from: tony
+  text: card captured via board-api
