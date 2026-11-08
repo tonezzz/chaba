@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 13:37
+updated: 2026-11-08 13:41
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -202,6 +202,12 @@ comms:
     subset of root kk-llm). DEFERRED: ada-nest-adobe-stock (LIVE writer 13:30 today), nest (dell gcrypt env), backups
     (dell unit inline paths — recommend keep root), ada-documents+notebooklm (host envs/manifests). Code repoints
     + post-merge move script in branch.'
+- at: 2026-11-08 13:41
+  from: tony
+  text: 'answered phase-b-layout-decision-every-phase-b-di-2fd698: proceed'
+- at: 2026-11-08 13:41
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: idle
@@ -241,12 +247,13 @@ requests:
     surfaces; (b) also consolidate nest/chaba/ada-documents under ada-nest/ (more switchovers incl. tony-dell gcrypt
     env + idc01 doc-archive unit); (c) keep flat, close card — audit says remaining root is mostly personal dirs.
     Full per-dir audit+recipe: docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation-phase-b.yml'
-  status: open
+  status: answered
   at: 2026-11-08 13:33
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 - id: phase-b-decision-all-remaining-gdrive-ro-be06dc
   ask: 'Phase-B decision — all remaining gdrive root dirs are live, none dead. Options: (a)★ STOP at phase A + close
     card (recommended — moving live roots buys cosmetics, costs multi-host migration); (b) migrate the 4 ada-nest-*
@@ -259,3 +266,4 @@ requests:
   options:
   - proceed
   - hold
+awaiting_action: true
