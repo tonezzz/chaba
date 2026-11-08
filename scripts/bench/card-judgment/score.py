@@ -102,8 +102,8 @@ def rules_entity(case):
 
 
 def _chat(base_url, model, system, user, api_key="", timeout=180,
-          max_tokens=640):
-    body = {"model": model, "temperature": 0, "max_tokens": max_tokens,
+          max_tokens=640, temperature=0):
+    body = {"model": model, "temperature": temperature, "max_tokens": max_tokens,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": user}]}
     req = urllib.request.Request(
@@ -117,7 +117,7 @@ def _chat(base_url, model, system, user, api_key="", timeout=180,
 
 
 def llm_entity_factory(base_url, model, api_key="", retries=2,
-                       system=SYSTEM):
+                       system=SYSTEM, temperature=0):
     def ent(case):
         user = json.dumps({
             "card_id": case["card_id"],
@@ -127,7 +127,8 @@ def llm_entity_factory(base_url, model, api_key="", retries=2,
         last = ""
         for _ in range(retries + 1):
             try:
-                last = _chat(base_url, model, system, user, api_key)
+                last = _chat(base_url, model, system, user, api_key,
+                             temperature=temperature)
                 pred = _parse_action(last)
                 if pred in CATEGORIES:
                     return pred
@@ -160,7 +161,8 @@ def entity_from_args(a):
     base = a.base_url or ("http://127.0.0.1:11434/v1" if a.entity == "ollama"
                           else "http://100.102.134.91:4000/v1")
     system = ADA_SYSTEM if a.entity == "ada" else SYSTEM
-    return llm_entity_factory(base, a.model, key, system=system)
+    return llm_entity_factory(base, a.model, key, system=system,
+                              temperature=a.temperature)
 
 
 # ---------------------------------------------------------------- metrics
@@ -232,6 +234,8 @@ def main():
     ap.add_argument("--model", default="")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--api-key-env", default="")
+    ap.add_argument("--temperature", type=float, default=0.0,
+                    help=">0 for consecutive-run variance (T3 gate needs 3 independent passes)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out-md", default="")
     ap.add_argument("--out-json", default="")
