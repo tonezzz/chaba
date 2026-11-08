@@ -1,0 +1,78 @@
+id: m1-stream-test-hook
+title: 'm1: add a stream state test hook to ReplicationClient for idle-healthy handler coverage'
+column: done
+updated: 2026-11-08 13:22
+brief: The idle-caught-up-follower-stays-healthy handler test needs to simulate a connected-but-quiet stream; ReplicationClient
+  has no public setter for connected/lag (all atomic internals). Add a small test-only hook (e.g. SetStreamStateForTest)
+  to the repo so the behavioral verifier can cover the full handler contract.
+priority: low
+program: chaba-ci
+tags:
+- bench
+- m1
+- test-hook
+- replication
+note: Covered semantically via lag contract in m1-behavioral (0.67/1.0 discriminates); full handler-level idle coverage
+  needs the hook.
+ref: BEN-0833
+comms:
+- at: 2026-10-24 19:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 05:51
+  from: devin
+  text: queued for processing
+- at: 2026-10-25 05:52
+  from: idc02
+  text: claimed
+- at: 2026-10-25 05:52
+  from: chaba
+  text: started devin-task-20261025-055220-m1-add-a-stream-state-test-hoo on idc02 (dispatch)
+- at: 2026-10-25 05:52
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:05
+  from: devin
+  text: 'DONE (pending push to activate): mddb-fork branch dispatch/20261025-055220-m1-add-a-stream-state-test-hoo
+    @ c66b563 adds SetStreamStateForTest(connected,lagMs,lastAppliedAt,appliedLSN) + a wired `connected` atomic
+    on base ed1ff11 — IsHealthy/handler untouched. Live verifier updated on dell: new TestFollowerHealthIdleCaughtUpStaysHealthy
+    self-skips until repo.ref bump, so current scores unchanged. Control-validated: plain parent 0.667 / parent+hook
+    0.5 / fix+hook 1.0. Activation = push branch + r'
+- at: 2026-10-25 06:05
+  from: idc02
+  text: 'finished (ok): exit=0 .yml`), and `dispatch-outcome-20261025-055220-m1-add-a-stream-state-test-hoo.md`;
+    board comment posted. | devin-t'
+- at: 2026-10-25 06:05
+  from: chaba
+  text: pushed dispatch/20261025-055220-m1-add-a-stream-state-test-hoo to origin
+- at: 2026-10-25 06:05
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-25 06:05
+  from: chaba
+  text: auto-merged 60ffd465 (dispatch/20261025-055220-m1-add-a-stream-state-test-hoo) → origin/master
+- at: 2026-10-25 06:05
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-055220-m1-add-a-stream-state-test-hoo,
+    branch dispatch/20261025-055220-m1-add-a-stream-state-test-hoo'
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (14d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 .yml`), and `dispatch-outcome-20261025-055220-m1-add-a-stream-state-test-hoo.md`; board comment
+    posted. | devin-task-20261025-055220-m1-add-a-stream-state-test-hoo.service: Consumed 29.487s CPU time, 268.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 06:15
+  note: verified — evidence checks green, closing itself
