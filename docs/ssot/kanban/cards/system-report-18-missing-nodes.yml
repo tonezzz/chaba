@@ -1,0 +1,19 @@
+id: system-report-18-missing-nodes
+title: 'system-report: 18 missing report nodes — producers never delivered (post-migration residue?)'
+column: backlog
+updated: 2026-11-08 10:45
+priority: medium
+tags:
+- system-report
+- monitor
+- triage
+spec: 'After the Nov-8 delivery fix, system-report is fresh but system-report-watchdog alerts on 21 red nodes: audit-hosts/{tony-omen,mn01,macbook}=unreachable
+  + 18 missing (health-monitor, host-loads, disk-trend, overnight-assessment, kanban, daily-brief, nest-lanes/*,
+  nest-brains/*, nest-bench/orch, chaba-nest, health-monitor). Missing = declared report nodes in ssot.reports.yml
+  whose producers never wrote data — triage which producers are dead vs decommissioned vs moved to a host that no
+  longer delivers.'
+ref: KNB-1167
+comms:
+- at: 2026-11-08 10:45
+  from: tony
+  text: card captured via board-api
