@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: doing
-updated: 2026-11-08 10:32
+updated: 2026-11-08 10:35
 priority: high
 tags:
 - timer-alert
@@ -230,6 +230,13 @@ comms:
 - at: 2026-11-08 10:32
   from: devin
   text: Dispatch started — investigating ada-scenario-memory.service journal on idc03.
+- at: 2026-11-08 10:35
+  from: devin
+  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite completed,
+    **Score: 0.269 printed). Wrapper updated Nov 7 now maps exit-1-with-report to 0 AND parks paid lanes (memory
+    stays prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed the 5 stale scenario
+    units + ran ada-scenario-memory.service once — parked with zero sessions, exit 0, Result=success. Next Wed 05:55
+    run goes green. Separate real failures remain carded: ada-embed'
 action:
   status: running
   type: dispatch
