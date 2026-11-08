@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: doing
-updated: 2026-11-08 12:40
+updated: 2026-11-08 13:30
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -79,6 +79,13 @@ comms:
     something else on the account is burning it (lane-watcher does not use CF). Will retry once more before close.
     Pivoting to local lanes: masks built for fix3 chair-wheels (x475,y790,w330,h234 feathered) and fix2 corner;
     omen sd-cli SDXL-inpaint next, FLUX-Fill needs ~10GB weights+~12GB RAM — checking host feasibility.'
+- at: 2026-11-08 13:30
+  from: devin
+  text: 'First masked-inpaint artifact LANDED: comparison-e-omen-sdxl-inpaint-wheels (1024x1024, sha 1e9d1ade).
+    Path: fix3 + wheels mask (x475,y790,330x234, feathered) -> omen sd-cli sdxl-lightning masked denoise 8 steps
+    (45min CPU under load) -> composite paste-back inside feathered mask so outside-mask pixels stay original (latent
+    VAE re-encode would otherwise degrade whole frame). New black 5-star base w/ proper casters vs old blobby ball-casters.
+    Control landed too: comparison-e-gemini-fix4-wheels = '
 action:
   type: dispatch
   status: running
