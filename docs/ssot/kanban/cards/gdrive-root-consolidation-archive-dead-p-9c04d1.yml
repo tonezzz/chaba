@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 13:43
+updated: 2026-11-08 14:54
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -218,6 +218,12 @@ comms:
   from: devin
   text: 'raised request phase-b-executed-4-dirs-remain-gated-on-167376: Phase B executed; 4 dirs remain gated on
     host-side config — pick per-item: (1) gdrive:backups 180GiB DR tier, dell units'
+- at: 2026-11-08 14:54
+  from: tony
+  text: 'answered phase-b-executed-4-dirs-remain-gated-on-167376: proceed'
+- at: 2026-11-08 14:54
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   status: idle
@@ -284,10 +290,11 @@ requests:
     (dell manifests hold rclone_path) → ★keep | ada-nest/notebooklm. (4) gdrive:archive now holds absorbed cold-storage+chaba-media-corpus+chaba
     — ★keep as root cold tier | merge into ada-nest/archive. (colab-cache: keeping regardless — Colab cells hardcode
     it.)'
-  status: open
+  status: answered
   at: 2026-11-08 13:43
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
 awaiting_action: true
