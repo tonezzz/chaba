@@ -29,7 +29,7 @@ planning:
       file: docs/ssot/kanban/cards/kanban-dispatch-spawned-duplicate-sessio-f49ed8.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: "2026-11-08T16:06:00+07:00"
   steps:
     - id: 1
@@ -48,6 +48,10 @@ processing:
       label: Implement minimal fix and verify
       status: completed
       notes: Handler now timestamps and saves claim/move/finish under the existing flock. Targeted tests, 67 dispatch/runner/merge-sweep tests, py_compile, and the 59-case safe-pull integration passed. tests.board.test_board_api_reads has a separate timeout on its existing single-card 404 path; it reproduces without touching this change.
+    - id: 5
+      label: Deploy and verify the board API fix
+      status: completed
+      notes: PR #128 merged as 91f327ca51d3de3cb5a4976282f1fa614a72d902 after Tony approved proceeding despite the unrelated branch-sprawl validate failure. idc03 kanban-commit pulled the change and restarted chaba-board-api.service at 16:47:50 +07. Live /health returned 200; /action move persisted on KNB-1196; Dell-served board2 cards.json showed the card done. A manual-only live claim canary accepted one claim, rejected a second, then persisted finish and move.
   decisions: []
   changes:
     - file: scripts/board/board-api.py
@@ -60,17 +64,18 @@ followup:
     - Targeted HTTP regression tests: 3 passed.
     - Dispatch/runner/merge-sweep regression tests: 67 passed.
     - tests/test-kanban-commit.sh: 59 checks passed, including write-vs-safe-pull preservation.
-    - Confirm the affected runner timers remain disabled.
-    - Update KNB-1196 with evidence and deployment approval request.
+    - idc03 chaba-board-api.service active after the commit-triggered restart; GET /health returned 200.
+    - Live board API and Dell board2 consumer both show KNB-1196 in done.
+    - Omen, MacBook, idc02, and idc03 runner timers remain disabled; no active devin-task units were found.
   rollback_plan:
-    - Revert any code-only patch in this branch.
-    - Keep Omen, MacBook, and idc02 runner-agent timers disabled; do not revert containment automatically.
+    - Revert merge commit 91f327ca with a normal revert and let kanban-commit safe-pull/restart the served board API.
+    - Keep all affected runner timers disabled during rollback; do not resume automatically.
   handoff:
-    - Request explicit approval before production board-api deployment or runner resumption.
+    - DEV-1209 has an open request for a staged runner resumption decision.
   deferred:
-    - Live production deployment.
-    - Re-enabling runner-agent timers.
+    - Re-enabling runner-agent and kanban-dispatch timers.
+    - The unrelated dev-system-assess branch-sprawl CI failure (merge proceeded only after Tony's explicit approval).
 
 report:
-  status: awaiting_approval
-  outcome: Root cause is confirmed and fixed in an isolated branch; local regression and safe-pull tests pass. Production board-api deployment and idc03 runner pausing are awaiting Tony's approval. Runners previously paused on Omen, MacBook, and idc02 remain disabled.
+  status: completed
+  outcome: KNB-1196 root cause is fixed and deployed. /action claim, move, and finish now persist under the shared write lock. Local concurrent-claim tests reproduced two winners before the patch and one winner after it; live API and board2 checks passed. PR #128's validate job failed only on the repository branch-sprawl gate; Tony explicitly approved merging despite that unrelated failure. All runner timers remain paused pending a separate resume decision.
