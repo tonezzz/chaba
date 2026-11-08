@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:12
+updated: 2026-11-08 16:14
 priority: medium
 tags:
 - kanban-dispatch
@@ -34,3 +34,19 @@ comms:
     while disk state stayed queued/running. The new loopback concurrency test reproduced two successful claims before
     the fix and now proves one winner (200/400); move and finish persistence tests also pass. No production deployment
     yet; Omen, MacBook, and idc02 runners remain paused.
+- at: 2026-11-08 16:14
+  from: devin
+  text: 'raised request pause-idc03-dispatch-for-knb1196: Should I temporarily pause idc03 automatic dispatch while
+    the verified board-api fix awaits deployment? This would stop '
+requests:
+- id: pause-idc03-dispatch-for-knb1196
+  ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
+    would stop idc03 runner-agent and kanban-dispatch timers and pause all automatic card claims from that host;
+    board-api itself stays online.
+  status: open
+  at: 2026-11-08 16:14
+  from: devin
+  options:
+  - Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
+  - No — leave idc03 dispatch running while the local fix is reviewed.
+  suggested: Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
