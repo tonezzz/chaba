@@ -1,0 +1,8 @@
+[Unit]
+Description=Archive verified done kanban cards >7d to cards/archive/ (KNB-1178)
+
+[Service]
+Type=oneshot
+# Dry-run by default; --apply moves eligible cards through board-api
+# /action do=archive (eligibility re-checked at the write door).
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/archive-done.py --apply
