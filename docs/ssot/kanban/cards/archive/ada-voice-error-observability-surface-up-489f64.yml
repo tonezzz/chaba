@@ -1,0 +1,87 @@
+id: ada-voice-error-observability-surface-up-489f64
+title: ada-voice-error-observability — surface upstream failure reason to cards
+column: done
+updated: 2026-11-08 13:21
+priority: high
+spec: '{''goal'': ''When a voice ws dies, the card shows WHAT failed — not a bare reconnect loop or a cryptic code'',
+  ''context'': "2026-10-13/14 incident: ada-ha-tony Gemini Live key hit monthly spend cap -> google 1011 -> card
+  showed cryptic ''1011''; Tony couldn''t tell it from a Cloudflare 1011. pwa_server.py:1335 already sends {type:error,message:str(exc)}
+  before close(1011) but message is raw ''1011 None. <gemini text>'' and cards drop it on teardown.", ''changes'':
+  ["pwa_server voice_socket: on provider connect failure send {type:''error'', stage:''provider_connect'', provider:''gemini-live'',
+  message:<sanitized>} — strip leading ''NNNN None.'' APIError prefix", "ada-voice-card.js + ada-chat-card.js +
+  pwa/app.js: avcLog/logLine the ws close code+reason on onclose (''close 1011 reason=...'') so a missing error
+  frame is still diagnosable", "voice card: keep last error line visible after teardown (don''t blank _line on close)",
+  ''wallet-watch.timer coverage: verify ada-ha-tony GEMINI key is in the hourly probe list — add if missing''],
+  ''verify'': ["simulate provider failure (bad key on ada-dev) -> card shows ''Upstream provider refused: ...''
+  line", ''console/avcLog shows close code on disconnect'', ''pytest + tool-lint green'']}'
+ref: ADA-0637
+comms:
+- at: 2026-10-14 07:49
+  from: devin
+  text: Filed from live incident — tony-ha voice 1011 = Gemini spend cap, user-facing error was unreadable.
+- at: 2026-10-14 08:20
+  from: devin
+  text: 'Shipped ada-pi 2430f7a + chaba 35c7d2532. pwa_server now sends {type:error, stage:provider_connect, provider,
+    message:<sanitized — ''1011 None.'' prefix stripped>} before close; ada-voice-card renders ''Upstream provider
+    refused: ...'', keeps it visible after teardown, avcLogs every ws close code+reason; pwa/app.js logs close code.
+    Card JS deployed to tony-ha/ada-ha/kk-ha www + tony-ha resource bumped v=14; ada-pi deployed to all 8 lanes
+    (1390 tests green). Incident resolved independently: Gemini pr'
+- at: 2026-10-16 15:55
+  from: tony
+  text: queued for processing
+- at: 2026-10-16 15:55
+  from: chaba
+  text: dispatched 20261016-155539-goal-when-a-voice-ws-dies-the- on chaba
+- at: 2026-10-16 16:02
+  from: devin
+  text: 'Attempt 2 (chaba side): prior run had already shipped the voice-card + ada-pi half (35c7d2532 in master,
+    ada-pi 2430f7a). Finished the gaps: ada-chat-card.js now console-logs every ws close code+reason, surfaces abnormal
+    closes in transcript+status (Disconnected code N — reason), and labels provider_connect errors as Upstream provider
+    refused (both stack copies, byte-identical). gemini-wallet-watch.py now takes repeatable --key-var and probes
+    per-key (per-key state, lane-labelled alerts, kk grou'
+- at: 2026-10-16 16:03
+  from: devin
+  text: 'Done (chaba worktree, unpushed per dispatch). Deliverables: ada-chat-card.js x2 (close-code logging + abnormal-close
+    surfacing + provider_connect label), gemini-wallet-watch.py multi-key probe + unit ExecStart PAID/TONY/KK/MICHAEL,
+    README + audit SSOT, 11 new tests (306 pytest green). Outcome doc: dispatch-outcome-20261016-155539-goal-when-a-voice-ws-dies-the-.md.
+    Remaining live-verify needs the www/unit sync to lanes — code path mirrors the already-deployed voice-card change.'
+- at: 2026-10-16 16:05
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-16 16:06
+  from: chaba
+  text: 'session-end checkpoint a32b4e04: 2 leftover file(s) committed'
+- at: 2026-10-16 16:06
+  from: chaba
+  text: pushed dispatch/20261016-155539-goal-when-a-voice-ws-dies-the- to origin
+- at: 2026-10-16 16:06
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 44.6s)
+- at: 2026-10-16 16:06
+  from: chaba
+  text: auto-merged f907a0f0 (dispatch/20261016-155539-goal-when-a-voice-ws-dies-the-) → origin/master
+- at: 2026-10-16 16:06
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261016-155539-goal-when-a-voice-ws-dies-the-,
+    branch dispatch/20261016-155539-goal-when-a-voice-ws-dies-the-'
+- at: 2026-10-16 16:11
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (22d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261016-155539-goal-when-a-voice-ws-dies-the-
+  result: 20261016-155539-goal-when-a-voice-ws-dies-the- finished (inactive) — see `devin-dispatch logs 20261016-155539-goal-when-a-voice-ws-dies-the-`
+  verified: true
+claim:
+  since: 2026-10-16 15:55
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-10-16 16:11
+  note: verified — evidence checks green, closing itself
