@@ -4,8 +4,11 @@ VCAST-style enrollment for Jack's disposable OpenCode web IDE. The browser
 never sees LiteLLM/MCP/host/SSH/Ada/Devin credentials — only an opaque
 HttpOnly session ticket.
 
-The companion `ada-opencode` and `ada-enroll` quadlets provide the protected
-Ada control-plane surface at `opencode-ada.surf-thailand.com`. They use a
+The companion `ada-code` and `ada-code-enroll` quadlets provide the protected
+Ada control-plane surface at `ada-code.surf-thailand.com`
+(formerly `ada-opencode`/`ada-enroll` at `opencode-ada.surf-thailand.com` —
+legacy names kept as aliases since 2026-11-08, ADA-1225; same single instance,
+do not deploy a second one). They use a
 separate Podman network, workspace, state directory, loopback port (`8378`),
 and LiteLLM environment from Jack. Cloudflare Access is the user gate:
 `AUTO_ENROLL_ACCESS=1` turns a valid Access JWT into a short-lived
@@ -85,7 +88,7 @@ Workspace reset (files, not auth):
 The Ada OpenCode container has an optional read-only mount:
 
 ```text
-host:      ~/.local/share/ada-opencode/gdrive
+host:      ~/.local/share/ada-code/gdrive
 container: /data/gdrive
 ```
 
@@ -112,7 +115,7 @@ incomplete. Override the remote or destination only with:
 
 ```bash
 ADA_NEST_GDRIVE_REMOTE=gdrive:ada-nest-adobe-stock \
-ADA_NEST_GDRIVE_DIR="$HOME/.local/share/ada-opencode/gdrive/ada-nest-adobe-stock" \
+ADA_NEST_GDRIVE_DIR="$HOME/.local/share/ada-code/gdrive/ada-nest-adobe-stock" \
 scripts/sync_ada_nest_gdrive.sh
 ```
 
