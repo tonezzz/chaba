@@ -5,7 +5,7 @@ One call replaces the ad-hoc poll/decode/hash/rclone/session-update
 chain. Lane adapters normalize job APIs into a RenderResult; the core
 streams image bytes to disk WITHOUT printing payloads, verifies
 sha256+dimensions, lands PNG+manifest in the campaign's
-30-generated-raw/, updates SESSION.json, appends a 40-qc-review.md
+30-candidates/<asset-id>/, updates SESSION.json, appends a 40-qc-review.md
 section, and prints one compact receipt.
 
 Usage:
@@ -100,7 +100,8 @@ def fetch_cf(model: str, prompt: str, negative: str,
     CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN in env."""
     import os
     acct = os.environ.get("CF_API_ACCOUNT_ID")
-    tok = os.environ.get("CF_API_WORKER_TOKEN")
+    tok = (os.environ.get("CF_API_WORKER_TOKEN")
+           or os.environ.get("CF_API_TOKEN"))
     if not (acct and tok):
         return {"status": "failed", "error": "cf_credentials_missing"}
     payload = {"prompt": prompt}
@@ -136,6 +137,114 @@ def fetch_cf(model: str, prompt: str, negative: str,
     except Exception:
         pass
     return {"status": "failed", "error": "cf_unexpected_response"}
+
+
+def fetch_cf_inpaint(model: str, prompt: str, image_path: str,
+                     mask_path: str) -> dict:
+    """CF Workers AI inpainting lane — masked region repair.
+    --job carries the model id (e.g. @cf/runwayml/stable-diffusion-v1-5-inpainting).
+    --init-image = source image, --mask = mask PNG/JPEG (white=regen).
+    Same CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN env as fetch_cf."""
+    import os
+    acct = os.environ.get("CF_API_ACCOUNT_ID")
+    tok = (os.environ.get("CF_API_WORKER_TOKEN")
+           or os.environ.get("CF_API_TOKEN"))
+    if not (acct and tok):
+        return {"status": "failed", "error": "cf_credentials_missing"}
+    ip, mp = Path(image_path), Path(mask_path)
+    if not ip.exists() or not mp.exists():
+        return {"status": "failed",
+                "error": f"missing_input:{image_path}|{mask_path}"}
+    payload = {
+        "prompt": prompt,
+        "image": [base64.b64encode(ip.read_bytes()).decode()],
+        "mask": [base64.b64encode(mp.read_bytes()).decode()],
+    }
+    req = urllib.request.Request(
+        f"https://api.cloudflare.com/client/v4/accounts/{acct}"
+        f"/ai/run/{model}",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {tok}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            raw = r.read()
+            ct = r.headers.get("Content-Type", "")
+    except Exception as exc:
+        body = ""
+        if hasattr(exc, "read"):
+            try:
+                body = exc.read()[:200].decode(errors="replace")
+            except Exception:
+                pass
+        return {"status": "failed",
+                "error": f"cf_http:{type(exc).__name__}:{exc}:{body}"[:300]}
+    if raw[:4] == b"\x89PNG" or raw[:3] == b"\xff\xd8\xff" or "image" in ct:
+        return {"status": "completed", "png_bytes": raw,
+                "meta": {"cf_model": model, "inpaint": True}}
+    try:
+        d = json.loads(raw)
+        res = d.get("result", d)
+        img = res.get("image") if isinstance(res, dict) else None
+        if img:
+            return {"status": "completed",
+                    "png_bytes": base64.b64decode(img),
+                    "meta": {"cf_model": model, "inpaint": True}}
+        return {"status": "failed",
+                "error": f"cf_inpaint_resp:{json.dumps(d)[:200]}"}
+    except Exception:
+        return {"status": "failed", "error": "cf_unexpected_response"}
+
+
+def fetch_gemini(model: str, prompt: str, init_image: str) -> dict:
+    """Gemini image lane (generateContent with image output).
+    --job carries the model id (e.g. gemini-2.5-flash-image).
+    --init-image optionally supplies an image-edit input (PNG/JPEG path).
+    Key/base via GEMINI_API_KEY + GEMINI_BASE_URL (LiteLLM gateway ok),
+    same convention as scripts/ada/gemini_rest.py."""
+    import os
+    key = (os.environ.get("GEMINI_API_KEY")
+           or os.environ.get("GOOGLE_API_KEY"))
+    if not key:
+        return {"status": "failed", "error": "gemini_credentials_missing"}
+    base = os.environ.get("GEMINI_BASE_URL",
+                          "https://generativelanguage.googleapis.com")
+    if not base.endswith("/v1beta"):
+        base += "/v1beta"
+    parts: list[dict] = []
+    if init_image:
+        p = Path(init_image)
+        if not p.exists():
+            return {"status": "failed",
+                    "error": f"init_image_missing:{init_image}"}
+        mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+        parts.append({"inline_data": {
+            "mime_type": mime,
+            "data": base64.b64encode(p.read_bytes()).decode()}})
+    parts.append({"text": prompt})
+    body = {"contents": [{"parts": parts}],
+            "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]}}
+    req = urllib.request.Request(
+        f"{base}/models/{model}:generateContent",
+        data=json.dumps(body).encode(),
+        headers={"x-goog-api-key": key,
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            d = json.loads(r.read())
+    except Exception as exc:
+        return {"status": "failed",
+                "error": f"gemini_http:{type(exc).__name__}:{exc}"[:200]}
+    for cand in d.get("candidates") or []:
+        for part in (cand.get("content") or {}).get("parts") or []:
+            blob = part.get("inlineData") or part.get("inline_data")
+            if blob and blob.get("data"):
+                return {"status": "completed",
+                        "png_bytes": base64.b64decode(blob["data"]),
+                        "meta": {"gemini_model": model,
+                                 "mime": blob.get("mimeType")
+                                 or blob.get("mime_type")}}
+    return {"status": "failed", "error": "gemini_no_image"}
 
 
 def fetch_pack(remote: str, pack: str) -> dict:
@@ -198,7 +307,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
         raise RuntimeError("artifact is not a valid PNG/JPEG")
     ext = "png" if fmt == "png" else "jpg"
     root = f"{remote}/campaigns/{campaign}"
-    raw = f"{root}/30-generated-raw"
+    raw = f"{root}/30-candidates/{asset_id}"
     manifest = {
         "asset_id": asset_id, "campaign": campaign,
         "request_id": request_id, "provider": lane, "job_id": job,
@@ -239,7 +348,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
         rclone("copy", f"{root}/40-qc-review.md", td)
         qp = Path(td) / "40-qc-review.md"
         note = (f"\n## {asset_id} — {lane} lane (landed {now_iso()})\n\n"
-                f"- File: `30-generated-raw/{asset_id}.{ext}` "
+                f"- File: `30-candidates/{asset_id}/{asset_id}.{ext}` "
                 f"({dims[0]}x{dims[1]}, {len(png)} bytes)\n"
                 f"- SHA-256: `{sha}`\n- Job: `{job}`\n\n"
                 "QC checklist vs prior candidates: sharpness, artifacts, "
@@ -261,13 +370,18 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--lane", required=True,
-                   choices=["omen-sd", "kk-mac-nest", "cf-workers-ai"])
+                   choices=["omen-sd", "kk-mac-nest", "cf-workers-ai",
+                            "cf-inpaint", "gemini-image"])
     p.add_argument("--job", required=True,
-                   help="job id / pack name / CF model id")
+                   help="job id / pack name / CF or Gemini model id")
     p.add_argument("--port", type=int, default=8399)
     p.add_argument("--pack", default="")
     p.add_argument("--prompt", default="")
     p.add_argument("--negative", default="")
+    p.add_argument("--init-image", default="",
+                   help="gemini-image/cf-inpaint: path to source image")
+    p.add_argument("--mask", default="",
+                   help="cf-inpaint: path to mask image (white=regen)")
     p.add_argument("--width", type=int, default=0)
     p.add_argument("--height", type=int, default=0)
     p.add_argument("--campaign", required=True)
@@ -281,6 +395,11 @@ def main() -> int:
     if args.lane == "cf-workers-ai":
         res = fetch_cf(args.job, args.prompt, args.negative,
                        args.width, args.height)
+    elif args.lane == "gemini-image":
+        res = fetch_gemini(args.job, args.prompt, args.init_image)
+    elif args.lane == "cf-inpaint":
+        res = fetch_cf_inpaint(args.job, args.prompt,
+                               args.init_image, args.mask)
     else:
         res = wait_result(args.lane, args.job, args.port, args.remote,
                           args.pack, args.status_only, args.timeout_s)

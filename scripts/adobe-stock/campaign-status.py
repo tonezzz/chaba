@@ -2,7 +2,7 @@
 """One-call campaign state receipt (MED-1103).
 
 Replaces the 3-5 rclone calls agents make per status check: fetches
-SESSION.json, lists 30-generated-raw/ + 35-comparison-run/, extracts
+SESSION.json, lists 30-candidates/ + 35-comparison-run/, extracts
 QC decision lines from 40-qc-review.md, and reports pending lane jobs.
 Output is a compact JSON receipt.
 
@@ -54,11 +54,12 @@ def main() -> int:
 
     assets = []
     try:
-        for line in rclone("lsf", f"{root}/30-generated-raw",
-                           "--files-only").splitlines():
+        for line in rclone("lsf", f"{root}/30-candidates",
+                           "--files-only", "--recursive").splitlines():
             x = line.strip()
             if x and not x.endswith(".manifest.json"):
-                assets.append(x)
+                assets.append(x.split("/")[0])
+        assets = sorted(set(assets))
     except Exception:
         pass
 
