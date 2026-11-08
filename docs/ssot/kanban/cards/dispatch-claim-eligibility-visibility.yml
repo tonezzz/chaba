@@ -1,7 +1,7 @@
 id: dispatch-claim-eligibility-visibility
 title: Surface why a queued dispatch card is unclaimable (label/host mismatch starves silently)
 column: backlog
-updated: 2026-11-08 01:13
+updated: 2026-11-08 07:10
 priority: high
 program: chaba-ci
 tags:
@@ -48,3 +48,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 07:10
+  from: devin
+  text: 'Live evidence 2026-11-07: two dispatch cards queued to target_host=tony-dell starved ~90min — kanban-dispatch.service/timer
+    are .parked on dell (deliberately retired per host-hygiene; devin-dispatch-watch also parked). A card can target
+    a host with NO claimer and nothing surfaces that fact. Also observed: ops0790-rollout-tony-dell completed with
+    claim=None — units were installed out-of-band, no claim recorded. Both are exactly the blind spots this card
+    targets. Retargeted both queued cards to to'
