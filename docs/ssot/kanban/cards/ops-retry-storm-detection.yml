@@ -1,0 +1,19 @@
+id: ops-retry-storm-detection
+title: Surface sustained retry storms / hot containers on the ops board
+column: backlog
+updated: 2026-11-08 13:13
+priority: medium
+tags:
+- observability
+- mddb
+- alerts
+spec: 'The mddb-embed OpenRouter retry storm ran ~6h before anyone looked - discovered via load investigation, not
+  surfaced. Cheap version: a periodic check (ops health sweep or host-logs producer) that flags (a) any container
+  >50% CPU sustained >30min, (b) repeated identical WARN/ERROR in recent podman logs (the ''embedding attempt failed''
+  signature), (c) MDDB queue stats via /v1/vector-stats dropped/error counters climbing. Report to a card or the
+  ops board, not Telegram (noise policy).'
+ref: MEM-1192
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
