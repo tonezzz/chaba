@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-08 08:04
+updated: 2026-11-08 12:20
 priority: low
 tags:
 - opencode
@@ -352,6 +352,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix
     action.labels/host pins or teach a runner the capability'
+- at: 2026-11-08 12:20
+  from: devin
+  text: 'OPS-1039 unblock evidence (2026-11-08): push:chaba label/host mismatch FIXED — ssot.kanban.yml fleet prose
+    declares idc02 push:chaba (PR #111 merged d19126f); idc02 push creds verified. Gemini strong route SERVED: or-gemini-3.1-pro-preview
+    -> openrouter/google/gemini-3.1-pro-preview (PR #112 merged 1bd5326); native gemini-3.1-pro also responds. Bounded
+    probes from idc02 via LITELLM_KEY_ADA (card default alias): or-claude-fable-5.1 (configured model) -> 200; gemini-3.1-pro
+    -> 200; or-gemini-3.1-p'
 action:
   type: dispatch
   repo: chaba
