@@ -1,0 +1,113 @@
+id: webchat-history-endpoint
+title: Per-chat_id history endpoint + card backfill for web channels
+column: done
+updated: 2026-11-08 13:22
+tags:
+- ada
+- webchat
+- roster
+spec: 'Tony 2026-10-22 (roster working): keep chat history across reconnects/devices, server-side.
+
+
+  WHY: roster web turns already journal as channel=web + session-end MDDB summary, but the card has nothing to backfill
+  from — every mount starts blank. /api/chat/transcript only exposes live sessions + last-session tail, not per-chat
+  history.
+
+
+  DESIGN (agreed): thread key = chat_id (web-<member>), surface-agnostic. Any UI connecting with chat_id=web-tony
+  on a lane shares one thread (roster, member webchat, future surfaces). Different member = different thread; voice/LINE/TG
+  stay under their own channels.
+
+
+  WORK:
+
+  1. pwa_server.py: rolling per-chat_id text log for web-channel sessions (JSONL on disk or reuse journal store;
+  cap ~500 turns/chat, survive restarts).
+
+  2. New endpoint GET /api/chat/history?chat_id=<id>&max_turns=N — api_key auth, returns ordered turns {role,text,ts}.
+
+  3. ada-webchat-card.js: on connect (after ready), GET history via lane base, backfill bubbles before live frames.
+  WebSockets need no CORS but this fetch is cross-origin from the roster page — confirm CORS headers or proxy it
+  over the ws itself (a history_request frame may be cleaner).
+
+  4. Roster needs no change once card backfills.
+
+
+  DONE-WHEN: reload roster -> prior turns visible per contact; same thread visible from a second webui on same chat_id.'
+ref: ADA-0774
+comms:
+- at: 2026-10-22 14:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-23 08:26
+  from: devin
+  text: queued for processing
+- at: 2026-10-23 08:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:30
+  from: chaba
+  text: 'idc03 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:39
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:47
+  from: idc02
+  text: claimed
+- at: 2026-10-23 08:47
+  from: chaba
+  text: started devin-task-20261023-084744-tony-2026-10-22-roster-working on idc02 (dispatch)
+- at: 2026-10-23 08:51
+  from: devin
+  text: 'Explored: turns funnel through ConversationMemory._channel_append; adding per-chat_id JSONL store there
+    + GET /api/chat/history + ws history_request frame; card will backfill on first ready with push dedupe vs parked
+    flush.'
+- at: 2026-10-23 09:00
+  from: devin
+  text: 'Done: per-chat_id JSONL history (ADA_WEBCHAT_HISTORY_DIR, keep 500) journaled from _channel_append + pushes;
+    GET /api/chat/history + ws history_request/history frame (bound chat_id only); card backfills on first ready
+    w/ push dedupe. 1652 tests pass, tool-lint clean. Outcome md + job yml written.'
+- at: 2026-10-23 09:01
+  from: idc02
+  text: 'finished (ok): exit=0 ny-2026-10-22-roster-working.md` and `docs/ssot/jobs/ada/2026-10-23-webchat-history-endpoint.yml`.
+    | devin-task-2'
+- at: 2026-10-23 09:01
+  from: chaba
+  text: 'session-end checkpoint 4e99c2ee: 9 leftover file(s) committed'
+- at: 2026-10-23 09:01
+  from: chaba
+  text: pushed dispatch/20261023-084744-tony-2026-10-22-roster-working to origin
+- at: 2026-10-23 09:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-23 09:01
+  from: chaba
+  text: auto-merged 770dcbbb (dispatch/20261023-084744-tony-2026-10-22-roster-working) → origin/main
+- at: 2026-10-23 09:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-084744-tony-2026-10-22-roster-working,
+    branch dispatch/20261023-084744-tony-2026-10-22-roster-working'
+- at: 2026-10-23 09:09
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (16d in done, verified)
+action:
+  type: dispatch
+  status: done
+  repo: ada-voice
+  runner: idc02
+  result: 'exit=0 ny-2026-10-22-roster-working.md` and `docs/ssot/jobs/ada/2026-10-23-webchat-history-endpoint.yml`.
+    | devin-task-20261023-084744-tony-2026-10-22-roster-working.service: Consumed 2min 46.847s CPU time, 295.8M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 09:09
+  note: verified — evidence checks green, closing itself
