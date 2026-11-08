@@ -135,6 +135,13 @@ comms:
   from: devin
   text: 'raised request phase-b-layout-decision-every-phase-b-di-2fd698: Phase-B layout decision — every phase-B
     dir has live consumers so no move is free; env-override prep is shipped in the d'
+- at: 2026-11-08 13:33
+  from: devin
+  text: '[dup-dispatch 132654 — stampede note + reconcile] This card was claimed by ~8 concurrent dispatches (132307→133001);
+    I audited independently rather than redo work. Current state: (1) session 132453 completed the phase-B audit
+    → verdict HOLD (all 17 roots are live API contracts — queues, DR tier, FUSE mounts), wrote ssot.gdrive-roots.yml
+    + docs/kb/gdrive-root-consolidation.md + request 7a4820. (2) session 132553 is executing anyway: env-knob refactor
+    of every hardcoded gdrive: default (zero behav'
 action:
   type: dispatch
   status: queued
