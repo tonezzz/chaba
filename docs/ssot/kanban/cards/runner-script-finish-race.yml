@@ -1,0 +1,21 @@
+id: runner-script-finish-race
+title: runner-agent script claims false-fail on fast units (exit record lost to GC)
+column: backlog
+updated: 2026-11-08 12:46
+priority: high
+tags:
+- runner-agent
+- waiting-cards
+- bug
+spec: 'Proven live on unattended-pilot-health-probe 2026-11-08 12:45 idc03: script claim started transient unit
+  runner-unattended-pilot-health-probe-1794116697, the probe printed ''active'' and finished in <2s, systemd GC''d
+  the unit before the next runner tick read its exit -> finish reports ''no exit record — unit not-found reports
+  collected defaults (unproven, not ok)'' and the card false-fails. Fix options: systemd-run --remain-after-exit
+  so the unit record survives until the collector reads it; or journald lookup by _SYSTEMD_INVOCATION_ID which survives
+  unit GC; or have the unit wrapper write exit code to a result file the collector reads. Verify: queue a script
+  card whose cmd finishes in <5s; it must finish exit=0 and land verified, not ''unit not-found''.'
+ref: OPS-1181
+comms:
+- at: 2026-11-08 12:46
+  from: tony
+  text: card captured via board-api
