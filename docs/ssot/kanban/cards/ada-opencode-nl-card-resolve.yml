@@ -1,7 +1,7 @@
 id: ada-opencode-nl-card-resolve
 title: Natural-language card resolution for Ada/OpenCode commands
 column: backlog
-updated: 2026-11-08 07:37
+updated: 2026-11-08 12:20
 brief: Tony should be able to say things like "hibiscus GS project status" or "the media pack card" and have Ada/OpenCode
   resolve the right kanban card instead of failing with "no board card matched".
 priority: medium
@@ -29,3 +29,8 @@ comms:
     matches return candidate id/ref/title list instead of dead-end no-match. Live on idc02 ada-opencode (commit
     843cfcd, service restarted): "media pack" -> MED-1032, "kornia evaluator" -> OPS-1055, "hibiscus" -> 3 candidates
     listed, "gaussian splat smoke" -> 2 candidates listed. Unit tests:'
+- at: 2026-11-08 12:20
+  from: devin
+  text: 'Verified for close (2026-11-08): commit 843cfcd in ada-voice main; deployed idc02 workspace ada_mcp.py
+    contains _reference_tokens/_card_aliases scored matching; live resolution verified earlier (''media pack''->MED-1032,
+    ambiguous ''hibiscus''->candidate list). Acceptance met.'
