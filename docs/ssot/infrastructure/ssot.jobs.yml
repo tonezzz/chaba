@@ -218,6 +218,24 @@ jobs:
     — the rendered unit previously dropped kanban-act + nest-overview. Prose lane moved off tony-omen phi3
     onto the LiteLLM gateway chat-local alias (qwen2.5:7b on idc02 — card chat-local-free-lane, 2026-10-16);
     env_file supplies LITELLM_KEY (LITELLM_KEY_CHABA virtual key).'
+- id: chaba-unattended-report
+  name: Daily unattended-run digest -> reports/ + Telegram milestone
+  host: idc03   # writer checkout — sees committed card state
+  dispatch: systemd
+  on_calendar: '*-*-* 08:30:00'
+  persistent: true
+  timeout: 10m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/unattended-report.py
+  note: 'card hands-off-waiting-card-procedure (KNB-0928) — the daily
+    hands-off digest: preflight state (kill switch, deploy lock, disk,
+    backup proof), queue snapshot, waiting_cards verdicts for every
+    queued/starting card, today''s card activity, eligibility metrics.
+    Writes reports/unattended-<date>.md and posts ONE Telegram milestone
+    via board-api /publish (noise policy debounces). Read-only — never
+    mutates cards. Added 2026-11-08; timer unit renders via
+    render-jobs.py --install on idc03.'
 - id: chaba-tony-ideas
   name: Tony ideas/decisions harvest -> CMS tony-ideas
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)

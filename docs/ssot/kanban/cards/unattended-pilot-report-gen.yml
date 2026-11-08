@@ -1,0 +1,31 @@
+id: unattended-pilot-report-gen
+title: 'Pilot: unattended report generation (read-only)'
+brief: Read-only pilot for the hands-off waiting-card procedure — safe to queue; writes nothing.
+column: backlog
+priority: low
+created: '2026-11-08'
+updated: 2026-11-08 08:20
+tags:
+- unattended
+- pilot
+- waiting-cards
+autonomy: t2
+recoverability: R0
+spec: Read-only pilot for the hands-off waiting-card procedure (KNB-0928). Runs `python3 scripts/board/unattended-report.py
+  --dry-run | head -20` in a scratch clone of chaba on idc03 — produces the daily digest preview, writes nothing,
+  publishes nothing. Verifies the script/card/report lane end-to-end under the waiting_cards gate.
+action:
+  type: script
+  host: idc03
+  artifact: script exit line + output captured in card comms (do=finish result)
+  verifier: exit=0 in the runner's finish result; a nonzero exit or missing result holds the card in review
+  script:
+    repo: chaba
+    cmd: python3 scripts/board/unattended-report.py --dry-run | head -20
+    timeout: 300
+review_kind: verify
+note: waiting-cards pilot — queue only after the gate is merged+deployed (job 2026-11-08-hands-off-waiting-cards).
+comms:
+- at: 2026-11-08 08:20
+  from: devin
+  text: created by dispatch hands-off-waiting-card-procedure — read-only pilot, not queued
