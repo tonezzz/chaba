@@ -1,0 +1,83 @@
+id: devnest-token-savings-lane-catalog
+title: 'DevNest production lane catalog: quantify token savings and delegate low-urgency work'
+column: done
+updated: 2026-11-08 13:21
+brief: Turn the proven DevNest skills and packs into a production catalog showing which work avoids paid Devin/LLM
+  tokens and which still needs frontier reasoning.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- tokens
+- routing
+- production
+- rainy-day
+spec: 'Catalog lanes: deterministic host assessment/report/Education, codemod, JEV routing, local/T4 GPU packs,
+  free OpenCode lane after closeout, paid frontier, Devin fallback. For each: task classes, verifier, target host,
+  expected cost/tokens, evidence artifact, escalation rule. Run a monthly savings report from board/pack artifacts;
+  never claim savings without usage evidence.'
+ref: OPS-0869
+comms:
+- at: 2026-10-25 18:46
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 19:12
+  from: tony
+  text: queued for processing
+- at: 2026-10-25 19:13
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 19:20
+  from: mn01
+  text: claimed
+- at: 2026-10-25 19:21
+  from: chaba
+  text: started devin-task-20261025-122102-catalog-lanes-deterministic-ho on mn01 (dispatch)
+- at: 2026-10-25 19:24
+  from: devin
+  text: 'started on mn01 — surveyed lane routing (dispatch_repos.LANE_*/classify_lane), cheap-agent-cascade design,
+    llm-gateway job_classes, colab packs, and board action evidence. Building: ssot.devnest-lanes.yml catalog +
+    lane-savings monthly report generator + first October run (evidence-bound).'
+- at: 2026-10-25 19:32
+  from: devin
+  text: 'DONE (mn01): lane catalog landed at docs/ssot/infrastructure/ssot.devnest-lanes.yml — 8 lanes w/ task_classes/verifier/host/cost/evidence/escalation
+    per spec. scripts/board/lane-savings.py runs the monthly evidence-bound savings report; first run docs/reports/lane-savings-2026-10.{md,json}:
+    Oct = 420 devin-lane dispatches (paid baseline), 6 evidenced cheap-lane sessions, 984k measured pack tokens
+    @ $0. Honest finding: no card persists action.lane yet (OPS-0838 backlog), devin sessions log no tok'
+- at: 2026-10-25 19:33
+  from: mn01
+  text: 'finished (ok): exit=0 xisting SSOT validation error in `jobs/bench/2026-10-24-m2-behavioral-verifier.yml`.
+    | devin-task-20261025-122102'
+- at: 2026-10-25 19:33
+  from: chaba
+  text: pushed dispatch/20261025-122102-catalog-lanes-deterministic-ho to origin
+- at: 2026-10-25 19:33
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-25 19:33
+  from: chaba
+  text: auto-merged eb104d36 (dispatch/20261025-122102-catalog-lanes-deterministic-ho) → origin/master
+- at: 2026-10-25 19:33
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-122102-catalog-lanes-deterministic-ho,
+    branch dispatch/20261025-122102-catalog-lanes-deterministic-ho'
+- at: 2026-10-25 19:45
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (13d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 xisting SSOT validation error in `jobs/bench/2026-10-24-m2-behavioral-verifier.yml`. | devin-task-20261025-122102-catalog-lanes-deterministic-ho.service:
+    Consumed 1min 12.037s CPU time over 11min 15.037s wall clock time, 343.8M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 19:45
+  note: verified — evidence checks green, closing itself
