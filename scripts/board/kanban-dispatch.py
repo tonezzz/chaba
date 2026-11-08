@@ -549,6 +549,61 @@ def _with_lock(fn):
         return fn()
 
 
+UNCLAIM_MARK = "unclaimable by the declared runner fleet"
+
+
+def _last_chaba_flag(card: dict, mark: str) -> str:
+    """Most recent chaba comms line containing `mark`, '' when none —
+    the card's comms are the debounce store for flag/defer notes."""
+    for c in reversed(card.get("comms") or []):
+        if c.get("from") == "chaba" and mark in (c.get("text") or ""):
+            return c["text"]
+    return ""
+
+
+def _defer_note(path: Path, card: dict, reason: str) -> bool:
+    """Per-host defer comms — the served-side twin of runner-agent's
+    note_defer: 'this host saw it and declined' lands on the card, not
+    just in the unit journal (the 2026-11-07 ops0790 starve was
+    invisible for ~3h because skips lived only in logs). Debounced on
+    the card's own comms: an unchanged reason is not re-logged. Comms
+    only — one host's refusal is not a fleet verdict, so no
+    awaiting_action."""
+    text = f"{HOST} defers: {reason}"[:500]
+    if _last_chaba_flag(card, f"{HOST} defers:") == text:
+        return False
+    comms_add(card, "chaba", text)
+    save_card(path, card)
+    return True
+
+
+def _flag_unclaimable(path: Path, card: dict, fleet: dict) -> str:
+    """Fleet-level starvation flag (dispatch-claim-eligibility-
+    visibility): a queued card no declared runner can serve writes WHY
+    to the card — chaba comms + awaiting_action — so Ada/triage sees
+    it and fixes labels or re-routes instead of the queue starving
+    silently. -> 'new' (flag written this pass), 'present' (same flag
+    already on the card — debounced), '' (declared fleet may serve it).
+    A cleared flag with unchanged reasons stays cleared (triage
+    dismissed it)."""
+    reasons = dr.unsatisfiable_reasons(card, fleet=fleet,
+                                       local_host=HOST,
+                                       push_probe=push_capable)
+    if not reasons:
+        return ""
+    text = (f"{UNCLAIM_MARK}: " + "; ".join(reasons)
+            + " — fix action.labels/host pins or teach a runner the "
+              "capability (card dispatch-claim-eligibility-visibility)"
+            )[:500]
+    if _last_chaba_flag(card, UNCLAIM_MARK) == text:
+        return "present"
+    comms_add(card, "chaba", text)
+    card["awaiting_action"] = True
+    save_card(path, card)
+    print(f"{card['id']}: UNCLAIMABLE — {'; '.join(reasons)}")
+    return "new"
+
+
 # Keyword lane classifier (jev-pilot Phase 2, 2026-10-25). Deterministic,
 # validated 23/23 on corpus + held-out cards (evals/results/jev/).
 # Canonical copy lives in dispatch_repos — aliases kept for importlib
@@ -737,6 +792,12 @@ def main() -> int:
             in ("queued", "starting"))]
         queued.sort(key=lambda pc: dr.claim_sort_key(
             pc[1], starve_hours=STARVE_HOURS))
+        # Declared fleet claim surface for the unclaimable flag — parsed
+        # once per pass; {} when the SSOT is unreadable (never flags).
+        try:
+            fleet = dr.fleet_capabilities()
+        except Exception:
+            fleet = {}
         rest = [pc for pc in loaded if (
             (pc[1].get("action") or {}).get("status")
             not in ("queued", "starting"))]
@@ -766,6 +827,11 @@ def main() -> int:
                     continue
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
+                    else:
+                        print(f"{card['id']}: skipped — host-pinned to "
+                              f"{pinned}")
                     continue  # pinned to another host's dispatcher
                 blocker_id = card.get("blocked_by")
                 if blocker_id and not _blocker_released(blocker_id):
@@ -775,6 +841,8 @@ def main() -> int:
                     # never claim must say so in the log — the 2026-10-13
                     # zombie-sweep found 6 of these silently starved for
                     # days (board-invariants Q1 alerts the persistent ones)
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — action.type "
                           f"{a.get('type')!r} is not dispatchable "
                           "(claims are type=dispatch only)")
@@ -799,26 +867,54 @@ def main() -> int:
                            else "Tony's hands — never claimed"
                            if ex == "manual"
                            else f"routes to the {ex} executor, not devin")
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — executor={ex} "
                           f"({why})")
                     continue
                 th = str(a.get("target_host") or "").strip()
                 if th and th != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — target_host={th}")
                     continue
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:
+                    # label skips used to be log-silent — the exact
+                    # ops0790 starve. Per-host defer lands on the card;
+                    # fleet-unclaimable additionally raises the flag
+                    # (and suppresses the noisier per-host note).
+                    miss = sorted(needs - MY_LABELS)
+                    fl = _flag_unclaimable(p, card, fleet)
+                    if fl == "new":
+                        changed = True
+                    elif not fl:
+                        changed |= _defer_note(
+                            p, card, f"missing labels {miss}")
+                    print(f"{card['id']}: skipped — missing labels "
+                          f"{miss}")
                     continue  # needs capabilities this host lacks
                 # runner-push-cred-gap: claiming a repo this host can't
                 # push strands the finished branch (ADA-0673, idc03
                 # daa0e0a) — leave it queued for a host that can
                 repo = str(a.get("repo") or "chaba")
                 if not push_capable(repo):
+                    fl = _flag_unclaimable(p, card, fleet)
+                    if fl == "new":
+                        changed = True
+                    elif not fl:
+                        changed |= _defer_note(
+                            p, card,
+                            f"push guard: no push:{dr.canon_repo(repo)} "
+                            "label and `git push --dry-run` fails — "
+                            "this host can't land the branch")
                     print(f"{card['id']}: skipped — cannot push "
                           f"{dr.canon_repo(repo)} (no push: label and "
                           "`git push --dry-run` fails)")
                     continue
                 if a.get("runner") and a["runner"] != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     continue  # claimed/starting on another host
                 if active_tasks() + claimed >= HOST_CAP:
                     print(f"{card['id']}: skipped — host cap {HOST_CAP}")

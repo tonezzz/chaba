@@ -131,7 +131,20 @@ card_schema:
              request it) — dispatch cards for action.repo imply it
              implicitly: without the label, the claiming path runs a live
              'git push --dry-run' probe against the repo checkout and
-             defers the card when it fails (runner-push-cred-gap)"
+             defers the card when it fails (runner-push-cred-gap).
+             VISIBILITY (OPS-1097, dispatch-claim-eligibility-visibility):
+             requirements the declared fleet (runner_fleet below) cannot
+             satisfy are flagged — dispatch_repos.unsatisfiable_reasons
+             computes the gaps (labels satisfied by no single host, pins
+             naming no declared runner, conflicting pins, unknown
+             executor, local push-guard failure on the only eligible
+             runner); board-api warns + flags awaiting_action at queue
+             time, kanban-dispatch writes 'unclaimable by the declared
+             runner fleet: ...' comms + awaiting_action when its eval
+             hits the skip, runner-agent posts the same via note_defer
+             (kind=unclaimable, awaiting flag over /comment), and
+             per-host misses get '<host> defers: missing labels [...]'
+             comms so skips stop being journal-only"
     gpu: "optional — VRAM pre-flight for gpu-labeled cards
           (omen-gpu-display-wedge): {min_free_mb: N} — the runner claims
           only while some GPU shows >=N MB free in nvidia-smi (a host
@@ -467,7 +480,8 @@ execution:
     runner_fleet: "as of 2026-10-10 (idc caps re-audited live 2026-10-27,
                card dispatch-concurrency-bump-idc — both already at 3;
                4 refused: ~3.5GB/session vs ~5G available on idc03) —
-               tony-dell: kanban-dispatch local cap 3
+               tony-dell: kanban-dispatch local cap 3 labels
+               push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,push:gods-eye-view
                (dispatch); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
                +container+script); idc02: cap 3 labels ssd,always-on,cpu,small (dispatch
                +container+script); idc03: cap 3 gate 0.85 labels
