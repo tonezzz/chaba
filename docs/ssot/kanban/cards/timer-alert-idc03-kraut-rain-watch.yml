@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: backlog
-updated: 2026-11-08 15:39
+updated: 2026-11-08 15:46
 priority: high
 tags:
 - timer-alert
@@ -133,3 +133,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 15:11) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 15:46
+  from: devin
+  text: 'Connection fixed 2026-11-08 via idc03 -> tony-omen SSH relay -> michael-ha. kraut-rain-watch ExecMainStatus=0;
+    live TG send returned {''ok'':True,''chat_id'':8960073266}. Persistent tunnel unit is active and restart-on-failure.
+    Rain report now shows sane units: RK600 34.3°C, 55.1% RH, wind 1.8m/s, today precip HA-FC 1.2mm; model values
+    explicitly rain%.'
