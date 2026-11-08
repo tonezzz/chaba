@@ -1549,6 +1549,20 @@ jobs:
     touched — pilot + cline-intake execution tasks are never modified.
     Chaba stays the source of truth; Cline state is rebuildable
     display data. Requires runner verdicts flowing (KNB-1007 /ready).'
+- id: adobe-stock-reindex-sync
+  name: Adobe Stock index rebuild + idc02 workspace sync
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/env bash %h/CascadeProjects/chaba/scripts/adobe-stock/reindex-sync.sh
+  note: 'OPS-1131 follow-up — rebuilds bounded reuse indexes from
+    gdrive:ada-nest-adobe-stock campaigns (publish-previews.py
+    --reindex-only) and scp-syncs the 4 index files into the idc02
+    ada-opencode workspace fallback; idc02''s /data/gdrive mount is
+    empty so the MCP bridge reads workspace indexes. Needs rclone
+    gdrive remote + ssh idc02 + BatchMode key on tony-dell.'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py

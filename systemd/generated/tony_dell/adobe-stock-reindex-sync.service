@@ -1,0 +1,7 @@
+[Unit]
+Description=Adobe Stock index rebuild + idc02 workspace sync (job:adobe-stock-reindex-sync, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/env bash %h/CascadeProjects/chaba/scripts/adobe-stock/reindex-sync.sh
