@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:36
+updated: 2026-11-08 16:41
 priority: medium
 tags:
 - kanban-dispatch
@@ -63,6 +63,13 @@ comms:
 - at: 2026-11-08 16:36
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 16:41
+  from: devin
+  text: 'Deployment gate update 2026-11-08: idc03 kanban-dispatch.timer and runner-agent.timer are stopped+disabled;
+    board-api remains active. PR #128 is open. GitHub validate failed; local CI-equivalent `python3 scripts/dev-system-assess.py
+    --check` reproduces the environment gate (154 branches, 57 ahead, 128 worktrees; `Too many branches ahead: 57`).
+    The targeted board-api tests and dispatch/runner/merge-sweep suites pass, and syntax passes. No merge/deploy
+    occurred. A live POST /action do=move also re'
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
