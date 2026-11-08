@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: review
-updated: 2026-11-08 16:51
+updated: 2026-11-08 16:53
 priority: medium
 tags:
 - kanban-dispatch
@@ -104,6 +104,13 @@ comms:
     move persisted (GET shows column=doing, updated=16:49); local concurrency test also proves one claim winner.
     Omen, MacBook, idc02, and idc03 runner timers remain disabled pending separate resumption approval. PR validate
     failed only on the branch-sprawl gate; merge was explicitl'
+- at: 2026-11-08 16:53
+  from: tony
+  text: 'answered knb1196-ci-branch-sprawl-gate: Approve merging despite the unrelated red validate check; local
+    targeted tests pass, no admin bypass.'
+- at: 2026-11-08 16:53
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -135,13 +142,14 @@ requests:
 - id: knb1196-ci-branch-sprawl-gate
   ask: 'PR #128 local code tests pass, but GitHub validate is red on the dev-system-assess branch-ahead gate (57
     ahead). Do you want me to merge/deploy despite that unrelated CI gate, or hold for branch cleanup first?'
-  status: open
+  status: answered
   at: 2026-11-08 16:41
   from: devin
   options:
   - Hold deployment until the branch-sprawl gate is green (recommended).
   - Approve merging despite the unrelated red validate check; local targeted tests pass.
   suggested: Hold deployment until the branch-sprawl gate is green (recommended).
+  answer: Approve merging despite the unrelated red validate check; local targeted tests pass, no admin bypass.
 - id: knb1196-branch-gate-decision
   ask: 'PR #128 has one red validate check; the local equivalent reproduces the branch-sprawl limit failure (57
     branches ahead). May I merge/deploy despite this unrelated repository gate, or should I hold for cleanup? I
@@ -155,3 +163,4 @@ requests:
   suggested: Hold deployment until branch-sprawl validation is green (recommended).
   answer: Approve normal merge/deployment despite this unrelated red check; no admin bypass.
 review_kind: verify
+awaiting_action: true
