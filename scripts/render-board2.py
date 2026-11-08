@@ -144,7 +144,6 @@ PAGE = r"""<!doctype html>
     <span class="text-slate-500">|</span>
     <span class="font-semibold">Board</span>
     <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400" title="live"></span>
-    <a href="/apps/board/" class="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2">classic view</a>
     <input id="q" type="search" placeholder="Filter cards…"
       class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm w-44 ml-2">
     <div class="flex items-center gap-1">
