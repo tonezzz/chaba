@@ -4,7 +4,7 @@ brief: Read-only pilot for the hands-off waiting-card procedure — safe to queu
 column: doing
 priority: low
 created: '2026-11-08'
-updated: 2026-11-08 12:45
+updated: 2026-11-08 12:46
 tags:
 - unattended
 - pilot
@@ -47,3 +47,8 @@ comms:
   from: idc03
   text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) Started
     runner-unattended-pilot-health-pro'
+- at: 2026-11-08 12:46
+  from: devin
+  text: 'first live gate run: claimed on idc03 12:45 once load dipped under cap (256 prior passes load-skipped —
+    see OPS-1182). Script ran (journal shows "active") but finish reported unit not-found — fast units GC before
+    exit collection. Carded as OPS-1181. Pilot stays failed until that fix lands; re-queue to retest.'
