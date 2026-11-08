@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: doing
-updated: 2026-11-08 12:36
+updated: 2026-11-08 12:40
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -73,6 +73,12 @@ comms:
   text: 'Dispatch started on idc02 (wt 20261108-123518). Picking up: CF inpaint retry (neurons should be reset),
     SDXL-inpaint lane eval on omen/kk-mac, FLUX.1-Fill probe, then repair comparison-b or comparison-e wall corner
     + QC note.'
+- at: 2026-11-08 12:40
+  from: devin
+  text: 'CF inpaint retry 05:40 UTC: STILL 429 neurons-exhausted — the free 10k/day did not reset at 00:00 UTC or
+    something else on the account is burning it (lane-watcher does not use CF). Will retry once more before close.
+    Pivoting to local lanes: masks built for fix3 chair-wheels (x475,y790,w330,h234 feathered) and fix2 corner;
+    omen sd-cli SDXL-inpaint next, FLUX-Fill needs ~10GB weights+~12GB RAM — checking host feasibility.'
 action:
   type: dispatch
   status: running
