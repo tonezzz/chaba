@@ -1,7 +1,7 @@
 id: dispatch-claim-eligibility-visibility
 title: Surface why a queued dispatch card is unclaimable (label/host mismatch starves silently)
-column: doing
-updated: 2026-11-08 07:44
+column: review
+updated: 2026-11-08 07:46
 priority: high
 program: chaba-ci
 tags:
@@ -24,9 +24,12 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: running
+  status: done
   runner: tony-macbook
   lane: devin
+  result: 'exit=0 utcome doc at `dispatch-outcome-20261108-071246-confirmed-2026-11-07-three-dis.md`. | devin-task-20261108-071246-confirmed-2026-11-07-three-dis.service:
+    Consumed 21min 40.676s CPU time over 31min 47.458s wall clock time, 592.8M memory peak.'
+  verified: true
 ref: OPS-1097
 comms:
 - at: 2026-11-07 16:00
@@ -68,3 +71,9 @@ comms:
   text: 'shipped: dr.fleet_capabilities+unsatisfiable_reasons; board-api warns+flags at queue, kanban-dispatch flags
     at eval (+defer comms for label/push skips), runner-agent posts unclaimable via note_defer(awaiting). /comment
     accepts awaiting_action. 163 board tests green.'
+- at: 2026-11-08 07:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0 utcome doc at `dispatch-outcome-20261108-071246-confirmed-2026-11-07-three-dis.md`.
+    | devin-task-20261108-071246-'
+review_kind: verify
+claim: {}
