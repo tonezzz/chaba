@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily kanban archive sweep (verified done cards >7d)
+
+[Timer]
+OnCalendar=*-*-* 04:20:00
+# Stagger off the top-of-hour sweeps
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

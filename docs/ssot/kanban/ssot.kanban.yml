@@ -611,10 +611,13 @@ ops:
               decide/triage + open-request cards stay human-gated"
     lab:     "bounded by review_by; past date with no outcome = sweep violation"
     done:    "terminal; verified-by evidence expected in note/comms.
-              Archive: done cards >30d old move to cards/archive/ (non-
-              recursive glob keeps them off the board but in git). Do NOT
-              archive *-auto-* ids — sweepers glob cards/*.yml by prefix
-              and would recreate them"
+              Archive (KNB-1178): done+verified cards >7d move to
+              cards/archive/ via board-api /action do=archive — daily
+              kanban-archive.timer runs scripts/board/archive-done.py.
+              Non-recursive glob keeps them off the board but in git;
+              unverified done cards never auto-archive. Do NOT archive
+              *-auto-* ids — sweepers glob cards/*.yml by prefix and
+              would recreate them"
     done_default: "verify-before-review — when shipped work has checkable
               evidence (live page/service/timer/test output), the session
               verifies it itself and files straight to done. review is

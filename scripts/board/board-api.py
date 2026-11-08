@@ -187,7 +187,10 @@ LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
-               "finish"}
+               "finish", "archive"}
+# done+verified cards older than this move to cards/archive/ via
+# /action do=archive (KNB-1178; SSOT column_sla.done convention).
+ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
 COLUMNS = {"backlog", "doing", "review", "done"}
 
 # /card spawn fields (report-session-loop §1a)
@@ -736,6 +739,39 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
         hide_dispatch_session(card)
     comms_add(card, frm, f"moved {old} -> {col}")
     return f"moved to {col}"
+
+
+def do_archive(card: dict, frm: str) -> str:
+    """Eligibility gate for /action do=archive — the file move itself is
+    done by the caller (_archive_move). Only verified done work ages out;
+    unverified done cards stay on the board for human review."""
+    if card.get("column") != "done":
+        raise ValueError("archive needs column=done")
+    if not (card.get("action") or {}).get("verified"):
+        raise ValueError("archive needs action.verified=true "
+                         "(verified done work only)")
+    upd = str(card.get("updated") or "")
+    try:
+        dt = datetime.strptime(upd, "%Y-%m-%d %H:%M")
+    except Exception:
+        raise ValueError(f"unparseable updated: {upd!r}")
+    age = (datetime.now() - dt).days
+    if age < ARCHIVE_MIN_DAYS:
+        raise ValueError(
+            f"too fresh: updated {upd} ({age}d < {ARCHIVE_MIN_DAYS}d)")
+    comms_add(card, frm, f"archived ({age}d in done, verified)")
+    return f"archived ({age}d in done)"
+
+
+def _archive_move(p: Path, card: dict) -> None:
+    """Persist an archived card under cards/archive/ (non-recursive glob
+    keeps it off the board, in git) and commit both sides of the move."""
+    adir = p.parent / "archive"
+    adir.mkdir(exist_ok=True)
+    dest = adir / p.name
+    save(dest, card)       # commits the archive-path write
+    p.unlink()             # source leaves cards/*.yml -> off the board
+    _commit_write(p, "archive move")  # stages source deletion + commits
 
 
 def do_claim(card: dict, body: dict) -> str:
@@ -3815,10 +3851,14 @@ class H(BaseHTTPRequestHandler):
                         msg = do_move(card, body, actor(body))
                     elif verb == "finish":
                         msg = do_finish(card, body)
+                    elif verb == "archive":
+                        msg = do_archive(card, actor(body))
+                        card["updated"] = now()
+                        _archive_move(p, card)
                     else:
                         msg = do_action(card, verb, actor(body))
-                    card["updated"] = now()
-                    save(p, card)
+                        card["updated"] = now()
+                        save(p, card)
                 elif path == "/respond":
                     frm = actor(body)
                     p = card_path(body.get("id") or body.get("card") or "")
