@@ -1,0 +1,84 @@
+id: jev-live-dispatch-demo
+title: 'JEV live dispatch demo: touch README.md in chaba (deterministic)'
+column: done
+updated: 2026-11-08 13:21
+brief: 'A tiny deterministic task to prove JEV lane routing live: append one line to README.md and commit.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- dispatch
+- demo
+- lane
+spec: 'JEV supervised trial #3 (2026-10-25): dispatch-type card, task = append ''JEV lane routing live'' line to
+  README.md + commit. Expected lane=free_lane or codemod -> cheapest model. Purpose: observe the live kanban-dispatch
+  claim with JEV_LANE=1.'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 was recorded in `dispatch-outcome-20261025-060241-jev-supervised-trial-3-2026-10.md`. Verify with
+    `tail -1 README.md` and `git log --oneline -1`. | devin-task-20261025-060241-jev-supervised-trial-3-2026-10.service:
+    Consumed 5.214s CPU time.'
+  verified: true
+ref: OPS-0835
+comms:
+- at: 2026-10-25 05:59
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 06:02
+  from: devin
+  text: queued for processing
+- at: 2026-10-25 06:02
+  from: idc02
+  text: claimed
+- at: 2026-10-25 06:02
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 06:02
+  from: chaba
+  text: started devin-task-20261025-060241-jev-supervised-trial-3-2026-10 on idc02 (dispatch)
+- at: 2026-10-25 06:02
+  from: devin
+  text: 'JEV trial #3 claimed by dispatch session on idc02; starting README append + commit in worktree.'
+- at: 2026-10-25 06:03
+  from: devin
+  text: 'JEV trial #3 complete: appended JEV lane routing live to README.md, committed bb2502c0 on dispatch branch
+    (no push). Outcome file written.'
+- at: 2026-10-25 06:03
+  from: idc02
+  text: 'finished (ok): exit=0 was recorded in `dispatch-outcome-20261025-060241-jev-supervised-trial-3-2026-10.md`.
+    Verify with `tail -1 README'
+- at: 2026-10-25 06:03
+  from: chaba
+  text: 'session-end checkpoint a8dd71ff: 1 leftover file(s) committed'
+- at: 2026-10-25 06:03
+  from: chaba
+  text: pushed dispatch/20261025-060241-jev-supervised-trial-3-2026-10 to origin
+- at: 2026-10-25 06:03
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-25 06:03
+  from: chaba
+  text: auto-merged a75beb2d (dispatch/20261025-060241-jev-supervised-trial-3-2026-10) → origin/master
+- at: 2026-10-25 06:03
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-060241-jev-supervised-trial-3-2026-10,
+    branch dispatch/20261025-060241-jev-supervised-trial-3-2026-10'
+- at: 2026-10-25 06:04
+  from: devin
+  text: 'DONE + VERIFIED: merged bb2502c06 to origin/master (README lane-routing marker). This was the JEV supervised
+    trial #3 — the first live card routed through the fleet by the kanban dispatch loop. Closing.'
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (14d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 06:15
+  note: verified — evidence checks green, closing itself
