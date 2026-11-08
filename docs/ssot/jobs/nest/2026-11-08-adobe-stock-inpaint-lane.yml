@@ -1,0 +1,156 @@
+title: Inpaint-based defect repair lane for stock candidates
+subtitle: OPS-1109 — masked region repair (box/polygon from QC note +
+  repair prompt) feeding land-render.py; lane evaluation across CF
+  Workers AI inpainting, omen sd-cli SDXL, FLUX.1-Fill local
+icon: paintbrush
+version: 1
+
+card: adobe-stock-inpaint-defect-repair
+dispatch: 20261108-123518-build-an-inpaint-lane-for-the-
+runner: idc02
+date: 2026-11-08
+
+planning:
+  goal: >-
+    Turn a localized QC defect (e.g. wall corner, chair wheels) into a
+    surgical inpaint repair instead of a full re-roll: candidate image +
+    defect mask + repair prompt -> patched image landed into the
+    campaign 30-candidates/ tree via land-render.py.
+  scope: >-
+    In: mask builder (box/polygon), CF inpaint lane, omen sd-cli SDXL
+    inpaint lane, FLUX.1-Fill feasibility, first real repair on
+    comparison-e (chair wheels) + QC note + lane comparison. Out: Adobe
+    upload, kk-mac diffusers run (host asleep), production scheduler.
+  success_criteria:
+    - at least one masked-inpaint lane produces a landed candidate
+    - lane comparison + QC note recorded in 40-qc-review.md
+    - repair preserves pixels outside the mask
+  risks:
+    - CF neuron quota exhausted -> mitigated by local lanes
+    - omen CPU slowness -> mitigated by crop-region inpaint mode
+
+pipeline:
+  flow: >-
+    picker / QC note (region + comment) -> inpaint-mask.py (mask PNG,
+    white=regen) -> lane (cf-inpaint | omen sd-cli | flux-fill) ->
+    land-render.py -> 30-candidates/<asset>/ + SESSION.json +
+    40-qc-review.md
+  components:
+    - scripts/adobe-stock/inpaint-mask.py — box/polygon -> feathered mask PNG
+    - scripts/adobe-stock/omen-inpaint.py — ssh driver: scp inputs,
+      sd-cli on tony-omen, scp result, land via local-file
+    - scripts/adobe-stock/land-render.py — +--lane local-file (lands a
+      finished PNG/JPEG path through the normal verify+manifest path);
+      cf-inpaint lane pre-existed (image+mask as b64 arrays)
+  masks:
+    convention: "white (255) = regenerate, black (0) = preserve"
+    note: >-
+      sd.cpp rounds the mask to binary internally (ops::round) — feather
+      is for dilation/blend margin at the UI level, not soft alpha at
+      the latent level. dilate 6-8px recommended over raw picker boxes.
+
+lanes:
+  - lane: cf-inpaint (@cf/runwayml/stable-diffusion-v1-5-inpainting)
+    status: blocked-quota
+    detail: >-
+      Implemented + input format verified (image+mask as arrays of b64
+      strings). 2026-11-08 01:33 + 05:40 UTC both returned 429 — the
+      free 10k-neurons/day allocation did not reset at 00:00 UTC or was
+      reconsumed; lane-watcher does not use CF. Token on tony-omen
+      cloudflare.env (CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN).
+    expected: "~$0.001-0.01/run neurons, seconds latency, SD1.5 quality"
+  - lane: gemini-image region-edit (incumbent baseline)
+    status: working
+    detail: >-
+      No mask input — region described in prompt text. fix3 corner
+      repair worked (2026-11-08), but the wheels control run
+      (comparison-e-gemini-fix4-wheels) produced a near-identical
+      re-render — Gemini preserves composition but under-edits small
+      geometry defects and re-renders the WHOLE image (no bit-exact
+      preservation).
+  - lane: omen sd-cli SDXL inpaint
+    status: working-slow
+    detail: >-
+      sd.cpp img_gen masked denoise: `-i init --mask mask` fills
+      latents.denoise_mask — pixels outside mask preserved bit-exact.
+      sdxl-lightning-4step.q4_0 (8 steps, cfg 2) and sdxl-base-1.0-Q8_0
+      (20 steps, cfg 7) on 12c CPU under load ~9: ~300s/step at 1024x1024
+      full-frame -> use crop mode (~640x448 patch, ~4x faster) for
+      defects. RAM: lightning ~3.4GB RSS, Q8 ~5.5GB — do not run both.
+  - lane: flux-fill-local (FLUX.1-Fill-dev gguf via sd.cpp)
+    status: blocked-host
+    detail: >-
+      sd.cpp master-964 has VERSION_FLUX_FILL support verified in
+      source. Needs: flux1-fill-dev gguf (city96 repo now 401-gated,
+      needs HF token w/ license accept; ~5.5-6.8GB Q3/Q4) + t5xxl-enc
+      (~2.9GB Q4) + clip_l (~0.25GB) + ae.safetensors (~0.34GB) =
+      ~9-10GB disk, ~10-13GB RAM peak. No host qualifies today: omen has
+      6.5GB free + swap 96% full (openjev 15GB RSS), dell 3.9GB,
+      macbook 4.8GB, idc02 8.4GB/4c, kk-mac asleep.
+    unblock: >-
+      HF token with FLUX license accept in secrets + either free ~12GB
+      on omen (openjev idle) or kk-mac awake (M4 Max unified memory).
+  - lane: sdxl-inpaint-diffusers on kk-mac
+    status: blocked-host
+    detail: >-
+      Card's named lane; kk-mac unreachable 2026-11-08 (tailscale last
+      seen 1d ago, ssh timeout — asleep). When awake:
+      StableDiffusionXLInpaintPipeline fp16 on MPS covers the same
+      function as the omen sd-cli lane.
+
+runbook:
+  mask: >-
+    python3 scripts/adobe-stock/inpaint-mask.py --image cand.png \
+      --box x,y,w,h [--poly x1,y1;x2,y2] --dilate 8 --feather 12 \
+      --out mask.png
+  cf: >-
+    set -a; . cloudflare.env; set +a; python3 land-render.py \
+      --lane cf-inpaint --job @cf/runwayml/stable-diffusion-v1-5-inpainting \
+      --init-image cand.png --mask mask.png --prompt "..." \
+      --campaign AS-... --asset-id cand-cf-inpaint
+  omen_full_frame: >-
+    python3 scripts/adobe-stock/omen-inpaint.py --image cand.png \
+      --mask mask.png --prompt "..." --model sdxl-lightning \
+      --campaign AS-... --asset-id cand-omen-inpaint
+  omen_crop_mode: >-
+    crop mask-bbox + ~80px context with PIL, resize crop to ~640x448,
+    scp crop+crop-mask, run sd-cli on omen, paste patch back inside the
+    feathered mask, land via --lane local-file. ~4x faster than
+    full-frame for small defects.
+  kk_mac_when_awake: >-
+    pip install diffusers transformers accelerate safetensors;
+    python3 -c 'from diffusers import
+    StableDiffusionXLInpaintPipeline as P; import torch; p =
+    P.from_pretrained("diffusers/stable-diffusion-xl-1.0-inpainting-0.1",
+    torch_dtype=torch.float16).to("mps"); p(prompt=..., image=init,
+    mask_image=mask).images[0].save("out.png")'
+
+processing:
+  status: in-progress
+  steps:
+    - built inpaint-mask.py (box/polygon -> feathered PNG, Pillow)
+    - added land-render.py --lane local-file for CLI-produced results
+    - wrote omen-inpaint.py ssh driver (scp -> sd-cli -> scp -> land)
+    - built masks: fix2 corner (x177,y290,w319,h559 from picker request
+      20261108T025838Z), fix3 wheels (x475,y790,w330,h234)
+    - cf-inpaint retry x2 -> 429 neurons exhausted (still)
+    - gemini control on wheels region -> comparison-e-gemini-fix4-wheels
+      landed (sha 0dc1094c) — near-no-op on wheel geometry, confirms
+      incumbent limitation
+    - launched omen sd-cli lightning inpaint on fix3 wheels mask
+      (full-frame, ~43min ETA under load)
+    - staged 640x448 crop + crop-mask for Q8 quality run
+  decisions:
+    - label: crop-mode preferred for small defects
+      rationale: full-frame denoise computes the whole 128x128 latent
+        each step; a 330px defect wastes ~10x compute at 1024^2
+    - label: sd-cli over diffusers on omen
+      rationale: ggml Q4/Q8 = 1/2 the RAM of fp16 torch and ~2-3x faster
+        on CPU; torch 2.13+cpu present but diffusers absent and heavier
+    - label: gemini region-edit kept as baseline lane
+      rationale: proven on the corner (fix3); masked lanes must beat it
+        on small-geometry defects to justify the extra machinery
+
+artifacts:
+  - tmp worktree files are scratch; durable artifacts land on
+    gdrive:ada-nest-adobe-stock/campaigns/AS-2026-11-05-REMOTE-WORK-001/

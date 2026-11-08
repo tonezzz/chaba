@@ -248,6 +248,18 @@ def fetch_gemini(model: str, prompt: str, init_image: str) -> dict:
     return {"status": "failed", "error": "gemini_no_image"}
 
 
+def fetch_local_file(path: str) -> dict:
+    """Local-file lane: --job carries a path to a finished PNG/JPEG
+    (e.g. produced by a remote sd-cli/diffusers inpaint run and scp'd
+    back). Lets manual/CLI lanes land through the same verify+manifest
+    path as API lanes."""
+    p = Path(path)
+    if not p.exists():
+        return {"status": "failed", "error": f"missing_file:{path}"}
+    return {"status": "completed", "png_bytes": p.read_bytes(),
+            "meta": {"local_file": str(p.name)}}
+
+
 def fetch_pack(remote: str, pack: str) -> dict:
     """Nest lane: pack dir under <remote>/packs/<pack> with done marker
     and out/*.png artifact."""
@@ -372,7 +384,7 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--lane", required=True,
                    choices=["omen-sd", "kk-mac-nest", "cf-workers-ai",
-                            "cf-inpaint", "gemini-image"])
+                            "cf-inpaint", "gemini-image", "local-file"])
     p.add_argument("--job", required=True,
                    help="job id / pack name / CF or Gemini model id")
     p.add_argument("--port", type=int, default=8399)
@@ -402,6 +414,8 @@ def main() -> int:
     elif args.lane == "cf-inpaint":
         res = fetch_cf_inpaint(args.job, args.prompt,
                                args.init_image, args.mask)
+    elif args.lane == "local-file":
+        res = fetch_local_file(args.job)
     else:
         res = wait_result(args.lane, args.job, args.port, args.remote,
                           args.pack, args.status_only, args.timeout_s)
