@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: doing
-updated: 2026-11-08 14:04
+updated: 2026-11-08 14:05
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -102,8 +102,18 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261108-123518-build-an-inpaint-lane-for-the- no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-08 14:05
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-123518-build-an-inpaint-lane-for-the- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-08 14:05
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261108-123518-build-an-inpaint-lane-for-the- on idc02 still dirty —
+    1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
 action:
   type: dispatch
   status: running
   lane: devin
   runner: idc02
+  sweep:
+    stale_running: 2026-11-08 14:05
