@@ -1,0 +1,24 @@
+id: ada-opencode-nl-card-resolve
+title: Natural-language card resolution for Ada/OpenCode commands
+column: backlog
+updated: 2026-11-08 07:35
+brief: Tony should be able to say things like "hibiscus GS project status" or "the media pack card" and have Ada/OpenCode
+  resolve the right kanban card instead of failing with "no board card matched".
+priority: medium
+tags:
+- ada
+- opencode
+- kanban
+- ux
+spec: 'find_card in opencode/ada_mcp.py currently matches only exact id, exact ref, or title substring. Extend it:
+  (1) exact id/ref/alias match stays first, (2) title substring stays, (3) add scored token matching over id+ref+title+brief+spec
+  so natural-language references resolve when a unique best card exists, (4) ambiguous matches return an error listing
+  candidate id/ref/title so the model can retry with an exact ref, (5) support an optional aliases list on cards.
+  Verified live: session ses_e477171e0ffevSlqN7ZwsVtBX9 failed with card_reference="hibiscus GS" for card unified-media-pack-layout
+  (MED-1032). Deploy = copy opencode/ada_mcp.py to idc02 ~/.local/share/ada-opencode/workspace/.opencode/ and restart
+  ada-opencode.'
+ref: ADA-1126
+comms:
+- at: 2026-11-08 07:35
+  from: devin
+  text: card captured via board-api
