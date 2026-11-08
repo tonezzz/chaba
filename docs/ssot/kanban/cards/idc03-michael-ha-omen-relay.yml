@@ -1,0 +1,22 @@
+id: idc03-michael-ha-omen-relay
+title: Declare idc03 -> tony-omen -> michael-ha relay in host SSOT
+column: backlog
+updated: 2026-11-08 15:46
+brief: 'Temporary operational fix is live: idc03 cannot TCP-reach michael-ha:8123 directly, while tony-omen can
+  SSH/HTTP reach it. Installed ~/.config/systemd/user/michael-ha-via-omen-tunnel.service on idc03 (127.0.0.1:18123
+  -> via tony-omen -> michael-ha:8123) and pointed kraut weather/backend envs at it. Weather and rain TG sends now
+  succeed.'
+priority: medium
+tags:
+- infra
+- weather
+- tailscale
+spec: 'Make the relay durable under host hygiene: declare the tunnel in the appropriate SSOT/service manifest, render/install
+  through the canonical deploy path, document the tony-omen dependency and health check, add ordering for weather-bakeoff/kraut-rain-watch/ada-ai-kraut
+  consumers, and audit idc03/michael-ha route policy. Preserve rollback: stop/disable tunnel and restore HOME_ASSISTANT_URL=michael-ha:8123
+  only after direct connectivity is restored.'
+ref: SYS-1208
+comms:
+- at: 2026-11-08 15:46
+  from: tony
+  text: card captured via board-api
