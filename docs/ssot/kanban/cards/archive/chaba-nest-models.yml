@@ -1,0 +1,80 @@
+id: chaba-nest-models
+title: Chaba Nest models — micro AI per node, federated smarts
+brief: 'Idea: give every small node its own tiny AI model that gets smarter when the nodes connect. It''s a vision
+  card sitting in the backlog — no action needed yet.'
+column: done
+priority: medium
+created: 2026-10-07
+updated: 2026-11-08 13:21
+note: 'Vision: smallest simple micro AI per node, run everywhere, smarter when connected (Flower FedAvg over tailnet;
+  syft-flwr file-based for intermittent hosts). Stack: nanochat/distillation factory (jev-student is the proven
+  recipe), ONNX/TFLite-Micro/onnxruntime-web WASM deploy, orch-bench as fitness function, NEAT/OpenEvolve for the
+  evolve layer. Learning track: architecture taxonomy experiments — one real task per family (dense→ops classifier,
+  CNN→edge vision, LSTM→solar/power series, transformer→jev family, autoencoder→anomaly detection).'
+links:
+- docs/ssot/kanban/cards/nest-edge-vision.yml
+- docs/ssot/kanban/cards/monitoring-standard.yml
+- docs/kb/nest-asher-polity-inspiration.md
+spec: 'P0 DONE 2026-10-07: experiments/nest-01-ops-classifier — pure-numpy MLP, 2000 real ops events, 50.7% acc
+  (chance 8%), 10KB model. Lessons: feature ceiling 81% (tool→type), imbalance→collapse→capped weights, temporal
+  split exposes drift. Continuous-education feed live: report-ai-edge.py weekly Mon 06:00 → CMS ai-edge-report.
+  P1: Flower local-sim federation, then real 2-node (omen↔mn01). P2: curriculum of architecture experiments (per-task
+  comparisons logged to MDDB bench collection). P3: evolution loop — NEAT population vs bench, keep winners.
+
+  '
+action:
+  type: dispatch
+  status: done
+  runner: tony-dell
+  task_id: 20261007-210229-p0-done-2026-10-07-experiments
+  result: 20261007-210229-p0-done-2026-10-07-experiments finished (inactive) — see `devin-dispatch logs 20261007-210229-p0-done-2026-10-07-experiments`
+  verified: true
+comms:
+- at: 2026-10-07 21:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 21:02
+  from: chaba
+  text: dispatched 20261007-210229-p0-done-2026-10-07-experiments on chaba
+- at: 2026-10-07 21:06
+  from: devin
+  text: 'P0 verify dispatch: eval.py reproduces 0.507 (203/400) zero-dep; train.py deterministic re-run same score,
+    10KB model.npz. Writing job report + closing trail.'
+- at: 2026-10-07 21:08
+  from: devin
+  text: 'P0 closed out: both eval paths reproduce 0.507 (203/400) deterministically; confusion matrix confirms drift
+    finding (61% majority baseline on jev_advisory-heavy test window — honest, documented). Trail: docs/ssot/jobs/experiments/2026-10-07-nest-01-ops-classifier.yml
+    + dispatch outcome md on branch. P1 handoff noted: flwr venv, Flower-sim vs syft-flwr file-based decision for
+    omen↔mn01.'
+- at: 2026-10-07 21:10
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 21:10
+  from: chaba
+  text: pushed dispatch/20261007-210229-p0-done-2026-10-07-experiments to origin
+- at: 2026-10-07 21:10
+  from: chaba
+  text: auto-merged 87ac8b36 (dispatch/20261007-210229-p0-done-2026-10-07-experiments) → origin/master
+- at: 2026-10-08 05:48
+  from: chaba
+  text: 'merge guard: dispatch/20261007-210229-p0-done-2026-10-07-experiments merged into origin/master'
+- at: 2026-10-08 05:48
+  from: tony
+  text: closed by Tony
+- at: 2026-10-08 13:10
+  from: devin
+  text: 'concept direction adopted: Neal Asher Polity persona/hegemony model is the compass for Nest — canonical
+    doc docs/kb/nest-asher-polity-inspiration.md, linked from this card + nest-collective-bench, nest-portable-brains,
+    nest-micro-training and SSOT ssot.nest-brains/ssot.nest-training.'
+- at: 2026-10-08 05:48
+  from: chaba
+  text: session piquant-eclipse… hidden
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0183'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (31d in done, verified)
+claim:
+  since: 2026-10-07 21:02
+ref: OPS-0183
