@@ -14,6 +14,15 @@ Docs land in collection "host-logs" as {contentMd: line, meta: {host,
 journal, unit, ts, kind}}. Key = hostlog/<host>/<rt_us>-<hash8> (unique
 per emission — never a re-add, so no HNSW tombstone churn).
 
+Docs post in batches via /v1/ingest (~0.1s/doc vs 2-6s/doc for
+individual /adds on a loaded 17GB ops bank — OPS-1153: the per-doc lane
+could not drain idc03's ~1500 docs/h inside TimeoutStartSec=600 once
+write latency crossed ~0.4s). The cursor checkpoints after EVERY
+successful batch, so a SIGTERM kill at the systemd timeout loses at most
+one batch of progress instead of the whole leg — the 2026-11-08 wedge
+(sys cursor frozen 2 days, every run killed mid-leg) was this
+granularity bug, not just slow writes.
+
 MDDB-down tolerant: posts with a short timeout and stops at the first
 failure (lines are ordered — a shipped-cursor gap would silently drop
 lines); the remote cursor only advances past lines confirmed shipped.
@@ -56,9 +65,11 @@ import hashlib
 import json
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -416,6 +427,57 @@ def _post(path: str, payload: dict, timeout: int = 15) -> bool:
         return False
 
 
+BATCH = 100  # docs per /v1/ingest call — measured ~1.8s fixed cost +
+             # ~0.09s/doc vs 2-6s/doc for single /add under load
+
+# Set on SIGTERM/SIGINT — systemd kills oneshot services with TERM at
+# TimeoutStartSec; checking this between batches lets the loop stop
+# cleanly AFTER the last batch's cursor checkpoint, instead of dying
+# mid-leg and replaying everything next run.
+_STOP = False
+
+
+def _on_stop(_sig, _frm) -> None:
+    global _STOP
+    _STOP = True
+
+
+signal.signal(signal.SIGTERM, _on_stop)
+signal.signal(signal.SIGINT, _on_stop)
+
+
+def _doc(r: dict) -> dict:
+    meta = {"host": [r["host"]],
+            "journal": [r["journal"]],
+            "unit": [r["unit"]], "ts": [r["ts"]],
+            "kind": [r["kind"]]}
+    if r.get("suppressed"):
+        meta["suppressed"] = [str(r["suppressed"])]
+    return {"key": r["key"], "lang": "en",
+            "contentMd": f"`{r['ts']}` [{r['unit']}] {r['line']}",
+            "meta": meta}
+
+
+def _ingest(docs: list[dict], timeout: int = 60) -> bool | None:
+    """Bulk-post one batch. True = all added; False = transport/server
+    error or partial failure (caller stops — keys are deterministic, so
+    replaying the batch upserts identical content); None = endpoint
+    missing on this mddb (caller falls back to per-doc /add)."""
+    try:
+        req = urllib.request.Request(
+            f"{MDDB_URL}/ingest",
+            data=json.dumps({"collection": COLLECTION,
+                             "documents": docs}).encode(),
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            res = json.loads(r.read())
+        return not res.get("failed")
+    except urllib.error.HTTPError as e:
+        return None if e.code == 404 else False
+    except Exception:
+        return False
+
+
 def _save_cursor(host: str, user: bool, cursor: str,
                  tag: str = "") -> None:
     _ssh(host, f"mkdir -p ~/.cache; printf '%s' '{cursor}' "
@@ -456,37 +518,43 @@ def ship(host: str, dry: bool, max_docs: int, kinds: set | None = None,
         journals["user" if user else "sys"] = len(rows)
         legs["user" if user else "sys"] = leg
         last_ok = ""
-        for r in rows:
-            if sent >= max_docs:
-                break
+        i = 0
+        while i < len(rows) and sent < max_docs and not _STOP:
+            batch = rows[i:i + min(BATCH, max_docs - sent)]
+            i += len(batch)
             if dry:
-                sent += 1
+                sent += len(batch)
+                last_ok = batch[-1]["cursor"]
                 continue
-            meta = {"host": [r["host"]],
-                    "journal": [r["journal"]],
-                    "unit": [r["unit"]], "ts": [r["ts"]],
-                    "kind": [r["kind"]]}
-            if r.get("suppressed"):
-                meta["suppressed"] = [str(r["suppressed"])]
-            if not _post("/add", {
-                    "collection": COLLECTION, "key": r["key"],
-                    "lang": "en",
-                    "contentMd":
-                        f"`{r['ts']}` [{r['unit']}] {r['line']}",
-                    "meta": meta}):
+            res = _ingest([_doc(r) for r in batch])
+            if res is None:
+                # mddb too old for /v1/ingest — per-doc fallback,
+                # same stop-on-first-failure ordering rule
+                res = True
+                for r in batch:
+                    if not _post("/add",
+                                 {"collection": COLLECTION, **_doc(r)}):
+                        res = False
+                        break
+                    sent += 1
+                    last_ok = r["cursor"]
+            elif res:
+                sent += len(batch)
+                last_ok = batch[-1]["cursor"]
+            if not res:
                 fail += 1
                 # ordered lines — stop here; everything after last_ok
                 # replays next run
                 print(f"warn: {host}: mddb add failed — stopping "
                       f"(cursor replays unshipped)", file=sys.stderr)
                 break
-            sent += 1
-            last_ok = r["cursor"]
-        if not dry and last_ok:
-            if ha:
-                _save_ha_state(host, last_ok, tag)
-            else:
-                _save_cursor(host, user, last_ok, tag)
+            # checkpoint after every batch — a kill at TimeoutStartSec
+            # keeps all confirmed progress
+            if last_ok:
+                if ha:
+                    _save_ha_state(host, last_ok, tag)
+                else:
+                    _save_cursor(host, user, last_ok, tag)
         if fail:
             break
     return {"host": host, "shipped": sent, "failed": fail,
