@@ -1,0 +1,262 @@
+id: ncm-thai-adaptation
+title: NCM (next-concept modeling) for Thai — feasibility + possible training run
+column: done
+updated: 2026-11-08 13:22
+brief: 'Tony asked: what if we train HazyResearch/ncm for Thai? Repo is eval-only — Thai means reimplementing both
+  training stages from the paper. Novel research artifact, no stack utility for Ada.'
+priority: low
+tags:
+- research
+- nlp
+- thai
+- parallel-generation
+spec: 'Context: NCM (arXiv:2610.14162, Education post 1588 / lesson-51569f4faa8f) is a two-stage coarse-to-fine
+  parallel text generator: multiscale residual VQ-VAE tokenizer + level-parallel transformer. Released checkpoints
+  are <=725M params, English/German tasks only.
+
+
+  Feasibility findings:
+
+  - NO training code in repo (evaluate.py + shard scripts only). Training = reimplement both stages; VAR image codebase
+  is the closest reference design.
+
+  - Data: mC4/OSCAR Thai easily reach the paper-scale ~1B-token budget.
+
+  - Compute: toy scale (~100-300M params) = single rented GPU, days, tens of dollars. Local GTX 1650 = toy-only.
+
+  - Thai specifics: byte/char or SentencePiece base units (no spaces in Thai); eval via XL-Sum Thai, scb-mt-en-th,
+  ThaiQA.
+
+  - Value: first Thai coarse-to-fine generator (novel), good learning artifact. No Ada/stack payoff — not instruction-tuned.
+
+  - Cheaper alternative for fast Thai generation: fine-tune existing small Thai AR model (Typhoon/WangchanX).
+
+
+  Done-condition depends on the request outcome:
+
+  - recon-spike: read paper training sections, estimate reimplementation LOC + compute, check/ask authors re training-code
+  release, pick dataset+eval set; verdict comm on this card.
+
+  - toy-train: additionally produce a working Thai NCM at TinyStories-equivalent scale with quality numbers vs a
+  small AR Thai baseline.
+
+  - watch-only: subscribe to repo; revisit when/if training code lands.'
+ref: OPS-0750
+comms:
+- at: 2026-10-20 15:03
+  from: tony
+  text: carded from chat — Tony asked about training NCM for Thai; feasibility assessment in spec; Education post
+    1588 has the repo assessment
+- at: 2026-10-20 15:04
+  from: devin
+  text: 'raised request how-far-should-the-thai-ncm-idea-go-repo-743d93: How far should the Thai-NCM idea go? Repo
+    ships no training code, so any training run means reimplementing both stages f'
+- at: 2026-10-20 15:06
+  from: devin
+  text: 'NCM x Ada Nest mix-and-match analysis (Tony follow-up): no code-level mixing — NCM is a training framework,
+    Nest is a serving topology — but 3 pattern transfers: (1) adaptive-depth/coarse-to-fine = our gate cascade (silence->STT->trivial-filter->Ada
+    turn); the missing rung is a trivial-answer gate specialist, carded separately as ada-nest-trivial-gate; (2)
+    best-of-N sampling + MBR pick = a candidate-ranker shelf item for text lanes, useful under provider caps; (3)
+    frozen tokenizer + generator sp'
+- at: 2026-10-20 15:47
+  from: tony
+  text: 'answered how-far-should-the-thai-ncm-idea-go-repo-743d93: recon-spike — Recon spike (recommended) — read
+    the paper’s training details, size the reimplementation (LOC/compute), check whether authors plan to release
+    training code, pick dataset + eval. Then dec'
+- at: 2026-10-20 15:47
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-20 16:02
+  from: devin
+  text: 'recon-spike done (Tony picked it 15:47): paper ships full recipe — arch tables + AdamW/warmup/clip + budgets
+    (LM1B-scale ~13.4B positions; tokenizer has 0 encoder blocks, simpler than classic VQ-VAE). Missing: trainer
+    code — GH issue #2 (training code request) open+unanswered, assume self-implement ~2-4k LOC, main risk VQ stability.
+    Compute: LM1B-scale ~1-2 H100-days; Thai toy run ~$20-50 rented. Data: mC4/OSCAR-th, eval XL-Sum-th + scb-mt-en-th.
+    Recommended path: reproduce released Sudoku first'
+- at: 2026-10-20 18:15
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 18:15
+  from: idc02
+  text: claimed
+- at: 2026-10-20 18:16
+  from: chaba
+  text: started devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e on idc02 (dispatch)
+- at: 2026-10-20 18:16
+  from: devin
+  text: 'dispatch picked up card — completing recon-spike deliverables: re-verifying paper training details + repo
+    issue status, writing durable recon report, then verdict comm + next-step request.'
+- at: 2026-10-20 18:19
+  from: devin
+  text: 'VERDICT (recon-spike complete — full report: reports/2026-10-20-ncm-thai-recon.md). Repo cloned: ALL model
+    code ships incl. training internals — quantizer does EMA updates, dead-code restart, nested dropout INSIDE forward()
+    under self.training; generator ships idx_to_ncm_input. Missing = loops only: ~1.2-1.5k LOC new code (2 trainer
+    loops + corruption fn + L_NCM loss + Thai SP tokenizer + eval wiring), revising earlier 2-4k down. Recipe fully
+    specified in App.B/C (tokenizer: 0 encoder blocks!, β'
+- at: 2026-10-20 18:20
+  from: devin
+  text: 'raised request recon-done-toy-train-is-cheaper-than-fea-b244ca: Recon done — toy-train is cheaper than
+    feared (~1.2-1.5k LOC new code, <$50, few days) but still zero Ada/stack payoff. '
+- at: 2026-10-20 18:22
+  from: idc02
+  text: 'finished (ok): exit=0 y in `reports/2026-10-20-ncm-thai-recon.md`, and the outcome summary is in `dispatch-outcome-20261020-181610-cont'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: 'session-end checkpoint 98ddb9d9: 1 leftover file(s) committed'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: pushed dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e to origin
+- at: 2026-10-20 18:22
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 18:22
+  from: chaba
+  text: auto-merged e813275d (dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e) → origin/master
+- at: 2026-10-20 18:23
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261020-181610-context-ncm-arxiv-2610-14162-e,
+    branch dispatch/20261020-181610-context-ncm-arxiv-2610-14162-e'
+- at: 2026-10-20 18:29
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''recon-done-toy-train-is-cheape''] block close)'
+- at: 2026-10-20 18:31
+  from: chaba
+  text: 'auto-reconciled ncm-thai-adaptation.yml.local-conflict-20261020-183106: column: ''doing'' -> ''review''
+    (conflict); action: merged per-key (conflict wins); +11 comms'
+- at: 2026-10-20 19:06
+  from: devin
+  text: '[plan-amend] Tony has Colab Pro — compute plan changes: Sudoku reproduction runs on Colab (free/pro tier,
+    small task, ideal validation gate). If VQ stack validates, the Thai toy run goes on Colab Pro (A100 + 24h runtime
+    + background execution) instead of a rented GPU — removes the <$50 line item entirely. Checkpoint-to-Drive discipline
+    still required (sessions can still interrupt on Pro). Rented GPU remains the fallback if a run needs >24h contiguous.'
+- at: 2026-10-20 19:06
+  from: tony
+  text: 'answered recon-done-toy-train-is-cheaper-than-fea-b244ca: toy-train'
+- at: 2026-10-20 19:06
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-20 19:06
+  from: tony
+  text: queued for processing
+- at: 2026-10-20 19:07
+  from: mn01
+  text: claimed
+- at: 2026-10-20 19:07
+  from: chaba
+  text: started devin-task-20261020-120717-context-ncm-arxiv-2610-14162-e on mn01 (dispatch)
+- at: 2026-10-20 19:08
+  from: devin
+  text: 'dispatch picked up card — Tony chose toy-train. Plan: clone HazyResearch/ncm, reimplement missing trainers
+    (~1.5k LOC), validate on Sudoku first, then Thai toy run if hardware permits. Checking mn01 GPU now.'
+- at: 2026-10-20 19:14
+  from: chaba
+  text: 'merge-sweep: devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e no longer active on mn01 but card
+    still says running — sweeping its branch'
+- at: 2026-10-20 19:14
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261020-181610-context-ncm-arxiv-2610-14162-e'
+- at: 2026-10-20 19:19
+  from: devin
+  text: 'toy-train in progress: trainers reimplemented (tokenizer + generator w/ conditioning corruption + L_NCM
+    level weighting per paper). mn01 is CPU-only (4c/7GB) — validating on Sudoku smoke at reduced updates first,
+    then wiring Thai pipeline end-to-end. Real Thai toy numbers need a GPU run (card it to tony-omen or rented).'
+- at: 2026-10-20 20:10
+  from: devin
+  text: 'toy-train progress: full trainer reimplementation done (~1.4k LOC, experiments/ncm-thai/). Sudoku-validated:
+    tokenizer recon CE 0.134 @250 steps (96% recon acc), micro-generator loss 2.9→2.0 acc 44% @50 steps and climbing.
+    Thai pipeline ready end-to-end: mC4-th 120k docs → SP-8k → 300k×128 ids; configs verified vs paper (36.43M/88.61M
+    exact param match). mn01 CPU+earlyoom means the actual Thai toy RUN needs GPU — next step carded as gpu action
+    or rented (<$50, already in accepted option).'
+- at: 2026-10-20 20:17
+  from: devin
+  text: 'toy-train session done: trainers built + Sudoku-validated end-to-end (gen wellformed 100% @~200 steps,
+    acc 58% climbing; solved-rate needs real budget). Thai path fully wired: data+SP+config verified (88.61M gen).
+    Blocker for final numbers = hardware: needs gpu-card to tony-omen or rented GPU. Durable record: docs/ssot/jobs/experiments/2026-10-20-ncm-thai-toy-train.yml;
+    code+README: experiments/ncm-thai/.'
+- at: 2026-10-20 20:22
+  from: mn01
+  text: 'finished (ok): exit=0 omms, and `dispatch-outcome-20261020-120717-context-ncm-arxiv-2610-14162-e.md`. |
+    devin-task-20261020-120717-cont'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: 'session-end checkpoint 395d416a: 4 leftover file(s) committed'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: pushed dispatch/20261020-120717-context-ncm-arxiv-2610-14162-e to origin
+- at: 2026-10-20 20:22
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-20 20:22
+  from: chaba
+  text: auto-merged 9014a636 (dispatch/20261020-120717-context-ncm-arxiv-2610-14162-e) → origin/master
+- at: 2026-10-20 20:29
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-22 14:45
+  from: devin
+  text: 'NEST REPORT filed in Education: new topic lesson "Ada Nest — NCM report" (post 1967, slug lesson-9bc73936498c)
+    — covers repo verdict (~1.2-1.5k LOC missing, all internals ship), train-for-Thai feasibility/status (trainers
+    built + Sudoku-validated in experiments/ncm-thai/, Thai run pending GPU), and the 3 Nest pattern transfers (gate
+    cascade -> ada-nest-trivial-gate, best-of-N + MBR ranker, frozen-interface discipline). Hub ada-nest-map (post
+    1608) inventory updated EN+TH. Upserts in place — repo'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (16d in done, verified)
+requests:
+- id: how-far-should-the-thai-ncm-idea-go-repo-743d93
+  ask: How far should the Thai-NCM idea go? Repo ships no training code, so any training run means reimplementing
+    both stages from the paper. Education post 1588 has the full assessment.
+  status: answered
+  at: 2026-10-20 15:04
+  from: devin
+  options:
+  - id: recon-spike
+    label: Recon spike (recommended) — read the paper’s training details, size the reimplementation (LOC/compute),
+      check whether authors plan to release training code, pick dataset + eval. Then decide.
+  - id: toy-train
+    label: Commit to toy-scale training — recon spike plus an actual Thai NCM at TinyStories-equivalent scale; needs
+      a rented GPU (tens of dollars).
+  - id: watch-only
+    label: Watch only — track the repo, revisit if/when training code is released.
+  - id: drop
+    label: Drop — not worth it; close the card.
+  suggested: recon-spike
+  answer: recon-spike — Recon spike (recommended) — read the paper’s training details, size the reimplementation
+    (LOC/compute), check whether authors plan to release training code, pick dataset + eval. Then decide.
+- id: recon-done-toy-train-is-cheaper-than-fea-b244ca
+  ask: Recon done — toy-train is cheaper than feared (~1.2-1.5k LOC new code, <$50, few days) but still zero Ada/stack
+    payoff. How to proceed?
+  status: answered
+  at: 2026-10-20 18:20
+  from: devin
+  options:
+  - id: watch-only
+    label: 'Watch only (recommended) — subscribe repo; Tony +1s GH issue #2 to nudge authors; revisit when/if trainer
+      lands (would cut remaining work further). Zero cost, keeps optionality.'
+  - id: toy-train
+    label: 'Toy-train — build the ~1.5k LOC trainers, reproduce Sudoku first to validate, then Thai toy run on rented
+      GPU (~$20-50 spend, few sessions). Yield: first Thai coarse-to-fine generator + learning artifact.'
+  - id: typhoon-ft
+    label: Different want — fine-tune Typhoon/WangchanX for fast Thai generation. Cheaper, usable result, but not
+      an NCM.
+  - id: drop
+    label: Drop — close card, keep report.
+  suggested: watch-only
+  answer: toy-train
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0 omms, and `dispatch-outcome-20261020-120717-context-ncm-arxiv-2610-14162-e.md`. | devin-task-20261020-120717-context-ncm-arxiv-2610-14162-e.service:
+    Consumed 2h 21min 16.755s CPU time over 1h 14min 39.109s wall clock time, 3.1G memory peak.'
+  sweep:
+    close_held: 2026-10-20 18:29
+    stale_running: 2026-10-20 19:14
+    no_repo: 2026-10-20 19:14
+  runner: mn01
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-20 20:29
+  note: verified — evidence checks green, closing itself
