@@ -1,0 +1,17 @@
+id: ada-review-refresh-log-shipper-timeout
+title: ada-review-refresh fails — log-shipper.py subprocess exceeds 600s on tony-omen
+column: backlog
+updated: 2026-11-08 10:45
+priority: low
+tags:
+- log-shipper
+- ada-review
+- timeout
+spec: 'ada-review-refresh.service on tony-omen exits 1: its log-shipper.py subprocess hits the 600s timeout. Unit
+  consumed 11.5min wall / 22s CPU — subprocess stalls (likely MDDB push backlog or slow endpoint), not compute-bound.
+  Reproduce: journalctl --user -u ada-review-refresh; check log-shipper.py --self --max-docs 2000 timing standalone.'
+ref: ADA-1166
+comms:
+- at: 2026-11-08 10:45
+  from: tony
+  text: card captured via board-api
