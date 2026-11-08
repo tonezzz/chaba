@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: backlog
-updated: 2026-11-07 15:52
+updated: 2026-11-08 14:15
 priority: medium
 program: ai-workforce
 tags:
@@ -9,17 +9,79 @@ tags:
 - opencode
 - devnest
 - memory
-spec: 'Add a bounded ''consult'' capability so Ada (the orchestrator) can borrow capability without becoming the
-  executor. Two consult sources: (1) MODEL — send a bounded question+context pack to a stronger model via LiteLLM
-  virtual key (candidates already in gateway: gemini-3.5-flash paid, or-gemini-3.1-pro-preview, or-claude-fable-5.1,
-  or paid gemini-3.5-flash alias ''chat''); returns structured answer with model+key attribution, spend logged.
-  (2) NEST/MEMORY — query nest_job records, pack artifacts, and MDDB memory banks (incl. the shared ada-ha-bank-devin-tony
-  collection) for past-experience precedent before drafting specs/wiki content. Boundaries: consult is read-only
-  advice — never execution authority; Ada still cannot approve her own work; every consult logged as an ops event
-  with question hash + model + cost; per-call USD/token caps; sensitive-context classes (secrets, private transcripts)
-  must be stripped or refused before leaving the host. Open questions for spec phase: which LiteLLM key alias funds
-  consults (new LITELLM_KEY_CONSULT vs reuse), whether consult results feed back into memory banks, latency budget
-  for voice turns (consult is async — likely text-lane only at first).'
+spec: 'Add a bounded consult capability so Ada (the orchestrator) can borrow capability without becoming the executor.
+  Ada asks; a stronger model or the Nest/memory store answers; Ada narrates. Consult is read-only advice — never
+  execution authority; Ada still cannot approve her own work.
+
+
+  SOURCES (v1 = model consult only; nest/memory precedent lookup is v2):
+
+  1. MODEL consult — send a bounded question+context pack to a stronger model via LiteLLM. Candidates already in
+  the gateway: chat (gemini-3.5-flash), gemini-3.5-flash-lite, or-gemini-3.1-pro-preview, or-claude-fable-5.1. Returns
+  a structured answer with model+key attribution; spend logged.
+
+  2. NEST/MEMORY consult (v2) — read-only queries over nest_job records, pack artifacts, and MDDB banks (incl. shared
+  ada-ha-bank-devin-tony) for past-experience precedent. Reuse the read-only MDDB adapter built for ada_opencode;
+  board-api /job for nest_job.
+
+
+  DECISIONS (recommendation marked; Tony may override):
+
+  - Funding key: NEW LITELLM_KEY_CONSULT, cap ~$5-10/30d, models allowlisted to consult-tier aliases only. ★ dedicated
+  key so consult spend is attributable.
+
+  - Consult model v1: gemini-3.5-flash via a dedicated LiteLLM alias (not raw chat — pin fallbacks so a consult
+  never silently lands on a weak local model). ★ flash-class for latency; pro/claude aliases stay available as consult_model
+  arg for hard cases.
+
+  - Surface: TEXT LANES ONLY at v1 (TG/LINE/PWA/webchat text). Voice gets async semantics later ("let me check and
+  get back to you") — a multi-second consult cannot hold a Live turn. ★
+
+  - Trigger: explicit user request ("ask the expert", "consult") + optional confidence/ambiguity gate later. NEVER
+  per-turn — ADA-1088 bench showed strong-model polish ties score at 3x cost; consult must be on-demand for hard
+  cases only. ★
+
+  - Memory write-back: NONE at v1 — consult results are ephemeral, logged as ops events (question hash, model, tokens,
+  cost, latency). ★
+
+  - Context boundary: strip/refuse secrets, private transcripts, and memory_write_guard-flagged classes before anything
+  leaves the host; consult prompts carry only the bounded question+context pack the caller passes.
+
+
+  IMPLEMENTATION (ada-voice repo, edit point tony-dell ~/CascadeProjects/ada-voice, deploy via scripts/deploy-ada.sh
+  gates):
+
+  - backend/tools.d/ada_consult.py — DECLARATION + async run(runner, **args); policy read (no confirm gate at v1
+  since it cannot mutate; revisit if consult args can carry sensitive context).
+
+  - Transport: gemini_pool.rest_client() pattern (same as decision_check/devteam/input_polish) honoring ADA_GEMINI_REST_BASE_URL
+  + per-lane virtual key; add ADA_CONSULT_MODEL env (default consult alias) and ADA_CONSULT_MAX_USD/MAX_TOKENS/MAX_WALL_S
+  caps.
+
+  - manifest.yml entry + tool-lint clean + unit tests (mock transport).
+
+  - Reasoning-model gotcha (ADA-1088 bench): gemini-3.5-flash burns max_tokens on reasoning — set consult max_tokens
+  >= 2048 or output truncates mid-answer.
+
+  - Ops event per call: consult_requested/consult_completed/consult_failed with model, tokens, est cost — feeds
+  tools-health scorecard.
+
+
+  VERIFICATION:
+
+  - Unit tests + tool-lint + pytest green on tony-dell before deploy-ada.sh.
+
+  - Live smoke on ada-dev lane only: 3 consult calls (easy/ambiguous/hard) verified in transcript + ops events +
+  LiteLLM spend ledger.
+
+  - Prod lanes (ada-ha-tony etc.) stay without the tool until ada-dev soaks — same pattern as input_polish.
+
+  - Bench: reuse micro-bench dispatch_cmd fixtures — measure whether consult-on-hard-cases beats direct on the fixtures
+  that scored none/partial (target: the 4 messy + ambiguous subset, not the whole set).
+
+
+  OPEN (non-blocking for v1): whether consult results should ever feed memory banks; voice-lane async consult UX;
+  JevTeam panel as a consult reviewer for high-stakes drafts.'
 note: 'Motivation: Ada''s dev/wiki drafting rides gemini-3.5-flash(''chat'' alias); analysis in lesson-c81fa66280af
   (post 4137). Stronger models already benched: gpt-oss:20b, clawbot, hermes3:8b, OR :free nemotron-super-vl/laguna-s.'
 ref: ADA-1084
@@ -33,15 +95,21 @@ comms:
     on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
     consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
     headroom (~2k) or polish output truncates mid-sentence.'
-- at: 2026-11-07 14:47
+- at: 2026-11-08 14:15
   from: devin
-  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
-    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
-    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
-    headroom (~2k) or polish output truncates mid-sentence.'
-- at: 2026-11-07 15:52
-  from: devin
-  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
-    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
-    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
-    headroom (~2k) or polish output truncates mid-sentence.'
+  text: re-spawned from report page
+- at: 2026-11-08 14:15
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — labels [''ada'', ''consult''] satisfied by no declared
+    runner (fleet advertises [''ada'', ''always-home'', ''always-on'', ''cpu'', ''desktop'', ''edge'', ''gpu'',
+    ''local-8c'', ''low-mem'', ''macbook'', ''push:ada-voice'', ''push:chaba'', ''push:gods-eye-view'', ''push:mddb-fork'',
+    ''push:sunsynk-card'', ''small'', ''ssd'']). Fix action.labels/host pins or teach a runner the capability (RUNNER_LABELS
+    + ssot.kanban.yml runner_fleet)'
+action:
+  type: dispatch
+  repo: ada-voice
+  labels:
+  - ada
+  - consult
+  status: queued
+awaiting_action: true
