@@ -42,8 +42,14 @@ HEARTBEAT = STATE_DIR / "sentinel-heartbeat.json"
 SWEEP_STALE_MIN = 30
 ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 
-# timers whose silence must always card — the load-bearing ones
-CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
+# timers whose silence must always card — the load-bearing ones.
+# chaba-jobs dropped 2026-11-08: the dispatcher was retired by OPS-0790
+# (zero dispatch:dispatcher jobs remain; per-job rendered timers replaced
+# the tick). Hosts that still expect it declare it in the audit census —
+# expected_state:active there is what keeps the dell unit covered during
+# the rollout, and what flagged nothing on idc03 once it was deliberately
+# disabled (timer-alert-idc03-chaba-jobs was a false positive of this set).
+CRITICAL = {"kanban-commit", "kanban-dispatch",
             "timer-timeline-update", "timer-sentinel"}
 
 # hosts that are EXPECTED to be off regularly — unreachable ≠ suspicious

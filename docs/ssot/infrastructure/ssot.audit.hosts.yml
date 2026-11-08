@@ -173,11 +173,13 @@ hosts:
         scope: user
         expected_state: active
         critical: true
-        note: "1min — drives scripts/job-dispatcher.py for dispatch:dispatcher
-          jobs in ssot.jobs.yml (yomi-update-active, mcp-debug-h3-sync,
-          tony-dell-health-snapshot, network-scan-tony). Was found disabled
-          2026-10-13 with no audit trail (OPS-0531) — a disabled tick here
-          silently starves every dispatcher job, so expected_state is critical"
+        note: "1min — legacy job-dispatcher tick, RETIRED by OPS-0790
+          (2026-10-29): zero dispatch:dispatcher jobs remain in ssot.jobs.yml
+          so each tick is a no-op. Still expected active on dell per rollout
+          plan — disable only after all 8 migrated timers verified; dell's
+          lesson-drift-check.timer is still unarmed (gap found 2026-11-08).
+          Already disabled+retired on idc03 (see its census entry).
+          History: found disabled 2026-10-13 with no audit trail (OPS-0531)"
       - name: timer-timeline-update.timer
         type: timer
         scope: user
@@ -1967,6 +1969,18 @@ hosts:
         critical: false
         note: Hourly git-safe-pull of ~/CascadeProjects/chaba — installed
           2026-10-09 after checkout drifted 190 commits behind (audit finding)
+      - name: chaba-jobs.timer
+        type: timer
+        scope: user
+        expected_state: inactive
+        critical: false
+        note: "RETIRED — legacy job-dispatcher tick. All dispatch:dispatcher
+          jobs migrated to per-job rendered timers 2026-10-29 (OPS-0790);
+          unit files remain in ~/.config/systemd/user but the timer stays
+          disabled on idc03 — verified replacements live 2026-11-08
+          (embed-lane-news/-lessons, yomi-update-active all firing).
+          Deliberate end-state: do NOT re-enable. Alert that surfaced it:
+          timer-alert-idc03-chaba-jobs (OPS-1148)."
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: ada-bankq-student.service, type: service, scope: user}
       - {name: ada-kk.service, type: service, scope: user}

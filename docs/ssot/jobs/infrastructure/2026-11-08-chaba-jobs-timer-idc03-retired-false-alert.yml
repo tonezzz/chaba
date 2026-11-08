@@ -1,0 +1,70 @@
+id: 2026-11-08-chaba-jobs-timer-idc03-retired-false-alert
+title: chaba-jobs.timer idc03 disabled — deliberate (OPS-0790 retirement); sentinel false positive fixed
+domain: infrastructure
+date: 2026-11-08
+status: resolved
+cards:
+- timer-alert-idc03-chaba-jobs
+- chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
+ref: OPS-1148
+
+summary: >
+  timer-sentinel carded `chaba-jobs.timer` on idc03 as "disabled but
+  expected active". Investigation — the disable is the intended
+  end-state of OPS-0790. Tony approved (2026-10-29) migrating all
+  dispatch:dispatcher jobs to per-job rendered systemd timers and
+  retiring the legacy dispatcher. Zero dispatch:dispatcher entries
+  remain in ssot.jobs.yml. Verified live on idc03 — replacements
+  embed-lane-news.timer, embed-lane-lessons.timer and
+  yomi-update-active.timer are armed and firing on schedule, so
+  nothing is starved. The timer was already disabled when found on
+  2026-10-23; re-enabling was explicitly NOT the chosen option.
+
+  The alert was a stale-declaration false positive. "chaba-jobs" sat
+  in timer-sentinel.py's hardcoded CRITICAL set, which cards any
+  disabled unit by name regardless of census. idc03 had no census
+  entry, so CRITICAL was the only trigger.
+
+changes:
+  - "scripts/ada/timer-sentinel.py — dropped chaba-jobs from CRITICAL;
+    hosts that still expect it cover it via census expected_state:active
+    (tony-dell entry unchanged — still enabled+active there during
+    rollout, still alerts if it dies)."
+  - "docs/ssot/infrastructure/ssot.audit.hosts.yml idc03 — added
+    chaba-jobs.timer entry, expected_state:inactive, documenting the
+    retirement (deliberate; do-not-re-enable; OPS-1148)."
+  - "same file tony-dell — note updated to record that the tick is a
+    no-op now, stays expected active until the rollout's step-3
+    disable, and that dell's lesson-drift-check.timer is still unarmed."
+
+verification: >
+  Live checks 2026-11-08 ~13:15 +07 — idc03 chaba-jobs.timer
+  disabled/inactive; embed-lane-news fired 27min ago (next 32min),
+  embed-lane-lessons 21h ago (next 2.5h, daily), yomi-update-active
+  6min ago (next 8min). Simulated sentinel logic against updated
+  census — idc03 disabled produces no card, idc02 missing produces
+  no card, tony-dell still covered via expected_state:active.
+
+residuals:
+  - "tony-dell — chaba-jobs.timer still enabled+active, ticking a no-op
+    dispatcher every minute; per plan, disable --now only after all 8
+    migrated timers verified."
+  - "tony-dell rollout gap — lesson-drift-check.timer unit installed but
+    DISABLED (never armed), so that job has silently not run since the
+    2026-10-29 migration. Fix — systemctl --user enable --now
+    lesson-drift-check.timer on tony-dell, then census-declare it
+    (E9 in dispatcher-systemd-migration-2026-10-29.md). Surfaced on
+    parent card chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b."
+  - "idc03 — chaba-jobs.{service,timer} unit files remain in
+    ~/.config/systemd/user; removal is part of the OPS-0790 cleanup
+    commit (job-dispatcher.py + config.dispatcher + render-jobs.py
+    dispatcher branch). If files are deleted, flip the census entry to
+    expected_state:absent to avoid a missing-unit card."
+  - "Until this branch merges and reaches tony-omen's exec checkout
+    (sentinel runs there), the sentinel keeps commenting on the alert
+    card — cosmetic, self-resolves on merge."
+
+verify:
+  - "ssh idc03 systemctl --user list-timers | grep -E 'embed-lane|yomi-update-active' — all NEXT/LEFT populated"
+  - "python3 yaml load of ssot.audit.hosts.yml — idc03 chaba-jobs.timer expected_state:inactive"
+  - "after merge + chaba-repo-sync on tony-omen — sentinel heartbeat findings no longer include timer-alert-idc03-chaba-jobs"
