@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
 column: backlog
-updated: 2026-11-08 19:48
+updated: 2026-11-08 20:34
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -51,6 +51,12 @@ comms:
 - at: 2026-11-08 19:48
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 20:34
+  from: devin
+  text: 'Completed with interactive TTY: Omen and Dell updated to 3000.12.28; `devin doctor` passes on both. MacBook
+    remains 3000.11.3 because `devin update` says auto-update is unavailable for this standalone binary. The official
+    installer was inspected and ends by running `devin setup` (authentication + MCP configuration wizard); installer
+    has not been run and the existing binary is unchanged.'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
