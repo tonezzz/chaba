@@ -24,6 +24,7 @@
   <button onclick="dl('json')">Download request.json</button>
   <button onclick="cp('gemini')">Copy Gemini edit prompt</button>
   <button onclick="cp('cf')">Copy CF inpaint JSON</button>
+  <button onclick="submitReq()">Submit repair request</button>
   <button onclick="resetSel()">Clear selection</button>
 </div>
 <div id="out" class="dim">drag a rectangle on the image, add a comment, then pick an output</div>
@@ -144,5 +145,27 @@ function cfPayload(){
 function cp(kind){
   const t = kind==='gemini' ? geminiPrompt() : JSON.stringify(cfPayload(),null,2);
   navigator.clipboard.writeText(t).then(()=>alert('copied to clipboard'));
+}
+async function submitReq(){
+  const r = nat();
+  if(!r){alert('select a region first');return}
+  if(!c.value.trim()){alert('add a comment first');return}
+  const payload = {
+    image: (im.currentSrc||'').split('/').pop(),
+    region: r, comment: c.value.trim(),
+    gemini_prompt: geminiPrompt(),
+    mask_png_b64: maskCanvas().toDataURL('image/png'),
+    submitted_at: new Date().toISOString()
+  };
+  try{
+    const resp = await fetch('/submit',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)});
+    const d = await resp.json();
+    out.className='';
+    out.textContent = d.ok
+      ? `SUBMITTED ${d.id} (board: ${d.board}) — agent will pick it up.`
+      : `submit failed: ${JSON.stringify(d)}`;
+  }catch(e){ alert('submit failed: '+e); }
 }
 </script>
