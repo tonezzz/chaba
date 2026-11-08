@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: backlog
-updated: 2026-11-08 08:35
+updated: 2026-11-08 10:00
 priority: medium
 tags:
 - embedding
@@ -23,3 +23,10 @@ comms:
 - at: 2026-11-08 08:35
   from: devin
   text: card captured via board-api
+- at: 2026-11-08 10:00
+  from: devin
+  text: 'DECISION DATA IN — option (a) wins on quality AND latency. Depth ablation rescored from saved GPU ranks
+    (rerank top-K + dense tail): top10 .262/.938, top20 .251/.892, top30 .263/.887, top50 .260/.869 (overall r@5/MRR).
+    Top-10 BEATS Gemini outright (.938 vs .893 MRR; Thai 1.000) at 565ms — deep pools dilute, the cross-encoder
+    does its best work on the dense head. RECOMMEND: top-10 sync rerank (~565ms after ~130ms dense fetch ~= 700ms
+    voice path), keep Gemini as fallback upstream. Lighter-reranker'
