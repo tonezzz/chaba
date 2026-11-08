@@ -93,6 +93,13 @@ comms:
 - at: 2026-11-08 13:29
   from: chaba
   text: started devin-task-20261108-132902-gdrive-root-consolidation-arch on idc02 (dispatch)
+- at: 2026-11-08 13:29
+  from: devin
+  text: '[phase-B audit+moves 2026-11-08] MOVED now (zero live consumers, verified): appsheet -> archive/appsheet;
+    DevinBackups -> backups/devin (vacuum-devin-db.sh default updated). Audit shows EVERY other phase-B dir has
+    a live consumer on a host checkout / deployed unit / colab notebook — cannot move unattended without a breakage
+    window. Plan + move tool staged: docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation-phase-b.yml
+    + scripts/ops/gdrive-root-consolidate.sh (status|move|sweep). '
 action:
   type: dispatch
   status: queued
