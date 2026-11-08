@@ -1,0 +1,13 @@
+id: fixture-spec-bug-ops-readonly-artifact-e-95ef6e
+title: 'Fixture spec bug: ops-readonly artifact expect.required_keys mismatch'
+column: backlog
+updated: 2026-11-08 12:26
+ref: OPS-1176
+comms:
+- at: 2026-11-08 12:26
+  from: devin
+  text: 'Found during ada-opencode-live-demo-opsread closeout (2026-11-07): run 1 failed ''required fields'' because
+    the card''s expect.required_keys=[artifact,tests,verifier] doesn''t match the ops-readonly artifact shape. verified:false
+    was correct behavior, but the fixture spec itself is wrong — ops-readonly jobs will keep failing verification
+    until expect.required_keys matches the actual artifact contract. Fix the fixture/card template so read_only
+    runs verify cleanly.'
