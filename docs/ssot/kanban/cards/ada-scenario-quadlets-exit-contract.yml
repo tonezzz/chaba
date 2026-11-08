@@ -1,0 +1,20 @@
+id: ada-scenario-quadlets-exit-contract
+title: Deploy quadlet exit-contract shim (smoke/full) — image rebuild pending
+column: backlog
+updated: 2026-11-08 11:02
+priority: medium
+tags:
+- ada
+- scenario-runner
+- idc03
+- ops-0581
+note: 'OPS-0581 residual: ada-scenario-smoke + ada-scenario-full quadlets bypass scenario-suite-run.sh, so completed-but-failing
+  runs exit 1 (seen 2026-11-08 10:37 — bench $2 LiteLLM cap crossed mid-run, 20 fails, outage sentinel, completed
+  run -> exit-code). Fixed in stack: container-suite-run.sh entrypoint shim greps scenario-report.py final "N scenarios:"
+  marker, exit-1-with-marker -> 0 (mirrors **Score: contract). DEPLOY: run stacks/services/ada-scenario-runner/install.sh
+  on idc03 (rebuilds image).'
+ref: ADA-1171
+comms:
+- at: 2026-11-08 11:02
+  from: devin
+  text: card captured via board-api
