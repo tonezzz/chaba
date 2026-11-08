@@ -1,0 +1,142 @@
+id: nest-node-hardware
+title: Nest node hardware — shortlist, first buy, USB cams for spare PCs
+brief: 'Tony 2026-10-10: find a wifi camera that can itself be a Chaba Nest Node; find good devices for Nest Nodes
+  generally; include USB cameras for PCs already lying around. Comparison matrix and buy plan in reports/nest-node-hardware.md.'
+column: done
+program: chaba-nest
+priority: medium
+created: 2026-10-10
+updated: 2026-11-08 13:22
+autonomy: t2
+links:
+- chaba-nest
+- nest-edge-vision
+- nest-micro-training
+- nest-io-fabric
+spec: 'Hardware chosen per Tony: Luckfox Pico Ultra W + ESP32-P4-EYE (~$75 total) - one vision node + one MCU node.
+  Produce the order checklist + provisioning runbook (enroll path, first-boot steps, cam/mic wiring for the vision
+  node) as a doc - no purchase inside the dispatch. Done when the plan doc lands.'
+metric: One vision node + one MCU node ordered, flashed, registered to HA/Frigate + reporting a first micro-AI detection
+  into Chaba (ops event or MDDB note).
+verify: Detection object from the Luckfox NPU lands in MDDB/Frigate events via tailnet; ESP32-P4 emits a person-detect
+  flag; both visible on the nest dashboard lane without cloud dependence.
+requests:
+- id: first-buy
+  ask: Which nodes to order first for the Nest hardware pilot?
+  status: answered
+  suggested: luckfox-plus-esp32p4
+  options:
+  - id: luckfox-plus-esp32p4
+    label: ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node + one MCU node
+  - id: luckfox-only
+    label: Luckfox Pico Ultra W only (~$40) — prove the vision lane first
+  - id: full-kit
+    label: Luckfox + ESP32-P4 + OPi Zero 2W (~$110) — full three-tier pilot
+  - id: usb-first
+    label: USB cam on spare PC first (~$25) — zero new host, slower to the Nest vision
+  - id: lora-pair
+    label: +2x LilyGo T-Beam LoRa pair (~$45, AS923) — LoRa->MQTT->HA pilot
+  answer: luckfox-plus-esp32p4 — ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node + one MCU node
+comms:
+- at: 2026-10-10 12:26
+  from: tony
+  text: 'answered first-buy: luckfox-plus-esp32p4 — ★ Luckfox Pico Ultra W + ESP32-P4-EYE (~$75) — one vision node
+    + one MCU node'
+- at: 2026-10-10 12:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-11 07:00
+  from: tony
+  text: moved backlog -> doing
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0437'
+- at: 2026-10-15 13:05
+  from: tony
+  text: moved doing -> backlog
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
+- at: 2026-10-26 07:06
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 07:06
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 07:06
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 07:07
+  from: chaba
+  text: started devin-task-20261026-070652-hardware-chosen-per-tony-luckf on tony-macbook (dispatch)
+- at: 2026-10-26 07:11
+  from: devin
+  text: 'plan doc landed: reports/nest-node-hardware.md — order checklist (G3 Ultra W + SC3336 cam bundle, P4-EYE
+    w/ u.FL antenna, ~$75) + provisioning runbook (buildroot/CSI+rkipc RTSP, WiFi+tailnet enroll, Frigate cameras.json
+    lane, MDDB ops-event shape, ESP-IDF/esp-dl vs ESPHome lanes). No purchase made — ready for Tony to order.'
+- at: 2026-10-26 07:12
+  from: tony-macbook
+  text: 'finished (ok): exit=0 ile is written, and no purchase was made — the doc is ready for Tony to order against.
+    | devin-task-20261026-0706'
+- at: 2026-10-26 07:12
+  from: chaba
+  text: 'session-end checkpoint 73c5ad75: 1 leftover file(s) committed'
+- at: 2026-10-26 07:12
+  from: chaba
+  text: pushed dispatch/20261026-070652-hardware-chosen-per-tony-luckf to origin
+- at: 2026-10-26 07:12
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 07:12
+  from: chaba
+  text: auto-merged 62f968ff (dispatch/20261026-070652-hardware-chosen-per-tony-luckf) → origin/master
+- at: 2026-10-26 07:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-070652-hardware-chosen-per-tony-luckf,
+    branch dispatch/20261026-070652-hardware-chosen-per-tony-luckf'
+- at: 2026-10-26 07:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 07:31
+  from: chaba
+  text: 'merge-sweep: devin-task-20261026-070652-hardware-chosen-per-tony-luckf no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-26 07:31
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-070652-hardware-chosen-per-tony-luckf on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-26 08:29
+  from: tony
+  text: moved doing -> done
+- at: 2026-10-26 08:49
+  from: chaba
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 09:16
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (13d in done, verified)
+ref: OPS-0437
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 ile is written, and no purchase was made — the doc is ready for Tony to order against. | devin-task-20261026-070652-hardware-chosen-per-tony-luckf.service:
+    Consumed 1min 3.925s CPU time over 4min 40.223s wall clock time, 576.3M memory peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-10-26 07:31
+    session_gone: 2026-10-26 07:31
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:16
+  note: verified — evidence checks green, closing itself
