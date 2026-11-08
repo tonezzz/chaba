@@ -70,6 +70,10 @@ comms:
     --check` reproduces the environment gate (154 branches, 57 ahead, 128 worktrees; `Too many branches ahead: 57`).
     The targeted board-api tests and dispatch/runner/merge-sweep suites pass, and syntax passes. No merge/deploy
     occurred. A live POST /action do=move also re'
+- at: 2026-11-08 16:41
+  from: devin
+  text: 'raised request knb1196-ci-branch-sprawl-gate: PR #128 local code tests pass, but GitHub validate is red
+    on the dev-system-assess branch-ahead gate (57 ahead). Do you '
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -98,4 +102,14 @@ requests:
   suggested: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
   answer: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (approved
     via chat).
+- id: knb1196-ci-branch-sprawl-gate
+  ask: 'PR #128 local code tests pass, but GitHub validate is red on the dev-system-assess branch-ahead gate (57
+    ahead). Do you want me to merge/deploy despite that unrelated CI gate, or hold for branch cleanup first?'
+  status: open
+  at: 2026-11-08 16:41
+  from: devin
+  options:
+  - Hold deployment until the branch-sprawl gate is green (recommended).
+  - Approve merging despite the unrelated red validate check; local targeted tests pass.
+  suggested: Hold deployment until the branch-sprawl gate is green (recommended).
 awaiting_action: true
