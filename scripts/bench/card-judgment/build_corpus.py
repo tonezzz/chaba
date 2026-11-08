@@ -90,6 +90,10 @@ def tail(comms_list, idx, n=6, width=280):
 
 
 def snapshot(card, comms_idx):
+    reqs = [r for r in (card.get("requests") or [])
+            if str(r.get("status", "")).lower() not in
+            ("answered", "resolved", "closed")]
+    act = card.get("action") or {}
     return {
         "title": card.get("title"),
         "priority": card.get("priority", "medium"),
@@ -97,6 +101,13 @@ def snapshot(card, comms_idx):
         "tags": [str(t) for t in (card.get("tags") or [])],
         "brief": str(card.get("brief") or card.get("note") or "")[:400],
         "spec_present": bool(card.get("spec")),
+        # open requests/claim/action state — the real tool sees these; a
+        # pending ask or live claim IS the defer signal. v1/v2 dropped
+        # them and the model over-acted on judgment-call cards.
+        "open_requests": [{"ask": str(r.get("ask") or "")[:120]}
+                          for r in reqs][:3],
+        "claim": (card.get("claim") or {}).get("status"),
+        "action_status": act.get("status"),
         "comms_tail": tail(comms(card), comms_idx),
     }
 
