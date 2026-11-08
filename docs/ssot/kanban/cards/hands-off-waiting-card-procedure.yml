@@ -29,8 +29,11 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: running
+  status: failed
   runner: tony-macbook
+  result: 'exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with result ''exit-code''.
+    | devin-task-20261108-071214-define-and-implement-the-hands.service: Consumed 2.609s CPU time over 1.338s wall
+    clock time, 71.5M memory peak.'
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -79,3 +82,7 @@ comms:
 - at: 2026-11-08 07:12
   from: chaba
   text: started devin-task-20261108-071214-define-and-implement-the-hands on tony-macbook (dispatch)
+- at: 2026-11-08 07:12
+  from: tony-macbook
+  text: 'finished (failed): exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with
+    result ''exit-code''. | devin-task-2'
