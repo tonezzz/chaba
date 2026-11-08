@@ -1,7 +1,7 @@
 id: cms-11023-parked-writers
 title: 'MEM-0545 residual: unit-level :11023 pins still write ada-cms-pages to parked DB'
 column: done
-updated: 2026-11-08 10:54
+updated: 2026-11-08 16:04
 brief: 'MEM-0545 repointed repo scripts to mddb-cms :11027 but unit-file MDDB env/--mddb args and installed copies
   kept writing to :11023. nest-mgr was the visible case (stale nest-* pages); a grep of ~/.config/systemd/user shows
   more: idc03 jev-bench.service (ExecStart --mddb :11023 -> ada-cms-pages/bench-jev, last write 12:47 UTC), idc03
@@ -156,4 +156,3 @@ requests:
   answer: delete now
 review_kind: verify
 claim: {}
-awaiting_action: true

@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 14:54
+updated: 2026-11-08 16:04
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -224,9 +224,12 @@ comms:
 - at: 2026-11-08 14:54
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 16:04
+  from: chaba
+  text: 'answer-sweep: executed ''proceed'' -> queued for processing'
 action:
   type: dispatch
-  status: idle
+  status: queued
 requests:
 - id: phase-b-every-remaining-root-dir-is-a-li-7a4820
   ask: 'Phase B: every remaining root dir is a live API (queues, DR tier, FUSE mounts, external workers). Options:
@@ -241,6 +244,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-08 queue
 - id: phase-b-layout-for-the-4-ada-nest-lane-d-b4fc84
   ask: 'Phase-B layout for the 4 ada-nest-* lane dirs — options: (a) ★ nest under gdrive:ada-nest/ as ada-nest/adobe-stock|devnest|kk-llm|kk-mac-video-pilot
     (root -4 dirs, refs updated in one commit, sweep catches stragglers); (b) leave flat at root (skip phase B for
@@ -253,6 +257,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-08 queue
 - id: phase-b-layout-decision-every-phase-b-di-2fd698
   ask: 'Phase-B layout decision — every phase-B dir has live consumers so no move is free; env-override prep is
     shipped in the dispatch branch (ADA_ADOBE_STOCK_REMOTE, DEVNEST_REMOTE, KK_LLM_REMOTE, KK_MAC_VIDEO_PILOT_REMOTE,
@@ -270,6 +275,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-08 queue
 - id: phase-b-decision-all-remaining-gdrive-ro-be06dc
   ask: 'Phase-B decision — all remaining gdrive root dirs are live, none dead. Options: (a)★ STOP at phase A + close
     card (recommended — moving live roots buys cosmetics, costs multi-host migration); (b) migrate the 4 ada-nest-*
@@ -283,6 +289,7 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-11-08 queue
 - id: phase-b-executed-4-dirs-remain-gated-on-167376
   ask: 'Phase B executed; 4 dirs remain gated on host-side config — pick per-item: (1) gdrive:backups 180GiB DR
     tier, dell units embed path inline → ★keep at root (move needs unit redeploy) | move to ada-nest/backups. (2)
@@ -297,4 +304,4 @@ requests:
   - proceed
   - hold
   answer: proceed
-awaiting_action: true
+  executed: 2026-11-08 queue

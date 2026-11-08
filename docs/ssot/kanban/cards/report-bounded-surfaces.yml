@@ -4,10 +4,10 @@ brief: 'The report registry now declares the standard (bounded_surfaces in ssot.
   gets limits, suppression, explicit empties, and ordered overflow — the same knobs the memory render just gained.
   This card implements it: extract the shared helpers, wire the L3 system report as pilot, and teach report-watch
   to flag surfaces that breach their declared budget.'
-column: done
+column: doing
 priority: medium
 created: 2026-10-08
-updated: 2026-11-08 13:56
+updated: 2026-11-08 16:04
 pipeline: ci
 autonomy: t2
 metric: 'SYSTEM-REPORT.md renders with a declared budget: over-budget sections shed in declared order (not arbitrary
@@ -110,6 +110,10 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
+- at: 2026-11-08 16:04
+  from: chaba
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
 claim: {}
 requests:
 - id: merge-conflict
@@ -121,4 +125,3 @@ requests:
   from: chaba
   answer: Merge by hand
 ref: KNB-0416
-awaiting_action: true

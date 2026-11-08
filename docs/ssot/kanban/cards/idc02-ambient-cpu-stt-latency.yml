@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
 column: done
-updated: 2026-11-08 07:33
+updated: 2026-11-08 16:04
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -122,7 +122,6 @@ requests:
   - escalate — convert ada-stt to system unit with Nice=-10 on con01 (+idc02/idc03)
   suggested: ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
   answer: ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
-awaiting_action: true
 auto_close:
   by: merge-sweep
   at: 2026-11-08 07:33

@@ -3,7 +3,7 @@ title: unified ACL resolver + 'who can do what' explain command
 brief: 'Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json
   overlay, and per-bank allowed_tools. ada_device_acl patched one room''s need; the unification is still ahead.
   Waiting in backlog.'
-column: done
+column: doing
 metric: ada_ops action='acl_explain' identity=X entity=Y traces which layer allowed/denied
 verify: explain a granted, a denied, and an ambiguous case — output names the deciding layer each time
 note: 'Read-only first step before merging the systems: one resolver function consumed by all three gates, then
@@ -11,7 +11,7 @@ note: 'Read-only first step before merging the systems: one resolver function co
   Second phase (separate card when designed): converge the stores behind the resolver.'
 help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
   bank.allowed_tools gate; ada-kanban-access card for the ACL design history
-updated: 2026-11-08 13:29
+updated: 2026-11-08 16:04
 comms:
 - at: 2026-10-10 09:03
   from: devin
@@ -74,6 +74,10 @@ comms:
 - at: 2026-11-08 13:29
   from: tony
   text: unarchived — back on the board
+- at: 2026-11-08 16:04
+  from: chaba
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
 action:
   type: dispatch
   status: done
