@@ -56,6 +56,13 @@ comms:
 - at: 2026-11-08 16:36
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 16:36
+  from: tony
+  text: 'answered deploy-knb1196-board-api: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify,
+    and keep runners paused (approved via chat).'
+- at: 2026-11-08 16:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -75,11 +82,13 @@ requests:
     the tested fix, pause idc03 kanban-dispatch and runner-agent timers during rollout, restart chaba-board-api.service,
     and verify via a disposable non-dispatch contract card. All affected runner timers will remain paused after
     verification until you separately approve resumption.
-  status: open
+  status: answered
   at: 2026-11-08 16:22
   from: devin
   options:
   - Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
   - No — keep the tested commit local for review; make no production changes.
   suggested: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
+  answer: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (approved
+    via chat).
 awaiting_action: true
