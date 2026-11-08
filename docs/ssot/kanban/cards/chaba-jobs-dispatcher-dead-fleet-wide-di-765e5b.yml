@@ -1,7 +1,7 @@
 id: chaba-jobs-dispatcher-dead-fleet-wide-di-765e5b
 title: chaba-jobs dispatcher dead fleet-wide — dispatch:dispatcher jobs not firing
 column: backlog
-updated: 2026-10-30 01:37
+updated: 2026-11-08 13:14
 action:
   type: manual
 ref: OPS-0790
@@ -71,6 +71,13 @@ comms:
     eight migrated jobs. OPS-0992 was held because idc02 cannot push; OPS-0993 is queued to tony-dell to add/test
     a per-job selector before deployment. No live timer units were changed. OPS-0993 is still unclaimed during the
     current quiet-hours window.'
+- at: 2026-11-08 13:14
+  from: devin
+  text: 'Rollout state check 2026-11-08 (from timer-alert-idc03-chaba-jobs work): idc03 = end-state reached — chaba-jobs.timer
+    disabled/inactive AND all 3 replacements armed+firing (embed-lane-news, embed-lane-lessons, yomi-update-active).
+    tony-dell = chaba-jobs.timer still enabled+active (no-op ticks) BUT lesson-drift-check.timer is installed yet
+    DISABLED — never armed, so that job has silently not run since 10-29. Remaining rollout step: enable --now lesson-drift-check.timer
+    on dell + census-declare it'
 requests:
 - id: the-chaba-jobs-timer-is-inacti-04f0e4
   ask: The chaba-jobs.timer is inactive on idc03 and absent on dell and mn01, causing all ssot.jobs.yml jobs with
