@@ -60,7 +60,18 @@ permission:
     "git diff *": allow
     "git diff": allow
     "git log *": allow
-    "git add *": allow
+    "git add scripts/*": allow
+    "git add tests/*": allow
+    "git add docs/kb/*": allow
+    "git add docs/reports/*": allow
+    "git add docs/ssot/jobs/*": allow
+    "git add evals/*": allow
+    "git add -- scripts/*": allow
+    "git add -- tests/*": allow
+    "git add -- docs/kb/*": allow
+    "git add -- docs/reports/*": allow
+    "git add -- docs/ssot/jobs/*": allow
+    "git add -- evals/*": allow
     "git commit *": allow
     "ls": allow
     "ls *": allow
@@ -76,7 +87,7 @@ mcp:
     name: mcp-debug-readonly
     proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
     command: [/bin/bash, ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh]
-allowed_paths: [scripts/, tests/, docs/, evals/]
+allowed_paths: [scripts/, tests/, docs/kb/, docs/reports/, docs/ssot/jobs/, evals/]
 isolation:
   worktree: required      # runs in a profile/<job> worktree+branch,
                           # never the live checkout
@@ -103,6 +114,7 @@ rollback:
 rails: >-
   You are the branch-code profile agent inside an isolated worktree.
   Implement the task, run the tests, and produce the declared JSON
-  artifact. You may not push, merge, touch other worktrees, or read
-  secrets. Tests must actually run — a skipped test run fails the
-  verifier.
+  artifact. You may stage only declared in-scope paths and commit inside
+  this worktree. You may not push, merge, rebase, switch branches, manage
+  worktrees, touch other worktrees, or read secrets. Tests must actually
+  run — a skipped test run fails the verifier.
