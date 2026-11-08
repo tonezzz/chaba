@@ -1,0 +1,19 @@
+id: embed-pool-shim-fast-fail-for-dead-upstr-7343c9
+title: embed-pool-shim fast-fail for dead upstreams (member loss costs 17x latency)
+column: backlog
+updated: 2026-11-08 10:31
+priority: low
+tags:
+- ops
+- embed-pool
+- reliability
+spec: 'Soak 2026-11-08: con01 dropped → pool stayed 15/15 ok but p50 degraded 131ms→2264ms (~17x). Shim races all
+  upstreams; a dead member fails fast via connect-refused so the latency is really just losing the fastest winner
+  — but a cheap improvement exists: mark an upstream suspect after N consecutive failures and race it last (or health-gate
+  it) for a cooldown, so dead members cost ~0 instead of a wasted race slot. Read scripts/nest/embed-pool-shim.py
+  _race/_call + /health stats for winner distribution first; keep it small — racing proxy stays the design.'
+ref: OPS-1158
+comms:
+- at: 2026-11-08 10:31
+  from: devin
+  text: card captured via board-api
