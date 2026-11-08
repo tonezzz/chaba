@@ -89,5 +89,31 @@ class ArchiveMoveTest(unittest.TestCase):
             self.assertTrue(moved["comms"])  # archive comms line landed
 
 
+class UnarchiveTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def test_unarchive_restores_to_cards_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            cards = Path(td) / "cards"
+            adir = cards / "archive"
+            adir.mkdir(parents=True)
+            src = adir / "test-card.yml"
+            src.write_text(yaml.safe_dump(_card()))
+            card = yaml.safe_load(src.read_text())
+            self.mod.do_unarchive(card, "devin")
+            self.mod._unarchive_move(src, card)
+            dest = cards / "test-card.yml"
+            self.assertFalse(src.exists())
+            self.assertTrue(dest.exists())
+            moved = yaml.safe_load(dest.read_text())
+            self.assertTrue(moved["comms"])
+
+    def test_do_unarchive_rejects_wrong_column(self):
+        with self.assertRaises(ValueError):
+            self.mod.do_unarchive(_card(column="review"), "devin")
+
+
 if __name__ == "__main__":
     unittest.main()

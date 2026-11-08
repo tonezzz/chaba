@@ -187,7 +187,7 @@ LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
 ACTORS = {"devin", "ada", "chaba", "tony"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
-               "finish", "archive"}
+               "finish", "archive", "unarchive"}
 # done+verified cards older than this move to cards/archive/ via
 # /action do=archive (KNB-1178; SSOT column_sla.done convention).
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
@@ -804,6 +804,27 @@ def _archive_move(p: Path, card: dict) -> None:
     save(dest, card)       # commits the archive-path write
     p.unlink()             # source leaves cards/*.yml -> off the board
     _commit_write(p, "archive move")  # stages source deletion + commits
+    _ARCHIVE_INDEX["t"] = 0.0  # next lookup rebuilds (new member)
+
+
+def do_unarchive(card: dict, frm: str) -> str:
+    """Inverse of do_archive — the caller checks the file actually lives
+    under cards/archive/ before calling. Restores column=done."""
+    if card.get("column") != "done":
+        raise ValueError(f"unarchive expects column=done, got "
+                         f"{card.get('column')}")
+    comms_add(card, frm, "unarchived — back on the board")
+    return "unarchived"
+
+
+def _unarchive_move(p: Path, card: dict) -> None:
+    """Persist an unarchived card back under cards/ and commit both
+    sides of the move (inverse of _archive_move)."""
+    dest = p.parent.parent / p.name  # cards/archive/x.yml -> cards/x.yml
+    save(dest, card)
+    p.unlink()
+    _commit_write(p, "unarchive move")
+    _ARCHIVE_INDEX["t"] = 0.0  # next lookup rebuilds (member left)
 
 
 def do_claim(card: dict, body: dict) -> str:
@@ -3892,6 +3913,13 @@ class H(BaseHTTPRequestHandler):
                         msg = do_archive(card, actor(body))
                         card["updated"] = now()
                         _archive_move(p, card)
+                    elif verb == "unarchive":
+                        if p.parent != CARD_DIR / "archive":
+                            raise ValueError(
+                                "unarchive needs a card under cards/archive/")
+                        msg = do_unarchive(card, actor(body))
+                        card["updated"] = now()
+                        _unarchive_move(p, card)
                     else:
                         msg = do_action(card, verb, actor(body))
                         card["updated"] = now()
