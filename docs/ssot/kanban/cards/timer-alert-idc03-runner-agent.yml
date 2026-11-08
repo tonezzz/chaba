@@ -1,7 +1,7 @@
 id: timer-alert-idc03-runner-agent
 title: Timer runner-agent on idc03 disabled
 column: backlog
-updated: 2026-11-08 18:39
+updated: 2026-11-08 18:40
 priority: high
 tags:
 - timer-alert
@@ -408,6 +408,10 @@ comms:
 - at: 2026-11-08 18:39
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.25 > 1.0)'
+- at: 2026-11-08 18:40
+  from: devin
+  text: '[still suspicious] `runner-agent.timer` on `idc03` is disabled but expected active (audit census / critical
+    list). Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
 action:
   type: dispatch
   status: queued
