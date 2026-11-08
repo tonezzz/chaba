@@ -314,6 +314,18 @@ def main() -> int:
             print(f"[hold] {cid}: "
                   f"{[f'{e}={o}' for e, o in results]}")
             continue
+        # Independent-review gate (waiting_cards spec, KNB-0928): a card
+        # whose deliverable is a model-produced report (report-linked or
+        # model_report: true) may not auto-close on self-referential
+        # checks alone — it needs externally-stamped evidence
+        # (verified_true from merge-sweep/close_out, or git_merged).
+        strong = ("verified_true", "git_merged")
+        if (c.get("report") or c.get("model_report")) and not any(
+                str(e).partition(":")[0] in strong for e, _ in results):
+            print(f"[hold] {cid}: model report lacks independent "
+                  f"verified evidence (need verified_true/git_merged "
+                  f"in auto_done_when)")
+            continue
         if acted >= MAX_ACTS:
             print(f"[cap] {cid}: MAX_ACTS reached — deferred")
             continue

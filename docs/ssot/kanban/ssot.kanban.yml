@@ -178,6 +178,20 @@ card_schema:
   # deploy) are never autonomous regardless of backups.
   recoverability: "R0 | R1 | R2 | R3 | R4 — see
     docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards"
+  model_report: "optional bool — the deliverable is model-produced
+    (report, analysis, digest). kanban-act will not auto-close it on
+    self-referential checks alone: auto_done_when must include
+    verified_true or git_merged (independent/stamped evidence).
+    report-linked cards (report: <slug>) get the same gate
+    automatically (2026-11-08, KNB-0928)."
+  # optional — execution gate note (waiting_cards, KNB-0928): unattended
+  # runners (kanban-dispatch KANBAN_WAITING_GATE, runner-agent
+  # RUNNER_WAITING_GATE) evaluate queued cards against
+  # ssot.devin-autonomy.yml waiting_cards — eligibility needs the fields
+  # above (recoverability, artifact/verifier via action.artifact|report|
+  # pipeline.goals + auto_done_when|action.verifier|pipeline.goals) plus
+  # an explicit action.target_host or action.host pin. This gates CLAIMS;
+  # kanban-act still gates CLOSE separately.
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
   # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
   # normalizes it to the status block on first run:

@@ -110,18 +110,54 @@ waiting_cards:
     - "an open Tony request appears on the card mid-run"
     - "kill_switch present (/tmp/no-kanban-dispatch)"
   reporting:
-    - "start/finish/fail/stalled summaries -> Telegram via board_notify (debounced)"
-    - "daily unattended-run digest — GAP: not yet wired; until then the QC scoreboard + card comms are the record"
+    - "start/finish/fail/stalled summaries -> Telegram via board-api /publish
+       (PublicationEvent fan-out; server-side noise policy debounces —
+       implemented 2026-11-08 in kanban-dispatch._notify/_flush_notify and
+       runner-agent._notify; start=progress is card-audit only, never TG)"
+    - "daily unattended-run digest -> scripts/board/unattended-report.py on
+       chaba-unattended-report.timer (idc03, daily) — reports/unattended-<date>.md
+       + one Telegram milestone"
+  implementation: >-
+    2026-11-08 (card hands-off-waiting-card-procedure, job
+    docs/ssot/jobs/kanban/2026-11-08-hands-off-waiting-cards.yml):
+    scripts/board/waiting_cards.py is the canonical evaluator
+    (eligibility + preflight + R0-R4 + /publish notify + CLI
+    --evaluate/--board/--preflight). kanban-dispatch.py gates claims
+    through it (KANBAN_WAITING_GATE=off|warn|strict, default warn —
+    declared R3/R4 are NEVER claimed in any mode) plus a pass-level
+    preflight (kill switch, deploy lock, disk floor). runner-agent.py
+    carries the single-file twin (RUNNER_WAITING_GATE) plus kill-switch
+    and disk-floor in _capacity_reason. kanban-act.py gained the
+    independent-review gate: report-linked/model_report cards need
+    verified_true or git_merged evidence — self-referential checks
+    alone cannot auto-close a model report. scripts/board/
+    unattended-report.py is the daily digest. Dry-run: waiting_cards
+    --evaluate/--board and kanban-act --dry-run; the claim gate itself
+    is warn-mode until the readiness checklist flips it to strict.
   dry_run: >-
-    runner-agent/kanban-dispatch dry-run logs the eligibility decision
-    without claiming. Any new card class or recoverability class gets a
+    waiting_cards.py --evaluate <card> / --board reports verdicts
+    without claiming; kanban-act.py --dry-run reports would-act closes;
+    KANBAN_WAITING_GATE=off|warn|strict and RUNNER_WAITING_GATE are the
+    rollout dials. Any new card class or recoverability class gets a
     dry-run pass before it may run unattended.
   readiness_checklist:
-    day1: "eligibility fields present on pilot cards; dry-run logs clean"
-    day2: "one R0/R1 card auto-processed end-to-end with verifier evidence"
-    day3: "daily report reviewed; kill-switch drill performed; metrics recorded on the card"
+    day1: "eligibility fields present on pilot cards; dry-run logs clean
+      — DONE 2026-11-08: 5 read-only pilot cards filed ELIGIBLE
+      (unattended-pilot-*), gate verdicts + negative cases verified"
+    day2: "one R0/R1 card auto-processed end-to-end with verifier
+      evidence — PENDING merge+deploy of this branch, then queue one
+      unattended-pilot-* card"
+    day3: "daily report reviewed; kill-switch drill performed
+      (`touch /tmp/no-kanban-dispatch`, confirm claims freeze, remove);
+      flip KANBAN_WAITING_GATE/RUNNER_WAITING_GATE to strict after
+      backfilling recoverability on queued cards"
   pilots: >-
-    Validate with five read-only pilot cards (report generation, digest
-    refresh, cache rebuild, doc sync, health probe) — record
-    evidence/metrics on the card before widening eligibility beyond
-    R0/R1.
+    Five read-only pilot cards filed 2026-11-08 (backlog, not queued —
+    they run only when a human queues them post-deploy):
+    unattended-pilot-report-gen, -digest-refresh, -cache-rebuild,
+    -doc-sync, -health-probe — all action.type=script, host=idc03,
+    recoverability=R0, autonomy=t2, artifact+verifier declared.
+    Gate verdicts: 5/5 ELIGIBLE (waiting_cards --evaluate, 2026-11-08).
+    Negative evidence: R3/R4 -> never=True HOLD; open request -> HOLD;
+    missing host/artifact/verifier/recoverability -> HOLD; R2 without
+    backup proof -> HOLD (tests/board/test_waiting_cards.py, 25 tests).

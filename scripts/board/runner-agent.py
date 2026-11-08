@@ -132,6 +132,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -350,6 +351,71 @@ PUSH_PROBE_TTL = int(os.environ.get("RUNNER_PUSH_PROBE_TTL", "300"))
 PUSH_PROBE_REF = "refs/heads/__runner-push-probe"
 _PUSH_PROBE_CACHE: dict = {}
 REPO_ALIASES = {"ada-pi": "ada-voice"}  # one repo, one credential
+
+# --- hands-off waiting-card gate (KNB-0928, single-file twin of
+# scripts/board/waiting_cards.py — this agent deploys standalone, so the
+# contract is mirrored here rather than imported) ---------------
+# RUNNER_WAITING_GATE=off|warn|strict. Declared R3/R4 cards are NEVER
+# claimed unattended in any mode; strict additionally defers cards
+# missing the eligibility fields.
+WAITING_GATE = os.environ.get("RUNNER_WAITING_GATE", "warn")
+WAITING_DISK_MIN_MB = int(os.environ.get("WAITING_DISK_MIN_MB", "2048"))
+WAITING_NEVER = {"R3", "R4"}
+WAITING_KILL = "/tmp/no-kanban-dispatch"
+
+
+def _card_rec(card: dict) -> str:
+    a = card.get("action") or {}
+    return str(card.get("recoverability")
+               or a.get("recoverability") or "").strip().upper()
+
+
+def _waiting_hold_reason(card: dict) -> str:
+    """Strict-mode eligibility mirror of waiting_cards.evaluate —
+    returns the first unmet requirement or ''."""
+    a = card.get("action") or {}
+    if str(a.get("type") or "dispatch") not in ("dispatch", "script",
+                                              "container"):
+        return f"action.type={a.get('type')!r} has no executor"
+    if not (a.get("target_host") or a.get("host")):
+        return "no explicit action.target_host/host"
+    if not (a.get("artifact") or card.get("report")
+            or (card.get("pipeline") or {}).get("goals")):
+        return "no declared artifact"
+    if not (card.get("auto_done_when") or a.get("verifier")
+            or a.get("verify")
+            or (card.get("pipeline") or {}).get("goals")):
+        return "no declared verifier"
+    for r in card.get("requests") or []:
+        if isinstance(r, dict) \
+                and (r.get("status") or "open") != "answered":
+            return "open request on card"
+    ask = card.get("ask") or {}
+    if isinstance(ask, dict) and ask.get("question") \
+            and (ask.get("status") or "open") != "answered":
+        return "unanswered ask on card"
+    if not _card_rec(card):
+        return "recoverability class undeclared (R0-R4)"
+    return ""
+
+
+def _publish(card_id: str, kind: str, title: str, body: str = "") -> None:
+    """Lifecycle summary via board-api /publish — the server-side noise
+    policy debounces; a dead api never blocks the claim loop."""
+    api("/publish", {"kind": kind, "title": title[:240],
+                     "body": body[:2000], "source": "runner-lifecycle",
+                     "confidence": "observed", "visibility": "members",
+                     "card": card_id,
+                     "meta": {"lane": "unattended", "host": HOST}})
+
+
+def _notify(cid: str, event: str, detail: str = "") -> None:
+    kind = {"start": "progress", "finish": "milestone",
+            "fail": "alert", "stalled": "alert"}.get(event)
+    if not kind:
+        return
+    _publish(cid, kind, f"card {event}: {cid} on {HOST}"
+             + (f" — {detail[:100]}" if detail else ""), detail)
 
 
 def _repo_checkout(repo: str) -> Path | None:
@@ -2662,6 +2728,8 @@ def finish_pass(st: dict) -> bool:
                 or "no card" in err:
             del st[cid]  # reported, or card moved on — stop tracking
             changed = True
+            _notify(cid, "finish" if ok else "fail",
+                    result[:160] if not ok else "")
             print(f"{cid}: finish {'ok' if ok else 'failed'} — {err or 'reported'}")
     return changed
 
@@ -2838,6 +2906,15 @@ def _capacity_reason(st: dict) -> str:
     while the runner silently skips it (OPS-1107)."""
     if len(st) >= CAP:
         return f"runner at cap ({len(st)}/{CAP})"
+    if Path(WAITING_KILL).exists():
+        return f"kill switch {WAITING_KILL} present"
+    try:
+        free_mb = shutil.disk_usage(str(STATE_DIR)).free / (1024 * 1024)
+        if free_mb < WAITING_DISK_MIN_MB:
+            return (f"disk headroom {free_mb:.0f}MB < "
+                    f"{WAITING_DISK_MIN_MB}MB floor")
+    except OSError:
+        pass
     if overloaded():
         try:
             lp = os.getloadavg()[1] / (os.cpu_count() or 1)
@@ -2896,6 +2973,25 @@ def claim_pass(st: dict) -> bool:
             blocker = by_id.get(card["blocked_by"]) or {}
             if not blocker_released(blocker):
                 continue  # gate holds — try again next pass
+        # waiting-cards gate (KNB-0928): R3/R4 declared cards are never
+        # claimed unattended; strict mode additionally requires the
+        # full eligibility envelope.
+        rec = _card_rec(card)
+        if rec in WAITING_NEVER:
+            note_defer(card, "waiting",
+                       f"recoverability {rec} — never autonomous "
+                       "(human-gated); staying queued")
+            continue
+        if WAITING_GATE == "strict":
+            hold = _waiting_hold_reason(card)
+            if hold:
+                note_defer(card, "waiting",
+                           f"waiting-cards gate: {hold}")
+                continue
+        elif WAITING_GATE == "warn":
+            hold = _waiting_hold_reason(card)
+            if hold:
+                print(f"{cid}: waiting-cards warn — {hold}")
         if not cid:
             continue
         reason = gpu_preflight(card)
@@ -2954,6 +3050,7 @@ def claim_pass(st: dict) -> bool:
                 detail += f" model={a0['model']}"
         api("/comment", {"id": cid, "from": "chaba",
                          "text": f"started {unit} on {HOST} ({detail})"})
+        _notify(cid, "start", f"claimed {typ} — {unit}")
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
                    "at": int(time.time()),
                    "gpu": "gpu" in set((card.get("action") or {})

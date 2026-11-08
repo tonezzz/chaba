@@ -46,6 +46,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
 import lesson_primer as lp
+import waiting_cards as wc
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -91,6 +92,20 @@ JEV_LANE = os.environ.get("JEV_LANE", "0") == "1"
 
 PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
 _PUSH_PROBE_CACHE: dict = {}
+
+# Hands-off waiting-card gate (KNB-0928,
+# docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards):
+# queue EXECUTION is gated separately from kanban-act's auto-close.
+# KANBAN_WAITING_GATE=off disables; warn (default) logs verdicts but
+# still claims — except declared R3/R4 cards, which are NEVER claimed
+# unattended in any mode; strict defers every ineligible card. Flip to
+# strict only after the readiness checklist (job
+# 2026-11-08-hands-off-waiting-cards) passes.
+WAITING_GATE = os.environ.get("KANBAN_WAITING_GATE", "warn")
+# Board-api base for lifecycle Telegram summaries (/publish fan-out —
+# noise policy lives server-side). Loopback on the writer host.
+PUBLISH_API = os.environ.get(
+    "KANBAN_PUBLISH_API", "http://127.0.0.1:8787").rstrip("/")
 
 
 def push_capable(repo: str) -> bool:
@@ -227,6 +242,8 @@ def requeue_dead(path: Path, host: str) -> str:
         comms_add(card, "chaba",
                   f"runner {host} unreachable {REQUEUE_AFTER} passes "
                   f"— requeued")
+        _notify("stalled", card.get("id") or path.stem,
+                f"runner {host} unreachable — requeued")
         card["updated"] = now()
         save_card(path, card)
         return "requeued"
@@ -461,6 +478,8 @@ def finish_one(path: Path, card: dict) -> str:
         a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
         card.setdefault("claim", {}).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
+        _notify("fail", card.get("id") or path.stem,
+                "unit failed — see devin-dispatch logs")
         return "failed"
     # Executor-owned closeout (OPS-1066): tasks run by runner-agent's
     # non-devin executors (jules, opencode, kk_mac_local) own their finish
@@ -509,6 +528,8 @@ def finish_one(path: Path, card: dict) -> str:
     card.setdefault("review_kind", "verify")  # close-out contract — without it the ssot-optimize gate fails commits repo-wide
     card.setdefault("claim", {}).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
+    _notify("finish", card.get("id") or path.stem,
+            f"finished ({state}) → review")
     if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
         a["merge_pending"] = True  # merged outside the lock in phase B
     else:
@@ -550,6 +571,21 @@ def _with_lock(fn):
 
 
 UNCLAIM_MARK = "unclaimable by the declared runner fleet"
+
+# Lifecycle Telegram summaries (waiting_cards.reporting): collected
+# under the card lock, flushed to board-api /publish in phase B — the
+# server-side noise policy debounces; a dead relay never blocks a claim.
+_NOTIFY: list = []
+
+
+def _notify(event: str, cid: str, detail: str = "") -> None:
+    _NOTIFY.append((event, cid, detail[:200]))
+
+
+def _flush_notify() -> None:
+    pending, _NOTIFY[:] = _NOTIFY[:], []
+    for event, cid, detail in pending:
+        wc.notify_lifecycle(PUBLISH_API, cid, event, detail, host=HOST)
 
 
 def _last_chaba_flag(card: dict, mark: str) -> str:
@@ -682,6 +718,8 @@ def start_pending(path: Path) -> str:
         comms_add(card, "chaba",
                   f"dispatched {task_id} on {repo}"
                   + (f" ({blurb})" if blurb else ""))
+        _notify("start", card.get("id") or path.stem,
+                f"dispatched {task_id} on {repo}")
         if LAST_PRIMER_LINES:
             comms_add(
                 card, "chaba",
@@ -749,6 +787,9 @@ def merge_pending_one(path: Path) -> str:
                 comms_add(card, "chaba",
                           f"auto-retry queued (attempt {att + 1}/"
                           f"{max_att}): {why}")
+                _notify("fail", card.get("id") or path.stem,
+                        f"merge/goals failed — auto-retry "
+                        f"{att + 1}/{max_att}")
                 ops_event(
                     f"kanban-dispatch auto-retry `{card.get('id') or path.stem}` "
                     f"(attempt {att + 1}/{max_att}) on {HOST}: {why}")
@@ -758,6 +799,10 @@ def merge_pending_one(path: Path) -> str:
             comms_add(card, "chaba", n)
         for n in session_end_notes(card):
             comms_add(card, "chaba", n)
+        if not res.get("merged") and not res.get("noop"):
+            _notify("fail", card.get("id") or path.stem,
+                    f"close-out merge failed: "
+                    f"{str(res.get('error') or res.get('skipped') or '')[:120]}")
         save_card(path, card)
         if res.get("noop"):
             return "noop"
@@ -789,6 +834,15 @@ def main() -> int:
         if in_quiet_hours(pol.get("quiet_hours") or ""):
             can_claim = False
             print(f"quiet hours {pol['quiet_hours']} — not claiming")
+        # waiting_cards preflight (KNB-0928): kill switch + deploy lock +
+        # disk headroom are pass-level gates — any failure stops ALL
+        # claims, not just one card.
+        pf_env = wc.local_env(host=HOST, path=REPO)
+        pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
+        if pf_fails:
+            can_claim = False
+            print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
+                  " — not claiming")
         # Priority-aware drain (card dispatch-priority-order): claimable
         # queued cards are visited starved-first -> priority rank ->
         # oldest `updated`; all other cards keep filename order. The
@@ -921,6 +975,29 @@ def main() -> int:
                           f"{dr.canon_repo(repo)} (no push: label and "
                           "`git push --dry-run` fails)")
                     continue
+                # waiting_cards eligibility gate (KNB-0928): R3/R4
+                # declared cards are NEVER claimed unattended; other
+                # ineligible cards defer only in strict mode (warn mode
+                # logs the verdict — the undeclared backlog predates
+                # the contract).
+                if WAITING_GATE != "off":
+                    env = dict(pf_env, claimed=active_tasks() + claimed,
+                               cap=HOST_CAP)
+                    verdict = wc.evaluate(card, env=env,
+                                          push_probe=push_capable)
+                    if verdict["never"] or (
+                            WAITING_GATE == "strict"
+                            and not verdict["eligible"]):
+                        why = "; ".join(verdict["reasons"])[:200] \
+                            or "ineligible"
+                        changed |= _defer_note(
+                            p, card, f"waiting-cards gate: {why}")
+                        print(f"{card['id']}: deferred — waiting-cards "
+                              f"gate ({why})")
+                        continue
+                    if not verdict["eligible"]:
+                        print(f"{card['id']}: waiting-cards warn — "
+                              f"{'; '.join(verdict['reasons'])[:160]}")
                 if a.get("runner") and a["runner"] != HOST:
                     if _flag_unclaimable(p, card, fleet) == "new":
                         changed = True
@@ -956,6 +1033,7 @@ def main() -> int:
         print(f"{p.stem}: {start_pending(p)}")
     for p in merges:
         print(f"{p.stem}: {merge_pending_one(p)}")
+    _flush_notify()
     if changed or starts or merges:
         subprocess.run([sys.executable, str(RENDER)], cwd=REPO, check=False)
     return 0
