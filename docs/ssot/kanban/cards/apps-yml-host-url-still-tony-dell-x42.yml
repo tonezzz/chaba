@@ -1,0 +1,19 @@
+id: apps-yml-host-url-still-tony-dell-x42
+title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
+column: backlog
+updated: 2026-11-08 13:20
+priority: medium
+tags:
+- ops
+- dell-migration
+- consumer-canary
+note: 'Found during timer-alert-idc03-consumer-canary (OPS-1149): the live /apps/ index renders a.host_url + a.href
+  for any app whose host != page host, and 42 entries in stacks/web/public/apps/apps.yml still carry host_url https://tony-dell.taila0626a.ts.net.
+  Links work today (dell edge still live) but they are retired-hostname refs on a consumer surface the canary does
+  not grep (its idc02 web-origin grep covers ~/web-srv/caddy/Caddyfile only, not the deployed webroot). Work: (1)
+  migrate each entrys h'
+ref: OPS-1195
+comms:
+- at: 2026-11-08 13:20
+  from: devin
+  text: card captured via board-api
