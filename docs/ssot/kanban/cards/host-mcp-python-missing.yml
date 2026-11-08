@@ -1,0 +1,20 @@
+id: host-mcp-python-missing
+title: idc02 host python lacks mcp package — dispatch-lane MCP proxy never spawns
+column: backlog
+updated: 2026-11-08 12:26
+priority: medium
+tags:
+- idc02
+- opencode
+- mcp
+- deps
+spec: 'mcp-allowlist.py proxy (profile upstream.command python3) can''t spawn on idc02 host — ModuleNotFoundError
+  ''mcp'' (no pip3, ensurepip disabled). Predates the v2 upgrade: zero mcp_* calls in any historic dispatch events.jsonl
+  — bash fallback carried lanes. Options: (a) dedicated venv ~/.local/share/mcp-venv with mcp<2 wheels (pure-python,
+  no compiler needed), (b) uv run --with mcp<2 if uv lands, (c) apt python3-mcp (sudo), (d) render_config interpreter
+  override. Affects ops-remote-read/mcp-kornia profiles'' designed tool path.'
+ref: SYS-1177
+comms:
+- at: 2026-11-08 12:26
+  from: devin
+  text: card captured via board-api
