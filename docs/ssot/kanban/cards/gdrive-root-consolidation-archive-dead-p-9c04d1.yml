@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 13:41
+updated: 2026-11-08 13:43
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -214,6 +214,10 @@ comms:
 - at: 2026-11-08 13:41
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 13:43
+  from: devin
+  text: 'raised request phase-b-executed-4-dirs-remain-gated-on-167376: Phase B executed; 4 dirs remain gated on
+    host-side config — pick per-item: (1) gdrive:backups 180GiB DR tier, dell units'
 action:
   type: dispatch
   status: idle
@@ -273,4 +277,17 @@ requests:
   - proceed
   - hold
   answer: proceed
+- id: phase-b-executed-4-dirs-remain-gated-on-167376
+  ask: 'Phase B executed; 4 dirs remain gated on host-side config — pick per-item: (1) gdrive:backups 180GiB DR
+    tier, dell units embed path inline → ★keep at root (move needs unit redeploy) | move to ada-nest/backups. (2)
+    gdrive:nest/brains (dell gcrypt env wraps it) → ★ada-nest/brains | backups/nest-brains | keep. (3) gdrive:notebooklm
+    (dell manifests hold rclone_path) → ★keep | ada-nest/notebooklm. (4) gdrive:archive now holds absorbed cold-storage+chaba-media-corpus+chaba
+    — ★keep as root cold tier | merge into ada-nest/archive. (colab-cache: keeping regardless — Colab cells hardcode
+    it.)'
+  status: open
+  at: 2026-11-08 13:43
+  from: devin
+  options:
+  - proceed
+  - hold
 awaiting_action: true
