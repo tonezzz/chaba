@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
 column: backlog
-updated: 2026-11-08 18:48
+updated: 2026-11-08 19:38
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -27,15 +27,24 @@ comms:
   from: devin
   text: 'raised request devin-cli-interactive-update-ssh: May I use an interactive SSH session on Omen, Dell, and
     MacBook to run the Devin CLI updater? The documented `devin upda'
+- at: 2026-11-08 19:38
+  from: tony
+  text: 'answered devin-cli-interactive-update-ssh: Yes — run the interactive CLI updates, then verify versions
+    and agent health (approved by Tony via chat).'
+- at: 2026-11-08 19:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
     `devin update` command exited 130 without a TTY on Omen and Dell; this fallback contacts the update service
     and changes the CLI binaries only. Devin Desktop will not be restarted.
-  status: open
+  status: answered
   at: 2026-11-08 18:48
   from: devin
   options:
   - Yes — run the interactive CLI updates, then verify versions and agent health (recommended).
   - Hold — leave all CLI versions unchanged.
   suggested: Yes — run the interactive CLI updates, then verify versions and agent health (recommended).
+  answer: Yes — run the interactive CLI updates, then verify versions and agent health (approved by Tony via chat).
+awaiting_action: true
