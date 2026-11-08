@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: backlog
-updated: 2026-11-08 13:13
+updated: 2026-11-08 13:14
 priority: high
 tags:
 - timer-alert
@@ -91,6 +91,12 @@ comms:
     dispatch:dispatcher entries remain in ssot.jobs.yml. Verified live on idc03: replacements embed-lane-news.timer,
     embed-lane-lessons.timer, yomi-update-active.timer all armed and firing. So the disable is the intended end-state;
     NOT re-enabling. Alert is a stale-declaration false positiv'
+- at: 2026-11-08 13:14
+  from: devin
+  text: 'RESOLVED — close-candidate. The disable is deliberate: OPS-0790 retirement end-state, replacements verified
+    live on idc03. Root cause of the alert was stale declaration (chaba-jobs in sentinel hardcoded CRITICAL); fix
+    committed on dispatch branch — sentinel CRITICAL updated + idc03 census entry added (expected_state:inactive).
+    Alert stops once merged to tony-omen exec checkout. No re-enable performed.'
 action:
   status: queued
   type: dispatch
