@@ -38,3 +38,21 @@ comms:
     returning success without persisting state. Deployed API health is 200; a live action move persisted and board2
     cards.json now shows KNB-1196 done. idc03 kanban-dispatch and runner-agent timers remain disabled; Omen, MacBook,
     and idc02 runner-agent timers remain disabled. No runner timers were re-enabled.'
+- at: 2026-11-08 16:59
+  from: devin
+  text: 'raised request resume-paused-runners-knb1196: KNB-1196 is fixed and deployed. Should any unattended runners
+    be resumed now? Current containment: idc03 kanban-dispatch'
+requests:
+- id: resume-paused-runners-knb1196
+  ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
+    kanban-dispatch and runner-agent disabled; Omen, MacBook, and idc02 runner-agent disabled; Dell has no runner-agent
+    timer. Recommended: keep all paused until you approve a monitored idc03-only canary, then review before resuming
+    the rest.'
+  status: open
+  at: 2026-11-08 16:59
+  from: devin
+  options:
+  - Keep all paused until a separate resumption approval (recommended).
+  - Resume idc03 kanban-dispatch and runner-agent only as a monitored canary; keep Omen/MacBook/idc02 paused.
+  - Resume all paused runner-agent timers on Omen/MacBook/idc02/idc03 and idc03 kanban-dispatch.
+  suggested: Keep all paused until a separate resumption approval (recommended).
