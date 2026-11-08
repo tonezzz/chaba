@@ -1,0 +1,81 @@
+id: report-loop-spawn-ui
+title: 'Report loop: "Start Devin session" button on CMS pages + /api/cms/spawn route'
+brief: 'Part 2 of the report→session loop (umbrella: report-session-loop). Adds the visible affordance: a button
+  on Ada''s CMS report pages that files an armed kanban card — same effect as asking Ada to dispatch a session.
+  Queued when Tony presses Start.'
+column: done
+priority: high
+program: ada-tools
+updated: 2026-11-08 13:22
+tags:
+- report-session-loop
+- cms
+- ada-pi
+blocked_by: report-loop-spawn-api
+spec: "Design: docs/design/report-session-loop.md §1b (contract). Repo: ada-pi. The CMS viewer is pwa/cms/index.html\
+  \ served by pwa_server.py behind /api/cms/* key auth; chaba-admin/chaba-cms* HA tabs iframe it.\n1. pwa/cms/index.html\
+  \ — a \"▶ Devin session\" button in the report page\n   toolbar (next to Regenerate). POST {API_BASE}/api/cms/spawn\
+  \ {slug};\n   on ok toast \"card <id> queued\" linking to the board\n   (/apps/board/ on the chaba edge); on 409/already-active\
+  \ say so.\n2. pwa_server.py — new route POST /api/cms/spawn {slug}: read the page\n   doc (title -> card title),\
+  \ then call board-api\n   POST /card {title, report: slug, action: {type: dispatch, repo: chaba},\n   queue: true,\
+  \ on_exists: queue, tags: [report-session-loop, cms],\n   brief: \"Spawned from CMS page '<slug>' — session keeps\
+  \ the report\n   updated; watch card comms.\"} — reuse whatever client helper\n   backend/tools.d/ada_board_write.py\
+  \ already uses to reach\n   tony-dell:8787 / the Caddy /apps/board-api route; do NOT add a second\n   auth path.\n\
+  3. Key capability: the shared cms-viewer key is a READ key embedded in\n   iframes — it must not gain dispatch\
+  \ power. Gate the route on the key's\n   `apps` metadata carrying a new `dispatch` capability (keys file\n   schema\
+  \ already tolerates extra apps values — auth.py); Tony's keys\n   get re-issued with [view, dispatch] via the\
+  \ existing pair flow.\n   Document the capability in the route docstring.\n4. Note for the implementer: confirm\
+  \ the CMS page deep-link param name\n   (?page= vs ?slug=) from the viewer JS before writing card comms links.\n\
+  \nVerify: unittest coverage for the route (key without dispatch -> 403, spawn -> board-api called with right body\
+  \ — mock the board-api call); manual smoke deferred to deploy (ada deploys need Tony's approval per ada-pi AGENTS.md\
+  \ — do NOT deploy, leave a needs-input/done note)."
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  runner: tony-omen
+  result: 'exit=0  on `dispatch/20261007-203220-design-docs-design-report-sess`. Not pushed, not deployed. | devin-task-20261007-203220-design-docs-design-report-sess.service:
+    Consumed 1min 45.415s CPU time over 12min 17.092s wall clock time, 1G memory peak.'
+  verified: true
+comms:
+- at: 2026-10-07 19:30
+  from: devin
+  text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:14
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 20:32
+  from: tony-omen
+  text: claimed
+- at: 2026-10-07 20:32
+  from: chaba
+  text: started devin-task-20261007-203220-design-docs-design-report-sess on tony-omen (dispatch)
+- at: 2026-10-07 20:33
+  from: devin
+  text: started — reading cms viewer, pwa_server auth, board-write helper to ground the §1b contract
+- at: 2026-10-07 20:43
+  from: devin
+  text: 'implemented §1b: board_client shared path + dispatch key capability + POST /api/cms/spawn + ▶ Devin session
+    button. 44 tests green. Deep-link fix for §1a: viewer routes pages by hash — /cms/#/<slug>, NOT ?page=. Deploy
+    order: spawn-api (board-api fields) must land first or /card files a bare unarmed card.'
+- at: 2026-10-07 20:45
+  from: tony-omen
+  text: 'finished (ok): exit=0  on `dispatch/20261007-203220-design-docs-design-report-sess`. Not pushed, not deployed.
+    | devin-task-20261007-20'
+- at: 2026-10-07 20:45
+  from: chaba
+  text: pushed dispatch/20261007-203220-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:45
+  from: chaba
+  text: auto-merged 30f5dac4 (dispatch/20261007-203220-design-docs-design-report-sess) → origin/main
+- at: 2026-10-07 20:47
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0172'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (31d in done, verified)
+claim: {}
+ref: KNB-0172
