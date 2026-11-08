@@ -1,7 +1,7 @@
 id: consumer-canary-standing-retired-hostnam-6aa4a2
 title: 'consumer-canary: standing retired-hostname audit across live surfaces'
 column: backlog
-updated: 2026-11-08 13:04
+updated: 2026-11-08 13:20
 priority: low
 tags:
 - ops
@@ -301,3 +301,9 @@ comms:
   text: "[consumer-canary] live retired-host refs found (2):\n- mn01:caddy+units: 109:\t\treverse_proxy https://tony-dell.taila0626a.ts.net:443\
     \ {\n- HIT ada-ha/chaba-admin: ...temap\", \"type\": \"panel\", \"cards\": [{\"type\": \"iframe\", \"url\":\
     \ \"https://tony-dell.taila0626a.ts.net/apps/node-red/?v=2\"}]}, {\"title\": \"DevNest\", \"pat"
+- at: 2026-11-08 13:20
+  from: devin
+  text: '[consumer-canary] cleared both standing findings 2026-11-08 ~13:19 +07 — manual rerun on idc03 is CLEAN
+    (9 greps + dashboards, exit 0). Fixed: (1) ada-ha/chaba-admin node-red iframe tony-dell->idc02 via lovelace
+    ws save; (2) mn01 Caddyfile.mn01 /apps/board* upstream tony-dell:443->idc02:443 (edited 13:18, validated + probed
+    200 via :8080). New gap carded: apps-yml-host-url-still-tony-dell-x42.'
