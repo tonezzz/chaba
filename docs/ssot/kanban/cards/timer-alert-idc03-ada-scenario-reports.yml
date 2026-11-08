@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-reports
 title: Timer ada-scenario-reports on idc03 failing
 column: doing
-updated: 2026-11-08 10:32
+updated: 2026-11-08 10:38
 priority: high
 tags:
 - timer-alert
@@ -231,6 +231,13 @@ comms:
   from: devin
   text: '[re-triage 2026-11-08] card shows RESOLVED 10-13 (exit-1 = findings signal, wrapper now maps to 0). Verifying
     current timer state on idc03 — checking whether alert re-fired or is stale.'
+- at: 2026-11-08 10:38
+  from: devin
+  text: '[resolved 2026-11-08] Re-fire root cause = DEPLOY DRIFT, not regression. Nov 5 run used the pre-BEN-0573
+    unit (paid lane :8002/ada-ha-tony, no provider gate) + old wrapper (no exit-1->0 mapping): suite COMPLETED (**Score:
+    0.0**, 7 fails/0 tool calls) and exited 1 -> exit-code alert. Wrapper was updated Nov 7 but units were never
+    re-installed. Re-ran stacks/services/ada-scenario-runner/install.sh on idc03: reports/cms/research now on :8005
+    ada-dev free lane w/ scenario-provider-gate ExecCondition'
 action:
   status: running
   type: dispatch
