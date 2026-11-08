@@ -210,7 +210,11 @@ function isLab(c) { return !!(c.lab && (c.lab.hypothesis || c.lab.metric || c.la
 function cardsFor(t) {
   if (!DATA) return [];
   if (t === 'lab') return DATA.cards.filter(isLab).sort((a,b) => String((a.lab||{}).review_by||'~').localeCompare((b.lab||{}).review_by||'~'));
-  return DATA.cards.filter(c => (c.column||'backlog') === t);
+  const hit = DATA.cards.filter(c => (c.column||'backlog') === t);
+  // done sorts freshest-first so recent closes surface on top;
+  // other columns keep board order (rank/priority semantics)
+  if (t === 'done') hit.sort((a,b) => String(b.updated||'').localeCompare(String(a.updated||'')));
+  return hit;
 }
 function matchQ(c, qq) {
   if (!qq) return true;
