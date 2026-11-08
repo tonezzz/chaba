@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:41
+updated: 2026-11-08 16:42
 priority: medium
 tags:
 - kanban-dispatch
@@ -74,6 +74,12 @@ comms:
   from: devin
   text: 'raised request knb1196-ci-branch-sprawl-gate: PR #128 local code tests pass, but GitHub validate is red
     on the dev-system-assess branch-ahead gate (57 ahead). Do you '
+- at: 2026-11-08 16:42
+  from: devin
+  text: 'PR #128 validate is red. Its annotation only reports exit 1; the GitHub job-logs endpoint returned 403.
+    The local workflow-equivalent `python3 scripts/dev-system-assess.py --check` reproduces the likely blocker:
+    154 branches, 57 ahead, 128 worktrees; `Too many branches ahead: 57`. The KNB code tests pass. I will not merge
+    or bypass the failed gate without your decision. idc03 dispatch timers remain disabled.'
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
