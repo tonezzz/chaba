@@ -113,13 +113,18 @@ def _chat(base_url, model, system, user, api_key="", timeout=180,
 
 
 def llm_entity_factory(base_url, model, api_key="", retries=2,
-                       system=SYSTEM, temperature=0):
+                       system=SYSTEM, temperature=0, briefs=None):
     def ent(case):
-        user = json.dumps({
+        payload = {
             "card_id": case["card_id"],
             "decision_point": case["decision_point"],
             "snapshot": case["snapshot"],
-        }, ensure_ascii=False)
+        }
+        if briefs:
+            b = (briefs.get(case.get("case_id") or "") or {}).get("brief")
+            if b:
+                payload["job_brief"] = b
+        user = json.dumps(payload, ensure_ascii=False)
         last = ""
         for _ in range(retries + 1):
             try:
@@ -157,39 +162,14 @@ def entity_from_args(a):
     base = a.base_url or ("http://127.0.0.1:11434/v1" if a.entity == "ollama"
                           else "http://100.102.134.91:4000/v1")
     system = ADA_SYSTEM if a.entity == "ada" else SYSTEM
+    briefs = None
+    if getattr(a, "briefs", ""):
+        briefs = json.loads(Path(a.briefs).read_text())
     ent = llm_entity_factory(base, a.model, key, system=system,
-                             temperature=a.temperature)
-    if a.with_brief:
-        ent = brief_wrapper(ent)
+                             temperature=a.temperature, briefs=briefs)
     if a.enforce:
         ent = enforce_wrapper(ent)
     return ent
-
-
-def brief_wrapper(ent):
-    """Inject top-3 similar-case precedents (proven outcomes) into the
-    snapshot — never the case itself (would leak its own gold)."""
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "..", "..", "ada-jobs"))
-    from brief_builder import similar_cases, load_corpus
-    corpus = load_corpus()
-
-    def wrapped(case):
-        snap = dict(case.get("snapshot") or {})
-        snap["title"] = snap.get("title") or case.get("card_id")
-        snap["tags"] = snap.get("tags") or []
-        precs = [p for p in similar_cases(snap, corpus, top=4)
-                 if p["case_id"] != case.get("case_id")][:3]
-        if precs:
-            snap = dict(snap)
-            snap["precedents"] = [{"similar_card": p["case_id"],
-                                   "proven_move": p["gold"],
-                                   "outcome": p["proven_right"]}
-                                  for p in precs]
-            case = dict(case, snapshot=snap)
-        return ent(case)
-    return wrapped
 
 
 def enforce_wrapper(ent):
@@ -276,13 +256,15 @@ def main():
     ap.add_argument("--model", default="")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--api-key-env", default="")
-    ap.add_argument("--with-brief", action="store_true",
-                    help="inject top-3 similar-card precedents into the snapshot")
     ap.add_argument("--enforce", action="store_true",
                     help="code-enforce hard gates post-LLM (composite entity, mirrors verify_worker)")
     ap.add_argument("--temperature", type=float, default=0.0,
                     help=">0 for consecutive-run variance (T3 gate needs 3 independent passes)")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--briefs", default="",
+                    help="per-case job briefs json from brief_builder.py "
+                    "--corpus-briefs (leave-one-out); injects job_brief "
+                    "into the case payload — the --with-brief analog")
     ap.add_argument("--out-md", default="")
     ap.add_argument("--out-json", default="")
     args = ap.parse_args()

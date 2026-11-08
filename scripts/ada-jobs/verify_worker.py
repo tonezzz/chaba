@@ -28,8 +28,12 @@ Usage:
   verify_worker.py --once                 # process up to --max cards once
   verify_worker.py --once --card <id>     # one named card (probe/pilot)
   verify_worker.py --dry-run --card <id>  # decide but don't write
+  verify_worker.py --with-brief ...       # attach a job brief (SSOT+KB+
+                                          # similar-card outcomes) to her turn
 """
 import argparse, json, os, re, sys, urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 API = os.environ.get("BOARD_API",
                      "https://idc03.taila0626a.ts.net:10000")
@@ -165,18 +169,15 @@ def probe_local(card, limit=6, timeout=6):
     return out
 
 
-def llm_action(card, base_url, model, key, system=PROMPT):
+def llm_action(card, base_url, model, key, system=PROMPT, brief=None):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
-    if card.get("_brief"):
-        snap["precedents"] = [{"similar_card": p["case_id"],
-                               "proven_move": p["gold"],
-                               "outcome": p["proven_right"]}
-                              for p in card["_brief"].get("precedents", [])]
     probes = probe_urls(card) + probe_local(card)
     if probes:
         snap["live_checks"] = probes
+    if brief:
+        snap["job_brief"] = brief
     body = {"model": model, "temperature": 0, "max_tokens": 800,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": json.dumps(
@@ -257,21 +258,29 @@ def run_once(args):
         print(f"[card] {cid} (age {_age_days(card)}d)")
         if not elig(card):
             print("  not eligible under matrix — skip"); continue
+        brief = None
         if args.with_brief:
             try:
-                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-                from brief_builder import build_brief
-                card["_brief"] = build_brief(card)
+                import brief_builder
+                b = brief_builder.build_brief(card,
+                                              exclude_card_ids={cid})
+                brief = brief_builder.render(b)
+                print("  -- job brief --")
+                for line in brief.splitlines():
+                    print(f"  {line}")
             except Exception as e:
-                print(f"  brief build failed ({str(e)[:60]}) — continuing without")
+                print(f"  brief build failed ({str(e)[:80]}) — "
+                      "turn runs without it")
         try:
             raw = llm_action(card, args.base_url, args.model, args.api_key,
-                             system=CLEANUP_PROMPT if cleanup else PROMPT)
+                             system=CLEANUP_PROMPT if cleanup else PROMPT,
+                             brief=brief)
         except Exception as e:
             print(f"  primary brain failed ({str(e)[:80]}) — trying fallback")
             raw = llm_action(card, args.fallback_base_url,
                              args.fallback_model, "",
-                             system=CLEANUP_PROMPT if cleanup else PROMPT)
+                             system=CLEANUP_PROMPT if cleanup else PROMPT,
+                             brief=brief)
         if cleanup and (raw.get("action") or "").lower() == "close" \
                 and card.get("column") != "review":
             raw["action"] = "request"   # backlog closes are Tony's — degrade to ask
@@ -308,10 +317,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--with-brief", action="store_true",
-                    help="inject top-3 similar-card precedents (ADA-1132)")
     ap.add_argument("--card", default="")
     ap.add_argument("--sweep", choices=["", "cleanup"], default="")
+    ap.add_argument("--with-brief", action="store_true",
+                    help="assemble a job brief (SSOT+KB+similar-card "
+                    "outcomes) before her turn and show it")
     ap.add_argument("--min-age", type=int, default=21)
     ap.add_argument("--max", type=int, default=3)
     ap.add_argument("--model", default=os.environ.get(
