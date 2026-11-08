@@ -18,6 +18,18 @@ Checks (local git, no ssh — the subject is the checkout itself):
   * unmerged: ls-files -u count > 0 — unresolved conflict; a pull died
               mid-merge. Always alerts.
 
+Service provenance (extension — the Nov-4-6 anomaly: the door served
+for two days off a hand-started exec-checkout process while
+chaba-board-api.service was dead; and on Nov-7 it ran pre-restart code
+for ~15h while the checkout had moved):
+  * service-inactive:   is-active != active — the door is whatever
+                        process grabbed the port, not the declared unit
+  * service-provenance: unit ExecStart is not anchored on the served
+                        checkout — wrong-code topology
+  * service-stale:      the ExecStart script's mtime is newer than
+                        ExecMainStartTimestampUSec — a pull updated the
+                        code under a running old process
+
 A best-effort `git fetch` runs first so `behind` is measured against a
 fresh ref (fetch never touches the worktree; failure just means we
 measure against the last-known ref).
@@ -89,6 +101,54 @@ def collect(repo: Path) -> tuple[dict, str | None]:
     return m, None
 
 
+def sh(*args: str, timeout: int = 15) -> str:
+    try:
+        r = subprocess.run(list(args), capture_output=True, text=True,
+                           timeout=timeout)
+        return r.stdout.strip()
+    except Exception:
+        return ""
+
+
+def service_problems(unit: str, served: Path) -> list[tuple[str, str]]:
+    """systemctl --user probes for the door service's provenance."""
+    probs = []
+    if sh("systemctl", "--user", "is-active", unit) != "active":
+        probs.append(("service-inactive",
+                      f"{unit} is not active — the door may be a "
+                      "hand-started process off the wrong checkout "
+                      "(Nov-4-6 anomaly)"))
+        return probs  # dead unit: provenance/stale checks are moot
+    show = sh("systemctl", "--user", "show", unit,
+              "-p", "ExecStart", "-p", "ExecMainStartTimestampUSec")
+    if served.name not in show:
+        probs.append(("service-provenance",
+                      f"{unit} ExecStart is not anchored on {served} — "
+                      "unit file or process is off the declared checkout"))
+        return probs  # can't locate the script to mtime-check
+    started_us = 0
+    for line in show.splitlines():
+        if line.startswith("ExecMainStartTimestampUSec="):
+            try:
+                started_us = int(line.split("=", 1)[1])
+            except ValueError:
+                pass
+    for tok in show.split():
+        tok = tok.strip("{};")
+        if served.name in tok and tok.endswith(".py"):
+            script = Path(tok) if tok.startswith("/") \
+                else served / Path(tok).name
+            if script.exists() and started_us \
+                    and script.stat().st_mtime > started_us / 1e6:
+                probs.append(("service-stale",
+                              f"{script.name} changed at "
+                              f"{dt.datetime.fromtimestamp(script.stat().st_mtime):%Y-%m-%d %H:%M} "
+                              f"but {unit} started earlier — running "
+                              "pre-update code until restarted"))
+            break
+    return probs
+
+
 def load_state() -> dict:
     try:
         return json.loads(STATE.read_text())
@@ -135,6 +195,9 @@ def main() -> int:
     ap.add_argument("--dirty-max", type=int, default=50)
     ap.add_argument("--repeat-h", type=float, default=12.0,
                     help="min hours between repeat alerts per condition")
+    ap.add_argument("--service-unit", default="chaba-board-api.service",
+                    help="user unit expected to serve the door off the "
+                         "served checkout; '' disables service checks")
     ap.add_argument("--no-alert", action="store_true",
                     help="check only, print verdict")
     args = ap.parse_args()
@@ -170,6 +233,9 @@ def main() -> int:
                 f"{m['dirty']} dirty/untracked paths "
                 f"(threshold {args.dirty_max}) — writer churn is normally "
                 "single digits."))
+
+    if args.service_unit:
+        problems.extend(service_problems(args.service_unit, served))
 
     for cond, detail in problems:
         if recently_alerted(st, cond, args.repeat_h):
