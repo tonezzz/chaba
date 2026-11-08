@@ -58,6 +58,10 @@ comms:
     started 21:00 and is still running; provider gate passed with ada-dev active and the free-lane key, but ada_opencode_control
     reported 2 failures. con01 cline-intake.timer is enabled; its last tick skipped because cline.deliverable was
     missing, next tick ~21:16 +07. House'
+- at: 2026-11-08 21:09
+  from: devin
+  text: 'raised request pause-nondevin-automation-tonight-20261108: Do you want all agent/test automation paused
+    tonight as well? ada-scenario-smoke.service is currently running on idc03 w'
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
@@ -74,5 +78,18 @@ requests:
   suggested: Keep all paused until a separate resumption approval (recommended).
   answer: Keep all paused until a separate resumption approval (recommended).
   executed: 2026-11-08 hold
+- id: pause-nondevin-automation-tonight-20261108
+  ask: Do you want all agent/test automation paused tonight as well? ada-scenario-smoke.service is currently running
+    on idc03 with a free-lane key (provider gate passed, but ada_opencode_control failed twice); con01 cline-intake
+    is enabled and last skipped due to missing cline.deliverable. Pausing would abort the current Ada smoke and
+    disable its timer plus Cline intake; housekeeping timers would continue.
+  status: open
+  at: 2026-11-08 21:09
+  from: devin
+  options:
+  - Pause the Ada smoke now and disable its timer; also pause con01 Cline intake for tonight (recommended).
+  - Pause only Ada smoke; leave Cline intake enabled.
+  - Leave both running; I only meant Devin dispatch sessions.
+  suggested: Pause the Ada smoke now and disable its timer; also pause con01 Cline intake for tonight (recommended).
 action:
   status: idle
