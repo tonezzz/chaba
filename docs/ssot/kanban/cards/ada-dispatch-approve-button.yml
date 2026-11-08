@@ -1,0 +1,21 @@
+id: ada-dispatch-approve-button
+title: 'Hands-off dispatch: board-level approve → gated dispatch → Ada verify+report'
+column: backlog
+updated: 2026-11-08 12:40
+priority: medium
+tags:
+- ada
+- opencode
+- kanban
+- ux
+spec: 'Tony''s flow: Ada shows menu/options -> Tony clicks to approve -> dispatch executes -> Ada verifies + reports.
+  Exists: preflight receipt, confirm-gated dispatch, next/next_choice menu (read-only), verifier+comms, kanban respond/request.
+  Missing: (1) a click-level approval signal the dispatch gate accepts (today only voice confirmed=true or confirm_token),
+  (2) menu option that can trigger dispatch (next_choice never queues by design), (3) auto close-the-loop (dispatch
+  done -> verifier verdict -> Ada tells Tony). Bundle-candidates: ada-opencode-control-plane-tab (protected UI home),
+  ada-opencode-repair-menu-card (button pattern, in review), ada-opencode-result-review-pilot (Ada reviewer path).'
+ref: ADA-1180
+comms:
+- at: 2026-11-08 12:40
+  from: devin
+  text: card captured via board-api
