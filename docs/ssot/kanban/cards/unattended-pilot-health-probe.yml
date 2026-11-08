@@ -4,7 +4,7 @@ brief: Read-only pilot for the hands-off waiting-card procedure — safe to queu
 column: backlog
 priority: low
 created: '2026-11-08'
-updated: 2026-11-08 08:20
+updated: 2026-11-08 12:36
 tags:
 - unattended
 - pilot
@@ -24,9 +24,13 @@ action:
     cmd: systemctl --user is-active chaba-board-api.service; curl -sf -o /dev/null -w 'board-api http=%{http_code}\n'
       http://127.0.0.1:8787/cards
     timeout: 300
+  status: queued
 review_kind: verify
 note: waiting-cards pilot — queue only after the gate is merged+deployed (job 2026-11-08-hands-off-waiting-cards).
 comms:
 - at: 2026-11-08 08:20
   from: devin
   text: created by dispatch hands-off-waiting-card-procedure — read-only pilot, not queued
+- at: 2026-11-08 12:36
+  from: devin
+  text: queued for processing
