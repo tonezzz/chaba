@@ -1,0 +1,86 @@
+id: ada-acl-explain
+title: unified ACL resolver + 'who can do what' explain command
+brief: 'Three overlapping ACL systems answer differently: control_policies domain lists, ~/.config/ada/device-grants.json
+  overlay, and per-bank allowed_tools. ada_device_acl patched one room''s need; the unification is still ahead.
+  Waiting in backlog.'
+column: done
+metric: ada_ops action='acl_explain' identity=X entity=Y traces which layer allowed/denied
+verify: explain a granted, a denied, and an ambiguous case — output names the deciding layer each time
+note: 'Read-only first step before merging the systems: one resolver function consumed by all three gates, then
+  the explain path. Makes "why can kk control the TV" answerable in one call — today it is a three-file investigation.
+  Second phase (separate card when designed): converge the stores behind the resolver.'
+help: backend/memory_ops.py control_policies; backend/tools.d/ada_device_acl.py device-grants.json; tool_runner
+  bank.allowed_tools gate; ada-kanban-access card for the ACL design history
+updated: 2026-11-08 13:18
+comms:
+- at: 2026-10-10 09:03
+  from: devin
+  text: 'verified closed: 155c9df ancestor of ada-pi/main (merged bb10f00).'
+- at: 2026-10-08 16:00
+  from: devin
+  text: Assessment finding — explainability first; merging three stores blind would move the confusion, not remove
+    it.
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
+- at: 2026-10-10 08:06
+  from: chaba
+  text: dispatched 20261010-080608-unified-acl-resolver-who-can-d on ada-pi
+- at: 2026-10-10 08:06
+  from: chaba
+  text: 'primer injected 8 lesson(s): GOTCHA: `--yolo`/`-y` is advertised in `crush --help` but rejected by the
+    flag p; [confirm-token-retry-expiry] filed from transcript audit — two sessions hit this; runbook docs/kb/mddb-migration-phases.md:
+    Migration Phases — **Objective**: Run ; runbook docs/kb/prompt-preprocessor.md: Prompt / command preprocessor
+    — A read-o; "test_merge_sweep fixture relied on global git identity — tony-dell has none (re; [ada-cms-discovery-fixes]
+    filed by devin dispatch 180802 — ad'
+- at: 2026-10-10 08:14
+  from: devin
+  text: 'attempt 2 started — mapped the three ACL layers (control_policies+grants overlay in memory_banks.control_allowed,
+    person_policies bank ACL, per-bank allowed_tools in _check_memory_write_allowed). Plan: acl_decision() resolver
+    on MemoryBankRegistry, gates delegate to it, ada_ops action=acl_explain exposes the trace.'
+- at: 2026-10-10 08:33
+  from: devin
+  text: 'DONE (attempt 2, branch dispatch/20261010-080608, commit c0ceba9, not pushed). One resolver — MemoryBankRegistry.acl_decision(identity,
+    entity_id=|bank=|tool=) — now backs control_allowed, bank_allowed, _check_control_allowed, and _check_memory_write_allowed;
+    ada_ops action=''acl_explain'' returns the trace + runtime gates (READ_ONLY/guest-pattern/dangerous/rate). Verify:
+    granted (kk+media_player via allow_domains), denied (kk+cover.gate via allow_domains), ambiguous (grant losing
+    to deny_entities'
+- at: 2026-10-10 08:35
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-10 08:36
+  from: chaba
+  text: 'session-end checkpoint 155c9df1: 1 leftover file(s) committed'
+- at: 2026-10-10 08:36
+  from: chaba
+  text: pushed dispatch/20261010-080608-unified-acl-resolver-who-can-d to origin
+- at: 2026-10-10 08:36
+  from: chaba
+  text: 'test gate failed — merge held: tests/test_calendar_providers.py'
+- at: 2026-10-10 08:36
+  from: chaba
+  text: 'session end: 2 commit(s) on dispatch/20261010-080608-unified-acl-resolver-who-can-d not in origin/main
+    — close will block until merged'
+- at: 2026-10-10 09:03
+  from: chaba
+  text: 'merge-sweep: dispatch/20261010-080608-unified-acl-resolver-who-can-d already in origin/main — marked verified
+    (exit_code=0; outcome doc dispatch-outcome-20261010-080608-unified-acl-resolver-who-can-d.md)'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0326'
+- at: 2026-11-08 13:18
+  from: tony
+  text: archived (29d in done, verified)
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261010-080608-unified-acl-resolver-who-can-d
+  result: 20261010-080608-unified-acl-resolver-who-can-d finished (inactive) — see `devin-dispatch logs 20261010-080608-unified-acl-resolver-who-can-d`
+  verified: true
+claim:
+  since: 2026-10-10 08:06
+review_kind: verify
+ref: ADA-0326
