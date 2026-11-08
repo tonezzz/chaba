@@ -68,6 +68,12 @@ comms:
     OK over websocket (auth_ok) but lovelace/config/save returns {code: unauthorized}. Token file ~/.config/secrets/home-assistant-token.env
     exists (Oct 27). The token is valid but its HA user lost dashboard-write/admin rights on tony-ha — needs HA-side
     user/token permission check. Not a unit/code bug; do NOT keep restarting.'
+- at: 2026-11-08 08:33
+  from: devin
+  text: 'REOPENING 2026-11-08 — recurrence verified, new root cause isolated: build-dossier-devices.py tony-ha authenticates
+    OK over websocket (auth_ok) but lovelace/config/save returns {code: unauthorized}. Token file exists (Oct 27).
+    The token is valid but its HA user lost dashboard-write/admin rights on tony-ha — needs HA-side user/token permission
+    check. Not a unit/code bug; do NOT keep restarting.'
 action:
   type: dispatch
   status: done
