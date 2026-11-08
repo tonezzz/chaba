@@ -1,0 +1,95 @@
+id: device-tracking
+title: device fleet tracking — lost-device locate via existing sources
+brief: All the pieces to locate a lost device already exist — this adds one place that pulls them together. Waiting
+  in the backlog — no action needed.
+column: done
+metric: '"Ada, where is my <device>" returns last-seen location + freshness + battery for every tracked device'
+verify: scenario device_track_* passes; real query against iphone-15/ipad answers with a location <15min old
+note: 'Sources already deployed — this is a read/aggregate layer, not new tracking: (1) HA companion-app device_tracker
+  entities = GPS + battery + charging (requires companion app installed + location permission on each device — verify
+  which are enrolled once tony-dell is back); (2) Tailscale node table = online/offline + last-seen + endpoint WAN
+  IP (rough geo); (3) LAN scanner digest = home/away + MAC/IP changes; (4) HA logbook = location history. Tool:
+  ada_track_device — merge the three reads, answer with confidence + age. Lost-mode: poll on a timer, push deltas
+  to LINE/TG via existing relays. Optional GEV pin via gev_command annotate. Watch: iOS has no app-usage sensor
+  (Android''s last_used_app is Android-only); logins = Tailscale admin-console auth log (poll API) or HA person
+  state changes.'
+help: 'tailscale status --json for fleet; HA /api/states device_tracker.*; LINE/TG push: tg_relay.send_text/send_photo,
+  line pushMessage; GEV pin: gev_command annotate'
+updated: 2026-11-08 13:21
+comms:
+- at: 2026-10-06 09:40
+  from: devin
+  text: 'Filed during idc01->idc03 migration — HA on tony-dell unreachable (tailnet relayed via sin), so tracker
+    entity enumeration is pending. Tailscale fleet verified live: iphone-15, tony-ipad, kk-ipad, tony-macbook +
+    servers. Ada itself is up on idc03.'
+- at: 2026-10-06 18:46
+  from: devin
+  text: 'Option matrix + first lane shipped 2026-10-06. Options: iOS can only do Find My (no hidden process possible);
+    macOS LaunchDaemon + Android hideable (Prey, GPLv3); OwnTracks = self-hosted GPS via MQTT (needs app on device,
+    visible); ActivityWatch = real app-usage on laptops; custom tiny daemon = hidden, IP-geo only. PROTOTYPE LIVE:
+    scripts/device-telemetry/agent.py — stdlib-only beacon posting {tailnet online+ips, wan ip+city geo, battery,
+    login users (loginctl), top procs, uptime} to MDDB device'
+- at: 2026-10-07 23:00
+  from: devin
+  text: 'triage: actionable engineering task — armed as dispatch (ada-pi), idle until started'
+- at: 2026-10-08 06:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 06:20
+  from: chaba
+  text: dispatched 20261008-062046-device-fleet-tracking-lost-dev on ada-pi
+- at: 2026-10-08 06:21
+  from: devin
+  text: 'starting: found existing ada_track_device (mddb beacon + tailscale); scoping HA device_tracker + LAN digest
+    + logbook merge and lost-mode'
+- at: 2026-10-08 06:28
+  from: devin
+  text: 'all four sources verified live: HA device_tracker.tony_ip (GPS+battery, TONY-IP enrolled; no ipad tracker
+    yet), beacon mddb (tony-omen ~5min), tailnet fleet (iPhones DNSName iphone-15/tony-ipad — HostName=localhost
+    bug in old code), LAN scan /local/ha/network-scan-latest.json fresh 2min (network-scan-tony.timer). Building
+    merge layer.'
+- at: 2026-10-08 07:04
+  from: devin
+  text: 'ada_track_device rewrite done + verified: HA companion trackers+person+companion sensors, beacon /latest
+    point-reads, tailnet keyed on DNSName, LAN scan w/ MAC registry, HA logbook history, lost-mode volatile watcher
+    -> relay /send, optional GEV pin. 39 tests pass; live smoke OK (tony-omen home-LAN+battery, iphone-15 GPS 9h-stale
+    honest, my ipad/ipad-2 aliases). SSOT job file written; outcome next.'
+- at: 2026-10-08 07:04
+  from: devin
+  text: 'DONE. ada_track_device is the full merge layer: HA device_tracker+person+companion sensors, beacon /latest
+    (WAN geo/battery/users/procs), tailnet DNSName keyed (last-seen always low conf), LAN scan + MAC registry, HA
+    logbook history. Confidence+age on every answer; STALE flag >15min. actions where/list/history/lost/found/watches;
+    lost-mode pushes deltas via relay /send (LINE:8912/TG:8911), volatile in-proc by design; gev_pin optional. iOS
+    app-usage honestly absent. 39 tests green + live smoke ve'
+- at: 2026-10-08 07:07
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 07:08
+  from: chaba
+  text: 'session-end checkpoint 91b5e3ea: 7 leftover file(s) committed'
+- at: 2026-10-08 07:08
+  from: chaba
+  text: pushed dispatch/20261008-062046-device-fleet-tracking-lost-dev to origin
+- at: 2026-10-08 07:08
+  from: chaba
+  text: auto-merged 1c611afc (dispatch/20261008-062046-device-fleet-tracking-lost-dev) → origin/main
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0199'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (30d in done, verified)
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  runner: tony-dell
+  task_id: 20261008-062046-device-fleet-tracking-lost-dev
+  result: 20261008-062046-device-fleet-tracking-lost-dev finished (inactive) — see `devin-dispatch logs 20261008-062046-device-fleet-tracking-lost-dev`
+  verified: true
+claim:
+  since: 2026-10-08 06:20
+ref: OPS-0199
