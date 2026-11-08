@@ -1,0 +1,589 @@
+id: doc-pilot-short-film
+title: doc-pilot — first AI short documentary end-to-end
+column: done
+updated: 2026-11-08 13:21
+priority: medium
+tags:
+- ada-nest
+- video
+- pipeline
+- education
+spec: Shorten the Thai narration line per Tony answer (shorten-line). Find the doc-pilot script/storyboard assets,
+  tighten the narration, keep the cut. Done when the shortened narration is committed.
+ref: OPS-0793
+comms:
+- at: 2026-10-23 16:34
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 16:40
+  from: devin
+  text: 'Pilot decided (Tony, chat 2026-10-23): TOPIC = solar-system documentary in Thai for KK. His outline: 1)
+    introduce Earth 2) solar-system overview, Sun at center 3) each planet 4) other/close. LANGUAGE = TH-primary
+    (KK audience) + EN track in parallel. NARRATOR = Tony-clone via VYNCX (Thai bench-proven). Design folded in
+    from his question: pipeline gains treatment/blueprint step, scratch-VO animatic time-lock, per-shot QC/regen,
+    sound+grade+titles, rough-cut->picture-lock gates. Lesson post 2157 d'
+- at: 2026-10-23 16:45
+  from: devin
+  text: 'Stage 1-3 drafts landed: gdrive:ada-nest/doc-pilot/{premise.md,script.yml,storyboard.yml}. 18 shots ~62s,
+    TH-primary + EN parallel, Tony-clone narrator, i2v chaining only on 1->2 and 17->18. QA/QC/audit: no new build
+    needed — pack artifact gates (QA), whisper CER + rough-cut watch (QC), artifact-landing session audit (Audit)
+    already exist. GATE: Tony reviews TH script + shot list, then scratch VO on Omen + embeds/render packs for next
+    Colab T4 session.'
+- at: 2026-10-23 17:38
+  from: devin
+  text: 'Script approved (Tony: go). 3 packs deployed to gdrive:ada-nest/packs/: doc-embeds-ss1 (CPU T5-XXL embeds
+    per shot + t5xxl archived to model-archive for reuse), doc-vo-ss1 (18 TH beats, tony-clone ref, silence-split
+    guard), doc-render-ss1 (18x73f t2v + i2v on shots 2/18, per-shot resumable, Colab-only gpu_gb14). tony-macbook
+    lacked venv+gpu so Omen claimed embeds; VO follows in same worker pass. REMAINING: Colab T4 session for doc-render-ss1
+    (also picks up ltx-probe-81f + s1-i2v-chain while conn'
+- at: 2026-10-23 17:45
+  from: devin
+  text: spec written from your answered request - queued for dispatch
+- at: 2026-10-23 18:38
+  from: devin
+  text: 'VO status 2026-10-23: doc-vo-ss1 generated/published all 18 wavs + vo-report.md to Drive. QC caught NaN
+    peaks on shots 4 and 8 (vo-report incorrectly says fails:none because NaN compares false to <0.01); hold assembly.
+    Remaining 16 clips have finite peak, durations ~2.2–4.4s. Need add finite-value check to pack, regenerate only
+    shots 4/8 with clause splits, verify waveform/CER before cut. Colab runner currently active on doc-embeds-ss1;
+    no embeds landed yet.'
+- at: 2026-10-24 17:48
+  from: devin
+  text: 'Visibility check 2026-10-24: WP lesson CPT contains slug lesson-1fa6858c7a4d / post 2157, titled ''Education
+    — AI short-documentary pipeline — idea to final cut''. The /lesson read door returns it; code creates lesson
+    CPT records with post_status=private. Anonymous post URL returns HTTP 404 and the public /wp/lesson/ archive
+    omits it, as designed. Content is an English production-pipeline retrospective, not a Thai solar-system article.
+    Roughcut is in Drive (18 shot inputs; 54.8s video + 66.4s VO p'
+- at: 2026-10-24 17:48
+  from: devin
+  text: 'raised request where-should-tony-see-doc-post: Where are you looking for the documentary post? The existing
+    Education post 2157 is private and English (pipeline retros'
+- at: 2026-10-24 17:48
+  from: devin
+  text: 'Caveat to the request options: the current /lesson write door always creates private CPT records; there
+    is no supported public-publish action on that endpoint. So the public-Thai option needs a separately approved/published
+    CMS path first; do not treat it as ready-to-run. No post visibility or content was changed.'
+- at: 2026-10-24 18:35
+  from: devin
+  text: 'Updated Education post 2157 in place (same slug; remains private): restored Tony''s original Thai idea,
+    narrated the real development timeline, included the 18-shot Thai script, prompt/storyboard/render/assembly
+    steps, sources, artifact paths, and linked the current GDrive rough cut v1. Marked it as a rough cut, not a
+    final master, and documented the two NaN source VO clips plus the mux tail-truncation bug. No Drive sharing
+    or CPT visibility changed.'
+- at: 2026-10-24 19:08
+  from: tony
+  text: 'answered where-should-tony-see-doc-post: wp-admin-private — Tony is viewing the WP Admin Education CPT
+    list. Keep post 2157 private; it was updated in place with the Thai idea/process and v2 video link.'
+- at: 2026-10-24 19:08
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-24 19:08
+  from: devin
+  text: 'Follow-up 2026-10-24: generated VO v2 for shots 4 and 8 with finite/readback checks (4.12s peak 0.603;
+    3.72s peak 0.620). Reassembled and verified ss1-final-v2.mp4: H.264 640x384 @24fps, 67.119s, 1,961,871 bytes;
+    decoded AAC 0 non-finite samples; v2 report PASS and confirms narration duration retained. Canonical GDrive
+    file gdrive:ada-nest/doc-pilot/final/ss1-final-v2.mp4; Education post 2157 now links to it and documents the
+    full story/process. Still a review cut, not a public release: science '
+- at: 2026-10-24 19:18
+  from: devin
+  text: Post 2157 now includes both an inline Google Drive preview iframe and fallback Watch link for ss1-final-v2.mp4;
+    API readback confirms both persisted with the Thai idea/process. The file remains private in Drive (no share
+    permissions changed), so KK needs Drive access for playback. V2 automated QC passed (67.119s, all VO finite,
+    AAC decoded samples finite); human review/fact-check and optional subtitles/music/title/grade still pending.
+- at: 2026-10-24 19:48
+  from: devin
+  text: 'Polish pass started (2026-10-24): v2 feasibility proven; focus now on story/facts/Thai VO/timing/subtitles
+    on current footage while higher-resolution scenes wait for a stronger GPU. NASA fact-check recommends: Venus
+    is hottest due to its dense greenhouse atmosphere; clouds are sulfuric acid; Earth is the only place in our
+    Solar System where life has been found; Kuiper Belt is estimated to contain millions of icy objects (not millions
+    of dwarf planets); Great Red Spot is larger than Earth but cha'
+- at: 2026-10-24 19:48
+  from: devin
+  text: 'raised request approve-fact-checked-thai-lines-v3: Approve these fact-checked narration replacements for
+    the next Thai VO pass? Shot 6: ''ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ ใต'
+- at: 2026-10-24 19:55
+  from: devin
+  text: 'Pacing polish v3 in progress on Omen CPU (no new GPU required): replace the v2 12.87s end-frame hold with
+    per-scene timing, holding each scene only for its own VO overrun and padding short VO with silence. This keeps
+    v2 and the v2 script unchanged; v3 is a comparison cut while the NASA-based line edits await Tony''s approval.
+    No file/share permission changes.'
+- at: 2026-10-24 19:59
+  from: devin
+  text: 'Polish progress: generated pacing cut v3 without another GPU render. It distributes holds per scene (max
+    1.32s) instead of freezing only the last frame for ~12.9s; 69.21s H.264/AAC, 640x384@24fps, decoded audio finite,
+    automated alignment report PASS. Canonical file gdrive:ada-nest/doc-pilot/final/ss1-polish-v3.mp4; post 2157
+    now embeds v3 and keeps the v2 comparison link. Sampled a mid-frame from all 18 shots; no black frames and overall
+    visual style is coherent (motion QC still pending). NASA '
+- at: 2026-10-24 20:00
+  from: devin
+  text: 'Pacing v3 completed on 2026-10-24 using CPU only: per-scene frame holds are now 0–1.32s, short narration
+    beats get silence to fill their shot, and no single 12.87s freeze remains at the end. QA report: 69.21s, H.264/AAC,
+    640x384@24fps, decoded audio finite. Saved to gdrive:ada-nest/doc-pilot/final/ss1-polish-v3.mp4 and linked in
+    private Education post 2157. NASA-fact-check edits for shots 6/7/15 remain awaiting Tony''s approval before
+    revoice; the current v3 uses the previous words. Contact sheet'
+- at: 2026-10-24 20:14
+  from: devin
+  text: 'NASA 2.5D source check: NASA says its media is generally reusable for educational/informational use, but
+    this is not blanket public domain; third-party restrictions/credits must be checked per asset, NASA/JPL credited,
+    no logos or implied endorsement. Candidate Earth GSFC_20171208_Archive_e001016 (NASA Goddard, Copyright=None
+    in metadata) and Saturn PIA06193 (NASA/JPL/Space Science Institute) previews inspected locally only. Candidate
+    Pluto PIA19857 credit NASA/JHUAPL/SWRI: ~large download retur'
+- at: 2026-10-24 20:14
+  from: devin
+  text: 'raised request nasa-pluto-403-next-step: The NASA Image Library''s ~large Pluto PIA19857 download returned
+    HTTP 403. I have Earth and Saturn previews only in loca'
+- at: 2026-10-24 20:25
+  from: tony
+  text: 'answered approve-fact-checked-thai-lines-v3: accept — Accept suggested Thai edits for v3'
+- at: 2026-10-24 20:25
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 05:34
+  from: tony
+  text: 'answered nasa-pluto-403-next-step: earth-saturn-only — Start a private 2-scene Earth/Saturn layer proof;
+    defer Pluto'
+- at: 2026-10-25 05:34
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 05:52
+  from: devin
+  text: 'Tony approved the NASA-fact-checked Thai edits (shots 6/7/15). Canonical doc-pilot/script.yml is now v1-fact-checked;
+    the old v0 is archived. Starting v4 on Omen (2GHz cap, no upgraded GPU): revoice only shots 6/7/15, align scene
+    holds per narration, and add a Thai soft-subtitle track/SRT. It retains the original 18 LTX shots and v2 repairs
+    for 4/8; this is a private review cut.'
+- at: 2026-10-25 05:56
+  from: devin
+  text: 'NASA 2.5D private proof v1 completed per approved Earth/Saturn-only scope. 6.375s H.264/AAC 640x384@24,
+    CPU-only: NASA stills are keyed over a procedural starfield, with a separate glow layer, subtle parallax/push-in,
+    Thai lower-third, narration from existing shots 1/11, and exact credits. Artifacts: gdrive:ada-nest/doc-pilot/alternatives/nasa-2p5d-v1/{nasa-2p5d-earth-saturn-v1.mp4,contact-sheet.jpg,asset-manifest.md,render_layers.py,mix_audio.py}.
+    SHA-256 verified after Drive readback. It is a '
+- at: 2026-10-25 05:57
+  from: devin
+  text: 'Nest pack chain verified on 2026-10-25: 01-doc-vo-repair-ss1 (inputs materialized from voice-bench assets)
+    DONE on tony-omen, 375s; 02-doc-assemble-v2-ss1 DONE, 9s; 03-doc-align-v3 DONE, 9s. Outputs/reports are on gdrive:ada-nest/doc-pilot/final
+    and packs/. Colab remains disconnected; T4-specific eval-code-14b (9GB) and ltx-probe-77f (14GB) are queued
+    for next Colab run. Omen worktree source pack now declares fetch for the references; that worktree remains uncommitted.'
+- at: 2026-10-25 06:19
+  from: devin
+  text: 'Polish pass v4 completed: fact-checked Thai edits approved by Tony are revoiced in shots 6/7/15; output
+    has Thai soft-subtitle track + SRT, per-scene timing, 72.257s duration, finite decoded audio. Review: gdrive:ada-nest/doc-pilot/final/ss1-polish-v4.mp4
+    and subtitles-th-v4.srt. NASA still+2.5D proof v1 also complete privately (Earth/Saturn only, 6.375s, CPU-only,
+    credits on screen): gdrive:ada-nest/doc-pilot/alternatives/nasa-2p5d-v1/; manifest and contact sheet included.
+    Post 2157 updated in '
+- at: 2026-10-25 06:19
+  from: devin
+  text: 'raised request choose-visual-lane-after-poc-v1: After reviewing the LTX v4 cut and the private NASA stills
+    + 2.5D Earth/Saturn proof, which visual lane should the next '
+- at: 2026-10-25 15:45
+  from: tony
+  text: 'answered choose-visual-lane-after-poc-v1: hybrid-static — Use NASA stills + subtle layers for static factual
+    planet shots; keep LTX for transitions and motion.'
+- at: 2026-10-25 15:45
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 15:54
+  from: devin
+  text: 'Hybrid v5 completed and verified on tony-dell CPU (no GPU render): NASA 2.5D stills/credits for shots 1
+    and 11; LTX for shots 2–10 and 12–18; Thai subtitle track + SRT; 72.257s, 640x384@24, AAC finite. Canonical
+    Drive file gdrive:ada-nest/doc-pilot/final/ss1-hybrid-v5.mp4; post 2157 embeds it. One known pacing choice:
+    fact-checked shot 15 VO is 6.60s over a 3.04s source clip, so v5 holds the last frame 3.56s. Review this with
+    KK before master; no public sharing changes.'
+- at: 2026-10-25 15:54
+  from: devin
+  text: 'raised request kuiper-shot15-pacing-v5: In hybrid v5, the approved Kuiper narration lasts 6.60s while its
+    generated visual is 3.04s, leaving a 3.56s end-frame h'
+- at: 2026-10-25 17:10
+  from: devin
+  text: 'Colab follow-up 2026-10-25: gaussian-splat-edu-smoke DONE (synthetic 2,400-point scene, 48 frames at 640x384,
+    680.6s). NASA embeds failed because the archived T5 tokenizer lacks spiece.model; NASA i2v then failed because
+    shot01 embedding was absent. Neither has a done marker or output. Colab queue drained. Omen retains the 8.9GB
+    archive cache; preserve it until the tokenizer/cache retry is fixed.'
+- at: 2026-10-25 17:55
+  from: devin
+  text: 'NASA embed repair verified 2026-10-25: nasa-embeds-ss1 DONE on Omen CPU in 251s. The archived tokenizer
+    lacked spiece.model; T5TokenizerFast loaded the self-contained tokenizer.json. Two Drive artifacts read back
+    (shot01/02.pt, 4.1MB each) and validated with expected keys, 1x256x4096 finite tensors. NASA i2v is now unblocked
+    but still requires a T4; no active claim or done marker yet.'
+- at: 2026-10-25 18:00
+  from: devin
+  text: 'NASA T5 embeddings are now DONE on Omen CPU: two validated shot01/02 embeddings (4.1MB each, [1,256,4096])
+    on Drive. The T5 fast tokenizer works from the existing tokenizer.json despite absent spiece.model. nasa-i2v
+    is now an unclaimed T4 pack and will run in the same queue-runner session as any other pending T4 packs; no
+    need to merge it into a benchmark pack.'
+- at: 2026-10-25 19:15
+  from: tony
+  text: 'answered kuiper-shot15-pacing-v5: shorten-line — Shorten the Thai narration to fit one ~4s shot'
+- at: 2026-10-25 19:15
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 05:59
+  from: devin
+  text: 'Verified Drive shows `nasa-i2v` DONE (from prior T4 boot 289669b4): report lists Earth 476.9s and Saturn
+    490.4s, with `nasa-earth-i2v.mp4` and `nasa-saturn-i2v.mp4` in the pack outputs. The new T4 session skipped
+    this pack because its done marker was already present; no duplicate render was launched.'
+- at: 2026-10-26 06:22
+  from: devin
+  text: 'Status 2026-10-26: v6 hybrid cut is complete and linked in private Education post 2157. NASA 2.5D stills
+    + baked captions/credits are in shots 1/11; LTX remains for the other 16. The shortened, fact-checked Kuiper
+    line is 3.51s, reducing its end-frame hold from 3.56s to 0.47s. v6 is 69.165s with Thai soft subtitles and passes
+    finite-audio/duration checks. Still awaiting Tony/KK playback approval; no public sharing changes.'
+- at: 2026-10-26 06:23
+  from: devin
+  text: 'raised request review-hybrid-v6-for-kk: Please review hybrid v6 in private Education post 2157 with the
+    Thai subtitles. Is the NASA still treatment for Earth/Sa'
+- at: 2026-10-26 07:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 07:06
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 07:06
+  from: idc02
+  text: claimed
+- at: 2026-10-26 07:06
+  from: chaba
+  text: started devin-task-20261026-070638-shorten-the-thai-narration-lin on idc02 (dispatch)
+- at: 2026-10-26 07:08
+  from: devin
+  text: 'dispatch shorten-line: located in-repo narration source (doc-vo-ss1 pack BEATS, still v0). Fetching canonical
+    v6 script via /lesson door to commit the shortened shot-15 Kuiper line.'
+- at: 2026-10-26 07:09
+  from: devin
+  text: 'shorten-line committed (dispatch worktree, not pushed): doc-vo-ss1 BEATS synced to the v6-canonical script
+    — shot 15 now "ไกลออกไปคือแถบไคเปอร์ แหล่งรวมวัตถุน้ำแข็ง" (3.51s), plus the approved fact-check lines on shots
+    6/7. Verified all 18 beats match the post-2157 Thai script table. Text-only; shipped v6 cut unchanged.'
+- at: 2026-10-26 07:10
+  from: idc02
+  text: 'finished (ok): exit=0 en-the-thai-narration-lin.md`, and the board card got progress + completion comments.
+    Text-only change — the ship'
+- at: 2026-10-26 07:10
+  from: chaba
+  text: pushed dispatch/20261026-070638-shorten-the-thai-narration-lin to origin
+- at: 2026-10-26 07:10
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 07:10
+  from: chaba
+  text: auto-merged 455c5df9 (dispatch/20261026-070638-shorten-the-thai-narration-lin) → origin/master
+- at: 2026-10-26 07:10
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-070638-shorten-the-thai-narration-lin,
+    branch dispatch/20261026-070638-shorten-the-thai-narration-lin'
+- at: 2026-10-26 07:10
+  from: devin
+  text: 'Research preview for quality expansion: preserve current 7-stage pipeline, then add an asset/continuity
+    control plane. Recommended layers: story truth -> character/object/location bibles -> storyboard graph -> scratch-VO
+    animatic -> reference/pose/depth/camera controlled generation -> temporal finishing -> QA/QC. GitHub precedents:
+    VBench/VBench-2.0, T2V-CompBench, VideoScore2, StoryDiffusion, DWPose, Tencent SCoPE, DepthFlow, BlenderProc,
+    SISIFOS/FlyByGen, FILM/RIFE, OmniSG/Video2Sim, and ai-ci'
+- at: 2026-10-26 07:15
+  from: devin
+  text: 'New review draft prepared per Tony''s direction: script-v3-tourist-review.yml adds a fictional small tour
+    ship/occasional cockpit POV, Moon, and on-screen average-distance + diameter callouts for Sun, Moon, all eight
+    planets and Pluto; Kuiper Belt is explicitly a region with no single size. Flow pros/cons and efficiency plan
+    are integrated into Education post 2157 and flow-assessment-v1.md. v6 remains the current cut; no script-v3
+    VO or render launched pending review.'
+- at: 2026-10-26 07:15
+  from: devin
+  text: 'raised request review-tourist-script-v3: Please review the v3 tourist-ship script/data-callout draft linked
+    in Education post 2157. Proposed scope is Sun, Moon, '
+- at: 2026-10-26 07:16
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''review-hybrid-v6-for-kk'', ''review-tourist-script-v3'']
+    block close)'
+- at: 2026-10-26 07:18
+  from: devin
+  text: 'Review assets are now in gdrive:ada-nest/doc-pilot/review/: script-v3-tourist-review.yml (18-shot Thai/EN
+    draft with object facts and ship-layer plan) and flow-assessment-v1.md (current-flow pros/cons + efficiency
+    proposals). Education post 2157 links both and includes the fact table. Kuiper Belt wording uses NASA''s main-belt
+    range ~30-50 AU, distinguishing the scattered disk; no rendering/VO started. Please review request review-tourist-script-v3
+    before replacing the approved v2 script.'
+- at: 2026-10-26 07:31
+  from: devin
+  text: 'Research assessment integrated into the existing flow report and private Education post 2157. The prior
+    OPS-0793 research entry was a shortlist, not a full report. Recommendation: use VBench-2.0/T2V-CompBench dimensions
+    as a small manual shot rubric now; do not install their full benchmark stacks. DepthFlow is the only direct
+    2.5D tool candidate, but AGPL-3.0/GPU/depth-estimator costs mean only an isolated one-image A/B is worth considering;
+    our CPU compositor already works. SCoPE is a Wan2.2-A1'
+- at: 2026-10-26 07:33
+  from: devin
+  text: 'Research shortlist assessed and recorded in flow-assessment-v1.md / Education post 2157. Immediate fit:
+    adapt VBench-2.0 + T2V-CompBench dimensions into a tiny manual shot rubric; no full benchmark install. DepthFlow
+    is a possible isolated Earth/Saturn A/B only (AGPL-3.0 + GPU/depth estimator); current CPU compositor remains
+    baseline. Defer SCoPE until larger GPU; StoryDiffusion only for reference-sheet ideas; no fit for DWPose/BlenderProc/FlyByGen/SISIFOS/FILM/RIFE/OmniSG/Vid2Sim
+    in current 18-'
+- at: 2026-10-26 07:36
+  from: tony
+  text: 'answered review-hybrid-v6-for-kk: revise-v6 — I have revisions; keep the cut private and update it'
+- at: 2026-10-26 07:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 08:21
+  from: tony
+  text: 'answered review-tourist-script-v3: approve-proposed-scope — Approve this scope and ship viewpoint for v3
+    development'
+- at: 2026-10-26 08:21
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 08:31
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 08:33
+  from: chaba
+  text: 'answer-sweep: executed ''approve-proposed-scope — Approve this scope and ship viewpoi'' -> queued for processing'
+- at: 2026-10-26 08:33
+  from: chaba
+  text: 'answer-sweep: 6 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-26 08:54
+  from: idc02
+  text: claimed
+- at: 2026-10-26 08:54
+  from: chaba
+  text: started devin-task-20261026-085417-shorten-the-thai-narration-lin on idc02 (dispatch)
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'dispatch shorten-line (re-run): verified already done — commit 09ff83b8 synced doc-vo-ss1 BEATS to v6-canonical
+    (shot 15 Kuiper line shortened to "ไกลออกไปคือแถบไคเปอร์ แหล่งรวมวัตถุน้ำแข็ง", 3.51s) and auto-merged to master
+    at 07:10. This dispatch was a re-queue no-op: answer-sweep re-queued the card on the newer answers (revise-v6,
+    approve-proposed-scope) but the spec field still carries the old shorten-line text. No repo changes needed;
+    cut unchanged. Note: revise-v6 says "I have revisions" b'
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'raised request you-answered-revise-v6-what-are-the-revi-3f64dc: You answered revise-v6 — what are the revisions
+    for hybrid v6? No detail was recorded, so the next pass has nothing to a'
+- at: 2026-10-26 08:55
+  from: devin
+  text: 'dispatch shorten-line (re-run) finished: no-op confirmed, outcome committed on dispatch/20261026-085417-shorten-the-thai-narration-lin
+    (45d652d7, outcome file only). Open item for next pass: request you-answered-revise-v6-what-are-the-revi-3f64dc
+    awaits the v6 revision list.'
+- at: 2026-10-26 08:56
+  from: idc02
+  text: 'finished (ok): exit=0 1026-085417-shorten-the-thai-narration-lin.md` and committed on `dispatch/20261026-085417-shorten-the-thai-narrat'
+- at: 2026-10-26 08:56
+  from: chaba
+  text: pushed dispatch/20261026-085417-shorten-the-thai-narration-lin to origin
+- at: 2026-10-26 08:56
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 08:56
+  from: chaba
+  text: auto-merged 350eaf25 (dispatch/20261026-085417-shorten-the-thai-narration-lin) → origin/master
+- at: 2026-10-26 08:56
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-085417-shorten-the-thai-narration-lin,
+    branch dispatch/20261026-085417-shorten-the-thai-narration-lin'
+- at: 2026-10-26 09:23
+  from: tony
+  text: 'answered you-answered-revise-v6-what-are-the-revi-3f64dc: go-v3 — Skip v6 polish; develop approved v3 tourist
+    script'
+- at: 2026-10-26 09:23
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-26 09:31
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 09:33
+  from: chaba
+  text: 'answer-sweep: executed ''go-v3 — Skip v6 polish; develop approved v3 tourist script'' -> queued for processing'
+- at: 2026-10-26 09:33
+  from: chaba
+  text: 'answer-sweep: 6 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-26 09:41
+  from: idc02
+  text: claimed
+- at: 2026-10-26 09:41
+  from: chaba
+  text: started devin-task-20261026-094110-shorten-the-thai-narration-lin on idc02 (dispatch)
+- at: 2026-10-26 09:44
+  from: devin
+  text: 'dispatch shorten-line (3rd re-queue): spec still stale — shorten-line already merged 07:10 (09ff83b8).
+    Real queued intent is Tony''s go-v3 answer. Acting on it: pulled approved script-v3-tourist-review.yml from
+    gdrive, building doc-vo-v3 pack (18 v3 TH beats, VYNCX+tony-ref) to stage on the nest queue for v3 VO; rest
+    of v3 production gets its own card.'
+- at: 2026-10-26 09:46
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 09:47
+  from: devin
+  text: 'go-v3 started: doc-vo-v3 pack committed (dispatch branch) + staged to gdrive:ada-nest/packs/ — 18 approved
+    v3 TH beats verbatim from script-v3-tourist.yml (script copy committed, status approved-scope-2026-10-26), VYNCX
+    v2 + tony-ref-8s, non-finite guard added. VO lands in doc-pilot/vo-v3 on next GPU worker pass. Remaining v3
+    production (storyboard/NASA rights/render/assembly/subs) carded as OPS-0904 doc-pilot-v3-tourist-cut — keeps
+    it off this stale-spec epic. v6 cut untouched. shorten-line its'
+- at: 2026-10-26 09:48
+  from: chaba
+  text: pushed dispatch/20261026-094110-shorten-the-thai-narration-lin to origin
+- at: 2026-10-26 09:48
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-26 09:48
+  from: chaba
+  text: auto-merged 0d3e1346 (dispatch/20261026-094110-shorten-the-thai-narration-lin) → origin/master
+- at: 2026-10-26 09:48
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-094110-shorten-the-thai-narration-lin,
+    branch dispatch/20261026-094110-shorten-the-thai-narration-lin'
+- at: 2026-10-26 10:34
+  from: devin
+  text: 'Current Drive queue scan 2026-10-26: `doc-vo-v3` is the sole unclaimed/uncompleted pack. It needs gpu_gb=3
+    and disk_gb=4; T4 satisfies it. It contains 18 Thai beats and ref inputs; its prep installs dependencies, while
+    `TTS(model="v2")` may fetch model weights during run (no explicit model prefetch currently). The local `07-doc-vo-kuiper-v5`
+    and `08-doc-hybrid-v6` files seen in the dispatch worktree are not deployed to Drive, so they are not queueable
+    yet. T4 runtime/runner is stale/exited; no j'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (13d in done, verified)
+requests:
+- id: where-should-tony-see-doc-post
+  ask: Where are you looking for the documentary post? The existing Education post 2157 is private and English (pipeline
+    retrospective); it will not appear on the public /wp/lesson/ archive. Choose the surface so I can fix the right
+    thing without publishing the wrong content.
+  status: answered
+  at: 2026-10-24 17:48
+  from: devin
+  options:
+  - id: wp-admin-private
+    label: WP Admin Education list (All/Private) — keep private; help locate it
+  - id: public-thai-post
+    label: Public Education page — create a separate Thai solar-system post; keep 2157 private
+  - id: publish-2157
+    label: Publish 2157 as-is (English pipeline retrospective)
+  suggested: public-thai-post
+  answer: wp-admin-private — Tony is viewing the WP Admin Education CPT list. Keep post 2157 private; it was updated
+    in place with the Thai idea/process and v2 video link.
+- id: approve-fact-checked-thai-lines-v3
+  ask: 'Approve these fact-checked narration replacements for the next Thai VO pass? Shot 6: ''ดาวศุกร์ ร้อนที่สุดในระบบสุริยะ
+    ใต้เมฆกรดซัลฟิวริกหนาทึบ'' (Venus hottest; sulfuric-acid clouds). Shot 7: ''โลกคือที่เดียวในระบบสุริยะที่เราพบสิ่งมีชีวิต''
+    (life found so far). Shot 15: ''เลยดาวเนปจูนออกไป นักดาราศาสตร์คาดว่ามีวัตถุน้ำแข็งนับล้านในแถบไคเปอร์'' (estimated
+    icy bodies, not dwarf planets). Shot 10 remains ''พายุหมุนอันยิ่งใหญ่ ใหญ่กว่าโลกทั้งใบ'' (NASA says it is larger
+    than Earth and changing). Recommended: accept these for the KK-facing v3; current v2 remains unchanged until
+    your answer.'
+  status: answered
+  at: 2026-10-24 19:48
+  from: devin
+  options:
+  - id: accept
+    label: Accept suggested Thai edits for v3
+  - id: hold
+    label: Keep v2 wording for now
+  - id: kk-review
+    label: Ask KK to review the Thai wording first
+  suggested: accept
+  answer: accept — Accept suggested Thai edits for v3
+- id: nasa-pluto-403-next-step
+  ask: The NASA Image Library's ~large Pluto PIA19857 download returned HTTP 403. I have Earth and Saturn previews
+    only in local scratch; they are not in the cut or Drive. How should I scope the private 2.5D proof while I pause
+    the failed source?
+  status: answered
+  at: 2026-10-24 20:14
+  from: devin
+  options:
+  - id: earth-saturn-only
+    label: Start a private 2-scene Earth/Saturn layer proof; defer Pluto
+  - id: retry-medium
+    label: Retry PIA19857 at medium resolution through the NASA library
+  - id: photojournal-alt
+    label: Search an alternate NASA Photojournal Pluto image, then verify its metadata before downloading
+  suggested: earth-saturn-only
+  answer: earth-saturn-only — Start a private 2-scene Earth/Saturn layer proof; defer Pluto
+- id: choose-visual-lane-after-poc-v1
+  ask: After reviewing the LTX v4 cut and the private NASA stills + 2.5D Earth/Saturn proof, which visual lane should
+    the next polish pass use? NASA prototype is only a 2-scene test, not integrated; Pluto asset remains deferred
+    after HTTP 403.
+  status: answered
+  at: 2026-10-25 06:19
+  from: devin
+  options:
+  - id: hybrid-static
+    label: 'Recommended: use sourced stills + subtle layers for fact/static planet shots; keep LTX for transitions
+      and motion'
+  - id: ltx-only
+    label: Keep LTX for all 18 scenes; retain NASA sample as an experiment only
+  - id: more-tests
+    label: Run another private comparison with different rights-checked NASA assets before choosing
+  suggested: hybrid-static
+  answer: hybrid-static — Use NASA stills + subtle layers for static factual planet shots; keep LTX for transitions
+    and motion.
+- id: kuiper-shot15-pacing-v5
+  ask: In hybrid v5, the approved Kuiper narration lasts 6.60s while its generated visual is 3.04s, leaving a 3.56s
+    end-frame hold. For the KK review cut, how should we handle this beat?
+  status: answered
+  at: 2026-10-25 15:54
+  from: devin
+  options:
+  - id: keep-linger
+    label: Keep the slow hold as a contemplative pause
+  - id: shorten-line
+    label: Shorten the Thai narration to fit one ~4s shot
+  - id: split-beat
+    label: Split the narration across shots 15 and 16; revise both subtitles
+  suggested: shorten-line
+  answer: shorten-line — Shorten the Thai narration to fit one ~4s shot
+- id: review-hybrid-v6-for-kk
+  ask: Please review hybrid v6 in private Education post 2157 with the Thai subtitles. Is the NASA still treatment
+    for Earth/Saturn and the shortened Kuiper beat acceptable for KK? No public release or Drive sharing change
+    will happen without your explicit instruction.
+  status: answered
+  at: 2026-10-26 06:23
+  from: devin
+  options:
+  - id: approve-v6-review
+    label: Looks good for KK review; proceed to final title/credit polish, keep private
+  - id: revise-v6
+    label: I have revisions; keep the cut private and update it
+  - id: hold-for-kk
+    label: Hold until KK can review the private cut
+  suggested: hold-for-kk
+  answer: revise-v6 — I have revisions; keep the cut private and update it
+- id: review-tourist-script-v3
+  ask: Please review the v3 tourist-ship script/data-callout draft linked in Education post 2157. Proposed scope
+    is Sun, Moon, eight planets, Pluto, and the Kuiper Belt region (not every moon/asteroid); ship is a recurring
+    fictional, logo-free layer with occasional window POV. Choose whether to approve this scope, change viewpoint,
+    or expand the body list before VO/storyboard work.
+  status: answered
+  at: 2026-10-26 07:15
+  from: devin
+  options:
+  - id: approve-proposed-scope
+    label: Approve this scope and ship viewpoint for v3 development
+  - id: window-only
+    label: Use cockpit/window POV only; no exterior ship silhouette
+  - id: expand-bodies
+    label: Include other dwarf planets/moons; accept longer runtime
+  suggested: approve-proposed-scope
+  answer: approve-proposed-scope — Approve this scope and ship viewpoint for v3 development
+  executed: 2026-10-26 queue
+- id: you-answered-revise-v6-what-are-the-revi-3f64dc
+  ask: 'You answered revise-v6 — what are the revisions for hybrid v6? No detail was recorded, so the next pass
+    has nothing to act on. List the changes (shots/timing/lines), or pick: (a) v6-is-final — skip revisions, treat
+    v6 as the KK review cut; (b) go-v3 — skip v6 polish, put effort into the approved v3 tourist-ship script instead.'
+  status: answered
+  at: 2026-10-26 08:55
+  from: devin
+  options:
+  - id: v6-is-final
+    label: Skip revisions; v6 is the KK review cut
+  - id: go-v3
+    label: Skip v6 polish; develop approved v3 tourist script
+  - id: list-revisions
+    label: I will list the v6 revisions in my answer
+  suggested: list-revisions
+  answer: go-v3 — Skip v6 polish; develop approved v3 tourist script
+  executed: 2026-10-26 queue
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: idc02
+  result: 'exit=0 1026-085417-shorten-the-thai-narration-lin.md` and committed on `dispatch/20261026-085417-shorten-the-thai-narration-lin`
+    (45d652d7); not pushed. | devin-task-20261026-085417-shorten-the-thai-narration-lin.service: Consumed 8.170s
+    CPU time.'
+  verified: true
+  sweep:
+    close_held: 2026-10-26 07:16
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-26 09:46
+  note: verified — evidence checks green, closing itself
