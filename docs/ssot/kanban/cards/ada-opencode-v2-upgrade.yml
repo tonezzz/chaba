@@ -1,7 +1,7 @@
 id: ada-opencode-v2-upgrade
 title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
 column: backlog
-updated: 2026-11-08 12:10
+updated: 2026-11-08 12:26
 priority: medium
 tags:
 - ada
@@ -19,3 +19,10 @@ comms:
 - at: 2026-11-08 12:10
   from: devin
   text: card captured via board-api
+- at: 2026-11-08 12:26
+  from: devin
+  text: '[done-parts] v2.2.5 live on idc02 both paths. Container: localhost/ada-opencode:latest rebuilt w/ v2 binary
+    install (ARG>=2 pulls GitHub asset — npm opencode-ai tops at 1.19.5), service active+healthy, /global/health
+    200, 14 ada-control_* MCP tools exposed. Host binary: v2 at ~/.opencode/bin + runner-agent drop-in OPENCODE_BIN
+    (next dispatch resolves v2). Config migrations: workspace opencode.json + .opencode/ → mcp.servers shape (v1
+    1.19.4 tolerated it — verified). Code: render_config emits mcp'
