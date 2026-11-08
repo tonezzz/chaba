@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 13:10
+updated: 2026-11-08 13:21
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -31,3 +31,23 @@ comms:
     backups (5) — cold-restore runbooks + 49 refs on idc03. HIGHEST risk — DR path.
 
     chaba (3), chaba-media-corpus (2), ada-documents (5; ada-voice backen'
+- at: 2026-11-08 13:21
+  from: devin
+  text: '[dispatch brief — phase B pilot-dirs migration, L3 careful-live]
+
+
+    GOAL: move 4 live pilot dirs under gdrive:ada-nest/projects/ and update all code refs atomically.
+
+
+    DIRS (server-side rclone move = instant rename):
+
+    - gdrive:ada-nest-adobe-stock -> gdrive:ada-nest/projects/adobe-stock
+
+    - gdrive:ada-nest-kk-llm -> gdrive:ada-nest/projects/kk-llm
+
+    - gdrive:ada-nest-devnest -> gdrive:ada-nest/projects/devnest
+
+    - gdrive:ada-nest-kk-mac-video-pilot -> gdrive:ada-nest/projects/kk-mac-video-pilot
+
+
+    REFS TO U'
