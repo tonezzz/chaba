@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-11-08 08:29
+updated: 2026-11-08 18:49
 priority: medium
 ref: MEM-0695
 comms:
@@ -83,6 +83,13 @@ comms:
     ok p50 131ms/p95 2823ms; con01 drop 15/15 ok BUT p50 degraded ~17x to 2264ms — resilient but latency-paying.
     python_ml_gpu declared on Omen. STATE: local dense+rerank now at Gemini parity (r@5 .260 vs .244, MRR .869 vs
     .893) — remaining decision is serving architecture, not quality.'
+- at: 2026-11-08 18:49
+  from: devin
+  text: 'DISTILLATION PILOT COMPLETE: linear closed-form map BGE-M3 1024d -> Gemini 768d trained on 8,109 doc pairs.
+    Mean cosine to Gemini teacher = .9493. Expanded-qrels scores: distilled overall r@5 .235 / MRR .871; English
+    .216/.848; Thai .283/.929. Baseline BGE dense .224/.767, Gemini .244/.893, top-10 rerank .262/.938. Result:
+    cheap distillation materially improves BGE MRR (+.104) and Thai, but does not beat the top-10 reranker or Gemini
+    overall; full fine-tune is optional, not needed for current se'
 action:
   type: dispatch
   status: done
