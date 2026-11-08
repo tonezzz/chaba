@@ -1,0 +1,19 @@
+id: merge-sweep-test-gate-fail-open
+title: merge-sweep test gate is fail-open when a runner host lacks pytest
+column: backlog
+updated: 2026-11-08 13:13
+priority: medium
+tags:
+- merge-sweep
+- dispatch
+- verification
+spec: 'Observed on hands-off-waiting-card-procedure merge 2026-11-08 (tony-macbook): ''test gate skipped: pytest
+  unavailable - fail-open'', and the merge proceeded anyway. A host without pytest merges with NO test evidence
+  - the gate protects nothing there. Options: fail-closed with an allowlist of test-exempt card types (docs-only,
+  script pilots), require pytest presence as a runner-agent claim label (labels: pytest so testable code only claims
+  where tests can run), or degrade to ''unverified'' column instead of done. Decide + implement.'
+ref: OPS-1191
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
