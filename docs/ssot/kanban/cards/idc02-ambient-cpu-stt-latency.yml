@@ -1,7 +1,7 @@
 id: idc02-ambient-cpu-stt-latency
 title: idc02 ambient CPU load inflates ada-stt/qwen3 RTF 3-5x vs Oct-16 baseline
-column: review
-updated: 2026-11-08 07:29
+column: done
+updated: 2026-11-08 07:33
 spec: 'Found during local-stt-lane-eval re-run 2026-10-23: idc02 now runs persistent CPU tenants (open-jev gemma-3-4b-it
   ~14% CPU steady since Oct-08, mddbd ~14%, ~25 podman containers) plus transient bursts (journalctl at ~95%). qwen3-asr
   warm TTT on ada-stt (:8914) is now ~7-12s for 3-8s clips (RTF 2-3) vs ~0.5-0.7 RTF quiet-window / ~3-4s Oct-16.
@@ -95,6 +95,9 @@ comms:
 - at: 2026-11-08 07:29
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 07:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -120,3 +123,7 @@ requests:
   suggested: ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
   answer: ★ accept — batch-lane RTF ~2 is fine, revisit only if TTT SLO tightens
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 07:33
+  note: verified — evidence checks green, closing itself
