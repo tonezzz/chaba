@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit-watchdog
 title: Timer chaba-audit-watchdog on tony-omen failing
-column: review
-updated: 2026-11-08 10:59
+column: done
+updated: 2026-11-08 11:07
 priority: high
 tags:
 - timer-alert
@@ -263,6 +263,9 @@ comms:
   from: devin
   text: '[still suspicious] `chaba-audit-watchdog.timer` on `tony-omen` is disabled but expected active (audit census
     / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit-watchdog.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   status: done
   type: dispatch
@@ -274,3 +277,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 11:07
+  note: verified — evidence checks green, closing itself
