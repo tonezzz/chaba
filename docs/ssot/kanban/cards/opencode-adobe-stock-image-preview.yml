@@ -1,7 +1,7 @@
 id: opencode-adobe-stock-image-preview
 title: OpenChamber Adobe Stock image preview and asset picker
 column: review
-updated: 2026-11-07 18:52
+updated: 2026-11-08 10:16
 brief: Make Adobe Stock reuse results useful in OpenChamber by showing source-bound image previews and safe asset
   selection without uploading or mutating Adobe Stock.
 priority: medium
@@ -64,4 +64,11 @@ comms:
     flagged as code-running config). Session ses_e4a2a5186ffeXzegNYfbd2NQGZ ran /ada adobe_stock home office remote
     work: v2 normalized the v1 opencode.json fine, MCP connected (16 tools), ada_adobe_stock_reuse executed, and
     the native question tool is now pending Create dra'
+- at: 2026-11-08 10:16
+  from: devin
+  text: 'Verified end-to-end on production ada-opencode (idc02, opencode-ada tab): ada_adobe_stock_reuse compact=true
+    returns preview_summary + openchamber_preview_markdown + preview_html_path; assistant emits markdown verbatim
+    and cites the HTML artifact path. Deployed via ada-voice@a8241ac to idc02 workspace .opencode/ + fixture indexes;
+    service restarted, confirmed active. Markdown images render inline in the opencode-ada web UI. Fixture cleaned
+    to 2 valid-preview assets. Note: OpenChamber transcript '
 review_kind: verify
