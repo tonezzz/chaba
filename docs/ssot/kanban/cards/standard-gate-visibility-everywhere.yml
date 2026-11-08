@@ -1,0 +1,19 @@
+id: standard-gate-visibility-everywhere
+title: 'Standard: every gate that can skip/hold/defer must leave a card-visible note'
+column: backlog
+updated: 2026-11-08 13:13
+priority: medium
+tags:
+- standard
+- dispatch
+- visibility
+spec: 'OPS-1097 fixed per-card unclaimability; KNB-1183 (filed) covers host-level claim gates; the embed storm exposed
+  the same pattern at service level (silent retry burn). Generalize as a written standard in ssot.devin-autonomy.yml
+  or the dispatch runbook: ANY component that decides not to act on a queued item must emit a rate-limited, consumer-visible
+  reason on the item or a fleet-level surface - ''claim pass skipped'' in a journal nobody greps is silent starvation.
+  Applies to runner-agent, kanban-dispatch, kanban-act, Ada sweep tools, and mddb workers.'
+ref: OPS-1193
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
