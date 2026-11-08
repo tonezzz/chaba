@@ -1,0 +1,139 @@
+id: ai-lane-delegation-procedure
+title: 'procedure: start using the AI lanes for real — delegation + testing protocol'
+column: done
+updated: 2026-11-08 13:21
+brief: 'Operationalize the eval findings: define HOW real work gets routed to lanes (codemod/cheap/paid/Devin),
+  how each lane is tested before trusting it, and which work is safe to delegate NOW vs needs gates.'
+priority: high
+program: chaba-ci
+tags:
+- procedure
+- routing
+- delegation
+- rainy-day
+- go-live
+spec: 'Document in devin-kb + lesson: (1) routing rule (task class -> lane), (2) per-lane go-live gates (what must
+  pass before a lane carries real work), (3) testing/delegation protocol (card -> classify -> route -> gate -> escalate),
+  (4) current go-live matrix (what proven today), (5) babysitting/verification roles. Then pilot on 3 real tasks.'
+note: 'Tony 2026-10-24: can we start using them for real? define procedure to start testing/delegating.'
+ref: OPS-0823
+comms:
+- at: 2026-10-24 15:53
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-24 15:53
+  from: devin
+  text: 'PILOT STARTED — 3 real chores selected: (1) timer-alert-idc03-ada-memory-sync (journal diag, verifier=journal+unit
+    state), (2) stash-graveyard-triage (audit 33 autostashes, verifier=count+classify), (3) check-traffic-report-automation
+    (verify report+producer, verifier=artifact exists). All free-lane, gated. Running #1 now.'
+- at: 2026-10-24 16:06
+  from: devin
+  text: 'PILOT #1 RESULT (free lane, timer-alert): FAILED cleanly. Run 1: host mismatch (agent on dell investigated
+    dell systemd - no such unit). Run 2 (fixed, ssh idc03): agent did 3 bash calls then STOPPED with a conversational
+    reply instead of completing - flash-lite lost the multi-step thread. VERDICT: the free lane CANNOT carry multi-step
+    remote diagnosis yet. The chore class that IS proven: single-step verifiable ops (probe/write/report). PROCEDURE
+    REFINEMENTS: (a) delegation needs explicit target_'
+- at: 2026-10-24 16:11
+  from: devin
+  text: 'PILOT #2 RESULT (stash-graveyard-triage, free-lane class ''find+report''): COMPLETED. All 7 stashes in
+    chaba classified: 6 = stale timestamp/metadata (drop), 1 (stash@{2}) = real sprawl finding already merged into
+    live ssot.dev-system.assessment.yml (13->6 branches, 20->8 worktrees today — trend improving). Verdict: whole
+    graveyard droppable, no salvage left. This class (single-repo list+classify+report with verifiable counts) IS
+    what the free lane carries well.'
+- at: 2026-10-24 16:18
+  from: devin
+  text: 'FABLE 5.1 PREP DONE: route live on proxy (or-claude-fable-5.1 -> openrouter/anthropic/claude-fable-5.1),
+    responds ''ok''. Two bench configs validated: config.fable-or.yaml (OpenRouter route) + config.fable-native.yaml
+    (Anthropic native, needs ANTHROPIC_API_KEY). Gates: t1/o1/m1 x 2 repeats x opencode+openhands. Burn note: OR
+    key spent $25 vs $10/wk cap this week (the 403s earlier); ada key only $1.3. Fable at $10/$50 per M — recommend:
+    OR route with raised cap OR a fresh Anthropic key; consider me'
+- at: 2026-10-24 16:22
+  from: devin
+  text: 'FABLE 5.1 BENCH RESULT (minimal run): 2/2 PASS in 60s total. o1 = 1.0 (13s). t1 = 7/7 (60s) — changed within->covered_by
+    with an explanatory comment (the exact semantic fix, 4x faster than Gemini OR''s 218-275s, matches codemod).
+    Fable is the fastest model lane AND the only one that explained the fix. Head-to-head t1: flash-lite 6/7 (167s+),
+    local CPU 6/7 no-edit, Gemini OR 7/7 (218-275s), Fable 7/7 (60s), codemod 7/7 (0.7s $0). L3 proven. Full matrix
+    (m1 + repeats + openhands) ready in config.fa'
+- at: 2026-10-24 16:38
+  from: devin
+  text: 'FABLE m1 RESULT: 0/2 BUT both runs made REAL high-quality Go edits (r1: streamConnected atomic.Bool with
+    correct lazy-dial reasoning + LeaderAddr/CurrentLSN accessors; r2: 131-line handlers+client change). Both failed
+    ONLY on the known compile-boundary (held-out test references rc.connected; Fable used streamConnected — same
+    as Gemini). Verdict: Fable Go capability CONFIRMED (matches Gemini), M1 verifier is the blocker for both. Fix
+    = mockable-interface M1-behavioral task (already identified). B'
+- at: 2026-10-24 16:51
+  from: tony
+  text: queued for processing
+- at: 2026-10-24 16:51
+  from: idc02
+  text: claimed
+- at: 2026-10-24 16:51
+  from: chaba
+  text: started devin-task-20261024-165135-document-in-devin-kb-lesson-1- on idc02 (dispatch)
+- at: 2026-10-24 16:51
+  from: devin
+  text: Dispatch picked up on idc02 — exploring repo for existing lane/routing material before drafting the kb doc
+    + lesson.
+- at: 2026-10-24 16:52
+  from: devin
+  text: 'M1-BEHAVIORAL VERIFIER BUILT (task m1-behavioral): held-out test asserts follower-with-unhealthy-client
+    must NOT report healthy:true, using only public API — no internal field names. Bidirectional: parent FAILS,
+    real fix PASSES. KEY FINDING: both Fable runs AND Gemini fixed the client but MISSED wiring the handler (Healthy:true
+    still hardcoded line 43) — the old verifier crashed on rc.connected so this real incompleteness was invisible.
+    With the one-line handler fix, Fable workspace PASSES. Veri'
+- at: 2026-10-24 17:00
+  from: devin
+  text: 'PILOT #3 RESULT (check-traffic-report-automation, free lane on idc02): run1 FAILED - searched correctly
+    (grep traffic / glob / read the card) but stopped before writing verdict.json; gate caught it (no artifact =
+    fail, not false-done). Run2 with ARTIFACT-FIRST prompt (write JSON skeleton before searching) PASSED - verdict
+    correct: no report automation exists (traffic-cam = snapshots only). New documented fix: write-then-fill beats
+    search-then-write for flash-lite early-stop.'
+- at: 2026-10-24 17:00
+  from: devin
+  text: 'PROCEDURE DOCUMENTED: devin-kb docs/tools/ai-lane-delegation.md (commit 3b26813 on tony-dell main, unpushed
+    per dispatch rails - mddb sync picks it up). Covers routing rule, per-lane gates, card->classify->route->gate->escalate
+    loop, go-live matrix, babysitting roles. Linked from ai-workforce-eval.md phase-4. Lesson filed: ai-lane-delegation
+    (post 2295). Index: ssot.procedures.yml#ai-lane-delegate + jobs/workflow/2026-10-24-ai-lane-delegation.yml.'
+- at: 2026-10-24 17:00
+  from: devin
+  text: 'm1-behavioral Fable run: score 0.5 (1/2 tests — LagContract passed, NotHardcoded failed). Fable explored
+    via subagent but no handler wiring landed in 253s. VERIFIER VALUE PROVEN: graduated score 0.5 instead of old
+    verifier''s crash/0.0 — the behavioral verifier measures partial progress honestly. Next: run 2 (Fable may need
+    the handler-wiring nudge made more explicit in the prompt) or accept m1 as a 2-attempt task.'
+- at: 2026-10-24 17:01
+  from: idc02
+  text: 'finished (ok): exit=0 sted on the card; full details in `dispatch-outcome-20261024-165135-document-in-devin-kb-lesson-1-.md`.
+    | devin-t'
+- at: 2026-10-24 17:01
+  from: chaba
+  text: pushed dispatch/20261024-165135-document-in-devin-kb-lesson-1- to origin
+- at: 2026-10-24 17:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-24 17:01
+  from: chaba
+  text: auto-merged 437d4b5a (dispatch/20261024-165135-document-in-devin-kb-lesson-1-) → origin/master
+- at: 2026-10-24 17:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261024-165135-document-in-devin-kb-lesson-1-,
+    branch dispatch/20261024-165135-document-in-devin-kb-lesson-1-'
+- at: 2026-10-24 17:13
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (14d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 sted on the card; full details in `dispatch-outcome-20261024-165135-document-in-devin-kb-lesson-1-.md`.
+    | devin-task-20261024-165135-document-in-devin-kb-lesson-1-.service: Consumed 49.639s CPU time, 725.9M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-24 17:13
+  note: verified — evidence checks green, closing itself
