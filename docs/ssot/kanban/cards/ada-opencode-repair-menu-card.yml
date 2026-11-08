@@ -1,7 +1,7 @@
 id: ada-opencode-repair-menu-card
 title: 'Ada/OpenCode repair-menu card: QC buttons + picker integration'
 column: backlog
-updated: 2026-11-08 10:09
+updated: 2026-11-08 10:43
 brief: 'Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair
   opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision
   endpoint -> SESSION/QC, deploy idc03.'
@@ -31,3 +31,10 @@ comms:
   from: devin
   text: 'Status: auto-loop live — picker submit -> inbox -> inbox-processor.py (cron */5) -> gemini-image repair
     -> 30-candidates/picker-<id> + board note. Remaining: Ada chat-card buttons + decision endpoint.'
+- at: 2026-11-08 10:43
+  from: devin
+  text: 'DONE + deployed (ada-voice cc0de60 on idc03, all services active). Shipped: tools.d/ada_adobe_stock.py
+    (status/decide/repair_info) registered in manifest + tool_guide + coverage_debt; picker-server.py read APIs
+    on master a52869d31 (/api/campaign /api/session /img/<asset> pulls candidate from Drive /api/qc-decision writes
+    SESSION.json + 40-qc-review.md). Verified live: tool-lint clean, 1739 pytest pass, deploy gates pass, /img/comparison-e-gemini-fix3-region
+    -> 200, /api/campaign -> human_qc_pend'
