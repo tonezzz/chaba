@@ -1,0 +1,125 @@
+id: timer-alert-tony-dell-tony-dell-mcp-health
+title: Timer tony-dell-mcp-health on tony-dell failing
+column: done
+updated: 2026-11-08 13:22
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (10-14 19:44) of `tony-dell-mcp-health.service` on `tony-dell` result=exit-code — investigate journal:
+  `journalctl --user -u tony-dell-mcp-health.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-0666
+comms:
+- at: 2026-10-14 19:56
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-16 04:41
+  from: tony
+  text: queued for processing
+- at: 2026-10-16 04:41
+  from: idc02
+  text: claimed
+- at: 2026-10-16 04:42
+  from: chaba
+  text: started devin-task-20261016-044213-timer-tony-dell-mcp-health-on- on idc02 (dispatch)
+- at: 2026-10-16 04:42
+  from: devin
+  text: '[dispatch] investigating tony-dell-mcp-health.service failure (10-14 19:44 exit-code) — pulling journal
+    + service definition'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: devin-task-20261016-044213-timer-tony-dell-mcp-health-on- no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261016-044213-timer-tony-dell-mcp-health-on- on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-16 15:09
+  from: devin
+  text: '[still suspicious] Last run (10-16 14:57) of `tony-dell-mcp-health.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u tony-dell-mcp-health.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-16 17:01
+  from: devin
+  text: '[sweep] investigation merged (b780a6915 + 791f3ea69: ssh-stderr capture + live-semantics sync). Dead claim
+    cleared. NOTE: alert refired 10-16 14:57 (exit-code) after the investigation concluded post-boot transient —
+    moved to review, not done, since the flap is still live.'
+- at: 2026-10-16 17:01
+  from: tony
+  text: moved doing -> review
+- at: 2026-10-16 17:02
+  from: tony
+  text: put on hold
+- at: 2026-10-16 17:03
+  from: devin
+  text: '[sweep] correction: hold moved this to backlog+idle, not review. Investigation commit is on master; card
+    returns to the alert pool — next flap reopens it.'
+- at: 2026-10-20 16:00
+  from: devin
+  text: 'sweep 2026-10-20: unit enabled on dell, svc inactive — likely stale; will auto-close on green.'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-22 19:34
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-22 19:34
+  from: idc02
+  text: claimed
+- at: 2026-10-22 19:34
+  from: chaba
+  text: started devin-task-20261022-193420-timer-tony-dell-mcp-health-on- on idc02 (dispatch)
+- at: 2026-10-22 19:34
+  from: devin
+  text: Investigating tony-dell-mcp-health.service exit-code failure from 10-14 19:44 — pulling journal on tony-dell.
+- at: 2026-10-22 19:46
+  from: devin
+  text: 'Root cause found. Timer is GREEN now — exit-code window was Oct 21 09:36→Oct 22 16:43 (~373 runs, ~1s each).
+    Cause: chaba-postgres.service restart on idc03 at 09:35:57 raced rootlessport bind (127.0.0.1:5432 in use);
+    container came up healthy but external 100.102.134.91:5432 never served → remote pg refused → mcp-health server.js
+    initializeDatabase() process.exit(1) → client BrokenPipe → exit 1. Sibling tony-dell-monitor (POSTGRES_HOST=tony-dell
+    default) stayed green all window — A/B proof. Some'
+- at: 2026-10-22 19:46
+  from: idc02
+  text: 'finished (ok): exit=0 ispatch-outcome-20261022-193420-timer-tony-dell-mcp-health-on-.md`, and the board
+    card has been updated. | devin-'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'session-end checkpoint 973e944a: 2 leftover file(s) committed'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: pushed dispatch/20261022-193420-timer-tony-dell-mcp-health-on- to origin
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-22 19:46
+  from: chaba
+  text: auto-merged d22c92aa (dispatch/20261022-193420-timer-tony-dell-mcp-health-on-) → origin/master
+- at: 2026-10-22 19:46
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261022-193420-timer-tony-dell-mcp-health-on-,
+    branch dispatch/20261022-193420-timer-tony-dell-mcp-health-on-'
+- at: 2026-10-22 19:52
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (16d in done, verified)
+action:
+  type: dispatch
+  status: done
+  sweep:
+    stale_running: 2026-10-16 14:42
+    session_gone: 2026-10-16 14:42
+  runner: idc02
+  result: 'exit=0 ispatch-outcome-20261022-193420-timer-tony-dell-mcp-health-on-.md`, and the board card has been
+    updated. | devin-task-20261022-193420-timer-tony-dell-mcp-health-on-.service: Consumed 29.060s CPU time, 88.4M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-22 19:52
+  note: verified — evidence checks green, closing itself
