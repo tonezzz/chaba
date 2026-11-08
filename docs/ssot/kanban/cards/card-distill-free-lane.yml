@@ -1,0 +1,23 @@
+id: card-distill-free-lane
+title: Card distiller — free-lane LLM distills each card to slot-template brief (save tokens on every lane)
+column: backlog
+updated: 2026-11-08 10:28
+priority: high
+tags:
+- ada
+- distill
+- free-lane
+- kanban
+- bench
+spec: 'Tony''s idea: use free lanes to pre-distill each card so judgment turns cost less context. Design: NOT freeform
+  summary — a FIXED SLOT template {state, open_asks, gates, evidence_present, staleness, last_action, needed_move_class}
+  so nothing decisive is lost. Trigger on card.updated change, cached sidecar keyed by (card_id, updated). Lane
+  chain: cf-70b -> local ollama -> OR free -> flash-lite-free (same fallback pattern as verify_worker). Two consumers:
+  bench corpus snapshots (v4 = distilled brief + raw gate fields) and live lane turns. QUALITY GATE before adoption:
+  bench the distilled snapshot vs raw — if action_accuracy drops >2pts, slots lose signal and we keep raw. Done:
+  distiller script + slot schema + cache + bench comparison run.'
+ref: ADA-1133
+comms:
+- at: 2026-11-08 10:28
+  from: tony
+  text: card captured via board-api
