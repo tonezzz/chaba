@@ -133,11 +133,43 @@ def probe_urls(card, limit=3, timeout=8):
     return found
 
 
+UNIT_RE = re.compile(r"\b([a-zA-Z0-9_.@-]+\.(?:service|timer|socket))\b")
+PATH_RE = re.compile(r"(?<![\w.-])(/[a-zA-Z0-9_./~-]{8,})")
+
+
+def probe_local(card, limit=6, timeout=6):
+    """Bounded local checks: systemd unit state + file existence for
+    units/paths the card itself declares. Read-only, no shell — the model
+    cannot inject commands."""
+    import subprocess, os
+    text = " ".join(str(card.get(k) or "") for k in ("spec", "brief", "note"))
+    text += " ".join(str(m.get("text", "")) for m in (card.get("comms") or [])[-8:])
+    out = []
+    for u in dict.fromkeys(UNIT_RE.findall(text)):
+        try:
+            r = subprocess.run(["systemctl", "--user", "is-active", u],
+                               capture_output=True, text=True, timeout=timeout)
+            state = r.stdout.strip() or r.stderr.strip() or "unknown"
+        except Exception as e:
+            state = f"ERR {e}"
+        out.append({"unit": u, "state": state})
+        if len(out) >= limit:
+            return out
+    for p in dict.fromkeys(PATH_RE.findall(text)):
+        p = os.path.expanduser(p.strip().rstrip(".,);]"))
+        if not p.startswith(("/home/tony/", "/srv/", "/tmp/", "/etc/")):
+            continue
+        out.append({"path": p, "exists": os.path.exists(p)})
+        if len(out) >= limit:
+            break
+    return out
+
+
 def llm_action(card, base_url, model, key, system=PROMPT):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
-    probes = probe_urls(card)
+    probes = probe_urls(card) + probe_local(card)
     if probes:
         snap["live_checks"] = probes
     body = {"model": model, "temperature": 0, "max_tokens": 800,
@@ -220,8 +252,14 @@ def run_once(args):
         print(f"[card] {cid} (age {_age_days(card)}d)")
         if not elig(card):
             print("  not eligible under matrix — skip"); continue
-        raw = llm_action(card, args.base_url, args.model, args.api_key,
-                         system=CLEANUP_PROMPT if cleanup else PROMPT)
+        try:
+            raw = llm_action(card, args.base_url, args.model, args.api_key,
+                             system=CLEANUP_PROMPT if cleanup else PROMPT)
+        except Exception as e:
+            print(f"  primary brain failed ({str(e)[:80]}) — trying fallback")
+            raw = llm_action(card, args.fallback_base_url,
+                             args.fallback_model, "",
+                             system=CLEANUP_PROMPT if cleanup else PROMPT)
         if cleanup and (raw.get("action") or "").lower() == "close" \
                 and card.get("column") != "review":
             raw["action"] = "request"   # backlog closes are Tony's — degrade to ask
@@ -268,6 +306,10 @@ def main():
         "ADA_JOBS_BASE_URL",
         CF_BASE % os.environ.get("CF_API_ACCOUNT_ID", "MISSING")))
     ap.add_argument("--api-key-env", default="CF_API_WORKER_TOKEN")
+    ap.add_argument("--fallback-base-url", default=os.environ.get(
+        "ADA_JOBS_FALLBACK_URL", "http://127.0.0.1:11434/v1"))
+    ap.add_argument("--fallback-model", default=os.environ.get(
+        "ADA_JOBS_FALLBACK_MODEL", "llama3.2:3b"))
     args = ap.parse_args()
     args.api_key = os.environ.get(args.api_key_env, "")
     run_once(args)
