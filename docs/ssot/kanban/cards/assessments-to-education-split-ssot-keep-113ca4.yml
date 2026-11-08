@@ -1,7 +1,7 @@
 id: assessments-to-education-split-ssot-keep-113ca4
 title: 'Assessments-to-Education split: SSOT keeps verdict+pointer, lesson dual-writes to MDDB, SSOT cleanup pass'
 column: done
-updated: 2026-11-08 13:11
+updated: 2026-11-08 13:46
 priority: medium
 tags:
 - knowledge-management
@@ -116,6 +116,13 @@ comms:
     Retrieval verified via /lesson op:list source=mddb (agent door). Rule edit OPS-1100 landed separately (0cc8e2f7ed).
     Residual: the SSOT prose cleanup pass (step 3, >40-line research sections -> lessons/kb + pointer) still open
     for a dedicated session.'
+- at: 2026-11-08 13:46
+  from: devin
+  text: 'Step-3 SSOT audit DONE 2026-11-08: scanned all docs/ssot/**/*.yml (non-card/inbox). Two heuristics: (a)
+    >40-line indented runs flagged ~50 files — sampled, all structural DATA (registries, metrics, decision records),
+    not prose; (b) folded >- text blocks flagged 5 files (ssot.home-assistant.dashboards/instances, mac-address-registry,
+    services migration note, terminology) — all operational current-state docs that legitimately belong in SSOT.
+    VERDICT: zero research-prose sections to migrate; the fi'
 action:
   type: dispatch
   status: done
