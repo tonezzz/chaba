@@ -5,7 +5,7 @@ One call replaces the ad-hoc poll/decode/hash/rclone/session-update
 chain. Lane adapters normalize job APIs into a RenderResult; the core
 streams image bytes to disk WITHOUT printing payloads, verifies
 sha256+dimensions, lands PNG+manifest in the campaign's
-30-generated-raw/, updates SESSION.json, appends a 40-qc-review.md
+30-candidates/<asset-id>/, updates SESSION.json, appends a 40-qc-review.md
 section, and prints one compact receipt.
 
 Usage:
@@ -249,7 +249,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
         raise RuntimeError("artifact is not a valid PNG/JPEG")
     ext = "png" if fmt == "png" else "jpg"
     root = f"{remote}/campaigns/{campaign}"
-    raw = f"{root}/30-generated-raw"
+    raw = f"{root}/30-candidates/{asset_id}"
     manifest = {
         "asset_id": asset_id, "campaign": campaign,
         "request_id": request_id, "provider": lane, "job_id": job,
@@ -290,7 +290,7 @@ def land(campaign: str, asset_id: str, request_id: str, res: dict,
         rclone("copy", f"{root}/40-qc-review.md", td)
         qp = Path(td) / "40-qc-review.md"
         note = (f"\n## {asset_id} — {lane} lane (landed {now_iso()})\n\n"
-                f"- File: `30-generated-raw/{asset_id}.{ext}` "
+                f"- File: `30-candidates/{asset_id}/{asset_id}.{ext}` "
                 f"({dims[0]}x{dims[1]}, {len(png)} bytes)\n"
                 f"- SHA-256: `{sha}`\n- Job: `{job}`\n\n"
                 "QC checklist vs prior candidates: sharpness, artifacts, "
