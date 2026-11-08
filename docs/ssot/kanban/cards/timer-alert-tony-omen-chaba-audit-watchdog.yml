@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit-watchdog
 title: Timer chaba-audit-watchdog on tony-omen failing
 column: doing
-updated: 2026-11-08 10:39
+updated: 2026-11-08 10:49
 priority: high
 tags:
 - timer-alert
@@ -232,6 +232,13 @@ comms:
   from: devin
   text: '[still suspicious] `chaba-audit-watchdog.timer` on `tony-omen` is disabled but expected active (audit census
     / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit-watchdog.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-08 10:49
+  from: devin
+  text: '[investigated 2026-11-08] Two separate things here. (1) The 10-13 05:00 exit-code was already root-caused
+    + fixed same day: pre-OPS-0581 finding-reporter, exited 1 on stale suite summary; exit-0 contract shipped 18:24.
+    (2) Todays re-spawn is NOT a fresh failure — sweep state shows chaba-audit-watchdog.timer DISABLED on omen while
+    ssot.audit.hosts.yml still expected it active; sentinel re-fired and board-api on_exists:queue re-armed the
+    done card (auto-comm re-spawned from report page). The disab'
 action:
   status: running
   type: dispatch
