@@ -1970,7 +1970,11 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
                     os.path.expanduser(str(x))
                     for x in allowfile_spec["command"]]
             af.write_text(json.dumps(allowfile_spec, indent=1))
-            for srv in (cfg.get("mcp") or {}).values():
+            # v2 nests servers under mcp.servers; fall back to the flat
+            # v1 shape for configs rendered before the migration.
+            _mcp = cfg.get("mcp") or {}
+            for srv in (mcp_s if isinstance(mcp_s := _mcp.get("servers"), dict)
+                        else _mcp).values():
                 srv.setdefault("environment", {})["MCP_ALLOWFILE"] = str(af)
         (confdir / "opencode.json").write_text(json.dumps(cfg, indent=1))
     except SystemExit as e:

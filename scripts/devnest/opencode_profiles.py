@@ -348,11 +348,16 @@ def render_config(env: dict, prof: dict) -> dict:
     proxy = str(up.get("proxy") or "")
     if allow and proxy and Path(proxy).expanduser().is_file():
         allowfile = f"allowlist.{agent_name(pid)}.json"
-        cfg["mcp"][str(up.get("name") or "mcp-debug-readonly")] = {
-            "type": "local",
-            "command": ["python3", str(Path(proxy).expanduser())],
-            "environment": {"MCP_ALLOWFILE": allowfile},
-            "enabled": True,
+        # mcp.servers shape (v2 config); v1 reads it too — verified on
+        # ada-opencode 1.19.4 (ADA-1174). Direct tool exposure, not
+        # Code-Mode wrapping, matches v1 behavior.
+        cfg["mcp"]["servers"] = {
+            str(up.get("name") or "mcp-debug-readonly"): {
+                "type": "local",
+                "command": ["python3", str(Path(proxy).expanduser())],
+                "environment": {"MCP_ALLOWFILE": allowfile},
+                "codemode": False,
+            }
         }
         cfg["_allowfile"] = {"command": up.get("command") or [],
                              "allow": allow}
