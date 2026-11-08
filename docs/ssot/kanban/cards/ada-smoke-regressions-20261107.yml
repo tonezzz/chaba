@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-07 19:21
+updated: 2026-11-08 07:12
 priority: medium
 tags:
 - ada
@@ -25,3 +25,10 @@ comms:
     (ada_opencode_dispatch.py:53) — residual fails are arg-shape misses. Watch next hourly. (2) cms_public_url_lane
     — REAL tool issue: cms_publish_page confirm-gate rejected repeated confirms (''confirmation gate error''), publish
     never completed; plus earlier-run lane mixup (tony-ha URL f'
+- at: 2026-11-08 07:12
+  from: devin
+  text: '[cms confirm-gate — deeper] cms_publish_page lives in backend/tool_runner/cms.py (~line 380) as a tool_runner
+    method — the ''confirmation gate error'' is the runner-level _require_confirmation replay, not inside the tool.
+    Symptom: turn3 ''Yes, go ahead'' fired cms_publish_page 3x, each rejected. Hypothesis: the model isn''t passing
+    confirmed=true/confirm_token on replay (or the token binding doesn''t match replayed args). Needs a trace-check
+    on ada-dev whether the denial mints a token the model then f'
