@@ -1,6 +1,6 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
-column: review
+column: done
 updated: 2026-11-08 16:53
 priority: medium
 tags:
@@ -111,6 +111,9 @@ comms:
 - at: 2026-11-08 16:53
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 16:53
+  from: devin
+  text: moved review -> done
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -163,4 +166,6 @@ requests:
   suggested: Hold deployment until branch-sprawl validation is green (recommended).
   answer: Approve normal merge/deployment despite this unrelated red check; no admin bypass.
 review_kind: verify
-awaiting_action: true
+action:
+  status: done
+claim: {}
