@@ -1,0 +1,205 @@
+id: devnest-fl-pilot-health
+title: 'OpenCode lane pilot: ops-readonly health report on idc02'
+column: done
+updated: 2026-11-08 13:21
+spec: "Produce a JSON health snapshot of THIS host (idc02). Emit ONLY the\nJSON object as your final message — the\
+  \ runner writes it for you; you\nhold no write tools and any denied tool call fails the job.\n\nCollect with read-only\
+  \ commands only (one per bash call):\n- hostname / current time: hostname, date -Iseconds\n- uptime + load: uptime\
+  \ (load1/load5/load15). For uptime_seconds:\n  uptime -s (boot ts) and date +%s (epoch now) as two calls, subtract\n\
+  \  YOURSELF — python3/expr/bc are not allowlisted. NEVER /proc/*.\n- cpu count: nproc or lscpu\n- memory: free\
+  \ -m (MB)\n- root fs usage: df -P / (used percent, int)\n- failed units: systemctl list-units --failed --no-legend\
+  \ AND\n  systemctl --user list-units --failed --no-legend (empty ok)\n\nRequired JSON fields (exact names): host,\
+  \ collected_at,\nuptime_seconds, load1, load5, load15, cpu_count, mem_total_mb,\nmem_available_mb, disk_root_pct,\
+  \ failed_units, read_only.\nread_only MUST be true. The artifact lands at\nevals/opencode-lane/out/ops-readonly-health.json\
+  \ — emit the JSON as\nyour final message and stop. No files, no writes, no secrets."
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/or-gemini-3.5-flash
+  executor: opencode
+  agent_profile: ops-readonly
+  artifact: evals/opencode-lane/out/ops-readonly-health.json
+  status: done
+  result: 'exit=0 b58a7dffeqnLVXMhOsJL20X","type":"step-finish","tokens":{"total":30150,"input":524,"output":210,"reasoning":1257,"cache":{"write":0,"read":28159}},"cost":0}}
+    | devin-task-devnest-fl-pilot-health-1793355048.service: Consumed 18.655s CPU time.'
+  sweep:
+    failed_noted: 2026-10-30 10:48
+    dirty: 1
+  runner: idc02
+  verified: true
+ref: OPS-0998
+comms:
+- at: 2026-10-30 10:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-30 10:32
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 10:33
+  from: idc02
+  text: claimed
+- at: 2026-10-30 10:33
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793331204 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash-lite)
+- at: 2026-10-30 10:44
+  from: idc02
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) /user@1000.service/app.slice/devin-task-de'
+- at: 2026-10-30 10:45
+  from: devin
+  text: 'pilot result: lane machinery proven through audit (60 denials enforced+recorded); BLOCKED on model capability
+    — or-free nemotron collected correct data but never emitted message-mode artifact (kept trying to write via
+    denied bash echo). Needs a model that completes emit-vs-write: retry on gemini-3.5-flash-lite after the google
+    monthly cap resets Nov 1, or another OR-free route.'
+- at: 2026-10-30 10:48
+  from: chaba
+  text: 'merge-sweep: devin-task-devnest-fl-pilot-health-1793331204 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/devnest-fl-pilot-health-1793331204 by hand.'
+- at: 2026-10-30 16:13
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 16:14
+  from: idc02
+  text: claimed
+- at: 2026-10-30 16:14
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793351654 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash-lite)
+- at: 2026-10-30 16:15
+  from: idc02
+  text: 'finished (ok): exit=0 ionID":"ses_e73e952dfffeHO5pQF0B3N5BcE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning"'
+- at: 2026-10-30 16:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-30 16:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-30 16:18
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-devnest-fl-pilot-health-1793331204 on idc02 still dirty — 1 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-30 16:19
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 16:20
+  from: idc02
+  text: claimed
+- at: 2026-10-30 16:20
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793352024 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash-lite)
+- at: 2026-10-30 16:21
+  from: idc02
+  text: 'finished (ok): exit=0 ionID":"ses_e73e3a9a3ffewot6JVaQMpqUr9","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning"'
+- at: 2026-10-30 16:21
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-30 16:21
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-30 16:22
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 16:23
+  from: idc02
+  text: claimed
+- at: 2026-10-30 16:23
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793352210 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash-lite)
+- at: 2026-10-30 16:24
+  from: idc02
+  text: 'finished (ok): exit=0 e73e0cf02ffejU4lB2RLPTyX4B","type":"step-finish","tokens":{"total":28662,"input":289,"output":57,"reasoning":69,"'
+- at: 2026-10-30 16:24
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-30 16:24
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-30 16:27
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 16:28
+  from: idc02
+  text: claimed
+- at: 2026-10-30 16:28
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793352519 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash)
+- at: 2026-10-30 16:29
+  from: idc02
+  text: 'finished (failed): exit=1 3352519.service: Main process exited, code=exited, status=1/FAILURE | devin-task-devnest-fl-pilot-health-17933525'
+- at: 2026-10-30 17:04
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 17:05
+  from: idc02
+  text: claimed
+- at: 2026-10-30 17:05
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793354739 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash)
+- at: 2026-10-30 17:07
+  from: idc02
+  text: 'finished (ok): exit=0 ba3accffe51SWoqaahmnVt5","type":"step-finish","tokens":{"total":31730,"input":711,"output":210,"reasoning":1583,"'
+- at: 2026-10-30 17:07
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/ops-readonly-health.json
+- at: 2026-10-30 17:07
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-30 17:07
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (required fields=True; read_only
+    true=True; artifact host is this host=True; artifact host == target_host=True)
+- at: 2026-10-30 17:09
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 17:10
+  from: idc02
+  text: claimed
+- at: 2026-10-30 17:10
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-health-1793355048 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/or-gemini-3.5-flash)
+- at: 2026-10-30 17:13
+  from: idc02
+  text: 'finished (ok): exit=0 b58a7dffeqnLVXMhOsJL20X","type":"step-finish","tokens":{"total":30150,"input":524,"output":210,"reasoning":1257,"'
+- at: 2026-10-30 17:13
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/ops-readonly-health.json
+- at: 2026-10-30 17:13
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-10-30 17:13
+  from: chaba
+  text: ran under executor=opencode:ops-readonly provider=litellm model=litellm/or-gemini-3.5-flash profile=ops-readonly
+- at: 2026-10-30 17:13
+  from: chaba
+  text: 'session-end checkpoint 29ef255f: 2 leftover file(s) committed'
+- at: 2026-10-30 17:13
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-health-1793355048 to origin
+- at: 2026-10-30 17:13
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-30 17:13
+  from: chaba
+  text: auto-merged 562d54fd (dispatch/devnest-fl-pilot-health-1793355048) → origin/master
+- at: 2026-10-30 17:13
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-health-1793355048,
+    branch dispatch/devnest-fl-pilot-health-1793355048'
+- at: 2026-10-30 17:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (8d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-30 17:18
+  note: verified — evidence checks green, closing itself
