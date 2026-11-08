@@ -115,7 +115,9 @@ Specs come from conversation — mine them, don't guess them:
 
 When Tony asks a knowledge question worth retaining — an explainer, a
 comparison, a "what is X / how does Y work" — the answer does not stay in
-chat. File it: `python3 scripts/lesson-add.py --topic "<topic>" --level
+chat. Same for every "educate me"-shaped answer (OPS-1100): coaching,
+feedback, assessments of his communication/habits, how-we-work guidance —
+file those too, automatically, without asking. File it: `python3 scripts/lesson-add.py --topic "<topic>" --level
 <intro|working|deep> --source <chat|voice|link> --content-file <html>`
 on a host with `~/.config/secrets/wp-boards.env` (idc03 works). The
 `/lesson` door upserts by topic slug so re-asked topics update in place;

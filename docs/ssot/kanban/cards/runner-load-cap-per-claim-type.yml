@@ -1,0 +1,19 @@
+id: runner-load-cap-per-claim-type
+title: runner-agent load gate is one-size-fits-all — trivial script probes starve with heavyweight claims
+column: backlog
+updated: 2026-11-08 12:46
+priority: medium
+tags:
+- runner-agent
+- waiting-cards
+spec: 'The claim-pass load check (5m load/core > RUNNER_MAX_LOAD cap, 0.85 on idc03) skips the ENTIRE pass regardless
+  of claim cost — a 2-second R0 read-only script probe is blocked identically to a heavyweight devin claim. Observed
+  2026-11-08: idc03 skipped 256 consecutive passes 08:00-12:45 while ambient load (mddb-embed OpenRouter retry storm)
+  sat at load/core ~1.05; unattended-pilot-health-probe starved until a dip to exactly ~0.85. Give action.type=script
+  (and other declared-cheap claim classes) a separate higher ceiling, or evaluate the gate per-claim rather than
+  per-pass. Keep devin-executor claims at the strict cap — they are the expensive ones.'
+ref: OPS-1182
+comms:
+- at: 2026-11-08 12:46
+  from: tony
+  text: card captured via board-api

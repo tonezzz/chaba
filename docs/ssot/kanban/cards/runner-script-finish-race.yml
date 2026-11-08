@@ -1,0 +1,33 @@
+id: runner-script-finish-race
+title: runner-agent script claims false-fail on fast units (exit record lost to GC)
+column: done
+updated: 2026-11-08 12:52
+priority: high
+tags:
+- runner-agent
+- waiting-cards
+- bug
+spec: 'Proven live on unattended-pilot-health-probe 2026-11-08 12:45 idc03: script claim started transient unit
+  runner-unattended-pilot-health-probe-1794116697, the probe printed ''active'' and finished in <2s, systemd GC''d
+  the unit before the next runner tick read its exit -> finish reports ''no exit record — unit not-found reports
+  collected defaults (unproven, not ok)'' and the card false-fails. Fix options: systemd-run --remain-after-exit
+  so the unit record survives until the collector reads it; or journald lookup by _SYSTEMD_INVOCATION_ID which survives
+  unit GC; or have the unit wrapper write exit code to a result file the collector reads. Verify: queue a script
+  card whose cmd finishes in <5s; it must finish exit=0 and land verified, not ''unit not-found''.'
+ref: OPS-1181
+comms:
+- at: 2026-11-08 12:46
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-08 12:52
+  from: devin
+  text: 'FIXED db8120443 — runner-* wrappers write exit to /run/user/<uid>/runner-exit/<unit>.code; collect() reads
+    it before journal fallback (also broadened to Deactivated successfully.). RemainAfterExit rejected — is-active
+    would pin claims forever. Deployed to idc03/idc02/tony-macbook (0848e9c0). Verified: (1) 20/20 CollectTest green
+    incl. 4 new cases; (2) live repro on tony-omen — unit reaped to LoadState=not-found, collect() still returns
+    exit=0. Pilot re-queued on idc03, will claim on load dip.'
+- at: 2026-11-08 12:52
+  from: devin
+  text: closed by devin
+action:
+  status: done

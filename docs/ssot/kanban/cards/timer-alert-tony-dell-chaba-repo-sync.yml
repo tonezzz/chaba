@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-dell failing
-column: doing
-updated: 2026-11-08 12:41
+column: review
+updated: 2026-11-08 12:56
 priority: high
 tags:
 - timer-alert
@@ -67,8 +67,52 @@ comms:
 - at: 2026-11-08 12:41
   from: devin
   text: '[devin] investigating chaba-repo-sync timeout on tony-dell — pulling journal + unit config'
+- at: 2026-11-08 12:50
+  from: devin
+  text: '[still suspicious] Last run (11-08 12:33) of `chaba-repo-sync.service` on `tony-dell` result=signal — investigate
+    journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:52
+  from: devin
+  text: 'ROOT CAUSE (verified 2026-11-08): orphaned board-api.py (spawned ~Nov 4 inside devin-desktop scope) squatted
+    on dell 127.0.0.1:8787 bound to ~/CascadeProjects/chaba (exec role). Sentinel/board-cli defaults POSTed to it
+    -> 837 unpushed local board-api commits (10:31-12:19). Every 15-min pull --rebase replayed the whole pile (card-union
+    driver + .ref-seq churn + reconcile flag posts) -> ~5min CPU -> TimeoutStartSec=300 kills / merge-fallback exit-code.
+    Cleared ~12:30-12:34: rogue killed (per chaba'
+- at: 2026-11-08 12:55
+  from: idc02
+  text: 'finished (ok): exit=0 .1:8787`, which strands writes off-canonical if anything rebinds that port — is flagged
+    as a follow-up. | devin-t'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: pushed dispatch/20261108-124119-timer-chaba-repo-sync-on-tony- to origin
+- at: 2026-11-08 12:55
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: auto-merged b93378a9 (dispatch/20261108-124119-timer-chaba-repo-sync-on-tony-) → origin/master
+- at: 2026-11-08 12:55
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-124119-timer-chaba-repo-sync-on-tony-,
+    branch dispatch/20261108-124119-timer-chaba-repo-sync-on-tony-'
+- at: 2026-11-08 12:55
+  from: chaba
+  text: restarted zombie claim as devin-task-20261108-125504-timer-chaba-repo-sync-on-tony- on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-08 12:56
+  from: devin
+  text: '[dup-dispatch 125504] First dispatch (124119) already root-caused + fixed this (rogue board-api on dell:8787
+    → 837-commit pile → rebase timeouts; reset at 12:34). Re-verified live: 12:35 + 12:51 ticks clean (7.7s), Result=success,
+    exec checkout 0/0 vs origin, nothing on 8787. Waiting for 13:06 tick for final confirmation, then closing alert
+    as stale.'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=0 .1:8787`, which strands writes off-canonical if anything rebinds that port — is flagged as a follow-up.
+    | devin-task-20261108-124119-timer-chaba-repo-sync-on-tony-.service: Consumed 26.284s CPU time, 167.4M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
