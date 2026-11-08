@@ -14,6 +14,7 @@ import subprocess
 ALLOWED = {"summary", "operator_brief", "structured_extract", "safe_route"}
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
 FORBIDDEN = re.compile(r"\b(package_plan|planner|credential|secret|publish|delete|shell)\b", re.I)
+DEFAULT_REMOTE = "gdrive:ada-nest/devnest"
 
 
 def rclone(*args: str, input_text: str | None = None) -> str:
@@ -67,7 +68,7 @@ def validate(pack: str, output: str) -> list[dict]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("pack")
-    ap.add_argument("--remote", default="gdrive:ada-nest-devnest")
+    ap.add_argument("--remote", default=DEFAULT_REMOTE)
     args = ap.parse_args()
     try:
         candidates = validate(args.pack, args.remote)

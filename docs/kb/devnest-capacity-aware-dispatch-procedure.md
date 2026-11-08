@@ -70,7 +70,7 @@ Benchmark and soak packages are labelled separately and have their own quota.
 
 ## KK-Mac JevNest
 
-Queue: `gdrive:ada-nest-kk-llm`
+Queue: `gdrive:ada-nest/kk-llm`
 
 Admission:
 
@@ -182,7 +182,7 @@ no secrets, credentials, mutations, or publication
 no automatic replanning after verifier failure
 ```
 
-The planner must not write to `gdrive:ada-nest-devnest/inbox/` directly.
+The planner must not write to `gdrive:ada-nest/devnest/inbox/` directly.
 Without the deterministic upstream validator, it would create synthetic work,
 feedback loops, and queue amplification rather than useful capacity
 utilization. This proposal is tracked as `OPS-1027`.

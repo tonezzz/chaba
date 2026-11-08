@@ -1428,7 +1428,7 @@ jobs:
     DEVNEST_KK_MAC_ENABLED: 'true'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 3 --max-new 3 --budget-s 90
   note: 'OPS-1001 — reads only explicit task specs from
-    gdrive:ada-nest-kk-llm/inbox/; stages at most three admitted
+    gdrive:ada-nest/kk-llm/inbox/; stages at most three admitted
     read-only packages when the KK-Mac heartbeat/load/Ollama/disk gates
     pass. It never invents work and never claims video/coding/destructive
     packs. Falls back by leaving the inbox untouched when KK is unavailable.'
@@ -1443,7 +1443,7 @@ jobs:
     DEVNEST_KK_MAC_ENABLED: 'true'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_capacity_broker.py
   note: 'OPS-1002 — routes explicit normalized task specs from
-    gdrive:ada-nest-devnest/inbox/ to KK-Mac or stages complete Colab packs.
+    gdrive:ada-nest/devnest/inbox/ to KK-Mac or stages complete Colab packs.
     KK admission/load gates remain authoritative. Colab packs are staged but
     never launched by this broker; a fresh managed GPU and explicit queue
     start remain required. No synthetic filler or duplicate runner.'

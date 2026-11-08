@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """KK-Mac JevNest lane metrics rollup (card kk-mac-continuous-llm-worker).
 
-Scans gdrive:ada-nest-kk-llm/packs and reports the metrics the capacity
+Scans gdrive:ada-nest/kk-llm/packs and reports the metrics the capacity
 procedure feeds back into JevTeam review:
 
   queue wait    staged -> claim (pack file mtimes via one rclone lsl)
@@ -23,7 +23,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-REMOTE = "gdrive:ada-nest-kk-llm"
+REMOTE = "gdrive:ada-nest/kk-llm"
 DONE_RE = re.compile(r"^(\d+(?:\.\d+)?)s\s")
 
 

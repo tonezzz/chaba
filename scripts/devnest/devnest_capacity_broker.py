@@ -15,10 +15,15 @@ import re
 import subprocess
 from pathlib import Path
 
-from kk_mac_admission import snapshot
+if __package__:
+    from .kk_mac_admission import snapshot
+else:
+    from kk_mac_admission import snapshot
 
 SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
 KK_CLASSES = {"summary", "operator_brief", "structured_extract", "safe_route"}
+DEVNEST_REMOTE = "gdrive:ada-nest/devnest"
+KK_LLM_REMOTE = "gdrive:ada-nest/kk-llm"
 
 
 def rc(*args: str, input_text: str | None = None) -> str:
@@ -98,8 +103,8 @@ def route_colab(spec: dict, source: str, destination: str) -> str:
 
 
 def produce(
-    source: str = "gdrive:ada-nest-devnest",
-    kk_remote: str = "gdrive:ada-nest-kk-llm",
+    source: str = DEVNEST_REMOTE,
+    kk_remote: str = KK_LLM_REMOTE,
     colab_remote: str = "gdrive:ada-nest",
     max_depth: int = 3,
 ) -> dict:
@@ -146,8 +151,8 @@ def produce(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--source", default="gdrive:ada-nest-devnest")
-    ap.add_argument("--kk-remote", default="gdrive:ada-nest-kk-llm")
+    ap.add_argument("--source", default=DEVNEST_REMOTE)
+    ap.add_argument("--kk-remote", default=KK_LLM_REMOTE)
     ap.add_argument("--colab-remote", default="gdrive:ada-nest")
     ap.add_argument("--max-depth", type=int, default=3)
     args = ap.parse_args()

@@ -14,7 +14,7 @@ import subprocess
 import time
 from pathlib import Path
 
-REMOTE = "gdrive:ada-nest-devnest"
+REMOTE = "gdrive:ada-nest/devnest"
 EXCLUDED = {"kk-mac", "kk_mac"}
 EXTENSIONS = {".json", ".jsonl", ".md", ".txt"}
 

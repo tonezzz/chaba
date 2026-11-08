@@ -2,7 +2,7 @@
 """Refill the KK-Mac JevNest from an explicit inbox.
 
 The producer never invents work. An upstream audit/report producer places
-JSON task specs in gdrive:ada-nest-kk-llm/inbox/. This script stages at most
+JSON task specs in gdrive:ada-nest/kk-llm/inbox/. This script stages at most
 three valid specs when the KK admission gate is green and the queue is below
 the configured depth.
 """
@@ -18,10 +18,14 @@ import tempfile
 import time
 from pathlib import Path
 
-from kk_mac_admission import snapshot
+if __package__:
+    from .kk_mac_admission import snapshot
+else:
+    from kk_mac_admission import snapshot
 
 TASK_CLASSES = {"summary", "operator_brief", "structured_extract", "safe_route"}
 TASK_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
+DEFAULT_REMOTE = "gdrive:ada-nest/kk-llm"
 
 
 def rclone(*args: str, input_text: str | None = None) -> str:
@@ -123,7 +127,7 @@ def pack_listing(remote: str) -> tuple[set[str], set[str]]:
 
 def produce(
     *,
-    remote: str = "gdrive:ada-nest-kk-llm",
+    remote: str = DEFAULT_REMOTE,
     max_depth: int = 3,
     max_new: int = 3,
     template: Path | None = None,
@@ -189,7 +193,7 @@ def produce(
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--remote", default="gdrive:ada-nest-kk-llm")
+    parser.add_argument("--remote", default=DEFAULT_REMOTE)
     parser.add_argument("--max-depth", type=int, default=3)
     parser.add_argument("--max-new", type=int, default=3)
     parser.add_argument("--dry-run", action="store_true")
