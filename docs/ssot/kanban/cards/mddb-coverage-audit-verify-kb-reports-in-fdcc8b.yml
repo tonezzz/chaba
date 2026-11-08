@@ -1,0 +1,13 @@
+id: mddb-coverage-audit-verify-kb-reports-in-fdcc8b
+title: MDDB coverage audit — verify kb/reports indexing
+column: backlog
+updated: 2026-11-08 12:56
+ref: AUD-1186
+comms:
+- at: 2026-11-08 12:56
+  from: devin
+  text: ' spec: Rules declare MDDB semantic search the PRIMARY doc-finding path, but coverage is unverified. Audit:
+    diff docs/kb/*.md (419) + docs/reports (29) + ssot docs against MDDB collections (chaba-lessons, ada-cms-pages,
+    ssot-* etc). Expose silent gaps — agents fall back to grep without knowing coverage is partial. ALSO: mddb leader
+    stats endpoint (100.102.134.91:11023/v1/stats) returned empty on 2026-11-08 — check service health first. done_when:
+    coverage report (indexed/missing per collection) +'
