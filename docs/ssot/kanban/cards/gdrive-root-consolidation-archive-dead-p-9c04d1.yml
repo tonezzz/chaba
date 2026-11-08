@@ -131,6 +131,10 @@ comms:
 - at: 2026-11-08 13:33
   from: tony
   text: 'answered phase-b-layout-for-the-4-ada-nest-lane-d-b4fc84: proceed'
+- at: 2026-11-08 13:33
+  from: devin
+  text: 'raised request phase-b-layout-decision-every-phase-b-di-2fd698: Phase-B layout decision — every phase-B
+    dir has live consumers so no move is free; env-override prep is shipped in the d'
 action:
   type: dispatch
   status: queued
@@ -160,3 +164,19 @@ requests:
   - proceed
   - hold
   answer: proceed
+- id: phase-b-layout-decision-every-phase-b-di-2fd698
+  ask: 'Phase-B layout decision — every phase-B dir has live consumers so no move is free; env-override prep is
+    shipped in the dispatch branch (ADA_ADOBE_STOCK_REMOTE, DEVNEST_REMOTE, KK_LLM_REMOTE, KK_MAC_VIDEO_PILOT_REMOTE,
+    NEST_BRAINS_REMOTE, CHABA_GDRIVE_BUNDLES, DRIVE_ROOT, NOTEBOOKLM_KB_COLLECTION; defaults unchanged). Options:
+    (a) ★ move only the 4 ada-nest-* dirs to gdrive:ada-nest/<short> (adobe-stock, devnest, kk-llm, kk-mac-video-pilot)
+    and KEEP the 7 service dirs at root with documented exceptions — backups=DR path (150GiB), chaba-media-corpus=dell
+    bind-mount, colab-cache=notebook contract, nest/brains=gcrypt env on dell, ada-documents/chaba/notebooklm=service
+    surfaces; (b) also consolidate nest/chaba/ada-documents under ada-nest/ (more switchovers incl. tony-dell gcrypt
+    env + idc01 doc-archive unit); (c) keep flat, close card — audit says remaining root is mostly personal dirs.
+    Full per-dir audit+recipe: docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation-phase-b.yml'
+  status: open
+  at: 2026-11-08 13:33
+  from: devin
+  options:
+  - proceed
+  - hold
