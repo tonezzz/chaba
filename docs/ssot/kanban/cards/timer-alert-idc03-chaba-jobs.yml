@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: backlog
-updated: 2026-11-08 13:31
+updated: 2026-11-08 13:33
 priority: high
 tags:
 - timer-alert
@@ -182,6 +182,13 @@ comms:
 - at: 2026-11-08 13:31
   from: chaba
   text: started devin-task-20261108-133100-timer-chaba-jobs-on-idc03-disa on idc02 (dispatch)
+- at: 2026-11-08 13:33
+  from: devin
+  text: '[4th dispatch 133100 — still FALSE ALARM, no re-enable] Live on idc03: chaba-jobs.timer disabled+inactive
+    (deliberate OPS-0790 retirement), replacements all firing (yomi-update-active 10min ago, embed-lane-news 45min,
+    yomi-update-all 31min, embed-lane-lessons daily). Root cause of the respawn loop found: tony-omen repo-sync
+    is HOURLY (last 13:00, fix merged 13:15) so its sentinel still had chaba-jobs in CRITICAL → re-armed this card
+    via on_exists:queue at 13:10+13:29. I started chaba-repo-sync.s'
 action:
   status: queued
   type: dispatch
