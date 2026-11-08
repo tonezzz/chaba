@@ -1,7 +1,7 @@
 # Graduated OpenCode routing procedure — definition (pre-pilot draft)
 
 Card: `opencode-graduated-routing-standard` · Date: 2026-10-27 ·
-Runner: tony-macbook · Status: **defined + implemented, S0 in
+Runner: idc02 (retargeted from tony-macbook 2026-11-08 — macbook lacks the opencode binary; idc02 has opencode + litellm keys + the GS fixture) · Status: **defined + implemented, S0 in
 execution — NOT yet promoted to SSOT/KB doctrine** (promotion gated on
 the first pilot passing, per the card).
 
