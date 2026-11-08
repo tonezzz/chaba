@@ -13,12 +13,14 @@ Unreachable hosts report 'down' for every capability — informational for
 laptops (see manifest note), a defect for declared-always-on hosts.
 """
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+import urllib.request
 from pathlib import Path
 
 import yaml
@@ -27,6 +29,44 @@ REPO = Path(__file__).resolve().parents[1]
 MANIFEST = REPO / "docs/ssot/infrastructure/ssot.host-software.yml"
 SSH_BASE = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
             "-o", "StrictHostKeyChecking=accept-new"]
+BOARD_API = os.environ.get(
+    "BOARD_API", "https://idc03.taila0626a.ts.net:10000")
+STATE = Path(os.environ.get(
+    "HOST_READY_STATE",
+    os.path.expanduser("~/var/chaba/jobs/host-ready-check.state.json")))
+
+
+def maybe_alert(fail_set):
+    """One focus-inbox entry per fail-set change (lesson-drift pattern):
+    fingerprint the current fail list; if it differs from the last
+    recorded set, post once and save. Keeps a recurring failure from
+    spamming and a silent break from going unnoticed."""
+    try:
+        fp = hashlib.md5(
+            "|".join(sorted(fail_set)).encode()).hexdigest()
+        last = {}
+        if STATE.exists():
+            last = json.loads(STATE.read_text())
+        if last.get("fp") == fp:
+            return False
+        if fail_set:
+            body = {
+                "from": "devin",
+                "label": "host-ready-check",
+                "text": ("R7 capability failures changed: "
+                         + "; ".join(sorted(fail_set))[:900]),
+                "priority": "high", "tags": ["ops", "r7", "fleet"],
+                "session": "chaba-host-ready-check"}
+            req = urllib.request.Request(
+                f"{BOARD_API}/inbox", data=json.dumps(body).encode(),
+                headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=20)
+        STATE.parent.mkdir(parents=True, exist_ok=True)
+        STATE.write_text(json.dumps({"fp": fp, "fails": sorted(fail_set)}))
+        return bool(fail_set)
+    except Exception as e:
+        sys.stderr.write(f"inbox alert failed: {e}\n")
+        return False
 
 
 def probe(host, cmd, timeout):
@@ -55,6 +95,7 @@ def main():
 
     results = {}
     fails = 0
+    fail_set = set()
     for host, spec in hosts.items():
         results[host] = {}
         for cap in spec.get("capabilities") or []:
@@ -75,6 +116,7 @@ def main():
             results[host][cap] = {"status": status, "detail": detail}
             if status in ("fail", "timeout"):
                 fails += 1
+                fail_set.add(f"{host}:{cap}={status}")
             print(f"{host:12} {cap:16} {status:8} {detail or ''}",
                   flush=True)
 
@@ -85,6 +127,8 @@ def main():
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(summary, indent=2))
         print(f"wrote {p}")
+    if maybe_alert(fail_set):
+        print("focus-inbox alerted on fail-set change")
     return 1 if fails else 0
 
 
