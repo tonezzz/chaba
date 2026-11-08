@@ -169,17 +169,22 @@ def metno(lat: float, lon: float) -> list[dict]:
     d = http_json(METNO_URL.format(lat=lat, lon=lon))
     by_day: dict[str, dict] = {}
     for ts in d["properties"]["timeseries"]:
-        day = ts["time"][:10]
+        # timeseries times are UTC — bucket by ICT day to match other sources
+        dt = datetime.strptime(ts["time"][:19], "%Y-%m-%dT%H:%M:%S") \
+            .replace(tzinfo=timezone.utc).astimezone(ICT)
+        day = dt.strftime("%Y-%m-%d")
         det = ts["data"]["instant"]["details"]
         t = det.get("air_temperature")
-        p6 = ts["data"].get("next_6_hours", {}).get("details", {}) \
+        # next_1_hours is per-hour accumulation; next_6_hours is a sliding
+        # 6h window present on ~every entry — summing it inflates ~6x
+        p1 = ts["data"].get("next_1_hours", {}).get("details", {}) \
             .get("precipitation_amount")
         cur = by_day.setdefault(day, {"hi": None, "lo": None, "rain_mm": 0.0})
         if t is not None:
             cur["hi"] = t if cur["hi"] is None else max(cur["hi"], t)
             cur["lo"] = t if cur["lo"] is None else min(cur["lo"], t)
-        if p6:
-            cur["rain_mm"] += p6
+        if p1:
+            cur["rain_mm"] += p1
     return [{"date": k, **v} for k, v in sorted(by_day.items())]
 
 
