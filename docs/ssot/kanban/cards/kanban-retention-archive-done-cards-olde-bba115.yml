@@ -1,7 +1,7 @@
 id: kanban-retention-archive-done-cards-olde-bba115
 title: 'Kanban retention: archive done cards older than 7 days'
 column: backlog
-updated: 2026-11-08 13:20
+updated: 2026-11-08 13:24
 brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
   archive stale done cards to a separate store/page, keep board fast and searchable.'
 spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
@@ -46,3 +46,9 @@ comms:
     archive index keeps /card/<id>+mutations resolvable. scripts/board/archive-done.py --apply is the sweep; chaba-kanban-archive.timer
     installed on idc03, daily 04:20. First sweep running now: ~240 candidates; occasional 60s timeouts under git-lock
     contention retry next run. Review/unveri'
+- at: 2026-11-08 13:24
+  from: devin
+  text: 'First sweep COMPLETE: all 240 candidates archived to cards/archive/ (2 client timeouts were post-commit
+    — files confirmed moved). cards.json now 1089 cards (was ~1329); Done ~810. Verified: /card/ada-acl-explain
+    resolves archived card via index; render unaffected (non-recursive glob). Timer chaba-kanban-archive.timer armed
+    daily 04:20+ jitter on idc03. Reversibility: git mv back or board-api comment on archived card still works.'
