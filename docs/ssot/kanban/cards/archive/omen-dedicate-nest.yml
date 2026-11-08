@@ -1,0 +1,151 @@
+id: omen-dedicate-nest
+title: Dedicate tony-omen to Ada Nest — exit travel-slim, GPU lane duty
+column: done
+updated: 2026-11-08 13:22
+priority: high
+spec: 'Tony 2026-10-12: macbook becomes his main desktop → omen dedicated to Nest. Already onboarded (tailnet/mesh/runner/devin
+  satellite all pass new-host checklist). Steps: (1) ssot.host-capacity.yml: role gpu-dev -> nest-gpu-lane, note
+  desktop role moved to tony-macbook; (2) exit travel-slim posture — open-jev + open-jev-student restarted 2026-10-12
+  (both active), verify orch-bench timer (Mon 04:30) completes clean next run; (3) verify ollama :11434 serving
+  for kanban-brief; (4) nest-mgr already running — confirm it reports omen lane to CMS; (5) decide whether GNOME
+  desktop session stays (power) or headless+CRD; (6) candidate new duty: take non-LAN-bound load off tony-dell (disk
+  14% < 15% rebalance trigger) + idc03 (mem 73%) per placement_policy.'
+ref: OPS-0515
+comms:
+- at: 2026-10-12 19:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-12 21:20
+  from: devin
+  text: '[progress] 2026-10-12 activation pass: (1) host-capacity.yml role updated gpu-dev -> nest-gpu-lane + pushed
+    68441a691; (2) open-jev + open-jev-student restarted — active, serving /health+/metrics; (3) ollama was ENTIRELY
+    absent — installed v0.40.3 user-space (~h/ollama) + user unit enabled, bound 0.0.0.0:11434, phi3 pulled + tagged
+    phi3-gguf:latest, inference verified, dell->omen tailnet path 200 — kanban-brief LLM endpoint restored; (4)
+    bonus cleanup: stale michael-dev duplicate on dell stopped'
+- at: 2026-10-16 04:50
+  from: tony
+  text: queued for processing
+- at: 2026-10-16 04:51
+  from: idc03
+  text: claimed
+- at: 2026-10-16 04:51
+  from: chaba
+  text: started devin-task-20261016-045119-tony-2026-10-12-macbook-become on idc03 (dispatch)
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: devin-task-20261016-045119-tony-2026-10-12-macbook-become no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-16 14:42
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261016-045119-tony-2026-10-12-macbook-become on
+    idc03 — if the work was never pushed it may be gone'
+- at: 2026-10-16 17:01
+  from: devin
+  text: '[sweep] claim was stale: task ended without pushing a branch (merge-sweep found no session/worktree; no
+    dispatch branch on origin). Work unrecoverable — returned to backlog for a fresh dispatch.'
+- at: 2026-10-16 17:02
+  from: tony
+  text: moved doing -> backlog
+- at: 2026-10-16 17:03
+  from: tony
+  text: put on hold
+- at: 2026-10-23 13:04
+  from: tony
+  text: queued for processing
+- at: 2026-10-23 13:05
+  from: idc02
+  text: claimed
+- at: 2026-10-23 13:05
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 13:05
+  from: chaba
+  text: started devin-task-20261023-130505-tony-2026-10-12-macbook-become on idc02 (dispatch)
+- at: 2026-10-23 13:05
+  from: devin
+  text: '[progress] dispatch re-run on idc02: verifying omen state (jev units, orch-bench timer, ollama, nest-mgr)
+    + checking placement drift since 10-12'
+- at: 2026-10-23 13:10
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261016-045119-tony-2026-10-12-macbook-become'
+- at: 2026-10-23 13:17
+  from: devin
+  text: 'raised request omen-desktop-posture-current-state-gdm-g-8e87da: Omen desktop posture? Current state: gdm
+    greeter sits on tty1 (no interactive GNOME session logged in, idle 2d), chrome-'
+- at: 2026-10-23 13:17
+  from: devin
+  text: '[sweep] all 6 steps done. (1) host-capacity: omen role already lan-hub+nest-gpu-lane; noted desktop→tony-macbook
+    + dell re-measure (220G/78G free post-SSD — step-6 disk trigger stale). (2) TRAVEL-SLIM EXITED durably: open-jev
+    was dead since the 10-19 reboot (disabled, 10-12 restart was start-only) — enabled --now open-jev:8777 + open-jev-student:8778
+    (both /health ok, 4b load 141s), leash timer retired, orch-bench ExecStartPost stop removed on-host+repo. 10-19
+    bench run itself was clean (Result='
+- at: 2026-10-23 13:18
+  from: idc02
+  text: 'finished (ok): exit=0 the card, and the full writeup in `dispatch-outcome-20261023-130505-tony-2026-10-12-macbook-become.md`.
+    | devin-t'
+- at: 2026-10-23 13:18
+  from: chaba
+  text: pushed dispatch/20261023-130505-tony-2026-10-12-macbook-become to origin
+- at: 2026-10-23 13:18
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-23 13:18
+  from: chaba
+  text: auto-merged dca9791b (dispatch/20261023-130505-tony-2026-10-12-macbook-become) → origin/master
+- at: 2026-10-23 13:18
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-130505-tony-2026-10-12-macbook-become,
+    branch dispatch/20261023-130505-tony-2026-10-12-macbook-become'
+- at: 2026-10-23 13:25
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''omen-desktop-posture-current-s''] block close)'
+- at: 2026-10-23 15:04
+  from: devin
+  text: 'answered omen-desktop-posture-current-state-gdm-g-8e87da: A — formalized headless+CRD: set-default multi-user.target
+    + stopped gdm on tony-omen. CRD daemon (tony-owned process since Oct 19) unaffected and verified still running.
+    Re-enable: sudo systemctl set'
+- at: 2026-10-23 15:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-23 15:10
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (15d in done, verified)
+action:
+  type: dispatch
+  status: done
+  sweep:
+    stale_running: 2026-10-16 14:42
+    session_gone: 2026-10-16 14:42
+    no_repo: 2026-10-23 13:10
+    close_held: 2026-10-23 13:25
+  runner: idc02
+  result: 'exit=0 the card, and the full writeup in `dispatch-outcome-20261023-130505-tony-2026-10-12-macbook-become.md`.
+    | devin-task-20261023-130505-tony-2026-10-12-macbook-become.service: Consumed 28.785s CPU time, 378.1M memory
+    peak, 0B memory swap peak.'
+  verified: true
+requests:
+- id: omen-desktop-posture-current-state-gdm-g-8e87da
+  ask: 'Omen desktop posture? Current state: gdm greeter sits on tty1 (no interactive GNOME session logged in, idle
+    2d), chrome-remote-desktop session for tony already active — so it is effectively headless+CRD today. Options:
+    ★A) formalize headless+CRD — disable gdm3 (saves idle GPU/display watts on a 24/7 lane; CRD unaffected, re-enable
+    is one command) · B) keep gdm greeter for local console fallback · C) keep a full GNOME session logged in (highest
+    power). Recommend A.'
+  status: answered
+  at: 2026-10-23 13:17
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: 'A — formalized headless+CRD: set-default multi-user.target + stopped gdm on tony-omen. CRD daemon (tony-owned
+    process since Oct 19) unaffected and verified still running. Re-enable: sudo systemctl set-default graphical.target
+    && systemctl start gdm'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 15:10
+  note: verified — evidence checks green, closing itself
