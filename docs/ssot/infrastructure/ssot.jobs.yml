@@ -577,6 +577,34 @@ jobs:
     health — the OPS-1074 divergence sat for days before surfacing as
     >60s writes. Alerts deduped 12h; state
     ~/.local/state/served-checkout-watchdog.json.'
+- id: timer-timeline-update
+  name: Timer timeline sweep (collects all hosts' timer/service states)
+  host: tony_omen
+  dispatch: systemd
+  every: 15min
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-timeline-update.py
+  note: 'Declared 2026-11-08 — was an ad-hoc unit on tony-omen (and before
+    that tony-dell), never absorbed into the manifest. Writes
+    ~/.local/share/chaba/timer-timeline/state.json that timer-sentinel
+    reads — the two MUST co-locate: when the collector moved dell->omen
+    the dell-side sentinel kept reading the stale local file and fired
+    timer-alert-collector on a phantom dead sweep.'
+- id: timer-sentinel
+  name: Timer sentinel — fires timer-alert-* cards on suspicious timer state
+  host: tony_omen
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 3m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-sentinel.py
+  note: 'Declared 2026-11-08 — was an ad-hoc unit on tony-dell reading a
+    state file that stopped updating when the collector moved to omen.
+    Co-located with timer-timeline-update on tony_omen (shares
+    TT_STATE_DIR default). Independent of the chaba-jobs dispatcher:
+    own timer, so it still fires when the dispatcher/jobs are what is
+    broken. Dell ad-hoc units removed same day.'
 - id: podman-lock-watchdog
   name: Podman lock-wedge watchdog (probe + stale-lock self-heal)
   host: tony_dell
