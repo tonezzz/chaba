@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: backlog
-updated: 2026-11-08 20:37
+updated: 2026-11-08 20:41
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -29,6 +29,13 @@ comms:
 - at: 2026-11-08 20:37
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 20:41
+  from: devin
+  text: 'Scope chosen: narrow command-only publisher (recorded as the suggested option after Tony said continue).
+    Findings: ada-opencode workspace is a local git repo with no commits/remotes and .opencode/ untracked; ada_mcp.py
+    has read/debug/board tools but no git commit/push; Chaba has git-safe-push.sh but it is not exposed to Ada.
+    Token impact: likely small for a one-file publish, potentially useful across repeated workflows if the tool
+    returns compact receipts; historical OpenCode sweep (~99.6k input'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
