@@ -585,6 +585,24 @@ def unit_active(unit: str) -> bool:
     return r.stdout.strip() in ("active", "activating")
 
 
+def _exit_capture(unit: str, workdir: str | None, cmd: list) -> str:
+    """bash -lc body for runner-* units: run the cmd, then write its
+    exit code to /run/user/<uid>/runner-exit/<unit>.code before exiting.
+
+    --collect can reap the transient unit record before the next finish
+    pass reads it (OPS-1181 — a <2s script probe false-failed
+    "unit not-found"). The code file is the durable verdict collect()
+    reads first; a `cd` failure skips the cmd and still records nonzero.
+    """
+    run_dir = Path(f"/run/user/{os.getuid()}/runner-exit")
+    code = run_dir / f"{unit.removesuffix('.service')}.code"
+    head = f"cd {shlex.quote(workdir)} && " if workdir else ""
+    return (f"{head}{shlex.join([str(x) for x in cmd])}; "
+            f"ec=$?; mkdir -p {shlex.quote(str(run_dir))} && "
+            f"printf '%s\\n' \"$ec\" > {shlex.quote(str(code))}; "
+            f"exit \"$ec\"")
+
+
 def collect(unit: str) -> tuple[bool, str]:
     """(ok, result-text) from the finished unit's exit evidence.
 
@@ -620,13 +638,29 @@ def collect(unit: str) -> tuple[bool, str]:
             ec = ""
         if ec:
             return ec == "0", f"exit={ec} {tail}".strip()
+    # runner-* script/container units wrap their cmd to write the exit
+    # code — survives --collect reaping the unit record before the next
+    # finish pass (OPS-1181: a <2s probe lost its exit and false-failed).
+    if unit.startswith("runner-"):
+        try:
+            ecp = (Path(f"/run/user/{os.getuid()}/runner-exit")
+                   / f"{unit.removesuffix('.service')}.code")
+            if ecp.is_file():
+                ec = ecp.read_text().strip()
+                ecp.unlink(missing_ok=True)
+                return ec == "0", f"exit={ec} {tail}".strip()
+        except OSError:
+            pass
     if kv.get("LoadState") == "loaded":
         ok = (kv.get("ExecMainStatus") == "0"
               and kv.get("Result") == "success")
         return ok, f"exit={kv.get('ExecMainStatus', '?')} {tail}".strip()
-    hits = re.findall(r"Succeeded\.|Failed with result '[a-z-]+'", jout)
+    hits = re.findall(
+        r"Succeeded\.|Deactivated successfully\.|"
+        r"Failed with result '[a-z-]+'", jout)
     if hits:
-        jr = ("success" if hits[-1] == "Succeeded."
+        jr = ("success" if hits[-1] in (
+                "Succeeded.", "Deactivated successfully.")
               else hits[-1].split("'")[1])
         return jr == "success", f"journal={jr} {tail}".strip()
     return False, (f"no exit record — unit {kv.get('LoadState') or 'gone'} "
@@ -2440,10 +2474,11 @@ def start_task(card: dict, typ: str) -> tuple:
             env += ["-e", f"{k}={v}"]
         argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
                  "--description", f"runner {cid}"] + task_run_props() +
-                ["podman", "run", "--rm",
-                 f"--pull={c.get('pull', 'missing')}",
-                 f"--name={unit}"] + env +
-                [str(c["image"])] + cmd)
+                ["bash", "-lc",
+                 _exit_capture(unit, workdir=None, cmd=[
+                     "podman", "run", "--rm",
+                     f"--pull={c.get('pull', 'missing')}",
+                     f"--name={unit}"] + env + [str(c["image"])] + cmd)])
     elif typ == "script":
         c = a.get("script") or {}
         url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
@@ -2463,9 +2498,7 @@ def start_task(card: dict, typ: str) -> tuple:
                  f"--property=RuntimeMaxSec={int(c.get('timeout', 1800))}",
                  "--description", f"runner {cid}"] + task_run_props() +
                 env +
-                ["bash", "-lc",
-                 f"cd {shlex.quote(workdir)} && "
-                 f"exec {shlex.join(cmd)}"])
+                ["bash", "-lc", _exit_capture(unit, workdir, cmd)])
     else:  # dispatch
         # Executor contract (opencode-explicit-executor-routing): an
         # explicit action.executor decides the route BEFORE any lane
