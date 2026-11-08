@@ -1,0 +1,21 @@
+id: ada-code-infra-rename
+title: Rename opencode-ada infra to ada-code (hostname, CF app, quadlets, volumes)
+column: backlog
+updated: 2026-11-08 20:49
+brief: 'Tony renamed the surface 2026-11-08: canonical name ada-code; opencode-ada/ada-opencode are aliases of the
+  same single instance (no second deployment). Dashboard tab already renamed (title ''Ada Code'', path ada-code,
+  pushed+synced). Remaining infra layer: (a) hostname ada-code.surf-thailand.com as primary — new CF Access app
+  + DNS + idc02 Caddy route, keep opencode-ada.surf-thailand.com as redirect/alias; (b) rename quadlets ada-opencode.service
+  + ada-enroll.service + ada-opencode.network -> ada-code-*; (c) rename volume dir ~/.local/share/ada-opencode ->
+  ada-code (update quadlet Volume= lines)'
+priority: medium
+program: devnest
+tags:
+- opencode
+- ada
+- infra
+ref: ADA-1225
+comms:
+- at: 2026-11-08 20:49
+  from: tony
+  text: card captured via board-api
