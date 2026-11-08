@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-11-08 08:21
+updated: 2026-11-08 08:29
 priority: medium
 ref: MEM-0695
 comms:
@@ -76,6 +76,13 @@ comms:
     cross-encoder closed the gap fusion could not. Rerank the dense pool only (rerank_union .250/.791 — lexical
     still dilutes). Remaining gates: request-path rerank latency (batch ~23s/q; prod needs <=500ms, feasible on
     GPU) + reliability soak. Also: Omen GPU back after reboot (595.99.02/C'
+- at: 2026-11-08 08:29
+  from: devin
+  text: 'ALL OPEN GATES CLOSED (#99,#100). GPU rerank latency: top-50 2891ms (does NOT fit ~500ms request path),
+    top-10 565ms, ~57ms/pair — options: top-10 depth, lighter reranker, or async rerank. Pool soak: baseline 29/30
+    ok p50 131ms/p95 2823ms; con01 drop 15/15 ok BUT p50 degraded ~17x to 2264ms — resilient but latency-paying.
+    python_ml_gpu declared on Omen. STATE: local dense+rerank now at Gemini parity (r@5 .260 vs .244, MRR .869 vs
+    .893) — remaining decision is serving architecture, not quality.'
 action:
   type: dispatch
   status: done
