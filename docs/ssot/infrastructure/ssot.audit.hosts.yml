@@ -893,8 +893,6 @@ hosts:
       - {name: ada-pi-orch-bench.timer, type: timer, scope: user}
       - {name: ada-review-refresh.timer, type: timer, scope: user}
       - {name: apps-health-sync.timer, type: timer, scope: user}
-      - {name: chaba-audit.timer, type: timer, scope: user}
-      - {name: chaba-audit-watchdog.timer, type: timer, scope: user}
       - {name: chaba-kb-audit.timer, type: timer, scope: user}
       - {name: chaba-mn01-sync.timer, type: timer, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
@@ -950,6 +948,16 @@ hosts:
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
           copy disabled 2026-10-12 (container running since 2026-07-28)
+      - name: chaba-audit.timer
+        scope: user
+        note: "audit suite moved to con01 (tony_dell->idc02 2026-10-04,
+          idc02->con01 in the 2026-10-25 absorber shed, jobs 766462b4e) —
+          omen timer disabled, undeclared in the tony_omen jobs pack"
+      - name: chaba-audit-watchdog.timer
+        scope: user
+        note: "retired with the suite move — watchdog is undeclared in
+          ssot.jobs.yml on every host (suite-freshness coverage now rests on
+          card job-health-sweep-consecutive-failure-alerts)"
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -2141,24 +2149,16 @@ hosts:
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
-      - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
       - {name: camwall-render-check.timer, type: timer, scope: user}
-      - {name: chaba-audit.timer, type: timer, scope: user}
-      - {name: chaba-audit-full.timer, type: timer, scope: user}
-      - {name: chaba-kb-audit.timer, type: timer, scope: user}
-      - {name: chaba-system-report.timer, type: timer, scope: user}
       - {name: cms-publish-site.timer, type: timer, scope: user}
-      - {name: devin-bank-distill.timer, type: timer, scope: user}
       - {name: jev-bench.timer, type: timer, scope: user}
       - {name: jev-retrain.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mddb-lab-pull.timer, type: timer, scope: user}
       - {name: mddb-watchdog.timer, type: timer, scope: user}
-      - {name: report-distill.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
-      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
       - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
@@ -2168,13 +2168,37 @@ hosts:
       - {name: notebooklm-mcp.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-rest.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: secrets-console.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: status-data-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-macbook.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-vms-mn01.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: gev-gemini.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation, moved by parallel session)"}
       - {name: gods-eye-view-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation)"}
       - {name: gev-cmd-relay.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19"}
+    expected_absent:
+      - name: chaba-audit.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e absorber tier) — unit removed from idc02"
+      - name: chaba-audit-full.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e) — unit removed from idc02"
+      - name: chaba-kb-audit.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e) — unit removed from idc02"
+      - name: chaba-system-report.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — generator now scp-fans-out to idc02 (gitignored data dir)"
+      - name: ssot-optimization-snapshot.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: ada-flood-news.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: report-distill.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: devin-bank-distill.timer
+        scope: user
+        note: "shed to con01 2026-10-26 (jobs b221da077) — unit removed from idc02"
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
