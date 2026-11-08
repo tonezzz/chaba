@@ -1,0 +1,17 @@
+id: mddb-breaker-rollout-remaining
+title: Roll embed circuit-breaker image to remaining mddb containers after soak
+column: backlog
+updated: 2026-11-08 13:13
+priority: low
+tags:
+- mddb
+- deploy
+spec: mddb-embed runs localhost/mddb:2.15.4-breaker (embedBreaker). mddb, mddb-ops, mddb-cms still run 2.15.4-lsn
+  — they have the same EmbeddingWorker and the same storm exposure. After ~a day of clean mddb-embed operation,
+  flip their quadlets to the breaker image + restart (one at a time). Also consider upstreaming the patch to github.com/tradik/mddb
+  — it is a generally-useful reliability fix, and our fork diverges further each local patch.
+ref: MEM-1190
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
