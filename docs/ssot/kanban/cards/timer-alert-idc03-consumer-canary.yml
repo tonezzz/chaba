@@ -1,7 +1,7 @@
 id: timer-alert-idc03-consumer-canary
 title: Timer consumer-canary on idc03 failing
 column: backlog
-updated: 2026-11-08 13:16
+updated: 2026-11-08 13:20
 priority: high
 tags:
 - timer-alert
@@ -80,6 +80,11 @@ comms:
   from: devin
   text: '[devin] dispatch picked up card — investigating consumer-canary.service exit-code on idc03 (last run 11-08
     05:21)'
+- at: 2026-11-08 13:20
+  from: devin
+  text: '[devin] RESOLVED — exit-code was by design (script exits 1 on findings). Root cause: 2 live retired-host
+    refs. Fixed + verified: manual rerun consumer-canary CLEAN exit 0 (journal 13:19 +07). See canary card comms
+    for details; follow-up gap filed as OPS-1195.'
 action:
   status: queued
   type: dispatch
