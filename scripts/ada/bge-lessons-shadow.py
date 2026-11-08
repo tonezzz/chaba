@@ -10,6 +10,7 @@ import html
 import json
 import os
 import re
+import time
 import urllib.error
 import urllib.request
 from html.parser import HTMLParser
@@ -32,16 +33,23 @@ class TextParser(HTMLParser):
             self.parts.append(data.strip())
 
 
-def post(url, payload, timeout=60):
+def post(url, payload, timeout=60, attempts=3):
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return json.loads(response.read())
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode(errors="replace")[:300]
-        raise RuntimeError(f"{exc.code} from {url}: {detail}") from exc
+    err = None
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode(errors="replace")[:300]
+            err = RuntimeError(f"{exc.code} from {url}: {detail}")
+        except Exception as exc:
+            err = exc
+        if attempt + 1 < attempts:
+            time.sleep(2 * (attempt + 1))
+    raise err
 
 
 def text_from_html(value):
