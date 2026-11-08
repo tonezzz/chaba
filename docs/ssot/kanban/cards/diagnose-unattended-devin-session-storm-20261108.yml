@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
 column: backlog
-updated: 2026-11-08 16:59
+updated: 2026-11-08 18:48
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -42,13 +42,19 @@ comms:
   from: devin
   text: 'raised request resume-paused-runners-knb1196: KNB-1196 is fixed and deployed. Should any unattended runners
     be resumed now? Current containment: idc03 kanban-dispatch'
+- at: 2026-11-08 18:48
+  from: tony
+  text: 'answered resume-paused-runners-knb1196: Keep all paused until a separate resumption approval (recommended).'
+- at: 2026-11-08 18:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
     kanban-dispatch and runner-agent disabled; Omen, MacBook, and idc02 runner-agent disabled; Dell has no runner-agent
     timer. Recommended: keep all paused until you approve a monitored idc03-only canary, then review before resuming
     the rest.'
-  status: open
+  status: answered
   at: 2026-11-08 16:59
   from: devin
   options:
@@ -56,3 +62,5 @@ requests:
   - Resume idc03 kanban-dispatch and runner-agent only as a monitored canary; keep Omen/MacBook/idc02 paused.
   - Resume all paused runner-agent timers on Omen/MacBook/idc02/idc03 and idc03 kanban-dispatch.
   suggested: Keep all paused until a separate resumption approval (recommended).
+  answer: Keep all paused until a separate resumption approval (recommended).
+awaiting_action: true
