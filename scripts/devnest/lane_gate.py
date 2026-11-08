@@ -160,6 +160,16 @@ READONLY_MCP_TOOLS = [
     "mcp_files_list", "mcp_files_stat", "mcp_files_search", "mcp_files_tree",
 ]
 
+# mcp-kornia read-only Gaussian capture evaluator (OPS-1055). These are
+# upstream tool names on the standalone mcp-kornia server — admitted at
+# the lane level only; each profile's mcp.allowed remains the per-agent
+# ceiling and the upstream allowlist proxy enforces it a second time.
+GS_EVAL_MCP_TOOLS = [
+    "inspect_image_set", "match_views", "propose_foreground_masks",
+    "score_capture_manifest", "compare_gs_runs",
+]
+LANE_MCP_TOOLS = READONLY_MCP_TOOLS + GS_EVAL_MCP_TOOLS
+
 # models permitted for S5 branch/code work — strong tier only
 STRONG_MODELS = [
     "litellm/claude-fable-5.1", "litellm/gemini-3-pro",
@@ -215,7 +225,7 @@ STAGES = {
     "S1": {
         "desc": "supervised read-only report canary, one runner",
         "classes": ["report", "read_only"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
         "quota": 3,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -231,7 +241,7 @@ STAGES = {
     "S2": {
         "desc": "five-job read-only pilot, Devin-verified",
         "classes": ["read_only", "report"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
         "quota": 5,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -247,7 +257,7 @@ STAGES = {
     "S3": {
         "desc": "sampled production read-only lane + Telegram summaries",
         "classes": ["read_only", "report"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": 20,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -263,7 +273,7 @@ STAGES = {
     "S4": {
         "desc": "reversible artifact writes",
         "classes": ["read_only", "report", "artifact_write"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": None,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -280,7 +290,7 @@ STAGES = {
         "desc": "branch/code tasks, strong model + strong verifier",
         "classes": ["read_only", "report", "artifact_write",
                     "branch_code"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": None,
         "env_required": {"OPENCODE_LANES": "1"},
