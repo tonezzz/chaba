@@ -87,5 +87,9 @@ copied to `~/.local/share/ada-scenario-runner/` on idc03 to deploy).
 
 Residual finding-reporters still on exit-nonzero-on-findings (migrate
 when next touched, or fix on the ada-voice side): `ada-memory-sync`,
-`mddb-vector-reindex`, `ada-scenario-smoke` + `ada-scenario-full`
-(quadlets — bypass the wrapper).
+`mddb-vector-reindex`. `ada-scenario-smoke` + `ada-scenario-full`
+(quadlets — bypass the host wrapper) were converted 2026-11-08 via
+`container-suite-run.sh`, the image entrypoint shim that greps
+scenario-report.py's final "N scenarios:" marker the same way
+`scenario-suite-run.sh` greps `**Score:`; effective on idc03 from the
+next `install.sh` image rebuild.

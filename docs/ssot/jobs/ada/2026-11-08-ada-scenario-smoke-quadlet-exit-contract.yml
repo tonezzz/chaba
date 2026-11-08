@@ -1,0 +1,78 @@
+date: 2026-11-08
+title: ada-scenario-smoke exit-code 10:37 — quadlet contract gap closed in stack
+domain: ada
+job: timer-alert-idc03-ada-scenario-research
+cards: [timer-alert-idc03-ada-scenario-research, ada-scenario-quadlets-exit-contract,
+        ada-scenario-smoke-timeout-truncation, provider-gate-zombie-backend-blind]
+host: idc03
+summary: >
+  While verifying the ada-scenario-research resolution, the hourly smoke
+  quadlet failed result=exit-code at 10:37 — a COMPLETED run that exited
+  1 because the quadlets (smoke, full) run scenario-report.py directly
+  and bypass scenario-suite-run.sh, the last residual finding-reporters
+  under the OPS-0581 contract. Proximate trigger: the bench LiteLLM
+  virtual key crossed its $2 cap at ~10:33 mid-run; every Gemini turn
+  422'd, the OpenRouter fallback model 404'd, ~20 scenarios failed fast,
+  the outage sentinel skip-quota'd the rest. Fixed in the stack via a
+  container entrypoint shim (container-suite-run.sh) that greps the
+  final "N scenarios:" marker; pending install.sh image rebuild.
+
+evidence:
+  - 'journalctl -u ada-scenario-smoke.service 2026-11-08: run start
+    10:00:03 (container created from pre-10:34 image), suite summary
+    "43 scenarios: ..." at 10:36:46, exit status=1 at 10:36:47,
+    Failed result=exit-code 10:37:00.'
+  - 'journalctl -u ada-dev.service 10:33-10:37: "Budget has been
+    exceeded! Key=bench (sk-...cj6A) Current cost: 2.005, Max budget:
+    2.0" 422s every turn; openrouter nemotron-3-super-120b-a12b:free
+    404 on every fallback.'
+  - 'Smoke ran ~9 TimeoutStartSec kills (status=9/KILL) Nov 07 20:46 →
+    Nov 08 09:46 — the 45-min truncation already carded as
+    ada-scenario-smoke-timeout-truncation (ADA-1106).'
+  - 'Unit sits in ssot.audit.hosts.yml known_failed with reason
+    "RESIDUAL finding-reporter — migrate to the contract" — sentinel
+    deliberately does not card it.'
+
+root_cause_chain:
+  - 'OPS-0581 (Oct 13) converted the .service suites via
+    scenario-suite-run.sh but quadlets run scenario-report.py
+    (ada-voice, bind-mounted /app) as ENTRYPOINT — no completion-marker
+    mapping, sys.exit(1 if failed else 0).'
+  - 'Provider gate is point-in-time: at 10:00 and 11:00 it verdicted ok
+    (rest_served 148-159) — OTHER lanes 200s refute the bench-key
+    budget_exceeded dunning, so the cap is invisible pre-run and only
+    bites mid-run.'
+
+fixes:
+  - 'stacks/services/ada-scenario-runner/container-suite-run.sh — image
+    ENTRYPOINT shim: tees scenario-report.py output, greps
+    "^[0-9]+ scenarios:" completion marker, exit-1-with-marker -> 0.
+    Verified locally: completed-fail -> 0, crash-no-marker -> 1,
+    clean -> 0. bash+coreutils present in python:3.12-slim image.'
+  - 'Containerfile updated to COPY + ENTRYPOINT the shim; covers both
+    smoke and full quadlets (shared image).'
+  - 'docs/kb/timer-expectations.md residual list updated — smoke/full
+    marked converted-in-stack, effective on next install.sh rebuild.'
+
+pending:
+  - 'DEPLOY: run stacks/services/ada-scenario-runner/install.sh on
+    idc03 (podman build re-CREATES the image; no unit changes needed).
+    Carded as ada-scenario-quadlets-exit-contract (ADA-1171). Until
+    then, completed-but-failing smoke runs keep exiting 1 — suppressed
+    from sentinel by the known_failed entry.'
+
+residual_risks:
+  - 'Bench $2/30d cap exhausted — every smoke run mass-fails until the
+    cap resets or is raised; the outage sentinel records it as
+    infra/skip-quota in reports, but the underlying signal (bench lane
+    dark) is worth watching.'
+  - 'Gate blind spot (reported on ADA-1171): per-key REST dunning is
+    refuted by any served 200 — a capped bench key never reads
+    quota-dead while other lanes are healthy.'
+
+verify:
+  - 'After install.sh: podman run --rm --entrypoint
+    /usr/local/bin/container-suite-run localhost/ada-scenario-runner:latest
+    --help — shim executes.'
+  - 'Next completed smoke run with failures must exit 0
+    (journal: "suite completed with failing scenarios").'
