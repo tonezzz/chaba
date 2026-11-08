@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:21
+updated: 2026-11-08 16:22
 priority: medium
 tags:
 - kanban-dispatch
@@ -45,6 +45,10 @@ comms:
     400. /action move and finish persistence tests also pass. Verification: 25 board-api tests, 67 dispatch/runner/merge-sweep
     tests, 59 test-kanban-commit.sh checks, and py_compile pass. Existing tests.board.test_board_api_reads still
     times out on its pre-existing single-card 404 pat'
+- at: 2026-11-08 16:22
+  from: devin
+  text: 'raised request deploy-knb1196-board-api: Approve production deployment of commit 616f9298 to the live idc03
+    board-api? Deployment will push/merge the tested fix,'
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -57,3 +61,15 @@ requests:
   - Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
   - No — leave idc03 dispatch running while the local fix is reviewed.
   suggested: Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
+- id: deploy-knb1196-board-api
+  ask: Approve production deployment of commit 616f9298 to the live idc03 board-api? Deployment will push/merge
+    the tested fix, pause idc03 kanban-dispatch and runner-agent timers during rollout, restart chaba-board-api.service,
+    and verify via a disposable non-dispatch contract card. All affected runner timers will remain paused after
+    verification until you separately approve resumption.
+  status: open
+  at: 2026-11-08 16:22
+  from: devin
+  options:
+  - Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
+  - No — keep the tested commit local for review; make no production changes.
+  suggested: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
