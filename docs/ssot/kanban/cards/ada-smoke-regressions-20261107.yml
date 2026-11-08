@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-08 08:33
+updated: 2026-11-08 11:00
 priority: medium
 tags:
 - ada
@@ -39,3 +39,10 @@ comms:
     is fine. Real surface: tool-side field validation — cms_publish_page raises ValueError(''title is required'')
     + contract fields (lang/format/confidence) per tool_runner/cms.py:380-416. Hypothesis update: model sends publish
     calls missing required fields → ValueError → retries repeat same s'
+- at: 2026-11-08 11:00
+  from: devin
+  text: '[diag+fix] TWO causes untangled. (1) cms confirm-loop — REAL BUG, FIXED: _check_cms_write_allowed used
+    strict ''confirmed is True'' vs _confirmed_truthy elsewhere; model''s truthy confirmed fell through to re-register
+    → serial denials (journal: 10x ''request registered'' translate-probe Nov 7 20:06-20:09, page never landed).
+    Fix: _confirmed_truthy in cms gate + same latent bug in _check_capture_confirmed. ada-voice 07119b1, deployed,
+    unit-verified. (2) CURRENT failures are QUOTA not code: bench LiteL'
