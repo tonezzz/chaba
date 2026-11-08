@@ -1,7 +1,7 @@
 id: timer-alert-mn01-runner-agent
 title: Timer runner-agent on mn01 disabled
 column: backlog
-updated: 2026-11-08 21:30
+updated: 2026-11-08 21:40
 priority: high
 tags:
 - timer-alert
@@ -17,6 +17,10 @@ comms:
 - at: 2026-11-08 21:30
   from: devin
   text: re-spawned from report page
+- at: 2026-11-08 21:40
+  from: devin
+  text: '[still suspicious] `runner-agent.timer` on `mn01` is disabled but expected active (audit census / critical
+    list). Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
 action:
   type: dispatch
   status: queued
