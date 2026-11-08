@@ -248,6 +248,48 @@ class CollectTest(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("no exit record", res)
 
+    def _exit_file(self, unit, code):
+        """OPS-1181 fixture — the runner-* wrapper's durable exit record."""
+        d = Path(f"/run/user/{os.getuid()}/runner-exit")
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{unit}.code"
+        p.write_text(f"{code}\n")
+        self.addCleanup(lambda: p.unlink(missing_ok=True))
+        return p
+
+    def test_runner_exit_file_ok_when_unit_reaped(self):
+        unit = "runner-ops1181-ok"
+        self._exit_file(unit, "0")
+        # GC'd unit: no fields, no journal — the exit file alone proves it
+        self._stub(loadstate="not-found", journal="")
+        ok, res = self.mod.collect(unit)
+        self.assertTrue(ok)
+        self.assertIn("exit=0", res)
+
+    def test_runner_exit_file_nonzero_fails(self):
+        unit = "runner-ops1181-fail"
+        self._exit_file(unit, "2")
+        self._stub(loadstate="not-found", journal="")
+        ok, res = self.mod.collect(unit)
+        self.assertFalse(ok)
+        self.assertIn("exit=2", res)
+
+    def test_runner_exit_file_removed_after_read(self):
+        unit = "runner-ops1181-gc"
+        p = self._exit_file(unit, "0")
+        self._stub(loadstate="not-found", journal="")
+        self.mod.collect(unit)
+        self.assertFalse(p.exists())
+
+    def test_journal_deactivated_successfully_is_ok(self):
+        # a GC'd simple service logs "Deactivated successfully." — not
+        # "Succeeded." (oneshot-only); the pattern must cover both
+        self._stub(loadstate="not-found",
+                   journal="runner-x.service: Deactivated successfully.\n")
+        ok, res = self.mod.collect("runner-c2-1700000000")
+        self.assertTrue(ok)
+        self.assertIn("journal=success", res)
+
 
 class ClaimPassLaneTest(unittest.TestCase):
     """OPS-0885: an explicit action.lane pinned in the card YAML must
