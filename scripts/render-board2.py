@@ -100,6 +100,7 @@ PAGE = r"""<!doctype html>
     #board.d-full .card .brief-line { display:block; }
     .autobox { border:1px dashed #33415f; border-radius:7px; padding:4px 6px; opacity:.75; }
     .autobox .auto-tog { font-size:10.5px; color:#64748b; cursor:pointer; user-select:none; }
+    .more-tog { font-size:10.5px; color:#64748b; cursor:pointer; user-select:none; padding:4px 6px; }
 
     /* ---- modal card view ---- */
     #overlay { position:fixed; inset:0; background:rgba(5,9,20,.72); z-index:60;
@@ -180,6 +181,9 @@ const POLL = __POLL_SECONDS__ * 1000;
 let DATA = null, sel = null;
 let q = localStorage.getItem('b2-q') || '';
 let autoOpen = JSON.parse(localStorage.getItem('b2-auto') || '{}');
+// done-column paging — render first PAGE cards, expand on demand
+const PAGE = 100;
+let moreOpen = new Set(JSON.parse(localStorage.getItem('b2-more') || '[]'));
 let density = localStorage.getItem('b2-density') || 'normal';
 let nyCollapsed = false;
 try { nyCollapsed = localStorage.getItem('b2-ny-collapsed') === '1'; } catch (e) {}
@@ -285,9 +289,19 @@ function colHtml(col) {
   const all = cardsFor(col.id);
   const norm = all.filter(c => !AUTO_RE.test(c.id));
   const autos = all.filter(c => AUTO_RE.test(c.id));
-  const vis = norm.filter(c => matchQ(c, q));
+  let vis = norm.filter(c => matchQ(c, q));
+  let moreRow = '';
+  if (col.id === 'done' && q === '' && !moreOpen.has('done')
+      && vis.length > PAGE) {
+    moreRow = `<div class="more-tog" data-col="done">▸ show ${vis.length - PAGE} more</div>`;
+    vis = vis.slice(0, PAGE);
+  } else if (col.id === 'done' && moreOpen.has('done') && q === ''
+      && norm.length > PAGE) {
+    moreRow = `<div class="more-tog" data-col="done">▾ show less</div>`;
+  }
   let inner = vis.map(c => rowHtml(c, col.id)).join('')
-    || '<div class="text-slate-600 text-[11px] italic px-1 py-2">—</div>';
+    || '<div class="text-slate-600 text-[11px] italic px-1 py-2">—</div>'
+    + moreRow;
   const autoVis = autos.filter(c => matchQ(c, q));
   if (autoVis.length) {
     const open = !!autoOpen[col.id] || q !== '';
@@ -604,6 +618,14 @@ document.addEventListener('click', async (e) => {
   if (el) {
     autoOpen[el.dataset.col] = !autoOpen[el.dataset.col];
     localStorage.setItem('b2-auto', JSON.stringify(autoOpen));
+    renderBoard();
+    return;
+  }
+  el = e.target.closest('.more-tog');
+  if (el) {
+    const mc = el.dataset.col;
+    moreOpen.has(mc) ? moreOpen.delete(mc) : moreOpen.add(mc);
+    localStorage.setItem('b2-more', JSON.stringify([...moreOpen]));
     renderBoard();
     return;
   }
