@@ -1,0 +1,28 @@
+id: diagnose-unattended-devin-session-storm-20261108
+title: Diagnose repeated unattended Devin sessions before re-enabling runners
+column: backlog
+updated: 2026-11-08 15:49
+brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
+  is understood.
+priority: high
+program: chaba-ops
+tags:
+- devin
+- runner-agent
+- session-storm
+- tony-omen
+- macbook
+- tony-dell
+spec: 'Investigate the repeated session entries using the title/prompt prefix `You are running unattended via...`
+  on tony-omen, tony-macbook, and tony-dell. Verify source, status transitions, and safe re-enable conditions. Evidence
+  2026-11-08: Omen runner-agent.timer was active and repeated runner-agent logs showed finish failed with `not running
+  (status=queued)` followed by new claims; one active devin-task unit had the unattended prompt marker when first
+  observed. Omen and MacBook runner-agent.timer are now stopped and disabled; no active devin-task units remain.
+  Dell had no active devin-task units or runner-agent timer. Devin Desktop ACP processes remain active on Omen/Dell
+  and were not stopped because they do not match the unattended title. Do not re-enable either timer until the root
+  cause is identified and Tony approves resume. Preserve task artifacts; do not delete session/task data.'
+ref: DEV-1209
+comms:
+- at: 2026-11-08 15:49
+  from: tony
+  text: card captured via board-api
