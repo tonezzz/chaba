@@ -1,0 +1,45 @@
+id: 2026-11-08-consumer-canary-exit-code-two-stale-refs
+kind: incident-record
+ref: OPS-1149
+card: timer-alert-idc03-consumer-canary
+date: 2026-11-08
+host: idc03
+summary: >-
+  consumer-canary.service failed with result=exit-code on the 05:21 / 11:21 /
+  13:02 +07 runs. Not a service bug — scripts/audit/consumer-canary.py exits 1
+  by design whenever it finds live retired-hostname refs, which is what
+  timer-sentinel surfaces as a timer-alert card. Two stale refs were the cause;
+  both fixed and verified by a manual rerun returning CLEAN (exit 0, 9 greps +
+  dashboards) at ~13:19 +07.
+findings_fixed:
+  - surface: mn01 Caddyfile.mn01 (:8080 site, handle /apps/board*)
+    was: reverse_proxy https://tony-dell.taila0626a.ts.net:443
+    now: reverse_proxy https://idc02.taila0626a.ts.net:443
+    note: >
+      Edited 13:18 +07 on mn01; `caddy validate` clean; probed
+      http://127.0.0.1:8080/apps/board/index.html -> 200 through the chain
+      (mn01 :8080 -> idc02 tailnet front -> web-origin :8099 mirror of the
+      served checkout). ssot.routes.yml topology comment updated.
+  - surface: ada-ha dashboard chaba-admin (lovelace, on tony-omen :8125)
+    was: 'iframe url https://tony-dell.taila0626a.ts.net/apps/node-red/?v=2'
+    now: 'https://idc02.taila0626a.ts.net/apps/node-red/?v=2'
+    note: >
+      Mutated live via lovelace/config/save over websocket (AGENTS.md rule).
+      node-red runs on tony-omen :1880; the idc02 web-origin
+      (~/web-srv/caddy/Caddyfile, /apps/node-red/* -> 100.75.102.88:1880) is
+      the live edge — tony-ha.surf-thailand.com has no node-red route and the
+      public edge is CF-Access-gated anyway. Repo snapshot refreshed via
+      scripts/home-assistant/sync-ada-ha-chaba-admin.py.
+related_discovery:
+  card: apps-yml-host-url-still-tony-dell-x42 (OPS-1195)
+  detail: >
+    stacks/web/public/apps/apps.yml has 42 entries with
+    host_url https://tony-dell.taila0626a.ts.net rendered as absolute links by
+    /apps/index.html. Links still work (dell edge answers) but are retired-host
+    refs on a live surface the canary does not grep (deployed webroot is not in
+    its GREPS set). Sequencing on the card: migrate entries first, THEN add the
+    apps.yml path to consumer-canary GREPS or the canary re-fails.
+verify: |
+  ssh idc03 'systemctl --user start consumer-canary.service'   # expect exit 0, "CLEAN"
+  ssh mn01 'curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8080/apps/board/index.html'  # 200
+  # ada-ha chaba-admin -> node-red panel -> iframe now loads from idc02 edge
