@@ -1,0 +1,102 @@
+id: ada-chaba-instance
+title: Provision ada-chaba backend :8008 — the tony-ha lane presence for LINE group
+column: done
+updated: 2026-11-08 13:18
+priority: medium
+spec: 'Provision the chaba persona backend on idc03, answering "chaba" mentions in the shared LINE group (spec v3
+  on line-multihome-group). Per ha-ada-isolation.md pattern: (1) ada-chaba.service on :8008 cloned from ada-ha-*
+  shape w/ cgroup caps (MemoryMax/CPUQuota); (2) ~/.config/secrets/ada-chaba.env — ADA_INSTANCE_ID=chaba, own GEMINI
+  key/pool (NOT the shared one), HA upstream tony-ha via svc-chaba non-admin LLAT (or upstream_ha:none initially),
+  MDDB bank + ops/docs tools (kanban, SSOT, report API) — chaba = house/ops brain, not an Ada clone; (3) ada-ha-chaba-keys.json
+  — callers per authority matrix: tony=owner, kk=member, nhong=guest; (4) persona instructions — the house presence,
+  mention-quiet by default; (5) relay: LINE_NAME_BACKENDS chaba->ws://127.0.0.1:8008 + per-lane caller keys; (6)
+  deploy-ada.sh SERVICES membership in canary order; (7) SSOT: ssot.services + ada-persons entries. Depends on:
+  line-multihome-group mention router landing first.'
+note: Blocked on the mention-router deploy (line-multihome-group, running). Until then chaba mentions get polite
+  not-home — do not alias to ada.
+ref: ADA-0467
+comms:
+- at: 2026-10-11 16:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-24 20:25
+  from: tony
+  text: queued for processing
+- at: 2026-10-24 20:25
+  from: mn01
+  text: claimed
+- at: 2026-10-24 20:26
+  from: chaba
+  text: started devin-task-20261024-132557-provision-the-chaba-persona-ba on mn01 (dispatch)
+- at: 2026-10-24 20:34
+  from: devin
+  text: 'provisioning on idc03 per spec. Design settled post-rebrand check: :8008 ada-chaba = dedicated house/ops-brain
+    backend (own bank, ops/docs tools, svc-chaba LLAT); :8002 stays Tony personal Chaba. LINE chaba: repoint ->
+    :8008 last, after backend verified.'
+- at: 2026-10-24 20:49
+  from: devin
+  text: PROVISIONED on idc03 per spec. ada-chaba.service :8008 active (MemoryMax=2G/CPUQuota=150% + journal caps);
+    env ada-chaba.env (ADA_INSTANCE_ID=chaba); svc-chaba non-admin LLAT minted + verified (api/states 200, events->ada-ha-events-chaba);
+    ada-ha-chaba-keys.json mirrors caller values tony=owner/kk=member/nhong=guest; 10 memory banks mounted (personal-chaba
+    own bank + shared + read-only kb/ssot/chaba-docs); house-presence identity env; tool profile managed via persons.chaba
+    (32 incl/23 excl, lint
+- at: 2026-10-24 20:49
+  from: devin
+  text: 'raised request ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac: ada-chaba is on GEMINI_API_KEY_PAID as
+    its own pool (spec: own key, not the shared tony one) — but that key is also lite'
+- at: 2026-10-24 20:50
+  from: mn01
+  text: 'finished (ok): exit=0 e session checkpoint; a board request is open for a dedicated `GEMINI_API_KEY_CHABA`
+    mint. | devin-task-20261024-'
+- at: 2026-10-24 20:50
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261024-132557-provision-the-chaba-persona-ba\
+    \ is 15 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-10-24 20:50
+  from: chaba
+  text: pushed dispatch/20261024-132557-provision-the-chaba-persona-ba to origin
+- at: 2026-10-24 20:50
+  from: chaba
+  text: 'worktree kept: dirty — 8 uncommitted file(s)'
+- at: 2026-10-24 20:59
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''ada-chaba-is-on-gemini-api-key''] block close)'
+- at: 2026-10-25 09:01
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-25 19:12
+  from: tony
+  text: closed by tony
+- at: 2026-10-25 19:13
+  from: tony
+  text: closed by tony
+- at: 2026-10-25 19:14
+  from: tony
+  text: 'answered ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac: keep the paid assignement, I''ll fix it all later.'
+- at: 2026-11-08 13:18
+  from: tony
+  text: archived (13d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 e session checkpoint; a board request is open for a dedicated `GEMINI_API_KEY_CHABA` mint. | devin-task-20261024-132557-provision-the-chaba-persona-ba.service:
+    Consumed 26.345s CPU time over 24min 8.945s wall clock time, 253.8M memory peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-24 20:59
+requests:
+- id: ada-chaba-is-on-gemini-api-key-paid-as-i-7695ac
+  ask: 'ada-chaba is on GEMINI_API_KEY_PAID as its own pool (spec: own key, not the shared tony one) — but that
+    key is also litellm paid upstream, so a chaba storm could hit fleet REST. Mint a dedicated GEMINI_API_KEY_CHABA
+    in GCP console (like kk-gemini-key), or keep the PAID assignment?'
+  status: answered
+  at: 2026-10-24 20:49
+  from: devin
+  options:
+  - proceed
+  - hold
+  escalated_at: 2026-10-25 09:01
+  answer: keep the paid assignement, I'll fix it all later.
+review_kind: verify
+claim: {}
