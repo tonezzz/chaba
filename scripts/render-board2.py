@@ -156,6 +156,7 @@ PAGE = r"""<!doctype html>
       <button id="cols-btn" class="zoom-btn" title="show/hide columns" style="width:auto;padding:0 8px;font-size:12px">▦ columns</button>
       <div id="colmenu"></div>
     </div>
+    <a href="archive.html" class="zoom-btn" style="width:auto;padding:0 8px;font-size:12px;text-decoration:none" title="archived done cards">🗄 archive</a>
     <div class="ml-auto flex items-center gap-2">
       <span id="ny-pill" class="badge bg-amber-800/70 text-amber-100 px-2 py-0.5 rounded cursor-pointer hidden"></span>
       <span id="gen" class="text-[10px] text-slate-500"></span>
@@ -862,6 +863,59 @@ document.addEventListener('visibilitychange', () => {
 """
 
 
+ARCHIVE_PAGE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Card Archive</title>
+<style>
+  body{background:#0b1220;color:#e2e8f0;font:13px/1.45 system-ui,sans-serif;margin:0}
+  nav{background:#111a2e;border-bottom:1px solid #334155;padding:10px 16px;
+      display:flex;gap:12px;align-items:center;position:sticky;top:0}
+  a{color:#38bdf8;text-decoration:none} input{background:#0f172a;
+      border:1px solid #334155;border-radius:6px;color:#e2e8f0;
+      padding:5px 9px;font-size:13px}
+  #list{max-width:1100px;margin:14px auto;padding:0 16px}
+  .row{border-bottom:1px solid #1e293b;padding:7px 4px;cursor:pointer}
+  .row:hover{background:#111a2e} .ref{color:#38bdf8;font-weight:600;
+      margin-right:8px} .id{color:#64748b;font-size:11px;margin-right:8px}
+  .meta{color:#64748b;font-size:11px} .title{color:#cbd5e1}
+  #count{color:#64748b;font-size:12px}
+</style></head><body>
+<nav><a href="index.html">&larr; Board</a><b>Card Archive</b>
+<span id="count"></span>
+<input id="q" type="search" placeholder="Filter archived cards\u2026" style="margin-left:auto;width:260px">
+</nav>
+<div id="list"></div>
+<script>
+let DATA = null, q = '';
+const esc = s => { const d=document.createElement('div');
+  d.textContent=String(s??''); return d.innerHTML; };
+async function load() {
+  const r = await fetch('archive.json?t=' + Date.now(), {cache:'no-store'});
+  DATA = await r.json();
+  document.getElementById('count').textContent =
+    DATA.cards.length + ' cards \u00b7 generated ' + (DATA.generated||'');
+  render();
+}
+function render() {
+  const ql = q.toLowerCase();
+  const hit = (DATA.cards||[]).filter(c => !ql ||
+    ((c.title||'')+' '+c.id+' '+(c.ref||'')+' '+(c.brief||'')).toLowerCase().includes(ql));
+  document.getElementById('list').innerHTML = hit.map(c =>
+    `<div class="row" data-id="${esc(c.id)}"><span class="ref">${esc(c.ref||'')}</span>` +
+    `<span class="id">${esc(c.id)}</span><span class="title">${esc(c.title||'')}</span>` +
+    `<div class="meta">${esc(c.column||'')} \u00b7 updated ${esc(c.updated||'')}</div></div>`
+  ).join('') || '<div style="color:#64748b;padding:20px">no matches</div>';
+}
+document.getElementById('q').addEventListener('input', e => { q = e.target.value; render(); });
+document.getElementById('list').addEventListener('click', e => {
+  const r = e.target.closest('.row'); if (r) location.href = 'index.html#' + r.dataset.id;
+});
+load();
+</script></body></html>
+"""
+
+
 def main():
     man = yaml.safe_load(MANIFEST.read_text())
     card_dir = REPO / man["card_dir"]
@@ -869,7 +923,8 @@ def main():
 
     state_hash = None
     if "--if-changed" in sys.argv:
-        state_hash = _rb.dir_hash(card_dir)
+        state_hash = (_rb.dir_hash(card_dir)
+                      + _rb.dir_hash(card_dir / "archive"))
         if STATE.exists() and STATE.read_text().strip() == state_hash \
                 and out_path.exists():
             return 0
@@ -877,6 +932,19 @@ def main():
         # — a crashed render must not poison the skip-set, OPS-1107).
 
     cards = _rb.load_cards(man)
+    # archived cards (cards/archive/*.yml) get their own payload + page —
+    # off the main board, still browsable (KNB-1178)
+    archive_cards = []
+    adir = card_dir / "archive"
+    if adir.is_dir():
+        for p in sorted(adir.glob("*.yml")):
+            c = yaml.safe_load(p.read_text())
+            if not isinstance(c, dict):
+                c = {}
+            c.setdefault("id", p.stem)
+            archive_cards.append(c)
+    archive_cards.sort(
+        key=lambda c: str(c.get("updated") or ""), reverse=True)
     rank = {"high": 0, "medium": 1, "low": 3}
     cards.sort(key=lambda c: rank.get(str(c.get("priority") or "").lower(), 2))
     runs_by_slug = _rb._run_branches()
@@ -902,6 +970,10 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     json_path = out_path.with_name("cards.json")
     json_path.write_text(json.dumps(payload, ensure_ascii=False, default=str))
+    out_path.with_name("archive.json").write_text(json.dumps(
+        {"generated": ts, "cards": archive_cards},
+        ensure_ascii=False, default=str))
+    out_path.with_name("archive.html").write_text(ARCHIVE_PAGE)
     out_path.write_text(page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
