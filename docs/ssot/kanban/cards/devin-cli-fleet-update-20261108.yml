@@ -40,6 +40,10 @@ comms:
     MacBook remains 3000.11.3; local `devin update` returned `Auto-update is not available for this installation`.
     Its `~/.local/bin/devin` is a standalone static binary not owned by dpkg. No Devin Desktop was restarted and
     all runner timers remain paused.'
+- at: 2026-11-08 19:38
+  from: devin
+  text: 'raised request devin-macbook-install-channel: MacBook CLI auto-update is unavailable for its standalone
+    binary. May I run the documented official installer `curl -fsS'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -53,4 +57,15 @@ requests:
   - Hold — leave all CLI versions unchanged.
   suggested: Yes — run the interactive CLI updates, then verify versions and agent health (recommended).
   answer: Yes — run the interactive CLI updates, then verify versions and agent health (approved by Tony via chat).
+- id: devin-macbook-install-channel
+  ask: MacBook CLI auto-update is unavailable for its standalone binary. May I run the documented official installer
+    `curl -fsSL https://cli.devin.ai/install.sh | bash` to replace/update `~/.local/bin/devin` and verify it? This
+    contacts the vendor, changes the CLI install layout, and will not restart Devin Desktop.
+  status: open
+  at: 2026-11-08 19:38
+  from: devin
+  options:
+  - Yes — run the official installer on MacBook and verify version/doctor (recommended).
+  - No — leave MacBook at 3000.11.3 and mark the CLI update blocked.
+  suggested: Yes — run the official installer on MacBook and verify version/doctor (recommended).
 awaiting_action: true
