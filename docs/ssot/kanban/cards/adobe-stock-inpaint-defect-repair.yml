@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: backlog
-updated: 2026-11-08 08:00
+updated: 2026-11-08 08:33
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -45,3 +45,10 @@ comms:
   text: 'Drive layout migrated: 30-generated-raw/ -> 30-candidates/<asset-id>/ (image+manifest together per candidate);
     picker exports -> 50-picker-exports/. land-render.py + campaign-status.py updated; QC doc + SESSION paths rewritten.
     11 candidate dirs live. comparison-g auto-landed by lane-watcher cron (omen Q8 wallfix completed).'
+- at: 2026-11-08 08:33
+  from: devin
+  text: 'cf-inpaint lane added to land-render.py (--lane cf-inpaint --job @cf/runwayml/stable-diffusion-v1-5-inpainting
+    --init-image SRC --mask MASK --prompt ...). Verified input format live: image+mask must be ARRAYS of b64 strings.
+    Token lives on tony-omen cloudflare.env (CF_API_WORKER_TOKEN) — run with env pulled via ssh, not stored on dell.
+    BLOCKED: CF daily 10k neurons still exhausted (429) — retry after reset. fix2 QC recorded: relight OK, corner+shelf
+    still defective -> picker region repair is nex'
