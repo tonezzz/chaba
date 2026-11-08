@@ -1,7 +1,7 @@
 id: jevnest-kk-mac-capacity-loop
 title: JevNest KK-Mac capacity-aware queue refill
 column: doing
-updated: 2026-11-07 14:20
+updated: 2026-11-08 08:03
 brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
   load, disk, and fallback gates.
 priority: high
@@ -77,3 +77,10 @@ comms:
     gates on ssh+ollama and runs the 115-case card-judgment corpus on kk-mac''s pulled models — the concrete ''can
     it replace paid side-call lanes'' measurement, zero spend. Trigger = next live heartbeat window (Mac offline
     19h). Capacity-loop producer could queue it.'
+- at: 2026-11-08 08:03
+  from: devin
+  text: '2026-11-08: installed the refreshed unit on tony-dell (was running stale generated args --max-depth 10
+    --max-new 5 under 240s TimeoutStartSec — Result=timeout, ExecMainStatus=15, x50 unit-fails in host digest).
+    Re-synced dell exec checkout (was 58 behind) + render-jobs --install → now --max-depth 3 --max-new 3 --budget-s
+    90. Verified: manual run completed in seconds, Result=success, no timeout. Watch for next scheduled tick to
+    confirm the fail-streak ends.'
