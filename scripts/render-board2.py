@@ -214,7 +214,7 @@ function cardsFor(t) {
 }
 function matchQ(c, qq) {
   if (!qq) return true;
-  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
+  const hay = ((c.title||'')+' '+c.id+' '+(c.ref||'')+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
   return qq.toLowerCase().split(/\s+/).every(w => hay.includes(w));
 }
 // card-level ask — one standing decision per card, schema
