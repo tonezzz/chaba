@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: backlog
-updated: 2026-11-08 20:46
+updated: 2026-11-08 20:58
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -43,6 +43,12 @@ comms:
     be path-locked to the canonical ada.md, with preview/hash check, explicit confirm, safe source commit/push,
     and a verified idc02 sync; expose one endpoint to Ada plus a Devin client. Token savings for this one command
     edit are likely small; repeated workflows may save round-trip/'
+- at: 2026-11-08 20:58
+  from: devin
+  text: 'New live-state check: idc02 has renamed the running OpenCode service/workspace from ada-opencode to ada-code
+    (ada-code.service active; old ada-opencode.service not found). The live command and backup now live under ~/.local/share/ada-code/workspace/.opencode/commands/ada.md
+    and ~/.local/share/ada-code/ada-command-before-sweep-menu-20261108.md. Chaba origin/master still only has stacks/idc02/ada-opencode/Containerfile,
+    so the canonical-source/sync design must target ada-code and reconcile that re'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
