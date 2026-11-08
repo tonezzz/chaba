@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-tools
 title: Timer ada-scenario-tools on idc03 failing
 column: doing
-updated: 2026-11-08 10:37
+updated: 2026-11-08 10:39
 priority: high
 tags:
 - timer-alert
@@ -231,6 +231,13 @@ comms:
   from: devin
   text: '[triage 2026-11-08] dispatch picked up — SSHing to idc03 to read journal of ada-scenario-tools.service;
     will determine if exit-code is real crash, gate refusal, or suite findings.'
+- at: 2026-11-08 10:39
+  from: devin
+  text: '[investigated 2026-11-08] Root cause: stale DEPLOYED wrapper, not the repo fix. OPS-0581 contract (exit-1-with-Score-marker
+    -> 0) merged Oct 13, but scenario-suite-run.sh is copy-on-install by design (install.sh -> ~/.local/share/ada-scenario-runner/)
+    and the deployed copy stayed pre-OPS-0581 until TODAY 10:34 when install.sh re-ran on idc03. Proof: Nov 6 05:55
+    run completed, printed **Score: 0.167**, then old wrapper passed exit 1 through -> FAILED exit-code. Same on
+    Oct 30 (Score 0.0). Deploye'
 action:
   status: running
   type: dispatch
