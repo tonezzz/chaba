@@ -1,0 +1,42 @@
+id: wiki-member-onboarding-kk-nhong-educatio-e38baf
+title: wiki-member-onboarding — KK/Nhong Education+Reports access
+column: backlog
+updated: 2026-11-08 10:44
+tags:
+- wiki
+- members
+- education
+spec: 'Members get read-only wiki access via new ''members'' Lockdown group (added 2026-11-08, LocalSettings backup
+  .devin-backup-members-20261108): read on Education:/Education_talk:/Reports:/Reports_talk: only — NOT Infrastructure:/PrivateNews:.
+
+
+  STATE: members group live + verified (anon still denied, wiki healthy). KK instruction file written: idc03:~/.config/secrets/wiki-kk.txt
+  (Thai). Accounts are Google-OIDC only — local createaccount is disabled by design (authmanager-create-no-primary);
+  username = email.
+
+
+  REMAINING:
+
+  1. KK: she signs in once at wiki.h3.gizmo-thailand.com -> Special:UserLogin -> Google button -> kkgtaday24@gmail.com
+  (or kkgt6019) -> account auto-creates -> THEN run userrights API as ada bot to add her to ''members'' group. Verify
+  by surface: anon denied, KK-account read OK on Education:Index.
+
+  2. Nhong: NEED HER EMAIL — not in records (kk-ha card had it as open ask, value never recorded). Once supplied:
+  same OIDC flow + members group + Thai instruction file in ~/.config/secrets/.
+
+  3. Optional later: add member emails to CF Access policy on wiki-internal.surf-thailand.com (app 189b0d42-1b10-4ef8-a336-c23e0ad0306c,
+  manageable via tony-dell cloudflare.env token) if they should use the private hostname too.
+
+
+  Rollback: remove ''members'' from the four Lockdown read arrays + drop $wgGroupPermissions[''members''] in LocalSettings.php
+  (FTP path documented in OPS-1046 comms).'
+action:
+  type: manual
+ref: KNB-1163
+comms:
+- at: 2026-11-08 10:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-08 10:44
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
