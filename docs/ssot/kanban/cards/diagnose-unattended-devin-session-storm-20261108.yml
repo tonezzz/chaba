@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
 column: backlog
-updated: 2026-11-08 16:02
+updated: 2026-11-08 16:59
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -32,3 +32,9 @@ comms:
     it had no active devin-task units at final verification. Dell remains idle/no runner-agent timer. Root-cause
     race is tracked in KNB-1196; keep Omen, MacBook, and idc02 timers disabled until that issue is understood and
     Tony approves resume.'
+- at: 2026-11-08 16:59
+  from: devin
+  text: '2026-11-08: KNB-1196 is deployed (PR #128, merge 91f327ca). Root cause was board-api /action claim/move/finish
+    returning success without persisting state. Deployed API health is 200; a live action move persisted and board2
+    cards.json now shows KNB-1196 done. idc03 kanban-dispatch and runner-agent timers remain disabled; Omen, MacBook,
+    and idc02 runner-agent timers remain disabled. No runner timers were re-enabled.'
