@@ -238,8 +238,24 @@ comms:
     0.0**, 7 fails/0 tool calls) and exited 1 -> exit-code alert. Wrapper was updated Nov 7 but units were never
     re-installed. Re-ran stacks/services/ada-scenario-runner/install.sh on idc03: reports/cms/research now on :8005
     ada-dev free lane w/ scenario-provider-gate ExecCondition'
+- at: 2026-11-08 10:38
+  from: devin
+  text: 'raised request bench-virtual-key-on-litellm-is-over-its-795583: Bench virtual key on LiteLLM is over its
+    $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns 422 budget_exc'
 action:
   status: running
   type: dispatch
   lane: devin
   runner: idc02
+requests:
+- id: bench-virtual-key-on-litellm-is-over-its-795583
+  ask: 'Bench virtual key on LiteLLM is over its $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns
+    422 budget_exceeded -> provider gate will CLEAN-SKIP weekly reports/cms/research suites (no alert, but no benchmark
+    coverage) until Dec 1. Options: [1] raise bench max_budget to $5/30d ★ (~2x headroom vs observed ~$2.7/30d burn,
+    keeps tripwire) [2] reset spend counter now, keep $2 [3] leave — accept coverage gap til Dec 1'
+  status: open
+  at: 2026-11-08 10:38
+  from: devin
+  options:
+  - proceed
+  - hold
