@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
-column: doing
-updated: 2026-11-08 08:39
+column: review
+updated: 2026-11-08 08:40
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,7 +29,7 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: running
+  status: done
   lane: devin
   sweep:
     failed_noted: 2026-11-08 07:18
@@ -38,8 +38,10 @@ action:
   model: swe-2-flash
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
-  verified: false
+  verified: true
   runner: tony-macbook
+  result: 'exit=0 08-083649-define-and-implement-the-hands.md` and a status comment posted to the card. | devin-task-20261108-083649-define-and-implement-the-hands.service:
+    Consumed 2min 14.345s CPU time over 2min 32.111s wall clock time, 331.7M memory peak.'
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -164,4 +166,9 @@ comms:
     Telegram lifecycle, dry-run + daily report + kill switch, 1/2/3-day checklist, 5 pilot cards all ELIGIBLE. Re-ran
     tests: 25/25 waiting_cards, 18/18 kanban_act; --board and --preflight healthy. No new code needed; day-2/3 items
     remain (live pilot run, warn->strict flip after drill).'
+- at: 2026-11-08 08:40
+  from: tony-macbook
+  text: 'finished (ok): exit=0 08-083649-define-and-implement-the-hands.md` and a status comment posted to the card.
+    | devin-task-20261108-08364'
 claim: {}
+review_kind: verify
