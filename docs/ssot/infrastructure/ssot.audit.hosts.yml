@@ -777,6 +777,14 @@ hosts:
         scope: user
         expected_state: active
         critical: false
+      - name: bge-rerank.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: warm bge-reranker-v2-m3 endpoint on tailnet :11555 (GPU lane,
+          chaba-ml-gpu-venv; coexists with ollama via expandable_segments) —
+          landed 2026-11-08 MEM-1129, #108/#109
       - name: openjev-student.service
         type: service
         scope: user
