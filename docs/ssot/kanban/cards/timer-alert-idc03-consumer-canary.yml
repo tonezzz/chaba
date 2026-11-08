@@ -1,7 +1,7 @@
 id: timer-alert-idc03-consumer-canary
 title: Timer consumer-canary on idc03 failing
 column: backlog
-updated: 2026-11-08 13:00
+updated: 2026-11-08 13:06
 priority: high
 tags:
 - timer-alert
@@ -54,3 +54,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 11:21) of `consumer-canary.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 13:06
+  from: devin
+  text: '2026-10-08 sweep: canary itself works — ran clean, found 2 REAL retired-host refs and only failed on board-api
+    comment timeout (load, now fixed). Findings: (1) mn01 caddy reverse_proxy -> tony-dell.taila0626a.ts.net:443;
+    (2) ada-ha chaba-admin node-red iframe -> same FQDN. Both resolve (100.68.142.13) — convention drift, not outage.
+    Follow-up: repoint to canonical name (verify TLS cert covers short name first). Findings belong on consumer-canary-standing-retired-hostnam-6aa4a2.'
