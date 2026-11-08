@@ -1,0 +1,67 @@
+id: voice-combo-openai-realtime
+title: 'Bench: OpenAI Realtime hosted baseline (needs key)'
+column: done
+review_kind: decide
+updated: 2026-11-08 13:22
+priority: low
+program: voice-fallback
+blocked_by: voice-bench-harness
+tags:
+- voice
+- bench
+spec: 'Bench combo `openai-realtime` via scripts/voice-bench/bench.py IF OPENAI_API_KEY is available in ~/.config/secrets/
+  — stream all fixtures through OpenAI Realtime (speech-to-speech, tool calling). This is the paid reference ceiling.
+  If no key exists, mark result skipped: no-key and note in comms — do not fail the card.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-medium
+  status: done
+  runner: mn01
+  result: 'exit=0 atch-outcome-20261008-233537-bench-combo-openai-realtime-vi.md`. No commits or pushes were made.
+    | devin-task-20261008-233537-bench-combo-openai-realtime-vi.service: Consumed 4.685s CPU time over 42.802s wall
+    clock time, 107.7M memory peak.'
+  verified: true
+comms:
+- at: 2026-10-08 18:11
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-08 18:30
+  from: tony
+  text: queued for processing
+- at: 2026-10-09 06:35
+  from: mn01
+  text: claimed
+- at: 2026-10-09 06:35
+  from: chaba
+  text: started devin-task-20261008-233537-bench-combo-openai-realtime-vi on mn01 (dispatch)
+- at: 2026-10-09 06:36
+  from: devin
+  text: 'skipped: no-key — no OPENAI_API_KEY in ~/.config/secrets/ (checked files + env). Also note: scripts/voice-bench/bench.py
+    does not exist yet; harness card voice-bench-harness is still a blocker.'
+- at: 2026-10-09 06:37
+  from: mn01
+  text: 'finished (ok): exit=0 atch-outcome-20261008-233537-bench-combo-openai-realtime-vi.md`. No commits or pushes
+    were made. | devin-task-202'
+- at: 2026-10-09 06:37
+  from: chaba
+  text: 'session-end checkpoint 49a24957: 1 leftover file(s) committed'
+- at: 2026-10-09 06:37
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-09 06:47
+  from: chaba
+  text: 'merge-sweep: merged 59293a1f (dispatch/20261008-233537-bench-combo-openai-realtime-vi from mn01) -> origin/master'
+- at: 2026-10-09 17:10
+  from: tony
+  text: closed by tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0256'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (29d in done, verified)
+pipeline: ci
+claim: {}
+ref: ADA-0256
