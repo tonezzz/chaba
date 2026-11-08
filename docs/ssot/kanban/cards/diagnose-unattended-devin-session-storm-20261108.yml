@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
 column: backlog
-updated: 2026-11-08 20:03
+updated: 2026-11-08 21:09
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -51,6 +51,13 @@ comms:
 - at: 2026-11-08 20:03
   from: chaba
   text: 'answer-sweep: executed ''Keep all paused until a separate resumption approval (recomm'' -> put on hold'
+- at: 2026-11-08 21:09
+  from: devin
+  text: 'Tonight status check 2026-11-08 21:08 +07: Devin runner-agent/kanban-dispatch timers are disabled across
+    Omen, MacBook, idc02, idc03, and mn01; Dell has no runner timer. Other automation remains: idc03 ada-scenario-smoke.service
+    started 21:00 and is still running; provider gate passed with ada-dev active and the free-lane key, but ada_opencode_control
+    reported 2 failures. con01 cline-intake.timer is enabled; its last tick skipped because cline.deliverable was
+    missing, next tick ~21:16 +07. House'
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
