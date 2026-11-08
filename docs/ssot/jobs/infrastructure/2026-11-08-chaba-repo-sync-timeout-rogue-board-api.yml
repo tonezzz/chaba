@@ -1,0 +1,81 @@
+id: 2026-11-08-chaba-repo-sync-timeout-rogue-board-api
+domain: infrastructure
+date: 2026-11-08
+status: resolved
+cards:
+- timer-alert-tony-dell-chaba-repo-sync
+- chaba-exec-checkout-divergence
+ref: OPS-1169
+
+summary: >
+  chaba-repo-sync.service on tony-dell failed all morning
+  (result=timeout at 10:42 / 11:28 / 12:02, exit-code at 10:54 /
+  11:41 / 12:15, signal at 12:33). Root cause: an orphaned
+  board-api.py process (spawned ~Nov 4 inside the app-devin-desktop
+  scope; chaba-board-api.service was .parked/dead by design) kept
+  listening on 127.0.0.1:8787 bound to ~/CascadeProjects/chaba —
+  the exec-role checkout, not the served one. Every caller that
+  defaults to loopback 8787 on dell (timer-sentinel.py,
+  board-cli.py, reconcile-local-conflicts.py primary base) wrote
+  through it, and board-api's immediate _commit_write produced 837
+  unpushed local "board-api comment/action/card" commits between
+  10:31 and 12:19. Each 15-min git pull --rebase --autostash then
+  replayed the whole pile — card-union merge driver invocations,
+  .ref-seq conflict churn, and reconcile flag posts (~30s each via
+  slow door) — burning ~5min CPU until TimeoutStartSec=300 killed
+  it; the merge fallback then died on "merge refused before
+  conflict stage (dirty tree?)".
+
+resolution:
+  - rogue board-api killed ~12:30 (PID 262964, per card
+    chaba-exec-checkout-divergence); nothing listens on dell:8787 now
+  - manual git reset --hard origin/master 12:34:25 discarded the
+    837-commit pile; pull fast-forwarded; 12:35 and 12:51 ticks
+    healthy (7.7s)
+  - discarded tip 5e656cf3cb remains in the exec checkout reflog
+    (~90d) if deeper audit is needed
+
+lost_write_recovery:
+  method: semantic YAML diff of 5e656cf3cb vs origin/master across
+    all 177 differing card files; 83 had content unique to the
+    discarded side
+  replayed_to_canonical:
+  - ada-opencode-control-plane-tab (2 comms — close verification + closed)
+  - ada-opencode-nl-card-resolve (2 comms — verify + closed)
+  - adobe-stock-render-preview-wiring (2 comms — follow-up + closed)
+  - opencode-retry-stale-worktree (1 comm — OPS-1039 unblock evidence)
+  - line-wp-site-manager (2 watcher comms, folded into one)
+  - keep-eye-on-floods-4f0f97 (open request re-raised as
+    re-raised-2026-11-08-original-request-fl-ea7044)
+  skipped:
+  - ~1000 sentinel "[still suspicious]" comms — re-derive on next scan
+  - timer-alert queued/done scalar conflicts — canonical already
+    dispatched and completed those cards today
+  - 6 timer-alert-* cards existing only on the discarded side —
+    sentinel recreates if still failing
+  needs_human_triage:
+  - ops-local-conflict-guard — discarded=done vs origin=review
+  - colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0 — discarded=review
+    vs origin=backlog
+  - ada-opencode-live-demo-opsread — discarded=review vs origin=done
+  - ada-opencode-repair-menu-card / adobe-stock-illustration-pivot-test
+    — discarded=backlog vs origin=review
+
+residuals:
+  - "exec checkout has uncommitted leftovers: staged focus-inbox
+    2026-11-08-053709-ha-auth-tony-ha-tony-omen.yml + modified
+    stacks/web/public/apps/ha/ssot.ui.ha.yml"
+  - 7 autostash entries retained in stash list (GC drops >7d only)
+  - ~/.config/systemd/user/chaba-board-api.service.parked still on
+    dell — declared-or-dead hygiene violation
+  - "loopback-8787 default in timer-sentinel/board-cli/reconcile is a
+    repeat-wedge trap: anything that rebinds dell:8787 strands card
+    writes off-canonical again. Follow-up: repoint dell defaults to
+    board-cli --ssh idc03 / BOARD_API env, or add a canary that
+    alerts when 127.0.0.1:8787 answers on non-served hosts"
+  - ~30 stale worktrees on dell (dispatch-wt-*, /tmp/chaba-*)
+
+verify:
+  - "journalctl --user -u chaba-repo-sync.service -n 20 (on dell) — ticks now finish in <10s"
+  - "cd ~/CascadeProjects/chaba && git rev-list --left-right --count HEAD...origin/master — 0 0"
+  - "ss -tlnp on dell — nothing on 127.0.0.1:8787"
