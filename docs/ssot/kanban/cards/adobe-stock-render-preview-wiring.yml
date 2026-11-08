@@ -1,7 +1,7 @@
 id: adobe-stock-render-preview-wiring
 title: Wire rendered image URLs into Adobe Stock asset preview metadata
 column: backlog
-updated: 2026-11-08 10:16
+updated: 2026-11-08 10:52
 brief: Real campaigns need assets.json entries carrying preview_url/thumbnail_url so ada_adobe_stock_reuse renders
   real thumbnails. Today only the fixture has them.
 priority: high
@@ -25,3 +25,10 @@ comms:
 - at: 2026-11-08 10:16
   from: devin
   text: card captured via board-api
+- at: 2026-11-08 10:52
+  from: devin
+  text: 'Implemented + verified live. scripts/adobe-stock/publish-previews.py (chaba PR #110) archives landed 30-candidates
+    images to the LINE relay media archive (durable relay-img URLs), upserts preview_url/thumbnail_url/source_ref
+    into campaign RUN.json, rebuilds + publishes bounded indexes to gdrive:ada-nest-adobe-stock/indexes. AS-2026-11-05-REMOTE-WORK-001:
+    11 assets published; opencode-ada reuse now returns 10 available assets with real thumbnails. Index sync to
+    idc02 workspace currently manual (g'
