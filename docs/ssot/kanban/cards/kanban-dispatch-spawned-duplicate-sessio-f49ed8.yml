@@ -1,0 +1,22 @@
+id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
+title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
+column: backlog
+updated: 2026-11-08 13:22
+priority: medium
+tags:
+- kanban-dispatch
+- race
+- auto
+spec: 'Reproduce path: queue a dispatch card while merge-sweep/board-api contention is high; check whether two runners
+  can both claim. Done-condition: claim is atomic cross-host (second claimer gets already-running) and a committed
+  write cannot be reverted by a concurrent stale-load save.'
+note: 'Observed 2026-11-08 13:16 +07: card timer-alert-idc03-chaba-jobs got TWO dispatches 28s apart — devin-task-20261108-131613
+  on tony-macbook AND devin-task-20261108-131641 on idc02 — both ran to completion on the same card (duplicate session
+  cost). During the same window, a /action do=close that returned ok ("moved to done") was later absent from the
+  card — state showed backlog/queued/updated=13:17 with no close comm — consistent with a stale-load clobber while
+  merge-sweep, kanban-dispatch, and bo'
+ref: KNB-1196
+comms:
+- at: 2026-11-08 13:22
+  from: devin
+  text: card captured via board-api
