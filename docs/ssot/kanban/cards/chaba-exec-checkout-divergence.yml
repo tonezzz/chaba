@@ -1,0 +1,21 @@
+id: chaba-exec-checkout-divergence
+title: 'tony-dell chaba exec checkout diverged: rogue board-api + 837 unpushed commits'
+column: backlog
+updated: 2026-11-08 12:20
+brief: '~/CascadeProjects/chaba on tony-dell is ahead 837 / behind 521 vs origin/master. ROOT CAUSE FOUND 2026-11-08:
+  an orphaned board-api.py (PID 262964, spawned inside app-devin-desktop scope ~Nov 4, unit chaba-board-api.service
+  is .parked/dead by design) squats on 127.0.0.1:8787 and commits card writes to this exec checkout — writes never
+  push, so local diverges and board-cli defaults strand writes off-canonical. Killed the process 2026-11-08 ~12:30;
+  canonical board-api is on idc03 (use board-cli --ssh idc03). REMAINING: (1) inventory the 837 local commits for
+  writes unique vs origin (172 card fil'
+priority: high
+tags:
+- infra
+spec: See brief. Do NOT reset --hard; inventory unique local card writes first (git log origin/master..HEAD -- docs/ssot/kanban/cards/),
+  replay missing ones via board-cli --ssh idc03, then reconcile. The .parked chaba-board-api unit must stay dead
+  — canonical writer is idc03 served checkout.
+ref: SYS-1175
+comms:
+- at: 2026-11-08 12:20
+  from: tony
+  text: card captured via board-api
