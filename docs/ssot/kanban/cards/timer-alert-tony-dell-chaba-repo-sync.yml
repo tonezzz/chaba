@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-dell failing
 column: doing
-updated: 2026-11-08 12:50
+updated: 2026-11-08 12:52
 priority: high
 tags:
 - timer-alert
@@ -71,6 +71,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 12:33) of `chaba-repo-sync.service` on `tony-dell` result=signal — investigate
     journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:52
+  from: devin
+  text: 'ROOT CAUSE (verified 2026-11-08): orphaned board-api.py (spawned ~Nov 4 inside devin-desktop scope) squatted
+    on dell 127.0.0.1:8787 bound to ~/CascadeProjects/chaba (exec role). Sentinel/board-cli defaults POSTed to it
+    -> 837 unpushed local board-api commits (10:31-12:19). Every 15-min pull --rebase replayed the whole pile (card-union
+    driver + .ref-seq churn + reconcile flag posts) -> ~5min CPU -> TimeoutStartSec=300 kills / merge-fallback exit-code.
+    Cleared ~12:30-12:34: rogue killed (per chaba'
 action:
   status: running
   type: dispatch
