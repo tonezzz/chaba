@@ -1,0 +1,21 @@
+id: ada-opencode-v2-upgrade
+title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
+column: backlog
+updated: 2026-11-08 12:10
+priority: medium
+tags:
+- ada
+- opencode
+- upgrade
+- idc02
+spec: 'ada-opencode on idc02 runs opencode 1.19.4 via pinned build ARG OPENCODE_VERSION in Containerfile; upstream
+  v2.2.6 (Nov 6). Target v2.2.5 (Oct 30 — past 7-day supply window; v2.2.6 too new). Steps: (1) verify ada_mcp.py
+  plugin API compat vs v2 plugin SDK, (2) bump ARG + rebuild localhost/ada-opencode + bump @opencode-ai/plugin dep
+  to matching v2, (3) restart ada-opencode.container, (4) regression: re-run the opsread fixture path (preflight
+  receipt -> confirmed dispatch -> runner-agent pickup -> artifact -> verifier) — perfect existing acceptance test.
+  Bonus: v2.2.x adds ''opencode run --worktree'' useful for dispatch worktrees.'
+ref: ADA-1174
+comms:
+- at: 2026-11-08 12:10
+  from: devin
+  text: card captured via board-api
