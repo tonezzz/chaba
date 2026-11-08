@@ -1,0 +1,21 @@
+id: runner-host-gate-card-visibility
+title: host-level claim gates skip before per-card eval — no defer note reaches the card
+column: backlog
+updated: 2026-11-08 12:46
+priority: medium
+tags:
+- runner-agent
+- visibility
+- waiting-cards
+spec: 'OPS-1097 made per-card unclaimability visible, but host-level gates (load, claim-cap, quiet-hours) skip the
+  whole claim pass BEFORE card iteration — so no defer note lands and queued cards still look silently starving
+  at board level. Observed 2026-11-08: unattended-pilot-health-probe sat queued 9min on idc03 while 256 passes were
+  load-skipped; the card showed nothing. Extend the OPS-1097 mechanism upward: when a host-level gate fires, write
+  a rate-limited defer note to queued cards it would otherwise evaluate (or a single fleet-level note naming host+gate+current
+  value, e.g. ''idc03 load/core 1.05 > cap 0.85''). Rate-limit: note only on gate-state change or max once per hour
+  — not every tick.'
+ref: KNB-1183
+comms:
+- at: 2026-11-08 12:46
+  from: tony
+  text: card captured via board-api
