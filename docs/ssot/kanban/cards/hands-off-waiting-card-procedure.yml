@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 08:30
+updated: 2026-11-08 08:36
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,7 +29,7 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-08 07:18
@@ -39,6 +39,7 @@ action:
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
   verified: false
+  runner: tony-macbook
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -150,4 +151,7 @@ comms:
 - at: 2026-11-08 08:30
   from: chaba
   text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-08 08:36
+  from: tony-macbook
+  text: claimed
 claim: {}
