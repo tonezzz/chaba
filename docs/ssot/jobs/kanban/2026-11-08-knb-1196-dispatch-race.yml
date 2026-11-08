@@ -1,0 +1,76 @@
+title: KNB-1196 duplicate dispatch and stale card-write race
+subtitle: Diagnose and close the cross-host dispatch race while keeping affected runners paused
+icon: target
+
+planning:
+  goal: Identify and fix, or prove already fixed, the duplicate-dispatch and stale-card-write race in KNB-1196.
+  scope:
+    - Trace card claims and writes through board-api, runner-agent, kanban-dispatch, merge-sweep, and git-safe-pull.
+    - Add deterministic regression coverage for single-winner claims and stale-write preservation.
+    - Verify current live evidence without re-enabling paused runners.
+    - Exclude production deployment and runner resumption until separately approved.
+  success_criteria:
+    - A concurrent claim test proves only one host can claim a queued card.
+    - A stale or concurrent writer cannot revert a committed running/closed card state.
+    - Relevant test suites pass and KNB-1196 receives verified findings.
+    - Omen, MacBook, and idc02 runners remain paused unless Tony explicitly approves resumption.
+  risks:
+    - A card state regression could create duplicate work or erase a close/claim.
+    - A production board-api change could affect all cards; keep live deployment out of scope pending approval.
+    - Re-enabling paused runners before a fix is verified could recreate the session storm.
+  resources:
+    - Isolated dispatch worktree based on origin/master.
+    - Board API on idc03 and paused runner hosts Omen, MacBook, and idc02.
+    - tests/board and tests/test-kanban-commit.sh.
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: KNB-1196 duplicate dispatch / stale-write race
+      file: docs/ssot/kanban/cards/kanban-dispatch-spawned-duplicate-sessio-f49ed8.yml
+
+processing:
+  status: in_progress
+  started_at: "2026-11-08T16:06:00+07:00"
+  steps:
+    - id: 1
+      label: Confirm live card and runner containment
+      status: completed
+      notes: KNB-1196 is open. Omen, MacBook, and idc02 runner-agent timers are disabled; no active devin-task units remained. Dell had no runner-agent timer.
+    - id: 2
+      label: Trace claim and card-write paths
+      status: completed
+      notes: Confirmed /action do=claim, move, and finish changed the loaded card under the request flock but omitted save(); callers received HTTP 200 while persisted state stayed unchanged. Runner-agent and kanban-dispatch both use the idc03 board API/lock, so the missing persistence allowed subsequent claimers to see queued state.
+    - id: 3
+      label: Reproduce and add regression tests
+      status: completed
+      notes: The loopback HTTP concurrency test failed before the fix with two 200 claims and a queued file; it now gets one 200 and one 400. Added persistence tests for move and finish.
+    - id: 4
+      label: Implement minimal fix and verify
+      status: completed
+      notes: Handler now timestamps and saves claim/move/finish under the existing flock. Targeted tests, 67 dispatch/runner/merge-sweep tests, py_compile, and the 59-case safe-pull integration passed. tests.board.test_board_api_reads has a separate timeout on its existing single-card 404 path; it reproduces without touching this change.
+  decisions: []
+  changes:
+    - file: scripts/board/board-api.py
+      summary: Persist /action claim, move, and finish mutations before releasing the shared request lock.
+    - file: tests/board/test_board_api_action_persistence.py
+      summary: Add HTTP-level concurrent-claim and move/finish persistence regressions.
+
+followup:
+  verification:
+    - Targeted HTTP regression tests: 3 passed.
+    - Dispatch/runner/merge-sweep regression tests: 67 passed.
+    - tests/test-kanban-commit.sh: 59 checks passed, including write-vs-safe-pull preservation.
+    - Confirm the affected runner timers remain disabled.
+    - Update KNB-1196 with evidence and deployment approval request.
+  rollback_plan:
+    - Revert any code-only patch in this branch.
+    - Keep Omen, MacBook, and idc02 runner-agent timers disabled; do not revert containment automatically.
+  handoff:
+    - Request explicit approval before production board-api deployment or runner resumption.
+  deferred:
+    - Live production deployment.
+    - Re-enabling runner-agent timers.
+
+report:
+  status: awaiting_approval
+  outcome: Root cause is confirmed and fixed in an isolated branch; local regression and safe-pull tests pass. Production board-api deployment and idc03 runner pausing are awaiting Tony's approval. Runners previously paused on Omen, MacBook, and idc02 remain disabled.
