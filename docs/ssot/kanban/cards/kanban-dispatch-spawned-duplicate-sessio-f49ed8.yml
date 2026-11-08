@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:02
+updated: 2026-11-08 16:12
 priority: medium
 tags:
 - kanban-dispatch
@@ -27,3 +27,10 @@ comms:
     task. runner-agent.service on the three paused hosts reports Result=signal because it was stopped while running;
     journals/task data were not deleted. The unattended title is a standard runner prompt prefix. Repeated finish
     calls against action.status=queued remain the likely d'
+- at: 2026-11-08 16:12
+  from: devin
+  text: Root cause reproduced and fixed in isolated branch dispatch/20261108-160548-knb-1196. /action do=claim,
+    move, and finish mutated the in-memory card under the flock but did not save it; the handler returned HTTP 200
+    while disk state stayed queued/running. The new loopback concurrency test reproduced two successful claims before
+    the fix and now proves one winner (200/400); move and finish persistence tests also pass. No production deployment
+    yet; Omen, MacBook, and idc02 runners remain paused.
