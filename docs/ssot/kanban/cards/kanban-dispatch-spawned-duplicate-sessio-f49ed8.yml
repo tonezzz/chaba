@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: doing
-updated: 2026-11-08 16:49
+updated: 2026-11-08 16:51
 priority: medium
 tags:
 - kanban-dispatch
@@ -87,6 +87,13 @@ comms:
 - at: 2026-11-08 16:49
   from: devin
   text: moved backlog -> doing
+- at: 2026-11-08 16:51
+  from: tony
+  text: 'answered knb1196-branch-gate-decision: Approve normal merge/deployment despite this unrelated red check;
+    no admin bypass.'
+- at: 2026-11-08 16:51
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
@@ -129,10 +136,12 @@ requests:
   ask: 'PR #128 has one red validate check; the local equivalent reproduces the branch-sprawl limit failure (57
     branches ahead). May I merge/deploy despite this unrelated repository gate, or should I hold for cleanup? I
     will not use an admin/bypass merge.'
-  status: open
+  status: answered
   at: 2026-11-08 16:42
   from: devin
   options:
   - Hold deployment until branch-sprawl validation is green (recommended).
   - Approve normal merge/deployment despite this unrelated red check; no admin bypass.
   suggested: Hold deployment until branch-sprawl validation is green (recommended).
+  answer: Approve normal merge/deployment despite this unrelated red check; no admin bypass.
+awaiting_action: true
