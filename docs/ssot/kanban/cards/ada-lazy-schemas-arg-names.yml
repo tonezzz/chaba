@@ -1,7 +1,7 @@
 id: ada-lazy-schemas-arg-names
 title: 'Lazy decls: keep arg names + required (fix cold-tool empty-args regression)'
 column: done
-updated: 2026-10-14 08:27
+updated: 2026-11-08 07:49
 priority: high
 tags:
 - ada
@@ -80,9 +80,15 @@ comms:
     real page family generated. Empty-args regression FIXED. First-turn in= 19,761 on this build (~+1.2k for arg
     names vs empty-schema floor; still ~-30% vs pre-lazy 28k). Flake note: one session phantom-claimed ''tried and
     hit error'' WITHOUT calling — no call on the wire; matches exi'
+- at: 2026-11-08 07:49
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
   at: 2026-10-14 08:13
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261014-075520-follow-up-to-ada-lazy-tool-sch.md
+awaiting_action: true
