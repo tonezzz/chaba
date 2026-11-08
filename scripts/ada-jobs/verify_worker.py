@@ -169,6 +169,11 @@ def llm_action(card, base_url, model, key, system=PROMPT):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
+    if card.get("_brief"):
+        snap["precedents"] = [{"similar_card": p["case_id"],
+                               "proven_move": p["gold"],
+                               "outcome": p["proven_right"]}
+                              for p in card["_brief"].get("precedents", [])]
     probes = probe_urls(card) + probe_local(card)
     if probes:
         snap["live_checks"] = probes
@@ -252,6 +257,13 @@ def run_once(args):
         print(f"[card] {cid} (age {_age_days(card)}d)")
         if not elig(card):
             print("  not eligible under matrix — skip"); continue
+        if args.with_brief:
+            try:
+                sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+                from brief_builder import build_brief
+                card["_brief"] = build_brief(card)
+            except Exception as e:
+                print(f"  brief build failed ({str(e)[:60]}) — continuing without")
         try:
             raw = llm_action(card, args.base_url, args.model, args.api_key,
                              system=CLEANUP_PROMPT if cleanup else PROMPT)
@@ -296,6 +308,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--with-brief", action="store_true",
+                    help="inject top-3 similar-card precedents (ADA-1132)")
     ap.add_argument("--card", default="")
     ap.add_argument("--sweep", choices=["", "cleanup"], default="")
     ap.add_argument("--min-age", type=int, default=21)
