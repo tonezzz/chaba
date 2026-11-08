@@ -1,0 +1,20 @@
+id: authority-matrix-single-source
+title: Deduplicate Ada authority matrix — kanban.py vs bench scorer vs corpus labels
+column: backlog
+updated: 2026-11-08 08:09
+priority: medium
+tags:
+- ada
+- refactor
+- kanban
+- bench
+spec: 'Root cause of the v2 corpus bug: the ''priority:high | review_kind:decide | prod|security|infra|deploy tag
+  = Tony''s call'' rule lives in 3 places that drifted — ada-voice kanban.py (_gate_reason + _queue), chaba scripts/bench/card-judgment/score.py
+  (ADA_SYSTEM prompt), build_corpus.py (close_gate). Fix: (a) kanban.py gains _card_gates(card)->reasons shared
+  by _gate_reason and _queue; (b) bench gains authority.py exporting close_gate() + the prose fragment used to build
+  ADA_SYSTEM, both derived from kanban.py semantics; corpus + scorer import it. Behavior-neutral refactor.'
+ref: ADA-1128
+comms:
+- at: 2026-11-08 08:09
+  from: devin
+  text: card captured via board-api
