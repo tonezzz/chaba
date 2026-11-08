@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-reports
 title: Timer ada-scenario-reports on idc03 failing
-column: doing
-updated: 2026-11-08 10:38
+column: review
+updated: 2026-11-08 10:39
 priority: high
 tags:
 - timer-alert
@@ -242,11 +242,19 @@ comms:
   from: devin
   text: 'raised request bench-virtual-key-on-litellm-is-over-its-795583: Bench virtual key on LiteLLM is over its
     $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns 422 budget_exc'
+- at: 2026-11-08 10:39
+  from: idc02
+  text: 'finished (ok): exit=0 n this branch; adjacent `ada-embed-bench` 403 crash is already carded (`embed-bench-blocked-20261107`).
+    | devin-t'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=0 n this branch; adjacent `ada-embed-bench` 403 crash is already carded (`embed-bench-blocked-20261107`).
+    | devin-task-20261108-103151-timer-ada-scenario-reports-on-.service: Consumed 18.097s CPU time, 117.4M memory
+    peak, 0B memory swap peak.'
+  verified: true
 requests:
 - id: bench-virtual-key-on-litellm-is-over-its-795583
   ask: 'Bench virtual key on LiteLLM is over its $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns
@@ -259,3 +267,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
