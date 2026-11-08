@@ -1,0 +1,148 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>adobe-stock mask picker</title>
+<style>
+  body{font:14px system-ui,sans-serif;margin:16px;background:#141414;color:#eee}
+  #wrap{position:relative;display:inline-block;line-height:0}
+  #im{max-width:100%;cursor:crosshair;display:block}
+  #cv{position:absolute;inset:0;cursor:crosshair}
+  .row{margin:10px 0}
+  textarea{width:680px;height:60px;background:#222;color:#eee;border:1px solid #555;border-radius:4px}
+  button{margin:4px 8px 4px 0;padding:6px 12px;cursor:pointer}
+  #out{white-space:pre-wrap;background:#000;border:1px solid #333;padding:8px;max-width:720px;overflow:auto;font:12px monospace}
+  .dim{color:#888}
+</style>
+
+<div class="row">
+  Image: <input type="file" id="f" accept="image/*">
+  <span class="dim">— or serve over http and use ?img=photo.jpg — or drag an image file onto the page</span>
+</div>
+<div id="wrap"><img id="im" alt="drop or pick an image"><canvas id="cv"></canvas></div>
+<div class="row">Comment: <textarea id="c" placeholder="e.g. straighten this wall corner so it meets the floor squarely; ground the floating shelf; keep everything else identical"></textarea></div>
+<div class="row">
+  <button onclick="dl('mask')">Download mask.png</button>
+  <button onclick="dl('json')">Download request.json</button>
+  <button onclick="cp('gemini')">Copy Gemini edit prompt</button>
+  <button onclick="cp('cf')">Copy CF inpaint JSON</button>
+  <button onclick="resetSel()">Clear selection</button>
+</div>
+<div id="out" class="dim">drag a rectangle on the image, add a comment, then pick an output</div>
+
+<script>
+const im = document.getElementById('im'),
+      cv = document.getElementById('cv'),
+      cx = cv.getContext('2d'),
+      c  = document.getElementById('c'),
+      out= document.getElementById('out');
+let sel = null, drag = null, nw = 0, nh = 0;
+
+function fit(){
+  cv.width  = im.clientWidth;
+  cv.height = im.clientHeight;
+  draw();
+}
+im.onload = () => { nw = im.naturalWidth; nh = im.naturalHeight; fit(); };
+window.onresize = fit;
+
+// --- image sources ---
+document.getElementById('f').onchange = e => {
+  if(e.target.files[0]) im.src = URL.createObjectURL(e.target.files[0]);
+};
+const q = new URLSearchParams(location.search).get('img');
+if (q) im.src = q;
+document.body.ondragover = e => e.preventDefault();
+document.body.ondrop = e => {
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) im.src = URL.createObjectURL(f);
+};
+
+// --- selection (display coords) ---
+function pos(e){
+  const r = cv.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+cv.onmousedown = e => { drag = pos(e); sel = null; draw(); };
+cv.onmousemove = e => {
+  if (!drag) return;
+  const p = pos(e);
+  sel = { x: Math.min(drag.x,p.x), y: Math.min(drag.y,p.y),
+          w: Math.abs(p.x-drag.x),  h: Math.abs(p.y-drag.y) };
+  draw();
+};
+cv.onmouseup = () => { drag = null; if (sel && sel.w>3 && sel.h>3) show(); };
+
+function draw(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  if (sel){
+    cx.fillStyle='rgba(255,80,80,.25)'; cx.fillRect(sel.x,sel.y,sel.w,sel.h);
+    cx.strokeStyle='#ff5050'; cx.lineWidth=2; cx.strokeRect(sel.x,sel.y,sel.w,sel.h);
+  }
+}
+function resetSel(){ sel=null; drag=null; draw(); out.className='dim';
+  out.textContent='drag a rectangle on the image, add a comment, then pick an output'; }
+
+// display -> natural pixels
+function nat(){
+  if(!sel||!nw) return null;
+  const sx = nw/cv.width, sy = nh/cv.height;
+  return { x:Math.round(sel.x*sx), y:Math.round(sel.y*sy),
+           w:Math.round(sel.w*sx), h:Math.round(sel.h*sy) };
+}
+function show(){
+  const r = nat();
+  out.className='';
+  out.textContent = r
+    ? `region (natural px): x=${r.x} y=${r.y} w=${r.w} h=${r.h}  (${nw}x${nh})` +
+      (c.value?`\ncomment: ${c.value}`:'\ncomment: (empty)')
+    : 'selection too small';
+}
+
+// --- outputs ---
+function maskCanvas(){
+  const r = nat(); if(!r) return null;
+  const m = document.createElement('canvas');
+  m.width = nw; m.height = nh;
+  const g = m.getContext('2d');
+  g.fillStyle='#000'; g.fillRect(0,0,nw,nh);
+  g.fillStyle='#fff'; g.fillRect(r.x,r.y,r.w,r.h);
+  return m;
+}
+function dl(kind){
+  const r = nat(); if(!r){alert('select a region first');return}
+  if(kind==='mask'){
+    maskCanvas().toBlob(b=>{
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(b); a.download='mask.png'; a.click();
+    });
+  } else {
+    const req={image:(im.currentSrc||'').split('/').pop(),
+      region:nat(), comment:c.value,
+      gemini_prompt:geminiPrompt(), cf_payload:cfPayload()};
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([JSON.stringify(req,null,2)],
+      {type:'application/json'}));
+    a.download='request.json'; a.click();
+  }
+}
+function geminiPrompt(){
+  const r=nat();
+  return `Edit this image: only modify the selected region ` +
+    `(about x=${r?r.x:0}, y=${r?r.y:0}, width=${r?r.w:0}, height=${r?r.h:0} ` +
+    `of ${nw}x${nh}). Requested change: ${c.value||'(none)'}. ` +
+    `Keep every pixel outside that region identical — same composition, ` +
+    `same objects, same lighting continuity. Photorealistic commercial ` +
+    `stock photo quality.`;
+}
+function cfPayload(){
+  const r=nat();
+  return {model:'@cf/runwayml/stable-diffusion-v1-5-inpainting',
+    prompt:c.value||'repair this region',
+    image:'<base64 of source image>',
+    mask:'<base64 of mask.png>'};
+}
+function cp(kind){
+  const t = kind==='gemini' ? geminiPrompt() : JSON.stringify(cfPayload(),null,2);
+  navigator.clipboard.writeText(t).then(()=>alert('copied to clipboard'));
+}
+</script>
