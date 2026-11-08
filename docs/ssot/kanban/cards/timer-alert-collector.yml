@@ -1,7 +1,7 @@
 id: timer-alert-collector
 title: Timer timeline sweep stale — collector may be dead
 column: backlog
-updated: 2026-11-05 14:22
+updated: 2026-11-08 10:30
 priority: high
 tags:
 - timer-alert
@@ -3569,6 +3569,13 @@ comms:
   from: devin
   text: '[still suspicious] Last successful sweep 23294min ago (threshold 30min). Check chaba-timer-timeline.timer
     and scripts/ada/timer-timeline-update.py on tony-dell.'
+- at: 2026-11-08 10:30
+  from: devin
+  text: 'RESOLVED 2026-11-08 — phantom alert, not a dead collector. Real cause: collector (timer-timeline-update)
+    runs healthy on tony-omen writing ~/.local/share/chaba/timer-timeline/state.json, but the sentinel on tony-dell
+    read its OWN stale local copy (both were undeclared ad-hoc units, split across hosts when the collector moved).
+    Fix: both declared in ssot.jobs.yml co-located on tony_omen (dc4104c25 + f5fc13495 — sentinel needed BOARD_API=tailnet-door
+    env, its default was dells loopback :8787). Del'
 spec: The goal is to investigate why the timer timeline sweep has not successfully run in the last 30 minutes, checking
   the status of chaba-timer-timeline.timer and the script scripts/ada/timer-timeline-update.py on the host tony-dell.
   Constraints are to inspect the specified systemd timer and script without making unauthorized modifications or
