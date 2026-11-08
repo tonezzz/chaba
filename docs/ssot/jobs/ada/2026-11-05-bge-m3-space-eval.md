@@ -325,3 +325,24 @@ GPU lane note: py3.12 GPU venv on Omen (`~/.local/share/chaba-ml-gpu-venv`,
 torch 2.11.0+cu128) is now the fast path for batch rerank (~23s/query
 full pipeline vs ~400-1400s CPU); declared as `python_ml_gpu` in
 ssot.host-software.yml (#99).
+
+## Rerank depth ablation — top-10 wins outright (2026-11-08)
+
+Rescored the saved GPU ranks at each depth (rerank dense top-K, append
+dense tail — zero new inference):
+
+| depth | r@5 | MRR | latency |
+|---|---|---|---|
+| **top-10** | **.262** | **.938** | 565ms |
+| top-20 | .251 | .892 | 1134ms |
+| top-30 | .263 | .887 | 1704ms |
+| top-50 | .260 | .869 | 2891ms |
+| gemini | .244 | .893 | — |
+
+Top-10 rerank BEATS Gemini on both headline metrics (MRR .938 vs .893;
+Thai MRR 1.000) — deeper pools dilute, the cross-encoder's best work is
+reordering the dense head. Serving answer for MEM-1129: **top-10 sync
+rerank, ~565ms on GPU after ~130ms dense fetch ≈ 700ms voice path**,
+with Gemini kept as fallback upstream (pool soak showed member loss
+costs latency not availability). Lighter-reranker and async variants
+demoted to optional tuning.
