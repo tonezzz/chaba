@@ -1,0 +1,59 @@
+title: consumer-canary timer-alert on idc03 — exit-code = working canary finding stale refs
+subtitle: timer-alert-idc03-consumer-canary investigation (dispatched 2026-11-08)
+icon: timer
+
+decision:
+  summary: >
+    Sentinel flagged consumer-canary.service result=exit-code (last run
+    2026-11-08 05:21, re-alerted through 13:00). This is the canary working
+    as designed: scripts/audit/consumer-canary.py exits 1 whenever it finds
+    live retired-hostname references, and posts them to the standing card
+    consumer-canary-standing-retired-hostnam-6aa4a2. Journal confirmed —
+    every "failure" run printed findings then exited 1.
+  findings:
+    - id: mn01-caddy-board
+      detail: >
+        ~/.config/caddy/Caddyfile.mn01 had drifted vs repo
+        (stacks/mn01/Caddyfile.mn01): on 2026-11-07 ~09:56 when
+        caddy-mn01.service was stood up, a live-only `handle /apps/board*`
+        block was added proxying to https://tony-dell.taila0626a.ts.net:443
+        — dead since dell retired, so /apps/board via mn01:8080 was 502ing.
+        First canary hit 2026-11-07 17:21.
+      fix: >
+        Repointed live upstream to https://idc02.taila0626a.ts.net:443 (the
+        canonical /apps origin since the 10-20 migration), `caddy reload`
+        via admin API, verified /apps/board/ -> 200 through mn01:8080.
+        Repo copy updated to match live (drift resolved both ways).
+    - id: ada-ha-nodered-iframe
+      detail: >
+        ada-ha (tony-omen:8125) chaba-admin dashboard "Node-RED" panel
+        iframe still pointed at https://tony-dell.taila0626a.ts.net/apps/node-red/?v=2.
+        Open since ~2026-10-30 — an earlier fix only dropped the :8080 port,
+        kept the retired hostname.
+      fix: >
+        Fixed externally at ~13:19 ICT while this session ran (live
+        websocket config + .storage/lovelace.chaba_admin both now
+        https://idc02.taila0626a.ts.net/apps/node-red/?v=2, verified 200).
+        Repo snapshot docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
+        re-synced via sync-ssot-from-live.sh --instance ada-ha (it had
+        captured the stale URL at 13:16, 3 min before HA flushed the fix).
+  current_state: >
+    Two consecutive canary runs CLEAN (13:19, 13:20), ExecMainStatus=0,
+    Result=success. Timer stays armed every 6h. exit-code on this unit is
+    a signal, not a malfunction — future timer-alerts on consumer-canary
+    should read the standing card's latest comms first.
+
+follow_ups:
+  - id: canary-noise-vs-sentinel
+    note: >
+      The canary's exit-1-on-findings semantics keep tripping
+      timer-sentinel into filing alert cards while the standing card is the
+      intended findings channel. Options: wrap the timer to exit 0 and
+      report via board-api only, or teach timer-sentinel that this unit's
+      exit-code means "findings posted", not "broken". Worth a small card.
+  - id: ada-ha-fix-author
+    note: >
+      The ada-ha iframe fix at ~13:19 was not done by this session — likely
+      Tony/Ada via UI or a concurrent dispatch responding to the same
+      canary comms. No claim was posted; fine, but the close-out trail
+      lives here.

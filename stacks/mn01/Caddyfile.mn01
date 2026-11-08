@@ -105,6 +105,12 @@
 		redir * /apps/ 308
 	}
 
+	handle /apps/board* {
+		reverse_proxy https://idc02.taila0626a.ts.net:443 {
+			header_up Host {upstream_hostport}
+		}
+	}
+
 	handle_path /apps/* {
 		root * /home/tony/.config/caddy/public/apps
 		file_server browse
