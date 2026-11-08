@@ -1,7 +1,7 @@
 id: lane-cms-content-model
 title: 'Procedure: lane-cms-content-model — declare + audit each persona CMS coverage'
 column: review
-updated: 2026-11-07 16:52
+updated: 2026-11-08 10:58
 spec: 'Standard procedure for managing a persona lane CMS to cover its responsibility (Tony asked 2026-10-12). (1)
   persons.<id>.cms block in ssot.apps.ada-persons.yml: section→producer→cadence→source allowlist; (2) producers
   collection-scoped + source-allowlisted (member lanes = public zones only); (3) cms-auto-health-style coverage
@@ -50,6 +50,10 @@ comms:
   from: devin
   text: '[KNB-1098] patch exists (cline task 8b60e, lane-cms-coverage-procedure.md 856B) but docs/kb/lane-cms-coverage-procedure.md
     is NOT on master — never landed. Needs a landing decision: apply the intake patch or close as superseded.'
+- at: 2026-11-08 10:58
+  from: devin
+  text: 'raised request lane-cms-coverage-procedure-md-patch-exi-cc982b: lane-cms-coverage-procedure.md patch exists
+    (cline task 8b60e) but never landed on master. Apply the intake patch, or cl'
 tags:
 - cline
 cline:
@@ -57,3 +61,15 @@ cline:
   sentinel: source allowlist
   model: ollama/qwen2.5:7b
 review_kind: verify
+requests:
+- id: lane-cms-coverage-procedure-md-patch-exi-cc982b
+  ask: lane-cms-coverage-procedure.md patch exists (cline task 8b60e) but never landed on master. Apply the intake
+    patch, or close the card as superseded?
+  status: open
+  at: 2026-11-08 10:58
+  from: devin
+  options:
+  - apply-patch
+  - close-superseded
+  - hold
+  suggested: apply-patch
