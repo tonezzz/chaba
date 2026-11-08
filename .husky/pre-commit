@@ -281,4 +281,17 @@ if [ -f scripts/ssot-optimize.mjs ] && [ -f scripts/ssot-optimize-gate.mjs ]; th
     echo -e "${GREEN}✅ SSOT optimization check passed${NC}"
 fi
 
+# --- Research-prose smell check (KNB-1101) ---------------------------------
+# Split rule: ssot/*.yml keeps verdict+pointer; research depth belongs in
+# Education/docs-kb. Warn when a staged ssot yml carries a >40-line folded
+# prose block — data rows and short notes are fine, paragraphs are not.
+ROOT_P="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+CHK="$ROOT_P/scripts/check-ssot-prose.py"
+if [ -f "$CHK" ]; then
+    STAGED_SSOT="$(git diff --cached --name-only | grep "^docs/ssot/.*\.yml$" | grep -v "kanban/cards/\|focus-inbox/" || true)"
+    if [ -n "$STAGED_SSOT" ]; then
+        echo "$STAGED_SSOT" | xargs python3 "$CHK" >&2
+    fi
+fi
+
 exit 0
