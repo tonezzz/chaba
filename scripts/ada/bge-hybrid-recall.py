@@ -30,12 +30,20 @@ TOKEN_RE = re.compile(r"[\wก-๙]+", re.UNICODE)
 RRF_K = 60
 
 
-def request_json(url, payload, timeout=60):
+def request_json(url, payload, timeout=60, attempts=3):
     req = urllib.request.Request(
         url, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as response:
-        return json.loads(response.read())
+    err = None
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                return json.loads(response.read())
+        except Exception as e:  # transient pool hiccups — bounded retry
+            err = e
+            if attempt + 1 < attempts:
+                time.sleep(1.5 * (attempt + 1))
+    raise err
 
 
 def tokens(text):
