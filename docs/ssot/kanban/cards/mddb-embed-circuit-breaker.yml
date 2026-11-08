@@ -1,0 +1,26 @@
+id: mddb-embed-circuit-breaker
+title: 'mddb-embed: provider-outage circuit breaker (killed the 7.5h retry storm)'
+column: doing
+updated: 2026-11-08 13:13
+priority: high
+tags:
+- mddb
+- embedding
+- deployed
+spec: 'The 2026-11-08 bge-lessons-shadow storm: gemini-ollama-proxy -> OpenRouter 504''d for ~6h; mddb-embed burned
+  ~90% CPU 7.5h on 3x30s doomed retries per doc while the re-enqueuer kept feeding, load-gating idc03''s runner-agent
+  (256 skipped passes). Fix: embedBreaker in mddb-fork services/mddbd/embedding_worker.go — consecutive Embed failures
+  past threshold (8) open the circuit for exponential cooldown (30s->10m); workers sleep it out interruptibly; half-open
+  trial on expiry; success resets. Committed 2767cdca -> feat/vector-algorithms; built mddbd-2.15.4-breaker on dell;
+  image localhost/mddb:2.15.4-breaker on idc03; mddb-embed.container flipped + restarted — active, worker up, zero
+  errors since. 3 new tests pass.'
+action:
+  type: manual
+ref: MEM-1189
+comms:
+- at: 2026-11-08 13:13
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-08 13:13
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
