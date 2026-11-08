@@ -1,0 +1,25 @@
+id: bge-production-serving-architecture-rera-e6ba35
+title: BGE production serving architecture — rerank depth/latency tradeoff decision
+column: backlog
+updated: 2026-11-08 08:35
+priority: medium
+tags:
+- embedding
+- architecture
+- bge
+- decision
+spec: 'Quality gate is PASSED — local bge_dense + bge-reranker-v2-m3 matches Gemini (r@5 .260 vs .244, MRR .869
+  vs .893, Thai tied .964, judged-union + expanded qrels, #82/#98). What remains is serving architecture — measured
+  facts (2026-11-08, #100): GPU rerank top-50 2891ms, top-20 1134ms, top-10 565ms (~57ms/pair fp32; fp16 is 4.7x
+  WORSE on this card). Voice request path wants <=~500ms added. Options: (a) rerank top-10 only — ~565ms, borderline,
+  simplest; (b) lighter reranker (bge-reranker-v2-minicpm or base) — needs a quick eval rerun to measure quality
+  delta, cheap now on the GPU lane; (c) async rerank — return dense results immediately (~130ms pool p50), refine
+  in background for callers that wait — best UX but most plumbing; (d) hybrid — top-10 sync + deeper async. ALSO
+  on record: pool member loss is resilient but costs ~17x latency (soak data) — a serving cutover should keep gemini
+  as fallback upstream rather than hard-switch. Decision is Tony call on UX latency budget; MEM-1083 distillation
+  remains optional (rerank may have made it unnecessary).'
+ref: MEM-1129
+comms:
+- at: 2026-11-08 08:35
+  from: devin
+  text: card captured via board-api
