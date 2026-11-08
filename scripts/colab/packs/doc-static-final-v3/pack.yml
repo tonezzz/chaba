@@ -1,0 +1,31 @@
+# doc-static-final-v3 — CPU assembler for the v3 tourist-ship cut
+# (card doc-pilot-v3-tourist-cut, OPS-0904). Builds the 18-shot private
+# review cut entirely on CPU: NASA stills + 2.5D zoom, recurring
+# logo-free ship silhouette, cockpit window POV, Thai fact callouts,
+# burned Thai subs + mov_text + SRT. Created 2026-11-07 on idc02 — the
+# prior animatic/review-cut builders lived only in discarded dispatch
+# worktrees; this one is committed so the pipeline is reproducible.
+#
+# NOT a Colab pack: runs on any host with python3, pillow, numpy,
+# ffmpeg. Needs the input tree assembled as:
+#   inputs/vo/v3-vo-*.wav, vo-manifest-v3.json   (gdrive:ada-nest/doc-pilot/vo-v3/)
+#   inputs/assets/*.jpg|png                    (gdrive:ada-nest/doc-pilot/review/v3-assets/nasa/
+#                                             + nasa-2p5d earth/saturn plates
+#                                             + tour-ship-silhouette-v1.png + cockpit-window-frame-v1.png)
+name: doc-static-final-v3
+needs:
+  gpu_gb: 0
+  disk_gb: 2
+venv: false
+timeout_s: 1800
+artifacts:
+  - packs/doc-static-final-v3/out/v3-static-final-v1.mp4
+  - packs/doc-static-final-v3/out/v3-static-final-v1-report.md
+  - packs/doc-static-final-v3/out/subtitles-th-v3-static-final-v1.srt
+prep: |
+  pip install -q pillow numpy
+run: |
+  import subprocess, sys
+  subprocess.run([sys.executable,
+                  f'{PACK_DIR}/build_v3_static_final.py',
+                  f'{PACK_DIR}/inputs'], check=True)

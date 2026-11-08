@@ -1,0 +1,87 @@
+title: Wiki education — daily due+index refresh, actor fix, index-status filter
+subtitle: >
+  Step-5 activation of the wiki education surface: verified the deployed
+  door serves /lesson source=wiki, folded Education:Index regeneration
+  into the daily lessons-due job, and fixed two live bugs the earlier
+  phases' mocked tests missed.
+icon: education
+version: 1
+
+card: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+date: 2026-11-07
+dispatch: devin-task-20261107-114216 (tony-macbook)
+
+verified_live:
+  door: "idc03 board-api already runs the post-2026-11-06 build —
+    POST /lesson {op:list, source:wiki} returns source:'wiki' + 127 rows
+    (the merge+restart activation happened before this dispatch)."
+  writes: "scripts/lessons-due.py --dest wiki -> Education:Due rev=186,
+    Education:Index rev=187 via /wiki/page."
+  boundary: "anon pretty-URL read of Education:Due -> 404 (Lockdown
+    on Education: holds; API exposes page metadata only)."
+  corpus: "125 real lessons after index filtering (127 raw rows minus
+    Education:Index + one synthetic series hub, both status=index);
+    111 due / 14 upcoming on 2026-11-07."
+
+bugs_fixed:
+  actor_400:
+    symptom: "lessons-due door_post sent from:'lessons-due' — the door's
+      login allowlist is ada|chaba|devin|tony, so EVERY door call 400d.
+      tests/test_lessons_due.py asserted the invalid value, so it
+      shipped green."
+    impact: "chaba-lessons-due 07:30 run on idc03 fails at fetch_rows
+      once the synced checkout has this script (merged 2026-11-06
+      ~20:29 +07, repo-sync every 15 min) — both dests skipped. Fix
+      lands on this merge + sync; tomorrow's run goes green."
+    fix: "from:'chaba' (merge-sweep convention for job scripts) +
+      test updated."
+  index_pages_counted_as_lessons:
+    symptom: "the door's _read_lessons_wiki parses any page carrying
+      the Education template as a lesson — but sink-written support
+      pages (Education:Index, synthetic series hubs) DO carry the
+      template with status=index, so skipped_non_lesson was 0 and the
+      corpus included them: 'education index' showed in the upcoming
+      review queue and the index listed itself."
+    fix: "door: _read_lessons_wiki skips status=index rows (lands on
+      next door restart — the running build still counts them);
+      lessons-due fetch_rows filters them client-side so the daily
+      job is right against both door builds."
+
+index_refresh:
+  what: "Education:Index was only rebuilt on manual
+    wiki-lesson-migrate.py reruns — stale between runs now that
+    do_lesson dual-writes new lessons daily. lessons-due.py gained
+    index_wikitext(rows) (same level-grouped shape as the migrate
+    page) and writes Education:Index whenever --dest includes wiki
+    and source=wiki."
+  controls: "--no-index flag / LESSON_INDEX=0|off|no env; failure is
+    reported independently of the Due write."
+  provenance: "both writers emit the same 'do not hand-edit' header
+    naming chaba-lessons-due + wiki-lesson-migrate.py."
+
+tests: "72 lessons-due/publication tests green locally; +3 new
+  (index render x2, status=index door skip, status=index client
+  filter, actor='chaba')."
+
+still_gated:
+  - "Step 6 (WP admin/Tony): lesson CPT read-only + permalink 301s
+    to Education:<title>. The slug->url map is derivable from
+    /lesson {op:list, source:wiki} rows."
+  - "EDU_SOURCE=wiki on chaba-education-report's unit env — gated on
+    step 6 per its manifest note (report keeps auditing WP until the
+    CPT goes read-only)."
+  - "Door restart on idc03 to ship the status=index corpus filter
+    (cosmetic until then — lessons-due already compensates)."
+  - "chaba-lessons-due unit on idc03 predates the manifest entry —
+    render-jobs.py --host idc03 --install converges it (same exec
+    path, so the new defaults/index already apply via repo sync)."
+
+files:
+  - scripts/lessons-due.py
+  - scripts/wiki-lesson-migrate.py
+  - scripts/board/board-api.py
+  - tests/test_lessons_due.py
+  - tests/board/test_publication.py
+  - docs/ssot/jobs/education/2026-11-06-wiki-education-read-door.yml
+  - docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+  - docs/ssot/infrastructure/ssot.jobs.yml

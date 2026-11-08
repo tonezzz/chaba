@@ -155,3 +155,34 @@ KK-Mac now has a capacity producer. Colab has the queue and assessment-first
 procedure, but DevNest does not yet have one shared capacity broker that
 converts ready cards/reports into normalized lane inbox specs. Implement that
 broker next, starting with read-only reports and finite Colab evaluations.
+
+## Bounded package planner (proposed)
+
+A planner can improve fanout, but it must be a proposal generator, not a
+queue writer:
+
+```text
+real evidence
+-> planner package on KK-Mac
+-> candidate-spec artifact
+-> deterministic validator on tony-dell
+-> normal JevTeam broker
+-> bounded worker packages
+```
+
+Guardrails:
+
+```text
+maximum 3 candidates per source/cycle
+depth 1 — planner output cannot create planner tasks
+source evidence required
+dedupe by source hash and task ID
+allowed classes and artifact roots only
+no secrets, credentials, mutations, or publication
+no automatic replanning after verifier failure
+```
+
+The planner must not write to `gdrive:ada-nest-devnest/inbox/` directly.
+Without the deterministic upstream validator, it would create synthetic work,
+feedback loops, and queue amplification rather than useful capacity
+utilization. This proposal is tracked as `OPS-1027`.

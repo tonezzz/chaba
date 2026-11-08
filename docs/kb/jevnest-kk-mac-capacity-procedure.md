@@ -33,6 +33,31 @@ owner/busy gate clear
 
 The executable gate is `scripts/devnest/kk_mac_admission.py`.
 
+## Owner-approved capacity window
+
+When Tony explicitly grants an idle window, record the end time and use the
+lane only until that deadline:
+
+```text
+owner permission window
+-> refresh heartbeat
+-> verify load/disk/Ollama
+-> enable report feed, broker, producer, and worker
+-> keep queue depth <= 10
+-> keep normal concurrency at 1
+-> stop intake and worker automatically at the deadline
+```
+
+For a short window, optimize throughput with more ready packages and shorter
+polling, not uncontrolled parallelism. Allow concurrency 2 only for short
+read-only requests when `load_1m < 2.5`, memory headroom is clear, and a
+two-request verifier test has passed. Revert to serial mode immediately when
+load rises, the owner returns, or disk approaches the floor.
+
+The deadline is a hard stop: no new claims after it, and any in-flight
+package finishes or records fallback. The physical Mac is not powered off by
+this procedure; worker use and host power are separate controls.
+
 ## What to send
 
 Only bounded, read-only packages:

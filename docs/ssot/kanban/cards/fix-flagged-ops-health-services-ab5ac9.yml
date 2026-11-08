@@ -1,0 +1,169 @@
+id: fix-flagged-ops-health-services-ab5ac9
+title: Fix flagged ops health services
+column: done
+updated: 2026-11-07 17:18
+priority: high
+note: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
+  from ops-health report
+ref: OPS-1038
+comms:
+- at: 2026-11-02 06:45
+  from: ada
+  text: Verify and fix flagged health services (open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, doc-mirror.timer)
+    from ops-health report
+- at: 2026-11-02 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-11-02 08:37
+  from: tony
+  text: 'answered the-ops-health-report-lists-sp-a4b0a0: ★ Run diagnostic checks and fixes across all available
+    infrastructure hosts (tony-dell, idc02, idc03, tony-omen, mn01, con01)'
+- at: 2026-11-02 08:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-02 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''Run diagnostic checks and fixes across all available infrast'' -> queued for processing'
+- at: 2026-11-06 20:27
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 20:27
+  from: idc02
+  text: claimed
+- at: 2026-11-06 20:27
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-07 16:24
+  from: devin
+  text: 'Reconcile 2026-11-07 ~16:15 ICT: the idc02 claim from 2026-11-06 20:27 is STALE — no devin-task unit for
+    this card exists in idc02 user journal (recent units are other cards: opencode-executor-routing-smoke, wiki-mem
+    dispatch). 17h running with no live unit = dead claim; no artifact/report produced. Clearing mentally-stale
+    running state — card needs re-queue or spec review before another claim (spec is a broad diagnostics sweep;
+    suggest scoping before re-dispatch).'
+- at: 2026-11-07 16:24
+  from: tony
+  text: retry requested
+- at: 2026-11-07 16:25
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-07 16:25
+  from: chaba
+  text: started devin-task-20261107-162550-verify-and-fix-flagged-health- on tony-macbook (dispatch)
+- at: 2026-11-07 16:33
+  from: devin
+  text: 'Diagnosed: jev-bench/doc-mirror flags are stale host checks (timers moved idc03->con01 10-22, report still
+    checks idc03). doc-mirror has a REAL failure on con01: documents collection is on mddb :11027 since the split,
+    script+doc-archive API still query :11023 -> empty stage, hourly exit-1. ada-pi-pwa + open-jev-4b-idc02 currently
+    healthy. Fixing all.'
+- at: 2026-11-07 16:57
+  from: devin
+  text: 'Coverage gap to fold in while you have ops-health-report.py open: chaba-board-api.service is NOT in SERVICES
+    — it''s a long-running user unit (the canonical kanban write door) and its Nov-4 death sat unnoticed ~2 days
+    until the kanban-commit wedge surfaced it. Suggest: add ''chaba-board-api'' to SERVICES + an HTTP probe probe(''board-api'',
+    lambda: get(''http://127.0.0.1:8787/queue'')) — unit-active alone misses a wedged process. (KNB-1098 sweep finding)'
+- at: 2026-11-07 17:06
+  from: devin
+  text: 'DONE — ops-health now HEALTHY/0 flags (16:49Z report). Fixes: (1) report script on idc03 now checks jev-bench+doc-mirror
+    timers on con01 via ssh — they moved there 10-22; (2) REAL doc-mirror failure fixed: documents collection is
+    on mddb :11027 since the split — MDDB_BASE added to con01 unit + idc03 doc-archive.env, repo defaults updated;
+    manual run synced 100 pages across 100 archives (verified on tony-dell HA www). ada-pi-pwa + open-jev-4b-idc02
+    were already healthy; probe timeout bumped 30s->'
+- at: 2026-11-07 17:06
+  from: tony-macbook
+  text: 'finished (ok): exit=0 full detail in `dispatch-outcome-20261107-162550-verify-and-fix-flagged-health-.md`.
+    | devin-task-20261107-162550'
+- at: 2026-11-07 17:06
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261107-162550-verify-and-fix-flagged-health-\
+    \ is 46 commits behind origin/master —\n   run 'git pull -"
+- at: 2026-11-07 17:06
+  from: chaba
+  text: pushed dispatch/20261107-162550-verify-and-fix-flagged-health- to origin
+- at: 2026-11-07 17:06
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 17:06
+  from: chaba
+  text: auto-merged affa1439 (dispatch/20261107-162550-verify-and-fix-flagged-health-) → origin/master
+- at: 2026-11-07 17:06
+  from: chaba
+  text: 'worktree kept: dirty — 3 uncommitted file(s)'
+- at: 2026-11-07 17:07
+  from: chaba
+  text: restarted zombie claim as devin-task-20261107-170704-verify-and-fix-flagged-health- on tony-macbook — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-07 17:08
+  from: devin
+  text: 'Session 170704: continuing from glib-metatarsal (doc-mirror MDDB port fix committed). Verifying live state
+    on idc02/con01/tony-pi + finding ops-health-report.py source to clear stale idc03 timer flags.'
+- at: 2026-11-07 17:12
+  from: devin
+  text: 'DONE — ops-health now publishes HEALTHY, 0/16 flagged (report/health-20261107-171104). Fixes: report TIMERS
+    now host-aware (jev-bench/doc-mirror checked via ssh con01 — they moved off idc03 10-22); doc-mirror MDDB 11023->11027
+    deployed on con01+idc03 (last run synced 100 pages); open-jev probe timeout 30->60s (cold 4b load=33s); added
+    chaba-board-api unit + /queue probe per KNB-1098. ada-pi-pwa verified on idc03 (unit+HTTP 200 — no tony-pi host
+    exists on tailnet). Trail: docs/ssot/jobs/infrastru'
+- at: 2026-11-07 17:14
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-07 17:14
+  from: chaba
+  text: 'checkpoint failed: commit: 🔍 Validating SSOT files...
+
+    📋 Found SSOT files to validate:
+
+    docs/ssot/jobs/infrastructure/2026-11-07-ops-health-report-host-aware-timers.yml
+
+    🔧 Checking YAML synt'
+- at: 2026-11-07 17:14
+  from: chaba
+  text: pushed dispatch/20261107-170704-verify-and-fix-flagged-health- to origin
+- at: 2026-11-07 17:14
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-07 17:14
+  from: chaba
+  text: 'worktree kept: dirty — 2 uncommitted file(s)'
+- at: 2026-11-07 17:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+requests:
+- id: the-ops-health-report-lists-sp-a4b0a0
+  ask: The ops health report lists specific flagged services across multiple potential nodes, but neither the hostnames
+    nor the repository locations are provided in the card note or recent communications to safely target the fixes.
+  options:
+  - ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02, idc03, tony-omen,
+    mn01, con01)
+  - Limit investigation strictly to the local host runner and standard systemd user/system scopes
+  - Postpone this card until the specific host and path mapping for the flagged services is provided
+  status: answered
+  at: 2026-11-02 07:20
+  from: backlog-spec-enrich
+  answer: ★ Run diagnostic checks and fixes across all available infrastructure hosts (tony-dell, idc02, idc03,
+    tony-omen, mn01, con01)
+  executed: 2026-11-06 queue
+spec: Verify and fix flagged health services including open-jev-4b-idc02, ada-pi-pwa, jev-bench.timer, and doc-mirror.timer
+  from the ops-health report. Run diagnostic checks and fixes across all available infrastructure hosts specifically
+  including idc02 and tony-pi environments. The done-condition is verified active and healthy status for all four
+  listed services across the relevant hosts without error flags in the ops-health report.
+action:
+  type: dispatch
+  status: done
+  lane: codemod
+  attempts: 1
+  runner: tony-macbook
+  result: 'exit=0 full detail in `dispatch-outcome-20261107-162550-verify-and-fix-flagged-health-.md`. | devin-task-20261107-162550-verify-and-fix-flagged-health-.service:
+    Consumed 2min 12.367s CPU time over 40min 38.561s wall clock time, 586.1M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-07 17:18
+  note: verified — evidence checks green, closing itself

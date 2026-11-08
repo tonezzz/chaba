@@ -1,0 +1,109 @@
+id: devnest-fl-pilot-artwrite
+title: 'OpenCode artifact-write pilot 1: lane status report (first S4 write job)'
+column: done
+updated: 2026-10-31 08:34
+spec: 'Write docs/reports/opencode-lane-status-2026-10-30.md — a lane status report. Ground it in the checkout:
+  read evals/opencode-lane/profiles/ops-readonly/profile.yml, evals/opencode-lane/profiles/doc-draft/profile.yml,
+  evals/opencode-lane/profiles/artifact-write/profile.yml, and docs/kb/opencode-lane-model-notes.md. The report
+  must state: which profiles exist and each one''s artifact mode (message vs file); ops-readonly emits JSON, doc-draft
+  emits markdown via message mode, artifact-write writes files directly; the verified pilot merges 562d54fdd (health
+  JSON) and ddda1db1b + c1813b5a0 (docs); the working models litellm/or-gemini-3.5-flash, litellm/ollama-qwen32b-kkmac,
+  litellm/ollama-qwen38b-kkmac; and that branch-code is status:disabled pending its S5 gate.
+
+
+  WRITE the file at the declared path using the write tool — do NOT emit the document as your message. End with
+  a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/opencode-lane-status-2026-10-30.md
+  status: done
+  result: 'exit=0 70734b4bffexogMhF475ZeDyV","type":"step-finish","tokens":{"total":32742,"input":32455,"output":16,"reasoning":271,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-artwrite-1793409721.service: Consumed 20.175s CPU time.'
+  sweep:
+    dirty: 2
+  runner: idc02
+  verified: true
+ref: OPS-1032
+comms:
+- at: 2026-10-31 08:15
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-31 08:15
+  from: devin
+  text: queued for processing
+- at: 2026-10-31 08:15
+  from: idc02
+  text: claimed
+- at: 2026-10-31 08:15
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite-1793409350 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 08:17
+  from: idc02
+  text: 'finished (ok): exit=0 e7078f341ffeYQ59BycDI6YW0u","type":"step-finish","tokens":{"total":26614,"input":26393,"output":8,"reasoning":213'
+- at: 2026-10-31 08:17
+  from: chaba
+  text: opencode artifact landed docs/reports/opencode-lane-status-2026-10-30.md
+- at: 2026-10-31 08:17
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-31 08:17
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact non-empty=True; markdown
+    shape=True; not rails echo=False; no placeholder markers=True)
+- at: 2026-10-31 08:19
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-devnest-fl-pilot-artwrite-1793409350 on idc02 still dirty — 2 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-31 08:21
+  from: devin
+  text: queued for processing
+- at: 2026-10-31 08:22
+  from: idc02
+  text: claimed
+- at: 2026-10-31 08:22
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite-1793409721 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 08:25
+  from: idc02
+  text: 'finished (ok): exit=0 70734b4bffexogMhF475ZeDyV","type":"step-finish","tokens":{"total":32742,"input":32455,"output":16,"reasoning":271'
+- at: 2026-10-31 08:25
+  from: chaba
+  text: opencode artifact landed docs/reports/opencode-lane-status-2026-10-30.md
+- at: 2026-10-31 08:25
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-10-31 08:25
+  from: chaba
+  text: ran under executor=opencode:artifact-write provider=litellm model=litellm/ollama-qwen38b-kkmac profile=artifact-write
+- at: 2026-10-31 08:25
+  from: chaba
+  text: 'session-end checkpoint 8d9fbe33: 2 leftover file(s) committed'
+- at: 2026-10-31 08:25
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-artwrite-1793409721 to origin
+- at: 2026-10-31 08:25
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-31 08:25
+  from: chaba
+  text: auto-merged 9256dc37 (dispatch/devnest-fl-pilot-artwrite-1793409721) → origin/master
+- at: 2026-10-31 08:25
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-artwrite-1793409721,
+    branch dispatch/devnest-fl-pilot-artwrite-1793409721'
+- at: 2026-10-31 08:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-31 08:34
+  note: verified — evidence checks green, closing itself

@@ -1,0 +1,101 @@
+{
+  "description": "Synthetic ada-nest Drive queue for nest-worker scan regression tests (card jevnest-worker-scan-latency, OPS-1003). Each pack lists files with content + age_s relative to test time; dirs are implied by file paths.",
+  "stale_claim_min": 60,
+  "caps": {"gpu_gb": 0.0, "disk_gb": 100.0, "egress_only_ok": false, "ram_gb": 16.0},
+  "packs": {
+    "p01-done": {
+      "files": {
+        "pack.yml": {"content": "name: p01-done\n", "age_s": 80000},
+        "done": {"content": "ok worker=w1", "age_s": 70000}
+      }
+    },
+    "p02-failed": {
+      "files": {
+        "pack.yml": {"content": "name: p02-failed\n", "age_s": 80000},
+        "failed": {"content": "boom worker=w1", "age_s": 70000}
+      }
+    },
+    "p03-live-claim": {
+      "files": {
+        "pack.yml": {"content": "name: p03-live-claim\n", "age_s": 3600},
+        "claim/other-host-99": {"content": "1700000000", "age_s": 60}
+      }
+    },
+    "p04-stale-claim": {
+      "files": {
+        "pack.yml": {"content": "name: p04-stale-claim\nneeds:\n  egress_only_ok: true\n", "age_s": 9000},
+        "claim/dead-worker-1": {"content": "1700000000", "age_s": 7200}
+      }
+    },
+    "p05-mixed-claims": {
+      "files": {
+        "pack.yml": {"content": "name: p05-mixed-claims\n", "age_s": 9000},
+        "claim/dead-worker-2": {"content": "1700000000", "age_s": 7200},
+        "claim/live-worker-3": {"content": "1700000000", "age_s": 120}
+      }
+    },
+    "p06-pending": {
+      "files": {
+        "pack.yml": {"content": "name: p06-pending\nneeds:\n  ram_gb: 4\n", "age_s": 300}
+      }
+    },
+    "p07-needs-unmet": {
+      "files": {
+        "pack.yml": {"content": "name: p07-needs-unmet\nneeds:\n  gpu_gb: 24\n", "age_s": 300}
+      }
+    },
+    "p08-no-yml": {
+      "files": {
+        "inputs/readme.txt": {"content": "staged but no pack.yml\n", "age_s": 300}
+      }
+    },
+    "p09-scalar-yml": {
+      "files": {
+        "pack.yml": {"content": "just a string, not a mapping\n", "age_s": 300}
+      }
+    },
+    "dep-done": {
+      "files": {
+        "pack.yml": {"content": "name: dep-done\n", "age_s": 80000},
+        "done": {"content": "ok worker=w1", "age_s": 70000}
+      }
+    },
+    "p10-requires-done-dep": {
+      "files": {
+        "pack.yml": {"content": "name: p10-requires-done-dep\nrequires:\n  - dep-done\n", "age_s": 300}
+      }
+    },
+    "zz-preflight": {
+      "files": {
+        "pack.yml": {"content": "name: zz-preflight\n", "age_s": 80000},
+        "done": {"content": "ok worker=w1", "age_s": 70000},
+        "preflight.json": {"content": "{\"verdict\": \"fail\"}", "age_s": 70000}
+      }
+    },
+    "p11-requires-preflight-fail": {
+      "files": {
+        "pack.yml": {"content": "name: p11-requires-preflight-fail\nrequires:\n  - zz-preflight\n", "age_s": 300}
+      }
+    },
+    "zz2-preflight": {
+      "files": {
+        "pack.yml": {"content": "name: zz2-preflight\n", "age_s": 80000},
+        "done": {"content": "ok worker=w1", "age_s": 70000},
+        "preflight.json": {"content": "{\"verdict\": \"pass\"}", "age_s": 70000}
+      }
+    },
+    "p13-requires-preflight-ok": {
+      "files": {
+        "pack.yml": {"content": "name: p13-requires-preflight-ok\nrequires:\n  - zz2-preflight\n", "age_s": 300}
+      }
+    },
+    "p14-requires-undone-dep": {
+      "files": {
+        "pack.yml": {"content": "name: p14-requires-undone-dep\nrequires:\n  - p06-pending\n", "age_s": 300}
+      }
+    },
+    "p15-empty-dir": {
+      "files": {}
+    }
+  }
+}

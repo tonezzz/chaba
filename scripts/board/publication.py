@@ -22,7 +22,9 @@ Kind semantics (the DevNest mapping):
               telegram/news — "do not publish every heartbeat".
   milestone  -> nest_job + board audit + concise telegram.
   report     -> project dossier (ada-cms-pages note) + board audit.
-  lesson     -> Education (WP lesson CPT) — reusable knowledge.
+  lesson     -> Education — reusable knowledge. WP lesson CPT today;
+              dual-write to the protected wiki Education: namespace rides
+              the WikiLessonSink (board-api flag WIKI_EDUCATION_WRITE).
   news       -> member-facing milestone news (WP news CPT) + board +
               telegram. Evidence is REQUIRED; public needs verified.
   alert      -> telegram + board audit + nest_job error state.
@@ -43,9 +45,12 @@ import json
 import os
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from html.parser import HTMLParser
+from http.cookiejar import CookieJar
 
 KINDS = ("progress", "milestone", "report", "lesson", "news", "alert")
 CONFIDENCE = ("observed", "measured", "verified")
@@ -63,7 +68,7 @@ DEFAULT_ROUTES = {
     "milestone": ["job", "board", "telegram"],
     "report": ["report", "board"],
     "lesson": ["lesson"],
-    "news": ["news", "board", "telegram"],
+    "news": ["news", "wiki", "wiki-private", "board", "telegram"],
     "alert": ["telegram", "board", "job"],
 }
 
@@ -193,6 +198,168 @@ def topic_key(ev: dict) -> str:
             or "t:" + hashlib.sha1(ev["title"].encode()).hexdigest()[:10])
 
 
+# --- html -> wikitext (education corpus) ------------------------------------
+
+_HEADING = {"h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}
+_LESSON_TITLE_BAD = re.compile(r"[#<>\[\]|{}_]")
+_TEMPLATE_PARAM_RE = re.compile(r"\|\s*([A-Za-z_][\w-]*)\s*=\s*([^|]*)")
+_THAI_RE = re.compile("[\u0e00-\u0e7f]")
+
+
+class _HtmlToWikitext(HTMLParser):
+    """Lesson-body HTML -> wikitext (stdlib only).
+
+    Covers the markup lesson writers emit: headings, paragraphs, nested
+    lists, links, bold/italic, code/pre, <hr>. Table-family and unknown
+    tags are flattened — their text content survives."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out = []
+        self.lists = []               # stack of '*' | '#'
+        self._a = None                # (href, out_index) inside <a>
+        self._skip = 0                # inside script/style
+        self._pre = 0
+
+    def _break(self, n):
+        cur = "".join(self.out)
+        if not cur.strip():
+            self.out = []
+            return
+        trailing = len(cur) - len(cur.rstrip("\n"))
+        if trailing < n:
+            self.out.append("\n" * (n - trailing))
+
+    def handle_starttag(self, tag, attrs):
+        if self._skip:
+            self._skip += tag in ("script", "style")
+            return
+        if tag in ("script", "style"):
+            self._skip = 1
+        elif tag in _HEADING or tag == "h1":
+            n = _HEADING.get(tag, 2)          # h1 -> == (page title is h1)
+            self._break(2)
+            self.out.append("=" * n + " ")
+        elif tag in ("p", "div", "section", "article"):
+            self._break(2)
+        elif tag == "br":
+            self.out.append("\n")
+        elif tag == "hr":
+            self._break(2)
+            self.out.append("----")
+            self._break(2)
+        elif tag in ("ul", "ol"):
+            self.lists.append("*" if tag == "ul" else "#")
+            self._break(1)
+        elif tag == "li":
+            self._break(1)
+            self.out.append(("".join(self.lists) or "*") + " ")
+        elif tag == "a":
+            href = (dict(attrs).get("href") or "").strip()
+            self._a = (href, len(self.out)) if href else None
+        elif tag in ("strong", "b"):
+            self.out.append("'''")
+        elif tag in ("em", "i"):
+            self.out.append("''")
+        elif tag == "code" and not self._pre:
+            self.out.append("<code>")
+        elif tag == "pre":
+            self._pre += 1
+            self.out.append("<pre>")
+        elif tag == "blockquote":
+            self._break(1)
+            self.out.append(": ")
+
+    def handle_endtag(self, tag):
+        if self._skip:
+            if tag in ("script", "style"):
+                self._skip = 0
+            return
+        if tag in _HEADING or tag == "h1":
+            n = _HEADING.get(tag, 2)
+            self.out.append(" " + "=" * n)
+            self._break(2)
+        elif tag in ("p", "div", "section", "article"):
+            self._break(2)
+        elif tag in ("ul", "ol"):
+            if self.lists:
+                self.lists.pop()
+            self._break(1)
+        elif tag == "a" and self._a is not None:
+            href, mark = self._a
+            self._a = None
+            label = "".join(self.out[mark:]).strip()
+            del self.out[mark:]
+            self.out.append(f"[{href}]" if not label or label == href
+                            else f"[{href} {label}]")
+        elif tag in ("strong", "b"):
+            self.out.append("'''")
+        elif tag in ("em", "i"):
+            self.out.append("''")
+        elif tag == "code" and not self._pre:
+            self.out.append("</code>")
+        elif tag == "pre":
+            self._pre = max(0, self._pre - 1)
+            self.out.append("</pre>")
+
+    def handle_startendtag(self, tag, attrs):
+        if tag == "br":
+            self.out.append("\n")
+        elif tag == "hr":
+            self._break(2)
+            self.out.append("----")
+            self._break(2)
+
+    def handle_data(self, data):
+        if not self._skip:
+            self.out.append(data)
+
+
+def html_to_wikitext(markup: str) -> str:
+    """Convert lesson-body HTML to wikitext for the Education: pages.
+    Not a general converter — unknown tags flatten to their text."""
+    p = _HtmlToWikitext()
+    p.feed(markup or "")
+    p.close()
+    text = "".join(p.out)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def lesson_wiki_title(topic: str, prefix: str = "Education:") -> str:
+    """Readable Education: page title from a lesson topic — the
+    lesson-<md5> slug never leaks to readers. First letter of each
+    lowercase (hyphen-)word is capitalized; acronyms survive;
+    MediaWiki-forbidden title chars fold to spaces."""
+    t = _LESSON_TITLE_BAD.sub(" ", str(topic or ""))
+    words = []
+    for w in re.split(r"\s+", t):
+        if not w:
+            continue
+        if w.islower():
+            w = "-".join(seg[:1].upper() + seg[1:]
+                         for seg in w.split("-"))
+        words.append(w)
+    return prefix + " ".join(words)
+
+
+def _topic_slug(topic: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", str(topic).lower()).strip("-")
+
+
+def report_wiki_title(report_type: str, period: str = "",
+                      prefix: str = "Reports:") -> str:
+    """Reports:<Type>/<period> page title — member-facing reports are
+    living pages, machine-overwritten by period (usage-ledger +
+    rolling-14d -> Reports:Usage-Ledger/rolling-14d). Same sanitation
+    rules as lesson_wiki_title."""
+    stem = lesson_wiki_title(report_type or "report", "")
+    leaf = re.sub(r"\s+", "-",
+                  _LESSON_TITLE_BAD.sub(" ", str(period or ""))).strip("-")
+    return prefix + stem + (f"/{leaf}" if leaf else "")
+
+
 # --- sinks ------------------------------------------------------------------
 
 
@@ -315,6 +482,325 @@ class TelegramSink(Sink):
             raise DeliveryError(f"telegram relay -> {r.get('error')}")
         return {"ref": f"tg:{(r or {}).get('message_thread_id', '')}"
                        if isinstance(r, dict) else "tg"}
+
+
+class MediaWikiSink(Sink):
+    """Verified-public news adapter for a MediaWiki Action API.
+
+    Wiki writes are deliberately public-only until a real MediaWiki
+    permission boundary exists. Credentials stay in the service env; callers
+    provide only a canonical event and a safe ``meta.wiki_title``.
+    """
+
+    edit_label = "DevNest News"
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:NewsReport", api=None,
+                 name: str = "wiki", surface: str = "public",
+                 namespace_prefix: str = "News/"):
+        super().__init__(name=name, surface=surface, kinds=("news",),
+                         evidence_required=True)
+        self.api_url = api_url.rstrip("/")
+        self.username = username
+        self.password = password
+        self.template = template
+        self.namespace_prefix = namespace_prefix
+        self._jar = CookieJar()
+        self._opener = urllib.request.build_opener(
+            urllib.request.HTTPCookieProcessor(self._jar))
+        self._api_override = api
+
+    def _api(self, params: dict, post: bool = False) -> dict:
+        if self._api_override is not None:
+            return self._api_override(params, post)
+        data = urllib.parse.urlencode(params).encode() if post else None
+        url = self.api_url if post else (
+            self.api_url + "?" + urllib.parse.urlencode(params))
+        req = urllib.request.Request(
+            url, data=data, headers={"User-Agent": "chaba-board-api/1.0"})
+        try:
+            return json.loads(self._opener.open(req, timeout=30).read())
+        except urllib.error.HTTPError as e:
+            detail = e.read()[:300].decode("utf-8", "replace")
+            raise DeliveryError(f"mediawiki -> {e.code}: {detail}")
+        except OSError as e:
+            raise DeliveryError(f"mediawiki -> {e}")
+
+    def _title(self, ev: dict) -> str:
+        title = str((ev.get("meta") or {}).get("wiki_title") or "").strip()
+        if not title:
+            raise Skip("wiki sink needs meta.wiki_title")
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
+        return title
+
+    def check(self, ev: dict):
+        reason = super().check(ev)
+        if reason:
+            return reason
+        if self.surface == "private" and ev["visibility"] != "private":
+            return "private Wiki sink accepts private events only"
+        if self.surface == "public" and ev["visibility"] != "public":
+            return "public Wiki sink accepts public events only"
+        return None
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        summary = str(meta.get("summary") or "").strip()
+        if not summary:
+            raise Skip("wiki sink needs meta.summary")
+        if len(summary) > 80:
+            raise Skip("wiki meta.summary must be <=80 characters")
+        lines = [
+            f"= {ev['title']} =", "",
+            f"'''Quick summary:''' {summary}", "",
+            f"{{{{{self.template}",
+            f"|story_id={ev['event_id']}",
+            f"|status={meta.get('status', 'review' if ev['visibility'] == 'private' else 'published')}",
+            f"|visibility={ev['visibility']}",
+            f"|confidence={ev['confidence']}",
+            f"|desk={meta.get('desk', 'DevNest')}",
+            f"|geo_scope={meta.get('geo_scope', '')}",
+            f"|country={meta.get('country', '')}",
+            f"|region={meta.get('region', '')}",
+            f"|topic={meta.get('topic', '')}",
+            f"|published_at={meta.get('published_at', ev['occurred_at'])}",
+            f"|source_published_at={meta.get('source_published_at', '')}",
+            f"|source_url={ev['evidence'][0]}",
+            f"|source_name={meta.get('source_name', ev['source'])}",
+            f"|parent={meta.get('parent', '')}",
+            "}}", "",
+            ev["body"], "", "== Evidence ==", "",
+        ]
+        lines.extend(f"* [{url} {url}]" for url in ev["evidence"])
+        categories = [] if ev["visibility"] == "private" else [
+            "News", "News/Desks/DevNest"]
+        geo_scope = str(meta.get("geo_scope") or "").strip()
+        if categories and geo_scope == "world":
+            categories.append("News/Geography/World")
+        for key in ("region", "country"):
+            value = str(meta.get(key) or "").strip()
+            if categories and value:
+                categories.append(f"News/Geography/{value}")
+        topic = str(meta.get("topic") or "").strip()
+        if categories and topic:
+            categories.append(f"News/Topics/{topic}")
+        lines.extend([""] + [f"[[Category:{category}]]"
+                             for category in dict.fromkeys(categories)])
+        return "\n".join(lines)
+
+    def _prepare_event(self, ev: dict, title: str) -> dict:
+        """Pre-edit hook riding the authenticated session — WikiLessonSink
+        merges preserved meta from the existing page here. Base: pass
+        through."""
+        return ev
+
+    def publish(self, ev: dict) -> dict:
+        title = self._title(ev)
+        login = self._api({
+            "action": "query", "meta": "tokens", "type": "login",
+            "format": "json"})
+        login_token = login["query"]["tokens"]["logintoken"]
+        result = self._api({
+            "action": "login", "lgname": self.username,
+            "lgpassword": self.password, "lgtoken": login_token,
+            "format": "json"}, post=True).get("login", {})
+        if result.get("result") != "Success":
+            raise DeliveryError("mediawiki login failed")
+        csrf = self._api({
+            "action": "query", "meta": "tokens", "format": "json"
+        })["query"]["tokens"]["csrftoken"]
+        ev = self._prepare_event(ev, title)
+        edited = self._api({
+            "action": "edit", "title": title, "text": self._wikitext(ev),
+            "summary": f"{self.edit_label} {ev['event_id']}",
+            "token": csrf, "format": "json"}, post=True).get("edit", {})
+        if edited.get("result") not in ("Success", "Nochange"):
+            raise DeliveryError("mediawiki edit failed")
+        return {"ref": f"wiki:{title}",
+                "pageid": edited.get("pageid"),
+                "revid": edited.get("newrevid"),
+                "action": edited.get("result", "").lower()}
+
+
+class WikiLessonSink(MediaWikiSink):
+    """Education:-namespace adapter for kind=lesson events
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2).
+
+    surface=private because Education: is a Lockdown-protected
+    staff-only namespace at cutover (Tony 2026-11-06: inhouse-after-sso);
+    members/public events skip with a reason until member wiki accounts
+    exist. meta.wiki_title wins; otherwise the title derives from
+    meta.topic via lesson_wiki_title. meta.format='wikitext' passes the
+    body through verbatim (the migrate path pre-converts); anything else
+    is treated as lesson HTML and converted."""
+
+    edit_label = "Education lesson"
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:Education", api=None,
+                 name: str = "wiki-education", surface: str = "private",
+                 namespace_prefix: str = "Education:"):
+        super().__init__(api_url, username, password, template=template,
+                         api=api, name=name, surface=surface,
+                         namespace_prefix=namespace_prefix)
+        self.kinds = frozenset(("lesson",))
+        self.evidence_required = False
+
+    def _title(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        title = str(meta.get("wiki_title") or "").strip() or \
+            lesson_wiki_title(meta.get("topic") or ev["title"],
+                              self.namespace_prefix)
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
+        return title
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        body = ev["body"]
+        if str(meta.get("format") or "").strip().lower() != "wikitext":
+            body = html_to_wikitext(body)
+        lines = [
+            f"{{{{{self.template}",
+            f"|topic={meta.get('topic', ev['title'])}",
+            f"|level={meta.get('level', '')}",
+            f"|source={meta.get('lesson_source')
+                          or meta.get('source', ev['source'])}",
+            f"|learned_at={meta.get('learned_at', '')}",
+            f"|next_review={meta.get('next_review', '')}",
+            f"|status={meta.get('status', 'open')}",
+            f"|updated={meta.get('updated', ev['occurred_at'][:10])}",
+            f"|no_th={'1' if meta.get('no_th') else ''}",
+            f"|event_id={ev['event_id']}",
+            "}}", "",
+            body, "",
+        ]
+        categories = ["Education"]
+        level = str(meta.get("level") or "").strip()
+        if level:
+            categories.append(f"Education/Level/{level}")
+        status = str(meta.get("status") or "").strip()
+        if status:
+            categories.append(f"Education/Status/{status}")
+        topic = _topic_slug(str(meta.get("topic") or ""))
+        if topic:
+            categories.append(f"Education/Topics/{topic}")
+        lines.extend(f"[[Category:{c}]]"
+                     for c in dict.fromkeys(categories))
+        return "\n".join(lines)
+
+    # meta keys a sparse event inherits from the existing page — the
+    # wiki-side half of do_lesson's re-file preservation, so a caller
+    # that only sends new content can't stomp provenance/review state
+    # (card wiki-education-write-cutover). The door merges explicitly
+    # against the same keys when it runs wiki-primary; this is the
+    # safety net for direct /publish and migrate callers.
+    _MERGE_KEYS = {"topic": "topic", "level": "level",
+                   "lesson_source": "source", "learned_at": "learned_at",
+                   "next_review": "next_review", "status": "status"}
+
+    def _template_call_re(self):
+        base = re.escape(self.template.split(":", 1)[-1])
+        return re.compile(
+            r"\{\{\s*(?:แม่แบบ|Template)\s*:\s*" + base +
+            r"\s*(\|.*?)\}\}", re.S)
+
+    def _existing_params(self, title: str):
+        """Education template params on the existing page, else None."""
+        r = self._api({"action": "query", "titles": title,
+                       "prop": "revisions", "rvslots": "main",
+                       "rvprop": "content", "format": "json"})
+        for p in (r.get("query", {}).get("pages") or {}).values():
+            if "missing" in p:
+                return None
+            rev = (p.get("revisions") or [{}])[0]
+            text = (rev.get("slots") or {}).get("main", {}).get("*", "")
+            m = self._template_call_re().search(text or "")
+            if not m:
+                return None
+            return {pm.group(1): pm.group(2).strip()
+                    for pm in _TEMPLATE_PARAM_RE.finditer(m.group(1))}
+        return None
+
+    def _prepare_event(self, ev: dict, title: str) -> dict:
+        meta = dict(ev.get("meta") or {})
+        thai_free = not _THAI_RE.search(ev.get("body") or "")
+        if all(str(meta.get(k) or "").strip()
+               for k in self._MERGE_KEYS) \
+                and (meta.get("no_th") or not thai_free):
+            return ev
+        old = self._existing_params(title)
+        if not old:
+            return ev
+        for mk, pk in self._MERGE_KEYS.items():
+            if not str(meta.get(mk) or "").strip() and old.get(pk):
+                meta[mk] = str(old[pk])
+        if thai_free and not meta.get("no_th") and old.get("no_th"):
+            meta["no_th"] = True
+        return {**ev, "meta": meta}
+
+
+class WikiReportSink(MediaWikiSink):
+    """Reports:-namespace adapter for kind=report events — the
+    member-facing half of the report split (card
+    wiki-member-knowledge-surface-migrate-wp-3a1cf2; internal dossiers
+    stay on the 'report' MDDB sink). surface=private because Reports: is
+    a Lockdown-protected staff/member namespace at cutover. Explicit
+    opt-in only — kind=report default routes stay report+board, so a
+    dossier note never lands on the wiki unless a caller names
+    sinks=['wiki-reports']. meta.wiki_title wins; otherwise the title
+    derives from meta.report_type + meta.period via report_wiki_title.
+    meta.format='wikitext' passes the body verbatim."""
+
+    edit_label = "Member report"
+
+    def __init__(self, api_url: str, username: str, password: str,
+                 template: str = "แม่แบบ:Report", api=None,
+                 name: str = "wiki-reports", surface: str = "private",
+                 namespace_prefix: str = "Reports:"):
+        super().__init__(api_url, username, password, template=template,
+                         api=api, name=name, surface=surface,
+                         namespace_prefix=namespace_prefix)
+        self.kinds = frozenset(("report",))
+        self.evidence_required = False
+
+    def _title(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        title = str(meta.get("wiki_title") or "").strip() or \
+            report_wiki_title(meta.get("report_type") or ev["title"],
+                              meta.get("period") or "",
+                              self.namespace_prefix)
+        if (not title.startswith(self.namespace_prefix)
+                or "\n" in title or "\r" in title):
+            raise Skip(f"wiki title must be under {self.namespace_prefix}")
+        return title
+
+    def _wikitext(self, ev: dict) -> str:
+        meta = ev.get("meta") or {}
+        body = ev["body"]
+        if str(meta.get("format") or "").strip().lower() != "wikitext":
+            body = html_to_wikitext(body)
+        lines = [
+            f"{{{{{self.template}",
+            f"|report_type={meta.get('report_type', '')}",
+            f"|period={meta.get('period', '')}",
+            f"|source_key={meta.get('source_key', ev['source'])}",
+            f"|status={meta.get('status', 'current')}",
+            f"|updated={meta.get('updated', ev['occurred_at'][:10])}",
+            f"|event_id={ev['event_id']}",
+            "}}", "",
+            body, "",
+        ]
+        categories = ["Reports"]
+        rtype = _topic_slug(str(meta.get("report_type") or ""))
+        if rtype:
+            categories.append(f"Reports/Type/{rtype}")
+        lines.extend(f"[[Category:{c}]]"
+                     for c in dict.fromkeys(categories))
+        return "\n".join(lines)
 
 
 # --- noise policy -----------------------------------------------------------

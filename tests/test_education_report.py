@@ -259,6 +259,33 @@ class FetchIsReadOnly(unittest.TestCase):
             self.assertNotIn("topic", b)      # an upsert body
             self.assertNotIn("content", b)
 
+    def test_fetch_all_wiki_source_and_stale_door(self):
+        sent = []
+
+        def fake(body, base):
+            sent.append(body)
+            if body.get("op") == "list":
+                # a current door echoes the source it served
+                return {"lessons": [], "count": 0,
+                        "source": body.get("source")}
+            return {"content": "", "meta": {}}
+        real = er.api
+        er.api = fake
+        try:
+            er.fetch_all("http://unused", "wiki")
+        finally:
+            er.api = real
+        self.assertTrue(all(b.get("source") == "wiki" for b in sent))
+
+        def stale(body, base):
+            return {"lessons": [], "count": 0}   # pre-wiki door shape
+        er.api = stale
+        try:
+            with self.assertRaises(RuntimeError):
+                er.fetch_all("http://unused", "wiki")
+        finally:
+            er.api = real
+
 
 class EndToEnd(unittest.TestCase):
     def test_main_writes_artifacts_and_gates_post(self):

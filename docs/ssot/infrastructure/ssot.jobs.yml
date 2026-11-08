@@ -55,6 +55,19 @@ conventions:
 
     '
 jobs:
+- id: ada-jobs-verify
+  name: Ada Jobs — verify lane (micro-entity ADA-1091)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:0/30:00'
+  persistent: true
+  timeout: 15m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada-jobs/verify_worker.py --once --max 5
+  env_file: "%h/.config/secrets/cloudflare.env"
+  note: INERT BY DEFAULT — only touches review/verify cards tagged
+    'ada-verify' (opt-in per card). Untagged cards are never read for
+    action. Brain = CF Workers AI llama-3.3-70b (free lane); authority
+    matrix enforced in code (close needs evidence, high/decide refused).
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725
@@ -139,9 +152,20 @@ jobs:
   timeout: 15m
   exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 con01 macbook;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
-    --consolidate; /usr/bin/python3 scripts/report-system.py'
+    --consolidate; /usr/bin/python3 scripts/report-system.py && scp -q
+    stacks/web/public/apps/system-report/data/system-report.yml
+    stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md
+    idc02:~/web-srv/public/apps/system-report/data/ && scp -q
+    stacks/web/public/apps/system-report/data/system-report.yml
+    stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md
+    idc02:~/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/'
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran bash chain, not the nonexistent
-    .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
+    .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh).
+    idc02 -> con01 in the Oct-25 absorber shed BROKE delivery — con01 only wrote its local checkout,
+    idc02's served+repo copies froze (system-report-watchdog caught it at 337h). Delivery restored
+    2026-11-08 via scp fanout to idc02 web-srv (live page) + idc02 exec checkout (the file
+    system-report-watchdog reads — the data dir is gitignored, git never carries it, so the
+    generator must write every host that consumes it).
 - id: chaba-host-loads
   name: Host-loads sampler (fleet load/mem/disk -> system-report monitor page)
   host: idc02
@@ -205,6 +229,24 @@ jobs:
     — the rendered unit previously dropped kanban-act + nest-overview. Prose lane moved off tony-omen phi3
     onto the LiteLLM gateway chat-local alias (qwen2.5:7b on idc02 — card chat-local-free-lane, 2026-10-16);
     env_file supplies LITELLM_KEY (LITELLM_KEY_CHABA virtual key).'
+- id: chaba-unattended-report
+  name: Daily unattended-run digest -> reports/ + Telegram milestone
+  host: idc03   # writer checkout — sees committed card state
+  dispatch: systemd
+  on_calendar: '*-*-* 08:30:00'
+  persistent: true
+  timeout: 10m
+  cwd: '%h/CascadeProjects/chaba-tony-dell'
+  exec:
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/unattended-report.py
+  note: 'card hands-off-waiting-card-procedure (KNB-0928) — the daily
+    hands-off digest: preflight state (kill switch, deploy lock, disk,
+    backup proof), queue snapshot, waiting_cards verdicts for every
+    queued/starting card, today''s card activity, eligibility metrics.
+    Writes reports/unattended-<date>.md and posts ONE Telegram milestone
+    via board-api /publish (noise policy debounces). Read-only — never
+    mutates cards. Added 2026-11-08; timer unit renders via
+    render-jobs.py --install on idc03.'
 - id: chaba-tony-ideas
   name: Tony ideas/decisions harvest -> CMS tony-ideas
   host: idc03   # moved 2026-10-17 OPS-0725 (served-path writer)
@@ -300,13 +342,18 @@ jobs:
   dispatch: systemd
   every: 1h
   persistent: true
-  timeout: 30m
+  timeout: 60m
   exec: '%h/.local/share/doc-archive/mirror-to-ha-www.sh'
+  env:
+    MDDB_BASE: http://100.102.134.91:11027
   note: publishes doc-archive pages to tony-ha www/documents/ so casted
     /local/documents/<slug>/<page> render on screens. Needs
     ~/.config/secrets/doc-archive.env (API key) + rsync ssh to tony-dell-m2m
     (con01 mesh key already on dell). Reads doc-archive API + mddb on idc03.
     Moved idc03->con01 2026-10-22 (was a hand unit on idc03 — now declared).
+    MDDB_BASE added 2026-11-07 — `documents` is a CMS collection on the :11027
+    plane since the 10-22 split; :11023 returned empty slug list -> hourly
+    "stage is empty" failures (OPS-1038).
 - id: mddb-vector-reindex
   name: MDDB vector reindex — daily re-embed sweep for dropped embeddings
   host: con01
@@ -450,6 +497,25 @@ jobs:
     optimize-gate warnings) into reports/qc-scoreboard/*.md + CMS page
     qc-scoreboard. After daily-brief (07:05/19:05) so its numbers ride the
     freshest producer state. Added 2026-10-15.'
+- id: deploy-preflight
+  name: Deploy-preflight gate (merged cards -> Tony approval -> prod deploy)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:07/5:00'
+  persistent: true
+  timeout: 25m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/deploy-preflight.py
+  note: 'card KNB-1090 — the R4 human-gated deploy stage. Scans served card
+    dir for column review|done + action.status=done + a top-level
+    deploy.target naming a DEPLOY_TARGETS registry entry (card ada-deploy-
+    preflight-gate). Raises a board request (approve/hold/abort, default
+    hold) with merge sha + diff stat + rollback plan; only an explicit
+    approve answer runs the registry deploy command and then verifies the
+    declared health surface (producer exit 0 AND consumer GET ok). Card
+    YAML writes under /tmp/board-api.lock; deploy exec outside the lock;
+    /tmp/deploy-preflight.lock prevents overlap. Fail-closed: unknown
+    targets error, t4 skipped, unparsed answers hold, failed deploys do
+    not loop. Added 2026-11-07.'
 - id: board-invariants
   name: Board invariants scan (every 4h)
   host: idc03   # moved 2026-10-16/17 OPS-0725
@@ -496,6 +562,51 @@ jobs:
     /inbox entry when data is >26h old or idc02 is unreachable. Kills
     the corpse-display failure mode (Oct-19 freeze: 3-day-old page, no
     alert).'
+- id: served-checkout-watchdog
+  name: Served-checkout divergence watchdog (idc03 writer health)
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'hourly'
+  persistent: true
+  timeout: 2m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/served-checkout-watchdog.py
+  note: 'OPS-1117 — watches the single-writer checkout
+    ~/CascadeProjects/chaba-tony-dell on idc03: files a deduped board-api
+    /inbox entry when behind>50, ahead>200, dirty>50, or unmerged paths
+    exist. OPS-1075 lesson: board-api write latency tracks served-checkout
+    health — the OPS-1074 divergence sat for days before surfacing as
+    >60s writes. Alerts deduped 12h; state
+    ~/.local/state/served-checkout-watchdog.json.'
+- id: timer-timeline-update
+  name: Timer timeline sweep (collects all hosts' timer/service states)
+  host: tony_omen
+  dispatch: systemd
+  every: 15min
+  persistent: true
+  timeout: 5m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-timeline-update.py
+  note: 'Declared 2026-11-08 — was an ad-hoc unit on tony-omen (and before
+    that tony-dell), never absorbed into the manifest. Writes
+    ~/.local/share/chaba/timer-timeline/state.json that timer-sentinel
+    reads — the two MUST co-locate: when the collector moved dell->omen
+    the dell-side sentinel kept reading the stale local file and fired
+    timer-alert-collector on a phantom dead sweep.'
+- id: timer-sentinel
+  name: Timer sentinel — fires timer-alert-* cards on suspicious timer state
+  host: tony_omen
+  dispatch: systemd
+  every: 10min
+  persistent: true
+  timeout: 3m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/timer-sentinel.py
+  env:
+    BOARD_API: https://idc03.taila0626a.ts.net:10000
+  note: 'Declared 2026-11-08 — was an ad-hoc unit on tony-dell reading a
+    state file that stopped updating when the collector moved to omen.
+    Co-located with timer-timeline-update on tony_omen (shares
+    TT_STATE_DIR default). Independent of the chaba-jobs dispatcher:
+    own timer, so it still fires when the dispatcher/jobs are what is
+    broken. Dell ad-hoc units removed same day.'
 - id: podman-lock-watchdog
   name: Podman lock-wedge watchdog (probe + stale-lock self-heal)
   host: tony_dell
@@ -633,7 +744,7 @@ jobs:
   note: 5s cadence — below the dispatcher floor, proves the dispatch boundary
 - id: wp-cam-snapshot
   name: Cam Snapshot -> WP cam CPT
-  host: tony_omen
+  host: tony_dell
   dispatch: systemd
   on_calendar: '*-*-* *:2/15:00'
   persistent: true
@@ -1056,7 +1167,7 @@ jobs:
     with --targets scripts/bench/targets.full.yml. Tiers + host ceilings:
     docs/ssot/infrastructure/ssot.model-tiers.yml. Added 2026-10-14.'
 - id: chaba-lessons-due
-  name: Education due-review queue -> WP page
+  name: Education due-review queue + index -> wiki Education:Due/Index + WP page
   host: idc03
   dispatch: systemd
   on_calendar: '*-*-* 07:30:00'
@@ -1064,11 +1175,18 @@ jobs:
   timeout: 5m
   cwd: '%h/CascadeProjects/chaba'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/lessons-due.py
-  note: 'card education-store (OPS-0696) — refreshes the private WP page slug
-    education-due (post 354) with due-now + upcoming lesson reviews read from
-    lesson CPT next_review/status meta. Live unit on idc03 predates this
-    manifest entry (hand-created 2026-10-15, same schedule+exec) —
-    render-jobs.py --host idc03 --install converges it.'
+  note: 'card education-store (OPS-0696) + wiki-member-knowledge-surface
+    (OPS-1046 step 4) — refreshes Education:Due AND Education:Index on
+    wiki.h3 via /wiki/page (index-refresh added 2026-11-07 so do_lesson
+    dual-writes show up without a migrate rerun; --no-index /
+    LESSON_INDEX=0 skips) plus the private WP page slug education-due
+    (post 354) during the migration transition. Defaults --source wiki
+    (reads /lesson op=list source=wiki through the door — needs
+    board-api post 2026-11-06 build) and --dest both; LESSON_SOURCE=wp
+    + --dest wp is the pre-migration fallback. Live unit on idc03
+    predates this manifest entry (hand-created 2026-10-15, same
+    schedule+exec) — render-jobs.py --host idc03 --install converges
+    it.'
 - id: chaba-lessons-audit
   name: Education CPT policy audit (R1/R3/R4) -> report
   host: idc03
@@ -1106,8 +1224,51 @@ jobs:
     report lands on disk silently. Read-only: never writes /lesson; fixes
     remain the explicit upsert stage, deletion human-gated. Runs after
     chaba-lessons-audit so both the standalone component and the
-    consolidated view stay fresh. Runbook:
+    consolidated view stay fresh. 2026-11-06 (OPS-1046 step 4):
+    --source wiki audits the Education: namespace instead of the WP CPT
+    (EDU_SOURCE env; needs the post-2026-11-06 board-api build). Default
+    stays wp until the lesson CPT goes read-only — flip EDU_SOURCE=wiki
+    in the unit env at cutover. Runbook:
     docs/ssot/jobs/education/2026-10-27-education-maintenance-report.yml'
+- id: chaba-host-ready-check
+  name: R7 host software readiness probe
+  host: idc03
+  dispatch: systemd
+  on_calendar: 'Sun *-*-* 06:00:00'
+  persistent: true
+  timeout: 10m
+  cwd: '%h/CascadeProjects/chaba'
+  condition_path: '%h/CascadeProjects/chaba/scripts/host-ready-check.py'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/host-ready-check.py --json-out %h/var/chaba/jobs/host-ready-check.json
+  note: 'card r7-host-software-baseline (OPS-1105) — weekly R7 probe:
+    ssh-checks every declared capability in ssot.host-software.yml on
+    every host (python/venv/python_ml/ollama models/node/podman).
+    Nonzero exit on any fail. Follow-up: focus-inbox flagging when the
+    fail-set changes (lesson-drift-check pattern). Added 2026-11-07.'
+- id: chaba-bge-education-shadow
+  name: BGE education shadow refresh (lesson sync + snapshot + report)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* 07:00:00'
+  persistent: true
+  timeout: 15m
+  cwd: '%h/CascadeProjects/chaba'
+  condition_path: '%h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py'
+  exec:
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-lessons-shadow.py --sync
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --build
+    - /usr/bin/python3 %h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py --adapter %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --index %h/.local/share/bge-hybrid/docs.json --output %h/.cache/bge-education-shadow-v2.json --collections bge-lessons-shadow
+  note: 'card education-maintenance-consolidated-report + embed-space-eval —
+    keeps the BGE shadow report inside the 48h freshness window that
+    lessons-due.py (#75) requires before rendering "Related lesson
+    suggestions (BGE shadow)". Three chained steps: sync WP lessons into
+    the isolated bge-lessons-shadow collection on mddb-embed, rebuild the
+    BM25 lexical snapshot, then run the due-lesson shadow queries and
+    write the JSON report lessons-due reads by default. Read-only on the
+    production side — writes only to mddb-embed + ~/.cache. Runs 30 min
+    before chaba-lessons-due so the report is fresh when the due page
+    renders. Slugs stay aligned post wiki-migration: wiki mints the same
+    lesson-md5(topic) slug WP does. Added 2026-11-07.'
 - id: lesson-drift-check
   name: Lesson drift check — trade docs mtime vs lesson modified
   host: tony_dell
@@ -1259,7 +1420,9 @@ jobs:
   every: 5m
   timeout: 4m
   persistent: false
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 3 --max-new 3
+  env:
+    DEVNEST_KK_MAC_ENABLED: 'true'
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 3 --max-new 3 --budget-s 90
   note: 'OPS-1001 — reads only explicit task specs from
     gdrive:ada-nest-kk-llm/inbox/; stages at most three admitted
     read-only packages when the KK-Mac heartbeat/load/Ollama/disk gates
@@ -1272,12 +1435,26 @@ jobs:
   every: 5m
   timeout: 5m
   persistent: false
+  env:
+    DEVNEST_KK_MAC_ENABLED: 'true'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_capacity_broker.py
   note: 'OPS-1002 — routes explicit normalized task specs from
     gdrive:ada-nest-devnest/inbox/ to KK-Mac or stages complete Colab packs.
     KK admission/load gates remain authoritative. Colab packs are staged but
     never launched by this broker; a fresh managed GPU and explicit queue
     start remain required. No synthetic filler or duplicate runner.'
+- id: devnest-report-feed
+  name: DevNest durable report feed
+  host: tony_dell
+  dispatch: systemd
+  every: 15m
+  timeout: 3m
+  persistent: false
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_report_feed.py --max-age-hours 168 --max-new 10
+  note: 'OPS-1002 — converts recent allowlisted durable reports into
+    bounded KK-Mac summary specs. Uses source markers for idempotency, excludes
+    KK-Mac self-reports to avoid feedback loops, and never creates synthetic
+    work. The shared capacity broker routes the resulting specs.'
 - id: nest-queue-watch
   name: Nest queue watch — TG notify on pack claim/done/fail
   host: idc03
@@ -1356,8 +1533,39 @@ jobs:
     scripts/colab/packs/cline-kanban-nest-bridge/out/intake/<job_key>/.
     Provider default ollama/qwen2.5:7b; openrouter/or-free-* also
     whitelisted. Serial by design — one card per tick.'
+- id: cline-board-mirror
+  name: Cline board mirror — Chaba queue/lifecycle -> con01 kanban projection
+  host: con01
+  dispatch: systemd
+  every: 2min
+  timeout: 3m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/cline-board-mirror.py
+  note: 'KNB-1008 — READ-ONLY projection of the Chaba pipeline onto the
+    cline-kanban board (cline.surf-thailand.com). Reads GET /queue +
+    /cards from board-api, applies moves/creates/deletes to
+    board.json under the app''s own atomic write convention (spike
+    2026-10-30: direct locked edit is live to task list + UI; no agent
+    session is spawned). Only tasks carrying [CARD:<id>] markers are
+    touched — pilot + cline-intake execution tasks are never modified.
+    Chaba stays the source of truth; Cline state is rebuildable
+    display data. Requires runner verdicts flowing (KNB-1007 /ready).'
+- id: adobe-stock-reindex-sync
+  name: Adobe Stock index rebuild + idc02 workspace sync
+  host: tony_dell
+  dispatch: systemd
+  every: 1h
+  persistent: true
+  timeout: 10m
+  exec: /usr/bin/env bash %h/CascadeProjects/chaba/scripts/adobe-stock/reindex-sync.sh
+  note: 'OPS-1131 follow-up — rebuilds bounded reuse indexes from
+    gdrive:ada-nest-adobe-stock campaigns (publish-previews.py
+    --reindex-only) and scp-syncs the 4 index files into the idc02
+    ada-opencode workspace fallback; idc02''s /data/gdrive mount is
+    empty so the MCP bridge reads workspace indexes. Needs rclone
+    gdrive remote + ssh idc02 + BatchMode key on tony-dell.'
 related_files:
 - scripts/render-jobs.py
+- scripts/ops/cline-board-mirror.py
 - scripts/job-dispatcher.py
 - systemd/generated/
 - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml

@@ -191,12 +191,13 @@ class StartTaskContractTest(unittest.TestCase):
         self.mod.start_opencode_lane = lambda card, lane, unit: (
             seen.append((lane, unit)) or ("devin-task-x", "x", ""))
         unit, tid, err = self.mod.start_task(
-            _card(executor="opencode", agent_profile="ops-readonly"),
+            _card(executor="opencode", lane="free_lane",
+                  agent_profile="ops-readonly"),
             "dispatch")
         self.assertEqual(err, "")
         self.assertEqual(unit, "devin-task-x")
         self.assertEqual(len(seen), 1)
-        self.assertEqual(seen[0][0], "")  # executor route, not a lane
+        self.assertEqual(seen[0][0], "free_lane")
         self.assertFalse(self.calls)      # no devin-dispatch spawn
 
     def test_opencode_start_failure_never_falls_back(self):
@@ -479,6 +480,30 @@ class BoardApiContractTest(unittest.TestCase):
                                  "model": "x; rm -rf /"}},
                      "action.model")
 
+    def test_create_preserves_deploy_block(self):
+        # OPS-1116: /card used to drop deploy: silently — the first live
+        # gate rehearsal had to hand-edit card YAML.
+        self.mod.do_create(
+            {"id": "c-dep", "title": "t",
+             "deploy": {"target": "ada-voice-prod",
+                        "note": "deploy after merge"}}, "devin")
+        import yaml
+        saved = yaml.safe_load((Path(self.td.name) / "c-dep.yml")
+                               .read_text())
+        self.assertEqual(saved["deploy"]["target"], "ada-voice-prod")
+        self.assertEqual(saved["deploy"]["note"], "deploy after merge")
+
+    def test_create_validates_deploy_block(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": "ada-voice-prod"},
+                     "deploy must be an object")
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": {"target": "Bad Target!"}},
+                     "deploy.target")
+        self.rejects({"id": "c-bad", "title": "t",
+                      "deploy": {}},
+                     "deploy.target")
+
     def test_queue_warns_manual_executor(self):
         card = {"id": "c-em", "column": "backlog",
                 "action": {"type": "dispatch", "executor": "manual"}}
@@ -540,7 +565,10 @@ class KanbanDispatchContractTest(unittest.TestCase):
             saved = (m.load_policy, m.overloaded, m.active_tasks,
                      m.push_capable, m.start_pending)
             self.started = []
-            m.load_policy = lambda: {"kill_switch": str(Path(td) / "k")}
+            m.load_policy = lambda: {
+                "kill_switch": str(Path(td) / "k"),
+                "state_file": str(Path(td) / "state.json"),
+            }
             m.overloaded = lambda: False
             m.active_tasks = lambda: 0
             m.push_capable = lambda repo: True

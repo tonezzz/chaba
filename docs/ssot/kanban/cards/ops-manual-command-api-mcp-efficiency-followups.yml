@@ -1,0 +1,91 @@
+id: ops-manual-command-api-mcp-efficiency-followups
+title: Implement the three approved AUD-1033 command-efficiency follow-ups
+column: doing
+updated: 2026-11-07 16:52
+brief: Turn Tony's all-three answer on AUD-1033 into tracked, gated implementation work.
+priority: medium
+program: devnest-efficiency
+tags:
+- board-api
+- mcp-debug
+- storage-probe
+- follow-up
+spec: 'Parent: ops-manual-command-api-mcp-efficiency-audit (AUD-1033), request gated-follow-ups-from-aud-1033-which-to-8d37ba;
+  Tony answered all three. Implement in sequence with independent tests and no production rollout without its normal
+  gate: (1) runner-agent read projection: after a claim-poll soak, replace only the two /cards reads with the projected
+  endpoint and prove claim/verdict field parity; (2) scoped host_snapshot mcp_debug preset and preset-catalog note,
+  with tool policy and contract tests, no global tool-surface expansion; (3) read-only storage_probe.py S2 job-pack
+  returning the storage-dryrun contract (directory-size table and protected-fragment checks), with a deterministic
+  verifier and no delete/write operations. Preserve existing fallback/rollback behavior.'
+ref: OPS-1037
+comms:
+- at: 2026-10-31 10:06
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-02 11:08
+  from: devin
+  text: 'Efficiency sequencing recommendation: start with a read-only claim-poll soak for the projected card endpoint,
+    then replace the three full `/cards` reads in runner-agent only if claim/verdict parity holds. The audit bench
+    reports 95.8–99.97% payload reduction. After that, add the scoped host_snapshot preset and the read-only storage_probe
+    pack; no global MCP or runner rollout without tests/review.'
+- at: 2026-11-02 12:21
+  from: devin
+  text: 'Started per Tony''s Nov 2 instruction in isolated worktree `feat/ops1037-command-efficiency-20261102`.
+    Scope is all three approved items: claim-poll soak + projected runner reads, scoped host_snapshot preset, and
+    read-only storage_probe pack with verifier/tests. No production rollout or service restart in this work; normal
+    gates remain. The prior focus router state is stale, and this explicit request takes precedence for this task.'
+- at: 2026-11-02 12:21
+  from: tony
+  text: moved backlog -> doing
+- at: 2026-11-02 12:32
+  from: devin
+  text: 'Runner projection gate result (Nov 2): five read-only paired polls against the live `:10000/cards` endpoint
+    all returned the legacy full-card payload (~5,336,702 B); `action_status`/`fields` produced no projection envelope
+    (`count/total` absent). One queued card observed. The live endpoint is not serving the projection yet, so no
+    runner rollout/switch will be claimed. Local runner implementation keeps the full-read fallback; deployment
+    remains a separate gate.'
+- at: 2026-11-02 13:07
+  from: devin
+  text: 'Implementation checkpoint committed locally: `bf5b0ff1f` on `feat/ops1037-command-efficiency-20261102`
+    (not pushed). Added the default-off projected claim/verdict reader with legacy fallback and blocker parity,
+    a fixed one-step host_snapshot preset/policy, and the read-only storage_probe S2 pack plus independent verifier.
+    Board suite: 342 passed/6 skipped; focused MCP/storage/runner suite: 28 passed; SSOT: 3,389 valid/0 errors,
+    optimizer warnings baseline-covered. The live board-api still ignore'
+- at: 2026-11-02 13:10
+  from: devin
+  text: Follow-up checkpoint `5d08978bf` records final validation/job evidence. The `host_snapshot` catalog description
+    is in the runtime `presets` map consumed by `mcp_preset_list`; policy stays fixed to one host/one command. I
+    left the oversized `ssot.token-tools.yml` unchanged rather than create a new bloat warning or refresh the warning
+    baseline. Code remains local/unpushed; projection flag stays off until the served endpoint passes the soak.
+- at: 2026-11-02 13:51
+  from: devin
+  text: 'Read-only deployment provenance check: `chaba-board-api.service` is active on idc03, but ExecStart runs
+    `scripts/board/board-api.py` from the served `chaba-tony-dell` checkout at `916efdb9e`, which has no projection
+    route. That served checkout is highly diverged (621 ahead/662 behind) and dirty. I did not pull, restart, or
+    edit it. The projection/runner enablement now needs a separately gated served-checkout reconciliation and service
+    rollout, followed by the same soak.'
+- at: 2026-11-02 14:14
+  from: devin
+  text: 'More precise read-only gate finding: `chaba-board-api.service` on idc03 runs the served checkout''s `board-api.py`
+    at `916efdb9e`; the file is clean but lacks `card_query`/`action_status`. The served checkout is now 624 ahead/663
+    behind and dirty, including an unresolved `UU stacks/idc03/litellm/config.yaml` conflict. No safe pull/restart
+    is possible as an OPS-1037 code step; it needs its own writer-owned reconciliation/deployment gate. I did not
+    touch that checkout or service.'
+- at: 2026-11-02 14:16
+  from: devin
+  text: 'One design constraint: board-api derives `REPO` from `__file__` and anchors `CARD_DIR`, render scripts,
+    and `CARDS_JSON` beneath it. Simply repointing ExecStart to a clean exec checkout would redirect canonical card
+    writes/rendering, so do not switch checkouts as a quick fix. Short term, reconcile the served writer checkout
+    safely after its unresolved conflict is handled; long term, a separate immutable service-code checkout needs
+    an explicit canonical data/render root contract and its own migra'
+- at: 2026-11-02 15:25
+  from: devin
+  text: 'Ada handoff proposal (planning only): ask Ada to produce a read-only risk/rollout plan from the verified
+    evidence: idc03 `chaba-board-api.service` is active on served checkout `chaba-tony-dell` at `916efdb9e`; projection
+    is absent; checkout is 624 ahead/663 behind, dirty, with an unresolved `UU` config conflict. Deliverables: explain
+    the code/data-path coupling, safe reconciliation options, rollback, and health + consumer verification steps.
+    Hard boundary: no repo/card edits, pull/rebase, checko'
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] partial: items 1+2 landed — read-projection endpoints + host_snapshot job-pack on master (21b4309ca,
+    28baadfc5). Item 3 (read-only storage_probe.py pack) absent on master — still open. Leaving in doing.'

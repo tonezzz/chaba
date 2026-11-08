@@ -55,12 +55,14 @@ from pathlib import Path
 try:
     from . import kk_mac_admission
     from . import kk_mac_llm
+    from . import kk_mac_memory
 except ImportError:  # direct script / spec-file loading
     _d = str(Path(__file__).resolve().parent)
     if _d not in sys.path:
         sys.path.insert(0, _d)
     import kk_mac_admission
     import kk_mac_llm
+    import kk_mac_memory
 
 LANE = "kk_mac_local"
 TASK_CLASSES = frozenset(kk_mac_llm.ALLOWED_TASKS)
@@ -183,7 +185,8 @@ def verify(task_class: str, response: str, expect: dict | None) -> dict:
 def run_contract(task: dict, *, run_task=None,
                  snap: dict | None = None,
                  worktree: Path | None = None,
-                 taskdir: Path | None = None) -> dict:
+                 taskdir: Path | None = None,
+                 mem_sample=None, make_monitor=None) -> dict:
     """Run the full contract for one task. task keys: id, card,
     task_class, prompt, expect (dict), artifact (repo-relative path),
     model, host. Returns the durable result record — also written to
@@ -225,20 +228,49 @@ def run_contract(task: dict, *, run_task=None,
         result["reasons"] = gate["reasons"]
         _persist(result, worktree, taskdir)
         return result
+    # live memory guard (MEM-1043): pre-load floor >=60% free, abort
+    # below 50% or on critical pressure; pre/during/post snapshots are
+    # persisted into the result record.
+    host = str(task.get("host") or "kk-mac")
+    sampler = mem_sample or kk_mac_memory.sample
+    mem = {"pre": None, "during": [], "post": None}
+    result["memory"] = mem
+    pre = sampler(host)
+    mem["pre"] = pre
+    pre_reasons = kk_mac_memory.evaluate(pre, phase="pre")
+    if pre_reasons:
+        result["verdict"] = "fallback"
+        result["reasons"] += pre_reasons
+        _persist(result, worktree, taskdir)
+        return result
+    monitor = (make_monitor or kk_mac_memory.MemoryMonitor)(host)
+    monitor.start()
     try:
-        res = run_task(tc, prompt, model=model,
-                       host=str(task.get("host") or "kk-mac"))
+        res = run_task(tc, prompt, model=model, host=host)
     except Exception as exc:
+        monitor.stop()
         result["verdict"] = "fallback"
         result["reasons"].append(
             f"executor_error:{type(exc).__name__}:{exc}"[:300])
         _persist(result, worktree, taskdir)
         return result
+    monitor.stop()
+    mem["during"] = list(getattr(monitor, "samples", []) or [])[-20:]
+    post = sampler(host)
+    mem["post"] = post
     if not res.get("ok"):
         result["verdict"] = "fallback"
         result["reasons"] = [
             "run_declined:" + ",".join(
                 (res.get("admission") or {}).get("reasons") or ["?"])]
+        _persist(result, worktree, taskdir)
+        return result
+    mem_reasons = list(getattr(monitor, "worst_reasons",
+                               lambda: [])())
+    mem_reasons += kk_mac_memory.evaluate(post, phase="post")
+    if mem_reasons:
+        result["verdict"] = "fallback"
+        result["reasons"] += mem_reasons
         _persist(result, worktree, taskdir)
         return result
     result["usage"] = res.get("usage")

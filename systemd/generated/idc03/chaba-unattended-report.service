@@ -1,0 +1,8 @@
+[Unit]
+Description=Daily unattended-run digest -> reports/ + Telegram milestone (job:chaba-unattended-report, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/unattended-report.py
+WorkingDirectory=%h/CascadeProjects/chaba-tony-dell

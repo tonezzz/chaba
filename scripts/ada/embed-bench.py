@@ -133,29 +133,45 @@ def main() -> None:
         sys.exit(f"corpus too small: {len(docs)} docs — mddb healthy?")
     print(f"corpus: {len(docs)} docs")
 
+    # Direct leg degrades gracefully — a dead GEMINI_API_KEY (403/quota)
+    # marks it unavailable instead of killing the whole weekly run; the
+    # OR + gateway legs still produce their numbers. (ADA-1111)
+    direct_err = None
     gem_lat, or_lat, or_toks = [], [], 0
     cosines = []
     for chunk in batched([b for _, b in docs], 10):
-        g, gs = embed_gemini(chunk)
+        if direct_err is None:
+            try:
+                g, gs = embed_gemini(chunk)
+                gem_lat.append(gs)
+            except Exception as e:
+                direct_err, g = str(e)[:200], None
+        else:
+            g = None
         o, os_, tk = embed_or(chunk)
-        gem_lat.append(gs); or_lat.append(os_); or_toks += tk
-        cosines += [cos(a, b) for a, b in zip(g, o)]
+        or_lat.append(os_); or_toks += tk
+        if g is not None:
+            cosines += [cos(a, b) for a, b in zip(g, o)]
         time.sleep(0.5)
+    if direct_err:
+        print(f"direct Gemini leg unavailable: {direct_err}", file=sys.stderr)
 
     # retrieval sanity: first-10-chars of title slug → top-1 same-space check
     hits_g = hits_o = 0
     probes = docs[:8]
-    gspace, _ = embed_gemini([b for _, b in docs])
+    gspace = [] if direct_err else embed_gemini([b for _, b in docs])[0]
     ospace, _, _ = embed_or([b for _, b in docs])
     for key, body in probes:
         q = " ".join(re.split(r"[-_]", key))[:80]
         try:
-            gq, _ = embed_gemini([q]); oq, _, _ = embed_or([q])
+            gq = [] if direct_err else embed_gemini([q])[0]
+            oq, _, _ = embed_or([q])
         except Exception:
             continue
-        bg = max(range(len(docs)), key=lambda i: cos(gq[0], gspace[i]))
+        if gq:
+            bg = max(range(len(docs)), key=lambda i: cos(gq[0], gspace[i]))
+            hits_g += docs[bg][0] == key
         bo = max(range(len(docs)), key=lambda i: cos(oq[0], ospace[i]))
-        hits_g += docs[bg][0] == key
         hits_o += docs[bo][0] == key
         time.sleep(0.3)
 
@@ -175,10 +191,13 @@ def main() -> None:
     rep = {
         "run": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "docs": len(docs), "dims": DIMS, "or_model": OR_MODEL,
-        "cosine": {"mean": round(statistics.fmean(cosines), 4),
-                   "min": round(min(cosines), 4)},
-        "latency_s": {"gemini_p50": round(statistics.median(gem_lat), 2),
-                      "gemini_p95": round(max(gem_lat), 2),
+        "cosine": ({"mean": round(statistics.fmean(cosines), 4),
+                    "min": round(min(cosines), 4)} if cosines
+                   else {"mean": None, "min": None}),
+        "latency_s": {"gemini_p50": (round(statistics.median(gem_lat), 2)
+                                    if gem_lat else None),
+                      "gemini_p95": (round(max(gem_lat), 2)
+                                     if gem_lat else None),
                       "or_p50": round(statistics.median(or_lat), 2),
                       "or_p95": round(max(or_lat), 2)},
         "or_tokens": or_toks, "or_cost_usd": round(est_cost, 5),
@@ -192,7 +211,7 @@ def main() -> None:
 
     if "--publish" in sys.argv:
         title = "Gemini & OR Embedding Benchmark"
-        same_space = rep["cosine"]["min"] > 0.98
+        same_space = (rep["cosine"]["min"] or 0) > 0.98
         body = f"""# {title}
 
 Run {rep['run']} — {rep['docs']} real `ada-cms-pages` docs, {DIMS} dims.

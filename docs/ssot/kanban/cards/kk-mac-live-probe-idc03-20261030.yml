@@ -1,7 +1,7 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
-column: review
-updated: 2026-10-30 15:09
+column: done
+updated: 2026-11-08 07:50
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
 priority: high
@@ -33,7 +33,7 @@ action:
     - no mutations
   status: done
   last_failure: ' finished (unknown) — see `devin-dispatch logs `'
-  attempts: 1
+  attempts: 2
   runner: idc03
   result: ' finished (unknown) — see `devin-dispatch logs `'
 ref: OPS-0991
@@ -90,6 +90,48 @@ comms:
   from: chaba
   text: 'patch-relay: dispatch/kk-mac-live-probe-retry-20261030 from idc03 — 1379B bundle in patch-inbox (kk-mac-live-probe-idc03-20261030-1f16965029.bundle);
     merge-sweep will land it'
+- at: 2026-10-30 15:16
+  from: devin
+  text: Retry after the `reachable` answer passed the supervised local probe. `kk_mac_executor.py` reported `verdict=pass`;
+    deterministic checks passed for non-empty/bounded response plus KK-Mac/read-only/no-mutations facts. Local Ollama
+    qwen3:8b usage was 265 eval tokens; no external provider and no persistent KK_MAC_LANES change. Commit `1f1696502`
+    is relayed through patch-inbox; merge-sweep still needs to land the artifact before I mark this verified.
+- at: 2026-10-30 15:21
+  from: tony
+  text: retry requested
+- at: 2026-10-30 15:21
+  from: idc03
+  text: claimed
+- at: 2026-10-30 15:22
+  from: chaba
+  text: run ended with no exit record (no task_id) — the verified gate decides from the deliverable
+- at: 2026-10-30 15:22
+  from: chaba
+  text: run finished (unknown) → review
+- at: 2026-10-31 10:09
+  from: devin
+  text: The reachable answer led to a retry, but the current action is still `finished (unknown)` with no task_id.
+    Earlier comms report a local verifier pass and patch bundle `1f1696502` in patch-inbox, but I cannot find a
+    durable result artifact in origin/master. Keeping this in review until the patch/result is landed and the verified
+    gate is supported by evidence; no new inference run without a fresh idle-window preflight.
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Kanban review note: the `reachable` answer has been followed by the bounded retry, but the latest action
+    ended `unknown`/no task_id. The earlier verifier-pass result is only in a patch-inbox relay and no result artifact
+    is present in origin/master; keeping this in review until the artifact is landed and checked. No additional
+    model run without a fresh idle-window preflight.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] closing as stale: reachability answer was delivered; verifier-pass artifact stayed relay-only
+    and kk-mac is now offline. Superseded by the armed kk-mac lane cards.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: closed by devin
+- at: 2026-11-08 07:50
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 review_kind: verify
 claim: {}
 requests:
@@ -107,3 +149,4 @@ requests:
     label: Keep the JEV lane off and wait for a later idle window.
   suggested: reachable
   answer: 'reachable — Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+awaiting_action: true

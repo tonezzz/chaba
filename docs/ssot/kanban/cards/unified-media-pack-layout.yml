@@ -1,0 +1,59 @@
+id: unified-media-pack-layout
+title: Define unified durable media pack layout and local-cache contract
+column: done
+updated: 2026-11-08 10:58
+brief: Generalize the Nest artifact structure so Gaussian, image, video, audio, and document jobs share one Drive
+  dataset/job/pack contract with local scratch processing and immutable manifests.
+tags:
+- nest
+- media
+- gaussian
+- video
+- artifacts
+- storage
+- manifest
+spec: Define and implement a reusable pack_manifest utility and documented directory contract. Drive/Nest is the
+  durable source and artifact registry; local scratch is disposable. Standardize datasets/<type>/<project>/<version>,
+  projects/<project>, jobs/<job-id>, and packs/<pack-id>; include manifest hashes, tool versions, config, device,
+  outputs, metrics, verifier, privacy, retention, and path_id. Add init/hash/verify/summarize commands and verify
+  a Hibiscus round-trip without deleting local source until upload and restore verification pass. Reuse existing
+  video pack fields (fetch, artifacts, needs, timeout_s, run_sh) instead of creating a competing schema.
+ref: MED-1032
+comms:
+- at: 2026-11-04 18:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-04 18:37
+  from: devin
+  text: Implemented the first reusable pack contract on feat/ops-0882-p0 commit 267bfb67d2. Added scripts/nest/pack_manifest.py
+    (init/hash/verify), docs/kb/nest-media-pack-layout.md, and tests/ops/test_pack_manifest.py. Local round-trip
+    test passes; 3 focused tests pass. Drive remains durable source/artifact tier; local scratch is disposable.
+    Generalized layout covers datasets, projects, jobs, and packs for Gaussian/video/audio/document lanes. Full
+    Drive upload/round-trip and PR merge remain explicit ne
+- at: 2026-11-07 11:29
+  from: devin
+  text: 'Chaba PR #77 merged (284434b47e): pack_manifest init/hash/verify/summarize + image_set_eval + mcp-kornia
+    on master. Ada PR #2 merged earlier. idc02 staging: fixture staged, ada-lab env set, /api/tools/call gs_capture_eval
+    returns 14 images / train_baseline_then_review_masks. Full ws scenario blocked by lab Gemini prepayment quota
+    (402/1011); Drive round-trip still pending.'
+- at: 2026-11-07 12:01
+  from: devin
+  text: 'MED-1032 acceptance verified: built nest-media-pack-v1 dataset pack for Hibiscus (16 files, 21111849 bytes,
+    hash_status=hashed, verdict=train_baseline_then_review_masks), uploaded to gdrive:ada-nest/datasets/gaussian/hibiscus-v1
+    (17 objects incl manifest.json), hydrated fresh to ~/.local/share/ada/nest-hydration/hibiscus-v1-20261107T0445Z,
+    and pack_manifest verify returned ok with missing=[] changed=[]. Local source/eval fixtures were not deleted.
+    Outside this card: live Ada ws scenario is quota'
+- at: 2026-11-08 07:38
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-08 10:58
+  from: devin
+  text: '[sweep] verified by surface: gdrive:ada-nest/datasets/gaussian/hibiscus-v1/manifest.json present (16 files
+    listed); MED-1032 acceptance (pack build -> gdrive upload -> fresh hydration -> verify ok) recorded in comms.
+    Closing.'
+- at: 2026-11-08 10:58
+  from: tony
+  text: closed by tony
+review_kind: verify
+action:
+  status: done

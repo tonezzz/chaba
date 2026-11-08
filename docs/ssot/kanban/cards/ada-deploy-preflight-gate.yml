@@ -1,0 +1,72 @@
+id: ada-deploy-preflight-gate
+title: Deploy-preflight gate — review-ready → preflight → Tony approval → deploy → verify
+column: done
+updated: 2026-11-07 18:51
+brief: 'Last missing piece of the Ada dev-control-plane loop. Cards currently merge to done with no production-deploy
+  stage. Build the gate: card declares deploy target, system collects preflight evidence, Tony approves explicitly,
+  deploy runs, post-deploy surface is verified.'
+priority: high
+program: chaba-ci
+tags:
+- kanban
+- deploy
+- autonomy
+- ada-control-plane
+spec: 'Tony''s stated flow: review-ready → deployment preflight → exact diff/commit → tests/lint → rollback plan
+  → explicit production approval → deploy → live surface verification. Autonomy SSOT already classifies deploy as
+  R4 human-gated — this card builds the mechanism.
+
+
+  Contract sketch:
+
+  - Card declares deploy intent, e.g. action.deploy = {host: idc03, repo: ada-voice, command: deploy-ada.sh, verify_url:
+  https://.../api/health} or per-repo default in ssot.
+
+  - New job (scripts/board/deploy-preflight.py + timer) scans review/done-merge cards with deploy declared and no
+  open deploy request.
+
+  - Preflight evidence posted as comms + request to Tony: merge commit sha, diff stat, test/lint result (already
+  produced by dispatch close-out), rollback plan (revert sha / previous tag).
+
+  - Approval via existing board /request + /respond (options: approve / hold / abort). No silent deploy.
+
+  - On approve: run declared deploy on target host (ssh systemd-run or the repo deploy script), capture output,
+  then verify the declared health surface — BOTH producer (unit active) and consumer (endpoint 200) per verify-by-surface
+  rule.
+
+  - Result comms + card stays honest: deploy_failed is a real state, not retried silently.
+
+
+  Must NOT: deploy without explicit Tony response; bypass deploy-ada.sh gates; auto-approve; touch t4 cards.'
+ref: KNB-1090
+comms:
+- at: 2026-11-07 15:00
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 15:08
+  from: devin
+  text: 'Implemented + merged + installed. PR tonezzz/chaba#83 squash-merged as 9658c8bf0. scripts/board/deploy-preflight.py:
+    review|done + action.status=done + deploy.target registry key -> preflight evidence (merge sha/diff stat/rollback)
+    -> board request approve|hold|abort (default hold) -> only explicit approve runs registry deploy command ->
+    verify producer rc=0 AND consumer GET ok. Fail-closed: unknown target errors, t4 skipped, unparsed=hold, failed
+    deploys dont loop; card YAML under board-api loc'
+- at: 2026-11-07 15:08
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] verified: PR #83 squash-merged as 9658c8bf0 on origin/master, deploy-preflight.py installed.
+    Closing.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: closed by devin
+- at: 2026-11-07 18:51
+  from: devin
+  text: 'FIRST LIVE REHEARSAL COMPLETE (ADA-1113 ada-tool-guide-lesson-sweep): merge 7549e6c -> card done+deploy
+    block -> preflight -> Tony approve via /respond -> deploy-ada.sh rc=0 (1733 tests, drain, restart) -> verify
+    ok -> deploy.status=deployed. Two bugs found+fixed live: PR#91 suggested-must-be-option-string (400 on raise),
+    PR#93 verify retry through warmup (false-failed rc=0 deploy). Prod verified: checkout at 7549e6c, tool_guide
+    entries present, /api/health ok=true degraded=false. Residual gaps '
+review_kind: verify
+action:
+  status: done

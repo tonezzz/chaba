@@ -1,0 +1,20 @@
+id: runner-agent-deploy-propagation-gap-repo-56a255
+title: runner-agent deploy propagation gap — repo pulls never reach ~/.local/bin/runner-agent
+column: backlog
+updated: 2026-10-30 20:06
+priority: medium
+tags:
+- ops
+- runner
+- deploy
+spec: 'Every fleet host''s runner-agent.service runs ExecStart=%h/.local/bin/runner-agent — a copied SNAPSHOT, not
+  the repo file. chaba-repo-sync pulls the repo but the binary never updates: today''s lane fix needed manual scp
+  to 5 hosts (mn01''s copy was 7h stale). runner-fleet-health.py already diffs snapshot vs repo — add auto-propagate
+  (timer or a self-update step at pass start: if repo file newer, copy+exit for restart) OR make ExecStart run the
+  repo path directly with a hash-check wrapper. Verify: push a runner-agent change, all hosts run it without manual
+  scp.'
+ref: OPS-1026
+comms:
+- at: 2026-10-30 20:06
+  from: tony
+  text: card captured via board-api

@@ -210,6 +210,20 @@ routes:
   - {id: node-red,         kind: proxy,  path: /apps/node-red/*,       upstream: "100.75.102.88:1880", owner: nodered, note: "omen since 2026-10-19/20 (ph5)"}
   - {id: board,            kind: static, path: /apps/board/*,          owner: chaba}
   - {id: board2,           kind: static, path: /apps/board2/*,         owner: chaba, note: "tabbed comparison view (render-board2.py)"}
+
+  # Board publish topology (fixed 2026-11-07 — requests appeared on some
+  # surfaces but not others):
+  #   render: board-render-guard.py writes index.html+cards.json into the
+  #     SERVED checkout ~/CascadeProjects/chaba-tony-dell/stacks/web/public/
+  #     every ~60s. cards.json is gitignored — it NEVER travels by git pull.
+  #   idc03 caddy-edge  -> mounts chaba-tony-dell/stacks/web/public (was the
+  #     exec checkout = stale until this date; fixed by repointing mount).
+  #   tony-dell :8080   -> web stack serves the same served checkout — canonical.
+  #   mn01 caddy-mn01   -> /apps/board* reverse_proxied to tony-dell:443
+  #     (was a month-stale local copy; proxied so it can't drift again).
+  #   idc02 public edge -> /apps/board* proxies to local :8099 mirror;
+  #     web-srv-sync.timer rsyncs the served checkout (tightened to :00/15/30/45).
+
   - {id: sw,               kind: static, path: /apps/sw.js,            owner: chaba, note: "shared service worker"}
 
 consumers:

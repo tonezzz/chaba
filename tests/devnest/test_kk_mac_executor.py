@@ -25,6 +25,19 @@ def _ok_run(response="done", **kw):
     return run
 
 
+class _NullMonitor:
+    samples = []
+
+    def start(self):
+        pass
+
+    def stop(self):
+        pass
+
+    def worst_reasons(self):
+        return []
+
+
 class VerifyTests(unittest.TestCase):
     def test_summary_needs_nonempty_bounded_text(self):
         v = verify("summary", "a tight summary", {})
@@ -117,8 +130,12 @@ class RunContractTests(unittest.TestCase):
         self.wt.mkdir()
         self.taskdir = Path(self.td.name) / "task"
         self.snap = {"eligible": True, "reasons": []}
+        self.mem = {"ok": True, "free_pct": 80.0, "level": None,
+                    "raw": "", "at": "t", "error": None}
 
     def run_c(self, task=None, **kw):
+        kw.setdefault("mem_sample", lambda host: dict(self.mem))
+        kw.setdefault("make_monitor", lambda host: _NullMonitor())
         return run_contract(task or _task(), snap=self.snap,
                             worktree=self.wt, taskdir=self.taskdir, **kw)
 
@@ -176,6 +193,47 @@ class RunContractTests(unittest.TestCase):
         r = self.run_c(task=_task(prompt="x" * 6001))
         self.assertEqual(r["verdict"], "fallback")
         self.assertIn("prompt_too_long", r["reasons"])
+
+    def test_memory_preload_floor_blocks_before_run(self):
+        self.mem["free_pct"] = 55.0
+        called = []
+        r = self.run_c(run_task=lambda *a, **k: called.append(1) or
+                       _ok_run()( *a, **k))
+        self.assertEqual(r["verdict"], "fallback")
+        self.assertTrue(any(x.startswith("memory_preload_floor")
+                            for x in r["reasons"]))
+        self.assertEqual(called, [])
+        self.assertEqual(r["memory"]["pre"]["free_pct"], 55.0)
+
+    def test_memory_sample_failure_fails_closed(self):
+        self.mem["ok"] = False
+        self.mem["free_pct"] = None
+        r = self.run_c(run_task=_ok_run())
+        self.assertEqual(r["verdict"], "fallback")
+        self.assertIn("memory_sample_failed", r["reasons"])
+
+    def test_memory_during_breach_fails_closed(self):
+        class BreachMonitor(_NullMonitor):
+            samples = [{"ok": True, "free_pct": 45.0}]
+
+            def worst_reasons(self):
+                return ["memory_pressure_abort:45.0%<50.0%"]
+
+        r = self.run_c(run_task=_ok_run("fine"),
+                       make_monitor=lambda host: BreachMonitor())
+        self.assertEqual(r["verdict"], "fallback")
+        self.assertTrue(any(x.startswith("memory_pressure_abort")
+                            for x in r["reasons"]))
+        self.assertEqual(len(r["memory"]["during"]), 1)
+
+    def test_memory_snapshots_persisted_on_pass(self):
+        r = self.run_c(run_task=_ok_run("ok"))
+        self.assertEqual(r["verdict"], "pass")
+        self.assertEqual(r["memory"]["pre"]["free_pct"], 80.0)
+        self.assertIsNotNone(r["memory"]["post"])
+        saved = json.loads(
+            (self.wt / "evals/kk-mac-lane/out/c1.json").read_text())
+        self.assertIn("memory", saved)
 
     def test_facts_verified_independently(self):
         r = self.run_c(task=_task(

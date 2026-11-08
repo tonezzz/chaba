@@ -1,0 +1,71 @@
+id: devnest-fl-pilot-artwrite5
+title: 'OpenCode artifact-write pilot 5: kk-mac capacity summary'
+column: done
+updated: 2026-11-03 13:42
+spec: 'Write docs/reports/kk-mac-capacity-summary-2026-11-02.md — a short capacity note. Read exactly ONE file:
+  docs/kb/jevnest-kk-mac-capacity-procedure.md. Summarize in <=15 lines: host specs, Ollama models available, how
+  the fleet reaches it (tunnel + LiteLLM routes), and the access caveat. WRITE the file with the write tool at EXACTLY
+  docs/reports/kk-mac-capacity-summary-2026-11-02.md — no other filename. Do NOT emit the doc as your message; end
+  with a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/kk-mac-capacity-summary-2026-11-02.md
+  status: done
+  runner: idc02
+  result: 'exit=0 fe77f23ffeNPUOz7fkZa5dtg","type":"step-finish","tokens":{"total":27987,"input":27832,"output":10,"reasoning":145,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-artwrite5-1793687318.service: Consumed 16.574s CPU time.'
+  verified: false
+ref: OPS-1035
+comms:
+- at: 2026-11-03 13:25
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-03 13:28
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 13:28
+  from: idc02
+  text: claimed
+- at: 2026-11-03 13:28
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite5-1793687318 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-11-03 13:33
+  from: idc02
+  text: 'finished (ok): exit=0 fe77f23ffeNPUOz7fkZa5dtg","type":"step-finish","tokens":{"total":27987,"input":27832,"output":10,"reasoning":145,'
+- at: 2026-11-03 13:33
+  from: chaba
+  text: opencode artifact landed docs/reports/kk-mac-capacity-summary-2026-11-02.md
+- at: 2026-11-03 13:33
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-03 13:33
+  from: chaba
+  text: ran under executor=opencode:artifact-write provider=litellm model=litellm/ollama-qwen38b-kkmac profile=artifact-write
+- at: 2026-11-03 13:33
+  from: chaba
+  text: 'session-end checkpoint a17f7152: 2 leftover file(s) committed'
+- at: 2026-11-03 13:33
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-artwrite5-1793687318 to origin
+- at: 2026-11-03 13:33
+  from: chaba
+  text: 'auto-merge conflicts: .opencode-profile/opencode.json — card stays in review for manual resolution'
+- at: 2026-11-03 13:33
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-03 13:42
+  from: devin
+  text: 'PASS mechanically (exact path, 0 denials, verifier pass) but merge held on .opencode-profile/opencode.json
+    collision with concurrent artwrite4 — root-fixed: render now gitignored+untracked (1f8f407db3). Semantic gap
+    struck again: model list was hallucinated, doc corrected on master. S4 verified write #4.'
+- at: 2026-11-03 13:42
+  from: devin
+  text: closed by devin
+review_kind: verify
+claim: {}

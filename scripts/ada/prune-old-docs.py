@@ -6,7 +6,11 @@ window. Append-only collections grow forever otherwise — this is the
 standing rule, run inside the export-transcripts refresh chain.
 
 Retention policy (days):
-  host-logs              14   journald shipper — high-volume noise
+  host-logs               3   journald shipper — high-volume noise;
+                              14d ≈ 530k docs > the ~250k /v1/search
+                              paging limit, which broke enumeration and
+                              silently disabled this sweep (MEM-0871,
+                              2026-11-07). 3d ≈ 114k keeps it listable.
   ada-ha-events-*        30   HA event bundles — superseded by newer bundles
   ada-ha-snapshots-*     30   HA state snapshots — same
 
@@ -39,7 +43,7 @@ DELETE_CHUNK = 1000
 
 # collection -> (timestamp meta key, retention days)
 POLICY = {
-    "host-logs": ("ts", 14),
+    "host-logs": ("ts", 3),
     "ada-ha-events-tony": ("period_end", 30),
     "ada-ha-events-michael": ("period_end", 30),
     "ada-ha-snapshots-tony": ("refreshed_at", 30),

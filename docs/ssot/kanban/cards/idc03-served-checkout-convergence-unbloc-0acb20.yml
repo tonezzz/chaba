@@ -1,0 +1,37 @@
+id: idc03-served-checkout-convergence-unbloc-0acb20
+title: idc03 served checkout convergence — unblock board-api wiki door, due page, repo-sync
+column: done
+updated: 2026-11-07 12:11
+priority: high
+tags:
+- ops
+- served-checkout
+- convergence
+spec: 'The served checkout ~/CascadeProjects/chaba-tony-dell on idc03 is diverged: ~2323 commits ahead, ~1479 behind
+  origin/master, dirty (52 added, 22 modified, 1 unresolved conflict, untracked), with kanban-commit.timer actively
+  writing. Dependents accumulating: (1) board-api runs from this checkout — it lacks the post-2026-11-06 source=wiki
+  lesson read door, so chaba-lessons-due (now wiki-default, merged) will fail loudly at every 07:30 run; (2) card
+  writes take >60s because every write does an immediate git commit over the giant dirty index — the board-api-lock
+  serializes these, stalling the whole door; (3) chaba-repo-sync reconcile loops churn .ref-seq.local-conflict-*
+  flags (~30s each — mitigated by #81 RECONCILE_BUDGET_S but flags keep accruing). Approach: quiesce kanban-commit.timer,
+  snapshot state, resolve the unresolved conflict, converge via git-safe-pull semantics (upstream-wins on generated
+  paths), push/rebase the local commits or archive them, verify writer resumes clean, restart board-api so the wiki
+  door goes live. Dangerous op — do not improvise; see git-safe-pull.sh and the single-writer rules.'
+ref: OPS-1074
+comms:
+- at: 2026-11-07 12:09
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 12:10
+  from: devin
+  text: 'RESOLVED — card filed on stale data. Re-measured live: served checkout converged itself via kanban-commit
+    cycles — 0 behind origin/master, 21 ahead (all recent board-api card writes, normal), no conflicts, dirty state
+    is only benign writer churn (.render-state, review-digest, out/). The actual remaining gap was the RUNNING board-api
+    still executing pre-restart code from 20:13 yesterday. Done now: restarted chaba-board-api (12:10), verified
+    /lesson source=wiki returns 126 wiki lessons with md5 sl'
+- at: 2026-11-07 12:11
+  from: tony
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

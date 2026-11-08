@@ -46,6 +46,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
 import lesson_primer as lp
+import waiting_cards as wc
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
@@ -91,6 +92,20 @@ JEV_LANE = os.environ.get("JEV_LANE", "0") == "1"
 
 PUSH_PROBE_TTL = int(os.environ.get("KANBAN_PUSH_PROBE_TTL", "300"))
 _PUSH_PROBE_CACHE: dict = {}
+
+# Hands-off waiting-card gate (KNB-0928,
+# docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards):
+# queue EXECUTION is gated separately from kanban-act's auto-close.
+# KANBAN_WAITING_GATE=off disables; warn (default) logs verdicts but
+# still claims — except declared R3/R4 cards, which are NEVER claimed
+# unattended in any mode; strict defers every ineligible card. Flip to
+# strict only after the readiness checklist (job
+# 2026-11-08-hands-off-waiting-cards) passes.
+WAITING_GATE = os.environ.get("KANBAN_WAITING_GATE", "warn")
+# Board-api base for lifecycle Telegram summaries (/publish fan-out —
+# noise policy lives server-side). Loopback on the writer host.
+PUBLISH_API = os.environ.get(
+    "KANBAN_PUBLISH_API", "http://127.0.0.1:8787").rstrip("/")
 
 
 def push_capable(repo: str) -> bool:
@@ -227,6 +242,8 @@ def requeue_dead(path: Path, host: str) -> str:
         comms_add(card, "chaba",
                   f"runner {host} unreachable {REQUEUE_AFTER} passes "
                   f"— requeued")
+        _notify("stalled", card.get("id") or path.stem,
+                f"runner {host} unreachable — requeued")
         card["updated"] = now()
         save_card(path, card)
         return "requeued"
@@ -461,7 +478,24 @@ def finish_one(path: Path, card: dict) -> str:
         a["result"] = f"{tid} FAILED — see `devin-dispatch logs {tid}`"
         card.setdefault("claim", {}).pop("session", None)
         comms_add(card, "chaba", "run failed — check logs, then retry")
+        _notify("fail", card.get("id") or path.stem,
+                "unit failed — see devin-dispatch logs")
         return "failed"
+    # Executor-owned closeout (OPS-1066): tasks run by runner-agent's
+    # non-devin executors (jules, opencode, kk_mac_local) own their finish
+    # path — the runner's finish_pass calls finish_<executor>_lane for
+    # the artifact/verified evidence. This sweeper knows none of that;
+    # it used to finish the card first ("no exit record") and the real
+    # closeout then bounced off status=done. Defer when the task meta
+    # names a runner-owned executor so the claiming runner reports.
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta_ex = str(json.loads(
+            (taskdir / "meta.json").read_text()).get("executor") or "")
+    except Exception:
+        meta_ex = ""
+    if meta_ex and meta_ex not in ("devin", "devin-dispatch"):
+        return f"deferred — executor={meta_ex} closeout is the runner's"
     # Units run under systemd-run --collect: a failed unit is unloaded
     # and is-active can no longer see Result=exit-code — so 'not active'
     # alone is NOT proof of success (the 2026-10-25/26
@@ -494,6 +528,8 @@ def finish_one(path: Path, card: dict) -> str:
     card.setdefault("review_kind", "verify")  # close-out contract — without it the ssot-optimize gate fails commits repo-wide
     card.setdefault("claim", {}).pop("session", None)
     comms_add(card, "chaba", f"run finished ({state}) → review")
+    _notify("finish", card.get("id") or path.stem,
+            f"finished ({state}) → review")
     if os.environ.get("KANBAN_AUTOMERGE", "1") != "0":
         a["merge_pending"] = True  # merged outside the lock in phase B
     else:
@@ -532,6 +568,76 @@ def _with_lock(fn):
     with LOCK.open("w") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         return fn()
+
+
+UNCLAIM_MARK = "unclaimable by the declared runner fleet"
+
+# Lifecycle Telegram summaries (waiting_cards.reporting): collected
+# under the card lock, flushed to board-api /publish in phase B — the
+# server-side noise policy debounces; a dead relay never blocks a claim.
+_NOTIFY: list = []
+
+
+def _notify(event: str, cid: str, detail: str = "") -> None:
+    _NOTIFY.append((event, cid, detail[:200]))
+
+
+def _flush_notify() -> None:
+    pending, _NOTIFY[:] = _NOTIFY[:], []
+    for event, cid, detail in pending:
+        wc.notify_lifecycle(PUBLISH_API, cid, event, detail, host=HOST)
+
+
+def _last_chaba_flag(card: dict, mark: str) -> str:
+    """Most recent chaba comms line containing `mark`, '' when none —
+    the card's comms are the debounce store for flag/defer notes."""
+    for c in reversed(card.get("comms") or []):
+        if c.get("from") == "chaba" and mark in (c.get("text") or ""):
+            return c["text"]
+    return ""
+
+
+def _defer_note(path: Path, card: dict, reason: str) -> bool:
+    """Per-host defer comms — the served-side twin of runner-agent's
+    note_defer: 'this host saw it and declined' lands on the card, not
+    just in the unit journal (the 2026-11-07 ops0790 starve was
+    invisible for ~3h because skips lived only in logs). Debounced on
+    the card's own comms: an unchanged reason is not re-logged. Comms
+    only — one host's refusal is not a fleet verdict, so no
+    awaiting_action."""
+    text = f"{HOST} defers: {reason}"[:500]
+    if _last_chaba_flag(card, f"{HOST} defers:") == text:
+        return False
+    comms_add(card, "chaba", text)
+    save_card(path, card)
+    return True
+
+
+def _flag_unclaimable(path: Path, card: dict, fleet: dict) -> str:
+    """Fleet-level starvation flag (dispatch-claim-eligibility-
+    visibility): a queued card no declared runner can serve writes WHY
+    to the card — chaba comms + awaiting_action — so Ada/triage sees
+    it and fixes labels or re-routes instead of the queue starving
+    silently. -> 'new' (flag written this pass), 'present' (same flag
+    already on the card — debounced), '' (declared fleet may serve it).
+    A cleared flag with unchanged reasons stays cleared (triage
+    dismissed it)."""
+    reasons = dr.unsatisfiable_reasons(card, fleet=fleet,
+                                       local_host=HOST,
+                                       push_probe=push_capable)
+    if not reasons:
+        return ""
+    text = (f"{UNCLAIM_MARK}: " + "; ".join(reasons)
+            + " — fix action.labels/host pins or teach a runner the "
+              "capability (card dispatch-claim-eligibility-visibility)"
+            )[:500]
+    if _last_chaba_flag(card, UNCLAIM_MARK) == text:
+        return "present"
+    comms_add(card, "chaba", text)
+    card["awaiting_action"] = True
+    save_card(path, card)
+    print(f"{card['id']}: UNCLAIMABLE — {'; '.join(reasons)}")
+    return "new"
 
 
 # Keyword lane classifier (jev-pilot Phase 2, 2026-10-25). Deterministic,
@@ -576,6 +682,15 @@ def start_pending(path: Path) -> str:
     # profile id — devin-dispatch._meta_write persists them.
     env["DISPATCH_CARD"] = card.get("id") or path.stem
     env["DISPATCH_EXECUTOR"] = ex or "devin"
+    # OPS-1127: a stale or lane-mapped litellm/* id must never reach the
+    # devin path — the CLI only accepts its own model ids and exits at
+    # launch (hands-off claim, 2026-11-08). A persisted action.model can
+    # outlive the lane/executor that produced it, so validate provider
+    # vs the resolved executor at launch: incompatible -> devin default.
+    if (env["DISPATCH_EXECUTOR"]) == "devin" and \
+            dr.model_provider(env.get("DISPATCH_MODEL") or "") \
+            not in ("devin", ""):
+        env.pop("DISPATCH_MODEL", None)
     env["DISPATCH_PROVIDER"] = dr.model_provider(
         env.get("DISPATCH_MODEL") or "") or "devin"
     if dr.card_profile(card):
@@ -603,6 +718,8 @@ def start_pending(path: Path) -> str:
         comms_add(card, "chaba",
                   f"dispatched {task_id} on {repo}"
                   + (f" ({blurb})" if blurb else ""))
+        _notify("start", card.get("id") or path.stem,
+                f"dispatched {task_id} on {repo}")
         if LAST_PRIMER_LINES:
             comms_add(
                 card, "chaba",
@@ -670,6 +787,9 @@ def merge_pending_one(path: Path) -> str:
                 comms_add(card, "chaba",
                           f"auto-retry queued (attempt {att + 1}/"
                           f"{max_att}): {why}")
+                _notify("fail", card.get("id") or path.stem,
+                        f"merge/goals failed — auto-retry "
+                        f"{att + 1}/{max_att}")
                 ops_event(
                     f"kanban-dispatch auto-retry `{card.get('id') or path.stem}` "
                     f"(attempt {att + 1}/{max_att}) on {HOST}: {why}")
@@ -679,6 +799,10 @@ def merge_pending_one(path: Path) -> str:
             comms_add(card, "chaba", n)
         for n in session_end_notes(card):
             comms_add(card, "chaba", n)
+        if not res.get("merged") and not res.get("noop"):
+            _notify("fail", card.get("id") or path.stem,
+                    f"close-out merge failed: "
+                    f"{str(res.get('error') or res.get('skipped') or '')[:120]}")
         save_card(path, card)
         if res.get("noop"):
             return "noop"
@@ -710,6 +834,15 @@ def main() -> int:
         if in_quiet_hours(pol.get("quiet_hours") or ""):
             can_claim = False
             print(f"quiet hours {pol['quiet_hours']} — not claiming")
+        # waiting_cards preflight (KNB-0928): kill switch + deploy lock +
+        # disk headroom are pass-level gates — any failure stops ALL
+        # claims, not just one card.
+        pf_env = wc.local_env(host=HOST, path=REPO)
+        pf_fails = wc.preflight({"recoverability": "R0"}, pf_env)
+        if pf_fails:
+            can_claim = False
+            print(f"waiting-cards preflight: {'; '.join(pf_fails)}"
+                  " — not claiming")
         # Priority-aware drain (card dispatch-priority-order): claimable
         # queued cards are visited starved-first -> priority rank ->
         # oldest `updated`; all other cards keep filename order. The
@@ -722,6 +855,12 @@ def main() -> int:
             in ("queued", "starting"))]
         queued.sort(key=lambda pc: dr.claim_sort_key(
             pc[1], starve_hours=STARVE_HOURS))
+        # Declared fleet claim surface for the unclaimable flag — parsed
+        # once per pass; {} when the SSOT is unreadable (never flags).
+        try:
+            fleet = dr.fleet_capabilities()
+        except Exception:
+            fleet = {}
         rest = [pc for pc in loaded if (
             (pc[1].get("action") or {}).get("status")
             not in ("queued", "starting"))]
@@ -751,6 +890,11 @@ def main() -> int:
                     continue
                 pinned = a.get("host")
                 if pinned and pinned != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
+                    else:
+                        print(f"{card['id']}: skipped — host-pinned to "
+                              f"{pinned}")
                     continue  # pinned to another host's dispatcher
                 blocker_id = card.get("blocked_by")
                 if blocker_id and not _blocker_released(blocker_id):
@@ -760,6 +904,8 @@ def main() -> int:
                     # never claim must say so in the log — the 2026-10-13
                     # zombie-sweep found 6 of these silently starved for
                     # days (board-invariants Q1 alerts the persistent ones)
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — action.type "
                           f"{a.get('type')!r} is not dispatchable "
                           "(claims are type=dispatch only)")
@@ -771,32 +917,90 @@ def main() -> int:
                 # Tony's hands, anything unknown fails closed. Never
                 # silently run them on devin.
                 ex = str(a.get("executor") or "").strip()
+                if str(a.get("lane") or "").strip() in ("jules", "nlm_batch"):
+                    # lane pin routes to a JULES_LANES runner —
+                    # this dispatcher only runs devin claims
+                    print(f"{card['id']}: skipped — lane=jules "
+                          "routes to the jules executor "
+                          "(runner-agent)")
+                    continue
                 if ex and ex != "devin":
                     why = ("not a known executor"
                            if ex not in dr.EXECUTORS
                            else "Tony's hands — never claimed"
                            if ex == "manual"
                            else f"routes to the {ex} executor, not devin")
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — executor={ex} "
                           f"({why})")
                     continue
                 th = str(a.get("target_host") or "").strip()
                 if th and th != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     print(f"{card['id']}: skipped — target_host={th}")
                     continue
                 needs = set(a.get("labels") or [])
                 if needs and not needs <= MY_LABELS:
+                    # label skips used to be log-silent — the exact
+                    # ops0790 starve. Per-host defer lands on the card;
+                    # fleet-unclaimable additionally raises the flag
+                    # (and suppresses the noisier per-host note).
+                    miss = sorted(needs - MY_LABELS)
+                    fl = _flag_unclaimable(p, card, fleet)
+                    if fl == "new":
+                        changed = True
+                    elif not fl:
+                        changed |= _defer_note(
+                            p, card, f"missing labels {miss}")
+                    print(f"{card['id']}: skipped — missing labels "
+                          f"{miss}")
                     continue  # needs capabilities this host lacks
                 # runner-push-cred-gap: claiming a repo this host can't
                 # push strands the finished branch (ADA-0673, idc03
                 # daa0e0a) — leave it queued for a host that can
                 repo = str(a.get("repo") or "chaba")
                 if not push_capable(repo):
+                    fl = _flag_unclaimable(p, card, fleet)
+                    if fl == "new":
+                        changed = True
+                    elif not fl:
+                        changed |= _defer_note(
+                            p, card,
+                            f"push guard: no push:{dr.canon_repo(repo)} "
+                            "label and `git push --dry-run` fails — "
+                            "this host can't land the branch")
                     print(f"{card['id']}: skipped — cannot push "
                           f"{dr.canon_repo(repo)} (no push: label and "
                           "`git push --dry-run` fails)")
                     continue
+                # waiting_cards eligibility gate (KNB-0928): R3/R4
+                # declared cards are NEVER claimed unattended; other
+                # ineligible cards defer only in strict mode (warn mode
+                # logs the verdict — the undeclared backlog predates
+                # the contract).
+                if WAITING_GATE != "off":
+                    env = dict(pf_env, claimed=active_tasks() + claimed,
+                               cap=HOST_CAP)
+                    verdict = wc.evaluate(card, env=env,
+                                          push_probe=push_capable)
+                    if verdict["never"] or (
+                            WAITING_GATE == "strict"
+                            and not verdict["eligible"]):
+                        why = "; ".join(verdict["reasons"])[:200] \
+                            or "ineligible"
+                        changed |= _defer_note(
+                            p, card, f"waiting-cards gate: {why}")
+                        print(f"{card['id']}: deferred — waiting-cards "
+                              f"gate ({why})")
+                        continue
+                    if not verdict["eligible"]:
+                        print(f"{card['id']}: waiting-cards warn — "
+                              f"{'; '.join(verdict['reasons'])[:160]}")
                 if a.get("runner") and a["runner"] != HOST:
+                    if _flag_unclaimable(p, card, fleet) == "new":
+                        changed = True
                     continue  # claimed/starting on another host
                 if active_tasks() + claimed >= HOST_CAP:
                     print(f"{card['id']}: skipped — host cap {HOST_CAP}")
@@ -829,6 +1033,7 @@ def main() -> int:
         print(f"{p.stem}: {start_pending(p)}")
     for p in merges:
         print(f"{p.stem}: {merge_pending_one(p)}")
+    _flush_notify()
     if changed or starts or merges:
         subprocess.run([sys.executable, str(RENDER)], cwd=REPO, check=False)
     return 0

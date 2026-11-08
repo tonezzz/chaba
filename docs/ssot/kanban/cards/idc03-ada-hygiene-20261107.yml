@@ -1,0 +1,27 @@
+id: idc03-ada-hygiene-20261107
+title: 'idc03 hygiene leftovers: ada-pi checkout, ada-pi-pwa active, weekly :8002 lane'
+column: backlog
+updated: 2026-11-07 19:05
+priority: low
+tags:
+- idc03
+- hygiene
+- ada
+spec: 'Found during scenario-smoke repair 2026-11-07: (a) ~/CascadeProjects/ada-pi on idc03 is now fully orphaned
+  — scenario quadlets + suite wrapper all repointed to ada-voice; retire or re-stamp the checkout deliberately (one-checkout-per-role
+  rule). (b) ada-pi-pwa.service is ACTIVE though SSOT marks it RETIRED 2026-10-23 — reconcile declared vs running
+  state. (c) ada-scenario-research.service targets ws://127.0.0.1:8002 (tony paid lane) — the bench-off-paid-lanes
+  commit says weekly suites moved to dev lane; check whether :8002 is intentional. (d) ada-dev.service restarted
+  externally 2x today (17:20:56 mid-smoke-run caused infra/skip-quota cascade) — identify the restarter.'
+ref: ADA-1112
+comms:
+- at: 2026-11-07 17:51
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 19:05
+  from: devin
+  text: 'RESOLVED (d): the ada-dev restarter is deploy-preflight.service working as designed — it ran deploy-ada.sh
+    for card ada-tool-guide-lesson-sweep (deploy deployed 18:48); every ada-voice merge restarts all lanes incl.
+    ada-dev. Not a bug — a collision with scenario runs. Proposed fix: deploy path waits on the :8199 suite lock
+    or checks ada-scenario-smoke.service active before restarting. Still open: (a) ada-pi checkout retire, (b) ada-pi-pwa
+    active vs RETIRED record, (c) weekly :8002 lane check.'

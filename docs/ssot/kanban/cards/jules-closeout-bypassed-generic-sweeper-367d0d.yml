@@ -1,0 +1,37 @@
+id: jules-closeout-bypassed-generic-sweeper-367d0d
+title: 'Jules closeout bypassed: generic sweeper finishes cards before finish_jules_lane posts PR link'
+column: done
+updated: 2026-11-07 15:03
+priority: medium
+tags:
+- devnest
+- jules
+- bug
+spec: 'Found during OPS-1049 e2e (OPS-1065): a generic sweeper path finished the jules card with "run ended with
+  no exit record (no task_id) — the verified gate decides from the deliverable" BEFORE runner-agent finish_pass
+  could run finish_jules_lane — so the PR url never reached card comms and the lane closeout semantics were bypassed.
+
+
+  Task: find which sweeper finishes dispatch cards without task_id evidence (likely card-pipeline or a kanban-commit-time
+  gate, not runner-agent finish_pass — the comms line "run finished (unknown) -> review" is the fingerprint). Make
+  it either (a) defer to executor closeout when meta.json executor is not devin/devin-dispatch, or (b) invoke the
+  same finish_<executor>_lane evidence so jules (and future executors) get their notes posted. Verify with a repeat
+  jules card that comms get the PR url.'
+note: Gap noticed in OPS-1049 e2e 2026-11-07; jules lane works, but its closeout notes can be pre-empted.
+ref: OPS-1066
+comms:
+- at: 2026-11-07 11:43
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 15:02
+  from: devin
+  text: 'FIXED b6e7bba80: kanban-dispatch finish_one now reads taskdir meta.json and returns deferred for runner-owned
+    executors (jules/opencode/kk_mac_local) instead of posting no-exit-record -> review before the real closeout
+    runs. Served checkout pulled; next kanban-dispatch tick has it. jules closeouts (finish_jules_lane -> PR url
+    + verified + auto-merge) now reach the card first.'
+- at: 2026-11-07 15:03
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

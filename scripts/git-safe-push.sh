@@ -10,6 +10,14 @@
 # Env:    SAFE_PUSH_ATTEMPTS   retry count (default 4)
 #         SAFE_PULL_UPSTREAM   upstream ref (default: @{upstream})
 # Exit:   0 pushed; 1 gave up (manual resolution needed)
+#
+# No push credentials on this host? Fallbacks that need no local creds:
+# bundle the work (`git bundle create /tmp/x.bundle origin/master..<branch>`),
+# scp it to a push-capable host (tony-dell), there `git fetch /tmp/x.bundle
+# <ref>` then `git push origin FETCH_HEAD:master` — or POST it to board-api
+# /patch-relay for merge-sweep (scripts/board/dispatch_repos.py relay_session).
+# Do NOT bake credentials into this checkout to work around the gap —
+# card the missing cred (runner-push-cred-gap pattern).
 set -uo pipefail
 
 REPO="${1:-$PWD}"

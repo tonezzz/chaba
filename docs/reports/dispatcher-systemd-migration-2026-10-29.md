@@ -139,8 +139,12 @@ node scripts/ssot-validate-all.mjs       # 3278 files, 0 errors
 
 ## Rollout (separate deploy-lock dispatch)
 
-1. On each target host: merge this worktree, `python3 scripts/render-jobs.py
-   --host <h> --install` on the exec checkout, `systemctl --user
+1. On each target host: merge this worktree, then install **only** the
+   migrated jobs with the `--ids` selector (see
+   `dispatcher-systemd-migration-2026-10-30-selective-install.md`; a bare
+   `--install` would arm every rendered timer on the host):
+   `python3 scripts/render-jobs.py --host <h> --ids <host's migrated ids>
+   --install` on the exec checkout, `systemctl --user
    list-timers <id>.timer` + one forced `systemctl --user start <id>.service`
    per job to verify.
 2. Add the three missing census entries (E9) to `ssot.audit.hosts.yml` as

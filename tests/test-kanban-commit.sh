@@ -204,6 +204,16 @@ check "F: fixed card pushed to origin/master" \
 # save() can never sit uncommitted when autostash fires. The wait is
 # bounded: a wedged writer must not deadlock convergence — it logs and
 # pulls anyway.
+# These checks need a REAL pull: the 2026-11-07 fast path skips the lock
+# entirely when upstream is already an ancestor of HEAD.
+(
+  cd "$TMP/other" || exit 1
+  echo "title: upstream-g" > "docs/ssot/kanban/cards/card-g.yml"
+  git add -A && git commit -qm "upstream change for G" || exit 1
+  git push -q origin master 2>/dev/null \
+    || { bash "$SAFE_PULL" . >/dev/null 2>&1 && git push -q origin master; } \
+    || exit 1
+)
 exec 9>"$TMP/board-api.lock"
 flock 9
 SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" SAFE_PULL_BOARD_LOCK_WAIT_S=1 \
@@ -221,6 +231,15 @@ check "G: free lock -> no bypass warning" \
 
 # mutual exclusion end-to-end: a write landing while safe-pull waits on
 # the lock is committed before the pull stashes — it survives in HEAD.
+# Another upstream change first so this pull also has real work to do.
+(
+  cd "$TMP/other" || exit 1
+  echo "title: upstream-g2" > "docs/ssot/kanban/cards/card-g2.yml"
+  git add -A && git commit -qm "upstream change for G2" || exit 1
+  git push -q origin master 2>/dev/null \
+    || { bash "$SAFE_PULL" . >/dev/null 2>&1 && git push -q origin master; } \
+    || exit 1
+)
 flock 9
 (
   SAFE_PULL_BOARD_LOCK="$TMP/board-api.lock" \

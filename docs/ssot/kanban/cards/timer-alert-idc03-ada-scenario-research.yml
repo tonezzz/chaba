@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-research
 title: Timer ada-scenario-research on idc03 failing
 column: done
-updated: 2026-10-13 18:24
+updated: 2026-11-08 11:07
 priority: high
 tags:
 - timer-alert
@@ -218,5 +218,100 @@ comms:
 - at: 2026-10-13 18:24
   from: devin
   text: closed by devin
+- at: 2026-11-08 10:29
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 10:36
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 10:36
+  from: chaba
+  text: started devin-task-20261108-103641-timer-ada-scenario-research-on on tony-macbook (dispatch)
+- at: 2026-11-08 10:37
+  from: devin
+  text: Investigating ada-scenario-research.service failure on idc03 — pulling journal and timer state.
+- at: 2026-11-08 10:52
+  from: devin
+  text: 'Root cause found — two stacked problems on the Nov 02 05:55 run:
+
+
+    1) Deploy drift (the exit-code): the deployed unit+wrapper at ~/.local/share/ada-scenario-runner/ + ~/.config/systemd/user/
+    were stale — pre-Oct-13 wrapper propagated benchmark rc=1 instead of exiting 0 on a completed run, and pre-Oct-15
+    unit had no ExecCondition provider gate. The stack install was not re-run after the Oct-13/15 contract landed.
+    Both files were refreshed 2026-11-08 10:34 (now == repo HEAD).
+
+
+    2) ada-dev zombie (th'
+- at: 2026-11-08 10:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 full detail in `dispatch-outcome-20261108-103641-timer-ada-scenario-research-on.md`.
+    | devin-task-20261108-103641'
+- at: 2026-11-08 10:54
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-08 10:54
+  from: chaba
+  text: 'session-end checkpoint fac4a11b: 2 leftover file(s) committed'
+- at: 2026-11-08 10:54
+  from: chaba
+  text: pushed dispatch/20261108-103641-timer-ada-scenario-research-on to origin
+- at: 2026-11-08 10:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 10:54
+  from: chaba
+  text: auto-merged 8be4dc80 (dispatch/20261108-103641-timer-ada-scenario-research-on) → origin/master
+- at: 2026-11-08 10:54
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-08 10:55
+  from: chaba
+  text: restarted zombie claim as devin-task-20261108-105501-timer-ada-scenario-research-on on tony-macbook — claim
+    committed but the response was lost (OPS-1071)
+- at: 2026-11-08 10:55
+  from: devin
+  text: Investigating ada-scenario-research.service failure on idc03 — pulling journal and unit definition.
+- at: 2026-11-08 11:03
+  from: devin
+  text: 'VERIFIED-resolved (2nd dispatch). ada-scenario-research: not in failed list, deployed wrapper+unit md5-identical
+    to repo HEAD, next fire Mon 05:55 (may skip via provider gate if quota still dead — by design). Sibling finding:
+    ada-scenario-smoke exit-code at 10:37 = OPS-0581 residual — quadlets bypass scenario-suite-run.sh; completed
+    run exited 1 after bench $2 LiteLLM cap crossed mid-run (~20 fails, outage sentinel skip-quota). Fixed in stack:
+    container-suite-run.sh entrypoint shim ("N scenarios'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'session-end checkpoint fc934a7f: 1 leftover file(s) committed'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: pushed dispatch/20261108-105501-timer-ada-scenario-research-on to origin
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: auto-merged 245bbc45 (dispatch/20261108-105501-timer-ada-scenario-research-on) → origin/master
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
 action:
   status: done
+  type: dispatch
+  runner: tony-macbook
+  result: 'exit=0 full detail in `dispatch-outcome-20261108-103641-timer-ada-scenario-research-on.md`. | devin-task-20261108-103641-timer-ada-scenario-research-on.service:
+    Consumed 2min 32.181s CPU time over 16min 56.556s wall clock time, 591.1M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 11:05
+  note: verified — evidence checks green, closing itself

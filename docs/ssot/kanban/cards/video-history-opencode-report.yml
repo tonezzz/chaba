@@ -1,0 +1,107 @@
+id: video-history-opencode-report
+title: 'OpenCode report: verify video history procedure'
+column: done
+updated: 2026-11-03 14:47
+brief: Produce a verifier-compatible review report for the video history procedure.
+priority: medium
+program: ai-workforce
+tags:
+- video
+- history
+- opencode
+- artifact-write
+spec: Review the existing docs/kb/video-history-data-management-procedure.md, artifact lifecycle SSOT, and claim
+  lifecycle procedure. Write a concise review report with required findings and any recommended changes. Do not
+  mutate queue state or canonical docs.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-history-procedure-review.md
+  prompt: Read the declared documents and write a concise review report to the declared artifact path. Do not edit
+    canonical docs or queue state. Include source/final/QC, superseded/archive, and no-delete findings.
+  expect:
+    facts:
+    - source/final/QC
+    - superseded
+    - archive
+    - no-delete
+  lane: free_lane
+  status: done
+  agent_profile: artifact-write
+  runner: idc02
+  sweep:
+    stale_running: 2026-11-03 14:12
+    session_gone: 2026-11-03 14:12
+  result: 'exit=0 c71ffezOGmGcMNh88lx4","type":"step-finish","tokens":{"total":45693,"input":2777,"output":26,"reasoning":0,"cache":{"write":0,"read":42890}},"cost":0}}
+    | devin-task-video-history-opencode-report-1793689902.service: Consumed 17.789s CPU time.'
+  verified: true
+ref: KNB-1051
+comms:
+- at: 2026-11-03 14:10
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 14:10
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 14:11
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 14:11
+  from: idc02
+  text: claimed
+- at: 2026-11-03 14:11
+  from: chaba
+  text: started devin-task-video-history-opencode-report-1793689902 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'merge-sweep: devin-task-video-history-opencode-report-1793689902 no longer active on idc02 but card still
+    says running — sweeping its branch'
+- at: 2026-11-03 14:12
+  from: idc02
+  text: 'finished (ok): exit=0 c71ffezOGmGcMNh88lx4","type":"step-finish","tokens":{"total":45693,"input":2777,"output":26,"reasoning":0,"cache"'
+- at: 2026-11-03 14:12
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/video-history-procedure-review.md
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-video-history-opencode-report-1793689902 on idc02
+    — if the work was never pushed it may be gone'
+- at: 2026-11-03 14:12
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=artifact-write
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'session-end checkpoint c4cdcc06: 1 leftover file(s) committed'
+- at: 2026-11-03 14:12
+  from: chaba
+  text: pushed dispatch/video-history-opencode-report-1793689902 to origin
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-03 14:12
+  from: chaba
+  text: auto-merged e96c73a2 (dispatch/video-history-opencode-report-1793689902) → origin/master
+- at: 2026-11-03 14:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-video-history-opencode-report-1793689902,
+    branch dispatch/video-history-opencode-report-1793689902'
+- at: 2026-11-03 14:27
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-03 14:47
+  from: devin
+  text: closed by devin
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-03 14:27
+  note: verified — evidence checks green, closing itself

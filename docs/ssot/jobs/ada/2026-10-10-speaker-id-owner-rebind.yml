@@ -27,61 +27,18 @@ incident: |
   there was no code path that un-pinned a disputed label.
 
 decision: |
-  Three-layer fix, all in ada-voice backend + pwa_server:
-
-  1) NON_OWNER_MIN_CONF floor (backend/speaker_id.py, env
-     ADA_SPEAKER_NON_OWNER_MIN_CONF, default 0.70): a *new* non-owner
-     person label below the floor never accrues toward hysteresis — it
-     counts as a miss (audio still banks into _pending_voice for
-     enrollment). Owner label and media sinks are exempt (owner scores
-     run 0.25–0.5 far-field; media is a noise sink, not an ACL actor).
-     An already-established label re-confirming below the floor is NOT
-     floored — the floor only gates binding a *new* foreign identity.
-     Rationale: a guest label strips owner tools for every turn it
-     survives, so its evidence bar must be higher than a personalization
-     hint's. This alone would have stopped 7a74536b32 (two 64% hits).
-
-  2) SpeakerSession.correct_speaker(claimed) — the "I'm not KK" path.
-     Re-scores the trailing _recent buffer NOW (user dispute is stronger
-     evidence than hysteresis). Resolution order:
-       - buffer verifies the current label at threshold → label STANDS
-         (a real guest can't talk their way out of a secondary turn)
-       - buffer identifies another person at threshold → rebind
-       - buffer's best person match is the session owner's print at
-         >= OWNER_RECLAIM_MIN (0.25) → rebind to the owner
-       - buffer's best match is the claimed profile at >= 0.25 → bind
-         the claim (a false "I'm Tony" can't land unless Tony's print
-         is genuinely the buffer's best match)
-       - nothing verifies → CLEAR to unrecognized. An unlabeled voice
-         keeps owner rights (same fail-open posture as SPEAKER_STALE_S
-         stale-label expiry), so dropping a disputed label loses no
-         security.
-     Media hits never bind via correction. Resets miss/switch streaks;
-     fires on_identified on rebind and the new on_cleared callback on a
-     clear, so provider + tool_runner + conversation speaker fields
-     resync through the same paths a voice-driven switch uses.
-
-  3) Deny-path re-verify — ToolRunner._reverify_secondary_turn(): the
-     secondary-speaker gate condition now ANDs with
-     `await self._reverify_secondary_turn()`. Before "Only the session
-     owner" fires, the label is re-scored against the buffer; if the
-     audio can't reproduce it, the label is dropped/rebound and the
-     call proceeds. Fails CLOSED on errors or missing session. The
-     provider-dispatched secondary gate in realtime_provider.py (which
-     bypasses the runner gate) calls the same method.
-
-  Surface plumbing:
-    - speaker_profiles action='correct' (tools.d, secondary_allowed
-      already true — the mislabeled guest IS the caller who needs it;
-      it mutates no profile, only session state). Optional name= claim.
-    - pwa_server _on_speaker_cleared: clears provider/runner speaker
-      fields, restores conversation.speaker_identity to the caller,
-      emits a 'speaker_cleared' ws event, and injects a system turn
-      telling Ada to treat the speaker as unrecognized.
-    - DEFAULT_ADA_INSTRUCTIONS: on "I'm not KK" / "this is Tony", call
-      speaker_profiles action='correct' — never just apologize while
-      the label stays pinned, because the label decides tool access.
-
+  Three-layer fix shipped, all in ada-voice backend + pwa_server:
+  (1) NON_OWNER_MIN_CONF floor (ADA_SPEAKER_NON_OWNER_MIN_CONF, 0.70) —
+      a NEW non-owner label below the floor never binds.
+  (2) SpeakerSession.correct_speaker(claimed) — user dispute re-scores
+      the trailing buffer now; stands/rebinds/owner-reclaim/claim/clear
+      in that order; clearing loses no security (fail-open).
+  (3) ToolRunner._reverify_secondary_turn() — the deny path re-scores
+      the label against the buffer before "Only the session owner"
+      fires; fails closed on errors.
+  Full design rationale moved to Education (verdict+pointer split,
+  2026-11-07): see lesson 'ada-speaker-id-rebind-layers'
+  (lesson-0eb6a7a7329c, Education:Ada-Speaker-Id-Rebind-Layers).
 verification:
   - >-
     tests/test_speaker_id.py — NonOwnerFloorTest (6 cases: marginal

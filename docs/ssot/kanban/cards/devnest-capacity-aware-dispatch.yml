@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-10-30 14:23
+updated: 2026-11-03 17:40
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -33,3 +33,107 @@ comms:
     and depth cap, routes KK specs to gdrive:ada-nest-kk-llm/inbox/, and stages complete Colab pack_source entries
     to gdrive:ada-nest/packs/ without launching a runtime. Empty inbox smoke passed; a real broker smoke spec routed
     successfully. Optimized recursive queue scan
+- at: 2026-10-30 16:21
+  from: devin
+  text: 'Continued OPS-1002 with a real upstream producer: scripts/devnest/devnest_report_feed.py scans recent allowlisted
+    durable reports, excludes KK-Mac self-reports, uses idempotent source markers, and submits up to 3 bounded summary
+    specs per 15m. SSOT job devnest-report-feed is declared on tony-dell. First run submitted 3 real report-review
+    tasks; broker routed them and KK producer staged them. Prompt bound was corrected to stay under the 6000-character
+    package limit. Current KK disk is at the 20GB'
+- at: 2026-10-30 19:15
+  from: devin
+  text: Tony requested KK-Mac stop now. Stopped devnest-report-feed, devnest-capacity-broker, and jevnest-kk-mac-capacity-producer
+    timers/services on tony-dell; booted out the KK-Mac LaunchAgent worker. Added DEVNEST_KK_MAC_ENABLED=false defensive
+    gates to broker/producer SSOT jobs so future starts hold KK packages instead of routing them. Existing inbox/packs
+    are preserved for later reroute; Ollama itself remains running for owner use. Next dispatch must use Colab/OpenCode/Devin/manual
+    lanes.
+- at: 2026-10-30 19:23
+  from: devin
+  text: 'Correction from Tony: KK-Mac is owner-free and should be used fully. Re-enabled the KK lane: DEVNEST_KK_MAC_ENABLED=true
+    in SSOT/job units, restarted KK LaunchAgent, and started report-feed, shared broker, and KK producer timers.
+    Admission is green with ~80 GB disk reported, load ~1.34, Ollama healthy. KK is again the preferred bounded
+    read-only lane; Colab/OpenCode/Devin remain fallback/parallel lanes.'
+- at: 2026-10-30 19:40
+  from: devin
+  text: 'Blocker review: KK resources were healthy (disk ~80GB, load ~1.4-1.7, Ollama green), but usage was blocked
+    by two orchestration defects: broker repeatedly scanned routed inbox specs and timed out; KK producer invoked
+    nest-pack-submit via a relative path (/home/tony/scripts/...) and failed staging. Fixed both in commits ba48a270c
+    + 2527abdb1, deployed to tony-dell. Producer now staged three new report-review packs; KK worker completed report-review-32bef8dc950a
+    in ~2.4s model wall. Two more are q'
+- at: 2026-10-30 19:48
+  from: devin
+  text: 'Follow-up verified: all three newly staged report packages completed on KK-Mac: report-review-32bef8dc950a
+    (~2.4s), report-review-42f0ca748e57 (~5.1s), report-review-784b75a88e57 (~2.1s). KK remains eligible: ~77GB
+    heartbeat disk, load ~1.5, Ollama healthy. The report feed/broker/producer timers remain active and will continue
+    filling up to three packages per cycle.'
+- at: 2026-10-30 20:03
+  from: devin
+  text: 'Continued efficiency work: KK producer had been spending minutes on one remote listing per historical pack.
+    It now uses one recursive pack inventory plus one existing-pack set. Live test on tony-dell completed in 3.37s
+    with queue_before=3 and correctly held new staging at the watermark. Commit f7dab43f4. This removes the producer-side
+    idle gap; worker remains serial and drains the three queued packages.'
+- at: 2026-10-30 22:31
+  from: devin
+  text: Tony requested overnight KK-Mac shutdown. Stopped the KK LaunchAgent and all three KK/report/broker timers
+    on tony-dell; deployed DEVNEST_KK_MAC_ENABLED=false into the rendered units. Existing queue artifacts are preserved.
+    KK-Mac host/Ollama was not powered off; only DevNest usage was stopped. Overnight fallback is the free OpenCode/Flash
+    Lite lane for small verified tasks, Colab for staged finite GPU batches, and Devin for ambiguous/multi-step
+    work.
+- at: 2026-10-31 10:53
+  from: devin
+  text: 'raised request producer-staging-timeout-recovery-20261031: Live flow is enabled: the three timers are active,
+    KK admission was eligible (78 GB free, load 3.54, not busy), and 70 D'
+- at: 2026-10-31 10:56
+  from: devin
+  text: 'Evidence update 2026-10-31 10:53 +07: second jevnest-kk-mac-capacity-producer.service run also timed out
+    at 10:53:03 after the 4-minute start timeout. At 10:53:44 the remote report-review-a8ff708e96d4 pack directory
+    was still empty (no pack files, claim, result, done, or failed marker). The timers remain active and will retry;
+    no remote cleanup, service stop/restart, or cap change was made. The existing producer-staging-timeout-recovery-20261031
+    request is the single pending decision.'
+- at: 2026-10-31 11:00
+  from: devin
+  text: 'Root-cause refinement for producer-staging-timeout-recovery-20261031: kk_mac_capacity_producer.py calls
+    load_task()/rclone cat for each inbox JSON before checking existing_packs. With 70 already-routed specs, a retry
+    can perform many unnecessary Drive reads before reaching new work and hit the 4m service timeout. Code-only
+    fix should derive a safe candidate task_id from each filename, skip complete existing packs before rclone cat,
+    and verify task_id matches after loading. Build a single pack in'
+- at: 2026-11-02 08:37
+  from: tony
+  text: 'answered producer-staging-timeout-recovery-20261031: atomic-3-3 — Recommended: prepare code/tests for ready-marker
+    staging and incomplete-pack retry; align producer to the card''s 3/3 caps and keep concurrency 1. No deployment
+    or remote cleanup yet.'
+- at: 2026-11-02 08:37
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-03 17:40
+  from: devin
+  text: 'Code/tests prepared locally (no deploy): commit `b02d243e0` on branch `fix/kk-mac-capacity-stage-atomic-20261103`.
+    Producer now derives task IDs from inbox filenames and skips ready/claimed/terminal packs before `rclone cat`;
+    incomplete unclaimed packs are retried. Marker-enabled packs are copied, checked with `rclone check`, then receive
+    a manifest-hash `ready` marker; the worker ignores absent/invalid markers. Producer hard-caps depth/new work
+    at 3/3 and the SSOT job args match. 23 focused adm'
+requests:
+- id: producer-staging-timeout-recovery-20261031
+  ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
+    busy), and 70 DevNest task specs were all routed. The KK queue reports one pending pack, but kk-mac-task-report-review-a8ff708e96d4
+    is an empty remote directory. The producer started at 10:44 and timed out at its 4-minute systemd limit at 10:48:02;
+    that empty directory appeared at 10:47:56 and was still empty on read at 10:48:41. A second run was still activating
+    at 10:51:53. The live job args max-depth=10/max-new=5 exceed the OPS-1002 spec of depth=3/max=3; queue accounting
+    treats any directory as a pack, and report-feed summaries use expect:{} (nonempty-only verification). Which
+    next step do you authorize? No remote cleanup, service restart, or concurrency change will be done without separate
+    review.'
+  status: answered
+  at: 2026-10-31 10:53
+  from: devin
+  options:
+  - id: atomic-3-3
+    label: 'Recommended: prepare code/tests for ready-marker staging and incomplete-pack retry; align producer to
+      the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
+  - id: atomic-10-5
+    label: Fix staging integrity but retain current 10/5 queue limits; no deployment or remote cleanup yet.
+  - id: hold
+    label: Hold changes and monitor the current producer run and pending pack.
+  suggested: atomic-3-3
+  answer: 'atomic-3-3 — Recommended: prepare code/tests for ready-marker staging and incomplete-pack retry; align
+    producer to the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
+awaiting_action: true

@@ -1,0 +1,35 @@
+id: cms-auto-alert-dedupe-digest-alerts-mint-4a5235
+title: CMS auto-alert dedupe — digest alerts mint new cards instead of reopening one
+column: done
+updated: 2026-11-07 16:53
+priority: medium
+tags:
+- board-hygiene
+- cms
+spec: '~30 cms-auto-*-digest cards pile up in review — the auto-alert writer stamps a NEW card each error window
+  instead of upserting/reopening one card per automation. Fix: find the alert producer (cms health/alert unit) and
+  make it update-in-place per automation key (open card exists -> bump note/updated, not a new card); auto-resolve
+  the card when the automation goes green for N windows. Then bulk-close the stale review pile as duplicates.'
+ref: KNB-1099
+comms:
+- at: 2026-11-07 16:26
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 16:41
+  from: devin
+  text: 'Ran it — premise correction: the writer already dedupes. Producer is scripts/ada/cms-auto-health.py via
+    kanban-sync.timer on idc03 (15m); it upserts in place per automation key (deterministic cms-auto-<slug>.yml,
+    one card per automation, note rewritten each tick). The ~30-card pile was ~30 DISTINCT digest automations red
+    simultaneously — shared digest generator outage (cms-auto-nest-tony-dell shows 18d overdue), not duplicate minting.
+
+
+    What was missing vs spec: close happened on the FIRST health'
+- at: 2026-11-07 16:41
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 16:53
+  from: tony
+  text: closed by tony
+review_kind: verify
+action:
+  status: done

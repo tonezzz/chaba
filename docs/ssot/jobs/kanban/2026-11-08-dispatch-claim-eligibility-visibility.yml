@@ -1,0 +1,75 @@
+title: Dispatch claim-eligibility visibility — unclaimable queued cards
+  flag themselves
+subtitle: a queued card whose labels/pins/push no declared runner can
+  satisfy writes WHY to its comms + awaiting_action instead of starving
+  invisibly
+icon: eye
+
+context:
+  incident: "2026-11-07, OPS-1097: three ops0790-rollout-* dispatch cards
+    sat queued ~3h — action.labels:[exec] matched no runner's
+    RUNNER_LABELS (idc03 advertises ssd,always-on,ada,cpu,small).
+    queue_starve_warn only covered action.type/executor=manual, and
+    kanban-dispatch's label skip was a bare `continue` — not even a log
+    line. Tony ran the work by hand over ssh."
+  card: dispatch-claim-eligibility-visibility
+  ref: OPS-1097
+  seams:
+    - scripts/board/dispatch_repos.py (fleet parse + shared verdict)
+    - scripts/board/board-api.py (queue-time warn + /comment flag)
+    - scripts/board/kanban-dispatch.py (eval-time flag + defer comms)
+    - scripts/board/runner-agent.py (note_defer kind=unclaimable)
+    - docs/ssot/kanban/ssot.kanban.yml (runner_fleet = declared surface)
+
+shipped:
+  fleet_capabilities:
+    what: "dispatch_repos.fleet_capabilities() parses the runner_fleet
+      prose into {host: {labels, types}} — the DECLARED claim surface
+      ('<host>: ... labels a,b (dispatch+container+script)' segments,
+      mtime-cached). {} on unreadable input — callers never flag on
+      absent evidence."
+  unsatisfiable_reasons:
+    what: "dispatch_repos.unsatisfiable_reasons(card, fleet?, local_host?,
+      push_probe?) -> [reason]. Deterministic gaps only: pin
+      (action.host/target_host/runner) naming no declared runner,
+      conflicting host+target_host pins, labels satisfied by no single
+      declared host, served-type mismatch on the pinned host, unknown
+      action.executor, and push-guard failure when the only eligible
+      runner IS the checking host (local `git push --dry-run` is real
+      evidence). Remote push stays unproven — live '<host> defers: push
+      guard' notes own it; never flag on it."
+  queue_time:
+    what: "board-api queue_unclaimable_warn() runs beside
+      queue_starve_warn in do_action(queue) and both do_create queue
+      paths: warns the queuer, writes a chaba comms line, sets
+      awaiting_action. Also fixed the type warn to stop calling
+      container/script cards unclaimable (runners serve them)."
+  eval_time:
+    what: "kanban-dispatch Phase A skips now: (a) fleet-unclaimable ->
+      comms 'unclaimable by the declared runner fleet: <reasons>' +
+      awaiting_action, debounced on the card's own comms (one note per
+      distinct reason; 'present' suppresses the per-host defer); (b)
+      label/push misses that ARE fleet-satisfiable -> '<host> defers:
+      ...' comms (served-side twin of runner-agent's note_defer); (c)
+      every skip prints a reason — label skips were log-silent before.
+      runner-agent claim_pass posts the same flag remotely via
+      note_defer(awaiting=True) -> /comment {awaiting_action:true}."
+  prose_push_labels:
+    what: "runner_fleet now declares tony-dell's push labels
+      (push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,
+      push:gods-eye-view) — the prose already said it pushes all
+      dispatch repos; declaring makes the parse (and the single-
+      eligible push check) truthful."
+
+tests: "tests/board/test_queue_starvation.py — FleetCapabilitiesTest
+  (parse + ops0790 reason + pin/executor/push legs),
+  QueueUnclaimableWarnTest (queue flag + awaiting_action),
+  DispatchUnclaimableFlagTest (eval flag, defer note, debounce)"
+
+followups:
+  - "runner_fleet prose is the declared surface but stays hand-synced —
+    a machine-readable fleet table (or per-host /ready label reports)
+    would remove the parse drift risk."
+  - "board-invariants Q1 could extend to queued cards unsatisfiable by
+    the declared fleet >24h as a third tripwire (runner-fleet-health's
+    runner-auto-queue card already aggregates it)."

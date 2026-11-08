@@ -86,50 +86,16 @@ poc_plan:
   cost: contained — no production lane touched, no spend, ~1GB disk on idc02
 
 deployed_2026_10_16: |
-  SHIPPED past POC: ada-stt.service on idc02 (audio.cpp v0.9.2 CPU,
-  Qwen3-ASR-0.6B Q8, tailscale-bound 100.123.163.11:8914, lazy_load,
-  idle-unload 10min). Moved OFF idc03 same day: under idc03's service
-  load the same clips ran RTF 2.75-12 (15-43s) vs idc02 RTF ~0.5
-  (1-6s) — ~8x. Placement rule learned: STT specialist lives on the
-  idle node, relay just POSTs over tailnet. idc03's ada-stt unit left
-  installed+stopped as a fallback target (flip TG_WHISPER_URL back to
-  127.0.0.1:8914 if idc02 is ever down).
-  ada-tg-relay patched: _transcribe prefers TG_WHISPER_URL remote —
-  decodes opus→wav16k in-venv (av+soundfile, no ffmpeg on idc03), POSTs
-  OpenAI-style multipart incl. model field — falls back to local
-  faster-whisper. Env: ada-ha-tony.env TG_VOICE_TRANSCRIBE=1,
-  TG_WHISPER_URL=http://100.123.163.11:8914/v1/audio/transcriptions,
-  TG_WHISPER_MODEL=qwen3-asr. Verified: _transcribe() in real venv →
-  live server → correct Thai transcript; relay restarted clean.
-  Closes the tg-relay-whisper-pin failure mode.
-  OPEN: 4 new clips (19:52-19:58) transcribed fine but Qwen emitted
-  ENGLISH — either Tony spoke English or the model auto-translated
-  ("crowd" looks like a ครับ mistranslation). Check for a language/
-  task pin field on the transcriptions endpoint before prod rollout.
-  UNPUSHED: ada-voice commit acd364e lives on idc03 main only — no push
-  creds there or on macbook (deploy-key denied). Push/re-land from
-  tony-dell when it returns; until then idc03 main is 1 ahead of origin
-  (ff-safe for deploy-ada.sh). KK relay shares the module but stays
-  corpus-only (env not set). Detection: scripts/ops/deploy-diff.sh flags
-  idc03 ada-voice as ahead-of-origin + dirty until re-landed.
-  +1 POSTED: score posts 641 (tony, stt-discovery) + 642 (devin,
-  deploy-diff detector) landed once a browser UA was added. CF
-  LESSON (corrected 2026-10-16 via Security-Events screenshot):
-  boards WP sits behind Cloudflare Browser Integrity Check — a
-  STANDING zone setting, not a toggle someone flipped. BIC bans the
-  default python-urllib signature (403 error-code-1010); curl passed
-  the whole time, urllib+browser-UA passes. Events at 19:43 BKK were
-  our own idc03 POSTs (157.85.102.125); 22:24 Managed-rules blocks
-  from a German GCP IP were ordinary scanner noise. Writers don't
-  need a browser UA — proven 2026-10-16: named agents pass BIC
-  ("chaba-agent/0.1 (+idc03)" → 400 reached-WP vs "Python-urllib/3.12"
-  → 403). CONVENTION: every chaba HTTP client sends UA
-  "chaba-<tool>/<ver>" — identifiable in CF events + origin logs AND
-  BIC-clean. Most scripts comply already (chaba-lessons/1.0,
-  chaba-news-digest, timing-probe, vcast-auto-health…); ad-hoc inline
-  urllib was the only gap. Optional hardening: WAF skip rule for
-  /wp-json/ from tailnet egress IPs (needs zone-edit scope we lack).
-
+  SHIPPED past POC: ada-stt.service lives on idc02 (audio.cpp v0.9.2 CPU,
+  Qwen3-ASR-0.6B Q8, tailscale-bound 100.123.163.11:8914). ada-tg-relay's
+  _transcribe prefers TG_WHISPER_URL remote, falls back to local
+  faster-whisper; closes the tg-relay-whisper-pin failure mode.
+  Placement rule: STT specialist lives on the idle node (~8x RTF win vs
+  idc03). Open items: Qwen emitted English on 4 clips (check
+  language/task pin); ada-voice commit acd364e unpushed on idc03.
+  Full deploy narrative moved to Education (verdict+pointer split,
+  2026-11-07): see lesson 'phonon2-audiocpp-stt-deploy'
+  (lesson-227dddf98997, Education:Phonon2-Audiocpp-Stt-Deploy).
 nest_next_plan: |
   Ada Nest (micro-AI fleet) improvements this unlocks — for the follow-on
   card:

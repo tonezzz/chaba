@@ -31,11 +31,13 @@ HARD FAIL (nothing written, exit 2): op=list unreachable / invalid.
 Usage:
   education-report.py [--out-dir DIR] [--repo PATH] [--fixture FILE]
       [--date YYYY-MM-DD] [--dated] [--post board,tg] [--post-card ID]
-      [--exceptions FILE] [--dump-fixture FILE]
+      [--exceptions FILE] [--dump-fixture FILE] [--source wp|wiki]
 
 Env:
   BOARD_API / RUNNER_API  door base (default: idc03 tailnet)
   EDU_REPORT_NOW          ISO timestamp override (tests)
+  EDU_SOURCE              lesson store — wp (default, canonical until
+                          cutover) or wiki (Education: namespace)
 """
 import argparse
 import hashlib
@@ -112,16 +114,28 @@ def api(body: dict, base: str) -> dict:
     return json.loads(urllib.request.urlopen(req, timeout=60).read())
 
 
-def fetch_all(base: str) -> dict:
+def fetch_all(base: str, source: str = "wp") -> dict:
     """One list + one get per lesson — the only door reads this tool
-    makes. Returns {list: [...], gets: {slug: {content, meta, error}}}."""
-    listing = api({"op": "list"}, base)
+    makes. Returns {list: [...], gets: {slug: {content, meta, error}}}.
+
+    source=wiki reads the Education: namespace through the same /lesson
+    door (card wiki-member-knowledge-surface-migrate-wp-3a1cf2) — rows
+    carry the same lesson-<md5> slugs and meta keys; content is
+    wikitext, which the audit/drift regexes handle (Thai, hub links,
+    repo-path refs all match plain wikitext). A door that predates the
+    wiki read path answers a source=wiki list without "source":"wiki"
+    — fail hard rather than audit the WP corpus under a wiki label."""
+    listing = api({"op": "list", "source": source}, base)
+    if source == "wiki" and listing.get("source") != "wiki":
+        raise RuntimeError(
+            "door answered without source=wiki — the running board-api "
+            "predates the wiki read path (merge + restart on idc03)")
     lessons = listing.get("lessons") or []
     gets = {}
     for l in lessons:
         slug = l.get("slug") or ""
         try:
-            g = api({"op": "get", "slug": slug}, base)
+            g = api({"op": "get", "slug": slug, "source": source}, base)
             gets[slug] = {"content": g.get("content") or "",
                           "meta": g.get("meta") or {},
                           "modified": g.get("modified")}
@@ -562,6 +576,10 @@ def main() -> int:
     ap.add_argument("--post-card", default=CARD_ID)
     ap.add_argument("--exceptions", default=str(DEFAULT_EXCEPTIONS))
     ap.add_argument("--api", default=API_BASE)
+    ap.add_argument("--source", choices=["wp", "wiki"],
+                    default=os.environ.get("EDU_SOURCE", "wp"),
+                    help="lesson store to audit — wp (canonical until "
+                         "cutover) or wiki (Education: namespace)")
     a = ap.parse_args()
 
     os.environ.setdefault("LESSON_OUT", a.out_dir)
@@ -586,8 +604,9 @@ def main() -> int:
         data = json.loads(Path(a.fixture).read_text())
     else:
         try:
-            data = fetch_all(a.api)
-        except (urllib.error.URLError, OSError, ValueError) as e:
+            data = fetch_all(a.api, a.source)
+        except (urllib.error.URLError, OSError, ValueError,
+                RuntimeError) as e:
             print(f"education-report: /lesson unreachable: {e}",
                   file=sys.stderr)
             return 2
@@ -602,6 +621,7 @@ def main() -> int:
         exceptions, exc_err = {}, f"missing {exc_path}"
 
     report = build(data, repo, today, exceptions, now_iso())
+    report["source"] = a.source
     report["verify"] = verify(report, data, exc_err)
     report["trend"] = trend(report, out_dir)
     ok = report["verify"]["status"] == "pass" \
@@ -637,7 +657,8 @@ def main() -> int:
     hist.write_text("\n".join(old + [json.dumps(hline)]) + "\n")
 
     t = report["totals"]
-    print(f"education-report: {t['lessons']} lessons, {t['flagged']} "
+    print(f"education-report[{report['source']}]: {t['lessons']} "
+          f"lessons, {t['flagged']} "
           f"flagged, compliance {report['policy']['compliance']:.4f}, "
           f"drift {report['drift']['drifted']}/"
           f"{report['drift']['source_gone']}, due "

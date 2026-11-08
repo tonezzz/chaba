@@ -1,0 +1,43 @@
+id: adobe-stock-artifact-landing-service
+title: Typed artifact-landing service for render lanes
+column: doing
+updated: 2026-11-07 17:27
+brief: Replace the ad-hoc decode/hash/rclone/session-update command chain with one typed landing call per render.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- nest
+- ada
+- token-efficiency
+- pipeline
+spec: 'Problem: every generated candidate currently costs ~7 shell calls and risks printing MB-scale base64 into
+  agent context. Build scripts/adobe-stock/land-render.py: inputs {lane, job_id|pack_name, campaign_id, asset_id,
+  request_id}; lane adapters normalize sd-server jobs (GET /sdcpp/v1/jobs/{id}), Nest pack done markers, and Gemini
+  results into RenderResult; core streams b64 to PNG without printing, computes sha256+dimensions, writes manifest,
+  rclone-copies to campaign 30-generated-raw/, updates SESSION.json and appends 40-qc-review.md section atomically,
+  returns compact receipt JSON. Later wrappers: board-api endpoint + Ada MCP tool adobe_stock_land_render so Ada
+  runs land->QC-prompt in one call. Acceptance: landing candidate D (job_6aeee1d0) via the script produces identical
+  artifacts to the manual flow with <30 lines of tool output. No upload, no auto-QC-decision.'
+ref: ADA-1092
+comms:
+- at: 2026-11-07 15:36
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 15:39
+  from: devin
+  text: 'v1 shipped to master (985fc537e): scripts/adobe-stock/land-render.py. Lane adapters: omen-sd (job API,
+    --port for :8399/:8400) and kk-mac-nest (pack done markers + out/*.png). Core never prints image payloads; verifies
+    sha256+PNG IHDR dims; writes manifest; rclone copyto PNG+manifest -> 30-generated-raw/; updates SESSION.json
+    (asset_ids, status=human_qc_pending, last_landed); appends 40-qc-review.md section; returns compact receipt.
+    --status-only mode verified live against job_6aeee1d0 (generati'
+- at: 2026-11-07 15:39
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-07 17:27
+  from: devin
+  text: 'CF Workers AI lane added + first live land (master 9fd7fa643). Probe results 2026-11-07: USABLE = flux-1-schnell
+    (b64 JPEG), lucid-origin (b64 JPEG), SDXL base (PNG), SDXL lightning (PNG), phoenix-1.0 (JPEG), dreamshaper-8-lcm
+    (PNG). flux-2-klein-9b/4b/dev need multipart input (400). Landed comparison-e-cf-flux-schnell.jpg 1024x1024
+    sha256 c2677dba via one land-render call — flux-schnell ignores width/height (square default) and negative_prompt.
+    Free-tier daily neuron quota now exhausted (429 on'

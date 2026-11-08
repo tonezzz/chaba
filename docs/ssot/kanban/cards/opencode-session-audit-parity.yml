@@ -1,7 +1,7 @@
 id: opencode-session-audit-parity
 title: Add OpenCode session audit parity with Chaba Voice audit
-column: backlog
-updated: 2026-10-29 11:13
+column: done
+updated: 2026-11-07 19:33
 brief: Audit every OpenCode session since a marker for tool safety, artifact landing, claims/evidence, latency,
   and token metrics.
 priority: medium
@@ -24,10 +24,15 @@ spec: 'Build a read-only OpenCode session audit equivalent to the Chaba Voice tr
 action:
   type: dispatch
   repo: chaba
-  status: idle
-  runner: tony-macbook
-  result: 'exit=0 d audit section — all read-only, nothing pushed or deployed. | devin-task-20261027-163705-build-a-read-only-opencode-ses.service:
-    Consumed 1min 16.136s CPU time over 18min 28.946s wall clock time, 528.7M memory peak, 39.1M memory swap peak.'
+  status: done
+  result: 'exit=0 dit`), and everything is committed on the dispatch branch — no session deletions or model changes.
+    | devin-task-20261107-190846-build-a-read-only-opencode-ses.service: Consumed 1min 30.682s CPU time, 246.2M
+    memory peak, 0B memory swap peak.'
+  lane: devin
+  runner: idc02
+  sweep:
+    stale_running: 2026-11-07 19:18
+    session_gone: 2026-11-07 19:18
   verified: true
 note: Chaba Voice has an established transcript audit; OpenCode needs equivalent independent QC before broader delegation.
   Current S0 report says 3/5 verified while shadow matrix shows 2/5 OpenCode pass, so reconciliation is the first
@@ -97,9 +102,53 @@ comms:
 - at: 2026-10-29 11:13
   from: devin
   text: put on hold
+- at: 2026-11-07 19:07
+  from: tony
+  text: queued for processing
+- at: 2026-11-07 19:08
+  from: idc02
+  text: claimed
+- at: 2026-11-07 19:08
+  from: chaba
+  text: started devin-task-20261107-190846-build-a-read-only-opencode-ses on idc02 (dispatch)
+- at: 2026-11-07 19:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261027-163705-build-a-read-only-opencode-ses no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-07 19:18
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-163705-build-a-read-only-opencode-ses on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-07 19:23
+  from: devin
+  text: 'AUD-0938 re-landed durably on idc02: scripts/devnest/opencode_session_audit.py + 20 unittests (green),
+    full-store audit of 276 sessions -> evals/opencode-lane/reports/2026-11-07-session-audit.{md,json}, marker set,
+    8 finding cards filed (4 artifact-miss, 1 deny-storm, 3 profile-scope mutations). Ledger-vs-benchmark reconciled:
+    independent executions, flash-lite non-deterministic, not a ledger error. 0 ungated profile runs; 13/13 lane
+    runs linked, token deltas 0.'
+- at: 2026-11-07 19:24
+  from: idc02
+  text: 'finished (ok): exit=0 dit`), and everything is committed on the dispatch branch — no session deletions
+    or model changes. | devin-task-2'
+- at: 2026-11-07 19:24
+  from: chaba
+  text: pushed dispatch/20261107-190846-build-a-read-only-opencode-ses to origin
+- at: 2026-11-07 19:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 19:24
+  from: chaba
+  text: auto-merged 3878b214 (dispatch/20261107-190846-build-a-read-only-opencode-ses) → origin/master
+- at: 2026-11-07 19:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261107-190846-build-a-read-only-opencode-ses,
+    branch dispatch/20261107-190846-build-a-read-only-opencode-ses'
+- at: 2026-11-07 19:33
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
-  at: 2026-10-27 17:02
+  at: 2026-11-07 19:33
   note: verified — evidence checks green, closing itself

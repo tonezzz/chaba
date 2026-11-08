@@ -386,6 +386,389 @@ class NoiseTest(PubTestBase):
         self.assertIn("Flood watch upgraded", text)
         self.assertIn("http://x", text)
 
+    def test_mediawiki_sink_login_edit_and_metadata(self):
+        calls = []
+
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "login-token"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success", "lgusername": "Ada"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "csrf-token"}}}
+            return {"edit": {"result": "Success", "pageid": 7,
+                              "newrevid": 8}}
+
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+        e = pub.validate_event(ev(
+            kind="news", title="Thailand AI update", body="A test story.",
+            evidence=["https://example/source"], confidence="verified",
+            visibility="public", meta={
+                "wiki_title": "News/Countries/Thailand/AI/Test",
+                "summary": "Verified Thailand AI test story.",
+                "geo_scope": "country", "country": "Thailand",
+                "region": "Asia", "topic": "Artificial Intelligence",
+            }))
+        result = sink.publish(e)
+        self.assertEqual(result["pageid"], 7)
+        self.assertEqual(result["revid"], 8)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "News/Countries/Thailand/AI/Test")
+        self.assertIn("Thailand AI update", edit["text"])
+        self.assertIn("Quick summary:", edit["text"])
+        self.assertIn("Category:News/Geography/Thailand", edit["text"])
+        self.assertTrue(calls[-1][1])
+
+    def test_mediawiki_sink_is_public_only(self):
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=lambda *_: {})
+        e = pub.validate_event(ev(
+            kind="news", title="private", body="test",
+            evidence=["https://example/source"], visibility="members"))
+        reason = sink.check(e)
+        self.assertIn("visibility", reason)
+
+    def test_mediawiki_private_sink_accepts_private_namespace_only(self):
+        sink = pub.MediaWikiSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=lambda *_: {}, name="wiki-private", surface="private",
+            namespace_prefix="PrivateNews:")
+        private = pub.validate_event(ev(
+            kind="news", title="private", body="test",
+            evidence=["https://example/source"], visibility="private",
+            meta={"wiki_title": "PrivateNews/Countries/Thailand/test",
+                  "summary": "Private review test."}))
+        self.assertIsNone(sink.check(private))
+        public = pub.validate_event(ev(
+            kind="news", title="public", body="test",
+            evidence=["https://example/source"], visibility="public",
+            confidence="verified",
+            meta={"wiki_title": "News/Countries/Thailand/test",
+                  "summary": "Public test."}))
+        self.assertIn("private events only", sink.check(public))
+
+
+class HtmlToWikitextTest(unittest.TestCase):
+    """Lesson-body HTML -> wikitext converter
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2)."""
+
+    def test_basic_markup(self):
+        html = ("<p>Intro <strong>bold</strong> and <em>it</em>.</p>"
+                "<h3>ไทย</h3><p>ไทย body</p><hr>"
+                "<ul><li>one</li><li>two</li></ul>"
+                "<p><a href='https://x/y'>the link</a></p>")
+        wt = pub.html_to_wikitext(html)
+        self.assertIn("'''bold'''", wt)
+        self.assertIn("''it''", wt)
+        self.assertIn("=== ไทย ===", wt)
+        self.assertIn("----", wt)
+        self.assertIn("* one\n* two", wt)
+        self.assertIn("[https://x/y the link]", wt)
+
+    def test_nested_lists_and_ol(self):
+        html = ("<ol><li>a<ul><li>a1</li><li>a2</li></ul></li>"
+                "<li>b</li></ol>")
+        wt = pub.html_to_wikitext(html)
+        self.assertIn("# a", wt)
+        self.assertIn("#* a1\n#* a2", wt)
+        self.assertIn("# b", wt)
+
+    def test_bare_url_link_and_h1(self):
+        wt = pub.html_to_wikitext(
+            "<h1>T</h1><p><a href='https://x/y'>https://x/y</a></p>")
+        self.assertTrue(wt.startswith("== T =="))
+        self.assertIn("[https://x/y]", wt)
+
+    def test_script_style_dropped_unknown_flattened(self):
+        wt = pub.html_to_wikitext(
+            "<p>keep<style>.x{}</style><script>bad()</script>"
+            "<marquee>me</marquee></p>")
+        self.assertIn("keep", wt)
+        self.assertIn("me", wt)
+        self.assertNotIn("bad()", wt)
+        self.assertNotIn(".x{}", wt)
+
+
+class LessonWikiTitleTest(unittest.TestCase):
+    def test_readable_title(self):
+        self.assertEqual(pub.lesson_wiki_title("ada-nest-map"),
+                         "Education:Ada-Nest-Map")
+        self.assertEqual(pub.lesson_wiki_title("cloud object storage"),
+                         "Education:Cloud Object Storage")
+        self.assertEqual(pub.lesson_wiki_title("WP REST API"),
+                         "Education:WP REST API")
+        # forbidden title chars fold to spaces, md5 slug never leaks
+        t = pub.lesson_wiki_title("a<b>[c]|d_{e}")
+        self.assertNotRegex(t, r"[#<>\[\]|{}_]")
+
+
+class WikiLessonSinkTest(PubTestBase):
+    """WikiLessonSink — protected Education: namespace adapter."""
+
+    def _sink(self, calls):
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            return {"edit": {"result": "Success", "pageid": 9,
+                             "newrevid": 10}}
+        return pub.WikiLessonSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _ev(self, body="<p>Block storage <strong>basics</strong>.</p>",
+            **meta):
+        m = {"topic": "cloud object storage", "level": "working",
+             "status": "open", "next_review": "2026-11-15",
+             "wiki_title": "Education:Cloud Object Storage"}
+        m.update(meta)
+        return pub.validate_event(ev(
+            kind="lesson", title="cloud object storage",
+            body=body, visibility="private", meta=m))
+
+    def test_publish_edit_and_metadata(self):
+        calls = []
+        r = self._sink(calls).publish(self._ev())
+        self.assertEqual(r["pageid"], 9)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "Education:Cloud Object Storage")
+        self.assertIn("{{แม่แบบ:Education", edit["text"])
+        self.assertIn("|level=working", edit["text"])
+        self.assertIn("|next_review=2026-11-15", edit["text"])
+        self.assertIn("'''basics'''", edit["text"])   # html converted
+        self.assertIn("[[Category:Education/Level/working]]",
+                      edit["text"])
+        self.assertIn("[[Category:Education/Topics/"
+                      "cloud-object-storage]]", edit["text"])
+
+    def test_wikitext_format_passthrough(self):
+        calls = []
+        self._sink(calls).publish(
+            self._ev(format="wikitext",
+                     body="already '''wiki''' text"))
+        self.assertIn("already '''wiki''' text", calls[-1][0]["text"])
+
+    def test_title_derives_from_topic(self):
+        calls = []
+        e = self._ev()
+        del e["meta"]["wiki_title"]
+        self._sink(calls).publish(e)
+        self.assertEqual(calls[-1][0]["title"],
+                         "Education:Cloud Object Storage")
+
+    _OLD_PAGE = (
+        "{{แม่แบบ:Education\n"
+        "|topic=cloud object storage\n|level=working\n|source=voice\n"
+        "|learned_at=2026-01-01\n|next_review=2026-02-01\n"
+        "|status=learned\n|updated=2026-01-01\n|no_th=1\n"
+        "|event_id=ev-old\n}}\n\nold body\n[[Category:Education]]\n")
+
+    def _sink_with_page(self, calls, page_wikitext):
+        """fake_api additionally answers the existing-page fetch the
+        meta-merge makes (page_wikitext=None -> missing page)."""
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("prop") == "revisions":
+                if page_wikitext is None:
+                    return {"query": {"pages": {"-1": {"missing": ""}}}}
+                return {"query": {"pages": {"1": {
+                    "title": "Education:Cloud Object Storage",
+                    "revisions": [{"slots": {
+                        "main": {"*": page_wikitext}}}]}}}}
+            return {"edit": {"result": "Success", "pageid": 9,
+                             "newrevid": 10}}
+        return pub.WikiLessonSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _queries(self, calls):
+        return [c[0] for c in calls
+                if c[0].get("prop") == "revisions"]
+
+    def test_sparse_meta_inherits_existing_state(self):
+        calls = []
+        e = self._ev()
+        for k in ("learned_at", "next_review", "status", "level"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|learned_at=2026-01-01", text)
+        self.assertIn("|next_review=2026-02-01", text)
+        self.assertIn("|status=learned", text)
+        self.assertIn("|level=working", text)
+        self.assertIn("|source=voice", text)     # lesson_source merged
+
+    def test_explicit_meta_wins_over_existing(self):
+        calls = []
+        e = self._ev(next_review="2026-12-31", status="open",
+                     learned_at="2026-11-07", level="intro",
+                     lesson_source="chat", no_th=True)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|next_review=2026-12-31", text)
+        self.assertIn("|learned_at=2026-11-07", text)
+        self.assertIn("|status=open", text)
+        self.assertNotIn("|status=learned", text)
+
+    def test_no_th_exemption_carried_on_thai_free_refile(self):
+        calls = []
+        e = self._ev()          # Thai-free body, no explicit no_th
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertIn("|no_th=1", calls[-1][0]["text"])
+
+    def test_no_th_exemption_dropped_when_thai_lands(self):
+        calls = []
+        e = self._ev(body="<p>มีไทยแล้ว</p>")
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertIn("|no_th=\n", calls[-1][0]["text"])
+
+    def test_full_meta_skips_existing_page_fetch(self):
+        calls = []
+        e = self._ev(learned_at="2026-11-07", lesson_source="chat",
+                     no_th=True)
+        self._sink_with_page(calls, self._OLD_PAGE).publish(e)
+        self.assertFalse(self._queries(calls))
+        self.assertIn("|learned_at=2026-11-07", calls[-1][0]["text"])
+
+    def test_missing_page_no_merge(self):
+        calls = []
+        e = self._ev()
+        for k in ("learned_at", "next_review", "status"):
+            e["meta"].pop(k, None)
+        self._sink_with_page(calls, None).publish(e)
+        text = calls[-1][0]["text"]
+        self.assertIn("|next_review=\n", text)
+        self.assertNotIn("2026-02-01", text)
+
+    def test_gates(self):
+        sink = self._sink([])
+        # wrong kind
+        news = pub.validate_event(ev(
+            kind="news", title="n", body="b",
+            evidence=["https://x"], visibility="private",
+            meta={"wiki_title": "Education:X"}))
+        self.assertIn("unsupported", sink.check(news))
+        # members/public can't reach a private namespace
+        mem = self._ev()
+        mem["visibility"] = "members"
+        self.assertIn("private events only", sink.check(mem))
+        # title outside the namespace
+        bad = self._ev(wiki_title="News/Cloud")
+        try:
+            sink._title(bad)
+        except pub.Skip as e:
+            self.assertIn("Education:", str(e))
+        else:
+            raise AssertionError("expected Skip")
+
+
+class ReportWikiTitleTest(unittest.TestCase):
+    def test_living_page_title(self):
+        self.assertEqual(
+            pub.report_wiki_title("usage-ledger", "rolling-14d"),
+            "Reports:Usage-Ledger/rolling-14d")
+        self.assertEqual(pub.report_wiki_title("usage-ledger"),
+                         "Reports:Usage-Ledger")
+
+    def test_forbidden_chars_fold(self):
+        t = pub.report_wiki_title("a<b>", "p|x_y")
+        self.assertNotRegex(t, r"[#<>\[\]|{}_]")
+
+
+class WikiReportSinkTest(PubTestBase):
+    """WikiReportSink — protected Reports: namespace adapter
+    (card wiki-member-knowledge-surface-migrate-wp-3a1cf2)."""
+
+    def _sink(self, calls):
+        def fake_api(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            return {"edit": {"result": "Success", "pageid": 11,
+                             "newrevid": 12}}
+        return pub.WikiReportSink(
+            "https://wiki.example/api.php", "ada", "secret",
+            api=fake_api)
+
+    def _ev(self, body="<p>Rolling usage <strong>ledger</strong>.</p>",
+            **meta):
+        m = {"report_type": "usage-ledger", "period": "rolling-14d",
+             "source_key": "idc03-usage-feed",
+             "wiki_title": "Reports:Usage-Ledger/rolling-14d"}
+        m.update(meta)
+        return pub.validate_event(ev(
+            kind="report", title="usage-ledger", body=body,
+            visibility="private", meta=m))
+
+    def test_publish_edit_and_metadata(self):
+        calls = []
+        r = self._sink(calls).publish(self._ev())
+        self.assertEqual(r["pageid"], 11)
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"],
+                         "Reports:Usage-Ledger/rolling-14d")
+        self.assertIn("{{แม่แบบ:Report", edit["text"])
+        self.assertIn("|report_type=usage-ledger", edit["text"])
+        self.assertIn("|period=rolling-14d", edit["text"])
+        self.assertIn("|source_key=idc03-usage-feed", edit["text"])
+        self.assertIn("'''ledger'''", edit["text"])   # html converted
+        self.assertIn("[[Category:Reports/Type/usage-ledger]]",
+                      edit["text"])
+
+    def test_wikitext_format_passthrough(self):
+        calls = []
+        self._sink(calls).publish(
+            self._ev(format="wikitext",
+                     body="already '''wiki''' text"))
+        self.assertIn("already '''wiki''' text", calls[-1][0]["text"])
+
+    def test_title_derives_from_report_meta(self):
+        calls = []
+        e = self._ev()
+        del e["meta"]["wiki_title"]
+        self._sink(calls).publish(e)
+        self.assertEqual(calls[-1][0]["title"],
+                         "Reports:Usage-Ledger/rolling-14d")
+
+    def test_gates(self):
+        sink = self._sink([])
+        lesson = pub.validate_event(ev(
+            kind="lesson", title="l", body="b", visibility="private",
+            meta={"wiki_title": "Reports:X"}))
+        self.assertIn("unsupported", sink.check(lesson))
+        mem = self._ev()
+        mem["visibility"] = "members"
+        self.assertIn("private events only", sink.check(mem))
+        bad = self._ev(wiki_title="Education:X")
+        try:
+            sink._title(bad)
+        except pub.Skip as e:
+            self.assertIn("Reports:", str(e))
+        else:
+            raise AssertionError("expected Skip")
+
 
 class BoardApiWiringTest(PubTestBase):
     """do_publish in board-api: WP adapter + JsonSink receive the same
@@ -399,9 +782,13 @@ class BoardApiWiringTest(PubTestBase):
         super().setUp()
         m = self.ba
         self._saved = {k: getattr(m, k) for k in
-                       ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL")}
+                       ("wp_api", "PUB_STATE_DIR", "PUB_TG_URL",
+                        "WIKI_ENV_FILE", "WIKI_API_CALL",
+                        "_wiki_login", "_wiki_api_call")}
         m.PUB_STATE_DIR = self.tmp / "pub-state"
         m.PUB_TG_URL = "http://127.0.0.1:1/send"   # closed port
+        m.WIKI_ENV_FILE = self.tmp / "no-wiki.env"  # absent by default
+        m.WIKI_API_CALL = None
 
     def tearDown(self):
         for k, v in self._saved.items():
@@ -492,6 +879,337 @@ class BoardApiWiringTest(PubTestBase):
         self.assertEqual(res["sinks"]["job"]["surface"], "members")
         self.assertTrue(res["sinks"]["news"]["evidence_required"])
 
+    def _wiki_env(self, extra=""):
+        env = self.tmp / "wiki.env"
+        env.write_text(
+            "WIKI_HOST=https://wiki.example\nWIKI_USER=ada\n"
+            f"WIKI_PASSWORD=secret\n{extra}")
+        self.ba.WIKI_ENV_FILE = env
+
+    def test_wiki_education_sink_registers(self):
+        self._wiki_env()
+        res = self.ba.do_publish({"op": "sinks"}, "devin")
+        s = res["sinks"]["wiki-education"]
+        self.assertEqual(s["kinds"], ["lesson"])
+        self.assertEqual(s["surface"], "private")
+
+    def test_do_lesson_dual_write_behind_flag(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=dual\n")
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: (
+            posts.append((route, data)) or {"id": 42} if data else [])
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+
+        class FakeSink:
+            def __init__(self, api, u, p, **kw):
+                sent.append(api)
+
+            def publish(self, ev):
+                sent.append(ev)
+                return {"ref": "wiki:x"}
+
+        real = self.ba.pub.WikiLessonSink
+        self.ba.pub.WikiLessonSink = FakeSink
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki dual write", "content": "<p>c</p>",
+                 "no_th": True}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(r["wiki"]["status"], "delivered")
+        self.assertEqual(sent[0], "https://wiki.example/api.php")
+        self.assertEqual(sent[1]["meta"]["wiki_title"],
+                         "Education:Wiki Dual Write")
+        # flag off -> no wiki key at all
+        self._wiki_env("WIKI_EDUCATION_WRITE=off\n")
+        r = self.ba.do_lesson(
+            {"topic": "wiki dual write", "content": "<p>c</p>",
+             "no_th": True}, "devin")
+        self.assertNotIn("wiki", r)
+
+    # --- WIKI_EDUCATION_WRITE=wiki — wiki-primary write (card
+    #     wiki-education-write-cutover-make-wiki-t-7f2e7d) -------------
+
+    def _wiki_primary_rig(self, sent, page_wikitext=None):
+        """Fake sink + login + single-page fetch for the wiki-primary
+        path. sent collects (api, published events)."""
+        class FakeSink:
+            def __init__(self, api, u, p, **kw):
+                sent.append(("sink-api", api))
+
+            def publish(self, ev):
+                sent.append(ev)
+                return {"ref": f"wiki:{ev['meta']['wiki_title']}",
+                        "pageid": 9}
+        self.ba.pub.WikiLessonSink = FakeSink
+        self.ba._wiki_login = lambda api, env: (object(), "ct")
+
+        def fake_api(api_url, opener, params, post=False):
+            if params.get("prop") == "revisions":
+                if page_wikitext is None:
+                    return {"query": {"pages": {"-1": {"missing": ""}}}}
+                return {"query": {"pages": {"1": {
+                    "title": params["titles"],
+                    "revisions": [{
+                        "timestamp": "2026-01-02T00:00:00Z",
+                        "slots": {"main": {"*": page_wikitext}}}]}}}}
+            return {}
+        self.ba._wiki_api_call = fake_api
+
+    def test_do_lesson_wiki_primary_create(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        wp_calls = []
+        self.ba.wp_api = lambda route, data=None, method=None: \
+            wp_calls.append(route) or []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent)
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>c</p>",
+                 "no_th": True}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertFalse(wp_calls)              # WP never touched
+        self.assertEqual(r["action"], "created")
+        self.assertEqual(r["store"], "wiki")
+        self.assertEqual(r["wiki_title"], "Education:Wiki Primary Write")
+        self.assertNotIn("post_id", r)
+        self.assertIn("index.php?title=", r["url"])
+        self.assertEqual(sent[0], ("sink-api",
+                                   "https://wiki.example/api.php"))
+        self.assertEqual(sent[1]["meta"]["learned_at"],
+                         str(__import__("datetime").date.today()))
+
+    _WIKI_PRIMARY_OLD = (
+        "{{แม่แบบ:Education\n"
+        "|topic=wiki primary write\n|level=working\n|source=voice\n"
+        "|learned_at=2026-01-01\n|next_review=2026-02-01\n"
+        "|status=learned\n|updated=2026-01-01\n|no_th=1\n"
+        "|event_id=ev-old\n}}\n\nold body\n[[Category:Education]]\n")
+
+    def test_do_lesson_wiki_primary_refile_preserves_state(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent, self._WIKI_PRIMARY_OLD)
+        try:
+            r = self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>v2</p>"},
+                "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(r["action"], "updated")
+        meta = sent[-1]["meta"]
+        # first-learn provenance + review state carried from the page
+        self.assertEqual(meta["learned_at"], "2026-01-01")
+        self.assertEqual(meta["next_review"], "2026-02-01")
+        self.assertEqual(meta["status"], "learned")
+        # Thai-free re-file keeps the prior exemption
+        self.assertTrue(meta["no_th"])
+
+    def test_do_lesson_wiki_primary_next_review_override(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        sent = []
+        real = self.ba.pub.WikiLessonSink
+        self._wiki_primary_rig(sent, self._WIKI_PRIMARY_OLD)
+        try:
+            self.ba.do_lesson(
+                {"topic": "wiki primary write", "content": "<p>v2</p>",
+                 "next_review": "2026-12-31"}, "devin")
+        finally:
+            self.ba.pub.WikiLessonSink = real
+        self.assertEqual(sent[-1]["meta"]["next_review"], "2026-12-31")
+        self.assertEqual(sent[-1]["meta"]["learned_at"], "2026-01-01")
+
+    def test_do_lesson_wiki_primary_creds_missing_fails(self):
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\nWIKI_USER=\n"
+                       "WIKI_PASSWORD=\n")
+        self.ba.wp_api = lambda *a, **kw: []
+        self.ba._gemini_thai = lambda c: None
+        try:
+            self.ba.do_lesson(
+                {"topic": "t", "content": "<p>x</p>"}, "devin")
+        except Exception as e:
+            self.assertIn("no fallback store", str(e))
+        else:
+            raise AssertionError("expected UpstreamError")
+
+    def test_lesson_read_default_follows_write_mode(self):
+        # flag=wiki -> bare op=list reads Education:, not the WP archive
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A})
+        r = self.ba.do_lesson({"op": "list"}, "devin")
+        self.assertEqual(r["source"], "wiki")
+        self.assertEqual(r["count"], 1)
+        # op=topics follows too
+        t = self.ba.do_lesson_topics({}, "devin")
+        self.assertEqual(t["source"], "wiki")
+        self.assertEqual(t["topics"][0]["topic"], "ada-nest-map")
+        # explicit source=wp still reads the archive
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: (
+            posts.append(route) or [] if data is None else [])
+        r = self.ba.do_lesson({"op": "list", "source": "wp"}, "devin")
+        self.assertEqual(r["source"], "wp")
+        self.assertTrue(posts)
+
+    def test_lesson_delete_wiki_mode_targets_wiki_page(self):
+        # wiki mode: op=delete removes the Education: page (live store),
+        # never the WP archive post
+        self._wiki_env("WIKI_EDUCATION_WRITE=wiki\n")
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A})
+        posts = []
+        self.ba.wp_api = lambda route, data=None, method=None: \
+            posts.append(route)
+        r = self.ba.do_lesson(
+            {"op": "delete", "topic": "ada-nest-map"}, "devin")
+        self.assertEqual(r["store"], "wiki")
+        self.assertEqual(r["wiki_title"], "Education:Ada-Nest-Map")
+        deletes = [c[0] for c in calls
+                   if c[0].get("action") == "delete"]
+        self.assertEqual(deletes[0]["title"], "Education:Ada-Nest-Map")
+        self.assertFalse(posts)
+
+    def test_wiki_reports_sink_registers(self):
+        self._wiki_env()
+        res = self.ba.do_publish({"op": "sinks"}, "devin")
+        s = res["sinks"]["wiki-reports"]
+        self.assertEqual(s["kinds"], ["report"])
+        self.assertEqual(s["surface"], "private")
+
+    def _fake_wiki_api(self, calls, namespaces=()):
+        def fake(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("siprop") == "namespaces":
+                return {"query": {"namespaces": {
+                    str(i): {"id": i, "*": n, "canonical": n}
+                    for i, n in enumerate(namespaces)}}}
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("action") == "edit":
+                return {"edit": {"result": "Success", "pageid": 20,
+                                 "newrevid": 21}}
+            return {}
+        self.ba.WIKI_API_CALL = fake
+
+    def test_wiki_page_template_write(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls)
+        r = self.ba.do_wiki_page(
+            {"title": "แม่แบบ:Education", "wikitext": "{| x |}"},
+            "devin")
+        self.assertEqual(r["action"], "success")
+        edit = calls[-1][0]
+        self.assertEqual(edit["title"], "แม่แบบ:Education")
+        # template writes never consult the namespace table
+        self.assertFalse(any(c[0].get("siprop") == "namespaces"
+                             for c in calls))
+
+    def test_wiki_page_rejects_unlisted_title(self):
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_api(calls)
+        for bad in ("News/x", "PrivateNews:x", "Main Page",
+                    "Template:NewsReport"):
+            try:
+                self.ba.do_wiki_page(
+                    {"title": bad, "wikitext": "x"}, "devin")
+            except ValueError as e:
+                self.assertIn("not allowed", str(e))
+            else:
+                raise AssertionError(f"{bad} should be refused")
+        self.assertFalse(calls)     # nothing reached the wiki
+
+    def test_wiki_page_ns_gate_before_localsettings(self):
+        self._wiki_env()
+        calls = []
+        # Education not yet registered -> refuse, don't litter main ns
+        self._fake_wiki_api(calls, namespaces=["Template"])
+        try:
+            self.ba.do_wiki_page(
+                {"title": "Education:Index", "wikitext": "x"}, "devin")
+        except ValueError as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace gate")
+        # registered -> write goes through
+        calls.clear()
+        self._fake_wiki_api(calls, namespaces=["Template", "Education"])
+        r = self.ba.do_wiki_page(
+            {"title": "Education:Index", "wikitext": "x"}, "devin")
+        self.assertEqual(r["wiki_title"], "Education:Index")
+
+    def test_wiki_page_edit_uses_login_session(self):
+        # Regression (live 502, 2026-11-06): the edit must ride the
+        # opener _wiki_login returns — it holds the session cookies.
+        # Sending it on the pre-login anon opener makes MediaWiki reject
+        # the logged-in csrf token (badtoken -> empty edit result).
+        self._wiki_env()
+        sentinel = object()
+        calls = []
+        self.ba._wiki_login = lambda api, env: (sentinel, "ct")
+
+        def fake_api(api_url, opener, params, post=False):
+            calls.append((opener, dict(params), post))
+            if params.get("action") == "edit":
+                return {"edit": {"result": "Success", "pageid": 1}}
+            return {}
+        self.ba._wiki_api_call = fake_api
+        r = self.ba.do_wiki_page(
+            {"title": "แม่แบบ:Education", "wikitext": "x"}, "devin")
+        self.assertEqual(r["action"], "success")
+        edits = [c for c in calls if c[1].get("action") == "edit"]
+        self.assertTrue(edits)
+        self.assertIs(edits[0][0], sentinel)
+
+    def test_report_wp_read_modes(self):
+        posts = []
+
+        def fake(route, data=None, method=None):
+            posts.append(route)
+            if "slug=" in route:
+                return [{"slug": "usage-ledger",
+                         "title": {"rendered": "Usage"},
+                         "content": {"rendered": "<p>c</p>"},
+                         "meta": {"report_type": "usage-ledger"},
+                         "modified": "2026-11-06", "status": "private"}]
+            return [{"slug": "usage-ledger",
+                     "title": {"rendered": "Usage"},
+                     "meta": {"report_type": "usage-ledger",
+                              "period": "rolling-14d",
+                              "source_key": "idc03-usage-feed"},
+                     "modified": "2026-11-06", "status": "private"}]
+        self.ba.wp_api = fake
+        r = self.ba.do_report({"mode": "wp-list"}, "devin")
+        self.assertEqual(r["count"], 1)
+        self.assertEqual(r["reports"][0]["report_type"], "usage-ledger")
+        self.assertIn("/wp/v2/report", posts[0])
+        g = self.ba.do_report({"mode": "wp-get", "slug": "usage-ledger"},
+                              "devin")
+        self.assertEqual(g["content"], "<p>c</p>")
+        try:
+            self.ba.do_report({"mode": "wp-get"}, "devin")
+        except ValueError as e:
+            self.assertIn("slug", str(e))
+        else:
+            raise AssertionError("expected slug required")
+
     def test_dedupe_across_adapters(self):
         posts = self._fake_wp()
         body = {"kind": "milestone", "title": "done", "job": "j1",
@@ -502,6 +1220,140 @@ class BoardApiWiringTest(PubTestBase):
         self.assertTrue(r2["deduped"])
         wp_posts = [p for p in posts if p[0] == "/wp/v2/nest_job"]
         self.assertEqual(len(wp_posts), 1)
+
+    # --- /lesson source=wiki read path (card
+    #     wiki-member-knowledge-surface-migrate-wp-3a1cf2, step 4)
+
+    _LESSON_WT_A = (
+        "{{แม่แบบ:Education\n"
+        "|topic=ada-nest-map\n|level=working\n|source=chat\n"
+        "|learned_at=2026-10-20\n|next_review=2026-11-03\n"
+        "|status=open\n|updated=2026-10-20\n|no_th=\n|event_id=ev1\n"
+        "}}\n\nNest hub body text.\n"
+        "[[Category:Education]]\n[[Category:Education/Level/working]]\n")
+    _LESSON_WT_B = (
+        "{{Template:Education\n"
+        "|topic=object storage\n|level=intro\n|source=voice\n"
+        "|learned_at=2026-11-01\n|next_review=2026-12-01\n"
+        "|status=learned\n|updated=2026-11-01\n|no_th=1\n|event_id=ev2\n"
+        "}}\n\nObject storage body.\n[[Category:Education]]\n")
+
+    def _fake_wiki_lesson_api(self, calls, pages,
+                              namespaces=("Education",)):
+        """pages: {title: wikitext}. Serves the siteinfo/allpages/
+        revisions calls the wiki lesson read makes."""
+        def fake(params, post=False):
+            calls.append((dict(params), post))
+            if params.get("siprop") == "namespaces":
+                return {"query": {"namespaces": {
+                    str(3000 + i): {"id": 3000 + i, "*": n,
+                                    "canonical": n}
+                    for i, n in enumerate(namespaces)}}}
+            if params.get("type") == "login":
+                return {"query": {"tokens": {"logintoken": "lt"}}}
+            if params.get("action") == "login":
+                return {"login": {"result": "Success"}}
+            if params.get("meta") == "tokens":
+                return {"query": {"tokens": {"csrftoken": "ct"}}}
+            if params.get("list") == "allpages":
+                return {"query": {"allpages":
+                                  [{"title": t} for t in sorted(pages)]}}
+            if params.get("prop") == "revisions":
+                return {"query": {"pages": {
+                    t: {"title": t, "revisions": [{
+                        "timestamp": "2026-11-01T00:00:00Z",
+                        "slots": {"main": {"*": pages[t]}}}]}
+                    for t in sorted(pages)}}}
+            return {}
+        self.ba.WIKI_API_CALL = fake
+
+    def test_lesson_read_wiki_list(self):
+        import hashlib
+        self._wiki_env()
+        calls = []
+        self._fake_wiki_lesson_api(calls, {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A,
+            "Education:Index": "generated index, no template",
+            "Education:Object-Storage": self._LESSON_WT_B,
+            # sink-written support page: carries the template but
+            # status=index marks it generated, not a lesson
+            "Education:Roller-Index": self._LESSON_WT_A.replace(
+                "ada-nest-map", "roller index").replace(
+                "status=open", "status=index")})
+        r = self.ba.do_lesson(
+            {"op": "list", "source": "wiki"}, "devin")
+        self.assertEqual(r["source"], "wiki")
+        self.assertEqual(r["count"], 2)
+        self.assertEqual(r["skipped_non_lesson"], 2)
+        by_topic = {l["topic"]: l for l in r["lessons"]}
+        a = by_topic["ada-nest-map"]
+        want_slug = "lesson-" + hashlib.md5(
+            b"ada-nest-map").hexdigest()[:12]
+        self.assertEqual(a["slug"], want_slug)   # WP-slug parity
+        self.assertEqual(a["wiki_title"], "Education:Ada-Nest-Map")
+        self.assertEqual(a["next_review"], "2026-11-03")
+        self.assertEqual(a["level"], "working")
+        self.assertFalse(a["no_th"])
+        # canonical page URL — /wiki/<t> 404s on wiki.h3 (no
+        # $wgArticlePath); the door emits the index.php?title= form
+        self.assertIn("wiki.example/index.php?title=", a["url"])
+        self.assertTrue(by_topic["object storage"]["no_th"])
+
+    def test_lesson_read_wiki_get(self):
+        import hashlib
+        self._wiki_env()
+        self._fake_wiki_lesson_api([], {
+            "Education:Ada-Nest-Map": self._LESSON_WT_A,
+            "Education:Object-Storage": self._LESSON_WT_B})
+        # by wiki_title
+        g = self.ba.do_lesson(
+            {"op": "get", "source": "wiki",
+             "wiki_title": "Education:Ada-Nest-Map"}, "devin")
+        self.assertEqual(g["meta"]["topic"], "ada-nest-map")
+        self.assertEqual(g["meta"]["learned_at"], "2026-10-20")
+        self.assertEqual(g["content"], "Nest hub body text.")
+        self.assertNotIn("Category:", g["content"])
+        # by WP-style slug
+        slug = "lesson-" + hashlib.md5(
+            b"ada-nest-map").hexdigest()[:12]
+        g2 = self.ba.do_lesson(
+            {"op": "get", "source": "wiki", "slug": slug}, "devin")
+        self.assertEqual(g2["wiki_title"], "Education:Ada-Nest-Map")
+        # by topic -> lesson_wiki_title
+        g3 = self.ba.do_lesson(
+            {"op": "get", "source": "wiki",
+             "topic": "object storage"}, "devin")
+        self.assertEqual(g3["wiki_title"], "Education:Object-Storage")
+        self.assertEqual(g3["meta"]["status"], "learned")
+        # missing -> ValueError
+        try:
+            self.ba.do_lesson(
+                {"op": "get", "source": "wiki",
+                 "wiki_title": "Education:Nope"}, "devin")
+        except ValueError as e:
+            self.assertIn("not found", str(e))
+        else:
+            raise AssertionError("expected not-found ValueError")
+
+    def test_lesson_read_source_validation(self):
+        try:
+            self.ba.do_lesson(
+                {"op": "list", "source": "bogus"}, "devin")
+        except ValueError as e:
+            self.assertIn("source", str(e))
+        else:
+            raise AssertionError("expected source ValueError")
+
+    def test_lesson_read_wiki_ns_missing(self):
+        self._wiki_env()
+        self._fake_wiki_lesson_api([], {}, namespaces=("Template",))
+        try:
+            self.ba.do_lesson(
+                {"op": "list", "source": "wiki"}, "devin")
+        except Exception as e:
+            self.assertIn("not registered", str(e))
+        else:
+            raise AssertionError("expected namespace UpstreamError")
 
 
 if __name__ == "__main__":

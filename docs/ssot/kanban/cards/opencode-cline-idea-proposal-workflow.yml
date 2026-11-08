@@ -1,7 +1,7 @@
 id: opencode-cline-idea-proposal-workflow
 title: Pilot OpenCode-to-Cline idea refinement workflow
 column: doing
-updated: 2026-10-30 15:03
+updated: 2026-11-07 16:19
 brief: Test whether OpenCode can clarify a rough request and Cline can synthesize a multi-perspective proposal while
   Chaba Kanban remains the canonical record.
 priority: medium
@@ -222,6 +222,98 @@ comms:
 - at: 2026-10-30 15:00
   from: chaba
   text: answer saved but session delivery skipped (bad task_id)
+- at: 2026-10-30 16:04
+  from: devin
+  text: 'Pilot complete (dispatch on mn01). Verified live: proxy 401 boundary, Ollama provider, submission path
+    + adapter (cline-intake-smoke proved the artifact contract 2026-10-29 — the 10-29 hold note is stale). Ran:
+    snapshot v1 SNAP-edu-no-th-v1:d4cc6b50 of education-lesson-no-th-marker-readback; intake draft via local qwen2.5:7b
+    (53.2s/739tok, opencode CLI absent on mn01 — substitution recorded); shadow proposal same-prompt (157.2s/1730tok,
+    0 unsupported claims, dup-detection correct). Lane arm: cli'
+- at: 2026-10-30 16:06
+  from: mn01
+  text: 'finished (ok): exit=0 erred per spec and the card left unqueued since the live scheduler isn''t verified.
+    | devin-task-20261030-074432-d'
+- at: 2026-10-30 16:06
+  from: chaba
+  text: pushed dispatch/20261030-074432-design-and-run-a-bounded-analy to origin
+- at: 2026-10-30 16:06
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-30 16:06
+  from: chaba
+  text: auto-merged 1f558856 (dispatch/20261030-074432-design-and-run-a-bounded-analy) → origin/master
+- at: 2026-10-30 16:06
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261030-074432-design-and-run-a-bounded-analy,
+    branch dispatch/20261030-074432-design-and-run-a-bounded-analy'
+- at: 2026-10-30 16:19
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-30 19:41
+  from: devin
+  text: 'Review draft: evals/opencode-lane/reports/2026-10-30-opencode-cline-workflow-proposal.md (human-authored;
+    the model''s actual-workflow proposal failed the content rubric). JEV 3/3; proposal-only v2 3/3; synthetic compiler
+    outputs keep execution denied. V1 executable plans remain 0/3. PR #62 remains open/unmerged; GitHub reports
+    validate failed, syntax passed. No Cline/Nest task or deploy. The Education draft approval request remains open
+    for Tony.'
+- at: 2026-10-30 19:42
+  from: devin
+  text: 'State correction: DEV-0975 is now `done` after auto-merge 1f558856, but its comms say the test gate was
+    skipped (fail-open). This evaluation is not verified complete: v1 executable plans are 0/3; Cline/Nest artifact
+    completion is unverified; PR #62 is still open with `validate` failing. The prior Education-draft request is
+    no longer in requests[]. I have not changed the column. Please choose whether to reopen DEV-0975 to `doing`
+    (recommended) or leave it closed; report: evals/opencode-lane/repor'
+- at: 2026-10-30 21:01
+  from: devin
+  text: moved done -> doing
+- at: 2026-10-30 21:09
+  from: devin
+  text: 'Reopened per Tony. The Oct30 pilot report says the shadow arm passed, but the live intake card stayed at
+    backlog >70m with the scheduler unverified; procedure updates were deferred. I won''t queue another Cline job.
+    Proceeding to diagnose PR #62''s warning-baseline CI failure and test the action.lane forwarding change in isolation;
+    no deploy or live task.'
+- at: 2026-10-30 21:50
+  from: devin
+  text: 'Procedure follow-up (Tony-approved): updated the Chaba Request-to-Focus guidance and existing idea-intake/ai-lane-delegate
+    index entries in the cline-ready-mirror worktree. Scope is proposal-only: preserve action.lane, keep policy
+    in the card/JEV compiler, and block live dispatch until con01 scheduler/artifact gates pass. The external tony-dell
+    devin-kb body is not in this checkout, so it was not edited. Runner lane-forwarding targeted tests 3/3 pass;
+    SSOT 3381 files valid/0 errors.'
+- at: 2026-10-30 21:56
+  from: devin
+  text: 'Tony-approved Chaba-side procedure update is pushed on `feat/cline-ready-mirror-20261030` (9316bb32a).
+    It updates Request-to-Focus and the existing idea-intake/ai-lane-delegate index: OpenCode content-only, explicit
+    JEV action.lane, deterministic card policy, artifact/result_ref verifier, and no live dispatch until scheduler/artifact
+    gates pass. Pilot remains partial; external devin-kb body was not available in this worktree. No new Cline/Nest
+    task was run.'
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Kanban follow-through update: OPS-0904''s approved static QC is staged in a single-pack isolated root and
+    recorded as a blocked job pending natural Ollama unload; OPS-0966/OPS-0967 remain held by KK-Mac per-job idle/model/dependency
+    gates. AUD-1033''s approved three follow-ups are now captured in OPS-1037; OPS-0812 has a focused clarification
+    request because repo/host alone did not define the probe target or done condition. No live Cline/Nest task was
+    started.'
+- at: 2026-10-31 10:14
+  from: devin
+  text: 'Kanban follow-through sweep: OPS-0904''s approved static QC is staged in a single-pack root and has a local
+    job record; latest preflight still sees qwen2.5:32b `Stopping...`, so no worker has run. AUD-1033''s `all three`
+    answer is now in follow-up card OPS-1037. OPS-0812 now has a focused request for the still-missing probe target/done
+    condition. OPS-0966/OPS-0967 remain held by per-job idle/model/dependency gates; OPS-0991 remains review until
+    its result artifact is landed.'
+- at: 2026-10-31 10:15
+  from: devin
+  text: 'Kanban answer-followthrough pass: OPS-0904''s approved CPU-only QC is staged in a single-pack root and
+    tracked in a local job record; no worker has run because qwen2.5:32b is still `Stopping...` and the pack requires
+    Ollama empty. Tony''s AUD-1033 `all three` answer is captured in OPS-1037; OPS-0812 now asks for the missing
+    speed-probe target/done criterion. OPS-0966/0967 remain gated by the explicit KK-Mac idle/model/dependency conditions;
+    OPS-0991 stays in review pending a durable result artifac'
+- at: 2026-11-07 16:19
+  from: devin
+  text: 'Reconcile 2026-11-07: pilot artifacts ARE on origin/master (evals/cline-proposal-pilot/ — shadow proposal,
+    snapshot, manifests; dispatch done/mn01, review answered proceed). OPEN spec item remains: update idea-intake
+    + ai-lane-delegate procedures in place — no docs by those names exist on master and no procedure update landed.
+    Card stays doing; next step is the procedure update (or card a first-version idea-intake procedure if none exists
+    yet).'
 requests:
 - id: first-cline-proposal-canary-route
   ask: 'For the first OpenCode-to-Cline proposal canary, which safe route should we take? Live board evidence says
@@ -270,8 +362,18 @@ requests:
   - proceed
   - hold
   answer: proceed
+  executed: 2026-10-30 queue (already running)
 action:
   type: dispatch
-  status: running
+  status: done
   runner: mn01
+  result: 'exit=0 erred per spec and the card left unqueued since the live scheduler isn''t verified. | devin-task-20261030-074432-design-and-run-a-bounded-analy.service:
+    Consumed 2min 8.616s CPU time over 1h 21min 11.685s wall clock time, 552.4M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-30 16:19
+  note: verified — evidence checks green, closing itself
 awaiting_action: true

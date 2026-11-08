@@ -1,0 +1,35 @@
+id: adobe-stock-upscaler-eval
+title: Evaluate open-source upscalers for stock pipeline
+column: backlog
+updated: 2026-11-07 19:25
+brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
+priority: high
+program: adobe-stock
+tags:
+- adobe-stock
+- image-quality
+- eval
+spec: 'Goal: choose the standard upscale step for the Nest Adobe Stock pipeline. Candidates: Real-ESRGAN (fast,
+  deterministic, CPU-viable, -dn denoise), SwinIR/HAT (lightweight SOTA), SeeSR/OSEDiff (diffusion prior, semantics-aware,
+  hallucination risk), SUPIR (best open quality, GPU-heavy). Test on AS-2026-11-05-REMOTE-WORK-001 assets (comparison-b
+  1024x576 photographic). Metrics: sharpness, artifact rate, semantic drift vs source, wall time, host fit (KK-Mac
+  MLX / idc03 CPU / omen GPU). Deliverable: eval report + recommended default + worker integration plan. Education:
+  lesson ai-image-quality-ladder-upscaling-restoration (post 4130).'
+ref: OPS-1077
+comms:
+- at: 2026-11-07 12:32
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 18:39
+  from: devin
+  text: 'Scaffold landed on feat/ops-1077-upscaler-eval: scripts/adobe-stock/upscale-eval.py — backend=real esrgan-ncnn
+    (ncnn binary, CPU/Vulkan), metrics = laplacian sharpness + roundtrip PSNR/SSIM (self-consistency; no ground
+    truth for generated images) + optional --unsharp post-pass + JSON receipt. Metric fns verified (blur < roundtrip
+    ordering correct). Live dogfood in progress: realesrgan-x4plus x4 on comparison-d running on tony-dell (~70min
+    CPU). Still TODO: spandrel/diffusion backends (SeeSR/SUPI'
+- at: 2026-11-07 19:25
+  from: devin
+  text: 'Dogfood done: realesrgan-ncnn x4plus x4 on comparison-d via upscale-eval metrics — output 5376x3072 (16.5MP),
+    roundtrip PSNR 29.3dB / SSIM 0.916. Note: raw x4 laplacian var DROPPED vs source (SR nets smooth); unsharp40/60
+    post-pass restores sharpness (lap 1259/1571 vs src 1583). Landed comparison-d-x4 + -sharp40 + -sharp60 to Drive
+    for Tony QC. Honest read: resolution 4x''d but realism ceiling unchanged — expect ''sharper but still not photo''.'

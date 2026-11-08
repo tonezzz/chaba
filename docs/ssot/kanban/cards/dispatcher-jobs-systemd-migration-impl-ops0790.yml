@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-impl-ops0790
 title: Implement OPS-0790 legacy dispatcher migration
 column: done
-updated: 2026-10-29 21:03
+updated: 2026-11-08 08:04
 brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
   this phase.
 priority: high
@@ -52,9 +52,26 @@ comms:
 - at: 2026-10-29 21:03
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 07:49
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix
+    action.labels/host pins or teach a runner the capability'
 review_kind: verify
 claim: {}
 auto_close:
   by: merge-sweep
   at: 2026-10-29 21:03
   note: verified — evidence checks green, closing itself
+awaiting_action: true

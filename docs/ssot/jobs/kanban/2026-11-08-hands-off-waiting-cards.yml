@@ -1,0 +1,152 @@
+title: "hands-off waiting-card procedure — gate, classes, reporting, pilots"
+subtitle: >-
+  waiting_cards eligibility+preflight gate wired into kanban-dispatch and
+  runner-agent (R3/R4 never autonomous), kanban-act independent-review
+  gate for model reports, lifecycle Telegram via /publish, daily digest
+  job, five read-only pilot cards
+icon: 🛡️
+id: 2026-11-08-hands-off-waiting-cards
+status: done
+owner: devin-dispatch
+project: chaba
+card: hands-off-waiting-card-procedure
+branch: dispatch/20261108-081116-define-and-implement-the-hands
+started: "2026-11-08"
+completed: "2026-11-08"
+
+context:
+  user_request: >
+    Tony asked whether backup/rebuild makes all waiting work safe to
+    process unattended. Correct model: recoverability is data-class-
+    specific — backups do not replace secrets, external identity,
+    active DB writers, uncommitted work, or human deployment decisions.
+    Card KNB-0928 asks to define AND implement the hands-off procedure:
+    separate queue execution from auto-close, R0-R4 recoverability,
+    preflight, stop conditions, deterministic verifier + independent
+    review for model reports, Telegram summaries, dry-run, daily
+    report, kill switch, readiness checklist, and five read-only pilot
+    cards — extending kanban-act-loop/DevNest, not a parallel queue.
+
+design:
+  prior_art: >-
+    The spec layer already existed (ssot.devin-autonomy.yml
+    waiting_cards, written 2026-11-07; kanban-act T2 auto-close from
+    kanban-act-loop). This session implemented the enforcement and
+    reporting layers on top — no parallel queue was invented:
+    kanban-dispatch remains THE claim path, runner-agent THE remote
+    executor, kanban-act THE close path.
+  canonical_module: >-
+    scripts/board/waiting_cards.py — evaluate(card, env, push_probe)
+    returns {eligible, never, recoverability, reasons, checks}.
+    Eligibility requires action.type in {dispatch,script,container},
+    explicit action.target_host/host, autonomy <= max_autonomy, declared
+    artifact + verifier, no open requests, declared recoverability,
+    passing preflight, and proven push credentials for dispatch repos.
+    R3/R4 set never=True — deferred in every gate mode.
+  gate_modes: >-
+    KANBAN_WAITING_GATE (kanban-dispatch) / RUNNER_WAITING_GATE
+    (runner-agent): off|warn|strict, default warn. Warn logs verdicts
+    but still claims — the pre-contract backlog lacks recoverability
+    declarations and strict-by-default would starve the queue. Declared
+    R3/R4 are NEVER claimed in any mode (spec: never autonomous).
+    Strict flips on after the day-3 checklist.
+  preflight: >-
+    Pass-level (kanban-dispatch main): kill switch, deploy-lock flock,
+    disk floor (WAITING_DISK_MIN_MB, default 2048MB on the repo fs) —
+    any failure freezes ALL claims. Per-card: queue capacity, R2 backup
+    freshness/proof (WAITING_BACKUP_PROOF or backup_fresh=True —
+    fail closed), stale-heartbeat ceiling. runner-agent mirrors the
+    kill switch + disk floor inside _capacity_reason so /ready
+    projections stay honest.
+  lifecycle_notify: >-
+    start/finish/fail/stalled -> board-api POST /publish canonical
+    PublicationEvents (kind progress|milestone|alert). The server-side
+    NoisePolicy debounces Telegram (600s/topic); start rides progress
+    = card-audit only, finish=milestone, fail/stalled=alert. Works from
+    any tailnet host because /publish is a REMOTE_WRITE_PATH — no host
+    needs the loopback TG relay. Best-effort: a dead api never blocks
+    a claim.
+  model_report_gate: >-
+    kanban-act.py: a card with report: or model_report: may not
+    auto-close on self-referential checks alone — auto_done_when must
+    include verified_true (merge-sweep/close_out stamp) or git_merged.
+    Deterministic verifier + independent evidence, per spec.
+  daily_report: >-
+    scripts/board/unattended-report.py on chaba-unattended-report.timer
+    (idc03, daily 08:30 ICT): preflight state, queue snapshot, gate
+    verdicts for queued/starting cards, today's activity, metrics —
+    reports/unattended-<date>.md + one Telegram milestone. Read-only.
+
+files:
+  - scripts/board/waiting_cards.py            # NEW — canonical gate + CLI + /publish helper
+  - scripts/board/kanban-dispatch.py          # claim gate + pass preflight + lifecycle notify
+  - scripts/board/runner-agent.py             # single-file gate twin + capacity gates + notify
+  - scripts/board/unattended-report.py        # NEW — daily digest
+  - scripts/ada/kanban-act.py                 # model-report independent-review gate
+  - docs/ssot/infrastructure/ssot.devin-autonomy.yml  # waiting_cards: implementation/reporting/checklist/pilots
+  - docs/ssot/infrastructure/ssot.jobs.yml    # chaba-unattended-report job (daily, idc03)
+  - docs/ssot/kanban/cards/unattended-pilot-*.yml     # 5 read-only pilot cards (backlog)
+  - tests/board/test_waiting_cards.py         # 25 tests
+
+verification:
+  - "python3 -m unittest tests.board.test_waiting_cards — 25/25 pass
+     (eligibility, R0-R4 floor, preflight, push probe, publish)"
+  - "python3 -m unittest tests.board.test_kanban_act — 18/18 pass
+     (regression: act gates unchanged)"
+  - "python3 scripts/board/waiting_cards.py --evaluate <pilot> —
+     5/5 pilot cards ELIGIBLE (R0, t2, all checks true)"
+  - "negative evidence: R3/R4 -> never=True HOLD; open request ->
+     HOLD; missing host/artifact/verifier/recoverability -> HOLD;
+     R2 without backup proof -> HOLD; backup_fresh=True -> ELIGIBLE"
+  - "python3 scripts/board/waiting_cards.py --board — live verdict
+     table over queued cards (1 queued card evaluated HOLD —
+     pre-contract fields)"
+  - "python3 scripts/board/unattended-report.py --dry-run — digest
+     renders: preflight, queue snapshot, verdicts, metrics"
+  - "python3 scripts/ada/kanban-act.py --dry-run — clean, 0 candidates"
+  - "py_compile clean on all touched scripts"
+
+pilot_evidence:
+  cards:
+    - unattended-pilot-report-gen      # unattended-report.py --dry-run preview
+    - unattended-pilot-digest-refresh  # kanban-stats --help + reports/ listing
+    - unattended-pilot-cache-rebuild   # ~/.cache enumeration (R0 proof)
+    - unattended-pilot-doc-sync        # git status/log on docs/ (read-only)
+    - unattended-pilot-health-probe    # board-api is-active + /cards http code
+  verdict: "5/5 ELIGIBLE via waiting_cards --evaluate (2026-11-08)"
+  caveat: >-
+    Pilots are filed in backlog and NOT queued — they exercise the gate
+    only when a human queues them after this branch merges and the
+    runner-agent/kanban-dispatch copies on the fleet pick it up
+    (day-2 checklist item). Live end-to-end evidence is therefore
+    pending deploy, by design.
+
+deployment_notes: >-
+  Code reaches runners on the normal sync paths: kanban-dispatch runs
+  from the served idc03 checkout (chaba-tony-dell — kanban-commit pull
+  cadence); runner-agent deploys as a single file per host (copy
+  scripts/board/runner-agent.py to each runner's agent path — check
+  ssot.jobs.yml runner units for the deploy convention). The daily
+  timer renders via render-jobs.py --install on idc03. Gate defaults
+  are warn-mode everywhere — merging changes no claim behavior except
+  the R3/R4 never-claim floor and the new preflight freezes (kill
+  switch, deploy lock, disk<2GB), which are the intended safety rails.
+  Flip to strict only after day-3 checklist + recoverability backfill.
+
+rollback: >-
+  KANBAN_WAITING_GATE=off / RUNNER_WAITING_GATE=off disables the
+  eligibility gate without a redeploy; /tmp/no-kanban-dispatch remains
+  the instant freeze; kanban-act gate is additive (holds more cards,
+  never closes more). Revert is a normal git revert — no state files,
+  no migrations.
+
+followups:
+  - "Backfill recoverability: + artifact/verifier on queued cards so
+     strict mode can flip (validator warning candidate)."
+  - "R2 backup proof producer: WAITING_BACKUP_PROOF needs a real
+     freshness stamp source (e.g. backup timer's last-success file)
+     before any R2 card may run unattended."
+  - "runner-agent single-file deploy: ship the updated file to each
+     RUNNER_LABELS host and confirm version parity (fleet-health)."
+  - "Queue one unattended-pilot-* card after deploy for the day-2
+     end-to-end evidence item."

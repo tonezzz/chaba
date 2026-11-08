@@ -1,0 +1,48 @@
+id: jules-auto-merge-e2e-report-file-c83179
+title: Jules auto-merge e2e — report file
+column: done
+updated: 2026-11-08 07:50
+priority: medium
+tags:
+- devnest
+- jules
+- pilot
+spec: 'Create exactly one new file docs/reports/jules-automerge-e2e-2026-11-07.md on master. Under 15 lines: markdown
+  titled "Jules Auto-Merge E2E" noting it was produced by the jules lane with JULES_AUTO_MERGE on 2026-11-07. Do
+  not touch other files.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  status: done
+  runner: idc03
+  result: ' finished (unknown) — see `devin-dispatch logs `'
+ref: KNB-1068
+comms:
+- at: 2026-11-07 11:46
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 11:46
+  from: idc03
+  text: claimed
+- at: 2026-11-07 11:51
+  from: chaba
+  text: 'tony-macbook defers: executor=''jules'' is not a known executor (devin, kk_mac_local, manual, opencode,
+    script) — fix the card; fail closed rather than guess a route'
+- at: 2026-11-07 11:52
+  from: chaba
+  text: run ended with no exit record (no task_id) — the verified gate decides from the deliverable
+- at: 2026-11-07 11:52
+  from: chaba
+  text: run finished (unknown) → review
+- at: 2026-11-07 11:55
+  from: devin
+  text: moved review -> done
+- at: 2026-11-08 07:50
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+review_kind: verify
+claim: {}
+awaiting_action: true

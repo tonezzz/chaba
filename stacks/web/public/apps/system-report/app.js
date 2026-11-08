@@ -1,7 +1,19 @@
 const state = { doc: null, statusFilter: null, textFilter: "", sortKey: "status", sortAsc: true };
 const STATUS_RANK = { error: 0, missing: 1, unreachable: 2, stale: 3, delta: 4, warn: 5, untracked: 6, remote: 7, ok: 8, planned: 9 };
+const HOSTS_ONLY = new URLSearchParams(location.search).get("view") === "hosts";
 
 function esc(s) { return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+if (HOSTS_ONLY) {
+  document.title = "Host fleet";
+  document.getElementById("hosts-title").textContent = "Fleet status";
+  const headers = document.querySelectorAll("table.hosts thead th");
+  if (headers.length === 5) {
+    headers[1].textContent = "Load 1m";
+    headers[2].textContent = "RAM";
+    headers[4].textContent = "Seen";
+  }
+}
 
 function ageMs(iso) {
   const t = Date.parse(iso);
@@ -103,9 +115,18 @@ function _loadBar(v) {
   const cls = v >= 8 ? "hot" : v >= 4 ? "warm" : "";
   return `<span class="bar ${cls}" style="width:${w}px" title="1m load ${v}"></span>`;
 }
-function renderHosts(rows, note, live) {
+function hostAgeCls(iso) {
+  if (!HOSTS_ONLY) return ageCls(iso);
+  const ms = ageMs(iso);
+  if (ms === null) return "";
+  if (ms > 30 * 60000) return "old";
+  if (ms > 15 * 60000) return "mid";
+  return "ok";
+}
+function renderHosts(rows, note, live, sampledAt) {
   const tb = document.getElementById("hosts");
   const noteEl = document.getElementById("hosts-note");
+  noteEl.className = `hosts-note ${hostAgeCls(sampledAt)}`;
   if (!rows.length) {
     tb.innerHTML = `<tr><td colspan="5" class="muted">no host-load data yet</td></tr>`;
     noteEl.textContent = note;
@@ -113,22 +134,27 @@ function renderHosts(rows, note, live) {
   }
   tb.innerHTML = rows.map((r) => {
     if (r.unreachable) return `<tr>
-      <td class="host">${esc(r.host)}</td><td colspan="3">${pill("unreachable")}</td>
-      <td class="age ${ageCls(r.ts)}">${fmtAge(r.ts)}</td></tr>`;
+      <td class="host">${esc(r.host)}</td><td colspan="3"><span class="pill unreachable" title="SSH probe did not respond; the host may be asleep or off-net">SSH n/a</span></td>
+      <td class="age ${hostAgeCls(r.ts)}">${fmtAge(r.ts)}</td></tr>`;
     const memPct = r.mem_total_mb ? Math.round(100 * (r.mem_used_mb || 0) / r.mem_total_mb) : null;
     const memTxt = r.mem_total_mb !== undefined
-      ? `${_mbHuman(r.mem_used_mb)} / ${_mbHuman(r.mem_total_mb)}${memPct === null ? "" : ` (${memPct}%)`}`
-      : [r.mem_used, r.mem_avail].filter(Boolean).join(" used / ") || "—";
+      ? HOSTS_ONLY
+        ? `${_mbHuman(r.mem_used_mb)}/${_mbHuman(r.mem_total_mb)}`
+        : `${_mbHuman(r.mem_used_mb)} / ${_mbHuman(r.mem_total_mb)}${memPct === null ? "" : ` (${memPct}%)`}`
+      : HOSTS_ONLY
+        ? `${r.mem_used || "—"}/${r.mem_avail || "—"}`
+        : [r.mem_used, r.mem_avail].filter(Boolean).join(" used / ") || "—";
     const l = r.load || {};
+    const loadValues = HOSTS_ONLY ? [l["1m"]] : [l["1m"], l["5m"], l["15m"]];
     return `<tr>
       <td class="host">${esc(r.host)}</td>
-      <td>${_loadBar(l["1m"])}${[l["1m"], l["5m"], l["15m"]].map((v) => v ?? "—").join(" / ")}</td>
+      <td>${_loadBar(l["1m"])}${loadValues.map((v) => v ?? "—").join(" / ")}</td>
       <td>${memTxt}</td>
       <td class="${(r.disk_pct ?? 0) >= 90 ? "fail" : (r.disk_pct ?? 0) >= 80 ? "warn" : ""}">${r.disk_pct ?? "—"}%</td>
-      <td class="age ${ageCls(r.ts)}">${fmtAge(r.ts)}</td>
+      <td class="age ${hostAgeCls(r.ts)}">${fmtAge(r.ts)}</td>
     </tr>`;
   }).join("");
-  noteEl.textContent = `${note} — ${rows.filter((r) => !r.unreachable).length}/${rows.length} up` +
+  noteEl.textContent = `${note} — ${rows.filter((r) => !r.unreachable).length}/${rows.length} SSH reachable` +
     (live ? "" : " (daily snapshot)");
 }
 async function loadHosts() {
@@ -138,20 +164,30 @@ async function loadHosts() {
       const doc = jsyaml.load(await r.text()) || {};
       const rows = (doc.hosts || []).slice()
         .sort((a, b) => String(a.host).localeCompare(String(b.host)));
-      renderHosts(rows, `live · sampled ${fmtAge(doc.generated_at)} ago`, true);
+      renderHosts(rows, `live · sampled ${fmtAge(doc.generated_at)} ago`, true, doc.generated_at);
       return;
     }
   } catch (e) { /* fall through to the embedded daily block */ }
+  if (!state.doc) {
+    try {
+      const r = await fetch("data/system-report.yml", { cache: "no-store" });
+      if (r.ok) state.doc = jsyaml.load(await r.text());
+    } catch (e) { /* show an empty host table below */ }
+  }
   const daily = (state.doc?.host_loads || []).map((r) => ({
     host: r.host, unreachable: r.unreachable, ts: r.snapshot_ts,
     load: { "1m": r.load_1m, "5m": r.load_5m, "15m": r.load_15m },
     disk_pct: r.disk_pct,
     mem_used: r.mem_used, mem_avail: r.mem_avail,  // human strings (no raw mb)
   }));
-  renderHosts(daily, "daily report");
+  renderHosts(daily, "daily report", false, state.doc?.generated_at);
 }
 
 async function load() {
+  if (HOSTS_ONLY) {
+    await loadHosts();
+    return;
+  }
   const meta = document.getElementById("meta");
   try {
     const yml = await fetch("data/system-report.yml", { cache: "no-store" });

@@ -1,0 +1,75 @@
+id: card-judgment-bench-build
+title: 'Card-judgment bench: corpus + scorer + first shadow run (Ada T3 unblock)'
+column: done
+updated: 2026-11-07 18:18
+priority: high
+tags:
+- ada
+- nest-bench
+- card-judgment
+- t3-gate
+spec: 'Build the card-judgment bench domain declared in ssot.nest-bench.yml (currently status: spec) — the gate
+  for Ada''s T3 queue tier (ssot.ada-participation.yml). Deliverables: (1) corpus miner scripts/bench/card-judgment/build_corpus.py
+  — freeze >=50 cases from docs/ssot/kanban/cards/*.yml done cards (snapshot/evidence/proven_right/category per
+  case_shape); (2) scorer scripts/bench/card-judgment/score.py — entity-pluggable, computes action_accuracy, appropriate_deference,
+  correction_precision, correction_recall vs t3_unlock_threshold; (3) first shadow-mode run on the real corpus with
+  metrics report; (4) ssot.nest-bench.yml card-judgment status spec->live + jobs trail. Unlock itself needs 3 consecutive
+  passing runs — this card delivers machinery + run 1.'
+note: 'Tony approved in session 2026-11-07: file + finish. Ada T0-T2 kanban participation already live (kanban tool
+  verified ada-dev 2026-10-08); this bench is the single declared blocker for T3.'
+ref: ADA-1073
+comms:
+- at: 2026-11-07 12:00
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 12:14
+  from: devin
+  text: '[progress] Corpus built: 115 cases (act30/correct30/defer30/observe25) mined from 941 done cards by scripts/bench/card-judgment/build_corpus.py
+    — comms truncated before the decisive event so proven_right cannot leak. Scorer score.py live with entities
+    rules|ollama|openai. Rules baseline: action_accuracy 0.30 (naive heuristics fail — bench discriminates). Run-1
+    vs local llama3.2:3b in flight on tony-omen; LiteLLM chaba key is over its $25 budget so no gateway spend was
+    used.'
+- at: 2026-11-07 12:23
+  from: chaba
+  text: 'patch-relay: devin/20261107-card-judgment-bench from tony-omen — 57339B bundle in patch-inbox (card-judgment-bench-build-9bd700c48a.bundle);
+    merge-sweep will land it'
+- at: 2026-11-07 12:24
+  from: devin
+  text: '[done — awaiting merge-sweep] Machinery + run 1 delivered on branch devin/20261107-card-judgment-bench
+    (9bd700c48, patch-relayed to idc03 — tony-omen has no push creds, this is exactly the runner-push-cred-gap path).
+    Committed: build_corpus.py (941 done cards -> 115 cases, act30/correct30/defer30/observe25, comms truncated
+    before decisive events), score.py (rules|ollama|openai entities, 4 declared metrics), corpus.jsonl, run1 report
+    md+json, ssot.nest-bench.yml spec->live, ssot.ada-participation'
+- at: 2026-11-07 12:28
+  from: devin
+  text: closed by devin
+- at: 2026-11-07 14:33
+  from: devin
+  text: '[run 2 — production-adjacent model] gemini-3.5-flash-lite via gateway (~$0.02): action_accuracy 0.574 |
+    deference 0.60 | corr_precision 0.938 | recall 0.50. vs llama3.2:3b local (0.739/0.965/0.966/0.933) the paid
+    model is WORSE — its failure is symmetric: over-defers (act->defer 18/30, correct->defer 14/30) where llama3.2
+    over-acted (observe->act 23/25). Neither passes t3 gate. Artifacts run2-flashlite-paid.{md,json} on master (d72091c77).
+    Watcher armed for kk-mac eval (KNB-1087) — fires on next'
+- at: 2026-11-07 14:48
+  from: devin
+  text: '[v2 corpus + runs 3-4] Label fix: verify-close sweeps (verified evidence present — closed) were mislabeled
+    observe — closing on evidence IS act. v2 corpus 95 cases (act30/correct30/defer30/observe5-pure). Results on
+    v2: llama3.2:3b 0.884 acc / 0.937 def / 0.968 prec / 1.0 recall — FIRST ALL-GATE PASS (single run; T3 still
+    needs 3 consecutive vs Ada real topology). flash-lite paid: 0.495 acc / 0.558 def — over-defers harder on clean
+    labels (act->defer 20/30). Caveat recorded in trail: scorer prom'
+- at: 2026-11-07 15:07
+  from: devin
+  text: '[run 5 — Ada REAL topology] score.py now has --entity ada: her actual kanban.py authority matrix as system
+    prompt, run via chaba key on the chat lane (gemini-3.5-flash — her real REST path). Result on v2 corpus: acc
+    0.768 / def 0.80 / corr-prec 0.968 / recall 1.0. Better than generic-prompt flash-lite (0.495) but still over-defers
+    on act (17/30). Standings v2: llama3.2:3b 0.884 (only pass so far) > ada-chat 0.768 > flash-lite 0.495 > rules
+    0.43. Parser hardened: thinking models blew the 96-token'
+- at: 2026-11-07 18:18
+  from: devin
+  text: '[v3 corpus + T3 gate MET] Found a label bug: v2 gold encoded what the system DID (sweep closes), not what
+    Ada MAY do — 18/30 act cases were priority:high review->done closes that kanban.py _gate_reason reserves for
+    Tony. Under matrix-aligned labels (c8fec5f3e): run5 ada/chat rescores 0.768->0.947; llama3.2:3b run3 INVERTS
+    to 0.716/0.562 fail (its pass was over-acting rewarded by bad gold). Fresh ada/chat runs on v3 (98 cases, gateway):
+    run8 0.969/0.980/1.0 PASS, run9 0.980/0.980/1.0 PASS, run10 '
+action:
+  status: done

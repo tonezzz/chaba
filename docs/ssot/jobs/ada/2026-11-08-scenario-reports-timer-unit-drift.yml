@@ -1,0 +1,79 @@
+date: 2026-11-08
+title: ada-scenario-reports timer-alert re-fire — deploy drift, not regression
+domain: ada
+job: timer-alert-idc03-ada-scenario-reports
+cards: [timer-alert-idc03-ada-scenario-reports]
+refs: [OPS-0581, BEN-0573, ADA-0552]
+host: idc03
+summary: >
+  The timer-alert card (originally closed 2026-10-13 after the
+  finding-reporter exit-code contract shipped) re-fired on the
+  2026-11-05 weekly reports run. Root cause was deploy drift on
+  idc03: the ExecStart wrapper had been updated (2026-11-07) but the
+  systemd units themselves were still the pre-BEN-0573 copies from the
+  2026-10-23 install — reports still targeted the PAID lane
+  (:8002/ada-ha-tony) with no provider gate. The suite completed
+  (**Score: 0.0**, 7 fails, all 0 tool calls) and the old wrapper
+  passed exit-1 through -> Result=exit-code -> sentinel alert.
+
+root_cause:
+  - 'Deployed ~/.config/systemd/user/ada-scenario-*.service dated
+    2026-10-23 predated the bench-off-paid-lanes unit retarget
+    (commit 1c56115c5, 2026-10-15 pulled into the exec checkout later).
+    Whatever installed 10-23 copied units without the dev-lane/gate
+    contract.'
+  - '~/.local/share/ada-scenario-runner/scenario-suite-run.sh was
+    updated 2026-11-07 (partial fix — wrapper only). Under the old
+    unit it still saw ADA_LIVE_URL=:8002, but on 11-05 the pre-update
+    wrapper ran and exited 1 on a completed suite.'
+  - 'Net: the OPS-0581 contract existed in repo since 10-13 but the
+    unit+wrapper pair on the host only became fully consistent when
+    install.sh was re-run 2026-11-08.'
+
+fix:
+  - 'Re-ran stacks/services/ada-scenario-runner/install.sh on idc03
+    from the synced exec checkout (HEAD b8f21c17ca). Rebuilt quadlet
+    image, copied all units, daemon-reload, re-armed timers.'
+  - 'Deployed units now match repo: ada-scenario-{research,cms,reports}
+    -> ws://127.0.0.1:8005/ws (ada-dev FREE lane) + ada-dev.env +
+    scenario-provider-gate ExecCondition; {memory,tools,casting} stay
+    :8002 and park via the wrapper paid-lane guard (by design).'
+  - 'Also fixes the same drift for sibling suites cms/research (their
+    timer-alert cards already resolved).'
+
+verify:
+  - 'md5 of installed wrapper == repo (99cea489).'
+  - 'Manual `systemctl --user start ada-scenario-reports.service`
+    exercised the new path end-to-end: ExecCondition gate read the
+    ada-dev journal, found live REST-lane dunning, skipped cleanly —
+    Result=exec-condition (ConditionResult=no, ExecMainStatus=0).
+    No failure, no alert. The 11-05 failure mode (completed run ->
+    exit 1) cannot recur under the new wrapper: exit-1 with the
+    "**Score:" marker maps to 0.'
+  - 'ada-dev.service confirmed active; ada-dev.env +
+    ada-ha-dev-keys.json present; standalone gate run returned ok.'
+
+surfaced_issue:
+  what: >
+    LiteLLM `bench` virtual key (ada-dev's key) is over its $2/30d
+    budget — spend 2.0057, budget_reset_at 2026-12-01. ada-dev text
+    turns now 422 budget_exceeded on the gemini leg and fall back to
+    openrouter (~650 dunning lines/24h, while REST still serves ~213
+    200s/70min). The provider gate reads this as quota-dead and will
+    CLEAN-SKIP weekly reports/cms/research until the reset — no alert,
+    but also no benchmark coverage for ~3 weeks.
+  raised_as: 'board request on this card — options: raise bench cap to
+    $5/30d (recommended), reset spend counter now, or leave until the
+    2026-12-01 auto-reset. Spend decision -> Tony.'
+  adjacent: 'ada-embed-bench.service also failed 2026-11-07 (Gemini
+    direct API HTTP 403) — real crash, already carded as
+    embed-bench-blocked-20261107.'
+
+lesson: >
+  Partial deploys are the dangerous middle state: install.sh updates
+  wrapper AND units together for a reason — the contract spans both.
+  When a fix touches scenario-suite-run.sh, the unit set must be
+  re-installed too (the ExecCondition/lane env lives in the .service,
+  not the wrapper). Timer-alert cards resolved by a repo change should
+  carry a "deployed to <host> at <time>" verification line before
+  closing.

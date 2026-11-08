@@ -1,7 +1,7 @@
 id: repo-choice-decision-policy
 title: Standardize repo-choice and executor decision policy across DevNest OpenCode and Cline
 column: backlog
-updated: 2026-10-30 09:01
+updated: 2026-10-30 15:18
 brief: Define the required repo/task metadata and one cheapest-safe-lane decision policy, then inject and benchmark
   it across OpenCode and Cline.
 priority: high
@@ -27,3 +27,10 @@ comms:
 - at: 2026-10-30 09:01
   from: devin
   text: card captured via board-api
+- at: 2026-10-30 15:18
+  from: devin
+  text: 'Heads-up from the cline-lane pilot: this card is tagged `cline` but has no lane config, so cline-intake
+    skips it silently every tick (it needs a `cline:` block or `cline-deliverable:`/`cline-model:` spec lines —
+    see cline-intake-smoke or cline-proposal-pilot-edu-no-th for the shape). Worse: because intake runs --limit
+    1 in filename order, this card sits at the queue head and starves every later cline-tagged card. Either add
+    config or drop the tag.'

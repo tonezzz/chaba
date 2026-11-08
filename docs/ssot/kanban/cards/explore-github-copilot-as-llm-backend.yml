@@ -1,0 +1,49 @@
+id: explore-github-copilot-as-llm-backend
+title: Explore Copilot Pro ($10) as LLM/agent backend for infra
+column: backlog
+updated: 2026-11-07 14:51
+priority: medium
+tags:
+- infra
+- llm
+- copilot
+spec: 'Context: GitHub Models service retired 2026-07-30 (verified — models.github.ai returns bare OK; docs 301
+  to retirement notice). PAT in ~/.config/secrets/github-models.env is valid for git/MCP but there is no models
+  API.
+
+
+  Verified account state (2026-11-07, api.github.com/copilot_internal/user): tonezzz = Copilot Pro individual monthly
+  — premium_interactions entitlement 1500 AI credits/mo, chat+completions unlimited, cli_enabled, is_mcp_enabled,
+  cloud_sessions_enabled, resets 2026-12-01.
+
+
+  Goal: determine what Copilot Pro gives the infra beyond IDE completions.
+
+  Steps:
+
+  1. Install Copilot CLI on tony-omen, authenticate, smoke an agentic session.
+
+  2. Test @github/copilot-sdk (JSON-RPC over Copilot CLI): listModels(), createSession, sendAndWait — check credit
+  consumption per call for automation use.
+
+  3. Evaluate SDK BYOK -> litellm/ollama wiring (SDK supports OpenAI-compatible providers incl. LiteLLM).
+
+  4. Decide and document (lesson or kb note): does Copilot cover any Ada/litellm model needs, or is it IDE/agent-surface
+  only for us?
+
+
+  Constraint: no official raw inference endpoint exists — SDK/CLI is the only sanctioned programmatic path; unofficial
+  api.githubcopilot.com proxies are ToS-grey, do NOT wire into litellm/Ada.'
+note: Spawned from chat 2026-11-07 — GitHub Models retirement follow-up.
+ref: SYS-1085
+comms:
+- at: 2026-11-07 14:17
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 14:51
+  from: devin
+  text: 'Progress 2026-11-07: Copilot CLI 1.0.107 installed on tony-omen (~/.npm-global, user-level). Auth works
+    with the fine-grained PAT via GH_TOKEN env — no OAuth dance needed. One-shot `copilot -p` verified working (7s,
+    ~$0.03 AI credits; footer showed AI Credits 14.97 remaining of ~$15/mo Pro). Account flags: cli_enabled, is_mcp_enabled
+    (Copilot can call our MCP servers), cloud_sessions_enabled. Code review test: requesting reviewer on chaba PR#80
+    via REST (`copilot`, `copilot-pull-request-reviewer'

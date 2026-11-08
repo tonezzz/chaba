@@ -1,17 +1,16 @@
 id: cms-auto-nest-tony-dell
 title: CMS automation `nest-tony-dell` stale
-brief: A scheduled report-page job ('nest-tony-dell') is stale. Re-run it or check
-  the generator — details in the note.
-column: review
+brief: A scheduled report-page job ('nest-tony-dell') is stale. Re-run it or check the generator — details in the
+  note.
+column: done
 review_kind: triage
 generated: cms-auto-health
 priority: high
-note: 'last_run 14737m overdue (interval 15m). last_run=2026-10-20T02:07:44+00:00
-  interval=15m status=ok. Page: https://idc03.taila0626a.ts.net/cms/#/nest-tony-dell'
-help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-dell'' (or POST
-  /api/cms/pages/nest-tony-dell/regenerate). If it repeats, check the page''s generator
-  command in the registry doc.'
-updated: '2026-10-30'
+note: 'last_run 26002m overdue (interval 15m). last_run=2026-10-20T02:07:44+00:00 interval=15m status=ok. Page:
+  https://idc03.taila0626a.ts.net/cms/#/nest-tony-dell'
+help: 'Trigger a manual regen: cms_automation run_now for ''nest-tony-dell'' (or POST /api/cms/pages/nest-tony-dell/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-07 16:49
 action:
   status: done
 comms:
@@ -27,3 +26,11 @@ comms:
 - at: 2026-10-30 14:17
   from: tony
   text: please fix.
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] fixed live: nest-mgr.service was absent on tony-dell (nest-mgr.py still installed, unit file
+    deleted) — reinstalled declared unit from stacks/services/nest-mgr/, enabled+started; page restamped 16:46 ICT.
+    Closing.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: closed by devin

@@ -1,0 +1,15 @@
+id: model-route-registration-unify
+title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
+column: backlog
+updated: 2026-10-30 19:18
+spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
+  live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
+  model.allowed. Four surfaces, zero of them cross-validated — drift is guaranteed. Options: (a) scripts/devnest/sync-opencode-models.py
+  — generate the opencode provider models map + validate profile allowlists against LiteLLM /v1/models on a timer
+  ★; (b) drop profile allowlists for a lane-level default set; (c) opencode provider fetch models dynamically (it
+  can''t — explicit map required). Recommend (a): one generator, check-mode in CI, same pattern as fleet-unit sync.'
+ref: OPS-1020
+comms:
+- at: 2026-10-30 19:18
+  from: tony
+  text: card captured via board-api

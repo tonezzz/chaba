@@ -1,0 +1,25 @@
+ANALYSIS-ONLY proposal task. Analyze the versioned, read-only Chaba kanban card snapshot below. Do NOT attempt writes, dispatch, queueing, code edits, or board-state changes.
+
+SNAPSHOT v1 (stable card id: education-lesson-no-th-marker-readback; marker SNAP-edu-no-th-v1:d4cc6b50 — quote it verbatim in the deliverable link-back block):
+id: education-lesson-no-th-marker-readback | column: backlog | priority: medium | ref: OPS-1000
+title: Verify Education no_th metadata persists through board-api
+brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to persist no_th=true.
+spec: Investigate why a lesson written through the unified /lesson door with no_th=true does not expose meta.no_th=true on a subsequent /lesson op=get. Reproduce with a synthetic lesson using board-api only; inspect/adjust board-api serialization or WP REST meta registration through the supported service deployment process. Add regression coverage for create and upsert/read-back. Do not write directly to WordPress, do not generate Thai translation, and do not change the existing lesson post unless explicitly requested.
+
+CONTEXT DIGEST (pointers only — mark reliance on them as ASSUMPTION):
+- Possible duplicate/adjacent: card audit-miss-education-lesson-write-timeout (Education lesson upsert failed on WP GET timeout; symptom is retry-after-healthy, not a lost meta field).
+- Procedures: AGENTS.md lesson-capture duty; runbook docs/kb/board-api-write-door.md (board-api is the only write door; no direct WP).
+- board-api /lesson upserts the WP lesson CPT and is intended to record meta.no_th=true for Thai-free lessons.
+
+Write proposal-edu-no-th-marker.md with sections:
+1. Summary + restated request.
+2. Matches/duplicates — which context items are real matches, adjacent, or unrelated.
+3. Viewpoints: stakeholder/user, architecture, operations, security/privacy, cost, delivery.
+4. Evidence vs assumptions — label every nontrivial claim [E] or [A].
+5. Options with tradeoffs + one recommendation.
+6. Acceptance criteria + open questions.
+7. Link-back: card id, snapshot v1, marker SNAP-edu-no-th-v1:d4cc6b50.
+cline-deliverable: proposal-edu-no-th-marker.md
+cline-sentinel: SNAP-edu-no-th-v1:d4cc6b50
+cline-model: ollama/qwen2.5:7b
+cline-timeout_s: 900

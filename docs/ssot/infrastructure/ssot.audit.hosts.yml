@@ -893,8 +893,6 @@ hosts:
       - {name: ada-pi-orch-bench.timer, type: timer, scope: user}
       - {name: ada-review-refresh.timer, type: timer, scope: user}
       - {name: apps-health-sync.timer, type: timer, scope: user}
-      - {name: chaba-audit.timer, type: timer, scope: user}
-      - {name: chaba-audit-watchdog.timer, type: timer, scope: user}
       - {name: chaba-kb-audit.timer, type: timer, scope: user}
       - {name: chaba-mn01-sync.timer, type: timer, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
@@ -950,6 +948,16 @@ hosts:
         scope: user
         note: ghost copy — real instance on idc03 since 2026-10-09; omen
           copy disabled 2026-10-12 (container running since 2026-07-28)
+      - name: chaba-audit.timer
+        scope: user
+        note: "audit suite moved to con01 (tony_dell->idc02 2026-10-04,
+          idc02->con01 in the 2026-10-25 absorber shed, jobs 766462b4e) —
+          omen timer disabled, undeclared in the tony_omen jobs pack"
+      - name: chaba-audit-watchdog.timer
+        scope: user
+        note: "retired with the suite move — watchdog is undeclared in
+          ssot.jobs.yml on every host (suite-freshness coverage now rests on
+          card job-health-sweep-consecutive-failure-alerts)"
     known_failed:
       - name: arp-inventory-scan.service
         reason: "Pre-OPS-0581 finding-reporter (exited 1/2 on findings); since 2026-10-13 exits 0 on completed scans — findings via report + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -1634,13 +1642,23 @@ hosts:
           embeds via embed-pool-shim (:11436) racing fleet ollama bge-m3
           (1024d) instead of the gemini proxy (MEM-0788/MEM-0805);
           ada-ha-bank-devin-tony backfilled 2560/2560 2026-10-23"
+      - name: kkmac-ollama-tunnel.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "ssh -N -L 127.0.0.1:11445:127.0.0.1:11434 kkkakk@kk-mac —
+          reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
+          feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
+          dies with kk-mac (member device, offline_ok)"
       - name: embed-pool-shim.service
         type: service
         scope: user
         expected_state: active
         critical: false
         note: "Ollama-shaped /api/embed racing proxy on 100.102.134.91:11436
-          (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen ollama bge-m3;
+          (MEM-0805) — hedged fan-out to idc03/idc02/tony-omen/kk-mac ollama
+          bge-m3 (kk-mac via kkmac-ollama-tunnel :11445, added 2026-10-30);
           first 2xx wins, 8s upstream timeout; fronts mddb-embed embeds"
       - name: mddb-panel.service
         type: service
@@ -2095,6 +2113,15 @@ hosts:
         expected_state: active
         critical: false
         note: Headless Chromium+Playwright virtual display 7
+      - name: playlived.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Playlive headless browser daemon on :9240 — preferred playlive
+          target fleet-wide since 2026-11-03 (OPS-0439, card
+          playlive-idc-targets). :9230 stays with caddy-edge. Headless
+          playwright only — no Chrome CDP on this host.
       - name: mddb.service
         type: service
         scope: user
@@ -2122,24 +2149,16 @@ hosts:
       - {name: camwall-edge.service, type: service, scope: user}
       - {name: mddb-ops.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
-      - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
       - {name: camwall-render-check.timer, type: timer, scope: user}
-      - {name: chaba-audit.timer, type: timer, scope: user}
-      - {name: chaba-audit-full.timer, type: timer, scope: user}
-      - {name: chaba-kb-audit.timer, type: timer, scope: user}
-      - {name: chaba-system-report.timer, type: timer, scope: user}
       - {name: cms-publish-site.timer, type: timer, scope: user}
-      - {name: devin-bank-distill.timer, type: timer, scope: user}
       - {name: jev-bench.timer, type: timer, scope: user}
       - {name: jev-retrain.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mddb-lab-pull.timer, type: timer, scope: user}
       - {name: mddb-watchdog.timer, type: timer, scope: user}
-      - {name: report-distill.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
-      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
       - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
@@ -2149,13 +2168,37 @@ hosts:
       - {name: notebooklm-mcp.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: notebooklm-rest.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: secrets-console.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
-      - {name: ssot-optimization-snapshot.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: status-data-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-macbook.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: websockify-vms-mn01.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: gev-gemini.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation, moved by parallel session)"}
       - {name: gods-eye-view-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation)"}
       - {name: gev-cmd-relay.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19"}
+    expected_absent:
+      - name: chaba-audit.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e absorber tier) — unit removed from idc02"
+      - name: chaba-audit-full.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e) — unit removed from idc02"
+      - name: chaba-kb-audit.timer
+        scope: user
+        note: "shed to con01 2026-10-25 (jobs 766462b4e) — unit removed from idc02"
+      - name: chaba-system-report.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — generator now scp-fans-out to idc02 (gitignored data dir)"
+      - name: ssot-optimization-snapshot.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: ada-flood-news.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: report-distill.timer
+        scope: user
+        note: "shed to con01 2026-10-25 — unit removed from idc02"
+      - name: devin-bank-distill.timer
+        scope: user
+        note: "shed to con01 2026-10-26 (jobs b221da077) — unit removed from idc02"
     known_failed:
       - name: chaba-audit.service
         reason: "Pre-OPS-0581 finding-reporter (exited nonzero on error findings — findings tracked in card fix-idc02-audit-suite); since 2026-10-13 exits 0 on completed runs — findings via reports/audits/summary.* + focus-inbox (docs/kb/timer-expectations.md). Retained as rollout cover; a fresh failure is a real crash"
@@ -2266,6 +2309,17 @@ hosts:
         critical: false
         note: "Dedicated rootless bridge network shared only by the Cline app
           and proxy; backend port 3485 is not published to the host."
+      - name: cline-intake.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Cline lane intake (ssot.jobs.yml cline-intake, 15m) — scans
+          backlog cards tagged cline + cline: config, runs ONE card/tick
+          through kanban-nest-bridge on con01, comments + moves card to
+          review. Declared 2026-10-30; enablement on con01 unverified —
+          proposal pilot saw no pickup in >70min (report
+          docs/reports/2026-10-30-cline-proposal-pilot.md)."
       # batch timers shed from idc02 2026-10-25 (idc02 contract review —
       # con01 is the declared absorber; all rendered via ssot.jobs.yml)
       - {name: ssot-optimization-snapshot.timer, type: timer, scope: user}
@@ -2309,6 +2363,17 @@ hosts:
       id_ed25519 (dell key seeded into authorized_keys 2026-10-22;
       remaining fleet keys + adanest user pending KK sign-off per
       docs/kb/ada-nest-kk-mac-onboarding.md)."
+    capabilities:
+      ollama:
+        note: "ollama serve under adanest user (launchd
+          net.adanest.ollama.plist), loopback bind only — reachable via
+          kkmac-ollama-tunnel.service on idc03 (ssh -L 11445 -> :11434).
+          KK approved full fleet use 2026-10-30. Models: qwen2.5:32b,
+          qwen3:8b, qwen2.5vl:7b, llama3.2:3b. LiteLLM routes:
+          ollama-*-kkmac. Audit blind spot: services in other users'
+          launchd domains are invisible to launchctl list — adanest
+          ollama ran undeclared until 2026-10-30 (OPS-1018)."
+        upstream: "http://127.0.0.1:11445 (idc03 tunnel) / 127.0.0.1:11434 (kk-mac)"
   michael-ha:
     tailscale_ip: 100.85.88.100
     description: michael-ha Home Assistant OS host — ssh via `ssh michael-ha`

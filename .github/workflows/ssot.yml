@@ -54,6 +54,8 @@ jobs:
         run: python3 scripts/dev-system-assess.py --check
       - name: Check SSOT optimization warnings
         run: node scripts/ssot-optimize.mjs
+      - name: Flag research-prose smell in SSOT (>40 lines)
+        run: python3 scripts/ssot-prose-smell.py
       - name: Report warning metrics
         run: |
           BLOAT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).bloat)")

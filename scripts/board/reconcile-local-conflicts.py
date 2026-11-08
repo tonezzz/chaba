@@ -70,6 +70,12 @@ BOARD_API_BASES = (
     [os.environ["BOARD_API"].rstrip("/")] if os.environ.get("BOARD_API")
     else ["http://127.0.0.1:8787",
           "https://idc03.taila0626a.ts.net:10000"])
+# Wall-time cap for one reconcile pass. A flag write costs ~30s when the
+# door is slow (>8s per API post x primary+fallback), so a backlog of a
+# dozen conflict files used to blow the caller's service timeout —
+# chaba-repo-sync died at 5min churning .ref-seq.local-conflict-* files
+# (2026-11-07). Remaining files stay on disk; the next cycle continues.
+BUDGET_S = float(os.environ.get("RECONCILE_BUDGET_S", "60"))
 TZ = timezone(timedelta(hours=7))
 
 CONFLICT_RE = re.compile(
@@ -365,6 +371,16 @@ def reconcile_one(conflict_path: Path, dry: bool) -> bool:
     card_dir = conflict_path.parent
     cid = canonical_path.stem
 
+    if canonical_path.suffix != ".yml":
+        # Not a card (e.g. .ref-seq sequencer state sitting in the cards
+        # dir) — never card-merge it; flag for manual reconcile, keep it.
+        flag_card(card_dir, None,
+                  f"non-card local-conflict {conflict_path.name} "
+                  f"needs manual reconcile — file kept", dry)
+        print(f"reconcile: {conflict_path.name}: non-card — flagged",
+              file=sys.stderr)
+        return False
+
     if not canonical_path.exists():
         flag_card(card_dir, None,
                   f"orphan {conflict_path.name}: canonical card "
@@ -441,8 +457,17 @@ def reconcile_one(conflict_path: Path, dry: bool) -> bool:
 def run(repo: Path, dry: bool) -> int:
     card_dir = repo / CARD_DIR_REL
     leftovers = 0
+    deferred = 0
+    started = time.monotonic()
+
+    def over_budget() -> bool:
+        return time.monotonic() - started > BUDGET_S
+
     if card_dir.is_dir():
         for p in sorted(card_dir.glob("*.local-conflict-*")):
+            if over_budget():
+                deferred += 1
+                continue
             if not reconcile_one(p, dry):
                 leftovers += 1
     # non-card generated conflicts: never silently dropped either —
@@ -452,12 +477,20 @@ def run(repo: Path, dry: bool) -> int:
         stray = [p for p in ssot.rglob("*.local-conflict-*")
                  if card_dir not in p.parents and p.parent != card_dir]
         for p in stray:
+            if over_budget():
+                deferred += 1
+                continue
             flag_card(card_dir, None,
                       f"non-card local-conflict {p.relative_to(repo)} "
                       f"needs manual reconcile — file kept", dry)
             print(f"reconcile: non-card conflict kept: "
                   f"{p.relative_to(repo)}", file=sys.stderr)
             leftovers += 1
+    if deferred:
+        print(f"reconcile: deferred {deferred} conflict file(s) — "
+              f"budget {BUDGET_S:.0f}s exhausted, next cycle continues",
+              file=sys.stderr)
+        leftovers += deferred
     return 1 if leftovers else 0
 
 

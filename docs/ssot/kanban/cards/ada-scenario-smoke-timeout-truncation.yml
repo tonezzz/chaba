@@ -1,0 +1,25 @@
+id: ada-scenario-smoke-timeout-truncation
+title: Smoke tier outgrew 45-min TimeoutStartSec — suite truncates mid-run
+column: backlog
+updated: 2026-11-07 17:18
+priority: medium
+tags:
+- ada
+- scenario-runner
+- idc03
+spec: '44 smoke scenarios at ~60-150s each (with one retry) puts a full run at ~70-110min > TimeoutStartSec=2700.
+  Systemd kills the oneshot mid-tier; per-scenario MDDB reports already posted so no data loss, but scenarios sort
+  a-z so the tail of the suite effectively never runs. Options: (a) parallelize scenario-report.py with -j N — scenarios
+  are independent ws sessions against ada-dev; (b) split tier into smoke-core (hourly, ~15 fast/critical) + rotating
+  shard; (c) order by last-fail-first so truncation costs the least signal; (d) raise TimeoutStartSec + slow the
+  timer. Also cheap wins: python -u for live journal output (stdout is buffered — journal shows nothing mid-run).'
+note: 'Found 2026-11-07 while repairing the mount breakage (ada-ha-michael->ada-ai-kraut secret reorg had killed
+  the hourly smoke since Oct 27 — 264 consecutive statfs-125 failures; cms-audit ExecStopPost output masked it).
+  Manual run verified the pipeline end-to-end; pacing confirmed the timeout risk. Related drift flagged: ada-scenario-full.container
+  had the same dead paths (fixed same commit); ada-pi checkout on idc03 is now a stale duplicate of ada-voice; ada-pi-pwa.service
+  is active though marked '
+ref: ADA-1106
+comms:
+- at: 2026-11-07 17:18
+  from: devin
+  text: card captured via board-api

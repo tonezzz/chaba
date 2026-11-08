@@ -1,0 +1,20 @@
+id: scenario-runner-deployed-drift-check
+title: Detect deployed-vs-repo drift of ada-scenario-runner wrapper on idc03
+column: backlog
+updated: 2026-11-08 10:39
+priority: medium
+tags:
+- ops
+- drift
+- ada-scenario-runner
+- idc03
+note: 'Incident 2026-11-08 (card timer-alert-idc03-ada-scenario-tools): the OPS-0581 exit-code contract shipped
+  to the repo Oct 13, but scenario-suite-run.sh is deliberately copy-on-install (install.sh -> ~/.local/share/ada-scenario-runner/,
+  isolated so a bad checkout can never break weekly suites). Nobody re-ran install.sh for 24 days -> Oct 30 + Nov
+  6 weekly runs completed but alerted as exit-code anyway. Proposal: keep the isolation design, close the DETECTION
+  gap — a light drift check on idc03 (e.g'
+ref: OPS-1160
+comms:
+- at: 2026-11-08 10:39
+  from: devin
+  text: card captured via board-api

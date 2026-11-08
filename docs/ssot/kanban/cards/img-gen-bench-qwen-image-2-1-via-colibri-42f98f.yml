@@ -1,7 +1,7 @@
 id: img-gen-bench-qwen-image-2-1-via-colibri-42f98f
 title: 'img-gen-bench: Qwen-Image-2.1 via Colibri on a fleet host'
-column: backlog
-updated: 2026-10-25 08:11
+column: done
+updated: 2026-11-07 20:48
 brief: 'Tony ask 2026-10-24 — does Colibri-style disk streaming extend to image gen? Colibri ships Qwen-Image-2.1
   (33GB dl, 12-18GB RAM, one 768x512 pic in 2min40s on 8 Zen4 cores CPU). Test: install on a fleet host with >=18GB
   RAM + >=40GB disk, generate a small prompt set (doc-pilot scene styles + standard eval prompts), measure latency
@@ -27,3 +27,65 @@ comms:
   text: 'REAL JOB PLAN (T4 only, deferred until runtime): 10 prompts (doc-pilot scenes + standard controls), 2 samples/prompt,
     fixed seed/settings; artifact JSON with latency p50/p95, VRAM, image paths, failures, and a contact sheet. Do
     not pull the 33GB model on Omen: only 38G data free now.'
+- at: 2026-11-07 19:07
+  from: tony
+  text: queued for processing
+- at: 2026-11-07 19:09
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-07 19:09
+  from: chaba
+  text: started devin-task-20261107-190909-pack-packs-img-gen-bench-needs on tony-macbook (dispatch)
+- at: 2026-11-07 19:11
+  from: devin
+  text: 'dispatch 20261107-190909: host gate — mn01 7GB + idc03 15GB both FAIL the 18GB floor; omen loaded (LA 37).
+    con01 still has the qwen-image-2.1 colibri server RESIDENT since Oct 24 (15GB RSS, /health ok). Extending the
+    run there: +3 doc-pilot storyboard styles + generic-3, collecting latency/RAM/disk per image.'
+- at: 2026-11-07 19:44
+  from: devin
+  text: 'r2 progress: doc-pilot-sun done in 1329s (matches ~20min CPU baseline; mem avail dipped to 4.0GB mid-gen
+    — the 18GB floor is real). Also staged NEW pack img-gen-bench-t4 to gdrive:ada-nest/packs/ (gpu_gb14, requires
+    the 3 done T4 packs — auto-fires on the next awake T4 window, implements job4 of the 10-25 seq).'
+- at: 2026-11-07 20:45
+  from: devin
+  text: 'R2 DONE. con01 extension: sun 1329s, saturn 1358s, mars 1232s, generic-3 1262s — combined n=8 mean ~21min/img,
+    0 fails, engine RSS 14.7GB constant (18GB floor validated). QC: saturn near-black (deep-black-space underexposure).
+    Artifacts in packs/img-gen-bench/out/ (8 PNGs + r2 report + metrics). img-gen-bench-t4 pack STAGED — auto-claims
+    next awake T4. Open: stop resident con01 server after T4 lands; fix dark-scene exposure. Trail: docs/ssot/jobs/bench/2026-11-07-img-gen-bench-r2.yml'
+- at: 2026-11-07 20:45
+  from: tony-macbook
+  text: 'finished (ok): exit=0 itted as `d718c288a` on the dispatch branch, nothing pushed. | devin-task-20261107-190909-pack-packs-img-gen-benc'
+- at: 2026-11-07 20:45
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-07 20:45
+  from: chaba
+  text: 'session-end checkpoint f44e0800: 2 leftover file(s) committed'
+- at: 2026-11-07 20:45
+  from: chaba
+  text: pushed dispatch/20261107-190909-pack-packs-img-gen-bench-needs to origin
+- at: 2026-11-07 20:45
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 20:45
+  from: chaba
+  text: auto-merged ff95edc5 (dispatch/20261107-190909-pack-packs-img-gen-bench-needs) → origin/master
+- at: 2026-11-07 20:45
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-07 20:48
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+action:
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 itted as `d718c288a` on the dispatch branch, nothing pushed. | devin-task-20261107-190909-pack-packs-img-gen-bench-needs.service:
+    Consumed 3min 590ms CPU time over 1h 36min 4.279s wall clock time, 364.2M memory peak, 31.1M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-07 20:48
+  note: verified — evidence checks green, closing itself

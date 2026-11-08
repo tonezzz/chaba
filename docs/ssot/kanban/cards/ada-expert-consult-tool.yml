@@ -1,0 +1,47 @@
+id: ada-expert-consult-tool
+title: Ada expert-consultation tool — second opinion from stronger models + Nest history
+column: backlog
+updated: 2026-11-07 15:52
+priority: medium
+program: ai-workforce
+tags:
+- ada
+- opencode
+- devnest
+- memory
+spec: 'Add a bounded ''consult'' capability so Ada (the orchestrator) can borrow capability without becoming the
+  executor. Two consult sources: (1) MODEL — send a bounded question+context pack to a stronger model via LiteLLM
+  virtual key (candidates already in gateway: gemini-3.5-flash paid, or-gemini-3.1-pro-preview, or-claude-fable-5.1,
+  or paid gemini-3.5-flash alias ''chat''); returns structured answer with model+key attribution, spend logged.
+  (2) NEST/MEMORY — query nest_job records, pack artifacts, and MDDB memory banks (incl. the shared ada-ha-bank-devin-tony
+  collection) for past-experience precedent before drafting specs/wiki content. Boundaries: consult is read-only
+  advice — never execution authority; Ada still cannot approve her own work; every consult logged as an ops event
+  with question hash + model + cost; per-call USD/token caps; sensitive-context classes (secrets, private transcripts)
+  must be stripped or refused before leaving the host. Open questions for spec phase: which LiteLLM key alias funds
+  consults (new LITELLM_KEY_CONSULT vs reuse), whether consult results feed back into memory banks, latency budget
+  for voice turns (consult is async — likely text-lane only at first).'
+note: 'Motivation: Ada''s dev/wiki drafting rides gemini-3.5-flash(''chat'' alias); analysis in lesson-c81fa66280af
+  (post 4137). Stronger models already benched: gpt-oss:20b, clawbot, hermes3:8b, OR :free nemotron-super-vl/laguna-s.'
+ref: ADA-1084
+comms:
+- at: 2026-11-07 13:22
+  from: devin
+  text: carded from tony-macbook chat 2026-11-07 — idea-pipeline capture
+- at: 2026-11-07 14:47
+  from: devin
+  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
+    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
+    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
+    headroom (~2k) or polish output truncates mid-sentence.'
+- at: 2026-11-07 14:47
+  from: devin
+  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
+    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
+    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
+    headroom (~2k) or polish output truncates mid-sentence.'
+- at: 2026-11-07 15:52
+  from: devin
+  text: 'Cross-evidence from ADA-1088 bench (2026-11-07): per-turn polish with a STRONG model (gemini-3.5-flash)
+    on dispatch commands tied score with flash-lite direct (8/12 exact) at ~3x tokens/4x latency — supports designing
+    consult as on-demand for hard/ambiguous cases only, never a per-turn tax. Also: reasoning models need max_tokens
+    headroom (~2k) or polish output truncates mid-sentence.'

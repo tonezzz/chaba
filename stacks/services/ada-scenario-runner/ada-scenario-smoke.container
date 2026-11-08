@@ -13,8 +13,11 @@ Volume=%h/CascadeProjects/ada-voice:/app:ro
 # daily input tokens). Prod lanes stay untouched except the release-s4
 # dev-twin gate a card explicitly requests.
 Volume=%h/.config/secrets/ada-ha-dev-keys.json:/secrets/keys.json:ro
-Volume=%h/.config/secrets/ada-ha-michael.env:/secrets/michael.env:ro
-Volume=%h/.config/secrets/ada-ha-michael-keys.json:/secrets/michael-keys.json:ro
+# michael lane renamed ada-ha-michael -> ada-ai-kraut (2026-10-16); its
+# secrets live under michael-ha/ — the old flat paths are gone (broken
+# mounts killed the hourly smoke 2026-11-02..07).
+Volume=%h/.config/secrets/michael-ha/backend.env:/secrets/michael.env:ro
+Volume=%h/.config/secrets/michael-ha/keys.json:/secrets/michael-keys.json:ro
 Environment=ADA_LIVE_URL=ws://127.0.0.1:8005/ws
 Environment=MDDB_BASE_URL=http://100.102.134.91:11023/v1
 Environment=ADA_KEYS_FILE=/secrets/keys.json

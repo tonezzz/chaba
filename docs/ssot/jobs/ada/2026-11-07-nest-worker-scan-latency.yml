@@ -1,0 +1,50 @@
+title: nest-worker queue discovery — O(1) rclone calls per pass (2 calls, ~7s vs ~197s)
+id: 2026-11-07-nest-worker-scan-latency
+job: nest-worker-scan-latency
+card: jevnest-worker-scan-latency
+ref: OPS-1003
+date: 2026-11-07
+runner: mn01 (dispatch worktree)
+remote: gdrive:ada-nest-kk-llm (78 packs, 1 undone, 0 live claims at measure time)
+
+verdict: >
+  Queue discovery is now O(1) rclone calls — 2 calls regardless of
+  pack count — instead of ~2 + N_pack + N_claim + N_pending.
+
+measured:
+  runs:
+    - "pre-290358235 (per-pack lsf): 196.5s wall, ~82 rclone calls"
+    - "290358235 (recursive lsf + per-claim lsl + per-candidate cat): 8.1s, ~4 calls"
+    - "this change (lsf -F pt + copy --files-from): 6.8s, 2 calls"
+  note: >
+    quiet-queue delta over 290358235 is small; the win scales with
+    live claims (each was +1 lsl ~2.5s) and pending pack.yml cats (~2.5s each)
+
+design: >
+  inventory via lsf packs --recursive --format pt — names+mtimes in one
+  call; stale-claim detection rides the same listing (mtime == lsl
+  output, verified). metadata via copy --files-from fetches pending
+  pack.yml + all preflight.json in one call; pack.yml presence is known
+  from inventory so missing-yml packs cost zero extra calls; per-pack
+  cat fallback if the batch copy fails. requires is re-evaluated at
+  claim time via refresh_requires (per-requirement lsf, bounded by
+  #requires) — preserves drain-in-one-pass.
+
+preserved: >
+  first-writer claim (rcat + settle + sorted winner), stale-claim
+  release, needs/admission gates, remote artifact verify, done/failed
+  markers, serial concurrency (single pass, sorted order). New:
+  --scan-only flag = read-only measurement mode, never claims.
+
+regression:
+  fixture: tests/fixtures/nest-worker-queue.json (16-pack semantic matrix)
+  tests: tests/ada/test_nest_worker_scan.py — admission matrix, claim-time
+    requires gate, drain-in-one-pass, discovery call bound (<=2), 200-pack
+    bench (<5s, <=2 calls), fresh-claim retention
+  live_bench: python3 tests/ada/test_nest_worker_scan.py --remote gdrive:ada-nest-kk-llm
+  worker_side: nest-worker.py --remote <remote> --scan-only
+
+notes:
+  - empty pack dirs (half-staged) still surface as 'no pack.yml — skip'
+  - scalar/non-mapping pack.yml now skips cleanly (previously crashed the pass)
+  - kk-mac LaunchAgent/deploy untouched; no second worker started

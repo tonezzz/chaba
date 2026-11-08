@@ -1,0 +1,43 @@
+id: board-write-lock-scope-narrowing
+title: 'Narrow board-api.lock hold: lock-free no-op ticks in git-safe-pull'
+column: done
+updated: 2026-11-07 12:41
+brief: Card flock held across whole pull cycle even for no-op ticks; restructure so lock is only taken when a pull
+  actually mutates the tree.
+priority: medium
+tags:
+- board-api
+- flock
+- git-safe-pull
+- kanban-commit
+- contention
+spec: '2026-11-07 incident evidence: board-api writes stalled 4+ min behind /tmp/board-api.lock while idc03 ran
+  its kanban-commit/sweep batch; two client-timed-out POSTs still landed server-side (deduped, harmless but confusing).
+  Analysis: the fetch is already pre-lock, but the lock wraps the whole worktree-mutating phase — collision walk
+  + rebase replay + pop + GC + column guard — even on ticks where there is nothing to integrate. Change: after fetch,
+  skip the board lock entirely when upstream is already an ancestor of HEAD and no rebase is in progress (a pull
+  would only autostash+pop pointlessly); move _gc_autostash (stash-refs only, never touches tree/board files) outside
+  the locked section; keep column guard + reconcile inside the pull-needed branch (guard is a post-pop fixer; reconcile
+  self-locks standalone). In-session implementation on tony-omen. Also: document the ssh-via-push-host fallback
+  in git-safe-push.sh header. Out of scope (separate decision): bounded-wait 503 semantics on board-api handlers.'
+action:
+  type: manual
+  status: done
+ref: KNB-1081
+comms:
+- at: 2026-11-07 12:34
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 12:34
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 12:41
+  from: devin
+  text: 'Landed on origin/master as ade8a652a (via ssh tony-dell push — tony-omen has no push:chaba). git-safe-pull
+    now skips the board lock + entire mutating phase when upstream is already in HEAD (the common no-op tick); _gc_autostash
+    moved outside the locked section (stash-refs only). _pull_needed still forces the phase for open rebases, unverifiable
+    upstream, and SAFE_PULL_NO_REBASE=1. tests/test-kanban-commit.sh: 59/59 pass — G tests now inject real upstream
+    commits to exercise the lock. Also docume'
+- at: 2026-11-07 12:41
+  from: tony
+  text: closed by tony

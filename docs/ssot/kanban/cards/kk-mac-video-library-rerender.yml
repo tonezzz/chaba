@@ -1,7 +1,7 @@
 id: kk-mac-video-library-rerender
 title: Re-render old video library on KK-Mac MLX lane
 column: backlog
-updated: 2026-10-29 20:03
+updated: 2026-11-02 10:01
 brief: Inventory old video projects, convert reproducible ones into versioned KK-Mac MLX packs, and queue one scene
   at a time with comparison/QC artifacts.
 priority: high
@@ -54,3 +54,42 @@ comms:
     deleting KK partials. Con01->IDC03 rsync mirror is now active at ~2-3 MB/s for the complete MLX package; after
     IDC03 receives it, KK-Mac will pull over the Thailand-side path. This preserves the cache and avoids restarting
     from the public HF source.'
+- at: 2026-10-31 10:23
+  from: devin
+  text: 'Verified video blocker: KK-Mac has no MP4 outputs and no active MLX/MPS render process. Local ~/kk-video/ltx-mlx/models/LTX
+    is only ~7GB and incomplete: text_encoder index requires shards model-00001..00004, but only shard 00001 exists;
+    shards 00002-00004 are missing. The LTX 2B checkpoint is present, but the text encoder cannot load. Next: resume/complete
+    the model import, verify all referenced files/checksums, run exactly one MLX control shot + decode/QC, then
+    queue the finite render batch.'
+- at: 2026-10-31 12:56
+  from: devin
+  text: 'FIRST CLEAN CONTROL RENDER PASSED 2026-10-31. Repaired all four T5 text-encoder shards plus the 2B checkpoint
+    from Omen mirror, installed compatible MLX runtime, rendered `kk-first-control-final.mp4` on KK-Mac: 17 frames,
+    768x480 H.264, 24fps, ~40s generation. Frame QC non-black: min=0 max=255 mean=150.0. Durable artifact: gdrive:ada-nest-kk-mac-video-pilot/controls/kk-first-control-final.mp4.
+    The earlier black control was rejected due corrupt/incomplete model files. Next gate is prompt/quality '
+- at: 2026-10-31 13:03
+  from: devin
+  text: 'SECOND USEFUL CLIP COMPLETE 2026-10-31. Used a clean crop of PDF storyboard panel 3.1 as the image condition
+    (not the full storyboard collage). MLX LTX-2B generated `pdf-conditioned-useful-shot-31.mp4`: 17 frames, 768x480,
+    24fps, ~8.7s generation; frame QC non-black at frame 0 and 8 (min 0/max 255, mean ~128). Durable artifact: gdrive:ada-nest-kk-mac-video-pilot/controls/pdf-conditioned-useful-shot-31.mp4.
+    The full-page collage clip was technically valid but not useful creative output; this pane'
+- at: 2026-10-31 13:19
+  from: devin
+  text: 'MULTI-SHOT PDF-CONDITIONED PREVIEW COMPLETE. Rendered 10 PDF storyboard panel-conditioned shots on KK-Mac
+    MLX 2B, each 17 frames at 768x480/24fps, ~6-10s generation per shot. All 10 passed non-black frame QC (min 0/max
+    255; means 133-161). Concatenated silent preview: gdrive:ada-nest-kk-mac-video-pilot/controls/pdf-preview-batch-silent.mp4
+    (170 frames, 7.08s). Individual durable shots are also under the same controls/ path. Next pipeline gate is
+    narration + Thai/English subtitles + mux/final-cut'
+- at: 2026-11-02 09:43
+  from: devin
+  text: 'FINAL PRIVATE PREVIEW V1 COMPLETE + VERIFIED. Rendered 10 PDF-conditioned shots at 73 frames/shot via resident
+    MLX batch (108 frames? 10x73), concatenated to 720 frames after 2x timing stretch, muxed existing Thai narration,
+    copied Thai and English SRT sidecars. Final artifact: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v1.mp4.
+    QC: H.264 640x384, 720 frames, AAC audio, duration 59.92s, 1.55MB; ffprobe decode passed. Sidecars: pdf-final-preview-v1.th.srt
+    and .en.srt. This is a pri'
+- at: 2026-11-02 10:01
+  from: devin
+  text: 'CORRECTIVE V2 COMPLETE. Re-rendered scenes 3.3–3.6 with clean image-only crops (removed storyboard headers/captions/speech-bubble
+    artifacts) and 8 denoising steps to improve continuous motion; resident MLX batch used. Rebuilt final preview
+    V2 with corrected shots, narration, and Thai/English subtitle sidecars. Artifact: gdrive:ada-nest-kk-mac-video-pilot/final/pdf-final-preview-v2.mp4.
+    QC: H.264 640x384, 720 frames, AAC audio, 59.92s, ffprobe decode passed. Original V1 preserved.'

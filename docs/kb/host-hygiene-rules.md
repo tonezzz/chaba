@@ -87,3 +87,15 @@ warm DR → idc01. Workload placement follows the
   as kanban cards, not chat messages.
 - Session discipline: these rules are loadable into AGENTS.md as the
   host-ops section; violations get caught by the same audit loop.
+
+## R7 — Declared capabilities, ready hosts
+
+A host's *software* is declared-or-dead just like its services. Runtime
+capability (python, venv, ML deps, ollama models, node, podman) lives in
+`docs/ssot/infrastructure/ssot.host-software.yml` — a host either has a
+declared capability or it does not; silently-broken installs (Omen's
+half-installed sentence-transformers, 2026-11-07) are exactly the drift
+this kills. Check with `scripts/host-ready-check.py` (weekly
+chaba-host-ready-check.timer on idc03); fix with
+`scripts/host-capability-bootstrap.sh <host> <cap>` — durable installs
+only (`~/.local/share/`, never /tmp).

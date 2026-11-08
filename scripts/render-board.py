@@ -225,7 +225,13 @@ def load_cards(man: dict) -> list:
     card_dir = REPO / man["card_dir"]
     cards = []
     for p in sorted(card_dir.glob("*.yml")):
+        # A file read mid-write (non-atomic writer, stash pop in flight)
+        # parses to None or a scalar — crashing here wedges the WHOLE
+        # render, not just that card (2026-11-07: one transient file ->
+        # rc=1 + stale board, OPS-1107).
         c = yaml.safe_load(p.read_text())
+        if not isinstance(c, dict):
+            c = {}
         c.setdefault("id", p.stem)
         cards.append(c)
     return cards
@@ -236,11 +242,16 @@ def main():
     card_dir = REPO / man["card_dir"]
     out_path = REPO / man["board_output"]
 
+    state_hash = None
     if "--if-changed" in sys.argv:
-        h = dir_hash(card_dir)
-        if STATE.exists() and STATE.read_text().strip() == h and out_path.exists():
+        state_hash = dir_hash(card_dir)
+        if STATE.exists() and STATE.read_text().strip() == state_hash \
+                and out_path.exists():
             return 0
-        STATE.write_text(h + "\n")
+        # STATE is advanced only AFTER the render lands (end of main) —
+        # writing it here poisons the skip-set on crash: every later
+        # --if-changed tick sees "unchanged" and the board stays stale
+        # until a real card write bumps the hash (OPS-1107).
 
     cards = load_cards(man)
     # legibility: `priority` drives intra-column order — "next-up" is
@@ -1030,6 +1041,8 @@ setInterval(load, POLL_MS);
 </body></html>
 """
     out_path.write_text(stub)
+    if state_hash is not None:
+        STATE.write_text(state_hash + "\n")
     print(f"wrote {out_path} (redirect stub -> board2) + cards.json ({len(cards)} cards, v{ver})")
     return 0
 

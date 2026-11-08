@@ -228,6 +228,17 @@ config:
       - infrastructure/ssot.mac-address-registry.michael.yml
       - infrastructure/ssot.mcp-tools.yml
       - infrastructure/ssot.operations.yml
+      # Reviewed per-file exemption (2026-10-30, card
+      # ssot-bloat-kk-video-preview-qc-card): done + auto_closed card whose
+      # 497 lines are ~480 of comms/requests history. Trimming is unsafe —
+      # card-union merge resurrects deleted comms and moving the card to
+      # cards/archive/ would break live board-api writes (it still receives
+      # producer comms) and is <30d in done vs the archive SLA. Review
+      # threshold only; the 750-line hard cap still applies. Revisit and
+      # drop this entry once the card qualifies for cards/archive/ — owner:
+      # board ops (kanban-archive sweep). Rationale record:
+      # docs/ssot/jobs/kanban/2026-10-30-kk-video-card-bloat-exemption.yml
+      - kanban/cards/kk-video-preview-output-qc-assembly.yml
   related_files:
     - docs/ssot/ssot.file-control.yml
     - docs/ssot/ssot.validation-patterns.yml

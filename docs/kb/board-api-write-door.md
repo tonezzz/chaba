@@ -3,7 +3,9 @@
 **Status:** deployed (card `nest-api-unified-mutation-service`, OPS trail
 `docs/ssot/jobs/infrastructure/2026-10-23-board-api-unified-mutations.yml`).
 Service: `chaba-board-api.service` on idc03, `127.0.0.1:8787`, tailnet front
-`https://idc03.taila0626a.ts.net:10000` (Caddy strips `/apps/board-api/`).
+`https://idc03.taila0626a.ts.net:10000` — Caddy proxies the endpoint paths at
+root (`POST /card`, `/comment`, `/action`, `GET /card/<id>`); there is NO
+`/apps/board-api/` prefix (it 404s).
 
 ## Rule
 
@@ -12,6 +14,10 @@ cards, WP lesson/nest_job CPTs, ada-cms-pages report pages, focus-inbox
 entries — goes through board-api over HTTP. Agents and runners never hold
 WP app passwords or mddb credentials; only the service host has
 `~/.config/secrets/wp-boards.env`. Same reason Colab stays credential-free.
+
+Reads are the mirror image: `docs/kb/board-api-read-door.md` — never
+pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
+`/cards?<filters>&fields=` cover the narrow questions.
 
 ## Endpoints (after prefix strip)
 

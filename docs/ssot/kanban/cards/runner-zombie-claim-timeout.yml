@@ -1,0 +1,36 @@
+id: runner-zombie-claim-timeout
+title: 'Runner zombie-claim: board-api write commits after client timeout'
+column: done
+updated: 2026-11-07 16:30
+brief: POST /action claim can commit server-side while the runner api() client times out at 30s — card lands status=running
+  with no unit and no state.json entry; nothing ever finishes it. Observed 2026-11-07 on opencode-executor-routing-smoke
+  during the board-api flock storm.
+priority: high
+tags:
+- runner
+- board-api
+- bug
+spec: 'Reconcile path needed: either claim returns a claim_token/tid the runner must confirm, or a sweeper detects
+  running+no-task_id+no-unit older than N minutes and requeues. Runner finish POST result is also ignored (api()
+  error swallowed) — a timed-out finish leaves the same zombie.'
+action:
+  type: manual
+  status: done
+ref: OPS-1071
+comms:
+- at: 2026-11-07 11:53
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 11:53
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 16:30
+  from: devin
+  text: 'FIXED — PR chaba#85 (364c6371). runner-agent now runs reconcile_pass() every pass before claim_pass: any
+    card status=running + runner=self missing from state gets adopted when a devin-task-<cid>-* unit exists (also
+    heals runner restarts that lost state.json), or restarted via start_task under the same claim when no unit exists;
+    restart failure finishes ok:false so it cannot zombie twice. kanban-dispatch claims skipped via action.task_id/claim.session
+    guard. Deployed: idc02+idc03 exec checkouts p'
+- at: 2026-11-07 16:30
+  from: devin
+  text: closed by devin

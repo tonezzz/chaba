@@ -179,7 +179,7 @@ def lint_profile(prof: dict) -> list:
     allow = set(mcp.get("allowed") or [])
     denied = set(mcp.get("denied") or [])
     for t in allow:
-        if t not in lane_gate.READONLY_MCP_TOOLS:
+        if t not in lane_gate.LANE_MCP_TOOLS:
             errs.append(f"profile_tool_outside_lane_set:{t}")
     if allow & denied:
         errs.append("profile_mcp_overlap:"
@@ -331,8 +331,13 @@ def render_config(env: dict, prof: dict) -> dict:
         "$schema": "https://opencode.ai/config.json",
         "model": env["model"],
         "agent": {a: {"disable": True} for a in DENIED_BUILTIN_AGENTS},
+        # doom_loop must be "deny", not "ask": profile runs are
+        # non-interactive (`opencode run`), so an "ask" can never be
+        # answered — the loop aborts with a 0-token final step and the
+        # agent never emits its artifact (OPS-1021, 2026-11-02). A deny
+        # is fed back to the model, which must then synthesize a reply.
         "permission": {"external_directory": "deny",
-                       "doom_loop": "ask"},
+                       "doom_loop": "deny"},
         "mcp": {},
     }
     cfg["agent"][agent_name(pid)] = agent

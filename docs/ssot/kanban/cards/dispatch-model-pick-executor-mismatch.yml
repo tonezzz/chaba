@@ -1,0 +1,77 @@
+id: dispatch-model-pick-executor-mismatch
+title: Cheapest-model pick chooses litellm/<model> ids for devin-executor claims — task dies at launch
+column: done
+updated: 2026-11-08 08:33
+priority: high
+program: chaba-ci
+tags:
+- kanban-dispatch
+- runner-agent
+- model-routing
+- bug
+spec: 'Observed 2026-11-08 on tony-macbook: hands-off-waiting-card-procedure claimed lane=devin executor=devin but
+  the claim-time cheapest-model selection persisted provider=litellm model=litellm/gemini-3.5-flash-lite into task
+  meta — devin CLI exited 1 (Unknown model; it only accepts its own ids). The dispatch_repos comment says lanes
+  map to devin --model ids, so a litellm/<m> pick on a devin-executor task violates the contract — provider and
+  executor namespaces must match. Sibling claim on the same host picked provider=devin model=<default> and ran fine,
+  so the pick is per-card and inconsistent. Fix: constrain cheapest-model selection to model ids valid for the resolved
+  executor (devin ids for devin, litellm ids for opencode/litellm lanes); if no valid id, leave model empty (devin
+  default). Evidence: devin-task-20261108-071214 meta.json (provider=litellm + devin executor); workaround applied:
+  pinned action.model=swe-2-flash on the card.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-flash
+  target_host: tony-macbook
+  lane: paid_frontier
+  status: done
+  runner: tony-macbook
+ref: OPS-1127
+comms:
+- at: 2026-11-08 08:06
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-08 08:06
+  from: tony
+  text: queued for processing
+- at: 2026-11-08 08:11
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 08:11
+  from: chaba
+  text: started devin-task-20261108-081128-observed-2026-11-08-on-tony-ma on tony-macbook (dispatch)
+- at: 2026-11-08 08:18
+  from: tony
+  text: put on hold
+- at: 2026-11-08 08:22
+  from: devin
+  text: 'DONE (processed directly, commit a602c405af on origin/master): root cause refined — idc03 kanban-dispatch
+    (JEV_LANE=1) classify-stamped lane=free_lane + litellm model on the card; a later lane=devin edit left the stale
+    action.model behind. Fix: both launchers (runner-agent.py claim/start path + kanban-dispatch.py start_pending)
+    now drop DISPATCH_MODEL when its provider is incompatible with the resolved executor — devin accepts only its
+    own ids -> devin default fallback. Regression tests in test_'
+- at: 2026-11-08 08:22
+  from: tony
+  text: closed by tony
+- at: 2026-11-08 08:30
+  from: devin
+  text: 'fixed: provider/executor namespace guard added (dr.model_valid_for_executor + lane_model; runner-agent
+    mirrors). Claim-time lane->model persist now gated on the resolved route; start_task + kanban-dispatch drop
+    litellm/* ids on devin-bound claims to the executor default (card-declared drops get a comms note). opencode
+    model precedence skips invalid-namespace candidates. 18 lane + 176 board tests green.'
+- at: 2026-11-08 08:33
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash
+- at: 2026-11-08 08:33
+  from: chaba
+  text: 'session-end checkpoint 36269e26: 2 leftover file(s) committed'
+- at: 2026-11-08 08:33
+  from: chaba
+  text: pushed dispatch/20261108-081128-observed-2026-11-08-on-tony-ma to origin
+- at: 2026-11-08 08:33
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/kanban-dispatch.py, scripts/board/runner-agent.py — card stays in review
+    for manual resolution'
+- at: 2026-11-08 08:33
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'

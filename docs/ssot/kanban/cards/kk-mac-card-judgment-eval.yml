@@ -1,0 +1,26 @@
+id: kk-mac-card-judgment-eval
+title: kk-mac card-judgment eval — can its local models replace paid side-call lanes?
+column: backlog
+updated: 2026-11-07 14:20
+priority: medium
+tags:
+- kk-mac
+- card-judgment
+- nest-bench
+- llm-lane
+spec: 'Evaluate whether kk-mac (M4 Max 36GB, ollama LaunchDaemon) can take over paid flash-lite side-call traffic
+  (~$22/window of the $69.64 LiteLLM ledger is steady REST spend — the movable part). Runner is ARMED: scripts/bench/card-judgment/kkmac_eval.sh
+  on any tailnet host — gates on ssh+ollama-alive (fails closed when the Mac is offline, as now: tailnet last seen
+  19h), auto-detects pulled models (prefer qwen3:8b, qwen2.5:32b, llama3.2:3b, qwen2.5vl:7b), runs the 115-case
+  corpus per model, writes run-kkmac-<model>.md|json next to corpus.jsonl. Success = action_accuracy comparable
+  to the llama3.2:3b baseline (0.739) and near paid-flash quality — then a routing proposal (kk-mac into tool-call/summary/classify
+  fallback chains) is worth making. Zero spend.'
+note: 'Blocked by: kk-mac powered off/asleep (tailnet offline 19h as of 2026-11-07). Trigger = next live heartbeat
+  window, or ask KK for a test window on AC. Related: kk-mac-local-llm-lane (review), jevnest-kk-mac-capacity-loop
+  (doing — capacity producer could pick this up as a queued job), kk-mac-continuous-llm-worker (backlog). LiteLLM
+  deployments already exist: ollama-qwen32b-kkmac/qwen38b/qwen25vl7b/llama32-3b via idc03 tunnel :11445.'
+ref: KNB-1087
+comms:
+- at: 2026-11-07 14:20
+  from: tony
+  text: card captured via board-api

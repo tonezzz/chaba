@@ -1,0 +1,38 @@
+id: openchamber-multirun-adobe-stock-prompts
+title: Test OpenChamber Multi-run for Adobe Stock prompt comparison
+column: doing
+updated: 2026-11-07 17:05
+brief: Compare bounded read-only model runs for Adobe Stock campaign prompt and asset-reuse recommendations.
+priority: low
+program: devnest
+tags:
+- openchamber
+- multi-run
+- adobe-stock
+- prompting
+- evaluation
+spec: 'Run the same read-only Adobe Stock campaign brief through up to three approved OpenCode models or profiles,
+  each isolated from board and filesystem mutation. Compare asset relevance, provenance preservation, missing-preview
+  detection, policy compliance, and token/cost/latency. Acceptance: a comparison artifact records identical input,
+  model/profile, outputs, verifier scores, and a recommended profile; no run uploads, generates, licenses, or mutates
+  cards.'
+note: Later evaluation; do not enable broad OpenCode lanes or paid image generation as part of this card.
+ref: OPS-1200
+comms:
+- at: 2026-11-05 17:32
+  from: tony
+  text: card captured as a later OpenChamber testing feature
+- at: 2026-11-07 13:25
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-07 13:25
+  from: devin
+  text: 'Started 2026-11-07. Plan: (1) define shared render-request.json as the identical input for all lanes; (2)
+    lane profiles = kk-mac-sdxl (photo tier), omen-sd-server (illustration tier until OPS-1078), gemini-image (best
+    tier, blocked on credits); (3) comparison artifact schema in campaign 35-comparison-run/ recording per-lane
+    output, sha256, dims, verifier scores (sharpness/artifact/prompt-adherence/copy-space), cost+latency, recommended
+    lane; (4) first live multi-run once KK-Mac wakes or Gemini c'
+- at: 2026-11-07 17:05
+  from: devin
+  text: 'ref renumbered OPS-1039 -> OPS-1200: OPS-1039 collided with opencode-retry-stale-worktree
+    (older card, keeps the ref). Card id unchanged; dispatch/board lookups by id unaffected.'

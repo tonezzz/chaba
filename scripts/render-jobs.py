@@ -9,6 +9,7 @@ Usage:
   render-jobs.py [--host tony_dell]            # write generated/<host>/
   render-jobs.py --check                       # validate manifest only (CI)
   render-jobs.py --host idc02 --install        # install units + daemon-reload
+  render-jobs.py --host idc02 --ids a,b --install   # install only those jobs' units
 """
 import argparse
 import json
@@ -176,15 +177,26 @@ def render_dispatcher_units(host, man):
     return {"chaba-jobs.service": svc, "chaba-jobs.timer": tim}
 
 
-def render_host(man, host):
+def timer_units(units):
+    """Unit names `--install` must enable — full .timer names, never bare
+    ids (a bare name resolves to .service under systemctl)."""
+    return sorted(n for n in units if n.endswith(".timer"))
+
+
+def render_host(man, host, ids=None):
     out = {}
     for j in man["jobs"]:
         if j["host"] != host or not j.get("enabled", True):
             continue
+        if ids is not None and j["id"] not in ids:
+            continue
         if j["dispatch"] == "systemd":
             out[f"{j['id']}.service"] = render_service(j, man)
             out[f"{j['id']}.timer"] = render_timer(j)
-    if any(
+    # dispatcher meta-units are not per-job selectable; a --ids install must
+    # leave chaba-jobs.timer untouched either way (OPS-0790 rollout keeps it
+    # active until every migrated job is verified).
+    if ids is None and any(
         j["host"] == host and j["dispatch"] == "dispatcher" and j.get("enabled", True)
         for j in man["jobs"]
     ):
@@ -197,6 +209,9 @@ def main():
     ap.add_argument("--host")
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--install", action="store_true")
+    ap.add_argument("--ids",
+                    help="comma-separated job ids — render/install only these "
+                         "jobs' unit pairs (dispatcher meta-units excluded)")
     ap.add_argument("--manifest", default=str(MANIFEST))
     args = ap.parse_args()
 
@@ -210,11 +225,22 @@ def main():
         print(f"OK {len(man['jobs'])} jobs, {len(man['config']['repo'])} hosts")
         return 0
 
+    ids = None
+    if args.ids:
+        ids = {s.strip() for s in args.ids.split(",") if s.strip()}
+        known = {j["id"] for j in man["jobs"]}
+        bad = sorted(ids - known)
+        if bad:
+            print(f"ERR unknown job ids: {', '.join(bad)}")
+            return 2
+
     hosts = [args.host] if args.host else list(man["config"]["repo"])
     rc = 0
     for host in hosts:
-        units = render_host(man, host)
+        units = render_host(man, host, ids)
         if not units:
+            if ids:
+                print(f"{host}: no units match --ids")
             continue
         dest = (
             Path.home() / ".config/systemd/user"
@@ -230,7 +256,9 @@ def main():
             print(f"wrote {p}")
         if args.install:
             subprocess.run(["systemctl", "--user", "daemon-reload"], check=False)
-            timers = [n[:-6] for n in units if n.endswith(".timer")]
+            # keep the .timer suffix — a bare name resolves to .service and
+            # `enable --now` would run/enable the service, never the timer.
+            timers = timer_units(units)
             if timers:
                 r = subprocess.run(
                     ["systemctl", "--user", "enable", "--now", *timers]

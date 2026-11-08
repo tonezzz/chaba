@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
 column: backlog
-updated: 2026-10-30 01:34
+updated: 2026-11-08 08:04
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -41,3 +41,25 @@ comms:
 - at: 2026-10-30 01:34
   from: tony
   text: put on hold
+- at: 2026-11-07 11:13
+  from: devin
+  text: '2026-11-07: superseded by render-jobs-selective-install-ops0790-tonydell (same spec, rerouted here 10-30
+    because idc02 lacks push:chaba). The work landed on branch fix/ops-0993-selective-install via an in-session
+    implementation on tony-omen. Safe to close once that card verifies.'
+- at: 2026-11-08 07:50
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix
+    action.labels/host pins or teach a runner the capability'
+awaiting_action: true
