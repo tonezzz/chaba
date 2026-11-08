@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: backlog
-updated: 2026-11-08 13:17
+updated: 2026-11-08 13:18
 priority: high
 tags:
 - timer-alert
@@ -121,6 +121,13 @@ comms:
   text: 'Re-verified live on idc03 (13:21 +07): chaba-jobs.timer disabled/inactive — deliberate OPS-0790 retirement,
     fix already merged (sentinel CRITICAL + census). Replacements firing (yomi-update 11m, embed-lane-news 31m ago).
     Closing card as resolved.'
+- at: 2026-11-08 13:18
+  from: devin
+  text: '[re-verified — FALSE ALARM, do NOT re-enable] Disable is deliberate: OPS-0790 retired the legacy dispatcher
+    2026-10-29; zero dispatch:dispatcher jobs remain. Live on idc03 just now: chaba-jobs.timer disabled+inactive
+    (matches new census expected_state:inactive); replacements firing — yomi-update-active (11min ago, next 3min),
+    embed-lane-news (31min ago, next 28min), embed-lane-lessons (daily, next 2.5h). Sentinel false-positive root
+    cause (chaba-jobs in hardcoded CRITICAL set) already fixed + me'
 action:
   status: queued
   type: dispatch
