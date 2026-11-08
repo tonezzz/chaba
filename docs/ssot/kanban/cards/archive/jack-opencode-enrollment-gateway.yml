@@ -1,0 +1,95 @@
+id: jack-opencode-enrollment-gateway
+title: Build VCAST-style one-time enrollment for Jack OpenCode
+column: done
+updated: 2026-11-08 13:21
+brief: Let Jack paste a single-use browser enrollment code/URL and persist a scoped IDE session without exposing
+  host/API keys.
+priority: high
+program: devnest
+tags:
+- opencode
+- jack
+- podman
+- enrollment
+- pairing
+- idc02
+spec: Implement the VCAST-style enrollment flow for the isolated Jack OpenCode Podman IDE on idc02. Provide a stable
+  HTTPS /enroll page behind authenticated public/tailnet edge, accept a short-lived single-use random code or token,
+  hash and consume it server-side, issue a Jack-scoped Secure/HttpOnly/SameSite session cookie/ticket, and redirect
+  to the OpenCode route. Re-registration mints a fresh code and revokes/invalidates the prior Jack session. Keep
+  LiteLLM, MCP, host, SSH, Ada, and Devin credentials server/container-side; never expose them to browser JS/localStorage.
+  Gate the isolated Podman OpenCode route via the session proxy, support WebSockets, add revoke/health, TTL, audit,
+  reset, and tests. First bind locally/tailnet on idc02; public Cloudflare Access path only after isolation smoke
+  passes. Verify one-time use, expiry, replay rejection, re-registration, unauthenticated denial, workspace-only
+  boundary, and browser UI access. Reuse the existing VCAST redeem pattern but do not reuse HA tokens or HA storage.
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  status: done
+  runner: idc02
+  result: 'exit=0 ice: No such file or directory | devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    Failed to open /run/user/1000/systemd/transient/devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    No such file or directory'
+  verified: true
+ref: OPS-0951
+comms:
+- at: 2026-10-27 17:05
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 17:06
+  from: idc02
+  text: claimed
+- at: 2026-10-27 17:06
+  from: chaba
+  text: started devin-task-20261027-170645-implement-the-vcast-style-enro on idc02 (dispatch)
+- at: 2026-10-27 17:13
+  from: devin
+  text: 'Design settled: dedicated tailnet origin via `tailscale serve --https=8448 -> 127.0.0.1:8377` (opencode
+    SPA needs root, so no path-prefix mount); Node stdlib enroll gateway on private podnet jack-ide session-gates
+    everything to the opencode container; codes+sessions sha256-hashed in /state JSON, audit JSONL; re-mint revokes
+    prior session (exclusive default). LiteLLM key reuse from litellm-chaba.env container-side only — dedicated
+    jack virtual key needs proxy admin, follow-up on parent card. Buil'
+- at: 2026-10-27 17:22
+  from: devin
+  text: 'DEPLOYED + VERIFIED on idc02. Live: https://idc02.taila0626a.ts.net:8448/enroll (tailscale serve -> jack-enroll
+    gw :8377 -> session-gated proxy -> jack-opencode on private podnet, no published ports). Verified: one-time
+    burn (replay=code_used), TTL expiry, forged-code 401, re-mint revokes prior session, unauth 401 (no+forged cookie),
+    /admin token-gated, /etc/passwd denied vs /workspace served, direct :4096 unreachable from host, SPA 200 + SSE
+    live over tailnet URL, model call PONG via LiteLLM. F'
+- at: 2026-10-27 17:24
+  from: idc02
+  text: 'finished (ok): exit=0 ice: No such file or directory | devin-task-20261027-170645-implement-the-vcast-style-enro.service:
+    Failed to ope'
+- at: 2026-10-27 17:24
+  from: chaba
+  text: pushed dispatch/20261027-170645-implement-the-vcast-style-enro to origin
+- at: 2026-10-27 17:24
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-27 17:24
+  from: chaba
+  text: auto-merged 92f70de3 (dispatch/20261027-170645-implement-the-vcast-style-enro) → origin/master
+- at: 2026-10-27 17:24
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-170645-implement-the-vcast-style-enro,
+    branch dispatch/20261027-170645-implement-the-vcast-style-enro'
+- at: 2026-10-27 17:32
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-28 06:59
+  from: devin
+  text: 'Prepared the approved syntax-only repair in a separate worktree: the three malformed YAML plain-scalar
+    continuations are now quoted or block-scalar values; targeted SSOT validation for this job passes. Full SSOT
+    validation is still blocked by a separate origin/master error: docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml
+    is missing required top-level title. No commit/PR has been made yet because the normal commit hook validates
+    the full repository.'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (11d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-27 17:32
+  note: verified — evidence checks green, closing itself
