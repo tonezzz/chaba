@@ -1,6 +1,6 @@
 id: dispatch-model-pick-executor-mismatch
 title: Cheapest-model pick chooses litellm/<model> ids for devin-executor claims — task dies at launch
-column: backlog
+column: done
 updated: 2026-11-08 08:22
 priority: high
 program: chaba-ci
@@ -24,7 +24,7 @@ action:
   model: swe-2-flash
   target_host: tony-macbook
   lane: paid_frontier
-  status: idle
+  status: done
   runner: tony-macbook
 ref: OPS-1127
 comms:
@@ -50,3 +50,6 @@ comms:
     action.model behind. Fix: both launchers (runner-agent.py claim/start path + kanban-dispatch.py start_pending)
     now drop DISPATCH_MODEL when its provider is incompatible with the resolved executor — devin accepts only its
     own ids -> devin default fallback. Regression tests in test_'
+- at: 2026-11-08 08:22
+  from: tony
+  text: closed by tony
