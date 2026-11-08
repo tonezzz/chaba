@@ -150,6 +150,11 @@ os.environ.setdefault("BOARD_API", API)
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
+# OPS-1182: script-type claims are near-free (a 2s probe) and should not
+# starve behind the heavyweight cap — they claim under a separate higher
+# ceiling while dispatch/container claims still defer.
+SCRIPT_MAX_LOAD_PC = float(
+    os.environ.get("RUNNER_SCRIPT_MAX_LOAD_PC", "2.0"))
 LABELS = {x.strip() for x in os.environ.get("RUNNER_LABELS", "").split(",")
           if x.strip()}
 STATE_DIR = Path(os.environ.get(
@@ -2896,12 +2901,16 @@ def reconcile_pass(st: dict) -> bool:
     return changed
 
 
-def overloaded() -> bool:
-    """5-min load per core above MAX_LOAD_PC → don't claim new work."""
-    if MAX_LOAD_PC <= 0:
+def overloaded(pc: float | None = None) -> bool:
+    """5-min load per core above the cap → don't claim new work.
+
+    `pc` overrides the default heavyweight cap (MAX_LOAD_PC) — the
+    script-claim exception (OPS-1182) probes the higher script ceiling."""
+    cap = MAX_LOAD_PC if pc is None else pc
+    if cap <= 0:
         return False
     try:
-        return os.getloadavg()[1] / (os.cpu_count() or 1) > MAX_LOAD_PC
+        return os.getloadavg()[1] / (os.cpu_count() or 1) > cap
     except OSError:
         return False
 
@@ -2962,11 +2971,52 @@ def _capacity_reason(st: dict) -> str:
     return ""
 
 
+def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
+    """Host-level gate fired before per-card eval (KNB-1183): write a
+    rate-limited defer note on each card this host would otherwise
+    evaluate, so the board shows why it waits — 'claim pass skipped'
+    in a journal nobody greps is silent starvation.
+
+    Only pins compatible with this host get the note (other hosts' pins
+    write their own). `exempt` action types are skipped — the OPS-1182
+    script-claim exception still lets those run under the same pass."""
+    try:
+        cards = (api("/cards") or {}).get("cards") or []
+    except Exception:
+        return
+    for card in cards:
+        a = card.get("action") or {}
+        if a.get("status") != "queued":
+            continue
+        if exempt and str(a.get("type") or "dispatch") in exempt:
+            continue
+        if (a.get("host") and a["host"] != HOST) or \
+           (a.get("target_host") and a["target_host"] != HOST) or \
+           (a.get("runner") and a["runner"] != HOST):
+            continue
+        if not set(a.get("labels") or []) <= LABELS:
+            continue
+        note_defer(card, "hostgate", cap)
+
+
 def claim_pass(st: dict) -> bool:
     cap = _capacity_reason(st)
+    script_only = False
     if cap:
-        print(f"claim pass skipped: {cap}")
-        return False
+        # OPS-1182: the load gate is one-size-fits-all — a 2s script
+        # probe was starved identically to a heavyweight devin claim.
+        # script claims get a separate higher ceiling; every other
+        # capacity reason still skips the whole pass.
+        if cap.startswith("host overloaded") \
+                and not overloaded(SCRIPT_MAX_LOAD_PC):
+            script_only = True
+            print(f"claim pass: script claims only ({cap}; "
+                  f"script cap {SCRIPT_MAX_LOAD_PC} ok)")
+            _note_capacity_skip(cap, exempt={"script"})
+        else:
+            print(f"claim pass skipped: {cap}")
+            _note_capacity_skip(cap)
+            return False
     cards = _claim_order((api("/cards") or {}).get("cards") or [])
     by_id = {c.get("id"): c for c in cards}
     changed = False
@@ -3006,6 +3056,8 @@ def claim_pass(st: dict) -> bool:
                           "runner the capability",
                         awaiting=True)
             continue
+        if script_only and typ != "script":
+            continue  # heavyweight gate holds for non-script claims
         if card.get("blocked_by"):
             blocker = by_id.get(card["blocked_by"]) or {}
             if not blocker_released(blocker):

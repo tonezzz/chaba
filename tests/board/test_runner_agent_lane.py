@@ -375,5 +375,100 @@ class ClaimPassLaneTest(unittest.TestCase):
         self.assertEqual(self.classified, ["lane-card"])
 
 
+class ClaimPassScriptOnlyTest(unittest.TestCase):
+    """OPS-1182 + KNB-1183: the host-overload gate must not starve
+    cheap script claims, and any host-level skip must leave a
+    card-visible defer note — 'claim pass skipped' in a journal
+    nobody greps is silent starvation."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        m = self.mod
+        self._saved_env = os.environ.get("JEV_LANE")
+        os.environ["JEV_LANE"] = "0"
+        self._saved = {k: getattr(m, k) for k in ("DISPATCH",)}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("api", "start_task", "push_capable",
+                           "gpu_preflight", "classify_lane", "dr_module",
+                           "overloaded", "note_defer")}
+        m.DISPATCH = str(SCRIPT)
+        m.dr_module = lambda: None
+        m.push_capable = lambda repo: True
+        m.gpu_preflight = lambda card: ""
+        m.classify_lane = lambda card: "paid_frontier"
+        self.posts = []
+        self.cards = []
+        self.defers = []
+        m.note_defer = lambda card, kind, reason, **kw: \
+            self.defers.append((card.get("id"), kind, reason))
+        m.start_task = lambda card, typ: ("devin-task-t", "t", "")
+
+        def fake_api(path, body=None):
+            if path == "/cards":
+                return {"cards": self.cards}
+            self.posts.append((path, dict(body or {})))
+            return {}
+        m.api = fake_api
+
+    def tearDown(self):
+        m = self.mod
+        if self._saved_env is None:
+            os.environ.pop("JEV_LANE", None)
+        else:
+            os.environ["JEV_LANE"] = self._saved_env
+        for k, v in self._saved.items():
+            setattr(m, k, v)
+        for k, v in self._saved_fn.items():
+            setattr(m, k, v)
+
+    def _two_cards(self):
+        sc = _card(type="script")
+        sc["id"] = "script-card"
+        sc["action"]["script"] = {"repo": "chaba", "cmd": "true"}
+        dc = _card()
+        dc["id"] = "dispatch-card"
+        self.cards = [sc, dc]
+
+    def _claim_ids(self):
+        return [b["id"] for p, b in self.posts
+                if p == "/action" and b.get("do") == "claim"]
+
+    def test_overloaded_host_still_claims_script(self):
+        # heavy cap exceeded, script cap fine -> script-only pass
+        self.mod.overloaded = lambda pc=None: pc is None
+        self._two_cards()
+        self.assertTrue(self.mod.claim_pass({}))
+        self.assertEqual(self._claim_ids(), ["script-card"])
+        # the dispatch card gets the host-gate note; the script card is
+        # exempt — it was claimable under this same pass
+        kinds = {cid: kind for cid, kind, _ in self.defers}
+        self.assertEqual(kinds.get("dispatch-card"), "hostgate")
+        self.assertNotIn("script-card", kinds)
+        self.assertIn("overloaded", next(
+            r for c, k, r in self.defers if c == "dispatch-card"))
+
+    def test_hard_skip_notes_every_queued_card(self):
+        # script cap also exceeded -> full skip, notes on both
+        self.mod.overloaded = lambda pc=None: True
+        self._two_cards()
+        self.assertFalse(self.mod.claim_pass({}))
+        self.assertEqual(self._claim_ids(), [])
+        noted = {cid for cid, kind, _ in self.defers
+                 if kind == "hostgate"}
+        self.assertEqual(noted, {"script-card", "dispatch-card"})
+
+    def test_no_notes_for_foreign_pins(self):
+        # a card pinned to another host is not this host's to explain
+        self.mod.overloaded = lambda pc=None: True
+        foreign = _card(target_host="some-other-host")
+        foreign["id"] = "foreign-card"
+        self.cards = [foreign]
+        self.assertFalse(self.mod.claim_pass({}))
+        self.assertEqual(self.defers, [])
+
+
 if __name__ == "__main__":
     unittest.main()
