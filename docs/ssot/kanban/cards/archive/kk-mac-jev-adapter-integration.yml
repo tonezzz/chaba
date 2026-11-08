@@ -1,0 +1,130 @@
+id: kk-mac-jev-adapter-integration
+title: Wire KK-Mac bounded LLM adapter into JEV dispatch
+column: done
+updated: 2026-11-08 13:22
+brief: Connect the verified KK-Mac admission and read-only LLM adapter to JEV as an explicit optional executor without
+  blocking fallback lanes.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- jev
+- online-lane
+- read-only
+- fallback
+spec: Add an explicit executor contract for kk_mac_local or equivalent. Admission must require a fresh Ada Nest
+  heartbeat, ollama_ok=true, disk threshold, and a bounded task class. Route only summary, operator_brief, structured_extract,
+  and safe_route. Execute through scripts/devnest/kk_mac_llm.py, persist usage/admission/response artifact, independently
+  verify schema and facts, and mark the card verified only after artifact+verifier pass. If KK-Mac is stale, unavailable,
+  overloaded, or returns invalid output, fail closed and fall back to the next lane. No shell, code mutation, credentials,
+  destructive action, or public publish. Add unit tests and one supervised live dispatch before enabling automatic
+  routing.
+ref: OPS-0978
+comms:
+- at: 2026-10-29 16:53
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-29 19:25
+  from: tony
+  text: queued for processing
+- at: 2026-10-29 19:26
+  from: idc02
+  text: claimed
+- at: 2026-10-29 19:26
+  from: chaba
+  text: started devin-task-20261029-192611-add-an-explicit-executor-contr on idc02 (dispatch)
+- at: 2026-10-29 19:47
+  from: devin
+  text: 'kk_mac_local executor wired: kk_mac_executor.py (admit→run→persist→verify), board-api contract validation,
+    runner claimable/start/finish/fallback paths + busy/overload gate in kk_mac_admission. 59 board tests + 18 executor
+    tests green; KK_MAC_LANES stays 0 pending supervised dispatch.'
+- at: 2026-10-29 19:48
+  from: devin
+  text: 'raised request supervised-live-dispatch-unit-tests-full-2f68ac: Supervised live dispatch: unit tests +
+    full contract wiring are green and the KK-Mac lane probe is eligible right now (h'
+- at: 2026-10-29 19:49
+  from: devin
+  text: 'Supervised dispatch runbook (on a host with kk-mac ssh + this branch): python3 scripts/devnest/kk_mac_executor.py
+    run --card <id> --task-id <tid> --task-class summary --worktree <wt> --taskdir <td> --artifact evals/kk-mac-lane/out/<id>.json
+    --prompt-file <p> --expect-file <e>. Require verdict.json verdict=pass + landed artifact, THEN set KK_MAC_LANES=1
+    in the runner env. Details: docs/ssot/jobs/devnest/2026-10-29-kk-mac-executor-contract.yml'
+- at: 2026-10-29 19:51
+  from: idc02
+  text: 'finished (ok): exit=0 vnest/2026-10-29-kk-mac-executor-contract.yml`. `KK_MAC_LANES` stays 0 until that
+    dispatch passes. | devin-task-2'
+- at: 2026-10-29 19:51
+  from: chaba
+  text: 'session-end checkpoint 86f728ae: 10 leftover file(s) committed'
+- at: 2026-10-29 19:51
+  from: chaba
+  text: pushed dispatch/20261029-192611-add-an-explicit-executor-contr to origin
+- at: 2026-10-29 19:51
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-29 19:51
+  from: chaba
+  text: auto-merged 105db1b7 (dispatch/20261029-192611-add-an-explicit-executor-contr) → origin/master
+- at: 2026-10-29 19:51
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261029-192611-add-an-explicit-executor-contr,
+    branch dispatch/20261029-192611-add-an-explicit-executor-contr'
+- at: 2026-10-29 20:03
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''supervised-live-dispatch-unit-''] block close)'
+- at: 2026-10-29 20:09
+  from: tony
+  text: 'answered supervised-live-dispatch-unit-tests-full-2f68ac: b) after idc03 is fixed/'
+- at: 2026-10-29 20:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-29 20:18
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-29 20:40
+  from: devin
+  text: 'Reconciliation of the answered request: the executor-contract implementation is merged, but the supervised
+    live probe was never run. I verified the KK-Mac host key against the trusted tony-dell fingerprint and added
+    that host key to idc03 known_hosts; SSH now reaches the Mac but authentication is denied because idc03''s public
+    key is not authorized there. I have NOT changed kk-mac authorized_keys. Therefore KK_MAC_LANES remains 0 and
+    no live inference ran. The answer ''b) after idc03 is fixed/'' is'
+- at: 2026-10-29 20:45
+  from: devin
+  text: 'The prior answer was not lost: it is stored on the original request. It did not trigger work because that
+    request''s UI options were only `proceed`/`hold`, while the prompt described a/b/c, and an answered request
+    does not enqueue an action by itself. OPS-0978''s code/contract is done; the live probe is separate and KK_MAC_LANES
+    remains 0. The only new gate is SSH authorization: host-key trust on idc03 is now verified, but idc03''s key
+    is not authorized on KK-Mac. OPS-0984 asks whether to use the a'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (9d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  result: 'exit=0 vnest/2026-10-29-kk-mac-executor-contract.yml`. `KK_MAC_LANES` stays 0 until that dispatch passes.
+    | devin-task-20261029-192611-add-an-explicit-executor-contr.service: Consumed 2min 48.518s CPU time, 450.2M
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-29 20:03
+requests:
+- id: supervised-live-dispatch-unit-tests-full-2f68ac
+  ask: 'Supervised live dispatch: unit tests + full contract wiring are green and the KK-Mac lane probe is eligible
+    right now (heartbeat 129s, ollama_ok, 72G free, node idle). But this runner (idc02) cannot ssh kk-mac (host
+    key verification fails), and a prior request answer limited KK-Mac to deterministic-only runs. Options: (a)
+    I stop here — KK_MAC_LANES stays 0, the supervised dispatch runs later on a host with kk-mac ssh access (documented
+    in the job file); (b) you authorize one bounded live inference and tell me which host should run it; (c) run
+    it yourself with the command in the comms. Which do you want?'
+  status: answered
+  at: 2026-10-29 19:48
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: b) after idc03 is fixed/
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-29 20:18
+  note: verified — evidence checks green, closing itself
