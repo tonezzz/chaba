@@ -1,7 +1,7 @@
 id: ada-code-infra-rename
 title: Rename opencode-ada infra to ada-code (hostname, CF app, quadlets, volumes)
 column: doing
-updated: 2026-11-08 20:52
+updated: 2026-11-08 20:58
 brief: 'Tony renamed the surface 2026-11-08: canonical name ada-code; opencode-ada/ada-opencode are aliases of the
   same single instance (no second deployment). Dashboard tab already renamed (title ''Ada Code'', path ada-code,
   pushed+synced). Remaining infra layer: (a) hostname ada-code.surf-thailand.com as primary — new CF Access app
@@ -22,3 +22,10 @@ comms:
 - at: 2026-11-08 20:52
   from: devin
   text: moved backlog -> doing
+- at: 2026-11-08 20:58
+  from: devin
+  text: 'DONE + verified live (2026-11-08). Completed: (a) DNS A ada-code.surf-thailand.com -> 45.136.236.190 proxied
+    (zone 4feb4a36); (b) CF Access app b80200c7 self_hosted_domains += ada-code — same app, same AUD 3ffbe55b so
+    ada-enroll JWT check unchanged; (c) idc02 caddy-edge: ada-code block proxies :8378; opencode-ada block kept
+    as legacy alias — rewritten Host=ada-code.surf-thailand.com because enroll-gw requires Host==PUBLIC_HOST (unauth
+    -> CF login on both names, verified 302); (d) quadlets rename'
