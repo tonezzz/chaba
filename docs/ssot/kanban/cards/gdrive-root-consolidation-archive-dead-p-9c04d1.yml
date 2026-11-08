@@ -149,6 +149,10 @@ comms:
     Root now 63 dirs. ALL 13 remaining chaba roots are LIVE: ada-nest (canonical), 4 ada-nest-* remote roots (adobe-stock
     8 scripts, devnest broker, kk-llm LIVE kk-mac worker, kk-mac-video-pilot active 54-pkg queue), ada-documents
     (idc01 doc-archive svc), archive 14.8G cold tier, backu'
+- at: 2026-11-08 13:34
+  from: devin
+  text: 'raised request phase-b-decision-all-remaining-gdrive-ro-be06dc: Phase-B decision — all remaining gdrive
+    root dirs are live, none dead. Options: (a)★ STOP at phase A + close card (recom'
 action:
   type: dispatch
   status: queued
@@ -190,6 +194,18 @@ requests:
     Full per-dir audit+recipe: docs/ssot/jobs/infrastructure/2026-11-08-gdrive-root-consolidation-phase-b.yml'
   status: open
   at: 2026-11-08 13:33
+  from: devin
+  options:
+  - proceed
+  - hold
+- id: phase-b-decision-all-remaining-gdrive-ro-be06dc
+  ask: 'Phase-B decision — all remaining gdrive root dirs are live, none dead. Options: (a)★ STOP at phase A + close
+    card (recommended — moving live roots buys cosmetics, costs multi-host migration); (b) migrate the 4 ada-nest-*
+    remote roots under ada-nest/remotes/<name>/ via per-dir dispatch cards (order: adobe-stock→devnest→kk-llm→kk-mac-video-pilot);
+    (c) partial — only fix the ada-nest/kk-llm multi-parented duplicate subset. NEVER unattended: backups/, nest/,
+    chaba-media-corpus/, colab-cache/ (DR/host-mount/notebook paths).'
+  status: open
+  at: 2026-11-08 13:34
   from: devin
   options:
   - proceed
