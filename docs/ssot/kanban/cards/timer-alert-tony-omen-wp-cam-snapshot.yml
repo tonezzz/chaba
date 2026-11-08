@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-08 10:17) of `wp-cam-snapshot.service` on `tony-omen` result=exit-code — investigate journal:
-  `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-08 10:17) of `wp-cam-snapshot.service` on `tony-omen` result=exit-code — investigate
+  journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: MED-1144
 comms:
 - at: 2026-11-08 10:29
@@ -18,3 +18,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 10:32) of `wp-cam-snapshot.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-08 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of the `wp-cam-snapshot.service` user timer on `tony-omen` by inspecting
+  its systemd journal using `journalctl --user -u wp-cam-snapshot.service`. Review the related CMS entry
+  `timer-timeline-tony-omen` to understand historical failures and context. The goal is to identify the
+  root cause of the exit-code failure and either fix the underlying issue or document the failure mechanism.
+  The done-condition is met when a root cause is identified from the journal logs and recorded on the
+  card or CMS.
