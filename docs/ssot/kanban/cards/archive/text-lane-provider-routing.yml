@@ -1,0 +1,96 @@
+id: text-lane-provider-routing
+title: Route text-only channels (LINE/TG/chatui) to text provider — reserve Live for voice
+column: done
+updated: 2026-11-08 13:22
+priority: medium
+spec: 'channel=telegram|line already exists on /ws — those sessions run the full Live audio pipeline for text-only
+  use. Route them to OpenRouterTextProvider directly (the degraded path, proven code) with a text model + prompt
+  caching (OR/Anthropic-style cache hits bill ~10%). Voice/chatui-voice stays on Live.
+
+  Expected: LINE/TG turn cost drops to near-zero on free OR models; Live paid burn shrinks to actual voice sessions.
+
+  Caveat: degraded mode lacks tools? OpenRouterTextProvider is text-only — audit which tools the relays actually
+  need (chat_send, cms_read, memory) and confirm the OR provider can drive function calls; if not, gate routing
+  to sessions that dont need tools, or extend the provider.'
+note: Live API has NO context caching (confirmed official forum) and bills audio-rate context every turn; text channels
+  never need audio in/out yet pay it anyway.
+ref: OPS-0587
+comms:
+- at: 2026-10-13 18:32
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-13 19:23
+  from: devin
+  text: 'AMENDED SPEC (Tony-confirmed 2026-10-13): the deliverable is (a) — extend OpenRouterTextProvider with chat-completions
+    tools support so text lanes keep tools off the Live paid path. Concretely: (1) pass the session''s declared
+    surface to the OR provider as OpenAI-style tools[] (name+blurb+schema — reuse the lazy-schema decls when ada-lazy-tool-schemas
+    lands); (2) implement the call/result loop — OR returns tool_calls -> run via tool_runner -> append tool result
+    message -> re-request (bounded, ~4 '
+- at: 2026-10-23 08:26
+  from: devin
+  text: queued for processing
+- at: 2026-10-23 08:26
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:30
+  from: chaba
+  text: 'idc03 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-23 08:31
+  from: idc02
+  text: claimed
+- at: 2026-10-23 08:31
+  from: chaba
+  text: started devin-task-20261023-083121-channel-telegram-line-already- on idc02 (dispatch)
+- at: 2026-10-23 08:39
+  from: devin
+  text: 'investigated: OpenRouterTextProvider(tools=True) already runs real lane tools via Gemini REST; gap is routing
+    is opt-in (mode=text/env) not channel-keyed. Implementing server-side channel routing + watchdog stubs.'
+- at: 2026-10-23 08:46
+  from: devin
+  text: 'done in worktree: /ws now routes channel=telegram|tg|line to OpenRouterTextProvider(tools=True) via ADA_TEXT_ONLY_CHANNELS
+    (mode=live escape hatch); relays pin mode=text unconditionally; reconnect loop guarded so text lanes never upgrade
+    to Live; watchdog stubs added (stall_watchdog was dying on text sessions). Tool audit: full lane tool set works
+    via Gemini REST tool loop. 1630 tests pass, lint clean. No commit/push/deploy.'
+- at: 2026-10-23 08:47
+  from: idc02
+  text: 'finished (ok): exit=0 nt posted; outcome written to `dispatch-outcome-20261023-083121-channel-telegram-line-already-.md`.
+    | devin-task-'
+- at: 2026-10-23 08:47
+  from: chaba
+  text: 'session-end checkpoint 3d91a27a: 9 leftover file(s) committed'
+- at: 2026-10-23 08:47
+  from: chaba
+  text: pushed dispatch/20261023-083121-channel-telegram-line-already- to origin
+- at: 2026-10-23 08:47
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-23 08:47
+  from: chaba
+  text: auto-merged 0558ed78 (dispatch/20261023-083121-channel-telegram-line-already-) → origin/main
+- at: 2026-10-23 08:47
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-083121-channel-telegram-line-already-,
+    branch dispatch/20261023-083121-channel-telegram-line-already-'
+- at: 2026-10-23 08:54
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (16d in done, verified)
+action:
+  type: dispatch
+  status: done
+  repo: ada-voice
+  runner: idc02
+  result: 'exit=0 nt posted; outcome written to `dispatch-outcome-20261023-083121-channel-telegram-line-already-.md`.
+    | devin-task-20261023-083121-channel-telegram-line-already-.service: Consumed 1min 59.058s CPU time, 80.2M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 08:54
+  note: verified — evidence checks green, closing itself
