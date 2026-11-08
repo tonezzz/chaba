@@ -646,6 +646,15 @@ def start_pending(path: Path) -> str:
     # profile id — devin-dispatch._meta_write persists them.
     env["DISPATCH_CARD"] = card.get("id") or path.stem
     env["DISPATCH_EXECUTOR"] = ex or "devin"
+    # OPS-1127: a stale or lane-mapped litellm/* id must never reach the
+    # devin path — the CLI only accepts its own model ids and exits at
+    # launch (hands-off claim, 2026-11-08). A persisted action.model can
+    # outlive the lane/executor that produced it, so validate provider
+    # vs the resolved executor at launch: incompatible -> devin default.
+    if (env["DISPATCH_EXECUTOR"]) == "devin" and \
+            dr.model_provider(env.get("DISPATCH_MODEL") or "") \
+            not in ("devin", ""):
+        env.pop("DISPATCH_MODEL", None)
     env["DISPATCH_PROVIDER"] = dr.model_provider(
         env.get("DISPATCH_MODEL") or "") or "devin"
     if dr.card_profile(card):

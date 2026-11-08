@@ -109,6 +109,43 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(err, "")
         self.assertEqual(seen, ["free_lane"])
 
+    def test_litellm_model_dropped_on_devin_path(self):
+        """OPS-1127: a stale/lane-mapped litellm/* action.model must never
+        reach the devin path — the CLI rejects foreign provider ids at
+        launch. The guard drops it -> devin default model."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="devin", model="litellm/gemini-3.5-flash-lite")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        self.assertNotIn("DISPATCH_MODEL", envs[0])
+        self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
+
+    def test_devin_model_survives_on_devin_path(self):
+        """Same guard must leave a native devin model id in place."""
+        self.mod.OPENCODE_LANES = False
+        envs = []
+
+        def fake_sh(argv, **kw):
+            envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+
+        self.mod.sh = fake_sh
+        card = _card(lane="devin", model="swe-2-flash")
+        unit, tid, err = self.mod.start_task(card, "dispatch")
+        self.assertEqual(err, "")
+        self.assertTrue(envs)
+        self.assertEqual(envs[0].get("DISPATCH_MODEL"), "swe-2-flash")
+        self.assertEqual(envs[0].get("DISPATCH_PROVIDER"), "devin")
+
     def test_classified_manual_is_refused_not_dispatched(self):
         """manual lane = Tony's hands — fail loudly, never burn tokens."""
         self.mod.classify_lane = lambda card: "manual"

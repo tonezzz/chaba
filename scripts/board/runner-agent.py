@@ -2520,9 +2520,19 @@ def start_task(card: dict, typ: str) -> tuple:
         if lane in lane_models:
             env["DISPATCH_MODEL"] = str(lane_models[lane])
     if typ == "dispatch":
+        # OPS-1127: a stale or lane-mapped litellm/* id must never reach
+        # the devin path — the CLI only accepts its own model ids and
+        # exits at launch (hands-off claim, 2026-11-08). A persisted
+        # action.model can outlive the lane/executor that produced it,
+        # so validate provider vs the resolved executor at launch:
+        # incompatible -> drop to the devin default model.
+        if (env.get("DISPATCH_EXECUTOR") or "devin") == "devin" and \
+                model_provider(env.get("DISPATCH_MODEL") or "") \
+                not in ("devin", ""):
+            env.pop("DISPATCH_MODEL", None)
         # provider follows the RESOLVED model (action.model or the lane
-        # mapping) — computed after both so litellm lane ids report
-        # provider=litellm, not devin.
+        # mapping) — computed after the guard so litellm lane ids still
+        # report provider=litellm on non-devin executors.
         env["DISPATCH_PROVIDER"] = model_provider(
             env.get("DISPATCH_MODEL") or "") or "devin"
     if typ == "dispatch" and LIMITS_ON:
