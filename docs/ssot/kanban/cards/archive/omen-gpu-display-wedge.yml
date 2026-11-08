@@ -1,0 +1,201 @@
+id: omen-gpu-display-wedge
+title: tony-omen display engine wedges under GPU-bench dispatch load (nvidia presentation hang)
+column: done
+priority: high
+program: chaba-ops
+updated: 2026-11-08 13:22
+tags:
+- omen
+- gpu
+- dispatch
+- reliability
+note: '2026-10-08 ~06:32: during lab-thai-voice-clone dispatch on tony-omen (F5-TTS + whisper-large-v3 + CAM++ hammering
+  the GTX1650 4GB with CPU spillover), the display presentation engine wedged: physical monitor + AnyDesk capture
+  froze on a stale frame while X, x11grab, and all session processes stayed healthy. Signature: GetVSyncParametersIfAvailable
+  failed 3.3M times (no vblank). Unwedged via chvt 3->2 modeset reset. Host is an interactive desktop — a hung display
+  = unusable machine.'
+spec: 'Make omen GPU dispatches safe on an interactive host: 1) nice/ionice + systemd-run CPUQuota/MemoryMax on
+  runner-agent task units so benches can''t starve the desktop; 2) pre-flight VRAM check — refuse/defer a gpu-labeled
+  card when free VRAM < spec need (GTX1650 is 4GB; whisper-large-v3 alone exceeds it and spills to CPU); 3) watchdog:
+  if vblank/presentation stalls during a gpu task (detect via xrandr --verbose or logwatch on GetVSyncParametersIfAvailable
+  flood), nice the task or pause it; 4) document the chvt 3->2 manual unstick in the card comms/runbook. runner-agent.py
+  is the right seam — it already builds the systemd-run invocation.'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  runner: idc02
+  result: 'exit=0 ushed — redeploy to tony-omen is a one-line `scp` noted in the runbook and card comms when approved.
+    | devin-task-20261010-080645-make-omen-gpu-dispatches-safe-.service: Consumed 1min 675ms CPU time, 109.3M memory
+    peak, 0B memory swap peak.'
+  verified: true
+comms:
+- at: 2026-10-08 09:45
+  from: devin
+  text: 'filed from live incident — manual unstick recorded: ssh in, `chvt 3; sleep 2; chvt 2` forces modeset reset
+    without killing the session'
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 08:06
+  from: idc02
+  text: claimed
+- at: 2026-10-10 08:06
+  from: chaba
+  text: started devin-task-20261010-080645-make-omen-gpu-dispatches-safe- on idc02 (dispatch)
+- at: 2026-10-10 08:06
+  from: devin
+  text: Session started in dispatch worktree — locating runner-agent.py and mapping the systemd-run seam.
+- at: 2026-10-10 08:26
+  from: devin
+  text: 'Implemented in scripts/board/runner-agent.py (worktree dispatch/20261010-080645): 1) all task units on
+    desktop-labeled hosts get Nice=10 + ionice best-effort/6 + CPUQuota 75%CPU + MemoryMax 75%RAM — container/script
+    via systemd-run argv, dispatch via DISPATCH_UNIT_PROPS + post-start set-property/renice; 2) gpu-labeled cards
+    now pass an nvidia-smi VRAM pre-flight BEFORE claim — action.gpu.min_free_mb vs free, 512MB host floor; shortfall
+    defers (card stays queued), need>total refused with comms; 3'
+- at: 2026-10-10 08:26
+  from: devin
+  text: 'RUNBOOK — display wedge manual unstick (also in docs/ssot/jobs/kanban/2026-10-10-omen-gpu-dispatch-safety.yml):
+    symptom = monitor + AnyDesk frozen on a stale frame, ssh alive. 1) ssh tony-omen. 2) `cat /sys/class/tty/tty0/active`
+    + `loginctl list-sessions` — find the Type=x11 session VTNr (GDM user session = vt2). 3) `sudo chvt 3; sleep
+    2; sudo chvt <vt>` — forces a modeset reset, session survives. 4) If the watchdog SIGSTOPped the task it auto-resumes
+    after 2 healthy probes, or `systemctl --use'
+- at: 2026-10-10 08:28
+  from: devin
+  text: 'DONE (branch dispatch/20261010-080645, d7e904e2): runner-agent.py now (a) caps+nices every task unit on
+    desktop-labeled hosts (Nice=10, ionice BE/6, CPUQuota 75%CPU, MemoryMax 75%RAM — dispatch units via DISPATCH_UNIT_PROPS
+    + post-start set-property/renice), (b) pre-flights VRAM before claiming gpu cards (action.gpu.min_free_mb; defer/refuse
+    + comms), (c) watchdogs presentation during gpu tasks (vsync flood or hung xrandr -> throttle -> SIGSTOP ->
+    auto-SIGCONT), (d) chvt unstick in comms + docs/'
+- at: 2026-10-10 08:29
+  from: idc02
+  text: 'finished (ok): exit=0 ushed — redeploy to tony-omen is a one-line `scp` noted in the runbook and card comms
+    when approved. | devin-task'
+- at: 2026-10-10 08:29
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:29
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 08:29
+  from: chaba
+  text: auto-merged 9c92d5a3 (dispatch/20261010-080645-make-omen-gpu-dispatches-safe-) → origin/master
+- at: 2026-10-10 08:30
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:31
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:32
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:33
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:34
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:36
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:37
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:38
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:40
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 10:45
+  from: devin
+  text: 'closed: merge 9c92d5a38 verified in chaba/master — real content confirmed in review sweep 2026-10-10.'
+- at: 2026-10-10 08:41
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:42
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:43
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:45
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:49
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:50
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:51
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:52
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:54
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:55
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:56
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 08:57
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:00
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:01
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:02
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:03
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:05
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:06
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:07
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:08
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:09
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:10
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:11
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:12
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:14
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:15
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-10 09:16
+  from: chaba
+  text: pushed dispatch/20261010-080645-make-omen-gpu-dispatches-safe- to origin
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0329'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (29d in done, verified)
+claim: {}
+ref: OPS-0329
