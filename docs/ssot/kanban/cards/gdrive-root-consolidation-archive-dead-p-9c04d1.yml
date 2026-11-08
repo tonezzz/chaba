@@ -1,7 +1,7 @@
 id: gdrive-root-consolidation-archive-dead-p-9c04d1
 title: Gdrive root consolidation — archive dead pilot dirs (phase A done, phase B carded)
 column: backlog
-updated: 2026-11-08 12:58
+updated: 2026-11-08 13:10
 ref: OPS-1187
 comms:
 - at: 2026-11-08 12:56
@@ -18,3 +18,16 @@ comms:
     kk-mac-pilot, kk-mac-render-smoke (9GB). Removed truly-empty tmp/ + tmp-test/. RETAINED after check: appsheet
     (data/, 5 obj), cold-storage (134.9GiB idc02 backups — real cold tier), archive (13.8GiB mddb/jev backups) —
     not empty, my lsl probe only showed files. Phase B unch'
+- at: 2026-11-08 13:10
+  from: devin
+  text: '[phase-B consumer audit 2026-11-08] Per-dir map (live-tree refs = scripts/+stacks/+evals/+systemd; host
+    refs incl docs inflated):
+
+
+    ada-nest (35) — MAIN DIR, stays. Consumers: queue-mgr, colab notebook MyDrive/ada-nest/queue, ~all jobs.
+
+    nest (4) — nest/brains subdir = portable-brains store (nest-brain-drive.py, gcrypt env on tony-dell). DR-adjacent.
+
+    backups (5) — cold-restore runbooks + 49 refs on idc03. HIGHEST risk — DR path.
+
+    chaba (3), chaba-media-corpus (2), ada-documents (5; ada-voice backen'
