@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 08:36
+updated: 2026-11-08 08:39
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -157,4 +157,11 @@ comms:
 - at: 2026-11-08 08:36
   from: chaba
   text: started devin-task-20261108-083649-define-and-implement-the-hands on tony-macbook (dispatch)
+- at: 2026-11-08 08:39
+  from: devin
+  text: 'Re-dispatch verified: full implementation from 08:11 dispatch (commit 266070f4d) is merged and satisfies
+    every spec element — waiting_cards.py gate, R0-R4 classes, preflight, stop gates, kanban-act independent review,
+    Telegram lifecycle, dry-run + daily report + kill switch, 1/2/3-day checklist, 5 pilot cards all ELIGIBLE. Re-ran
+    tests: 25/25 waiting_cards, 18/18 kanban_act; --board and --preflight healthy. No new code needed; day-2/3 items
+    remain (live pilot run, warn->strict flip after drill).'
 claim: {}
