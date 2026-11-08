@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-dell failing
 column: backlog
-updated: 2026-11-08 12:29
+updated: 2026-11-08 12:36
 priority: high
 tags:
 - timer-alert
@@ -46,3 +46,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 12:15) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-08 12:36
+  from: devin
+  text: 'Verified healthy 2026-11-08 ~12:40 +07: chaba-repo-sync.service ran manually after SYS-1175 checkout reconcile
+    — ExecMainStatus=0, checkout converged master==origin/master (was ahead 837/behind 527 mid-rebase). Alert was
+    fired during the divergence window; root cause fixed under SYS-1175 (done). Timer next fires 11:24+15m cadence
+    normally.'
