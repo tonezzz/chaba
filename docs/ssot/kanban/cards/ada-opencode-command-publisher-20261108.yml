@@ -19,3 +19,23 @@ comms:
 - at: 2026-11-08 20:31
   from: devin
   text: card captured via board-api
+- at: 2026-11-08 20:31
+  from: devin
+  text: 'raised request which-publisher-scope-should-i-implement-d42d5b: Which publisher scope should I implement,
+    given that the current OpenCode workspace has no remote and the existing Chaba'
+requests:
+- id: which-publisher-scope-should-i-implement-d42d5b
+  ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
+    existing Chaba safe-push helper only covers Chaba checkouts?
+  status: open
+  at: 2026-11-08 20:31
+  from: devin
+  options:
+  - id: narrow
+    label: 'Command-only publisher for allowlisted OpenCode-Ada command files (recommended): preview + explicit
+      confirm + safe push/sync'
+  - id: generic
+    label: Generic commit/push tool for allowlisted repositories and paths; broader security/deployment surface
+  - id: manual
+    label: Keep manual Git flow; only make the command file versioned
+  suggested: narrow
