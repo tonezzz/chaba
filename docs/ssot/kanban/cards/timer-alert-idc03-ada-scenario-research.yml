@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-research
 title: Timer ada-scenario-research on idc03 failing
 column: doing
-updated: 2026-11-08 10:37
+updated: 2026-11-08 10:52
 priority: high
 tags:
 - timer-alert
@@ -230,6 +230,18 @@ comms:
 - at: 2026-11-08 10:37
   from: devin
   text: Investigating ada-scenario-research.service failure on idc03 — pulling journal and timer state.
+- at: 2026-11-08 10:52
+  from: devin
+  text: 'Root cause found — two stacked problems on the Nov 02 05:55 run:
+
+
+    1) Deploy drift (the exit-code): the deployed unit+wrapper at ~/.local/share/ada-scenario-runner/ + ~/.config/systemd/user/
+    were stale — pre-Oct-13 wrapper propagated benchmark rc=1 instead of exiting 0 on a completed run, and pre-Oct-15
+    unit had no ExecCondition provider gate. The stack install was not re-run after the Oct-13/15 contract landed.
+    Both files were refreshed 2026-11-08 10:34 (now == repo HEAD).
+
+
+    2) ada-dev zombie (th'
 action:
   status: running
   type: dispatch
