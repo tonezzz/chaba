@@ -232,6 +232,23 @@ policy:
     note: |
       Use only for debugging MCP calls. Do not leave enabled in normal usage.
 
+  gaussian_capture_eval:
+    primary: mcp-kornia
+    secondary: scripts/gs/image_set_eval.py direct CLI
+    default: |
+      Use mcp-kornia for Gaussian Splat capture-set evaluation:
+      inspect_image_set for basic gates, match_views for pairwise view
+      overlap (RANSAC inliers), propose_foreground_masks for review-only
+      mask proposals, score_capture_manifest for manifest+quality
+      scoring, compare_gs_runs for run-vs-run render metrics. All tools
+      are read-only and return a durable artifact_ref.
+    when_not_to_use: |
+      Do not use for training, COLMAP runs, or any mutating media
+      operation. Mask proposals require approval before training use.
+    fallback: |
+      If mcp-kornia is unavailable, run scripts/gs/image_set_eval.py
+      directly for basic image-set gates only.
+
 # Server registry
 servers:
   - name: mddb
@@ -469,6 +486,26 @@ servers:
       - "Direct auth test: curl PROPFIND to caldav.icloud.com (expect 207)"
       - "If 401/UNAUTHORIZED: ask user to regenerate app-specific password at account.apple.com, update env file, podman rm + create (env is baked at create time)"
     verified: "2026-09-18 (IMAP INBOX, 3 CalDAV calendars, CardDAV contacts)"
+
+  - name: mcp-kornia
+    status: active
+    category: gaussian-media
+    use_cases:
+      - Gaussian Splat capture-set readiness evaluation
+      - Pairwise view overlap / RANSAC inlier checks
+      - Review-only foreground mask proposals
+      - Capture manifest + quality scoring
+      - GS run-vs-run render comparison (PSNR/SSIM)
+    example_tools:
+      - inspect_image_set
+      - match_views
+      - propose_foreground_masks
+      - score_capture_manifest
+      - compare_gs_runs
+    failure_procedure:
+      - "Heavy backends degrade cleanly: torch/kornia DISK/LightGlue and LPIPS report unavailable-backend; cv2 path needs opencv-python-headless"
+      - "Artifacts land under $GS_EVAL_ARTIFACT_ROOT (default ~/.local/share/gs-eval-artifacts/<tool>/<dataset>-<ts>/result.json)"
+    note: "OPS-1055. Read-only; never trains, deletes, uploads, or publishes. Registered 2026-11-08."
 
 # Credentials and runtime configuration
 secrets:
