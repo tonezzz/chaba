@@ -1,7 +1,7 @@
 id: timer-alert-idc03-weather-bakeoff-daily
 title: Timer weather-bakeoff-daily on idc03 failing
 column: backlog
-updated: 2026-11-08 13:07
+updated: 2026-11-08 13:33
 priority: high
 tags:
 - timer-alert
@@ -23,3 +23,10 @@ comms:
   text: '2026-11-08 sweep: last run exited 1 during the mddb-embed runaway window (idc03 load ~5 on 4cpu, embed
     worker wedged at 89% CPU). mddb-embed restarted 13:00 +07, load decaying; next scheduled run is the real test
     — leaving open for timer-sentinel to confirm recovery rather than closing on a stale alert.'
+- at: 2026-11-08 13:33
+  from: devin
+  text: '2026-11-08 deep-dive: TWO issues found. (1) FIXED wrong-units bug — metno() summed next_6_hours.precipitation_amount
+    which is a sliding 6h window on ~every hourly entry (~6x inflation, e.g. 33.7mm vs HA-FC 4.4mm); switched to
+    next_1_hours + ICT day bucketing, PR #124 merged. (2) STILL BLOCKED: missing ~/.config/secrets/ada-ai-kraut.env
+    since ~Oct 23 — reconstructed on idc03 from michael-ha/backend.env, but idc03->michael-ha.taila0626a.ts.net:8123
+    TCP times out (tailscale ping OK — asymmetric rea'
