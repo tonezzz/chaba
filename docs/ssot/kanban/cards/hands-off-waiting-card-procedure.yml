@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 08:04
+updated: 2026-11-08 08:11
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,7 +29,7 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-08 07:18
@@ -38,6 +38,7 @@ action:
     | devin-task-20261108-071214-define-and-implement-the-hands.service: Consumed 2.609s CPU time over 1.338s wall
     clock time, 71.5M memory peak.'
   attempts: 1
+  runner: tony-macbook
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -103,3 +104,6 @@ comms:
 - at: 2026-11-08 08:04
   from: tony
   text: retry requested
+- at: 2026-11-08 08:11
+  from: tony-macbook
+  text: claimed
