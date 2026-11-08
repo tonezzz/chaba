@@ -74,7 +74,8 @@ class LintProfiles(unittest.TestCase):
         self.assertEqual(sorted(pids),
                          ["artifact-write", "branch-code",
                           "branch-code-supervised-pilot", "doc-draft",
-                          "mddb-sequence", "ops-readonly",
+                          "gs-capture-eval", "mddb-sequence",
+                          "ops-readonly",
                           "ops-remote-read", "ssot-research",
                           "storage-dryrun"])
         for pid in pids:
@@ -137,8 +138,8 @@ class LintProfiles(unittest.TestCase):
 
 class CheckEnvelope(unittest.TestCase):
     def test_clean_envelope_passes(self):
-        for pid in ("mddb-sequence", "ops-readonly", "ssot-research",
-                    "storage-dryrun"):
+        for pid in ("gs-capture-eval", "mddb-sequence", "ops-readonly",
+                    "ssot-research", "storage-dryrun"):
             prof = mod.load_profile(pid)
             self.assertEqual(
                 mod.check_envelope(mk_env(pid), prof), [], pid)
@@ -537,15 +538,15 @@ class JobLibrary(unittest.TestCase):
     def test_profile_envelopes_parse_and_lint(self):
         jobs = sorted((REPO / "evals/opencode-lane/jobs")
                       .glob("p*.yaml"))
-        self.assertEqual(len(jobs), 5)
+        self.assertEqual(len(jobs), 6)
         for j in jobs:
             env = lane_gate.load_envelope(j)
             self.assertEqual(lane_gate.lint_envelope(env), [], j.name)
             self.assertIn("profile", env)
 
     def test_enabled_job_envelopes_consistent(self):
-        for pid in ("mddb-sequence", "ops-readonly", "ssot-research",
-                    "storage-dryrun"):
+        for pid in ("gs-capture-eval", "mddb-sequence", "ops-readonly",
+                    "ssot-research", "storage-dryrun"):
             j = REPO / "evals/opencode-lane/jobs" / \
                 f"p1-{pid}-idc02.yaml"
             env = lane_gate.load_envelope(j)

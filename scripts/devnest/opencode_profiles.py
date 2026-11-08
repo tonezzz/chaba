@@ -179,7 +179,7 @@ def lint_profile(prof: dict) -> list:
     allow = set(mcp.get("allowed") or [])
     denied = set(mcp.get("denied") or [])
     for t in allow:
-        if t not in lane_gate.READONLY_MCP_TOOLS:
+        if t not in lane_gate.LANE_MCP_TOOLS:
             errs.append(f"profile_tool_outside_lane_set:{t}")
     if allow & denied:
         errs.append("profile_mcp_overlap:"

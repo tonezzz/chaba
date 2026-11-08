@@ -1,0 +1,23 @@
+id: gs-capture-eval
+title: Gaussian capture-set evaluation report
+class: read_only
+timeout_s: 420
+artifact: evals/opencode-lane/out/gs-capture-eval.json
+description: >-
+  Evaluate the declared image set with the mcp-kornia read-only tools
+  and emit the JSON report as the final message; the runner writes it.
+  The agent must NOT train, delete, upload, or publish anything.
+contract:
+  required_fields:
+    dataset: "string — the image_dir that was evaluated"
+    image_count: "int >= 1 — number of images inspected"
+    same_dimensions: "bool"
+    duplicate_groups: "int >= 0"
+    min_sharpness: "float >= 0"
+    sharpness_median: "float >= 0"
+    recommendation: "one of train_baseline / train_baseline_then_review_masks / review_capture / reject_capture"
+    read_only: "must be true"
+    tools_used: "list of mcp-kornia tool names actually called (non-empty)"
+  tolerances:
+    image_count: 0
+    duplicate_groups: 0
