@@ -31,6 +31,16 @@ capabilities:
     bootstrap: python_ml
     note: durable shared ML venv at ~/.local/share/chaba-ml-venv —
       NOT /tmp (cleared on reboot and by cleanup jobs)
+  python_ml_gpu:
+    probe: '$HOME/.local/share/chaba-ml-gpu-venv/bin/python -c "import torch, transformers; assert torch.cuda.is_available()"'
+    bootstrap: manual
+    note: GPU lane — uv-managed cpython 3.12 venv at
+      ~/.local/share/chaba-ml-gpu-venv with cuda torch (cp314 cuda wheels
+      do not exist yet for the system py3.14). Recipe: install uv,
+      `uv python install 3.12`, `uv venv --python 3.12`,
+      `uv pip install --index-url .../cu128 torch transformers`.
+      Requires working nvidia driver (2026-11-08 reboot restored
+      595.99.02/CUDA 13.2 on Omen).
   ollama_bge_m3:
     probe: 'curl -fsS --max-time 10 "http://$(tailscale ip -4 2>/dev/null || hostname -I | awk \"{print \$1}\"):11434/api/tags" | grep -q bge-m3'
     bootstrap: ollama_pull_bge_m3
@@ -48,7 +58,7 @@ hosts:
   tony-dell:
     capabilities: [python3, venv, node, podman]
   tony-omen:
-    capabilities: [python3, venv, python_ml, ollama_bge_m3]
+    capabilities: [python3, venv, python_ml, python_ml_gpu, ollama_bge_m3]
   con01:
     capabilities: [python3, venv, python_ml, ollama_bge_m3]
   idc02:
