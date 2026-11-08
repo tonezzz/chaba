@@ -220,5 +220,215 @@ class InvariantQ1Test(unittest.TestCase):
         self.assertEqual(finds["Q1"], [])
 
 
+class FleetCapabilitiesTest(unittest.TestCase):
+    """dispatch_repos.fleet_capabilities parses the runner_fleet prose
+    into the declared claim surface; unsatisfiable_reasons is the
+    shared no-runner verdict behind the queue/eval flags."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.dr = _load("dispatch_repos.py")
+
+    def test_fleet_parse(self):
+        fleet = self.dr.fleet_capabilities()
+        self.assertIn("idc03", fleet)
+        self.assertIn("ada", fleet["idc03"]["labels"])
+        self.assertIn("container", fleet["idc03"]["types"])
+        self.assertIn("push:chaba", fleet["tony-dell"]["labels"])
+        # macbook declares dispatch+script only (no podman)
+        self.assertNotIn("container",
+                         fleet["tony-macbook"]["types"])
+
+    def test_ops0790_reason(self):
+        """labels:[exec] + target_host:idc03 — the 2026-11-07 starve."""
+        card = {"action": {"type": "dispatch", "status": "queued",
+                           "labels": ["exec"], "target_host": "idc03",
+                           "repo": "chaba"}}
+        r = self.dr.unsatisfiable_reasons(card, local_host="nowhere")
+        self.assertEqual(r, ["idc03 lacks labels ['exec']"])
+
+    def test_satisfiable_is_quiet(self):
+        for action in ({"type": "dispatch", "repo": "chaba"},
+                       {"type": "dispatch", "labels": ["ada"]},
+                       {"type": "dispatch", "target_host": "tony-dell",
+                        "repo": "chaba"},
+                       {"type": "dispatch", "executor": "manual"}):
+            r = self.dr.unsatisfiable_reasons({"action": action},
+                                              local_host="nowhere")
+            self.assertEqual(r, [], action)
+
+    def test_pin_and_executor_reasons(self):
+        for action, want in (
+                ({"target_host": "idc99"}, "names no declared runner"),
+                ({"host": "ghost-host"}, "names no declared runner"),
+                ({"executor": "gandalf"}, "no known executor"),
+                ({"host": "tony-dell", "target_host": "idc03"},
+                 "conflicts")):
+            a = {"type": "dispatch", "status": "queued"}
+            a.update(action)
+            r = self.dr.unsatisfiable_reasons({"action": a},
+                                              local_host="nowhere")
+            self.assertTrue(any(want in x for x in r),
+                            (action, r))
+
+    def test_single_eligible_local_push_guard(self):
+        """Pinned to this host, local probe fails -> deterministic push
+        reason; remote single-candidate push is unprovable -> quiet."""
+        a = {"type": "dispatch", "status": "queued",
+             "target_host": "me", "repo": "chaba"}
+        fleet = {"me": {"labels": set(), "types": {"dispatch"}}}
+        r = self.dr.unsatisfiable_reasons(
+            {"action": a}, fleet=fleet, local_host="me",
+            push_probe=lambda repo: False)
+        self.assertTrue(any("push guard" in x for x in r))
+        r = self.dr.unsatisfiable_reasons(
+            {"action": a}, fleet=fleet, local_host="other",
+            push_probe=lambda repo: False)
+        self.assertEqual(r, [])
+
+
+class QueueUnclaimableWarnTest(unittest.TestCase):
+    """board-api queue_unclaimable_warn + awaiting_action on queue."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("board-api.py")
+        # a single-eligible card pinned to THIS host would run a real
+        # `git push --dry-run` — pin the probe instead
+        cls._push_probe = cls.mod.dr.push_probe
+        cls.mod.dr.push_probe = lambda repo: {"pushable": True}
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.mod.dr.push_probe = cls._push_probe
+
+    def test_queue_flags_unsatisfiable_labels(self):
+        card = {"id": "c-exec", "column": "backlog",
+                "action": {"type": "dispatch", "labels": ["exec"]}}
+        msg = self.mod.do_action(card, "queue", "tony")
+        self.assertIn("unclaimable", msg)
+        self.assertTrue(card.get("awaiting_action"))
+        hits = [c for c in card["comms"]
+                if c["from"] == "chaba" and "unclaimable" in c["text"]]
+        self.assertEqual(len(hits), 1)
+        self.assertIn("exec", hits[0]["text"])
+
+    def test_queue_flags_dead_target_host(self):
+        card = {"id": "c-pindead", "column": "backlog",
+                "action": {"type": "dispatch", "target_host": "idc99"}}
+        msg = self.mod.do_action(card, "queue", "tony")
+        self.assertIn("idc99", msg)
+        self.assertTrue(card.get("awaiting_action"))
+
+    def test_queue_satisfiable_no_flag(self):
+        card = {"id": "c-ok", "column": "backlog",
+                "action": {"type": "dispatch", "labels": ["ada"]}}
+        msg = self.mod.do_action(card, "queue", "tony")
+        self.assertEqual(msg, "queued — kanban-dispatch will claim it")
+        self.assertIsNone(card.get("awaiting_action"))
+
+
+class DispatchUnclaimableFlagTest(unittest.TestCase):
+    """kanban-dispatch eval: fleet-unclaimable cards get comms +
+    awaiting_action; satisfiable label misses get a per-host defer."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load("kanban-dispatch.py")
+
+    def _run(self, *cards):
+        import yaml
+        m = self.mod
+        with tempfile.TemporaryDirectory() as td:
+            m.CARD_DIR = Path(td)
+            m.LOCK = Path(td) / "lock"
+            for cid, fields in cards:
+                _write_card(Path(td), cid, **fields)
+            saved = (m.load_policy, m.overloaded, m.active_tasks,
+                     m.push_capable, m.start_pending)
+            started = []
+            m.load_policy = lambda: {
+                "kill_switch": str(Path(td) / "k"),
+                "state_file": str(Path(td) / "state.json")}
+            m.overloaded = lambda: False
+            m.active_tasks = lambda: 0
+            m.push_capable = lambda repo: True
+            m.start_pending = lambda p: (started.append(p.stem)
+                                         or "started")
+            try:
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    m.main()
+            finally:
+                (m.load_policy, m.overloaded, m.active_tasks,
+                 m.push_capable, m.start_pending) = saved
+            cards_out = {}
+            for p in Path(td).glob("*.yml"):
+                cards_out[p.stem] = yaml.safe_load(p.read_text())
+            return buf.getvalue(), cards_out, started
+
+    def test_unsatisfiable_labels_flagged(self):
+        out, cards, started = self._run(
+            ("c-exec", {"column": "backlog",
+                        "action": {"type": "dispatch",
+                                   "status": "queued",
+                                   "labels": ["exec"]}}))
+        self.assertIn("UNCLAIMABLE", out)
+        c = cards["c-exec"]
+        self.assertTrue(c.get("awaiting_action"))
+        hits = [x for x in c.get("comms") or []
+                if "unclaimable" in (x.get("text") or "")]
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(started, [])
+
+    def test_satisfiable_labels_get_defer_note(self):
+        """ada is satisfiable (idc03) — this host's miss lands as a
+        defer comms line, not the unclaimable flag."""
+        out, cards, started = self._run(
+            ("c-ada", {"column": "backlog",
+                       "action": {"type": "dispatch",
+                                  "status": "queued",
+                                  "labels": ["ada"]}}))
+        self.assertNotIn("UNCLAIMABLE", out)
+        c = cards["c-ada"]
+        self.assertIsNone(c.get("awaiting_action"))
+        hits = [x for x in c.get("comms") or []
+                if "defers: missing labels" in (x.get("text") or "")]
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(started, [])
+
+    def test_flag_debounced_on_second_pass(self):
+        """An unchanged reason isn't re-logged every pass."""
+        fields = {"column": "backlog",
+                  "action": {"type": "dispatch", "status": "queued",
+                             "labels": ["exec"]}}
+        _, cards1, _ = self._run(("c-exec", dict(fields)))
+        n1 = len(cards1["c-exec"].get("comms") or [])
+        # second pass over the already-flagged card
+        import yaml
+        m = self.mod
+        with tempfile.TemporaryDirectory() as td:
+            m.CARD_DIR = Path(td)
+            m.LOCK = Path(td) / "lock"
+            (Path(td) / "c-exec.yml").write_text(
+                yaml.safe_dump(cards1["c-exec"]))
+            saved = (m.load_policy, m.overloaded, m.active_tasks,
+                     m.push_capable)
+            m.load_policy = lambda: {
+                "kill_switch": str(Path(td) / "k"),
+                "state_file": str(Path(td) / "state.json")}
+            m.overloaded = lambda: False
+            m.active_tasks = lambda: 0
+            m.push_capable = lambda repo: True
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    m.main()
+            finally:
+                (m.load_policy, m.overloaded, m.active_tasks,
+                 m.push_capable) = saved
+            c2 = yaml.safe_load((Path(td) / "c-exec.yml").read_text())
+        self.assertEqual(n1, len(c2.get("comms") or []))
+
+
 if __name__ == "__main__":
     unittest.main()

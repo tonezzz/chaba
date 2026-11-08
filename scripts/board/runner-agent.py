@@ -1308,9 +1308,13 @@ def gpu_preflight(card: dict) -> str:
     return ""
 
 
-def note_defer(card: dict, kind: str, reason: str) -> None:
+def note_defer(card: dict, kind: str, reason: str,
+               awaiting: bool = False) -> None:
     """Comment a defer/refuse — at most once per GPU_DEFER_SECS per
-    distinct reason per kind (gpu preflight, push guard)."""
+    distinct reason per kind (gpu preflight, push guard, executor,
+    fleet-unclaimable). `awaiting` also raises the card's triage flag —
+    reserved for deterministic gaps a human must fix (a card no
+    declared runner can serve), never for per-host refusals."""
     cid = card.get("id") or ""
     key = f"{cid}:{kind}"
     try:
@@ -1322,8 +1326,11 @@ def note_defer(card: dict, kind: str, reason: str) -> None:
     if ent.get("reason") == reason and \
             now - int(ent.get("at", 0)) < GPU_DEFER_SECS:
         return
-    api("/comment", {"id": cid, "from": "chaba",
-                     "text": f"{HOST} defers: {reason}"})
+    body = {"id": cid, "from": "chaba",
+            "text": f"{HOST} defers: {reason}"}
+    if awaiting:
+        body["awaiting_action"] = True
+    api("/comment", body)
     log[key] = {"at": now, "reason": reason}
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -2856,6 +2863,24 @@ def claim_pass(st: dict) -> bool:
             xr = executor_defer_reason(card)
             if xr:
                 note_defer(card, "executor", xr)
+            # fleet-level starvation flag (OPS-1097): a card no declared
+            # runner can serve gets the reason + awaiting_action on the
+            # board instead of sitting queued invisibly
+            dr = dr_module()
+            if dr is not None:
+                try:
+                    gap = dr.unsatisfiable_reasons(
+                        card, local_host=HOST, push_probe=push_capable)
+                except Exception:
+                    gap = []
+                if gap:
+                    note_defer(
+                        card, "unclaimable",
+                        "unclaimable by the declared runner fleet: "
+                        + "; ".join(gap)
+                        + " — fix action.labels/host pins or teach a "
+                          "runner the capability",
+                        awaiting=True)
             continue
         if card.get("blocked_by"):
             blocker = by_id.get(card["blocked_by"]) or {}

@@ -618,13 +618,13 @@ def hide_dispatch_session(card: dict) -> None:
 
 
 def queue_starve_warn(card: dict) -> str:
-    """queue-type-starvation-guard: kanban-dispatch claims only
-    action.type == dispatch. Queueing a card typed manual/devin/self/
-    container silently starves it (2026-10-13 zombie-sweep: 6 cards
-    queued for days, zero claims). Warn the queuer — never auto-flip the
-    type, a manual card queued by hand may mean 'not for dispatch'.
-    Same for the executor contract: executor=manual means Tony's hands —
-    automation never claims it."""
+    """queue-type-starvation-guard: no claimer serves types outside
+    dispatch_repos.SERVED_TYPES (dispatch/container/script). Queueing a
+    card typed manual/devin/self silently starves it (2026-10-13
+    zombie-sweep: 6 cards queued for days, zero claims). Warn the queuer
+    — never auto-flip the type, a manual card queued by hand may mean
+    'not for dispatch'. Same for the executor contract: executor=manual
+    means Tony's hands — automation never claims it."""
     a = card.get("action") or {}
     t = str(a.get("type") or "dispatch")
     if t == "dispatch":
@@ -632,8 +632,32 @@ def queue_starve_warn(card: dict) -> str:
             return ("WARNING: action.executor=manual — never claimed by "
                     "automation; this card will starve in queue")
         return ""
-    return (f"WARNING: action.type={t} — kanban-dispatch claims only "
-            "type=dispatch; this card will starve in queue")
+    if t not in dr.SERVED_TYPES:
+        return (f"WARNING: action.type={t} — kanban-dispatch claims only "
+                "type=dispatch; this card will starve in queue")
+    return ""
+
+
+def queue_unclaimable_warn(card: dict) -> str:
+    """dispatch-claim-eligibility-visibility (OPS-1097): a queued card
+    whose labels/pins/push no declared runner satisfies starves
+    invisibly — every host skips it and nothing says why (the
+    ops0790-rollout-* cards sat ~3h on labels:[exec]). Compute the
+    deterministic gaps at queue time so the queuer sees them
+    immediately. '' when some declared runner might serve it."""
+    try:
+        reasons = dr.unsatisfiable_reasons(
+            card, local_host=HOST,
+            push_probe=lambda repo: bool(
+                dr.push_probe(repo).get("pushable")))
+    except Exception:
+        return ""
+    if not reasons:
+        return ""
+    return ("WARNING: unclaimable by the declared runner fleet — "
+            + "; ".join(reasons)
+            + ". Fix action.labels/host pins or teach a runner the "
+              "capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)")
 
 
 def do_action(card: dict, verb: str, frm: str) -> str:
@@ -652,9 +676,15 @@ def do_action(card: dict, verb: str, frm: str) -> str:
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
         warn = queue_starve_warn(card)
+        uncl = queue_unclaimable_warn(card)
+        if uncl:
+            comms_add(card, "chaba", uncl)
+            card["awaiting_action"] = True
         if warn:
             comms_add(card, "chaba", warn)
-            return f"queued — {warn}"
+        if warn or uncl:
+            return "queued — " + " ".join(
+                x for x in (warn, uncl) if x)
         return "queued — kanban-dispatch will claim it"
     if verb == "retry":
         a["status"] = "queued"
@@ -1303,11 +1333,16 @@ def do_create(body: dict, frm: str) -> dict:
         comms_add(card, frm, "re-spawned from report page")
         card["updated"] = now()
         warn = queue_starve_warn(card)
+        uncl = queue_unclaimable_warn(card)
+        if uncl:
+            comms_add(card, "chaba", uncl)
+            card["awaiting_action"] = True
         if warn:
             comms_add(card, "chaba", warn)
         save(p, card)
+        warn_all = " ".join(x for x in (warn, uncl) if x)
         return {"message": f"card {cid} re-queued"
-                + (f" ({warn})" if warn else ""),
+                + (f" ({warn_all})" if warn_all else ""),
                 "id": cid, "status": "queued"}
 
     card = {"id": cid, "title": title[:160], "column": col,
@@ -1381,10 +1416,16 @@ def do_create(body: dict, frm: str) -> dict:
                       "text": str(body.get("text") or
                                    "card captured via board-api")[:500]}]
     warn = queue_starve_warn(card)
+    uncl = queue_unclaimable_warn(card)
+    if uncl:
+        card["comms"].append({"at": now(), "from": "chaba",
+                              "text": uncl})
+        card["awaiting_action"] = True
     if warn:
         card["comms"].append({"at": now(), "from": "chaba",
                               "text": warn})
     save(p, card)
+    warn_all = " ".join(x for x in (warn, uncl) if x)
     msg = f"card {cid} created in {col} as {card['ref']}"
     res = {"message": msg, "id": cid, "ref": card["ref"]}
     a = card.get("action") or {}
@@ -1392,7 +1433,7 @@ def do_create(body: dict, frm: str) -> dict:
         res["status"] = a["status"]
         if a["status"] == "queued":
             res["message"] = msg + " (queued)" \
-                + (f" {warn}" if warn else "")
+                + (f" {warn_all}" if warn_all else "")
     return res
 
 
@@ -3800,6 +3841,11 @@ class H(BaseHTTPRequestHandler):
                     p = card_path(body.get("id", ""))
                     card = load(p)
                     comms_add(card, frm, text)
+                    # runner defer notes can raise the triage flag in the
+                    # same write (fleet-unclaimable cards need a human to
+                    # fix labels/pins — OPS-1097)
+                    if body.get("awaiting_action"):
+                        card["awaiting_action"] = True
                     msg = "comment added"
                     note = deliver_comment(card, frm, text)
                     if note:
