@@ -1,7 +1,7 @@
 id: ada-opencode-repair-menu-card
 title: 'Ada/OpenCode repair-menu card: QC buttons + picker integration'
 column: backlog
-updated: 2026-11-08 10:08
+updated: 2026-11-08 10:09
 brief: 'Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair
   opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision
   endpoint -> SESSION/QC, deploy idc03.'
@@ -21,3 +21,9 @@ comms:
 - at: 2026-11-08 10:08
   from: tony
   text: card captured via board-api
+- at: 2026-11-08 10:09
+  from: devin
+  text: 'Loop is live WITHOUT the card UI: picker submit -> POST /submit -> ~/adobe-work/inbox/*.json -> inbox-processor.py
+    cron */5min auto-fires land-render.py --lane gemini-image with the submitted prompt+image -> lands picker-<id>
+    in 30-candidates/ -> board comment on OPS-1109. Tony''s click IS the approval gate. Remaining for this card:
+    the Ada chat-card buttons + decision endpoint (Phase 1/3 proper).'
