@@ -1,7 +1,7 @@
 id: dispatch-model-pick-executor-mismatch
 title: Cheapest-model pick chooses litellm/<model> ids for devin-executor claims — task dies at launch
 column: done
-updated: 2026-11-08 08:30
+updated: 2026-11-08 08:33
 priority: high
 program: chaba-ci
 tags:
@@ -59,3 +59,6 @@ comms:
     mirrors). Claim-time lane->model persist now gated on the resolved route; start_task + kanban-dispatch drop
     litellm/* ids on devin-bound claims to the executor default (card-declared drops get a comms note). opencode
     model precedence skips invalid-namespace candidates. 18 lane + 176 board tests green.'
+- at: 2026-11-08 08:33
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash
