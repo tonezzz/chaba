@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 08:18
+updated: 2026-11-08 08:28
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,16 +29,16 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: running
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-08 07:18
+    stale_running: 2026-11-08 08:18
+    zero_commit: 2026-11-08 08:18
   model: swe-2-flash
-  last_failure: 'exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with result ''exit-code''.
-    | devin-task-20261108-071214-define-and-implement-the-hands.service: Consumed 2.609s CPU time over 1.338s wall
-    clock time, 71.5M memory peak.'
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 1
-  runner: tony-macbook
+  verified: false
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -117,3 +117,19 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands no longer active on tony-macbook
     but card still says running — sweeping its branch'
+- at: 2026-11-08 08:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-08 08:18
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-08 08:28
+  from: devin
+  text: 'Done in dispatch worktree: waiting_cards.py gate (eligibility+preflight+R0-R4) wired into kanban-dispatch
+    (KANBAN_WAITING_GATE warn|strict, R3/R4 never claimed) and runner-agent twin; kanban-act model-report independent-review
+    gate; lifecycle Telegram via /publish; daily unattended-report job+timer rendered; 5 read-only pilot cards filed
+    ELIGIBLE; 25 new tests + 82 related tests pass. Gate defaults warn-mode — strict flips after day-3 checklist.
+    Job doc: docs/ssot/jobs/kanban/2026-11-08-hands-of'
+claim: {}
