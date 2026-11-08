@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-08 07:12
+updated: 2026-11-08 08:33
 priority: medium
 tags:
 - ada
@@ -32,3 +32,10 @@ comms:
     Symptom: turn3 ''Yes, go ahead'' fired cms_publish_page 3x, each rejected. Hypothesis: the model isn''t passing
     confirmed=true/confirm_token on replay (or the token binding doesn''t match replayed args). Needs a trace-check
     on ada-dev whether the denial mints a token the model then f'
+- at: 2026-11-08 08:33
+  from: devin
+  text: '[diag] cms_publish_page rejections are NOT the runner confirm-gate — zero ''denied cms_publish_page'' in
+    ada-dev journal (only ada_opencode_dispatch denials, calls sent with no token replay). _require_confirmation
+    is fine. Real surface: tool-side field validation — cms_publish_page raises ValueError(''title is required'')
+    + contract fields (lang/format/confidence) per tool_runner/cms.py:380-416. Hypothesis update: model sends publish
+    calls missing required fields → ValueError → retries repeat same s'
