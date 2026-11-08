@@ -1,0 +1,84 @@
+id: nest-gap-gpu-runner
+title: 'Nest gap GPU runner: use idle Colab GPU during CPU/cache prep'
+column: done
+updated: 2026-11-08 13:22
+brief: Use idle Colab GPU time during main queue prep/prep-wait without starting a second main runner or colliding
+  with cache/model work. Separate gap packs, lease, VRAM gate, timeout, and artifacts.
+priority: high
+program: ai-workforce
+tags:
+- nest
+- colab
+- gpu
+- gap-jobs
+- queue
+spec: 'Implement and use ada-nest/queue/gap-runner.py + gap-packs. Allowed only when fresh queue heartbeat phase
+  is prep/prep-wait, VRAM gate passes, and no gap lease exists. Forbidden: model pulls, HF/Drive cache writes, production
+  indexes, long agent loops. First gap pack: embedding-smoke, 10 documents, no production mutation.'
+ref: OPS-0854
+comms:
+- at: 2026-10-25 13:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 19:12
+  from: tony
+  text: queued for processing
+- at: 2026-10-25 19:13
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 19:33
+  from: mn01
+  text: claimed
+- at: 2026-10-25 19:33
+  from: chaba
+  text: started devin-task-20261025-123310-implement-and-use-ada-nest-que on mn01 (dispatch)
+- at: 2026-10-25 19:35
+  from: devin
+  text: 'started: Drive-staged gap-runner.py + embedding-smoke pack.json from the 13:36 session have real defects
+    (pack.json is invalid JSON — stray chmod line; gap-lease defined but never enforced; no mid-run abort when main
+    leaves prep; no artifact gate; done-marker shape inconsistent). Implementing corrected runner+pack in repo,
+    sandbox-testing on mn01, then restaging to Drive.'
+- at: 2026-10-25 19:39
+  from: devin
+  text: 'DONE (implemented+deployed+tested). Prior Drive staging was broken: pack.json invalid JSON (stray chmod
+    line -> silent skip), gap-lease unused, no mid-run abort, no artifact gate. Rewrote: scripts/colab/gap-runner.py
+    (fresh-hb prep/prep-wait gate + VRAM floor + exclusive gap-lease + 10s window watchdog w/ process-group kill
+    + verify-before-mark + forbidden-pattern scan), gap-packs/embedding-smoke/pack.json (10 docs via RESIDENT nomic-embed-text,
+    /api/tags no-pull guard, out/ only), PROCEDURE.md,'
+- at: 2026-10-25 19:41
+  from: mn01
+  text: 'finished (ok): exit=0 anch, full detail in `dispatch-outcome-20261025-123310-implement-and-use-ada-nest-que.md`.
+    | devin-task-20261025-'
+- at: 2026-10-25 19:41
+  from: chaba
+  text: pushed dispatch/20261025-123310-implement-and-use-ada-nest-que to origin
+- at: 2026-10-25 19:41
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-25 19:41
+  from: chaba
+  text: auto-merged 1d697d05 (dispatch/20261025-123310-implement-and-use-ada-nest-que) → origin/master
+- at: 2026-10-25 19:41
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-123310-implement-and-use-ada-nest-que,
+    branch dispatch/20261025-123310-implement-and-use-ada-nest-que'
+- at: 2026-10-25 19:45
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (13d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 anch, full detail in `dispatch-outcome-20261025-123310-implement-and-use-ada-nest-que.md`. | devin-task-20261025-123310-implement-and-use-ada-nest-que.service:
+    Consumed 14.128s CPU time over 6min 36.481s wall clock time, 209.2M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 19:45
+  note: verified — evidence checks green, closing itself
