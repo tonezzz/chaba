@@ -3903,12 +3903,15 @@ class H(BaseHTTPRequestHandler):
                         raise ValueError(f"do must be one of {sorted(TRANSITIONS)}")
                     p = card_path(body.get("id", ""))
                     card = load(p)
-                    if verb == "claim":
-                        msg = do_claim(card, body)
-                    elif verb == "move":
-                        msg = do_move(card, body, actor(body))
-                    elif verb == "finish":
-                        msg = do_finish(card, body)
+                    if verb in ("claim", "move", "finish"):
+                        if verb == "claim":
+                            msg = do_claim(card, body)
+                        elif verb == "move":
+                            msg = do_move(card, body, actor(body))
+                        else:
+                            msg = do_finish(card, body)
+                        card["updated"] = now()
+                        save(p, card)
                     elif verb == "archive":
                         msg = do_archive(card, actor(body))
                         card["updated"] = now()
