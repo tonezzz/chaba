@@ -4,7 +4,7 @@ ConditionPathExists=%h/CascadeProjects/chaba/scripts/education/bge-education-sha
 
 [Service]
 Type=oneshot
-TimeoutStartSec=900
+TimeoutStartSec=1800
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-lessons-shadow.py --sync
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --build
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/education/bge-education-shadow.py --adapter %h/CascadeProjects/chaba/scripts/ada/bge-hybrid-recall.py --index %h/.local/share/bge-hybrid/docs.json --output %h/.cache/bge-education-shadow-v2.json --collections bge-lessons-shadow
