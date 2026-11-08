@@ -1,0 +1,72 @@
+date: 2026-11-08
+title: ada-scenario-research exit-code — stale deployed units + zombie ada-dev
+domain: ada
+job: timer-alert-idc03-ada-scenario-research
+cards: [timer-alert-idc03-ada-scenario-research, provider-gate-zombie-backend-blind]
+host: idc03
+summary: >
+  The 2026-11-02 05:55 research-suite run failed result=exit-code for two
+  stacked reasons: (1) the deployed wrapper + unit under
+  ~/.local/share/ada-scenario-runner/ and ~/.config/systemd/user/ were
+  stale — the pre-Oct-13 wrapper propagated benchmark rc=1 instead of
+  exiting 0 on a completed run, and the pre-Oct-15 unit had no
+  ExecCondition provider gate; (2) ada-dev was a zombie —
+  is-active=active but zero journal output all of Nov 02, so all 7
+  scenarios failed in ~0.4s each with 0 turns.
+
+evidence:
+  - 'journalctl -u ada-scenario-research.service: all 7 scenarios
+    "fail (2 runs, 0 tool calls, 0s)", **Score: 0.0**, exit 1.'
+  - 'journalctl -u ada-dev.service: zero entries 2026-11-02; last normal
+    traffic Oct 30 16:12; restarts resume Nov 04 19:50.'
+  - 'ada-scenario-smoke gate log Nov 02 05:00: ada-dev=active,
+    journal_lines=1/70min, healthy_markers=0, rest_served=0 — verdict
+    still "ok — provider healthy".'
+  - 'ada-voice exec checkout reflog: no merges Oct 23 → Nov 04 —
+    chaba-repo-sync/merge pipeline stalled for 11 days; Nov 04 merges
+    coincide with the ada-dev restarts (deploy restarts the unit).'
+  - 'Deployed file mtimes (post-fix): unit+wrapper refreshed
+    2026-11-08 10:34, now identical to repo HEAD
+    (stacks/services/ada-scenario-runner/).'
+
+root_cause_chain:
+  - 'a3fa229ee (Oct 13) added the exit-0-on-**Score:** contract and the
+    ExecCondition gate to the stack, but install.sh was never re-run on
+    idc03 — the Nov-02 run used the Oct-09 wrapper (1958c3cb7), which
+    exits with the benchmark rc directly.'
+  - 'ada-dev zombie: systemd active, uvicorn PID alive, zero log output —
+    children failed instantly; error text did not match UNSCORED_RE so
+    runs scored "fail" rather than "infra".'
+  - 'Sibling failure same morning: ada-scenario-smoke exited 125 —
+    podman statfs missing ada-ha-michael.env (stale secret mounts,
+    later fixed by 62281ff10 / 24051a032).'
+
+fixes:
+  - 'Deployed unit + wrapper refreshed on idc03 2026-11-08 10:34 —
+    exit-0 contract and provider-gate ExecCondition now live. Verified
+    deployed == repo HEAD (diff clean).'
+  - 'Live verification 2026-11-08 10:48:
+    scenario-benchmark.py --suite research --max-scenarios 1 --dry-run
+    → deep_research_neuralink PASS (3 turns, 5 tool calls, 99s).'
+
+residual_risks:
+  - 'provider-gate-zombie-backend-blind (ADA-1168): the gate trusts
+    is-active + journal quota counts; an active-but-silent backend
+    passes as healthy. Needs a liveness signal (health probe or
+    zero-journal-floor => infra skip).'
+  - 'Provider gate verdict is point-in-time: as of 11:00 it reported
+    quota-dead (132 quota lines/70min from morning activity). If
+    dunning persists, Mon 05:55 run skips cleanly via exec-condition —
+    by design, not a failure.'
+  - 'Deploy drift class: stack units in ~/.config/systemd/user/ and
+    ~/.local/share/ada-scenario-runner/ only update on manual
+    install.sh — a sync-notify or post-merge hook would prevent
+    repeats.'
+
+verify:
+  - 'ssh idc03 systemctl --user status ada-scenario-research.service —
+    next fire Mon 2026-11-09 05:55; a completed failing run must exit 0
+    (wrapper prints "suite completed with failing scenarios").'
+  - 'diff stacks/services/ada-scenario-runner/scenario-suite-run.sh
+    <(ssh idc03 cat ~/.local/share/ada-scenario-runner/scenario-suite-run.sh)
+    — expect identical.'

@@ -1,7 +1,7 @@
 id: ada-render-image-v2
 title: Rebuild ada_render_image on gemini-3.1-flash-image (gen+edit, kk lane)
 column: done
-updated: 2026-10-15 12:19
+updated: 2026-11-06 19:35
 priority: high
 tags:
 - ada
@@ -45,6 +45,13 @@ comms:
 - at: 2026-10-15 12:19
   from: tony
   text: closed by tony
+- at: 2026-11-06 19:35
+  from: devin
+  text: '2026-11-06: image lane FAILED upstream — LiteLLM ''image'' class returned 402 RESOURCE_EXHAUSTED ''prepayment
+    credits are depleted'' on gemini-3.1-flash-image AND both fallbacks (gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image
+    via OpenRouter also failed). Not a virtual-key budget issue (tested with LITELLM_KEY_BENCH, under cap) — the
+    paid Gemini project''s prepaid credits are empty. ada_render_image is effectively down for all lanes until credits
+    are topped up at ai.studio/projects. Found whil'
 action:
   status: done
 claim: {}

@@ -1,0 +1,48 @@
+id: ada-smoke-regressions-20261107
+title: Smoke tier regressions — 4 fails surfaced after runner repair
+column: backlog
+updated: 2026-11-08 11:00
+priority: medium
+tags:
+- ada
+- scenario-runner
+- regression
+spec: 'First live smoke run in 11 days (after mount fix 2026-11-07) surfaced 4 real fails on ada-dev: (1) ada_opencode_control
+  turn3 — Ada narrated correctly but routed to kanban instead of ada_opencode_dispatch; (2) auto-report-worthy turn1
+  — answered via cms_read without calling ada_memory_search; (3) cms_public_url_lane turn4 — chat_send carried surf-thailand.com/tony-ha/...
+  for a kk-lane page (lane mixup) + publish confirm-gate repeated-tool error + cleanup delete HTTP 400s; (4) cms-translate
+  — see report docs. Full detail: MDDB ada-ha-scenario-reports report/*-20261107-*. Triage each: tool-declaration
+  drift, routing change, or expectation rot (11 days of upstream commits landed while the suite was dead).'
+ref: ADA-1110
+comms:
+- at: 2026-11-07 17:51
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 19:21
+  from: devin
+  text: '[triage] Per-failure verdicts: (1) ada_opencode_control — largely SELF-HEALED: the 19:00 run shows her
+    correctly calling ada_opencode_dispatch (new tool decls landed with the pull); tool does return ''card not found''
+    (ada_opencode_dispatch.py:53) — residual fails are arg-shape misses. Watch next hourly. (2) cms_public_url_lane
+    — REAL tool issue: cms_publish_page confirm-gate rejected repeated confirms (''confirmation gate error''), publish
+    never completed; plus earlier-run lane mixup (tony-ha URL f'
+- at: 2026-11-08 07:12
+  from: devin
+  text: '[cms confirm-gate — deeper] cms_publish_page lives in backend/tool_runner/cms.py (~line 380) as a tool_runner
+    method — the ''confirmation gate error'' is the runner-level _require_confirmation replay, not inside the tool.
+    Symptom: turn3 ''Yes, go ahead'' fired cms_publish_page 3x, each rejected. Hypothesis: the model isn''t passing
+    confirmed=true/confirm_token on replay (or the token binding doesn''t match replayed args). Needs a trace-check
+    on ada-dev whether the denial mints a token the model then f'
+- at: 2026-11-08 08:33
+  from: devin
+  text: '[diag] cms_publish_page rejections are NOT the runner confirm-gate — zero ''denied cms_publish_page'' in
+    ada-dev journal (only ada_opencode_dispatch denials, calls sent with no token replay). _require_confirmation
+    is fine. Real surface: tool-side field validation — cms_publish_page raises ValueError(''title is required'')
+    + contract fields (lang/format/confidence) per tool_runner/cms.py:380-416. Hypothesis update: model sends publish
+    calls missing required fields → ValueError → retries repeat same s'
+- at: 2026-11-08 11:00
+  from: devin
+  text: '[diag+fix] TWO causes untangled. (1) cms confirm-loop — REAL BUG, FIXED: _check_cms_write_allowed used
+    strict ''confirmed is True'' vs _confirmed_truthy elsewhere; model''s truthy confirmed fell through to re-register
+    → serial denials (journal: 10x ''request registered'' translate-probe Nov 7 20:06-20:09, page never landed).
+    Fix: _confirmed_truthy in cms gate + same latent bug in _check_capture_confirmed. ada-voice 07119b1, deployed,
+    unit-verified. (2) CURRENT failures are QUOTA not code: bench LiteL'

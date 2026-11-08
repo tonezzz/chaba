@@ -17,6 +17,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { verifyCloudflareAccessJwt } from "./access-jwt.mjs";
 
 const PORT = +(process.env.LISTEN_PORT || 8080);
 const UPSTREAM = new URL(process.env.UPSTREAM_URL || "http://127.0.0.1:4096");
@@ -30,6 +31,13 @@ const SESSION_TTL_S = +(process.env.SESSION_TTL_S || 43200); // 12 h
 const COOKIE_NAME = process.env.COOKIE_NAME || "jack_ide_sess";
 const COOKIE_SECURE = process.env.COOKIE_SECURE !== "0";
 const REQUIRE_EDGE_HEADER = process.env.REQUIRE_EDGE_HEADER === "1";
+const PUBLIC_HOST = (process.env.PUBLIC_HOST || "").trim().toLowerCase();
+const ACCESS_ISSUER = (process.env.CF_ACCESS_ISSUER || "").trim();
+const ACCESS_AUDIENCE = (process.env.CF_ACCESS_AUDIENCE || "").trim();
+const ACCESS_JWKS_URL = (process.env.CF_ACCESS_JWKS_URL || "").trim();
+const PUBLIC_ACCESS_ENABLED = Boolean(
+  PUBLIC_HOST && ACCESS_ISSUER && ACCESS_AUDIENCE && ACCESS_JWKS_URL
+);
 const SCOPE = "jack-ide";
 
 const STATE_FILE = path.join(STATE_DIR, "state.json");
@@ -150,8 +158,17 @@ function wantsHtml(req) {
     /text\/html/.test(req.headers.accept || "");
 }
 
-function edgeOk(req) {
-  return !REQUIRE_EDGE_HEADER || !!req.headers["tailscale-user-login"];
+async function edgeOk(req) {
+  if (!REQUIRE_EDGE_HEADER) return true;
+  const host = String(req.headers.host || "").toLowerCase();
+  if (req.headers["tailscale-user-login"] && host !== PUBLIC_HOST) return true;
+  if (!PUBLIC_ACCESS_ENABLED) return false;
+  if (host !== PUBLIC_HOST) return false;
+  return verifyCloudflareAccessJwt(req.headers["cf-access-jwt-assertion"], {
+    issuer: ACCESS_ISSUER,
+    audience: ACCESS_AUDIENCE,
+    jwksUrl: ACCESS_JWKS_URL,
+  });
 }
 
 function readBody(req, cap = 8192) {
@@ -205,6 +222,8 @@ function proxyHttp(req, res, sess) {
   delete headers["tailscale-user-login"];
   delete headers["tailscale-user-name"];
   delete headers["tailscale-user-profile-pic"];
+  delete headers["cf-access-jwt-assertion"];
+  delete headers["cf-access-authenticated-user-email"];
   headers["x-forwarded-for"] = req.socket.remoteAddress;
   headers["x-jack-session"] = sess.id;
 
@@ -242,6 +261,8 @@ function proxyUpgrade(req, sock, head, sess) {
       "Basic " + Buffer.from(`${UPSTREAM_USER}:${UPSTREAM_PASSWORD}`).toString("base64");
     delete headers.cookie;
     delete headers["x-admin-token"];
+    delete headers["cf-access-jwt-assertion"];
+    delete headers["cf-access-authenticated-user-email"];
     const lines = [`${req.method} ${req.url} HTTP/${req.httpVersion}`];
     for (const [k, v] of Object.entries(headers))
       lines.push(`${k}: ${Array.isArray(v) ? v.join(", ") : v}`);
@@ -286,7 +307,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === "/enroll" && req.method === "GET") {
-      if (!edgeOk(req)) return send(res, 403, { error: "edge_auth_required" });
+      if (!(await edgeOk(req))) return send(res, 403, { error: "edge_auth_required" });
       if (sessionFor(req))
         return send(res, 303, "", { location: "/" }); // already enrolled
       const html = ENROLL_HTML
@@ -296,7 +317,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if ((p === "/enroll" && req.method === "POST") || p.startsWith("/redeem/")) {
-      if (!edgeOk(req)) return send(res, 403, { error: "edge_auth_required" });
+      if (!(await edgeOk(req))) return send(res, 403, { error: "edge_auth_required" });
       let raw = p.startsWith("/redeem/") ? decodeURIComponent(p.slice(8)) : "";
       if (req.method === "POST") {
         const body = await readBody(req).catch(() => "");
@@ -356,7 +377,7 @@ const server = http.createServer(async (req, res) => {
       }
       return send(res, 401, { error: "session_required" });
     }
-    if (!edgeOk(req)) return send(res, 403, { error: "edge_auth_required" });
+    if (!(await edgeOk(req))) return send(res, 403, { error: "edge_auth_required" });
     return proxyHttp(req, res, sess);
   } catch (e) {
     audit("error", { path: p, err: String(e).slice(0, 200) });
@@ -452,13 +473,15 @@ async function admin(req, res, p, u) {
 }
 
 server.on("upgrade", (req, sock, head) => {
-  const sess = sessionFor(req);
-  if (!sess || !edgeOk(req)) {
-    audit("ws_denied", { path: req.url });
-    sock.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
-    return sock.destroy();
-  }
-  proxyUpgrade(req, sock, head, sess);
+  void (async () => {
+    const sess = sessionFor(req);
+    if (!sess || !(await edgeOk(req))) {
+      audit("ws_denied", { path: req.url });
+      sock.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+      return sock.destroy();
+    }
+    proxyUpgrade(req, sock, head, sess);
+  })().catch(() => sock.destroy());
 });
 
 const BOOT = nowS();

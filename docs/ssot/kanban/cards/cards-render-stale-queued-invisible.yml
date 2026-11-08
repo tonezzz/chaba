@@ -1,0 +1,65 @@
+id: cards-render-stale-queued-invisible
+title: 'BUG: queued cards missing from GET /cards — runner never claims them'
+column: done
+updated: 2026-11-07 18:37
+priority: high
+tags:
+- bug
+- board-api
+- runner
+- opencode
+spec: 'Reproduced 2026-11-07: card ada-opencode-live-demo-opsread queued via /card (on_exists:queue) at ~17:05 but
+  GET /cards still showed generated:17:01 with no card present. runner-agent on idc02 polls /cards every 60s → sees
+  nothing → silent skip (verified _claimable returns (''dispatch'','''') under unit env, so claim would pass). Diagnose:
+  does the /card write path trigger cards.json render on action.status flips? Does the compact card schema strip
+  queued action fields? Verify with a card whose status flips queued→running→done and watch /cards regenerated timestamp.'
+ref: OPS-1107
+comms:
+- at: 2026-11-07 17:25
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 17:59
+  from: devin
+  text: 'ROOT CAUSE (verified in journal): no single render bug — the ~76s gap between queue flip (17:02:47) and
+    next completed render (17:04:03) was render contention: chaba-board-render.timer ran an 85s render 17:02:00-17:03:25
+    concurrent with board-api async render, plus render-board2 rc=1 crash at 17:01:17 (transient empty card file
+    -> NoneType.setdefault). Also found: --if-changed STATE advanced before render (crash poisons skip-set), autostash
+    flap regressed 1232->1228 at 17:16:29 during kanban-com'
+- at: 2026-11-07 17:59
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 18:03
+  from: devin
+  text: 'MERGED to master (896511274) + LANDED: kanban-commit pulled to served checkout 18:01, board-api try-restarted
+    18:02:22 onto the fix. Verified: /cards?compact=1 exposes action_status (ada-opencode-live-demo-opsread shows
+    queued), /cards?action_status=queued returns 3 cards, /queue consistent, health 200. Restart hook will keep
+    the service current on future merges — this first hop needed a manual try-restart because the running script
+    predated the hook. Closing.'
+- at: 2026-11-07 18:03
+  from: devin
+  text: moved review -> done
+- at: 2026-11-07 18:05
+  from: devin
+  text: 'Verify 2026-11-07 ~17:55: render half CONFIRMED FIXED — /cards regenerated 17:49 and queued card ada-opencode-live-demo-opsread
+    now appears WITH full action envelope (executor/model/target_host/artifact/limits). BUT claim still does not
+    fire: ~15+ poll cycles after card became visible, action.status stays queued, runner=None, no devin-task-* unit
+    on idc02, no claim attempt in runner-agent journal. _claimable() returns (''dispatch'','''') under unit env
+    so the gate passes — bug is downstream in the c'
+- at: 2026-11-07 18:37
+  from: devin
+  text: 'OPS-1107 runner-claim half RESOLVED 2026-11-07 ~18:36. Root cause: idc02 5m load/core ~1.3 (mddbd+openjev+ollama
+    baseline on 4 cores) > RUNNER_MAX_LOAD_PC=1.0 -> claim_pass early-returned with ZERO journal output and /ready
+    still reported cards eligible -> invisible starvation. Fix in PR tonezzz/chaba#92 (merged): claim_pass now logs
+    capacity skips; verdict_pass mirrors claim order (capacity->blocked_by->gpu) so /queue shows blocked+reason
+    instead of false eligible; also fixed blocked_by never e'
+- at: 2026-11-07 18:37
+  from: devin
+  text: 'OPS-1107 runner-claim half RESOLVED 2026-11-07 ~18:36. Root cause: idc02 5m load/core ~1.3 (mddbd+openjev+ollama
+    baseline on 4 cores) > RUNNER_MAX_LOAD_PC=1.0 -> claim_pass early-returned with ZERO journal output and /ready
+    still reported cards eligible -> invisible starvation. Fix in PR tonezzz/chaba#92 (merged): claim_pass now logs
+    capacity skips; verdict_pass mirrors claim order (capacity->blocked_by->gpu) so /queue shows blocked+reason
+    instead of false eligible; also fixed blocked_by never e'
+review_kind: verify
+action:
+  status: done
+claim: {}

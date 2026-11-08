@@ -118,15 +118,17 @@ class Tick(unittest.TestCase):
     def test_dead_pause_pid_removed(self):
         with tempfile.TemporaryDirectory() as td:
             run = Path(td) / "run"
+            shm = Path(td) / "shm"
             (run / "containers" / "c1").mkdir(parents=True)
+            shm.mkdir()
             (run / "containers" / "c1" / "pause.pid").write_text("99999")
-            old = mod.RUN_DIR, mod._pid_is_pause
-            mod.RUN_DIR = run
+            old = mod.DEV_SHM, mod.RUN_DIR, mod._pid_is_pause
+            mod.DEV_SHM, mod.RUN_DIR = str(shm), run
             mod._pid_is_pause = lambda pid: False         # dead
             try:
                 out = mod.clear_stale_state()
             finally:
-                mod.RUN_DIR, mod._pid_is_pause = old
+                mod.DEV_SHM, mod.RUN_DIR, mod._pid_is_pause = old
             self.assertEqual(len(out["removed"]), 1)
             self.assertFalse((run / "containers" / "c1"
                               / "pause.pid").exists())

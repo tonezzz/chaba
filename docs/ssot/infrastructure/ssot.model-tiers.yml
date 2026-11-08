@@ -70,7 +70,7 @@ hosts:
     role: offload lane for small jobs; reachable via tailscale ssh only
   kk-mac:
     compute: Apple M4 Max, 14 CPU cores, 32-core Metal GPU, 36 GiB unified memory
-    gpu_resident: small (qwen3:4b proven to load; qwen3:8b pending benchmark)
+    gpu_resident: small (qwen3:4b and qwen3:8b proven to load and run)
     cpu_ceiling: medium for bounded local inference; concurrency one until measured
     runtime: "Ollama Metal, opportunistic/one-shot until launchd policy is approved"
     role: online-when-available local inference lane; no destructive or credential work

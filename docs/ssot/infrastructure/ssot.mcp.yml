@@ -469,6 +469,25 @@ servers:
       sessions. No Colab Enterprise/GCP runtime provisioning.
 
       '
+  mcp-kornia:
+    name: Kornia GS Capture Evaluator
+    description: Read-only Gaussian Splat capture-set evaluation — image metrics, view matching, mask proposals, manifest scoring, run comparison
+    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-kornia/server.py
+    wrapper: none
+    pattern: mcp-kornia/server.py
+    filter: allowlist
+    filtered_tools:
+    - inspect_image_set
+    - match_views
+    - propose_foreground_masks
+    - score_capture_manifest
+    - compare_gs_runs
+    single_instance: false
+    status: operational
+    config_files:
+    - devin: true
+    - windsurf: false
+    notes: 'Read-only evaluator (OPS-1055). Heavy matcher backends (torch/kornia DISK/LightGlue, LPIPS) degrade to unavailable-backend responses; cv2 path needs opencv-python-headless. Artifacts land under $GS_EVAL_ARTIFACT_ROOT (default ~/.local/share/gs-eval-artifacts). Never trains, deletes, uploads, or publishes.'
   google-home-lan:
     name: Google Home LAN
     description: Local-network control of Google Cast devices (Chromecast, Android

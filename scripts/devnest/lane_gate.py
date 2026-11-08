@@ -146,7 +146,7 @@ def now_iso():
 # ------------------------------------------------------------- stage book
 
 TASK_CLASSES = ["shadow_replay", "report", "read_only",
-                "artifact_write", "branch_code"]
+                "diagnosis", "artifact_write", "branch_code"]
 # never admitted to the OpenCode lane at any stage — human/Devin only
 DENIED_CLASSES = ["production", "destructive", "deploy", "secret",
                   "payment", "credential"]
@@ -160,18 +160,32 @@ READONLY_MCP_TOOLS = [
     "mcp_files_list", "mcp_files_stat", "mcp_files_search", "mcp_files_tree",
 ]
 
+# mcp-kornia read-only Gaussian capture evaluator (OPS-1055). These are
+# upstream tool names on the standalone mcp-kornia server — admitted at
+# the lane level only; each profile's mcp.allowed remains the per-agent
+# ceiling and the upstream allowlist proxy enforces it a second time.
+GS_EVAL_MCP_TOOLS = [
+    "inspect_image_set", "match_views", "propose_foreground_masks",
+    "score_capture_manifest", "compare_gs_runs",
+]
+LANE_MCP_TOOLS = READONLY_MCP_TOOLS + GS_EVAL_MCP_TOOLS
+
 # models permitted for S5 branch/code work — strong tier only
 STRONG_MODELS = [
     "litellm/claude-fable-5.1", "litellm/gemini-3-pro",
     "litellm/gpt-5.2-codex", "openrouter/anthropic/claude-fable-5.1",
+    "litellm/or-claude-fable-5.1",
+    "litellm/or-gemini-3.1-pro-preview",
 ]
 
 # rough $/1M-token {input, output} planning rates — used only to roll
 # provider cost into combined_cost; 0.0 = unpriced/free
 PRICE_TABLE = {
     "litellm/gemini-3.5-flash-lite": (0.10, 0.40),
-    "litellm/gemini-3-flash": (0.30, 2.50),
+    "litellm/gemini-3.5-flash": (0.30, 2.50),
     "litellm/claude-fable-5.1": (10.0, 50.0),
+    "litellm/or-claude-fable-5.1": (10.0, 50.0),
+    "litellm/or-gemini-3.1-pro-preview": (2.0, 12.0),
     "opencode/deepseek-v4.1-flash-free": (0.0, 0.0),
     "ollama/qwen2.5:7b-instruct": (0.0, 0.0),
 }
@@ -211,7 +225,7 @@ STAGES = {
     "S1": {
         "desc": "supervised read-only report canary, one runner",
         "classes": ["report", "read_only"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
         "quota": 3,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -227,7 +241,7 @@ STAGES = {
     "S2": {
         "desc": "five-job read-only pilot, Devin-verified",
         "classes": ["read_only", "report"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 1,
         "quota": 5,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -243,7 +257,7 @@ STAGES = {
     "S3": {
         "desc": "sampled production read-only lane + Telegram summaries",
         "classes": ["read_only", "report"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": 20,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -259,7 +273,7 @@ STAGES = {
     "S4": {
         "desc": "reversible artifact writes",
         "classes": ["read_only", "report", "artifact_write"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": None,
         "env_required": {"OPENCODE_LANES": "1"},
@@ -276,7 +290,7 @@ STAGES = {
         "desc": "branch/code tasks, strong model + strong verifier",
         "classes": ["read_only", "report", "artifact_write",
                     "branch_code"],
-        "mcp_tools": READONLY_MCP_TOOLS,
+        "mcp_tools": LANE_MCP_TOOLS,
         "concurrency": 2,
         "quota": None,
         "env_required": {"OPENCODE_LANES": "1"},

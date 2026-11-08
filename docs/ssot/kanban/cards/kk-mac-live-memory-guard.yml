@@ -1,0 +1,57 @@
+id: kk-mac-live-memory-guard
+title: Add live memory guard to KK-Mac bounded LLM executor
+column: review
+updated: 2026-11-07 16:52
+priority: high
+tags:
+- kk-mac
+- llm
+- resource-guard
+spec: 'Before another KK-Mac local inference, add a live memory-pressure/free-memory monitor to the bounded executor
+  that covers model load and generation. Enforce the approved 60% pre-load floor and stop below 50% or on pressure;
+  safely unload only a model loaded by this task, never an owner-resident model. Persist pre/during/post snapshots
+  and add tests for threshold crossing. Keep KK_MAC_LANES=0 and automatic routing off until independently verified.
+  Trigger: the approved 2026-11-06 smoke passed its deterministic task checks but free memory measured 34% with
+  Qwen3:8B resident; after unloading the test-loaded model, free memory recovered to 55%.'
+ref: MEM-1043
+comms:
+- at: 2026-11-06 16:30
+  from: tony
+  text: 'Created from the 2026-11-06 Qwen3:8B one-shot: inference passed, but the live 50% memory floor was crossed.
+    Keep the lane off pending a verified memory monitor/abort path.'
+- at: 2026-11-06 18:53
+  from: devin
+  text: 'MEM-1043 implemented on branch fix/kk-mac-memory-guard (commit 0809ead3a, worktree chaba-wt-kk-mac-memguard).
+
+
+    What landed:
+
+    - scripts/devnest/kk_mac_remote_guard.py (new): runs ON KK-Mac via `ssh kk-mac python3 -` (script on stdin,
+    payload b64 argv). Enforces >=60% free before model load; polls free memory every ~1s during BOTH load and generation
+    via streamed /api/generate in a worker thread (covers the silent load window the smoke exposed); aborts+closes
+    below 50% or when memory is unmeasurabl'
+- at: 2026-11-06 20:05
+  from: devin
+  text: 'Verification staging update: branch fix/kk-mac-memory-guard pushed to origin (commit 0809ead3a). A detached
+    worktree is staged on tony-dell at ~/CascadeProjects/chaba-wt-memguard-verify (keep until the supervised smoke
+    runs — do not let orphan-cleanup remove it).
+
+
+    BLOCKED: kk-mac went offline ~1h ago (tailscale last seen 1h, rx 0; ssh times out even from tony-dell). Live
+    verification of the guard needs the Mac awake with a fresh heartbeat. When it returns: from that worktree run
+    one synthetic st'
+- at: 2026-11-07 12:12
+  from: devin
+  text: 'Implemented + pushed: branch feat/mem-1043-kk-mac-memory-guard (931013560). New scripts/devnest/kk_mac_memory.py
+    — ssh memory_pressure -Q sampler (vm_stat page fallback), floors per spec: pre-load >=60% free, abort <50% or
+    critical pressure; fail-closed when pre-load sample unavailable. kk_mac_executor.run_contract now wraps run_task
+    in a MemoryMonitor thread (15s poll), persists pre/during/post snapshots into result.memory -> kk_mac_result.json
+    + artifact; any during/post breach flips verdict t'
+- at: 2026-11-07 12:12
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] implemented + pushed feat/mem-1043-kk-mac-memory-guard (931013560); verification smoke blocked
+    — kk-mac offline 22h+; staging worktree kept on tony-dell (chaba-wt-memguard-verify). Keeping in review.'
+review_kind: verify

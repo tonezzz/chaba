@@ -1,0 +1,149 @@
+id: mediawiki-private-sso-boundary
+title: MediaWiki private Wiki SSO and in-house access boundary
+column: backlog
+updated: 2026-11-06 09:05
+brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
+  Infrastructure pages without a second manual login, while public News remains anonymous-safe.
+priority: high
+program: devnest
+tags:
+- mediawiki
+- security
+- sso
+- cloudflare-access
+- lockdown
+- home-assistant
+spec: 'Design and implement one-Wiki/two-surfaces access. Keep wiki.h3.gizmo-thailand.com public-safe for News only;
+  add a private Wiki hostname behind the same Cloudflare Access identity policy used by ada-ha. Integrate MediaWiki
+  OIDC/PluggableAuth with the same approved identity provider, auto-provision/map Tony and Ada to the inhouse group,
+  and retain Lockdown namespace read rules for Infrastructure/Home/Ops/Draft. Point the Ada HA Private Wiki tab
+  at the private hostname and verify anonymous deny, Tony/inhouse allow, Ada/sysop allow, public News allow, and
+  spoofed identity-header/direct-public-host denial. Do not put Wiki passwords or permanent tokens in iframe URLs.
+  Rollback: remove private hostname/tab and disable OIDC/PluggableAuth config while leaving public News alive.'
+ref: SEC-1035
+comms:
+- at: 2026-11-05 17:26
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-05 17:33
+  from: tony
+  text: 'Continued Option A: prepared official MediaWiki 1.46 REL1_46 upload bundle for PluggableAuth + OpenIDConnect
+    at /home/tony/Downloads/MediaWiki-auth-1.46.zip (sha256 db91b9ee4779acd88b58999613eae3198cbb18fed6ea11dcfcc43d54353cd1dd).
+    Provider/client registration is still required; no LocalSettings OIDC secrets or private hostname changes applied
+    yet.'
+- at: 2026-11-05 17:35
+  from: devin
+  text: 'raised request oidc-provider-choice: Which identity provider should wiki-internal trust for automatic Tony/Ada
+    login? Recommended: reuse the existing Google '
+- at: 2026-11-05 17:48
+  from: tony
+  text: 'answered oidc-provider-choice: google-existing-access-idp — ★ Reuse the existing Google identity/provider
+    used by Cloudflare Access — recommended'
+- at: 2026-11-05 17:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-05 17:49
+  from: devin
+  text: 'raised request oidc-client-registration: Provide or approve the Google OIDC client registration for wiki-internal.
+    The callback URL will be https://wiki-internal'
+- at: 2026-11-05 18:02
+  from: devin
+  text: 'Progress check: no declared Google OIDC client credential was found in the local secret filenames. Existing
+    google_credentials.json / calendar tokens are not assumed to be an OIDC client. SEC-1035 remains waiting on
+    the human/provider gate; no secret values were read or exposed.'
+- at: 2026-11-05 18:14
+  from: tony
+  text: 'answered oidc-client-registration: register-new-google-client — ★ Register a dedicated Google OIDC client
+    for wiki-internal'
+- at: 2026-11-05 18:14
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-05 18:51
+  from: devin
+  text: 'VERIFICATION FAILED / urgent: wiki.h3.gizmo-thailand.com now returns HTTP 500 Configuration error: PluggableAuth
+    is enabled in LocalSettings.php but /var/www/vhosts/ultimate-official.com/www/wiki.h3.gizmo-thailand.com/extensions/PluggableAuth/extension.json
+    is missing. OpenIDConnect verification cannot proceed; public News and private Infrastructure consumers are
+    currently impacted. Immediate rollback: comment out PluggableAuth/OpenIDConnect wfLoadExtension/config block
+    OR upload the prepared Pl'
+- at: 2026-11-05 18:56
+  from: devin
+  text: 'Verification after auth extension upload: PluggableAuth/OpenIDConnect now progress past missing extension.json,
+    but Wiki remains down because LocalSettings.php fatal-errors at line 150: OIDC secret file is missing/unreadable.
+    Required next: upload wiki-internal-oidc.php to the exact Plesk path expected by LocalSettings.php (/var/www/vhosts/system/wiki.h3.gizmo-thailand.com/etc/wiki-internal-oidc.php)
+    or adjust the path to the actual private file location, with owner-readable mode 600. Do not put'
+- at: 2026-11-05 19:00
+  from: devin
+  text: 'Verification after auth bundle/secret upload: API is healthy HTTP 200; MediaWiki 1.46.2; extensions now
+    loaded: Lockdown, PluggableAuth, OpenID Connect. However Special:PluggableAuthLogin redirects with error=pluggableauth-fatal-error
+    (login loop). OIDC config/provider/client validation remains failing; public API works but SSO is not ready.
+    Need inspect Plesk PHP/MediaWiki error log for the fatal cause before exposing private hostname/tab.'
+- at: 2026-11-05 19:06
+  from: devin
+  text: 'New verified blocker: wiki-internal.h3.gizmo-thailand.com resolves to 103.99.11.249 but serves the Plesk
+    default page (no Wiki vhost/site configured). The OIDC callback hostname is therefore not a MediaWiki endpoint.
+    Before debugging provider credentials further, add wiki-internal as a Plesk domain/alias sharing the Wiki document
+    root, issue TLS, then put the hostname behind Cloudflare Access. Re-test Special:PluggableAuthLogin only after
+    the private hostname serves MediaWiki.'
+- at: 2026-11-06 08:17
+  from: devin
+  text: 'Root cause confirmed from Plesk log: OpenIDConnectStore::findUser fails because table `wiki.openid_connect`
+    does not exist (AH01071). Extensions/config are loaded; MediaWiki schema update was not run after OpenIDConnect
+    installation. Run the MediaWiki 1.46 maintenance update with PHP 8.3 from the Wiki root, then re-test OIDC.
+    `$_SESSION` deprecation is unrelated and should not be fixed in MWDebug.php.'
+- at: 2026-11-06 08:43
+  from: devin
+  text: 'Verified wiki-internal currently 301-redirects every request to wiki.h3.gizmo-thailand.com. This must be
+    fixed: the private hostname is not yet an independent MediaWiki surface, so OIDC callback/session cannot stay
+    on wiki-internal. Configure a whitelisted host-aware $wgServer (or equivalent Plesk vhost/canonical-host policy)
+    so wiki-internal serves the same Wiki without redirecting to public; keep public canonical URLs for public pages
+    only. Then re-register/test the private callback and Cloudf'
+- at: 2026-11-06 08:49
+  from: devin
+  text: 'Progress: wiki-internal now serves Wiki over valid TLS, but Cloudflare API token on idc02 lists zero Access
+    applications for its account. Existing Ada Access apps are not visible through this token/account, so automatic
+    private-host SSO cannot be created programmatically yet. Need Cloudflare dashboard/account that owns ada-ha
+    Access, then create protected application for wiki-internal.h3.gizmo-thailand.com using the existing Google
+    allowlist.'
+- at: 2026-11-06 09:05
+  from: devin
+  text: 'Progress: found existing Cloudflare token on tony-dell and created DNS CNAME wiki-internal.surf-thailand.com
+    -> wiki.h3.gizmo-thailand.com (proxied) plus CF Access self-hosted app `wiki-internal` with existing Tony allowlist
+    (app id 189b0d42-1b10-4ef8-a336-c23e0ad0306c). Access challenge verified. Private Wiki dashboard tab now targets
+    wiki-internal.surf-thailand.com. Remaining: add exact new Google OIDC callback for wiki-internal.surf-thailand.com
+    and ensure MediaWiki host allowlist/config acce'
+requests:
+- id: oidc-provider-choice
+  ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
+    existing Google identity behind Cloudflare Access via MediaWiki OpenIDConnect; alternative: configure Cloudflare
+    Access as/through an OIDC provider if the account supports it; fallback: MediaWiki-native login (does not meet
+    auto-login goal).'
+  status: answered
+  at: 2026-11-05 17:35
+  from: devin
+  options:
+  - id: google-existing-access-idp
+    label: ★ Reuse the existing Google identity/provider used by Cloudflare Access — recommended
+  - id: cloudflare-access-oidc
+    label: Use a Cloudflare Access OIDC issuer/provider if available in this account
+  - id: mediawiki-native
+    label: Use separate MediaWiki login — simplest, but no automatic Tony login
+  suggested: google-existing-access-idp
+  answer: google-existing-access-idp — ★ Reuse the existing Google identity/provider used by Cloudflare Access —
+    recommended
+- id: oidc-client-registration
+  ask: Provide or approve the Google OIDC client registration for wiki-internal. The callback URL will be https://wiki-internal.h3.gizmo-thailand.com/index.php?title=Special:PluggableAuthLogin.
+    Store client ID/secret only in the Plesk/Wiki secret store; never paste them into chat or LocalSettings.php
+    plaintext.
+  status: answered
+  at: 2026-11-05 17:49
+  from: devin
+  options:
+  - id: register-new-google-client
+    label: ★ Register a dedicated Google OIDC client for wiki-internal
+  - id: reuse-approved-client
+    label: Reuse an existing approved Google OIDC client after confirming its redirect URI can include wiki-internal
+  - id: stop
+    label: Stop SSO work and keep the private Wiki on manual login
+  suggested: register-new-google-client
+  answer: register-new-google-client — ★ Register a dedicated Google OIDC client for wiki-internal
+awaiting_action: true

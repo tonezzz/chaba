@@ -1,0 +1,59 @@
+id: ada-t4-micro-entity-design
+title: Ada T4 design — first micro-entity that finishes real jobs (bounded card class + own bench)
+column: done
+updated: 2026-11-07 15:54
+priority: high
+tags:
+- ada
+- t4
+- nest
+- micro-entity
+- design
+spec: 'T4 per ssot.ada-participation.yml = micro-entity scope: a nest brain that owns a narrow card class with its
+  own bench — NOT general agent work. The gap analysis from the bench work (2026-11-07): Ada can already read/comment/ask/move-with-evidence
+  (T0-T2 live, kanban tool verified); what''s missing for ''finish jobs'' is the EXECUTION LOOP — a driver that
+  hands her a card, runs her turn with a bounded toolset, captures the artifact+evidence, moves the card. Proposed
+  first micro-entity ''ada-jobs-verify'': owns ONE card class = verify/observe cards (check a surface, post evidence
+  comms, move review->done with evidence=). All steps already in her authority — no new power. Driver = a runner
+  (systemd or nest pack) that feeds cards tagged class:verify to a scoped Ada session (toolset = kanban + health/HTTP
+  checks only, her real authority matrix). Gates to pilot: (1) card-judgment bench 3 consecutive passes vs her production
+  topology (standings now: llama3.2 0.884 pass x1, ada-chat 0.768, cf-70b 0.695 — needs a passing entity first,
+  candidate = llama3.2-family or the winner of upcoming kk-mac/CF runs); (2) per-class bench = verify-class corpus
+  subset; (3) Tony picks the card class (this proposal''s default). Failure containment: doing_limit applies, no
+  prod writes beyond card comms/moves, every action lands from:ada audit line.'
+note: 'Key finding that shapes this design: capability is NOT the constraint — 3B local beats paid flash on judgment;
+  Ada''s failure mode is over-deferral (safe, correctable via prompt+corpus). The T4 path is a LOOP problem, not
+  a brain problem. CF Workers AI (llama-3.3-70b free tier, verified live 2026-11-07) gives a free always-on brain
+  + free bench runs — candidate executor model. Depends on: card-judgment-bench-build (done), kk-mac-card-judgment-eval
+  (KNB-1087 armed), T3 production proof. Decision f'
+ref: ADA-1091
+comms:
+- at: 2026-11-07 15:34
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 15:44
+  from: devin
+  text: '[PROCESSED — pilot live] scripts/ada-jobs/verify_worker.py on master (e5b8cab01). Loop: eligible = review/verify
+    + tag ada-verify + not-high-priority + no open requests -> Ada turn (default CF llama-3.3-70b, free, always-on;
+    override via --model/--base-url) -> ONE bounded action -> authority matrix enforced IN CODE (close refused without
+    evidence, high/decide refused outright) -> write via board-api from:ada. LIVE PILOT: probe card ada-verify-probe-board-api-alive
+    (ADA-1093) — she verified the /'
+- at: 2026-11-07 15:44
+  from: devin
+  text: closed by devin
+- at: 2026-11-07 15:48
+  from: devin
+  text: '[scheduler live] ada-jobs-verify.timer installed on idc03 (systemd --user, every 30min, declared in ssot.jobs.yml,
+    master 91bad24c5). INERT BY DEFAULT — only acts on review/verify cards tagged ada-verify; untagged cards are
+    never read for action. Worker pulled to idc03 exec checkout. Real finding from this pass: verify cards need
+    genuine check tools, not just card reads — expanding the lane means giving her real probes (HTTP/systemctl),
+    which is the next design step. Tagging a real card remains '
+- at: 2026-11-07 15:54
+  from: devin
+  text: '[probe tool landed — 2nd card self-finished] verify_worker now runs REAL checks: extracts http(s) URLs
+    the card declares, GETs them (allowlist: tailnet/loopback/LAN only, read-only, model cannot steer elsewhere),
+    feeds live_checks into her decision, matrix still enforced in code. Live proof: ADA-1096 (litellm liveliness)
+    — she fetched http://100.102.134.91:4000/health/liveliness herself, cited HTTP 200 I am alive as evidence, closed
+    review->done. Master 16d420a29. Timer on idc03 still inert-by-d'
+action:
+  status: done

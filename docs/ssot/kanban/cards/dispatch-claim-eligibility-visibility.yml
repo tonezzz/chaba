@@ -1,0 +1,104 @@
+id: dispatch-claim-eligibility-visibility
+title: Surface why a queued dispatch card is unclaimable (label/host mismatch starves silently)
+column: done
+updated: 2026-11-08 07:49
+priority: high
+program: chaba-ci
+tags:
+- kanban-dispatch
+- claim
+- eligibility
+- labels
+- observability
+- ada-finishes-jobs
+spec: 'Confirmed 2026-11-07: three dispatch rollout cards sat queued ~3h. Per kanban-dispatch.py, a card action.labels
+  must ALL be satisfied by the claiming host MY_LABELS (KANBAN_HOST_LABELS env); target_host check runs separately.
+  Failure mode is INVISIBLE: a card whose labels match no runner (or whose target_host lacks the declared labels/creds)
+  sits queued forever — queue_starve_warn only covers action.type=manual, and per-host skip logs name target_host
+  but not label mismatches. Fix: on queue and on dispatch eval, compute unclaimable reasons (label∩runner empty,
+  target_host has no runner, push:<repo> cred guard would fail) and write a chaba comms line + awaiting_action on
+  the card — same pattern as the manual-type warning. Then Ada/triage sees exactly why a card starves and can fix
+  labels or re-route instead of Devin debugging the queue. Precedent for why this matters: ops0790-rollout-* cards
+  with labels:[exec] never claimed on idc03.'
+action:
+  type: dispatch
+  repo: chaba
+  target_host: tony-macbook
+  status: done
+  runner: tony-macbook
+  lane: devin
+  result: 'exit=0 utcome doc at `dispatch-outcome-20261108-071246-confirmed-2026-11-07-three-dis.md`. | devin-task-20261108-071246-confirmed-2026-11-07-three-dis.service:
+    Consumed 21min 40.676s CPU time over 31min 47.458s wall clock time, 592.8M memory peak.'
+  verified: true
+ref: OPS-1097
+comms:
+- at: 2026-11-07 16:00
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 16:00
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 16:08
+  from: tony
+  text: queued for processing
+- at: 2026-11-07 16:19
+  from: chaba
+  text: 'mn01 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-07 19:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 01:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 07:10
+  from: devin
+  text: 'Live evidence 2026-11-07: two dispatch cards queued to target_host=tony-dell starved ~90min — kanban-dispatch.service/timer
+    are .parked on dell (deliberately retired per host-hygiene; devin-dispatch-watch also parked). A card can target
+    a host with NO claimer and nothing surfaces that fact. Also observed: ops0790-rollout-tony-dell completed with
+    claim=None — units were installed out-of-band, no claim recorded. Both are exactly the blind spots this card
+    targets. Retargeted both queued cards to to'
+- at: 2026-11-08 07:12
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 07:12
+  from: chaba
+  text: started devin-task-20261108-071246-confirmed-2026-11-07-three-dis on tony-macbook (dispatch)
+- at: 2026-11-08 07:44
+  from: devin
+  text: 'shipped: dr.fleet_capabilities+unsatisfiable_reasons; board-api warns+flags at queue, kanban-dispatch flags
+    at eval (+defer comms for label/push skips), runner-agent posts unclaimable via note_defer(awaiting). /comment
+    accepts awaiting_action. 163 board tests green.'
+- at: 2026-11-08 07:46
+  from: tony-macbook
+  text: 'finished (ok): exit=0 utcome doc at `dispatch-outcome-20261108-071246-confirmed-2026-11-07-three-dis.md`.
+    | devin-task-20261108-071246-'
+- at: 2026-11-08 07:46
+  from: chaba
+  text: ran under executor=devin provider=devin
+- at: 2026-11-08 07:46
+  from: chaba
+  text: 'session-end checkpoint 69bf4305: 8 leftover file(s) committed'
+- at: 2026-11-08 07:46
+  from: chaba
+  text: pushed dispatch/20261108-071246-confirmed-2026-11-07-three-dis to origin
+- at: 2026-11-08 07:46
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 07:46
+  from: chaba
+  text: auto-merged 3901c41b (dispatch/20261108-071246-confirmed-2026-11-07-three-dis) → origin/master
+- at: 2026-11-08 07:46
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-08 07:49
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 07:48
+  note: verified — evidence checks green, closing itself

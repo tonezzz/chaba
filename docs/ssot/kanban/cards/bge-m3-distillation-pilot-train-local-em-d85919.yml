@@ -1,0 +1,26 @@
+id: bge-m3-distillation-pilot-train-local-em-d85919
+title: BGE-M3 distillation pilot — train local embedder on Gemini vector targets
+column: backlog
+updated: 2026-11-07 12:58
+priority: low
+tags:
+- embedding
+- experiment
+- bge
+spec: 'Distillation experiment (option 1 from the train-our-own discussion): fine-tune BGE-M3 to mimic gemini-embedding-2
+  geometry on our corpus. Teacher outputs already exist — /tmp/embedeval/vec-gemini.jsonl on idc03 covers all 8,109
+  eval docs (zero new API cost). Data: 8,109 doc pairs for training, 1,366 mined bankq queries + 48-query judged
+  eval (qrels-bge-hybrid.json) for validation. Compute: hours on a GPU/CPU worker (Omen has sentence-transformers
+  5.6.1, CPU-only until NVML driver fixed; con01/kk-mac alternatives). Loss: cosine-similarity regression or MSE
+  on (doc, query-side anchor) pairs — standard SBERT distillation recipe (MSE on teacher embeddings, plus optional
+  MNRL on mined pairs). Success gate: close >=50% of the dense-arm gap vs gemini on the expanded qrels (dense r@5
+  .224->~.235+, MRR .767->~.83+) WITHOUT English regression. ToS flag: distilling commercial model outputs into
+  a replacement is a gray zone for production services; private household bank makes it low-risk but it is Tony
+  call. Prereq: rerun judged eval on the fine-tuned bank — needs a second mddb-embed collection or offline cosine
+  scoring like the original arms. Sequence: reranker experiment first (in flight on Omen) — if rerank closes the
+  MRR gap, this card may be unnecessary.'
+ref: MEM-1083
+comms:
+- at: 2026-11-07 12:58
+  from: devin
+  text: card captured via board-api

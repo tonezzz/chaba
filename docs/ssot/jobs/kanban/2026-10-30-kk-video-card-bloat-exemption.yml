@@ -1,0 +1,82 @@
+# Bloat-warning resolution record for
+# docs/ssot/kanban/cards/kk-video-preview-output-qc-assembly.yml
+# (card ssot-bloat-kk-video-preview-qc-card, dispatch 20261030-205733)
+title: Reviewed bloat exemption for kk-video-preview-output-qc-assembly card
+card: ssot-bloat-kk-video-preview-qc-card
+date: 2026-10-30
+decision: narrow reviewed exemption, not a structural split
+
+context:
+  warning: "Bloat: 468 lines exceeds review threshold of 350 (grew to 497)"
+  surfaced_by: >-
+    reports/SSOT_OPTIMIZATION_WARNINGS.json via the nightly
+    ssot-optimization-snapshot job; the entry was already in the committed
+    baseline on master, but Cline PR #62's `validate` job fails at
+    ssot-optimize-gate on its older baseline. Fixed here at the source so a
+    rebase clears the PR.
+  card_state: >-
+    column=done, auto_close 2026-10-29 19:48 (merge-sweep, verified).
+    ~480 of 497 lines are comms (71 entries) + requests (7, all answered).
+    The card still receives producer comms (education-lesson upsert
+    recorded 2026-10-30 20:12).
+
+why_not_split:
+  comms_trim: >-
+    UNSAFE — merge-card-yaml / reconcile-local-conflicts merge_cards unions
+    comms on (at|ts, from, text) and explicitly does not propagate
+    deletions. Any diverged copy (served checkout, older worktree)
+    resurrects trimmed entries on the next merge.
+  whole_card_archive: >-
+    UNSAFE NOW — ssot.kanban.yml column_sla.done archives cards to
+    cards/archive/ only after >30d in done; this card is ~1d old and still
+    receives board-api /comment writes, which card_path resolves via a
+    non-recursive CARD_DIR glob — an archived card becomes unwritable
+    ("no card <id>") and producer comms would fail.
+  sidecar_history_file: >-
+    UNSAFE — no consumer follows a history pointer. Under cards/ it would
+    render as a phantom card and get card-union merges; outside cards/ it
+    loses the merge driver and is invisible to board-api/render — history
+    would exist in git but effectively be off the board.
+
+exemption:
+  mechanism: >-
+    docs/ssot/ssot.file-optimization.yml config.bloat_exemptions.
+    review_threshold — exact rel path
+    kanban/cards/kk-video-preview-output-qc-assembly.yml
+  scope: >-
+    review threshold (350 lines) only; the 750-line hard cap still applies,
+    so unbounded growth is still gated.
+  baseline_handling: >-
+    reports/SSOT_OPTIMIZATION_WARNINGS.json deliberately NOT committed from
+    this worktree — the served checkout's kanban-commit already owns that
+    generated file (GENERATED_RE) and drops the stale entry on its next
+    optimize run. Gate verified green locally without a baseline refresh.
+  rationale_review: >-
+    Done+verified card whose size is audit history, not active spec; history
+    must stay on-card for board readers (TRUST_RE heuristics, review-digest,
+    kanban-stats). Exemption beats a baseline-only silence because the
+    underlying warning is genuinely gone.
+
+follow_up:
+  owner: board ops (kanban-archive sweep / kanban-system lane)
+  trigger: >-
+    When the card has been in done >30d and no producer still writes comms
+    to it, move it to cards/archive/ per ssot.kanban.yml column_sla.done,
+    then remove the bloat_exemptions entry.
+  watch: >-
+    If the card crosses 750 lines before archival, the hard threshold still
+    fires — exemption does not mask runaway growth.
+  adjacent_drift: >-
+    Verification surfaced an unrelated new warning — active review card
+    kanban/cards/kk-mac-local-llm-lane.yml crossed 350 lines tonight
+    (~356, still receiving board-api writes). Left as-is: it is live debt,
+    not a done-card history problem; the served checkout's kanban-commit
+    absorbs it into the baseline on the next optimize cycle, or it gets its
+    own split-vs-exempt review. Flagged on ssot-bloat-kk-video-preview-qc-card.
+
+verification:
+  - "node scripts/ssot-optimize.mjs — card warning absent from regenerated reports"
+  - "node scripts/ssot-optimize-gate.mjs — pass (all warnings covered by baseline)"
+  - "node scripts/ssot-validate-all.mjs — file parses; exemption honored"
+  - "python3 scripts/ssot-validate-refs.py — refs resolve"
+  - "tests/board + merge driver selftest — unaffected (no card/render code touched)"

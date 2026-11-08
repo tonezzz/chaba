@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-10-28 07:36
+updated: 2026-11-07 11:39
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -99,6 +99,39 @@ comms:
     validation is currently blocked by unrelated existing errors in docs/ssot/jobs/devnest/2026-10-27-jack-enrollment-gateway.yml
     (syntax) and docs/ssot/jobs/kanban/2026-10-27-kanban-triage-audit.yml (missing title); these are open in the
     separate Cline worktree, so I did not touch them or '
+- at: 2026-11-06 19:49
+  from: devin
+  text: 'BGE education shadow integration is prepared and locally committed as 0aedce89f1 (feat(education): add
+    optional BGE shadow suggestions). Dry-run verified: 67 due lessons receive related suggestions when the <48h
+    shadow report is present; due ordering remains authoritative and stale/missing reports omit the section. Deployment
+    is blocked only on the served idc03 checkout being heavily dirty/diverged (ahead 2322, behind 1479); git apply
+    --check passes against it. Do not hand-edit served; converge '
+- at: 2026-11-06 19:56
+  from: devin
+  text: 'Deployment prep advanced: created clean branch feat/bge-education-shadow-deploy from current origin/master,
+    applied and compiled the focused lessons-due patch, committed as 0e1796fee6, and pushed to origin. PR URL: https://github.com/tonezzz/chaba/pull/new/feat/bge-education-shadow-deploy.
+    Live served checkout remains untouched pending normal review/convergence.'
+- at: 2026-11-07 11:12
+  from: devin
+  text: 'MERGED: PR #75 squash-merged to master (695563e7c0). The BGE shadow suggestion block was re-ported onto
+    the post-migration lessons-due.py — it now feeds BOTH destinations (Education:Due wikitext with [[links]], WP
+    education-due HTML), reads BGE_EDU_SHADOW_REPORT read-only, ignores stale (>48h)/missing/malformed reports,
+    and leaves due ordering authoritative. Verified: py_compile, diff --check, fresh/stale/missing report matrix,
+    self-hit + non-lesson key filtering. Remaining: served checkout pick'
+- at: 2026-11-07 11:39
+  from: devin
+  text: 'DEPLOYED end-to-end: #75 (BGE suggestions in lessons-due, both wiki+wp dests) + #76 (shadow tooling + eval
+    doc on master) + #78 (chaba-bge-education-shadow.timer declared+installed on idc03, daily 07:00). First live
+    run: 124 lessons synced, snapshot rebuilt (24 colls/9857 docs/0 errs), report written to ~/.cache/bge-education-shadow-v2.json
+    — BUT 73/111 queries hit vector_errors under the burst (pool healthy now: idc03 237ms, idc02 429ms, con01 1.2s;
+    Omen down >10s). Follow-up worth doing: retry'
+- at: 2026-11-07 11:39
+  from: devin
+  text: 'DEPLOYED end-to-end: #75 (BGE suggestions in lessons-due, both wiki+wp dests) + #76 (shadow tooling + eval
+    doc on master) + #78 (chaba-bge-education-shadow.timer declared+installed on idc03, daily 07:00). First live
+    run: 124 lessons synced, snapshot rebuilt (24 colls/9857 docs/0 errs), report written to ~/.cache/bge-education-shadow-v2.json
+    — BUT 73/111 queries hit vector_errors under the burst (pool healthy now: idc03 237ms, idc02 429ms, con01 1.2s;
+    Omen down >10s). Follow-up worth doing: retry'
 review_kind: verify
 claim: {}
 auto_close:

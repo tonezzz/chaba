@@ -1,0 +1,53 @@
+id: video-render-dispatcher
+title: Build canonical video render dispatcher and queue status
+column: backlog
+updated: 2026-11-03 17:59
+brief: Make video packages visibly and reliably progress from approved manifest through render, mux, QC, and durable
+  final artifact.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- dispatcher
+- kk-mac
+- colab
+- qc
+spec: 'Implement a read-only inventory/status layer first, then a controlled dispatcher for project kk-video-c9f99fee6146
+  and future video projects. Inventory both gdrive:ada-nest-kk-mac-video-pilot and gdrive:ada-nest packs; classify
+  packages as queued, claimed, running, done, failed, or support/other; show active claims and artifacts. Dispatch
+  only approved manifest stages, never historical/support packages. Route MLX work to KK-Mac when awake/model-ready/load/disk
+  gates pass, otherwise route finite GPU batches to Colab only after complete staging. Preserve one writer/one runner,
+  idempotent shot IDs, review-vs-clean variants, and final artifact QC. First deliverable: queue status report and
+  one canonical final-preview manifest for the Sacred Father project.'
+ref: OPS-1042
+comms:
+- at: 2026-11-02 22:03
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 09:37
+  from: devin
+  text: 'OPS-1042 v1 implemented and verified. Added read-only scripts/devnest/video_queue_status.py plus durable
+    report reports/video-queue-status-2026-11-03.json. Live audit: KK video pilot 54 packages = 9 done, 43 queued/other,
+    2 failed; general video queue 16 = 14 done, 2 queued/other. The key finding is 0 fresh active claims and 14
+    stale claims (ages ~77–251h); the queues are not actively moving. No claims were deleted automatically. Next
+    operational decision is to retire/release stale historical cl'
+- at: 2026-11-03 10:31
+  from: devin
+  text: Defined the standard claim lifecycle in docs/kb/video-queue-claim-lifecycle-procedure.md and Education post
+    3582. States are now queued/running/stale/done/failed/retired; default lease TTL is 2h; status scans remain
+    read-only; stale claims require evidence/reconciliation before explicit release; historical/support packages
+    get retired markers, not reruns. Only one canonical current render manifest may dispatch final-cut packages.
+    Live audit remains 0 fresh claims + 14 stale claims; no claims wer
+- at: 2026-11-03 14:49
+  from: devin
+  text: OpenCode subcards KNB-1051 and AUD-1052 are verified/closed. OPS-1042 remains the parent for the controlled
+    video dispatcher. Next gate is selective stale-claim reconciliation and one canonical Sacred Father manifest;
+    no bulk claim deletion or historical rerun.
+- at: 2026-11-03 17:59
+  from: devin
+  text: 'STALE CLAIM CLEANUP COMPLETED per claim-lifecycle procedure. Retired 14 historical/support claims with
+    durable retired markers and removed only their stale claim files; packages/artifacts preserved. Fresh audit
+    now: active_claims=0, stale_claims=0. Queue inventory remains KK pilot 54 (9 done/43 queued-other/2 failed)
+    and general 16 (14 done/2 queued). No render was started; remaining blocker is canonical Sacred Father manifest
+    + approved dispatcher, not stale claims.'

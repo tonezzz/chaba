@@ -1,0 +1,97 @@
+name: bge-hybrid-shadow-idc03
+needs:
+  gpu_gb: 0
+  disk_gb: 1
+  ram_gb: 2
+  egress_only_ok: true
+timeout_s: 1800
+
+# These are read-only inputs. The pack never writes to the source bank.
+fetch:
+  - scripts/ada/bge-hybrid-recall.py
+  - experiments/query-cache-phase0/bankq-corpus-20261008.jsonl
+
+artifacts:
+  - packs/bge-hybrid-shadow-idc03/out/bge-hybrid-shadow-*.json
+  - packs/bge-hybrid-shadow-idc03/out/bge-hybrid-shadow-*.md
+
+run: |
+  import importlib.util
+  import json
+  import os
+  import re
+  import statistics
+  import time
+
+  base = os.environ.get("BGE_HYBRID_MDDB_URL",
+                        "http://100.102.134.91:11028/v1")
+  script = f"{NEST_ROOT}/scripts/ada/bge-hybrid-recall.py"
+  spec = importlib.util.spec_from_file_location("bge_hybrid", script)
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
+
+  corpus_path = (
+      f"{NEST_ROOT}/experiments/query-cache-phase0/"
+      "bankq-corpus-20261008.jsonl")
+  rows = [json.loads(line) for line in open(corpus_path)
+          if line.strip()]
+  seen = set()
+  unique = []
+  thai = re.compile(r"[ก-๙]")
+  for row in rows:
+      query = (row.get("query") or "").strip()
+      key = re.sub(r"\s+", " ", query.lower())
+      if len(query) >= 3 and key not in seen:
+          seen.add(key)
+          row = dict(row)
+          row["lang"] = "th" if thai.search(query) else "en"
+          unique.append(row)
+  selected = ([row for row in unique if row["lang"] == "en"][:34] +
+              [row for row in unique if row["lang"] == "th"][:14])
+  if len(selected) < 48:
+      raise RuntimeError(f"query fixture too small: {len(selected)}")
+
+  # Keep the 80MB lexical snapshot out of Drive artifacts.
+  index = f"/tmp/bge-hybrid-{os.getpid()}.json"
+  mod.build_index(base, index)
+  results = []
+  started = time.time()
+  for number, row in enumerate(selected, 1):
+      result = mod.query(base, index, row["query"], 50, 100, 10, 1.0, 0.75)
+      results.append({"qid": row.get("qid") or f"q{number:02d}",
+                      "lang": row["lang"], "query": row["query"],
+                      "result": result})
+      print(f"{number}/{len(selected)} {row['query'][:80]} "
+            f"{result['latency_s']}s", flush=True)
+
+  out = f"{PACK_DIR}/out"
+  os.makedirs(out, exist_ok=True)
+  stamp = time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+  report = {
+      "pack": "bge-hybrid-shadow",
+      "run": stamp,
+      "queries": len(results),
+      "completed": len(results),
+      "vector_errors": sum(r["result"]["vector_errors"] for r in results),
+      "wall_seconds": round(time.time() - started, 1),
+      "latency_p50_seconds": round(statistics.median(
+          r["result"]["latency_s"] for r in results), 3),
+      "latency_p95_seconds": round(sorted(
+          r["result"]["latency_s"] for r in results)
+          [int(len(results) * 0.95) - 1], 3),
+      "weights": {"dense": 1.0, "lexical": 0.75},
+      "read_only": True,
+      "results": results,
+  }
+  json_path = f"{out}/bge-hybrid-shadow-{stamp}.json"
+  with open(json_path, "w") as fh:
+      json.dump(report, fh, ensure_ascii=False, indent=2)
+  with open(f"{out}/bge-hybrid-shadow-{stamp}.md", "w") as fh:
+      fh.write(f"# BGE hybrid shadow replay — {stamp}\n\n")
+      fh.write(f"- Queries: {len(results)}\n")
+      fh.write(f"- Vector errors: {report['vector_errors']}\n")
+      fh.write(f"- Wall time: {report['wall_seconds']}s\n")
+      fh.write(f"- Latency p50/p95: {report['latency_p50_seconds']}s / "
+               f"{report['latency_p95_seconds']}s\n")
+      fh.write("- Read-only: yes\n")
+  print(f"wrote {json_path}", flush=True)

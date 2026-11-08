@@ -1,8 +1,0 @@
-[Unit]
-Description=Ada lesson miner — transcripts -> lesson CPT (job:ada-lesson-miner, rendered from ssot.jobs.yml — do not edit)
-OnFailure=ada-report-fail@%p.service
-
-[Service]
-Type=oneshot
-TimeoutStartSec=1200
-ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/lesson-miner.py --card lesson-transcript-miner

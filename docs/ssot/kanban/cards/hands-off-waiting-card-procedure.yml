@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
-column: doing
-updated: 2026-10-28 22:46
+column: done
+updated: 2026-11-08 08:48
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -26,8 +26,22 @@ spec: 'Define and implement the hands-off waiting-card procedure. Separate queue
   checklist. Update existing kanban-act-loop/DevNest procedures rather than inventing a parallel queue. Validate
   with five read-only pilot cards and record evidence/metrics.'
 action:
-  type: manual
-  status: queued
+  type: dispatch
+  repo: chaba
+  target_host: tony-macbook
+  status: done
+  lane: devin
+  sweep:
+    failed_noted: 2026-11-08 07:18
+    stale_running: 2026-11-08 08:18
+    zero_commit: 2026-11-08 08:18
+  model: swe-2-flash
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  attempts: 1
+  verified: true
+  runner: tony-macbook
+  result: 'exit=0 08-083649-define-and-implement-the-hands.md` and a status comment posted to the card. | devin-task-20261108-083649-define-and-implement-the-hands.service:
+    Consumed 2min 14.345s CPU time over 2min 32.111s wall clock time, 331.7M memory peak.'
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -52,3 +66,135 @@ comms:
 - at: 2026-10-28 22:46
   from: tony
   text: moved backlog -> doing
+- at: 2026-11-07 12:08
+  from: devin
+  text: 'Progress 2026-11-07: codified the procedure in SSOT rather than a parallel queue, per spec. docs/ssot/infrastructure/ssot.devin-autonomy.yml
+    gains waiting_cards: unattended eligibility gate (action.type dispatch/script/container + executor + tier<=max
+    + artifact/verifier + no open requests + recoverability + preflight), R0-R4 recoverability classes with worst-class
+    rule (R3 secrets/accounts and R4 prod/destructive NEVER autonomous — backups do not apply), preflight checklist
+    (runner health, queu'
+- at: 2026-11-07 16:19
+  from: tony
+  text: queued for processing
+- at: 2026-11-07 19:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 01:13
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 07:12
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 07:12
+  from: chaba
+  text: started devin-task-20261108-071214-define-and-implement-the-hands on tony-macbook (dispatch)
+- at: 2026-11-08 07:12
+  from: tony-macbook
+  text: 'finished (failed): exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with
+    result ''exit-code''. | devin-task-2'
+- at: 2026-11-08 07:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261108-071214-define-and-implement-the-hands by
+    hand.'
+- at: 2026-11-08 07:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/20261108-071214-define-and-implement-the-hands by
+    hand.'
+- at: 2026-11-08 08:04
+  from: tony
+  text: retry requested
+- at: 2026-11-08 08:11
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 08:11
+  from: chaba
+  text: started devin-task-20261108-081116-define-and-implement-the-hands on tony-macbook (dispatch)
+- at: 2026-11-08 08:11
+  from: devin
+  text: Dispatch started. Exploring existing kanban-act-loop/DevNest procedures and queue code before designing.
+- at: 2026-11-08 08:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-08 08:18
+  from: chaba
+  text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-08 08:18
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-08 08:28
+  from: devin
+  text: 'Done in dispatch worktree: waiting_cards.py gate (eligibility+preflight+R0-R4) wired into kanban-dispatch
+    (KANBAN_WAITING_GATE warn|strict, R3/R4 never claimed) and runner-agent twin; kanban-act model-report independent-review
+    gate; lifecycle Telegram via /publish; daily unattended-report job+timer rendered; 5 read-only pilot cards filed
+    ELIGIBLE; 25 new tests + 82 related tests pass. Gate defaults warn-mode — strict flips after day-3 checklist.
+    Job doc: docs/ssot/jobs/kanban/2026-11-08-hands-of'
+- at: 2026-11-08 08:30
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash
+- at: 2026-11-08 08:30
+  from: chaba
+  text: 'session-end checkpoint 266070f4: 19 leftover file(s) committed'
+- at: 2026-11-08 08:30
+  from: chaba
+  text: pushed dispatch/20261108-081116-define-and-implement-the-hands to origin
+- at: 2026-11-08 08:30
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 08:30
+  from: chaba
+  text: auto-merged c04fd91e (dispatch/20261108-081116-define-and-implement-the-hands) → origin/master
+- at: 2026-11-08 08:30
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-08 08:36
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-08 08:36
+  from: chaba
+  text: started devin-task-20261108-083649-define-and-implement-the-hands on tony-macbook (dispatch)
+- at: 2026-11-08 08:39
+  from: devin
+  text: 'Re-dispatch verified: full implementation from 08:11 dispatch (commit 266070f4d) is merged and satisfies
+    every spec element — waiting_cards.py gate, R0-R4 classes, preflight, stop gates, kanban-act independent review,
+    Telegram lifecycle, dry-run + daily report + kill switch, 1/2/3-day checklist, 5 pilot cards all ELIGIBLE. Re-ran
+    tests: 25/25 waiting_cards, 18/18 kanban_act; --board and --preflight healthy. No new code needed; day-2/3 items
+    remain (live pilot run, warn->strict flip after drill).'
+- at: 2026-11-08 08:40
+  from: tony-macbook
+  text: 'finished (ok): exit=0 08-083649-define-and-implement-the-hands.md` and a status comment posted to the card.
+    | devin-task-20261108-08364'
+- at: 2026-11-08 08:40
+  from: chaba
+  text: ran under executor=devin provider=devin model=swe-2-flash
+- at: 2026-11-08 08:40
+  from: chaba
+  text: 'session-end checkpoint a91b7d13: 1 leftover file(s) committed'
+- at: 2026-11-08 08:40
+  from: chaba
+  text: pushed dispatch/20261108-083649-define-and-implement-the-hands to origin
+- at: 2026-11-08 08:40
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 08:40
+  from: chaba
+  text: auto-merged ec3adcc8 (dispatch/20261108-083649-define-and-implement-the-hands) → origin/master
+- at: 2026-11-08 08:40
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-083649-define-and-implement-the-hands,
+    branch dispatch/20261108-083649-define-and-implement-the-hands'
+- at: 2026-11-08 08:48
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+claim: {}
+review_kind: verify
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 08:48
+  note: verified — evidence checks green, closing itself

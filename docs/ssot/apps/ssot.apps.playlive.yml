@@ -15,8 +15,8 @@ sections:
     icon: 🏗️
     layout: list
     items:
-      - label: Daemon (consolidated 2026-08-10)
-        text: playlived runs on tony-dell:9230 (primary) and tony-omen:9230 (fallback). See docs/ssot/infrastructure/ssot.host-roles.yml for the canonical host priorities.
+      - label: Daemon (updated 2026-11-03)
+        text: playlived runs on idc02:9240 (preferred, headless-only since 2026-11-03), tony-dell:9230 (declared fallback), and tony-omen:9230. idc02's :9230 is owned by caddy-edge, hence :9240. See docs/ssot/infrastructure/ssot.host-roles.yml for the canonical host priorities.
       - label: MCP client
         text: mcp-playlive (chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
       - label: Target flexibility
@@ -31,23 +31,24 @@ sections:
     layout: list
     items:
       - label: Preferred daemon
-        text: docs/ssot/infrastructure/playlive-hosts.yml has a per_host section. tony-dell prefers 127.0.0.1:9230 (itself) and tony-omen prefers tony-dell:9230.
+        text: docs/ssot/infrastructure/playlive-hosts.yml has a per_host section. idc02 prefers 127.0.0.1:9240 (itself); tony-dell and tony-omen prefer idc02:9240 over tailnet (target_preference activated 2026-11-03).
       - label: Failover
-        text: playlive-hosts.yml has a failover section. tony-dell falls back to tony-omen:9230; tony-omen falls back to 127.0.0.1:9230 (itself). The loader switches PLAYLIVE_URL automatically.
+        text: playlive-hosts.yml has a failover section. idc02 falls back to tony-dell:9230; tony-dell falls back to its own 127.0.0.1:9230 daemon; tony-omen falls back to tony-dell:9230. The loader switches PLAYLIVE_URL automatically.
       - label: Self-heal
-        text: playlive-hosts-loader.py checks daemon health on startup and, if unhealthy, runs the host-specific systemd restart command from playlive-hosts.yml. playlive_self_heal provides the same on demand.
+        text: playlive-hosts-loader.py checks daemon health on startup and, if unhealthy, runs the host-specific command from playlive-hosts.yml — local systemd restart on idc02, ssh-to-idc02 restart from dell/omen. playlive_self_heal provides the same on demand.
       - label: Focus escalation
         text: If both the primary and the failover are unreachable after self-heal and focus is enabled in playlive-hosts.yml, a focus-inbox item is written so the outage is triaged manually.
-      - label: Target preference (2026-10-08)
-        text: Tony prefers idc01–idc03 as playlive targets once a playlived/Chrome lane is provisioned there (target_preference block in playlive-hosts.yml; card playlive-idc-targets). As of 2026-10-08 no idc host runs playlived — tony-dell is the only live daemon, so the preference is pending provisioning.
+      - label: Target preference (active 2026-11-03)
+        text: Tony prefers idc01–idc03 as playlive targets (target_preference block in playlive-hosts.yml; card playlive-idc-targets). idc02 lane provisioned 2026-11-03 — user playlived.service on :9240, headless playwright only (no Chrome CDP; VPS CPU is modest). idc03/idc01 not yet provisioned; idc01 stays last (retired/cold-batch, never takes ada services or mddb writes).
 
   - title: Hosts & endpoints
     icon: 🌐
     layout: table
     headers: [Name, Host, Endpoint, Purpose]
     rows:
-      - [playlived, tony-dell, http://tony-dell:9230, Primary session daemon]
-      - [playlived, tony-omen, http://tony-omen:9230, Fallback session daemon]
+      - [playlived, idc02, http://idc02:9240, Preferred session daemon (headless-only)]
+      - [playlived, tony-dell, http://tony-dell:9230, Declared fallback session daemon]
+      - [playlived, tony-omen, http://tony-omen:9230, Further manual fallback]
       - [
           chrome-remote,
           tony-dell,
@@ -91,7 +92,7 @@ sections:
     layout: list
     items:
       - label: Start daemon
-        text: tony-omen runs playlived as a systemd service on port 9230. On tony-dell, the playlived systemd service also runs on port 9230.
+        text: "idc02 runs playlived as a systemd user service on port 9240 (unit: mcp-servers/mcp-playlive/playlived-idc02.service). tony-dell (:9230) and tony-omen (:9230) run the same daemon as fallbacks."
       - label: Create session (default)
         text: playlive_create_playwright defaults to headless local mode for better performance.
       - label: Create session (live)
@@ -108,7 +109,7 @@ sections:
     layout: list
     items:
       - label: Default first move
-        text: When a task needs any browser interaction, start with playlive_create_playwright on tony-dell. It is headless, fastest (~50-100MB less RAM, quicker startup), and does not require Chrome CDP to be running.
+        text: When a task needs any browser interaction, start with playlive_create_playwright on idc02:9240. It is headless, offloads browser CPU/RAM to the idle VPS, and does not require Chrome CDP to be running. Fall back to tony-dell:9230 if idc02 is unreachable.
       - label: Use chrome-live only when
         text: You need to see or interact with a visible browser window, capture a human-readable screenshot of a live session, or debug rendering. Use target tony-dell with remote_url http://127.0.0.1:9222.
       - label: Use playlive-macbook only when
@@ -123,7 +124,7 @@ sections:
     layout: list
     items:
       - label: Pinned Playwright version
-        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json on both tony-omen and tony-dell to avoid package/browser binary mismatches.
+        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json on idc02, tony-omen, and tony-dell to avoid package/browser binary mismatches. idc02 uses node from ~/.local/node (system node18 is too old — playwright 1.62 needs >=20) and Google Chrome 156 installed via 'npx playwright install --with-deps chrome'.
       - label: Browser install
         text: Run 'npx playwright install chromium' from /home/tony/.local/playlive after any Playwright version change.
       - label: Package-lock

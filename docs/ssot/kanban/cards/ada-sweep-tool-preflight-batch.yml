@@ -1,0 +1,47 @@
+id: ada-sweep-tool-preflight-batch
+title: ada_sweep tool — batch preflight/dispatch of eligible backlog cards by voice
+column: done
+updated: 2026-11-07 18:12
+priority: medium
+tags:
+- ada
+- opencode
+- tools
+spec: 'New tools.d/ada_sweep.py (board_client pattern like wiki_extension): iterate backlog cards with action.executor=opencode
+  (and/or queued dispatch cards), preflight each via ada_opencode_control.preflight, report per-card missing/errors,
+  queue ready ones under ONE confirmation. policy: confirmed, secondary_allowed:false. Requires the cards-render
+  fix (cards-render-stale-queued-invisible) to see queued state correctly. Lets Tony say ''Ada, sweep my opencode
+  cards'' instead of per-card rounds.'
+ref: ADA-1108
+comms:
+- at: 2026-11-07 17:25
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 17:59
+  from: devin
+  text: 'IMPLEMENTED on ada-voice feat/ada-sweep-tool: backend/tools.d/ada_sweep.py + manifest entry (policy confirmed,
+    secondary_allowed:false, timeout 120s). Walks /cards?column=backlog -> filters action.executor=opencode + type=dispatch,
+    skips already queued/running/claimed, runs ada_opencode_control.preflight per candidate, queues ready ones via
+    POST /action do=queue under the single tool confirmation (no per-card receipts — envelope already on card).
+    Args: executor/column/dry_run/limit(20 cap). Veri'
+- at: 2026-11-07 17:59
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 18:03
+  from: devin
+  text: 'MERGED to ada-voice main (ebd1594). Tool ships in backend/tools.d/ada_sweep.py + manifest (confirmed, secondary_allowed:false).
+    OPS-1107 dependency landed on idc03 same session — compact reads expose action_status=queued. PENDING: production
+    deploy (deploy-ada.sh on idc03 restarts ada-ha-* lanes, drains live /ws ~45s). Staying in review until deployed.'
+- at: 2026-11-07 18:12
+  from: devin
+  text: 'DEPLOYED: deploy-ada.sh on idc03 -> 853018f on all 10 lanes (ada-ha-tony/michael, pi-pwa, dev, relays)
+    — tool-lint clean, 1733 tests pass, drain expired mid-conversation (ada-ha-tony had 80 ws sessions). Note: landed
+    together with stranded commit 2351ce4 (ada_lesson + dispatch receipt TTL fix) cherry-picked onto main — prod
+    kept its live feature instead of regressing. ada_sweep ready: Tony can say sweep my opencode cards.'
+- at: 2026-11-07 18:12
+  from: devin
+  text: moved review -> done
+review_kind: verify
+action:
+  status: done
+claim: {}

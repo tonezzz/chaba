@@ -1,0 +1,38 @@
+id: devnest-parked-candidates-from-ops-1048-bdfb25
+title: 'DevNest parked candidates from OPS-1048: agy headless + AI Studio eval lane'
+column: done
+updated: 2026-11-07 15:48
+priority: low
+tags:
+- devnest
+- gemini
+- google-ai-pro
+spec: 'Two verified-but-parked candidates from the OPS-1048 spike, kept so they are not lost.
+
+
+  1) Antigravity CLI (agy): consumer Pro/Ultra moved off gemini-cli 2026-06-18. agy -p headless works (OAuth once,
+  file creds in ~/.gemini/antigravity-cli, container-safe). Quota = shared 5h+weekly windows with the IDE; headless
+  cold-start burns 2.5-7x more (no prompt cache). Verdict: opportunistic free lane only, behind Jules. Revisit only
+  if Jules quota proves insufficient or agy adds API-key auth.
+
+  2) AI Studio eval lane: subscription quota applies to Studio UI only — use it for model-selection/bench arms interactively,
+  then productionize winners through LiteLLM keys. Zero code; add a short howto to docs/kb so evals stop burning
+  paid keys for desk research.
+
+
+  Done: either a card per item when adopted, or this card closed with the docs/kb howto for (2) written.'
+note: Parked options — not yet adopted lanes.
+ref: OPS-1067
+comms:
+- at: 2026-11-07 11:43
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 15:48
+  from: devin
+  text: 'Item 2 done: docs/kb/ai-studio-eval-lane.md written (cd480b7bd). Item 1 (agy) stays parked — revisit only
+    if Jules quota insufficient or agy gains API-key auth.'
+- at: 2026-11-07 15:48
+  from: devin
+  text: closed by devin
+action:
+  status: done

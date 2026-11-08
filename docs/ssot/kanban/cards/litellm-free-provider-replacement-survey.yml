@@ -1,0 +1,80 @@
+id: litellm-free-provider-replacement-survey
+title: Survey free hosted LLM providers to replace GitHub Models in litellm
+column: backlog
+updated: 2026-11-07 15:39
+priority: medium
+tags:
+- infra
+- llm
+- litellm
+- cloudflare
+spec: 'Context: GitHub Models retired 2026-07-30. idc03 litellm needs a free/low-cost hosted provider set for Ada/infra
+  calls that used to route there.
+
+
+  Candidates to evaluate (OpenAI-compat preferred — litellm drop-in):
+
+  1. Cloudflare Workers AI — REST /ai/v1/chat/completions is OpenAI-compatible; free 10,000 neurons/day. BLOCKER:
+  neither existing CF token has Workers AI perm — verified 2026-11-07: cfut_ (tony-omen/tony-dell, Workers Scripts
+  only) and cfat_ (idc01/02/03, Zone DNS+Workers Scripts) both get auth error 10000 on /ai/models/search. NEED:
+  new CF API token with Account > Workers AI permission (or edit cfat_ in dashboard).
+
+  2. Gemini API free tier (AI Studio key).
+
+  3. Groq free tier.
+
+  4. OpenRouter free models (:free variants).
+
+  5. Local Ollama (already in infra — baseline, not hosted).
+
+
+  Deliverable: comparison table (free limits, model list, OpenAI-compat, litellm config snippet), recommended provider
+  set, config diff for idc03 litellm. Update ssot.secrets.yml if a new CF token is minted.'
+note: Spawned from chat 2026-11-07 — GitHub Models retirement follow-up.
+ref: SYS-1086
+comms:
+- at: 2026-11-07 14:17
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 14:39
+  from: devin
+  text: 'CF retest 2026-11-07 ~15:20: Tony reported key updated, but no slot changed — cloudflare.env mtimes: tony-omen
+    Oct 4 (cfut_), tony-dell Oct 8 (cfut_), idc03 Oct 3 (cfat_). All three still get auth error 10000 on /ai/models/search.
+    If the update was a dashboard permission edit, it did not land on either known token — needs Account > Workers
+    AI permission on the token whose string sits in cloudflare.env, or a NEW token value pasted into the file. Asked
+    Tony where the updated key went.'
+- at: 2026-11-07 14:51
+  from: devin
+  text: 'Inventory 2026-11-07 (~/.config/litellm/config.yaml on idc03, 248 lines): WIRED = gemini direct (2.5-flash/-lite,
+    3.5-flash/-lite, 3.1-pro/img, embedding-2; PAID+FREE key variants x5 keys incl KK/TONY/MICHAEL), openrouter
+    (gemini/claude-fable-5.1/nemotron-nano/gemma-4-31b incl :free variants), ollama x3 backends (idc03 local :11434,
+    kkmac tunnel :11445, idc02 :11434) with role aliases tool-call/chat/summary/voice-aux/classify/bench. GAPS:
+    GROQ_API_KEY exists in ~/.config/secrets/groq.env but is '
+- at: 2026-11-07 15:00
+  from: devin
+  text: 'CF update 2026-11-07 ~16:00: Tony reports Workers AI permission added, but BOTH stored tokens still auth-denied
+    on /ai/models/search, /ai/run, and /ai/v1 (tested on tony-omen cfut_ + idc03 cfat_). No new token file on any
+    host. Likely edited a different token, or added Workers Scripts/AI Gateway perm instead of Account>Workers AI.
+    Needs: verify dashboard token whose value MATCHES the env string has Workers AI perm.
+
+
+    Meanwhile — live catalog pulled (73 models, today''s snapshot via ai.flared.au/ll'
+- at: 2026-11-07 15:11
+  from: devin
+  text: 'CF Workers AI LIVE 2026-11-07: new CF_API_WORKER_TOKEN in tony-omen cloudflare.env — works. Tested: FREE
+    tier models = llama-3.3-70b-fp8, llama-4-scout, llama-3.1-8b-fp8, llama-3.2-3b, gpt-oss-120b/20b, qwen3-30b-a3b,
+    qwq-32b, nemotron-3-120b, mistral-small-3.1-24b, deepseek-r1-distill-32b (reasoning models return reasoning_content
+    not content — parsers must handle). PAYWALLED on Free: glm-5.x, kimi-k2.x, deepseek-v4.x. Embeddings bge-m3
+    works (1024-dim, multilingual — returned vector for Thai+E'
+- at: 2026-11-07 15:39
+  from: devin
+  text: 'Shadow-eval vs CF lanes (2026-11-07, tony-dell opencode arm, fixture host-health):
+
+    - CONTROL gemini-3.5-flash-lite: PASS 23.4s
+
+    - cf-llama-70b: FAIL 163s — bash-statelessness loop: 32 tool calls retrying `export VAR`/`echo $VAR` (never
+    learned each bash call is a fresh shell), produced EMPTY health.json.
+
+    - cf-gpt-oss-120b: FAIL 99.7s — only 4 tool calls, spent budget reasoning, never wrote the artifact.
+
+    Plumbing fixed en route: dell ~/.config/opencode/opencode.json litellm provider (openai-compat'

@@ -1,17 +1,17 @@
 id: rk600-empty-sensors-ok
 title: get_rk600_weather returns ok:true with empty sensors — retry storm bait
-brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned {sensors: {}, ok: True}
-  ~10x in a row. Model retried indefinitely because the result looked successful. Same silent-miss class
-  as the cms_read None→ok:true bug fixed 2026-10-08.'
+brief: 'Session 7d21066a27 (2026-10-07): weather station offline, tool returned {sensors: {}, ok: True} ~10x in
+  a row. Model retried indefinitely because the result looked successful. Same silent-miss class as the cms_read
+  None→ok:true bug fixed 2026-10-08.'
 column: backlog
 priority: medium
 program: ada-tools
-updated: 2026-10-08 20:35
+updated: 2026-11-07 16:11
 tags:
 - tool-contract
 - audit-2026-10-08
-note: Return ok:false + "station offline/unreachable" when sensors dict is empty. Same fix pattern as
-  backend/tool_runner/cms.py get on miss.
+note: Return ok:false + "station offline/unreachable" when sensors dict is empty. Same fix pattern as backend/tool_runner/cms.py
+  get on miss.
 comms:
 - at: 2026-10-08 20:35
   from: devin
@@ -22,10 +22,12 @@ comms:
 - at: 2026-10-25 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-07 16:11
+  from: ada
+  text: '[verify] [cleanup] alive - recent activity and spec draft indicate ongoing work'
 ref: OPS-0222
-spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and station offline/unreachable
-  when the sensors dictionary is empty, following the fix pattern seen in backend/tool_runner/cms.py get
-  on miss. Host/repo: tony-dell, chaba. Constraints: Apply the exact error return structure and pattern
-  from the CMS tool runner reference. Testable done-condition: A unit or integration test asserts that
-  calling get_rk600_weather with empty sensors yields ok:false and the specified offline message instead
-  of ok:true.'
+spec: 'Goal: Update get_rk600_weather in the chaba repo to return ok:false and station offline/unreachable when
+  the sensors dictionary is empty, following the fix pattern seen in backend/tool_runner/cms.py get on miss. Host/repo:
+  tony-dell, chaba. Constraints: Apply the exact error return structure and pattern from the CMS tool runner reference.
+  Testable done-condition: A unit or integration test asserts that calling get_rk600_weather with empty sensors
+  yields ok:false and the specified offline message instead of ok:true.'

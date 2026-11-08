@@ -1,0 +1,376 @@
+title: MediaWiki DevNest News Standard
+subtitle: Hierarchy, metadata, visibility, and orchestration contract for wiki.h3.gizmo-thailand.com
+icon: 🗞️
+version: 1
+
+overview:
+  purpose: >
+    Define MediaWiki as the public DevNest News presentation surface.
+    MediaWiki stores the human-readable article, hierarchy links, categories,
+    and revision history. It is not the source of truth for publication policy,
+    automation state, credentials, or private operational reports.
+  status: active
+  canonical_host: https://wiki.h3.gizmo-thailand.com
+  api: https://wiki.h3.gizmo-thailand.com/api.php
+  mediawiki_version: "1.46.2"
+  language: th
+  fallback_language: en
+  owner: tony
+  orchestrator: ada
+  mutation_door: board-api /publish
+  adapter: scripts/board/publication.py::MediaWikiSink
+
+source_of_truth:
+  publication_event: >
+    The canonical PublicationEvent in board-api is authoritative for why,
+    when, and whether an article was published. Its event_id,
+    idempotency_key, confidence, evidence, visibility, and source are
+    copied into the wiki page.
+  wiki_page: >
+    The MediaWiki revision is authoritative for the rendered public article
+    and its human-visible edit history. It must not be edited around the
+    publication door for generated DevNest News pages.
+  internal_state: >
+    Private drafts, source packets, reporter evaluation data, and operational
+    maintenance state remain in board-api, MDDB, or repo artifacts until a
+    real MediaWiki access boundary is configured.
+
+roles:
+  ada:
+    role: orchestrator
+    allowed:
+      - read wiki pages and categories
+      - request search/tree/validation operations
+      - draft a PublicationEvent
+      - request a dry-run maintenance operation
+      - explain publication receipts and failures
+    forbidden:
+      - hold or expose WIKI_PASSWORD
+      - edit arbitrary pages directly
+      - publish unverified public news
+      - make a page public by changing only wiki prose
+      - install extensions or change LocalSettings.php
+  board_api:
+    role: policy and mutation door
+    responsibilities:
+      - validate PublicationEvent
+      - enforce evidence and public-confidence gates
+      - apply idempotency and outbox retry
+      - route to MediaWiki only when the sink capability allows it
+      - return page and revision receipts
+  mediawiki_adapter:
+    role: deterministic writer
+    location: scripts/board/publication.py::MediaWikiSink
+    responsibilities:
+      - obtain login and CSRF tokens
+      - render NewsReport wikitext
+      - write the requested News/ title
+      - apply categories and source links
+      - never write private or members events
+  human_editor:
+    role: Tony-controlled approval
+    responsibilities:
+      - approve public-news policy changes
+      - approve corrections and retractions
+      - approve access-boundary changes
+  scheduled_maintenance:
+    role: future deterministic worker
+    responsibilities:
+      - validate templates and metadata
+      - detect orphaned parents and missing categories
+      - regenerate rollups
+      - report failures; never silently broaden visibility
+
+hierarchy:
+  rule: >
+    Geography answers where a story matters; desk answers which editorial
+    lens reports it; topic answers what it is about. DevNest is a desk, not
+    a geographic level.
+  geographic_levels:
+    - world
+    - region
+    - country
+    - subnational
+    - local
+    - project
+  canonical_pages:
+    root: News
+    world: News/World
+    regions: News/Regions/<Region>
+    countries: News/Countries/<Country>
+    local: News/Local/<Locality>
+    desks: News/Desks/<Desk>
+    private_reserved: News/Private/<Desk>
+    private_namespace: PrivateNews:<Scope>/<Leaf>
+  devnest_desk:
+    root: News/Desks/DevNest
+    branches:
+      - AI
+      - Tools
+      - Infrastructure
+      - Benchmarks
+      - Projects
+      - Releases
+      - Corrections
+  leaf_rule: >
+    Store a story once at its most specific meaningful scope. Rollups link
+    to the leaf; they do not copy or independently rewrite the story.
+  title_rules:
+    - "ASCII slash-separated paths under News/"
+    - "one canonical leaf title per story_id"
+    - "News/Private/* is legacy reserved naming only; it is not an access boundary"
+    - "PrivateNews:* is the enforced inhouse/sysop review namespace"
+    - "generated titles must be supplied as meta.wiki_title"
+    - "each Wiki adapter rejects titles outside its configured namespace prefix"
+
+page_roles:
+  index:
+    purpose: navigational hub
+    examples: [News, News/World, News/Desks/DevNest]
+  rollup:
+    purpose: generated summary of child leaves
+    required: [parent, children, report_role]
+  leaf:
+    purpose: source-backed article or event
+    required: [story_id, evidence, confidence, published_at]
+  correction:
+    purpose: visible correction or retraction of an existing leaf
+    rule: never erase a material correction from revision history
+
+metadata:
+  template: "แม่แบบ:NewsReport"
+  required:
+    - story_id
+    - status
+    - visibility
+    - confidence
+    - summary
+    - desk
+    - geo_scope
+    - topic
+    - published_at
+    - source_published_at
+    - source_url
+    - parent
+  recommended:
+    - lede
+    - why_it_matters
+    - country
+    - region
+    - locality
+    - source_name
+    - event_id
+    - idempotency_key
+    - generated_by
+    - corrected_at
+    - correction_of
+  event_mapping:
+    event_id: story_id
+    occurred_at: published_at
+    evidence[0]: source_url
+    meta.wiki_title: canonical page title
+    meta.parent: parent link
+  body_rules:
+    - "lede first; explain the bottom line in one breath"
+    - "render Quick summary immediately below the title"
+    - "summary is the stable index/AI handoff sentence; keep it <=80 characters"
+    - "lede may expand the summary to 1-2 sentences; keep it <=280 characters"
+    - "why_it_matters is optional and stays separate from the factual summary"
+    - "show source publication time separately from wiki publication time"
+    - "include an Evidence section with every source link"
+    - "include confidence and visibility in the rendered metadata"
+    - "do not claim currentness without a source timestamp"
+  quick_summary:
+    display_label: "Quick summary"
+    source: "meta.summary or NewsReport summary parameter"
+    position: "immediately after H1, before the body"
+    format: "one factual sentence; no unsupported interpretation"
+    ai_contract: >
+      AI may use summary and lede as the first-pass context, but an AI
+      summary never overwrites the editorial summary. Any generated AI
+      block must carry model, generated_at, source_revid, and confidence.
+
+taxonomy:
+  categories:
+    root: Category:News
+    desks: Category:News/Desks/<Desk>
+    geography: Category:News/Geography/<Region-or-Country>
+    topics: Category:News/Topics/<Topic>
+    visibility: Category:News/Visibility/Private
+  rules:
+    - "category membership is secondary navigation, not a second copy of a story"
+    - "a leaf may have multiple topic/geography categories"
+    - "category names must remain stable after first publication"
+    - "CategoryTree is optional; core category pages remain canonical"
+
+visibility:
+  levels: [private, members, public]
+  current_adapter_policy: >
+    MediaWiki sink accepts only visibility=public and confidence=verified
+    news events with evidence. Private and members events are skipped, not
+    downgraded or written as hidden prose.
+  parent_rule: >
+    A parent must never be more visible than its most restricted child.
+  private_warning: >
+    A title containing Private is not private. Until MediaWiki permissions
+    are configured and tested, internal reports stay outside MediaWiki.
+  public_gate:
+    - evidence is non-empty
+    - confidence is verified
+    - privacy scan passes
+    - source and source_published_at are present
+    - idempotency_key is deterministic
+    - parent is known and public-safe
+
+publication:
+  default_route:
+    news: [news, wiki, board, telegram]
+  wiki_sink:
+    surface: public
+    kinds: [news]
+    evidence_required: true
+    credential_file: "~/.config/secrets/wiki-h3-gizmo.env"
+    api_variable: WIKI_API_URL
+    host_variable: WIKI_HOST
+    user_variable: WIKI_USER
+    password_variable: WIKI_PASSWORD
+    template_variable: WIKI_NEWS_TEMPLATE
+    default_template: "แม่แบบ:NewsReport"
+  guarantees:
+    - idempotency
+    - outbox_retry
+    - evidence_gate
+    - verified_public_gate
+    - page_revision_receipt
+    - no credential exposure to agents
+  receipt:
+    required: [event_id, idempotency_key, ref, pageid, revid, action]
+
+maintenance:
+  validation:
+    - "all generated pages use NewsReport"
+    - "all leaves have a parent"
+    - "all parent links resolve"
+    - "all public leaves have evidence and source timestamps"
+    - "all stories have at least one desk/topic/geography classification"
+    - "no private content appears in public rollups"
+    - "private review leaves use the protected PrivateNews namespace"
+    - "rerunning the same event produces no duplicate page"
+  regeneration:
+    - "rollups are rebuilt from leaf metadata"
+    - "corrections update one canonical leaf and its rollups"
+    - "failed maintenance produces an audit result or board item"
+    - "maintenance defaults to dry-run"
+  future_tools:
+    - wiki_read
+    - wiki_search
+    - wiki_tree
+    - wiki_validate
+    - wiki_maintain
+    - wiki_draft
+    - wiki_publish
+extensions:
+  policy: >
+    Install only extensions compatible with MediaWiki 1.46.2 and PHP 8.3.
+    Do not install archived Graph or archived Drawio. Every extension change
+    requires a LocalSettings.php backup, a dry-run/test page, and a
+    Special:Version verification.
+  phase_1:  # ALL INSTALLED — verified 2026-11-06 via /wiki/extension list
+    - name: Lockdown
+      purpose: namespace-level read/write boundary for private Wiki content
+      risk: high
+      gate: install and verify before publishing Infrastructure/Hosts
+      status: "installed + enforced — anon content read on PrivateNews: and
+        Infrastructure: returns accessdenied (verified 2026-11-06)"
+    - name: CategoryTree
+      purpose: expandable category and News hierarchy navigation
+      risk: low
+      status: installed
+    - name: Mermaid
+      purpose: text-defined flowcharts, timelines, and architecture diagrams
+      risk: low
+      status: installed
+    - name: MsUpload
+      purpose: drag-and-drop multi-file upload and gallery insertion
+      risk: medium
+      status: installed
+    - name: MultimediaViewer
+      purpose: image lightbox and full-size media browsing
+      risk: low
+      status: installed
+  phase_2:  # ALL INSTALLED — verified 2026-11-06 via /wiki/extension list
+    - name: Cargo
+      purpose: structured NewsReport storage and queries
+      risk: medium
+      status: installed
+    - name: PageForms
+      purpose: form-driven creation of structured news pages
+      risk: medium
+      status: installed
+  phase_3:  # NOT installed (verified 2026-11-06)
+    - name: Wanda
+      purpose: read-only wiki-grounded AI search/chat with citations
+      risk: high
+      rule: editing disabled until Ada/publication policy parity is proven
+    - name: CirrusSearch
+      purpose: Elasticsearch-backed full-text retrieval for larger content
+      risk: high
+      prerequisite: Elasticsearch/OpenSearch capacity + backup plan
+  rejected:
+    - "Graph — archived; security issues and no current MediaWiki support"
+    - "Drawio — archived; use DrawioEditor only with external-service approval"
+  install_gate:
+    current_state: >
+      Superseded 2026-11-06: all phase_1/phase_2 extensions are installed and
+      verified via the board-api /wiki/extension door, which drives the
+      wiki-side Springboard extension over an allowlist — no agent-held
+      filesystem access needed for extension enable/disable. New custom
+      namespaces and Lockdown rules (e.g. Education:/Reports: per
+      docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml)
+      still require a LocalSettings.php edit via the admin/Plesk path —
+      the same path that registered PrivateNews: and Infrastructure:.
+    required_access:
+      - Plesk login or SSH/SFTP to the wiki webroot
+      - write access to extensions/ and LocalSettings.php
+      - PHP CLI/Composer or a supported extension release bundle
+      - backup and rollback path
+    verification:
+      - Special:Version lists the extension
+      - test page renders the extension output
+      - existing News/ pages remain readable
+      - API publication remains functional
+
+current_state:
+  re_verified_2026-11-06:
+    - "main-namespace subpages enabled"
+    - "NewsReport template renders"
+    - "Ada account can authenticate and edit"
+    - "MediaWikiSink delivered Ada's first test publication"
+    - "public test leaf News/Desks/DevNest/Ada/First-Publication-Test exists"
+    - "private boundary ENFORCED — anon content read on PrivateNews: and
+      Infrastructure: returns accessdenied (Lockdown); titles remain
+      enumerable via allpages"
+    - "phase_1+2 extensions installed: Lockdown, CategoryTree, Mermaid,
+      MsUpload, MultimediaViewer, Cargo, PageForms"
+    - "Springboard extension installed — /wiki/extension door manages the
+      allowlisted set"
+    - "PluggableAuth + OpenID Connect installed; SSO login live; users
+      Ada / Tony / Tonezzzz@gmail.com"
+    - "namespaces: PrivateNews: (3002, protected), Infrastructure: (3000,
+      protected, hosts tree populated), Form (106)"
+    - "wiki + wiki-private sinks registered live in /publish (9 sinks)"
+  not_ready:
+    - "scheduled wiki maintenance worker"
+    - "Ada wiki read/search tools"
+    - "public rollup generator"
+    - "LocalSettings edit path for new namespaces (admin/Plesk action)"
+
+related_ssot:
+  - docs/ssot/apps/ssot.apps.cms-reports.yml
+  - docs/ssot/infrastructure/ssot.reports.yml
+  - docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+  - docs/ssot/kanban/cards/devnest-news-two-lane-pilot.yml
+related_code:
+  - scripts/board/publication.py
+  - scripts/board/board-api.py
+  - tests/board/test_publication.py

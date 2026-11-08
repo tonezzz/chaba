@@ -1,0 +1,20 @@
+id: idc03-re-run-ada-scenario-runner-install-a77c3c
+title: 'idc03: re-run ada-scenario-runner install.sh — unit files stale since Oct 23'
+column: backlog
+updated: 2026-11-08 10:36
+priority: medium
+tags:
+- idc03
+- ada
+- scenario
+- drift
+note: 'Deployed ~/.config/systemd/user/ada-scenario-*.service on idc03 all still point ADA_LIVE_URL=:8002 (paid
+  lane); repo HEAD has research/cms/reports on dev lane :8005 (bench-off-paid-lanes, 1c56115c5). Wrapper was reinstalled
+  Nov 7 but unit files were not. Result: research/cms/reports weekly suites will PARK (exit 0, zero sessions) instead
+  of running on dev until install.sh is re-run on idc03. memory/tools/casting staying :8002+parked is by design.
+  Found during timer-alert-idc03-ada-scenario-memor'
+ref: ADA-1159
+comms:
+- at: 2026-11-08 10:36
+  from: tony
+  text: card captured via board-api

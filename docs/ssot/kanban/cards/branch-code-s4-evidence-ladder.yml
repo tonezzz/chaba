@@ -1,0 +1,24 @@
+id: branch-code-s4-evidence-ladder
+title: 'branch-code S5 graduation: accumulate S4 artifact_write evidence + rollback drills'
+column: backlog
+updated: 2026-11-04 14:16
+spec: 'lane_gate S5 admit branch_code requires promote_gate evidence: min_jobs 5 verified artifact_write jobs at
+  1.0 rate, 0 tool denials, rollback drills recorded. Today: ops-readonly + doc-draft + ssot-research proven at
+  report/read_only class; NOTHING has run artifact_write class. Plan: (1) create an artifact-write profile (file-mode
+  artifact under declared dirs — unlike message-mode, the agent writes through the edit tool inside allowed_paths);
+  (2) run 5 bounded write jobs on real cards (doc edits, config updates, generated fixtures) collecting verified:true
+  at 0 denials; (3) record two rollback drills (deliberate bad write → gate holds → revert evidence); (4) only then
+  enable branch_code + point a real code-edit card at it. Do NOT shortcut the gate — the evidence ladder is what
+  makes a write-capable agent safe. Evidence lives in evals/opencode-lane/runs/ + lane ledger.'
+ref: OPS-1030
+comms:
+- at: 2026-10-30 21:03
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-04 14:16
+  from: devin
+  text: 'Current evidence check: 7 verified OpenCode artifact-write jobs are present (KNB-1051, OPS-1054, OPS-1058,
+    AUD-1052, OPS-1059, OPS-1061, OPS-1063), meeting the minimum 5-job count. Remaining promotion gate is two recorded
+    rollback drills plus confirmation of zero tool denials. Recommendation: run two supervised disposable branch-code
+    canaries (no push/deploy), verify tests + independent review + rollback evidence, then consider OPS-1042 branch-code
+    pilot.'

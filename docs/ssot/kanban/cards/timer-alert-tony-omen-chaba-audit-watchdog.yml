@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit-watchdog
 title: Timer chaba-audit-watchdog on tony-omen failing
 column: done
-updated: 2026-10-13 18:24
+updated: 2026-11-08 11:07
 priority: high
 tags:
 - timer-alert
@@ -216,5 +216,71 @@ comms:
 - at: 2026-10-13 18:24
   from: devin
   text: closed by devin
+- at: 2026-11-08 10:29
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 10:38
+  from: idc02
+  text: claimed
+- at: 2026-11-08 10:38
+  from: chaba
+  text: started devin-task-20261108-103843-timer-chaba-audit-watchdog-on- on idc02 (dispatch)
+- at: 2026-11-08 10:38
+  from: devin
+  text: dispatch started — investigating chaba-audit-watchdog 10-13 05:00 failure on tony-omen
+- at: 2026-11-08 10:39
+  from: devin
+  text: '[still suspicious] `chaba-audit-watchdog.timer` on `tony-omen` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit-watchdog.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-08 10:49
+  from: devin
+  text: '[investigated 2026-11-08] Two separate things here. (1) The 10-13 05:00 exit-code was already root-caused
+    + fixed same day: pre-OPS-0581 finding-reporter, exited 1 on stale suite summary; exit-0 contract shipped 18:24.
+    (2) Todays re-spawn is NOT a fresh failure — sweep state shows chaba-audit-watchdog.timer DISABLED on omen while
+    ssot.audit.hosts.yml still expected it active; sentinel re-fired and board-api on_exists:queue re-armed the
+    done card (auto-comm re-spawned from report page). The disab'
+- at: 2026-11-08 10:51
+  from: idc02
+  text: 'finished (ok): exit=0 card, and the full write-up is in `dispatch-outcome-20261108-103843-timer-chaba-audit-watchdog-on-.md`.
+    | devin-t'
+- at: 2026-11-08 10:52
+  from: chaba
+  text: 'session-end checkpoint 492f8fbd: 2 leftover file(s) committed'
+- at: 2026-11-08 10:52
+  from: chaba
+  text: pushed dispatch/20261108-103843-timer-chaba-audit-watchdog-on- to origin
+- at: 2026-11-08 10:52
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 10:52
+  from: chaba
+  text: auto-merged ba06a8aa (dispatch/20261108-103843-timer-chaba-audit-watchdog-on-) → origin/master
+- at: 2026-11-08 10:52
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-103843-timer-chaba-audit-watchdog-on-,
+    branch dispatch/20261108-103843-timer-chaba-audit-watchdog-on-'
+- at: 2026-11-08 10:59
+  from: devin
+  text: '[still suspicious] `chaba-audit-watchdog.timer` on `tony-omen` is disabled but expected active (audit census
+    / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit-watchdog.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 11:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   status: done
+  type: dispatch
+  lane: devin
+  runner: idc02
+  result: 'exit=0 card, and the full write-up is in `dispatch-outcome-20261108-103843-timer-chaba-audit-watchdog-on-.md`.
+    | devin-task-20261108-103843-timer-chaba-audit-watchdog-on-.service: Consumed 18.129s CPU time, 174.0M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 11:07
+  note: verified — evidence checks green, closing itself

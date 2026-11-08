@@ -1,0 +1,28 @@
+id: runner-agent-opencode-lane-profile-bug
+title: 'runner-agent: explicit executor=opencode ignores card lane when resolving profile'
+column: backlog
+updated: 2026-10-30 21:56
+priority: low
+spec: 'start_task calls start_opencode_lane(card, "", unit) for declared executor=opencode — the card''s own action.lane
+  never reaches the lane->LANE_PROFILES map, so an executor=opencode + lane=free_lane card fails with "no task profile
+  for lane (none)" unless it also pins action.agent_profile. Either pass a.get("lane") into start_opencode_lane
+  (so a mapped lane resolves) or tighten the error to say agent_profile is required with explicit executor. Found
+  live 2026-10-30 on devnest-fl-pilot-sop (3rd claim attempt, idc02). Related: idc02''s ~/.local/bin/runner-agent
+  was a stale Oct-25 copy missing the whole executor-contract block — reinstalled; runner-fleet-health should flag
+  binary/repo drift.'
+ref: OPS-0996
+comms:
+- at: 2026-10-30 09:19
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-30 21:51
+  from: devin
+  text: 'Lane-forwarding verification in cline-ready-mirror: added a regression assertion that action.lane=free_lane
+    reaches start_opencode_lane; the 3 targeted routing tests pass. Full test_executor_contract now passes 59/59
+    after its test fixture writes dispatch state under its temp directory rather than shared /tmp. No live task
+    or dispatch was run; the test/doc changes remain uncommitted in this worktree.'
+- at: 2026-10-30 21:56
+  from: devin
+  text: 'Follow-up: the action.lane regression assertion and temp-state isolation are committed/pushed on `feat/cline-ready-mirror-20261030`
+    at 9316bb32a. Full test_executor_contract passes 59/59, including explicit free_lane forwarding; no live lane
+    task or dispatch was run.'

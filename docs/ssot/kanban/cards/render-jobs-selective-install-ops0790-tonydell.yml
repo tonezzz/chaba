@@ -1,0 +1,84 @@
+id: render-jobs-selective-install-ops0790-tonydell
+title: Scope rendered timer installation for OPS-0790 rollout
+column: done
+updated: 2026-11-08 08:04
+brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+- deploy-safety
+spec: Code-only follow-up to OPS-0790. `render-jobs.py --host <host> --install` currently enables/starts every rendered
+  timer for that host. Add a per-job selector (e.g. `--ids`) so the accepted eight-job rollout can install/enable
+  only requested service/timer pairs; keep full-host behavior as the explicit default when no selector is provided.
+  Add tests proving unrelated timers are neither enabled nor restarted, and update docs/reports/dispatcher-systemd-migration-2026-10-29.md
+  with the scoped rollout command. No live unit install, enable, start, or disable in this task. Target tony-dell
+  because the idc02 runner lacks chaba push; respect `/tmp/pfg-deploy.lock` for the later host rollout.
+action:
+  type: dispatch
+  repo: chaba
+  host: tony-dell
+  labels:
+  - exec
+  target_host: tony-dell
+  artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
+  status: done
+  runner: tony-dell
+ref: OPS-0993
+comms:
+- at: 2026-10-30 01:34
+  from: devin
+  text: Rerouted from idc02, which lacks push:chaba; tony-dell has exec/push capability. Code/tests only; live timers
+    remain untouched.
+- at: 2026-10-30 15:13
+  from: tony-dell
+  text: claimed
+- at: 2026-10-30 15:24
+  from: devin
+  text: 'Reconciliation: the tony-dell dispatch unit exited 0 but produced no code, test, or report artifact; the
+    transcript shows a read-only `systemctl is-enabled` probe was rejected and work stopped before implementation.
+    I''m clearing the stale running claim; no service command was re-run and no live timer changed. I will resume
+    the same code-only task with the install-selector tests isolated from host/systemctl probes.'
+- at: 2026-10-30 15:24
+  from: tony
+  text: put on hold
+- at: 2026-10-30 15:25
+  from: tony
+  text: queued for processing
+- at: 2026-10-30 15:25
+  from: tony-dell
+  text: claimed
+- at: 2026-11-07 11:13
+  from: devin
+  text: '2026-11-07 tony-omen in-session (dispatch had twice produced zero artifacts): implemented --ids selector
+    on branch fix/ops-0993-selective-install at origin/master (5de6a6c57). render_host(man,host,ids) emits only
+    selected job pairs; chaba-jobs.* excluded under --ids; unknown ids -> ERR rc2 before any write; timer_units()
+    keeps .timer suffix — found the bare-name enable was resolving to .service, so --install never actually armed
+    timers. Verified accidentally on tony-omen, cleaned up (reset-faile'
+- at: 2026-11-07 11:43
+  from: devin
+  text: 'Landed on origin/master as 7b5f86014 (FF push from tony-dell — tony-omen has no push:chaba; gh token expired,
+    no SSH key). Verification: 22 render-jobs tests pass, --check OK 92 jobs/8 hosts, --ids bad-id -> ERR rc2. Rollout-ready
+    command shape: render-jobs.py --host <h> --ids <migrated ids> --install — chaba-jobs.timer untouched under --ids
+    and the bare-name enable bug (was targeting .service, never armed timers) is fixed.'
+- at: 2026-11-07 11:43
+  from: tony
+  text: closed by tony
+- at: 2026-11-08 07:50
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''exec''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''exec''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''exec''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''exec''] — fix
+    action.labels/host pins or teach a runner the capability'
+awaiting_action: true

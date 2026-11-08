@@ -1,0 +1,94 @@
+# Task-scoped OpenCode agent profile — artifact-write
+# (card opencode-task-agent-profiles; S4 evidence ladder, OPS-1030).
+#
+# S4 bounded write agent: the agent writes ONE declared file inside the
+# worktree using the write/edit tools — no bash, no patch, no emit.
+# Confined to the S4 write roots (evals/opencode-lane/out/, reports/,
+# docs/reports/). This is the evidence rung between read-only/report
+# profiles and the S5 branch-code gate: every verified run here is a
+# data point that a write-capable agent can be bounded.
+id: artifact-write
+version: 1
+status: enabled
+unattended: true
+description: >-
+  Bounded file-write agent: writes exactly the declared artifact path
+  via write/edit inside the S4 roots, in an isolated worktree with
+  worktree-drop rollback. No bash, no patch, no other paths — the
+  scope audit fails the run on any write outside the declared set.
+task_classes: [artifact_write]
+stages: [S4]
+target_host:
+  required: true
+  allowed: []
+model:
+  tier: cheap
+  default: litellm/ollama-qwen38b-kkmac
+  allowed:
+  - litellm/ollama-qwen38b-kkmac
+  - litellm/ollama-qwen32b-kkmac
+  - litellm/or-gemini-3.5-flash
+  - litellm/gemini-3.5-flash-lite
+providers: [litellm]
+agent:
+  mode: primary
+tools:
+  read: true
+  grep: true
+  glob: true
+  list: true
+  todoread: true
+  todowrite: true
+  bash: false
+  write: true              # file-mode: the agent writes the artifact
+  edit: true
+  patch: false
+  task: false
+  webfetch: false
+permission:
+  edit: allow             # confined to allowed_paths by the scope audit
+  webfetch: deny
+  external_directory: deny
+  doom_loop: ask
+  bash:
+    '*': deny
+mcp:
+  allowed: []
+  denied: []
+  upstream:
+    name: mcp-debug-readonly
+    proxy: ~/.config/devin/mcp-scripts/mcp-allowlist.py
+    command:
+    - /bin/bash
+    - ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh
+allowed_paths:
+- evals/opencode-lane/out/
+- reports/
+- docs/reports/
+artifact:
+  mode: file
+  format: md
+  dirs:
+  - evals/opencode-lane/out/
+  - reports/
+  - docs/reports/
+  schema: 'evals/opencode-lane/profiles/artifact-write/fixture/task.yaml #contract.required_fields'
+verifier:
+  type: held_out_py
+  ref: evals/opencode-lane/profiles/artifact-write/fixture/verify.py
+escalation:
+  on_fail: manual
+  allowed_on_fail:
+  - manual
+  - hold
+  - retry_then_manual
+  max_retries: 1
+rollback:
+  kind: worktree-drop    # S4 gate requires a real rollback kind
+rails: 'You are the artifact-write profile agent inside an isolated
+  worktree. You may READ the repo with read/grep/glob and you may WRITE
+  — but ONLY the declared artifact path, using the write/edit tools.
+  Do not touch any other path, do not run shell commands, do not emit
+  the document as your message. Write the file, then end with a one
+  line summary of what you wrote. Every denied call and every write
+  outside the declared path is recorded and fails the job.'

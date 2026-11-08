@@ -1,0 +1,809 @@
+id: video-render-dispatcher-plan-repair
+title: 'OpenCode artifact repair: video dispatcher plan'
+column: done
+updated: 2026-11-04 01:14
+brief: Retry the OPS-1042 plan with a verifier-compatible artifact path.
+priority: high
+program: ai-workforce
+tags:
+- video
+- dispatcher
+- opencode
+- artifact-write
+spec: Read OPS-1042, the video claim lifecycle procedure, video history procedure, current queue status report,
+  and Sacred Father manifest. Write the concrete dispatcher implementation plan to the declared artifact path. Do
+  not mutate queues, cards, claims, services, or source files.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-render-dispatcher-plan.md
+  prompt: Write the declared plan artifact under evals/opencode-lane/out/. Read source documents and reports, but
+    do not edit them or mutate queues. Include canonical manifest, stale claim policy, rollback, QC, and read-only
+    boundaries.
+  expect:
+    facts:
+    - canonical manifest
+    - stale claim
+    - rollback
+    - QC
+    - read-only
+  lane: free_lane
+  status: done
+  agent_profile: artifact-write
+  result: 'exit=0 J8vgJwuHp5dkAC","type":"step-finish","tokens":{"total":45163,"input":2701,"output":31,"reasoning":0,"cache":{"write":0,"read":42431}},"cost":0}}
+    | devin-task-video-render-dispatcher-plan-repair-1793728841.service: Consumed 15.252s CPU time.'
+  verified: true
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=0'
+  sweep:
+    zero_commit: 2026-11-04 00:59
+  runner: idc02
+ref: OPS-1058
+comms:
+- at: 2026-11-03 16:15
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 16:15
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 16:15
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 16:15
+  from: idc02
+  text: claimed
+- at: 2026-11-03 16:15
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793697342 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 16:16
+  from: idc02
+  text: 'finished (ok): exit=0 e5f4e8c09ffehpnoDBYA4PT9nE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 16:16
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 16:16
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 16:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 16:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 16:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793698143 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 16:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5f42503cffeSx32C5ZhDYbMRH","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 16:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 16:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 16:37
+  from: devin
+  text: 'Assessment of recent Ada/OpenCode interactive session: native question flow reached OPS-1058 and Start
+    supervised, then the model wrote `evals/opencode-lane/out/video-render-dispatcher-plan.md` in `/home/tony/DevNest`
+    (demo workspace). This is not the canonical chaba dispatch worktree/artifact landing for OPS-1058, so it does
+    NOT satisfy the card verifier and must not be marked done. The card remains unverified; no queue/card/service/deployment
+    mutation was observed from this session. Next corre'
+- at: 2026-11-03 16:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 16:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 16:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793699063 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 16:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5f344667ffeVjLadtvBrpybBH","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 16:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 16:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 16:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 16:58
+  from: idc02
+  text: claimed
+- at: 2026-11-03 16:58
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793699924 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 16:59
+  from: idc02
+  text: 'finished (ok): exit=0 e5f2723a8ffe6TFHA8BiZ3VUN1","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 16:59
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 16:59
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 17:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 17:14
+  from: idc02
+  text: claimed
+- at: 2026-11-03 17:14
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793700847 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 17:15
+  from: idc02
+  text: 'finished (ok): exit=0 e5f190c12ffeidbdHAZrHECgPQ","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 17:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 17:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 17:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 17:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 17:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793701770 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 17:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5f0af8a0ffeCtktOR4z2kQlR3","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 17:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 17:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 17:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 17:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 17:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793702685 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 17:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5efd0644ffeuJeZIpADKY4L3e","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 17:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 17:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 17:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 17:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 17:59
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793703545 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 18:00
+  from: idc02
+  text: 'finished (ok): exit=0 e5eefe344ffeJKxEOHfdzh7j7Y","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 18:00
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 18:00
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 18:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 18:14
+  from: idc02
+  text: claimed
+- at: 2026-11-03 18:14
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793704472 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 18:15
+  from: idc02
+  text: 'finished (ok): exit=0 e5ee1be3cffeGVDL91wxUBPabM","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 18:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 18:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 18:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 18:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 18:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793705392 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 18:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5ed3b69effe054VbAHpNeGj3x","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 18:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 18:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 18:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 18:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 18:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793706260 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 18:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5ec675f3ffe8XomDXyew6xLFx","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 18:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 18:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 18:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 18:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 18:59
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793707187 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 19:01
+  from: idc02
+  text: 'finished (ok): exit=0 e5eb85111ffeHuZEn6kwj1EmYw","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 19:01
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 19:01
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 19:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 19:14
+  from: idc02
+  text: claimed
+- at: 2026-11-03 19:14
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793708050 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 19:15
+  from: idc02
+  text: 'finished (ok): exit=0 e5eab26a6ffe4ltTXil60g1W7c","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 19:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 19:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 19:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 19:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 19:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793708969 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 19:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5e9d2030ffeNnjEg5FrvCFQH6","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 19:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 19:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 19:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 19:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 19:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793709895 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 19:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5e8f0035ffeZ04EFmIsB66c5G","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 19:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 19:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 19:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 19:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 19:59
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793710765 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 20:00
+  from: idc02
+  text: 'finished (ok): exit=0 e5e81bb57ffexQhAn9kOVpc2hs","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 20:00
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 20:00
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 20:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 20:14
+  from: idc02
+  text: claimed
+- at: 2026-11-03 20:14
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793711686 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 20:15
+  from: idc02
+  text: 'finished (ok): exit=0 e5e73abd3ffeaYHujbNicK57F2","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 20:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 20:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 20:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 20:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 20:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793712550 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 20:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5e667ad3ffenwAZp5SEdLbDTC","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 20:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 20:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 20:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 20:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 20:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793713472 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 20:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5e586d83ffe3FGzJTkAqVSMN1","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 20:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 20:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 20:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 20:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 20:59
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793714394 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 21:00
+  from: idc02
+  text: 'finished (ok): exit=0 e5e4a568bffexv7h2Otikw5Prz","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 21:00
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 21:00
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 21:13
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 21:15
+  from: idc02
+  text: claimed
+- at: 2026-11-03 21:15
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793715316 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 21:16
+  from: idc02
+  text: 'finished (ok): exit=0 e5e3c486effem1t7QEqGgBBgW6","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 21:16
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 21:16
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 21:28
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 21:29
+  from: idc02
+  text: claimed
+- at: 2026-11-03 21:29
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793716169 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 21:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5e2f4141ffefiH4G4CzL2yl3l","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 21:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 21:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 21:43
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 21:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 21:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793717097 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 21:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5e211920ffeNP6S5SZMP3I5Ru","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 21:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 21:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 21:58
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 21:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 21:59
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793717961 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 22:00
+  from: idc02
+  text: 'finished (ok): exit=0 e5e13e9b6ffePpS0uxcmsJSXjE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 22:00
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 22:00
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 22:14
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 22:14
+  from: idc02
+  text: claimed
+- at: 2026-11-03 22:14
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793718888 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 22:15
+  from: idc02
+  text: 'finished (ok): exit=0 e5e05c88cffejKvgFT5PC6KTX4","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 22:15
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 22:15
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 22:29
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 22:29
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 22:30
+  from: idc02
+  text: claimed
+- at: 2026-11-03 22:30
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793719815 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 22:31
+  from: idc02
+  text: 'finished (ok): exit=0 e5df790b0ffe6b371qMBAuNkJJ","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 22:31
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 22:31
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 22:44
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 22:45
+  from: idc02
+  text: claimed
+- at: 2026-11-03 22:45
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793720735 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 22:46
+  from: idc02
+  text: 'finished (ok): exit=0 e5de9952dffeW2X8FX7M0haeSo","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 22:46
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 22:46
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 22:59
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 22:59
+  from: idc02
+  text: claimed
+- at: 2026-11-03 23:00
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793721598 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 23:00
+  from: idc02
+  text: 'finished (ok): exit=0 e5ddc67cdffeVFcGxe9LFanTr8","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 23:00
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 23:00
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 23:14
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 23:15
+  from: idc02
+  text: claimed
+- at: 2026-11-03 23:15
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793722517 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 23:16
+  from: idc02
+  text: 'finished (ok): exit=0 e5dce63e6ffeAQVECvf4vwpqRE","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 23:16
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 23:16
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 23:29
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 23:30
+  from: idc02
+  text: claimed
+- at: 2026-11-03 23:30
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793723436 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 23:31
+  from: idc02
+  text: 'finished (ok): exit=0 e5dc0579bffe9JsuPuOuV1MH8S","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 23:31
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 23:31
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 23:44
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-03 23:44
+  from: idc02
+  text: claimed
+- at: 2026-11-03 23:44
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793724296 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 23:45
+  from: idc02
+  text: 'finished (ok): exit=0 e5db3447affeONx62U3V8KIcsl","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-03 23:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 23:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 23:59
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 00:00
+  from: idc02
+  text: claimed
+- at: 2026-11-04 00:00
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793725221 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 00:01
+  from: idc02
+  text: 'finished (ok): exit=0 e5da525c7ffezUkbA3LCMT7n29","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-04 00:01
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-04 00:01
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-04 00:14
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 00:15
+  from: idc02
+  text: claimed
+- at: 2026-11-04 00:15
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793726139 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 00:16
+  from: idc02
+  text: 'finished (ok): exit=0 e5d9723b6ffePG6dTS8mWw9c3L","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-04 00:16
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-04 00:16
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-04 00:29
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 00:30
+  from: idc02
+  text: claimed
+- at: 2026-11-04 00:30
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793727001 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 00:30
+  from: idc02
+  text: 'finished (ok): exit=0 e5d89f20effeHNJzdhhIlNbpMZ","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-04 00:30
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-04 00:30
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-04 00:44
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 00:45
+  from: idc02
+  text: claimed
+- at: 2026-11-04 00:45
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793727921 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 00:46
+  from: idc02
+  text: 'finished (ok): exit=0 e5d7befcfffe6OOwdjX0DnF6Bp","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{'
+- at: 2026-11-04 00:46
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-04 00:46
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-04 00:59
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=0; auto-retry queued (attempt 1/2)'
+- at: 2026-11-04 01:00
+  from: idc02
+  text: claimed
+- at: 2026-11-04 01:00
+  from: chaba
+  text: started devin-task-video-render-dispatcher-plan-repair-1793728841 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 01:02
+  from: idc02
+  text: 'finished (ok): exit=0 J8vgJwuHp5dkAC","type":"step-finish","tokens":{"total":45163,"input":2701,"output":31,"reasoning":0,"cache":{"wri'
+- at: 2026-11-04 01:02
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/video-render-dispatcher-plan.md
+- at: 2026-11-04 01:02
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-04 01:02
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=artifact-write
+- at: 2026-11-04 01:02
+  from: chaba
+  text: 'session-end checkpoint 4f22e8f1: 1 leftover file(s) committed'
+- at: 2026-11-04 01:02
+  from: chaba
+  text: pushed dispatch/video-render-dispatcher-plan-repair-1793728841 to origin
+- at: 2026-11-04 01:02
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-04 01:02
+  from: chaba
+  text: auto-merged 0b52aecf (dispatch/video-render-dispatcher-plan-repair-1793728841) → origin/master
+- at: 2026-11-04 01:02
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-video-render-dispatcher-plan-repair-1793728841,
+    branch dispatch/video-render-dispatcher-plan-repair-1793728841'
+- at: 2026-11-04 01:14
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-04 01:14
+  note: verified — evidence checks green, closing itself

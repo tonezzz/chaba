@@ -1,0 +1,67 @@
+title: DocPilot v3 static-final — private static cut for KK
+job: docpilot-v3-static-final
+date: 2026-11-07
+host: idc02
+card: doc-pilot-v3-tourist-cut
+epic: doc-pilot-short-film
+session: dispatch/20261107-163129-produce-the-v3-tourist-ship-cu
+
+summary: >-
+  Produced v3-static-final-v1 — the complete private static cut of the
+  approved tourist-ship solar-system doc for KK. 65.728 s,
+  640x384@24fps H.264/AAC + mov_text Thai soft-subs + SRT sidecar.
+  Every shot now uses a rights-checked NASA plate or a deliberate
+  schematic; no placeholder planets remain.
+
+inputs:
+  vo: gdrive:ada-nest/doc-pilot/vo-v3/ (18/18 wavs, re-verified finite
+      1.91-4.52 s, peaks 0.53-0.74, fails none)
+  script: scripts/colab/packs/doc-vo-v3/inputs/script-v3-tourist.yml
+    (approved scope 2026-10-26)
+  plates: gdrive:ada-nest/doc-pilot/review/v3-assets/nasa/ + nasa-2p5d
+    earth/saturn plates + ship/window layers
+
+outputs:
+  - gdrive:ada-nest/doc-pilot/review/v3-static-final-v1.mp4
+    (Drive ID 12BbrvSDURkUxzmvx6orXqJIeayXfYI6Q,
+    sha256 182dd336e7d810c4b23539b65f8dc42fec1378f94555187c5c643103454a2662)
+  - gdrive:ada-nest/doc-pilot/review/v3-static-final-v1-report.md
+  - gdrive:ada-nest/doc-pilot/review/subtitles-th-v3-static-final-v1.srt
+  - gdrive:ada-nest/doc-pilot/review/v3-assets/nasa/ (6 new plates + updated
+    asset-manifest.md)
+  - Education post 2157 (lesson-1fa6858c7a4d) updated in place — v3
+    status section appended EN+TH; stays private
+  - scripts/colab/packs/doc-static-final-v3/ (durable CPU builder)
+
+asset_changes_vs_review_cut_v2:
+  shot3: PIA00075 false-color -> PIA00405 natural Galileo (NASA/JPL/USGS)
+  shot4: schematic -> PIA26681 SDO (NASA/GSFC/SDO)
+  shot6: procedural -> PIA23791 Mariner 10 (NASA/JPL-Caltech)
+  shot7: PIA02992 polar mosaic -> GSFC e000332 Hubble (NASA, ESA/Hubble)
+  shot8: schematic -> PIA04866 Cassini (NASA/JPL/SSI)  # LTX fallback
+  shot9: schematic -> PIA21772 JunoCam
+    (NASA/JPL-Caltech/SwRI/MSSS/J.Major)               # LTX fallback
+  shot15: digit/Latin tofu fixed
+  shot17: PIA00452 lifted + approximate dot marker
+
+qc:
+  rubric: flow-assessment-v1
+  decode: clean (ffmpeg -f null, zero errors; 1577 packets = 65.7 s)
+  audio: mean -21.7 dB, peak -2.6 dB
+  srt: 18 cues, start offsets match measured VO exactly
+  facts: callouts verified verbatim vs approved script object table
+  pending: Tony/KK acceptance; LTX shots 8/9; public rights pass
+
+gpu_lane_status: >-
+  No live GPU lane this session: Colab queue heartbeat stale since
+  ~2026-10-29 (runner is Tony-attached); KK-Mac last check 2026-11-02
+  blocked by owner app (Photoshop Beta) — its admission gate correctly
+  held. Shots 8/9 keep the approved static fallback; the two LTX prompts
+  remain in visual-storyboard-v3-draft.yml ready for a T4 or a clear
+  Mac window.
+
+not_done:
+  - LTX dynamic renders for shots 8/9 (GPU-gated)
+  - music bed, EN subtitles (Thai-only lane, ADA-0510)
+  - public release / per-asset public rights pass
+  - Tony/KK viewing + acceptance

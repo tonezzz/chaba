@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-reports
 title: Timer ada-scenario-reports on idc03 failing
-column: done
-updated: 2026-10-13 18:24
+column: review
+updated: 2026-11-08 10:52
 priority: high
 tags:
 - timer-alert
@@ -218,5 +218,75 @@ comms:
 - at: 2026-10-13 18:24
   from: devin
   text: closed by devin
+- at: 2026-11-08 10:29
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-08 10:31
+  from: idc02
+  text: claimed
+- at: 2026-11-08 10:31
+  from: chaba
+  text: started devin-task-20261108-103151-timer-ada-scenario-reports-on- on idc02 (dispatch)
+- at: 2026-11-08 10:32
+  from: devin
+  text: '[re-triage 2026-11-08] card shows RESOLVED 10-13 (exit-1 = findings signal, wrapper now maps to 0). Verifying
+    current timer state on idc03 — checking whether alert re-fired or is stale.'
+- at: 2026-11-08 10:38
+  from: devin
+  text: '[resolved 2026-11-08] Re-fire root cause = DEPLOY DRIFT, not regression. Nov 5 run used the pre-BEN-0573
+    unit (paid lane :8002/ada-ha-tony, no provider gate) + old wrapper (no exit-1->0 mapping): suite COMPLETED (**Score:
+    0.0**, 7 fails/0 tool calls) and exited 1 -> exit-code alert. Wrapper was updated Nov 7 but units were never
+    re-installed. Re-ran stacks/services/ada-scenario-runner/install.sh on idc03: reports/cms/research now on :8005
+    ada-dev free lane w/ scenario-provider-gate ExecCondition'
+- at: 2026-11-08 10:38
+  from: devin
+  text: 'raised request bench-virtual-key-on-litellm-is-over-its-795583: Bench virtual key on LiteLLM is over its
+    $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns 422 budget_exc'
+- at: 2026-11-08 10:39
+  from: idc02
+  text: 'finished (ok): exit=0 n this branch; adjacent `ada-embed-bench` 403 crash is already carded (`embed-bench-blocked-20261107`).
+    | devin-t'
+- at: 2026-11-08 10:39
+  from: chaba
+  text: 'session-end checkpoint c5556a99: 1 leftover file(s) committed'
+- at: 2026-11-08 10:39
+  from: chaba
+  text: pushed dispatch/20261108-103151-timer-ada-scenario-reports-on- to origin
+- at: 2026-11-08 10:39
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-08 10:39
+  from: chaba
+  text: auto-merged 77cafbc7 (dispatch/20261108-103151-timer-ada-scenario-reports-on-) → origin/master
+- at: 2026-11-08 10:39
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261108-103151-timer-ada-scenario-reports-on-,
+    branch dispatch/20261108-103151-timer-ada-scenario-reports-on-'
+- at: 2026-11-08 10:52
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''bench-virtual-key-on-litellm-i''] block close)'
 action:
   status: done
+  type: dispatch
+  lane: devin
+  runner: idc02
+  result: 'exit=0 n this branch; adjacent `ada-embed-bench` 403 crash is already carded (`embed-bench-blocked-20261107`).
+    | devin-task-20261108-103151-timer-ada-scenario-reports-on-.service: Consumed 18.097s CPU time, 117.4M memory
+    peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-11-08 10:52
+requests:
+- id: bench-virtual-key-on-litellm-is-over-its-795583
+  ask: 'Bench virtual key on LiteLLM is over its $2/30d cap (spend 2.0057, reset 2026-12-01) — ada-dev text turns
+    422 budget_exceeded -> provider gate will CLEAN-SKIP weekly reports/cms/research suites (no alert, but no benchmark
+    coverage) until Dec 1. Options: [1] raise bench max_budget to $5/30d ★ (~2x headroom vs observed ~$2.7/30d burn,
+    keeps tripwire) [2] reset spend counter now, keep $2 [3] leave — accept coverage gap til Dec 1'
+  status: open
+  at: 2026-11-08 10:38
+  from: devin
+  options:
+  - proceed
+  - hold
+review_kind: verify
+claim: {}

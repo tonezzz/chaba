@@ -39,6 +39,11 @@ RENDERS = [REPO / "scripts/render-board.py",
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
 CARD_ID = "ops-board-render-fail"
 LOCK = Path("/tmp/board-api.lock")
+# board-api.py's async render holds this across its renders; the timer
+# path takes it too so the two writers serialize — an older snapshot
+# landing after a fresher one regresses cards.json for a whole tick
+# (OPS-1107).
+RENDER_LOCK = Path("/tmp/board-render.lock")
 STATE = Path(os.environ.get("RENDER_GUARD_STATE",
                             "/tmp/chaba-board-render-guard.json"))
 THRESHOLD = 2
@@ -131,14 +136,16 @@ def upsert_card(note: str, healthy: bool) -> None:
 
 def main() -> int:
     fails = []
-    for r in RENDERS:
-        p = subprocess.run(
-            [sys.executable, str(r), "--if-changed"],
-            cwd=REPO, capture_output=True, text=True, timeout=120)
-        if p.returncode != 0:
-            tail = (p.stderr or p.stdout or "").strip().splitlines()
-            fails.append(f"{r.name} rc={p.returncode}"
-                         + (f" — {tail[-1][:200]}" if tail else ""))
+    with RENDER_LOCK.open("w") as rl:
+        fcntl.flock(rl, fcntl.LOCK_EX)
+        for r in RENDERS:
+            p = subprocess.run(
+                [sys.executable, str(r), "--if-changed"],
+                cwd=REPO, capture_output=True, text=True, timeout=120)
+            if p.returncode != 0:
+                tail = (p.stderr or p.stdout or "").strip().splitlines()
+                fails.append(f"{r.name} rc={p.returncode}"
+                             + (f" — {tail[-1][:200]}" if tail else ""))
     st = _load_state()
     if not fails:
         st["fails"] = 0

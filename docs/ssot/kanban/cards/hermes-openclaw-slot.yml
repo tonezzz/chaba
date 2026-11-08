@@ -1,7 +1,7 @@
 id: hermes-openclaw-slot
 title: A/B hermes3:8b as OpenClaw local provider vs OR-free rotation
 column: backlog
-updated: 2026-10-10 21:09
+updated: 2026-11-07 17:19
 priority: low
 note: 'Follow-up of try-hermes (benched 2026-10-10, adopt-verdict: docs/ssot/jobs/models/2026-10-10-hermes3-t1-eval.yml).
   hermes3:8b is the only omen model good at both native ollama tool calls (80%) and prompted-JSON (100%). OpenClaw
@@ -15,4 +15,46 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0400'
+- at: 2026-11-07 16:12
+  from: ada
+  text: 'raised request cleanup-suggests-dead-close-or-keep-6d47fa: cleanup suggests dead — close or keep?'
+- at: 2026-11-07 16:18
+  from: tony
+  text: 'answered cleanup-suggests-dead-close-or-keep-6d47fa: superseded — reraised with buttons'
+- at: 2026-11-07 16:18
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-07 16:18
+  from: ada
+  text: 'raised request cleanup-verdict-dead-close-this-card-or-a731ea: cleanup verdict: dead — close this card
+    or keep it?'
+- at: 2026-11-07 17:19
+  from: tony
+  text: 'answered cleanup-verdict-dead-close-this-card-or-a731ea: close — Close — verdict is right'
+- at: 2026-11-07 17:19
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 ref: OPS-0400
+requests:
+- id: cleanup-suggests-dead-close-or-keep-6d47fa
+  ask: cleanup suggests dead — close or keep?
+  status: answered
+  at: 2026-11-07 16:12
+  from: ada
+  options:
+  - proceed
+  - hold
+  answer: superseded — reraised with buttons
+- id: cleanup-verdict-dead-close-this-card-or-a731ea
+  ask: 'cleanup verdict: dead — close this card or keep it?'
+  status: answered
+  at: 2026-11-07 16:18
+  from: ada
+  options:
+  - id: close
+    label: Close — verdict is right
+  - id: keep
+    label: Keep — still alive
+  suggested: close
+  answer: close — Close — verdict is right
+awaiting_action: true

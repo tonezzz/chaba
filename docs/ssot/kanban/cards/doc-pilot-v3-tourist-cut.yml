@@ -1,7 +1,7 @@
 id: doc-pilot-v3-tourist-cut
 title: doc-pilot v3 — tourist-ship cut production (approved scope)
-column: doing
-updated: 2026-10-29 11:33
+column: review
+updated: 2026-11-07 17:18
 priority: medium
 tags:
 - ada-nest
@@ -198,6 +198,215 @@ comms:
   text: 'Missed-job sweep 2026-10-29: private static review cuts and reports are recorded in comms, but the earlier
     doc-align-v3 pack source remains only in a local dispatch worktree, not origin/master. Current cut still notes
     placeholders; this is not a final release. No pack was dispatched or published by this audit.'
+- at: 2026-10-30 20:12
+  from: devin
+  text: 'raised request docpilot-kk-mac-static-qc-consent: No existing cross-project package is currently both unfinished
+    and safe to dispatch. The best new candidate is a one-sho'
+- at: 2026-10-31 07:21
+  from: devin
+  text: 'Status check 2026-10-30: the latest DocPilot Solar System v3 review asset is the private 65.625s static
+    review cut v2 (`gdrive:ada-nest/doc-pilot/review/v3-static-review-cut-v2.mp4`), H.264/AAC 640x384@24, decode
+    passed, 18 measured VO cues. Jupiter and Great Red Spot remain schematic placeholders; no LTX or music bed.
+    Existing shipped v6 remains untouched. No assets were staged to KK-Mac; `docpilot-kk-mac-static-qc-consent`
+    remains open and covers only CPU/read-only static QC, not LTX rendering'
+- at: 2026-10-31 07:32
+  from: tony
+  text: 'answered docpilot-kk-mac-static-qc-consent: approve-docpilot-static-qc — Recommended: stage and run one
+    isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+- at: 2026-10-31 07:32
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-31 08:20
+  from: devin
+  text: 'Tony''s latest instruction supersedes the prior static-only deferral for private Solar System v3 LTX work:
+    prepare Jupiter/Great Red Spot background renders on KK-Mac when it is reachable, using the already archived
+    T5-XXL model (no HF download), then composite the existing ship/window/callout layers separately. Shots 8/9
+    remain private placeholders until those renders pass QC; no public release. Current Mac heartbeat/SSH is stale,
+    so this comment is planning only and no render has run.'
+- at: 2026-10-31 08:33
+  from: devin
+  text: 'New direct direction from Tony (2026-10-31): proceed toward private Mac LTX background plates for DocPilot
+    v3 shots08 Jupiter and09 Great Red Spot; the earlier `static-only-while-waiting` decision is superseded for
+    these two scenes. Use the already archived T5-XXL weights and cached LTX-MLX/MPS model only—no HF download,
+    no public release, no changes to shipped v6. KK-Mac is presently offline, so I am staging isolated, hash-bound
+    packs; no render starts until a fresh trusted-host/AC/memory/cache'
+- at: 2026-10-31 08:33
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
+- at: 2026-10-31 08:57
+  from: devin
+  text: 'Solar System Mac preparation: the approved CPU-only static QC pack and private v3 T5-embedding/MPS shot08→shot09
+    packs are staged in the isolated `ada-nest-kk-mac-video-pilot` root. The existing T5-XXL archive (9,524,648,592
+    bytes; MD5 d97cc9cae59e20c95f925eb79a0c3717) was copied from the shared archive and `rclone check` found zero
+    differences; the v3 visual/VO manifests and static-cut/report inputs are hash-pinned. MPS is selected for full
+    positive/negative conditioning; cached model only, no '
+- at: 2026-10-31 09:09
+  from: devin
+  text: 'Fresh KK-Mac admission update 2026-10-31: the node is reachable through the trusted idc03 hop, on AC, 69%
+    memory free, 79 GiB disk, and no owner video/editor app. Qwen3:8B is still resident for about 9 minutes, so
+    no pack was launched and I did not unload it. The new private LTX shot08/09 packs and static QC are staged;
+    shots08/09 wait for the T5 embed pack''s `done`. After Qwen expires, one one-shot pass can run static QC + T5
+    embeddings + Sacred Father S04–S10; Solar System shots08/09 then need'
+- at: 2026-10-31 09:12
+  from: devin
+  text: Read-only Mac preflight now confirms the trusted idc03→Mac route, AC power, 69% free memory, 79 GiB free
+    disk, no editor/compute process, MPS available, required LTX snapshot files present, and Torch/Transformers/Diffusers/ffmpeg
+    imports available. Qwen3:8B remains resident for ~7 minutes; I will not unload it or start any package until
+    it expires and a fresh preflight confirms the no-model gate.
+- at: 2026-10-31 09:22
+  from: devin
+  text: 'Updated live gate: KK-Mac is reachable via idc03 and AC/memory/cache/dependency checks look good, but the
+    latest `ollama ps` shows `qwen2.5:32b` resident (24 GiB GPU; `Stopping...`). I did not unload it or start the
+    worker. Wait for it to disappear naturally, then run the fresh full preflight; static QC, T5 embed, and S04
+    are the only currently claimable packs, with LTX shots08/09 dependent on embeddings.'
+- at: 2026-10-31 09:23
+  from: devin
+  text: 'Live host update: trusted idc03→KK-Mac route remains reachable, but a fresh `ollama ps` now shows `qwen2.5:32b`
+    active for ~4 more minutes (24 GiB GPU). No packs have run; we do not unload the owner model. After natural
+    expiry, repeat the full AC/memory/Ollama/process preflight and then start the isolated one-shot worker if clear.'
+- at: 2026-10-31 09:28
+  from: devin
+  text: 'The four new DocPilot Mac pack sources are committed locally as `4c60fe639` on `feat/docpilot-mac-ltx-v3-20261031`
+    (not pushed); matching manifests/scripts are already staged in the isolated Drive root with zero-difference
+    checks. Runtime remains safely held: Qwen2.5:32B is still present/`Stopping...`; wait until `ollama ps` is empty,
+    then rerun full admission before any one-shot worker.'
+- at: 2026-10-31 09:56
+  from: devin
+  text: 'Processing the approved `docpilot-kk-mac-static-qc-consent`: copied only the static-QC pack, its approval
+    sentinel, and the pinned video/report inputs to isolated root `gdrive:ada-nest-kk-mac-docpilot-static-qc-ops0904-20261031`;
+    all three rclone checks report zero differences, shared source root untouched. Fresh KK-Mac preflight: AC, 23%
+    memory free, 78 GiB disk, no matching owner video process, QC venv ready; however qwen2.5:32b is still `Stopping...`.
+    No worker was started. Waiting for it to '
+- at: 2026-10-31 10:09
+  from: devin
+  text: 'Status for the approved static QC: the one-pack isolated Drive root is staged and verified (0 differences).
+    Fresh preflight at 10:03+07 had AC, 22% free memory, 78 GiB disk, no matching owner video process, QC venv ready,
+    but qwen2.5:32b was still `Stopping...`. No worker was started; waiting for Ollama to become empty naturally,
+    then I will rerun the gates and run only this pack.'
+- at: 2026-10-31 10:12
+  from: devin
+  text: 'Progress record: the isolated static-QC staging and fresh no-run preflight are recorded in `docs/ssot/jobs/nest/2026-10-31-docpilot-static-qc.yml`
+    (local branch commit `c45de0df0`). It is not pushed yet. The QC remains blocked while qwen2.5:32b is still `Stopping...`;
+    I will not unload it or start the worker until the Ollama-empty gate passes.'
+- at: 2026-10-31 10:51
+  from: devin
+  text: 'Fresh KK-Mac read: AC power and trusted route are good, but `qwen3:8b` is resident for ~50 minutes and
+    only 68% memory is free. The offline/cache-only worker is held; no model will be unloaded or displaced. Static
+    QC, T5 embeddings, Solar System shots08/09, S04-S10, and the 30-panel sequence remain staged/blocked by the
+    no-resident-model gate.'
+- at: 2026-10-31 10:58
+  from: devin
+  text: 'Fresh live check: Mac is reachable/on AC, but Qwen3:8B is resident (7.2GB GPU, lease ~45min; 67% system
+    memory free). No static QC/T5/LTX pack has a claim/done/failed/out marker; no worker has run. DocPilot shots08/09,
+    the approved Sacred Father S04-S10 chain, and the new 30-panel sequence are all staged privately. Dispatch waits
+    for the owner model to unload naturally and a fresh preflight to pass.'
+- at: 2026-11-02 11:02
+  from: devin
+  text: 'Fresh Nov 2 admission update: Ollama is now empty; KK-Mac is on AC, memory 90% free, disk 35 GiB, QC venv
+    ready. The static pack still cannot run because Adobe Photoshop (Beta) is open and its owner-workload prep gate
+    blocks. I did not close the app or start the worker. The isolated pack/root remains verified; the job note is
+    committed locally as `f21eaa12c` on the docpilot branch (not pushed). Next check only after the owner app is
+    closed.'
+- at: 2026-11-02 11:03
+  from: devin
+  text: 'Nov 2 refresh: Ollama is empty, but the approved CPU-only static-QC pack''s own prep still sees Adobe Photoshop
+    (Beta) open and fails its owner-app gate. The isolated root and pinned inputs remain ready; no worker run, app
+    close, or other pack launch. Resume only after the owner app is closed and a fresh preflight passes.'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: executed ''approve-docpilot-static-qc — Recommended: stage and run one '' -> queued for processing'
+- at: 2026-11-06 20:19
+  from: chaba
+  text: 'answer-sweep: 4 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-06 20:27
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 20:27
+  from: idc02
+  text: claimed
+- at: 2026-11-06 20:28
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-07 16:31
+  from: chaba
+  text: restarted zombie claim as devin-task-20261107-163129-produce-the-v3-tourist-ship-cu on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-07 16:33
+  from: devin
+  text: '[dispatch 2026-11-07] idc02 session started — reviewing v3 pipeline state (VO/storyboard/assets/render/assembly)
+    and checking what is runnable from this runner.'
+- at: 2026-11-07 16:48
+  from: devin
+  text: '[static-final-v1 2026-11-07] Produced the complete private static cut: https://drive.google.com/file/d/12BbrvSDURkUxzmvx6orXqJIeayXfYI6Q/view
+    (65.728s, H.264/AAC+mov_text TH subs, 640x384@24, decode clean). Every shot now uses a rights-checked NASA plate
+    or deliberate schematic — no placeholders remain. New plates: Moon PIA00405 natural (was false-color), Sun PIA26681
+    SDO, Venus PIA23791 Mariner 10, Mars Hubble e000332 (was polar mosaic), Jupiter PIA04866 Cassini + GRS PIA21772
+    JunoCam as the ap'
+- at: 2026-11-07 16:50
+  from: devin
+  text: '[done 2026-11-07] v3 tourist-ship cut produced as a complete private static cut — all 18 shots use rights-checked
+    NASA plates or deliberate schematics, zero placeholders. Cut: https://drive.google.com/file/d/12BbrvSDURkUxzmvx6orXqJIeayXfYI6Q/view
+    + report + SRT + updated manifests on Drive; Education post 2157 updated in place (private). CPU assembler now
+    durable at scripts/colab/packs/doc-static-final-v3/ (prior builders died in unmerged worktrees). Still open:
+    LTX for shots 8/9 needs a live GP'
+- at: 2026-11-07 16:52
+  from: idc02
+  text: 'finished (ok): exit=0 en for next: LTX shots 8/9 when a GPU lane is live, then Tony/KK acceptance; outcome
+    file written. | devin-task-2'
+- at: 2026-11-07 16:52
+  from: chaba
+  text: 'session-end checkpoint c0472a4d: 1 leftover file(s) committed'
+- at: 2026-11-07 16:52
+  from: chaba
+  text: pushed dispatch/20261107-163129-produce-the-v3-tourist-ship-cu to origin
+- at: 2026-11-07 16:52
+  from: chaba
+  text: 'merge held — gitignored-dir shadow path(s): work/doc-pilot-v3/.venv/bin/python (symlink), work/doc-pilot-v3/.venv/bin/python3
+    (symlink), work/doc-pilot-v3/.venv/bin/python3.12 (symlink), work/doc-pilot-v3/.venv/lib64 (symlink) — untrack/rename
+    them or add the bare ignore name (the 2026-10-10 .venv incident class)'
+- at: 2026-11-07 16:52
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-07 16:52
+  from: chaba
+  text: restarted zombie claim as devin-task-20261107-165241-produce-the-v3-tourist-ship-cu on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-07 16:57
+  from: devin
+  text: '[resume-verify 2026-11-07] This restarted session (165241) independently re-verified the 163129 session
+    output: v3-static-final-v1.mp4 (Drive ID 12BbrvSDURkUxzmvx6orXqJIeayXfYI6Q) decodes clean, 65.728s h264/aac/mov_text,
+    18 SRT cues, audio peak -2.6dB; VO 18/18 fails:none; post 2157 has the link. Fix for the held merge: the prior
+    branch is blocked because its session-end checkpoint committed work/doc-pilot-v3/.venv (1,474 files + symlinks
+    — shadow-guard class). I cherry-picked the good commit f'
+- at: 2026-11-07 16:58
+  from: chaba
+  text: pushed dispatch/20261107-165241-produce-the-v3-tourist-ship-cu to origin
+- at: 2026-11-07 16:58
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 16:58
+  from: chaba
+  text: auto-merged bd8992bd (dispatch/20261107-165241-produce-the-v3-tourist-ship-cu) → origin/master
+- at: 2026-11-07 16:58
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261107-165241-produce-the-v3-tourist-ship-cu,
+    branch dispatch/20261107-165241-produce-the-v3-tourist-ship-cu'
+- at: 2026-11-07 17:03
+  from: chaba
+  text: 'merge-sweep: dispatch/20261107-163129-produce-the-v3-tourist-ship-cu adds gitignored-dir shadow path(s)
+    vs origin/master: work/doc-pilot-v3/.venv/bin/python (symlink), work/doc-pilot-v3/.venv/bin/python3 (symlink),
+    work/doc-pilot-v3/.venv/bin/python3.12 (symlink), work/doc-pilot-v3/.venv/lib64 (symlink) — merge blocked (a
+    symlink, or a file whose name is ignored only as a directory — the 2026-10-10 .venv incident class). Untrack/rename
+    it or add the bare ignore name and the next pass lands it.'
+- at: 2026-11-07 17:18
+  from: chaba
+  text: 'merge-sweep: dispatch/20261107-163129-produce-the-v3-tourist-ship-cu adds gitignored-dir shadow path(s)
+    vs origin/master: work/doc-pilot-v3/.venv/bin/python (symlink), work/doc-pilot-v3/.venv/bin/python3 (symlink),
+    work/doc-pilot-v3/.venv/bin/python3.12 (symlink), work/doc-pilot-v3/.venv/lib64 (symlink) — merge blocked (a
+    symlink, or a file whose name is ignored only as a directory — the 2026-10-10 .venv incident class). Untrack/rename
+    it or add the bare ignore name and the next pass lands it.'
 requests:
 - id: doc-v3-colab-gpu-next-step
   ask: The approved v3 VO pack is queued but Colab tunnel verification failed (HTTP 500, colab-qwen3 cannot reach
@@ -264,4 +473,35 @@ requests:
     label: Pause additional layout work until I review the current animatic with KK
   suggested: full-bleed-2p5d
   answer: full-bleed-2p5d
+- id: docpilot-kk-mac-static-qc-consent
+  ask: No existing cross-project package is currently both unfinished and safe to dispatch. The best new candidate
+    is a one-shot CPU-only, read-only static-asset/QC audit for DocPilot v3 on KK-Mac. It would stage only the existing
+    static cut and manifest to an isolated job root; no LTX, Qwen, service changes, publication, or edits. Do you
+    authorize that cross-project asset transfer and audit, or should KK-Mac stay idle?
+  status: answered
+  at: 2026-10-30 20:12
+  from: devin
+  options:
+  - id: approve-docpilot-static-qc
+    label: 'Recommended: stage and run one isolated CPU-only read-only asset/QC audit; no GPU or model inference.'
+  - id: hold-mac
+    label: Keep KK-Mac idle; do not stage another project's assets.
+  suggested: approve-docpilot-static-qc
+  answer: 'approve-docpilot-static-qc — Recommended: stage and run one isolated CPU-only read-only asset/QC audit;
+    no GPU or model inference.'
+  escalated_at: 2026-10-31 08:33
+  executed: 2026-11-06 queue
+action:
+  type: dispatch
+  status: done
+  lane: codemod
+  runner: idc02
+  result: 'exit=0 en for next: LTX shots 8/9 when a GPU lane is live, then Tony/KK acceptance; outcome file written.
+    | devin-task-20261107-163129-produce-the-v3-tourist-ship-cu.service: Consumed 1min 40.308s CPU time, 708.7M
+    memory peak, 0B memory swap peak.'
+  verified: false
+  sweep:
+    shadow_blocked: c0472a4d8a5f
 awaiting_action: true
+review_kind: verify
+claim: {}

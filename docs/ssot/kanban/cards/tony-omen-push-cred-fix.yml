@@ -1,0 +1,39 @@
+id: tony-omen-push-cred-fix
+title: Restore push:chaba on tony-omen (gh token expired, no SSH key)
+column: done
+updated: 2026-11-08 10:54
+priority: medium
+tags:
+- credentials
+- git
+- tony-omen
+- push
+- ops
+spec: 'tony-omen cannot push to github.com/tonezzz/chaba: `gh auth status` reports the stored token invalid, and
+  no SSH key is registered for git@github.com (credential.helper is gh-only). Verified 2026-11-07 while landing
+  7b5f86014 — worked around via ssh tony-dell + `git push origin FETCH_HEAD:master`. Fix options (Tony decision,
+  needs his GitHub identity): (a) `gh auth login -h github.com` on tony-omen — quickest, matches the existing credential.helper;
+  (b) mint a per-host repo deploy key + SSH remote/insteadOf — matches the deploy-key-per-host pattern other satellites
+  use; (c) accept the gap and document ssh-via-dell/patch-relay as the permanent path. Until fixed, dispatch tasks
+  requiring push:chaba must not route to tony-omen.'
+action:
+  type: manual
+  status: done
+ref: OPS-1080
+comms:
+- at: 2026-11-07 12:34
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 12:34
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-08 10:54
+  from: devin
+  text: 'DONE 2026-11-08: ed25519 deploy key generated on tony-omen (~/.ssh/chaba-deploy), ssh alias github-chaba
+    in ~/.ssh/config, origin push-url -> git@github-chaba:tonezzz/chaba.git. Tony registered the .pub as a write
+    deploy key on tonezzz/chaba. Verified: git push --dry-run origin HEAD:master passes auth+write (rejected only
+    non-FF — the local exec checkout is behind origin, expected; auth itself is confirmed working). push:chaba restored
+    on this host.'
+- at: 2026-11-08 10:54
+  from: tony
+  text: closed by tony

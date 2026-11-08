@@ -58,3 +58,106 @@ control:
   audit:
     every_claim_appends: comms_tail         # already true via comms_add
     weekly_review_card: true                # auto-card listing autonomous changes (gap: not yet wired)
+
+waiting_cards:
+  # KNB-0928 — hands-off processing for safe waiting cards.
+  # Extends dispatch/tiers/guards above; it does NOT replace
+  # kanban-dispatch, runner-agent, or kanban-act — it names which cards
+  # those may touch unattended and what must be true first.
+  scope: >-
+    Any card a runner, dispatcher, or act-loop may pick up without a
+    human watching: action.status=queued with action.type in
+    {dispatch, script, container} on an unattended path (timer,
+    runner-agent, kanban-act). Manual cards and review-column judgment
+    calls (review_kind: decide/triage) are out of scope by definition.
+  eligibility:
+    all_required:
+      - "action.type in [dispatch, script, container] — an executor exists"
+      - "action.host/repo resolves to a live runner for this card"
+      - "autonomy tier <= dispatch.max_autonomy (t3 ceiling; t4 never)"
+      - "card declares artifact + verifier (action.artifact/verifier or auto_done_when/pipeline.goals)"
+      - "no open requests: entries on the card"
+      - "recoverability class declared (recoverability: R0-R4)"
+      - "preflight passes (below)"
+  recoverability:
+    # Data-class-specific — a backup does NOT make secrets, external
+    # accounts, active DB writers, or uncommitted work safe.
+    R0: "rebuildable caches/reports/derived data — failure loses nothing"
+    R1: "git-tracked worktree state — recoverable iff clean or merged; uncommitted work is NOT recoverable"
+    R2: "stateful DB/service data — only with verified backup + integrity check + no active writer"
+    R3: "secrets/identity/external accounts — NEVER autonomous, backups irrelevant"
+    R4: "production/destructive/deploy — human-gated always"
+    rule: >-
+      A card's recoverability is the WORST data class it can touch,
+      not the best. Mixed work takes the max class. R3/R4 cards may
+      still be queued — they just require a human at the gate, which
+      the autonomy tier already expresses.
+  preflight:
+    # runner verifies all of these BEFORE claim/act; any failure defers
+    - "runner/timer unit active, heartbeat fresh"
+    - "queue depth + per-host session budget within caps"
+    - "target host reachable when the card is host-bound"
+    - "push credentials proven for the card's repo (push_capable / push:<repo>)"
+    - "disk headroom on target above the job floor"
+    - "backup freshness verified for R2 cards"
+    - "no conflicting locks (deploy lock, card flock, lane/killswitch gates)"
+  stop_conditions:
+    # any one => stop safely, comms note, no retry storm
+    - "stale heartbeat / host unreachable mid-run"
+    - "missing declared artifact or verifier failure"
+    - "wrong host / dirty or unmerged worktree at close-out"
+    - "spend or budget cap hit (litellm keys, API quotas)"
+    - "an open Tony request appears on the card mid-run"
+    - "kill_switch present (/tmp/no-kanban-dispatch)"
+  reporting:
+    - "start/finish/fail/stalled summaries -> Telegram via board-api /publish
+       (PublicationEvent fan-out; server-side noise policy debounces —
+       implemented 2026-11-08 in kanban-dispatch._notify/_flush_notify and
+       runner-agent._notify; start=progress is card-audit only, never TG)"
+    - "daily unattended-run digest -> scripts/board/unattended-report.py on
+       chaba-unattended-report.timer (idc03, daily) — reports/unattended-<date>.md
+       + one Telegram milestone"
+  implementation: >-
+    2026-11-08 (card hands-off-waiting-card-procedure, job
+    docs/ssot/jobs/kanban/2026-11-08-hands-off-waiting-cards.yml):
+    scripts/board/waiting_cards.py is the canonical evaluator
+    (eligibility + preflight + R0-R4 + /publish notify + CLI
+    --evaluate/--board/--preflight). kanban-dispatch.py gates claims
+    through it (KANBAN_WAITING_GATE=off|warn|strict, default warn —
+    declared R3/R4 are NEVER claimed in any mode) plus a pass-level
+    preflight (kill switch, deploy lock, disk floor). runner-agent.py
+    carries the single-file twin (RUNNER_WAITING_GATE) plus kill-switch
+    and disk-floor in _capacity_reason. kanban-act.py gained the
+    independent-review gate: report-linked/model_report cards need
+    verified_true or git_merged evidence — self-referential checks
+    alone cannot auto-close a model report. scripts/board/
+    unattended-report.py is the daily digest. Dry-run: waiting_cards
+    --evaluate/--board and kanban-act --dry-run; the claim gate itself
+    is warn-mode until the readiness checklist flips it to strict.
+  dry_run: >-
+    waiting_cards.py --evaluate <card> / --board reports verdicts
+    without claiming; kanban-act.py --dry-run reports would-act closes;
+    KANBAN_WAITING_GATE=off|warn|strict and RUNNER_WAITING_GATE are the
+    rollout dials. Any new card class or recoverability class gets a
+    dry-run pass before it may run unattended.
+  readiness_checklist:
+    day1: "eligibility fields present on pilot cards; dry-run logs clean
+      — DONE 2026-11-08: 5 read-only pilot cards filed ELIGIBLE
+      (unattended-pilot-*), gate verdicts + negative cases verified"
+    day2: "one R0/R1 card auto-processed end-to-end with verifier
+      evidence — PENDING merge+deploy of this branch, then queue one
+      unattended-pilot-* card"
+    day3: "daily report reviewed; kill-switch drill performed
+      (`touch /tmp/no-kanban-dispatch`, confirm claims freeze, remove);
+      flip KANBAN_WAITING_GATE/RUNNER_WAITING_GATE to strict after
+      backfilling recoverability on queued cards"
+  pilots: >-
+    Five read-only pilot cards filed 2026-11-08 (backlog, not queued —
+    they run only when a human queues them post-deploy):
+    unattended-pilot-report-gen, -digest-refresh, -cache-rebuild,
+    -doc-sync, -health-probe — all action.type=script, host=idc03,
+    recoverability=R0, autonomy=t2, artifact+verifier declared.
+    Gate verdicts: 5/5 ELIGIBLE (waiting_cards --evaluate, 2026-11-08).
+    Negative evidence: R3/R4 -> never=True HOLD; open request -> HOLD;
+    missing host/artifact/verifier/recoverability -> HOLD; R2 without
+    backup proof -> HOLD (tests/board/test_waiting_cards.py, 25 tests).

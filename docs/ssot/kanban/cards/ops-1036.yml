@@ -1,0 +1,14 @@
+id: ops-1036
+title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
+column: backlog
+updated: 2026-10-31 09:16
+spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
+  after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
+  failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
+  into the task dir, then git worktree remove --force. Must NOT touch worktrees of in-flight tasks. Lives near the
+  runner-agent GC path; host-hygiene declared unit if periodic.'
+ref: OPS-1036
+comms:
+- at: 2026-10-31 09:16
+  from: tony
+  text: card captured via board-api

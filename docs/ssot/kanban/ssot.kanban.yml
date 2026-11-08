@@ -131,7 +131,20 @@ card_schema:
              request it) — dispatch cards for action.repo imply it
              implicitly: without the label, the claiming path runs a live
              'git push --dry-run' probe against the repo checkout and
-             defers the card when it fails (runner-push-cred-gap)"
+             defers the card when it fails (runner-push-cred-gap).
+             VISIBILITY (OPS-1097, dispatch-claim-eligibility-visibility):
+             requirements the declared fleet (runner_fleet below) cannot
+             satisfy are flagged — dispatch_repos.unsatisfiable_reasons
+             computes the gaps (labels satisfied by no single host, pins
+             naming no declared runner, conflicting pins, unknown
+             executor, local push-guard failure on the only eligible
+             runner); board-api warns + flags awaiting_action at queue
+             time, kanban-dispatch writes 'unclaimable by the declared
+             runner fleet: ...' comms + awaiting_action when its eval
+             hits the skip, runner-agent posts the same via note_defer
+             (kind=unclaimable, awaiting flag over /comment), and
+             per-host misses get '<host> defers: missing labels [...]'
+             comms so skips stop being journal-only"
     gpu: "optional — VRAM pre-flight for gpu-labeled cards
           (omen-gpu-display-wedge): {min_free_mb: N} — the runner claims
           only while some GPU shows >=N MB free in nvidia-smi (a host
@@ -158,6 +171,27 @@ card_schema:
               in origin/<default>; explicit false = checked and NOT
               verified. The review-column badge prefers it over the comms
               heuristic"
+  # optional — recoverability class for unattended work (KNB-0928,
+  # ssot.devin-autonomy.yml waiting_cards). Required before a card may
+  # run on an unattended path; the class is the WORST data the card can
+  # touch. R3 (secrets/identity/accounts) and R4 (prod/destructive/
+  # deploy) are never autonomous regardless of backups.
+  recoverability: "R0 | R1 | R2 | R3 | R4 — see
+    docs/ssot/infrastructure/ssot.devin-autonomy.yml waiting_cards"
+  model_report: "optional bool — the deliverable is model-produced
+    (report, analysis, digest). kanban-act will not auto-close it on
+    self-referential checks alone: auto_done_when must include
+    verified_true or git_merged (independent/stamped evidence).
+    report-linked cards (report: <slug>) get the same gate
+    automatically (2026-11-08, KNB-0928)."
+  # optional — execution gate note (waiting_cards, KNB-0928): unattended
+  # runners (kanban-dispatch KANBAN_WAITING_GATE, runner-agent
+  # RUNNER_WAITING_GATE) evaluate queued cards against
+  # ssot.devin-autonomy.yml waiting_cards — eligibility needs the fields
+  # above (recoverability, artifact/verifier via action.artifact|report|
+  # pipeline.goals + auto_done_when|action.verifier|pipeline.goals) plus
+  # an explicit action.target_host or action.host pin. This gates CLAIMS;
+  # kanban-act still gates CLOSE separately.
   # optional — standard CI pipeline (docs/ssot/ssot.ci.yml). Opt in with
   # the scalar `pipeline: ci`; the runner (scripts/ci/card-pipeline.py)
   # normalizes it to the status block on first run:
@@ -460,16 +494,21 @@ execution:
     runner_fleet: "as of 2026-10-10 (idc caps re-audited live 2026-10-27,
                card dispatch-concurrency-bump-idc — both already at 3;
                4 refused: ~3.5GB/session vs ~5G available on idc03) —
-               tony-dell: kanban-dispatch local cap 3
+               tony-dell: kanban-dispatch local cap 3 labels
+               push:chaba,push:ada-voice,push:sunsynk-card,push:mddb-fork,push:gods-eye-view
                (dispatch); tony-omen: cap 3 labels gpu,desktop,cpu (dispatch
-               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small (dispatch
-               +container+script); idc03: cap 3 gate 0.85 labels
+               +container+script); idc02: cap 3 labels ssd,always-on,cpu,small,push:chaba (dispatch
+               +container+script — push:chaba added via runner-agent.service.d/ada-pilot.conf
+               2026-11-04, push creds verified 2026-11-08; prose was stale and
+               starved OPS-1039); idc03: cap 3 gate 0.85 labels
                ssd,always-on,ada,cpu,small (dispatch+container+script);
                mn01: cap 1
                labels low-mem,edge,small (dispatch+container+script — devin CLI
                IS present; RAM-tight so cap stays 1); tony-macbook: cap 2
-               gate 0.8 labels macbook,local-8c,always-home (script-type
-               only — no devin CLI or podman yet; enrolled 2026-10-11).
+               gate 0.8 labels macbook,local-8c,always-home (dispatch+script,
+               no podman so no container; devin CLI enrolled — running
+               devin-task dispatches since 2026-10-2x; runner + repo-sync
+               installed; suspend-prone member, don't park long sessions).
                Push creds (2026-10-14 audit, runner-push-cred-gap):
                tony-dell pushes all dispatch_repos repos; tony-macbook's
                ada-voice clone is fetch-only (HTTPS remote / chaba-only

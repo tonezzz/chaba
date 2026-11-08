@@ -1,0 +1,86 @@
+id: video-queue-audit-opencode
+title: 'OpenCode: audit video queue claims'
+column: backlog
+updated: 2026-11-07 16:52
+brief: Have Ada/OpenCode produce a read-only reconciliation report for video package states and stale claims.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- opencode
+- ada
+- audit
+spec: Run the existing read-only video queue status tool against both video roots. Classify queued/running/stale/done/failed/retired;
+  do not release claims or mutate Drive. Write a durable report with package counts, stale claim ages, canonical
+  Sacred Father packages, and recommended safe next actions.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: ops-readonly
+  target_host: idc02
+  artifact: reports/video-queue-status-opencode.md
+  prompt: Audit both video queues read-only. Do not delete/release claims or start renders. Use scripts/devnest/video_queue_status.py
+    and write the declared report artifact with evidence and recommendations.
+  expect:
+    required_keys:
+    - queue counts
+    - stale claims
+    - canonical manifest
+    - recommendation
+    facts:
+    - read-only
+    - stale
+    - done
+    - failed
+  lane: free_lane
+  status: done
+  agent_profile: ops-readonly
+  runner: idc02
+  result: 'exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-video-queue-audit-opencode-1793680313.service: Consumed 13.632s CPU time.'
+  verified: false
+  sweep:
+    dirty: 2
+ref: ADA-1046
+comms:
+- at: 2026-11-03 11:30
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 11:30
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 11:31
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-03 11:31
+  from: idc02
+  text: claimed
+- at: 2026-11-03 11:31
+  from: chaba
+  text: started devin-task-video-queue-audit-opencode-1793680313 on idc02 (dispatch executor=opencode profile=ops-readonly
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 11:32
+  from: idc02
+  text: 'finished (ok): exit=0 ID":"ses_e60525a60ffej5FVAdPwNPOfyd","type":"step-finish","tokens":{"total":0,"input":0,"output":0,"reasoning":0,'
+- at: 2026-11-03 11:32
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-11-03 11:32
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-11-03 11:42
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-video-queue-audit-opencode-1793680313 on idc02 still dirty — 2 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-07 16:52
+  from: devin
+  text: '[KNB-1098] provably failed: idc02 worktree dirty files are only .opencode-profile session state — no durable
+    audit artifact produced. Back to backlog for retry.'
+- at: 2026-11-07 16:52
+  from: devin
+  text: moved review -> backlog
+review_kind: verify
+claim: {}

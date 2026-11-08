@@ -1,0 +1,35 @@
+title: 'job-fail: crit on testbox'
+subtitle: Focus inbox item
+icon: inbox
+focus:
+  label: 'job-fail: crit on testbox'
+  text: 'Dispatcher job ''crit'' (crit) failed on testbox at 2026-10-29T21:00:31+0700: exit 1
+
+    command: /bin/true
+
+    stderr tail: x
+
+
+    failure_count=1 — dispatcher backs off exponentially (next retry 1970-01-01T07:17:40) and this is the only alert
+    for the episode; recovery clears the flag. Policy: CRITICAL — tick exits nonzero. See scripts/job-dispatcher.py
+    + ssot.jobs.yml failure_policy.'
+  priority: high
+  status: draft
+  tags:
+  - ops
+  - chaba-jobs
+  - job-failure
+  - testbox
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: ''
+  subtasks: []
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: chaba-jobs-dispatcher
+  date: '2026-10-29'

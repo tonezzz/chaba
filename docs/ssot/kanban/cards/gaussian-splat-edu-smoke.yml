@@ -1,7 +1,7 @@
 id: gaussian-splat-edu-smoke
 title: T4 Gaussian splat education smoke pack
-column: review
-updated: 2026-10-27 07:01
+column: done
+updated: 2026-11-08 10:58
 brief: Run the smallest real Gaussian splat renderer proof on Colab T4 and publish an MP4, still, and measurement
   report.
 priority: medium
@@ -59,6 +59,34 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261027-065035-pack-staged-at-ada-nest-packs- on
     tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-31 13:50
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261027-065035-pack-staged-at-ada-nest-packs-'
+- at: 2026-11-07 16:51
+  from: devin
+  text: '[KNB-1098] not landed — pack staged but the T4 Colab run never executed (artifacts gate unmet). Back to
+    backlog for a T4 run.'
+- at: 2026-11-07 16:51
+  from: devin
+  text: moved review -> backlog
+- at: 2026-11-08 07:38
+  from: devin
+  text: 'Verified-done evidence: gdrive:ada-nest/packs/gaussian-splat-edu-smoke-v2/ contains out/gaussian-splat-edu-smoke-v2.mp4
+    (497843B), out/gaussian-splat-edu-smoke-v2.png (107554B), report.md (gsplat, 2400 primitives, 48 frames 640x384,
+    render 4.57s, peak CUDA 0.02GB), and a done marker with per-artifact size verification from Colab T4 boot 2026-10-25.
+    The 2026-11-07 sweep verdict "T4 Colab run never executed" contradicts the durable artifacts — v2 did run on
+    CUDA (v1 black-PNG was fixed by the v2 d'
+- at: 2026-11-08 07:38
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-08 10:58
+  from: devin
+  text: '[sweep] verified by surface: rclone lsl gdrive:ada-nest/packs/gaussian-splat-edu-smoke-v2/ shows done marker
+    + out/gaussian-splat-edu-smoke-v2.mp4 (497843B) + .png (107554B) + report.md — byte sizes match the 2026-10-25
+    Colab T4 claim exactly. Closing.'
+- at: 2026-11-08 10:58
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   status: done
@@ -68,5 +96,6 @@ action:
     clock time, 32.7M memory peak.'
   sweep:
     session_gone: 2026-10-27 07:01
+    no_repo: 2026-10-31 13:50
 review_kind: verify
 claim: {}

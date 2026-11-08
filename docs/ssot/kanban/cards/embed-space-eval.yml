@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-10-15 12:14
+updated: 2026-11-08 08:29
 priority: medium
 ref: MEM-0695
 comms:
@@ -62,6 +62,27 @@ comms:
 - at: 2026-10-15 12:14
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-07 12:32
+  from: devin
+  text: 'JUDGED-UNION BENCHMARK DONE (#82): dense top-50 + BM25 top-100 per query, 4800 union candidates LLM-judged
+    into qrels-bge-hybrid.json, all arms rescored on expanded qrels. VERDICT: hybrid RRF does NOT beat BGE dense
+    alone (best hybrid .197 r@5 vs dense .224, MRR also lower) — the provisional .408/.849 was a narrow-judgment
+    artifact. BGE dense = best local arm: 92% of Gemini r@5 (.224 vs .244), BETTER on Thai (.272 vs .255, MRR .946
+    vs .964), but English (.204 vs .240) + MRR (.767 vs .893) still '
+- at: 2026-11-08 08:21
+  from: devin
+  text: 'RERANK VERDICT (#98): bge-reranker-v2-m3 on dense top-50 pools, all 48 queries, Omen GPU lane: r@5 .260
+    vs gemini .244, MRR .869 vs .893 — BEATS Gemini on recall, within noise on MRR, ties Thai exactly (.964). The
+    cross-encoder closed the gap fusion could not. Rerank the dense pool only (rerank_union .250/.791 — lexical
+    still dilutes). Remaining gates: request-path rerank latency (batch ~23s/q; prod needs <=500ms, feasible on
+    GPU) + reliability soak. Also: Omen GPU back after reboot (595.99.02/C'
+- at: 2026-11-08 08:29
+  from: devin
+  text: 'ALL OPEN GATES CLOSED (#99,#100). GPU rerank latency: top-50 2891ms (does NOT fit ~500ms request path),
+    top-10 565ms, ~57ms/pair — options: top-10 depth, lighter reranker, or async rerank. Pool soak: baseline 29/30
+    ok p50 131ms/p95 2823ms; con01 drop 15/15 ok BUT p50 degraded ~17x to 2264ms — resilient but latency-paying.
+    python_ml_gpu declared on Omen. STATE: local dense+rerank now at Gemini parity (r@5 .260 vs .244, MRR .869 vs
+    .893) — remaining decision is serving architecture, not quality.'
 action:
   type: dispatch
   status: done

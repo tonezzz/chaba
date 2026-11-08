@@ -1,0 +1,86 @@
+id: jevnest-kk-mac-capacity-loop
+title: JevNest KK-Mac capacity-aware queue refill
+column: doing
+updated: 2026-11-08 08:03
+brief: Keep the KK-Mac JevNest productively fed with real bounded read-only work while respecting heartbeat, owner
+  load, disk, and fallback gates.
+priority: high
+program: devnest
+tags:
+- jevnest
+- jevteam
+- kk-mac
+- queue
+- capacity
+- continuous
+spec: 'JevNest is a DevNest sub-nest governed by JevTeam. Build the capacity-aware producer for gdrive:ada-nest-kk-llm:
+  when heartbeat age<=900s, ollama_ok=true, load_1m<=4, disk>=20G, owner/busy gate clear, and queue depth<3, enqueue
+  at most three real summary/operator_brief/structured_extract/safe_route packages from host reports, audits, queue
+  status, and outstanding DevNest work. Soak packages are benchmark-only and never refill production capacity. Worker
+  concurrency remains one until a two-request load test is approved. Each package carries expect schema/facts, artifact,
+  verifier, usage, and fallback. Stale/offline/high-load KK falls back immediately. Publish L0-L3 evidence and feed
+  weekly JevTeam review. Standard procedure: docs/kb/jevnest-kk-mac-capacity-procedure.md.'
+ref: OPS-1001
+comms:
+- at: 2026-10-30 11:20
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-30 11:33
+  from: devin
+  text: 'Capacity producer now implemented in scripts/devnest/kk_mac_capacity_producer.py. It scans explicit gdrive
+    inbox tasks, checks KK admission, caps queue depth at 3/new packages at 3, stages only allowed read-only classes,
+    dedupes by pack name, and never invents work. First real producer-created task completed on KK-Mac: cache-status-20261030-1,
+    verifier pass, artifact+done marker landed in ~2s.'
+- at: 2026-10-30 13:59
+  from: devin
+  text: 'Added three real inbox tasks and staged them on KK-Mac. Independent verifier correctly rejected all three
+    model responses for missing literal facts (Omen, Ollama, fallback); no invalid output was accepted. Marked those
+    packages terminal-failed/held to stop retry churn. This exposed and fixed a worker issue: terminal package failures
+    now write a failed marker and are skipped, rather than retrying forever. Commit 8bc67743d.'
+- at: 2026-10-30 20:52
+  from: devin
+  text: 'Defined and indexed the fast-submit procedure at docs/kb/jevnest-kk-mac-capacity-procedure.md#fast-submission-skip-the-timer-wait.
+    Quick path: validate a unique normalized task, stream it to gdrive:ada-nest-devnest/inbox, start devnest-capacity-broker.service
+    then jevnest-kk-mac-capacity-producer.service, and verify the KK pack done marker/result. Admission, queue depth,
+    verifier and human-review gates remain required. Commit 226c52748 is pushed on docs/kk-mac-fast-submit-20261030.
+    The manual on'
+- at: 2026-10-30 20:53
+  from: devin
+  text: 'Fast path is defined but not yet exercised as a manual one-shot; index status stays defined. Report packages
+    with empty expect remain human-review drafts because the worker only checks response_nonempty. Next: exercise
+    broker then producer on a real task, preserving admission and the queue cap.'
+- at: 2026-10-30 21:26
+  from: devin
+  text: 'Quick-submit exercised on real report: decision-arena-extract-20261030-2114 (structured_extract; reports/2026-10-25-decision-arena-50.md).
+    Routed through the shared inbox, staged by the producer, and completed on KK-Mac qwen3:8b. Done marker/result
+    verified; all 11 JSON/key/literal-fact checks passed in 2.525s (65 eval tokens). No persistent service/timer
+    config changed; automatic JEV remains gated. Empty-expect report summaries remain human-review drafts.'
+- at: 2026-10-30 21:29
+  from: devin
+  text: 'Fast-submit canary passed: decision-arena-extract-20261030-2114 (structured_extract from reports/2026-10-25-decision-arena-50.md)
+    was streamed to the shared inbox, routed, staged, and completed on KK-Mac. Done/result readback: 11/11 JSON/key/literal-fact
+    checks true, 2.525s, 65 eval tokens. No persistent service/timer changes; no duplicate task was launched. Procedure
+    index is now verified. Empty-expect report summaries remain human-review drafts.'
+- at: 2026-11-07 12:14
+  from: devin
+  text: 'Code-side pass 2026-11-07. Found the producer was silently dead: jevnest-kk-mac-capacity-producer.timer
+    is disabled/inactive and the service timed out at the 4m unit limit repeatedly on Oct 31 (8s CPU / 4min wall
+    = blocked on rclone; each call can hang ~60s and the loop made many sequential listings). Fix pushed on branch
+    fix/jevnest-producer-budget (ad1e4ba44): single recursive pack listing feeds queue depth + dedupe, overall --budget-s
+    90 self-limits the loop, and ssot.jobs.yml args corrected '
+- at: 2026-11-07 12:14
+  from: devin
+  text: moved backlog -> doing
+- at: 2026-11-07 14:20
+  from: devin
+  text: '[link 2026-11-07] kk-mac-card-judgment-eval (KNB-1087) armed: scripts/bench/card-judgment/kkmac_eval.sh
+    gates on ssh+ollama and runs the 115-case card-judgment corpus on kk-mac''s pulled models — the concrete ''can
+    it replace paid side-call lanes'' measurement, zero spend. Trigger = next live heartbeat window (Mac offline
+    19h). Capacity-loop producer could queue it.'
+- at: 2026-11-08 08:03
+  from: devin
+  text: '2026-11-08: installed the refreshed unit on tony-dell (was running stale generated args --max-depth 10
+    --max-new 5 under 240s TimeoutStartSec — Result=timeout, ExecMainStatus=15, x50 unit-fails in host digest).
+    Re-synced dell exec checkout (was 58 behind) + render-jobs --install → now --max-depth 3 --max-new 3 --budget-s
+    90. Verified: manual run completed in seconds, Result=success, no timeout. Watch for next scheduled tick to
+    confirm the fail-streak ends.'

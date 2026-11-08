@@ -1,0 +1,78 @@
+id: kk-mac-live-jev-probe2
+title: KK-Mac supervised JEV executor probe
+column: done
+updated: 2026-11-07 16:49
+brief: Run one supervised explicit kk_mac_local executor job on tony-dell runner against KK-Mac qwen3:8b.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- jev
+- supervised
+- read-only
+spec: Read-only summary probe. Do not modify files, invoke shell, use credentials, or publish. Accept only if admission
+  heartbeat/Ollama gate passes, kk_mac executor returns a valid artifact, and independent contract verifier passes.
+action:
+  type: dispatch
+  executor: kk_mac_local
+  artifact: evals/kk-mac-lane/out/kk-mac-live-jev-probe2.json
+  task_class: summary
+  prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
+    and Ollama health must be fresh; no mutation occurred. Return a concise operator summary.'
+  status: done
+  runner: mn01
+  result: 'exit=0 devin-task-20261029-161424-read-only-summary-probe-do-not.service: Failed with result ''exit-code''.
+    | devin-task-20261029-161424-read-only-summary-probe-do-not.service: Consumed 357ms CPU time over 1.183s wall
+    clock time, 104.7M memory peak.'
+  sweep:
+    session_gone: 2026-10-29 23:18
+ref: OPS-0987
+comms:
+- at: 2026-10-29 23:13
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-29 23:13
+  from: devin
+  text: queued for processing
+- at: 2026-10-29 23:14
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-29 23:14
+  from: chaba
+  text: 'tony-dell defers: executor=kk_mac_local declared and the lane is live, but this runner can''t serve it
+    (KK_MAC_LANES=0) — the card stays queued for a kk_mac-capable runner'
+- at: 2026-10-29 23:14
+  from: mn01
+  text: claimed
+- at: 2026-10-29 23:14
+  from: chaba
+  text: started devin-task-20261029-161424-read-only-summary-probe-do-not on mn01 (dispatch)
+- at: 2026-10-29 23:15
+  from: mn01
+  text: 'finished (ok): exit=0 devin-task-20261029-161424-read-only-summary-probe-do-not.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-29 23:15
+  from: chaba
+  text: pushed dispatch/20261029-161424-read-only-summary-probe-do-not to origin
+- at: 2026-10-29 23:15
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-29 23:15
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261029-161424-read-only-summary-probe-do-not,
+    branch dispatch/20261029-161424-read-only-summary-probe-do-not'
+- at: 2026-10-29 23:18
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261029-161424-read-only-summary-probe-do-not on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] closing as stale: dispatch produced zero commits (10-29), kk-mac offline 22h+ — the one-shot
+    probe is superseded by kk-mac-live-memory-guard + KNB-1087 card-judgment eval which carry the live lane work.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: closed by devin
+review_kind: verify
+claim: {}

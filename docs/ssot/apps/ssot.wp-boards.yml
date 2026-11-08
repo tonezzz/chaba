@@ -22,6 +22,15 @@ site:
   # index.php — clicks land clean via the edge bounce.
   rest_route_style: index.php?rest_route=   # /wp-json/ 404s on the vhost; /wp/wp-json/* is edge-rewritten to index.php and also works
   app_password_env: ~/.config/secrets/wp-boards.env   # WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD
+  lesson_cpt_cutover: >-
+    2026-11-07 (card wiki-education-write-cutover-make-wiki-t-7f2e7d):
+    the lesson CPT corpus migrated to wiki.h3 Education: (OPS-1046) and
+    the /lesson door gained WIKI_EDUCATION_WRITE=wiki (wiki-primary —
+    no WP write). WP posts become a frozen archive; /wp/lesson/<slug>
+    permalinks 301 to the wiki via the generated idc02 edge fragment
+    stacks/idc02/boards-lesson-redirects.caddy (regenerate with
+    scripts/wiki-lesson-redirect-map.py). Details:
+    docs/ssot/jobs/education/2026-11-07-wiki-education-write-cutover.yml
 
 sites:
   # Registry of LINE-managed WP sites — one entry per site the lanes

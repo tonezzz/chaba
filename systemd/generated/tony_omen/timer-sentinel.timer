@@ -1,0 +1,10 @@
+[Unit]
+Description=Timer sentinel — fires timer-alert-* cards on suspicious timer state (job:timer-sentinel, rendered from ssot.jobs.yml — do not edit)
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

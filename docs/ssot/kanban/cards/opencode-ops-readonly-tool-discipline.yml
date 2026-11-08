@@ -1,0 +1,47 @@
+id: opencode-ops-readonly-tool-discipline
+title: ops-readonly profile — models probe outside bash allowlist (denials fail closeout)
+column: done
+updated: 2026-11-07 15:48
+brief: OpenCode executor smoke showed flash-lite models gather real data but probe non-allowlisted commands (git
+  status, python3 -c /proc/uptime). Any denial fails the merge closeout even when all verifier data checks pass.
+  Tighten the profile prompt or add pre-denial guidance so executor models stay in-lane.
+priority: medium
+tags:
+- opencode
+- executor
+- profile
+spec: 'Context: opencode-executor-routing-smoke ran 4x on idc02. Run 4 (litellm/gemini-3.5-flash-lite) produced
+  a fully valid artifact — every verifier data check true — but closeout failed on audit denials: bash:git status
+  and bash:python3 -c reading /proc/uptime. ops-readonly allowlist covers hostname/uname/uptime/nproc/free/df/systemctl
+  --user list-units only.
+
+
+  Goal: executor models should not waste turns on denied commands. Options to evaluate (pick one, implement, verify
+  with a rerun of the smoke card):
+
+  1. Strengthen the ops-readonly profile prompt: explicit list of allowed commands + "do NOT run any other command;
+  denied calls fail the task".
+
+  2. Inject a pre-denial hint in the opencode runner so the model sees allowlist boundaries up front.
+
+  3. Extend the allowlist with safe read-only commands models naturally reach for (git status? /proc reads?) — only
+  if safe under ops-readonly semantics.
+
+
+  Done when: a smoke rerun completes with zero denials and verifier pass, or denials drop to zero across 3 runs.'
+ref: OPS-1089
+comms:
+- at: 2026-11-07 14:48
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 15:47
+  from: devin
+  text: 'FIXED + verified live. PR chaba#84 (28baadfc5): rails now name allowed bash families + point host facts
+    at python3 scripts/devnest/host_snapshot.py; prompt.md fast-path-first; permission.bash += read-only git. Verification
+    run: opencode-executor-routing-smoke re-queued on litellm/gemini-3.5-flash-lite — verdict.json PASS, zero denials,
+    all 11 data checks true, auto-merged a2d3c461 to origin/master. First fully-green OpenCode executor closeout.'
+- at: 2026-11-07 15:48
+  from: devin
+  text: closed by devin
+action:
+  status: done

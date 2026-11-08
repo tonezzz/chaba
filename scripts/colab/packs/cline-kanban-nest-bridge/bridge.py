@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 import socket
 import subprocess
@@ -41,19 +42,21 @@ def validate_spec(spec):
     allowed = {
         ("ollama", "qwen3:4b"),
         ("ollama", "qwen2.5:7b"),
-        ("openai", "or-free-nemotron-nano"),
-        ("openai", "or-free-gemma31b"),
+        ("openrouter", "or-free-nemotron-nano"),
+        ("openrouter", "or-free-gemma31b"),
     }
     if (spec.get("provider_id"), spec.get("model_id")) not in allowed:
         raise ValueError(
             "provider/model must be one of: "
             + ", ".join(f"{p}/{m}" for p, m in sorted(allowed)))
     expected_file = spec.get("expected_file", "")
-    path = PurePosixPath(expected_file)
-    if path.is_absolute() or not expected_file or ".." in path.parts:
-        raise ValueError("expected_file must be a relative path without traversal")
-    if not isinstance(spec.get("expected_text"), str) or not spec["expected_text"]:
-        raise ValueError("expected_text is required")
+    if expected_file:
+        path = PurePosixPath(expected_file)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("expected_file must be a relative path without traversal")
+        if spec.get("expected_text") is not None and not isinstance(
+                spec["expected_text"], str):
+            raise ValueError("expected_text must be a string when set")
     timeout_s = spec.get("timeout_s", 600)
     if not isinstance(timeout_s, int) or not 30 <= timeout_s <= 900:
         raise ValueError("timeout_s must be between 30 and 900 seconds")
@@ -98,13 +101,42 @@ def create_args(spec):
 
 
 def run_container(args, timeout=60, allowed_codes=(0,)):
-    cmd = ["podman", "exec", "--env", f"KANBAN_RUNTIME_HOST={RUNTIME_HOST}",
-           "--env", f"KANBAN_RUNTIME_PORT={RUNTIME_PORT}", CONTAINER, *args]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
-    if result.returncode not in allowed_codes:
-        detail = (result.stderr or result.stdout).strip()[:500]
-        raise RuntimeError(f"container command failed ({result.returncode}): {detail}")
-    return result.stdout
+    # the kanban CLI drops stdout past ~8KB when writing to a pipe, so
+    # redirect inside the container and read the files back out.
+    stamp = f"{os.getpid()}-{time.time_ns()}"
+    out_tmp = f"/tmp/nest-adapter-{stamp}.out"
+    err_tmp = f"/tmp/nest-adapter-{stamp}.err"
+    rc_tmp = f"/tmp/nest-adapter-{stamp}.rc"
+    cmd = [
+        "podman", "exec",
+        "--env", f"KANBAN_RUNTIME_HOST={RUNTIME_HOST}",
+        "--env", f"KANBAN_RUNTIME_PORT={RUNTIME_PORT}",
+        "--env", f"O={out_tmp}", "--env", f"E={err_tmp}", "--env", f"R={rc_tmp}",
+        CONTAINER, "sh", "-c",
+        '"$@" >"$O" 2>"$E"; printf "%s" "$?" >"$R"',
+        "sh", *args,
+    ]
+    try:
+        subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        stdout = _read_container_file(out_tmp)
+        stderr = _read_container_file(err_tmp)
+        rc_raw = _read_container_file(rc_tmp).strip()
+        returncode = int(rc_raw) if rc_raw.isdigit() else -1
+    finally:
+        subprocess.run(
+            ["podman", "exec", CONTAINER, "rm", "-f", out_tmp, err_tmp, rc_tmp],
+            capture_output=True, timeout=30)
+    if returncode not in allowed_codes:
+        detail = (stderr or stdout).strip()[:500]
+        raise RuntimeError(f"container command failed ({returncode}): {detail}")
+    return stdout
+
+
+def _read_container_file(path):
+    result = subprocess.run(
+        ["podman", "exec", CONTAINER, "cat", "--", path],
+        capture_output=True, text=True, timeout=30)
+    return result.stdout if result.returncode == 0 else ""
 
 
 def run_kanban(args, timeout=60):
@@ -133,8 +165,35 @@ def find_existing_task(tasks, marker):
     )
 
 
+def agent_ended(task_id):
+    """True when hooks.jsonl records agent_end for a session of this task.
+
+    The kanban runtime can lose the session record (e.g. a duplicate
+    `task start`), leaving the task in_progress with session=None even
+    though the agent finished — hooks are the surviving evidence."""
+    out = run_container([
+        "sh", "-c",
+        "grep '\"agent_end\"' /root/.cline/data/logs/hooks.jsonl 2>/dev/null"
+        f" | grep '\"rootSessionId\":\"{task_id}-' | tail -1",
+    ], allowed_codes=(0, 1))
+    return bool(out.strip())
+
+
 def should_start_task(task):
-    return task.get("column") in {"backlog", "in_progress"}
+    column = task.get("column")
+    if column == "backlog":
+        return True
+    if column == "in_progress":
+        # never re-start a task whose session ended — task start on an
+        # in_progress task clears the session record and can wipe the
+        # worktree, destroying a completed-but-unfinalized artifact
+        if agent_ended(task["id"]):
+            return False
+        # restart only when the session record is gone entirely
+        # (stale/crashed before agent_end); a live session dict means
+        # a session is running — leave it alone
+        return not (task.get("session") or {})
+    return False
 
 
 def parse_worktrees(output):
@@ -195,7 +254,11 @@ def wait_for_review(task_id, project_path, timeout_s):
         exit_code = session.get("exitCode")
         if exit_code not in (None, 0):
             raise RuntimeError(f"Cline task exited with code {exit_code}")
-        if column == "review":
+        if column == "review" or exit_code == 0:
+            return task
+        if not session and agent_ended(task_id):
+            # session record lost after agent_end — the task will never
+            # transition on its own; artifact verification decides below
             return task
         if column == "trash":
             raise RuntimeError("task reached Done before the adapter collected its diff")
@@ -254,31 +317,61 @@ def run_bridge(spec, output_path, patch_path):
     marker = task_marker(spec)
     before = get_worktrees()
     tasks = list_tasks(spec["project_path"])
-    task = find_existing_task(tasks, marker)
-    if task and task.get("column") == "trash":
-        raise RuntimeError(
-            "matching task is already in Done; use a new job_key for another run"
+    final_task = None
+    worktree = None
+    for attempt in range(2):
+        tasks = list_tasks(spec["project_path"])
+        task = find_existing_task(tasks, marker)
+        if task and task.get("column") == "trash":
+            raise RuntimeError(
+                "matching task is already in Done; use a new job_key for another run"
+            )
+        if not task:
+            created = run_kanban(create_args(spec))
+            task = created.get("task")
+            if not isinstance(task, dict) or not task.get("id"):
+                raise RuntimeError("Kanban create response did not include task.id")
+            print(f"created Cline task {task['id']}", flush=True)
+
+        task_id = task["id"]
+        if should_start_task(task):
+            try:
+                run_kanban([
+                    "task", "start", "--task-id", task_id,
+                    "--project-path", spec["project_path"],
+                ], timeout=90)
+            except subprocess.TimeoutExpired:
+                pass
+            print(f"ensured Cline task session {task_id}", flush=True)
+
+        final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
+        worktree = choose_task_worktree(before, get_worktrees(), task_id)
+        if not spec.get("expected_file"):
+            break
+        try:
+            expected = read_expected_file(worktree["path"], spec["expected_file"])
+        except RuntimeError:
+            expected = None
+        sentinel = spec.get("expected_text")
+        ok = (
+            expected is not None
+            and (expected.strip() if not sentinel else sentinel in expected)
         )
-    if not task:
-        created = run_kanban(create_args(spec))
-        task = created.get("task")
-        if not isinstance(task, dict) or not task.get("id"):
-            raise RuntimeError("Kanban create response did not include task.id")
-        print(f"created Cline task {task['id']}", flush=True)
-
-    task_id = task["id"]
-    if should_start_task(task):
-        run_kanban([
-            "task", "start", "--task-id", task_id,
-            "--project-path", spec["project_path"],
-        ])
-        print(f"ensured Cline task session {task_id}", flush=True)
-
-    final_task = wait_for_review(task_id, spec["project_path"], spec["timeout_s"])
-    worktree = choose_task_worktree(before, get_worktrees(), task_id)
-    expected = read_expected_file(worktree["path"], spec["expected_file"])
-    if spec["expected_text"] not in expected:
-        raise RuntimeError("expected smoke text was not written in the Cline task worktree")
+        if ok:
+            break
+        if attempt == 0:
+            run_kanban([
+                "task", "delete", "--task-id", task_id,
+                "--project-path", spec["project_path"],
+            ])
+            print(f"deleted failed Cline task {task_id} "
+                  "(verification failed); retrying once", flush=True)
+            continue
+        if expected is None:
+            raise RuntimeError("expected file was not written in the Cline task worktree")
+        if sentinel and sentinel not in expected:
+            raise RuntimeError("expected smoke text was not written in the Cline task worktree")
+        raise RuntimeError("expected file was written but is empty")
 
     patch, changed_files = collect_patch(worktree["path"], patch_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

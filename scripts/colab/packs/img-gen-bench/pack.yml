@@ -45,7 +45,7 @@ run: |
           data=json.dumps(body).encode(),
           headers={"Content-Type": "application/json"})
       try:
-          r = json.load(urllib.request.urlopen(req, timeout=900))
+          r = json.load(urllib.request.urlopen(req, timeout=2400))
           dt = time.time() - t0
           # dump the raw response for evidence; try to extract an image
           raw = json.dumps(r, ensure_ascii=False)

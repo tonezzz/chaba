@@ -1,0 +1,22 @@
+id: update-ai-lane-delegation-md-for-the-exe-40ae04
+title: Update ai-lane-delegation.md for the executor-contract layer (opencode/kk_mac_local rungs, /queue pre-flight)
+column: backlog
+updated: 2026-10-30 19:32
+priority: medium
+tags:
+- docs
+- procedure
+- routing
+spec: 'devin-kb docs/tools/ai-lane-delegation.md (tony-dell ~/devin-kb) predates the executor contract — it routes
+  L1 via script-cards/direct CLI. Add: (1) executor rungs as declared action.executor contract (devin|opencode|script|kk_mac_local|manual,
+  fail-closed no-fallback semantics), (2) opencode ops-readonly = the L1-ops kanban-native path (RAILS_OPENCODE
+  profile bounds, idc02 serves today), (3) kk_mac_local bounded lane (try-first + fallback, task_classes), (4) GET
+  /queue pre-flight — check verdicts before carding to a contract, (5) Ada/actor origin note — any actor files executor
+  cards via board-api. Source of truth for the contract semantics: scripts/board/runner-agent.py _claimable + ssot.procedures.yml
+  ai-lane-delegate entry (updated 2026-10-30). Verify: doc sections land, procedure entry already updated — this
+  is the depth-layer sync.'
+ref: OPS-1023
+comms:
+- at: 2026-10-30 19:32
+  from: tony
+  text: card captured via board-api

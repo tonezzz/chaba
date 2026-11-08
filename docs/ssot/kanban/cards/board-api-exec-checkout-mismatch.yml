@@ -1,0 +1,49 @@
+id: board-api-exec-checkout-mismatch
+title: board-api running from exec checkout — card writes not reaching served/web board
+column: done
+updated: 2026-11-07 16:57
+brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
+  sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
+  kanban page.'
+priority: high
+spec: 'Evidence 2026-11-06: board-api process pid cwd = /home/tony/CascadeProjects/chaba on idc03 (pgrep -af board-api.py).
+  That checkout is 133 commits ahead of origin/master and contains OPS-1045 commits e795d37ce/ab5f2a4ed/1854009d6,
+  but origin/master does not contain them. kanban-commit.service ExecStart uses ~/CascadeProjects/chaba-tony-dell/scripts/board/kanban-commit.sh
+  (REPO defaults to ~/CascadeProjects/chaba-tony-dell). The static board served on tony-dell (/apps/board/cards.json,
+  /apps/board2/cards.json) has 1170 cards with no OPS-1045 hit, while board-api GET /cards?id=adobe-stock-kk-mac-render-poc
+  returns the card. Likely fix: run/restart board-api with cwd ~/CascadeProjects/chaba-tony-dell (served writer)
+  or otherwise route board-api writes into the served checkout so kanban-commit commits+pushes them; then reconcile
+  the 133 unpushed chaba commits without losing card writes.'
+note: Found while OPS-1045 did not appear on the kanban tab.
+ref: KNB-1047
+comms:
+- at: 2026-11-06 17:55
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 11:03
+  from: devin
+  text: 'FIXED 2026-11-06. Root cause was two stacked faults: (1) served checkout chaba-tony-dell on idc03 was wedged
+    ~7d on an autostash-pop conflict in stacks/idc03/litellm/config.yaml — every kanban-commit failed ''unmerged
+    files'' since Oct 30 21:24, stranding 2324 commits; resolved keeping upstream (stash held only an older comment),
+    git-safe-pull archived the stash patch, pushed e89b3bcc4..7ad5879a4. (2) chaba-board-api.service was dead; a
+    manual nohup kept respawning board-api.py from exec checkout '
+- at: 2026-11-07 11:08
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-07 16:49
+  from: devin
+  text: '[KNB-1098] verified: live board-api process on idc03 runs from served checkout ~/CascadeProjects/chaba-tony-dell
+    (pgrep -af). Writes reach master. Note: chaba-board-api.service unit still inactive — door is a hand-started
+    process from the right path; tracked under ops hygiene, not this card. Closing.'
+- at: 2026-11-07 16:49
+  from: devin
+  text: closed by devin
+- at: 2026-11-07 16:57
+  from: devin
+  text: 'CORRECTION to my close note: chaba-board-api.service is a USER unit on idc03 — systemctl --user shows it
+    active since 15:45 ICT running the served-checkout process (my earlier ''unit inactive / hand-started'' read
+    was system-scope). Door is properly declared+systemd-managed. Residual gap (no health coverage) is carded on
+    fix-flagged-ops-health-services-ab5ac9.'
+review_kind: verify
+action:
+  status: done

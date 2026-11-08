@@ -24,12 +24,12 @@ def mutate(config):
     board_index = next(
         (
             i for i, view in enumerate(views)
-            if view.get("path") == "board" or view.get("title") == "Board"
+            if view.get("path") in ("kanban", "board") or view.get("title") in ("Kanban", "Board")
         ),
         None,
     )
     if board_index is None:
-        raise ValueError("Ada chaba-admin dashboard has no Board view")
+        raise ValueError("Ada chaba-admin dashboard has no Kanban/Board view")
 
     cline_indexes = [i for i, view in enumerate(views) if view.get("path") == "cline"]
     if len(cline_indexes) > 1:

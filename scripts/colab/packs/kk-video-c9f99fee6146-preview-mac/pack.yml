@@ -1,0 +1,168 @@
+# kk-video-c9f99fee6146-preview-mac — Apple Silicon lane for the private
+# KK teaser preview. Same shots/embeds/chaining as the CUDA pack
+# (I2V={2:1,10:9}, 73f/640x384) but driven by baisampayans/ltx-mlx — a
+# pure-MLX port of LTX-Video 0.9.x — on the 0.9.8-distilled 2B checkpoint.
+# Probed on kk-mac (M4 Max): ~8s/shot vs ~81s PyTorch-MPS vs ~5min T4,
+# with better prompt adherence + cleaner color than the MPS/bf16 path
+# (OPS-0967). T5-XXL is skipped entirely — the same .pt shot embeds are
+# injected into the pipeline, so conditioning is identical to the CUDA
+# lane and no 9.5GB text-encoder download is needed. torch-free: embeds
+# are read with an inline zip+pickle loader. Resumable per-shot.
+name: kk-video-c9f99fee6146-preview-mac
+requires:
+  - kk-video-c9f99fee6146-embeds
+needs:
+  gpu_gb: 0        # unified memory; ~8GB RAM headroom is the real need
+  disk_gb: 12
+  egress_only_ok: true
+timeout_s: 3600    # probes: ~90s total render; leaves download headroom
+fetch:
+  - packs/kk-video-c9f99fee6146-embeds/embeds/
+artifacts:
+  - packs/kk-video-c9f99fee6146-preview-mac/shots/kk-shot*.mp4
+  - packs/kk-video-c9f99fee6146-preview-mac/teaser-preview-silent.mp4
+  - packs/kk-video-c9f99fee6146-preview-mac/teaser-preview.th.srt
+  - packs/kk-video-c9f99fee6146-preview-mac/teaser-preview.en.srt
+  - packs/kk-video-c9f99fee6146-preview-mac/verdict.md
+publish:
+  shots: kk-video-c9f99fee6146/renders-mac
+prep: |
+  # ltx-mlx source (pure MLX, 5 deps) + distilled 2B ckpt (~5.9GB) +
+  # tokenizer only — text_encoder weights are never fetched.
+  LTXM=$NEST_ROOT/sw/ltx-mlx
+  [ -d "$LTXM/.git" ] || git clone --depth 1 \
+    https://huggingface.co/baisampayans/ltx-mlx "$LTXM"
+  python3 -m venv .venv-mlx
+  .venv-mlx/bin/pip install -q -e "$LTXM" 'imageio[ffmpeg]' imageio-ffmpeg
+  .venv-mlx/bin/python - <<'PY'
+  from huggingface_hub import snapshot_download
+  snapshot_download('Lightricks/LTX-Video', allow_patterns=[
+      'ltxv-2b-0.9.8-distilled.safetensors', 'tokenizer/*'])
+  PY
+  mkdir -p models/LTX/text_encoder models/LTX/tokenizer
+  SNAP=$(ls -d ~/.cache/huggingface/hub/models--Lightricks--LTX-Video/snapshots/*/ | head -1)
+  ln -sf "${SNAP}ltxv-2b-0.9.8-distilled.safetensors" models/LTX/
+  ln -sf "${SNAP}"tokenizer/* models/LTX/tokenizer/ 2>/dev/null || true
+run: |
+  import os, time, json, zipfile, pickle, subprocess
+  import numpy as np
+  import mlx.core as mx
+  import imageio.v3 as iio
+  import imageio_ffmpeg
+  import ltx_mlx.pipeline as lp
+
+  EMB = f'{NEST_ROOT}/packs/kk-video-c9f99fee6146-embeds/embeds'
+  MODEL_DIR = f'{PACK_DIR}/models/LTX'
+  OUT = f'{PACK_DIR}/shots'; os.makedirs(OUT, exist_ok=True)
+  I2V = {2: 1, 10: 9}           # shot -> last-frame source shot
+  W, H, FR, STEPS, SEED = 640, 384, 73, 4, 42
+  FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
+
+  # --- torch-free .pt reader: zip archive, pickle dict, raw storages ---
+  def load_pt(path):
+      zf = zipfile.ZipFile(path)
+      pkl = next(n for n in zf.namelist() if n.endswith('data.pkl'))
+      root = pkl.rsplit('/', 1)[0]
+      def rebuild(storage, offset, size, stride, *a):
+          _, st_name, key, _loc, numel = storage
+          dt = {'FloatStorage': np.float32, 'BFloat16Storage': np.uint16,
+                'DoubleStorage': np.float64, 'HalfStorage': np.float16,
+                'LongStorage': np.int64, 'IntStorage': np.int32,
+                'ShortStorage': np.int16, 'ByteStorage': np.uint8,
+                'BoolStorage': np.uint8}[st_name]
+          arr = np.frombuffer(zf.read(f'{root}/data/{key}'), dtype=dt)
+          if st_name == 'BFloat16Storage':
+              arr = (arr.astype(np.uint32) << 16).view(np.float32)
+          return arr[offset:offset + int(np.prod(size))].reshape(size)
+      class U(pickle.Unpickler):
+          def find_class(self, mod, name):
+              if 'rebuild_tensor' in name or 'rebuild_parameter' in name:
+                  return rebuild
+              if name == 'OrderedDict':
+                  from collections import OrderedDict
+                  return OrderedDict
+              if name.endswith('Storage'):
+                  return name
+              return lambda *a: None
+          def persistent_load(self, pid):
+              return pid
+      return U(zf.open(pkl)).load()
+
+  def emb(n):
+      d = load_pt(f'{EMB}/shot{n:02d}.pt')
+      return (mx.array(d['prompt_embeds'].astype(np.float32)).astype(mx.bfloat16),
+              mx.array(d['prompt_attention_mask'].astype(np.float32)))
+
+  lp.load_t5_encoder = lambda *a, **k: None    # T5 skipped: embeds injected
+  pipe = lp.LTXPipeline(MODEL_DIR)
+  embs = {n: emb(n) for n in range(1, 11)}
+
+  done = lambda n: os.path.exists(f'{OUT}/kk-shot{n:02d}.mp4') \
+                   and os.path.getsize(f'{OUT}/kk-shot{n:02d}.mp4') > 50000
+  verdict = ['# kk-video-c9f99fee6146-preview-mac verdict', '',
+             '| shot | mode | s | note |', '|---|---|---|---|']
+
+  def render(n, src=None):
+      e, m = embs[n]
+      pipe.t5 = lambda ids, mask=None, _e=e: _e
+      class FakeTok:
+          def encode(self, prompt, _m=m): return None, _m
+      pipe.tokenizer = FakeTok()
+      image = iio.imread(f'{OUT}/kk-shot{src:02d}.mp4')[-1] if src else None
+      t = time.time(); note = ''
+      try:
+          frames = pipe.generate('x', num_frames=FR, height=H, width=W,
+                                 num_steps=STEPS, seed=SEED, image=image)
+          iio.imwrite(f'{OUT}/kk-shot{n:02d}.mp4', frames, fps=24,
+                      codec='libx264', macro_block_size=None)
+      except Exception as ex:
+          note = f'{type(ex).__name__}: {str(ex)[:160]}'
+      dt = time.time() - t
+      mode = f'i2v:{src}' if src else 't2v'
+      verdict.append(f'| {n} | {mode} | {dt:.0f} | {note} |')
+      print(f'shot{n} {mode} {dt:.0f}s {note}', flush=True)
+
+  for n in range(1, 11):
+      if n not in I2V and not done(n):
+          render(n)
+  for n, src in I2V.items():
+      if not done(n) and done(src):
+          render(n, src)
+
+  missing = [n for n in range(1, 11) if not done(n)]
+  concat = f'{OUT}/concat.txt'
+  with open(concat, 'w') as fh:
+      for n in range(1, 11):
+          if done(n):
+              fh.write("file '%s'\n" % f'{OUT}/kk-shot{n:02d}.mp4')
+  silent = f'{PACK_DIR}/teaser-preview-silent.mp4'
+  if not os.path.exists(silent) and not missing:
+      subprocess.run([
+          FFMPEG, '-y', '-f', 'concat', '-safe', '0', '-i', concat,
+          '-vf', 'setpts=2.0*PTS', '-an', '-t', '60',
+          '-c:v', 'libx264', '-pix_fmt', 'yuv420p', silent,
+      ], check=False, capture_output=True)
+  th_lines = [
+      'ความผูกพันระหว่างพ่อกับลูกสาวเริ่มต้นจากความทรงจำที่อบอุ่น',
+      'ความสูญเสียทำให้เธอต้องเติบโตและเป็นเสาหลักของครอบครัว',
+      'ความฝันทั้งสี่เชื่อมโยงกับเหตุการณ์สำคัญในชีวิต',
+      'แต่คำตอบของเรื่องราวนี้ยังคงเป็นคำถามที่เธอกำลังค้นหา',
+  ]
+  en_lines = [
+      'A father and daughter begin with warm, ordinary memories.',
+      'Loss forces her to grow into a pillar for the family.',
+      'Four dreams become connected to moments that change her life.',
+      'But the meaning remains a question she is still searching for.',
+  ]
+  def write_srt(path, lines):
+      with open(path, 'w') as fh:
+          for i, line in enumerate(lines):
+              start = i * 15
+              def ts(sec):
+                  return '00:%02d:%02d,000' % (sec // 60, sec % 60)
+              fh.write(f'{i + 1}\n{ts(start)} --> {ts(start + 15)}\n{line}\n\n')
+  write_srt(f'{PACK_DIR}/teaser-preview.th.srt', th_lines)
+  write_srt(f'{PACK_DIR}/teaser-preview.en.srt', en_lines)
+  verdict += ['', f'missing: {missing or "none"}']
+  open(f'{PACK_DIR}/verdict.md', 'w').write('\n'.join(verdict) + '\n')
+  print('kk-video preview-mac done missing=%s' % missing, flush=True)

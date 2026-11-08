@@ -1,6 +1,7 @@
 import importlib.util
 import subprocess
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import yaml
@@ -58,10 +59,12 @@ class ClineKanbanNestBridgeTests(unittest.TestCase):
 
     def test_resumes_tasks_already_moved_to_in_progress(self):
         self.assertTrue(bridge.should_start_task({"column": "backlog"}))
-        self.assertTrue(bridge.should_start_task({
-            "column": "in_progress",
-            "session": None,
-        }))
+        with mock.patch.object(bridge, "agent_ended", return_value=False):
+            self.assertTrue(bridge.should_start_task({
+                "column": "in_progress",
+                "id": "task-123",
+                "session": None,
+            }))
         self.assertFalse(bridge.should_start_task({"column": "review"}))
         self.assertFalse(bridge.should_start_task({"column": "trash"}))
 

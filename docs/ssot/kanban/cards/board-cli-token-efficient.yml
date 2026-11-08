@@ -1,0 +1,29 @@
+id: board-cli-token-efficient
+title: board CLI wrapping board-api for agents
+column: done
+updated: 2026-11-07 17:12
+brief: Thin CLI over idc03:8787 board-api so agents do card ops in one call instead of ssh+curl heredocs.
+priority: medium
+program: devnest
+tags:
+- kanban
+- token-efficiency
+- tooling
+spec: 'scripts/board/board-cli.py (or extend existing): subcommands card/comment/action/request/respond/search get|post
+  against board-api. Compact JSON in/out. Use for all agent card mutations; board-api remains the write door.'
+ref: KNB-1104
+comms:
+- at: 2026-11-07 17:07
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-07 17:11
+  from: devin
+  text: 'KNB-1104 v1 shipped to master (4eb1fba28): scripts/board/board-cli.py — get/card/comment/action/request/respond
+    over board-api, --ssh idc03 transport via remote __api mode. Verified live: get returns card JSON in one call.
+    Replaces ssh+curl heredocs for all agent card ops.'
+- at: 2026-11-07 17:12
+  from: devin
+  text: moved backlog -> done
+action:
+  status: done
+claim: {}

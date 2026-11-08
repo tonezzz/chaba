@@ -1,0 +1,84 @@
+id: kk-mac-live-jev-probe3
+title: KK-Mac supervised JEV executor probe (tony-dell)
+column: backlog
+updated: 2026-10-30 01:06
+brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
+priority: high
+program: devnest
+tags:
+- kk-mac
+- jev
+- supervised
+- read-only
+spec: Read-only summary probe. No mutation, shell, credentials, or publish. Must run through the merged kk_mac_local
+  executor contract on tony-dell and finish with a verified artifact.
+action:
+  type: dispatch
+  host: tony-dell
+  executor: kk_mac_local
+  artifact: evals/kk-mac-lane/out/kk-mac-live-jev-probe3.json
+  task_class: summary
+  prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
+    and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
+  status: idle
+  sweep:
+    failed_noted: 2026-10-29 23:18
+    dirty: 1
+  last_failure: no exit record — unit not-found reports collected defaults (unproven, not ok) at and Ollama health
+    checks are active.  \n- **Model:** qwen3:8b running in read-only mode on KK-Mac.  \n- **Activity:** No mutations
+    or changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
+  attempts: 2
+ref: OPS-0988
+comms:
+- at: 2026-10-29 23:16
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-29 23:16
+  from: devin
+  text: queued for processing
+- at: 2026-10-29 23:16
+  from: tony-dell
+  text: claimed
+- at: 2026-10-29 23:16
+  from: chaba
+  text: started devin-task-kk-mac-live-jev-probe3-1793290591 on tony-dell (dispatch executor=kk_mac_local)
+- at: 2026-10-29 23:17
+  from: tony-dell
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) at and
+    Ollama health checks are active.  \'
+- at: 2026-10-29 23:18
+  from: chaba
+  text: 'merge-sweep: devin-task-kk-mac-live-jev-probe3-1793290591 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/kk-mac-live-jev-probe3-1793290591 by hand.'
+- at: 2026-10-29 23:19
+  from: devin
+  text: retry requested
+- at: 2026-10-29 23:20
+  from: tony-dell
+  text: claimed
+- at: 2026-10-29 23:20
+  from: chaba
+  text: started devin-task-kk-mac-live-jev-probe3-1793290810 on tony-dell (dispatch executor=kk_mac_local)
+- at: 2026-10-29 23:20
+  from: tony-dell
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) at and
+    Ollama health checks are active.  \'
+- at: 2026-10-29 23:23
+  from: devin
+  text: retry requested
+- at: 2026-10-29 23:24
+  from: chaba
+  text: dispatch parked after 2 attempts (policy retries_per_card=2) — re-queue to retry
+- at: 2026-10-29 23:25
+  from: devin
+  text: queued for processing
+- at: 2026-10-29 23:26
+  from: chaba
+  text: dispatch parked after 2 attempts (policy retries_per_card=2) — re-queue to retry
+- at: 2026-10-29 23:33
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-kk-mac-live-jev-probe3-1793290591 on tony-dell still dirty — 1 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-30 01:06
+  from: tony
+  text: put on hold

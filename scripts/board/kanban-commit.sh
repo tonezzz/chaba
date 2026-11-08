@@ -247,10 +247,24 @@ git -c user.name="kanban-bot" -c user.email="kanban-bot@chaba.local" \
 attempt=0
 while [ $attempt -lt "$PUSH_RETRIES" ]; do
     attempt=$((attempt + 1))
+    pre_pull_head="$(git rev-parse HEAD 2>/dev/null || true)"
     if ! SAFE_PULL_GENERATED_RE="$GENERATED_RE" bash "$SAFE_PULL" "$REPO"; then
         echo "kanban-commit: pull needs manual resolution — next tick retries" >&2
         fail_tick "pull needs manual resolution"
         exit 1
+    fi
+    # Self-restart when a pull lands new service code — the long-running
+    # unit otherwise keeps serving the pre-merge implementation until
+    # somebody notices (2026-11-07: board-api served 14-min-stale code
+    # across a merge, OPS-1107). try-restart is a no-op where the unit
+    # isn't running.
+    if [ -n "$pre_pull_head" ] \
+        && [ "$pre_pull_head" != "$(git rev-parse HEAD 2>/dev/null)" ] \
+        && ! git diff --quiet "$pre_pull_head" HEAD \
+            -- scripts/board/board-api.py; then
+        systemctl --user try-restart chaba-board-api.service 2>/dev/null \
+            && echo "kanban-commit: board-api.py changed in pull — restarted chaba-board-api" \
+            || true
     fi
     push_log="$(git push origin master 2>&1)"; rc=$?
     [ -n "$push_log" ] && echo "$push_log" | tail -2

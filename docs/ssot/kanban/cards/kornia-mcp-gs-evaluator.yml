@@ -1,0 +1,75 @@
+id: kornia-mcp-gs-evaluator
+title: Add read-only Kornia MCP tools for Gaussian capture evaluation
+column: done
+updated: 2026-11-08 10:58
+spec: 'Build a narrow Ada-facing MCP evaluator around Kornia for Gaussian Splat capture sets. Tools: inspect_image_set
+  (dimensions/duplicates/sharpness/exposure), match_views (DISK/LightGlue or SIFT fallback + RANSAC inliers), propose_foreground_masks
+  (review-only), score_capture_manifest, and compare_gs_runs (PSNR/SSIM/LPIPS/COLMAP registration/PLY/metrics).
+  Every tool returns JSON plus durable artifact_ref; no training, deletion, upload, or production mutation. Start
+  offline/read-only on the hibiscus fixture, compare CPU/MPS feasibility, then expose only through the existing
+  MCP policy/allowlist. Ada remains an explainer; deterministic metrics own gates.'
+note: 'Kornia official MCP module PR #3182 merged into kornia; local stack has no Kornia package or configured Kornia
+  MCP server yet. Education post 3620 covers Kornia GS fit and lane tracking.'
+ref: OPS-1055
+comms:
+- at: 2026-11-03 15:22
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 18:03
+  from: devin
+  text: 'Implementation complete on feat/ops-0882-p0 commit 43fb20b4e1: read-only mcp-kornia inspect_image_set adapter
+    + deterministic scripts/gs/image_set_eval.py + 2 tests. Hibiscus example: 14 images, same 1600x2844 dimensions,
+    zero duplicate groups, min sharpness 17.328, median 270.383, recommendation train_baseline_then_review_masks.
+    Education lesson updated with example post result. Next: optional DISK/LightGlue or SIFT/RANSAC matcher, then
+    reviewed foreground masks.'
+- at: 2026-11-08 08:34
+  from: devin
+  text: 'Progress: all 5 spec tools now implemented in mcp-servers/mcp-kornia (Chaba PR #101, branch feat/ops-1055-kornia-tools).
+    inspect_image_set (existing) + match_views (cv2 SIFT/ORB+RANSAC, kornia DISK/LightGlue optional), propose_foreground_masks
+    (review-only heuristic saliency), score_capture_manifest (0-100 gates+manifest), compare_gs_runs (PSNR/SSIM/PLY/metrics).
+    Every tool returns JSON + durable artifact_ref under GS_EVAL_ARTIFACT_ROOT; no training/deletion/upload/publish.
+    Verified on hibiscus-'
+- at: 2026-11-08 08:37
+  from: devin
+  text: 'Chaba PR #101 merged (010d9458e7): all 5 evaluator tools on master — inspect_image_set, match_views, propose_foreground_masks,
+    score_capture_manifest, compare_gs_runs. Verified on hibiscus-v1: views_well_linked (median 367 inliers), capture_usable_review_edges.
+    Remaining for done: register mcp-kornia server through the MCP policy/allowlist so Ada/JevTeam lanes can call
+    it; optional torch+kornia worker for DISK/LightGlue+LPIPS backends.'
+- at: 2026-11-08 10:03
+  from: devin
+  text: 'MCP policy/allowlist registration complete (OPS-1055 close-out).
+
+
+    - SSOT: mcp-kornia registered in ssot.mcp.yml servers (5-tool read-only allowlist) + gaussian_capture_eval policy
+    domain in ssot.mcp-tools.yml — merged via PR #102 (d4adbe79).
+
+    - Runtime: ~/.config/devin/mcp_config.json on tony-dell now routes mcp-kornia through mcp-allowlist.py with
+    allowlist.mcp-kornia.json (exactly the 5 tools).
+
+    - Verified live: initialize + tools/list through the proxy returns exactly [inspect_image_set, match_'
+- at: 2026-11-08 10:04
+  from: tony
+  text: moved backlog -> review
+- at: 2026-11-08 10:16
+  from: devin
+  text: 'OpenCode lane exposure done (caveat closed structurally).
+
+
+    - lane_gate.py: GS_EVAL_MCP_TOOLS (5 read-only mcp-kornia tools) added to LANE_MCP_TOOLS; all read-only stages
+    admit them. Profile mcp.allowed remains the per-agent ceiling; allowlist proxy enforces again upstream.
+
+    - New profile evals/opencode-lane/profiles/gs-capture-eval/: no bash/write/edit, MCP-only, message-mode JSON
+    artifact, held-out verifier re-runs image_set_eval.py. Job p1-gs-capture-eval-idc02.yaml targets hibiscus fixture
+    on '
+- at: 2026-11-08 10:58
+  from: devin
+  text: '[sweep] verified on origin/master: mcp-servers/mcp-kornia/ (server.py, gs_tools.py), GS_EVAL_MCP_TOOLS
+    in scripts/devnest/lane_gate.py:167, profile evals/opencode-lane/profiles/gs-capture-eval/, job evals/opencode-lane/jobs/p1-gs-capture-eval-idc02.yaml
+    all landed. Deliverable (read-only tools + lane exposure) complete; the eval run itself is the job yaml''s next
+    execution, not this card''s scope. Closing.'
+- at: 2026-11-08 10:58
+  from: tony
+  text: closed by tony
+review_kind: verify
+action:
+  status: done

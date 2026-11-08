@@ -1,7 +1,7 @@
 id: ada-trip-calendar-pages
 title: Trip calendar page family — generator + Ada tool (rollup/daily-leaf/QC)
 column: done
-updated: 2026-10-13 10:56
+updated: 2026-11-08 07:49
 priority: high
 tags:
 - ada-pi
@@ -88,6 +88,11 @@ comms:
   text: '[prod] deployed 2026-10-13 — ada-pi 6148f64 + chaba generator on idc03 checkout. trip_calendar armed on
     ada-kk/ada-kk-dev; denylist lanes get it by default. Generator dry-run verified end-to-end (provider load, journal
     scan, mermaid gantt, 22-day span). Pages render once real dates/slug supplied.'
+- at: 2026-11-08 07:49
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -102,3 +107,4 @@ auto_close:
   by: merge-sweep
   at: 2026-10-13 09:42
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261013-091329-tony-2026-10-13-need-calendar-.md
+awaiting_action: true

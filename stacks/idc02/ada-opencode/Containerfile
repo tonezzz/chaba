@@ -1,0 +1,23 @@
+# ada-opencode — Ada's dispatch executor on idc02 (rootless podman).
+# Reconstructed 2026-11-08 from the live image layer history — the
+# original build was ad-hoc and unreproducible; this is now canonical.
+# Bump OPENCODE_VERSION to upgrade; the executor contract (preflight
+# receipts -> confirmed dispatch -> artifact -> verifier) is the gate.
+FROM docker.io/library/node:22-slim
+ARG OPENCODE_VERSION=1.19.4
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      git ca-certificates ripgrep python3 python3-pip \
+ && rm -rf /var/lib/apt/lists/*
+RUN npm install -g "opencode-ai@${OPENCODE_VERSION}" \
+ && npm cache clean --force
+# Python MCP SDK — ada_mcp.py (workspace .opencode/) is a stdio MCP
+# server; pinned below 2.x pending compatibility review.
+RUN pip3 install --no-cache-dir --break-system-packages "mcp<2"
+ENV HOME=/home/opencode
+RUN mkdir -p /home/opencode/.config/opencode /workspace \
+ && chown -R node:node /home/opencode /workspace
+USER node
+WORKDIR /workspace
+ENTRYPOINT ["opencode"]
+CMD ["serve", "--hostname", "0.0.0.0", "--port", "4096"]

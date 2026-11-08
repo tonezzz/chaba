@@ -144,7 +144,6 @@ PAGE = r"""<!doctype html>
     <span class="text-slate-500">|</span>
     <span class="font-semibold">Board</span>
     <span id="live-dot" class="w-2 h-2 rounded-full bg-emerald-400" title="live"></span>
-    <a href="/apps/board/" class="text-xs text-slate-400 hover:text-slate-200 underline underline-offset-2">classic view</a>
     <input id="q" type="search" placeholder="Filter cards…"
       class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm w-44 ml-2">
     <div class="flex items-center gap-1">
@@ -215,7 +214,7 @@ function cardsFor(t) {
 }
 function matchQ(c, qq) {
   if (!qq) return true;
-  const hay = ((c.title||'')+' '+c.id+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
+  const hay = ((c.title||'')+' '+c.id+' '+(c.ref||'')+' '+(c.brief||'')+' '+(c.note||'')+' '+(c.program||'')).toLowerCase();
   return qq.toLowerCase().split(/\s+/).every(w => hay.includes(w));
 }
 // card-level ask — one standing decision per card, schema
@@ -842,11 +841,14 @@ def main():
     card_dir = REPO / man["card_dir"]
     out_path = REPO / "stacks/web/public/apps/board2/index.html"
 
+    state_hash = None
     if "--if-changed" in sys.argv:
-        h = _rb.dir_hash(card_dir)
-        if STATE.exists() and STATE.read_text().strip() == h and out_path.exists():
+        state_hash = _rb.dir_hash(card_dir)
+        if STATE.exists() and STATE.read_text().strip() == state_hash \
+                and out_path.exists():
             return 0
-        STATE.write_text(h + "\n")
+        # STATE advances only after the render lands (see render-board.py
+        # — a crashed render must not poison the skip-set, OPS-1107).
 
     cards = _rb.load_cards(man)
     rank = {"high": 0, "medium": 1, "low": 3}
@@ -875,6 +877,8 @@ def main():
     json_path = out_path.with_name("cards.json")
     json_path.write_text(json.dumps(payload, ensure_ascii=False, default=str))
     out_path.write_text(page)
+    if state_hash is not None:
+        STATE.write_text(state_hash + "\n")
     print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
     return 0
 

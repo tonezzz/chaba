@@ -89,9 +89,13 @@ def dispatch_dir() -> Path:
 # by runner-agent always launched on the devin default model.
 LANE_MODELS = {
     "free_lane": "litellm/gemini-3.5-flash-lite",
-    "paid_frontier": "litellm/or-claude-fable-5.1",
+    # was litellm/or-claude-fable-5.1 — that alias was never deployed
+    # on the litellm proxy (OPS-1021 escalation, 2026-11-02);
+    # gemini-3.5-flash is the strongest served non-lite model
+    "paid_frontier": "litellm/gemini-2.5-flash",
 }
-LANE_EXECUTORS = {"codemod": "script", "manual": None}
+LANE_EXECUTORS = {"codemod": "script", "manual": None,
+                "jules": "jules", "nlm_batch": "nlm_batch"}
 JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 
 # ------------------------------------------------- executor contract
@@ -107,6 +111,28 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 #              A card that can't get all three must NEVER fall back to
 #              devin: it stays queued with a defer note, or the claim
 #              fails closed with the reason recorded.
+#   kk_mac_local — the bounded read-only LLM lane on KKs-Mac-Studio
+#              (card kk-mac-jev-adapter-integration). The OPPORTUNISTIC
+#              executor: cards carry action.task_class in
+#              KK_MAC_TASK_CLASSES (+ optional action.prompt /
+#              action.expect / action.artifact), execute through
+#              scripts/devnest/kk_mac_executor.py, and the run is
+#              verified only after its usage/admission/response artifact
+#              lands AND the independent verifier passes. Unlike the
+#              strict executors this one is try-first: when KK-Mac is
+#              stale/unavailable/overloaded or returns invalid output it
+#              fails closed and the SAME claim falls back to the normal
+#              lane — it never starves the card and never runs outside
+#              the admitted task classes. Serving requires KK_MAC_LANES=1
+#              on the runner (off by default until the supervised
+#              dispatch passes).
+#   jules    — the Jules REST lane (OPS-1048/OPS-1049): Google AI
+#              Pro's async coding agent. A card carries
+#              action.executor=jules (or action.lane=jules); a
+#              JULES_LANES=1 runner shells scripts/jules/jules.py
+#              (create --auto-pr + wait) and Jules opens the
+#              GitHub PR itself — no local worktree, no push
+#              creds. Declared = fail closed like opencode.
 #   devin    — devin-dispatch, regardless of lane tables/env.
 #   script   — the action.script block via the runner's script path.
 #   manual   — Tony's hands; automation never claims it.
@@ -115,7 +141,17 @@ JEVOS = os.environ.get("JEVOS_URL", "http://127.0.0.1:8017")
 # classifier fallback — devin when nothing cheaper resolves). An
 # executor value outside EXECUTORS is unintelligible — claimants fail
 # closed rather than guess.
-EXECUTORS = {"opencode", "devin", "script", "manual"}
+EXECUTORS = {"opencode", "devin", "script", "manual", "kk_mac_local",
+            "jules", "nlm_batch"}
+# Bounded task classes the kk_mac_local executor may ever run — mirrors
+# scripts/devnest/kk_mac_llm.py ALLOWED_TASKS (kept local: board-api
+# validates the contract without importing the devnest package).
+KK_MAC_TASK_CLASSES = {
+    "summary", "operator_brief", "structured_extract", "safe_route"}
+# roots the kk_mac_local persisted artifact may land under — mirrors
+# kk_mac_executor.ARTIFACT_ROOTS
+KK_MAC_ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/",
+                         "docs/reports/")
 MODEL_ID_RE = re.compile(r"^[a-zA-Z0-9._/-]{1,80}$")
 PROFILE_ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,60}$")
 HOST_ID_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{0,62}$")
@@ -137,6 +173,21 @@ def card_target_host(card: dict) -> str:
     """Declared executor host pin (action.target_host) — independent of
     action.host; both must be satisfied for a claim."""
     return str((card.get("action") or {}).get("target_host") or "").strip()
+
+
+def card_subject_host(card: dict) -> str:
+    """Declared diagnosis SUBJECT (action.subject_host) — the host the
+    task inspects, distinct from where it executes (OPS-1025: remote-read
+    profiles diagnose a remote host while running locally; hijacking
+    target_host for that collided with the claim pin and made the card
+    unclaimable fleet-wide)."""
+    return str((card.get("action") or {}).get("subject_host") or "").strip()
+
+
+def card_task_class(card: dict) -> str:
+    """Declared bounded task class (action.task_class) — required when
+    executor=kk_mac_local; ignored by every other executor."""
+    return str((card.get("action") or {}).get("task_class") or "").strip()
 
 
 def model_provider(model: str) -> str:
@@ -166,6 +217,9 @@ def executor_blurb(card: dict) -> str:
     prof = card_profile(card)
     if prof:
         bits.append(f"profile={prof}")
+    tc = card_task_class(card)
+    if tc:
+        bits.append(f"task={tc}")
     return " ".join(bits)
 
 # Keyword lane classifier — deterministic, validated on the lane corpus
@@ -561,6 +615,183 @@ def sort_claimable(cards: list, starve_hours: float = 12.0,
     now = time.time() if now_ts is None else now_ts
     return sorted(cards,
                   key=lambda c: claim_sort_key(c, starve_hours, now))
+
+
+# ------------------------------------------------- fleet claim surface
+#
+# Card dispatch-claim-eligibility-visibility (OPS-1097): a queued card
+# whose labels/pins/repo-push no declared runner can satisfy starves
+# invisibly — every host just skips it (the 2026-11-07 ops0790-rollout-*
+# cards sat ~3h on labels:[exec] before a manual run). The runner_fleet
+# prose in ssot.kanban.yml is the declared claim surface
+# ('<host>: ... labels a,b (dispatch+container+script)'). The queue-time
+# warning (board-api queue_unclaimable_warn) and the eval-time flags
+# (kanban-dispatch _flag_unclaimable, runner-agent note_defer
+# kind=unclaimable) share these helpers so a card is judged by the same
+# table everywhere. Live per-host truth (push probes, caps, load) stays
+# with the runners' /ready verdicts and '<host> defers:' notes — this is
+# the *declared* floor: a gap here is fixed by editing the card or the
+# fleet, never by waiting.
+
+SERVED_TYPES = {"dispatch", "container", "script"}
+
+_FLEET_HOST_RE = re.compile(r"\b(tony-[\w-]+|idc\d+|mn\d+)\s*:")
+_FLEET_LABELS_RE = re.compile(
+    r"\blabels\s+([A-Za-z0-9_:.\-]+(?:\s*,\s*[A-Za-z0-9_:.\-]+)*)")
+_FLEET_TYPES_RE = re.compile(r"\(\s*([a-z_]+(?:\s*\+\s*[a-z_]+)*)")
+_FLEET_CACHE: dict = {}
+
+
+def kanban_ssot_path() -> Path:
+    return Path(os.environ.get(
+        "KANBAN_SSOT",
+        str(Path(os.environ.get(
+            "CHABA_REPO",
+            str(Path(__file__).resolve().parents[2])))
+            / "docs" / "ssot" / "kanban" / "ssot.kanban.yml")))
+
+
+def _find_key(d, key):
+    if isinstance(d, dict):
+        for k, v in d.items():
+            if k == key:
+                return v
+            r = _find_key(v, key)
+            if r is not None:
+                return r
+    return None
+
+
+def fleet_capabilities(ssot: Path | None = None) -> dict:
+    """{host: {"labels": set, "types": set}} from the runner_fleet prose —
+    the declared claim surface every claimer gates on. mtime-cached; {}
+    when the file or section is unreadable — callers must treat unknown
+    as 'cannot prove unclaimable', never as 'unclaimable'."""
+    path = ssot or kanban_ssot_path()
+    try:
+        mtime = path.stat().st_mtime
+        import yaml  # lazy — runner hosts may lack it; {} = no evidence
+        text = str(_find_key(yaml.safe_load(path.read_text()) or {},
+                             "runner_fleet") or "")
+    except Exception:
+        return {}
+    if not text:
+        return {}
+    hit = _FLEET_CACHE.get(str(path))
+    if hit and hit[0] == (mtime, text):
+        return hit[1]
+    fleet: dict = {}
+    marks = list(_FLEET_HOST_RE.finditer(text))
+    for i, m in enumerate(marks):
+        host = m.group(1)
+        seg = text[m.end():marks[i + 1].start() if i + 1 < len(marks)
+                   else len(text)]
+        ent = fleet.setdefault(host, {"labels": set(), "types": set()})
+        lm = _FLEET_LABELS_RE.search(seg)
+        if lm:
+            ent["labels"] |= {x.strip() for x in lm.group(1).split(",")
+                              if x.strip()}
+        tm = _FLEET_TYPES_RE.search(seg)
+        if tm:
+            ent["types"] |= ({x.strip() for x in tm.group(1).split("+")
+                              if x.strip()} & SERVED_TYPES)
+    for ent in fleet.values():
+        if not ent["types"]:
+            ent["types"] = {"dispatch"}  # every runner serves dispatch
+    _FLEET_CACHE[str(path)] = ((mtime, text), fleet)
+    return fleet
+
+
+def unsatisfiable_reasons(card: dict, fleet: dict | None = None,
+                          local_host: str = "",
+                          push_probe=None) -> list:
+    """Deterministic claim gaps for a queued card — [] when the declared
+    fleet might still serve it. Labels, host pins and served types are
+    the same hard gates in every claimer; push creds count when declared
+    (push:<repo> label in the fleet prose) or probed on the local host —
+    remote probe results are the runners' /ready verdicts and defer
+    notes, not knowable here, so 'unproven' push never flags alone
+    unless the card has exactly one eligible runner."""
+    a = card.get("action") or {}
+    typ = str(a.get("type") or "dispatch")
+    if typ not in SERVED_TYPES:
+        return []                # the type warn / manual lane owns this
+    ex = str(a.get("executor") or "").strip()
+    if ex and ex not in EXECUTORS:
+        return [f"action.executor={ex!r} names no known executor"]
+    if ex == "manual" or str(a.get("lane") or "") == "manual":
+        return []                # Tony's hands — deliberate, not a gap
+    fleet = fleet_capabilities() if fleet is None else fleet
+    if not fleet:
+        return []                # no declared evidence — never flag
+    needs = set(a.get("labels") or [])
+    reasons = []
+    cands = set(fleet)
+    for pin_key in ("host", "target_host", "runner"):
+        pin = str(a.get(pin_key) or "").strip()
+        if not pin:
+            continue
+        if pin not in fleet:
+            reasons.append(f"action.{pin_key}={pin} names no declared "
+                           "runner")
+            cands.clear()
+            break
+        cands &= {pin}
+    pin_host = str(a.get("host") or "").strip()
+    pin_th = str(a.get("target_host") or "").strip()
+    if pin_host and pin_th and pin_host != pin_th:
+        reasons.append(f"action.host={pin_host} conflicts "
+                       f"target_host={pin_th}")
+        cands.clear()
+    if not cands:
+        return reasons
+
+    def _serves(h: str) -> bool:
+        ent = fleet[h]
+        return typ in (ent.get("types") or {"dispatch"}) and \
+            needs <= (ent.get("labels") or set())
+
+    ok = [h for h in sorted(cands) if _serves(h)]
+    if not ok:
+        if len(cands) == 1:
+            h = next(iter(cands))
+            ent = fleet[h]
+            bits = []
+            miss = sorted(needs - (ent.get("labels") or set()))
+            if miss:
+                bits.append(f"lacks labels {miss}")
+            types = ent.get("types") or {"dispatch"}
+            if typ not in types:
+                bits.append(f"serves {sorted(types)}, not {typ}")
+            reasons.append(f"{h} " + " and ".join(bits))
+        else:
+            union = sorted(set().union(
+                *(fleet[h].get("labels") or set() for h in cands)))
+            reasons.append(
+                f"labels {sorted(needs)} satisfied by no declared "
+                f"runner (fleet advertises {union})")
+        return reasons
+    if typ == "dispatch" and len(ok) == 1:
+        # one eligible runner: its push creds decide the claim. Only
+        # the LOCAL host's probe is real evidence here — a remote
+        # runner's `git push --dry-run` is its own business (live
+        # '<host> defers: push guard' notes already say when it fails),
+        # and an absent push:<repo> declaration is unproven, not failed.
+        h = ok[0]
+        repo = canon_repo(str(a.get("repo") or "chaba"))
+        labels = fleet[h].get("labels") or set()
+        declared = f"push:{repo}" in labels or \
+            f"push:{a.get('repo') or 'chaba'}" in labels
+        if not declared and h == local_host and push_probe is not None:
+            try:
+                if not push_probe(repo):
+                    reasons.append(
+                        "push guard: `git push --dry-run` fails on the "
+                        f"only eligible runner ({h}) — it needs "
+                        f"push:{repo} creds or the card needs re-routing")
+            except Exception:
+                pass                 # probe error = unproven, not failed
+    return reasons
 
 
 # ------------------------------------------------------------- close-out

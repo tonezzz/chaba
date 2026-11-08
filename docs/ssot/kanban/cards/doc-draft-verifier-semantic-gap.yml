@@ -1,0 +1,15 @@
+id: doc-draft-verifier-semantic-gap
+title: doc-draft verifier passes off-spec docs — sentinels are mechanical not semantic
+column: backlog
+updated: 2026-10-30 19:02
+spec: 'OPS-1014 evidence: qwen2.5:32b emitted a code-summary of runner-agent.py instead of the specced model-notes
+  doc, but verify_contains passed because code names matched sentinels. Options: require verify_contains to include
+  at least one string that only appears in a correct deliverable (spec-author duty); add a task-keyword-coverage
+  check comparing spec terms to doc; or accept mechanical gate + mandatory human doc review at closeout (cheapest,
+  honest). Recommendation: keep mechanical gate, document that doc-draft cards need specific sentinels, add optional
+  verify_regex/verify_min_terms.'
+ref: OPS-1017
+comms:
+- at: 2026-10-30 19:02
+  from: tony
+  text: card captured via board-api

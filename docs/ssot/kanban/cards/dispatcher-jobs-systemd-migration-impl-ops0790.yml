@@ -1,0 +1,77 @@
+id: dispatcher-jobs-systemd-migration-impl-ops0790
+title: Implement OPS-0790 legacy dispatcher migration
+column: done
+updated: 2026-11-08 08:04
+brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
+  this phase.
+priority: high
+tags:
+- systemd
+- dispatcher
+- ops-0790
+spec: 'Follow-up implementation for the approved OPS-0790 decision. Migrate the eight remaining registry entries
+  in docs/ssot/infrastructure/ssot.jobs.yml that declare dispatch:dispatcher: embed-lane-news, embed-lane-lessons,
+  embed-lane-banks, yomi-update-active, mcp-debug-h3-sync, tony-dell-health-snapshot, network-scan-tony, and lesson-drift-check.
+  Preserve each job''s host, cadence, timeout, cwd, exec, env_file, condition_path, critical/failure behavior, and
+  any Podman network/volume settings. Use the established dispatch:systemd rendered-timer contract; add per-host
+  render/golden tests and a migration matrix/report. This dispatch is code/tests only: do not install/enable timers,
+  stop chaba-jobs.timer, or remove the legacy dispatcher. Do those in a separate rollout after all rendered timers
+  are reviewed and verified under the deploy lock.'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - push:chaba
+  - cpu
+  target_host: idc02
+  artifact: docs/reports/dispatcher-systemd-migration-2026-10-29.md
+  status: done
+  runner: idc02
+  result: 'Verified commit 93c61b905 is in origin/master. Independent checks on that commit: 16 render-jobs tests
+    + 12 job-dispatcher tests passed; render-jobs.py --check OK (87 jobs/8 hosts); SSOT validation 3278 files, 0
+    errors. Code/registry migration only; no live timers installed/enabled and legacy chaba-'
+  verified: true
+ref: OPS-0983
+comms:
+- at: 2026-10-29 20:43
+  from: devin
+  text: Actionable follow-up to OPS-0790; eight legacy dispatcher registry jobs are queued for code/test migration
+    to rendered systemd timers. Live deploy/removal remains a later verified rollout.
+- at: 2026-10-29 20:48
+  from: devin
+  text: 'Execution proof: the idc02 one-shot dispatch task `devin-task-20261029-204303-follow-up-execution-for-the-ap`
+    is active (`systemctl --user show` reports ActiveState=active/SubState=running; task metadata binds it to this
+    card). It is implementing the registry inventory and code/tests only; no timers have been installed or disabled.'
+- at: 2026-10-29 20:51
+  from: idc02
+  text: claimed
+- at: 2026-10-29 21:01
+  from: idc02
+  text: 'finished (ok): Verified commit 93c61b905 is in origin/master. Independent checks on that commit: 16 render-jobs
+    tests + 12 job-dispatch'
+- at: 2026-10-29 21:03
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 07:49
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'idc02 defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-08 08:04
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix
+    action.labels/host pins or teach a runner the capability'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-29 21:03
+  note: verified — evidence checks green, closing itself
+awaiting_action: true

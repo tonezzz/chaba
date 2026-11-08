@@ -1,0 +1,20 @@
+id: branch-code
+title: Isolated-worktree code task (DISABLED — schema fixture only)
+class: branch_code
+timeout_s: 900
+artifact: evals/opencode-lane/out/branch-code-report.json
+description: >-
+  Contract fixture for the branch-code profile. The profile is
+  disabled in this card: this fixture exists so profile config,
+  envelopes, and renders validate end-to-end. Running it is denied by
+  every admission path.
+contract:
+  required_fields:
+    task: "what was implemented"
+    branch: "profile/<job> worktree branch"
+    worktree: "isolated worktree path"
+    files_changed: "list of repo-relative paths touched"
+    tests_run: "int > 0 — tests actually executed"
+    tests_passed: "int <= tests_run"
+    review_ref: "independent reviewer reference (required)"
+    artifact_complete: "must be true"

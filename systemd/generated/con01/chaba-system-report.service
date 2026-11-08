@@ -1,0 +1,7 @@
+[Unit]
+Description=Chaba System Report (job:chaba-system-report, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 con01 macbook; do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py --consolidate; /usr/bin/python3 scripts/report-system.py && scp -q stacks/web/public/apps/system-report/data/system-report.yml stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md idc02:~/web-srv/public/apps/system-report/data/ && scp -q stacks/web/public/apps/system-report/data/system-report.yml stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md idc02:~/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/'

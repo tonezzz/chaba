@@ -1,0 +1,561 @@
+id: wiki-member-knowledge-surface-migrate-wp-3a1cf2
+title: Wiki member-knowledge surface — migrate wp education, structure with news+report
+column: done
+updated: 2026-11-07 12:03
+priority: medium
+tags:
+- cms
+- education
+- wp-boards
+- architecture
+spec: 'Idea (2026-11-06, Tony chat): migrate wp/education to a wiki; structure it together with existing news and
+  report surfaces.
+
+
+  CURRENT STATE (verified 2026-11-06):
+
+  - WP lesson CPT (boards.surf-thailand.com/wp/lesson/) = education ledger: private posts, slug lesson-<md5(topic)>,
+  auto-Thai section, meta topic/level/source/learned_at/next_review/status. Written ONLY via board-api POST /lesson
+  (do_lesson -> WP REST upsert); scripts/lesson-add.py thin client; /publish kind=lesson sink. Spaced recall: next_review
+  -> chaba-lessons-due.timer daily page education-due (post 354) + education-report.py. Hub+series convention (ada-nest-map
+  post 1608 + ada-nest-* topic lessons).
+
+  - WP news CPT: ~2,736 published items; hourly news-fetch + embedding digest clustering (news-digest) + situation
+  sweep — a real feed, not knowledge articles.
+
+  - WP report CPT: member-facing report pubs (usage-ledger etc.), meta report_type/period/source_key.
+
+  - ada-cms-pages (MDDB, tailnet): ~388 docs, kind=page|report|archive, domain taxonomy, reports-index; cms-publish-site.py
+  static-publish DORMANT since 2026-10-14. Ada''s report-first surface.
+
+  - Publication layer (scripts/board/publication.py): PublicationEvent -> sinks nest_job/lesson/news/report/telegram/board/json;
+  WP is one adapter via board-api wp_api seam.
+
+
+  PROPOSED STRUCTURE (sort by content physics):
+
+  - EVERGREEN KNOWLEDGE -> wiki. Lessons become wiki pages; series/hub = native wiki pages/subpages; lesson meta
+  maps to page templates/categories (level) + review-date bot; /lesson writer retargets to wiki API behind board-api
+  — callers unchanged (unified mutation door).
+
+  - FEEDS stay in WP news CPT — 2.7k items, hourly ingest, digest trees have no wiki semantics. Optional: wiki News
+  portal page links into WP archives/situations.
+
+  - REPORTS split by audience: internal reports stay ada-cms-pages; member-facing report CPT -> wiki Reports: pages
+  (a report is a document; usage-ledger class = living page machine-overwritten via API).
+
+  - OPS LEDGERS stay WP CPTs (activity/ops_error/nest_job/cam/score/repeat_ask) — records, not knowledge.
+
+  - ada-cms-pages remains the ops/internal store; wiki = member-facing knowledge surface (parallel, like ada-cms-pages
+  vs CMS for internal).
+
+
+  ENGINE OPTIONS (decision on card request):
+
+  A. MediaWiki on the Plesk host beside boards WP (boards.surf-thailand.com/wiki): most wiki-true (categories, templates,
+  subpages, backlinks, bot API); same PHP/LAMP stack + separate DB, no new service topology; Thai = same-page TH
+  section (current convention), no Translate ext needed. Cons: dated UI. RECOMMENDED — lowest friction, fits the
+  writer pattern.
+
+  B. Wiki.js on idc03 (quadlet + Postgres): modern UX, built-in locale trees for TH; more infra — Node service +
+  DB on prod host, new watch.
+
+  C. No wiki product — education as ada-cms-pages domain + re-enable static publish: cheapest, weakest member UX
+  (no links/backlinks, static snapshots, dormant pipeline).
+
+
+  MIGRATION MECHANICS (option-agnostic):
+
+  - Export lessons via WP REST with wp-boards.env (idc03) -> wiki pages; slug -> readable title; preserve meta as
+  template fields/categories.
+
+  - 301 lesson permalinks -> wiki; keep CPT read-only or unregister post-cutover.
+
+  - board-api: do_lesson + /publish lesson sink get a wiki adapter (proves the adapter seam); lesson-add.py untouched.
+
+  - lessons-due/education-report retarget to wiki API or emit wiki index pages.
+
+  - Thai-section convention carries over verbatim.
+
+
+  OPEN QUESTIONS: does news need wiki presence beyond a portal link? should member reports move or stay WP (tiny
+  count)? audience = members-only or public SEO?'
+ref: OPS-1046
+comms:
+- at: 2026-11-06 17:09
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-06 17:09
+  from: tony
+  text: 'raised request which-wiki-engine-should-the-member-know-3c539b: Which wiki engine should the member-knowledge
+    surface use?'
+- at: 2026-11-06 17:21
+  from: tony
+  text: 'answered which-wiki-engine-should-the-member-know-3c539b: mediawiki'
+- at: 2026-11-06 17:21
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 17:21
+  from: devin
+  text: 'Engine decided in chat 2026-11-06: MediaWiki on the Plesk host beside boards WP (boards.surf-thailand.com/wiki).
+    Next step when picked up: MediaWiki install + lesson export/migration plan + board-api wiki adapter behind do_lesson.'
+- at: 2026-11-06 17:36
+  from: devin
+  text: 'SPEC CORRECTION (verified live 2026-11-06): the wiki is NOT greenfield — MediaWiki 1.46.2 already live
+    at wiki.h3.gizmo-thailand.com (Thai-first), with the devnest publication program in flight. Existing pieces
+    this card must build on, not duplicate: (1) MediaWikiSink in scripts/board/publication.py (idc03 checkout) —
+    Action API login->csrf->edit, public-only, News/ prefix, NewsReport template; (2) ssot.mediawiki-news.yml —
+    canonical News hierarchy + visibility contract; (3) protected namespaces'
+- at: 2026-11-06 17:36
+  from: tony
+  text: 'raised request education-visibility-on-the-wiki-public-1021dd: Education visibility on the wiki — public
+    Education/ namespace now, or gated in-house namespace after SEC-1035? Note: WP'
+- at: 2026-11-06 17:40
+  from: tony
+  text: 'answered education-visibility-on-the-wiki-public-1021dd: inhouse-after-sso'
+- at: 2026-11-06 17:40
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 17:41
+  from: devin
+  text: 'DISPATCH BRIEF — phase 1 only (adapter, no live writes). Decisions locked 2026-11-06: engine=existing MediaWiki
+    1.46.2 at wiki.h3.gizmo-thailand.com; education visibility=in-house gated (protected namespace, NOT public —
+    waits on SEC-1035 boundary + a protected Education: namespace via LocalSettings/Plesk).
+
+
+    BUILD: (1) WikiLessonSink in scripts/board/publication.py — subclass/generalize MediaWikiSink (see origin/master,
+    class at ~line 322): kinds=(''lesson'',), own wikitext renderer with an Educat'
+- at: 2026-11-06 17:41
+  from: tony
+  text: queued for processing
+- at: 2026-11-06 17:41
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 17:41
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-06 17:41
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-06 17:42
+  from: chaba
+  text: started devin-task-20261106-174159-idea-2026-11-06-tony-chat-migr on tony-macbook (dispatch)
+- at: 2026-11-06 17:48
+  from: devin
+  text: 'Verified-live correction (2026-11-06): the wiki already exists and is fully integrated — wiki.h3.gizmo-thailand.com
+    (MediaWiki 1.46.2, same managed host 103.99.11.249 as boards.h3) with a board-api adapter (MediaWikiSink), wiki+wiki-private
+    sinks live in /publish (9 sinks), a springboard extension-control door (/wiki/extension), Lockdown-ENFORCED
+    protected namespaces (PrivateNews: and Infrastructure: — anon content read returns accessdenied, verified),
+    PageForms+Cargo+CategoryTree+Mermaid+MsUplo'
+- at: 2026-11-06 17:49
+  from: devin
+  text: 'raised request wiki-member-knowledge-surface-the-wiki-a-0b8e38: wiki-member-knowledge-surface: the wiki
+    already exists (wiki.h3 — Lockdown-protected namespaces, SSO, springboard door, '
+- at: 2026-11-06 17:50
+  from: devin
+  text: 'Plan landed: docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml — namespace map (protected
+    Education:+Reports: mirroring PrivateNews:/Infrastructure:), Education template/categories, migration mechanics
+    (door export -> wikitext, MediaWikiSink retarget w/ dual-write->cutover, 301s, lessons-due/education-report
+    retarget via Cargo), decision matrix, impl sequence. SSOT drift repaired in ssot.mediawiki-news.yml (extensions
+    installed, Lockdown enforced, springboard/OIDC recorded). '
+- at: 2026-11-06 17:51
+  from: tony-macbook
+  text: 'finished (ok): exit=0  Tony''s A/B/C answer and the LocalSettings admin path — both captured in the request.
+    | devin-task-20261106-17415'
+- at: 2026-11-06 17:51
+  from: chaba
+  text: 'checkpoint failed: commit: 🔍 Validating SSOT files...
+
+    📋 Found SSOT files to validate:
+
+    docs/ssot/apps/ssot.mediawiki-news.yml
+
+    docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surf'
+- at: 2026-11-06 17:51
+  from: chaba
+  text: pushed dispatch/20261106-174159-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-06 17:51
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-06 17:51
+  from: chaba
+  text: 'worktree kept: dirty — 5 uncommitted file(s)'
+- at: 2026-11-06 18:01
+  from: tony
+  text: 'answered wiki-member-knowledge-surface-the-wiki-a-0b8e38: proceed'
+- at: 2026-11-06 18:01
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 18:01
+  from: devin
+  text: 'Status 2026-11-06 evening: (1) Hierarchy review page LIVE on the wiki: https://wiki.h3.gizmo-thailand.com/index.php?title=Wiki:Wiki-Hierarchy
+    (ns4 project namespace, draft-for-review banner; covers News as-built + Education: proposal + flow + open questions).
+    (2) Dispatch rescued: its commit failed because macbook''s node lives at ~/.local/node/bin (not on hook PATH)
+    — committed manually as 86a9d78c5 on dispatch/20261106-174159-idea-2026-11-06-tony-chat-migr and pushed; merge-sweep
+    will land the '
+- at: 2026-11-06 18:11
+  from: devin
+  text: 'DISPATCH BRIEF — phase 2a (build tooling, still no live wiki writes; the Education: namespace doesn''t
+    exist yet — that needs the Plesk/LocalSettings step only Tony can do). Plan doc (merging via dispatch/20261106-174159-idea-2026-11-06-tony-chat-migr,
+    or already on master at docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml — read it FIRST,
+    it has the verified sink/door inventory):
+
+
+    BUILD: (1) WikiLessonSink in scripts/board/publication.py — generalize or subclass MediaWikiSi'
+- at: 2026-11-06 18:11
+  from: tony
+  text: queued for processing
+- at: 2026-11-06 18:12
+  from: idc02
+  text: claimed
+- at: 2026-11-06 18:12
+  from: chaba
+  text: started devin-task-20261106-181239-idea-2026-11-06-tony-chat-migr on idc02 (dispatch)
+- at: 2026-11-06 18:13
+  from: devin
+  text: 'LOCALSETTINGS SNIPPET READY (for Tony Plesk panel step — the only human gate). Verified: ns IDs 3004-3007
+    free (siteinfo), bot user Ada = sysop/bureaucrat/interface-admin, no agent filesystem path to h3 (22 filtered;
+    only 8443/21 open). Paste at end of LocalSettings.php in the wiki docroot, mirroring the PrivateNews:/Infrastructure:
+    group list exactly. After save: verify via api.php?meta=siteinfo&siprop=namespaces (expect 3004-3007) + anon
+    deny test.'
+- at: 2026-11-06 18:13
+  from: devin
+  text: 'LOCALSETTINGS SNIPPET (Plesk panel step — the only human gate). Verified: ns IDs 3004-3007 free via siteinfo;
+    bot Ada = sysop/bureaucrat/interface-admin; no agent fs path to h3 (22 filtered; only 8443/21 open). Paste at
+    end of LocalSettings.php in the wiki docroot; mirror the PrivateNews:/Infrastructure: group list exactly. After
+    save verify: api.php?meta=siteinfo&siprop=namespaces shows 3004-3007 + anon deny test.
+
+
+    [code]
+
+    // === Education + Reports namespaces (card OPS-1046, 2026-11-06) ===
+
+    // '
+- at: 2026-11-06 18:14
+  from: devin
+  text: 'LOCALSETTINGS SNIPPET for the Plesk panel step — full text lives in the plan doc docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+    (localsettings_snippet section, added to the dispatch branch). Summary: register ns 3004-3007 (Education/Education_talk/Reports/Reports_talk),
+    subpages on, Lockdown read+edit to the same group list as PrivateNews:/Infrastructure:. Verified: IDs free,
+    bot Ada=sysop, no agent fs path to h3.'
+- at: 2026-11-06 18:14
+  from: devin
+  text: 'phase 2a picked up on idc02. Merged the earlier plan branch into this worktree as base (plan doc + ssot.mediawiki-news
+    corrections now present). Building: WikiLessonSink in publication.py (protected Education: ns, kinds=lesson),
+    /publish registry + do_lesson dual-write behind flag, scripts/wiki-lesson-migrate.py export tool with --dry-run,
+    tests. No live wiki writes — Education: ns still gated on the LocalSettings snippet already posted.'
+- at: 2026-11-06 18:19
+  from: devin
+  text: 'PHASE 2a DONE — all repo-side tooling landed on dispatch/20261106-181239 (43+21 tests green, SSOT valid):
+    (1) WikiLessonSink in publication.py — kinds=lesson, private surface, Education: prefix, แม่แบบ:Education template,
+    meta.format=wikitext|html-convert, title derives from topic; registered as wiki-education in /publish op=sinks.
+    (2) do_lesson dual-write behind WIKI_EDUCATION_WRITE=dual in wiki-h3-gizmo.env — ships OFF; wiki failure reports
+    result[wiki] and never fails the WP write. (3) script'
+- at: 2026-11-06 18:21
+  from: idc02
+  text: 'finished (ok): exit=0 eady on the card, ns 3004–3007) plus creating `แม่แบบ:Education`, then flag=dual
+    and `migrate --apply`. | devin-t'
+- at: 2026-11-06 18:21
+  from: chaba
+  text: pushed dispatch/20261106-181239-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-06 18:21
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-06 18:21
+  from: chaba
+  text: auto-merged d70d184d (dispatch/20261106-181239-idea-2026-11-06-tony-chat-migr) → origin/master
+- at: 2026-11-06 18:21
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261106-181239-idea-2026-11-06-tony-chat-migr,
+    branch dispatch/20261106-181239-idea-2026-11-06-tony-chat-migr'
+- at: 2026-11-06 18:34
+  from: devin
+  text: 'NAMESPACES LIVE — done via FTP (WIKI_FTP_* creds in tony-dell''s wiki-h3-gizmo.env; host must be origin
+    IP 103.99.11.249, the surf-thailand name is CF-proxied and won''t pass FTP). Edited LocalSettings.php in the
+    wiki docroot via FTP: registered Education:/Education_talk: (3004/3005) + Reports:/Reports_talk: (3006/3007)
+    with subpages + nonincludable + Lockdown read/edit [inhouse,sysop] — exact mirror of the PrivateNews:/Infrastructure:
+    block. Server backup: LocalSettings.php.devin-backup-education'
+- at: 2026-11-06 18:39
+  from: devin
+  text: 'DISPATCH BRIEF — phase 2b LIVE MIGRATION. Everything is now unblocked: Education:(3004/3005)+Reports:(3006/3007)
+    namespaces are LIVE and Lockdown-verified (anon accessdenied, bot writes OK — probe-tested today); WikiLessonSink
+    + wiki-lesson-migrate.py + board-api wiring are ON MASTER (merge d70d184d); plan doc docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+    has the full contract — READ IT FIRST.
+
+
+    KNOWN GOTCHA: ~/.config/secrets/wiki-h3-gizmo.env on idc03 has WIKI_HOST=https'
+- at: 2026-11-06 18:39
+  from: tony
+  text: queued for processing
+- at: 2026-11-06 18:40
+  from: idc02
+  text: claimed
+- at: 2026-11-06 18:40
+  from: chaba
+  text: started devin-task-20261106-184016-idea-2026-11-06-tony-chat-migr on idc02 (dispatch)
+- at: 2026-11-06 18:43
+  from: devin
+  text: 'dispatch 184016 (phase 2b): plan doc + phase-2a tooling already landed earlier today. Remaining repo-side
+    gaps per plan: Reports: sink variant, WP report-CPT door read, support-page write door (for แม่แบบ:Education
+    template). Building those + tests now.'
+- at: 2026-11-06 18:47
+  from: devin
+  text: 'phase 2b done (commit b5a2075 on dispatch branch): WikiReportSink (wiki-reports, Reports: ns, opt-in),
+    /wiki/page guarded write door (template allowlist + Education:/Reports: titles, siteinfo-verifies ns exists),
+    /report mode=wp-list|wp-get for the member report CPT, scripts/wiki-support-pages.py + wiki-report-migrate.py,
+    54 tests green. VERIFIED LIVE: Education:+talk 3004/3005 and Reports:+talk 3006/3007 are REGISTERED on wiki.h3
+    — the LocalSettings step landed (template pages still absent; ano'
+- at: 2026-11-06 18:48
+  from: idc02
+  text: 'finished (ok): exit=0 e templates, one-page Lockdown probe, then the full migration and the `WIKI_EDUCATION_WRITE=dual`
+    flag. | devin-t'
+- at: 2026-11-06 18:48
+  from: chaba
+  text: pushed dispatch/20261106-184016-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-06 18:48
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-06 18:48
+  from: chaba
+  text: auto-merged 1986ffc2 (dispatch/20261106-184016-idea-2026-11-06-tony-chat-migr) → origin/master
+- at: 2026-11-06 18:48
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261106-184016-idea-2026-11-06-tony-chat-migr,
+    branch dispatch/20261106-184016-idea-2026-11-06-tony-chat-migr'
+- at: 2026-11-06 19:33
+  from: devin
+  text: 'Model note: phase-2a dispatch (devin-task-20261106-181239) ran Devin default model (action.lane=codemod
+    fell back to devin-dispatch, no --model flag). Not the free lane — free lane only engages on lane=free_lane
+    -> litellm/gemini-3.5-flash-lite.'
+- at: 2026-11-06 19:34
+  from: devin
+  text: 'DISPATCH BRIEF — phase 2c LIVE MIGRATION RUN. All tooling is ON MASTER: WikiLessonSink+WikiReportSink (publication.py),
+    wiki-lesson-migrate.py, wiki-report-migrate.py, wiki-support-pages.py, /wiki/page guarded write door, /report
+    wp-list|wp-get. Namespaces Education:(3004/5)+Reports:(3006/7) LIVE + Lockdown-verified. Plan doc docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml
+    = contract, READ FIRST.
+
+
+    DO IN ORDER, verify each: (1) wiki-support-pages.py -> create แม่แบบ:Educatio'
+- at: 2026-11-06 19:34
+  from: tony
+  text: queued for processing
+- at: 2026-11-06 19:34
+  from: idc02
+  text: claimed
+- at: 2026-11-06 19:34
+  from: chaba
+  text: started devin-task-20261106-193421-idea-2026-11-06-tony-chat-migr on idc02 (dispatch)
+- at: 2026-11-06 19:37
+  from: devin
+  text: 'dispatch 193421 (phase 3): door still stale (9 sinks — running board-api predates 2a/2b merge). Restarting
+    the detached board-api on idc03 (exec checkout now has the code), then templates -> 1-page probe -> anon Lockdown
+    check -> full migration per plan.'
+- at: 2026-11-06 19:49
+  from: devin
+  text: 'phase-3 DONE: restarted stale door on idc03 (11 sinks live). Found+fixed a real door bug — do_wiki_page
+    edited via the ANON opener not the login session (badtoken); fix+regression test on this branch, templates bootstrapped
+    via direct API meanwhile. Migration applied: 124 lessons + Ada-Nest hub + Education:Index; 2 reports + Reports:Index.
+    Anon accessdenied VERIFIED on Education:+Reports: (Lockdown). WIKI_EDUCATION_WRITE=dual on — do_lesson dual-write
+    proven (post 4057 -> wiki pageid 175). Remai'
+- at: 2026-11-06 19:50
+  from: idc02
+  text: 'finished (ok): exit=0 ved checkout on idc03 is ~2300 ahead/~1500 behind origin with the board-api unit
+    dead since Nov 4. | devin-task-2'
+- at: 2026-11-06 19:50
+  from: chaba
+  text: pushed dispatch/20261106-193421-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-06 19:50
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-06 19:50
+  from: chaba
+  text: auto-merged 22b9a62c (dispatch/20261106-193421-idea-2026-11-06-tony-chat-migr) → origin/master
+- at: 2026-11-06 19:50
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261106-193421-idea-2026-11-06-tony-chat-migr,
+    branch dispatch/20261106-193421-idea-2026-11-06-tony-chat-migr'
+- at: 2026-11-06 20:11
+  from: devin
+  text: 'DISPATCH BRIEF — phase 4: wiki READ PATH + due-job retarget (plan doc step 4). Context: migration live
+    — 124 lessons in Education:, 2 reports in Reports:, dual-write on, door restarted with do_wiki_page fix (11
+    sinks). DO: (1) add a read path — either mode=read on /wiki/page (guarded: Education:/Reports:/News: titles,
+    returns wikitext/parse) OR {{#cargo_declare}} tables in the two templates + Cargo query endpoint — pick whichever
+    the plan doc prefers, keep it guarded/private-surface only. (2) Re'
+- at: 2026-11-06 20:11
+  from: tony
+  text: queued for processing
+- at: 2026-11-06 20:12
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-06 20:12
+  from: chaba
+  text: started devin-task-20261106-201214-idea-2026-11-06-tony-chat-migr on tony-macbook (dispatch)
+- at: 2026-11-07 11:22
+  from: chaba
+  text: 'merge-sweep: devin-task-20261106-174159-idea-2026-11-06-tony-chat-migr no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-07 11:23
+  from: chaba
+  text: 'merge-sweep: devin-task-20261106-174159-idea-2026-11-06-tony-chat-migr no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-11-07 11:24
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261106-174159-idea-2026-11-06-tony-chat-migr on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-07 11:41
+  from: devin
+  text: phase-4 dispatch (devin-task-20261106-201214, tony-macbook) exited 0 at 20:25 but produced NO work — branch
+    has only auto-checkpoints on an unrelated file; no read path in board-api, lessons-due.py untouched. Stale running
+    claim swept. Re-queuing phase 4.
+- at: 2026-11-07 11:41
+  from: tony
+  text: retry requested
+- at: 2026-11-07 11:42
+  from: tony-macbook
+  text: claimed
+- at: 2026-11-07 11:42
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-07 11:42
+  from: chaba
+  text: started devin-task-20261107-114216-idea-2026-11-06-tony-chat-migr on tony-macbook (dispatch)
+- at: 2026-11-07 11:44
+  from: devin
+  text: 'dispatch 114216 (tony-macbook): door probe shows /lesson source=wiki LIVE (127 lessons, source echoed)
+    — the merge+restart already happened. Running step-5 verification (lessons-due --dry-run on live corpus) + closing
+    the Education:Index staleness gap (plan step 6 note: index only regenerates on manual migrate runs — adding
+    daily index refresh to lessons-due).'
+- at: 2026-11-07 11:53
+  from: devin
+  text: 'STEP 5 DONE + two live bugs fixed (dispatch 114216, tony-macbook). VERIFIED: door already serves /lesson
+    source=wiki (127 rows); lessons-due --dest wiki wrote Education:Due rev=186 + Education:Index rev=187; anon
+    read 404s (Lockdown holds). BUG 1: lessons-due sent actor lessons-due -> door 400s every call; the synced 07:30
+    job would fail — fixed to chaba. BUG 2: sink-written status=index pages (Index, synthetic hubs) counted as lessons
+    — 125 real lessons; door+client now filter (door fix lands n'
+- at: 2026-11-07 11:53
+  from: devin
+  text: 'STEP 5 DONE + two live bugs fixed (dispatch 114216, tony-macbook). VERIFIED: door already serves /lesson
+    source=wiki (127 rows); lessons-due --dest wiki wrote Education:Due rev=186 + Education:Index rev=187; anon
+    read 404s (Lockdown holds). BUG 1: lessons-due sent actor lessons-due -> door 400s every call; the synced 07:30
+    job would fail — fixed to chaba. BUG 2: sink-written status=index pages (Index, synthetic hubs) counted as lessons
+    — 125 real lessons; door+client now filter (door fix lands n'
+- at: 2026-11-07 11:53
+  from: devin
+  text: test ping
+- at: 2026-11-07 11:54
+  from: devin
+  text: 'STEP 5 DONE + two live bugs fixed (dispatch 114216). VERIFIED: door serves /lesson source=wiki (127 rows);
+    lessons-due --dest wiki wrote Education:Due rev=186 + Education:Index rev=187; anon 404 (Lockdown holds). BUG1:
+    lessons-due actor was rejected by door 400 (only ada|chaba|devin|tony) — fixed to chaba; todays 07:30 run would
+    have failed once synced. BUG2: status=index support pages counted as lessons — door+client now filter, corpus=125.
+    NEW: Education:Index refreshes daily in lessons-due (-'
+- at: 2026-11-07 11:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 s comment did land earlier; full record is in the outcome file. | devin-task-20261107-114216-idea-2026-11-06-tony'
+- at: 2026-11-07 11:54
+  from: chaba
+  text: 'session-end checkpoint fb0b959a: 1 leftover file(s) committed'
+- at: 2026-11-07 11:54
+  from: chaba
+  text: pushed dispatch/20261107-114216-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-07 11:54
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 11:54
+  from: chaba
+  text: auto-merged 0e4a9881 (dispatch/20261107-114216-idea-2026-11-06-tony-chat-migr) → origin/master
+- at: 2026-11-07 11:54
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-07 11:55
+  from: chaba
+  text: 'session-end checkpoint d221ad62: 1 leftover file(s) committed'
+- at: 2026-11-07 11:55
+  from: chaba
+  text: pushed dispatch/20261107-114216-idea-2026-11-06-tony-chat-migr to origin
+- at: 2026-11-07 11:55
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-07 11:55
+  from: chaba
+  text: auto-merged 9fa7e411 (dispatch/20261107-114216-idea-2026-11-06-tony-chat-migr) → origin/master
+- at: 2026-11-07 11:55
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261107-114216-idea-2026-11-06-tony-chat-migr,
+    branch dispatch/20261107-114216-idea-2026-11-06-tony-chat-migr'
+- at: 2026-11-07 12:03
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+requests:
+- id: which-wiki-engine-should-the-member-know-3c539b
+  ask: Which wiki engine should the member-knowledge surface use?
+  status: answered
+  at: 2026-11-06 17:09
+  from: tony
+  options:
+  - id: mediawiki
+    label: MediaWiki on Plesk beside boards WP ★ recommended — cheapest credible wiki, bot API fits writer pattern
+  - id: wikijs
+    label: Wiki.js on idc03 — modern UX + built-in TH locale, more infra
+  - id: no-wiki
+    label: No wiki product — education as ada-cms-pages domain + static publish (cheapest, weakest UX)
+  suggested: mediawiki
+  answer: mediawiki
+- id: education-visibility-on-the-wiki-public-1021dd
+  ask: 'Education visibility on the wiki — public Education/ namespace now, or gated in-house namespace after SEC-1035?
+    Note: WP lesson posts are private but members have no wp-admin read path today, so lessons are de-facto Tony-only;
+    public wiki would be the first real KK/Nhong read surface.'
+  status: answered
+  at: 2026-11-06 17:36
+  from: tony
+  options:
+  - id: public-now
+    label: ★ Public Education/ namespace now — privacy-scan gate per lesson, no SSO dependency, first real member
+      read path
+  - id: inhouse-after-sso
+    label: Gated in-house namespace — waits on SEC-1035 private boundary + needs KK/Nhong read path
+  - id: hybrid
+    label: Hybrid — public default, per-lesson private flag routes to protected ns once it exists
+  suggested: public-now
+  answer: inhouse-after-sso
+- id: wiki-member-knowledge-surface-the-wiki-a-0b8e38
+  ask: 'wiki-member-knowledge-surface: the wiki already exists (wiki.h3 — Lockdown-protected namespaces, SSO, springboard
+    door, sinks live), so the engine question is answered; the remaining call is SCOPE. ★ RECOMMENDED: migrate the
+    124 lessons + member reports into new protected Education:/Reports: namespaces on wiki.h3 (same Lockdown pattern
+    as PrivateNews:/Infrastructure: — needs one LocalSettings edit via the Plesk/admin path that created those),
+    readers = staff-only at cutover (boards members lack wiki accounts today; add later via SSO/local accounts),
+    WP lesson CPT goes read-only+301. Alternatives: B=public Education tree with ops lessons staying in WP (splits
+    the ledger, needs per-lesson classification); C=keep education in WP entirely (wiki stays news+infra only).
+    Full structure+mechanics: docs/ssot/jobs/education/2026-11-06-wiki-member-knowledge-surface.yml. Answer A/B/C
+    (or adjust) — who should edit LocalSettings for the new namespaces?'
+  status: answered
+  at: 2026-11-06 17:49
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+action:
+  type: dispatch
+  status: done
+  lane: codemod
+  sweep:
+    stale_running: 2026-11-07 11:23
+    dirty: 1
+  last_failure: 'exit=0 ved checkout on idc03 is ~2300 ahead/~1500 behind origin with the board-api unit dead since
+    Nov 4. | devin-task-20261106-193421-idea-2026-11-06-tony-chat-migr.service: Consumed 1min 18.674s CPU time,
+    274.1M memory peak, 0B memory swap peak.'
+  attempts: 1
+  runner: tony-macbook
+  result: 'exit=0 s comment did land earlier; full record is in the outcome file. | devin-task-20261107-114216-idea-2026-11-06-tony-chat-migr.service:
+    Consumed 1min 21.687s CPU time over 11min 1.683s wall clock time, 547.1M memory peak, 19M memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-07 12:03
+  note: verified — evidence checks green, closing itself

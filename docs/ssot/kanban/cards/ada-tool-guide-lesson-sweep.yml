@@ -1,0 +1,140 @@
+id: ada-tool-guide-lesson-sweep
+title: 'ada-voice: tool_guide entries for ada_lesson + ada_sweep'
+column: done
+updated: 2026-11-07 18:48
+priority: low
+action:
+  type: manual
+  repo: ada-voice
+  status: done
+note: tool_guide.yml had no error-path entries for ada_lesson/ada_sweep (both in manifest). Added terse recovery
+  guidance. ada-voice PR tonezzz/ada-voice#10. Deploy via ada-voice-prod gate — this card is the dress rehearsal
+  for KNB-1090.
+ref: ADA-1113
+comms:
+- at: 2026-11-07 18:14
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 18:14
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-07 18:19
+  from: devin
+  text: closed by devin
+- at: 2026-11-07 18:22
+  from: chaba
+  text: 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
+- at: 2026-11-07 18:22
+  from: chaba
+  text: 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
+- at: 2026-11-07 18:27
+  from: chaba
+  text: 'raised request deploy-ada-tool-guide-lesson-sweep: Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
+
+    repo: ada-voice on idc03
+
+    command: ~/.local/bin/deploy-ada.sh
+
+    rollb'
+- at: 2026-11-07 18:27
+  from: chaba
+  text: 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
+- at: 2026-11-07 18:29
+  from: tony
+  text: 'answered deploy-ada-tool-guide-lesson-sweep: approve — run the deploy now'
+- at: 2026-11-07 18:33
+  from: chaba
+  text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
+- at: 2026-11-07 18:36
+  from: chaba
+  text: 'deploy gate: FAILED — rc=0 verify=False
+
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+    1733 passed, 72 warnings, 31 subtests passed in 190.44s (0:03:10)
+
+    [deploy] drain: no live ws sessions
+
+    [deploy] restarting: ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-pi-pwa ada-dev ada-kk-dev
+    ada-kk ada-line-relay ada-tg-relay
+
+    [deploy] active: ada-ha-tony
+
+    [deploy] active: ada-ai-kraut
+
+    [deploy] active: ada-tg-relay-kk
+
+    [deploy] active: ada-tg-relay-mn
+
+    [deploy] active: a'
+- at: 2026-11-07 18:42
+  from: chaba
+  text: 'deploy gate: approved — running ~/.local/bin/deploy-ada.sh on idc03'
+- at: 2026-11-07 18:48
+  from: chaba
+  text: 'deploy gate: DEPLOYED — rc=0 verify=True
+
+    -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+    1733 passed, 72 warnings, 31 subtests passed in 243.92s (0:04:03)
+
+    [deploy] drain: no live ws sessions
+
+    [deploy] restarting: ada-ha-tony ada-ai-kraut ada-tg-relay-kk ada-tg-relay-mn ada-pi-pwa ada-dev ada-kk-dev
+    ada-kk ada-line-relay ada-tg-relay
+
+    [deploy] active: ada-ha-tony
+
+    [deploy] active: ada-ai-kraut
+
+    [deploy] active: ada-tg-relay-kk
+
+    [deploy] active: ada-tg-relay-mn
+
+    [deploy] active: '
+deploy:
+  target: ada-voice-prod
+  note: deploy-ada.sh on idc03 after ada-voice merge 7549e6c; verify :8002/api/health
+  preflight:
+    at: 2026-11-07 18:27
+    merge_sha: null
+    files: '?'
+    tests: see card comms (close-out gate)
+    comms_tail:
+    - card captured via board-api
+    - 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+    - closed by devin
+    - 'deploy gate: could not raise approval request: HTTP Error 400: Bad Request'
+    - 'deploy gate: preflight done — approval request deploy-ada-tool-guide-lesson-sweep raised (default hold)'
+  request_id: deploy-ada-tool-guide-lesson-sweep
+  status: deployed
+  retry_note: re-run after verify-retry fix; prior run rc=0 verify=false(warmup)
+  deployed_at: 2026-11-07 18:48
+  deploy_rc: 0
+  verify:
+    ok: true
+    status: 200
+    body_head: '{"ok":true,"conversation_memory":{"summary_cached":false,"summary_ts":0.0,"recall_running":false,"gemini":{"keys_configured":1,"exhausted_key_models":0,"reset_at":"2026-11-08T15:00:00+07:00","simulate'
+requests:
+- id: deploy-ada-tool-guide-lesson-sweep
+  ask: 'Deploy ada-tool-guide-lesson-sweep to ada-voice-prod?
+
+    repo: ada-voice on idc03
+
+    command: ~/.local/bin/deploy-ada.sh
+
+    rollback: git revert the merge commit on ada-voice (see comms)
+
+    verify: GET http://127.0.0.1:8002/api/health must return ok
+
+
+    Preflight: merge=? files=? tests=see card comms (close-out gate)'
+  status: answered
+  at: 2026-11-07 18:27
+  from: chaba
+  options:
+  - approve — run the deploy now
+  - hold — keep merged, do not deploy
+  - abort — do not deploy
+  suggested: hold — keep merged, do not deploy
+  answer: approve — run the deploy now

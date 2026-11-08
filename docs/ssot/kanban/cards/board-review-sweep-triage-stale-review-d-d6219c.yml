@@ -1,0 +1,43 @@
+id: board-review-sweep-triage-stale-review-d-d6219c
+title: Board review sweep — triage stale review/doing cards to verified closes
+column: done
+updated: 2026-11-07 16:53
+priority: medium
+tags:
+- sweep
+- board-hygiene
+spec: 'Run the sweep duty loop over the kanban review + doing columns. For each card: (1) verify real state — merged
+  commits on master, deployed units, live evidence, not memory; (2) verified-done -> close with evidence in comms;
+  (3) provably-failed -> honest fail note + retry or block; (4) still-blocked -> leave with a requests entry naming
+  what is needed; (5) stale CMS automation/digest alerts -> check the unit/page and close or card the fix. Report
+  once at the end: fixed / carded / awaiting-Tony. Do NOT force-close anything without evidence (OPS-0731: producer
+  proof AND consumer proof).'
+note: Deferred from the 2026-11-07 AI-Pro/DevNest session; board has many stale review cards.
+ref: KNB-1098
+comms:
+- at: 2026-11-07 16:00
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-07 16:05
+  from: devin
+  text: 'PASS-1 (this session): closed 5 runner-auto bootstrap cards verified=True (idc02, idc03, mn01, tony-dell,
+    tony-omen). FINDINGS for deeper pass: (a) ~30 cms-auto-*-digest cards are recurring auto-alert stamps — a dedupe/auto-resolve
+    class problem, not per-card work: worth a rule so alerts reopen one card instead of minting new ones; (b) runner-auto-tony-macbook
+    stale alert — drift fixed 2026-11-07 (reset+role+sync), verify bootstrap probe then close; (c) verified=False
+    cards (video-queue-audit*, '
+- at: 2026-11-07 16:48
+  from: devin
+  text: KNB-1098 PASS-2 running on tony-omen (session sweep). Full verify pass over 69 review + 15 doing cards;
+    outcomes landing on each card in comms now.
+- at: 2026-11-07 16:53
+  from: devin
+  text: '[KNB-1098] PASS-2 report (tony-omen sweep session): review column 69 -> 13, doing 15 -> 11. FIXED live:
+    yt-live-api restarted (:8791/status 200); nest-mgr.service reinstalled on tony-dell (page restamped 16:46);
+    news-flood automation restored (missing generator block -> scripts/ada/news-flood-fetch.py + run_now); tony-macbook
+    devin-dispatch binary redeployed (sha drift resolved). CLOSED 50 cards with evidence: 27 cms-auto-*-digest (registry
+    healthy 06:05Z, pages fresh today), 4 more cms-auto (fl'
+- at: 2026-11-07 16:53
+  from: devin
+  text: closed by devin
+action:
+  status: done

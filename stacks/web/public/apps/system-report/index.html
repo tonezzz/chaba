@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chaba System Report</title>
+  <script>
+    if (new URLSearchParams(location.search).get("view") === "hosts")
+      document.documentElement.classList.add("hosts-only");
+  </script>
   <style>
     :root { --bg: #0f172a; --card: #1e293b; --border: #334155; --text: #e2e8f0;
             --muted: #94a3b8; --ok: #22c55e; --warn: #facc15; --fail: #ef4444; --link: #60a5fa; }
@@ -85,12 +89,41 @@
     table.hosts td { padding: 0.38rem 0.6rem; border-bottom: 1px solid #1e293b; }
     table.hosts tr:hover td { background: #17203a; }
     table.hosts td.host { font-family: ui-monospace, monospace; font-size: 0.8rem; }
+    table.hosts td.age.ok { color: var(--ok); }
     .bar { display: inline-block; height: 0.55rem; border-radius: 0.2rem; background: var(--link);
            vertical-align: middle; margin-right: 0.45rem; min-width: 2px; }
     .bar.hot { background: var(--fail); } .bar.warm { background: var(--warn); }
     #hosts-note { color: var(--muted); font-size: 0.78rem; margin-left: 0.6rem; }
+    #hosts-note.mid { color: var(--warn); }
+    #hosts-note.old { color: var(--fail); }
+    .hosts-scroll { overflow-x: auto; }
     h2.section { font-size: 0.95rem; color: var(--muted); font-weight: 600;
       margin: 1.1rem 0 0.2rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    html.hosts-only body { padding-bottom: 0.5rem; }
+    html.hosts-only .topbar, html.hosts-only #meta,
+    html.hosts-only #summary, html.hosts-only .toolbar,
+    html.hosts-only table.nodes, html.hosts-only #report-wrap { display: none; }
+    html.hosts-only .wrap { max-width: none; padding: 0 0.8rem; }
+    html.hosts-only h2.section { margin: 0.3rem 0 0.15rem; font-size: 0.75rem; }
+    html.hosts-only .hosts-scroll { overflow-x: auto; }
+    html.hosts-only table.hosts {
+      width: 100%; min-width: 0; table-layout: fixed; margin-top: 0; font-size: 0.75rem;
+    }
+    html.hosts-only table.hosts th, html.hosts-only table.hosts td {
+      padding: 0.2rem 0.28rem;
+    }
+    html.hosts-only table.hosts th:nth-child(1) { width: 22%; }
+    html.hosts-only table.hosts th:nth-child(2) { width: 22%; }
+    html.hosts-only table.hosts th:nth-child(3) { width: 26%; }
+    html.hosts-only table.hosts th:nth-child(4) { width: 12%; }
+    html.hosts-only table.hosts th:nth-child(5) { width: 18%; }
+    @media (max-width: 560px) {
+      html.hosts-only .wrap { padding: 0 0.2rem; }
+      html.hosts-only table.hosts { font-size: 0.72rem; }
+      html.hosts-only table.hosts th, html.hosts-only table.hosts td {
+        padding: 0.18rem 0.2rem;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -107,13 +140,15 @@
   <div class="wrap">
     <div class="meta" id="meta">Loading…</div>
     <div class="summary" id="summary"></div>
-    <h2 class="section">Host loads <span id="hosts-note">—</span></h2>
-    <table class="hosts">
-      <thead><tr>
-        <th>Host</th><th>Load 1/5/15m</th><th>Mem</th><th>Disk</th><th>Sampled</th>
-      </tr></thead>
-      <tbody id="hosts"></tbody>
-    </table>
+    <h2 class="section"><span id="hosts-title">Host loads</span><span id="hosts-note"> — </span></h2>
+    <div class="hosts-scroll">
+      <table class="hosts">
+        <thead><tr>
+          <th>Host</th><th>Load 1/5/15m</th><th>RAM</th><th>Disk</th><th>Seen</th>
+        </tr></thead>
+        <tbody id="hosts"></tbody>
+      </table>
+    </div>
     <div class="toolbar">
       <input type="search" id="filter" placeholder="Filter nodes… (id, summary, status)" />
       <span class="hint" id="shown-hint"></span>
@@ -129,6 +164,6 @@
       <div id="report"></div>
     </details>
   </div>
-  <script src="app.js?v=9"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
