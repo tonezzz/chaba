@@ -1,7 +1,7 @@
 id: kornia-mcp-gs-evaluator
 title: Add read-only Kornia MCP tools for Gaussian capture evaluation
 column: review
-updated: 2026-11-08 10:16
+updated: 2026-11-08 10:58
 spec: 'Build a narrow Ada-facing MCP evaluator around Kornia for Gaussian Splat capture sets. Tools: inspect_image_set
   (dimensions/duplicates/sharpness/exposure), match_views (DISK/LightGlue or SIFT fallback + RANSAC inliers), propose_foreground_masks
   (review-only), score_capture_manifest, and compare_gs_runs (PSNR/SSIM/LPIPS/COLMAP registration/PLY/metrics).
@@ -61,4 +61,10 @@ comms:
     - New profile evals/opencode-lane/profiles/gs-capture-eval/: no bash/write/edit, MCP-only, message-mode JSON
     artifact, held-out verifier re-runs image_set_eval.py. Job p1-gs-capture-eval-idc02.yaml targets hibiscus fixture
     on '
+- at: 2026-11-08 10:58
+  from: devin
+  text: '[sweep] verified on origin/master: mcp-servers/mcp-kornia/ (server.py, gs_tools.py), GS_EVAL_MCP_TOOLS
+    in scripts/devnest/lane_gate.py:167, profile evals/opencode-lane/profiles/gs-capture-eval/, job evals/opencode-lane/jobs/p1-gs-capture-eval-idc02.yaml
+    all landed. Deliverable (read-only tools + lane exposure) complete; the eval run itself is the job yaml''s next
+    execution, not this card''s scope. Closing.'
 review_kind: verify
