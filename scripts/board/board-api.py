@@ -274,6 +274,32 @@ def now() -> str:
     return datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 
 
+_ARCHIVE_INDEX = {"t": 0.0, "map": {}}
+_ARCHIVE_INDEX_TTL = 60.0
+
+
+def _archive_index() -> dict:
+    """id/ref/stem -> path for cards/archive/*.yml, cached 60s. The
+    archive only changes via /action do=archive (which commits through
+    this process), so a short TTL is safe and keeps lookups O(1)."""
+    now_t = time.time()
+    if now_t - _ARCHIVE_INDEX["t"] < _ARCHIVE_INDEX_TTL:
+        return _ARCHIVE_INDEX["map"]
+    m = {}
+    adir = CARD_DIR / "archive"
+    if adir.is_dir():
+        for cand in adir.glob("*.yml"):
+            try:
+                c = yaml.safe_load(cand.read_text()) or {}
+            except Exception:
+                continue
+            for k in (c.get("id"), c.get("ref"), cand.stem):
+                if k:
+                    m.setdefault(str(k), cand)
+    _ARCHIVE_INDEX.update(t=now_t, map=m)
+    return m
+
+
 def card_path(cid: str) -> Path:
     if not cid or "/" in cid or ".." in cid:
         raise ValueError("bad card id")
@@ -290,6 +316,12 @@ def card_path(cid: str) -> Path:
                 continue
             if c.get("id") == cid or c.get("ref") == cid:
                 return cand
+        # archived cards stay resolvable via the cached archive index
+        # (KNB-1178) — a per-request yaml scan of cards/archive/ would
+        # be too slow for the GET path
+        cand = _archive_index().get(cid)
+        if cand:
+            return cand
         raise ValueError(f"no card {cid}")
     return p
 
@@ -3744,8 +3776,13 @@ class H(BaseHTTPRequestHandler):
             hit = next((c for c in (load_cards().get("cards") or [])
                         if c.get("id") == cid), None)
             if hit is None:
-                return self._send(404, {"error": "card not found",
-                                        "id": cid})
+                # archived cards leave cards.json — resolve them via the
+                # archive index so lookups keep working (KNB-1178)
+                ap = _archive_index().get(cid)
+                if ap is None:
+                    return self._send(404, {"error": "card not found",
+                                            "id": cid})
+                hit = load(ap)
             return self._send(200, {
                 "ok": True,
                 "card": _project(hit, _field_set(parse_qs(url.query)))})
