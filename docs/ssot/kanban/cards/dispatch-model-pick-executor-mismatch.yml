@@ -1,0 +1,31 @@
+id: dispatch-model-pick-executor-mismatch
+title: Cheapest-model pick chooses litellm/<model> ids for devin-executor claims — task dies at launch
+column: backlog
+updated: 2026-11-08 08:06
+priority: high
+program: chaba-ci
+tags:
+- kanban-dispatch
+- runner-agent
+- model-routing
+- bug
+spec: 'Observed 2026-11-08 on tony-macbook: hands-off-waiting-card-procedure claimed lane=devin executor=devin but
+  the claim-time cheapest-model selection persisted provider=litellm model=litellm/gemini-3.5-flash-lite into task
+  meta — devin CLI exited 1 (Unknown model; it only accepts its own ids). The dispatch_repos comment says lanes
+  map to devin --model ids, so a litellm/<m> pick on a devin-executor task violates the contract — provider and
+  executor namespaces must match. Sibling claim on the same host picked provider=devin model=<default> and ran fine,
+  so the pick is per-card and inconsistent. Fix: constrain cheapest-model selection to model ids valid for the resolved
+  executor (devin ids for devin, litellm ids for opencode/litellm lanes); if no valid id, leave model empty (devin
+  default). Evidence: devin-task-20261108-071214 meta.json (provider=litellm + devin executor); workaround applied:
+  pinned action.model=swe-2-flash on the card.'
+action:
+  type: dispatch
+  repo: chaba
+  model: swe-2-flash
+  target_host: tony-macbook
+  lane: paid_frontier
+ref: OPS-1127
+comms:
+- at: 2026-11-08 08:06
+  from: tony
+  text: card captured via board-api
