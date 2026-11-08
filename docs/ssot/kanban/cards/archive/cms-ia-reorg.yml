@@ -1,0 +1,81 @@
+id: cms-ia-reorg
+title: CMS information architecture — group ada-cms-pages by real use, fix dup keys
+brief: 'ada-cms-pages has grown flat: ~100+ pages mixing reports, bench trends, camera pages, research notes, and
+  one-offs — several keys duplicated. Assess the real navigation Tony and Ada use, group pages into sections, fix
+  duplicate keys, and set a naming/grouping standard so new pages land in the right place.'
+column: done
+priority: medium
+program: reports
+area: cms
+note: 'Observed 2026-10-08: search of ada-cms-pages shows dup keys (ada-dev-lab-plan, bloat-report, cam-* doubled),
+  and one flat namespace spanning ada-*, bench-*, *-report, cam-*, plus singletons. The CMS viewer (/apps/ha/ada-tony/cms/)
+  has no sectioning. The query-cache experiment''s results land here as bench/cache-* docs — structure should be
+  fixed before more generated families arrive.'
+spec: "1. Inventory: dump all ada-cms-pages keys + meta.kind/domain, cluster by\n   use (reports, bench/metrics,\
+  \ ops status/monitors, camera pages,\n   research notes, one-offs). Report the real groups, not aspirational\n\
+  \   ones — base it on what actually exists.\n2. Dedup: resolve duplicate keys (keep newest by updated, verify\
+  \ content\n   diff first — if identical, delete the dup; if diverged, merge and\n   redirect).\n3. Naming/grouping\
+  \ standard in ssot (docs/ssot/infrastructure/ssot.cms.yml\n   or extend an existing node): page-kind prefixes\
+  \ (report-, bench-,\n   cam-, status-, note-), meta.kind/domain values enumerated, and which\n   nav section each\
+  \ maps to.\n4. Viewer: add sectioned nav (tabs or grouped sidebar) to the cms app —\n   groups derived from meta.kind/domain,\
+  \ not hardcoded.\n5. reports-index regenerates grouped; producers writing new page families\n   get the standard\
+  \ in their help/spec.\nAcceptance:\n- zero duplicate keys; every page tagged kind+domain; viewer shows\n  sections;\
+  \ reports-index grouped; standard committed to ssot so the\n  next generated page family lands sorted.\n"
+help: 'CMS = MDDB ada-cms-pages collection + viewer at /apps/ha/ada-tony/cms/ (Caddy /apps/ route). Generator examples:
+  scripts/eye/bench-edge-cms.py, kanban-cms.py, scripts/lib/cms_index.py. Check how reports-index is generated before
+  adding grouping.'
+updated: 2026-11-08 13:21
+action:
+  type: dispatch
+  status: done
+  runner: tony-dell
+  task_id: 20261008-152449-1-inventory-dump-all-ada-cms-p
+  result: 20261008-152449-1-inventory-dump-all-ada-cms-p finished (inactive) — see `devin-dispatch logs 20261008-152449-1-inventory-dump-all-ada-cms-p`
+  verified: true
+comms:
+- at: 2026-10-08 10:05
+  from: devin
+  text: 'filed from Tony — CMS group/tab reorg per real use. Dup keys already visible in ada-cms-pages. Not queued:
+    better run after tonight''s dispatch wave drains (same-repo serialization).'
+- at: 2026-10-08 15:30
+  from: devin
+  text: 'queued: idle->queued (armed cards don''t self-drain; Tony: queue all except yolo/gpu)'
+- at: 2026-10-08 15:24
+  from: chaba
+  text: dispatched 20261008-152449-1-inventory-dump-all-ada-cms-p on chaba
+- at: 2026-10-08 15:26
+  from: devin
+  text: 'started: dumping live ada-cms-pages, locating viewer app + ssot targets'
+- at: 2026-10-08 16:16
+  from: devin
+  text: 'done. Inventory: reports/cms-ia-inventory-2026-10-08.md (worktree, untracked — reports/ is gitignored).
+    Live collection: 389 docs, every doc has kind+domain+status, 0 exact dup keys, all superseded_by targets live.
+    Dedup: 4 cam-dohweb-* twins superseded to cam-traffic-doh-* (same PER_* streams; zones.yml trimmed so cam-wall-cms
+    stops reviving them); infrastructure/uncategorized-digest, services-by-host snapshot, gold-report redirected;
+    diverged pairs (nut-*, transcript-audit-*) kept. Standard: d'
+- at: 2026-10-08 16:18
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 16:19
+  from: chaba
+  text: 'session-end checkpoint 42493088: 1 leftover file(s) committed'
+- at: 2026-10-08 16:19
+  from: chaba
+  text: pushed dispatch/20261008-152449-1-inventory-dump-all-ada-cms-p to origin
+- at: 2026-10-08 16:19
+  from: chaba
+  text: auto-merged 5fb26906 (dispatch/20261008-152449-1-inventory-dump-all-ada-cms-p) → origin/master
+- at: 2026-10-08 18:20
+  from: devin
+  text: 'review sweep 2: verified + no open requests — closed'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0210'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (30d in done, verified)
+ownership:
+  owner: tony
+claim:
+  since: 2026-10-08 15:24
+ref: KNB-0210
