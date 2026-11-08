@@ -219,8 +219,9 @@ routes:
   #   idc03 caddy-edge  -> mounts chaba-tony-dell/stacks/web/public (was the
   #     exec checkout = stale until this date; fixed by repointing mount).
   #   tony-dell :8080   -> web stack serves the same served checkout — canonical.
-  #   mn01 caddy-mn01   -> /apps/board* reverse_proxied to tony-dell:443
-  #     (was a month-stale local copy; proxied so it can't drift again).
+  #   mn01 caddy-mn01   -> /apps/board* reverse_proxied to
+  #     idc02.taila0626a.ts.net:443 (was tony-dell:443; repointed 2026-11-08
+  #     after consumer-canary flagged the retired upstream — OPS-1149).
   #   idc02 public edge -> /apps/board* proxies to local :8099 mirror;
   #     web-srv-sync.timer rsyncs the served checkout (tightened to :00/15/30/45).
 
