@@ -1,7 +1,7 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
 column: done
-updated: 2026-11-07 16:18
+updated: 2026-11-08 08:36
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
 tags:
@@ -95,6 +95,13 @@ comms:
 - at: 2026-11-07 16:18
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 08:36
+  from: devin
+  text: 'DEPLOYED + VERIFIED LIVE 2026-11-08: (1) WIKI_EDUCATION_WRITE=wiki flipped in wiki-h3-gizmo.env on idc03
+    — board-api already ran cutover code (served checkout, restarted 07:47). (2) Caddy edge on idc02: boards-lesson-redirects
+    fragment inlined into ~/.config/caddy/Caddyfile boards.surf-thailand.com block (backup Caddyfile.bak-lesson-redirects-20261108;
+    import-by-file impossible — container mounts only the Caddyfile, not the dir). caddy validate OK, reloaded.
+    (3) VERIFIED: probe /lesson write -> '
 review_kind: verify
 claim: {}
 auto_close:
