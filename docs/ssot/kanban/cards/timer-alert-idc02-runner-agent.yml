@@ -1,7 +1,7 @@
 id: timer-alert-idc02-runner-agent
 title: Timer runner-agent on idc02 disabled
 column: backlog
-updated: 2026-11-09 03:20
+updated: 2026-11-09 03:30
 priority: high
 tags:
 - timer-alert
@@ -1343,6 +1343,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 16:01) of `runner-agent.service` on `idc02` result=signal — investigate
     journal: `journalctl --user -u runner-agent.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 03:30
+  from: devin
+  text: '[still suspicious] `runner-agent.timer` on `idc02` is disabled but expected active (audit census / critical
+    list). Deliberate? If not: `systemctl --user enable --now runner-agent.timer`. See CMS `timer-timeline`.'
 action:
   type: dispatch
   status: queued
