@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: done
-updated: 2026-10-22 10:08
+updated: 2026-11-08 08:33
 priority: high
 tags:
 - timer-alert
@@ -62,6 +62,12 @@ comms:
 - at: 2026-10-22 10:08
   from: tony
   text: closed by tony
+- at: 2026-11-08 08:33
+  from: devin
+  text: 'REOPENING 2026-11-08 — recurrence verified, new root cause isolated: build-dossier-devices.py tony-ha authenticates
+    OK over websocket (auth_ok) but lovelace/config/save returns {code: unauthorized}. Token file ~/.config/secrets/home-assistant-token.env
+    exists (Oct 27). The token is valid but its HA user lost dashboard-write/admin rights on tony-ha — needs HA-side
+    user/token permission check. Not a unit/code bug; do NOT keep restarting.'
 action:
   type: dispatch
   status: done
