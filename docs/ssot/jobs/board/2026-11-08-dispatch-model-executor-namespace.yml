@@ -1,0 +1,42 @@
+title: "Dispatch model pick must match the resolved executor's provider namespace"
+date: 2026-11-08
+card: dispatch-model-pick-executor-mismatch
+session: "dispatch-wt-20261108-081128-observed-2026-11-08-on-tony-ma (tony-macbook)"
+status: "implemented — lane/model claim tests + 176 board tests green"
+
+incident:
+  observed: "2026-11-08 on tony-macbook — card hands-off-waiting-card-procedure claimed lane=devin executor=devin, but claim-time cheapest-model selection resolved provider=litellm model=litellm/gemini-3.5-flash-lite into task meta; devin CLI exited 1 (Unknown model — it only accepts its own ids)"
+  evidence: "devin-task-20261108-071214 meta.json (provider=litellm + devin executor); sibling claim on the same host picked provider=devin model=<default> and ran fine — the pick is per-card and inconsistent"
+  workaround: "action.model=swe-2-flash pinned on the card"
+  root_cause: >
+    LANE_MODELS values are all litellm/* ids — valid only for the
+    opencode executor (opencode --model takes provider/model). Three
+    places fed them to the devin CLI regardless of the resolved
+    executor: (1) claim_pass persisted lane->model into the claim body
+    for any undeclared-executor card, even when the claiming host had
+    no opencode route (OPENCODE_LANES=0 or no resolvable profile);
+    (2) start_task's env fallback re-read action.lane and mapped
+    LANE_MODELS even on the executor=devin path; (3) kanban-dispatch
+    start_pending did the same via `elif lane in LANE_MODELS` and
+    persisted litellm picks into action.model. A stale litellm
+    action.model (persisted by an earlier claim, or reclassified lane
+    keeping `not a.get("model")`) then poisoned later devin claims.
+
+contract:
+  rule: "provider and executor namespaces must match — devin ids (bare, e.g. swe-2-flash) for the devin executor; provider/model ids (litellm/*) for opencode/litellm lanes; if no valid id exists for the resolved executor, leave model empty (executor default)"
+  helpers:
+    dispatch_repos.model_valid_for_executor(model, executor): "'' always valid; opencode requires a '/' provider-qualified id; every other launch path is `devin -p` so only devin-namespace (bare) ids pass"
+    dispatch_repos.lane_model(lane, executor): "LANE_MODELS pick constrained to the executor namespace — '' when invalid"
+    runner-agent_mirrors: "runner-agent.py keeps local copies of both helpers — the file deploys standalone where dispatch_repos may not import"
+
+enforcement_points:
+  runner-agent.claim_pass: "claim-time lane->model persist now gated on the route THIS claim resolves to (opencode iff OPENCODE_LANES + resolvable profile, else devin) — a devin-bound claim persists lane but leaves model empty"
+  runner-agent.start_task: "DISPATCH_MODEL resolved then namespace-checked against ex or 'devin'; a dropped CARD-DECLARED model posts a chaba comms note, a routine lane-table pick stays quiet; DISPATCH_PROVIDER follows the surviving model"
+  runner-agent.start_opencode_lane: "model precedence (action.model > lane table > profile default) now picks the first candidate VALID for opencode — a bare devin id is skipped, not launched"
+  kanban-dispatch.start_pending: "same namespace check on action.model + lane pick (this dispatcher only ever launches devin); claim-time persist uses dr.lane_model(lane, 'devin') so litellm picks no longer poison action.model"
+
+notes:
+  - "action.model=litellm/* already sitting on a card is NOT deleted — the launch guard drops it per-claim and comments once; a later opencode-capable re-claim can still use it"
+  - "paid_frontier has no LANE_PROFILES entry, so it always resolves devin today — its litellm pick is never persisted or launched"
+
+tests: "tests/board/test_runner_agent_lane.py — new: litellm drop + comms note on executor=devin, devin id passthrough, lane pick kept off DISPATCH_MODEL, claim persist gated by OPENCODE_LANES route; updated claim-pass expectations; 18 lane tests + 176 board tests green"

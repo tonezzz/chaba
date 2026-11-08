@@ -630,24 +630,36 @@ def start_pending(path: Path) -> str:
             # Persist the cheapest model too, so ANY claimer (runner-agent
             # reads action.model) routes to the right lane — the env-only
             # path never reached remote runner-agents (model-chain probe
-            # OPS-0836, 2026-10-25).
-            if lane in LANE_MODELS:
-                a["model"] = LANE_MODELS[lane]
+            # OPS-0836, 2026-10-25). Constrained to ids valid for the
+            # executor serving THIS claim: this dispatcher only launches
+            # devin, whose CLI rejects litellm/* ids, so the lane pick
+            # resolves empty (devin default) instead of poisoning
+            # action.model (dispatch-model-pick-executor-mismatch).
+            pick = dr.lane_model(lane, "devin")
+            if pick:
+                a["model"] = pick
             save_card(path, card)
     if lane == "manual":
         return "manual lane — not dispatched (Tony's hands)"
     env = dict(os.environ)
-    if a.get("model"):
-        env["DISPATCH_MODEL"] = str(a["model"])  # -> devin --model
-    elif lane in LANE_MODELS:
-        env["DISPATCH_MODEL"] = LANE_MODELS[lane]  # cheapest lane
+    # Provider/executor namespaces must match
+    # (dispatch-model-pick-executor-mismatch): a litellm/* model id on
+    # the devin CLI is a guaranteed 'Unknown model' exit — drop it to
+    # the executor default rather than launch a dead session.
+    exr = ex or "devin"
+    model = str(a.get("model") or "")
+    if model and not dr.model_valid_for_executor(model, exr):
+        model = ""
+    if not model:
+        model = dr.lane_model(lane, exr)  # cheapest lane, ns-checked
+    if model:
+        env["DISPATCH_MODEL"] = model  # -> devin --model
     # Executor-contract context for the launcher's task meta + usage:
     # the card that declared it, the resolved executor/provider, and the
     # profile id — devin-dispatch._meta_write persists them.
     env["DISPATCH_CARD"] = card.get("id") or path.stem
-    env["DISPATCH_EXECUTOR"] = ex or "devin"
-    env["DISPATCH_PROVIDER"] = dr.model_provider(
-        env.get("DISPATCH_MODEL") or "") or "devin"
+    env["DISPATCH_EXECUTOR"] = exr
+    env["DISPATCH_PROVIDER"] = dr.model_provider(model) or "devin"
     if dr.card_profile(card):
         env["DISPATCH_PROFILE"] = dr.card_profile(card)
     if a.get("target_host"):

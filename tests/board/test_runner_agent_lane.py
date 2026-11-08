@@ -49,13 +49,21 @@ class StartTaskLaneTest(unittest.TestCase):
                        ("OPENCODE_LANES", "DISPATCH", "HOST")}
         self._saved_fn = {k: getattr(m, k) for k in
                           ("sh", "classify_lane", "start_opencode_lane",
-                           "dr_module", "enforce_task_limits")}
+                           "dr_module", "enforce_task_limits", "api")}
         m.DISPATCH = str(SCRIPT)          # exists -> dispatch executor present
         m.dr_module = lambda: None        # no host checkout resolution
         m.enforce_task_limits = lambda *a, **k: None
         self.calls = []
-        m.sh = lambda argv, **kw: self.calls.append(argv) or _proc(
-            0, "fake-tid-123\n")
+        self.envs = []
+        self.comments = []
+
+        def fake_sh(argv, **kw):
+            self.calls.append(argv)
+            self.envs.append(kw.get("env") or {})
+            return _proc(0, "fake-tid-123\n")
+        m.sh = fake_sh
+        m.api = lambda path, body=None: (
+            self.comments.append((path, body)) or {})
 
     def tearDown(self):
         m = self.mod
@@ -74,6 +82,43 @@ class StartTaskLaneTest(unittest.TestCase):
         self.assertEqual(err, "")
         self.assertEqual(unit, "devin-task-fake-tid-123")
         self.assertEqual(tid, "fake-tid-123")
+
+    def test_litellm_model_dropped_on_devin_executor(self):
+        """dispatch-model-pick-executor-mismatch: a litellm/* model id
+        reaching the devin CLI exits 'Unknown model' — start_task must
+        drop it to the executor default and leave a comms note."""
+        self.mod.OPENCODE_LANES = False
+        unit, tid, err = self.mod.start_task(
+            _card(executor="devin", lane="devin",
+                  model="litellm/gemini-3.5-flash-lite"), "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(unit, "devin-task-fake-tid-123")
+        env = self.envs[-1]
+        self.assertNotIn("DISPATCH_MODEL", env)
+        self.assertEqual(env["DISPATCH_PROVIDER"], "devin")
+        self.assertTrue(any("model litellm/gemini-3.5-flash-lite "
+                            "dropped" in (b or {}).get("text", "")
+                            for p, b in self.comments
+                            if p == "/comment"))
+
+    def test_devin_model_id_passes_through(self):
+        """A bare devin id (the card's workaround pin) stays valid."""
+        self.mod.OPENCODE_LANES = False
+        unit, tid, err = self.mod.start_task(
+            _card(executor="devin", model="swe-2-flash"), "dispatch")
+        self.assertEqual(err, "")
+        self.assertEqual(self.envs[-1]["DISPATCH_MODEL"], "swe-2-flash")
+        self.assertEqual(self.envs[-1]["DISPATCH_PROVIDER"], "devin")
+
+    def test_lane_pick_not_sent_to_devin(self):
+        """lane=free_lane on a devin-bound claim: the litellm lane pick
+        must not reach DISPATCH_MODEL (executor default applies)."""
+        self.mod.OPENCODE_LANES = False
+        unit, tid, err = self.mod.start_task(
+            _card(lane="free_lane"), "dispatch")
+        self.assertEqual(err, "")
+        self.assertNotIn("DISPATCH_MODEL", self.envs[-1])
+        self.assertFalse(self.comments)  # lane picks stay quiet
 
     def test_explicit_lane_routes_to_opencode_when_enabled(self):
         """Explicit model lane + OPENCODE_LANES=1 -> OpenCode executor."""
@@ -228,7 +273,8 @@ class ClaimPassLaneTest(unittest.TestCase):
         self._saved_env = os.environ.get("JEV_LANE")
         os.environ["JEV_LANE"] = "1"
         self._saved = {k: getattr(m, k) for k in
-                       ("DISPATCH",)}
+                       ("DISPATCH", "OPENCODE_LANES")}
+        m.OPENCODE_LANES = False
         self._saved_fn = {k: getattr(m, k) for k in
                           ("api", "start_task", "push_capable",
                            "gpu_preflight", "classify_lane", "dr_module",
@@ -280,19 +326,33 @@ class ClaimPassLaneTest(unittest.TestCase):
         self.assertEqual(self.classified, [])  # never consulted
 
     def test_pinned_lane_gets_lane_model_when_unset(self):
+        """OPENCODE_LANES=1 + resolvable profile -> the litellm lane pick
+        persists for the opencode route."""
+        self.mod.OPENCODE_LANES = True
         self.cards = [_card(lane="free_lane")]
         self.assertTrue(self.mod.claim_pass({}))
         bodies = self._claim_bodies()
         self.assertEqual(bodies[0]["model"],
                          "litellm/gemini-3.5-flash-lite")
 
+    def test_lane_model_not_persisted_on_devin_route(self):
+        """dispatch-model-pick-executor-mismatch: OPENCODE_LANES=0 means
+        this claim resolves to devin, whose CLI rejects litellm/* ids —
+        the lane is persisted but the model stays empty (devin default)."""
+        self.cards = [_card(lane="free_lane")]
+        self.assertTrue(self.mod.claim_pass({}))
+        bodies = self._claim_bodies()
+        self.assertEqual(bodies[0]["lane"], "free_lane")
+        self.assertEqual(bodies[0]["model"], "")
+
     def test_unset_lane_still_classifies_at_claim(self):
         self.cards = [_card()]
         self.assertTrue(self.mod.claim_pass({}))
         bodies = self._claim_bodies()
         self.assertEqual(bodies[0]["lane"], "paid_frontier")
-        self.assertEqual(bodies[0]["model"],
-                         "litellm/gemini-2.5-flash")
+        # paid_frontier has no opencode profile -> devin route -> the
+        # litellm pick is not valid there, model stays empty
+        self.assertEqual(bodies[0]["model"], "")
         self.assertEqual(self.classified, ["lane-card"])
 
 

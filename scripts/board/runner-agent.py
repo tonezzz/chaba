@@ -249,6 +249,31 @@ def model_provider(model: str) -> str:
     return m.split("/", 1)[0] if "/" in m else "devin"
 
 
+def model_valid_for_executor(model: str, executor: str) -> bool:
+    """Mirror of dispatch_repos.model_valid_for_executor — kept local
+    because this file deploys standalone (may run where dispatch_repos
+    isn't importable). Provider/executor namespaces must match
+    (dispatch-model-pick-executor-mismatch, 2026-11-08): the devin CLI
+    accepts only its own bare ids — a 'litellm/...' pick exits
+    'Unknown model'; opencode takes provider/model ids. `executor` is
+    the RESOLVED executor; '' resolves to devin. Empty model = the
+    executor default, always valid."""
+    m = (model or "").strip()
+    if not m:
+        return True
+    if executor == "opencode":
+        return "/" in m
+    return model_provider(m) == "devin"
+
+
+def lane_model(lane: str, executor: str) -> str:
+    """Mirror of dispatch_repos.lane_model — LANE_MODELS pick constrained
+    to the executor's model namespace ('' = no valid pick, executor
+    default applies)."""
+    m = LANE_MODELS.get(lane or "", "")
+    return m if m and model_valid_for_executor(m, executor) else ""
+
+
 LANE_KW = {
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
                "spend", "order the", "blocked on tony", "rotation", "rekey",
@@ -1812,9 +1837,16 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         return "", "", f"profile {prof_id}: {e}"
     # model precedence: explicit action.model > lane table > the
     # profile's declared default — the contract's model always wins.
-    model = str(a.get("model") or "").strip() or \
-        str(LANE_MODELS.get(lane) or "") or \
-        str(((prof.get("model") or {}).get("default")) or "")
+    # Provider/executor namespaces must match (dispatch-model-pick-
+    # executor-mismatch): opencode takes provider/model ids, so a bare
+    # devin id is skipped for the next candidate rather than launched.
+    model = ""
+    for cand in (str(a.get("model") or "").strip(),
+                 str(LANE_MODELS.get(lane) or ""),
+                 str(((prof.get("model") or {}).get("default")) or "")):
+        if cand and model_valid_for_executor(cand, "opencode"):
+            model = cand
+            break
     if not model:
         return "", "", (f"no model resolvable for profile {prof_id} — "
                         "set action.model or a lane")
@@ -2402,6 +2434,11 @@ def start_task(card: dict, typ: str) -> tuple:
         # classification, and never silently re-routes to a different
         # executor.
         ex = str(a.get("executor") or "").strip()
+        # Card-declared model, captured before claim-time lane
+        # classification may write a lane-table pick into a["model"] —
+        # the env guard below only comms-notes drops of DECLARED models
+        # (a lane pick resolving empty is routine, not a bad pin).
+        declared_model = str(a.get("model") or "")
         if ex == "kk_mac_local":
             # Try-first contract (kk-mac-jev-adapter-integration): the
             # bounded lane gets one shot; every decline falls back to
@@ -2500,9 +2537,8 @@ def start_task(card: dict, typ: str) -> tuple:
             env["DISPATCH_PROFILE"] = card_profile(card)
         if a.get("target_host"):
             env["DISPATCH_TARGET_HOST"] = str(a["target_host"])
-    if a.get("model"):
-        env["DISPATCH_MODEL"] = str(a["model"])
-    elif typ == "dispatch":
+    model = str(a.get("model") or "")
+    if typ == "dispatch" and not model:
         # lane -> cheapest model (jev-pilot Phase 2). Parity with
         # kanban-dispatch start_pending — whichever claimer wins applies
         # the same routing: an explicit action.lane always maps through
@@ -2518,13 +2554,32 @@ def start_task(card: dict, typ: str) -> tuple:
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in lane_models:
-            env["DISPATCH_MODEL"] = str(lane_models[lane])
+            model = str(lane_models[lane])
+    if model:
+        # Executor contract: provider and executor namespaces must match
+        # (dispatch-model-pick-executor-mismatch, 2026-11-08) — the devin
+        # CLI only accepts its own ids, so a litellm/* lane pick on a
+        # devin-bound claim drops to the executor default instead of
+        # launching into a guaranteed 'Unknown model' exit. A
+        # card-declared model earns a comms note (the bad pin stays
+        # visible); a routine lane-table pick stays quiet.
+        if typ == "dispatch" and not model_valid_for_executor(
+                model, ex or "devin"):
+            if model == declared_model and declared_model:
+                api("/comment", {"id": cid, "from": "chaba",
+                                 "text": f"model {model} dropped — "
+                                         "provider namespace doesn't "
+                                         f"match executor={ex or 'devin'}"
+                                         "; running the executor "
+                                         "default"})
+            model = ""
+        else:
+            env["DISPATCH_MODEL"] = model
     if typ == "dispatch":
         # provider follows the RESOLVED model (action.model or the lane
         # mapping) — computed after both so litellm lane ids report
         # provider=litellm, not devin.
-        env["DISPATCH_PROVIDER"] = model_provider(
-            env.get("DISPATCH_MODEL") or "") or "devin"
+        env["DISPATCH_PROVIDER"] = model_provider(model) or "devin"
     if typ == "dispatch" and LIMITS_ON:
         # devin-dispatch splices this into its systemd-run call;
         # enforce_task_limits below re-applies the cgroup props on the
@@ -2919,7 +2974,19 @@ def claim_pass(st: dict) -> bool:
             if lane == "manual":
                 continue
             a["lane"] = lane
-            if lane in LANE_MODELS and not a.get("model"):
+            # Persist the cheapest model only when it is valid for the
+            # executor THIS claim resolves to — a litellm/* id on a
+            # devin-bound claim crashes `devin --model` (OPS
+            # dispatch-model-pick-executor-mismatch, 2026-11-08). The
+            # opencode route needs OPENCODE_LANES + a resolvable task
+            # profile (same gate start_task applies); anything else is
+            # devin and takes its default model.
+            svc = "opencode" if (lane in LANE_MODELS and OPENCODE_LANES
+                                 and (card_profile(card)
+                                      or LANE_PROFILES.get(lane))) \
+                else "devin"
+            if lane in LANE_MODELS and not a.get("model") \
+                    and model_valid_for_executor(LANE_MODELS[lane], svc):
                 a["model"] = LANE_MODELS[lane]
             claim_body["lane"] = lane
             claim_body["model"] = a.get("model", "")

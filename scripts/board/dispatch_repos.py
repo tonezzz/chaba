@@ -199,6 +199,32 @@ def model_provider(model: str) -> str:
     return m.split("/", 1)[0] if "/" in m else "devin"
 
 
+def model_valid_for_executor(model: str, executor: str) -> bool:
+    """Provider/executor namespace contract
+    (dispatch-model-pick-executor-mismatch, 2026-11-08): the devin CLI
+    accepts only its own bare ids ('swe-2-flash', 'adaptive') — a
+    'litellm/...' pick exits 'Unknown model'; the opencode lane takes
+    provider/model ids. `executor` must be the RESOLVED executor
+    ('' resolves to devin). An empty model is always valid — it means
+    the executor default."""
+    m = (model or "").strip()
+    if not m:
+        return True
+    if executor == "opencode":
+        return "/" in m
+    # every other launch path here is `devin -p` — devin-namespace only
+    return model_provider(m) == "devin"
+
+
+def lane_model(lane: str, executor: str) -> str:
+    """LANE_MODELS pick constrained to the executor's model namespace —
+    '' when the lane's cheapest id can't run there (today every lane
+    pick is litellm/*, valid only for opencode; devin falls back to its
+    default model)."""
+    m = LANE_MODELS.get(lane or "", "")
+    return m if m and model_valid_for_executor(m, executor) else ""
+
+
 def executor_blurb(card: dict) -> str:
     """Short executor/provider/model/profile phrase for comms lines —
     'executor=opencode provider=litellm model=litellm/g-3.5 profile=ops'
