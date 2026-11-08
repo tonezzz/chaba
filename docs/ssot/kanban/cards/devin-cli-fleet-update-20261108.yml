@@ -1,0 +1,25 @@
+id: devin-cli-fleet-update-20261108
+title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
+column: backlog
+updated: 2026-11-08 18:48
+brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
+  SSH fallback.
+priority: medium
+program: chaba-ops
+tags:
+- devin
+- cli
+- runner-agent
+- tony-omen
+- tony-dell
+- macbook
+spec: 'Update Devin CLI on tony-omen, tony-dell, and tony-macbook, then verify the CLI and agent state. 2026-11-08
+  evidence: `devin doctor` passes on Omen and Dell; Omen CLI is 3000.11.205 and Dell is 3000.11.234. Non-TTY `devin
+  update` exited 130 on Omen and Dell without changing versions. MacBook is reachable via Omen SSH; mcp-debug is
+  intentionally not installed there. User requested updates, but interactive SSH is needed for the updater and remains
+  approval-gated. Do not restart Devin Desktop or re-enable runner timers as part of this CLI update.'
+ref: DEV-1221
+comms:
+- at: 2026-11-08 18:48
+  from: tony
+  text: card captured via board-api
