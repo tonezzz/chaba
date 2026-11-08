@@ -1,0 +1,20 @@
+id: ada-dispatch-approval-scenario
+title: 'Live scenario: ask->respond->dispatch approval handshake'
+column: backlog
+updated: 2026-11-08 13:14
+priority: low
+tags:
+- ada
+- scenarios
+- opencode
+spec: 'Guard the taught approval flow (ada-voice d27be7c): scenario drives Ada to preflight a bounded card, raise
+  kanban ask, and (on scripted respond=yes or confirmed turn) call ada_opencode_dispatch inside the receipt window,
+  then read back status. Asserts: preflight tool call, kanban ask with dispatch wording, dispatch confirmed=true,
+  verdict readback. Smoke tier, transport:text, real ada-opencode surface on idc02 (v2.2.5). Watch for: model skipping
+  the board ask and going straight to voice confirm (acceptable but should be noted in the scenario), receipt-window
+  expiry on slow turns.'
+ref: ADA-1194
+comms:
+- at: 2026-11-08 13:14
+  from: devin
+  text: card captured via board-api
