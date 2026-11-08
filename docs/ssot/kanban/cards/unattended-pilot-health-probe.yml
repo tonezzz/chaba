@@ -4,7 +4,7 @@ brief: Read-only pilot for the hands-off waiting-card procedure — safe to queu
 column: doing
 priority: low
 created: '2026-11-08'
-updated: 2026-11-08 12:46
+updated: 2026-11-08 12:50
 tags:
 - unattended
 - pilot
@@ -24,8 +24,7 @@ action:
     cmd: systemctl --user is-active chaba-board-api.service; curl -sf -o /dev/null -w 'board-api http=%{http_code}\n'
       http://127.0.0.1:8787/cards
     timeout: 300
-  status: failed
-  runner: idc03
+  status: queued
   result: no exit record — unit not-found reports collected defaults (unproven, not ok) Started runner-unattended-pilot-health-probe-1794116697.service
     - runner unattended-pilot-health-probe. | active | board-api http=200
 review_kind: verify
@@ -52,3 +51,6 @@ comms:
   text: 'first live gate run: claimed on idc03 12:45 once load dipped under cap (256 prior passes load-skipped —
     see OPS-1182). Script ran (journal shows "active") but finish reported unit not-found — fast units GC before
     exit collection. Carded as OPS-1181. Pilot stays failed until that fix lands; re-queue to retest.'
+- at: 2026-11-08 12:50
+  from: devin
+  text: queued for processing
