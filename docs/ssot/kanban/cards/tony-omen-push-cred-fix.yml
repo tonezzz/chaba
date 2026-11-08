@@ -1,7 +1,7 @@
 id: tony-omen-push-cred-fix
 title: Restore push:chaba on tony-omen (gh token expired, no SSH key)
 column: backlog
-updated: 2026-11-07 12:34
+updated: 2026-11-08 10:54
 priority: medium
 tags:
 - credentials
@@ -26,3 +26,10 @@ comms:
 - at: 2026-11-07 12:34
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-08 10:54
+  from: devin
+  text: 'DONE 2026-11-08: ed25519 deploy key generated on tony-omen (~/.ssh/chaba-deploy), ssh alias github-chaba
+    in ~/.ssh/config, origin push-url -> git@github-chaba:tonezzz/chaba.git. Tony registered the .pub as a write
+    deploy key on tonezzz/chaba. Verified: git push --dry-run origin HEAD:master passes auth+write (rejected only
+    non-FF — the local exec checkout is behind origin, expected; auth itself is confirmed working). push:chaba restored
+    on this host.'
