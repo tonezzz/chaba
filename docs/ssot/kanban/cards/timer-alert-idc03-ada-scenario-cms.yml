@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-cms
 title: Timer ada-scenario-cms on idc03 failing
 column: doing
-updated: 2026-11-08 10:32
+updated: 2026-11-08 10:36
 priority: high
 tags:
 - timer-alert
@@ -230,6 +230,13 @@ comms:
 - at: 2026-11-08 10:32
   from: devin
   text: '[dispatch] investigating — pulling journal for ada-scenario-cms.service on idc03'
+- at: 2026-11-08 10:36
+  from: devin
+  text: 'DIAGNOSIS: Nov-3 exit-code = deployment drift, not a crash. idc03 ran stale units (pre OPS-0581 exit-contract
+    + pre bench-off-paid-lanes): suite hit PAID lane :8002 during provider dunning -> 0 score -> old wrapper exited
+    1. install.sh re-run today 10:34 — all 7 units now byte-identical to repo (dev lane :8005, ada-dev.env, provider
+    gate). VERIFIED: manual start -> gate detected quota-dead -> clean skip, Result=exec-condition (not alertable),
+    zero billed sessions. Residual: free-lane provider qu'
 action:
   status: running
   type: dispatch
