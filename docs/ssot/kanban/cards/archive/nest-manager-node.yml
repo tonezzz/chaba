@@ -1,0 +1,125 @@
+id: nest-manager-node
+title: Nest manager node — per-host supervisor + live nest report on CMS
+column: done
+review_kind: verify
+kind: feature
+priority: high
+autonomy: t2
+created: '2026-10-09'
+updated: 2026-11-08 13:22
+tags:
+- nest
+- polity
+- cms
+- observability
+brief: 'Tony 2026-10-09: "Can the nest page include a report for all nest nodes on its host? What it is trying to
+  do & progress, be brief. What if we make this report as a Nest manager node — when it exists, it takes authority
+  for all ownerless lesser nodes it discovers, just like the polity AI. Then it generates a live report on cms."
+  Maps directly onto the Asher governance tier: a per-host governor mind that adopts unclaimed students/lanes and
+  reports fleet state to CMS, which auto-surfaces on /chaba-nest.
+
+  '
+spec: "nest-mgr service (one per host; start idc03 + tony-omen + tony-dell):\n\nDISCOVERY — a nest node is any of:\n\
+  \  - systemd user unit matching nest patterns (jev|student|bankq|nest|\n    serve-*.py|openjev)\n  - a `serves:`\
+  \ endpoint in ada-pi tests/bench/topologies.yml `models:`/\n    `lanes:` that resolves to this host\n  - a live\
+  \ /metrics endpoint on a known nest port\nOwnership: a unit/env declaring NEST_OWNER (or a kanban card claim)\
+  \ owns\nthe node; everything else is OWNERLESS → the manager adopts it (registers\nin ~/.local/share/nest/manager-state.json,\
+  \ begins tracking). Adoption is\nobservational in v1 — manager reports and health-checks, never restarts\nor enforces\
+  \ (leash principle in ssot.nest-training.yml promotion_gate).\n\nREPORT — publish/update one CMS page per host\
+  \ (`nest-<host>`, e.g.\n`nest-idc03`) via the CMS write path used by report-distill. Per node,\nBRIEF: name ·\
+  \ kind (student/scorer/lane/brain) · endpoint · state\n(active|shadow|failed|parked) · current goal (from its\
+  \ card/topology —\ne.g. \"shadow-scoring memory-bank routing\") · progress (requests served,\ndivergence count,\
+  \ last bench score — read /metrics or state file) ·\nowner (manager|card:<id>|unmanaged). Max 2 lines/node. Page\
+  \ refreshes\non a 15-min timer + on state change.\n\nSURFACE — /chaba-nest auto-picks these: the nest topic match\
+  \ regex\n`nest|polity|tony-ideas` already matches `nest-idc03` etc. — tiles land\nas PROPOSED via chaba-nest-build.py\
+  \ --discover (Tony accepts → pinned).\nNo dashboard spec change needed.\n\nVERIFICATION —\n  - unit runs, manager-state.json\
+  \ has ≥3 adopted nodes on idc03\n    (jev-student, bankq-student, openjev-student)\n  - CMS page nest-idc03 exists\
+  \ with per-node rows\n  - --discover proposes the tile\nauto_done_when:\n  - file_exists: ~/.local/share/nest/manager-state.json\n\
+  \  - command: curl -sf http://127.0.0.1:<cms>/api/pages/nest-idc03\n"
+advice:
+  from: devin
+  at: 2026-10-09 14:55
+  text: Keep v1 strictly observational — adopt + report + health-flag, zero control actions. The enforcement question
+    (restart failed nodes? retrain?) is a separate gate per the leash posture. Discovery via systemd-pattern + registry
+    serves is enough; do NOT port-scan.
+comms:
+- at: 2026-10-09 14:55
+  from: devin
+  text: 'spec written from Tony''s polity-manager idea. v1 = observer-governor: discovers nest nodes on its host,
+    adopts ownerless ones, publishes a live nest-<host> CMS page that auto-surfaces on /chaba-nest via the existing
+    discover flow. Control actions stay human-gated per promotion_gate.'
+- at: 2026-10-09 14:47
+  from: idc03
+  text: claimed
+- at: 2026-10-09 14:47
+  from: chaba
+  text: started devin-task-20261009-144740-nest-mgr-service-one-per-host- on idc03 (dispatch)
+- at: 2026-10-09 14:47
+  from: chaba
+  text: 'merge-sweep: devin-task-20261009-144740-nest-mgr-service-one-per-host- no longer active on idc03 but card
+    still says running — sweeping its branch'
+- at: 2026-10-09 14:48
+  from: chaba
+  text: 'merge-sweep: dispatch/20261009-144740-nest-mgr-service-one-per-host- already in origin/master — marked
+    verified'
+- at: 2026-10-09 14:48
+  from: idc03
+  text: 'finished (ok): exit=0 sh, deepseek-v4-pro | devin-task-20261009-144740-nest-mgr-service-one-per-host-.service:
+    Main process exited, cod'
+- at: 2026-10-09 15:15
+  from: devin
+  text: false-verified by merge-sweep — the dispatch died in 1s (empty DEVIN_MODEL env — stale devin-dispatch on
+    idc03; repo fix never synced). Runner synced now; re-queued.
+- at: 2026-10-09 15:15
+  from: chaba
+  text: dispatched 20261009-151553-nest-mgr-service-one-per-host- on chaba
+- at: 2026-10-09 15:16
+  from: devin
+  text: attempt 2 started on tony-dell worktree. Prior run never executed (runner env bug). Scoping discovery +
+    CMS write path now.
+- at: 2026-10-09 15:47
+  from: devin
+  text: 'done. nest-mgr.service running on idc03+tony-omen+tony-dell; state files at ~/.local/share/nest/manager-state.json
+    (idc03: jev-student/bankq-student/openjev-student +open-jev all adopted). CMS pages nest-idc03/nest-tony-omen/nest-tony-dell
+    live in ada-cms-pages (domain=bench, report path = report-distill MDDB add); all 3 specced PROPOSED under the
+    nest topic in ssot.chaba-nest-dashboard.yml — --accept + --apply to pin. Registry docs seeded so cms-auto-health
+    watches freshness; regenerate button '
+- at: 2026-10-09 15:47
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-09 15:49
+  from: chaba
+  text: 'session-end checkpoint 70dd490b: 3 leftover file(s) committed'
+- at: 2026-10-09 15:49
+  from: chaba
+  text: pushed dispatch/20261009-151553-nest-mgr-service-one-per-host- to origin
+- at: 2026-10-09 15:49
+  from: chaba
+  text: test gate passed (python3 -m pytest tests -x -q, 48.5s)
+- at: 2026-10-09 15:49
+  from: chaba
+  text: auto-merged 79877f66 (dispatch/20261009-151553-nest-mgr-service-one-per-host-) → origin/master
+- at: 2026-10-09 17:35
+  from: devin
+  text: 'VERIFIED on idc03: nest-mgr.service active since 15:42, manager-state.json has 4 adopted nodes (bankq-student
+    shadow, jev-student active 900req/17esc/bench-golden-10/10, openjev-student active bench-56%, open-jev parked)
+    — spec required >=3. CMS page ada-cms-pages/nest-idc03 live (title "Nest nodes — idc03", updated 17:31, refreshes
+    15min + on state change). --discover tile will surface on next chaba-nest-build run (regex covers nest-*).'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0260'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (29d in done, verified)
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  runner: tony-dell
+  attempts: 1
+  task_id: 20261009-151553-nest-mgr-service-one-per-host-
+  result: 20261009-151553-nest-mgr-service-one-per-host- finished (inactive) — see `devin-dispatch logs 20261009-151553-nest-mgr-service-one-per-host-`
+  verified: true
+claim:
+  since: 2026-10-09 15:15
+ref: OPS-0260
