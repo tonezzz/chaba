@@ -159,9 +159,37 @@ def entity_from_args(a):
     system = ADA_SYSTEM if a.entity == "ada" else SYSTEM
     ent = llm_entity_factory(base, a.model, key, system=system,
                              temperature=a.temperature)
+    if a.with_brief:
+        ent = brief_wrapper(ent)
     if a.enforce:
         ent = enforce_wrapper(ent)
     return ent
+
+
+def brief_wrapper(ent):
+    """Inject top-3 similar-case precedents (proven outcomes) into the
+    snapshot — never the case itself (would leak its own gold)."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    "..", "..", "ada-jobs"))
+    from brief_builder import similar_cases, load_corpus
+    corpus = load_corpus()
+
+    def wrapped(case):
+        snap = dict(case.get("snapshot") or {})
+        snap["title"] = snap.get("title") or case.get("card_id")
+        snap["tags"] = snap.get("tags") or []
+        precs = [p for p in similar_cases(snap, corpus, top=4)
+                 if p["case_id"] != case.get("case_id")][:3]
+        if precs:
+            snap = dict(snap)
+            snap["precedents"] = [{"similar_card": p["case_id"],
+                                   "proven_move": p["gold"],
+                                   "outcome": p["proven_right"]}
+                                  for p in precs]
+            case = dict(case, snapshot=snap)
+        return ent(case)
+    return wrapped
 
 
 def enforce_wrapper(ent):
@@ -248,6 +276,8 @@ def main():
     ap.add_argument("--model", default="")
     ap.add_argument("--base-url", default="")
     ap.add_argument("--api-key-env", default="")
+    ap.add_argument("--with-brief", action="store_true",
+                    help="inject top-3 similar-card precedents into the snapshot")
     ap.add_argument("--enforce", action="store_true",
                     help="code-enforce hard gates post-LLM (composite entity, mirrors verify_worker)")
     ap.add_argument("--temperature", type=float, default=0.0,
