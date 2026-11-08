@@ -279,3 +279,30 @@ meaningfully. Production cutover remains unjustified; the BGE sidecars
 (education shadow, read-only adapters) stay valuable on their own merits.
 Artifacts: `2026-11-07-bge-hybrid-judged-union.{json,md}`, script +
 raw-hit capture in `bge-hybrid-judged.py`.
+
+## Rerank benchmark — the gap closes (2026-11-08)
+
+`bge-reranker-v2-m3` rescored the dense top-50 pool per query (48 queries,
+bge-hybrid-judged candidate pools, `qrels-bge-hybrid.json`), full run on
+Omen's restored GPU lane (~23s/query CPU-free, ~18min wall):
+
+| arm | r@1 | r@3 | r@5 | MRR |
+|---|---|---|---|---|
+| **bge_dense + rerank** | .072 | .188 | **.260** | **.869** |
+| gemini | .086 | .186 | .244 | .893 |
+| bge_dense | .047 | .135 | .224 | .767 |
+| rerank_union (dense+lex) | .054 | .170 | .250 | .791 |
+
+Thai: rerank .273 r@5 / **.964 MRR** = Gemini exactly. English: .255 / .829
+vs Gemini .240 / .863 — ahead on recall, slightly behind on MRR.
+
+**Verdict: local dense+rerank BEATS Gemini on recall@5 and is within noise
+on MRR overall — while winning outright on Thai.** The cross-encoder was
+the right move: it targeted exactly the MRR/ranking gap fusion couldn't.
+`rerank_union` confirms lexical candidates still dilute — rerank the dense
+pool only. The remaining production questions are serving cost
+(~20s/query on GPU is batch-grade; a real service needs request-path
+rerank ≤ ~500ms — feasible on GPU, not on this CPU fleet) and the
+reliability soak. Cutover case is now real, not speculative.
+Artifacts: `2026-11-08-bge-rerank-v2-m3.{json,md}`, script
+`scripts/ada/bge-rerank-eval.py`.
