@@ -1,0 +1,114 @@
+id: migration-stragglers-orphaned-units
+title: 'Migration stragglers: orphaned units after dell/omen->idc02/03 move'
+column: done
+updated: 2026-11-08 13:22
+tags:
+- migration
+- ops-0725
+- ops-0731
+- cleanup
+spec: 'Verified 2026-10-20 — all claimed services are live on the new hosts (gev/gesture/weaviate/gpu-queue on idc02
+  tailnet IP; yomi/trade-api/pg/redis on idc03; tony-ha+node-red on omen; edge serving new upstreams, live probes
+  200). These units were left behind:
+
+
+  FAILING (target moved):
+
+  - tony-dell ha-auth-watch.service — polls tony-ha (now on omen) + michael-ha (quarantined). Move or repoint.
+
+  - tony-dell network-scan-tony.service — scans the tony-ha network; HA host moved to omen.
+
+  - tony-omen weaviate-index.service — fails; weaviate is on idc02:8084 now.
+
+  - tony-omen mcp-health-snapshot.service — failed (check if it should move with the health lane).
+
+
+  DEAD-END:
+
+  - tony-omen weaviate-embed-proxy.service — forwards localhost:5000 -> mn01:5000; mn01 offline 6d. Point at idc02
+  weaviate or retire.
+
+  - tony-omen weaviate-search.service — running but backend moved to idc02; verify its weaviate URL.
+
+
+  NOT migration (do not fix here):
+
+  - wp-cam-snapshot oneshot ''failed'' = 7 cams returning empty go2rtc frames — pre-existing.
+
+  - OPS-0731: /apps origin (web container + Caddy + tailnet entry) still on dell — separate card, still open.
+
+
+  Done = each unit either repointed to the new host (and verified active) or retired with a comms note; nothing
+  left in failed state for migration reasons.'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  runner: idc02
+  result: 'exit=0 o changes committed on the dispatch branch, not pushed; outcome written to `dispatch-outcome-20261023-165616-verified-2026-10-20-all-claime.md`.
+    | devin-task-20261023-165616-verified-2026-10-20-all-claime.service: Consumed 38.822s CPU time.'
+  verified: true
+note: Units left pointing at services that moved in the 2026-10-19/20 constellation move (ph3+ph5).
+ref: OPS-0749
+comms:
+- at: 2026-10-20 10:20
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-22 16:59
+  from: devin
+  text: 'progress 2026-10-22 (from tony-dell-full-migration dispatch): DONE — weaviate-index+weaviate-search repointed
+    WEAVIATE_URL tony-dell:8084->idc02(100.123.163.11):8084, search verified end-to-end (real hits); weaviate-embed-proxy
+    verified live (mn01 IS up — stale claim); mcp-health-snapshot ran clean 16:43 (stale claim). PARKED dead-dell
+    units on omen: mddb-tunnel (no consumer), chaba-watch, clip-sync-dell. BONUS found+fixed on idc03: wave-2 quadlets
+    had pg on :5433 not :5432 — all pg consumers de'
+- at: 2026-10-22 19:33
+  from: tony
+  text: queued for processing
+- at: 2026-10-23 16:56
+  from: idc02
+  text: claimed
+- at: 2026-10-23 16:56
+  from: chaba
+  text: started devin-task-20261023-165616-verified-2026-10-20-all-claime on idc02 (dispatch)
+- at: 2026-10-23 16:56
+  from: devin
+  text: dispatch 2026-10-23 picked up. Prior session cleared omen weaviate units; verifying current state + handling
+    dell ha-auth-watch / network-scan-tony now.
+- at: 2026-10-23 17:05
+  from: devin
+  text: 'DONE 2026-10-23 — all card units resolved. dell: ha-auth-watch repointed tony-dell:8123->tony-omen:8123,
+    verified green (2 instances, 0 err, caught real deduped auth fail). network-scan-tony was never failing (LAN
+    scan works post-move) — repointed cwd/exec readonly-mirror->exec checkout per role model + created venv there,
+    verified run. RETIRED on dell: yomi-api + trade-automation (dead containers; live on idc03), ssot-optimization-snapshot
+    (stale dup; declared host=idc02; idc02 copy re-ran clea'
+- at: 2026-10-23 17:06
+  from: idc02
+  text: 'finished (ok): exit=0 o changes committed on the dispatch branch, not pushed; outcome written to `dispatch-outcome-20261023-165616-veri'
+- at: 2026-10-23 17:06
+  from: chaba
+  text: 'session-end checkpoint 213f8a18: 1 leftover file(s) committed'
+- at: 2026-10-23 17:06
+  from: chaba
+  text: pushed dispatch/20261023-165616-verified-2026-10-20-all-claime to origin
+- at: 2026-10-23 17:06
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-23 17:06
+  from: chaba
+  text: auto-merged 5ebaecc7 (dispatch/20261023-165616-verified-2026-10-20-all-claime) → origin/master
+- at: 2026-10-23 17:06
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261023-165616-verified-2026-10-20-all-claime,
+    branch dispatch/20261023-165616-verified-2026-10-20-all-claime'
+- at: 2026-10-23 17:10
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:22
+  from: tony
+  text: archived (15d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-23 17:10
+  note: verified — evidence checks green, closing itself
