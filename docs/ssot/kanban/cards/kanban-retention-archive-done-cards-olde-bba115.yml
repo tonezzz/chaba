@@ -1,0 +1,41 @@
+id: kanban-retention-archive-done-cards-olde-bba115
+title: 'Kanban retention: archive done cards older than 7 days'
+column: backlog
+updated: 2026-11-08 12:33
+brief: 'Done column has 1000+ cards (~6.6MB cards.json polled per client). Define and implement a retention procedure:
+  archive stale done cards to a separate store/page, keep board fast and searchable.'
+spec: 'Proposal (Devin 2026-11-08, discussed with Tony):
+
+
+  Phase 1 — done-sort: DONE (PR #119, updated desc).
+
+
+  Phase 2 — archive lane:
+
+  - New column value `archive` (not shown by default; toggle via ▦ columns like others).
+
+  - Nightly/periodic job moves cards with column=done AND updated < now-7d to column=archive via board-api /action
+  (reversible, audited).
+
+  - render-board2.py writes archive-column cards to a separate archive.json (NOT main cards.json) so payload shrinks;
+  board2 lazy-fetches archive.json only when the archive column is enabled.
+
+  - Archive stays searchable: board-api /card/<slug> and /cards?filters still resolve archived cards (they read
+  card YAML, not cards.json).
+
+  - Optional standalone /apps/board2/archive.html reusing the same renderer for deep archive browsing.
+
+
+  Phase 3 (optional) — per-column pagination/"show more" for done even before archive lands.
+
+
+  Open questions for Tony: threshold 7d ok? include `verified` column too or done-only? archive.json separate file
+  vs board-api dynamic query?'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-1178
+comms:
+- at: 2026-11-08 12:33
+  from: tony
+  text: card captured via board-api
