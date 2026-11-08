@@ -1,6 +1,6 @@
 id: messenger-control-inventory
 title: Reconcile Telegram and LINE relay inventory
-column: review
+column: done
 updated: 2026-11-08 08:27
 priority: medium
 tags:
@@ -134,6 +134,9 @@ comms:
     flags ada-tg-relay-mn and devnest-tg-relay as unexpected. (evidence: audit-hosts report: reports/audit-hosts/idc03-20261028-131959.yml,
     verified on idc03 2026-10-28: active relays ada-line-relay, ada-tg-relay, ada-tg-relay-kk, ada-tg-relay-mn,
     devne)'
+- at: 2026-11-08 08:27
+  from: ada
+  text: closed by ada
 requests:
 - id: mn-bot-identity-and-group-policy-20261031
   ask: 'The MN records conflict: the lane/Rika-alert records use @KrautMNBot, Michael onboarding references @mn_ha_bot,
@@ -219,4 +222,5 @@ requests:
   answer: 'fix-new-memberships — Recommended: add each new bot to its target group and configure host-only allowlists;
     keep old relays until tests pass.'
 review_kind: verify
-awaiting_action: true
+action:
+  status: done
