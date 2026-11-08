@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-08 04:20) of `device-telemetry-prune.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u device-telemetry-prune.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-08 04:20) of `device-telemetry-prune.service` on `idc03` result=exit-code — investigate
+  journal: `journalctl --user -u device-telemetry-prune.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-1150
 comms:
 - at: 2026-11-08 10:29
@@ -17,9 +17,19 @@ comms:
 - at: 2026-11-08 10:39
   from: devin
   text: '[still suspicious] Last run (11-08 04:20) of `device-telemetry-prune.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u device-telemetry-prune.service` on the host. See CMS `timer-timeline-idc03`.'
+    — investigate journal: `journalctl --user -u device-telemetry-prune.service` on the host. See CMS
+    `timer-timeline-idc03`.'
 - at: 2026-11-08 13:06
   from: devin
-  text: '2026-11-08 sweep: last run exited 1 during the mddb-embed runaway window (idc03 load ~5 on 4cpu, embed
-    worker wedged at 89% CPU). mddb-embed restarted 13:00 +07, load decaying; next scheduled run is the real test
-    — leaving open for timer-sentinel to confirm recovery rather than closing on a stale alert.'
+  text: '2026-11-08 sweep: last run exited 1 during the mddb-embed runaway window (idc03 load ~5 on 4cpu,
+    embed worker wedged at 89% CPU). mddb-embed restarted 13:00 +07, load decaying; next scheduled run
+    is the real test — leaving open for timer-sentinel to confirm recovery rather than closing on a stale
+    alert.'
+- at: 2026-11-08 19:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of device-telemetry-prune.service on idc03, which previously exited with
+  an error during a high-load window. The runner must inspect the journal via journalctl --user -u device-telemetry-prune.service
+  on idc03 to verify if subsequent runs recovered successfully. Constraints are to inspect the specified
+  host and service without inventing paths. The done-condition is confirmed successful execution of the
+  timer in the system journal or CMS timeline.

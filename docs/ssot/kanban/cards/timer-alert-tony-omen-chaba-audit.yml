@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: '`chaba-audit.timer` on `tony-omen` is disabled but expected active (audit census / critical list). Deliberate?
-  If not: `systemctl --user enable --now chaba-audit.timer`. See CMS `timer-timeline`.'
+note: '`chaba-audit.timer` on `tony-omen` is disabled but expected active (audit census / critical list).
+  Deliberate? If not: `systemctl --user enable --now chaba-audit.timer`. See CMS `timer-timeline`.'
 ref: AUD-1141
 comms:
 - at: 2026-11-08 10:29
@@ -16,9 +16,17 @@ comms:
   text: card captured via board-api
 - at: 2026-11-08 10:39
   from: devin
-  text: '[still suspicious] `chaba-audit.timer` on `tony-omen` is disabled but expected active (audit census / critical
-    list). Deliberate? If not: `systemctl --user enable --now chaba-audit.timer`. See CMS `timer-timeline`.'
+  text: '[still suspicious] `chaba-audit.timer` on `tony-omen` is disabled but expected active (audit
+    census / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit.timer`. See
+    CMS `timer-timeline`.'
 - at: 2026-11-08 10:59
   from: devin
-  text: '[still suspicious] `chaba-audit.timer` on `tony-omen` is disabled but expected active (audit census / critical
-    list). Deliberate? If not: `systemctl --user enable --now chaba-audit.timer`. See CMS `timer-timeline`.'
+  text: '[still suspicious] `chaba-audit.timer` on `tony-omen` is disabled but expected active (audit
+    census / critical list). Deliberate? If not: `systemctl --user enable --now chaba-audit.timer`. See
+    CMS `timer-timeline`.'
+- at: 2026-11-08 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Ensure that `chaba-audit.timer` is enabled and active on the host `tony-omen`. Execute `systemctl
+  --user enable --now chaba-audit.timer` to bring the critical audit census timer to its expected active
+  state. Verify success by confirming the systemd user timer is active and running.
