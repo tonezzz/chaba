@@ -2,7 +2,7 @@ id: vcast-input-bridge
 title: vcast input-bridge lane — headless/real/flip-check health
 brief: Keeps the phone-cast feature's remote-control lane healthy so casts don't fight each other. Queued — a worker
   session will pick it up.
-column: doing
+column: done
 priority: medium
 program: vcast
 area: input-bridge
@@ -24,7 +24,7 @@ action:
     Consumed 1min 6.702s CPU time over 3min 58.247s wall clock time, 1G memory peak.'
   verified: true
   runner: tony-omen
-updated: 2026-11-08 16:04
+updated: 2026-11-08 16:22
 comms:
 - at: 2026-10-07 20:19
   from: tony
@@ -106,6 +106,9 @@ comms:
   from: chaba
   text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
     Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
+- at: 2026-11-08 16:22
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 requests:
 - id: approve-live-remediation-a-merge-dispatc-73bd94
   ask: Approve live remediation? (a) merge dispatch/20261007-204337 branch; (b) deploy server.mjs+vcast-headless.mjs+vcast-headless@.service
@@ -119,3 +122,7 @@ requests:
   answer: suggestion?
 claim: {}
 ref: MED-0185
+auto_close:
+  by: merge-sweep
+  at: 2026-11-08 16:22
+  note: verified — evidence checks green, closing itself
