@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 01:13
+updated: 2026-11-08 07:12
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,7 +29,8 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: queued
+  status: running
+  runner: tony-macbook
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -72,3 +73,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-08 07:12
+  from: tony-macbook
+  text: claimed
