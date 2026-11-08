@@ -29,3 +29,10 @@ comms:
   text: skipped — The card notes that the run failure was due to a known runaway window on idc03, load
     is decaying, and the card is explicitly left open for the timer-sentinel to confirm recovery on the
     next scheduled run rather than closing on a stale alert.
+- at: 2026-11-09 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `ada-embed-bench.service` on host `idc03` following the mddb-embed runaway
+  window. The runner must check the journal logs via `journalctl --user -u ada-embed-bench.service` on
+  idc03 and verify the status of the next scheduled run. The done-condition is confirmed recovery of the
+  timer service on idc03 based on the timer-sentinel check.
