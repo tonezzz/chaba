@@ -57,6 +57,10 @@ comms:
     remains 3000.11.3 because `devin update` says auto-update is unavailable for this standalone binary. The official
     installer was inspected and ends by running `devin setup` (authentication + MCP configuration wizard); installer
     has not been run and the existing binary is unchanged.'
+- at: 2026-11-08 20:34
+  from: devin
+  text: 'raised request devin-macbook-setup-wizard: The approved MacBook installer unconditionally launches `devin
+    setup`, an interactive wizard for authentication and MCP '
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -82,4 +86,15 @@ requests:
   - No — leave MacBook at 3000.11.3 and mark the CLI update blocked.
   suggested: Yes — run the official installer on MacBook and verify version/doctor (recommended).
   answer: Yes — run the official installer on MacBook and verify version/doctor (recommended).
+- id: devin-macbook-setup-wizard
+  ask: The approved MacBook installer unconditionally launches `devin setup`, an interactive wizard for authentication
+    and MCP configuration. Do you authorize running that wizard? It may prompt for auth or change `~/.config/devin`;
+    Devin Desktop will not be restarted.
+  status: open
+  at: 2026-11-08 20:34
+  from: devin
+  options:
+  - Yes — run the installer and setup wizard; preserve/reuse existing auth and MCP settings wherever offered.
+  - No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
+  suggested: No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
 awaiting_action: true
