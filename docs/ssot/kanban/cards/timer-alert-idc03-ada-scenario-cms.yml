@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-cms
 title: Timer ada-scenario-cms on idc03 failing
-column: doing
-updated: 2026-11-08 10:36
+column: review
+updated: 2026-11-08 10:37
 priority: high
 tags:
 - timer-alert
@@ -237,8 +237,18 @@ comms:
     1. install.sh re-run today 10:34 — all 7 units now byte-identical to repo (dev lane :8005, ada-dev.env, provider
     gate). VERIFIED: manual start -> gate detected quota-dead -> clean skip, Result=exec-condition (not alertable),
     zero billed sessions. Residual: free-lane provider qu'
+- at: 2026-11-08 10:37
+  from: idc02
+  text: 'finished (ok): exit=0 posted to the card and written to `dispatch-outcome-20261108-103141-timer-ada-scenario-cms-on-idc0.md`.
+    | devin-t'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=0 posted to the card and written to `dispatch-outcome-20261108-103141-timer-ada-scenario-cms-on-idc0.md`.
+    | devin-task-20261108-103141-timer-ada-scenario-cms-on-idc0.service: Consumed 21.492s CPU time, 460.1M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
