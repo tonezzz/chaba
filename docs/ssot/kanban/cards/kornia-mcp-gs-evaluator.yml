@@ -1,7 +1,7 @@
 id: kornia-mcp-gs-evaluator
 title: Add read-only Kornia MCP tools for Gaussian capture evaluation
 column: backlog
-updated: 2026-11-03 18:03
+updated: 2026-11-08 08:34
 spec: 'Build a narrow Ada-facing MCP evaluator around Kornia for Gaussian Splat capture sets. Tools: inspect_image_set
   (dimensions/duplicates/sharpness/exposure), match_views (DISK/LightGlue or SIFT fallback + RANSAC inliers), propose_foreground_masks
   (review-only), score_capture_manifest, and compare_gs_runs (PSNR/SSIM/LPIPS/COLMAP registration/PLY/metrics).
@@ -22,3 +22,10 @@ comms:
     zero duplicate groups, min sharpness 17.328, median 270.383, recommendation train_baseline_then_review_masks.
     Education lesson updated with example post result. Next: optional DISK/LightGlue or SIFT/RANSAC matcher, then
     reviewed foreground masks.'
+- at: 2026-11-08 08:34
+  from: devin
+  text: 'Progress: all 5 spec tools now implemented in mcp-servers/mcp-kornia (Chaba PR #101, branch feat/ops-1055-kornia-tools).
+    inspect_image_set (existing) + match_views (cv2 SIFT/ORB+RANSAC, kornia DISK/LightGlue optional), propose_foreground_masks
+    (review-only heuristic saliency), score_capture_manifest (0-100 gates+manifest), compare_gs_runs (PSNR/SSIM/PLY/metrics).
+    Every tool returns JSON + durable artifact_ref under GS_EVAL_ARTIFACT_ROOT; no training/deletion/upload/publish.
+    Verified on hibiscus-'
