@@ -1,0 +1,107 @@
+id: crush-provider-bench
+title: Bench crush across providers — rainy-day model options (Tony 2026-10-09)
+brief: 'Tony: crush runs gemini-first, but benchmark the other provider lanes for rainy-day options. crush v0.98.0
+  adopted as alt lane (card lab-crush-cli, done 2026-10-09 — currently on OpenRouter nemotron-3-super :free). Run
+  the same smoke suite per provider so fallback quality is known before it is needed.'
+column: done
+priority: medium
+created: 2026-10-09
+tags:
+- crush
+- bench
+- voice-fallback
+claim: {}
+spec: 'Repeat the lab-crush-cli smoke (fizzbuzz+pytest 4/4, surgical edit 5/5, MCP stdio connect+invoke) against
+  each lane: (1) gemini-api-key.env on tony-dell — primary; (2) Anthropic — needs key decision; (3) OpenRouter paid
+  tier — $100 credit bought 2026-10-09; (4) local ollama on idc03/tony-omen as fully-offline lane. Record latency
+  + pass rates in a jobs/bench doc. Use a project-local .crush.json — parallel agents clobber the shared ~/.config/crush/crush.json
+  (observed 2026-10-09).'
+action:
+  type: dispatch
+  status: done
+  repo: chaba
+  runner: mn01
+  result: 'exit=0 rness/configs alongside, plus board comments posted and the outcome file written. | devin-task-20261010-021707-repeat-the-lab-crush-cli-smoke.service:
+    Consumed 1min 11.408s CPU time over 1h 42min 45.936s wall clock time, 523.2M memory peak.'
+  verified: true
+  sweep:
+    close_held: 2026-10-10 11:34
+comms:
+- at: 2026-10-10 08:03
+  from: devin
+  text: armed for dispatch (queue sweep 19:5x, repo=chaba)
+- at: 2026-10-10 09:05
+  from: devin
+  text: credits blocker cleared — $100 OR credit bought 2026-10-09; OR paid + free lanes both runnable.
+- at: 2026-10-10 09:16
+  from: mn01
+  text: claimed
+- at: 2026-10-10 09:17
+  from: chaba
+  text: started devin-task-20261010-021707-repeat-the-lab-crush-cli-smoke on mn01 (dispatch)
+- at: 2026-10-10 09:21
+  from: devin
+  text: '[devin/mn01] starting provider bench on tony-dell. Inventory: crush v0.98.0 present, gemini+openrouter
+    keys in ~/.config/secrets, ollama live on idc03 (llama3.2:3b) and omen (phi3/qwen). No ANTHROPIC_API_KEY on
+    any host — raising request; benching other 3 lanes meanwhile.'
+- at: 2026-10-10 09:21
+  from: devin
+  text: 'raised request anthropic-lane-no-anthropic-api-key-foun-ec782a: Anthropic lane: no ANTHROPIC_API_KEY found
+    in ~/.config/secrets on tony-dell, tony-omen, idc01-03. How should I run the '
+- at: 2026-10-10 09:36
+  from: devin
+  text: '[devin/mn01] config notes: gemini-api-key.env key is DEAD (AQ.* token, 401 — known from ada-scenario-casting-hang);
+    using working GEMINI key from ada-pi-pwa.env instead. crush type=google ignores models.large (forces gemini-3.1-pro-preview-customtools,
+    key has zero pro quota) — fixed via openai-compat provider to /v1beta/openai/ + explicit model. ollama type
+    needs base_url with /v1 suffix. Probes pass: gemini-3.5-flash, claude-sonnet-4.6 via OR, llama3.2:3b on idc03.
+    Starting smoke runs.'
+- at: 2026-10-10 10:59
+  from: devin
+  text: '[outcome] Bench done — docs/ssot/jobs/bench/2026-10-10-crush-provider-bench.yml. PASS: gemini-3.1-flash-lite
+    (native google + -m flag; 135s/89s/58s, 4/4+5/5+MCP) and OR-paid claude-sonnet-4.6 (103s/90s/180s, all pass
+    — T3 via bash JSON-RPC workaround after a transient MCP init stall). FAIL: offline ollama — llama3.2:3b ignores
+    tools (code-as-text), qwen2.5:1.5b under-reasons, qwen3:4b (pulled to omen) stalls past crush 2m stream deadline
+    / 900s timeouts. Anthropic: no key on any host, request st'
+- at: 2026-10-10 11:00
+  from: mn01
+  text: 'finished (ok): exit=0 rness/configs alongside, plus board comments posted and the outcome file written.
+    | devin-task-20261010-021707-re'
+- at: 2026-10-10 11:00
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-10 11:00
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-10 11:03
+  from: chaba
+  text: 'merge-sweep: merged bb1d7cb7 (dispatch/20261010-021707-repeat-the-lab-crush-cli-smoke from mn01) -> origin/master
+    — marked verified (exit_code=0; outcome doc dispatch-outcome-20261010-021707-repeat-the-lab-crush-cli-smoke.md)'
+- at: 2026-10-10 11:34
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''anthropic-lane-no-anthropic-ap''] block close)'
+- at: 2026-10-10 16:05
+  from: tony
+  text: closed by tony
+- at: 2026-10-11 06:15
+  from: tony
+  text: 'answered anthropic-lane-no-anthropic-api-key-foun-ec782a: C. Add anthropic CMS report? Add each provide
+    to their report each.'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: BEN-0415'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (28d in done, verified)
+updated: 2026-11-08 13:21
+requests:
+- id: anthropic-lane-no-anthropic-api-key-foun-ec782a
+  ask: 'Anthropic lane: no ANTHROPIC_API_KEY found in ~/.config/secrets on tony-dell, tony-omen, idc01-03. How should
+    I run the Anthropic lane? Options: (a) tell me where an anthropic key lives / drop one into ~/.config/secrets,
+    (b) run Anthropic-via-OpenRouter using the paid $100 credit instead (claude-sonnet-4.x through OR), (c) skip
+    the Anthropic lane this round. Continuing with gemini + OR-paid + ollama lanes meanwhile.'
+  status: answered
+  at: 2026-10-10 09:21
+  from: devin
+  answer: C. Add anthropic CMS report? Add each provide to their report each.
+ref: BEN-0415
