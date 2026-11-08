@@ -76,22 +76,30 @@ def open_card_ids():
 
 
 def fire(card_id, title, body, dry_run, open_ids):
-    """Create card if no open one; else comment on it."""
+    """Create card if no open one; else comment on it. on_exists:queue
+    re-arms a done card when its condition recurs (a duplicate POST /card
+    fails closed with 400 — that crash killed whole sweeps)."""
     if open_ids is None:
         print(f"SKIP {card_id}: board unreachable")
         return
-    if card_id in open_ids:
+    try:
+        if card_id in open_ids:
+            if not dry_run:
+                api("comment", {"id": card_id, "from": ACTOR,
+                                "text": f"[still suspicious] {body}"})
+            print(f"COMMENT {card_id}: {body[:80]}")
+            return
         if not dry_run:
-            api("comment", {"id": card_id, "from": ACTOR,
-                            "text": f"[still suspicious] {body}"})
-        print(f"COMMENT {card_id}: {body[:80]}")
-        return
-    if not dry_run:
-        api("card", {"id": card_id, "title": title, "column": "backlog",
-                     "priority": "high", "from": ACTOR,
-                     "tags": ["timer-alert", "auto", "by:timer-sentinel"],
-                     "note": body})
-    print(f"CARD {card_id}: {body[:80]}")
+            api("card", {"id": card_id, "title": title,
+                         "column": "backlog", "priority": "high",
+                         "from": ACTOR, "on_exists": "queue",
+                         "tags": ["timer-alert", "auto",
+                                  "by:timer-sentinel"],
+                         "note": body})
+        print(f"CARD {card_id}: {body[:80]}")
+    except Exception as e:
+        # one bad fire must not kill the remaining findings
+        print(f"WARN {card_id}: fire failed: {e}", file=sys.stderr)
 
 
 def _recent(last_us, now, hours=48):
@@ -175,7 +183,7 @@ def main():
                     f"ssh-fail, not a timer failure)."))
         for host, tt in timers.items():
             for name, t in tt.items():
-                cid = f"timer-alert-{host}-{name}"[:120]
+                cid = f"timer-alert-{host}-{name}"[:61]
                 exp = (expected.get(host) or {}).get(name)
                 enabled = str(t.get("enabled") or "")
                 crit = name in CRITICAL or exp == "active"
@@ -208,7 +216,7 @@ def main():
     # synthetic fault for verification runs
     if args.inject:
         kind, host, name = args.inject.split(":", 2)
-        cid = f"timer-alert-{host}-{name}"[:120]
+        cid = f"timer-alert-{host}-{name}"[:61]
         findings.append((cid, f"[synthetic] {kind} {name} on {host}",
                          f"Injected test condition: {kind}. This card "
                          f"proves the sentinel pipeline works; close it."))

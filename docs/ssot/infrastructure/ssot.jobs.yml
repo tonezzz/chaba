@@ -152,9 +152,19 @@ jobs:
   timeout: 15m
   exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 con01 macbook;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
-    --consolidate; /usr/bin/python3 scripts/report-system.py'
+    --consolidate; /usr/bin/python3 scripts/report-system.py && scp -q
+    stacks/web/public/apps/system-report/data/system-report.yml
+    stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md
+    idc02:~/web-srv/public/apps/system-report/data/ && scp -q
+    stacks/web/public/apps/system-report/data/system-report.yml
+    stacks/web/public/apps/system-report/data/SYSTEM-REPORT.md
+    idc03:~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/system-report/data/'
   note: migrated tony_dell -> idc02 2026-10-04; exec corrected (deployed unit ran bash chain, not the nonexistent
-    .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh)
+    .sh); audit host list + idc03 2026-10-06; on-demand refresh via chaba-report-api.service (POST /apps/system-report/api/refresh).
+    idc02 -> con01 in the Oct-25 absorber shed BROKE delivery — con01 only wrote its local checkout,
+    idc02's served+repo copies froze (system-report-watchdog caught it at 337h). Delivery restored
+    2026-11-08 via scp fanout to idc02 web-srv (live page) + idc03 served checkout (kanban-commit ->
+    git -> all exec checkouts, incl. the file the watchdog reads).
 - id: chaba-host-loads
   name: Host-loads sampler (fleet load/mem/disk -> system-report monitor page)
   host: idc02
