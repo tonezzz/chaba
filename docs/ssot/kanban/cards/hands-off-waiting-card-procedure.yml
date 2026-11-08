@@ -1,7 +1,7 @@
 id: hands-off-waiting-card-procedure
 title: Standardize hands-off processing for safe waiting cards
 column: doing
-updated: 2026-11-08 07:18
+updated: 2026-11-08 08:04
 brief: Define when queued/review cards may run and close unattended, with recoverability classes, preflight, stop
   gates, and Telegram reporting.
 priority: high
@@ -29,15 +29,15 @@ action:
   type: dispatch
   repo: chaba
   target_host: tony-macbook
-  status: failed
-  runner: tony-macbook
-  result: 'exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with result ''exit-code''.
-    | devin-task-20261108-071214-define-and-implement-the-hands.service: Consumed 2.609s CPU time over 1.338s wall
-    clock time, 71.5M memory peak.'
+  status: queued
   lane: devin
   sweep:
     failed_noted: 2026-11-08 07:18
   model: swe-2-flash
+  last_failure: 'exit=1 devin-task-20261108-071214-define-and-implement-the-hands.service: Failed with result ''exit-code''.
+    | devin-task-20261108-071214-define-and-implement-the-hands.service: Consumed 2.609s CPU time over 1.338s wall
+    clock time, 71.5M memory peak.'
+  attempts: 1
 note: 'Tony asked whether backup/rebuild makes all waiting work safe to process unattended. Correct model: recoverability
   is data-class-specific; backups do not replace secrets, external identity, active DB writers, uncommitted work,
   or human deployment decisions.'
@@ -100,3 +100,6 @@ comms:
   text: 'merge-sweep: devin-task-20261108-071214-define-and-implement-the-hands failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261108-071214-define-and-implement-the-hands by
     hand.'
+- at: 2026-11-08 08:04
+  from: tony
+  text: retry requested
