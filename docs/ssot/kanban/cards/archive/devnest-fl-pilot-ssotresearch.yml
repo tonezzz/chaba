@@ -1,0 +1,81 @@
+id: devnest-fl-pilot-ssotresearch
+title: 'OpenCode ssot-research pilot: kk-mac fleet declarations (qwen3:8b)'
+column: done
+updated: 2026-11-08 13:21
+spec: "Research question: What does the fleet declare about kk-mac — its host entry, its ollama capability, and\
+  \ the LiteLLM routes that reach it?\n\nAnswer ONLY from the checkout's SSOT (docs/ssot/, AGENTS.md, docs/kb/)\
+  \ — never from memory. Every factual claim must cite a file path (with a line range when possible). If the sources\
+  \ do not contain the answer, say so. You may not write files or run shell commands.\n\nEmit ONLY a JSON object\
+  \ as your final message — no prose before or after — in exactly this shape:\n{\n  \"question\": \"<the research\
+  \ question, echoed>\",\n  \"answer\": \"<prose answer>\",\n  \"citations\": [{\"path\": \"<repo-relative path>\"\
+  , \"note\": \"<what it supports>\"}, ...],\n  \"sources_consulted\": [\"<paths actually read>\"],\n  \"read_only\"\
+  : true\n}\nEvery cited path must exist in the checkout (a held-out verifier checks each one). >= 2 citations,\
+  \ >= 1 source under docs/."
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: ssot-research
+  artifact: evals/opencode-lane/out/ssot-research-kkmac.json
+  status: done
+  runner: idc02
+  result: 'exit=0 65dffeSHpW6C3zDQtnTG","type":"step-finish","tokens":{"total":25780,"input":25088,"output":234,"reasoning":458,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-ssotresearch-1793368746.service: Consumed 14.847s CPU time.'
+  verified: true
+ref: KNB-1029
+comms:
+- at: 2026-10-30 20:58
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-30 20:58
+  from: devin
+  text: queued for processing
+- at: 2026-10-30 20:59
+  from: idc02
+  text: claimed
+- at: 2026-10-30 20:59
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-ssotresearch-1793368746 on idc02 (dispatch executor=opencode profile=ssot-research
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-30 21:01
+  from: idc02
+  text: 'finished (ok): exit=0 65dffeSHpW6C3zDQtnTG","type":"step-finish","tokens":{"total":25780,"input":25088,"output":234,"reasoning":458,"ca'
+- at: 2026-10-30 21:01
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/ssot-research-kkmac.json
+- at: 2026-10-30 21:01
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-10-30 21:01
+  from: chaba
+  text: ran under executor=opencode:ssot-research provider=litellm model=litellm/ollama-qwen38b-kkmac profile=ssot-research
+- at: 2026-10-30 21:01
+  from: chaba
+  text: 'session-end checkpoint 297d8726: 2 leftover file(s) committed'
+- at: 2026-10-30 21:01
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-ssotresearch-1793368746 to origin
+- at: 2026-10-30 21:01
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-30 21:01
+  from: chaba
+  text: auto-merged aa015d6b (dispatch/devnest-fl-pilot-ssotresearch-1793368746) → origin/master
+- at: 2026-10-30 21:01
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-ssotresearch-1793368746,
+    branch dispatch/devnest-fl-pilot-ssotresearch-1793368746'
+- at: 2026-10-30 21:03
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (8d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-30 21:03
+  note: verified — evidence checks green, closing itself
