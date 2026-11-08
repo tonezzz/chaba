@@ -1,7 +1,7 @@
 id: kanban-dispatch-spawned-duplicate-sessio-f49ed8
 title: kanban-dispatch spawned duplicate sessions on one card (timer-alert-idc03-chaba-jobs, 2026-11-08)
 column: backlog
-updated: 2026-11-08 16:22
+updated: 2026-11-08 16:36
 priority: medium
 tags:
 - kanban-dispatch
@@ -49,18 +49,27 @@ comms:
   from: devin
   text: 'raised request deploy-knb1196-board-api: Approve production deployment of commit 616f9298 to the live idc03
     board-api? Deployment will push/merge the tested fix,'
+- at: 2026-11-08 16:36
+  from: tony
+  text: 'answered pause-idc03-dispatch-for-knb1196: Yes — stop and disable both idc03 timers until the fix is deployed
+    and verified (approved as part of the deployment).'
+- at: 2026-11-08 16:36
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: pause-idc03-dispatch-for-knb1196
   ask: Should I temporarily pause idc03 automatic dispatch while the verified board-api fix awaits deployment? This
     would stop idc03 runner-agent and kanban-dispatch timers and pause all automatic card claims from that host;
     board-api itself stays online.
-  status: open
+  status: answered
   at: 2026-11-08 16:14
   from: devin
   options:
   - Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
   - No — leave idc03 dispatch running while the local fix is reviewed.
   suggested: Yes — stop and disable both idc03 timers until the fix is deployed and verified (recommended).
+  answer: Yes — stop and disable both idc03 timers until the fix is deployed and verified (approved as part of the
+    deployment).
 - id: deploy-knb1196-board-api
   ask: Approve production deployment of commit 616f9298 to the live idc03 board-api? Deployment will push/merge
     the tested fix, pause idc03 kanban-dispatch and runner-agent timers during rollout, restart chaba-board-api.service,
@@ -73,3 +82,4 @@ requests:
   - Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
   - No — keep the tested commit local for review; make no production changes.
   suggested: Yes — deploy the tested fix, pause idc03 dispatch during rollout, verify, and keep runners paused (recommended).
+awaiting_action: true
