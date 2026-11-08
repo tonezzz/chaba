@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: backlog
-updated: 2026-11-08 07:37
+updated: 2026-11-08 08:00
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -40,3 +40,8 @@ comms:
     wallfix.png + comp-e.jpg; accepts any image via file picker/drag-drop/?img=. OpenCode/OpenChamber can''t do
     region-select natively (verified: chat UI has no bbox widget) so this standalone page is the OPS-1109 input
     surface. Next: Tony selects corner/shelf region -> Gemini edit or CF '
+- at: 2026-11-08 08:00
+  from: devin
+  text: 'Drive layout migrated: 30-generated-raw/ -> 30-candidates/<asset-id>/ (image+manifest together per candidate);
+    picker exports -> 50-picker-exports/. land-render.py + campaign-status.py updated; QC doc + SESSION paths rewritten.
+    11 candidate dirs live. comparison-g auto-landed by lane-watcher cron (omen Q8 wallfix completed).'
