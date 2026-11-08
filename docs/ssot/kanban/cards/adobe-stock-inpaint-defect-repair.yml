@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
 column: backlog
-updated: 2026-11-07 19:25
+updated: 2026-11-08 07:37
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -33,3 +33,10 @@ comms:
     comparison-e-gemini-wallfix.png landed (1024x1024, gemini-2.5-flash-image, edit prompt targeted wall corner
     only). This may obsolete the mask-inpaint path for defect repair — Gemini edit preserves composition semantically.
     CF inpainting still queued for neuron reset as the masked'
+- at: 2026-11-08 07:37
+  from: devin
+  text: 'UI piece shipped (uncommitted, serving now): mask-picker page at http://192.168.2.67:8777/ — drag-rect
+    on image + comment -> mask.png (white=regen), request.json, ready Gemini edit prompt, CF inpaint payload. Serves
+    wallfix.png + comp-e.jpg; accepts any image via file picker/drag-drop/?img=. OpenCode/OpenChamber can''t do
+    region-select natively (verified: chat UI has no bbox widget) so this standalone page is the OPS-1109 input
+    surface. Next: Tony selects corner/shelf region -> Gemini edit or CF '
