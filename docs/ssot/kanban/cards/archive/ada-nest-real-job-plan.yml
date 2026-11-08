@@ -1,0 +1,126 @@
+id: ada-nest-real-job-plan
+title: 'Ada Nest real-job plan: Omen embeddings + T4 image + JEV arena gates'
+column: done
+updated: 2026-11-08 13:21
+brief: Coordinate the next real Ada Nest jobs with explicit host/resource gates. Omen has 38G data free; T4 is for
+  GPU-heavy image/voice/embedding work; JEV arena expands before autonomous routing.
+priority: high
+program: ai-workforce
+tags:
+- nest
+- omen
+- colab
+- jev
+- planning
+spec: 'Plan and sequence: (1) idc03 CPU nest-efficiency report; (2) idc03 JEV decision-arena 27->50 labeled cases;
+  (3) Omen embedding 100-document pilot <=5G; (4) Colab/T4 Qwen-Image benchmark only when runtime is awake; (5)
+  hold Omen Colibri Qwen3.6-35B until >=83G data free. Every job must declare target_host, resource gate, artifact,
+  verifier, and stop condition.'
+ref: ADA-0847
+comms:
+- at: 2026-10-25 08:11
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 12:53
+  from: devin
+  text: 'T4 package prepared and staged: `t4-embedding-bench` in ada-nest/packs (100 docs, nomic-embed-text, GPU
+    check, throughput/query artifact, no production index mutation). Queue order: embedding throughput first; existing
+    vyncx/thonburian voice artifacts already done; image pack only on T4; no Omen Qwen35/image pull while /data
+    has 38G free. Omen embedding pilot remains <=5G after rescue/boot.'
+- at: 2026-10-25 13:01
+  from: devin
+  text: 'Nest status check: decomposition is real in the pack graph (01-doc-vo-repair -> 02-doc-assemble-v2 -> 03-doc-align;
+    eval m1/t1 split; VYNCX bench/score/redo/CER split). However current queue heartbeat is ~6h stale (`vyncx-v2-score
+    flush-settle`), and many claims are stale even where done markers exist. So Nest is NOT actively grinding now;
+    it has completed work artifacts but needs stale-claim/heartbeat repair before we call it healthy. New `t4-embedding-bench`
+    is staged but unclaimed.'
+- at: 2026-10-25 13:36
+  from: devin
+  text: 'Gap-job procedure prepared and staged: ada-nest/queue/gap-runner.py + gap-packs/PROCEDURE.md + gap-packs/embedding-smoke/pack.json.
+    It runs only during fresh main heartbeat prep/prep-wait, uses a separate lease, checks free VRAM, has a timeout/artifact
+    gate, and never starts a second main runner or mutates cache/index. Launch cell: `nohup bash -lc "while true;
+    do python3 /content/drive/MyDrive/ada-nest/queue/gap-runner.py; sleep 20; done" > /content/drive/MyDrive/ada-nest/queue/gap-runner.log
+    2>'
+- at: 2026-10-25 14:24
+  from: devin
+  text: 'T4 EMBEDDING JOB COMPLETE: t4-embedding-bench done; nomic-embed-text, 100 docs, 768 dims, 9.809s batch,
+    10.2 docs/s, 3 queries in 0.187s, Tesla T4 14.6/15.36GiB observed. No production index mutation. Colab queue
+    is now flush-settle; this is the first clean GPU throughput artifact.'
+- at: 2026-10-25 16:20
+  from: devin
+  text: 'COLAB RUNTIME ONLINE: worker colab-289669b4-1902 epoch 16, caps GPU=15GB/disk=207GB. It discovered gaussian-splat-edu-smoke
+    and is currently restore-hf-cache prep. Gaussian pack has not claimed yet. Assessment: no need to duplicate
+    embedding (already done), voice packs (done), or coding-agent packs (capability verdict complete). Next useful
+    T4 job is Gaussian smoke; then only add a real-PLY follow-up after its MP4/VRAM report passes.'
+- at: 2026-10-25 16:33
+  from: devin
+  text: 'MORE T4 WORK PACKED: t4-gpu-baseline (1GB, no model pull) + t4-llm-direct-bench (qwen3:8b direct latency,
+    5GB, no agent loop) staged alongside gaussian-splat-edu-smoke. These fill the queue without duplicate production/index
+    writes.'
+- at: 2026-10-25 19:11
+  from: tony
+  text: queued for processing
+- at: 2026-10-25 19:12
+  from: mn01
+  text: claimed
+- at: 2026-10-25 19:12
+  from: chaba
+  text: started devin-task-20261025-121205-plan-and-sequence-1-idc03-cpu- on mn01 (dispatch)
+- at: 2026-10-25 19:16
+  from: devin
+  text: 'Sequencing in progress. Live state verified 19:13 UTC: omen /data = 174G FREE (the 38G figure was root-fs/stale)
+    => colibri-35B >=83G gate is ALREADY MET; idc03 load 9.3/4 (CPU jobs must serialize + nice); jev-student :8778
+    + jevos :8017 healthy; omen ollama already has nomic+bge-m3 (pilot = ~0G new disk); T4 heartbeat ~16min stale
+    = not confirmed awake; img-gen-bench already done on con01-CPU (~20min/img) so T4 arm needs a cuda variant pack.'
+- at: 2026-10-25 19:17
+  from: devin
+  text: 'SEQUENCE PLAN LANDED: docs/ssot/jobs/nest/2026-10-25-ada-nest-real-job-seq.yml — all 5 jobs declare target_host/resource_gate/artifact/verifier/stop_condition.
+    Order: wave-A = idc03 efficiency report (after a --max-sessions/deadline patch — 08:16 hang was unbounded queue
+    scan) ‖ omen embed pilot (~0G new disk, models already pulled, RAM>=4G gate, scorers outrank); wave-B = idc03
+    arena 27->50 (choice-heavy, jevos choice-acc = routing gate) + omen colibri-35b ELIGIBLE — /data is 174G free
+    now, the'
+- at: 2026-10-25 19:20
+  from: mn01
+  text: 'finished (ok): exit=0 e outcome file is at `dispatch-outcome-20261025-121205-plan-and-sequence-1-idc03-cpu-.md`.
+    | devin-task-20261025-'
+- at: 2026-10-25 19:20
+  from: chaba
+  text: 'session-end checkpoint bfddd9bd: 1 leftover file(s) committed'
+- at: 2026-10-25 19:20
+  from: chaba
+  text: pushed dispatch/20261025-121205-plan-and-sequence-1-idc03-cpu- to origin
+- at: 2026-10-25 19:20
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-10-25 19:20
+  from: chaba
+  text: auto-merged 670af448 (dispatch/20261025-121205-plan-and-sequence-1-idc03-cpu-) → origin/master
+- at: 2026-10-25 19:20
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-121205-plan-and-sequence-1-idc03-cpu-,
+    branch dispatch/20261025-121205-plan-and-sequence-1-idc03-cpu-'
+- at: 2026-10-25 19:30
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-10-26 13:38
+  from: devin
+  text: 'QUEUE CLEANUP VERIFIED: new Colab worker epoch 19 skips all done markers, including nasa-embeds-ss1 and
+    nasa-i2v. Current Drive artifacts now exist: nasa-embeds shot01.pt/shot02.pt and nasa-i2v MP4/report. Earlier
+    NASA failure was a stale ordering/artifact race, not current T4 health. New Gaussian v2, GPU baseline, direct
+    qwen, and embedding outputs are also done.'
+- at: 2026-11-08 13:21
+  from: tony
+  text: archived (12d in done, verified)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 e outcome file is at `dispatch-outcome-20261025-121205-plan-and-sequence-1-idc03-cpu-.md`. | devin-task-20261025-121205-plan-and-sequence-1-idc03-cpu-.service:
+    Consumed 11.613s CPU time over 5min 57.886s wall clock time, 404.2M memory peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-10-25 19:30
+  note: verified — evidence checks green, closing itself
