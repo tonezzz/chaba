@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
-column: doing
-updated: 2026-11-08 10:36
+column: review
+updated: 2026-11-08 10:37
 priority: high
 tags:
 - timer-alert
@@ -254,8 +254,18 @@ comms:
     prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed the 5 stale scenario units
     + ran ada-scenario-memory.service once — parked with zero sessions, exit 0, Result=success. Next Wed 05:55 run
     goes green. Side-fix: chaba-board-api was wedged on a hung outb'
+- at: 2026-11-08 10:37
+  from: idc02
+  text: 'finished (ok): exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real but already
+    carded separately. | devin-t'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real but already carded separately.
+    | devin-task-20261108-103146-timer-ada-scenario-memory-on-i.service: Consumed 10.447s CPU time, 131.3M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
