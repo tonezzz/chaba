@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-11-07 11:39
+updated: 2026-11-08 18:49
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -132,6 +132,11 @@ comms:
     run: 124 lessons synced, snapshot rebuilt (24 colls/9857 docs/0 errs), report written to ~/.cache/bge-education-shadow-v2.json
     — BUT 73/111 queries hit vector_errors under the burst (pool healthy now: idc03 237ms, idc02 429ms, con01 1.2s;
     Omen down >10s). Follow-up worth doing: retry'
+- at: 2026-11-08 18:49
+  from: devin
+  text: 'OPS SWEEP FINDING: BGE education shadow retry fixed board-api 502, but manual rerun at 13:32 hit the 15-minute
+    systemd timeout before producing a fresh report; old report remained and due page degraded safely. Need raise
+    service timeout or reduce/batch query work before calling refresh healthy. No user-facing breakage observed.'
 review_kind: verify
 claim: {}
 auto_close:
