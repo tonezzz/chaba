@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: backlog
-updated: 2026-11-08 13:06
+updated: 2026-11-08 13:10
 priority: high
 tags:
 - timer-alert
@@ -64,3 +64,7 @@ comms:
     (HOME_ASSISTANT_URL + HOME_ASSISTANT_TOKEN for mn-ha + ADA_TG_SEND_URL) on idc03; file does not exist on idc03/mn01/tony-omen/idc02.
     NEEDS: provision ada-ai-kraut.env on idc03 (mn-ha HA credentials + TG send :8917). Until provisioned every run
     fails FileNotFoundError.'
+- at: 2026-11-08 13:10
+  from: devin
+  text: '[still suspicious] Last run (11-08 13:03) of `kraut-rain-watch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kraut-rain-watch.service` on the host. See CMS `timer-timeline-idc03`.'
