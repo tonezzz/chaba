@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
 column: backlog
-updated: 2026-11-08 18:48
+updated: 2026-11-08 20:03
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -48,6 +48,9 @@ comms:
 - at: 2026-11-08 18:48
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-08 20:03
+  from: chaba
+  text: 'answer-sweep: executed ''Keep all paused until a separate resumption approval (recomm'' -> put on hold'
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
@@ -63,4 +66,6 @@ requests:
   - Resume all paused runner-agent timers on Omen/MacBook/idc02/idc03 and idc03 kanban-dispatch.
   suggested: Keep all paused until a separate resumption approval (recommended).
   answer: Keep all paused until a separate resumption approval (recommended).
-awaiting_action: true
+  executed: 2026-11-08 hold
+action:
+  status: idle
