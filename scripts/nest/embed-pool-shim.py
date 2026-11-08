@@ -34,9 +34,34 @@ UPSTREAMS = [u.strip().rstrip("/") for u in
 ADDR = os.environ.get("EMBED_POOL_ADDR", "127.0.0.1:11436")
 TIMEOUT = float(os.environ.get("EMBED_POOL_TIMEOUT_S", "8"))
 RACED = {"/api/embed", "/api/embeddings"}
+DEAD_AFTER = int(os.environ.get("EMBED_POOL_DEAD_AFTER", "3"))
+DEAD_COOLDOWN_S = float(os.environ.get("EMBED_POOL_DEAD_COOLDOWN_S", "60"))
 
-_stats = {u: {"wins": 0, "fails": 0, "last_ms": 0} for u in UPSTREAMS}
+_stats = {u: {"wins": 0, "fails": 0, "last_ms": 0, "consec": 0,
+              "dead_until": 0.0} for u in UPSTREAMS}
 _lock = threading.Lock()
+
+
+def _alive_upstreams():
+    """Upstreams not currently in dead cooldown; all if all are dead."""
+    now = time.time()
+    with _lock:
+        live = [u for u in UPSTREAMS if _stats[u]["dead_until"] <= now]
+    return live or list(UPSTREAMS)
+
+
+def _record(u, ok):
+    with _lock:
+        st = _stats[u]
+        if ok:
+            st["wins"] += 1
+            st["consec"] = 0
+            st["dead_until"] = 0.0
+        else:
+            st["fails"] += 1
+            st["consec"] += 1
+            if st["consec"] >= DEAD_AFTER:
+                st["dead_until"] = time.time() + DEAD_COOLDOWN_S
 
 
 def _call(upstream, path, body):
@@ -57,19 +82,17 @@ def _race(path, body):
         try:
             st, data, ms = _call(u, path, body)
             if 200 <= st < 300:
+                _record(u, True)
                 with _lock:
-                    _stats[u]["wins"] += 1
                     _stats[u]["last_ms"] = int(ms)
                 q.append((u, st, data))
             else:
-                with _lock:
-                    _stats[u]["fails"] += 1
+                _record(u, False)
         except Exception:
-            with _lock:
-                _stats[u]["fails"] += 1
+            _record(u, False)
 
     ts = [threading.Thread(target=worker, args=(u,), daemon=True)
-          for u in UPSTREAMS]
+          for u in _alive_upstreams()]
     for t in ts:
         t.start()
     deadline = time.time() + TIMEOUT
@@ -84,12 +107,15 @@ def _race(path, body):
 
 def _first(path, body):
     """Non-raced proxy: try each upstream in order until one answers."""
-    for u in UPSTREAMS:
+    for u in _alive_upstreams():
         try:
             st, data, _ = _call(u, path, body)
             if 200 <= st < 400:
+                _record(u, True)
                 return u, st, data
+            _record(u, False)
         except Exception:
+            _record(u, False)
             continue
     return (None, 502, b'{"error":"no upstream available"}')
 
