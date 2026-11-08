@@ -306,3 +306,22 @@ rerank ≤ ~500ms — feasible on GPU, not on this CPU fleet) and the
 reliability soak. Cutover case is now real, not speculative.
 Artifacts: `2026-11-08-bge-rerank-v2-m3.{json,md}`, script
 `scripts/ada/bge-rerank-eval.py`.
+
+## Serving-path latency + pool soak (2026-11-08)
+
+Rerank serving cost measured on Omen GPU (bge-reranker-v2-m3, warm model,
+batch per query): top-10 **565ms**, top-20 1134ms, top-30 1704ms, top-50
+**2891ms** (~57ms/pair). A top-50 rerank does NOT fit a ~500ms voice
+request path; options: rerank top-10 only (~565ms, borderline), lighter
+reranker (v2-m3-base ~3x lighter), or async rerank (dense results return
+immediately; ranking refines for callers that can wait).
+
+Embed-pool soak through embed-pool-shim (idc03:11436, races 5 upstreams):
+baseline 30 probes — 29/30 ok, **p50 131ms / p95 2823ms** (one timeout,
+the known transient). Controlled con01 drop: 15/15 still ok — the racing
+shim routes around a dead member — but **p50 degraded to 2264ms** (~17x).
+Resilience holds; a dead upstream costs latency, not availability.
+GPU lane note: py3.12 GPU venv on Omen (`~/.local/share/chaba-ml-gpu-venv`,
+torch 2.11.0+cu128) is now the fast path for batch rerank (~23s/query
+full pipeline vs ~400-1400s CPU); declared as `python_ml_gpu` in
+ssot.host-software.yml (#99).
