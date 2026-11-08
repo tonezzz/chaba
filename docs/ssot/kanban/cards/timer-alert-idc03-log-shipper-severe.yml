@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper-severe
 title: Timer log-shipper-severe on idc03 failing
 column: backlog
-updated: 2026-11-08 18:01
+updated: 2026-11-08 18:02
 priority: high
 tags:
 - timer-alert
@@ -1602,6 +1602,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-08 17:11) of `log-shipper-severe.service` on `idc03` result=timeout — investigate
     journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-08 18:02
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.09 > 1.0)'
 action:
   status: queued
   type: dispatch
