@@ -1,6 +1,6 @@
 id: runner-script-finish-race
 title: runner-agent script claims false-fail on fast units (exit record lost to GC)
-column: backlog
+column: done
 updated: 2026-11-08 12:52
 priority: high
 tags:
@@ -26,3 +26,8 @@ comms:
     would pin claims forever. Deployed to idc03/idc02/tony-macbook (0848e9c0). Verified: (1) 20/20 CollectTest green
     incl. 4 new cases; (2) live repro on tony-omen — unit reaped to LoadState=not-found, collect() still returns
     exit=0. Pilot re-queued on idc03, will claim on load dip.'
+- at: 2026-11-08 12:52
+  from: devin
+  text: closed by devin
+action:
+  status: done
