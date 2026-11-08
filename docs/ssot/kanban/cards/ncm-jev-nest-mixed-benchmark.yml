@@ -1,7 +1,7 @@
 id: ncm-jev-nest-mixed-benchmark
 title: Benchmark NCM + JEV + Nest mixed generation routing
 column: review
-updated: 2026-11-07 16:52
+updated: 2026-11-08 12:26
 spec: Explore whether NCM improves Thai generation speed/quality when orchestrated by JEV and executed by Nest.
   NCM is the candidate generator; JEV routes/gates; Nest runs parallel candidates and publishes artifacts. P0 replay
   Sudoku/Thai fixtures through AR baseline, NCM, JEV route-only, and mixed candidates. P1 run Thai NCM toy on Colab.
@@ -94,6 +94,11 @@ comms:
   text: '[KNB-1098] still blocked: PR #63 remains OPEN (docs/ncm-jev-production-procedure-20261028); GitHub validate
     check red on unrelated cline-kanban test, local ssot-validate clean. Needs the PR merged (or CI unblocked) before
     this can close.'
+- at: 2026-11-08 12:26
+  from: devin
+  text: '[sweep] unblocked: PR #63 squash-merged (docs/kb/ncm-jev-nest-exploration-procedure.md + ssot.procedures.yml
+    entry on master; validate green). The card''s actionable scope — landing the P0-P5 procedure — is done. Actual
+    benchmark runs (GPU/replay ladder) are future dispatches under that procedure, not this card. Closing.'
 action:
   type: dispatch
   status: done
