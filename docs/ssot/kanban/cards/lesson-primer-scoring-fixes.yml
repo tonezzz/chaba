@@ -1,7 +1,7 @@
 id: lesson-primer-scoring-fixes
 title: lesson_primer scoring fixes — word boundaries, host-token eligibility, staleness
-column: review
-updated: 2026-11-09 15:55
+column: done
+updated: 2026-11-09 16:07
 brief: 'Three known scoring bugs in scripts/board/lesson_primer.py: substring matching false-hits (e.g. keyword
   ''test'' matches ''latest''), host tokens alone reach MIN_SCORE=2 so host-specific lessons always crowd the 8
   slots regardless of task relevance, and lessons never decay so stale references persist. Fix the scoring, keep
@@ -103,5 +103,12 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-154625-files-scripts-board-lesson-pri,
     branch dispatch/20261109-154625-files-scripts-board-lesson-pri'
+- at: 2026-11-09 16:07
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 16:06
+  note: verified — evidence checks green, closing itself
