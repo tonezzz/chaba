@@ -1,7 +1,7 @@
 id: ada-code-auth-error
 title: ada-code authentication error — investigate scope + fix
 column: backlog
-updated: 2026-11-09 18:00
+updated: 2026-11-09 18:10
 priority: high
 tags:
 - ada
@@ -42,3 +42,9 @@ comms:
     at 2.2.6 + restarted ada-code.service (verified: opencode v2.2.6, active). Pin bumped on writer (commit pending).
     The earlier x-forwarded-for crash-loop fix is also live on the enroll gateway — both issues fixed today. TEST:
     retry the session deep link — should load the UI now'
+- at: 2026-11-09 18:10
+  from: devin
+  text: 'FULL CHAIN RESOLVED 2026-11-09: real error was LiteLLM blocked-key (rotation blocked the pinned ada key)
+    — minted fresh key alias ada-code ($10/30d), updated ada-code.env on idc02, service active. Root cause hardening
+    shipped: OPS-1291 — mint-key.sh now syncs dependent envs on rotation. Earlier fixes also live: enroll x-forwarded-for
+    crash-loop + opencode 2.2.6 SPA fix. Closing as verified — reopen if it re-blocks.'
