@@ -3,7 +3,7 @@ title: 'tony-usb stick: own tailnet node key (stop claiming mn01)'
 column: backlog
 priority: medium
 created: 2026-10-10
-updated: 2026-11-09 09:36
+updated: 2026-11-09 09:37
 note: 'The stick''s /var/lib/tailscale/tailscaled.state is a clone of real mn01''s nodekey — any booted host steals
   the mn01 session (verified 2026-10-10 on the MacBook). Fix at next stick session: sudo tailscale logout + delete
   tailscaled.state + tailscale up as its own node (name: tony-usb or rescue). Then document generated per-stick
@@ -83,6 +83,9 @@ comms:
 - at: 2026-11-09 09:36
   from: chaba
   text: 'tony-omen defers: host overloaded (5m load/core 1.54 > 1.0)'
+- at: 2026-11-09 09:37
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.70 > 1.0)'
 spec: The goal is to stop the tony-usb stick from stealing the real mn01 tailnet session by giving it its own unique
   node identity. On the tony-usb stick host during the next stick session, run sudo tailscale logout, delete /var/lib/tailscale/tailscaled.state,
   and run tailscale up as its own node named tony-usb or rescue. Finally, document the generated per-stick identity
