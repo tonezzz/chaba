@@ -1,7 +1,7 @@
 id: lesson-primer-scoring-fixes
 title: lesson_primer scoring fixes — word boundaries, host-token eligibility, staleness
 column: backlog
-updated: 2026-11-09 15:44
+updated: 2026-11-09 15:45
 brief: 'Three known scoring bugs in scripts/board/lesson_primer.py: substring matching false-hits (e.g. keyword
   ''test'' matches ''latest''), host tokens alone reach MIN_SCORE=2 so host-specific lessons always crowd the 8
   slots regardless of task relevance, and lessons never decay so stale references persist. Fix the scoring, keep
@@ -48,3 +48,6 @@ comms:
 - at: 2026-11-09 15:44
   from: devin
   text: card captured via board-api
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.05 > 0.85)'
