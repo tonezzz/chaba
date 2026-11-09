@@ -708,14 +708,22 @@ def dr_module():
 def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     """Local merge step for a finished dispatch claim. Returns
     (verified: bool|None, comms notes: list[str])."""
-    if os.environ.get("KANBAN_AUTOMERGE", "1") == "0":
-        return None, []
     tid = ent.get("tid") or ""
     if not tid:
         unit = ent.get("unit") or ""
         tid = (unit[len("devin-task-"):]
                if unit.startswith("devin-task-") else "")
     if not tid:
+        return None, []
+    taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
+    try:
+        meta = json.loads((taskdir / "meta.json").read_text())
+    except (OSError, ValueError):
+        meta = {}
+    if meta.get("executor") == "opencode:profile-run":
+        ocp = oc_profiles_module()
+        return finish_profile_dispatch(cid, taskdir, meta, card, ocp) if ocp else (False, ["profile verifier unavailable"])
+    if os.environ.get("KANBAN_AUTOMERGE", "1") == "0":
         return None, []
     dr = dr_module()
     if dr is None:
@@ -758,6 +766,75 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
     return None, notes
 
 
+def finish_profile_dispatch(cid, taskdir, meta, card, ocp):
+    try:
+        env = meta["lane_envelope"]
+        prof = ocp.load_profile(env["profile"])
+        if prepare_profile_dispatch(card, env["id"], prof, env["model"], ocp) != env:
+            raise ValueError("card contract changed after admission")
+        if int((taskdir / "exit_code").read_text()) != 0:
+            raise ValueError("profile controller did not exit successfully")
+        result = json.loads((taskdir / "profile-result.json").read_text())
+        wt = Path(meta["worktree"]).resolve()
+        rd = Path(result["run_dir"]).resolve()
+        if not rd.is_relative_to(wt / "evals/opencode-lane/runs"):
+            raise ValueError("profile evidence outside the dispatch worktree")
+        run = json.loads((rd / "run.json").read_text())
+        manifest = json.loads((rd / "manifest.json").read_text())
+        metric = run["metric"]
+        if (manifest["envelope"] != env or run.get("job") != env["id"] or meta.get("card") != cid
+                or manifest.get("profile") != {k: v for k, v in prof.items() if k != "_path"}):
+            raise ValueError("profile evidence differs from the frozen envelope")
+        if (rd / "prompt.md").read_text() != ocp.build_prompt(env, prof):
+            raise ValueError("profile prompt differs from the frozen request")
+        config = ocp.render_config(env, prof)
+        config.pop("_allowfile", None)
+        if json.loads((rd / "opencode.json").read_text()) != config:
+            raise ValueError("profile config differs from the admitted permissions")
+        if any(metric.get(k) != env.get(k) for k in ("card", "stage", "task_class", "executor", "profile", "model", "provider")):
+            raise ValueError("metric differs from the frozen executor identity")
+        if (run.get("verification_status") != "complete" or run.get("exit_code") != 0
+                or (run.get("admit") or {}).get("admit") is not True
+                or (run.get("admit") or {}).get("stage") != env["stage"]
+                or metric.get("stage") != env["stage"] or metric.get("card") != cid
+                or metric.get("job_id") != env["id"] or metric.get("failure_reason")
+                or metric.get("verifier_pass") is not True or metric.get("artifact_landed") is not True
+                or metric.get("tool_denials") != 0 or metric.get("escalated") is not False):
+            raise ValueError("profile admission/verifier/safety contract did not pass")
+        records = ocp.lane_gate.qualification_ledger(ocp.lane_gate.load_stage())
+        if sum(r == metric for r in records) != 1:
+            raise ValueError("profile metric missing or duplicated in the active qualification ledger")
+        audit = ocp.audit_events(rd / "events.jsonl", env, prof)
+        if any(audit.get(k) for k in ("denials", "write_attempts", "mutating_commands", "verifier_peeks")):
+            raise ValueError("profile event audit failed")
+        if run.get("scope_violations"):
+            raise ValueError("profile scope audit failed")
+        artifact = (rd / "artifact.out").read_bytes()
+        if not ocp.artifact_matches_snapshot(rd):
+            raise ValueError("artifact differs from original host tool output")
+        if (wt / env["artifact"]["path"]).read_bytes() != artifact:
+            raise ValueError("landed artifact differs from verified evidence")
+        verifier = ocp.REPO / env["verifier"]["ref"]
+        if hashlib.sha256(verifier.read_bytes()).hexdigest() != meta["verifier_sha256"]:
+            raise ValueError("held-out verifier changed since dispatch")
+        verdict = ocp._verify(rd, env)
+        if verdict.get("verdict") != "pass":
+            raise ValueError("held-out verifier recheck failed")
+        digest = hashlib.sha256(artifact).hexdigest()
+        (taskdir / "artifact.out").write_bytes(artifact)
+        proof = {"card": cid, "job": env["id"], "stage": env["stage"],
+                 "artifact_sha256": digest, "run_dir": str(rd)}
+        (taskdir / "profile-verified.json").write_text(json.dumps(proof, indent=1))
+        usage_path = taskdir / "usage.json"
+        usage = json.loads(usage_path.read_text()) if usage_path.is_file() else {}
+        usage.update(metric, executor="opencode:profile-run", exit_code=0, verdict="pass",
+                     artifact_landed=True, artifact_sha256=digest, run_dir=str(rd))
+        usage_path.write_text(json.dumps(usage, indent=1))
+        return True, [f"S3 read-only report verified: {taskdir / 'artifact.out'} sha256={digest}; no source changes or code merge claimed"]
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        return False, [f"staged profile closeout held: {e}"]
+
+
 def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
     """Executor-contract closeout for OpenCode lanes — runs BEFORE
     close_out_merge so a landed artifact is checkpointed into the
@@ -788,6 +865,8 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
     if ocp is None:
         return False, ["opencode closeout: opencode_profiles missing — "
                        "artifact/verifier can't run, merge held"]
+    if meta.get("executor") == "opencode:profile-run":
+        return finish_profile_dispatch(cid, taskdir, meta, card, ocp)
     try:
         prof = ocp.load_profile(str(meta.get("profile") or ""))
     except Exception as e:
@@ -1875,7 +1954,85 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     return False, notes, fb
 
 
+def prepare_profile_dispatch(card, tid, prof, model, ocp):
+    a = card.get("action") or {}
+    raw = a.get("lane_envelope")
+    if not isinstance(raw, dict):
+        raise ValueError("lane_envelope must be a complete job object")
+    env = json.loads(json.dumps(raw))
+    env.pop("_path", None)
+    errs = ocp.lane_gate.lint_envelope(env)
+    if errs:
+        raise ValueError("; ".join(errs))
+    expected = {"card": card["id"], "profile": prof["id"], "model": model,
+                "provider": model_provider(model), "executor": "opencode",
+                "target_host": HOST, "task_class": a.get("task_class")}
+    if any(env.get(k) != v for k, v in expected.items()):
+        raise ValueError("lane envelope differs from the declared executor/card/host/model/class")
+    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] != "ops-readonly"
+            or env.get("mcp_allowlist") != []
+            or env.get("task_class") not in ("read_only", "report")
+            or a.get("target_host") != HOST or env.get("unattended", True) is not True
+            or env.get("subject_host") not in (None, "", HOST)
+            or a.get("subject_host") not in (None, "", HOST)):
+        raise ValueError("staged dispatch currently admits only unattended S3 idc02 ops-readonly reports")
+    art = str((env.get("artifact") or {}).get("path") or "")
+    if not art or Path(art).is_absolute() or ".." in Path(art).parts or art != a.get("artifact"):
+        raise ValueError("lane artifact must match the declared relative artifact path")
+    if (env.get("verifier") or {}) != prof.get("verifier"):
+        raise ValueError("staged closeout requires the profile's held-out verifier")
+    errs = ocp.lane_gate.lint_envelope(env) + ocp.check_envelope(env, prof)
+    if errs:
+        raise ValueError("; ".join(errs))
+    env.update(id=tid, unattended=True, dispatch_card=True, task=str(card.get("spec") or card.get("title") or ""))
+    return env
+
+
+def launch_profile_dispatch(card, env, taskdir, worktree, tid):
+    oc_bin = shutil.which("opencode")
+    if not oc_bin:
+        return "", "", "stage-aware profile controller requires opencode on PATH"
+    timeout = env.get("timeout_s", 420)
+    if isinstance(timeout, bool) or not isinstance(timeout, int) or not 0 < timeout <= 420:
+        return "", "", "profile dispatch timeout_s must be 1..420"
+    job = taskdir / "lane-envelope.json"
+    job.write_text(json.dumps(env, indent=1))
+    meta_path = taskdir / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    verifier = worktree / env["verifier"]["ref"]
+    meta.update(executor="opencode:profile-run", lane_envelope=env, opencode_binary=oc_bin,
+                verifier_sha256=hashlib.sha256(verifier.read_bytes()).hexdigest())
+    meta_path.write_text(json.dumps(meta, indent=1))
+    alias = str((card.get("action") or {}).get("llm_key_alias") or "ada").strip().upper()
+    if alias not in ("ADA", "CHABA", "BENCH", "KK", "MICHAEL", "CLINE"):
+        return "", "", "unknown profile credential alias"
+    key_expr = "${LITELLM_KEY_" + alias + ":-}"
+    shell = (
+        "set -a; if [ -f $$HOME/.config/secrets/litellm-keys.env ]; then "
+        f". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY={key_expr}; "
+        "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
+        "export LITELLM_KEY_BENCH=$$LITELLM_KEY; "
+        f"export PATH={shlex.quote(str(Path(oc_bin).parent))}:$$PATH; "
+        f"cd {shlex.quote(str(worktree))} && python3 scripts/devnest/opencode_profiles.py run "
+        f"{shlex.quote(str(job))} --controller-heartbeat "
+        f"> {shlex.quote(str(taskdir / 'profile-result.json'))} "
+        f"2> {shlex.quote(str(taskdir / 'profile-stderr.log'))}; "
+        f"rc=$$?; echo $$rc > {shlex.quote(str(taskdir / 'exit_code'))}; exit $$rc"
+    )
+    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
+             f"--property=RuntimeMaxSec={timeout + 60}", "--description",
+             f"runner {card['id']} staged read-only profile"] + task_run_props() + ["bash", "-lc", shell])
+    r = sh(argv, timeout=180)
+    return ("", "", (r.stderr or r.stdout).strip()[:240]) if r.returncode else (f"devin-task-{tid}", tid, "")
+
+
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
+    if not isinstance((card.get("action") or {}).get("lane_envelope"), dict):
+        return "", "", "OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held"
+    return _start_opencode_lane(card, lane, unit)
+
+
+def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     """Run a profile-scoped opencode lane in a dispatch worktree.
 
     The generic build agent is kept out of unattended routing
@@ -1931,6 +2088,12 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     if not root.is_dir():
         return "", "", f"no dispatch repo checkout for {repo_name}"
     tid = unit.removeprefix("runner-")
+    staged_env = None
+    if "lane_envelope" in a:
+        try:
+            staged_env = prepare_profile_dispatch(card, tid, prof, model, ocp)
+        except (ValueError, TypeError, KeyError) as e:
+            return "", "", f"staged profile admission contract: {e}"
     branch = f"dispatch/{tid}"
     worktree = Path.home() / f"CascadeProjects/dispatch-wt-{tid}"
     # Match devin-dispatch's task metadata so the existing closeout/merge
@@ -1970,6 +2133,11 @@ def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
     except Exception as e:
         return "", "", f"OpenCode worktree setup: {e}"
+    if staged_env is not None:
+        try:
+            return launch_profile_dispatch(card, staged_env, taskdir, worktree, tid)
+        except (OSError, ValueError, KeyError) as e:
+            return "", "", f"staged profile launch: {e}"
     spec = (card.get("spec") or "").strip() or \
         f"{card.get('title', '')}\n\n{card.get('note', '')}"
     task = spec + "\n\n" + RAILS_OPENCODE.format(

@@ -209,7 +209,7 @@ LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
-               "subject_host", "llm_key_alias", "nlm_notebook",
+               "subject_host", "llm_key_alias", "lane_envelope", "nlm_notebook",
                "nlm_source_file", "nlm_source_text", "nlm_source_url")
 
 # --- write gate (card board-api-auth) ------------------------------------
@@ -1316,6 +1316,8 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError(
                     f"action.{pk} must be a profile id "
                     "([a-z0-9][a-z0-9-], max 61)")
+        if "lane_envelope" in act and not isinstance(act["lane_envelope"], dict):
+            raise ValueError("action.lane_envelope must be an object")
         key_alias = str(act.get("llm_key_alias") or "").strip().lower()
         if key_alias and key_alias not in LLM_KEY_ALIASES:
             raise ValueError(

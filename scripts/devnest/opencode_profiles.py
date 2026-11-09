@@ -424,6 +424,8 @@ def build_prompt(env: dict, prof: dict) -> str:
     else:
         task = ""
     q = str(env.get("task") or env.get("title") or env.get("id") or "")
+    if f.is_file() and env.get("dispatch_card") and env.get("task") and "{{TASK}}" not in task:
+        task += "\n\nProduction card request (within the profile contract):\n" + str(env["task"])
     task = task.replace("{{HOST}}", str(env.get("target_host") or ""))
     task = task.replace("{{TASK}}", q)
     task = task.replace("{{JOB}}", str(env.get("id") or ""))
@@ -806,6 +808,24 @@ def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
     return result
 
 
+def artifact_matches_snapshot(rd: Path) -> bool:
+    try:
+        artifact = json.loads((rd / "artifact.out").read_text())
+        snapshots = []
+        for line in (rd / "events.jsonl").read_text().splitlines():
+            part = json.loads(line).get("part") or {}
+            state = part.get("state") or {}
+            command = str((state.get("input") or {}).get("command") or "").strip()
+            if part.get("tool") == "bash" and state.get("status") == "completed" and command == "python3 scripts/devnest/host_snapshot.py":
+                metadata = state.get("metadata") or {}
+                if metadata.get("exit") != 0 or metadata.get("truncated") is True:
+                    return False
+                snapshots.append(json.loads(state["output"]))
+        return len(snapshots) == 1 and snapshots[0] == artifact
+    except (OSError, ValueError, TypeError, KeyError):
+        return False
+
+
 def cmd_run(args):
     observer = (getattr(args, "human_observer", "") or "").strip()
     if observer and (args.unattended or not sys.stdin.isatty()):
@@ -815,6 +835,14 @@ def cmd_run(args):
     env.setdefault("unattended", args.unattended)
     if not args.unattended:
         env["unattended"] = False
+    if getattr(args, "controller_heartbeat", False):
+        job_id = str(env.get("id") or "")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,199}", job_id):
+            print(json.dumps({"error": "invalid controller job identity"}))
+            return 2
+        lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
+        (lane_gate.state_dir() / f"heartbeat-{job_id}.json").write_text(
+            json.dumps({"job": job_id, "at": now_iso(), "pid": os.getpid(), "source": "profile-controller"}))
     pre = run_preflight(env)
     if not pre["admit"]:
         m = _record_denial_metric(env, pre["reasons"])
@@ -908,6 +936,11 @@ def cmd_run(args):
             landed = True
     verdict = _verify(rd, env) if landed else {
         "verdict": "fail", "checks": {"artifact landed": False}}
+    if env.get("dispatch_card"):
+        matched = artifact_matches_snapshot(rd)
+        verdict.setdefault("checks", {})["artifact matches original host snapshot output"] = matched
+        if not matched:
+            verdict["verdict"] = "fail"
     (rd / "verdict.json").write_text(json.dumps(verdict, indent=1))
 
     tok = audit["tokens"]
@@ -963,7 +996,7 @@ def cmd_run(args):
         f.unlink()
     st = lane_gate.load_stage()
     st.setdefault("jobs_completed", {})
-    cur = st.get("current_stage", "S0")
+    cur = env["stage"]
     st["jobs_completed"][cur] = st["jobs_completed"].get(cur, 0) + 1
     lane_gate.save_stage(st)
 
@@ -1006,6 +1039,7 @@ def main():
 
     sp = sub.add_parser("run")
     sp.add_argument("job")
+    sp.add_argument("--controller-heartbeat", action="store_true")
     sp.add_argument("--supervised", dest="unattended",
                     action="store_false", default=True,
                     help="mark the run supervised (unattended:false "

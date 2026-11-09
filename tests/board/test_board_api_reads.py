@@ -160,6 +160,8 @@ class GetRoutingTest(unittest.TestCase):
              "columns": [], "cards": FIXTURE_CARDS}))
         cls._saved = cls.mod.CARDS_JSON
         cls._saved_card_dir = cls.mod.CARD_DIR
+        cls._saved_lock = cls.mod.LOCK
+        cls.mod.LOCK = Path(cls.tmp.name) / "board-api.lock"
         cls.mod.CARDS_JSON = fixture
         cls.mod.CARD_DIR = Path(cls.tmp.name) / "cards"
         cls.mod.CARD_DIR.mkdir()
@@ -172,8 +174,10 @@ class GetRoutingTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.srv.server_close()
         cls.mod.CARDS_JSON = cls._saved
         cls.mod.CARD_DIR = cls._saved_card_dir
+        cls.mod.LOCK = cls._saved_lock
         cls.tmp.cleanup()
 
     def setUp(self):

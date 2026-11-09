@@ -15,6 +15,7 @@ No network, no git, no systemd — every seam is stubbed.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -252,6 +253,140 @@ class StartTaskContractTest(unittest.TestCase):
 
 # ------------------------------------------------------------ finish
 
+class StagedProfileDispatchTest(unittest.TestCase):
+    def setUp(self):
+        self.mod = _load("runner-agent.py")
+        self.ocp = self.mod.oc_profiles_module()
+        self.prof = self.ocp.load_profile("ops-readonly")
+        self.env = self.ocp.lane_gate.load_envelope(REPO / "evals/opencode-lane/jobs/p1-ops-readonly-idc02.yaml")
+        self.env.update(id="requested-report", card="ex-card", stage="S3")
+        self.card = _card(executor="opencode", agent_profile="ops-readonly", model=self.env["model"],
+                          task_class="report", target_host="idc02", artifact=self.env["artifact"]["path"],
+                          lane_envelope=self.env)
+        self.mod.HOST = "idc02"
+
+    def prepare(self):
+        return self.mod.prepare_profile_dispatch(self.card, "actual-task", self.prof, self.env["model"], self.ocp)
+
+    def test_unstaged_dispatch_is_held_before_any_launch(self):
+        del self.card["action"]["lane_envelope"]
+        self.assertEqual(self.mod.start_opencode_lane(self.card, "free_lane", "runner-new")[:2], ("", ""))
+
+    def test_freezes_full_envelope_with_actual_job_identity(self):
+        frozen = self.prepare()
+        self.assertEqual(frozen["id"], "actual-task")
+        self.assertEqual(frozen["card"], "ex-card")
+        self.assertEqual(frozen["stage"], "S3")
+        self.assertNotIn("_path", frozen)
+        self.assertEqual(self.env["id"], "requested-report")
+        self.assertEqual(frozen["task"], self.card["spec"])
+
+    def test_rejects_stage_host_card_model_or_artifact_drift(self):
+        for key, value in (("stage", "S4"), ("target_host", "other"), ("card", "other"),
+                           ("model", "litellm/other"), ("task_class", "branch_code")):
+            with self.subTest(key=key):
+                old = self.env[key]
+                self.env[key] = value
+                with self.assertRaises(ValueError):
+                    self.prepare()
+                self.env[key] = old
+        self.env["artifact"]["path"] = "../escape.json"
+        with self.assertRaises(ValueError):
+            self.prepare()
+
+    def closeout_fixture(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.taskdir = Path(self.tmp.name) / "task"
+        self.taskdir.mkdir()
+        self.wt = Path(self.tmp.name) / "worktree"
+        self.rd = self.wt / "evals/opencode-lane/runs/actual-task-run"
+        self.rd.mkdir(parents=True)
+        self.frozen = self.prepare()
+        artifact = b'{"value":1}\n'
+        (self.rd / "artifact.out").write_bytes(artifact)
+        dest = self.wt / self.frozen["artifact"]["path"]
+        dest.parent.mkdir(parents=True)
+        dest.write_bytes(artifact)
+        (self.rd / "events.jsonl").write_text(json.dumps({"part": {"tool": "bash", "state": {
+            "status": "completed", "input": {"command": "python3 scripts/devnest/host_snapshot.py"},
+            "metadata": {"exit": 0}, "output": artifact.decode()}}}) + "\n")
+        (self.rd / "prompt.md").write_text(self.ocp.build_prompt(self.frozen, self.prof))
+        config = self.ocp.render_config(self.frozen, self.prof)
+        config.pop("_allowfile", None)
+        (self.rd / "opencode.json").write_text(json.dumps(config))
+        (self.rd / "manifest.json").write_text(json.dumps({"envelope": self.frozen,
+            "profile": {k: v for k, v in self.prof.items() if k != "_path"}}))
+        self.metric = self.ocp.lane_gate.new_metric(self.frozen, "opencode")
+        self.metric.update(verifier_pass=True, artifact_landed=True)
+        self.records = [self.metric]
+        self.run = {"job": "actual-task", "verification_status": "complete", "exit_code": 0,
+                    "admit": {"admit": True, "stage": "S3"}, "metric": self.metric, "scope_violations": []}
+        (self.rd / "run.json").write_text(json.dumps(self.run))
+        (self.taskdir / "profile-result.json").write_text(json.dumps({"run_dir": str(self.rd)}))
+        (self.taskdir / "exit_code").write_text("0")
+        self.meta = {"card": "ex-card", "worktree": str(self.wt), "lane_envelope": self.frozen,
+                     "verifier_sha256": hashlib.sha256((REPO / self.frozen["verifier"]["ref"]).read_bytes()).hexdigest()}
+        self.fake = types.SimpleNamespace(
+            REPO=REPO, load_profile=self.ocp.load_profile, check_envelope=self.ocp.check_envelope,
+            render_config=self.ocp.render_config, build_prompt=self.ocp.build_prompt,
+            artifact_matches_snapshot=self.ocp.artifact_matches_snapshot,
+            lane_gate=types.SimpleNamespace(lint_envelope=self.ocp.lane_gate.lint_envelope,
+                load_stage=lambda: {}, qualification_ledger=lambda st: self.records),
+            audit_events=lambda *a: {}, _verify=lambda *a: {"verdict": "pass"})
+
+    def finish(self):
+        return self.mod.finish_profile_dispatch("ex-card", self.taskdir, self.meta, self.card, self.fake)
+
+    def test_staged_closeout_copies_verified_report_and_receipt(self):
+        self.closeout_fixture()
+        ok, notes = self.finish()
+        self.assertTrue(ok, notes)
+        self.assertEqual((self.taskdir / "artifact.out").read_bytes(), (self.rd / "artifact.out").read_bytes())
+        self.assertEqual(json.loads((self.taskdir / "profile-verified.json").read_text())["stage"], "S3")
+        self.assertEqual(json.loads((self.taskdir / "usage.json").read_text())["executor"], "opencode:profile-run")
+
+    def test_staged_closeout_rejects_missing_or_duplicate_stage_evidence(self):
+        self.closeout_fixture()
+        self.records.clear()
+        self.assertFalse(self.finish()[0])
+        self.records.extend([self.metric, self.metric])
+        self.assertFalse(self.finish()[0])
+
+    def test_staged_closeout_rejects_changed_artifact_prompt_or_verifier(self):
+        self.closeout_fixture()
+        path = self.wt / self.frozen["artifact"]["path"]
+        data = path.read_bytes()
+        path.write_text('{"value":2}')
+        self.assertFalse(self.finish()[0])
+        path.write_bytes(data)
+        prompt = (self.rd / "prompt.md").read_text()
+        (self.rd / "prompt.md").write_text("different task")
+        self.assertFalse(self.finish()[0])
+        (self.rd / "prompt.md").write_text(prompt)
+        self.meta["verifier_sha256"] = "wrong"
+        self.assertFalse(self.finish()[0])
+
+    def test_staged_closeout_never_passes_on_exit_zero_alone(self):
+        self.closeout_fixture()
+        self.run["admit"]["admit"] = False
+        (self.rd / "run.json").write_text(json.dumps(self.run))
+        self.assertFalse(self.finish()[0])
+
+    def test_rejects_incomplete_or_independent_or_supervised_contract(self):
+        del self.env["rollback"]
+        with self.assertRaises(ValueError):
+            self.prepare()
+        self.env["rollback"] = {"kind": "none"}
+        self.env["verifier"]["type"] = "independent_devin"
+        with self.assertRaises(ValueError):
+            self.prepare()
+        self.env["verifier"]["type"] = "held_out_py"
+        self.env["unattended"] = False
+        with self.assertRaises(ValueError):
+            self.prepare()
+
+
 class FinishOpenCodeLaneTest(unittest.TestCase):
     """finish_opencode_lane: declared artifact must land + verifier pass
     before the merge gate runs; contract failures hold the merge."""
@@ -452,6 +587,15 @@ class BoardApiContractTest(unittest.TestCase):
         self.assertEqual(a["agent_profile"], "ops-readonly")
         self.assertEqual(a["target_host"], "idc02")
         self.assertEqual(a["model"], "litellm/gemini-3.5-flash-lite")
+
+    def test_create_preserves_typed_lane_envelope(self):
+        self.mod.do_create({"id": "staged", "title": "health report",
+                            "action": {"type": "dispatch", "executor": "opencode",
+                                       "lane_envelope": {"stage": "S3", "profile": "ops-readonly"}}}, "devin")
+        saved = self.mod.load(Path(self.td.name) / "staged.yml")
+        self.assertEqual(saved["action"]["lane_envelope"]["stage"], "S3")
+        self.rejects({"id": "bad-envelope", "title": "t", "action": {"type": "dispatch", "lane_envelope": "S3"}},
+                     "action.lane_envelope must be an object")
 
     def test_create_validates_executor(self):
         self.rejects({"id": "c-bad", "title": "t",
