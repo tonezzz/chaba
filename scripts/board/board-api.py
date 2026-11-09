@@ -3796,7 +3796,7 @@ def queue_view() -> dict:
 
 class H(BaseHTTPRequestHandler):
     def _send(self, code: int, obj):
-        body = json.dumps(obj, ensure_ascii=False).encode()
+        body = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
