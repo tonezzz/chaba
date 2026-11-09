@@ -17,7 +17,11 @@ Her allowed actions (all already inside kanban-tool authority):
            fact she verified this run); refused on priority:high /
            decide / prod-security by BOTH prompt and code.
   comment  post an evidence/status comms line.
-  request  defer to Tony — raise a board request (her safe failure mode).
+  request  defer — raise a board request (her safe failure mode). With
+           --consultant (tiered judgment, card ada-consultant-tier) the
+           deferral routes `to: consultant` — the stronger consultant
+           entity reviews it first; Tony only sees what the consultant
+           can't resolve. Without the flag it stays `to: tony` (default).
   skip     nothing to do this pass.
 
 Default brain: CF Workers AI llama-3.3-70b (free, always-on) —
@@ -104,7 +108,13 @@ def eligible(card):
     reqs = [r for r in (card.get("requests") or [])
             if str(r.get("status", "")).lower() not in
             ("answered", "resolved", "closed")]
-    return not reqs
+    if reqs:
+        return False
+    # a card that was ever deferred to the consultant lane stays out of
+    # her queue — the consultant (or Tony above it) owns that judgment
+    # call; re-asking would churn the same boundary.
+    return not any(r.get("to") == "consultant"
+                   for r in (card.get("requests") or []))
 
 
 PROBE_ALLOW = re.compile(
@@ -237,7 +247,12 @@ def eligible_cleanup(card, min_age=21):
     reqs = [r for r in (card.get("requests") or [])
             if str(r.get("status", "")).lower() not in
             ("answered", "resolved", "closed")]
-    return not reqs
+    if reqs:
+        return False
+    # same consultant-ownership guard as eligible() — once deferred to
+    # the consultant lane the card's judgment calls belong there.
+    return not any(r.get("to") == "consultant"
+                   for r in (card.get("requests") or []))
 
 
 def run_once(args):
@@ -310,7 +325,14 @@ def run_once(args):
             sug = payload.get("suggested")
             if sug:
                 body["suggested"] = sug
+            if args.consultant:
+                # tiered judgment: defer-verdict-with-uncertainty queues to
+                # the consultant lane (quiet — notify only fires to: tony);
+                # consultant_worker drains it, Tony sees only escalations.
+                body["to"] = "consultant"
             post("/request", body)
+            if args.consultant:
+                print("  deferred -> consultant lane")
 
 
 def main():
@@ -322,6 +344,11 @@ def main():
     ap.add_argument("--with-brief", action="store_true",
                     help="assemble a job brief (SSOT+KB+similar-card "
                     "outcomes) before her turn and show it")
+    ap.add_argument("--consultant", action="store_true",
+                    default=bool(os.environ.get("ADA_JOBS_CONSULTANT")),
+                    help="route defer-verdicts (request actions) to the "
+                    "consultant lane (to: consultant) instead of straight "
+                    "to Tony — tiered judgment, card ada-consultant-tier")
     ap.add_argument("--min-age", type=int, default=21)
     ap.add_argument("--max", type=int, default=3)
     ap.add_argument("--model", default=os.environ.get(

@@ -185,7 +185,7 @@ RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
 PORT = int(os.environ.get("BOARD_API_PORT", "8787"))
-ACTORS = {"devin", "ada", "chaba", "tony"}
+ACTORS = {"devin", "ada", "chaba", "tony", "consultant"}
 TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
                "finish", "archive", "unarchive"}
 # done+verified cards older than this move to cards/archive/ via
@@ -4234,6 +4234,15 @@ def _selftest() -> None:
     do_request(card, {"ask": "ada check this", "from": "devin", "to": "ada"})
     r2 = card["requests"][-1]
     assert r2["to"] == "ada" and not request_needs_notify(r2)
+    # consultant lane (ada-consultant-tier): valid target, quiet by design —
+    # only to:tony pushes the notify
+    do_request(card, {"ask": "boundary call", "from": "ada",
+                      "to": "consultant"})
+    r3 = card["requests"][-1]
+    assert r3["to"] == "consultant" and not request_needs_notify(r3)
+    do_respond(card, {"request_id": r3["id"], "from": "consultant",
+                      "answer": "verdict: keep it open"}, "consultant")
+    assert card["requests"][-1]["status"] == "answered"
     # batched summary format
     assert "•" in _req_line("c1", {"ask": "q" * 100,
                                    "options": [{"id": "a", "label": "A"}]})

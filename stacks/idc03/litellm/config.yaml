@@ -210,6 +210,15 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen2.5:32b
       api_base: http://127.0.0.1:11445
+  # consultant tier (card ada-consultant-tier / ADA-1206): the stronger
+  # model that reviews Ada's judgment-call deferrals before Tony sees
+  # them — consultant_worker.py drains to:consultant board requests.
+  # Same kk-mac tunnel as chat-local; swapped for whichever bench-
+  # qualified brain wins (acc>=0.85 + def>=0.90, 3x consecutive).
+  - model_name: consultant
+    litellm_params:
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11445
   - model_name: bench
     litellm_params:
       model: gemini/gemini-3.5-flash-lite

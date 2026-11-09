@@ -6,6 +6,10 @@ jobs:
     schedule: every 15m
     dispatch: systemd
     persistent: true
+  - id: ada-jobs-consultant
+    schedule: *-*-* *:7,37:00
+    dispatch: systemd
+    persistent: true
   - id: ada-jobs-verify
     schedule: *-*-* *:0/30:00
     dispatch: systemd

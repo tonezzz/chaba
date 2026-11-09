@@ -115,6 +115,38 @@ tiers:
       is routine.
 
 # ---------------------------------------------------------------------------
+# Consultant tier (2026-11-09, card ada-consultant-tier / ADA-1206) — tiered
+# judgment between Ada's bounded lanes and Tony. Not a permission tier: a
+# ROUTING layer. Ada's lanes keep the bounded classes they pass
+# (verify/cleanup/file via composite gates); judgment-call boundary cards
+# escalate to a stronger consultant entity (bigger model, same enforce
+# matrix + job brief) instead of straight to Tony. Tony only sees what the
+# consultant can't resolve.
+# ---------------------------------------------------------------------------
+consultant_tier:
+  mechanism: >-
+    verify_worker --consultant (env ADA_JOBS_CONSULTANT) rewrites
+    defer-verdicts to `to: consultant` board requests — quiet by design
+    (notify only fires for to:tony). consultant_worker.py (timer
+    ada-jobs-consultant) drains them: verdict+confidence answers the
+    request in place; escalate re-raises to:tony with the consultant's
+    framing + suggested pick; close needs review-column + evidence and is
+    refused on the same gated classes (priority:high / decide /
+    prod|security) — the matrix does not widen for the consultant.
+  brain: >-
+    LiteLLM model_name 'consultant' -> kk-mac qwen2.5:32b (direct-ollama
+    fallback). Qualification rule: a composite entity (enforce+brief) that
+    holds action_accuracy>=0.85 + appropriate_deference>=0.90 for 3
+    consecutive card-judgment bench runs becomes the consultant brain —
+    consultant-* run artifacts in scripts/bench/card-judgment/.
+  status: shadow     # lane machinery live; verify-side flag + brain
+                     # qualification pending bench results
+  metric: >-
+    Tony-deferral rate — fraction of lane deferrals that reach to:tony
+    after consultant review. Lower is the win; every escalation should
+    carry a suggested pick so Tony answers in one word.
+
+# ---------------------------------------------------------------------------
 # Educate-vs-educated standard — generalizes the education_correction
 # scenario (ada-voice tests/scenarios-live/education_correction.yaml, smoke
 # tier, tools+gate suites).

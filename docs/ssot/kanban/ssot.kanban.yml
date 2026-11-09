@@ -257,10 +257,13 @@ card_schema:
         only answers like superseded/duplicate). Unmapped answers stay
         unexecuted and keep awaiting_action set — they ARE the triage."
       at: "YYYY-MM-DD HH:MM — stamped by POST /request (kanban-push-notify)"
-      from: "devin | ada | chaba | tony — who raised it"
+      from: "devin | ada | chaba | tony | consultant — who raised it"
       to: "target actor; absent = tony. Tony-targeted agent-raised requests
         push a notification on create and one escalation after 12h open
-        (escalated_at stamp, once per request — see request-sweep.py)."
+        (escalated_at stamp, once per request — see request-sweep.py).
+        to=consultant (2026-11-09, card ada-consultant-tier) queues the
+        deferral to the consultant lane — quiet by design (notify only
+        fires for tony); consultant_worker.py drains it."
   # optional — the filing/working agent's standing recommendation,
   # rendered 💡 on the card tile + an Advice block in the modal.
   # Refreshed whenever the agent's take changes; NOT a decision.
@@ -280,7 +283,7 @@ card_schema:
     >= sessions_min real sessions."
   # optional — append-only log; every actor writes here (board shows last 4)
   comms:
-    - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony", text: "..."}
+    - {at: "YYYY-MM-DD HH:MM", from: "devin | ada | chaba | tony | consultant", text: "..."}
 
 write_path:
   api: "board-api.service on tony-dell 127.0.0.1:8787 (scripts/board/board-api.py);
@@ -295,7 +298,7 @@ write_path:
       "queue: action.status->queued (idle/failed/done cards; column resets to
       backlog from done/review). close: column->done. hold: ->backlog."
     "POST /respond {id|card, request_id?, answer?, option?, text?, from?, reopen?}":
-      "with request_id: answers a requests[] entry; from ∈ devin|ada|chaba|tony
+      "with request_id: answers a requests[] entry; from ∈ devin|ada|chaba|tony|consultant
       (default tony — the board UI sends none). 400 'answer required' on empty
       answer; 400 'already answered' on re-answer unless reopen:true (logs
       're-answered'). Without request_id: answers the card-level ask —
@@ -315,7 +318,7 @@ write_path:
       -> stamped 'none'), dict-option `action:` fields execute verbatim,
       and anything unmapped stays awaiting_action for a human —
       knb-answer-action-triage."
-    "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
+    "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony|consultant;
       400 'text required' on empty/whitespace text"
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
       "raises a requests[] entry {id, ask, status: open, at, from, to?,

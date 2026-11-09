@@ -113,7 +113,8 @@ def _chat(base_url, model, system, user, api_key="", timeout=180,
 
 
 def llm_entity_factory(base_url, model, api_key="", retries=2,
-                       system=SYSTEM, temperature=0, briefs=None):
+                       system=SYSTEM, temperature=0, briefs=None,
+                       max_tokens=640):
     def ent(case):
         payload = {
             "card_id": case["card_id"],
@@ -129,7 +130,7 @@ def llm_entity_factory(base_url, model, api_key="", retries=2,
         for _ in range(retries + 1):
             try:
                 last = _chat(base_url, model, system, user, api_key,
-                             temperature=temperature)
+                             temperature=temperature, max_tokens=max_tokens)
                 pred = _parse_action(last)
                 if pred in CATEGORIES:
                     return pred
@@ -166,7 +167,8 @@ def entity_from_args(a):
     if getattr(a, "briefs", ""):
         briefs = json.loads(Path(a.briefs).read_text())
     ent = llm_entity_factory(base, a.model, key, system=system,
-                             temperature=a.temperature, briefs=briefs)
+                             temperature=a.temperature, briefs=briefs,
+                             max_tokens=a.max_tokens)
     if a.enforce:
         ent = enforce_wrapper(ent)
     return ent
@@ -260,6 +262,10 @@ def main():
                     help="code-enforce hard gates post-LLM (composite entity, mirrors verify_worker)")
     ap.add_argument("--temperature", type=float, default=0.0,
                     help=">0 for consecutive-run variance (T3 gate needs 3 independent passes)")
+    ap.add_argument("--max-tokens", type=int, default=640,
+                    help="raise for thinking models (qwen3/gpt-oss) — a "
+                    "tight cap truncates reasoning before the JSON lands "
+                    "and reads as parse-fail")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--briefs", default="",
                     help="per-case job briefs json from brief_builder.py "

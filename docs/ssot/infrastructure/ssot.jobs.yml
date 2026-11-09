@@ -72,6 +72,24 @@ jobs:
     brief — related SSOT + KB lessons + top-3 similar done-cards with
     proven-right outcomes via scripts/ada-jobs/brief_builder.py — before
     her turn; opt-in flag pending bench delta + flip decision.
+    --consultant (2026-11-09, card ada-consultant-tier) — defer-verdicts
+    route `to=consultant` instead of `to=tony`; off by default, flip via
+    ADA_JOBS_CONSULTANT=1 once the consultant brain is qualified.
+- id: ada-jobs-consultant
+  name: Ada Jobs — consultant lane (tiered judgment, ADA-1206)
+  host: idc03
+  dispatch: systemd
+  on_calendar: '*-*-* *:7,37:00'
+  persistent: true
+  timeout: 15m
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada-jobs/consultant_worker.py --once --max 5
+  env_file: "%h/.config/secrets/litellm-keys.env"
+  note: drains `to=consultant` board requests deferred by verify_worker
+    --consultant. Brain = LiteLLM model_name 'consultant' (-> kk-mac
+    qwen2.5:32b per consultant-* bench runs) with direct kk-mac ollama
+    fallback; same composite the bench scores (code-enforced matrix +
+    job brief). INERT until both ends land — with the verify lane's flag
+    off no consultant requests exist, and this worker exits cleanly.
 - id: overnight-assessment
   name: Overnight Assessment
   host: idc03   # moved 2026-10-16/17 OPS-0725
