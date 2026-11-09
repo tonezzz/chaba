@@ -118,6 +118,13 @@ comms:
     gate recommended promote; applied S1->S2 at 2026-11-09T04:33:07Z. Runner timer active. Evidence s1-final-review.json
     under ~/.local/state/opencode-lane/ops1255-20261109T041258Z. Next: five S2 read-only artifacts with independent
     verification.'
+- at: 2026-11-09 11:34
+  from: devin
+  text: 'S2 blocker found before quota use: opencode_profiles._verify returns skipped for independent_devin (separate-session
+    review), but scripts have no reviewer finalization/attestation ingestion path. Existing cmd_run would record
+    such artifacts unverified. Do not fabricate pass or mutate ledger rows. Need pending-review evidence + independently
+    recorded finalization before five-job pilot. S1 is genuinely passed; lane at S2; no S2 jobs consumed. Runner
+    timer active. Separate Devin review requires exp'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
