@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -87,10 +88,22 @@ def fire(card_id, title, body, dry_run, open_ids):
         print(f"COMMENT {card_id}: {body[:80]}")
         return
     if not dry_run:
-        api("card", {"id": card_id, "title": title, "column": "backlog",
-                     "priority": "high", "from": ACTOR,
-                     "tags": ["timer-alert", "auto", "by:timer-sentinel"],
-                     "note": body})
+        try:
+            api("card", {"id": card_id, "title": title, "column": "backlog",
+                         "priority": "high", "from": ACTOR,
+                         "tags": ["timer-alert", "auto",
+                                  "by:timer-sentinel"],
+                         "note": body})
+        except urllib.error.HTTPError as e:
+            if e.code != 400:
+                raise
+            # id exists but closed — reopen + comment instead of crashing
+            api("action", {"id": card_id, "do": "move",
+                           "column": "backlog"})
+            api("comment", {"id": card_id, "from": ACTOR,
+                            "text": f"[reopened — condition recurred] {body}"})
+            print(f"REOPEN {card_id}: {body[:80]}")
+            return
     print(f"CARD {card_id}: {body[:80]}")
 
 
