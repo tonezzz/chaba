@@ -1,0 +1,26 @@
+id: rotate-key-updates-ada-code-env
+title: 'rotate-or-key.sh: update ada-code.env dependent on idc02 — pinned LITELLM_KEY broke ada-code after rotation
+  (ADA-1289)'
+column: backlog
+updated: 2026-11-09 18:09
+priority: high
+tags:
+- ops
+- litellm
+- bug
+- manual
+spec: 'Root cause of ADA-1289: weekly rotate-or-key.sh rotated LiteLLM keys but ~/.config/secrets/ada-code.env on
+  idc02 pins LITELLM_KEY — old key blocked, service broke (auth error in UI). Script already handles mddb-gemini.env
+  (mounted into the litellm container, local to idc03). DO: extend the rotation script to also rewrite LITELLM_KEY
+  in ada-code.env ON idc02 over ssh (BatchMode) and restart ada-code.service — same pattern, remote variant. Verify:
+  next rotation leaves ada-code serving.'
+action:
+  type: manual
+ref: OPS-1291
+comms:
+- at: 2026-11-09 18:09
+  from: tony
+  text: carding before implementing per open-ask rule; mirroring mddb-gemini.env handling
+- at: 2026-11-09 18:09
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
