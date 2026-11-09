@@ -1,0 +1,17 @@
+id: nest-queue-health-kk-coverage
+title: 'nest-queue-health: extend snapshot to kk-llm + video queues + KK worker heartbeat'
+column: doing
+updated: 2026-11-09 09:31
+tags:
+- devnest
+- kk-mac
+- observability
+note: Extend scripts/ops/nest-queue-health.py so the 2-min snapshot covers the migrated kk-llm queue (inbox depth,
+  pack done/failed/pending, claims), the kk-mac-video-pilot queue (pack counts, stale claims), and the KK-Mac worker
+  heartbeat from MDDB ada-nest-heartbeats (age, ollama_ok, load_1m, disk). Output stays ~/var/chaba/health/nest-queue-status.json.
+  Asked by Tony 2026-11-09 after KK queue migration + worker remote repoint.
+ref: OPS-1258
+comms:
+- at: 2026-11-09 09:31
+  from: tony
+  text: card captured via board-api
