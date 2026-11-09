@@ -1,7 +1,7 @@
 id: diagnose-unattended-devin-session-storm-20261108
 title: Diagnose repeated unattended Devin sessions before re-enabling runners
 column: backlog
-updated: 2026-11-08 21:09
+updated: 2026-11-09 09:00
 brief: Investigate the repeated unattended Devin sessions and keep their runner source paused until the trigger
   is understood.
 priority: high
@@ -62,6 +62,12 @@ comms:
   from: devin
   text: 'raised request pause-nondevin-automation-tonight-20261108: Do you want all agent/test automation paused
     tonight as well? ada-scenario-smoke.service is currently running on idc03 w'
+- at: 2026-11-09 09:00
+  from: tony
+  text: 'answered pause-nondevin-automation-tonight-20261108: Leave both running; I only meant Devin dispatch sessions.'
+- at: 2026-11-09 09:00
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: resume-paused-runners-knb1196
   ask: 'KNB-1196 is fixed and deployed. Should any unattended runners be resumed now? Current containment: idc03
@@ -83,7 +89,7 @@ requests:
     on idc03 with a free-lane key (provider gate passed, but ada_opencode_control failed twice); con01 cline-intake
     is enabled and last skipped due to missing cline.deliverable. Pausing would abort the current Ada smoke and
     disable its timer plus Cline intake; housekeeping timers would continue.
-  status: open
+  status: answered
   at: 2026-11-08 21:09
   from: devin
   options:
@@ -91,5 +97,7 @@ requests:
   - Pause only Ada smoke; leave Cline intake enabled.
   - Leave both running; I only meant Devin dispatch sessions.
   suggested: Pause the Ada smoke now and disable its timer; also pause con01 Cline intake for tonight (recommended).
+  answer: Leave both running; I only meant Devin dispatch sessions.
 action:
   status: idle
+awaiting_action: true
