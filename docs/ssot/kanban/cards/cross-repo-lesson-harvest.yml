@@ -1,7 +1,7 @@
 id: cross-repo-lesson-harvest
 title: Cross-repo lesson harvest — outcome docs outside chaba are invisible to the primer
 column: doing
-updated: 2026-11-09 18:20
+updated: 2026-11-09 18:32
 brief: lesson_primer._outcome_candidates only globs dispatch-outcome-*.md at the local chaba checkout root. Dispatches
   on ada-voice/sunsynk-card/mddb-fork write their outcome docs inside those repos, so their lessons never enter
   the primer corpus. Move the lesson corpus to the devin-handoff bank so it is repo-agnostic (and sets up semantic
@@ -119,3 +119,8 @@ comms:
   from: devin
   text: 'in progress: explored lesson_primer + dispatch_repos close_out; implementing bank write at close_out +
     bank source in primer + tests'
+- at: 2026-11-09 18:32
+  from: devin
+  text: 'done: close_out banks outcome-doc lessons to ada-ha-bank-devin-handoff (lesson/<task_id>/<n>, dedupe-by-key,
+    never gates merge); primer reads them back via /v1/search at rank 0 (60s cache, fail-open). tests/board green
+    506; live add→search→fetch→delete loop verified on mn01. trail: docs/ssot/jobs/kanban/2026-11-09-cross-repo-lesson-harvest.yml'
