@@ -1,7 +1,7 @@
 id: rotate-ada-code-litellm-key-20261109
 title: Rotate exposed Ada-code LiteLLM key without weakening budget controls
 column: doing
-updated: 2026-11-09 17:38
+updated: 2026-11-09 18:22
 priority: high
 program: ai-workforce
 tags:
@@ -32,3 +32,10 @@ comms:
     /budget/new has no license gate. Key generation with budget_id and omitted key budget_duration inherits the
     linked tier schedule; the native reset job explicitly resets linked-key spend atomically. Before any activation,
     verify the active scheduler/cascade, preserve latest '
+- at: 2026-11-09 18:22
+  from: devin
+  text: 'Tony approved dedicated Community budget record. Created and verified sec1286-ada-20261201: USD30/30d,
+    initial reset 2026-12-01T00:00:00Z. Replacement ada-sec1286 is created BLOCKED, carries 2.159097620000001 spend,
+    preserves model permissions, and inherits tier schedule. Pending credential is stored only as LITELLM_KEY_ADA_PENDING_SEC1286
+    in the existing idc03 secret env; no values in comms. Old ada remains blocked/401. Confirmed old references:
+    idc02 litellm-keys.env ADA and ada-code.env LITEL'
