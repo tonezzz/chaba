@@ -87,6 +87,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:51
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service:'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -128,6 +131,9 @@ requests:
   executed: 2026-11-09 queue
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   runner: idc02
+  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service:
+    Failed with result ''exit-code''. | devin-task-20261109-094945-update-devin-cli-on-tony-omen-.service: Consumed
+    3.959s CPU time.'
