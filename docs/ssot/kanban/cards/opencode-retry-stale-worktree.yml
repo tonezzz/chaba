@@ -385,6 +385,10 @@ comms:
   from: chaba
   text: started devin-task-opencode-retry-stale-worktree-1794207589 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
     model=litellm/or-gemini-3.1-pro-preview)
+- at: 2026-11-09 13:59
+  from: idc02
+  text: 'finished (failed): exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Main process exite'
 action:
   type: dispatch
   repo: chaba
@@ -400,12 +404,12 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: failed
   labels:
   - push:chaba
-  result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793971989.service:
-    Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793971989.service: Consumed 12.350s
-    CPU time.'
+  result: 'exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Failed with result ''exit-code''.'
   sweep:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-06 20:32
