@@ -1,6 +1,6 @@
 id: ops-1244f-timer-alert-retype
 title: 'OPS-1244f ops: timer-alert cards must not be dispatch-type (sub of devnest-queue-consolidation)'
-column: backlog
+column: done
 updated: 2026-11-09 10:57
 priority: medium
 tags:
@@ -22,6 +22,7 @@ spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). Small change.
   DONE-CONDITION: new timer-alert cards do not spawn agent sessions; alerts still reach Tony (card + notify).'
 action:
   type: manual
+  status: done
 ref: OPS-1252
 comms:
 - at: 2026-11-09 09:21
@@ -35,3 +36,6 @@ comms:
   text: 'DONE 2026-11-09 ~11:00 +07: scripts/ada/timer-sentinel.py fire payload now sets action.type manual — alerts
     are ops notifications, not agent claims; stops the self-starving dispatch loop seen today (12 of 25 queued cards
     were timer-alerts for dead runners). Commit c26fcf62ae on writer; effective after exec checkout sync.'
+- at: 2026-11-09 10:57
+  from: devin
+  text: closed by devin
