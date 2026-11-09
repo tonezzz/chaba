@@ -1,7 +1,7 @@
 id: nest-queue-health-kk-coverage
 title: 'nest-queue-health: extend snapshot to kk-llm + video queues + KK worker heartbeat'
 column: doing
-updated: 2026-11-09 09:49
+updated: 2026-11-09 10:56
 tags:
 - devnest
 - kk-mac
@@ -55,6 +55,13 @@ comms:
   text: 'merge-sweep: devin-task-20261109-094338-nest-queue-health-extend-snaps failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261109-094338-nest-queue-health-extend-snaps by
     hand.'
+- at: 2026-11-09 10:56
+  from: devin
+  text: 'Follow-on (Tony: add to Ada to save Devin tokens): snapshot is now published to the web-served snapshots
+    dir — https://tony-dell.taila0626a.ts.net/snapshots/nest-queue-status.json (chaba 7c00e85dec). New Ada tool
+    nest_status (ada-voice 6f01c7e) reads it: per-lane verdicts, KK worker heartbeat, pack counts, snapshot-staleness
+    flag; smoke scenario nest_status.yaml added; tool-lint + 1739 tests green; deployed to idc03 prod, all 10 services
+    restarted active. Ada can now answer kk-mac/queue/video st'
 action:
   type: dispatch
   status: failed
