@@ -1431,7 +1431,11 @@ jobs:
     gdrive:ada-nest/kk-llm/inbox/; stages at most three admitted
     read-only packages when the KK-Mac heartbeat/load/Ollama/disk gates
     pass. It never invents work and never claims video/coding/destructive
-    packs. Falls back by leaving the inbox untouched when KK is unavailable.'
+    packs. Falls back by leaving the inbox untouched when KK is unavailable.
+    2026-11-09 (OPS-1002 atomic-3-3): staging is sealed — copy, rclone
+    check, then a manifest-hash `ready` marker; workers refuse unsealed
+    packs, unsealed unclaimed dirs are retried, and depth/new caps are
+    hard-clamped to 3/3.'
 - id: devnest-capacity-broker
   name: DevNest shared capacity broker
   host: tony_dell
@@ -1442,11 +1446,15 @@ jobs:
   env:
     DEVNEST_KK_MAC_ENABLED: 'true'
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/devnest_capacity_broker.py
-  note: 'OPS-1002 — routes explicit normalized task specs from
-    gdrive:ada-nest/devnest/inbox/ to KK-Mac or stages complete Colab packs.
-    KK admission/load gates remain authoritative. Colab packs are staged but
-    never launched by this broker; a fresh managed GPU and explicit queue
-    start remain required. No synthetic filler or duplicate runner.'
+  note: 'OPS-1002 — routes explicit normalized task specs (full envelope:
+    task_id/task_class/evidence/lane/model/expect/artifact/timeout/fallback)
+    from gdrive:ada-nest/devnest/inbox/ to KK-Mac or stages sealed Colab
+    packs (submit-contract validation + copy + rclone check + ready
+    marker). KK admission/load gates remain authoritative. Observes both
+    lanes per cycle and records a capacity ledger under devnest/capacity/.
+    Colab packs are staged but never launched by this broker; a fresh
+    managed GPU and explicit queue start remain required. No synthetic
+    filler or duplicate runner.'
 - id: nest-queue-health
   name: Nest queue health snapshot — ada-nest + kk-llm + video + KK worker
   host: tony_dell

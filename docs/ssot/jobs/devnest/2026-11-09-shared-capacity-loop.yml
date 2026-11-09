@@ -1,0 +1,109 @@
+title: Shared DevNest capacity loop — sealed staging, full envelope, dual-lane observation (OPS-1002 atomic-3-3)
+date: 2026-11-09
+card: devnest-capacity-aware-dispatch
+session: dispatch-wt-20261109-135506-implement-a-shared-devnest-cap (tony-omen)
+procedure: docs/kb/devnest-capacity-aware-dispatch-procedure.md
+
+context:
+  prior_state:
+    - "broker/feed/producer v1 deployed on tony-dell (5m/15m/5m timers)"
+    - "2026-10-31 incident: producer cat'd ~70 routed specs before new
+      work -> 4m systemd timeout mid-staging -> unsealed empty pack dir
+      (kk-mac-task-report-review-a8ff708e96d4) counted as queue depth"
+    - "Tony approved atomic-3-3 2026-11-02; fix branch
+      fix/kk-mac-capacity-stage-atomic-20261103 was prepared locally on
+      another checkout and never reached this worktree — re-implemented"
+  goal: "shared capacity loop observes KK-Mac + Colab every 5m, normalizes
+        the full spec envelope, refills KK to depth 3 (max 3/cycle,
+        concurrency 1), stages complete Colab packs before launch, and
+        records queue/admission/routing per cycle"
+
+deliverables:
+  - scripts/ada/nest_pack_ready.py:
+      what: "shared `ready` marker contract — manifest sha256 over sorted
+            'relpath\\tsize' lines (transients ready/done/failed/claim/**/out/**
+            excluded), make_marker/parse_marker/marker_valid/
+            remote_manifest/verify_and_mark"
+      why: "content-addressed seal: a partial copy or post-staging
+           mutation invalidates the marker, not just a crashed run"
+  - scripts/devnest/kk_mac_capacity_producer.py:
+      what: "filename-derived task_id skip (no `rclone cat` for
+            terminal/sealed/claimed packs — the timeout fix); unsealed
+            unclaimed pack dirs are retried (re-stage + re-seal); staging
+            = copy -> `rclone check --one-way` -> remote manifest ->
+            `ready` last; depth/new hard-clamped to 3/3 regardless of
+            args; live_depth counts only sealed-or-claimed packs"
+  - scripts/ada/nest-worker.py:
+      what: "--ready-policy auto|required|optional (default auto:
+            required on *kk-llm remotes, optional elsewhere); required =
+            absent/invalid marker never claimed; optional = absent is
+            legacy, present-but-corrupt never claimed; one lsf --format
+            sp per marked candidate; degrades safely when
+            nest_pack_ready is absent"
+  - scripts/ada/nest-pack-submit.py:
+      what: "manual staging now seals: copy -> check -> ready marker"
+  - scripts/colab/queue-runner.py:
+      what: "optional ready validation in load_packs (standalone Drive
+            file — manifest algorithm mirrored inline); corrupt seal
+            skipped, unmarked packs unchanged"
+  - scripts/devnest/devnest_capacity_broker.py:
+      what: "normalize_spec() enforces the full envelope
+            (task_id=filename stem, task_class, evidence|prompt, lane,
+            model default, expect, artifact roots, timeout (0,3600],
+            fallback default jevteam_hold); route_kk writes the
+            NORMALIZED spec; route_colab validates pack_source against
+            the nest-pack-submit contract and seals with ready marker;
+            colab_state() observes queue heartbeat age, fresh
+            runtime-sessions (duplicate-runner signal), pending packs,
+            JOBS.py drift vs repo canonical; record_cycle() appends a
+            per-cycle record to devnest/capacity/<utc>-<rand>.json;
+            --budget-s 240 self-limits rclone"
+  - scripts/devnest/devnest_report_feed.py:
+      what: "emits evidence/timeout_s/fallback so produced specs are
+            already normalized"
+  - tests: "tests/devnest/test_kk_mac_capacity_producer.py (9),
+           tests/devnest/test_devnest_capacity_broker.py (10),
+           tests/ada/test_nest_worker_ready.py (8) — plus
+           test_gdrive_roots.py updated to the <task_id>.json contract
+           and normalized rcat write"
+  - docs: "devnest-capacity-aware-dispatch-procedure.md (envelope,
+          sealed staging, observation/ledger, remaining gap);
+          jevnest-kk-mac-capacity-procedure.md (sealed staging step);
+          ssot.jobs.yml notes for both units"
+
+guarantees_kept:
+  - "no synthetic production filler — only explicit inbox specs route"
+  - "no duplicate Colab runners — broker never launches; duplicate
+    freshness is observed and recorded, not acted on"
+  - "no owner/quota gate bypass — KK admission remains authoritative;
+    DEVNEST_KK_MAC_ENABLED still hard-holds routing"
+  - "concurrency 1 unchanged; depth/new hard cap 3/3"
+  - "cache-independent held-out assessment ordering stays in JOBS.py;
+    broker records JOBS drift instead of repairing it"
+
+verify:
+  - "python3 -m unittest tests.devnest.test_kk_mac_capacity_producer
+     tests.devnest.test_devnest_capacity_broker
+     tests.ada.test_nest_worker_ready tests.ada.test_nest_worker_scan
+     tests.devnest.test_gdrive_roots"
+  - result: "285 focused tests green; full tests/devnest 249 green;
+            tests/colab 70 green"
+
+deployment_notes:
+  - "this dispatch changed repo code only — no deploy/push performed"
+  - "producer/broker/report-feed run from tony-dell exec checkout —
+    lands via chaba-repo-sync + next merge; unit args already 3/3/90s"
+  - "KK-Mac LaunchAgent net.adanest.kk-llm-worker must sync BOTH
+    nest-worker.py and nest_pack_ready.py together; the worker degrades
+    (required -> skips everything) if the helper is missing"
+  - "Drive queue-runner.py + JOBS.py update via the normal rclone
+    deploy step; optional-marker behaviour keeps unmarked packs working"
+  - "existing unsealed live pack dirs on kk-llm are healed by producer
+    retry; unmarked legacy packs on ada-nest keep claiming (optional)"
+
+open_gap:
+  - "upstream coverage: audits/service-deltas/held-out-eval feeds beyond
+    the durable-report feed are still unimplemented"
+  - "capacity ledger is raw per-cycle JSON; weekly JevTeam rollup
+    (queue wait/productive/verified/fallback/cost/GPU/owner-impact) is
+    collected by kk_mac_metrics.py per pack — no aggregator yet"

@@ -66,6 +66,49 @@ JOBS = jobs_mod.JOBS
 
 PACKS = f'{ROOT}/packs'
 
+# --- ready-marker validation (OPS-1002) -------------------------------
+# Mirror of scripts/ada/nest_pack_ready.py — this file deploys standalone
+# to Drive, so the manifest algorithm is duplicated verbatim: sha256 over
+# sorted "relpath\tsize" lines excluding transient entries. A pack WITH
+# a `ready` marker must match its sealed manifest — a corrupt seal means
+# interrupted/altered staging and the pack is skipped. Absent marker =
+# legacy pack, allowed (staging tools write markers since 2026-11-09).
+_READY_TRANSIENT_FILES = {'ready', 'done', 'failed'}
+_READY_TRANSIENT_PREFIXES = ('claim/', 'out/')
+
+def _pack_manifest_hash(pack_dir):
+    import hashlib
+    items = []
+    for base, _dirs, files in os.walk(pack_dir):
+        for f in files:
+            full = os.path.join(base, f)
+            rel = os.path.relpath(full, pack_dir).replace(os.sep, '/')
+            if rel in _READY_TRANSIENT_FILES or \
+                    rel.startswith(_READY_TRANSIENT_PREFIXES):
+                continue
+            try:
+                items.append((rel, os.path.getsize(full)))
+            except OSError:
+                pass
+    payload = '\n'.join(f'{r}\t{s}' for r, s in sorted(items))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+def ready_problem(pack_dir, name):
+    """Skip reason for a sealed pack whose manifest no longer matches;
+    '' when unmarked (legacy) or the seal validates."""
+    rf = f'{pack_dir}/ready'
+    if not os.path.isfile(rf):
+        return ''
+    try:
+        marker = json.loads(open(rf).read())
+        want = marker.get('manifest_sha256')
+    except Exception:
+        return 'ready marker unparseable'
+    have = _pack_manifest_hash(pack_dir)
+    if want != have:
+        return f'ready manifest mismatch ({str(want)[:12]}!={have[:12]})'
+    return ''
+
 def norm_requires(job):
     """requires: pack names this pack may not claim ahead of. Accepts a
     single string or a list; anything else is treated as none — the
@@ -123,6 +166,10 @@ def load_packs():
             continue
         spec.setdefault('name', d)
         spec['_pack'] = True
+        why = ready_problem(f'{PACKS}/{d}', d)
+        if why:
+            print(f'pack {d}: {why} — skipped')
+            continue
         out.append(spec)
     return order_packs(out)
 

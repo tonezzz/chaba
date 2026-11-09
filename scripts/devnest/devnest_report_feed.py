@@ -72,6 +72,12 @@ def make_task(path: Path, repo_root: Path) -> tuple[str, dict]:
             f"Source: {rel}\n\n{evidence}"
         ),
         "expect": {},
+        # normalized envelope (OPS-1002): grounded evidence, bounded
+        # timeout, declared fallback when KK is ineligible
+        "evidence": str(rel),
+        "timeout_s": 600,
+        "fallback": {"lane": "jevteam_hold",
+                     "reason": "kk_mac_local ineligible or invalid output"},
         "source": str(rel),
     }
     return task_id, task

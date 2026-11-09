@@ -99,6 +99,10 @@ below three:
 4. Refill at most three packages per cycle and keep worker concurrency at
    one until a two-request load test is approved.
 5. Stop producing when heartbeat/load/disk admission fails.
+6. Stage atomically: copy -> `rclone check` -> `ready` manifest-hash
+   marker written last; the worker refuses unsealed packs and the
+   producer retries unsealed unclaimed dirs (OPS-1002 atomic-3-3,
+   contract in docs/kb/devnest-capacity-aware-dispatch-procedure.md).
 
 This keeps KK-Mac active without competing with the owner or exhausting
 storage. A missing or stale heartbeat causes safe fallback, not queue

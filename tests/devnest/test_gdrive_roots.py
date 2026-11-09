@@ -48,7 +48,7 @@ class GdriveRootTests(unittest.TestCase):
         def fake_rc(*args, input_text=None):
             calls.append((args, input_text))
             if args[0] == "lsf":
-                return "canary.json\n"
+                return "canary-task-1.json\n"
             if args[0] == "cat":
                 return json.dumps(spec)
             return ""
@@ -63,12 +63,17 @@ class GdriveRootTests(unittest.TestCase):
         target = "gdrive:ada-nest/kk-llm/inbox/canary-task-1.json"
         self.assertEqual(result["source"], "gdrive:ada-nest/devnest")
         self.assertEqual(result["routed"][0]["destination"], target)
-        self.assertIn(
-            (("copyto", f"{source_inbox}/canary.json", target), None),
-            calls,
-        )
+        # routing writes the NORMALIZED envelope to <task_id>.json
+        routed_writes = [
+            (args, body) for args, body in calls
+            if args[:2] == ("rcat", target)
+        ]
+        self.assertEqual(len(routed_writes), 1)
+        written = json.loads(routed_writes[0][1])
+        self.assertEqual(written["task_id"], "canary-task-1")
+        self.assertEqual(written["timeout_s"], 600)
         self.assertTrue(any(
-            args[:2] == ("rcat", f"{source_inbox}/canary.json.routed")
+            args[:2] == ("rcat", f"{source_inbox}/canary-task-1.json.routed")
             for args, _ in calls
         ))
 

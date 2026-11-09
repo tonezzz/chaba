@@ -15,10 +15,18 @@ pack code must use those, never hardcode /content/drive.
 
 Usage: nest-worker.py [--once] [--remote gdrive:ada-nest]
                       [--workdir /tmp/nest-worker] [--stale-claim-min 60]
-                      [--scan-only]
+                      [--scan-only] [--ready-policy auto|required|optional]
 """
 import argparse, datetime, glob, json, os, shutil, signal, subprocess
 import sys, tempfile, time
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+try:
+    import nest_pack_ready as npr
+except ImportError:                    # older synced copies ship worker
+    npr = None                         # alone — degrade, never crash
 
 REMOTE = 'gdrive:ada-nest'
 # /tmp on managed hosts is a small tmpfs (dell: 7.5G) — venvs + synced
@@ -161,12 +169,60 @@ def requires_unmet(spec, remote_root, inv=None, meta=None):
     return ''
 
 
+READY_REQUIRED_REMOTES = ('/kk-llm', '-kk-llm')
+
+
+def resolve_ready_policy(remote_root, policy):
+    """auto -> 'required' on the dedicated kk-llm queue (producer-managed;
+    every pack there is sealed) and 'optional' elsewhere: a present
+    marker must validate, an absent marker keeps legacy behaviour so
+    older unmarked packs on shared queues are not stranded."""
+    if policy != 'auto':
+        return policy
+    tail = '/' + remote_root.rstrip('/').rsplit('/', 1)[-1] \
+        if '/' in remote_root else remote_root
+    if any(tail.endswith(sfx) or remote_root.endswith(sfx)
+           for sfx in READY_REQUIRED_REMOTES):
+        return 'required'
+    return 'optional'
+
+
+def ready_check(remote_root, name, entries, meta, policy):
+    """None when the pack may be claimed; a skip reason otherwise.
+
+    required : marker absent -> not claimable (half-staged dirs are
+               invisible to the worker); marker must validate.
+    optional : absent marker -> claimable (legacy packs); a present
+               marker must still validate — a corrupt seal means the
+               staging integrity guarantee is broken, never claim.
+    One extra lsf --format sp per marked candidate; unmarked packs keep
+    the O(1) discovery bound."""
+    if 'ready' not in entries:
+        if policy == 'required':
+            return 'no ready marker — unsealed pack'
+        return None
+    if npr is None:
+        if policy == 'required':
+            return 'nest_pack_ready unavailable — cannot validate marker'
+        return None
+    marker = npr.parse_marker(meta.get(f'{name}/ready', ''))
+    if marker is None:
+        return 'ready marker unparseable — staging corrupted'
+    remote_entries = npr.remote_manifest(
+        lambda *a, input_text=None: rc(*a).stdout,
+        f'{remote_root}/packs/{name}')
+    ok, why = npr.marker_valid(marker, remote_entries)
+    return None if ok else f'ready {why}'
+
+
 def fetch_pack_meta(remote_root, inventory, pending):
     """One batched fetch of every pending pack.yml plus every
     preflight.json on the store — the only metadata discovery needs.
     Returns {relpath: text}; falls back to per-pack cat for pending
     pack.yml if the batch copy fails."""
     want = [f'{d}/pack.yml' for d in pending]
+    want += [f'{d}/ready' for d in pending
+             if 'ready' in inventory[d]]
     want += [f'{d}/preflight.json' for d, entries in inventory.items()
              if 'preflight.json' in entries and d not in pending]
     texts = {}
@@ -207,17 +263,18 @@ def refresh_requires(spec, remote_root, inventory, meta):
             meta[key] = cat(f'{remote_root}/packs/{key}')
 
 
-def plan_pass(remote_root, stale_claim_min):
+def plan_pass(remote_root, stale_claim_min, ready_policy='auto'):
     """Queue discovery in ~2 rclone calls regardless of pack count: one
     recursive listing (names+mtimes) + one batched metadata fetch.
 
     Returns (candidates, releases, inventory, meta): candidates are
     [(pack, spec)] in scan order, gated only on static facts (markers,
-    claims, pack.yml, needs) — `requires` is re-evaluated at claim time
-    so mid-pass completions still unblock dependents. releases are
-    [(pack, claim, age_s)] stale claims to drop before claiming.
-    inventory/meta are the scan-time snapshot main() refreshes per
-    requirement at claim time."""
+    claims, pack.yml, needs, ready seal) — `requires` is re-evaluated
+    at claim time so mid-pass completions still unblock dependents.
+    releases are [(pack, claim, age_s)] stale claims to drop before
+    claiming. inventory/meta are the scan-time snapshot main() refreshes
+    per requirement at claim time."""
+    policy = resolve_ready_policy(remote_root, ready_policy)
     inventory = pack_inventory(remote_root)
     now = time.time()
     releases, pending = [], []
@@ -267,6 +324,10 @@ def plan_pass(remote_root, stale_claim_min):
         why = fits(spec.get('needs'))
         if why:
             say(f'{d}: needs unmet ({why}) — skip')
+            continue
+        why = ready_check(remote_root, d, inventory[d], meta, policy)
+        if why:
+            say(f'{d}: {why} — skip')
             continue
         candidates.append((d, spec))
     return candidates, releases, inventory, meta
@@ -416,6 +477,13 @@ def main():
     ap.add_argument('--scan-only', action='store_true',
                     help='report discovery plan without claiming — safe '
                          'measurement mode, never touches the queue')
+    ap.add_argument('--ready-policy', default='auto',
+                    choices=('auto', 'required', 'optional'),
+                    help="ready-marker enforcement: 'auto' requires a "
+                         "valid marker on the dedicated kk-llm queue and "
+                         "validates markers when present elsewhere; "
+                         "'required' skips every unsealed pack; "
+                         "'optional' only rejects corrupt markers")
     args = ap.parse_args()
     WORKDIR = args.workdir
     host = subprocess.run(['hostname'], capture_output=True,
@@ -426,7 +494,7 @@ def main():
 
     t0 = time.time()
     candidates, releases, inventory, meta = plan_pass(
-        args.remote, args.stale_claim_min)
+        args.remote, args.stale_claim_min, args.ready_policy)
     say(f'discovery: {len(candidates)} pending, {len(releases)} stale '
         f'claims, {time.time() - t0:.1f}s')
     if args.scan_only:

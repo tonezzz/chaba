@@ -38,17 +38,23 @@ DevNest cards/reports/audits
 Every task spec declares:
 
 ```text
-task_id
-task_class
+task_id            safe slug; must equal the inbox filename stem
+                   (<task_id>.json) — the routing/dedupe identity
+task_class         bounded class; kk_mac_local admits summary,
+                   operator_brief, structured_extract, safe_route
 repo/repo_root when relevant
-evidence or prompt
-lane/executor
-model
-expect/verifier
-artifact root
-timeout
-fallback
+evidence or prompt (at least one; kk_mac_local requires prompt <=6000c)
+lane/executor      kk_mac_local | colab
+model              executor model (default qwen3:8b for kk_mac_local)
+expect/verifier    {required_keys, enums, facts} (default {})
+artifact           repo-relative, under allowed artifact roots only
+timeout            int seconds, clamped to (0, 3600], default 600
+fallback           where the task goes when the lane cannot serve it
+                   (default: hold for JevTeam)
 ```
+
+The broker normalizes every inbox spec through this envelope before
+routing and rejects violations; it never repairs silently.
 
 ## Refill loop
 
@@ -68,6 +74,13 @@ The capacity producer runs every five minutes:
 No producer creates synthetic production tasks merely to increase utilization.
 Benchmark and soak packages are labelled separately and have their own quota.
 
+Each broker cycle also OBSERVES both lanes — KK admission + queue depth,
+Colab queue heartbeat age, fresh managed runtimes (duplicate-runner
+signal), pending pack depth, and whether deployed `queue/JOBS.py` matches
+the canonical repo copy — and appends one record to the capacity ledger
+at `gdrive:ada-nest/devnest/capacity/<utc>-<rand>.json`. Recording is
+best-effort and never blocks routing.
+
 ## KK-Mac JevNest
 
 Queue: `gdrive:ada-nest/kk-llm`
@@ -85,8 +98,8 @@ owner/busy gate clear
 Watermark and concurrency:
 
 ```text
-target queue depth: 3
-refill: at most 3 packages/cycle
+target queue depth: 3   (hard cap — producer clamps args to 3/3)
+refill: at most 3 packages/cycle (hard cap)
 normal concurrency: 1
 concurrency 2: only after a realistic two-request test
 ```
@@ -97,6 +110,35 @@ video, and long agent loops go to another lane.
 
 If any gate fails, do not wait for KK-Mac. Mark the attempt fallback and route
 to the next eligible lane.
+
+## Sealed staging (`ready` marker)
+
+A pack staged by `rclone copy` is visible file-by-file, so staging is
+atomic-by-marker (OPS-1002 atomic-3-3, 2026-11-09):
+
+```text
+copy pack dir -> rclone check --one-way -> write `ready` LAST
+ready = {v, manifest_sha256, files, staged_at, staged_by}
+manifest = sha256 over sorted "relpath\tsize" lines of the REMOTE
+           file set, excluding transient entries
+           (ready, done, failed, claim/**, out/**)
+```
+
+Workers only claim a pack whose `ready` marker parses and whose manifest
+matches the current remote file set:
+
+```text
+kk-llm (dedicated producer queue): marker REQUIRED — an unsealed dir is
+    never claimable; the producer retries it by re-staging and re-sealing
+ada-nest (shared queue): marker VALIDATED WHEN PRESENT — unmarked legacy
+    packs still claim; a corrupt marker means never claim
+```
+
+Queue depth counts only worker-visible packs (sealed or claimed);
+staging debris is not depth. Shared module:
+`scripts/ada/nest_pack_ready.py`; enforced by `scripts/ada/nest-worker.py`
+(`--ready-policy auto|required|optional`, default `auto`) and mirrored in
+the Colab queue-runner.
 
 ## Colab GPU Nest
 
@@ -149,12 +191,23 @@ owner-impact incidents
 The target is not maximum utilization. It is verified output per available
 minute, with zero unsafe work and no quota or owner-impact surprises.
 
+Per-pack metrics are collected by `scripts/devnest/kk_mac_metrics.py`
+(queue wait from stage->claim mtimes, wall time, eval tokens/duration,
+verifier verdicts, fallback markers); per-cycle admission and routing
+decisions live in the capacity ledger named above.
+
 ## Current gap and next implementation
 
 KK-Mac now has a capacity producer. Colab has the queue and assessment-first
 procedure, but DevNest does not yet have one shared capacity broker that
 converts ready cards/reports into normalized lane inbox specs. Implement that
 broker next, starting with read-only reports and finite Colab evaluations.
+
+_Status 2026-11-09: the shared broker now normalizes the full spec
+envelope, observes both lanes per cycle, records a capacity ledger, and
+seals Colab pack staging; producers seal with `ready` markers and the
+workers enforce them. Remaining gap: upstream coverage — audits, service
+deltas, and held-out eval feeds beyond the durable-report feed._
 
 ## Bounded package planner (proposed)
 
