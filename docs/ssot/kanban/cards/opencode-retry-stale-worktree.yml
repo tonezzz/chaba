@@ -400,6 +400,10 @@ comms:
 - at: 2026-11-09 18:44
   from: idc02
   text: claimed
+- at: 2026-11-09 18:44
+  from: idc02
+  text: 'finished (failed): start failed: OpenCode admission requires a complete action.lane_envelope; unstaged
+    dispatch is held'
 action:
   type: dispatch
   repo: chaba
@@ -415,12 +419,10 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: running
+  status: failed
   labels:
   - push:chaba
-  result: 'exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
-    Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1794207589.service:
-    Failed with result ''exit-code''.'
+  result: 'start failed: OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held'
   sweep:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-06 20:32
