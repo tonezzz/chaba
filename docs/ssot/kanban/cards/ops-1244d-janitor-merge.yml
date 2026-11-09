@@ -33,8 +33,10 @@ action:
   host: idc02
   executor: opencode
   lane: paid_frontier
-  status: running
+  status: failed
   runner: idc02
+  result: 'start failed: no task profile for lane paid_frontier — the opencode executor requires action.agent_profile
+    or a mapped lane (generic build agent is not an unattended executor)'
 ref: OPS-1250
 comms:
 - at: 2026-11-09 09:21
@@ -46,3 +48,7 @@ comms:
 - at: 2026-11-09 09:36
   from: idc02
   text: claimed
+- at: 2026-11-09 09:36
+  from: idc02
+  text: 'finished (failed): start failed: no task profile for lane paid_frontier — the opencode executor requires
+    action.agent_profile or a mapped l'
