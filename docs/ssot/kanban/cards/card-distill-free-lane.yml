@@ -1,7 +1,7 @@
 id: card-distill-free-lane
 title: Card distiller — free-lane LLM distills each card to slot-template brief (save tokens on every lane)
 column: doing
-updated: 2026-11-09 14:10
+updated: 2026-11-09 14:23
 priority: high
 tags:
 - ada
@@ -60,6 +60,13 @@ comms:
     sidecar cache keyed (card_id,updated), slot schema at schemas/card-distill-slots.schema.json, verify_worker
     --with-distill wired, corpus-v4.jsonl built (94/94 cases distilled, 0 fails). Now benching raw-vs-v4 A/B on
     flash-lite-free.'
+- at: 2026-11-09 14:23
+  from: devin
+  text: '[done] GATE PASSED — adopt distilled briefs. Built: distill.py (5-lane chain cf-70b→ollama→or-free→flash-lite-free→gemini-direct,
+    sidecar cache keyed card_id+updated), schemas/card-distill-slots.schema.json, build_corpus_v4.py + corpus-v4.jsonl
+    (94 cases, -45% snapshot), verify_worker --with-distill, tests (8 green). Bench A/B on flash-lite-free: action_accuracy
+    raw 0.50 → v4 0.52 all-case, +1.37pts paired n=73 — no >2pt drop. correction_precision fell 0.93→0.78 (v4 reaches
+    for correct more) — w'
 action:
   type: dispatch
   status: running
