@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: backlog
-updated: 2026-11-09 09:25
+updated: 2026-11-09 09:41
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -22,3 +22,10 @@ comms:
 - at: 2026-11-09 09:25
   from: tony
   text: card captured via board-api
+- at: 2026-11-09 09:41
+  from: devin
+  text: 'Read-only inspection: idc02 live stage remains S0; no KILLED marker. Recovered Oct-29 promotion review:
+    rollback was evidence-driven, not merely unexplained manual action: S1 15 ledger rows, 8 verified (53.3%), 11
+    tool denials, 4 escalations; 4 safety-critical rows (3 tool_denial, 1 mutating_command). All human_minutes=0.
+    Current lane_gate.review aggregates all historical rows for a stage, with no attempt/epoch boundary, so fresh
+    clean S1 runs alone cannot clear old rollback triggers. S1 counter'
