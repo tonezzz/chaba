@@ -1,0 +1,59 @@
+title: kanban-sync.service on idc03 exit-code — fetch ref-lock race + mddb-cms embed-queue outage
+subtitle: Timer-alert RCA for card timer-alert-idc03-kanban-sync
+icon: target
+
+processing:
+  status: completed
+  steps:
+    - id: 1
+      label: Journal audit of kanban-sync.service (11-08 11:00 → 11-09 09:30)
+      status: completed
+      notes: >-
+        29 failed runs total, two distinct causes. (a) Five runs died on
+        `git fetch` — "cannot lock ref 'refs/remotes/origin/chaba.h3' (and once
+        origin/master): is at X but expected Y" at 11-08 12:00/17:00/19:00 and
+        11-09 03:00/07:00. kanban-sync's detached worktree shares the
+        chaba-tony-dell gitdir with kanban-commit.timer (15min, randomized
+        120s delay); when both fetch while a dispatch lands chaba.h3 refs,
+        the loser aborts and the script exits 1. (b) 24+ runs overnight
+        (00:19–06:49) died on `mddb add dev-kanban/{en,th}: Remote end closed
+        connection` / timed out — kanban-cms.py is the script's last command,
+        so publish=FAIL exits the service non-zero.
+    - id: 2
+      label: mddb-cms (idc03:11027) overnight state
+      status: completed
+      notes: >-
+        Container up 28h — never restarted. Embed pipeline was dead: "all
+        same-space providers down (OR circuit-open + Gemini failed)";
+        embed queue pinned at 4000 with droppedTotal>2300 vector jobs
+        dropped. /add blocks up to 30s server-side waiting for a queue slot;
+        saturation produced the client-side connection closes. Queue drained
+        and embeds resumed ~07:15; /v1/health=healthy, /v1/stats OK at 09:26.
+        mddb-embed had restarted ~13:30 on 11-08 and spent 9h40m loading its
+        vector index (done 22:52), during which the same-space providers
+        circuit-opened.
+    - id: 3
+      label: Fix fetch race
+      status: completed
+      notes: >-
+        scripts/ada/kanban-sync.sh: fetch now retries 3x with 10s backoff
+        (OPS-0834 retry-safe standard — same pattern used for chaba.h3 push
+        races on tony-dell). bash -n clean. Publish path left fatal on
+        purpose — a publish=FAIL is a real mddb degradation signal the
+        sentinel should keep surfacing.
+
+followup:
+  verification:
+    - journalctl --user -u kanban-sync.service — last runs 07:19→09:21 all Finished, kanban-cms publish=ok
+    - curl http://100.102.134.91:11027/v1/health -> healthy; /v1/stats responds
+    - watch next few ticks for "fetch attempt" lines vs hard failures
+  deferred:
+    - mddb-embed "queue stats unavailable: timed out" probe warnings at 09:00/09:15 (embed bank still slow to answer stats; probe itself reports up, 3 hits)
+    - ~2300 CMS docs lost vectors during the outage — reindex if semantic search misses them (embed jobs were dropped, not queued)
+    - idc03/no-push-creds + devin-dispatch sha drift flagged by runner-fleet-health in the same ticks (separate cards exist)
+report:
+  status: completed
+  outcome: >-
+    Root causes identified; service self-recovered for the mddb-cms leg once
+    the embed queue drained (last run exit 0). Fetch ref-lock race fixed with
+    a 3x/10s retry in kanban-sync.sh — lands on idc03 when this branch merges.

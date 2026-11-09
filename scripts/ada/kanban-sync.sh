@@ -26,7 +26,17 @@ if [ ! -d "$WT" ]; then
     git -C "$SRC" worktree add --detach "$WT" origin/master || exit 1
 fi
 cd "$WT" || exit 1
-git fetch origin -q || { echo "fetch failed"; exit 1; }
+# fetch races other writers sharing this gitdir (kanban-commit's safe-pull,
+# dispatch merges — all update refs/remotes/origin/* concurrently); the loser
+# sees "cannot lock ref ... but expected ..." and exits nonzero (killed the
+# 12:00/17:00/19:00 ticks 2026-11-08 and 03:00/07:00 2026-11-09). Transient —
+# retry per the OPS-0834 retry-safe standard.
+fetch_ok=
+for _ in 1 2 3; do
+    git fetch origin -q && { fetch_ok=1; break; }
+    sleep 10
+done
+[ -n "$fetch_ok" ] || { echo "fetch failed"; exit 1; }
 if ! git merge --ff-only origin/master; then
     # a raced push leaves the detached HEAD one auto-commit ahead while
     # origin/master moved too — diverged, and ff-only then fails on EVERY
