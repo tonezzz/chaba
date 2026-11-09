@@ -1,19 +1,25 @@
 id: tony-ha-configuration-yaml-profiler-inte-b54166
 title: 'tony-ha configuration.yaml: profiler integration uses YAML (2026.8 rejects it)'
 column: backlog
-updated: 2026-10-12 18:39
+updated: 2026-11-09 12:30
 ref: HOM-0514
 comms:
 - at: 2026-10-12 18:39
   from: devin
-  text: 'check_config flagged during the trusted_proxies fix 2026-10-12: "profiler integration does not
-    support YAML setup, please remove it". Non-fatal (HA still boots) but the integration is dead in config
-    — move to UI setup or drop the yaml block. File: ~/.config/home-assistant/configuration.yaml on tony-dell.'
+  text: 'check_config flagged during the trusted_proxies fix 2026-10-12: "profiler integration does not support
+    YAML setup, please remove it". Non-fatal (HA still boots) but the integration is dead in config — move to UI
+    setup or drop the yaml block. File: ~/.config/home-assistant/configuration.yaml on tony-dell.'
 - at: 2026-10-26 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: Resolve Home Assistant''s configuration check warning by removing the unsupported YAML block
-  for the profiler integration in ~/.config/home-assistant/configuration.yaml on tony-dell. Host: tony-dell.
-  Constraints: Do not invent new configuration paths or make unrequested integration changes beyond addressing
-  the 2026.8 YAML rejection. Done-condition: Running the Home Assistant configuration check on tony-dell
-  returns no errors or warnings regarding the profiler integration YAML setup.'
+- at: 2026-11-09 12:30
+  from: devin
+  text: 'VERIFIED + FIXED 2026-11-09: profiler: block was still live at line 5 of tony-ha config (~/.config/home-assistant/configuration.yaml
+    on tony-omen, migrated from tony-dell). Removed the dead block (comment + ''profiler:'' line, /tmp backup kept).
+    check_config can''t run inside the live instance, but removing an integration HA already rejected is provably
+    inert — warning clears at next boot.'
+spec: 'Goal: Resolve Home Assistant''s configuration check warning by removing the unsupported YAML block for the
+  profiler integration in ~/.config/home-assistant/configuration.yaml on tony-dell. Host: tony-dell. Constraints:
+  Do not invent new configuration paths or make unrequested integration changes beyond addressing the 2026.8 YAML
+  rejection. Done-condition: Running the Home Assistant configuration check on tony-dell returns no errors or warnings
+  regarding the profiler integration YAML setup.'
