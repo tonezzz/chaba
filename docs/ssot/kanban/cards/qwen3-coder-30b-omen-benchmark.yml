@@ -1,7 +1,7 @@
 id: qwen3-coder-30b-omen-benchmark
 title: Benchmark Qwen3-Coder-30B-A3B on Tony-Omen
 column: doing
-updated: 2026-11-09 20:37
+updated: 2026-11-09 20:40
 brief: Assess this exact GGUF as a local coding-agent lane on Omen, with a strict host resource gate.
 priority: high
 program: ai-workforce
@@ -46,3 +46,8 @@ comms:
     15/15 GiB used (1.4 MiB free). Load average 9.79/10.76/10.86; top process ~93% CPU. Candidate GGUF is not in
     ~/model-bench. No download, model launch, service stop, or restart performed. Keep benchmark blocked until a
     fresh read-only preflight shows safe headroom and the incumbent w'
+- at: 2026-11-09 20:40
+  from: devin
+  text: 'Follow-up host-scoped check at 20:39 confirms this is tony-omen: nvidia-smi reports 2,312/4,096 MiB allocated
+    (2,278 MiB held by the incumbent chaba-ml-gpu worker; GPU utilization 0%). Memory remains reserved even while
+    utilization is idle, so the no-displacement/no-launch gate still stands.'
