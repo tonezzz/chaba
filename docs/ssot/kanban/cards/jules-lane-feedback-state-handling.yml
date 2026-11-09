@@ -1,0 +1,35 @@
+id: jules-lane-feedback-state-handling
+title: 'jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail — map the state to card surface,
+  not death'
+column: backlog
+updated: 2026-11-09 18:47
+priority: high
+tags:
+- devnest
+- jules
+- bug
+spec: 'Diagnosed 2026-11-09 live: ops-1244b/c/d jules tasks all failed with no-exit-record after ~1.5h idle waits.
+  Jules API shows their sessions in AWAITING_USER_FEEDBACK — the agent did work, messaged a question/plan, and waited.
+  runner-agent finish_jules_lane only maps COMPLETED/terminal states; the feedback-wait state is unhandled so the
+  lane idles to timeout and the card fails unproven (plus zombie restarts spawned 2-3 duplicate sessions per card
+  — visible in sessions list).
+
+
+  DO: in runner-agent.py jules lane — treat AWAITING_USER_FEEDBACK as a first-class outcome: fetch the session''s
+  last agentMessage activity, post it to card comms (+ a card request when the question is for Tony), park the card
+  blocked-with-evidence instead of failing; resume when the session continues. Also dedupe: restarts create new
+  sessions each time — gate re-submission on an existing live session ID in state.
+
+  DONE-CONDITION: a jules task reaching AWAITING_USER_FEEDBACK surfaces its question on the card and parks, not
+  fails; duplicate sessions stop.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  lane: jules
+  status: queued
+ref: OPS-1295
+comms:
+- at: 2026-11-09 18:47
+  from: tony
+  text: 'evidence: sessions 17919096463273976947 / 17635468610908268255 / 3573152215288110114 all AWAITING_USER_FEEDBACK'
