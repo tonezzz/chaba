@@ -1,6 +1,6 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
-column: backlog
+column: doing
 updated: 2026-11-09 18:17
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
@@ -43,6 +43,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 18:17
+  from: idc02
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: codemod
+  runner: idc02
