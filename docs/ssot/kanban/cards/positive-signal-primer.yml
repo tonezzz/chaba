@@ -1,7 +1,7 @@
 id: positive-signal-primer
 title: Positive-signal primer — harvest what worked, not only pitfalls
-column: doing
-updated: 2026-11-09 16:38
+column: review
+updated: 2026-11-09 16:39
 brief: 'KNOWN_PITFALLS is failure-only, so the prompt accrues prohibitions and never distills what worked. Add a
   positive channel: KNOWN_GOOD lines harvested from first-try-verified dispatches (spec shapes, approaches that
   merged clean) rendered as a second small block.'
@@ -35,9 +35,12 @@ spec: 'Files: scripts/board/lesson_primer.py, scripts/board/kanban-dispatch.py (
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: tony-omen
+  result: 'exit=0 tch-outcome-20261109-155120-files-scripts-board-lesson-pri.md`. | devin-task-20261109-155120-files-scripts-board-lesson-pri.service:
+    Consumed 40min 35.943s CPU time over 47min 21.478s wall clock time, 1G memory peak, 39.8M memory swap peak.'
+  verified: false
 ref: OPS-1274
 comms:
 - at: 2026-11-09 15:44
@@ -93,3 +96,8 @@ comms:
     sharing _select() with pitfalls so scoring-fixes lands once; build_task appends KNOWN_GOOD after KNOWN_PITFALLS
     (KANBAN_PRIMER_GOOD=0 off, warn-only); comms log gains good: prefix. Also fixed a latent lp.build crash on bare-string
     comms entries. tests/board'
+- at: 2026-11-09 16:39
+  from: tony-omen
+  text: 'finished (ok): exit=0 tch-outcome-20261109-155120-files-scripts-board-lesson-pri.md`. | devin-task-20261109-155120-files-scripts-board-'
+review_kind: verify
+claim: {}
