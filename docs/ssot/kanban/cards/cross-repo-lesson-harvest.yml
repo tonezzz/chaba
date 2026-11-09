@@ -1,0 +1,48 @@
+id: cross-repo-lesson-harvest
+title: Cross-repo lesson harvest — outcome docs outside chaba are invisible to the primer
+column: backlog
+updated: 2026-11-09 15:44
+brief: lesson_primer._outcome_candidates only globs dispatch-outcome-*.md at the local chaba checkout root. Dispatches
+  on ada-voice/sunsynk-card/mddb-fork write their outcome docs inside those repos, so their lessons never enter
+  the primer corpus. Move the lesson corpus to the devin-handoff bank so it is repo-agnostic (and sets up semantic
+  selection later).
+priority: high
+tags:
+- dispatch-tuning
+- primer
+- mddb
+spec: 'Problem: scripts/board/lesson_primer.py::_outcome_candidates scans root.glob(''dispatch-outcome-*.md'') where
+  root is the chaba checkout. Outcome docs from ada-voice/sunsynk-card/mddb-fork dispatches land in those repos
+  — the primer never sees them.
+
+
+  Design (preferred over multi-repo file copying):
+
+  1. At dispatch close-out (scripts/board/dispatch_repos.py close_out, or devin-dispatch-watch on the runner — pick
+  whichever already has the task_id + worktree in scope), extract the outcome doc''s `lessons:` list and POST each
+  line as an mddb doc into collection ada-ha-bank-devin-handoff: key lesson/<task_id>/<n>, meta {kind:[lesson],
+  job_id, repo, card, ts, source:[dispatch-outcome]}. Dedupe by key so re-runs don''t duplicate.
+
+  2. lesson_primer gains a bank candidate source: fetch kind=lesson docs via the mddb /v1/search endpoint (base
+  URL from env MDDB_BASE_URL, default http://100.102.134.91:11023/v1 — mirror kanban-dispatch.py''s convention),
+  short in-process cache (~60s), fail-open with a stderr warn when unreachable. Keep the repo-root glob as a fallback
+  source for chaba-local docs that predate bank writes.
+
+  3. Rank bank lessons at the same tier as outcome-doc lessons (rank 0).
+
+
+  Constraints: mddb writes are best-effort and must NEVER block close-out or dispatch (same posture as mddb_job
+  in devin-dispatch.sh); no new secrets — reuse existing env conventions.
+
+
+  Verify: synthetic close-out on a fixture outcome doc lands a lesson/<id> doc in the bank; lp.build() on a matching
+  card returns the bank lesson; pytest tests/board green; document the new corpus source in the module docstring.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: MEM-1272
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
