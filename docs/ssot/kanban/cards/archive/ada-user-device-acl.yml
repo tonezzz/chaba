@@ -1,0 +1,62 @@
+id: ada-user-device-acl
+title: Ada user ACL — per-user device set, guest default, admin-grant flow
+column: done
+priority: medium
+metric: guest/unknown user can control only the pre-defined device set; a denied device requires an admin grant
+  to become controllable
+verify: scenario acl_guest_denied (guest asks to control an unlisted device -> refused + admin notified) + acl_admin_grant
+  (admin grants device -> same user can then control it)
+note: 'Extend the `access` posture (already: per-identity memory banks + domain allowlist e.g. person.kk = light/switch/input_boolean/script/
+  media_player) from domain-level to device-level ACL. Requirements: (1) every identity has an ACL; (2) guests/unknown
+  get a limited pre-defined set only; (3) a user can ask admin to add a device — admin grant adds it to that user''s
+  ACL, then control is allowed. Enforcement point: ada-pi tool gating (control_entity + other actuating tools check
+  caller ACL before executing); SSOT file = the access posture in chaba memory. Open questions: ACL granularity
+  (entity_id vs device vs area), grant channel (voice confirm vs card/admin tool), audit log of grants/denials.'
+help: 'related: person.kk domain list in `## access` memory section; speaker-id ties ACL to voice identity — a denied-device
+  request under Guest means speaker-id correctness gates this whole feature'
+updated: 2026-11-09 20:08
+spec: 'Extend Ada access posture from domain-level to device-level ACL: (1) every identity gets a device set (default
+  guest = read-only safe set), (2) admin-grant flow to add devices per identity, (3) enforced in tool_runner ha_*
+  paths. person.kk currently domain-allowlisted (light/switch/input_boolean/script/media_player) — keep that, add
+  device filtering inside it. Verify: kk identity can toggle her lights but not Tony-only devices; scenario covers
+  it.'
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  button: ▶ Start
+  runner: tony-omen
+  result: 'exit=0 e mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223025-extend-ada-access-posture-from.service:
+    Consumed 3min 3.161s CPU time over 29min 27.912s wall clock time, 1G memory peak, 188M memory swap peak.'
+comms:
+- at: 2026-10-05 21:15
+  from: devin
+  text: spec'd in batch (ada-pi lane, medium)
+- at: 2026-10-05 22:03
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 22:30
+  from: tony-omen
+  text: claimed
+- at: 2026-10-05 22:30
+  from: chaba
+  text: started devin-task-20261005-223025-extend-ada-access-posture-from on tony-omen (dispatch)
+- at: 2026-10-05 22:44
+  from: devin
+  text: 'picked up. Design: control_policies gains allow_entities (declared device set) + granted_entities (runtime
+    grants via owner-only ada_device_acl tools.d tool, persisted to ~/.config/ada/device-grants.json overlay). Enforcement
+    reuses the existing control_allowed gate in tool_runner. Empty set = read-only guest posture.'
+- at: 2026-10-05 23:00
+  from: tony-omen
+  text: 'finished (ok): exit=0 e mode. Use --permission-mode dangerous to auto-approve all tools. | devin-task-20261005-223025-extend-ada-access'
+- at: 2026-10-06 08:35
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0095'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (34d in done, board over card cap)
+claim: {}
+ref: ADA-0095
