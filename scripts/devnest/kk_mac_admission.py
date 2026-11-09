@@ -68,6 +68,8 @@ def snapshot(
     max_age_s: int = 900,
     min_disk_gb: int = 20,
     max_load_1m: float = 4.0,
+    # Tony 2026-11-09: KK runs hot under load — hold new work at 60C.
+    max_temp_c: float = 60.0,
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
@@ -137,6 +139,23 @@ def snapshot(
             result["reasons"].append("load_high")
     except (KeyError, TypeError, ValueError):
         result["reasons"].append("load_unknown")
+    try:
+        temp = body.get("cpu_temp_c")
+        if temp is None:
+            # heartbeat body lacks temp (root-owned adanest script) —
+            # same read-only fallback pattern as the load probe.
+            t = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+                 os.environ.get("KK_MAC_SSH_HOST", "kk-mac"),
+                 "~/.local/bin/smctemp -c"],
+                capture_output=True, text=True, timeout=12)
+            if t.returncode == 0 and t.stdout.strip():
+                temp = float(t.stdout.strip())
+        result["cpu_temp_c"] = temp
+        if temp is not None and float(temp) > max_temp_c:
+            result["reasons"].append("temp_high")
+    except (TypeError, ValueError):
+        pass
     # Overload gate: KK-Mac is an owner-first box — a busy node defers
     # the opportunistic lane. Signals, best available first: tmux_jobs
     # non-empty (work is running on the node), an explicit load_ok flag,
