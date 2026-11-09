@@ -16,14 +16,29 @@ status surface needs, in a bounded number of Drive calls:
   - queue/runtime-sessions/  (managed Colab runtimes; freshest = live VM)
   - packs/                   (total pack dirs vs `*/done` marker count)
 
+Extra lane coverage (OPS-1258, added 2026-11-09):
+
+  - kk-llm/            (inbox depth; packs total/done/failed/pending/active
+                        claims — the KK-Mac LLM lane)
+  - kk-mac-video-pilot/packs (video queue pack counts + active claims)
+  - kk worker heartbeat (MDDB ada-nest-heartbeats: age, ollama_ok,
+                        load_1m, disk_free_gb — one HTTP call, no ssh)
+
 Usage: nest-queue-health.py [--out PATH] [--quiet]
 Exit: 0 always — the snapshot records anomalies; callers stay green.
 """
-import argparse, json, os, re, subprocess, sys, time
+import argparse, json, os, re, subprocess, sys, time, urllib.request
+from datetime import datetime, timezone
 
 ROOT = 'gdrive:ada-nest'
 Q = f'{ROOT}/queue'
 PACKS = f'{ROOT}/packs'
+KK_LLM = f'{ROOT}/kk-llm'
+KK_VIDEO = f'{ROOT}/kk-mac-video-pilot'
+MDDB_URL = 'http://100.102.134.91:11026/v1'
+KK_HB_HOST = 'KKs-Mac-Studio'
+KK_HB_TAILNET_IP = '100.108.217.17'
+KK_HB_STALE_S = 15 * 60
 DEFAULT_OUT = os.path.expanduser('~/var/chaba/health/nest-queue-status.json')
 # heartbeat is rewritten every ~15s by a live runner; >20min + no pending
 # work just means "done", but >20min with a live runner.id is a stall.
@@ -85,6 +100,102 @@ def parse_hb(text):
         except ValueError:
             pass
     return epoch, state
+
+
+def mddb_search(collection, url=MDDB_URL):
+    req = urllib.request.Request(
+        url.rstrip('/') + '/search',
+        data=json.dumps({'collection': collection, 'query': '',
+                         'limit': 100}).encode(),
+        headers={'content-type': 'application/json'}, method='POST')
+    with urllib.request.urlopen(req, timeout=15) as r:
+        v = json.load(r)
+    return v if isinstance(v, list) else []
+
+
+def kk_worker_heartbeat(now):
+    """KK-Mac lane heartbeat from MDDB ada-nest-heartbeats — the same doc
+    the admission gate reads. No ssh: fields come from the heartbeat body."""
+    try:
+        docs = mddb_search('ada-nest-heartbeats')
+    except Exception as e:
+        return {'error': f'mddb: {e}'}
+    bodies = []
+    for doc in docs:
+        try:
+            b = json.loads(doc.get('contentMd', '{}'))
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if b.get('host') == KK_HB_HOST:
+            bodies.append(b)
+        elif b.get('tailnet_ip') == KK_HB_TAILNET_IP:
+            bodies.append(b)  # LAN-aliased legacy heartbeats
+    def _ts(b):
+        try:
+            raw = b['ts']
+            return (float(raw) if isinstance(raw, (int, float)) else
+                    datetime.fromisoformat(
+                        str(raw).replace('Z', '+00:00')).timestamp())
+        except (KeyError, TypeError, ValueError):
+            return 0.0
+    body = max(bodies, key=_ts) if bodies else None
+    if not isinstance(body, dict):
+        return {'error': 'heartbeat_missing', 'stale': True}
+    try:
+        raw_ts = body['ts']
+        ts = float(raw_ts) if isinstance(raw_ts, (int, float)) else \
+            datetime.fromisoformat(
+                str(raw_ts).replace('Z', '+00:00')).timestamp()
+        age = max(0, round(now - ts, 1))
+    except (KeyError, TypeError, ValueError):
+        return {'error': 'heartbeat_invalid', 'stale': True}
+    return {
+        'host': body.get('host') or KK_HB_HOST,
+        'age_s': age,
+        'stale': age > KK_HB_STALE_S,
+        'ollama_ok': body.get('ollama_ok'),
+        'load_1m': body.get('load_1m'),
+        'disk_free_gb': body.get('disk_free_gb'),
+        'node_busy': body.get('node_busy'),
+    }
+
+
+def pack_stats(remote):
+    """One recursive files-only listing -> per-pack marker counts.
+    claim/* files on a done/failed pack are normal residue; a claim on a
+    live pack is an active claim."""
+    stats = {'total': 0, 'done': 0, 'failed': 0,
+             'pending': 0, 'active_claims': 0}
+    try:
+        entries = lsf(f'{remote}/packs', ['--recursive', '--files-only'])
+    except Exception as e:
+        stats['error'] = str(e)
+        return stats
+    packs = {}
+    for e in entries:
+        parts = e.split('/', 1)
+        if len(parts) != 2:
+            continue
+        name, rel = parts
+        p = packs.setdefault(
+            name, {'done': False, 'failed': False, 'claim': False})
+        if rel == 'done':
+            p['done'] = True
+        elif rel == 'failed':
+            p['failed'] = True
+        elif rel.startswith('claim/'):
+            p['claim'] = True
+    stats['total'] = len(packs)
+    for p in packs.values():
+        if p['done']:
+            stats['done'] += 1
+        elif p['failed']:
+            stats['failed'] += 1
+        else:
+            stats['pending'] += 1
+            if p['claim']:
+                stats['active_claims'] += 1
+    return stats
 
 
 def main():
@@ -153,6 +264,26 @@ def main():
     snap['packs'] = {'total': len(pack_dirs), 'done': len(done_marks),
                      'pending': max(0, len(pack_dirs) - len(done_marks))}
 
+    # --- KK-Mac lanes (kk-llm + video) ---
+    kk = pack_stats(KK_LLM)
+    try:
+        # spec files persist as dedupe keys after their packs are staged —
+        # this is total specs received, not unprocessed work
+        kk['inbox_specs'] = len(
+            [x for x in lsf(f'{KK_LLM}/inbox') if x.endswith('.json')])
+    except Exception as e:
+        errors.append(f'kk-llm inbox: {e}')
+    snap['kk_worker'] = kk_worker_heartbeat(now)
+    snap['kk_llm'] = kk
+
+    video = pack_stats(KK_VIDEO)
+    vhb_epoch, vhb_state = parse_hb(cat(f'{KK_VIDEO}/queue/heartbeat'))
+    video['heartbeat'] = {
+        'epoch': vhb_epoch,
+        'age_s': (now - vhb_epoch) if vhb_epoch else None,
+        'state': vhb_state}
+    snap['video'] = video
+
     # --- verdict ---
     session_live = (freshest is not None
                     and freshest.get('age_s') is not None
@@ -168,6 +299,29 @@ def main():
     if errors and not hb_raw:
         verdict = 'unreadable'
     snap['verdict'] = verdict
+    # per-lane verdicts — 'verdict' above stays the general-queue verdict
+    # for existing consumers (Node-RED surface)
+    kk_hb = snap.get('kk_worker') or {}
+    if kk.get('error'):
+        kk_verdict = 'unreadable'
+    elif kk_hb.get('error') or kk_hb.get('stale'):
+        kk_verdict = 'worker-stale'
+    elif kk.get('active_claims'):
+        kk_verdict = 'claimed'
+    elif kk.get('pending'):
+        kk_verdict = 'pending'
+    else:
+        kk_verdict = 'drained'
+    if video.get('error'):
+        video_verdict = 'unreadable'
+    elif video.get('active_claims'):
+        video_verdict = 'claimed'
+    elif video.get('pending'):
+        video_verdict = 'pending'
+    else:
+        video_verdict = 'drained'
+    snap['verdicts'] = {'general': verdict, 'kk_llm': kk_verdict,
+                        'video': video_verdict}
     snap['errors'] = errors
 
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
