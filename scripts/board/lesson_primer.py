@@ -15,12 +15,19 @@ Sources, in rank order:
   4. docs/kb/**/*.md runbooks — title+abstract keyword match contributes
      a pointer line ("runbook <path>: <title>").
 
-A line is kept only when it carries a lesson signal word and shares >=2
-distinct keywords with the card. Output: top MAX_LINES lines within
+A line is kept only when it carries a lesson signal word, shares >=2
+distinct keywords with the card (matched on word boundaries), AND hits
+>=1 card-derived task keyword — host/repo tokens rank but cannot
+qualify a line on their own (host-specific lessons are the least
+generalizable). Lines from files older than STALE_DAYS score -1
+(staleness demotion); lines naming retired infra (RETIRED_RE) are
+dropped unless they still hit >=2 task keywords.
+Output: top MAX_LINES lines within
 MAX_CHARS (~1.5k tokens, ssot.tokens.policy baseline-discipline).
 KANBAN_PRIMER=0 disables (kanban-dispatch checks the env).
 """
 import re
+import time
 from pathlib import Path
 
 import yaml
@@ -29,6 +36,12 @@ MAX_LINES = 8
 MAX_CHARS = 5500          # ~1.5k tokens at ~3.7 chars/token
 LINE_CAP = 240
 MIN_SCORE = 2             # distinct keyword hits required
+STALE_DAYS = 90           # source files older than this score -1
+
+# Infra retired from the fleet — lines referencing it are stale by
+# definition. Dropped unless the line still hits >=2 task keywords.
+# NEEDS PERIODIC REVIEW as hosts retire or return to service.
+RETIRED_RE = re.compile(r"\bidc01\b", re.I)
 
 # Words that mark a line as an actual lesson rather than prose.
 SIGNAL_RE = re.compile(
@@ -56,21 +69,29 @@ def _tokens(s: str) -> list:
     return re.findall(r"[a-z0-9][a-z0-9_.-]{2,}", (s or "").lower())
 
 
-def keywords(card: dict, host: str, repo: str) -> set:
-    """Task keyword set: card text + tags + host + repo tokens."""
+def keywords(card: dict, host: str, repo: str) -> tuple:
+    """(task_kws, host_repo_kws) — card-derived keywords vs host+repo
+    tokens. Task kws qualify a line; host/repo kws only rank it."""
     parts = [str(card.get(k) or "")
              for k in ("id", "title", "brief", "spec", "note")]
     parts += [str(t) for t in (card.get("tags") or [])]
-    kws = {t for t in _tokens(" ".join(parts))
-           if len(t) >= 4 and t not in STOPWORDS}
-    kws.update(t for t in _tokens(host or "") if len(t) >= 3)
-    kws.update(t for t in _tokens(repo or "") if len(t) >= 3)
-    return kws
+    task = {t for t in (s.strip("._-") for s in _tokens(" ".join(parts)))
+            if len(t) >= 4 and t not in STOPWORDS}
+    host_repo = {t for t in
+                 (s.strip("._-") for s in _tokens(f"{host or ''} {repo or ''}"))
+                 if len(t) >= 3}
+    return task, host_repo - task
 
 
 def _score(text: str, kws: set) -> int:
-    tl = text.lower()
-    return sum(1 for k in kws if k in tl)
+    """Distinct keyword hits on word boundaries — 'test' does not match
+    'latest'/'protest', 'card' does not match 'discard'. Compound tokens
+    (ada-voice, ssot.kanban) count whole and by parts; edge punctuation
+    is stripped so 'tony-omen.' still matches 'tony-omen'."""
+    tl = (text or "").lower()
+    toks = ({t.strip("._-") for t in _tokens(tl)}
+            | set(re.findall(r"[a-z0-9]+", tl)))
+    return len(toks & {k.strip("._-") for k in kws})
 
 
 def _clip(line: str) -> str:
@@ -128,7 +149,7 @@ def _job_candidates(root: Path) -> list:
             continue
         for text in _walk_fields(doc):
             for line in _lesson_lines(text):
-                out.append((line, 1, p.name))
+                out.append((line, 1, p))
     return out
 
 
@@ -140,9 +161,10 @@ def _comms_candidates(root: Path) -> list:
         except Exception:
             continue
         for c in (doc.get("comms") or []):
-            text = str((c or {}).get("text") or "")
+            text = (str(c.get("text") or "") if isinstance(c, dict)
+                    else str(c or ""))
             if COMMS_RE.search(text):
-                out.append((_clip(f"[{p.stem}] {text}"), 2, p.name))
+                out.append((_clip(f"[{p.stem}] {text}"), 2, p))
     return out
 
 
@@ -161,7 +183,7 @@ def _outcome_candidates(root: Path) -> list:
                 m = re.match(r"^\s*-\s+(.+)$", item)
                 if not m:
                     break
-                out.append((_clip(m.group(1)), 0, p.name))
+                out.append((_clip(m.group(1)), 0, p))
     return out
 
 
@@ -190,24 +212,41 @@ def _kb_candidates(root: Path, kws: set) -> list:
             rel = p.relative_to(root) if p.is_relative_to(root) else p
             out.append((_clip(f"runbook {rel}: {title}"
                               + (f" — {ab[:120]}" if ab else "")),
-                        3, p.name))
+                        3, p))
     return out
+
+
+def _stale(path: Path, now: float) -> bool:
+    """Source file untouched for >STALE_DAYS → its lines score -1."""
+    try:
+        return (now - path.stat().st_mtime) > STALE_DAYS * 86400
+    except OSError:
+        return False
 
 
 def build(card: dict, host: str, repo: str = "",
           root: Path | None = None) -> list:
     """Top MAX_LINES lesson lines for this card, char-capped."""
     root = Path(root) if root else Path(__file__).resolve().parents[2]
-    kws = keywords(card, host, repo)
+    task_kws, host_repo_kws = keywords(card, host, repo)
+    kws = task_kws | host_repo_kws
     cands = (_outcome_candidates(root) + _job_candidates(root)
              + _comms_candidates(root) + _kb_candidates(root, kws))
+    now = time.time()
     seen, scored = set(), []
     for text, rank, src in cands:
         key = re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
         if not key or key in seen:
             continue
         seen.add(key)
+        task_hits = _score(text, task_kws)
+        if not task_hits:
+            continue  # host/repo tokens rank but cannot qualify a line
+        if RETIRED_RE.search(text) and task_hits < 2:
+            continue  # retired infra unless still on-topic for the card
         s = _score(text, kws)
+        if _stale(src, now):
+            s -= 1
         if s >= MIN_SCORE:
             scored.append((-s, rank, text))
     scored.sort()

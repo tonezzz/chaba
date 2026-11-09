@@ -1,0 +1,37 @@
+title: "lesson-primer-scoring-fixes: word-boundary scoring, task-kw
+        eligibility, staleness demotion, retired-infra filter"
+summary: >
+  scripts/board/lesson_primer.py scoring overhaul — substring keyword
+  matching replaced by word-boundary matching, host/repo tokens demoted
+  to ranking-only, stale sources score -1, retired hosts filtered.
+artifacts:
+  - scripts/board/lesson_primer.py
+  - tests/board/test_lesson_primer.py
+verify:
+  - "python3 -m unittest tests.board.test_lesson_primer — 7/7 ok (pytest
+    not installed on idc02; tests are unittest-style)"
+  - "live lp.build on dispatch-merge-sweep + ada-tool-guide-lesson-sweep —
+    8/8 lines each carry >=1 task keyword"
+method_notes: >
+  _score now intersects the line's token set (compound _tokens plus
+  alnum parts, edge punctuation stripped) with the keyword set —
+  'test' no longer matches 'latest'/'protest', 'card' no longer matches
+  'discard'. keywords() returns (task_kws, host_repo_kws); a candidate
+  needs >=1 task hit AND combined score >= MIN_SCORE to qualify, so
+  host-specific lessons can rank but cannot self-qualify. STALE_DAYS=90:
+  lines from files whose mtime is older score -1. RETIRED_RE (currently
+  \\bidc01\\b only, needs periodic review as the fleet changes) drops
+  lines referencing retired infra unless they hit >=2 task keywords.
+  Contracts kept: MAX_LINES=8, MAX_CHARS=5500, LINE_CAP=240, MIN_SCORE=2,
+  rank order outcome<job<comms<kb, KANBAN_PRIMER=0 off-switch, warn-only
+  primer failure inside build_task.
+gotchas:
+  - "comms entries can be bare strings, not just {text: ...} dicts —
+    _comms_candidates crashed on real cards (the 'warn: lesson primer
+    failed: str object has no attribute get' in rails tests); now
+    handles both shapes"
+  - "YAML '>' folds lesson lines into one string — per-line assertions
+    in tests need '|' literal blocks or >240-char GOTCHA:-split text"
+  - "compound tokens keep trailing punctuation ('tony-omen.') — strip
+    ._- on both kw and line sides or word-boundary matching loses hits
+    substring matching used to get for free"
