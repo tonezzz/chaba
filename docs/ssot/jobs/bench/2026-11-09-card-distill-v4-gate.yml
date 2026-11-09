@@ -1,0 +1,103 @@
+id: jobs/bench/2026-11-09-card-distill-v4-gate
+title: Card distiller — free-lane slot brief + v4 corpus + adoption gate run
+card: card-distill-free-lane
+ref: ADA-1133
+date: 2026-11-09
+host: idc02 (dispatch worktree)
+status: delivered
+
+idea: >-
+  Tony: use free lanes to pre-distill each kanban card so judgment
+  turns cost less context. NOT freeform summary — a FIXED SLOT
+  template so nothing decisive is lost. Trigger on card.updated
+  change; cached sidecar keyed by (card_id, updated). Consumers:
+  bench corpus v4 snapshots + live lane turns. Adoption gate: bench
+  distilled vs raw — if action_accuracy drops >2pts, keep raw.
+
+built:
+  distiller: scripts/bench/card-judgment/distill.py
+    # FIXED slots (no prose): state open_asks gates evidence_present
+    # staleness last_action needed_move_class
+    # lane chain (verify_worker pattern, every leg env-overridable):
+    #   cf-70b -> local-ollama -> or-free -> flash-lite-free -> gemini-direct
+    # sidecar cache ~/.cache/card-distill/<card_id>.json, entries keyed
+    # by card.updated (live) or snap:<content-hash> (frozen bench
+    # snapshots); lane=none failures are never cached
+  schema: schemas/card-distill-slots.schema.json
+    # needed_move_class enum: execute|decide|correct|monitor
+    # staleness enum: fresh|stale|dead
+  corpus_v4: scripts/bench/card-judgment/build_corpus_v4.py
+    # consumes corpus.jsonl; distills the FROZEN case snapshot via
+    # pseudo_card() — never the live card, so proven_right can't leak.
+    # v4 snapshot = raw gate fields (title priority review_kind tags
+    # spec_present open_requests claim action_status) + distilled{slots}
+    # --retries/--retry-wait re-walks the chain on RPM windows
+  live_consumer: scripts/ada-jobs/verify_worker.py --with-distill
+    # attaches distilled_brief slots to Ada's turn (off by default)
+  scorer: scripts/bench/card-judgment/score.py --delay N
+    # new flag: per-case sleep, keeps free-lane runs under RPM bursts
+  tests: tests/test_card_distill.py  # 8 tests, offline, stubbed lanes
+
+lane_state_2026-11-09:   # probed from idc02 — why the chain matters
+  cf-70b: 'no CF_API_WORKER_TOKEN on idc02 (CF_API_TOKEN != workers-ai);
+           gateway cf-llama-70b listed in /v1/models but 400s on call —
+           deployed config drift on idc03'
+  local-ollama: 'not running on idc02'
+  or-free: 'or-free-gemma31b -> upstream 400 "API key not valid";
+           or-free-nemotron-nano -> 429 free-models-per-day cap'
+  flash-lite-free: 'WORKING — served 94/94 distill calls + both bench runs'
+  gemini-direct: 'WORKING — gemini-3.5-flash-lite direct w/ free
+           GEMINI_API_KEY (2.5-flash-lite upstream is retired)'
+  note: '4 of 5 legs dead and the chain still delivered — the point of
+           the fallback pattern'
+
+corpus:
+  v3_rebuild: >-
+    corpus.jsonl on disk was v2 (no gate fields). Rebuilt with current
+    build_corpus.py: 843 done cards -> 94 cases (act 26, correct 30,
+    defer 30, observe 8) now carrying open_requests/claim/action_status.
+  v4: >-
+    corpus-v4.jsonl — 94/94 distilled via flash-lite-free, 0 failures.
+    Snapshot mean 1269 -> 698 chars (-45%).
+
+gate_run:
+  judge: 'ada entity, gemini-3.5-flash-lite-free, --delay 2'
+  raw:   {run: run15-flashlite-v3raw, action_accuracy: 0.5000,
+          appropriate_deference: 0.6170, correction_precision: 0.9286,
+          correction_recall: 0.4333, parse_failures: 14}
+  v4:    {run: run16-flashlite-v4distilled, action_accuracy: 0.5213,
+          appropriate_deference: 0.6277, correction_precision: 0.7778,
+          correction_recall: 0.4667, parse_failures: 7}
+  paired: >-
+    n=73 cases judged in both runs (429 bursts are asymmetric noise):
+    action_accuracy 0.5616 -> 0.5753 = +1.37pts;
+    appropriate_deference +8.22pts
+  verdict: >-
+    GATE PASSED — accuracy did not drop (it rose). ADOPT distilled
+    briefs for lane turns. correction_precision fell 0.93->0.78 (v4
+    reaches for `correct` more — recall up too): watch on next corpus.
+  rules_baseline: >-
+    rules entity raw 0.4149 -> v4 0.3617 (-5.3pts): prose-greppers lose
+    comms_tail/brief by design — v4 is for LLM turns only; deterministic
+    consumers keep raw gate fields / v3 corpus.
+
+artifacts:
+  - scripts/bench/card-judgment/distill.py          # rewritten
+  - scripts/bench/card-judgment/build_corpus_v4.py  # new
+  - scripts/bench/card-judgment/corpus.jsonl        # rebuilt v3
+  - scripts/bench/card-judgment/corpus-v4.jsonl     # new
+  - scripts/bench/card-judgment/run15-flashlite-v3raw.{md,json}
+  - scripts/bench/card-judgment/run16-flashlite-v4distilled.{md,json}
+  - scripts/bench/card-judgment/v4-gate-comparison.md
+  - schemas/card-distill-slots.schema.json
+  - tests/test_card_distill.py
+  - scripts/ada-jobs/verify_worker.py               # --with-distill
+
+followups:
+  - 'cross-model gate check when a second free lane is healthy (judge
+    != distiller model) — cf token on idc02, or OR-free quota reset'
+  - 'evidence_present slot is the lossy edge — 2-3 lost `correct` cases
+    had the checkable fact in prose; consider allowing a short
+    evidence quote in the slot'
+  - 'flip verify_worker --with-distill on by default after the
+    cross-check; other live consumers (cleanup sweep) same flag'

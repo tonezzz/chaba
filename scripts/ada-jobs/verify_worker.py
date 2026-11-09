@@ -34,6 +34,8 @@ Usage:
 import argparse, json, os, re, sys, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "..", "bench", "card-judgment"))
 
 API = os.environ.get("BOARD_API",
                      "https://idc03.taila0626a.ts.net:10000")
@@ -169,7 +171,8 @@ def probe_local(card, limit=6, timeout=6):
     return out
 
 
-def llm_action(card, base_url, model, key, system=PROMPT, brief=None):
+def llm_action(card, base_url, model, key, system=PROMPT, brief=None,
+               distilled=None):
     snap = {k: card.get(k) for k in
             ("id", "title", "brief", "note", "spec", "expected_goals")}
     snap["comms_tail"] = (card.get("comms") or [])[-6:]
@@ -178,6 +181,8 @@ def llm_action(card, base_url, model, key, system=PROMPT, brief=None):
         snap["live_checks"] = probes
     if brief:
         snap["job_brief"] = brief
+    if distilled:
+        snap["distilled_brief"] = distilled
     body = {"model": model, "temperature": 0, "max_tokens": 800,
             "messages": [{"role": "system", "content": system},
                          {"role": "user", "content": json.dumps(
@@ -271,16 +276,26 @@ def run_once(args):
             except Exception as e:
                 print(f"  brief build failed ({str(e)[:80]}) — "
                       "turn runs without it")
+        distilled = None
+        if args.with_distill:
+            try:
+                import distill as card_distill
+                db = card_distill.distill_card(card)
+                distilled = {s: db.get(s, "") for s in card_distill.SLOTS}
+                print(f"  -- distilled ({db.get('_lane')}) --")
+                print("  " + card_distill.brief_text(db).replace("\n", "\n  "))
+            except Exception as e:
+                print(f"  distill failed ({str(e)[:80]}) — turn runs without it")
         try:
             raw = llm_action(card, args.base_url, args.model, args.api_key,
                              system=CLEANUP_PROMPT if cleanup else PROMPT,
-                             brief=brief)
+                             brief=brief, distilled=distilled)
         except Exception as e:
             print(f"  primary brain failed ({str(e)[:80]}) — trying fallback")
             raw = llm_action(card, args.fallback_base_url,
                              args.fallback_model, "",
                              system=CLEANUP_PROMPT if cleanup else PROMPT,
-                             brief=brief)
+                             brief=brief, distilled=distilled)
         if cleanup and (raw.get("action") or "").lower() == "close" \
                 and card.get("column") != "review":
             raw["action"] = "request"   # backlog closes are Tony's — degrade to ask
@@ -322,6 +337,9 @@ def main():
     ap.add_argument("--with-brief", action="store_true",
                     help="assemble a job brief (SSOT+KB+similar-card "
                     "outcomes) before her turn and show it")
+    ap.add_argument("--with-distill", action="store_true",
+                    help="attach the fixed-slot distilled brief "
+                    "(card-distill-free-lane) to her turn")
     ap.add_argument("--min-age", type=int, default=21)
     ap.add_argument("--max", type=int, default=3)
     ap.add_argument("--model", default=os.environ.get(
