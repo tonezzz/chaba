@@ -1616,6 +1616,13 @@ jobs:
     ada-opencode workspace fallback; idc02''s /data/gdrive mount is
     empty so the MCP bridge reads workspace indexes. Needs rclone
     gdrive remote + ssh idc02 + BatchMode key on tony-dell.'
+- id: fleet-jobs-report
+  name: Fleet jobs deterministic aggregator
+  host: idc03
+  dispatch: systemd
+  every: 4h
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/fleet-jobs-report.py
+  note: 'deterministic — no LLM'
 related_files:
 - scripts/render-jobs.py
 - scripts/ops/cline-board-mirror.py

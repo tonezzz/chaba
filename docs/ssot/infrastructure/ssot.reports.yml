@@ -666,6 +666,15 @@ nodes:
       - nest-brains/orch-bench-corpus
       - nest-brains/nest-edge-vision-models
       - nest-bench/orch
+  - id: fleet-jobs-report
+    layer: L2-domain
+    purpose: per-host jobs/queue/lane status from existing sources
+    generator: scripts/fleet-jobs-report.py
+    cadence: 4h
+    output: reports
+    artifact_pattern: "fleet-jobs-*.md"
+    meta: reports/meta.fleet-jobs-report.yml
+    children: []
   # --- Overview ---
   - id: system-report
     layer: L3-overview
@@ -690,6 +699,7 @@ nodes:
       - focus-inbox
       - daily-brief
       - chaba-nest
+      - fleet-jobs-report
 
 schedule:
   system_report:
