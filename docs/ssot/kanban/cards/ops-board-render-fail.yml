@@ -21,14 +21,23 @@ comms:
 - at: 2026-11-09 13:53
   from: chaba
   text: render healthy — auto-closing
+- at: 2026-11-09 20:09
+  from: chaba
+  text: 'render failing: render-board.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/dispatch-model-smoke-max.yml'';
+    render-board2.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/devin-autonomy-contract.yml'''
+- at: 2026-11-09 20:10
+  from: chaba
+  text: 'render failing: render-board.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/mha-log-noise.yml'';
+    render-board2.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/drift-reconcile-loop.yml'''
 id: ops-board-render-fail
 title: chaba-board-render failing — board stale
-column: done
+column: review
 generated: board-render-guard
 priority: high
 review_kind: triage
-note: 'Auto-recovered 2026-11-09 13:53: board render healthy again.'
+note: 'render-board.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/mha-log-noise.yml'';
+  render-board2.py rc=1 — FileNotFoundError: [Errno 2] No such file or directory: ''/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/kanban/cards/drift-reconcile-loop.yml'''
 help: 'journalctl --user -u chaba-board-render -n 50. The note names the failing renderer + its last stderr line
   — a poisoned card YAML is the usual cause: fix or remove the file it names and the next 60s tick re-renders +
   auto-closes this card.'
-updated: 2026-11-09 13:53
+updated: 2026-11-09 20:10
