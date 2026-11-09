@@ -1,6 +1,6 @@
 id: ops-1244b-one-claimer-jules
 title: 'OPS-1244b jules: merge kanban-dispatch into runner-agent as long-running claim service (sub of devnest-queue-consolidation)'
-column: backlog
+column: doing
 updated: 2026-11-09 10:28
 priority: high
 tags:
@@ -42,7 +42,8 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: queued
+  status: running
+  runner: tony-omen
 ref: OPS-1248
 comms:
 - at: 2026-11-09 09:20
@@ -219,4 +220,6 @@ comms:
 - at: 2026-11-09 10:28
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.26 > 0.85)'
-awaiting_action: true
+- at: 2026-11-09 10:28
+  from: tony-omen
+  text: claimed
