@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: backlog
-updated: 2026-11-09 12:30
+updated: 2026-11-09 17:54
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -16,3 +16,13 @@ comms:
   text: 'VERIFIED NOT DONE 2026-11-09: no scheduled NotebookLM transcript-retention job exists on idc03 — scripts/ada/export-transcripts.py
     is a manual pull tool only; no timer archives transcripts to NLM or purges L0, no ops-collection TTL, no supersede-merge
     job. Card stays open.'
+- at: 2026-11-09 17:54
+  from: tony
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  executor: devin
+  lane: paid_frontier
+  status: queued
