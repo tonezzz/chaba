@@ -1,7 +1,7 @@
 id: voice-dispatch-card-autocreate
 title: Voice dispatch auto-card — Ada's devin_dispatch files a queued card instead of bare start
-column: doing
-updated: 2026-11-09 18:30
+column: review
+updated: 2026-11-09 18:31
 brief: 'Ada''s voice/chat devin_dispatch path (ada-voice backend/devin_dispatch.py → ssh devin-dispatch start) bypasses
   the entire tuned kanban path: no card, no KNOWN_PITFALLS primer, no card comms, no RETRY_RAILS, no board visibility.
   Tony''s decision (2026-11-09): voice dispatches auto-create a queued kanban card and ride the normal dispatch
@@ -54,7 +54,7 @@ spec: 'Repo: ada-voice (primary change). Files: backend/devin_dispatch.py, backe
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 16:09
     stale_running: 2026-11-09 18:20
@@ -65,6 +65,10 @@ action:
     Failed with result ''exit-code''.'
   attempts: 1
   runner: idc02
+  result: 'exit=0 ve e2e on ada-dev is the post-deploy check since a real `queue:true` card spawns an actual session.
+    | devin-task-20261109-181807-repo-ada-voice-primary-change-.service: Consumed 3min 39.661s CPU time, 71.2M memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: ADA-1273
 comms:
 - at: 2026-11-09 15:44
@@ -176,3 +180,9 @@ comms:
   text: 'done: dispatch() no-playbook path -> board-api /card armed dispatch card (queue:true, tags voice-dispatch,
     dedup returns card_id). DEVIN_INSTRUCTIONS + tool_guide updated. pytest tests/ -x -q: 1739 passed / 7 skipped;
     tool-lint clean. e2e on ada-dev deferred to deploy per AGENTS.md.'
+- at: 2026-11-09 18:31
+  from: idc02
+  text: 'finished (ok): exit=0 ve e2e on ada-dev is the post-deploy check since a real `queue:true` card spawns
+    an actual session. | devin-task-'
+review_kind: verify
+claim: {}
