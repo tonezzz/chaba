@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
 column: backlog
-updated: 2026-11-09 16:24
+updated: 2026-11-09 16:36
 priority: high
 tags:
 - ada
@@ -190,6 +190,13 @@ comms:
     and would burn a Devin session. Non-Devin decomposition: (a) per-model script cards driving an existing bench
     harness (e.g. scripts/ops/decision-arena.py pattern) with declared cmd+args, or (b) a jules card that writes
     the bench harness first, then script cards run it. Unhold when a decomposition is carded.'
+- at: 2026-11-09 16:36
+  from: devin
+  text: 'FINAL: lane built + e2e-verified (defer->consultant->evidence->close on local board-api). Bench verdict:
+    NO BRAIN QUALIFIED — qwen3:8b straddles gate (P/m/P/m), qwen2.5:32b deterministic-misses both bars by ~0.003
+    on the same ~12 over-deferred cases every run, gpt-oss:20b DQ throughput, or-* quota-blocked. ADA_JOBS_CONSULTANT
+    stays OFF. Cheapest path forward: corpus audit of the 12 consistent-miss cases (act-001/003/005/007/012/014/006,
+    observe-001/003/004/006/008) — if relabeled, 32b passes; el'
 action:
   type: dispatch
   status: idle
