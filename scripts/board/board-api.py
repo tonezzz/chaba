@@ -1344,10 +1344,15 @@ def do_create(body: dict, frm: str) -> dict:
                 "action.artifact must be a safe repo-relative path")
         # kk_mac_local executor contract (kk-mac-jev-adapter-integration):
         # the bounded task class is part of the contract — a card must
-        # declare one of the admitted classes, and no other executor
-        # takes a task_class.
+        # declare one of the admitted classes; other executors need
+        # an explicit typed profile envelope.
         tc = str(act.get("task_class") or "").strip()
-        if tc and ex != "kk_mac_local":
+        if tc and ex == "opencode":
+            envelope = act.get("lane_envelope")
+            if (tc not in ("read_only", "report") or not isinstance(envelope, dict)
+                    or envelope.get("task_class") != tc):
+                raise ValueError("executor=opencode requires a read_only/report task_class matching lane_envelope")
+        elif tc and ex != "kk_mac_local":
             raise ValueError(
                 "action.task_class is only valid with "
                 "executor=kk_mac_local")

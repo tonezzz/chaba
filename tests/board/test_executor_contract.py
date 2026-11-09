@@ -589,13 +589,31 @@ class BoardApiContractTest(unittest.TestCase):
         self.assertEqual(a["model"], "litellm/gemini-3.5-flash-lite")
 
     def test_create_preserves_typed_lane_envelope(self):
-        self.mod.do_create({"id": "staged", "title": "health report",
-                            "action": {"type": "dispatch", "executor": "opencode",
-                                       "lane_envelope": {"stage": "S3", "profile": "ops-readonly"}}}, "devin")
+        runner = _load("runner-agent.py")
+        ocp = runner.oc_profiles_module()
+        env = ocp.lane_gate.load_envelope(REPO / "evals/opencode-lane/jobs/p1-ops-readonly-idc02.yaml")
+        env.pop("_path", None)
+        env.update(id="requested-report", card="staged", stage="S3")
+        action = {"type": "dispatch", "executor": "opencode", "task_class": "report",
+                  "target_host": "idc02", "agent_profile": "ops-readonly", "model": env["model"],
+                  "artifact": env["artifact"]["path"], "lane_envelope": env}
+        self.mod.do_create({"id": "staged", "title": "health report", "action": action}, "devin")
         saved = self.mod.load(Path(self.td.name) / "staged.yml")
-        self.assertEqual(saved["action"]["lane_envelope"]["stage"], "S3")
+        self.assertEqual(saved["action"]["task_class"], "report")
+        self.assertEqual(saved["action"]["lane_envelope"], env)
+        runner.HOST = "idc02"
+        admitted = runner.prepare_profile_dispatch(saved, "actual-job", ocp.load_profile("ops-readonly"), env["model"], ocp)
+        self.assertEqual(admitted["stage"], "S3")
         self.rejects({"id": "bad-envelope", "title": "t", "action": {"type": "dispatch", "lane_envelope": "S3"}},
                      "action.lane_envelope must be an object")
+
+    def test_opencode_task_class_requires_matching_readonly_envelope(self):
+        for tc, env in (("report", None), ("report", {"task_class": "read_only"}),
+                        ("branch_code", {"task_class": "branch_code"})):
+            self.rejects({"id": "bad-class", "title": "t", "action": {
+                "type": "dispatch", "executor": "opencode", "task_class": tc,
+                **({"lane_envelope": env} if env is not None else {})}},
+                "executor=opencode requires a read_only/report")
 
     def test_create_validates_executor(self):
         self.rejects({"id": "c-bad", "title": "t",
