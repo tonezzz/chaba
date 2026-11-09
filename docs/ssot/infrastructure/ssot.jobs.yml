@@ -1463,7 +1463,7 @@ jobs:
   name: Nest queue watch — TG notify on pack claim/done/fail
   host: idc03
   dispatch: systemd
-  every: 1m
+  every: 15m  # slowed from 1m 2026-11-09 (ops-1244a): ada-nest queue dormant 10+d; OFF switch unchanged
   timeout: 60s
   env:
     BOARD_NOTIFY_CHANNEL: tg
