@@ -1,0 +1,74 @@
+id: devnest-queue-consolidation
+title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
+column: backlog
+updated: 2026-11-09 09:06
+priority: high
+tags:
+- devnest
+- queue
+- consolidation
+- ops
+spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
+
+
+  STATE FOUND
+
+  - Claim plane down: runner-agent.timer disabled + service failed on ALL 4 runners (idc03, idc02, mn01, tony-omen);
+  kanban-dispatch.timer disabled on idc03. Mass SIGTERM ~2026-11-08 16:32. 25 cards status=queued, nothing claiming.
+
+  - 12 of 25 queued cards are timer-alert-* — dispatch-typed alerts that queue for the dead runners they report
+  (self-defeating).
+
+  - ada-nest Drive queue dormant 10.6d (heartbeat stale, lease dead) yet 3x 1-min nest-queue-watch timers on idc03
+  + nest-queue-health on dell keep polling (~4300 ssh+rclone/day).
+
+  - focus-dispatcher-overnight.service failed on idc03.
+
+  - Deployed ~/.local/bin/runner-agent on idc03 has jules + nlm_batch executors absent from repo copy (deploy drift).
+
+  - jev-lane.conf missing [Service] header on mn01 + tony-omen (and idc02 per OPS-0846 ledger) — JEV_LANE inert;
+  unset-lane cards all run the most expensive devin lane. Queue-time classify (OPS-0838) still backlog.
+
+
+  CONTROL SURFACES TODAY (~13): board-api (11 verbs), card-YAML edits, focus-inbox+focus-dispatcher (546 unprocessed
+  files), handoff-*.yml, ada-nest Drive queue, mcp-colab, 4 TG relays (devnest + ada x3), ssot.jobs.yml renderer
+  (77 timers), chaba-jobs dispatcher (4 jobs vestige), kanban-dispatch, runner-agent fleet, Colab job console, nest-mgr.
+  Plus ~10 janitorial sweeps and 4 parallel schedule catalogs (ssot.jobs / night-jobs.* / automation.* / audit.hosts)
+  that already drifted (night-jobs says focus-dispatcher-overnight on dell; it renders+fails on idc03).
+
+
+  CONSOLIDATION PLAN (one queue, one claimer, one catalog, one janitor)
+
+  1. ONE QUEUE: card action queue via board-api is the only queue. Producers: fold focus-inbox intake into /inbox;
+  handoffs + TG relays write cards; Drive packs materialize as script-type cards.
+
+  2. ONE CLAIMER: replace oneshot+timer+external-tick with long-running nest-runner.service (Restart=always) per
+  host; idc03 becomes just another runner; retire kanban-dispatch.
+
+  3. ONE CATALOG: ssot.jobs.yml only. Migrate last 4 dispatch:dispatcher jobs (yomi-update-active, mcp-debug-h3-sync,
+  tony-dell-health-snapshot, network-scan-tony) to rendered timers; delete job-dispatcher + chaba-jobs.tick. Generate
+  night-jobs/automation views from the renderer instead of hand-maintaining.
+
+  4. ONE WATCHDOG: merge 3 nest-queue-watch timers into 1 parameterized unit; fast-poll only while heartbeat fresh,
+  daily otherwise. Timer-alert cards -> script-type or direct TG notify, never dispatch.
+
+  5. ONE JANITOR: merge merge-sweep/answer-sweep/request-sweep/lab-review-sweep/backlog-audit into a single board-janitor
+  tick.
+
+  6. ARM THE ROUTER: fix jev-lane.conf [Service] headers fleet-wide; land OPS-0838 queue-time classify inside board-api
+  /action queue so every claimer routes uniformly.
+
+  7. KILL DEPLOY DRIFT: runner-agent deploys via render pipeline like other units (single source in repo).
+
+
+  DONE-CONDITION: queue drains end-to-end on a claimer restart; exactly one systemd unit family claims cards; ssot.jobs.yml
+  is the only schedule catalog; nest queue watch = 1 unit; no dispatch-typed timer-alert cards.'
+action:
+  type: dispatch
+  repo: chaba
+ref: OPS-1244
+comms:
+- at: 2026-11-09 09:06
+  from: tony
+  text: DevNest queue efficiency assessment filed by devin session on tony-dell — see spec. Verified live state
+    on 4 hosts.
