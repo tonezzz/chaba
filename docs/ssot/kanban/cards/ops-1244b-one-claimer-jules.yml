@@ -1,7 +1,7 @@
 id: ops-1244b-one-claimer-jules
 title: 'OPS-1244b jules: merge kanban-dispatch into runner-agent as long-running claim service (sub of devnest-queue-consolidation)'
 column: doing
-updated: 2026-11-09 10:29
+updated: 2026-11-09 11:30
 priority: high
 tags:
 - devnest
@@ -42,8 +42,11 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   runner: tony-omen
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) UID=1000 PID=2102719 PPID=2474
+    |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-ops-1244b-one-claimer-jules-1794194938.service:
+    Consumed 1.723s CPU time over 1h 29.100s wall clock time, 16.7M memory peak, 328K'
 ref: OPS-1248
 comms:
 - at: 2026-11-09 09:20
@@ -229,3 +232,7 @@ comms:
 - at: 2026-11-09 10:29
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.00 > 1.0)'
+- at: 2026-11-09 11:30
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) UID=1000
+    PID=2102719 PPID=2474 |   Set IM_'
