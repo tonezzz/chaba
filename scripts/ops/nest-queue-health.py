@@ -168,6 +168,21 @@ def kk_worker_heartbeat(now):
     }
 
 
+def kk_thermal(ssh_host='kk-mac'):
+    """CPU temperature via smctemp on KK-Mac (user-built, no root needed).
+    One short ssh probe; returns {} on any failure so callers stay green."""
+    try:
+        r = subprocess.run(
+            ['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=5',
+             ssh_host, '~/.local/bin/smctemp -c'],
+            capture_output=True, text=True, timeout=12)
+        if r.returncode == 0 and r.stdout.strip():
+            return {'cpu_temp_c': round(float(r.stdout.strip()), 1)}
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    return {}
+
+
 def pack_stats(remote):
     """One recursive files-only listing -> per-pack marker counts.
     claim/* files on a done/failed pack are normal residue; a claim on a
@@ -282,6 +297,7 @@ def main():
     except Exception as e:
         errors.append(f'kk-llm inbox: {e}')
     snap['kk_worker'] = kk_worker_heartbeat(now)
+    snap['kk_worker'].update(kk_thermal())
     snap['kk_llm'] = kk
 
     video = pack_stats(KK_VIDEO)
