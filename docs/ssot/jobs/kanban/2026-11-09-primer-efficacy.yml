@@ -1,0 +1,111 @@
+title: "primer-efficacy: the compounding claim is CONTRADICTED — the primer is dead"
+subtitle: >-
+  scripts/board/primer_efficacy.py measures coverage, repeat-failure,
+  and era success over the card corpus: 15 injections ever, last one
+  2026-10-11, build() crashes on string comms, 96% of dispatches run a
+  lane with no primer at all
+icon: 📉
+id: 2026-11-09-primer-efficacy
+status: done
+owner: devin-dispatch
+project: chaba
+card: primer-efficacy-measurement
+branch: dispatch/20261109-154659-goal-prove-or-kill-the-primer-
+started: "2026-11-09"
+completed: "2026-11-09"
+
+context:
+  user_request: >
+    Card primer-efficacy-measurement (OPS-1270): prove or kill the
+    primer's compounding claim with numbers and produce the A/B design.
+    Metrics required: coverage since 2026-10-09, repeat-failure rate vs
+    injected lessons, verified/merge rate vs pre-primer baseline,
+    dead-primer rate.
+
+findings:
+  coverage: >-
+    15 primer injections ever logged (all 8-line), last at 2026-10-11
+    06:15. Post-launch kanban-dispatch lane: 15/41 (37%); runner-agent
+    lane: 0/893 — runner-agent.py has no primer code path and carries
+    ~96% of dispatches. Effective coverage across all post-launch
+    dispatches: 1.6%.
+  root_causes: >-
+    (a) lesson_primer._comms_candidates raises AttributeError on
+    plain-string comms entries (kraut-rain-events, kraut-weather-bakeoff)
+    — kanban-dispatch catches warn-only so every build has silently
+    returned nothing since those cards landed (~10-20); reproduced live.
+    (b) The 10-13→10-16 zero-injection window on tony-dell predates those
+    cards — same invisible signature, mechanism unproven (transient
+    corpus-shape crash or stale dispatch checkout). (c) The injection
+    comms is only written when lines exist, so dead primer,
+    KANBAN_PRIMER=0, and crashes are indistinguishable in the corpus.
+  repeat_failure: >-
+    12 failure events after injections; 8/12 (67%) had a matching lesson
+    injected (primer signature scoring, MIN_SCORE=2). Dominated by the
+    recurring test_calendar_providers merge-gate failure — the primer's
+    keyword matching surfaced the right prior failure; the failure was
+    environmental, not agent error. "Warned" measures signature match,
+    not preventability.
+  success: >-
+    Raw card-level rates — verified: pre-era 24% (n=159), post-primed
+    100% (n=13), post-unprimed 88% (n=17), post-runner 67% (n=411);
+    merged: 33% / 77% / 82% / 76%. No causal claim: the verified stamp
+    postdates the pre-era cohort, primed/unprimed are time-clustered not
+    random, n=13.
+  self_seeding: >-
+    Only 22/311 post-launch outcome docs (7%) carry the `lessons:` block
+    TASK_RAILS requires — the flywheel's input side is also mostly off.
+  verdict: >-
+    contradicted — nothing is compounding because nothing is being
+    injected; efficacy proper is untested (n=15, zero injections in a
+    month). When it fired, signature matching was right 2/3 of the time —
+    fix-then-A/B is the path to a real verdict.
+
+deliverables:
+  - scripts/board/primer_efficacy.py — read-only analyzer, --json/--md,
+    live lp.build() health probe, dedupes cards across live/archive
+  - reports/primer-efficacy-2026-11-09.md — tables, verdict, A/B design
+    (sha1(card_id)%100 < KANBAN_PRIMER_CTL_PCT - control arm - metric =
+    mean attempts to verified)
+  - this job doc
+
+verification:
+  - "python3 scripts/board/primer_efficacy.py --md → full report, exit 0"
+  - "python3 scripts/board/primer_efficacy.py --json → valid JSON, exit 0"
+  - "spot-checks: ada-acl-explain (primed+warned-fail), ada-deploy-gate-tests (injected preview literally names the test it then failed), line-file-doc-ingest (dead dispatch, 0 primer lines in file) — all confirmed against card YAML"
+  - "health probe: lp.build() on live corpus raises AttributeError 'str' object has no attribute 'get' — root cause of dead primer confirmed"
+
+method_notes: >
+  Dispatch events are reconstructed from comms text because the two
+  lanes log differently: kanban-dispatch writes 'dispensed <task> on
+  <repo>' (primer-capable), runner-agent writes 'started devin-task-*
+  on <host> (dispatch)' (never primed). Failure events come from comms
+  failure patterns + action.last_failure deduped by normalized text;
+  repo-sync local-conflict churn deliberately excluded. Era split uses
+  first dispatch date per card; verified reads action.verified, merged
+  reads merge/verify comms lines.
+
+gotchas:
+  - "LESSON: a fail-open advisory feature plus a log-only-on-success
+    observability line = silent death. The primer has injected nothing
+    for ~a month and no alert could have seen it — always log the zero
+    case."
+  - "LESSON: card comms are not guaranteed dicts — plain-string entries
+    exist in the wild (kraut-* cards). Any corpus scan that assumes
+    comms[i].get(...) will crash; mirror this tolerance everywhere."
+  - "GOTCHA: two dispatch lanes write different comms markers —
+    'dispatched <task> on <repo>' vs 'started devin-task-<id> on <host>
+    (dispatch)'. Measuring only the first lane misses ~96% of traffic."
+  - "GOTCHA: 'verified' is a post-era stamp — comparing verified rates
+    across the primer boundary undercounts the baseline; use
+    merge-comms presence as the era-fair comparator."
+
+followups:
+  - "fix lesson_primer._comms_candidates non-dict tolerance (one-line
+    guard) — the primer is dead until this lands"
+  - "log 'primer injected 0 lesson(s) (dead|disabled)' so dead-primer is
+    observable; distinguish KANBAN_PRIMER=0 explicitly"
+  - "wire lp.build() into runner-agent's prompt builder — 96% of
+    dispatches are currently primer-free by construction"
+  - "run the A/B: sha1(card_id)%100 < KANBAN_PRIMER_CTL_PCT control arm,
+    ~4-6 weeks, primary metric mean-attempts-to-verified"
