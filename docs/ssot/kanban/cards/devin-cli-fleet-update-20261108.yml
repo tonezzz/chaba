@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
 column: backlog
-updated: 2026-11-08 20:38
+updated: 2026-11-09 09:33
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -68,6 +68,12 @@ comms:
 - at: 2026-11-08 20:38
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'answer-sweep: executed ''Yes — run the official installer on MacBook and verify versi'' -> queued for processing'
+- at: 2026-11-09 09:33
+  from: chaba
+  text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -93,6 +99,7 @@ requests:
   - No — leave MacBook at 3000.11.3 and mark the CLI update blocked.
   suggested: Yes — run the official installer on MacBook and verify version/doctor (recommended).
   answer: Yes — run the official installer on MacBook and verify version/doctor (recommended).
+  executed: 2026-11-09 queue
 - id: devin-macbook-setup-wizard
   ask: The approved MacBook installer unconditionally launches `devin setup`, an interactive wizard for authentication
     and MCP configuration. Do you authorize running that wizard? It may prompt for auth or change `~/.config/devin`;
@@ -105,4 +112,8 @@ requests:
   - No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
   suggested: No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
   answer: Yes — run the installer and setup wizard; preserve/reuse existing auth and MCP settings wherever offered.
+  executed: 2026-11-09 queue
 awaiting_action: true
+action:
+  type: dispatch
+  status: queued
