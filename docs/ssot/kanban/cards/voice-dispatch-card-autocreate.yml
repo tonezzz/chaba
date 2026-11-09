@@ -54,10 +54,13 @@ spec: 'Repo: ada-voice (primary change). Files: backend/devin_dispatch.py, backe
 action:
   type: dispatch
   repo: ada-voice
-  status: running
+  status: failed
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   runner: idc02
+  result: 'exit=1 --dir in command opencode run | devin-task-voice-dispatch-card-autocreate-1794214565.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-voice-dispatch-card-autocreate-1794214565.service:
+    Failed with result ''exit-code''.'
 ref: ADA-1273
 comms:
 - at: 2026-11-09 15:44
@@ -125,3 +128,7 @@ comms:
 - at: 2026-11-09 15:56
   from: chaba
   text: started devin-task-voice-dispatch-card-autocreate-1794214565 on idc02 (dispatch)
+- at: 2026-11-09 15:56
+  from: idc02
+  text: 'finished (failed): exit=1 --dir in command opencode run | devin-task-voice-dispatch-card-autocreate-1794214565.service:
+    Main process exited'
