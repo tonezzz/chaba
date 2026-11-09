@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: backlog
-updated: 2026-11-09 09:10
+updated: 2026-11-09 09:11
 priority: high
 tags:
 - devnest
@@ -66,6 +66,7 @@ spec: 'Assessment 2026-11-09 (verified live on dell/idc03/idc02/mn01):
 action:
   type: dispatch
   repo: chaba
+  status: queued
 ref: OPS-1244
 comms:
 - at: 2026-11-09 09:06
@@ -79,3 +80,6 @@ comms:
     re-enabled on idc03; queue draining 25->19, 6 claims running; (3) jev-lane.conf fixed on mn01+tony-omen (missing
     [Service] header — JEV_LANE was inert); OPENCODE_LANES commented on omen pending OPS-0846 gate; (4) focus-dispatcher-overnight
     abort root-caused to 1 inva'
+- at: 2026-11-09 09:11
+  from: devin
+  text: queued for processing
