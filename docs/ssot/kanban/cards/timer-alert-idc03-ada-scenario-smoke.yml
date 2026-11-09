@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-smoke
 title: Timer ada-scenario-smoke on idc03 failing
 column: doing
-updated: 2026-11-09 09:24
+updated: 2026-11-09 09:29
 priority: high
 tags:
 - timer-alert
@@ -1486,6 +1486,13 @@ comms:
 - at: 2026-11-09 09:24
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.90 > 1.0)'
+- at: 2026-11-09 09:29
+  from: devin
+  text: 'Root cause found — different bug than the 11-08 exit-code phase. Since the deploy-drift fix, every gate-passing
+    run dies at TimeoutStartSec=2700 mid-suite: smoke tier is now 44 scenarios ~2.5min each (fails rerun once) =
+    ~90-120min/pass. Journal shows every run 11-08 12:00 -> 11-09 08:00 killed at :45 (result=timeout); alternating
+    fires exec-condition skip on quota-dead. Fixed in repo: smoke 2700->7200, full 3600->43200 (203 scenarios, same
+    latent bug, manual-only). DEPLOY pending: install.sh on'
 action:
   status: running
   type: dispatch
