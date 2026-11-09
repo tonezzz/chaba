@@ -1,7 +1,7 @@
 id: lesson-qc-sweep
 title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
 column: doing
-updated: 2026-11-09 15:51
+updated: 2026-11-09 15:56
 brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
   an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
   publishes a report. Advisory only — it never deletes.'
@@ -86,3 +86,9 @@ comms:
 - at: 2026-11-09 15:51
   from: chaba
   text: started devin-task-20261109-155049-new-script-scripts-board-lesso on tony-omen (dispatch)
+- at: 2026-11-09 15:56
+  from: devin
+  text: 'in progress on tony-omen. Corpus probe: 1883 lines (52 outcome / 47 job / 1784 comms), 8 idc01-flagged
+    lesson lines already present — staleness verify target confirmed. Also found primer crashes on 2 cards with
+    bare-string comms (kraut-rain-events, kraut-weather-bakeoff) — QC will tolerate. Invocation: same mechanism
+    as render-handoff-inbox (best-effort tail of devin-dispatch-watch.sh).'
