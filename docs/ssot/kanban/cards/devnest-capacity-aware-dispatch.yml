@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: backlog
-updated: 2026-11-03 17:40
+updated: 2026-11-09 10:58
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -112,6 +112,9 @@ comms:
     incomplete unclaimed packs are retried. Marker-enabled packs are copied, checked with `rclone check`, then receive
     a manifest-hash `ready` marker; the worker ignores absent/invalid markers. Producer hard-caps depth/new work
     at 3/3 and the SSOT job args match. 23 focused adm'
+- at: 2026-11-09 10:58
+  from: tony
+  text: queued for processing
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
@@ -136,4 +139,6 @@ requests:
   suggested: atomic-3-3
   answer: 'atomic-3-3 — Recommended: prepare code/tests for ready-marker staging and incomplete-pack retry; align
     producer to the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
-awaiting_action: true
+action:
+  type: dispatch
+  status: queued
