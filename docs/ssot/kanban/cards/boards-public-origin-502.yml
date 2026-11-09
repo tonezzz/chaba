@@ -1,7 +1,7 @@
 id: boards-public-origin-502
 title: Repair boards.surf-thailand.com origin 502
 column: doing
-updated: 2026-11-09 09:08
+updated: 2026-11-09 09:11
 brief: Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns
   nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.
 priority: high
@@ -91,6 +91,13 @@ comms:
 - at: 2026-11-09 09:08
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:11
+  from: devin
+  text: 'Diagnosis complete — site self-recovered, no duplicate service needed. Incident window 2026-10-29 ~17:02
+    -> 10-30 ~07:47 (+07), brief relapse 10-30 15:31. Two layers: (a) origin distress — Plesk nginx answered but
+    upstream Apache/PHP-FPM dead (nginx 502 on direct probes; read-timeouts + TCP i/o timeouts + h2 GOAWAY/resets
+    from idc02 edge 19:30-21:28 = host-level event, not WP app bug); (b) idc02 edge DNS flakiness — systemd-resolved
+    lookup i/o timeouts for boards.h3 independently produced public'
 action:
   type: dispatch
   status: running
