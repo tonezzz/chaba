@@ -11,7 +11,7 @@ note: 'Formalize in tool_runner: context exposes mddb (routed client), ha_client
   become unnecessary).'
 help: backend/tools_loader.py contract; tool_runner/common.py ToolContext; backend/mddb_client.py read-routing;
   tools.d/ada_track_device.py current raw-httpx pattern; docs/ada-tool-dev.md
-updated: 2026-11-09 21:17
+updated: 2026-11-10 03:12
 comms:
 - at: 2026-10-08 16:00
   from: devin
@@ -110,6 +110,11 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-10 03:12
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -128,3 +133,4 @@ auto_close:
   by: merge-sweep
   at: 2026-11-08 16:18
   note: verified — evidence checks green, closing itself
+awaiting_action: true
