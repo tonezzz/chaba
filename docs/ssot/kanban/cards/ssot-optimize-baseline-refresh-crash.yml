@@ -1,7 +1,7 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
 column: backlog
-updated: 2026-11-09 17:25
+updated: 2026-11-09 17:31
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
   files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
@@ -29,3 +29,9 @@ comms:
 - at: 2026-11-09 17:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-09 17:31
+  from: tony
+  text: queued for processing
+action:
+  type: dispatch
+  status: queued
