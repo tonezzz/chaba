@@ -1,7 +1,7 @@
 id: zen-free-code-corpus-eval
 title: Zen free code brains on code corpus — t1 + m1-behavioral canary
 column: doing
-updated: 2026-11-09 09:25
+updated: 2026-11-09 09:29
 brief: 'Question: does the $0 lane pass the CODE gate, not just chores? Zen free models (deepseek-v4.1-flash-free,
   glm-5.3-flash-free) went 4/4 on ops tasks and beat flash-lite on research. This run is the held-out code canary
   the opencode-lane job doc requires before any non-paid model touches branch_code. LIVE NOW on tony-dell: agent-cost-bench
@@ -19,3 +19,8 @@ comms:
 - at: 2026-11-09 09:25
   from: tony
   text: card captured via board-api
+- at: 2026-11-09 09:29
+  from: devin
+  text: 'RUN LIVE on tony-dell: run_id 20261109_022656_b016d7 (config.zen-code.yaml; t1 + m1-behavioral x bench/zen-ds/zen-glm,
+    concurrency 2, 30min timeout). First attempt 022325_779d91 died: LITELLM_KEY in secrets file lacks ''export''
+    — use ''set -a; source litellm-chaba.env; set +a'' for bench lanes. Results -> ~/evals/results/20261109_022656_b016d7.json'
