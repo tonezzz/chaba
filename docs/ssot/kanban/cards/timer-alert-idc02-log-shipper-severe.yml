@@ -404,6 +404,10 @@ comms:
 - at: 2026-11-10 03:30
   from: tony
   text: moved done -> backlog
+- at: 2026-11-10 03:30
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-10 03:12) of `log-shipper-severe.service` on `idc02` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
   during its recent run. Access the host logs using `journalctl --user -u log-shipper-severe.service` and review
   the CMS record `timer-timeline-idc02` for historical context. The done-condition is verified when the root cause
