@@ -191,6 +191,7 @@ TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
 # done+verified cards older than this move to cards/archive/ via
 # /action do=archive (KNB-1178; SSOT column_sla.done convention).
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
+BOARD_CLASSIFY_AT_QUEUE = os.environ.get("BOARD_CLASSIFY_AT_QUEUE", "1") == "1"  # default on after burn-in — decide + document
 COLUMNS = {"backlog", "doing", "review", "done"}
 
 # /card spawn fields (report-session-loop §1a)
@@ -695,6 +696,24 @@ def queue_unclaimable_warn(card: dict) -> str:
               "capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)")
 
 
+def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
+    """Queue-time classification (OPS-0838). Sets lane and model, and returns an abort message if classified as manual."""
+    if not BOARD_CLASSIFY_AT_QUEUE:
+        return None
+    if a.get("type") == "dispatch" and not a.get("lane") and not a.get("executor"):
+        lane, source, conf = dr.classify_lane(card, with_detail=True)
+        if lane == "manual":
+            a["lane"] = "manual"
+            a["status"] = "idle"
+            comms_add(card, "chaba", f"classified as manual ({source} conf {conf:.2f})")
+            return "classified as manual — queue skipped"
+        a["lane"] = lane
+        if lane in dr.LANE_MODELS and not a.get("model"):
+            a["model"] = dr.LANE_MODELS[lane]
+        comms_add(card, "chaba", f"classified as {lane} ({source} conf {conf:.2f})")
+    return None
+
+
 def do_action(card: dict, verb: str, frm: str) -> str:
     a = card.setdefault("action", {})
     card.pop("awaiting_action", None)  # any deliberate action is triage
@@ -707,6 +726,9 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
         a.pop("verified", None)  # stale stamp must not survive a re-queue
+        msg = _apply_classify_at_queue(card, a)
+        if msg:
+            return msg
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
@@ -1417,6 +1439,9 @@ def do_create(body: dict, frm: str) -> dict:
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue
         a.pop("task_id", None)
+        abort_msg = _apply_classify_at_queue(card, a)
+        if abort_msg:
+            return {"message": f"card {cid} " + abort_msg, "id": cid, "status": "idle"}
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "re-spawned from report page")
@@ -1488,10 +1513,6 @@ def do_create(body: dict, frm: str) -> dict:
         dnote = str(dep.get("note") or "").strip()
         if dnote:
             card["deploy"]["note"] = dnote[:300]
-    if body.get("queue"):
-        a = card.setdefault("action", {})
-        a.setdefault("type", "dispatch")
-        a["status"] = "queued"
     note = str(body.get("note") or "").strip()
     if note:
         card["note"] = note[:500]
@@ -1504,6 +1525,12 @@ def do_create(body: dict, frm: str) -> dict:
     card["comms"] = [{"at": now(), "from": frm,
                       "text": str(body.get("text") or
                                    "card captured via board-api")[:500]}]
+    abort_msg = None
+    if body.get("queue"):
+        a = card.setdefault("action", {})
+        a.setdefault("type", "dispatch")
+        a["status"] = "queued"
+        abort_msg = _apply_classify_at_queue(card, a)
     warn = queue_starve_warn(card)
     uncl = queue_unclaimable_warn(card)
     if uncl:
@@ -1516,6 +1543,10 @@ def do_create(body: dict, frm: str) -> dict:
     save(p, card)
     warn_all = " ".join(x for x in (warn, uncl) if x)
     msg = f"card {cid} created in {col} as {card['ref']}"
+    if abort_msg:
+        res = {"message": f"{msg} — {abort_msg}",
+               "id": cid, "ref": card["ref"], "status": "idle"}
+        return res
     res = {"message": msg, "id": cid, "ref": card["ref"]}
     a = card.get("action") or {}
     if a.get("status"):
