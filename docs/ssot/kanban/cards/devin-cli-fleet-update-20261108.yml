@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
 column: doing
-updated: 2026-11-09 09:49
+updated: 2026-11-09 09:51
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -83,6 +83,10 @@ comms:
 - at: 2026-11-09 09:49
   from: chaba
   text: started devin-task-20261109-094945-update-devin-cli-on-tony-omen- on idc02 (dispatch)
+- at: 2026-11-09 09:51
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
