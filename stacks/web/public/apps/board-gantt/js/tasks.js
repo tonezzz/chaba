@@ -1,4 +1,6 @@
-// tasks.js — normalized cards -> frappe-gantt task list.
+// tasks.js — normalized cards -> gantt task list + tree row model.
+// buildRows() is the single source of truth for row order; buildTasks()
+// and the sidebar tree both consume it so they can never drift apart.
 import { COLUMN_STYLE, DEFAULT_COLUMN_STYLE, DONE_RECENT_DAYS } from './config.js';
 import { groupCards, groupLabel } from './groups.js';
 
@@ -42,41 +44,42 @@ export function cardToTask(card, now = new Date()) {
   };
 }
 
-// Group header row — a zero-progress span covering the group's date range,
-// styled as a label via custom_class (see theme.css .group-header).
-function groupHeaderTask(group, cards, tasks) {
-  const dates = tasks
-    .filter((t) => t._group === group.id)
-    .flatMap((t) => [parseDate(t.start), parseDate(t.end)])
-    .filter(Boolean);
-  if (!dates.length) return null;
-  const start = new Date(Math.min(...dates));
-  const end = new Date(Math.max(...dates));
-  return {
-    id: `group-${group.id}`,
-    name: `▸ ${groupLabel(group.id)} (${cards.length})`,
-    start: fmt(start),
-    end: fmt(end),
-    progress: 0,
-    custom_class: 'group-header',
-    _group: group.id,
-  };
+// Row model shared by the gantt and the tree sidebar. Each entry:
+//   { kind: 'group', group, count, task }   — header row (also a gantt bar)
+//   { kind: 'card',  card,  task }          — card row
+// task is the frappe-gantt task object (null only if a card lacks dates,
+// in which case the row is dropped entirely to keep rows 1:1).
+export function buildRows(cards, now = new Date()) {
+  const rows = [];
+  for (const { group, cards: gcards } of groupCards(cards)) {
+    const cardRows = [];
+    for (const c of gcards) {
+      const task = cardToTask(c, now);
+      if (task) cardRows.push({ kind: 'card', card: c, task });
+    }
+    if (!cardRows.length) continue;
+    cardRows.sort((a, b) =>
+      a.task.start.localeCompare(b.task.start) || a.task.name.localeCompare(b.task.name));
+
+    const starts = cardRows.map((r) => parseDate(r.task.start)).filter(Boolean);
+    const ends = cardRows.map((r) => parseDate(r.task.end)).filter(Boolean);
+    const headerTask = starts.length && ends.length ? {
+      id: `group-${group.id}`,
+      name: `▸ ${groupLabel(group.id)} (${cardRows.length})`,
+      start: fmt(new Date(Math.min(...starts))),
+      end: fmt(new Date(Math.max(...ends))),
+      progress: 0,
+      custom_class: 'group-header',
+      _group: group.id,
+    } : null;
+
+    rows.push({ kind: 'group', group, count: cardRows.length, task: headerTask });
+    rows.push(...cardRows);
+  }
+  return rows;
 }
 
-// Full task list: per group, a header row then its cards sorted by start.
-// `grouped` is the output of groupCards(); `doneDays` override for tests.
+// Flat gantt task list (group headers included, in row order).
 export function buildTasks(cards, now = new Date()) {
-  const tasks = [];
-  for (const { group, cards: gcards } of groupCards(cards)) {
-    const cardTasks = gcards
-      .map((c) => cardToTask(c, now))
-      .filter(Boolean)
-      .map((t) => ({ ...t, _group: group.id }))
-      .sort((a, b) => a.start.localeCompare(b.start) || a.name.localeCompare(b.name));
-    if (!cardTasks.length) continue;
-    const header = groupHeaderTask(group, gcards, cardTasks);
-    if (header) tasks.push(header);
-    tasks.push(...cardTasks);
-  }
-  return tasks;
+  return buildRows(cards, now).map((r) => r.task).filter(Boolean);
 }
