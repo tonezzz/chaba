@@ -380,11 +380,15 @@ comms:
 - at: 2026-11-09 09:37
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.70 > 1.0)'
+- at: 2026-11-09 09:37
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service:'
 action:
   type: dispatch
-  status: running
-  result: 'exit=0  pull + `gev-gemini` rebuild (not deployed per dispatch rules). | devin-task-20261006-174428-gods-eye-view-app-work-held-re.service:
-    Consumed 2min 4.768s CPU time over 22min 2.559s wall clock time, 1.1G memory peak, 269.7M memory swap peak.'
+  status: failed
+  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service:
+    Failed with result ''exit-code''. | devin-task-20261109-093655-gods-eye-view-app-work-held-re.service: Consumed
+    2.505s CPU time.'
   sweep:
     no_repo: 2026-11-08 16:20
   lane: codemod
