@@ -5,6 +5,13 @@ The producer never invents work. An upstream audit/report producer places
 JSON task specs in gdrive:ada-nest/kk-llm/inbox/. This script stages at most
 three valid specs when the KK admission gate is green and the queue is below
 the configured depth.
+
+Staging is atomic-by-marker (OPS-1002 atomic-3-3): the pack is copied,
+verified with `rclone check`, and sealed with a manifest-hash `ready`
+marker written last. Workers ignore packs without a valid marker, so an
+interrupted staging run can no longer leave a claimable partial pack.
+An incomplete unclaimed pack dir is retried (re-copied and re-sealed)
+instead of counted as queue depth.
 """
 from __future__ import annotations
 
@@ -23,9 +30,19 @@ if __package__:
 else:
     from kk_mac_admission import snapshot
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+import sys
+sys.path.insert(0, str(_REPO_ROOT / "scripts" / "ada"))
+import nest_pack_ready as npr
+
 TASK_CLASSES = {"summary", "operator_brief", "structured_extract", "safe_route"}
 TASK_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,60}$")
 DEFAULT_REMOTE = "gdrive:ada-nest/kk-llm"
+# OPS-1002 watermark — hard ceiling regardless of CLI args (the 10/5 args
+# that overran the approved 3/3 spec were the trigger for the fix branch).
+HARD_MAX_DEPTH = 3
+HARD_MAX_NEW = 3
 
 
 def rclone(*args: str, input_text: str | None = None) -> str:
@@ -41,26 +58,23 @@ def rclone(*args: str, input_text: str | None = None) -> str:
     return result.stdout
 
 
-def queue_depth(remote: str) -> int:
-    entries = rclone(
-        "lsf", f"{remote}/packs", "--recursive"
-    ).splitlines()
-    packs = {line.split("/", 1)[0] for line in entries if line.strip()}
-    terminal = {
-        line.split("/", 1)[0]
-        for line in entries
-        if line.endswith("/done") or line.endswith("/failed")
-    }
-    return len(packs - terminal)
+def inbox_task_id(filename: str) -> str | None:
+    """Candidate task_id derived from the inbox filename — the write
+    contract is `<task_id>.json`, so the filename alone decides whether
+    the pack needs attention without a remote `cat`."""
+    if not filename.endswith(".json"):
+        return None
+    candidate = filename[:-5]
+    return candidate if TASK_RE.fullmatch(candidate) else None
 
 
 def task_files(remote: str) -> list[str]:
-    return [
+    return sorted(
         x for x in rclone(
             "lsf", f"{remote}/inbox", "--files-only"
         ).splitlines()
         if x.endswith(".json")
-    ]
+    )
 
 
 def load_task(remote: str, name: str) -> dict:
@@ -77,6 +91,44 @@ def load_task(remote: str, name: str) -> dict:
     if not prompt or len(prompt) > 6000:
         raise ValueError("prompt missing or exceeds 6000 characters")
     return task
+
+
+def pack_states(remote: str) -> dict[str, dict]:
+    """One recursive listing -> {pack_name: state flags}.
+
+    ready    — `ready` marker file present (staging sealed)
+    claimed  — a worker claim file exists
+    terminal — done or failed marker exists
+    empty/partial dirs show up as all-False (staging debris, retryable).
+    """
+    entries = [
+        x for x in rclone("lsf", f"{remote}/packs", "--recursive")
+        .splitlines() if x.strip()
+    ]
+    states: dict[str, dict] = {}
+    for line in entries:
+        parts = line.split("/", 1)
+        name = parts[0]
+        rel = parts[1] if len(parts) > 1 else ""
+        st = states.setdefault(
+            name, {"ready": False, "claimed": False, "terminal": False})
+        if rel == npr.READY_FILE:
+            st["ready"] = True
+        elif rel.startswith("claim/"):
+            st["claimed"] = True
+        elif rel in ("done", "failed"):
+            st["terminal"] = True
+    return states
+
+
+def live_depth(states: dict[str, dict]) -> int:
+    """Queue watermark counts packs a worker can see: sealed (ready) or
+    claimed. Terminal packs are drained; bare/incomplete dirs are staging
+    debris, not depth."""
+    return sum(
+        1 for st in states.values()
+        if not st["terminal"] and (st["ready"] or st["claimed"])
+    )
 
 
 def stage_task(
@@ -100,29 +152,18 @@ def stage_task(
         (pack / "inputs" / "task.json").write_text(
             json.dumps(task, indent=2, ensure_ascii=False) + "\n"
         )
-        submitter = Path(__file__).resolve().parents[1] / "ada" / "nest-pack-submit.py"
-        subprocess.run(
-            ["python3", str(submitter),
-             str(pack), "--remote", remote],
-            check=True,
-            timeout=120,
+        if not pack_yml.is_file() or not (pack / "inputs" / "task.json").is_file():
+            raise ValueError("pack build incomplete")
+        remote_dir = f"{remote}/packs/{pack_name}"
+        rclone(
+            "copy", str(pack), remote_dir,
+            "--exclude", "claim/**", "--exclude", "done",
+            "--exclude", "failed", "--exclude", npr.READY_FILE,
         )
+        npr.verify_and_mark(pack, remote_dir,
+                            staged_by="kk_mac_capacity_producer",
+                            rclone=rclone)
     return pack_name
-
-
-def pack_listing(remote: str) -> tuple[set[str], set[str]]:
-    """One recursive lsf -> (live pack dir names, terminal pack names).
-    A pack dir always contains files, so only entries with a '/' count."""
-    entries = [
-        x for x in rclone("lsf", f"{remote}/packs", "--recursive")
-        .splitlines() if x.strip()
-    ]
-    dirs = {x.split("/", 1)[0] for x in entries if "/" in x}
-    terminal = {
-        x.split("/", 1)[0] for x in entries
-        if x.endswith("/done") or x.endswith("/failed")
-    }
-    return dirs, terminal
 
 
 def produce(
@@ -142,6 +183,8 @@ def produce(
         Path(__file__).resolve().parents[1] / "colab" / "packs" /
         "kk-mac-llm-pack"
     )
+    depth_clamped = max(1, min(max_depth, HARD_MAX_DEPTH))
+    new_clamped = max(1, min(max_new, HARD_MAX_NEW))
     gate = snapshot()
     if os.environ.get("DEVNEST_KK_MAC_ENABLED", "true").lower() != "true":
         gate = dict(gate)
@@ -152,7 +195,11 @@ def produce(
         "gate": gate,
         "queue_before": None,
         "staged": [],
+        "retried": [],
         "skipped": [],
+        "limits": {"max_depth": depth_clamped, "max_new": new_clamped,
+                   "clamped": depth_clamped != max_depth
+                   or new_clamped != max_new},
     }
     if not result["eligible"]:
         result["skipped"].append("admission_gate")
@@ -160,32 +207,50 @@ def produce(
     if expired():
         result["skipped"].append("budget_exhausted")
         return result
-    # one recursive listing yields both queue depth and staged-pack names;
-    # rclone calls are the hang surface (each can block up to 60s)
-    dirs, terminal = pack_listing(remote)
-    result["queue_before"] = len(dirs - terminal)
-    if result["queue_before"] >= max_depth:
+    # one recursive listing yields queue depth, sealed-pack names, claim
+    # and terminal state — rclone calls are the hang surface (~60s each)
+    states = pack_states(remote)
+    result["queue_before"] = live_depth(states)
+    room = depth_clamped - result["queue_before"]
+    if room <= 0:
         result["skipped"].append("queue_at_capacity")
         return result
-    existing_packs = {x.rstrip("/") for x in dirs}
     for filename in task_files(remote):
         if expired():
             result["skipped"].append("budget_exhausted")
             break
-        if len(result["staged"]) >= min(
-            max_new, max_depth - result["queue_before"]
-        ):
+        if len(result["staged"]) >= min(new_clamped, room):
             break
+        candidate = inbox_task_id(filename)
+        if not candidate:
+            result["skipped"].append(f"{filename}:bad_task_filename")
+            continue
+        pack_name = f"kk-mac-task-{candidate}"
+        st = states.get(pack_name)
+        retry = False
+        if st:
+            if st["terminal"]:
+                result["skipped"].append(f"{filename}:terminal")
+                continue
+            if st["claimed"]:
+                result["skipped"].append(f"{filename}:claimed")
+                continue
+            if st["ready"]:
+                result["skipped"].append(f"{filename}:already_staged")
+                continue
+            retry = True  # dir exists, unsealed, unclaimed -> re-stage
         try:
             task = load_task(remote, filename)
-            pack_name = f"kk-mac-task-{task['task_id']}"
-            if pack_name in existing_packs:
-                result["skipped"].append(f"{filename}:already_staged")
+            if task["task_id"] != candidate:
+                result["skipped"].append(f"{filename}:task_id_mismatch")
                 continue
             result["staged"].append(stage_task(
                 task, remote=remote, template=template, dry_run=dry_run
             ))
-            existing_packs.add(pack_name)
+            if retry:
+                result["retried"].append(pack_name)
+            states[pack_name] = {
+                "ready": True, "claimed": False, "terminal": False}
         except Exception as exc:
             result["skipped"].append(f"{filename}:{type(exc).__name__}")
     return result

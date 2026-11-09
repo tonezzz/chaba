@@ -15,6 +15,11 @@ Usage:
 """
 import argparse, os, re, subprocess, sys
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+if _HERE not in sys.path:
+    sys.path.insert(0, _HERE)
+import nest_pack_ready as npr
+
 NEED_KEYS = {'gpu_gb', 'disk_gb', 'ram_gb', 'egress_only_ok'}
 NAME_RE = re.compile(r'[a-z0-9][a-z0-9-]{0,60}')
 
@@ -92,10 +97,11 @@ def validate(spec, dirname):
     return errs
 
 
-def rclone(*args, capture=True):
+def rclone(*args, capture=True, input_text=None):
     cmd = ['rclone'] + list(args)
     if capture:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        r = subprocess.run(cmd, input=input_text, capture_output=True,
+                           text=True, timeout=120)
         if r.returncode != 0:
             die(f'rclone {args[0]} failed: {r.stderr.strip()[:300]}')
         return r.stdout
@@ -149,8 +155,15 @@ def main():
         return
     rclone('copy', d, f'{args.remote}/packs/{name}',
            '--exclude', 'claim/**', '--exclude', 'done',
+           '--exclude', 'failed', '--exclude', npr.READY_FILE,
            capture=False)
-    print(f'staged. workers will discover it on their next pass.')
+    # atomic-by-marker (OPS-1002): check proves the copy, `ready` seals it
+    # last — workers never see a half-staged pack as claimable.
+    marker = npr.verify_and_mark(d, f'{args.remote}/packs/{name}',
+                                 staged_by='nest-pack-submit',
+                                 rclone=rclone)
+    print(f'staged + sealed (manifest {marker["manifest_sha256"][:12]}, '
+          f'{marker["files"]} files). workers discover it next pass.')
     print(f'check: nest-queue-status.py   (packs section)')
 
 
