@@ -1,0 +1,22 @@
+id: board-weight-cards-json-still-6-2mb-at-7-894827
+title: 'Board weight: cards.json still 6.2MB at 739 cards after cap archive'
+column: backlog
+updated: 2026-11-09 20:22
+priority: medium
+tags:
+- board
+- perf
+spec: 'Done when: board page loads a compact cards payload (<1.5MB at ~750 cards) with full card detail fetched
+  on open via GET /card/<id>, and doing holds only cards with a live claim or running action.'
+note: '2026-11-09: Tony saw a card missing from the board tab. Cause: board held 1193 cards (8.2MB cards.json, ~60-100s
+  per render) and archive-done archived 0/day — only action.verified done cards qualified, most done cards are manual
+  closes. Shipped 2049bf1d76: archive-done.py --cap 600 (daily timer, oldest done >7d, never cards with unanswered
+  requests, reversible via do=unarchive). First sweep: 455 archived, 1 timeout -> 739 cards, 6.2MB.
+
+
+  Still over cap because the rest isn''t done: backlog 245, do'
+ref: KNB-1302
+comms:
+- at: 2026-11-09 20:22
+  from: devin
+  text: card captured via board-api
