@@ -1,6 +1,6 @@
 id: ada-code-auth-error
 title: ada-code authentication error — investigate scope + fix
-column: backlog
+column: done
 updated: 2026-11-09 18:10
 priority: high
 tags:
@@ -13,6 +13,7 @@ spec: 'Tony reported "Authentication error on ada-code" 2026-11-09 ~12:00 +07. D
   Fix = rotate/remount creds per secrets convention; if the surface is dead, declare it dead per host-hygiene.'
 action:
   type: manual
+  status: done
 ref: ADA-1289
 comms:
 - at: 2026-11-09 17:39
@@ -48,3 +49,6 @@ comms:
     — minted fresh key alias ada-code ($10/30d), updated ada-code.env on idc02, service active. Root cause hardening
     shipped: OPS-1291 — mint-key.sh now syncs dependent envs on rotation. Earlier fixes also live: enroll x-forwarded-for
     crash-loop + opencode 2.2.6 SPA fix. Closing as verified — reopen if it re-blocks.'
+- at: 2026-11-09 18:10
+  from: devin
+  text: closed by devin
