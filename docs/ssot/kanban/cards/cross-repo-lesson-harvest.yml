@@ -1,7 +1,7 @@
 id: cross-repo-lesson-harvest
 title: Cross-repo lesson harvest — outcome docs outside chaba are invisible to the primer
 column: doing
-updated: 2026-11-09 18:16
+updated: 2026-11-09 18:17
 brief: lesson_primer._outcome_candidates only globs dispatch-outcome-*.md at the local chaba checkout root. Dispatches
   on ada-voice/sunsynk-card/mddb-fork write their outcome docs inside those repos, so their lessons never enter
   the primer corpus. Move the lesson corpus to the devin-handoff bank so it is repo-agnostic (and sets up semantic
@@ -40,7 +40,7 @@ spec: 'Problem: scripts/board/lesson_primer.py::_outcome_candidates scans root.g
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 15:50
   executor: devin
@@ -48,6 +48,7 @@ action:
     Main process exited, code=exited, status=1/FAILURE | devin-task-cross-repo-lesson-harvest-1794213980.service:
     Failed with result ''exit-code''.'
   attempts: 1
+  runner: mn01
 ref: MEM-1272
 comms:
 - at: 2026-11-09 15:44
@@ -94,3 +95,6 @@ comms:
 - at: 2026-11-09 18:16
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: mn01
+  text: claimed
