@@ -351,20 +351,23 @@ This card is report-linked: ada-cms-pages/{slug}.
 """.strip()
 
 
-# Lesson lines injected into the most recent build_task call — read by
-# start_pending so the card comms logs exactly what the primer added.
+# Lesson/good lines injected into the most recent build_task call — read
+# by start_pending so the card comms logs exactly what the primer added.
 LAST_PRIMER_LINES: list = []
+LAST_GOOD_LINES: list = []
 
 
 def build_task(card: dict) -> str:
     """The text handed to `devin-dispatch start` — card spec (or
     title+note) plus TASK_RAILS, a KNOWN_PITFALLS primer block when past
-    lessons match, plus REPORT_RAILS when report-linked."""
+    lessons match, a KNOWN_GOOD block when first-try-verified work
+    matches, plus REPORT_RAILS when report-linked."""
     spec = (card.get("spec") or "").strip() \
         or f"{card.get('title','')}\n\n{card.get('note','')}"
     task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
     repo = (card.get("action") or {}).get("repo", "chaba")
     LAST_PRIMER_LINES.clear()
+    LAST_GOOD_LINES.clear()
     if os.environ.get("KANBAN_PRIMER", "1") != "0":
         try:
             LAST_PRIMER_LINES.extend(lp.build(card, HOST, repo, REPO))
@@ -372,6 +375,14 @@ def build_task(card: dict) -> str:
             print(f"warn: lesson primer failed: {e}", file=sys.stderr)
     if LAST_PRIMER_LINES:
         task += "\n\n" + lp.format_block(LAST_PRIMER_LINES, HOST, repo)
+    if os.environ.get("KANBAN_PRIMER_GOOD", "1") != "0":
+        try:
+            LAST_GOOD_LINES.extend(
+                lp.build_good(card, HOST, repo, REPO))
+        except Exception as e:  # good primer is advisory too
+            print(f"warn: good primer failed: {e}", file=sys.stderr)
+    if LAST_GOOD_LINES:
+        task += "\n\n" + lp.format_good_block(LAST_GOOD_LINES)
     a = card.get("action") or {}
     attempts = int(a.get("attempts") or 0)
     if attempts > 0 or a.get("last_failure"):
@@ -720,11 +731,15 @@ def start_pending(path: Path) -> str:
                   + (f" ({blurb})" if blurb else ""))
         _notify("start", card.get("id") or path.stem,
                 f"dispatched {task_id} on {repo}")
-        if LAST_PRIMER_LINES:
-            comms_add(
-                card, "chaba",
-                f"primer injected {len(LAST_PRIMER_LINES)} lesson(s): "
-                + "; ".join(l[:80] for l in LAST_PRIMER_LINES))
+        if LAST_PRIMER_LINES or LAST_GOOD_LINES:
+            msg = f"primer injected {len(LAST_PRIMER_LINES)} lesson(s)"
+            if LAST_PRIMER_LINES:
+                msg += ": " + "; ".join(
+                    l[:80] for l in LAST_PRIMER_LINES)
+            if LAST_GOOD_LINES:
+                msg += (" | good: " + "; ".join(
+                    l[:80] for l in LAST_GOOD_LINES))
+            comms_add(card, "chaba", msg)
         save_card(path, card)
         return f"dispatched {task_id}"
     return _with_lock(apply)
