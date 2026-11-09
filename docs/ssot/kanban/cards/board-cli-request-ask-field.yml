@@ -1,7 +1,7 @@
 id: board-cli-request-ask-field
 title: Fix board-cli request subcommand — posts 'text' but API expects 'ask'
 column: backlog
-updated: 2026-11-09 11:03
+updated: 2026-11-09 19:12
 brief: 'board-cli.py request subcommand POSTs {text: ...} to /request, but do_request() reads body[''ask''] — every
   ''board-cli request'' returns HTTP 400 ''ask required''. Confirmed identical bug in dell and idc03 checkouts (line
   ~168). One-word fix in the payload dict. Requests meanwhile go via curl with ''ask'' — workaround proven 2026-11-09
@@ -24,3 +24,8 @@ comms:
     but omits card id; API documents POST /respond {id,request_id,answer,from}. CLI respond returned HTTP 400. Direct
     /respond with id=opencode-lane-regraduation used as workaround. Include card-id routing in regression coverage
     along with request ask field; text remains accepted by do_respond.'
+- at: 2026-11-09 19:12
+  from: devin
+  text: Devin preparing bounded fix/regressions in dedicated /home/tony/CascadeProjects/chaba-knb1257, branch fix/knb-1257-request-field,
+    base 75c053c30d. Scope includes request ask field, respond card-id routing, and preserving comment text contract.
+    Free code lane remains unqualified; no delegation/promotion. TDD implementation not yet started.
