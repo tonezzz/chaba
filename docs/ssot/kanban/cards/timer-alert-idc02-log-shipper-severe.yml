@@ -1,6 +1,6 @@
 id: timer-alert-idc02-log-shipper-severe
 title: Timer log-shipper-severe on idc02 failing
-column: backlog
+column: done
 updated: 2026-11-10 04:10
 priority: high
 tags:
@@ -423,6 +423,9 @@ comms:
 - at: 2026-11-10 04:10
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-10 04:10
+  from: tony
+  text: closed by tony
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
   during its recent run. Access the host logs using `journalctl --user -u log-shipper-severe.service` and review
   the CMS record `timer-timeline-idc02` for historical context. The done-condition is verified when the root cause
