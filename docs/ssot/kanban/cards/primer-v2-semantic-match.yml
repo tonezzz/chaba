@@ -1,0 +1,49 @@
+id: primer-v2-semantic-match
+title: Lesson primer v2 — semantic selection via bge-m3 hybrid recall
+column: backlog
+updated: 2026-11-09 15:44
+brief: If primer-efficacy-measurement shows the primer pays its token cost, upgrade selection from keyword scoring
+  to hybrid semantic retrieval — BGE-M3 dense + BM25 RRF using the proven read-only infra in scripts/ada/bge-hybrid-recall.py.
+  Keyword scorer stays as the fail-open fallback.
+priority: low
+blocked_by: primer-efficacy-measurement
+tags:
+- dispatch-tuning
+- primer
+- embeddings
+- v2
+spec: 'Gate: this card is blocked_by primer-efficacy-measurement — only proceed once that card''s report exists;
+  read its verdict first (if compounding is contradicted, this card should be closed not built).
+
+
+  Design:
+
+  - Lesson corpus indexed into a dedicated collection — if cross-repo-lesson-harvest landed, the devin-handoff bank
+  kind=lesson docs are the corpus; otherwise index dispatch-outcome lessons + job fields into a ''dispatch-lessons''
+  shadow collection on the local bank (mirror the bge-lessons-shadow pattern in docs/ssot/jobs/ada/2026-11-05-bge-m3-space-eval.md).
+
+  - Selection: query = card title+brief+spec (truncate ~512 chars); retrieve dense top-20 + BM25 top-50, weighted
+  RRF (start at the evaluated lexical=0.75 setting from the bge eval); take top-8 lines.
+
+  - Fail-open: if the embed endpoint/index is unreachable or slow (>2s), fall back to the keyword scorer silently
+  (log ''semantic primer fell back to keywords'' to card comms).
+
+  - Gate the new path behind env KANBAN_PRIMER_SEM=1 so it ships dark.
+
+
+  Evaluation BEFORE enabling by default: on a fixture set of ~10 historical cards, produce keyword top-8 vs semantic
+  top-8 side-by-side; hand-label relevance (agent does the judgment pass, human spot-checks); report docs/ssot/jobs/kanban/<date>-primer-v2-eval.yml
+  with the verdict. Only wire KANBAN_PRIMER_SEM=1 as default in a follow-up once the eval wins.
+
+
+  Verify: offline eval report lands; fallback path proven (embed endpoint down -> keyword lines still injected);
+  pytest green.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-1277
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
