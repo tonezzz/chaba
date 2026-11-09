@@ -1,0 +1,57 @@
+title: weather-bakeoff-daily timer-alert on idc03 — missing env file + dead HA route, now green
+subtitle: timer-alert-idc03-weather-bakeoff-daily investigation (dispatched 2026-11-09)
+icon: timer
+
+decision:
+  summary: >
+    Sentinel flagged weather-bakeoff-daily.service result=exit-code (last
+    bad run 2026-11-08 07:40, plus every daily run since 11-01). Two
+    stacked root causes: (1) ~/.config/secrets/ada-ai-kraut.env was moved
+    to ~/.config/secrets/_attic-20261023/ during the Oct-23 secrets reorg —
+    script FileNotFoundError'd every 07:40 run; (2) the env reconstructed
+    11-08 ~13:33 pointed HOME_ASSISTANT_URL at michael-ha:8123, which idc03
+    cannot TCP-reach (asymmetric tailscale — ping OK, TCP timeout), so runs
+    at 13:28/15:44 still failed with URLError. Fixed 11-08 15:45 by
+    switching HOME_ASSISTANT_URL to http://127.0.0.1:18123 backed by the
+    new durable user unit michael-ha-via-omen-tunnel.service (ssh -L via
+    tony-omen, Restart=always, enabled). Verified green 11-08 15:45 and
+    11-09 07:40.
+  residual_fix_this_session:
+    detail: >
+      The reconstructed env (3 vars) missed the GEMINI block the original
+      had, so the report's GEMINI row was always "n/a (gemini baseline:
+      all endpoints failed)". Merged ADA_GEMINI_REST_BASE_URL
+      (http://100.102.134.91:4000 — idc03 LiteLLM, tailscale-IP bound, not
+      loopback), ADA_GEMINI_REST_API_KEY and ADA_TEXT_MODEL
+      (gemini-3.5-flash-lite) from the attic backup into the live env;
+      key verified live vs LiteLLM before merging.
+    verify: >
+      Manual `systemctl --user start weather-bakeoff-daily.service` at
+      09:10 ICT 11-09: full report rendered, GEMINI row shows a real
+      forecast sentence, PNG written, snapshot appended, TG send ok to
+      8960073266.
+  side_effect: >
+    kraut-rain-watch.service (30-min cadence) shares ada-ai-kraut.env —
+    same root cause, recovered with the tunnel env; every run since 11-08
+    15:45 clean (verified through 08:41 11-09). timer-alert card
+    timer-alert-idc03-kraut-rain-watch closed too.
+  open_followup: >
+    card idc03-michael-ha-omen-relay (SYS-1208, backlog): declare the
+    tunnel in SSOT/render path, document the tony-omen dependency, and
+    audit why idc03->michael-ha:8123 TCP fails while ping/other hosts
+    succeed (HAOS firewall/ACL suspicion). Tunnel is the workaround, not
+    the fix for the asymmetric route.
+
+lesson: >
+  When a secrets/env file vanishes on a host, check
+  ~/.config/secrets/_attic-*/ before reconstructing from scratch — the
+  Oct-23 reorg moved (not deleted) ada-ai-kraut.env, and the attic copy
+  had vars (GEMINI block) the reconstruction missed. Attic dirs are dated
+  by the reorg that made them.
+
+refs:
+  - card: timer-alert-idc03-weather-bakeoff-daily (done)
+  - card: timer-alert-idc03-kraut-rain-watch (done)
+  - card: idc03-michael-ha-omen-relay (SYS-1208, backlog — durability follow-up)
+  - unit: idc03 ~/.config/systemd/user/michael-ha-via-omen-tunnel.service
+  - job: ssot.jobs.yml weather-bakeoff-daily / kraut-rain-watch
