@@ -1,7 +1,7 @@
 id: lesson-primer-scoring-fixes
 title: lesson_primer scoring fixes — word boundaries, host-token eligibility, staleness
-column: doing
-updated: 2026-11-09 15:54
+column: review
+updated: 2026-11-09 15:55
 brief: 'Three known scoring bugs in scripts/board/lesson_primer.py: substring matching false-hits (e.g. keyword
   ''test'' matches ''latest''), host tokens alone reach MIN_SCORE=2 so host-specific lessons always crowd the 8
   slots regardless of task relevance, and lessons never decay so stale references persist. Fix the scoring, keep
@@ -42,9 +42,13 @@ spec: 'Files: scripts/board/lesson_primer.py, tests/board/test_lesson_primer.py.
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: idc02
+  result: 'exit=0 o `dispatch-outcome-20261109-154625-files-scripts-board-lesson-pri.md`, and the board was updated.
+    | devin-task-20261109-154625-files-scripts-board-lesson-pri.service: Consumed 2min 35.651s CPU time, 246.3M
+    memory peak, 0B memory swap peak.'
+  verified: true
 ref: OPS-1271
 comms:
 - at: 2026-11-09 15:44
@@ -79,3 +83,9 @@ comms:
     rank-only), STALE_DAYS=90 demotion, RETIRED_RE=idc01 filter w/ 2-task-kw escape, + fixed pre-existing crash
     on string comms entries. 7/7 lesson_primer tests + 3 rails tests green via unittest (no pytest on idc02). Live
     smoke on dispatch-merge-sweep + ada-tool-guide-lesson-sweep: 8/8 lines each carry task kws. Trail: docs/ssot/jobs/kanban/2026-11-09-lesson-primer-scoring-fixes.yml'
+- at: 2026-11-09 15:55
+  from: idc02
+  text: 'finished (ok): exit=0 o `dispatch-outcome-20261109-154625-files-scripts-board-lesson-pri.md`, and the board
+    was updated. | devin-task-2'
+review_kind: verify
+claim: {}
