@@ -1,0 +1,103 @@
+id: ada-context-budget
+title: Ada context budget — cap per-turn token growth, catch role-token runaway
+column: done
+priority: high
+program: ada-tools
+updated: 2026-11-09 20:09
+tags:
+- ada
+- context
+- reliability
+- audit
+note: 'Transcript audit 2026-10-07 (session d6cbf6e6e7, 19:52-20:04 BKK): a 12-minute session accumulated 1.5M input
+  tokens, ~78k per turn by the end. At that size the model degenerated into continuation behavior — emitted "ยืนยัน—user\nบันทึกเลยmodel"
+  (fabricating the user reply inside Ada''s own turn). The confirm gate caught the resulting self-asserted publish
+  (denied), and the dead-turn guard only sees degenerate output — this was fluent, wrong-actor output. Guards are
+  downstream band-aids; the fix is upstream: bound the context.'
+spec: 'ada-pi realtime_provider.py: bound per-turn input tokens. 1) Count/context: log and gate on usage turn in=
+  (already emitted) — when a session exceeds a threshold (default ~40k/turn or ~500k cumulative), trigger context
+  hygiene: drop oldest assistant turns from the replayed history, summarize long tool results, or rotate the session
+  transparently. 2) Role-token leak: extend the sanitizer to catch emitted role markers (`—user`, `—model`, `\nuser:`
+  `\nmodel:` at line boundaries) — these are never legitimate speech. 3) Verify: replay a long session transcript,
+  assert per-turn input tokens stay under threshold and that role-marker text is stripped before transcript write.'
+action:
+  type: manual
+  repo: ada-pi
+  status: done
+  runner: tony-dell
+  task_id: 20261008-055417-ada-pi-realtime-provider-py-bo
+  result: 20261008-055417-ada-pi-realtime-provider-py-bo finished (inactive) — see `devin-dispatch logs 20261008-055417-ada-pi-realtime-provider-py-bo`
+expected_goals:
+- id: context-cap
+  label: per-turn input tokens bounded (session rotation or history trim)
+  check: command grep -c "_context_rotate_when_idle\|ADA_CONTEXT_TURN_BUDGET" /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+- id: role-token-strip
+  label: role markers stripped before transcript
+  check: command grep -c "_ROLE_LEAK_RE" /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+- id: regression-test
+  label: context-budget regression test passes
+  check: command cd /home/tony/CascadeProjects/ada-pi && ./.venv/bin/python -m unittest tests.test_context_budget
+    expect OK
+comms:
+- at: 2026-10-07 21:00
+  from: devin
+  text: 'filed from transcript audit — session d6cbf6e6e7: 78k tok/turn, 1.5M cumulative in 12min; model emitted
+    fabricated user turn (—user บันทึกเลยmodel); confirm gate held but transcript records fabricated speech. Guards
+    downstream — fix is bounding context growth.'
+- at: 2026-10-07 21:20
+  from: devin
+  text: 'landed directly (not dispatched): d614648 pushed + deployed to idc03, all 4 services active. _ROLE_LEAK_RE
+    strips boundary role tags; ADA_CONTEXT_TURN_BUDGET=45000 default rotates the session via the set_voice reconnect
+    seam. tests/test_context_budget.py 7/7, suite 794 (2 pre-existing tool-lint fails). Goal checks corrected to
+    match shipped identifiers.'
+- at: 2026-10-07 22:10
+  from: devin
+  text: 'benchmark work landed + live-tested: bbe1ad9 (usage event over /ws, scenario token assertions, context_growth.yaml),
+    82c94cf (runner scores mid-turn disconnects instead of crashing), ce8b0ae+2a0b285 (sliding-window trigger/target).
+    LIVE FINDING: trigger=24k/target=8k plus the dead-turn guard misjudging mid-task turn_complete boundaries caused
+    a tool-call storm — every tool dispatch was synthesizing "Ada is now neutral" into the transcript. Fixed in
+    704c8d7 (segment_tool_pending gate) + gentler window 32k/24k. usage data confirmed flowing: turns held ~23-25k
+    in= while total_in climbed to 95k. Also observed: memory search surfaced Devin session-summary dumps (MESSAGE/System
+    transcript-shaped hits) — a separate hijack vector worth a card.'
+- at: 2026-10-07 22:25
+  from: devin
+  text: 'context_growth.yaml PASS live on idc03 @ 704c8d7 — 11/11 turns, every input_tokens_below held, planted
+    fact recalled at turn 11 ("รหัสการนัดหมายของคุณคือ 4471"). Ceiling+floor pair verified: usage events reach the
+    scenario runner, ceiling asserts real bounds, recall asserts trimming keeps early context.'
+- at: 2026-10-08 05:52
+  from: tony
+  text: queued for processing
+- at: 2026-10-08 05:54
+  from: chaba
+  text: dispatched 20261008-055417-ada-pi-realtime-provider-py-bo on ada-pi
+- at: 2026-10-08 06:01
+  from: devin
+  text: 'picked up dispatch 20261008-055417 — prior commits already landed per-turn rotate (45k), bare role-tag
+    strip, sliding-window 32k/24k, usage events + context_growth scenario (live PASS). Gaps vs spec: cumulative
+    ~500k gate missing, colon-form markers (\nuser:/\nmodel:) not caught. Implementing both + replay test.'
+- at: 2026-10-08 06:07
+  from: devin
+  text: 'done on dispatch/20261008-055417 (ab9d2c3, no push): closed the two spec gaps left by the 10-07 direct-land
+    — (1) ADA_CONTEXT_TOTAL_BUDGET=500000 cumulative gate in _record_usage, rotates via the same set_voice seam
+    when either gate fires (compressed sessions never trip the 45k per-turn cap — d6cbf6e6e7 shape needs the running-total
+    signal); (2) _ROLE_LEAK_RE now accepts the colon form so \nuser:/—model: fabricated replies strip + latch _leak_active
+    (mid-line user:/model: still passes). tests/te'
+- at: 2026-10-08 06:08
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-08 06:08
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261008-055417-ada-pi-realtime-provider-py-bo — close will block
+    until merged'
+- at: 2026-10-08 14:35
+  from: devin
+  text: 'review sweep: verified evidence present, requests resolved — closed'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: ADA-0195'
+- at: 2026-11-09 20:09
+  from: tony
+  text: archived (32d in done, board over card cap)
+claim:
+  since: 2026-10-08 05:54
+ref: ADA-0195
