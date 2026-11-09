@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-smoke
 title: Timer ada-scenario-smoke on idc03 failing
 column: doing
-updated: 2026-11-09 09:29
+updated: 2026-11-09 09:31
 priority: high
 tags:
 - timer-alert
@@ -1493,8 +1493,14 @@ comms:
     ~90-120min/pass. Journal shows every run 11-08 12:00 -> 11-09 08:00 killed at :45 (result=timeout); alternating
     fires exec-condition skip on quota-dead. Fixed in repo: smoke 2700->7200, full 3600->43200 (203 scenarios, same
     latent bug, manual-only). DEPLOY pending: install.sh on'
+- at: 2026-11-09 09:31
+  from: idc02
+  text: 'finished (failed): exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261109-092348-timer-ada-scenario-smoke-on-id.service: '
 action:
-  status: running
+  status: failed
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=1 ocess exited, code=exited, status=1/FAILURE | devin-task-20261109-092348-timer-ada-scenario-smoke-on-id.service:
+    Failed with result ''exit-code''. | devin-task-20261109-092348-timer-ada-scenario-smoke-on-id.service: Consumed
+    15.480s CPU time.'
