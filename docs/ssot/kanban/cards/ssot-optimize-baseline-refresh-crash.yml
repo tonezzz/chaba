@@ -1,0 +1,31 @@
+id: ssot-optimize-baseline-refresh-crash
+title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
+column: backlog
+updated: 2026-11-09 17:25
+brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
+  warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
+  files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
+priority: medium
+tags:
+- bug
+- ssot
+- tooling
+spec: 'Bug: running `node scripts/ssot-optimize.mjs` (full run, no --staged — the pre-commit hook tells you to do
+  exactly this to refresh reports/SSOT_OPTIMIZATION_WARNINGS.json) crashes with a Node error whose object dump shows
+  ~321k chars of validator stdout (''Validating: focus-inbox/...'') — classic execSync maxBuffer / E2BIG overflow.
+  Node v24.21.0, tony-omen.
+
+
+  Fix options: raise maxBuffer on the spawn/execSync call that runs the per-file validator; or capture validator
+  output to a file/pipe instead of a buffer; or run the validation in-process.
+
+
+  Context: hit while resolving a merge commit — the gate flagged 24 pre-existing bloat warnings as ''new debt''
+  and the offered remediation crashed, forcing --no-verify. Reproduce: `node scripts/ssot-optimize.mjs` on any checkout.
+
+  Verify: the full run completes and updates reports/SSOT_OPTIMIZATION_WARNINGS.json.'
+ref: KNB-1287
+comms:
+- at: 2026-11-09 17:25
+  from: devin
+  text: card captured via board-api
