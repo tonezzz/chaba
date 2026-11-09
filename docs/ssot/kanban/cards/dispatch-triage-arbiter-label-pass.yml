@@ -1,0 +1,44 @@
+id: dispatch-triage-arbiter-label-pass
+title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
+column: backlog
+updated: 2026-11-09 18:02
+brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
+  option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
+  low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
+priority: medium
+tags:
+- dispatch-tuning
+- nest
+- jev
+- labeling
+spec: 'Approved strategy (b) per the board request answer on dispatch-triage-corpus-inventory: arbiter adjudication.
+  Read docs/ssot/jobs/nest/2026-11-09-dispatch-triage-corpus.yml FIRST — it has the full counts + cost rows this
+  plan was priced on.
+
+
+  Deliverables:
+
+  1. A labeling script (scripts/ada/ or scripts/bench/) that iterates the inventoried corpus rows, calls the arbiter
+  model via the LiteLLM proxy flash-lite free lane (mirroring the edu fixture judge convention — check how bench-edu-manage
+  calls its judge), and writes labeled rows to a corpus file (jsonl) with fields {text, source, label, confidence,
+  model, ts}.
+
+  2. Confidence policy: rows below the confidence threshold go to a review queue (a board card or a review file)
+  rather than being silently labeled — the ~100-row human spot-check that doubles as the golden seed.
+
+  3. Output lands where ada-voice tests/bench/suites.yml dispatch-triage tier expects it (check the suite registry
+  for the expected path/format).
+
+  4. A job doc docs/ssot/jobs/nest/<date>-arbiter-label-pass.yml with counts: labeled per class, review-queue size,
+  spot-check list for Tony.
+
+
+  Constraints: free-lane only for the arbiter model calls (no paid spend — the whole point of arbiter adjudication);
+  idempotent re-runs (skip already-labeled rows); no writes to prod collections.
+
+  Verify: script runs on the real corpus, labeled file lands, review queue posted on the card, job doc exists.'
+ref: OPS-1290
+comms:
+- at: 2026-11-09 18:02
+  from: tony
+  text: card captured via board-api
