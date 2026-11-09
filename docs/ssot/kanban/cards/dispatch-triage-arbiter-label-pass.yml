@@ -1,7 +1,7 @@
 id: dispatch-triage-arbiter-label-pass
 title: 'Arbiter label pass — dispatch-triage corpus (approved: strategy b)'
 column: doing
-updated: 2026-11-09 18:29
+updated: 2026-11-09 18:57
 brief: 'Tony answered "proceed" on the labeling-strategy request (dispatch-triage-corpus-inventory, 17:26) — approving
   option (b) arbiter adjudication. Run the label pass: L2/L3 model labels ~700-1400 card texts into code/docs/ops/research/clarify,
   low-confidence rows queued to Tony, ~100-row human spot-check becomes the golden seed.'
@@ -83,8 +83,15 @@ comms:
   from: devin
   text: 'arbiter-label.py built + smoke-tested: 686 unique dispatch-card texts, free lane gemini-3.5-flash-lite-free
     live (or-free + kk-mac ollama lanes down — kept as fallbacks). Full pass running.'
+- at: 2026-11-09 18:57
+  from: idc02
+  text: 'finished (failed): exit=1  devin-task-20261109-182323-approved-strategy-b-per-the-bo.service: Failed with
+    result ''exit-code''. | devin-task-'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   runner: idc02
+  result: 'exit=1  devin-task-20261109-182323-approved-strategy-b-per-the-bo.service: Failed with result ''exit-code''.
+    | devin-task-20261109-182323-approved-strategy-b-per-the-bo.service: Consumed 2min 3.757s CPU time, 172.4M memory
+    peak, 0B memory swap peak.'
