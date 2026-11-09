@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-timer-sentinel
 title: Timer timer-sentinel on tony-omen failing
 column: backlog
-updated: 2026-11-09 14:10
+updated: 2026-11-09 14:12
 priority: high
 tags:
 - timer-alert
@@ -105,6 +105,13 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-09 14:00) of `timer-sentinel.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u timer-sentinel.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-09 14:12
+  from: devin
+  text: 'VERIFIED FIXED (14:10 tick): Result=success, exit 0, 52.9s wall, 26 findings + 7 auto-closes landed. Root
+    cause of this second failure wave: NOT the script — chaba-repo-sync at 14:00:19 autostash-pop-CONFLICTED scripts/ada/timer-sentinel.py
+    mid-run (file outside SAFE_PULL_GENERATED_RE → kept for manual merge with live conflict markers → SyntaxError
+    landmine). 14:00 crash = old pre-fix bytecode hitting the known uncaught TimeoutError while the conflicted file
+    was being written. Resolved: file res'
 action:
   type: dispatch
   status: done
