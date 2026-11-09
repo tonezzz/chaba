@@ -1,7 +1,7 @@
 id: ada-code-auth-error
 title: ada-code authentication error — investigate scope + fix
 column: backlog
-updated: 2026-11-09 17:39
+updated: 2026-11-09 17:47
 priority: high
 tags:
 - ada
@@ -21,3 +21,10 @@ comms:
 - at: 2026-11-09 17:39
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 17:47
+  from: devin
+  text: 'Investigated 2026-11-09 ~12:35 +07: ada-code lives on IDC02 (audit ssot hosts block was macbook-section
+    context — actual units generated/active on idc02). State: ada-code.service + ada-code-enroll.service ACTIVE,
+    enroll restarted 12:27 (prior instance exit 137), container healthy, PublishPort 127.0.0.1:8378:8080, env complete
+    (CF_ACCESS_AUDIENCE+JWKS present, cookie ada_opencode_sess). Local :8378 → 401 is CORRECT (REQUIRE_EDGE_HEADER=1
+    — unauthenticated is by design). Cosmetic: server.mjs SCOPE'
