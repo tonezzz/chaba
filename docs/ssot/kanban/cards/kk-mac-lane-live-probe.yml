@@ -1,0 +1,61 @@
+id: kk-mac-lane-live-probe
+title: kk_mac_local lane live probe — first real claim through the armed lane
+column: doing
+updated: 2026-11-09 10:47
+priority: high
+tags:
+- devnest
+- kk-mac
+- probe
+spec: 'Probe card for the kk_mac_local lane (armed KK_MAC_LANES=1 on idc03+tony-omen 2026-11-09). Contract: executor=kk_mac_local,
+  task_class=summary, artifact under lane roots. Prompt below — bounded read-only summary, no repo writes.
+
+  DONE-CONDITION: card finishes ok with the artifact written by the kk-mac lane + card comms record which executor
+  ran (kk_mac_local, not a fallback lane).'
+action:
+  type: dispatch
+  repo: chaba
+  executor: kk_mac_local
+  artifact: reports/kk-mac-lane-probe.md
+  task_class: summary
+  prompt: 'Write a file reports/kk-mac-lane-probe.md containing: (1) a 5-bullet summary of the DevNest lane routing
+    model — entry-level prediction of the cheapest lane expected to pass, work plane vs decision plane, escalation
+    on gate failure; (2) one line noting this artifact was produced by the kk_mac_local lane on KKs-Mac-Studio.
+    Keep it under 40 lines.'
+  status: failed
+  runner: idc02
+  result: 'exit=1 ecognized flag: --dir in command opencode run | devin-task-kk-mac-lane-live-probe-1794196044.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-kk-mac-lane-live-probe-1794196044.service: Failed
+    with result ''exit-code''.'
+ref: OPS-1259
+comms:
+- at: 2026-11-09 10:45
+  from: tony
+  text: probe for the armed kk_mac_local lane — expect finish via kk-mac, fallback allowed if lane ineligible at
+    start
+- at: 2026-11-09 10:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.08 > 0.85)'
+- at: 2026-11-09 10:47
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 10:47
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.73 > 1.0)'
+- at: 2026-11-09 10:47
+  from: idc02
+  text: claimed
+- at: 2026-11-09 10:47
+  from: chaba
+  text: kk_mac_local not servable on this host — running the next lane
+- at: 2026-11-09 10:47
+  from: chaba
+  text: started devin-task-kk-mac-lane-live-probe-1794196044 on idc02 (dispatch executor=kk_mac_local model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-09 10:47
+  from: idc02
+  text: 'finished (failed): exit=1 ecognized flag: --dir in command opencode run | devin-task-kk-mac-lane-live-probe-1794196044.service:
+    Main proces'
+- at: 2026-11-09 10:47
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
