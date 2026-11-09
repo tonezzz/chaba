@@ -1588,7 +1588,7 @@ def checkout_role(repo: Path) -> str:
         return ""
 
 
-def main() -> int:
+def main(cards=None) -> int:
     dry = "--dry-run" in sys.argv
     role = checkout_role(CHABA_REPO)
     if role and role != "served":
@@ -1602,12 +1602,12 @@ def main() -> int:
               "writer — refusing to sweep a stale board "
               "(merge-sweep-resurrects-closed-cards)")
         return 0
-    card_files = sorted(CARD_DIR.glob("*.yml"))
-    if not card_files:
-        print(f"merge-sweep: no cards in {CARD_DIR}")
-        return 0
-
-    cards = [load_card(p) for p in card_files]
+    if cards is None:
+        card_files = sorted(CARD_DIR.glob("*.yml"))
+        if not card_files:
+            print(f"merge-sweep: no cards in {CARD_DIR}")
+            return 0
+        cards = [load_card(p) for p in card_files]
     cards = [c for c in cards if c]
     by_tid = {}
     runners = set()

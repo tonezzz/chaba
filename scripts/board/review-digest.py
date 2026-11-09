@@ -31,14 +31,25 @@ def load(p: Path) -> dict:
     return yaml.safe_load(p.read_text()) or {}
 
 
-def main() -> int:
+def main(cards=None) -> int:
     review, asks = [], []
-    for p in sorted(CARD_DIR.glob("*.yml")):
-        try:
-            c = load(p)
-        except Exception:
-            continue
-        cid = c.get("id") or p.stem
+
+    if cards is not None:
+        c_iter = []
+        for c in cards:
+            cid = c.get("id")
+            if cid:
+                c_iter.append((CARD_DIR / f"{cid}.yml", c, cid))
+    else:
+        c_iter = []
+        for p in sorted(CARD_DIR.glob("*.yml")):
+            try:
+                c = load(p)
+                c_iter.append((p, c, c.get("id") or p.stem))
+            except Exception:
+                continue
+
+    for p, c, cid in c_iter:
         if cid == DIGEST_ID:
             continue
         if c.get("column") == "review":

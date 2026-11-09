@@ -52,16 +52,27 @@ META_OPT = re.compile(r"clarif|specify|ask the owner|which repos|"
                       r"which host|more context|define the", re.I)
 
 
-def _load() -> tuple[dict[str, list], set[str]]:
+def _load(cards_override=None) -> tuple[dict[str, list], set[str]]:
     cols: dict[str, list] = {}
     done_ids: set[str] = set()
-    for p in sorted(CARD_DIR.glob("*.yml")):
-        try:
-            c = yaml.safe_load(open(p))
-        except Exception:
-            continue
-        if not isinstance(c, dict):
-            continue
+
+    if cards_override is not None:
+        c_iter = []
+        for c in cards_override:
+            cid = c.get("id")
+            if cid:
+                c_iter.append((CARD_DIR / f"{cid}.yml", c))
+    else:
+        c_iter = []
+        for p in sorted(CARD_DIR.glob("*.yml")):
+            try:
+                c = yaml.safe_load(open(p))
+                if isinstance(c, dict):
+                    c_iter.append((p, c))
+            except Exception:
+                continue
+
+    for p, c in c_iter:
         col = c.get("column") or "backlog"
         if col == "done":
             done_ids.add(c.get("id") or p.stem)
@@ -117,8 +128,8 @@ def audit_review(cards: list[tuple[Path, dict]]) -> dict:
     return out
 
 
-def audit() -> dict:
-    cols, done_ids = _load()
+def audit(cards_override=None) -> dict:
+    cols, done_ids = _load(cards_override)
     out: dict[str, list] = {k: [] for k in
                             ("answered-close", "answered-queue",
                              "answered-circular", "answered-hold",
@@ -155,16 +166,16 @@ def audit() -> dict:
     return out
 
 
-def main() -> int:
+def main(cards_override=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--column", default="backlog",
                     choices=("backlog", "review", "all"))
     args = ap.parse_args()
-    cols, done_ids = _load()
+    cols, done_ids = _load(cards_override)
     sections: dict[str, dict] = {}
     if args.column in ("backlog", "all"):
-        sections["backlog"] = audit()
+        sections["backlog"] = audit(cards_override)
     if args.column in ("review", "all"):
         sections["review"] = audit_review(cols.get("review", []))
     if args.json:

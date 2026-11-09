@@ -65,13 +65,29 @@ def execute_decision(card: dict, req: dict) -> bool:
     return True
 
 
-def main() -> int:
+def main(cards=None) -> int:
     flagged, executed = [], []
-    for path in sorted(CARDS.glob("*.yml")):
-        try:
-            card = yaml.safe_load(path.read_text()) or {}
-        except Exception:
-            continue
+
+    def process_card(path, card):
+        if card.get("column") != "lab":
+            return
+
+    if cards is not None:
+        c_iter = []
+        for c in cards:
+            cid = c.get("id")
+            if cid:
+                c_iter.append((CARDS / f"{cid}.yml", c))
+    else:
+        c_iter = []
+        for path in sorted(CARDS.glob("*.yml")):
+            try:
+                c = yaml.safe_load(path.read_text()) or {}
+                c_iter.append((path, c))
+            except Exception:
+                continue
+
+    for path, card in c_iter:
         if card.get("column") != "lab":
             continue
         lab = card.get("lab") or {}
