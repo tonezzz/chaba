@@ -1,0 +1,56 @@
+id: dispatch-triage-corpus-inventory
+title: dispatch-triage specialist — corpus inventory and labeling strategy proposal
+column: backlog
+updated: 2026-11-09 15:44
+brief: 'The dispatch-triage suite is registered in ada-voice tests/bench/suites.yml but has no trained incumbent
+  — the open question (ssot.nest-training) is who labels the data. Analysis card: inventory candidate labeled sources
+  for the routing/triage surface, propose labeling strategies with costs, and put the decision to Tony as a board
+  request.'
+priority: low
+tags:
+- dispatch-tuning
+- nest
+- jev
+- analysis
+spec: 'This is an ANALYSIS card — produce a decision doc, do NOT train anything.
+
+
+  Inventory candidate labeled data for the dispatch-triage/routing decision surface:
+
+  - cascade-outcomes log (mddb) — task/family/lane_path/gate_verdicts/final_pass rows.
+
+  - Dispatch history in cards: action.repo, action.model, action.lane, action.attempts, action.verified, action.last_failure
+  — weak labels for ''which lane/executor would have sufficed''.
+
+  - classify_lane history (scripts/board/dispatch_repos.py LANE_KW) — what the rules router picked vs what outcome
+  occurred.
+
+  - RETRY_RAILS outcomes — cards that needed >1 attempt as ''wrongly-easy-routed'' negatives.
+
+  - suites.yml dispatch-triage tier definitions — what the suite actually needs (row schema, tier sizes).
+
+
+  Deliverable:
+
+  - docs/ssot/jobs/nest/<date>-dispatch-triage-corpus.yml: per-source row counts, labelable fraction, field schema
+  map to the suite''s needs, and a gap list.
+
+  - Labeling strategy options WITH cost estimates: (a) weak supervision — derive labels from verified outcomes automatically
+  (cheapest, noisiest); (b) arbiter adjudication — L2/L3 model labels the ambiguous queue, human spot-checks (the
+  ssot.nest-training open-question proposal); (c) hand-labeled sample — Tony/agent labels ~100 rows for the golden
+  tier. Recommend one (mark ★) and write the cost rows honestly.
+
+  - Post a board /request on this card asking Tony to pick the strategy (options a/b/c with the recommendation marked).
+
+
+  Verify: job doc lands with real counts (not estimates pulled from memory — query the actual mddb collection and
+  card corpus); the requests entry exists on the card when the session ends.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-1278
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
