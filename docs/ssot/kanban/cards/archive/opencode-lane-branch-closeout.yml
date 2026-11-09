@@ -1,0 +1,110 @@
+id: opencode-lane-branch-closeout
+title: Complete OpenCode lane executor branch commit + auto-merge closeout
+column: done
+updated: 2026-11-09 20:16
+brief: Model-chain probe proved runner-agent launches OpenCode with the requested model (flash-lite process observed),
+  but the executor uses a scratch repo and runner close_out_merge cannot find a dispatch session repo; cards finish
+  with no merge. Wire branch/worktree identity + commit/push/closeout for OpenCode lanes.
+priority: high
+program: chaba-ci
+tags:
+- jev
+- opencode
+- runner-agent
+- automerge
+- lane
+spec: Add an opencode lane executor that creates a dispatch-compatible worktree/branch or a runner-owned branch
+  record; persist executor/repo/branch on the card; make finish_pass close_out_merge recognize the executor and
+  verify/merge. Keep OPENCODE_LANES gated off until this passes. Test with a free_lane marker job, then a paid_frontier
+  dry-run only if budget allows.
+ref: OPS-0846
+comms:
+- at: 2026-10-25 08:07
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 12:53
+  from: devin
+  text: 'OpenCode executor package tested: actual opencode process received --model flash-lite + LITELLM_KEY, but
+    scratch repo closeout is not dispatch-compatible; OPENCODE_LANES gated off. Next implementation is branch/worktree
+    identity + normal close_out_merge; do not enable automatically yet.'
+- at: 2026-10-25 14:43
+  from: devin
+  text: 'NEXT: highest priority. Interactive OpenCode works; finish dispatch-compatible worktree/branch/commit/verify/merge
+    closeout before enabling OPENCODE_LANES.'
+- at: 2026-10-25 19:02
+  from: devin
+  text: 'IMPLEMENTATION ADVANCED: runner-agent now creates dispatch-compatible worktree + dispatch/<task> branch
+    + devin-dispatch meta.json, runs OpenCode there, and returns devin-task-compatible unit (commit 38956b47 / origin).
+    OpenCode lanes remain gated until a pinned idc02 closeout probe passes. Probe OPS-0870 is queued/pinned but
+    has not yet been claimed; no false completion claimed.'
+- at: 2026-10-25 19:47
+  from: devin
+  text: 'OPS-0846 review (mn01 dispatch wt): found+fixed UnboundLocalError in start_task — `lane` unbound when card
+    already carries action.lane (explicit lane OR JEV_LANE claim-classify path); every such claim would crash before
+    spawning any unit. Also meta.json now carries base/executor/started_at parity with devin-dispatch. Regression
+    tests: tests/board/test_runner_agent_lane.py (5 cases) + full tests/board suite 191 pass. Live findings: idc02
+    jev-lane.conf is malformed (Assignment outside of section —'
+- at: 2026-10-25 20:10
+  from: tony
+  text: queued for processing
+- at: 2026-10-25 20:10
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 20:12
+  from: mn01
+  text: claimed
+- at: 2026-10-25 20:12
+  from: chaba
+  text: started devin-task-20261025-131219-add-an-opencode-lane-executor- on mn01 (dispatch)
+- at: 2026-10-25 20:13
+  from: mn01
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261025-131219-add-an-opencode-lane-executor-.service:
+    Main process exited, cod'
+- at: 2026-10-25 20:13
+  from: chaba
+  text: pushed dispatch/20261025-131219-add-an-opencode-lane-executor- to origin
+- at: 2026-10-25 20:13
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-131219-add-an-opencode-lane-executor-,
+    branch dispatch/20261025-131219-add-an-opencode-lane-executor-'
+- at: 2026-10-25 20:16
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-131219-add-an-opencode-lane-executor- on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-26 05:04
+  from: devin
+  text: 'STATUS CORRECTION: card/action shows done on some older probes, but merge-sweep explicitly reported no
+    session/worktree. This is NOT a verified OpenCode closeout. Latest Dell probe remains queued after PATH/start
+    failure; Omen defers push; idc02 probes ran Devin default deepseek-v4-pro, not OpenCode. Keep OPS-0846 open
+    for a real OpenCode branch+verify+merge proof.'
+- at: 2026-10-26 06:08
+  from: devin
+  text: 'ROOT CAUSE REFINED: OpenCode closeout probe branch changes only README marker, but merge gate failed tests/ada/test_tg_forward_provenance.py::TestHandleTurns::test_forwarded_document_described.
+    Re-ran the exact test on origin/master baseline: SAME UnboundLocalError(turn_ok). This is a pre-existing baseline
+    failure, not OpenCode regression. Next fix: make closeout test gate baseline-aware (or explicit expected-goal
+    for docs-only marker), then rerun; do not bypass globally.'
+- at: 2026-10-26 07:00
+  from: devin
+  text: 'CLOSEOUT PROBE VERIFIED: Dell-pinned OpenCode marker job created dispatch-compatible worktree/branch, ran
+    OpenCode with Flash Lite, pushed branch, baseline-aware gate compared the pre-existing tg_forward_provenance
+    failure (same failure on origin/master), and merged marker to origin/master. Card opencode-closeout-probe-dell
+    is review with verified=true. OPS-0846 implementation is now proven; keep broad OPENCODE_LANES gated until one
+    supervised real code task passes, but free-lane executor is no '
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (14d in done, board over card cap)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261025-131219-add-an-opencode-lane-executor-.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261025-131219-add-an-opencode-lane-executor-.service:
+    Failed with result ''exit-code''.'
+  sweep:
+    session_gone: 2026-10-25 20:16
+review_kind: verify
+claim: {}
