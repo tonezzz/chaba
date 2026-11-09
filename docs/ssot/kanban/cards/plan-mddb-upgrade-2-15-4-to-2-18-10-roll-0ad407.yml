@@ -1,0 +1,22 @@
+id: plan-mddb-upgrade-2-15-4-to-2-18-10-roll-0ad407
+title: Plan MDDB upgrade 2.15.4 to 2.18.10 — rolling validation and rollback
+column: backlog
+updated: 2026-11-09 08:34
+priority: medium
+tags:
+- mddb
+- upgrade
+- ops
+spec: 'Current live MDDB health on 2026-11-09: idc03 primary/CMS/embed 2.15.4 healthy; idc02 read-only follower
+  2.15.4 healthy; con01 read-only follower 2.15.4 healthy; all durable. Health advertises latest v2.18.10. Plan
+  only — do not upgrade in this card. Required plan: capture backups and current health/index stats; validate 2.18.10
+  in an isolated/staging instance; upgrade follower first (idc02 or con01), verify health/read/search/vector behavior
+  and replication lag; observe soak; upgrade second follower; only then maintenance-window upgrade idc03 services
+  with rollback to pinned 2.15.4 image/data backup; verify CMS 11027, embed 11028, MCP 9000, Ada production read
+  path, and BGE shadow path. Record go/no-go gates and exact rollback commands. Note: con01 currently runs the reindex
+  job against idc03 leader, not its local follower; do not confuse follower upgrade with reindex-job host.'
+ref: MEM-1243
+comms:
+- at: 2026-11-09 08:34
+  from: devin
+  text: card captured via board-api
