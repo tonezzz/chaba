@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: review
-updated: 2026-11-09 14:23
+updated: 2026-11-09 14:24
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -198,6 +198,13 @@ comms:
     tests/devnest 125 OK, tests/ada 125 OK, tests/colab 70 OK, focused 32 OK; one load-flake rerun green. Deliverable:
     sealed ready-marker staging (atomic-3-3), full spec envelope, dual-lane observation + per-cycle capacity ledger,
     3/3 hard caps. No deploy/push. Outcome doc + job recor'
+- at: 2026-11-09 14:24
+  from: devin
+  text: 'Re-dispatch 141530: prior session 135506 had already implemented the shared capacity loop on its own branch
+    (7f4e4a37d4, pushed but not yet in master). Merged it into this worktree (b86f2d59f5, clean) and re-verified:
+    tests/devnest 125 OK, tests/ada 125 OK, tests/colab 70 OK, focused 32 OK. Deliverable: sealed ready-marker staging
+    (atomic-3-3), full spec envelope, dual-lane observation + per-cycle capacity ledger, 3/3 hard caps. No deploy/push.
+    Outcome doc + job record docs/ssot/jobs/devnest/202'
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
