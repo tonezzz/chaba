@@ -1,0 +1,60 @@
+/* theme.css — map frappe-gantt CSS vars onto the board palette and
+   color bars per kanban column (custom_class comes from config.js). */
+
+html[data-theme='dark'] {
+  --g-header-background: #16213e;
+  --g-row-color: #141c33;
+  --g-row-border-color: #232f52;
+  --g-border-color: #232f52;
+  --g-tick-color: #1e2a4a;
+  --g-tick-color-thick: #2a3a63;
+  --g-text-dark: #cbd5e1;
+  --g-text-muted: #64748b;
+  --g-text-light: #f1f5f9;
+  --g-bar-color: #1b2745;
+  --g-bar-border: #2a3a63;
+  --g-progress-color: #38bdf8;
+  --g-arrow-color: #475569;
+  --g-today-highlight: #38bdf8;
+  --g-actions-background: #263356;
+  --g-popup-actions: #263356;
+  --g-handle-color: #64748b;
+  --g-weekend-highlight-color: #101a30;
+}
+
+.gantt-container {
+  background: #1a1a2e;
+  border: 1px solid #232f52;
+  border-radius: 10px;
+}
+
+/* ---- per-column bar colors ---- */
+.gantt .bar-wrapper.col-backlog .bar { fill: #1e293b; }
+.gantt .bar-wrapper.col-backlog .bar-progress { fill: #64748b; }
+.gantt .bar-wrapper.col-lab .bar { fill: #2e1065; }
+.gantt .bar-wrapper.col-lab .bar-progress { fill: #8b5cf6; }
+.gantt .bar-wrapper.col-doing .bar { fill: #0c2d48; }
+.gantt .bar-wrapper.col-doing .bar-progress { fill: #0ea5e9; }
+.gantt .bar-wrapper.col-review .bar { fill: #451a03; }
+.gantt .bar-wrapper.col-review .bar-progress { fill: #f59e0b; }
+.gantt .bar-wrapper.col-done .bar { fill: #052e1b; }
+.gantt .bar-wrapper.col-done .bar-progress { fill: #10b981; }
+
+/* ---- project group header rows: quiet label band, no bar chrome ---- */
+.gantt .bar-wrapper.group-header .bar {
+  fill: rgba(125, 211, 252, 0.07);
+  stroke: none;
+}
+.gantt .bar-wrapper.group-header .bar-progress { display: none; }
+.gantt .bar-wrapper.group-header .bar-label {
+  fill: #7dd3fc;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* popup */
+.gantt-container .popup-wrapper { background: #16213e; border: 1px solid #2f3f6b; }
+.gantt-container .popup-wrapper .title { color: #e2e8f0; }
+.gantt-container .popup-wrapper .subtitle,
+.gantt-container .popup-wrapper .details { color: #94a3b8; }
+.gantt-container .popup-wrapper .action-btn { background: #263356; color: #cbd5e1; }
