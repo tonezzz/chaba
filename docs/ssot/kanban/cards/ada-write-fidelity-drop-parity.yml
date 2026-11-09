@@ -1,7 +1,7 @@
 id: ada-write-fidelity-drop-parity
 title: Review staged Ada write-fidelity drop parity without weakening guards
 column: backlog
-updated: 2026-11-09 20:14
+updated: 2026-11-09 20:21
 brief: 'Pre-commit blocks PR #138 CI repair because the staged write-fidelity.patch diverges against canonical Ada
   main; canonical fidelity tests still pass 17/17.'
 priority: high
@@ -25,16 +25,26 @@ comms:
   from: devin
   text: 'raised request guard-parity-scope: Recommended: prepare a separate, reviewed parity refresh of the staged
     integration artifact, keeping runtime guards and '
+- at: 2026-11-09 20:21
+  from: devin
+  text: 'answered guard-parity-scope: Tony selected Review parity artifact in the Devin CLI. Approved scope: context-only
+    artifact refresh, runtime guards/hooks/tests unchanged, review before integration.'
+- at: 2026-11-09 20:21
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: guard-parity-scope
   ask: 'Recommended: prepare a separate, reviewed parity refresh of the staged integration artifact, keeping runtime
     guards and all safety tests unchanged. Canonical Ada fidelity tests pass 17/17; the old patch no longer applies
     in either direction. Alternatively hand maintenance to the Ada owner and leave PR #138 blocked. No bypass or
     relaxed guard is an option.'
-  status: open
+  status: answered
   at: 2026-11-09 20:14
   from: devin
   options:
   - Review parity artifact
   - Hand off to Ada maintainer
   suggested: Review parity artifact
+  answer: 'Tony selected Review parity artifact in the Devin CLI. Approved scope: context-only artifact refresh,
+    runtime guards/hooks/tests unchanged, review before integration.'
+awaiting_action: true
