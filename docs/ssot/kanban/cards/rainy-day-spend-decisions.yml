@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
 column: backlog
-updated: 2026-11-09 09:26
+updated: 2026-11-09 10:57
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -25,24 +25,39 @@ comms:
   from: devin
   text: 'raised request devin-default-model-is-swe-2-high-which-51a93b: Devin default model is swe-2-high — which
     free model should be the new default? (give the /model slug, or pick it once i'
+- at: 2026-11-09 10:57
+  from: tony
+  text: 'answered approve-10-usd-openrouter-credit-unlocks-6e9934: approve 10 USD'
+- at: 2026-11-09 10:57
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 10:57
+  from: tony
+  text: 'answered devin-default-model-is-swe-2-high-which-51a93b: free model slug in comms'
+- at: 2026-11-09 10:57
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
     USD/session)?
-  status: open
+  status: answered
   at: 2026-11-09 09:26
   from: devin
   options:
   - approve 10 USD
   - approve different amount
   - deny - free lanes only
+  answer: approve 10 USD
 - id: devin-default-model-is-swe-2-high-which-51a93b
   ask: Devin default model is swe-2-high — which free model should be the new default? (give the /model slug, or
     pick it once in the picker and it saves itself)
-  status: open
+  status: answered
   at: 2026-11-09 09:26
   from: devin
   options:
   - use adaptive router
   - use fusion
   - free model slug in comms
+  answer: free model slug in comms
+awaiting_action: true

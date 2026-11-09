@@ -99,6 +99,7 @@ def fire(card_id, title, body, dry_run, open_ids):
             api("card", {"id": card_id, "title": title,
                          "column": "backlog", "priority": "high",
                          "from": ACTOR, "on_exists": "queue",
+                         "action": {"type": "manual"},
                          "tags": ["timer-alert", "auto",
                                   "by:timer-sentinel"],
                          "note": body})

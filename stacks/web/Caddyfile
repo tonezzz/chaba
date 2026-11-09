@@ -535,6 +535,14 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	handle /apps/board-gantt {
+		redir * /apps/board-gantt/ 308
+	}
+	handle_path /apps/board-gantt/* {
+		root * /srv/public/apps/board-gantt
+		file_server
+	}
+
 	handle /apps/sw.js {
 		root * /srv/public/apps/sw.js
 		file_server

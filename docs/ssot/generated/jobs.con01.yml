@@ -1,0 +1,61 @@
+title: Scheduled jobs — con01
+generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
+source: docs/ssot/infrastructure/ssot.jobs.yml
+jobs:
+  - id: ada-flood-news
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: chaba-audit
+    schedule: Sun *-*-* 02:00:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-audit-full
+    schedule: Sun *-*-1..7 03:00:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-kb-audit
+    schedule: Sun *-*-* 04:00:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-system-report
+    schedule: *-*-* 06:45:00
+    dispatch: systemd
+    persistent: true
+  - id: cline-board-mirror
+    schedule: every 2min
+    dispatch: systemd
+  - id: cline-intake
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: devin-bank-distill
+    schedule: Sun *-*-* 10:15:00
+    dispatch: systemd
+    persistent: true
+  - id: doc-mirror
+    schedule: every 1h
+    dispatch: systemd
+    persistent: true
+  - id: jev-bench
+    schedule: hourly
+    dispatch: systemd
+    persistent: true
+  - id: log-shipper
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe
+    schedule: every 1h
+    dispatch: systemd
+  - id: mddb-vector-reindex
+    schedule: *-*-* 05:40:00
+    dispatch: systemd
+    persistent: true
+  - id: report-distill
+    schedule: *-*-* 04:00:00
+    dispatch: systemd
+    persistent: true
+  - id: ssot-optimization-snapshot
+    schedule: *-*-* 03:30:00
+    dispatch: systemd
+    persistent: true

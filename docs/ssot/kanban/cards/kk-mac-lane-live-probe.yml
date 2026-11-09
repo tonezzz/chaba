@@ -1,7 +1,7 @@
 id: kk-mac-lane-live-probe
 title: kk_mac_local lane live probe — first real claim through the armed lane
 column: doing
-updated: 2026-11-09 10:47
+updated: 2026-11-09 10:49
 priority: high
 tags:
 - devnest
@@ -14,6 +14,7 @@ spec: 'Probe card for the kk_mac_local lane (armed KK_MAC_LANES=1 on idc03+tony-
   ran (kk_mac_local, not a fallback lane).'
 action:
   type: dispatch
+  host: idc03
   repo: chaba
   executor: kk_mac_local
   artifact: reports/kk-mac-lane-probe.md
@@ -22,11 +23,11 @@ action:
     model — entry-level prediction of the cheapest lane expected to pass, work plane vs decision plane, escalation
     on gate failure; (2) one line noting this artifact was produced by the kk_mac_local lane on KKs-Mac-Studio.
     Keep it under 40 lines.'
-  status: failed
-  runner: idc02
-  result: 'exit=1 ecognized flag: --dir in command opencode run | devin-task-kk-mac-lane-live-probe-1794196044.service:
+  status: queued
     Main process exited, code=exited, status=1/FAILURE | devin-task-kk-mac-lane-live-probe-1794196044.service: Failed
     with result ''exit-code''.'
+  sweep:
+    failed_noted: 2026-11-09 10:49
 ref: OPS-1259
 comms:
 - at: 2026-11-09 10:45
@@ -59,3 +60,7 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 10:49
+  from: chaba
+  text: 'merge-sweep: devin-task-kk-mac-lane-live-probe-1794196044 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/kk-mac-lane-live-probe-1794196044 by hand.'

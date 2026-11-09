@@ -1,0 +1,185 @@
+title: Scheduled jobs — idc03
+generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
+source: docs/ssot/infrastructure/ssot.jobs.yml
+jobs:
+  - id: activity-posts
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: ada-jobs-verify
+    schedule: *-*-* *:0/30:00
+    dispatch: systemd
+    persistent: true
+  - id: ada-tg-webhook-watch
+    schedule: every 5m
+    dispatch: systemd
+    persistent: true
+  - id: backlog-spec-enrich
+    schedule: *-*-* 01,07,13,19:20:00
+    dispatch: systemd
+    persistent: true
+  - id: board-invariants
+    schedule: *-*-* 00,04,08,12,16,20:35:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-bge-education-shadow
+    schedule: *-*-* 07:00:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-cached-videos
+    schedule: *:0/30
+    dispatch: systemd
+    persistent: true
+  - id: chaba-cms-regen
+    schedule: hourly
+    dispatch: systemd
+    persistent: true
+  - id: chaba-education-report
+    schedule: *-*-* 07:50:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-host-ready-check
+    schedule: Sun *-*-* 06:00:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-kanban-brief
+    schedule: *:0/30
+    dispatch: systemd
+    persistent: true
+  - id: chaba-lessons-audit
+    schedule: *-*-* 07:40:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-lessons-due
+    schedule: *-*-* 07:30:00
+    dispatch: systemd
+    persistent: true
+  - id: chaba-review-digest
+    schedule: *:0/15
+    dispatch: systemd
+    persistent: true
+  - id: chaba-standard-drift
+    schedule: hourly
+    dispatch: systemd
+    persistent: true
+  - id: chaba-starboard-tracker
+    schedule: *:0/30
+    dispatch: systemd
+    persistent: true
+  - id: chaba-tony-ideas
+    schedule: *:0/30
+    dispatch: systemd
+    persistent: true
+  - id: chaba-unattended-report
+    schedule: *-*-* 08:30:00
+    dispatch: systemd
+    persistent: true
+  - id: consumer-canary
+    schedule: every 6h
+    dispatch: systemd
+    persistent: true
+  - id: daily-brief
+    schedule: *-*-* 07,19:05:00
+    dispatch: systemd
+    persistent: true
+  - id: deploy-preflight
+    schedule: *-*-* *:07/5:00
+    dispatch: systemd
+    persistent: true
+  - id: device-telemetry-prune
+    schedule: *-*-* 04:20:00
+    dispatch: systemd
+    persistent: true
+  - id: embed-lane-lessons
+    schedule: every 1d
+    dispatch: systemd
+  - id: embed-lane-news
+    schedule: every 1h
+    dispatch: systemd
+  - id: focus-dispatcher-overnight
+    schedule: *-*-* 03:00:00
+    dispatch: systemd
+    persistent: true
+  - id: house-timeline
+    schedule: every 1h
+    dispatch: systemd
+    persistent: true
+  - id: kanban-notify
+    schedule: every 5m
+    dispatch: systemd
+  - id: kanban-sync
+    schedule: *-*-* *:0/15:00
+    dispatch: systemd
+    persistent: true
+  - id: kraut-rain-watch
+    schedule: *-*-* *:11,41:00
+    dispatch: systemd
+    persistent: true
+  - id: log-shipper
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe
+    schedule: every 1h
+    dispatch: systemd
+  - id: media-inbox-update-kk
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: media-inbox-update-tony
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: nest-queue-watch
+    schedule: every 15m
+    dispatch: systemd
+  - id: ops-error-posts
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: overnight-assessment
+    schedule: *-*-* 02:00:00
+    dispatch: systemd
+    persistent: true
+  - id: qc-scoreboard
+    schedule: *-*-* 07,19:20:00
+    dispatch: systemd
+    persistent: true
+  - id: served-checkout-watchdog
+    schedule: hourly
+    dispatch: systemd
+    persistent: true
+  - id: usage-feed-push
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: voice-burn-ledger
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: weather-bakeoff-daily
+    schedule: *-*-* 07:40:00
+    dispatch: systemd
+    persistent: true
+  - id: wp-comment-sync
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: wp-lane-timeline
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: wp-news-situation
+    schedule: *-*-* *:45:00
+    dispatch: systemd
+    persistent: true
+  - id: yomi-backup
+    schedule: daily
+    dispatch: systemd
+    persistent: true
+  - id: yomi-update-active
+    schedule: every 15m
+    dispatch: systemd
+  - id: yomi-update-all
+    schedule: hourly
+    dispatch: systemd
+    persistent: true

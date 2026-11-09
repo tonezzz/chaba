@@ -11,14 +11,18 @@ comms:
 - at: 2026-11-08 13:23
   from: chaba
   text: render healthy — auto-closing
+- at: 2026-11-09 10:52
+  from: chaba
+  text: 'render failing: render-board.py rc=1 —                                          ^; render-board2.py rc=1
+    —                                          ^'
 id: ops-board-render-fail
 title: chaba-board-render failing — board stale
-column: done
+column: review
 generated: board-render-guard
 priority: high
 review_kind: triage
-note: 'Auto-recovered 2026-11-08 13:23: board render healthy again.'
+note: render-board.py rc=1 —                                          ^; render-board2.py rc=1 —                                          ^
 help: 'journalctl --user -u chaba-board-render -n 50. The note names the failing renderer + its last stderr line
   — a poisoned card YAML is the usual cause: fix or remove the file it names and the next 60s tick re-renders +
   auto-closes this card.'
-updated: 2026-11-08 13:23
+updated: 2026-11-09 10:52

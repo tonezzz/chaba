@@ -1,7 +1,7 @@
 id: ops-1244e-catalog-views
 title: 'OPS-1244e ops: generate night-jobs/automation catalogs from ssot.jobs.yml (sub of devnest-queue-consolidation)'
-column: backlog
-updated: 2026-11-09 09:21
+column: done
+updated: 2026-11-09 10:57
 priority: low
 tags:
 - devnest
@@ -21,6 +21,7 @@ spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). Mechanical — no age
   DONE-CONDITION: one canonical schedule file; generated views carry a do-not-edit header; drift impossible.'
 action:
   type: manual
+  status: done
 ref: OPS-1251
 comms:
 - at: 2026-11-09 09:21
@@ -29,3 +30,11 @@ comms:
 - at: 2026-11-09 09:21
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 10:57
+  from: devin
+  text: 'DONE 2026-11-09 ~11:00 +07: new scripts/render-jobs-catalog.py emits docs/ssot/generated/jobs.<host>.yml
+    (7 hosts, 102 jobs) from ssot.jobs.yml with generated/do-not-edit headers; legacy ssot.night-jobs.* + ssot.automation.*
+    (8 files) marked SUPERSEDED pointing at the generated views. Commit dbd8104501 on writer.'
+- at: 2026-11-09 10:57
+  from: devin
+  text: closed by devin

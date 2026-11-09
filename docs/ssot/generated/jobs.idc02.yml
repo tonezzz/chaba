@@ -1,0 +1,16 @@
+title: Scheduled jobs — idc02
+generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
+source: docs/ssot/infrastructure/ssot.jobs.yml
+jobs:
+  - id: chaba-host-loads
+    schedule: every 5min
+    dispatch: systemd
+  - id: embed-lane-banks
+    schedule: every 1d
+    dispatch: systemd
+  - id: log-shipper
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe
+    schedule: every 1h
+    dispatch: systemd
