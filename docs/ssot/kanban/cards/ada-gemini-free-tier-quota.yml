@@ -25,21 +25,6 @@ expected_goals:
   id: quota-429s-drained
 created: '2026-10-09'
 comms:
-- at: 2026-10-10 08:10
-  from: devin
-  text: filed from Tony's question 'how are we using token? a lot of rate limit?' — journal evidence above
-- at: 2026-10-10 08:45
-  from: devin
-  text: 'per-tool model map (all env-overridable): web_search=ADA_WEB_SEARCH_MODEL gemini-2.5-flash WITH google_search
-    grounding + existing duckduckgo auto-fallback; DOC_MODEL/DECISION_MODEL/DEVTEAM_MODEL all default gemini-2.5-flash
-    (plain generateContent — substitutable); gemini-3.5-flash-lite already used for summaries/posture/cms (own 20/day
-    pool); vcast TTS on flash-preview-tts. Substitutes: (a) billing-enabled key — pennies/day for side tools, removes
-    wall entirely; (b) extra free-tier projects — 20/day each; (c) local via gemini-ollama-proxy on idc03 (already
-    fronts ollama for mddb; llama3.2:3b installed — fine for classify/decision/devteam, CANNOT do grounded web_search);
-    (d) OpenRouter — hosts google/gemini-2.5-flash + flash-lite paid, and :free variants of llama/deepseek/qwen/gemma
-    (~50 req/day free, 1000/day w/ $10 credit) — but needs an OpenAI-shaped client shim (extend gemini-ollama-proxy
-    or add a provider branch like the existing ddg fallback); OR-hosted gemini does NOT include google_search grounding,
-    so web_search needs DDG fallback, Tavily/Brave free tier, or a paid Gemini key.'
 - at: 2026-10-10 08:03
   from: devin
   text: armed for dispatch (queue sweep 19:5x, repo=ada-pi)
@@ -54,6 +39,9 @@ comms:
   text: 'checked wiring: 1 active GEMINI_API_KEY shared by ada-ha-tony/michael, ada-dev, ada-pi-pwa, mddb-gemini
     (same sha). attic has 1 retired key. -> B needs new projects; surveying call sites for C+D and a multi-key-ready
     pool.'
+- at: 2026-10-10 08:10
+  from: devin
+  text: filed from Tony's question 'how are we using token? a lot of rate limit?' — journal evidence above
 - at: 2026-10-10 08:19
   from: devin
   text: 'done (worktree, not deployed). audit: 1 active key shared by all 5 env files -> A/B need new GCP keys from
@@ -99,6 +87,18 @@ comms:
 - at: 2026-10-10 08:34
   from: chaba
   text: 'merge-sweep: merged 2c4150d8 (dispatch/20261010-080517-options-pick-after-checking-ho from idc01) -> origin/main'
+- at: 2026-10-10 08:45
+  from: devin
+  text: 'per-tool model map (all env-overridable): web_search=ADA_WEB_SEARCH_MODEL gemini-2.5-flash WITH google_search
+    grounding + existing duckduckgo auto-fallback; DOC_MODEL/DECISION_MODEL/DEVTEAM_MODEL all default gemini-2.5-flash
+    (plain generateContent — substitutable); gemini-3.5-flash-lite already used for summaries/posture/cms (own 20/day
+    pool); vcast TTS on flash-preview-tts. Substitutes: (a) billing-enabled key — pennies/day for side tools, removes
+    wall entirely; (b) extra free-tier projects — 20/day each; (c) local via gemini-ollama-proxy on idc03 (already
+    fronts ollama for mddb; llama3.2:3b installed — fine for classify/decision/devteam, CANNOT do grounded web_search);
+    (d) OpenRouter — hosts google/gemini-2.5-flash + flash-lite paid, and :free variants of llama/deepseek/qwen/gemma
+    (~50 req/day free, 1000/day w/ $10 credit) — but needs an OpenAI-shaped client shim (extend gemini-ollama-proxy
+    or add a provider branch like the existing ddg fallback); OR-hosted gemini does NOT include google_search grounding,
+    so web_search needs DDG fallback, Tavily/Brave free tier, or a paid Gemini key.'
 - at: 2026-10-10 10:45
   from: devin
   text: 'closed: merge 2c4150d8 verified in ada-pi/main — real content confirmed in review sweep 2026-10-10.'
@@ -207,6 +207,10 @@ comms:
   from: chaba
   text: 'idc03 defers: unclaimable by the declared runner fleet: action.runner=idc01 names no declared runner —
     fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-09 21:16
+  from: chaba
+  text: 'mn01 defers: unclaimable by the declared runner fleet: action.runner=idc01 names no declared runner — fix
+    action.labels/host pins or teach a runner the capability'
 updated: 2026-11-09 21:17
 action:
   type: dispatch
@@ -219,3 +223,4 @@ action:
   verified: true
 claim: {}
 ref: ADA-0321
+awaiting_action: true
