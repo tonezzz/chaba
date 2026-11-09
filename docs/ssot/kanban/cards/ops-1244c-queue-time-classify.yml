@@ -1,0 +1,53 @@
+id: ops-1244c-queue-time-classify
+title: 'OPS-1244c jules: lane classify at queue time inside board-api (OPS-0838 — sub of devnest-queue-consolidation)'
+column: backlog
+updated: 2026-11-09 09:21
+priority: high
+tags:
+- devnest
+- jules
+- repo-work
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). Implements open gap OPS-0838 (dispatch-classify-at-queue-time).
+  REPO-ONLY.
+
+
+  TODAY: lane classification runs at CLAIM time inside each claimer (dispatch_repos.classify_lane, JEV_LANE=1 opt-in
+  per host). Unpatched runners skip it — whack-a-mole.
+
+
+  DO: classify inside board-api POST /action do=queue (and /card queue:true) — when a card queues with unset action.lane,
+  board-api runs the same classifier (keyword LANE_KW first, jevos fallback at JEV_LANE_MIN_CONF) and persists action.lane
+  (+action.model when the lane maps to one) BEFORE the card becomes claimable. Every claimer then sees a pinned
+  lane — claim-time classify becomes a no-op for queued cards (keep it as fallback for direct-file queuing).
+
+  - Reuse dispatch_repos.classify_lane; board-api already imports dr.
+
+  - classified-manual: never dispatched — set lane manual and skip queue.
+
+  - Log the classification in card comms (lane, source kw|jevos|fallback, conf).
+
+  - Env gates stay honored: JEVOS_URL, JEV_LANE_MIN_CONF; board-api needs its own enable flag (e.g. BOARD_CLASSIFY_AT_QUEUE=1,
+  default on after burn-in — decide + document).
+
+  TESTS: tests/board for /action queue classify paths (kw hit, jevos down fallback->devin, explicit action.model
+  wins, manual refuses).
+
+  DONE-CONDITION: queued card carries persisted lane; claimers do not re-classify; tests green.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc03
+  executor: jules
+  lane: jules
+  status: queued
+ref: OPS-1249
+comms:
+- at: 2026-11-09 09:21
+  from: tony
+  text: queued for jules lane — implements OPS-0838
+- at: 2026-11-09 09:21
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
+    or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+awaiting_action: true
