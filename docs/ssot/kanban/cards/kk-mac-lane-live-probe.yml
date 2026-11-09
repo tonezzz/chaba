@@ -1,0 +1,31 @@
+id: kk-mac-lane-live-probe
+title: kk_mac_local lane live probe — first real claim through the armed lane
+column: backlog
+updated: 2026-11-09 10:45
+priority: high
+tags:
+- devnest
+- kk-mac
+- probe
+spec: 'Probe card for the kk_mac_local lane (armed KK_MAC_LANES=1 on idc03+tony-omen 2026-11-09). Contract: executor=kk_mac_local,
+  task_class=summary, artifact under lane roots. Prompt below — bounded read-only summary, no repo writes.
+
+  DONE-CONDITION: card finishes ok with the artifact written by the kk-mac lane + card comms record which executor
+  ran (kk_mac_local, not a fallback lane).'
+action:
+  type: dispatch
+  repo: chaba
+  executor: kk_mac_local
+  artifact: reports/kk-mac-lane-probe.md
+  task_class: summary
+  prompt: 'Write a file reports/kk-mac-lane-probe.md containing: (1) a 5-bullet summary of the DevNest lane routing
+    model — entry-level prediction of the cheapest lane expected to pass, work plane vs decision plane, escalation
+    on gate failure; (2) one line noting this artifact was produced by the kk_mac_local lane on KKs-Mac-Studio.
+    Keep it under 40 lines.'
+  status: queued
+ref: OPS-1259
+comms:
+- at: 2026-11-09 10:45
+  from: tony
+  text: probe for the armed kk_mac_local lane — expect finish via kk-mac, fallback allowed if lane ineligible at
+    start
