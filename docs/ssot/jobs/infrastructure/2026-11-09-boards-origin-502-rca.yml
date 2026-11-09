@@ -1,0 +1,86 @@
+title: boards.surf-thailand.com 502 incident 2026-10-29 — root-cause analysis
+card: boards-public-origin-502
+date: "2026-11-09"
+status: complete
+kind: incident-rca
+
+# Public boards surface returned 502s on 2026-10-29 evening (+07). Diagnosed
+# 2026-11-09 from idc02 edge + wp-watch journals (dispatch on idc02). Site
+# self-recovered overnight; no fix action taken or needed.
+
+topology: |
+  browser -> Cloudflare (boards.surf-thailand.com, proxied)
+          -> idc02 caddy-edge (bind 45.136.236.190, tls internal)
+          -> https://boards.h3.gizmo-thailand.com (Plesk, ReadyIDC VPS
+             103.99.11.249; Host header rewritten, WP siteurl = public name).
+  Edge internally rewrites /wp/<path> -> /wp/index.php/<path> because the
+  Plesk vhost has no try_files/PATH_INFO (permalink /index.php/%postname%/).
+
+incident_window:
+  start: "2026-10-29 ~17:02 +07 (first wp-watch read timeouts)"
+  acute: "2026-10-29 19:30-21:28 +07 (edge dial/DNS error burst, 144 errors)"
+  recovered: "2026-10-30 ~07:47 +07 sustained; brief relapse 15:31-15:36"
+  evidence_capture: "card evidence 2026-10-29 ~23:48 sits inside the flapping tail"
+
+findings:
+  origin_upstream_dead:
+    evidence: >-
+      Direct SNI/Host probes to 103.99.11.249 (10-29, prior session) returned
+      an nginx 502 page = Plesk nginx itself answering while its application
+      upstream (Apache and/or PHP-FPM) was down or wedged. Edge saw explicit
+      HTTP 502s at 18:26 and 20:37, plus 60s+ read timeouts, h2 GOAWAY,
+      connection-reset-by-peer, and TCP connect i/o timeouts to :443
+      (19:30-21:28) — host-level distress, not a WP application bug.
+    confidence: high
+    unknown: >-
+      Which upstream layer died (Apache vs PHP-FPM) and the trigger (OOM,
+      traffic spike, provider maintenance) — no SSH/Plesk-panel access to h3
+      exists on idc02; wp-admin credential lives on tony-omen. Forensic gap.
+  edge_dns_flakiness:
+    evidence: >-
+      126+ journal events "lookup boards.h3.gizmo-thailand.com: i/o timeout"
+      via 127.0.0.53 (systemd-resolved) — burst during 20:35-21:28 plus
+      isolated 10-28 12:35, 10-30 22:xx, 10-31 13:xx, 11-06/11-07. These
+      independently produce public 502s even when the origin is healthy.
+      Zone NS = lin3/lin4.readyidc.com. Chronic low-grade issue; a second,
+      self-inflicted failure layer.
+    confidence: high (that it occurred); unresolved whether resolved's
+    upstreams or the zone's authoritative NS are the slow leg.
+  public_502_path: >-
+    "Cloudflare 502" in the evidence = idc02 edge's 502 (upstream dial/DNS
+    failure) proxied through Cloudflare (server: cloudflare header). CF's
+    own origin is the idc02 edge, not h3.
+  unaffected: >-
+    status.surf-thailand.com -> chaba.h3 (same origin IP) logged only 1 error
+    (a DNS timeout, same class) — but it carries near-zero traffic so the
+    sample is thin. board-api on idc03 (:10000 tailnet) healthy throughout;
+    unrelated to the public chain.
+
+consumer_proof_2026-11-09:
+  public:
+    "https://boards.surf-thailand.com/": "200 (0.08s)"
+    "https://boards.surf-thailand.com/wp/": "200 (0.47s)"
+    "https://boards.surf-thailand.com/wp/wp-json/": "200 (0.41s) — via edge rewrite"
+    "heartbeat-idc03 ops-event modified": "2026-11-09T02:09Z — idc03 WP writer live through public path"
+  origin:
+    "https://boards.h3.gizmo-thailand.com/wp/": "301 -> https://boards.surf-thailand.com/wp/ (WP siteurl redirect — expected)"
+    "https://boards.h3.gizmo-thailand.com/wp/wp-json/": "404 — DOCUMENTED vhost limitation (no try_files); not a failure"
+    "https://boards.h3.gizmo-thailand.com/wp/index.php?rest_route=/": "200 — canonical origin REST form"
+    "https://boards.h3.gizmo-thailand.com/wp/index.php/wp-json/": "200 — form the edge rewrite produces"
+    connect: "TCP ~30-60ms, TLS ~40-70ms, TTFB 0.35-1.1s"
+  watchers: "wp-watch (5-min, idc02): all clear on every run 2026-11-09"
+
+root_cause_summary: >-
+  Primary: the Plesk origin host (ReadyIDC 103.99.11.249) suffered a
+  ~14-hour distressed window on 2026-10-29 evening/night (+07) during which
+  its application upstream was dead (nginx 502 to direct probes) and the
+  host intermittently dropped TCP connections — recovered on its own by
+  2026-10-30 morning. Trigger unknown (no host access). Secondary/self-
+  inflicted: idc02 edge DNS lookups for boards.h3 flaked via systemd-
+  resolved in the same window, adding public 502s even absent the origin
+  problem; still sporadic today.
+
+followups:
+  - "Card raised: idc02 edge DNS flakiness for gizmo-thailand.com (chronic 502 source) + h3 forensic-access gap (no ssh/panel path from ops hosts)."
+  - "If DNS flakiness persists: pin resolved upstreams or add a caddy resolver/dial fallback for the h3 upstream."
+  - "If h3 access lands: pull Plesk/nginx/apache/php-fpm logs for 2026-10-29 16:00-24:00 +07 to close the trigger question."
