@@ -1,0 +1,41 @@
+id: ops-1244d-janitor-merge
+title: 'OPS-1244d opencode: merge board sweep scripts into one janitor tick (sub of devnest-queue-consolidation)'
+column: backlog
+updated: 2026-11-09 09:21
+priority: medium
+tags:
+- devnest
+- opencode
+- repo-work
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). REPO change (chaba), paid_frontier model via opencode
+  executor on idc02.
+
+
+  TODAY: 8+ separate timers each scan the same card set: merge-sweep, answer-sweep, request-sweep, lab-review-sweep,
+  backlog-audit, review-digest, kanban-stats (each own timer+service+state).
+
+
+  DO: one board-janitor service — single tick (e.g. every 15m) running the sweeps as sub-checks in order, shared
+  /cards fetch, per-check state file, per-check timeout, failure of one check does not skip the rest. Keep the existing
+  sweep modules callable (import, do not rewrite logic). Render the single timer; retire the per-sweep timers in
+  ssot.jobs.yml.
+
+  - Preserve notify semantics (kanban-notify stays separate — it is event-driven not a sweep).
+
+  - Report one summary line per tick to journald; per-check detail on failure only.
+
+  TESTS: at minimum a smoke test that runs the janitor against a fixture card dir.
+
+  DONE-CONDITION: one rendered unit replaces the sweep timers; check coverage parity documented in the card.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  executor: opencode
+  lane: paid_frontier
+  status: queued
+ref: OPS-1250
+comms:
+- at: 2026-11-09 09:21
+  from: tony
+  text: queued for opencode paid_frontier on idc02 — repo change, sweeps preserved as sub-checks
