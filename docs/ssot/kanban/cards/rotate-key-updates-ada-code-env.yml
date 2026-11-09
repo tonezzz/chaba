@@ -1,7 +1,7 @@
 id: rotate-key-updates-ada-code-env
 title: 'rotate-or-key.sh: update ada-code.env dependent on idc02 — pinned LITELLM_KEY broke ada-code after rotation
   (ADA-1289)'
-column: backlog
+column: done
 updated: 2026-11-09 18:10
 priority: high
 tags:
@@ -16,6 +16,7 @@ spec: 'Root cause of ADA-1289: weekly rotate-or-key.sh rotated LiteLLM keys but 
   next rotation leaves ada-code serving.'
 action:
   type: manual
+  status: done
 ref: OPS-1291
 comms:
 - at: 2026-11-09 18:09
@@ -31,3 +32,6 @@ comms:
     (commit c8fca9fae0, writer; exec checkout picks it up on next repo-sync). Rotation path now covered end-to-end:
     rotate->mint->dependent env+restart. Also updated ADA-1289: root cause chain was LiteLLM key rotation blocking
     the pinned ada key — fresh key minted earlier (sk-yjyeQnI…, a'
+- at: 2026-11-09 18:10
+  from: devin
+  text: closed by devin
