@@ -1,7 +1,7 @@
 id: qwen3-coder-30b-omen-benchmark
 title: Benchmark Qwen3-Coder-30B-A3B on Tony-Omen
 column: doing
-updated: 2026-11-09 20:35
+updated: 2026-11-09 20:37
 brief: Assess this exact GGUF as a local coding-agent lane on Omen, with a strict host resource gate.
 priority: high
 program: ai-workforce
@@ -39,3 +39,10 @@ comms:
 - at: 2026-11-09 20:35
   from: tony
   text: Carded and started resource preflight; model execution is gated on safe Omen headroom.
+- at: 2026-11-09 20:37
+  from: devin
+  text: 'Preflight 2026-11-09 20:35: Omen is NOT safe to load the candidate now. GPU: 4 GiB total, 2,312 MiB used,
+    1,404 MiB free; existing chaba-ml-gpu Python worker uses 2,278 MiB. RAM: 30 GiB total, 13 GiB available. Swap:
+    15/15 GiB used (1.4 MiB free). Load average 9.79/10.76/10.86; top process ~93% CPU. Candidate GGUF is not in
+    ~/model-bench. No download, model launch, service stop, or restart performed. Keep benchmark blocked until a
+    fresh read-only preflight shows safe headroom and the incumbent w'
