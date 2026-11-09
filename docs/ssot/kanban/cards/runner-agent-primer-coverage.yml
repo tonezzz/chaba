@@ -1,6 +1,6 @@
 id: runner-agent-primer-coverage
 title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
-column: backlog
+column: doing
 updated: 2026-11-09 18:17
 brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
   — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
@@ -43,7 +43,8 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1280
 comms:
 - at: 2026-11-09 16:54
@@ -60,3 +61,6 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 18:17
+  from: idc02
+  text: claimed
