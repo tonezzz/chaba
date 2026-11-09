@@ -1,0 +1,55 @@
+id: 2026-11-09-repo-sync-autostash-conflict
+kind: incident-rca
+ref: OPS-1261
+card: timer-alert-tony-omen-timer-sentinel
+followup_card: exec-sync-autostash-conflict-codefile  # SYS-1267
+host: tony-omen
+unit: timer-sentinel.service
+summary: >-
+  Second timer-sentinel failure wave on 2026-11-09 (after the 11:03/13:53
+  result=timeout pair fixed by the SENTINEL_BUDGET_SEC commit). The
+  14:00:10 run died result=exit-code: chaba-repo-sync.service ran
+  14:00:00-14:00:31 and its autostash pop CONFLICTED on
+  scripts/ada/timer-sentinel.py at 14:00:19 — the file is outside
+  SAFE_PULL_GENERATED_RE so git-safe-pull "kept it for manual merge",
+  writing live conflict markers into a file a systemd job executes.
+  The running process had the pre-fix bytecode imported (whose fire()
+  re-raised a stalled board-api write as TimeoutError) while
+  traceback/linecache read the new conflicted file — hence the garbled
+  line numbers in the journal (api frame at line 61 pointing at
+  "class BudgetExhausted"). Every subsequent tick would have failed
+  SyntaxError until resolved; chaba-repo-sync itself reported
+  Result=success while leaving the landmine.
+evidence:
+  - 'tony-omen journal 14:00:19: "git-safe-pull: autostash pop conflict
+    kept for manual merge: scripts/ada/timer-sentinel.py".'
+  - 'Deployed file post-sync: 5 conflict hunks, py_compile SyntaxError
+    at line 32.'
+  - '14:00 run traceback: TimeoutError propagated through fire() ->
+    exit 1 at 36.8s wall — matches the pre-fix code path (merged fix
+    632e03f06 catches it).'
+  - 'Verification: 14:10 run on the restored upstream file —
+    Result=success, exit 0, 52.9s wall, 26 findings, 7 auto-closes.'
+  - 'Other exec checkouts (idc03, mn01, tony-dell): 0 conflict markers
+    in timer-sentinel.py.'
+resolution:
+  - 'git restore --source=HEAD --staged --worktree
+    scripts/ada/timer-sentinel.py on tony-omen — upstream side taken;
+    local drift preserved in stash@{0} (autostash, retained).'
+  - 'Remaining staged drift on that checkout (backups/*.json,
+    focus-inbox files from the partial pop) left as-is — pre-existing
+    state, re-autostashes cleanly each sync.'
+systemic_gap: >-
+  git-safe-pull._resolve_autostash_pop resolves pop-conflicts
+  upstream-wins only under GENERATED_RE (^docs/ssot/ + warnings json).
+  A conflict in any executed code path on an exec/readonly checkout is
+  "kept for manual merge" with markers left in the live file and the
+  sync still exits 0. On role=exec checkouts the local diff is drift by
+  definition — upstream-wins with .local-conflict-<ts> preservation
+  (same pattern as generated paths) is the honest default, or at least
+  a loud flag instead of silent success. Tracked in
+  exec-sync-autostash-conflict-codefile.
+verify: |
+  ssh tony-omen 'journalctl --user -u timer-sentinel.service --since today \
+    -o short-iso | grep -E "Finished|Failed"'
+  # expect Finished (exit 0) ticks; no SyntaxError / exit-code after 14:10
