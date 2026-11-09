@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-device-telemetry
 title: Timer device-telemetry on tony-macbook failing
 column: backlog
-updated: 2026-11-09 12:10
+updated: 2026-11-09 12:20
 priority: high
 tags:
 - timer-alert
@@ -9,6 +9,7 @@ tags:
 - by:timer-sentinel
 action:
   type: manual
+  status: queued
 note: 'Last run (11-09 12:01) of `device-telemetry.service` on `tony-macbook` result=exit-code — investigate journal:
   `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-macbook`.'
 ref: SYS-1265
@@ -17,5 +18,11 @@ comms:
   from: devin
   text: card captured via board-api
 - at: 2026-11-09 12:10
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 12:20
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-09 12:20
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
