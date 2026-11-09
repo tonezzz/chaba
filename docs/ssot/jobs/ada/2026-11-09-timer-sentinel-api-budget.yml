@@ -1,0 +1,54 @@
+id: 2026-11-09-timer-sentinel-api-budget
+kind: incident-fix
+ref: OPS-1261
+card: timer-alert-tony-omen-timer-sentinel
+host: tony-omen
+unit: timer-sentinel.service
+summary: >-
+  timer-sentinel.service on tony-omen failed result=timeout twice
+  (11-09 11:03 and 13:53). Both runs stalled on board-api writes that
+  were serializing behind kanban-commit's git operations on the idc03
+  served checkout; ~85 serial calls x up to 30s socket timeout exceeded
+  the unit's TimeoutStartSec=180, systemd killed the run, and the
+  sentinel's own alert pipeline carded itself (dispatch noise).
+evidence:
+  - 'journal tony-omen 11:00: WARN timer-alert-tony-dell-wp-cam-snapshot:
+    fire failed: read timed out, then killed at 11:03:06 (3min).'
+  - 'journal tony-omen 13:50: 3x warn: close timer-alert-* failed (read
+    timed out) at 30s spacing, killed at 13:53:10.'
+  - 'idc03 kanban-commit.service was mid-run in both windows (failed
+    11:01:55; non-FF push retry finished 13:50:40 consuming 37.7s CPU)
+    — board-api card writes serialize on /tmp/board-api.lock + do
+    synchronous git work in the served checkout (OPS-1075).'
+  - 'board-api latency healthy otherwise: POST /comment 0.19-0.23s from
+    tony-omen at 13:5x; typical full sweep is 15-40s.'
+fix:
+  file: scripts/ada/timer-sentinel.py
+  changes:
+    - 'Wall-clock budget: SENTINEL_BUDGET_SEC (default 150s) tracked from
+      process start; api() raises BudgetExhausted when <10s remain and
+      clamps each socket timeout to the remaining budget — the run exits
+      0 with deferred writes instead of being SIGKILLed at 180s.'
+    - 'fire() once again tolerates a single failed write (warn +
+      continue) — b4f7be59b had narrowed the catch to HTTPError-400 so
+      one stalled urlopen crashed the whole sweep.'
+    - 'reconcile() breaks cleanly on BudgetExhausted instead of grinding
+      30s timeouts through every healable card.'
+  rationale: >-
+    Sentinel writes are idempotent and deduped by card id; deferring to
+    the next 10min tick loses nothing. Exiting 0 under board-api
+    congestion is honest — the sentinel ran and did partial work; the
+    alert-worthy condition is board-api write latency, which OPS-1075
+    already tracks via served-checkout health.
+residual:
+  - 'Write lands but client read times out -> dup comment next tick
+    (observed BrokenPipe pattern on idc03 11:07) — pre-existing
+    board-api semantics, unchanged.'
+  - 'If board-api is fully down, open_card_ids() -> None -> all fires
+    SKIP -> exit 0. Dead-board visibility lives in the heartbeat file +
+    timer-alert-collector, unchanged from before.'
+verify: |
+  ssh tony-omen 'journalctl --user -u timer-sentinel.service --since today \
+    | grep -E "Finished|Failed|budget|deferred"'
+  # congested-window runs should show "budget exhausted — deferred" and
+  # exit 0 (Finished), never "Failed with result 'timeout'".

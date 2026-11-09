@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -43,6 +44,23 @@ HEARTBEAT = STATE_DIR / "sentinel-heartbeat.json"
 SWEEP_STALE_MIN = 30
 ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 
+# Wall-clock budget for board-api work. The unit's TimeoutStartSec is
+# 180s (ssot.jobs.yml timer-sentinel timeout:3m); ~85 serial writes at
+# up to 30s each can exceed that when board-api writes stall behind
+# kanban-commit git locks (OPS-1261: run killed at 180s -> sentinel
+# cards itself). Finish gracefully instead: remaining writes are
+# idempotent and retried on the next 10min tick.
+START = time.monotonic()
+BUDGET_SEC = float(os.environ.get("SENTINEL_BUDGET_SEC", "150"))
+
+
+class BudgetExhausted(Exception):
+    pass
+
+
+def budget_left():
+    return BUDGET_SEC - (time.monotonic() - START)
+
 # timers whose silence must always card — the load-bearing ones
 CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
             "timer-timeline-update", "timer-sentinel"}
@@ -52,6 +70,10 @@ OPTIONAL_HOSTS = {"tony-macbook"}
 
 
 def api(path, payload=None, timeout=30):
+    left = budget_left()
+    if left < 10:
+        raise BudgetExhausted(f"{left:.0f}s of {BUDGET_SEC:.0f}s budget left")
+    timeout = min(timeout, left)
     if payload is None:
         return json.load(urllib.request.urlopen(
             f"{BOARD_API}/{path}", timeout=timeout))
@@ -77,34 +99,42 @@ def open_card_ids():
 
 
 def fire(card_id, title, body, dry_run, open_ids):
-    """Create card if no open one; else comment on it."""
+    """Create card if no open one; else comment on it. One bad fire must
+    not kill the remaining findings (board-api stalls are transient —
+    the next tick retries; BudgetExhausted aborts the whole sweep)."""
     if open_ids is None:
         print(f"SKIP {card_id}: board unreachable")
         return
-    if card_id in open_ids:
-        if not dry_run:
-            api("comment", {"id": card_id, "from": ACTOR,
-                            "text": f"[still suspicious] {body}"})
-        print(f"COMMENT {card_id}: {body[:80]}")
-        return
-    if not dry_run:
-        try:
-            api("card", {"id": card_id, "title": title, "column": "backlog",
-                         "priority": "high", "from": ACTOR,
-                         "tags": ["timer-alert", "auto",
-                                  "by:timer-sentinel"],
-                         "note": body})
-        except urllib.error.HTTPError as e:
-            if e.code != 400:
-                raise
-            # id exists but closed — reopen + comment instead of crashing
-            api("action", {"id": card_id, "do": "move",
-                           "column": "backlog"})
-            api("comment", {"id": card_id, "from": ACTOR,
-                            "text": f"[reopened — condition recurred] {body}"})
-            print(f"REOPEN {card_id}: {body[:80]}")
+    try:
+        if card_id in open_ids:
+            if not dry_run:
+                api("comment", {"id": card_id, "from": ACTOR,
+                                "text": f"[still suspicious] {body}"})
+            print(f"COMMENT {card_id}: {body[:80]}")
             return
-    print(f"CARD {card_id}: {body[:80]}")
+        if not dry_run:
+            try:
+                api("card", {"id": card_id, "title": title,
+                             "column": "backlog", "priority": "high",
+                             "from": ACTOR,
+                             "tags": ["timer-alert", "auto",
+                                      "by:timer-sentinel"],
+                             "note": body})
+            except urllib.error.HTTPError as e:
+                if e.code != 400:
+                    raise
+                # id exists but closed — reopen + comment instead of crashing
+                api("action", {"id": card_id, "do": "move",
+                               "column": "backlog"})
+                api("comment", {"id": card_id, "from": ACTOR,
+                                "text": f"[reopened — condition recurred] {body}"})
+                print(f"REOPEN {card_id}: {body[:80]}")
+                return
+        print(f"CARD {card_id}: {body[:80]}")
+    except BudgetExhausted:
+        raise
+    except Exception as e:
+        print(f"warn: fire {card_id} failed ({e})", file=sys.stderr)
 
 
 def _heal_reason(cid, sweep, sweep_age_min):
@@ -157,6 +187,10 @@ def reconcile(open_ids, sweep, sweep_age_min, findings, dry_run):
             try:
                 api("comment", {"id": cid, "from": ACTOR, "text": note})
                 api("action", {"id": cid, "do": "close"})
+            except BudgetExhausted:
+                print(f"warn: budget exhausted — remaining heals "
+                      f"deferred to next tick", file=sys.stderr)
+                break
             except Exception as e:
                 print(f"warn: close {cid} failed ({e})", file=sys.stderr)
                 continue
@@ -285,8 +319,12 @@ def main():
                          f"proves the sentinel pipeline works; close it."))
 
     open_ids = open_card_ids()
-    for cid, title, body in findings:
-        fire(cid, title, body, args.dry_run, open_ids)
+    try:
+        for cid, title, body in findings:
+            fire(cid, title, body, args.dry_run, open_ids)
+    except BudgetExhausted as e:
+        print(f"warn: {e} — remaining fires deferred to next tick",
+              file=sys.stderr)
 
     healed = reconcile(open_ids, sweep, sweep_age_min, findings,
                        args.dry_run)
