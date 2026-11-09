@@ -213,6 +213,29 @@ availability, automatic execution, or a missing observer never proves watch.
 Safety/verifier failures remain failures regardless of observation. Do not
 provide either confirmation on an observer's behalf without their actual consent.
 
+### S2 independent review finalization
+
+For `independent_devin`, a clean execution appends an unverified pending metric
+and freezes its envelope, producer session, artifact and event/prompt/manifest
+hashes in `pending-review.json`. Pending is not failure or success. Safety and
+execution failures remain immediate failures, never eligible for this path.
+A separate reviewer produces an `independent_devin_attestation/1` certificate
+with job, named reviewer/session, timestamp, evidence hashes, pass/fail verdict,
+and boolean admission/audit/contract/claims checks. Operator-controlled ingestion
+uses `opencode_profiles.py finalize-review <run-dir> --review <certificate.json>`.
+This appends a hash-bound finalization; it never rewrites the primary row or quota.
+Reviewer identity is an operational trust boundary, not cryptographic authentication.
+
+Review and promotion resolve one primary/finalization pair per execution, reject
+orphan/duplicate/forged finalizations, and rehash repo-relative evidence in the
+current checkout. Missing or changed evidence holds promotion. Reports retain
+`source_ledger` for re-derivation alongside the effective `ledger`; metrics count
+executions, not review events, and expose the raw record count separately.
+A failed review is final for that execution; it cannot be replaced with a passing
+certificate or silently retried past the five-job quota. S2 requires five genuinely
+independently verified artifacts before S3. The pilot scope is read-only ops;
+it does not qualify free models for branch/code work.
+
 ## Weekly promotion review
 
 `lane_gate.py review` — run weekly (calendar cadence; `review_due` is

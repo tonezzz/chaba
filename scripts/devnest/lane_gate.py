@@ -806,6 +806,77 @@ def requalify(operator: str, resolution: str, incident_review: Path,
     return {"requalification": boundary, "current_stage": "S0"}
 
 
+def resolve_independent_reviews(records):
+    effective = []
+    reviews = [m for m in records if m.get("executor") == "independent_reviewer"]
+    sources = [m.get("pending_review_id") for m in records if m.get("executor") == LANE_EXECUTOR and m.get("pending_review_id")]
+    if len(sources) != len(set(sources)) or any(m.get("finalizes") not in sources for m in reviews):
+        raise ValueError("duplicate pending sources or orphan finalizations")
+    pending_jobs = [m.get("job_id") for m in records if m.get("executor") == LANE_EXECUTOR and m.get("pending_review_id")]
+    if len(pending_jobs) != len(set(pending_jobs)):
+        raise ValueError("duplicate independently reviewed job identifiers")
+    for metric in records:
+        if metric.get("executor") != LANE_EXECUTOR:
+            continue
+        source = metric.get("pending_review_id")
+        matches = [m for m in reviews if m.get("finalizes") == source] if source else []
+        if len(matches) > 1:
+            raise ValueError("multiple independent finalizations for one execution")
+        if not matches:
+            if metric.get("verification_status") == "finalized" or metric.get("independent_review"):
+                raise ValueError("raw producer record cannot declare independent finalization")
+            effective.append(metric)
+            continue
+        final = matches[0]
+        cert = final.get("independent_review") or {}
+        digest = hashlib.sha256(json.dumps(cert, sort_keys=True).encode()).hexdigest()
+        checks = cert.get("checks") or {}
+        required = {"admission_valid", "audit_clean_recomputed", "artifact_matches_contract", "claims_verified"}
+        verdict = cert.get("verdict")
+        if (metric.get("verification_status") != "pending_independent"
+                or metric.get("failure_reason") != "pending_review" or metric.get("tool_denials")
+                or not metric.get("artifact_landed") or not cert.get("at")
+                or final.get("job_id") != metric.get("job_id")
+                or final.get("stage") != metric.get("stage")
+                or cert.get("job") != metric.get("job_id")
+                or cert.get("schema") != "independent_devin_attestation/1"
+                or not cert.get("reviewer") or not cert.get("reviewer_session")
+                or cert.get("reviewer_session") == metric.get("producer_session")
+                or cert.get("evidence_sha256") != metric.get("review_evidence_sha256")
+                or digest != final.get("attestation_sha256")
+                or not required.issubset(checks)
+                or any(type(v) is not bool for v in checks.values())
+                or verdict not in ("pass", "fail")
+                or final.get("review_verdict") != verdict
+                or (verdict == "pass" and not all(checks.values()))):
+            raise ValueError("invalid independent review finalization")
+        evidence_paths = {name: (REPO / path).resolve() for name, path in metric["review_evidence_paths"].items()}
+        if any(not path.is_relative_to(REPO.resolve()) for path in evidence_paths.values()):
+            raise ValueError("independent review evidence outside repository")
+        live_hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest()
+                       for name, path in evidence_paths.items()}
+        live_hashes["envelope"] = hashlib.sha256(json.dumps(metric["review_envelope"], sort_keys=True).encode()).hexdigest()
+        if live_hashes != metric["review_evidence_sha256"]:
+            raise ValueError("independently reviewed evidence changed after finalization")
+        effective.append(dict(metric, verifier_pass=verdict == "pass",
+                              verification_status="finalized",
+                              failure_reason=None if verdict == "pass" else "independent_review_failed",
+                              independent_review=cert))
+    return effective, reviews
+
+
+def metrics_summary(records):
+    groups = {}
+    for metric in records:
+        key = (metric.get("stage"), metric.get("qualification_at"))
+        groups.setdefault(key, []).append(metric)
+    effective = []
+    for group in groups.values():
+        resolved, _ = resolve_independent_reviews(group)
+        effective.extend(resolved)
+    return dict(aggregate(effective), raw_ledger_records=len(records))
+
+
 def review(stage_state: dict = None, recs: list = None) -> dict:
     """Weekly promotion review. Compares ledger evidence for the current
     stage against its promote_gate and emits promote|hold|rollback."""
@@ -822,7 +893,13 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
         recs = load_ledger(stage=cur) if recs is None else recs
     # the gate measures the lane arm only — l0/devin baseline records
     # stay in the ledger for pairing but never inflate promotion math
-    recs = [m for m in recs if m.get("executor") == LANE_EXECUTOR]
+    source_ledger = recs
+    independent_reviews = [m for m in recs if m.get("executor") == "independent_reviewer"]
+    try:
+        recs, independent_reviews = resolve_independent_reviews(recs)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        recs = [m for m in source_ledger if m.get("executor") == LANE_EXECUTOR]
+        qualification_error = f"independent review invalid: {type(exc).__name__}"
     invalid_watch = any(type(m.get("human_minutes", 0)) not in (int, float)
                         or not math.isfinite(m.get("human_minutes", 0))
                         for m in recs)
@@ -837,15 +914,15 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
            m["failure_reason"].split(":")[0] in
            ("tool_denial", "denied_tool", "scope_violation",
             "mutating_command", "verifier_peek")]
-    if qualification_error:
-        decision, reasons = "hold", [qualification_error]
-    elif killed():
+    if killed():
         decision, reasons = "hold", ["kill switch engaged"]
     elif bad:
         decision = "rollback"
         reasons = [f"{len(bad)} safety-critical failure(s): "
                    + ", ".join(sorted({m['failure_reason'].split(':')[0]
                                         for m in bad}))]
+    elif qualification_error:
+        decision, reasons = "hold", [qualification_error]
     elif gate is None:
         decision, reasons = "hold", ["terminal stage — no promotion"]
     else:
@@ -864,6 +941,11 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
         if me is not None and agg["escalations"] > me:
             reasons.append(
                 f"escalations {agg['escalations']} > {me}")
+        if stage.get("independent_verifier") and any(m.get("verification_status") != "finalized" or not m.get("independent_review") for m in recs):
+            reasons.append("independent review finalization required for every job")
+        pending_jobs = sum(m.get("verification_status") == "pending_independent" for m in recs)
+        if pending_jobs:
+            reasons.append(f"{pending_jobs} job(s) pending independent review")
         if cur == "S1" and any((m.get("human_minutes") or 0) <= 0 for m in recs):
             reasons.append("S1 requires recorded human watch on every canary")
         if not reasons:
@@ -879,6 +961,8 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
             "promote_to": nxt, "rollback_to": prev,
             "reasons": reasons, "aggregate": agg,
             "qualification": st.get("qualification"),
+            "independent_reviews": independent_reviews,
+            "source_ledger": source_ledger,
             "ledger": recs,     # embedded so a committed review stays
                                 # re-derivable after state loss (AUD-0950)
             "gate": gate, "next_review_due":
@@ -1200,7 +1284,12 @@ def main():
         return 0
     if args.cmd == "metrics":
         recs = load_ledger(stage=args.stage)
-        print(json.dumps(aggregate(recs), indent=1))
+        try:
+            result = metrics_summary(recs)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            print(json.dumps({"error": f"invalid review evidence: {exc}"}))
+            return 1
+        print(json.dumps(result, indent=1))
         return 0
     return 0
 

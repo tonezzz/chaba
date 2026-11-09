@@ -70,6 +70,181 @@ def mk_env(profile="ops-readonly", **kw):
     return env
 
 
+class IndependentReview(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name)
+        self.old_state = os.environ["OPENCODE_LANE_STATE"]
+        os.environ["OPENCODE_LANE_STATE"] = str(self.root / "state")
+        self.repo_patch = mock.patch.object(mod, "REPO", self.root)
+        self.repo_patch.start()
+        self.gate_repo_patch = mock.patch.object(lane_gate, "REPO", self.root)
+        self.gate_repo_patch.start()
+        lane_gate.save_stage({"current_stage": "S2", "history": [], "jobs_completed": {"S2": 1}})
+        self.rd = self.root / "run"
+        self.rd.mkdir()
+        self.env = mk_env(stage="S2", verifier={"type": "independent_devin", "ref": "verify.py"})
+        self.dest = self.root / self.env["artifact"]["path"]
+        self.dest.parent.mkdir(parents=True)
+        self.dest.write_text('{"read_only":true}\n')
+        for name, text in {"artifact.out": self.dest.read_text(), "events.jsonl": '{"sessionID":"producer-session"}\n',
+                           "manifest.json": '{}', "prompt.md": 'read-only task', "verdict.json": '{"verdict":"skipped"}'}.items():
+            (self.rd / name).write_text(text)
+        self.metric = lane_gate.new_metric(self.env, "opencode")
+        self.metric.update(artifact_landed=True, verifier_pass=False)
+
+    def tearDown(self):
+        self.repo_patch.stop()
+        self.gate_repo_patch.stop()
+        os.environ["OPENCODE_LANE_STATE"] = self.old_state
+        self.td.cleanup()
+
+    def prepare(self):
+        pending = mod.prepare_independent_review(self.rd, self.env, self.metric)
+        lane_gate.record_metric(self.metric)
+        return pending
+
+    def certificate(self, pending, **overrides):
+        cert = {"schema": "independent_devin_attestation/1", "job": self.env["id"],
+                "reviewer": "devin-independent", "reviewer_session": "review-session",
+                "verdict": "pass", "evidence_sha256": pending["evidence_sha256"],
+                "checks": {"admission_valid": True, "audit_clean_recomputed": True,
+                           "artifact_matches_contract": True, "claims_verified": True},
+                "findings": [], "at": "2026-11-09T04:00:00+00:00"}
+        cert.update(overrides)
+        path = self.root / "attestation.json"
+        path.write_text(json.dumps(cert))
+        return path
+
+    def test_pending_then_review_appends_without_rewriting(self):
+        pending = self.prepare()
+        before = lane_gate.ledger_file().read_bytes()
+        self.assertEqual(lane_gate.review()["aggregate"]["verified"], 0)
+        self.assertIn("pending independent review", " ".join(lane_gate.review()["reasons"]))
+        result = mod.finalize_independent_review(self.rd, self.certificate(pending))
+        self.assertNotIn("error", result)
+        self.assertTrue(lane_gate.ledger_file().read_bytes().startswith(before))
+        self.assertEqual(lane_gate.review()["aggregate"]["jobs"], 1)
+        self.assertEqual(lane_gate.review()["aggregate"]["verified"], 1)
+        self.assertEqual(lane_gate.load_stage()["jobs_completed"], {"S2": 1})
+        size = lane_gate.ledger_file().stat().st_size
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        self.assertEqual(lane_gate.ledger_file().stat().st_size, size)
+
+    def test_tamper_self_review_or_empty_checks_rejected(self):
+        pending = self.prepare()
+        for override in ({"reviewer_session": "producer-session"}, {"checks": {}},
+                         {"job": "another"}, {"evidence_sha256": {}},
+                         {"checks": {"admission_valid": "true"}}):
+            self.assertIn("error", mod.finalize_independent_review(self.rd, self.certificate(pending, **override)))
+        self.dest.write_text("tampered")
+        self.assertIn("error", mod.finalize_independent_review(self.rd, self.certificate(pending)))
+        self.assertEqual(lane_gate.review()["aggregate"]["verified"], 0)
+
+    def test_failed_review_stays_failed(self):
+        pending = self.prepare()
+        result = mod.finalize_independent_review(self.rd, self.certificate(
+            pending, verdict="fail", checks={"admission_valid": True, "audit_clean_recomputed": True,
+                                            "artifact_matches_contract": False, "claims_verified": False}))
+        self.assertNotIn("error", result)
+        self.assertEqual(lane_gate.review()["aggregate"]["verified"], 0)
+        self.assertIn("independent_review_failed", lane_gate.review()["aggregate"]["failure_reasons"])
+
+    def test_review_survives_repository_relocation(self):
+        import shutil
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        with tempfile.TemporaryDirectory() as td:
+            relocated = Path(td) / "clone"
+            shutil.copytree(self.root, relocated)
+            with mock.patch.object(lane_gate, "REPO", relocated):
+                self.assertEqual(lane_gate.review()["aggregate"]["verified"], 1)
+
+    def test_metrics_count_execution_once_not_review_as_a_job(self):
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        result = lane_gate.metrics_summary(lane_gate.load_ledger())
+        self.assertEqual(result["jobs"], 1)
+        self.assertEqual(result["verified"], 1)
+        self.assertEqual(result["raw_ledger_records"], 2)
+
+    def test_post_finalization_tamper_blocks_promotion(self):
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        self.dest.write_text("changed-after-review")
+        result = lane_gate.review()
+        self.assertEqual(result["decision"], "hold")
+        self.assertIn("independent review invalid", " ".join(result["reasons"]))
+
+    def test_duplicate_sources_or_finalizations_cannot_inflate_jobs(self):
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        lane_gate.record_metric(dict(self.metric))
+        result = lane_gate.review()
+        self.assertEqual(result["decision"], "hold")
+        self.assertIn("independent review invalid", " ".join(result["reasons"]))
+
+    def test_raw_finalized_claim_and_orphan_finalization_hold(self):
+        for record in ({"executor": "opencode", "verification_status": "finalized",
+                        "verifier_pass": True, "artifact_landed": True, "independent_review": {"fake": True}},
+                       {"executor": "independent_reviewer", "finalizes": "unknown"}):
+            result = lane_gate.review({"current_stage": "S2"}, [dict(record, stage="S2")])
+            self.assertEqual(result["decision"], "hold")
+            self.assertIn("independent review invalid", " ".join(result["reasons"]))
+
+    def test_bad_finalization_does_not_hide_safety_rollback(self):
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        final = lane_gate.load_ledger()[-1]
+        lane_gate.record_metric(dict(final))
+        bad = lane_gate.new_metric(dict(self.env, id="unsafe"), "opencode")
+        bad.update(failure_reason="tool_denial", tool_denials=1)
+        lane_gate.record_metric(bad)
+        self.assertEqual(lane_gate.review()["decision"], "rollback")
+
+    def test_source_ledger_rederives_finalized_review(self):
+        pending = self.prepare()
+        mod.finalize_independent_review(self.rd, self.certificate(pending))
+        result = lane_gate.review()
+        replay = lane_gate.review(lane_gate.load_stage(), result["source_ledger"])
+        self.assertEqual(replay["aggregate"], result["aggregate"])
+
+    def test_real_message_landing_normalizes_both_artifacts(self):
+        self.env["unattended"] = True
+        args = SimpleNamespace(job="fixture", unattended=True, skip_scope=False, human_observer="")
+        prof = mod.load_profile("ops-readonly")
+        def render(env, profile, rd):
+            rd.mkdir(parents=True)
+            (rd / "prompt.md").write_text("read-only health")
+            (rd / "manifest.json").write_text("{}")
+            return {}
+        def execute(cmd, rd, *args, **kwargs):
+            (rd / "events.jsonl").write_text('{"sessionID":"producer-session"}\n')
+            return SimpleNamespace(returncode=0)
+        audit = {"tokens": {}, "denials": [], "write_attempts": [], "mutating_commands": [], "verifier_peeks": []}
+        with mock.patch.object(mod, "RUNS", self.root / "runs"), \
+                mock.patch.object(mod.lane_gate, "load_envelope", return_value=self.env), \
+                mock.patch.object(mod, "run_preflight", return_value={"admit": True, "profile": prof, "lane": {"admit": True}}), \
+                mock.patch.object(mod, "render_bundle", side_effect=render), \
+                mock.patch.object(mod, "run_profile_process", side_effect=execute), \
+                mock.patch.object(mod, "arm_env", return_value={}), \
+                mock.patch.object(mod, "audit_events", return_value=audit), \
+                mock.patch.object(mod, "_git_status", return_value=set()), \
+                mock.patch.object(mod, "final_text", return_value='{"read_only":true}'):
+            self.assertEqual(mod.cmd_run(args), 0)
+        rd = next((self.root / "runs").iterdir())
+        self.assertEqual((rd / "artifact.out").read_bytes(), self.dest.read_bytes())
+        self.assertTrue((rd / "pending-review.json").exists())
+        self.assertEqual(lane_gate.load_ledger()[-1]["verification_status"], "pending_independent")
+
+    def test_changed_attempt_rejects_stale_attestation(self):
+        pending = self.prepare()
+        st = lane_gate.load_stage()
+        st["qualification"] = {"at": "a-new-attempt"}
+        lane_gate.save_stage(st)
+        self.assertIn("error", mod.finalize_independent_review(self.rd, self.certificate(pending)))
+
+
 class HumanWatch(unittest.TestCase):
     def test_confirmation_records_measured_minutes_and_observer(self):
         result = mod.confirm_human_watch("tony", "j-test", 90,

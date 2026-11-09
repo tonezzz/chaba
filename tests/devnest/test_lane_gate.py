@@ -345,6 +345,11 @@ class ReviewAndMetrics(unittest.TestCase):
                                     [self._rec(stage="S1", human_minutes=value)])
                 self.assertEqual(result["decision"], "hold")
 
+    def test_s2_cannot_promote_self_declared_passes_without_attestation(self):
+        result = mod.review(stage_state("S2"), [self._rec(stage="S2") for _ in range(5)])
+        self.assertEqual(result["decision"], "hold")
+        self.assertIn("independent review", " ".join(result["reasons"]))
+
     def test_terminal_stage_holds(self):
         recs = [self._rec(stage="S5") for _ in range(9)]
         r = mod.review(stage_state("S5"), recs)

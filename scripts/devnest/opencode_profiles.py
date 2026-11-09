@@ -38,6 +38,8 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+import fcntl
+import hashlib
 import importlib.util
 import json
 import math
@@ -679,6 +681,100 @@ def _verify(rd: Path, env: dict) -> dict:
     return res
 
 
+REVIEW_CHECKS = {"admission_valid", "audit_clean_recomputed", "artifact_matches_contract", "claims_verified"}
+REVIEW_FILES = ("events.jsonl", "artifact.out", "manifest.json", "prompt.md", "verdict.json")
+
+
+def review_evidence(rd, env):
+    artifact = (REPO / env["artifact"]["path"]).resolve()
+    if not artifact.is_relative_to(REPO.resolve()):
+        raise ValueError("artifact outside repository")
+    if artifact.read_bytes() != (rd / "artifact.out").read_bytes():
+        raise ValueError("landed artifact differs from run artifact")
+    hashes = {name: hashlib.sha256((rd / name).read_bytes()).hexdigest() for name in REVIEW_FILES}
+    hashes["landed_artifact"] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    hashes["envelope"] = hashlib.sha256(json.dumps(env, sort_keys=True).encode()).hexdigest()
+    return hashes
+
+
+def prepare_independent_review(rd, env, metric):
+    if (metric.get("failure_reason") or not metric.get("artifact_landed")
+            or metric.get("tool_denials") or (rd / "pending-review.json").exists()):
+        raise ValueError("only new clean landed executions can await independent review")
+    sessions = {event.get("sessionID") for line in (rd / "events.jsonl").read_text().splitlines()
+                if line.strip() for event in [json.loads(line)] if event.get("sessionID")}
+    if len(sessions) != 1:
+        raise ValueError("independent review requires one identifiable producer session")
+    evidence = review_evidence(rd, env)
+    review_id = hashlib.sha256(json.dumps([metric["job_id"], metric["at"], evidence], sort_keys=True).encode()).hexdigest()
+    lane_gate.finalize_cost(metric)
+    producer_session = sessions.pop()
+    metric.update(pending_review_id=review_id, failure_reason="pending_review",
+                  verification_status="pending_independent", verifier_pass=False, escalated=False,
+                  producer_session=producer_session, review_evidence_sha256=evidence,
+                  qualification_at=(lane_gate.load_stage().get("qualification") or {}).get("at"),
+                  review_envelope=env, review_evidence_paths={
+                      **{name: (rd / name).resolve().relative_to(REPO.resolve()).as_posix() for name in REVIEW_FILES},
+                      "landed_artifact": (REPO / env["artifact"]["path"]).resolve().relative_to(REPO.resolve()).as_posix()})
+    pending = {"schema": "pending_independent_review/1", "review_id": review_id,
+               "env": env, "metric": dict(metric), "producer_session": producer_session,
+               "qualification_at": (lane_gate.load_stage().get("qualification") or {}).get("at"),
+               "evidence_sha256": evidence}
+    (rd / "pending-review.json").write_text(json.dumps(pending, indent=2) + "\n")
+    return pending
+
+
+def finalize_independent_review(rd, review_path):
+    lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
+    with (lane_gate.state_dir() / "review-finalize.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            pending = json.loads((rd / "pending-review.json").read_text())
+            certificate = json.loads(review_path.read_text())
+            env, metric = pending["env"], pending["metric"]
+            state = lane_gate.load_stage()
+            if state["current_stage"] != metric["stage"] or (state.get("qualification") or {}).get("at") != pending["qualification_at"]:
+                raise ValueError("review belongs to a different stage or qualification attempt")
+            if pending.get("schema") != "pending_independent_review/1" or metric.get("verification_status") != "pending_independent":
+                raise ValueError("invalid pending execution")
+            if certificate.get("schema") != "independent_devin_attestation/1" or certificate.get("job") != metric["job_id"]:
+                raise ValueError("attestation schema or job mismatch")
+            reviewer = certificate.get("reviewer_session")
+            if not certificate.get("reviewer") or not reviewer or reviewer == pending["producer_session"]:
+                raise ValueError("distinct named reviewer session required")
+            checks = certificate.get("checks") or {}
+            if not REVIEW_CHECKS.issubset(checks) or any(type(v) is not bool for v in checks.values()):
+                raise ValueError("explicit boolean admission, audit, contract and claims checks required")
+            verdict = certificate.get("verdict")
+            if verdict not in ("pass", "fail") or (verdict == "pass" and not all(checks.values())):
+                raise ValueError("invalid review verdict or failing pass checks")
+            if not certificate.get("at"):
+                raise ValueError("review timestamp required")
+            evidence = review_evidence(rd, env)
+            if evidence != pending["evidence_sha256"] or evidence != certificate.get("evidence_sha256"):
+                raise ValueError("review evidence changed or attestation hashes differ")
+            digest = hashlib.sha256(json.dumps(certificate, sort_keys=True).encode()).hexdigest()
+            previous = [m for m in lane_gate.load_ledger() if m.get("finalizes") == pending["review_id"]]
+            if previous:
+                if len(previous) == 1 and previous[0].get("attestation_sha256") == digest:
+                    return {"already_finalized": True, "verdict": verdict}
+                raise ValueError("execution already finalized with a different review")
+            originals = [m for m in lane_gate.load_ledger() if m.get("pending_review_id") == pending["review_id"]]
+            if len(originals) != 1 or originals[0] != metric:
+                raise ValueError("pending ledger source missing, duplicated or changed")
+            final = lane_gate.new_metric(env, "independent_reviewer")
+            final.update(finalizes=pending["review_id"], attestation_sha256=digest,
+                         qualification_at=pending["qualification_at"],
+                         independent_review=certificate, review_verdict=verdict,
+                         artifact_landed=True, verifier_pass=verdict == "pass",
+                         failure_reason=None if verdict == "pass" else "independent_review_failed")
+            lane_gate.record_metric(final)
+            (rd / "independent-review.json").write_text(json.dumps(final, indent=2) + "\n")
+            return {"finalized": True, "job": metric["job_id"], "verdict": verdict}
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            return {"error": str(exc)}
+
+
 def confirm_human_watch(observer, job_id, seconds, read=None):
     result = {"human_observer": observer, "human_minutes": 0,
               "human_watch_confirmed": False}
@@ -799,10 +895,11 @@ def cmd_run(args):
     content = extract_artifact(text, afmt) if text else None
     landed = False
     if amode == "message" and content:
+        content += "" if content.endswith("\n") else "\n"
         (rd / "artifact.out").write_text(content)
         dest = REPO / str(art.get("path") or "")
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_text(content + ("" if content.endswith("\n") else "\n"))
+        dest.write_text(content)
         landed = True
     elif amode == "file":
         src = REPO / str(art.get("path") or "")
@@ -820,6 +917,7 @@ def cmd_run(args):
     m["cache_write_tokens"] = tok.get("cache_write") or 0
     m["wall_s"] = round(time.time() - t0, 1)
     m["verifier_pass"] = verdict.get("verdict") == "pass"
+    needs_independent = (env.get("verifier") or {}).get("type") == "independent_devin" and verdict.get("verdict") == "skipped"
     m["artifact_landed"] = landed
     den = len(audit["denials"]) + len(audit["write_attempts"])
     m["tool_denials"] = den
@@ -841,13 +939,23 @@ def cmd_run(args):
         fr = "timeout"
     elif rec["exit_code"] not in (0, None) and not m["verifier_pass"]:
         fr = "executor_error"
-    elif not m["verifier_pass"]:
+    elif not m["verifier_pass"] and not needs_independent:
         fr = "unverified_exit"
     m["failure_reason"] = fr
+    pending_review = needs_independent and not fr
     if observer:
         print(json.dumps({"job": env["id"], "verdict": verdict.get("verdict"),
                           "failure_reason": fr, "run_dir": str(rd)}), flush=True)
         m.update(confirm_human_watch(observer, env["id"], watch_seconds))
+    if pending_review:
+        try:
+            prepare_independent_review(rd, env, m)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            pending_review = False
+            m.pop("pending_review_id", None)
+            m.update(verification_status="failed", failure_reason="independent_review_preparation_error")
+            fr = m["failure_reason"]
+            print(json.dumps({"error": str(exc)}), flush=True)
     lane_gate.record_metric(m)
 
     f = lane_gate.inflight_dir() / f"{env['id']}.json"
@@ -860,6 +968,7 @@ def cmd_run(args):
     lane_gate.save_stage(st)
 
     run = {"job": env["id"], "profile": prof["id"], "at": now_iso(),
+           "verification_status": "pending_independent" if pending_review else "complete",
            "admit": pre["lane"], "run_dir": str(rd),
            "exit_code": rec["exit_code"], "error": rec["error"],
            "verdict": verdict.get("verdict"), "checks": verdict.get("checks"),
@@ -871,10 +980,10 @@ def cmd_run(args):
            "mcp_rendered": man.get("mcp_rendered")}
     (rd / "run.json").write_text(json.dumps(run, indent=1))
     print(json.dumps({k: run[k] for k in
-                      ("job", "profile", "verdict", "artifact_landed",
+                      ("job", "profile", "verdict", "verification_status", "artifact_landed",
                        "denials", "mutating", "verifier_peeks",
                        "scope_violations", "run_dir")}, indent=1))
-    return 0 if run["verdict"] == "pass" and not fr else 1
+    return 0 if pending_review or (run["verdict"] == "pass" and not fr) else 1
 
 
 # -------------------------------------------------------------------- cli
@@ -905,6 +1014,10 @@ def main():
                     help="named human watcher; requires --supervised, a terminal, and end-of-run attestation")
     sp.add_argument("--skip-scope", action="store_true",
                     help="skip before/after git-status scope diff")
+
+    sp = sub.add_parser("finalize-review")
+    sp.add_argument("run_dir")
+    sp.add_argument("--review", required=True)
 
     sp = sub.add_parser("classify")
     sp.add_argument("path")
@@ -955,6 +1068,10 @@ def main():
         return 0
     if args.cmd == "run":
         return cmd_run(args)
+    if args.cmd == "finalize-review":
+        result = finalize_independent_review(Path(args.run_dir), Path(args.review))
+        print(json.dumps(result, indent=1))
+        return 1 if "error" in result else 0
     if args.cmd == "classify":
         prof = load_profile(args.profile)
         print(json.dumps({"path": args.path, "kind": args.kind,
