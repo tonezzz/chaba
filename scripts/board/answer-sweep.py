@@ -363,22 +363,32 @@ def card_needs_triage(card: dict) -> bool:
     return bool(pending(card))
 
 
-def main() -> int:
+def main(cards=None) -> int:
     dry = "--dry-run" in sys.argv
     ref = today()
     report = []
     # pass 1 (unlocked): cards with answers to execute OR an
     # awaiting_action flag to heal (pre-flag answers still count)
     cands = []
-    for p in sorted(CARD_DIR.glob("*.yml")):
-        try:
-            card = yaml.safe_load(p.read_text()) or {}
-        except Exception:
-            continue
-        if card.get("awaiting_action") or (
-                card.get("column") not in ("done", "lab")
-                and pending(card)):
-            cands.append((p, card.get("id") or p.stem))
+    if cards is not None:
+        for card in cards:
+            cid = card.get("id")
+            if not cid: continue
+            p = CARD_DIR / f"{cid}.yml"
+            if card.get("awaiting_action") or (
+                    card.get("column") not in ("done", "lab")
+                    and pending(card)):
+                cands.append((p, cid))
+    else:
+        for p in sorted(CARD_DIR.glob("*.yml")):
+            try:
+                card = yaml.safe_load(p.read_text()) or {}
+            except Exception:
+                continue
+            if card.get("awaiting_action") or (
+                    card.get("column") not in ("done", "lab")
+                    and pending(card)):
+                cands.append((p, card.get("id") or p.stem))
     if not cands:
         print("answer-sweep: no answered requests awaiting triage")
         return 0

@@ -883,10 +883,8 @@ jobs:
     (runner-auto-<host> cards — dispatch bootstrap audit: git identity, chaba clone freshness >200 behind, fetch-only
     remote + merge-sweep salvage ls-remote, installed runner-agent / devin-dispatch / dispatch_repos drift, devin
     CLI; added 2026-10-09, card runner-bootstrap-check), request-sweep.py (board requests unanswered >12h get one
-    batched escalation push, escalated_at stamp — added 2026-10-05, card kanban-push-notify), answer-sweep.py
-    (answered requests execute known-verb board actions — queue/close/hold, per-option `action:` field honored;
-    unmapped answers stay awaiting_action — added 2026-10-15, card knb-answer-action-triage), and kanban-stats.py
-    (L2 kanban report node, ssot.reports.yml). Own worktree, self-bootstraps. Added 2026-10-04. on_failure added
+    batched escalation push, escalated_at stamp — added 2026-10-05, card kanban-push-notify).
+    Own worktree, self-bootstraps. Added 2026-10-04. on_failure added
     2026-10-05 (cms-generator-schedule-audit) — a dead sync would silently stall every cms-auto-* card and the dev-kanban
     page.'
 - id: log-shipper
@@ -1079,19 +1077,19 @@ jobs:
     this unit retires the ~/CascadeProjects/ada-voice copy (git pull the chaba checkout first so the script exists).
     On idc02 it runs after mddb-lab-pull (03:15) + ssot-optimization-snapshot (03:30); the SSOT 'after ada-scenario-*
     timers' note targets idc03, whose scenario timers are weekly, not nightly.
-- id: chaba-review-digest
-  name: Kanban review-digest card refresher (standing summary card for Tony)
-  host: idc03   # moved 2026-10-16/17 OPS-0725
+- id: board-janitor
+  name: Board Janitor Tick (runs all kanban sweeps)
+  host: idc03
   dispatch: systemd
-  on_calendar: '*:0/15'
+  every: 15m
   persistent: true
-  timeout: 2m
+  timeout: 5m
   cwd: '%h/CascadeProjects/chaba-tony-dell'
   env:
     REPO: '%h/CascadeProjects/chaba-tony-dell'
   exec:
-  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/review-digest.py
-  note: Tony request 2026-10-11 — single summary card listing review pile + open requests, refreshed every 15m.
+  - /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/board/board-janitor.py
+  note: 'OPS-1244d: runs all board sweeps (merge-sweep, answer-sweep, request-sweep, lab-review-sweep, backlog-audit, review-digest, kanban-stats) as sub-checks in one tick.'
 - id: media-inbox-update-tony
   name: Media inbox page family (tony lane)
   host: idc03

@@ -267,7 +267,7 @@ def render_md(stats: dict) -> str:
     return "\n".join(lines)
 
 
-def main() -> int:
+def main(cards=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--cards-dir", type=Path,
                    default=Path(os.environ.get(
@@ -279,7 +279,8 @@ def main() -> int:
     args = p.parse_args()
 
     now = datetime.datetime.now(BANGKOK)
-    cards = load_cards(args.cards_dir)
+    if cards is None:
+        cards = load_cards(args.cards_dir)
     stats = collect(cards, now)
     md = render_md(stats)
 

@@ -93,19 +93,28 @@ def overdue_requests(card: dict, ref: datetime) -> list[tuple[dict, float]]:
     return out
 
 
-def main() -> int:
+def main(cards=None) -> int:
     dry = "--dry-run" in sys.argv
     ref = now()
     # pass 1 (unlocked): find candidates; re-verified under the lock
     candidates = []
-    for p in sorted(CARD_DIR.glob("*.yml")):
-        try:
-            card = yaml.safe_load(p.read_text()) or {}
-        except Exception:
-            continue
-        hits = overdue_requests(card, ref)
-        if hits:
-            candidates.append((p, card.get("id") or p.stem, hits))
+    if cards is not None:
+        for card in cards:
+            cid = card.get("id")
+            if not cid: continue
+            p = CARD_DIR / f"{cid}.yml"
+            hits = overdue_requests(card, ref)
+            if hits:
+                candidates.append((p, cid, hits))
+    else:
+        for p in sorted(CARD_DIR.glob("*.yml")):
+            try:
+                card = yaml.safe_load(p.read_text()) or {}
+            except Exception:
+                continue
+            hits = overdue_requests(card, ref)
+            if hits:
+                candidates.append((p, card.get("id") or p.stem, hits))
 
     if not candidates:
         print(f"request-sweep: no open requests >{AGE_H:g}h")
