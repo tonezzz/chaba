@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 11:16
+updated: 2026-11-09 11:34
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -104,6 +104,27 @@ comms:
   from: devin
   text: 'raised request ops1255-s1-human-watch: S0 requalification passed at the configured 60% threshold with zero
     safety flags; lane is now S1. Next is a read-only ca'
+- at: 2026-11-09 11:25
+  from: devin
+  text: 'S1 watch support deployed: code 7acaeb2b08 via master a826721241; 139 focused tests pass on idc02. --human-observer
+    requires interactive --supervised run, readiness before execution and explicit post-run attestation; no confirmation
+    means zero minutes. Tony selected availability (A). New S1 ops-readonly envelope passes preflight. CLI is paused
+    at readiness prompt; NO canary model call yet. Waiting for Tony to open live event tail before start; gate remains
+    S1.'
+- at: 2026-11-09 11:34
+  from: devin
+  text: 'S1 canary passed: ops1255-s1-opsread-20261109, verified artifact, zero denials/mutations/peeks/scope flags/escalations.
+    Tony confirmed full observation in chat (A); measured 0.1478 human minutes with observer+timestamp saved. S1
+    gate recommended promote; applied S1->S2 at 2026-11-09T04:33:07Z. Runner timer active. Evidence s1-final-review.json
+    under ~/.local/state/opencode-lane/ops1255-20261109T041258Z. Next: five S2 read-only artifacts with independent
+    verification.'
+- at: 2026-11-09 11:34
+  from: devin
+  text: 'S2 blocker found before quota use: opencode_profiles._verify returns skipped for independent_devin (separate-session
+    review), but scripts have no reviewer finalization/attestation ingestion path. Existing cmd_run would record
+    such artifacts unverified. Do not fabricate pass or mutate ledger rows. Need pending-review evidence + independently
+    recorded finalization before five-job pilot. S1 is genuinely passed; lane at S2; no S2 jobs consumed. Runner
+    timer active. Separate Devin review requires exp'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus

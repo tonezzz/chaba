@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kanban-dispatch
 title: Timer kanban-dispatch on idc03 disabled
 column: backlog
-updated: 2026-11-09 09:22
+updated: 2026-11-09 11:30
 priority: high
 tags:
 - timer-alert
@@ -414,3 +414,7 @@ comms:
   from: devin
   text: '[still suspicious] `kanban-dispatch.timer` on `idc03` is disabled but expected active (audit census / critical
     list). Deliberate? If not: `systemctl --user enable --now kanban-dispatch.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-09 11:30
+  from: devin
+  text: '[still suspicious] Last run (11-09 11:19) of `kanban-dispatch.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u kanban-dispatch.service` on the host. See CMS `timer-timeline-idc03`.'
