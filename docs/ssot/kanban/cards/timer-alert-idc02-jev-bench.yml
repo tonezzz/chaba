@@ -1,7 +1,7 @@
 id: timer-alert-idc02-jev-bench
 title: Timer jev-bench on idc02 disabled
 column: backlog
-updated: 2026-11-09 19:10
+updated: 2026-11-09 19:21
 priority: high
 tags:
 - timer-alert
@@ -732,5 +732,17 @@ comms:
   from: devin
   text: '[still suspicious] `jev-bench.timer` on `idc02` is disabled but expected active (audit census / critical
     list). Deliberate? If not: `systemctl --user enable --now jev-bench.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-09 19:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-09 19:21
+  from: devin
+  text: '[still suspicious] `jev-bench.timer` on `idc02` is disabled but expected active (audit census / critical
+    list). Deliberate? If not: `systemctl --user enable --now jev-bench.timer`. See CMS `timer-timeline`.'
 action:
   status: done
+spec: The goal is to ensure `jev-bench.timer` on `idc02` is enabled and active as required by the audit census and
+  critical list. The runner must connect to host idc02 and execute `systemctl --user enable --now jev-bench.timer`
+  unless there is an explicit deliberate decision to keep it disabled. The done-condition is verified when `systemctl
+  --user is-active jev-bench.timer` and `systemctl --user is-enabled jev-bench.timer` both return active/enabled
+  states on idc02.
