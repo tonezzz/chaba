@@ -40,6 +40,14 @@ KK_HB_HOST = 'KKs-Mac-Studio'
 KK_HB_TAILNET_IP = '100.108.217.17'
 KK_HB_STALE_S = 15 * 60
 DEFAULT_OUT = os.path.expanduser('~/var/chaba/health/nest-queue-status.json')
+# web-served copy — the web quadlet mounts stacks/web/public read-only as
+# /srv/public, so this file lands at
+# https://tony-dell.taila0626a.ts.net/snapshots/nest-queue-status.json
+# for HTTP consumers (Ada nest_status tool). Generated surface file, not
+# committed to git.
+PUBLISH_OUT = os.path.expanduser(
+    '~/CascadeProjects/chaba-tony-dell/stacks/web/public/'
+    'snapshots/nest-queue-status.json')
 # heartbeat is rewritten every ~15s by a live runner; >20min + no pending
 # work just means "done", but >20min with a live runner.id is a stall.
 STALE_S = 20 * 60
@@ -324,11 +332,15 @@ def main():
                         'video': video_verdict}
     snap['errors'] = errors
 
-    os.makedirs(os.path.dirname(args.out), exist_ok=True)
-    tmp = f'{args.out}.tmp'
-    with open(tmp, 'w') as f:
-        json.dump(snap, f, indent=2, ensure_ascii=False)
-    os.replace(tmp, args.out)
+    for out in {args.out, PUBLISH_OUT}:
+        try:
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            tmp = f'{out}.tmp'
+            with open(tmp, 'w') as f:
+                json.dump(snap, f, indent=2, ensure_ascii=False)
+            os.replace(tmp, out)
+        except Exception as e:
+            errors.append(f'write {out}: {e}')
     if not args.quiet:
         print(json.dumps(snap, indent=2, ensure_ascii=False))
     return 0
