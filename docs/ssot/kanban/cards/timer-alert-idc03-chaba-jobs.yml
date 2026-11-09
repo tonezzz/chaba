@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-jobs
 title: Timer chaba-jobs on idc03 disabled
 column: backlog
-updated: 2026-11-10 01:10
+updated: 2026-11-10 01:20
 priority: high
 tags:
 - timer-alert
@@ -452,6 +452,17 @@ comms:
   from: devin
   text: '[still suspicious] `chaba-jobs.timer` on `idc03` is disabled but expected active (audit census / critical
     list). Deliberate? If not: `systemctl --user enable --now chaba-jobs.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-10 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-10 01:20
+  from: devin
+  text: '[still suspicious] `chaba-jobs.timer` on `idc03` is disabled but expected active (audit census / critical
+    list). Deliberate? If not: `systemctl --user enable --now chaba-jobs.timer`. See CMS `timer-timeline`.'
 action:
   status: done
   type: dispatch
+spec: Ensure the required user timer chaba-jobs.timer is active on host idc03 by evaluating whether its disabled
+  state is deliberate against the audit census critical list. If the disabled state is not deliberate, enable and
+  start the timer using the systemctl --user command specified in the card note. The task is complete when chaba-jobs.timer
+  is verified as active on idc03 or explicitly confirmed as a deliberate exception via CMS timer-timeline.
