@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
 column: doing
-updated: 2026-11-09 20:09
+updated: 2026-11-09 20:34
 priority: medium
 tags:
 - ada
@@ -22,8 +22,11 @@ action:
   repo: ada-voice
   executor: jules
   lane: jules
-  status: running
+  status: failed
   runner: tony-omen
+  result: 'journal=exit-code  code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794229791.service: Failed
+    with result ''exit-code''. | devin-task-ada-prompt-slim-1794229791.service: Consumed 1.427s CPU time over 24min
+    42.780s wall clock time, 17.7M memory peak.'
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
@@ -332,3 +335,7 @@ comms:
 - at: 2026-11-09 20:09
   from: chaba
   text: started devin-task-ada-prompt-slim-1794229791 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 20:34
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code  code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794229791.service:
+    Failed with result ''ex'
