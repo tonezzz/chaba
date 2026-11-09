@@ -1,0 +1,57 @@
+id: ops-1244b-one-claimer-jules
+title: 'OPS-1244b jules: merge kanban-dispatch into runner-agent as long-running claim service (sub of devnest-queue-consolidation)'
+column: backlog
+updated: 2026-11-09 09:20
+priority: high
+tags:
+- devnest
+- jules
+- repo-work
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). REPO-ONLY change (chaba) — Jules lane.
+
+
+  GOAL: one claimer. Today two mechanisms claim card actions: kanban-dispatch.py (served-host local drain, oneshot+timer)
+  and runner-agent.py (remote oneshot+timer). Both were disabled fleet-wide 2026-11-08 and the queue silently stalled
+  — oneshot+external-tick has no self-healing.
+
+
+  DO:
+
+  - Refactor so one code path serves both roles: keep scripts/board/runner-agent.py as the single claimer; make
+  the served host (idc03) just another runner. Port anything kanban-dispatch does that runner-agent lacks (local
+  card-file drain when board-api unreachable, load gate parity, devin-dispatch argv).
+
+  - Add a long-running service mode to runner-agent (--loop or default service ExecStart) with Restart=always in
+  the rendered unit — timer stays as watchdog/fallback.
+
+  - Update render-jobs.py / install assets so runner-agent.service + .timer are generated consistently per host
+  (drop-in model: api.conf, cap.conf, lane confs).
+
+  - Retire scripts/board/kanban-dispatch.py (or reduce to a shim calling runner-agent) and remove its rendered job
+  entry.
+
+  - Preserve: claim order (dispatch_repos.claim_sort_key), push-credential guard, lane classification (JEV_LANE),
+  executor map {opencode,devin,script,manual,kk_mac_local,jules,nlm_batch}, close-out merge, worktree GC.
+
+  TESTS: extend tests/board/ for claim-path parity (served-host case). Run python3 -m unittest tests.board.* .
+
+  DONE-CONDITION: single claimer code path; served host claims via runner-agent; unit renders from ssot.jobs.yml
+  path; tests green.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc03
+  executor: jules
+  lane: jules
+  status: queued
+ref: OPS-1248
+comms:
+- at: 2026-11-09 09:20
+  from: tony
+  text: queued for jules lane — repo-only refactor; live unit flips tracked under ops-1244a
+- at: 2026-11-09 09:20
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
+    or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+awaiting_action: true
