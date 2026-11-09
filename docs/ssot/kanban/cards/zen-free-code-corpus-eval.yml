@@ -1,0 +1,21 @@
+id: zen-free-code-corpus-eval
+title: Zen free code brains on code corpus — t1 + m1-behavioral canary
+column: doing
+updated: 2026-11-09 09:25
+brief: 'Question: does the $0 lane pass the CODE gate, not just chores? Zen free models (deepseek-v4.1-flash-free,
+  glm-5.3-flash-free) went 4/4 on ops tasks and beat flash-lite on research. This run is the held-out code canary
+  the opencode-lane job doc requires before any non-paid model touches branch_code. LIVE NOW on tony-dell: agent-cost-bench
+  cli-compare run ~/evals/config.zen-code.yaml (2 tasks x 3 lanes, 30min timeout).'
+priority: high
+program: chaba-ci
+tags:
+- devnest,eval,free_lane,zen,jev
+spec: 'Config: ~/evals/config.zen-code.yaml — tasks t1-terrology-sea-predicate + m1-behavioral (honest verifier)
+  x lanes oc-bench (flash-lite baseline), oc-zen-ds, oc-zen-glm. Results -> ~/evals/results/<run_id>.json; score
+  = task verifier. Record outcome in devin-kb ai-workforce-eval.md + feed card opencode-lane-regraduation (S5 STRONG_MODELS
+  decision).'
+ref: OPS-1254
+comms:
+- at: 2026-11-09 09:25
+  from: tony
+  text: card captured via board-api
