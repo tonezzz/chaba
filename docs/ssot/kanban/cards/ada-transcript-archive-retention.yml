@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-09 19:46
+updated: 2026-11-09 19:49
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -51,6 +51,10 @@ comms:
 - at: 2026-11-09 19:46
   from: chaba
   text: started devin-task-20261109-194653-scheduled-per-lane-retention-j on idc02 (dispatch executor=devin)
+- at: 2026-11-09 19:49
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-183239-scheduled-per-lane-retention-j no longer active on idc02 but card
+    still says running — sweeping its branch'
 action:
   type: dispatch
   repo: chaba
