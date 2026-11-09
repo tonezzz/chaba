@@ -1,0 +1,43 @@
+id: positive-signal-primer
+title: Positive-signal primer — harvest what worked, not only pitfalls
+column: backlog
+updated: 2026-11-09 15:44
+brief: 'KNOWN_PITFALLS is failure-only, so the prompt accrues prohibitions and never distills what worked. Add a
+  positive channel: KNOWN_GOOD lines harvested from first-try-verified dispatches (spec shapes, approaches that
+  merged clean) rendered as a second small block.'
+priority: medium
+tags:
+- dispatch-tuning
+- primer
+spec: 'Files: scripts/board/lesson_primer.py, scripts/board/kanban-dispatch.py (build_task), tests/board/test_lesson_primer.py.
+
+
+  Add _positive_candidates(root): for each docs/ssot/kanban/cards/*.yml with action.verified == true and attempts
+  <= 1, pull short lines from comms/outcome text that carry a success signal (worked|clean|merged|verified|passed
+  first) — cap at the card''s own spec-summary line or the first substantive comms line describing the approach.
+  Distill to <=240-char lines like ''[<card-id>] <what worked>''. Also accept job-doc fields named wins|worked|success_patterns
+  if any exist.
+
+
+  Render: format_good_block() -> ''KNOWN_GOOD — approaches that verified clean on similar work:'' + up to 4 lines,
+  ~1200 chars. build_task appends it after the KNOWN_PITFALLS block when non-empty. Env KANBAN_PRIMER_GOOD=0 disables;
+  warn-only fail-open like the pitfalls path. Log positive lines in the same ''primer injected'' comms entry (prefix
+  ''good:'').
+
+
+  Keep the two blocks visually distinct (KNOWN_PITFALLS stays first); same keyword scoring/eligibility as pitfalls
+  once lesson-primer-scoring-fixes lands — write the code so it composes but does not hard-depend (works against
+  current _score too).
+
+
+  Verify: new tests for harvest+format+env-off; live build_task smoke on a real card shows KNOWN_GOOD lines when
+  candidates exist; pytest tests/board green.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-1274
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
