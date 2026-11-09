@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: backlog
-updated: 2026-11-09 09:21
+updated: 2026-11-09 09:22
 priority: high
 tags:
 - devnest
@@ -110,3 +110,10 @@ comms:
     + watcher merge — in progress by devin session), OPS-1248 jules one-claimer, OPS-1249 jules queue-time classify
     (OPS-0838), OPS-1250 opencode janitor merge @idc02, OPS-1251 catalog views, OPS-1252 timer-alert retype. This
     card held as tracker — do not dispatch.'
+- at: 2026-11-09 09:22
+  from: devin
+  text: 'dispatch on idc02: repo-side consolidation landed plan in progress — (1) nest-runner.service: runner-agent
+    --loop + dispatch:service render type so all claimers are one rendered unit family; (2) catalog: dispatcher
+    vestige removal (0 dispatch:dispatcher jobs remain), generated night-jobs views; (3) timer-alert demotion: sentinel
+    re-arms to backlog+comment, never type=dispatch — confirmed root cause is on_exists:queue re-arm; (4) OPS-0838
+    queue-time classify inside board-api /action; (5) adaptive'
