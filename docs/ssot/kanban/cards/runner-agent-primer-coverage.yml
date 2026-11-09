@@ -1,0 +1,51 @@
+id: runner-agent-primer-coverage
+title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
+column: backlog
+updated: 2026-11-09 16:54
+brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
+  — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
+  no primer at all. Wire the primer into the runner-agent devin path.'
+priority: high
+tags:
+- dispatch-tuning
+- primer
+- runner-agent
+spec: 'Evidence: reports/primer-efficacy-2026-11-09.md + docs/ssot/jobs/kanban/2026-11-09-primer-efficacy.yml (primer-efficacy-measurement
+  card).
+
+
+  Gap: scripts/board/runner-agent.py (~line 1816, the devin-path fallback) builds spec + RAILS for the task text
+  — no lp.build call, no KNOWN_PITFALLS, no RETRY_RAILS equivalent (compare its RAILS constant vs kanban-dispatch
+  TASK_RAILS/RETRY_RAILS). runner-agent carries ~96% of dispatches, so the lesson loop effectively never fires.
+
+
+  Implement (pick the cleaner of):
+
+  A. Extract the task-composition from kanban-dispatch.build_task (spec + TASK_RAILS + KNOWN_PITFALLS + RETRY_RAILS
+  + REPORT_RAILS) into a shared helper both callers use — single source, future rails land in both lanes.
+
+  B. Minimal: in runner-agent''s devin-path task build, call lp.build(card, HOST, repo, REPO-root) and append lp.format_block
+  lines after its RAILS block; add a retry-failure block mirroring RETRY_RAILS when action.attempts>0 or last_failure
+  is set.
+
+  Prefer A if the import boundary is clean (both live in scripts/board); keep the primer warn-only + KANBAN_PRIMER=0
+  honored, and log injected lines to card comms like kanban-dispatch start_pending does.
+
+
+  Scope note (record the decision in the outcome doc): inject primer ONLY on the devin path — opencode/kk_mac lanes
+  have bounded profile contracts where extra prompt blocks could break the contract. Do NOT inject into start_opencode_lane
+  or start_kk_mac_lane.
+
+
+  Verify: unit test or smoke — build a card task on the runner-agent devin path and show KNOWN_PITFALLS renders;
+  pytest tests/board green; comms log shows injected lines on the next claimed card.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
+ref: OPS-1280
+comms:
+- at: 2026-11-09 16:54
+  from: devin
+  text: card captured via board-api
