@@ -1,7 +1,7 @@
 id: unattended-pilot-health-probe
 title: 'Pilot: unattended health probe (read-only)'
 brief: Read-only pilot for the hands-off waiting-card procedure — safe to queue; writes nothing.
-column: doing
+column: review
 priority: low
 created: '2026-11-08'
 updated: 2026-11-09 09:11
@@ -24,9 +24,9 @@ action:
     cmd: systemctl --user is-active chaba-board-api.service; curl -sf -o /dev/null -w 'board-api http=%{http_code}\n'
       http://127.0.0.1:8787/cards
     timeout: 300
-  status: running
-  result: no exit record — unit not-found reports collected defaults (unproven, not ok) Started runner-unattended-pilot-health-probe-1794116697.service
-    - runner unattended-pilot-health-probe. | active | board-api http=200
+  status: done
+  result: exit=0 Started runner-unattended-pilot-health-probe-1794190262.service - runner unattended-pilot-health-probe.
+    | active | board-api http=200
   runner: idc03
 review_kind: verify
 note: waiting-cards pilot — queue only after the gate is merged+deployed (job 2026-11-08-hands-off-waiting-cards).
@@ -403,3 +403,8 @@ comms:
 - at: 2026-11-09 09:11
   from: chaba
   text: started runner-unattended-pilot-health-probe-1794190262 on idc03 (script)
+- at: 2026-11-09 09:11
+  from: idc03
+  text: 'finished (ok): exit=0 Started runner-unattended-pilot-health-probe-1794190262.service - runner unattended-pilot-health-probe.
+    | active '
+claim: {}
