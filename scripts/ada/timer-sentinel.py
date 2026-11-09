@@ -109,6 +109,64 @@ def fire(card_id, title, body, dry_run, open_ids):
         print(f"WARN {card_id}: fire failed: {e}", file=sys.stderr)
 
 
+def _heal_reason(cid, sweep, sweep_age_min):
+    """KNB-0577: return a close reason when the card's condition healed,
+    else None. We only close what the latest sweep can actually verify —
+    unverifiable stays open for a human."""
+    host_ok = (sweep or {}).get("host_ok") or {}
+    timers = (sweep or {}).get("timers") or {}
+    if cid == "timer-alert-collector":
+        if sweep_age_min is not None and sweep_age_min <= SWEEP_STALE_MIN:
+            return "collector sweep fresh again"
+        return None
+    if cid.startswith("timer-alert-host-"):
+        host = cid[len("timer-alert-host-"):]
+        if host in host_ok and host_ok[host]:
+            return "host reachable again"
+        return None
+    for host, tt in timers.items():
+        prefix = f"timer-alert-{host}-"
+        if not cid.startswith(prefix):
+            continue
+        if not host_ok.get(host):
+            return None  # host unverified — don't guess
+        name = cid[len(prefix):]
+        t = tt.get(name)
+        if not t:
+            return None
+        enabled = str(t.get("enabled") or "")
+        if (t.get("result") == "success" and not t.get("failed_now")
+                and enabled not in ("disabled", "masked", "missing")):
+            return f"last run result=success at {t.get('last') or '?'}"
+        return None
+    return None
+
+
+def reconcile(open_ids, sweep, sweep_age_min, findings, dry_run):
+    """Close open timer-alert-* cards whose condition healed (KNB-0577)."""
+    if not open_ids:
+        return 0
+    fired = {f[0] for f in findings}
+    closed = 0
+    for cid in sorted(open_ids):
+        if not cid.startswith("timer-alert-") or cid in fired:
+            continue
+        reason = _heal_reason(cid, sweep, sweep_age_min)
+        if not reason:
+            continue
+        note = f"[auto-resolved] {reason} — closing (timer-sentinel KNB-0577)"
+        if not dry_run:
+            try:
+                api("comment", {"id": cid, "from": ACTOR, "text": note})
+                api("action", {"id": cid, "do": "close"})
+            except Exception as e:
+                print(f"warn: close {cid} failed ({e})", file=sys.stderr)
+                continue
+        print(f"CLOSE {cid}: {reason}")
+        closed += 1
+    return closed
+
+
 def _recent(last_us, now, hours=48):
     """A failed Result is sticky — only card it if the last run was
     recent (or the service sits in `failed` right now, handled by the
@@ -231,6 +289,10 @@ def main():
     open_ids = open_card_ids()
     for cid, title, body in findings:
         fire(cid, title, body, args.dry_run, open_ids)
+
+    healed = reconcile(open_ids, sweep, sweep_age_min, findings,
+                       args.dry_run)
+    print(f"timer-sentinel: {healed} cards auto-closed")
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     HEARTBEAT.write_text(json.dumps({
