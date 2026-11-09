@@ -1,7 +1,7 @@
 id: adobe-stock-inpaint-defect-repair
 title: Inpaint-based defect repair lane for stock candidates
-column: doing
-updated: 2026-11-09 09:15
+column: review
+updated: 2026-11-09 09:16
 brief: Mask-repair localized QC defects instead of full re-rolls.
 priority: high
 program: adobe-stock
@@ -320,11 +320,20 @@ comms:
   from: chaba
   text: 'patch-relay: dispatch/20261109-090621-build-an-inpaint-lane-for-the- from idc02 — 8123008B bundle in patch-inbox
     (adobe-stock-inpaint-defect-repair-970e5903b4.bundle); merge-sweep will land it'
+- at: 2026-11-09 09:16
+  from: idc02
+  text: 'finished (ok): exit=0  branch (a1592bbb3 + 30b8ec853 + 321333cd7) with board comms posted — the remaining
+    gate is Tony''s visual QC of t'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: devin
   runner: idc02
   sweep:
     stale_running: 2026-11-08 14:05
     dirty: 1
+  result: 'exit=0  branch (a1592bbb3 + 30b8ec853 + 321333cd7) with board comms posted — the remaining gate is Tony''s
+    visual QC of the three wheels candidates. | devin-task-20261109-090621-build-an-inpaint-lane-for-the-.service:
+    Consumed 1min 8.491s CPU time.'
+review_kind: verify
+claim: {}
