@@ -1,7 +1,7 @@
 id: opencode-lane-dir-flag-bug
 title: opencode lane spawn bug — --dir flag rejected, dispatches die at start
 column: backlog
-updated: 2026-11-09 16:54
+updated: 2026-11-09 17:24
 brief: 'Two dispatch cards failed on idc02 with ''unrecognized flag: --dir in command opencode run'' (cross-repo-lesson-harvest,
   voice-dispatch-card-autocreate — 2026-11-09). runner-agent.py ~line 1690 passes --dir to opencode run; the installed
   opencode rejects it. Fix the spawn command.'
@@ -40,3 +40,7 @@ comms:
 - at: 2026-11-09 16:54
   from: devin
   text: card captured via board-api
+- at: 2026-11-09 17:24
+  from: devin
+  text: 'already fixed on master: f555b47e04 (Tony, 16:53) drops the invalid --dir flag from opencode run. Closing
+    — no dispatch needed.'
