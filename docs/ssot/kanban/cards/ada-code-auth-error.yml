@@ -1,7 +1,7 @@
 id: ada-code-auth-error
 title: ada-code authentication error — investigate scope + fix
 column: backlog
-updated: 2026-11-09 17:52
+updated: 2026-11-09 18:00
 priority: high
 tags:
 - ada
@@ -35,3 +35,10 @@ comms:
     the process (audit showed 4+ boots today). Patched (guard added), rebuilt localhost/ada-enroll on idc02, ada-code-enroll
     restarted on the fixed image — active. Source fix committed on writer (3a6d7f1e01). NOTE: jack-enroll:latest
     is the same crashing code — needs the same rebuild wh'
+- at: 2026-11-09 18:00
+  from: devin
+  text: 'REAL FIX 18:05 +07: the auth error was upstream bug opencode#61001 — v2.2.5 SPA crashes on auth-proxy redirects
+    to stale paths (deep /server/<b64>/session/<id> links). Image was pinned 2.2.5. Rebuilt localhost/ada-opencode
+    at 2.2.6 + restarted ada-code.service (verified: opencode v2.2.6, active). Pin bumped on writer (commit pending).
+    The earlier x-forwarded-for crash-loop fix is also live on the enroll gateway — both issues fixed today. TEST:
+    retry the session deep link — should load the UI now'
