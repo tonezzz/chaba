@@ -1,0 +1,32 @@
+id: ops-1244f-timer-alert-retype
+title: 'OPS-1244f ops: timer-alert cards must not be dispatch-type (sub of devnest-queue-consolidation)'
+column: backlog
+updated: 2026-11-09 09:21
+priority: medium
+tags:
+- devnest
+- ops
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). Small change.
+
+
+  TODAY: the timer staleness sentinel creates timer-alert-* cards with action.type dispatch — they queue for agent
+  claims, and when the alert is runner-agent being dead they queue for the very thing they report (self-defeating;
+  12 of 25 queued cards 2026-11-09 were these).
+
+
+  DO: in the alert generator (staleness-sentinel.sh / timer-sentinel / wherever timer-alert-* cards originate —
+  grep scripts/ for timer-alert), emit action.type script with a bounded verify cmd (e.g. scripts/ops/check-timer.sh
+  <unit> that probes is-active and writes a verdict artifact), OR if the generator cannot produce script payloads,
+  fall back to action.type manual + TG notify via board_notify. Never dispatch for a pure check-then-report alert.
+
+  DONE-CONDITION: new timer-alert cards do not spawn agent sessions; alerts still reach Tony (card + notify).'
+action:
+  type: manual
+ref: OPS-1252
+comms:
+- at: 2026-11-09 09:21
+  from: tony
+  text: small change — batch with ops-1244a
+- at: 2026-11-09 09:21
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
