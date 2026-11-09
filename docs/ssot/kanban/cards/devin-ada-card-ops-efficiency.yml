@@ -1,0 +1,39 @@
+id: devin-ada-card-ops-efficiency
+title: Devin + Ada efficient card status and processing procedure
+column: doing
+updated: 2026-11-09 19:48
+priority: medium
+tags:
+- devin
+- ada
+- efficiency
+- workflow
+spec: 'Reduce repeated context reads, board scans, session polls, and unanswered feedback loops during multi-card
+  status/processing work. Reuse existing compact surfaces; do not add a duplicate queue/status tool unless a demonstrated
+  gap remains.
+
+
+  Deliverables:
+
+  1. Shared procedure docs/kb/card-status-and-processing.md covering one-pass scope, narrow board reads, batched
+  independent checks, Jules/session/PR reconciliation, reuse of answered requests, no polling loops, cost/ETA caveats,
+  and concise evidence-based reporting.
+
+  2. Devin skill .devin/skills/card-ops-sweep/SKILL.md triggered by status/process/continue-card asks; reference
+  the shared procedure and existing /queue, /card/<id>, Jules client, and GitHub paths.
+
+  3. Ada mirror in ada-voice DEFAULT_ADA_INSTRUCTIONS: use nest_status once for DevNest overview; use kanban-brief
+  then named-card reads; refresh only if stale/contradictory or requested; distinguish session, card, and PR state.
+  Keep added prompt text short.
+
+  4. Add a procedure-index entry. Validate Chaba SSOT and focused Ada lint/tests. Do not deploy Ada; source change
+  is prepared for later review/deploy.
+
+
+  Done when the doc/skill/Ada prompt agree, focused tests pass, and the card records evidence plus the deployment
+  boundary.'
+ref: DEV-1298
+comms:
+- at: 2026-11-09 19:48
+  from: tony
+  text: card captured via board-api
