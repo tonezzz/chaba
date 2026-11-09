@@ -1,7 +1,7 @@
 id: lesson-qc-sweep
 title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
 column: doing
-updated: 2026-11-09 15:56
+updated: 2026-11-09 16:07
 brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
   an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
   publishes a report. Advisory only — it never deletes.'
@@ -92,3 +92,10 @@ comms:
     lesson lines already present — staleness verify target confirmed. Also found primer crashes on 2 cards with
     bare-string comms (kraut-rain-events, kraut-weather-bakeoff) — QC will tolerate. Invocation: same mechanism
     as render-handoff-inbox (best-effort tail of devin-dispatch-watch.sh).'
+- at: 2026-11-09 16:07
+  from: devin
+  text: 'DONE on tony-omen. scripts/board/lesson_qc.py + tests (5/5) + best-effort tail in devin-dispatch-watch.sh
+    (same mechanism as render-handoff-inbox, documented). Live corpus: 1883 lines → 57 flags [45 dup clusters, 12
+    stale, 0 contra]; 8 idc01 refs flagged; ops-event emitted to ada-ha-events-tony (fingerprint-deduped). Reports:
+    docs/ssot/jobs/kanban/2026-11-09-lesson-qc.yml + reports/lesson-qc-2026-11-09.md. Notables: self-seed compliance
+    only 7% post-rule; primer crashes on 2 cards with bare-stri'
