@@ -1,7 +1,7 @@
 id: lesson-primer-scoring-fixes
 title: lesson_primer scoring fixes — word boundaries, host-token eligibility, staleness
 column: doing
-updated: 2026-11-09 15:47
+updated: 2026-11-09 15:54
 brief: 'Three known scoring bugs in scripts/board/lesson_primer.py: substring matching false-hits (e.g. keyword
   ''test'' matches ''latest''), host tokens alone reach MIN_SCORE=2 so host-specific lessons always crowd the 8
   slots regardless of task relevance, and lessons never decay so stale references persist. Fix the scoring, keep
@@ -73,3 +73,9 @@ comms:
   from: devin
   text: 'started: read lesson_primer.py + tests; implementing word-boundary scoring, task-kw eligibility, stale
     demotion, retired-host filter'
+- at: 2026-11-09 15:54
+  from: devin
+  text: 'DONE in dispatch worktree: word-boundary _score (test∉latest, card∉discard), task-kw eligibility (host/repo
+    rank-only), STALE_DAYS=90 demotion, RETIRED_RE=idc01 filter w/ 2-task-kw escape, + fixed pre-existing crash
+    on string comms entries. 7/7 lesson_primer tests + 3 rails tests green via unittest (no pytest on idc02). Live
+    smoke on dispatch-merge-sweep + ada-tool-guide-lesson-sweep: 8/8 lines each carry task kws. Trail: docs/ssot/jobs/kanban/2026-11-09-lesson-primer-scoring-fixes.yml'
