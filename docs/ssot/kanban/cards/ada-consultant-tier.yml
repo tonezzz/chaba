@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
 column: doing
-updated: 2026-11-09 15:23
+updated: 2026-11-09 15:43
 priority: high
 tags:
 - ada
@@ -176,6 +176,11 @@ comms:
   text: 'qwen3:8b composite (ada-entity, enforce+briefs): r1 PASS 0.898/0.918, r2 miss def=0.898, r3 PASS 0.929/0.949
     — streak reset, runs 4-5 in flight. E2E lane verified: defer->consultant->evidence->close full loop on local
     board-api harness. gpt-oss:20b DQ throughput (CPU-bound, 4min+/case); or-* blocked (OR daily cap).'
+- at: 2026-11-09 15:43
+  from: devin
+  text: 'qwen3:8b NOT QUALIFIED — 4 composite runs went PASS/miss/PASS/miss (temp-0.3 variance swings both directions:
+    over-act r1/r4, over-defer r2). Cannot hold 3x streak. kk-mac now on qwen2.5:32b x3 series (~51min/run, ~2.5h)
+    — the litellm consultant alias already targets it.'
 action:
   type: dispatch
   status: running
