@@ -501,6 +501,10 @@ comms:
 - at: 2026-11-10 04:40
   from: tony
   text: moved done -> backlog
+- at: 2026-11-10 04:40
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-10 04:27) of `log-shipper-severe.service` on `tony-omen` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-omen`.'
 spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-omen` by inspecting the systemd
   user journal via `journalctl --user -u log-shipper-severe.service`. The target host is `tony-omen`. Constraints
   are to rely solely on the journal logs and CMS `timer-timeline-tony-omen` context without inventing external paths.
