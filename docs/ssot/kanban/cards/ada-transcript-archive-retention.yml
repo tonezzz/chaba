@@ -45,16 +45,20 @@ comms:
 - at: 2026-11-09 19:46
   from: devin
   text: retry requested
+- at: 2026-11-09 19:46
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 18:49
   last_failure: 'exit=1 RE | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Failed with result
     ''exit-code''. | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Consumed 33.553s CPU time,
     212.1M memory peak, 0B memory swap peak.'
   attempts: 1
+  runner: idc02
