@@ -1,7 +1,7 @@
 id: dispatch-worktree-gc
 title: GC dispatch worktrees + task dirs at card close
 column: done
-updated: 2026-11-09 17:17
+updated: 2026-11-09 21:11
 brief: Dispatch worktrees and task dirs accumulate forever — root cause of the 2026-10-11 tony-dell disk pressure
   (97% to 87% after manual sweep). Task-dir GC now lives in prune-devin-sessions.sh (d721e9b0); worktrees still
   leak.
@@ -100,6 +100,11 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
+- at: 2026-11-09 21:11
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 ref: OPS-0445
 review_kind: verify
 claim: {}
@@ -107,3 +112,4 @@ auto_close:
   by: merge-sweep
   at: 2026-10-15 10:29
   note: verified — exit_code=0; outcome doc dispatch-outcome-20261015-100100-in-scripts-board-runner-agent-.md
+awaiting_action: true
