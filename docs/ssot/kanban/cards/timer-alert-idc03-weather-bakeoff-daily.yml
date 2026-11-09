@@ -1,7 +1,7 @@
 id: timer-alert-idc03-weather-bakeoff-daily
 title: Timer weather-bakeoff-daily on idc03 failing
 column: doing
-updated: 2026-11-09 09:09
+updated: 2026-11-09 09:10
 priority: high
 tags:
 - timer-alert
@@ -980,6 +980,13 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:10
+  from: devin
+  text: '2026-11-09 09:10 VERIFY + RESIDUAL FIX. Root cause chain: (1) ~/.config/secrets/ada-ai-kraut.env lost ~Oct
+    23 (moved to _attic-20261023 during secrets reorg) → FileNotFoundError every 07:40 run Nov 1-8; (2) reconstructed
+    env pointed at michael-ha:8123 which idc03 cannot TCP-reach (asymmetric tailscale) → URLError timeout; (3) 11-08
+    15:45 env switched to 127.0.0.1:18123 via new durable unit michael-ha-via-omen-tunnel.service (ssh -L via tony-omen,
+    Restart=always, enabled) → runs 11-08 15:45 + 11-'
 action:
   status: running
   type: dispatch
