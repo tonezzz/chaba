@@ -1,0 +1,39 @@
+id: fix-lesson-th-translation-timeout
+title: 'fix board-api /lesson: Thai translation hangs (no timeout) — block lesson writes'
+column: done
+updated: 2026-11-09 20:15
+brief: '/lesson writes hang 20s+ when the Gemini Thai-translation lane is slow/capped (hit twice: lesson-add needed
+  --no-th manual flag). The code says best-effort EN-only fallback but _gemini_thai() has NO timeout on generate(),
+  so the intent is unenforced.'
+priority: high
+program: chaba-ci
+tags:
+- board-api
+- lesson
+- timeout
+- efficiency
+spec: 'Add hard timeout (~12-15s) to the gemini_rest.generate() call in _gemini_thai() (board-api.py ~line 1452).
+  On timeout/error return  (existing fallback path already handles EN-only). Verify: POST /lesson with slow lane
+  -> returns quickly with EN-only lesson; fast lane -> Thai still appended. Also confirm lesson-add.py inherits
+  the fix (it POSTs to /lesson).'
+note: Discovered 2026-10-24 during eval lesson filings — post 2231/2244/2258 all needed --no-th workaround.
+ref: OPS-0813
+comms:
+- at: 2026-10-24 12:43
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-24 12:51
+  from: tony
+  text: closed by tony
+- at: 2026-10-24 12:51
+  from: devin
+  text: 'FIXED + VERIFIED: /lesson now returns 200 with th:false (EN-only) in ~22s (12s Gemini timeout + ~10s WP
+    write) instead of hanging indefinitely. Two-part root cause: (1) no timeout passed (120s default), (2) gemini_rest
+    4-attempt retry loop with 20s/40s/60s/80s backoff = up to 200s of sleeping on a failing lane. Fix: max_attempts
+    param (default 4, backward-compatible for Ada/batch) + board-api uses timeout=12, max_attempts=1. Committed
+    3a52caccb via served checkout, pushed.'
+- at: 2026-11-09 20:15
+  from: tony
+  text: archived (16d in done, board over card cap)
+action:
+  status: done
