@@ -1,0 +1,87 @@
+id: devnest-colab-release-pinning
+title: Make Colab queue use verified latest DevNest release
+column: done
+updated: 2026-11-09 20:16
+brief: Automatically publish and verify a complete Chaba/pack release before a Colab queue can run it.
+priority: high
+program: devnest
+tags:
+- devnest
+- colab
+- release
+- reproducibility
+- hands-off
+spec: Define a hands-off Colab release flow. Build a release bundle from the canonical chaba origin/master commit;
+  include release.json with commit, generated_at, file hashes, pack hashes, and schema version. Upload all files
+  to a versioned Drive release directory, then atomically update queue/ACTIVE_RELEASE.json only after every artifact
+  verifies. Cell 1 must report and validate the active release; Cell 2 must refuse to launch when the release pointer,
+  hashes, notebook, JOBS.py, runner, or pack manifests mismatch. Queue runner must snapshot one verified release
+  at startup, and done/failed markers must be release/pack-hash aware so stale markers cannot skip new code. Keep
+  rollback as changing the active pointer to a previously verified release. Add a release publisher timer after
+  chaba-repo-sync, dry-run/hash tests, and a live fresh-T4 verification. Never pull unreviewed working-tree files
+  or silently run stale code.
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 t-merge step since the bundle must come from merged master. | devin-task-20261027-151516-define-a-hands-off-colab-relea.service:
+    Consumed 2min 13.555s CPU time over 38min 18.002s wall clock time, 358.7M memory peak, 159.8M memory swap peak.'
+  verified: false
+  sweep:
+    dirty: 1
+ref: OPS-0935
+comms:
+- at: 2026-10-27 15:14
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 15:15
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 15:15
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 15:15
+  from: chaba
+  text: started devin-task-20261027-151516-define-a-hands-off-colab-relea on tony-macbook (dispatch)
+- at: 2026-10-27 15:21
+  from: devin
+  text: '[dispatch] mapped the queue surface (queue-runner, launcher/preflight cells, gap-runner, packs). Design:
+    ada-nest/releases/<id>/ immutable bundle from origin/master + queue/ACTIVE_RELEASE.json pointer flipped only
+    after rclone hashsum verify; hash-aware done/failed markers; publisher timer on idc02 (holds gdrive: remote).
+    Implementing release_lib + publisher + cell/runner changes + sandbox tests now.'
+- at: 2026-10-27 15:53
+  from: devin
+  text: '[dispatch] DONE: pinned-release flow landed on dispatch branch. releases/<id>/ immutable bundles from git
+    archive origin/master + release.json (commit/generated_at/file+pack sha256); queue/ACTIVE_RELEASE.json flips
+    atomically only after rclone hashsum --download verifies all remote bytes. Cell1 RELEASE-OK/BAD, cell2 refuses
+    on any pointer/hash/notebook/JOBS/runner/pack mismatch, runner re-verifies+self-hashes at startup, markers hash-aware
+    (rel=+jh/ph/gh) with one-shot legacy rescue; rollback = '
+- at: 2026-10-27 15:54
+  from: tony-macbook
+  text: 'finished (ok): exit=0 t-merge step since the bundle must come from merged master. | devin-task-20261027-151516-define-a-hands-off-colab'
+- at: 2026-10-27 15:54
+  from: chaba
+  text: 'session-end checkpoint 0eb58a63: 10 leftover file(s) committed'
+- at: 2026-10-27 15:54
+  from: chaba
+  text: pushed dispatch/20261027-151516-define-a-hands-off-colab-relea to origin
+- at: 2026-10-27 15:54
+  from: chaba
+  text: 'auto-merge conflicts: scripts/colab/queue-runner.py — card stays in review for manual resolution'
+- at: 2026-10-27 15:54
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-10-27 16:02
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261027-151516-define-a-hands-off-colab-relea on tony-macbook still
+    dirty — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-27 16:36
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (13d in done, board over card cap)
+review_kind: verify
+claim: {}
