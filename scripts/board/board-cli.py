@@ -12,7 +12,7 @@ Usage:
   board-cli.py comment CARD_ID "text" [--from devin]
   board-cli.py action CARD_ID move COLUMN [--from devin]
   board-cli.py request CARD_ID "text" [--options a|b|c] [--from devin]
-  board-cli.py respond REQUEST_ID "answer" [--from devin]
+  board-cli.py respond CARD_ID REQUEST_ID "answer" [--from devin]
 
 Transport: BOARD_API env (default http://127.0.0.1:8787) or --ssh HOST
 which pipes the same HTTP call through `ssh HOST curl` (board-api binds
@@ -126,6 +126,7 @@ def main() -> int:
     rq.add_argument("--from", dest="frm", default="devin")
 
     rs = sub.add_parser("respond")
+    rs.add_argument("id")
     rs.add_argument("request_id")
     rs.add_argument("text")
     rs.add_argument("--from", dest="frm", default="devin")
@@ -165,13 +166,13 @@ def main() -> int:
         elif args.cmd == "request":
             out = call("POST", "/request",
                        {"id": args.id, "from": args.frm,
-                        "text": args.text,
+                        "ask": args.text,
                         "options": args.options.split("|")
                         if args.options else []}, ssh)
         else:
             out = call("POST", "/respond",
-                       {"request_id": args.request_id, "from": args.frm,
-                        "text": args.text}, ssh)
+                       {"id": args.id, "request_id": args.request_id,
+                        "from": args.frm, "answer": args.text}, ssh)
     except Exception as exc:
         print(json.dumps({"ok": False, "error": str(exc)[:300]}))
         return 2
