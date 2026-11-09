@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on tony-omen failing
 column: doing
-updated: 2026-11-09 09:49
+updated: 2026-11-09 09:51
 priority: high
 tags:
 - timer-alert
@@ -526,6 +526,10 @@ comms:
   text: 'merge-sweep: devin-task-20261109-093347-timer-focus-dispatcher-overnig failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261109-093347-timer-focus-dispatcher-overnig by
     hand.'
+- at: 2026-11-09 09:51
+  from: devin
+  text: '[still suspicious] Last run (11-09 03:00) of `focus-dispatcher-overnight.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-tony-omen`.'
 action:
   status: failed
   type: dispatch
@@ -534,3 +538,5 @@ action:
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093347-timer-focus-dispatcher-overnig.service:
     Failed with result ''exit-code''. | devin-task-20261109-093347-timer-focus-dispatcher-overnig.service: Consumed
     2.760s CPU time.'
+  sweep:
+    failed_noted: 2026-11-09 09:49
