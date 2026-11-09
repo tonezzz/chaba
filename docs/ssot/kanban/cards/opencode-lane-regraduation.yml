@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 11:25
+updated: 2026-11-09 11:34
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -111,6 +111,13 @@ comms:
     means zero minutes. Tony selected availability (A). New S1 ops-readonly envelope passes preflight. CLI is paused
     at readiness prompt; NO canary model call yet. Waiting for Tony to open live event tail before start; gate remains
     S1.'
+- at: 2026-11-09 11:34
+  from: devin
+  text: 'S1 canary passed: ops1255-s1-opsread-20261109, verified artifact, zero denials/mutations/peeks/scope flags/escalations.
+    Tony confirmed full observation in chat (A); measured 0.1478 human minutes with observer+timestamp saved. S1
+    gate recommended promote; applied S1->S2 at 2026-11-09T04:33:07Z. Runner timer active. Evidence s1-final-review.json
+    under ~/.local/state/opencode-lane/ops1255-20261109T041258Z. Next: five S2 read-only artifacts with independent
+    verification.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
