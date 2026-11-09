@@ -1,0 +1,25 @@
+id: dispatch-worktree-merged-triage
+title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
+column: backlog
+updated: 2026-11-09 17:39
+priority: medium
+tags:
+- devnest
+- cleanup
+- manual
+spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 merged+dirty removed (kk-mac-live-jev-probe3
+  pair); 16 remain with dispatch/* branches NOT merged to origin/master (abandoned runs, failed close-outs, zombie
+  tasks). Each needs merge-sweep-style inspection: is the branch content already landed via another merge (safe
+  drop) or does it hold real unmerged work (salvage or record then drop)? devin-dispatch-prune keeps them because
+  all are dirty. DONE-CONDITION: each worktree classified merged-equivalent/abandoned-partial/live-partial; drops
+  documented; matching card comms on the cards that spawned them.'
+action:
+  type: manual
+ref: OPS-1288
+comms:
+- at: 2026-11-09 17:39
+  from: tony
+  text: 16 unmerged worktrees — inspect before delete; evidence in prune output
+- at: 2026-11-09 17:39
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
