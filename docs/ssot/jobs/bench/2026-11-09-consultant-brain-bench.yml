@@ -38,8 +38,8 @@ entities_under_test:
         # fresh streak = 1 consecutive
       - run4: {acc: 0.8469, def: 0.8776, prec: 0.9375, verdict: miss}
         # swung back to over-act: defer->act 6/30; streak dead again
-      - run5: aborted — 4-run pattern PASS/miss/PASS/miss; model cannot
-        hold the 3x streak, series stopped to free kk-mac for 32b
+      - run5: 'aborted — 4-run pattern PASS/miss/PASS/miss; model cannot
+          hold the 3x streak, series stopped to free kk-mac for 32b'
     interim_read: >-
       qwen3:8b straddles the gate — swings between over-act (r1/r4:
       4-6 defer->act) and over-defer (r2: 7 fact->defer) across temp-0.3
@@ -49,9 +49,22 @@ entities_under_test:
     host: kk-mac ollama
     probe: '~31s/case -> ~51min/run; full x3 series started 2026-11-09 ~15:55'
     runs:
-      - run1: pending
-      - run2: pending
-      - run3: pending
+      - run1: {acc: 0.8469, def: 0.898, prec: 0.9375, verdict: miss}
+        # over-defer on act-gold (6/30 act->defer); defer-gold 30/30 clean;
+        # misses both bars by ~0.003 — deterministic-ish miss pattern
+      - run2: {acc: 0.8469, def: 0.8878, prec: 0.9677, verdict: miss}
+        # identical miss set — deterministic pattern, not variance
+      - run3: {acc: 0.8469, def: 0.8878, prec: 0.9677, verdict: miss}
+    interim_read: >-
+      qwen2.5:32b is deterministic-over-deferent on this corpus: defer-gold
+      30/30 all three runs, but 7/30 act-gold + 4/8 observe-gold read as
+      judgment calls (act-001/003/005/007/012/014/006 -> defer every run).
+      Misses both bars by ~0.003 every run => NOT QUALIFIED, and not a
+      variance problem — the same ~12 cases every time. Two candidate
+      reads: (a) model genuinely over-cautious; (b) those gold labels are
+      borderline ("spec armed and queued — nothing needed Tony" is
+      defensible as defer). Corpus audit of the consistent-miss set is a
+      follow-up before any retune.
   - model: gpt-oss:20b
     host: tony-omen ollama (MXFP4, ~222MB of 14GB in VRAM -> CPU-bound)
     probe: 'mini16 corpus first-4: 2 correct + 2 timeouts (>180s/case) —
@@ -72,18 +85,18 @@ controls:
 
 lane_build (this branch):
   - board-api ACTORS += consultant   # to:consultant requests + from:consultant comms/respond
-  - verify_worker --consultant (env ADA_JOBS_CONSULTANT): defer-verdicts
-    -> to:consultant instead of to:tony; cards with any consultant request
-    are out of her queue permanently (consultant owns the judgment call)
-  - consultant_worker.py: drains to:consultant — answer/comment/close/
+  - 'verify_worker --consultant (env ADA_JOBS_CONSULTANT): defer-verdicts
+    -> to=consultant instead of to=tony; cards with any consultant request
+    are out of her queue permanently (consultant owns the judgment call)'
+  - 'consultant_worker.py: drains to=consultant — answer/comment/close/
     escalate; same gated-class matrix; confidence<0.7 -> escalate; brief
-    builder attached (composite parity)
-  - ssot.jobs.yml ada-jobs-consultant (idc03, *:7,37; env_file litellm-keys.env,
-    LITELLM_KEY_CHABA); units rendered systemd/generated/idc03/
-  - litellm config: model_name consultant -> ollama_chat/qwen2.5:32b
-    (kk-mac tunnel :11445) — placeholder pending bench winner
-  - ACTIVATION ORDER: land branch -> board-api restart (ACTORS) -> litellm
-    reload (model_name) -> install units -> ADA_JOBS_CONSULTANT=1 flip.
+    builder attached (composite parity)'
+  - 'ssot.jobs.yml ada-jobs-consultant (idc03, *:7,37; env_file litellm-keys.env,
+    LITELLM_KEY_CHABA); units rendered systemd/generated/idc03/'
+  - 'litellm config: model_name consultant -> ollama_chat/qwen2.5:32b
+    (kk-mac tunnel :11445) — placeholder pending bench winner'
+  - 'ACTIVATION ORDER: land branch -> board-api restart (ACTORS) -> litellm
+    reload (model_name) -> install units -> ADA_JOBS_CONSULTANT=1 flip.'
 
 e2e_verification: >-
   Local board-api harness (module-loaded, CARD_DIR/LOCK/CARDS_JSON ->
@@ -94,9 +107,18 @@ e2e_verification: >-
   column done, request answered, 3 from:consultant comms lines.
   Full defer->consultant->resolve loop verified 2026-11-09 15:12.
 
+verdict: >-
+  NO CANDIDATE QUALIFIED 2026-11-09. qwen3:8b straddles the gate (variance),
+  qwen2.5:32b sits deterministically just under both bars (consistent
+  ~12-case over-defer set), gpt-oss:20b too slow, or-* quota-blocked.
+  Lane infra is built + e2e-verified but ADA_JOBS_CONSULTANT stays OFF —
+  verify-worker keeps raising straight to Tony until a brain qualifies.
+
 open:
-  - 'qwen3:8b run2 missed deference by 0.002 — consecutive streak broken;
-    needs a fresh 3x series to qualify'
-  - 'qwen2.5:32b x3 pending kk-mac window'
-  - 'or-* rerun when OR quota resets'
+  - 'corpus audit: the 12 consistent-miss cases (act-001/003/005/007/012/
+    014/006, observe-001/003/004/006/008) may be borderline gold labels —
+    if relabeled, 32b would pass; if correct, 32b needs a prompt tune'
+  - 'or-* rerun when OR quota resets — cloud model may clear both bars'
+  - 'if a brain qualifies later: flip ADA_JOBS_CONSULTANT=1 on idc03
+    verify-worker units + install ada-jobs-consultant units (already rendered)'
   - 'JEV classify -> task_class=judgment routing is ada-voice side, out of repo'
