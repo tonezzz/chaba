@@ -36,12 +36,12 @@ pipeline:
     land-render.py -> 30-candidates/<asset>/ + SESSION.json +
     40-qc-review.md
   components:
-    - scripts/adobe-stock/inpaint-mask.py — box/polygon -> feathered mask PNG
-    - scripts/adobe-stock/omen-inpaint.py — ssh driver: scp inputs,
-      sd-cli on tony-omen, scp result, land via local-file
-    - scripts/adobe-stock/land-render.py — +--lane local-file (lands a
+    - "scripts/adobe-stock/inpaint-mask.py — box/polygon -> feathered mask PNG"
+    - "scripts/adobe-stock/omen-inpaint.py — ssh driver: scp inputs,
+      sd-cli on tony-omen, scp result, land via local-file"
+    - "scripts/adobe-stock/land-render.py — +--lane local-file (lands a
       finished PNG/JPEG path through the normal verify+manifest path);
-      cf-inpaint lane pre-existed (image+mask as b64 arrays)
+      cf-inpaint lane pre-existed (image+mask as u8 int arrays)"
   masks:
     convention: "white (255) = regenerate, black (0) = preserve"
     note: >-
@@ -51,14 +51,19 @@ pipeline:
 
 lanes:
   - lane: cf-inpaint (@cf/runwayml/stable-diffusion-v1-5-inpainting)
-    status: blocked-quota
+    status: working-quality-limited
     detail: >-
-      Implemented + input format verified (image+mask as arrays of b64
-      strings). 2026-11-08 01:33 + 05:40 UTC both returned 429 — the
-      free 10k-neurons/day allocation did not reset at 00:00 UTC or was
-      reconsumed; lane-watcher does not use CF. Token on tony-omen
-      cloudflare.env (CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN).
-    expected: "~$0.001-0.01/run neurons, seconds latency, SD1.5 quality"
+      Verified live 2026-11-09 (quota returned): image/mask must be
+      ARRAYS of u8 ints = the encoded file's bytes — b64 strings fail
+      ('failed to decode u8', 'array not in string'). Repair is
+      semantically correct but output is SD1.5-native 512x512 only;
+      land the masked-region composite (upscale 512->1024, paste inside
+      feathered mask) — patched region reads soft vs SDXL. $0.00/step,
+      seconds latency. 2026-11-08 all-day 429 was shared-pool
+      exhaustion, not a lane defect. Token on tony-omen cloudflare.env
+      (CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN). Model has planned
+      deprecation 2026-11-20 — treat as stopgap.
+    expected: "seconds, 512x512 output, needs upscale+composite for stock res"
   - lane: gemini-image region-edit (incumbent baseline)
     status: working
     detail: >-
@@ -69,14 +74,20 @@ lanes:
       geometry defects and re-renders the WHOLE image (no bit-exact
       preservation).
   - lane: omen sd-cli SDXL inpaint
-    status: working-slow
+    status: working-slow (recommended default)
     detail: >-
       sd.cpp img_gen masked denoise: `-i init --mask mask` fills
       latents.denoise_mask — pixels outside mask preserved bit-exact.
-      sdxl-lightning-4step.q4_0 (8 steps, cfg 2) and sdxl-base-1.0-Q8_0
-      (20 steps, cfg 7) on 12c CPU under load ~9: ~300s/step at 1024x1024
-      full-frame -> use crop mode (~640x448 patch, ~4x faster) for
-      defects. RAM: lightning ~3.4GB RSS, Q8 ~5.5GB — do not run both.
+      WINNER on the wheels defect: sdxl-lightning-4step.q4_0 full-frame
+      (8 steps, cfg 2, ~45min under load ~9) produced a correct,
+      sharp 5-star base + casters; land the feathered-mask composite.
+      sdxl-base-1.0-Q8_0 crop mode FAILED both ways 2026-11-08/09:
+      tight crop (bbox+margin) hallucinated scoop chairs; wide crop
+      (832x528, chair fully in frame, 16 steps cfg7, ~23min)
+      hallucinated a giant distorted chair-base. Rule: low-step low-cfg
+      models stay faithful to surviving context; cfg-7 full models
+      over-imagine inside masks. Prefer lightning full-frame over Q8
+      crops for localized repairs. RAM: lightning ~3.4GB, Q8 ~5.5GB.
   - lane: flux-fill-local (FLUX.1-Fill-dev gguf via sd.cpp)
     status: blocked-host
     detail: >-
@@ -93,10 +104,12 @@ lanes:
   - lane: sdxl-inpaint-diffusers on kk-mac
     status: blocked-host
     detail: >-
-      Card's named lane; kk-mac unreachable 2026-11-08 (tailscale last
-      seen 1d ago, ssh timeout — asleep). When awake:
-      StableDiffusionXLInpaintPipeline fp16 on MPS covers the same
-      function as the omen sd-cli lane.
+      Card's named lane. 2026-11-09: kk-mac is ON the tailnet (active,
+      direct) but idc02 carries no ssh key for kkkakk@kk-mac —
+      Permission denied. Same constraint already recorded in the
+      devnest executor contract. Runnable command below when ssh
+      access exists; function duplicates the omen sd-cli lane, so not
+      urgent.
 
 runbook:
   mask: >-
@@ -126,24 +139,31 @@ runbook:
     mask_image=mask).images[0].save("out.png")'
 
 processing:
-  status: in-progress
+  status: complete (2026-11-09)
   steps:
-    - built inpaint-mask.py (box/polygon -> feathered PNG, Pillow)
-    - added land-render.py --lane local-file for CLI-produced results
-    - wrote omen-inpaint.py ssh driver (scp -> sd-cli -> scp -> land)
-    - built masks: fix2 corner (x177,y290,w319,h559 from picker request
-      20261108T025838Z), fix3 wheels (x475,y790,w330,h234)
-    - cf-inpaint retry x2 -> 429 neurons exhausted (still)
-    - gemini control on wheels region -> comparison-e-gemini-fix4-wheels
-      landed (sha 0dc1094c) — near-no-op on wheel geometry, confirms
-      incumbent limitation
-    - launched omen sd-cli lightning inpaint on fix3 wheels mask
-      (full-frame, ~43min ETA under load)
-    - staged 640x448 crop + crop-mask for Q8 quality run
+    - "built inpaint-mask.py (box/polygon -> feathered PNG, Pillow)"
+    - "added land-render.py --lane local-file for CLI-produced results"
+    - "wrote omen-inpaint.py ssh driver (scp -> sd-cli -> scp -> land)"
+    - "built masks — fix2 corner (x177,y290,w319,h559 from picker request
+      20261108T025838Z), fix3 wheels (x475,y790,w330,h234)"
+    - "gemini control on wheels -> comparison-e-gemini-fix4-wheels
+      (near-no-op, confirms incumbent limitation)"
+    - "omen sd-cli lightning full-frame -> comparison-e-omen-sdxl-inpaint-wheels
+      landed 2026-11-08 (sha 1e9d1ade) — WINNER"
+    - "omen Q8 crop retries 2026-11-08 — tight crop hallucinated chairs;
+      wide crop (finished 14:28 but session died before composite)
+      hallucinated giant distorted base — both rejected, not landed"
+    - "cf-inpaint unblocked 2026-11-09 — fixed payload to u8 int arrays,
+      ran wheels repair, composited 512->1024, landed
+      comparison-e-cf-inpaint-wheels (sha 90c09847)"
+    - "final lane comparison + QC note appended to 40-qc-review.md"
   decisions:
-    - label: crop-mode preferred for small defects
-      rationale: full-frame denoise computes the whole 128x128 latent
-        each step; a 330px defect wastes ~10x compute at 1024^2
+    - label: full-frame lightning over crop-mode Q8 (revised 2026-11-09)
+      rationale: crop mode was preferred for speed, but Q8 crops failed
+        semantically twice (tight = no context, wide = cfg-7
+        over-imagination). Full-frame masked denoise with the
+        low-cfg lightning checkpoint produced the only sharp correct
+        repair. Speed < correctness for QC-loop repairs.
     - label: sd-cli over diffusers on omen
       rationale: ggml Q4/Q8 = 1/2 the RAM of fp16 torch and ~2-3x faster
         on CPU; torch 2.13+cpu present but diffusers absent and heavier

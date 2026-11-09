@@ -145,7 +145,12 @@ def fetch_cf_inpaint(model: str, prompt: str, image_path: str,
     """CF Workers AI inpainting lane — masked region repair.
     --job carries the model id (e.g. @cf/runwayml/stable-diffusion-v1-5-inpainting).
     --init-image = source image, --mask = mask PNG/JPEG (white=regen).
-    Same CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN env as fetch_cf."""
+    Same CF_API_ACCOUNT_ID + CF_API_WORKER_TOKEN env as fetch_cf.
+    Verified live 2026-11-09: image/mask must be ARRAYS of u8 ints
+    (the encoded file's bytes); b64 strings fail with
+    'failed to decode u8' / 'array not in string'. Output is the
+    model's native 512x512 — composite the masked region back onto
+    the full-res source before landing."""
     import os
     acct = os.environ.get("CF_API_ACCOUNT_ID")
     tok = (os.environ.get("CF_API_WORKER_TOKEN")
@@ -158,8 +163,10 @@ def fetch_cf_inpaint(model: str, prompt: str, image_path: str,
                 "error": f"missing_input:{image_path}|{mask_path}"}
     payload = {
         "prompt": prompt,
-        "image": [base64.b64encode(ip.read_bytes()).decode()],
-        "mask": [base64.b64encode(mp.read_bytes()).decode()],
+        "image": list(ip.read_bytes()),
+        "mask": list(mp.read_bytes()),
+        "num_steps": 20,
+        "strength": 1.0,
     }
     req = urllib.request.Request(
         f"https://api.cloudflare.com/client/v4/accounts/{acct}"
