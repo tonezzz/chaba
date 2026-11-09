@@ -1,0 +1,24 @@
+id: opencode-lane-regraduation
+title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
+column: backlog
+updated: 2026-11-09 09:25
+brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
+  3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
+  and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
+  throttles what classes may run: S0 = entry only. Path per lane_gate.py: re-run S1 supervised canary -> S2 five-job
+  read-only -> S3 sampled prod -> S4 reversible writes -> S5 branch_code. S5 currently admits only STRONG_MODELS
+  (fable-5.1, gemini-3-pro, gpt-5.2-codex — al'
+priority: high
+program: chaba-ci
+tags:
+- devnest,opencode,lane,jev,graduated-rout
+spec: '1) Re-run S1 canary on idc02 (ops-readonly profile, quota 3, human watch — record human_minutes). 2) If promote_gate
+  passes, run S2 five-job read-only pilot with independent_devin verification. 3) Continue S3/S4 per promote gates
+  in scripts/devnest/lane_gate.py. 4) Decide S5: keep paid-only STRONG_MODELS or admit a canary-proven free model
+  — input = zen-free-code-corpus-eval result. Context: rollback reason on 2026-10-29 was manual (stage.json history);
+  investigate why before re-climbing.'
+ref: OPS-1255
+comms:
+- at: 2026-11-09 09:25
+  from: tony
+  text: card captured via board-api
