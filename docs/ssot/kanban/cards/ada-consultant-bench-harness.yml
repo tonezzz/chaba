@@ -1,0 +1,34 @@
+id: ada-consultant-bench-harness
+title: ada-consultant bench harness — per-model runner so the held bench card runs as script cards, not a Devin
+  session
+column: backlog
+updated: 2026-11-09 17:05
+priority: high
+tags:
+- ada
+- devnest
+- jules
+spec: 'Unblocks ada-consultant-tier (held under zero-devin-spend). REPO-ONLY.
+
+
+  DO: write scripts/ada/consultant-bench.py — takes --model <litellm-name> --fixture <tasks.jsonl>, runs each fixture
+  through the LiteLLM gateway, scores verdicts vs expected labels, writes reports/consultant-bench-<model>.{md,json}
+  (verdicts, accuracy, latency, escalation-rate field). Reuse the decision-arena.py pattern (scripts/ops/decision-arena.py)
+  — fixed judge, per-case raw JSON, summary md.
+
+  Candidates when run: ollama-qwen32b-kkmac (live), ollama-qwen38b-kkmac, gpt-oss:20b (colab when back), gemini-3.5-flash-lite
+  (reference).
+
+  DONE-CONDITION: harness + one fixture set + tests green; then the parent card decomposes into per-model script
+  cards.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  lane: jules
+  status: queued
+ref: ADA-1283
+comms:
+- at: 2026-11-09 17:05
+  from: tony
+  text: queued for jules — harness makes the held consultant bench runnable as $0 script cards

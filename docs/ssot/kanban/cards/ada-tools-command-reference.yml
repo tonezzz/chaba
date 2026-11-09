@@ -1,0 +1,35 @@
+id: ada-tools-command-reference
+title: Ada tools command reference — generated reviewable catalog (name/purpose/trigger/cost) + Ada what-can-you-do
+  verb
+column: backlog
+updated: 2026-11-09 17:24
+priority: high
+tags:
+- ada
+- docs
+- jules
+spec: 'REPO work, two parts:
+
+
+  1) GENERATED CATALOG — script that parses Ada tool declarations (ada-voice realtime_provider.py tools block) +
+  writes docs/kb/ada-tools-commands.md: table per tool — name, purpose, trigger phrases, backend (board-api|MCP|exec),
+  token/cost note, last-changed. Generated, not handwritten — mark do-not-edit + regenerate on decl change (tie
+  into the tools-merge-* consolidation work).
+
+  2) ADA VERB — a what-can-you-do read path so she answers her own capability questions from the same generated
+  source (sub-second, deterministic — producer/consumer split, never computes live).
+
+
+  DONE-CONDITION: docs/kb/ada-tools-commands.md generated + reviewable; Ada verb contract documented (wiring card
+  follows in ada-voice if needed).'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  lane: jules
+  status: queued
+ref: ADA-1285
+comms:
+- at: 2026-11-09 17:24
+  from: tony
+  text: queued for jules — generated catalog + read-path verb; deterministic, reviewable

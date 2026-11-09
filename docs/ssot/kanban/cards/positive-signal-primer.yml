@@ -1,7 +1,7 @@
 id: positive-signal-primer
 title: Positive-signal primer — harvest what worked, not only pitfalls
 column: review
-updated: 2026-11-09 16:39
+updated: 2026-11-09 17:26
 brief: 'KNOWN_PITFALLS is failure-only, so the prompt accrues prohibitions and never distills what worked. Add a
   positive channel: KNOWN_GOOD lines harvested from first-try-verified dispatches (spec shapes, approaches that
   merged clean) rendered as a second small block.'
@@ -41,6 +41,8 @@ action:
   result: 'exit=0 tch-outcome-20261109-155120-files-scripts-board-lesson-pri.md`. | devin-task-20261109-155120-files-scripts-board-lesson-pri.service:
     Consumed 40min 35.943s CPU time over 47min 21.478s wall clock time, 1G memory peak, 39.8M memory swap peak.'
   verified: false
+  sweep:
+    dirty: 80
 ref: OPS-1274
 comms:
 - at: 2026-11-09 15:44
@@ -111,5 +113,38 @@ comms:
 - at: 2026-11-09 16:39
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-09 16:49
+  from: chaba
+  text: 'merge-sweep: dispatch/20261109-155120-files-scripts-board-lesson-pri conflicts with origin/master: scripts/board/lesson_primer.py
+    — merge aborted, card stays for human resolution'
+- at: 2026-11-09 16:49
+  from: chaba
+  text: 'raised request merge-conflict: merge-sweep can''t land dispatch/20261109-155120-files-scripts-board-lesson-pri:
+    2 commit(s) conflict with origin/master '
+- at: 2026-11-09 17:04
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261109-155120-files-scripts-board-lesson-pri on tony-omen still dirty
+    — 80 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 17:26
+  from: tony
+  text: 'answered merge-conflict: let devin resolve the conflict and land it ★'
+- at: 2026-11-09 17:26
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 review_kind: verify
 claim: {}
+requests:
+- id: merge-conflict
+  ask: 'merge-sweep can''t land dispatch/20261109-155120-files-scripts-board-lesson-pri: 2 commit(s) conflict with
+    origin/master in chaba — conflicted paths: scripts/board/lesson_primer.py. Merge tony-omen:/home/tony/CascadeProjects/dispatch-wt-20261109-155120-files-scripts-board-lesson-pri
+    by hand, or retry/abandon the card.'
+  status: answered
+  at: 2026-11-09 16:49
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
+awaiting_action: true

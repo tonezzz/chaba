@@ -1,0 +1,49 @@
+id: opencode-lane-dir-flag-bug
+title: opencode lane spawn bug — --dir flag rejected, dispatches die at start
+column: done
+updated: 2026-11-09 17:24
+brief: 'Two dispatch cards failed on idc02 with ''unrecognized flag: --dir in command opencode run'' (cross-repo-lesson-harvest,
+  voice-dispatch-card-autocreate — 2026-11-09). runner-agent.py ~line 1690 passes --dir to opencode run; the installed
+  opencode rejects it. Fix the spawn command.'
+priority: high
+tags:
+- dispatch-tuning
+- bug
+- opencode
+- runner-agent
+spec: 'Bug: scripts/board/runner-agent.py start_opencode_lane (~line 1689) builds: opencode run --format json --dir
+  <worktree> --model <m> --agent <a> <task>. On idc02 the opencode binary exits 1: ''unrecognized flag: --dir in
+  command opencode run''.
+
+
+  Investigate + fix:
+
+  - Check `opencode run --help` on idc02 for the current flag set — the worktree is already the cwd (a cd precedes
+  the call), so --dir may simply be removable; if opencode renamed it (--cwd? -d? --project?), use the correct flag.
+
+  - If opencode versions differ across runner hosts, gate on the installed version or use only stable flags.
+
+  - Smoke-verify the spawn path on idc02 after the fix (a trivial opencode lane task completes end to end).
+
+
+  Context: this bug kills every card lane-classified to an opencode lane on affected hosts — silent fleet-wide failure
+  for free_lane routing (two cards died on it 2026-11-09).
+
+  Verify: `opencode run` with the fixed argv exits 0 on a smoke task; pytest tests/board green.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: done
+ref: OPS-1281
+comms:
+- at: 2026-11-09 16:54
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-09 17:24
+  from: devin
+  text: 'already fixed on master: f555b47e04 (Tony, 16:53) drops the invalid --dir flag from opencode run. Closing
+    — no dispatch needed.'
+- at: 2026-11-09 17:24
+  from: tony
+  text: closed by tony

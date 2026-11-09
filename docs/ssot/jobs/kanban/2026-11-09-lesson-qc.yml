@@ -1,0 +1,124 @@
+title: lesson-qc sweep 2026-11-09 — 57 flags (45 dup, 12 stale, 0 contradiction)
+subtitle: advisory QC over the self-reported lesson corpus — report-only damping layer, never deletes
+icon: 🧹
+id: 2026-11-09-lesson-qc
+status: done
+owner: lesson-qc
+project: chaba
+card: lesson-qc-sweep
+started: '2026-11-09'
+completed: '2026-11-09'
+corpus:
+  outcome:
+    docs: 355
+    docs_with_lessons: 22
+    docs_since_seed_rule: 311
+    docs_seeded_since_rule: 22
+    lines: 52
+  jobs:
+    docs: 433
+    lines: 47
+  comms:
+    docs: 1172
+    lines: 1784
+  total_lines: 1883
+growth:
+  delta: 0
+  prev: 1883
+findings:
+  dup_clusters: 45
+  dup_cluster_top:
+  - count: 605
+    representative: '[ops-local-conflict-guard] .ref-seq: unresolved .ref-seq.local-conflict-20261106-201530:
+      YAML load failed (card YAML is not a mapping) — conflict file kept'
+  - count: 188
+    representative: '[video-render-dispatcher-plan] merge-sweep: verified gate failed — no delivered work
+      — head is an old base commit — nothing committed; unit: exit_code=0; auto-retry queued (attempt
+      1/2)'
+  - count: 139
+    representative: '[timer-alert-idc03-embed-lane-lessons] [still suspicious] Last run (11-08 15:55)
+      of `embed-lane-lessons.service` on `idc03` result=timeout — investigate journal: `journalctl --user
+      -u embed-lane-lessons.service` on the host. See CMS `timer…'
+  - count: 26
+    representative: '[colibri-bench-qwen3-6-35b-on-omen-vs-gpt-8ea5a0] session produced no commits — the
+      branch head is just an old base commit; NOT verified (merge-sweep counts this a failed dispatch
+      attempt)'
+  - count: 20
+    representative: '[audit-fail-ada-camera-snapshot] child of umbrella ADA-0525 (fix Ada tool-call failure
+      surface) — do NOT run as a separate card; root cause + fix tracked there, close this when that fix
+      verifies this tool'
+  - count: 8
+    representative: '[cheap-agent-cascade] test gate failed — merge held: tests/ops/test_podman_lock_watchdog.py::Tick::test_dead_pause_pid_removed'
+  - count: 8
+    representative: '[line-proactive-persona] merge-sweep: no session/worktree found for devin-task-20261027-140132-relay-is-reply-only-today-a-pe
+      on idc02 — if the work was never pushed it may be gone'
+  - count: 8
+    representative: '[nest-edge-vision] finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+  - count: 7
+    representative: '[diagnose-con01-dead-jobs-via-opencode-re-6da54c] idc03 defers: executor=opencode
+      declared but this runner can''t serve it (OPENCODE_LANES=0, no opencode binary) — the card stays
+      queued for an OpenCode-capable runner; it will never silently…'
+  - count: 6
+    representative: '[opencode-executor-routing-smoke] finished (failed): exit=1 Main process exited,
+      code=exited, status=1/FAILURE | devin-task-opencode-executor-routing-smoke-1794024860.servi'
+  stale_lines: 12
+  stale_sample:
+  - src: docs/ssot/jobs/infrastructure/2026-10-09-jev-bench-retarget.yml
+    hits:
+    - retired-ref:idc01
+    text: jev-bench.service on idc02 failed hourly with Connection refused since idc01 retirement (2026-10-05).
+      Unit ExecStart pointed at http://100.74.146.0:8778 (jev-st
+  - src: docs/ssot/kanban/cards/fix-flagged-ops-health-services-ab5ac9.yml
+    hits:
+    - missing-path:docs/ssot/jobs/infrastructure/2026-11-07-ops-health-report-host-aware-timers.yml
+    text: '[fix-flagged-ops-health-services-ab5ac9] checkpoint failed: commit: 🔍 Validating SSOT files...
+      📋 Found SSOT files to validate: docs/ssot/jobs/infrastructure/202'
+  - src: docs/ssot/kanban/cards/idc01-return-role.yml
+    hits:
+    - retired-ref:idc01
+    text: '[idc01-return-role] role proposed from fleet restructure: warm DR + lab + batch. mddb.service
+      stays masked until seeded as follower - never unmask the old leade'
+  - src: docs/ssot/kanban/cards/idc01-return-role.yml
+    hits:
+    - retired-ref:idc01
+    text: '[idc01-return-role] Verify pass DONE + gaps closed: (1) zombie quadlets MASKED on idc01 — they
+      were WantedBy=default.target with linger=on, would have restarted'
+  - src: docs/ssot/kanban/cards/idc01-return-role.yml
+    hits:
+    - retired-ref:idc01
+    text: '[idc01-return-role] standby-edge gap closed: the "cert sync" referenced in Caddyfile comments
+      never existed — added ~/scripts/cert-sync.sh + cert-sync.timer (we'
+  - src: docs/ssot/kanban/cards/idc01-to-idc03-migration.yml
+    hits:
+    - retired-ref:idc01
+    text: '[idc01-to-idc03-migration] MIGRATED. idc03 tailnet 100.102.134.91 (public IP in ssot.values.yml).
+      mddb leader moved (LSN continuity kept via binlog copy — 139.1'
+  - src: docs/ssot/kanban/cards/logs-auto-idc01-severe-spike.yml
+    hits:
+    - retired-ref:idc01
+    text: '[logs-auto-idc01-severe-spike] Triaged 2026-10-04: 190 severe lines = mostly benign service-restart
+      churn (ada-ha-* TERM on restarts). Real signal: mddb.service'
+  - src: docs/ssot/kanban/cards/mddb-embed-queue-recovery.yml
+    hits:
+    - retired-ref:idc01
+    text: '[mddb-embed-queue-recovery] DONE. (1) Enumerated: 3,160 drop events / 1,320 unique docIDs on
+      idc01, window 2026-10-04 20:47 → 2026-10-05 11:50 +07 (wider than c'
+  - src: docs/ssot/kanban/cards/member-nodes-to-vps-ha.yml
+    hits:
+    - retired-ref:idc01
+    text: '[member-nodes-to-vps-ha] Correction — ada-pi AGENTS.md states idc01 is RETIRED (mddb masked,
+      never unmask; warm-DR role is stale). VPS targets for member nodes '
+  - src: docs/ssot/kanban/cards/messenger-control-inventory.yml
+    hits:
+    - missing-path:docs/ssot/apps/ssot.messaging-lanes.yml
+    text: '[messenger-control-inventory] OPS-0963 processed on feat/messenger-control-inventory-20261031
+      at ad2fe7512 (pushed to origin, not merged). Added docs/ssot/apps/'
+  contradiction_pairs: 0
+  contradiction_sample: []
+flag_count: 57
+flag_fingerprint: cd03365daf17d056
+ops_event_threshold: 10
+report: reports/lesson-qc-2026-11-09.md
+invocation: best-effort tail of devin-dispatch-watch.sh — same mechanism render-handoff-inbox.py uses;
+  chosen over a standalone timer because the corpus grows exactly when dispatches land, which is what
+  the watcher already polls

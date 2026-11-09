@@ -1,7 +1,7 @@
 id: lesson-qc-sweep
 title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
-column: review
-updated: 2026-11-09 16:22
+column: done
+updated: 2026-11-09 17:34
 brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
   an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
   publishes a report. Advisory only — it never deletes.'
@@ -49,7 +49,7 @@ action:
   runner: tony-omen
   result: 'exit=0 d skip home/absolute/cross-repo paths (30→12 flags, all true). | devin-task-20261109-155049-new-script-scripts-board-lesso.service:
     Consumed 5min 33.518s CPU time over 16min 35.315s wall clock time, 1018M memory peak, 316K memory swap peak.'
-  verified: false
+  verified: true
   sweep:
     dirty: 1
 ref: OPS-1275
@@ -123,5 +123,23 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261109-155049-new-script-scripts-board-lesso on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 17:23
+  from: devin
+  text: 'note: held test-gate failure is environmental — test_patch_state_vs_checkout fails on plain master on tony-omen
+    too (live ada-voice checkout diverged from write-fidelity.patch; unrelated to this card). Leftover assessment
+    file committed + pushed; branch head 2ac2cbd7 on origin.'
+- at: 2026-11-09 17:34
+  from: chaba
+  text: 'merge-sweep: merged 765ad9e5 (dispatch/20261109-155049-new-script-scripts-board-lesso from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261109-155049-new-script-scripts-board-lesso.md)
+    — auto-closed'
+- at: 2026-11-09 17:34
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-155049-new-script-scripts-board-lesso,
+    branch dispatch/20261109-155049-new-script-scripts-board-lesso on tony-omen'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 17:34
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261109-155049-new-script-scripts-board-lesso.md

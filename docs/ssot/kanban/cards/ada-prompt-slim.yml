@@ -1,0 +1,30 @@
+id: ada-prompt-slim
+title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
+column: backlog
+updated: 2026-11-09 17:05
+priority: medium
+tags:
+- ada
+- efficiency
+- jules
+spec: 'ada-voice backend/realtime_provider.py DEFAULT_ADA_INSTRUCTIONS carries full duty paragraphs — attention
+  dilution + token cost per voice turn.
+
+
+  DO: compact the duties to one-line rules each + a pointer to the canonical doc (AGENTS.md duties / ssot). Preserve
+  semantics — especially: operator correction duty, open-ask capture, kanban-first, idea-pipeline, field-ownership.
+  Mirror any wording change so Devin-side AGENTS.md and Ada stay in parity (the parity rule).
+
+  DONE-CONDITION: instruction block ~50%+ shorter, all duties still named, parity maintained, existing smoke-tier
+  tools suite still passes (education_correction scenario).'
+action:
+  type: dispatch
+  repo: ada-voice
+  executor: jules
+  lane: jules
+  status: queued
+ref: ADA-1282
+comms:
+- at: 2026-11-09 17:05
+  from: tony
+  text: queued for jules — prompt compaction + parity check

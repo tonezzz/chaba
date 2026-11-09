@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-09 13:59
+updated: 2026-11-09 17:17
 priority: low
 tags:
 - opencode
@@ -389,6 +389,14 @@ comms:
   from: idc02
   text: 'finished (failed): exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
     Main process exite'
+- at: 2026-11-09 16:54
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-09 16:54
+  from: devin
+  text: 'Re-armed after infra fix: 13:59 run failed on `Unrecognized flag: --dir` — runner-agent passed an invalid
+    flag to opencode run (fixed f555b47e, synced to idc02 exec checkout). Model route (or-gemini-3.1-pro-preview
+    via ada key) was never reached; previous failure not attributable to the code task.'
 action:
   type: dispatch
   repo: chaba
@@ -404,7 +412,7 @@ action:
     - tests_passed
     - verifier_pass
     - artifact
-  status: failed
+  status: queued
   labels:
   - push:chaba
   result: 'exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
@@ -418,7 +426,6 @@ action:
   llm_key_alias: ada
   button: test-key-alias
   verified: false
-  runner: idc02
 requests:
 - id: the-first-real-opencode-dispatch-reached-163fd0
   ask: The first real OpenCode dispatch reached idc02 but the approved strong model route is unavailable. Choose
@@ -460,3 +467,4 @@ requests:
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
 claim: {}
+awaiting_action: true

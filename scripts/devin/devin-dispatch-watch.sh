@@ -361,6 +361,18 @@ HANDOFF_RENDERER="$HOME/CascadeProjects/chaba/scripts/devin/render-handoff-inbox
 [ -f "$HANDOFF_RENDERER" ] || HANDOFF_RENDERER="$SCRIPT_DIR/render-handoff-inbox.py"
 [ -f "$HANDOFF_RENDERER" ] && log "handoff-inbox: $(python3 "$HANDOFF_RENDERER" 2>&1)" || true
 
+# lesson-qc: advisory sweep over the self-seeded lesson corpus — dup
+# clusters, stale refs, contradiction candidates (card lesson-qc-sweep).
+# Same best-effort tail mechanism as the handoff renderer above: rides
+# this proven cadence (the corpus grows exactly when dispatches land,
+# which is what the watcher polls), warns on failure, never blocks.
+# LESSON_QC=0 disables; LESSON_QC_OPS_EVENT=0 mutes the ops-event emit.
+LESSON_QC_SCRIPT="$HOME/CascadeProjects/chaba/scripts/board/lesson_qc.py"
+[ -f "$LESSON_QC_SCRIPT" ] || LESSON_QC_SCRIPT="$SCRIPT_DIR/../board/lesson_qc.py"
+if [ "${LESSON_QC:-1}" = "1" ] && [ -f "$LESSON_QC_SCRIPT" ]; then
+    log "lesson-qc: $(python3 "$LESSON_QC_SCRIPT" 2>&1 | tail -1)" || true
+fi
+
 # Hide finished dispatch sessions from the Devin session list — hides
 # tasks that never had a card or never produced transcript.json, which
 # board-api's card-close path can't reach. Cheap UPDATE, no quick_check.

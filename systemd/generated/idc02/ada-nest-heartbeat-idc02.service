@@ -1,0 +1,8 @@
+[Unit]
+Description=Ada Nest heartbeat — idc02 (job:ada-nest-heartbeat-idc02, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=30
+ExecStart=/bin/sh %h/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh
+Environment="NEST_ROLE=opencode-runner"

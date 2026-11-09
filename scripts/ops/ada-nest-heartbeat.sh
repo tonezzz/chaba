@@ -55,12 +55,46 @@ tmux_jobs() {
 }
 
 disk_free_gb() {
-  df -g / 2>/dev/null | awk 'NR==2 {print $4}'
+  if [ "$(uname -s)" = "Darwin" ]; then
+    df -g / 2>/dev/null | awk 'NR==2 {print $4}'
+  else
+    df -B1G / 2>/dev/null | awk 'NR==2 {gsub(/G/,"",$4); print $4}'
+  fi
+}
+
+uptime_s() {
+  if [ "$(uname -s)" = "Darwin" ]; then
+    sysctl -n kern.boottime 2>/dev/null |
+      sed 's/.*{ sec = //;s/,.*//' |
+      awk -v n=$(date +%s) '{print n-$1}'
+  else
+    cut -d' ' -f1 /proc/uptime 2>/dev/null | cut -d. -f1
+  fi
 }
 
 load_1m() {
-  sysctl -n vm.loadavg 2>/dev/null |
-    awk '{gsub(/[{}]/, ""); print $1}'
+  if [ "$(uname -s)" = "Darwin" ]; then
+    sysctl -n vm.loadavg 2>/dev/null |
+      awk '{gsub(/[{}]/, ""); print $1}'
+  else
+    cut -d' ' -f1 /proc/loadavg 2>/dev/null
+  fi
+}
+
+cpu_temp_c() {
+  # Apple Silicon: smctemp (user-built, no root). Linux: first thermal
+  # zone with a sane value, no root needed.
+  if command -v smctemp >/dev/null 2>&1; then
+    smctemp -c 2>/dev/null && return
+    [ -x "$HOME/.local/bin/smctemp" ] && "$HOME/.local/bin/smctemp" -c 2>/dev/null && return
+  elif [ "$(uname -s)" = "Linux" ]; then
+    for z in /sys/class/thermal/thermal_zone*/temp; do
+      [ -r "$z" ] || continue
+      t=$(cat "$z" 2>/dev/null) || continue
+      [ "${t:-0}" -gt 1000 ] && awk -v t="$t" 'BEGIN{printf "%.1f", t/1000}' && return
+    done
+  fi
+  echo "null"
 }
 
 EXTRA=""
@@ -68,7 +102,7 @@ EXTRA=""
 
 PAYLOAD=$(cat <<EOF
 {"collection":"ada-nest-heartbeats","key":"heartbeat/$HOST","lang":"en",
-"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"uptime_s\":$(sysctl -n kern.boottime 2>/dev/null | sed 's/.*{ sec = //;s/,.*//' | awk -v n=$(date +%s) '{print n-$1}' || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
+"contentMd":"{\"host\":\"$HOST\",\"role\":\"$ROLE\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"tailnet_ip\":\"$(tailnet_ip)\",\"lan_ip\":\"$(lan_ip)\",\"ollama_ok\":$(svc_ollama),\"tmux_jobs\":\"$(tmux_jobs)\",\"disk_free_gb\":$(disk_free_gb),\"load_1m\":$(load_1m),\"cpu_temp_c\":$(cpu_temp_c),\"uptime_s\":$(uptime_s || echo 0),$EXTRA\"platform\":\"$(uname -s)\"}",
 "meta":{"host":["$HOST"],"kind":["nest-heartbeat"],"ts":["$(date -u +%Y-%m-%dT%H:%M:%SZ)"]}}
 EOF
 )
