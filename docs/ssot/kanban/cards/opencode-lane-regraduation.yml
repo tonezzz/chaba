@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: backlog
-updated: 2026-11-09 10:50
+updated: 2026-11-09 10:51
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -61,6 +61,13 @@ comms:
   from: devin
   text: 'raised request ops1255-requalification-deployment-review: OPS-1255 revision 9fcecc83fb is locally committed,
     author-reviewed and verified (131 focused tests plus devnest pre-comm'
+- at: 2026-11-09 10:51
+  from: devin
+  text: 'Review handoff: local commit 9fcecc83fb, branch fix/ops-1255-requalification, dell chaba-ops1255-review.
+    131 focused tests + pre-commit devnest gate pass; clean worktree. NOT pushed/deployed; live S0 unchanged. Await
+    independent policy review, then explicit push/deploy approval. Operator must quiesce writers; no shared lock
+    added. Deployment approval does NOT authorize requalify or stage promotion. Structured request POST timed out;
+    checked card: request not recorded.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
