@@ -1,0 +1,52 @@
+id: nest-queue-watch-log-discovery
+title: Nest queue watch is missing current Colab events
+column: done
+updated: 2026-11-09 20:15
+priority: high
+spec: Investigate and fix quiet Ada-HA Telegram notifications. Current watcher selects only queue/run-*.out.log,
+  while current queue-runner emits queue/log-*.txt; watcher state remains pinned to the old run-20261023-1028.out.log
+  despite later Colab events. Update discovery/parser to follow active log formats, add regression tests, confirm
+  relay routing to ada-ha group (-5410424865) and log send failures. Deploy through SSOT-rendered systemd job. Do
+  not send unsolicited Telegram test messages without approval. Done when current events are consumed and watcher
+  reports target/transport status; card progress appended.
+action:
+  type: manual
+  status: done
+ref: OPS-0800
+comms:
+- at: 2026-10-23 20:04
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-23 20:04
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 20:06
+  from: devin
+  text: 'Confirmed primary cause: the watcher only lists queue/run-*.out.log, while the current Colab runner creates
+    queue/log-YYYYMMDD-HHMM.txt. Its state remains pinned to the old run-20261023-1028.out.log, so current claim/run/done
+    events are invisible. Group target env (-5410424865) is loaded; relay is active and group is in TELEGRAM_ALLOWED_CHAT_IDS,
+    with no TG_PUSH_DENY set. Add current+legacy log discovery, tests, and failure reporting. No Telegram test send
+    without approval.'
+- at: 2026-10-23 20:12
+  from: devin
+  text: 'Reproduced safely: ran the updated watcher against live Drive logs with BOARD_NOTIFY_CHANNEL=file (no Telegram
+    send); it discovered current log-20261023-...txt and recovered missed ltx-probe-81f started + DONE events. Relay
+    service is active; ada-ha group is allowlisted, no TG_PUSH_DENY configured, systemd supplies chat_id -5410424865.
+    Implementing dual-format discovery, prep events, retry cursor on send failure, regression tests.'
+- at: 2026-10-23 20:16
+  from: devin
+  text: 'Fixed and deployed: commit c21e274eb is on master; idc03 exec checkout synced successfully. Timer tick
+    at 20:15:44 parsed the current log-20261023-1233.txt and reported ltx-probe-81f started + DONE; service exited
+    successfully. The systemd env targets ada-ha chat -5410424865, and relay group is allowlisted. Regression suite:
+    5 tests pass; live dry-run with file sink recovered the events without sending a test Telegram. Awaiting Tony
+    confirmation that the group message appeared before closing.'
+- at: 2026-10-23 20:16
+  from: devin
+  text: moved doing -> review
+- at: 2026-10-23 20:21
+  from: devin
+  text: closed by devin
+- at: 2026-11-09 20:15
+  from: tony
+  text: archived (16d in done, board over card cap)
+review_kind: verify
