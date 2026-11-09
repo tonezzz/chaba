@@ -1,0 +1,62 @@
+id: voice-dispatch-card-autocreate
+title: Voice dispatch auto-card — Ada's devin_dispatch files a queued card instead of bare start
+column: backlog
+updated: 2026-11-09 15:44
+brief: 'Ada''s voice/chat devin_dispatch path (ada-voice backend/devin_dispatch.py → ssh devin-dispatch start) bypasses
+  the entire tuned kanban path: no card, no KNOWN_PITFALLS primer, no card comms, no RETRY_RAILS, no board visibility.
+  Tony''s decision (2026-11-09): voice dispatches auto-create a queued kanban card and ride the normal dispatch
+  path.'
+priority: medium
+tags:
+- dispatch-tuning
+- ada
+- voice
+- kanban
+spec: 'Repo: ada-voice (primary change). Files: backend/devin_dispatch.py, backend/realtime_provider.py (DEVIN_INSTRUCTIONS),
+  tests for the dispatch tool.
+
+
+  Change dispatch() so that when no playbook is given, it POSTs board-api /card with:
+
+  - id: leave unset (slugified) or deterministic ''voice-dispatch-<ts>'' if id needed
+
+  - title: task text truncated to ~80 chars
+
+  - spec: the full task text + a short ''Dispatched by Ada voice/chat on behalf of the user'' provenance line
+
+  - column: backlog, tags: [''voice-dispatch''], priority: medium
+
+  - action: {type: ''dispatch'', repo: <repo>}, queue: true
+
+  - text: provenance comms line
+
+  Board-api base: the ada backend runs on idc03 where 127.0.0.1:8787 is loopback-trusted — check backend/ for an
+  existing BOARD_API/url constant convention (cms/tool code already posts to board-api) and reuse it; env override
+  BOARD_API_BASE.
+
+
+  Keep unchanged: the playbook path (playbooks already carry contracts + gates), devin_status/devin_followup/devin_answer
+  tools, and the dedup logic — extend dedup to also return the created card id. After carding, return {ok, card_id,
+  note:''queued on the board — kanban-dispatch will claim and run it''}.
+
+
+  Update DEVIN_INSTRUCTIONS: after dispatch, report the CARD id and that the board queues/runs it (not a task id);
+  dispatch is now asynchronous — the user is notified on completion as before via the dispatch watcher.
+
+
+  Edge cases: board-api unreachable -> return a clear error dict (do NOT fall back to direct devin-dispatch ssh
+  — the whole point is the tuned path); repo not in dispatch whitelist -> surface the /card 400 verbatim.
+
+
+  Verify: unit test mocks the board-api call (card payload correct, queue:true set); e2e on ada-dev lane — a real
+  dispatch produces a queued card that kanban-dispatch claims; card comms show ''primer injected'' line once running.
+  Deploy follows deploy-ada.sh (gates + drain), never a hand restart.'
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+ref: ADA-1273
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
