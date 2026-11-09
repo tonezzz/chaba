@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 15:55
+updated: 2026-11-09 16:07
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -168,6 +168,12 @@ comms:
     errors explicitly on corrupt source; read-after-write regressions pass and board suite 473 passed before upstream
     merge. Next bridge must freeze full lane_envelope, admit before launch, count only admitted stage, verify actual
     artifact/safety, and close report-only work '
+- at: 2026-11-09 16:07
+  from: devin
+  text: 'READ-FRESHNESS-VERIFIED: 38444fb87c deployed on idc03 via normal writer sync; canonical read preflight
+    passed, chaba-board-api restarted active. Local post-integration board suite 473/473. CLI now returns doing
+    and S3 comms rather than old backlog. Stage-aware dispatch integration and real-card pilot remain open; no stage
+    promotion performed.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
