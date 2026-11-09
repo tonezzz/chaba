@@ -1,6 +1,6 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
-column: backlog
+column: doing
 updated: 2026-11-09 13:54
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
@@ -145,6 +145,9 @@ comms:
 - at: 2026-11-09 13:54
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 0.99 > 0.85)'
+- at: 2026-11-09 13:54
+  from: tony-omen
+  text: claimed
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
@@ -171,5 +174,6 @@ requests:
     producer to the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
 action:
   type: dispatch
-  status: queued
-awaiting_action: true
+  status: running
+  lane: codemod
+  runner: tony-omen
