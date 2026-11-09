@@ -5,7 +5,7 @@
  * Runs ssot-validate-all.mjs, captures bloat/data-isolation warnings,
  * and writes a non-destructive suggestions report.
  */
-import { execSync } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, watch } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
@@ -77,13 +77,25 @@ function main() {
   const start = Date.now();
   const args = process.argv
     .slice(2)
-    .filter((a) => a !== "--watch" && a !== "--fix")
-    .join(" ");
-  const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs ${args}`, {
-    cwd: REPO,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+    .filter((a) => a !== "--watch" && a !== "--fix");
+  // spawnSync: the validator exits 1 whenever any file has errors, which is a
+  // normal condition here — we need its stdout regardless of exit status.
+  const result = spawnSync(
+    process.execPath,
+    ["scripts/ssot-validate-all.mjs", ...args],
+    {
+      cwd: REPO,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    }
+  );
+  if (result.error) throw result.error;
+  const report = result.stdout || "";
+  if (!report) {
+    console.warn(
+      `ssot-validate-all.mjs exited ${result.status} with no stdout: ${result.stderr || "(empty stderr)"}`
+    );
+  }
 
   const bloatWarnings = [];
   const dataWarnings = [];
