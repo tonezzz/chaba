@@ -10,6 +10,9 @@ const statusEl = document.getElementById('gantt-status');
 let chart = null;
 let cardById = new Map();
 let lastGenerated = null;
+let lastPayload = null;
+const collapsed = new Set(); // header _key values — survives polls/rebuilds
+let tasks = [];
 
 function setStatus(msg, isErr = false) {
   if (!statusEl) return;
@@ -17,10 +20,26 @@ function setStatus(msg, isErr = false) {
   statusEl.style.color = isErr ? '#f87171' : '#64748b';
 }
 
+// Clicking a group/sub header bar toggles its fold and rebuilds the chart.
+function bindFoldHeaders() {
+  for (const t of tasks) {
+    if (!t._key) continue;
+    const bar = chart && chart.get_bar(t.id);
+    const node = bar && (bar.group || bar.$bar);
+    if (!node || typeof node.addEventListener !== 'function') continue;
+    node.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (collapsed.has(t._key)) collapsed.delete(t._key);
+      else collapsed.add(t._key);
+      if (lastPayload) render(lastPayload);
+    });
+  }
+}
+
 function render(payload) {
   const cards = payload.cards || [];
   cardById = new Map(cards.map((c) => [c.id, c]));
-  const tasks = buildTasks(cards);
+  tasks = buildTasks(cards, new Date(), collapsed);
   if (!tasks.length) {
     setStatus('no project cards in scope');
     el.innerHTML = '';
@@ -31,6 +50,7 @@ function render(payload) {
     ...GANTT_OPTIONS,
     popup: makePopup(cardById),
   });
+  bindFoldHeaders();
   setStatus(`${tasks.length} bars · updated ${payload.generated || ''}`);
 }
 
@@ -42,7 +62,8 @@ async function load() {
       0, ...cards.map((c) => Date.parse(String(c.updated || '').replace(' ', 'T')) || 0))}`;
     if (stamp === lastGenerated) return;
     lastGenerated = stamp;
-    render({ cards, generated: new Date().toISOString().slice(0, 16).replace('T', ' ') });
+    lastPayload = { cards, generated: new Date().toISOString().slice(0, 16).replace('T', ' ') };
+    render(lastPayload);
   } catch (e) {
     setStatus(`load failed: ${e.message}`, true);
   }

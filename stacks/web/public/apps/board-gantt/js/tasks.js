@@ -53,7 +53,9 @@ function subPath(card, groupId) {
 const INDENT = '\u00A0'.repeat(4); // nbsp run — SVG text collapses plain spaces
 
 // Span (start..end) covering a set of tasks -> header-row task.
-function spanHeader(id, name, cls, tasks) {
+// key identifies the fold node ('group:<id>' / 'sub:<gid>/<path>'); the
+// app keeps a collapsed Set of these keys across rebuilds.
+function spanHeader(id, name, cls, tasks, key) {
   const dates = tasks
     .flatMap((t) => [parseDate(t.start), parseDate(t.end)])
     .filter(Boolean);
@@ -66,6 +68,7 @@ function spanHeader(id, name, cls, tasks) {
     progress: 0,
     custom_class: cls,
     _group: tasks[0] && tasks[0]._group,
+    _key: key,
   };
 }
 
@@ -75,7 +78,9 @@ const byStart = (a, b) =>
 // Full task list, depth-first: group header, direct cards, then each
 // sub-group (header + its cards). Indentation is a name prefix —
 // frappe-gantt labels are plain SVG text, so depth shows as leading space.
-export function buildTasks(cards, now = new Date()) {
+// `collapsed` is a Set of header _key values; collapsed nodes emit only
+// their header row (▸) and skip all descendants.
+export function buildTasks(cards, now = new Date(), collapsed = new Set()) {
   const tasks = [];
   for (const { group, cards: gcards } of groupCards(cards)) {
     const cardTasks = gcards
@@ -89,10 +94,14 @@ export function buildTasks(cards, now = new Date()) {
       .sort(byStart);
     if (!cardTasks.length) continue;
 
+    const gKey = `group:${group.id}`;
+    const gCollapsed = collapsed.has(gKey);
     const header = spanHeader(
-      `group-${group.id}`, `▸ ${groupLabel(group.id)} (${cardTasks.length})`,
-      'group-header', cardTasks);
+      `group-${group.id}`,
+      `${gCollapsed ? '▸' : '▾'} ${groupLabel(group.id)} (${cardTasks.length})`,
+      'group-header', cardTasks, gKey);
     if (header) tasks.push(header);
+    if (gCollapsed) continue;
 
     const direct = cardTasks.filter((t) => !t._sub.length);
     const subs = new Map(); // 'foo/bar' -> [tasks]
@@ -106,10 +115,14 @@ export function buildTasks(cards, now = new Date()) {
 
     for (const t of direct) tasks.push({ ...t, name: INDENT + t.name });
     for (const [key, list] of [...subs.entries()].sort()) {
+      const sKey = `sub:${group.id}/${key}`;
+      const sCollapsed = collapsed.has(sKey);
       const subHeader = spanHeader(
-        `sub-${group.id}-${key}`, `└ ${key} (${list.length})`,
-        'sub-header', list);
+        `sub-${group.id}-${key}`,
+        `${sCollapsed ? '▸' : '└'} ${key} (${list.length})`,
+        'sub-header', list, sKey);
       if (subHeader) tasks.push(subHeader);
+      if (sCollapsed) continue;
       for (const t of list) tasks.push({ ...t, name: INDENT + INDENT + t.name });
     }
   }
