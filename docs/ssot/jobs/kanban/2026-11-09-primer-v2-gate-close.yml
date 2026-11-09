@@ -1,0 +1,62 @@
+title: "primer-v2-semantic-match: gate-closed, not built (upstream verdict CONTRADICTED)"
+subtitle: >-
+  The card's own gate said: read primer-efficacy-measurement's verdict
+  first; if compounding is contradicted, close this card instead of
+  building. The verdict was CONTRADICTED — the primer mechanism is not
+  running — so the semantic-retrieval upgrade was closed via board-api
+  without implementation.
+icon: 🚪
+id: 2026-11-09-primer-v2-gate-close
+status: done
+owner: devin-dispatch
+project: chaba
+card: primer-v2-semantic-match
+branch: dispatch/20261109-113430-gate-this-card-is-blocked-by-p
+started: "2026-11-09"
+completed: "2026-11-09"
+
+context:
+  user_request: >
+    Card primer-v2-semantic-match (OPS-1277): upgrade lesson-primer
+    selection from keyword scoring to BGE-M3 dense + BM25 weighted RRF,
+    behind KANBAN_PRIMER_SEM=1, with an offline top-8 eval before
+    enabling. Explicit gate: only proceed if primer-efficacy-measurement
+    supports the compounding claim; contradicted => close.
+
+findings:
+  upstream_verdict: >-
+    reports/primer-efficacy-2026-11-09.md (job doc
+    docs/ssot/jobs/kanban/2026-11-09-primer-efficacy.yml, branch
+    dispatch/20261109-154659-goal-prove-or-kill-the-primer-): CONTRADICTED
+    — the mechanism is not running. 15 primer injections ever (all
+    2026-10-09..10-11), zero since; runner-agent lane carries ~96% of
+    dispatches with no primer code path; lp.build() crashed on
+    plain-string comms entries; zero-injection was never logged, so
+    dead-primer was invisible.
+  decision: >-
+    Closed primer-v2-semantic-match via POST /action do=close
+    (column=done, action.status=done) — the card's pre-authorized gate
+    outcome. Semantic selection upgrades a scoring stage that is not the
+    bottleneck; nothing fires to select. Building it now would add an
+    embed-endpoint dependency to a dead code path.
+  fix_path_status: >-
+    The report's honest path (fix crash, cover runner lane, make
+    zero-injection observable, then A/B) is already carded elsewhere:
+    _comms_candidates string-comms tolerance is merged (lesson_primer.py
+    ~line 202), runner-agent-primer-coverage is doing (wires lp.build
+    into the ~96% lane), lesson-primer-scoring-fixes and
+    positive-signal-primer are done, dispatch-prompt-regression-harness
+    covers prompt-layer gates.
+  revisit_condition: >-
+    Re-open/re-spec only if the post-fix A/B (hash(card_id) control arm,
+    ~4-6 weeks, mean-attempts-to-verified) shows the primer pays its
+    token cost — i.e., a supported verdict on the compounding claim.
+    The bge-hybrid-recall design in this card's spec remains the right
+    starting point if that day comes.
+
+verification:
+  - gate card report read from origin/dispatch/20261109-154659-goal-prove-or-kill-the-primer-
+    (not yet merged to master at session time — card auto-closed verified
+    by merge-sweep, branch merge pending)
+  - board-api /comment + /action do=close both returned ok:true
+  - no code changes made; nothing to test
