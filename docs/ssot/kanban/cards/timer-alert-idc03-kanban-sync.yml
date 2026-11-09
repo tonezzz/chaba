@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kanban-sync
 title: Timer kanban-sync on idc03 failing
 column: doing
-updated: 2026-11-09 09:25
+updated: 2026-11-09 09:26
 priority: high
 tags:
 - timer-alert
@@ -760,6 +760,13 @@ comms:
 - at: 2026-11-09 09:25
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.50 > 0.85)'
+- at: 2026-11-09 09:26
+  from: devin
+  text: 'RCA: 29 failed runs, 2 causes. (1) 5x git-fetch ref-lock race vs kanban-commit sharing the chaba-kanban-sync
+    gitdir (chaba.h3/origin refs) — 11-08 12:00/17:00/19:00, 11-09 03:00/07:00. Fixed: kanban-sync.sh now retries
+    fetch 3x/10s (OPS-0834 pattern), in dispatch branch pending merge. (2) ~24x overnight 00:19-06:49: mddb-cms
+    embed queue saturated (4000 deep, all embed providers down — mddb-embed was mid-9h40m vector-index load) so
+    /add blocked server-side and connections dropped -> kanban-cms pu'
 action:
   status: running
   type: dispatch
