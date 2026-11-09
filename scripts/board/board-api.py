@@ -773,15 +773,21 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     return f"moved to {col}"
 
 
-def do_archive(card: dict, frm: str) -> str:
+def do_archive(card: dict, frm: str, cap: bool = False) -> str:
     """Eligibility gate for /action do=archive — the file move itself is
     done by the caller (_archive_move). Only verified done work ages out;
-    unverified done cards stay on the board for human review."""
+    unverified done cards stay on the board for human review — unless
+    cap=True (board over its card cap, archive-done.py --cap): then any
+    done card ages out, but never one with an unanswered request."""
     if card.get("column") != "done":
         raise ValueError("archive needs column=done")
-    if not (card.get("action") or {}).get("verified"):
+    verified = bool((card.get("action") or {}).get("verified"))
+    if not verified and not cap:
         raise ValueError("archive needs action.verified=true "
-                         "(verified done work only)")
+                         "(verified done work only) or cap=true")
+    if cap and any(not r.get("answer") for r in (card.get("requests") or [])
+                   if isinstance(r, dict)):
+        raise ValueError("cap archive skips cards with unanswered requests")
     upd = str(card.get("updated") or "")
     try:
         dt = datetime.strptime(upd, "%Y-%m-%d %H:%M")
@@ -791,7 +797,8 @@ def do_archive(card: dict, frm: str) -> str:
     if age < ARCHIVE_MIN_DAYS:
         raise ValueError(
             f"too fresh: updated {upd} ({age}d < {ARCHIVE_MIN_DAYS}d)")
-    comms_add(card, frm, f"archived ({age}d in done, verified)")
+    comms_add(card, frm, f"archived ({age}d in done, "
+                         f"{'verified' if verified else 'board over card cap'})")
     return f"archived ({age}d in done)"
 
 
@@ -3949,7 +3956,8 @@ class H(BaseHTTPRequestHandler):
                         card["updated"] = now()
                         save(p, card)
                     elif verb == "archive":
-                        msg = do_archive(card, actor(body))
+                        msg = do_archive(card, actor(body),
+                                         cap=body.get("cap") is True)
                         card["updated"] = now()
                         _archive_move(p, card)
                     elif verb == "unarchive":
