@@ -2201,7 +2201,7 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
         f"{shlex.quote(oc_bin)} run --format json "
-        f"--dir {shlex.quote(str(worktree))} --model {shlex.quote(model)} "
+        f"--model {shlex.quote(model)} "
         f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
         f"{shlex.quote(task)} 2>&1 | "
         f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "
