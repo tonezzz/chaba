@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
-column: doing
-updated: 2026-11-09 14:08
+column: review
+updated: 2026-11-09 14:15
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -164,6 +164,9 @@ comms:
     3/3 hard caps) + full spec envelope normalization in broker, Colab lane observation (heartbeat/runtimes/pending/JOBS
     drift), per-cycle capacity ledger at devnest/capacity/. Worker enforces markers: required on kk-llm, optional
     elsewhere. 38 focused tests + 249 devnest green. Deploy'
+- at: 2026-11-09 14:15
+  from: tony-omen
+  text: 'finished (ok): exit=0 upstream feeds beyond durable reports and a weekly ledger rollup. | devin-task-20261109-135506-implement-a-shared'
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
@@ -190,6 +193,11 @@ requests:
     producer to the card''s 3/3 caps and keep concurrency 1. No deployment or remote cleanup yet.'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   runner: tony-omen
+  result: 'exit=0 upstream feeds beyond durable reports and a weekly ledger rollup. | devin-task-20261109-135506-implement-a-shared-devnest-cap.service:
+    Consumed 2min 5.110s CPU time over 13min 57.710s wall clock time, 1G memory peak, 33.2M memory swap peak.'
+  verified: false
+review_kind: verify
+claim: {}
