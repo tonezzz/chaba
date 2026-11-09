@@ -1,0 +1,33 @@
+id: ops-1244a-dispatcher-retire-watch-merge
+title: 'OPS-1244a ops: retire dispatcher mechanism + merge nest-queue-watch timers (sub of devnest-queue-consolidation)'
+column: doing
+updated: 2026-11-09 09:18
+priority: high
+tags:
+- devnest
+- ops
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). LIVE OPS work — no agent lane; run in-session.
+
+
+  1. Migrate last 4 dispatch:dispatcher jobs in ssot.jobs.yml to dispatch:systemd: yomi-update-active (idc03, 15m),
+  mcp-debug-h3-sync (tony_dell, 10m), tony-dell-health-snapshot (tony_dell, 5m), network-scan-tony (tony_dell, 15m).
+  Rendered .service units already exist on dell — check whether .timer units exist too; if not render+install, enable.
+
+  2. Then retire the dispatcher: disable chaba-jobs.timer on every host where enabled (dell confirmed active; check
+  idc03/idc02/mn01/omen); mark dispatch:dispatcher mechanism deprecated in ssot.jobs.yml conventions; job-dispatcher.py
+  removal rides the repo PR (1244b scope).
+
+  3. Merge 3 nest-queue-watch timers on idc03 (nest-queue-watch, -kk-mac, -kk-mac-video) into one parameterized
+  unit or drop cadence when queue dormant — heartbeat 10.6d stale.
+
+  4. Commit ssot.jobs.yml on the writer (idc03 chaba-tony-dell).'
+action:
+  type: manual
+ref: OPS-1247
+comms:
+- at: 2026-11-09 09:18
+  from: tony
+  text: claimed by devin session on tony-dell — executing in-session now
+- at: 2026-11-09 09:18
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
