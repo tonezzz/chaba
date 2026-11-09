@@ -1,7 +1,7 @@
 id: timer-alert-idc03-log-shipper-severe
 title: Timer log-shipper-severe on idc03 failing
 column: doing
-updated: 2026-11-09 09:28
+updated: 2026-11-09 09:31
 priority: high
 tags:
 - timer-alert
@@ -2409,8 +2409,14 @@ comms:
 - at: 2026-11-09 09:28
   from: devin
   text: '[dispatch] picked up on idc02 — pulling idc03 journal + checking whether prior leg-timeout fix landed'
+- at: 2026-11-09 09:31
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-092813-timer-log-shipper-severe-on-id.service:'
 action:
-  status: running
+  status: failed
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-092813-timer-log-shipper-severe-on-id.service:
+    Failed with result ''exit-code''. | devin-task-20261109-092813-timer-log-shipper-severe-on-id.service: Consumed
+    8.394s CPU time.'
