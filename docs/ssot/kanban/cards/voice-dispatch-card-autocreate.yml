@@ -1,7 +1,7 @@
 id: voice-dispatch-card-autocreate
 title: Voice dispatch auto-card — Ada's devin_dispatch files a queued card instead of bare start
 column: doing
-updated: 2026-11-09 18:20
+updated: 2026-11-09 18:30
 brief: 'Ada''s voice/chat devin_dispatch path (ada-voice backend/devin_dispatch.py → ssh devin-dispatch start) bypasses
   the entire tuned kanban path: no card, no KNOWN_PITFALLS primer, no card comms, no RETRY_RAILS, no board visibility.
   Tony''s decision (2026-11-09): voice dispatches auto-create a queued kanban card and ride the normal dispatch
@@ -171,3 +171,8 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-voice-dispatch-card-autocreate-1794214565 on idc02 still dirty — 1 uncommitted
     file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 18:30
+  from: devin
+  text: 'done: dispatch() no-playbook path -> board-api /card armed dispatch card (queue:true, tags voice-dispatch,
+    dedup returns card_id). DEVIN_INSTRUCTIONS + tool_guide updated. pytest tests/ -x -q: 1739 passed / 7 skipped;
+    tool-lint clean. e2e on ada-dev deferred to deploy per AGENTS.md.'
