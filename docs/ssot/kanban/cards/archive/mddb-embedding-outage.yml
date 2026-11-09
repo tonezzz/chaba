@@ -1,0 +1,66 @@
+id: mddb-embedding-outage
+title: mddb idc03 — embedding provider chain dead, 2500+ docs dropped without vectors
+brief: 'Since ~2026-10-09 morning all mddb embeddings fail: gemini-ollama-proxy returns "all same-space providers
+  down (OR circuit-open + Gemini failed)". Chain: Gemini direct = 429 quota exhausted; OpenRouter = 402 credits
+  exhausted; OLLAMA_FALLBACK_BASE never configured so idc03 local ollama (nomic-embed-text, verified healthy on
+  100.102.134.91:11434) is never tried. Queue full (4000), droppedTotal ~2514 — those docs have no vector until
+  reindexed. Vector search saturated 4/4 concurrent, 9828 rejected searches; binlog janitor lag is downstream of
+  this.'
+column: done
+review_kind: decide
+priority: high
+created: 2026-10-09
+tags:
+- mddb
+- incident
+- idc03
+claim: {}
+requests:
+- id: recovery-path
+  ask: 'idc03 embedding is fully dead. Recommended: add OLLAMA_FALLBACK_BASE=http://100.102.134.91:11434 to ~/.config/secrets/mddb-gemini.env
+    on idc03 + restart gemini-ollama-proxy (dims match — nomic-embed-text is 768). Then reindex dropped docs. Alternatively:
+    top up OpenRouter credits (402) or wait out the Gemini 429 quota window.'
+  status: answered
+  at: 2026-10-09 12:15
+  from: devin
+  options:
+  - id: wire-ollama-fallback
+    label: Wire local Ollama fallback + restart proxy
+  - id: topup-openrouter
+    label: Top up OpenRouter credits
+  - id: wait-gemini
+    label: Wait for Gemini quota reset
+  suggested: wire-ollama-fallback
+  answer: topup-openrouter — Top up OpenRouter credits
+comms:
+- at: 2026-10-09 12:34
+  from: tony
+  text: 'answered recovery-path: topup-openrouter — Top up OpenRouter credits'
+- at: 2026-10-09 12:34
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-09 12:38
+  from: devin
+  text: 'verified 12:40 — still down: Gemini 429 (quota), OpenRouter 402 (no credits), probe fails. Top-up is Tony-side:
+    openrouter.ai -> Credits. Bridge confirmed viable meanwhile: idc03 ollama nomic-embed-text answers 768-dim on
+    100.102.134.91:11434 — one env line (OLLAMA_FALLBACK_BASE) + proxy restart restores the queue NOW without waiting
+    on payment, and stays as permanent fallback after credits land. Note: the two options are complementary, not
+    exclusive.'
+- at: 2026-10-09 12:56
+  from: devin
+  text: 'verified recovered ~12:55: OR credits landed, proxy circuit closed itself, 80 embeds routed in 3min — queue
+    draining. No restart needed. embed-probe next tick should flip up. Dropped docs still need reindex — queue will
+    re-embed them automatically if the retry path covers droppedTotal, else a reindex job.'
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: MEM-0243'
+- at: 2026-11-09 20:14
+  from: tony
+  text: archived (25d in done, board over card cap)
+updated: 2026-11-09 20:14
+resolution: 'verified 13:15 — OR credits landed ~12:55, proxy routed 1900+ embeds via OpenRouter since recovery,
+  zero failures/drops in last 15min (last drop 12:54, droppedTotal=2648). embed-probe detected down->up at 13:00
+  and auto-triggered vector-reindex per design; dropped docs re-embedding now (~849/2648 in 8min — full sweep ~25min).
+  OPEN follow-up: OLLAMA_FALLBACK_BASE still unset — local ollama fallback remains the unpaid-insurance option if
+  OR credits lapse again; one env line + proxy restart on idc03.'
+ref: MEM-0243
