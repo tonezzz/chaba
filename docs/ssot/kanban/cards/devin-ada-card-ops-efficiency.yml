@@ -1,7 +1,7 @@
 id: devin-ada-card-ops-efficiency
 title: Devin + Ada efficient card status and processing procedure
 column: doing
-updated: 2026-11-09 19:49
+updated: 2026-11-09 19:59
 priority: medium
 tags:
 - devin
@@ -42,3 +42,10 @@ comms:
   text: 'Initial assessment: reuse existing compact surfaces rather than adding another status tool: Chaba board-api
     read door (/queue, /card/<id>) and Ada nest_status + kanban-brief. Implementing a short shared procedure/Devin
     skill and a minimal Ada instruction mirror; no deployment planned.'
+- at: 2026-11-09 19:59
+  from: devin
+  text: 'Implemented and committed locally: Chaba 3edb8d65ae (shared procedure, card-ops-sweep skill, procedure
+    index); ada-voice bf16a93 (live-first status instruction + regression test). Existing /queue, /card/<id>, nest_status,
+    and kanban-brief are reused; no duplicate runtime tool. Ada focused test 1/1 passed, tool-lint clean, py_compile
+    passed, and Chaba commit hooks passed. Ada source is not pushed/deployed; this card is ready for review before
+    activation.'
