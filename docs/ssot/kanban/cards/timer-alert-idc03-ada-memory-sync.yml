@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
 column: doing
-updated: 2026-11-09 09:18
+updated: 2026-11-09 09:21
 priority: high
 tags:
 - timer-alert
@@ -129,6 +129,13 @@ comms:
 - at: 2026-11-09 09:18
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
+- at: 2026-11-09 09:21
+  from: devin
+  text: 'ROOT CAUSE (11-09 re-alert) — transient MDDB infra events, not a script bug. Two recent crashes, both inside
+    sync() -> mddb.add() POST to idc03:11023: (a) 11-08 05:00:12 RemoteDisconnected — weekly mddb-restart.timer
+    (Sun 05:00) restarted mddb.service mid-request; (b) 11-09 04:01:07 ReadTimeout (read=20s) — embedding path degraded
+    03:58-07:01 (embed-pool-shim: all same-space providers down OR circuit-open + Gemini 429 rate-limit), mddb retries
+    embeds inline ~30s/doc so /add exceeded the client 2'
 spec: Investigate the failure of the `ada-memory-sync.service` timer on host `idc03` which failed with exit-code
   on 10-16 14:00. The runner must inspect the journal using `journalctl --user -u ada-memory-sync.service` on `idc03`
   and reference the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the exit-code
