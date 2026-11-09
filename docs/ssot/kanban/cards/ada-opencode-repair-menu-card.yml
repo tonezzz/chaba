@@ -1,7 +1,7 @@
 id: ada-opencode-repair-menu-card
 title: 'Ada/OpenCode repair-menu card: QC buttons + picker integration'
 column: review
-updated: 2026-11-08 20:49
+updated: 2026-11-09 20:39
 brief: 'Phase 1/3 of OPS-1109 UI: Ada chat card shows candidate + Keep/Reject/Revise/Repair-region buttons; Repair
   opens mask-picker; picker POST /submit already lands in inbox + board comment. Remaining: card JS buttons, decision
   endpoint -> SESSION/QC, deploy idc03.'
@@ -54,4 +54,10 @@ comms:
     are aliases of the same instance, not separate things. Done: ada-voice README alias note (61bb773), chaba-admin
     tab renamed live (title ''Ada Code'', path /chaba-admin/ada-code — old path now falls back to default view),
     snapshot synced+committed. Carded infra rename (hostname/quadlets/volumes) as ada-code-infra-rename.'
+- at: 2026-11-09 20:39
+  from: devin
+  text: 'Post-deploy check 2026-11-09 on idc03: systemd logs show tools.d ada_adobe_stock fails to load: expected
+    DECLARATION dict, module currently exports TOOL. The module includes status and a QC-decision write; do not
+    hotfix with a blind alias until its confirmation/manifest policy is checked. Reopening this card for a guarded
+    loader fix and post-deploy verification.'
 review_kind: verify
