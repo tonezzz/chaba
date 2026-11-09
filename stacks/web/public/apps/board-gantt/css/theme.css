@@ -52,39 +52,21 @@ html[data-theme='dark'] {
   font-size: 12px;
 }
 
+/* sub-project headers (project: parent/child slugs) — quieter than group */
+.gantt .bar-wrapper.sub-header .bar {
+  fill: rgba(148, 163, 184, 0.05);
+  stroke: none;
+}
+.gantt .bar-wrapper.sub-header .bar-progress { display: none; }
+.gantt .bar-wrapper.sub-header .bar-label {
+  fill: #94a3b8;
+  font-weight: 600;
+  font-size: 11px;
+}
+
 /* popup */
 .gantt-container .popup-wrapper { background: #16213e; border: 1px solid #2f3f6b; }
 .gantt-container .popup-wrapper .title { color: #e2e8f0; }
 .gantt-container .popup-wrapper .subtitle,
 .gantt-container .popup-wrapper .details { color: #94a3b8; }
 .gantt-container .popup-wrapper .action-btn { background: #263356; color: #cbd5e1; }
-
-/* ---- left tree sidebar ---- */
-.tree { display:flex; flex-direction:column; height:100%; min-height:0; }
-.tree-head { flex:0 0 auto; display:flex; align-items:center;
-             padding:0 10px; background:#0d1b3a; border-bottom:1px solid #232f52;
-             position:sticky; top:0; z-index:5; }
-.tree-head-title { font-size:10px; letter-spacing:1.5px; color:#475569; font-weight:700; }
-.tree-body-wrap { flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; }
-.tree-row { display:flex; align-items:stretch; box-sizing:border-box;
-            border-bottom:1px solid #16213e; cursor:default; }
-.tree-group { background:#0d1b3a; }
-.tree-group-label { font-size:12px; font-weight:700; color:#7dd3fc;
-                    letter-spacing:.3px; display:flex; align-items:center;
-                    padding:0 10px; white-space:nowrap; overflow:hidden;
-                    text-overflow:ellipsis; width:100%; }
-.tree-card { cursor:pointer; }
-.tree-card:hover { background:#1b2745; }
-.tree-indent { flex:0 0 26px; display:flex; justify-content:center;
-               border-right:1px solid #232f52; color:#33456b; font-size:11px; }
-.tree-body { flex:1; min-width:0; padding:4px 8px 3px 2px; position:relative; }
-.tree-title { font-size:12.5px; line-height:1.25; color:#cbd5e1;
-              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.tree-col { font-size:9.5px; color:#64748b; margin-top:2px; text-transform:uppercase;
-            letter-spacing:.5px; }
-.tree-col.col-doing { color:#38bdf8; }
-.tree-col.col-review { color:#fbbf24; }
-.tree-col.col-done { color:#34d399; }
-.tree-col.col-backlog { color:#94a3b8; }
-.tree-col.col-lab { color:#a78bfa; }
-.tree-spacer { min-height:60px; }

@@ -1,6 +1,4 @@
-// tasks.js — normalized cards -> gantt task list + tree row model.
-// buildRows() is the single source of truth for row order; buildTasks()
-// and the sidebar tree both consume it so they can never drift apart.
+// tasks.js — normalized cards -> frappe-gantt task list.
 import { COLUMN_STYLE, DEFAULT_COLUMN_STYLE, DONE_RECENT_DAYS } from './config.js';
 import { groupCards, groupLabel } from './groups.js';
 
@@ -44,42 +42,76 @@ export function cardToTask(card, now = new Date()) {
   };
 }
 
-// Row model shared by the gantt and the tree sidebar. Each entry:
-//   { kind: 'group', group, count, task }   — header row (also a gantt bar)
-//   { kind: 'card',  card,  task }          — card row
-// task is the frappe-gantt task object (null only if a card lacks dates,
-// in which case the row is dropped entirely to keep rows 1:1).
-export function buildRows(cards, now = new Date()) {
-  const rows = [];
-  for (const { group, cards: gcards } of groupCards(cards)) {
-    const cardRows = [];
-    for (const c of gcards) {
-      const task = cardToTask(c, now);
-      if (task) cardRows.push({ kind: 'card', card: c, task });
-    }
-    if (!cardRows.length) continue;
-    cardRows.sort((a, b) =>
-      a.task.start.localeCompare(b.task.start) || a.task.name.localeCompare(b.task.name));
-
-    const starts = cardRows.map((r) => parseDate(r.task.start)).filter(Boolean);
-    const ends = cardRows.map((r) => parseDate(r.task.end)).filter(Boolean);
-    const headerTask = starts.length && ends.length ? {
-      id: `group-${group.id}`,
-      name: `▸ ${groupLabel(group.id)} (${cardRows.length})`,
-      start: fmt(new Date(Math.min(...starts))),
-      end: fmt(new Date(Math.max(...ends))),
-      progress: 0,
-      custom_class: 'group-header',
-      _group: group.id,
-    } : null;
-
-    rows.push({ kind: 'group', group, count: cardRows.length, task: headerTask });
-    rows.push(...cardRows);
-  }
-  return rows;
+// project: slugs nest — 'adobe-stock/foo' folds under the adobe-stock group
+// as sub-group 'foo'. Returns the card's sub-path segments relative to the
+// group (['foo','bar'] for 'adobe-stock/foo/bar'), [] for direct members.
+function subPath(card, groupId) {
+  const segs = String(card.project || '').split('/').filter(Boolean);
+  return segs[0] === groupId ? segs.slice(1) : [];
 }
 
-// Flat gantt task list (group headers included, in row order).
+const INDENT = '\u00A0'.repeat(4); // nbsp run — SVG text collapses plain spaces
+
+// Span (start..end) covering a set of tasks -> header-row task.
+function spanHeader(id, name, cls, tasks) {
+  const dates = tasks
+    .flatMap((t) => [parseDate(t.start), parseDate(t.end)])
+    .filter(Boolean);
+  if (!dates.length) return null;
+  return {
+    id,
+    name,
+    start: fmt(new Date(Math.min(...dates))),
+    end: fmt(new Date(Math.max(...dates))),
+    progress: 0,
+    custom_class: cls,
+    _group: tasks[0] && tasks[0]._group,
+  };
+}
+
+const byStart = (a, b) =>
+  a.start.localeCompare(b.start) || a.name.localeCompare(b.name);
+
+// Full task list, depth-first: group header, direct cards, then each
+// sub-group (header + its cards). Indentation is a name prefix —
+// frappe-gantt labels are plain SVG text, so depth shows as leading space.
 export function buildTasks(cards, now = new Date()) {
-  return buildRows(cards, now).map((r) => r.task).filter(Boolean);
+  const tasks = [];
+  for (const { group, cards: gcards } of groupCards(cards)) {
+    const cardTasks = gcards
+      .map((c) => ({ card: c, task: cardToTask(c, now) }))
+      .filter((x) => x.task)
+      .map((x) => ({
+        ...x.task,
+        _group: group.id,
+        _sub: subPath(x.card, group.id),
+      }))
+      .sort(byStart);
+    if (!cardTasks.length) continue;
+
+    const header = spanHeader(
+      `group-${group.id}`, `▸ ${groupLabel(group.id)} (${cardTasks.length})`,
+      'group-header', cardTasks);
+    if (header) tasks.push(header);
+
+    const direct = cardTasks.filter((t) => !t._sub.length);
+    const subs = new Map(); // 'foo/bar' -> [tasks]
+    for (const t of cardTasks) {
+      if (t._sub.length) {
+        const key = t._sub.join('/');
+        if (!subs.has(key)) subs.set(key, []);
+        subs.get(key).push(t);
+      }
+    }
+
+    for (const t of direct) tasks.push({ ...t, name: INDENT + t.name });
+    for (const [key, list] of [...subs.entries()].sort()) {
+      const subHeader = spanHeader(
+        `sub-${group.id}-${key}`, `└ ${key} (${list.length})`,
+        'sub-header', list);
+      if (subHeader) tasks.push(subHeader);
+      for (const t of list) tasks.push({ ...t, name: INDENT + INDENT + t.name });
+    }
+  }
+  return tasks;
 }

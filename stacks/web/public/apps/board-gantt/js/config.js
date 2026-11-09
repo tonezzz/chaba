@@ -12,7 +12,7 @@ export const GROUPS = [
     match: (c) =>
       (c.tags || []).includes('adobe-stock') ||
       c.program === 'adobe-stock' ||
-      c.project === 'adobe-stock' ||
+      (c.project || '').split('/')[0] === 'adobe-stock' ||
       c.id.startsWith('adobe-stock-'),
   },
   // future projects go here — e.g.
