@@ -1,7 +1,7 @@
 id: timer-alert-idc02-runner-agent
 title: Timer runner-agent on idc02 disabled
 column: doing
-updated: 2026-11-09 09:14
+updated: 2026-11-09 09:16
 priority: high
 tags:
 - timer-alert
@@ -1672,6 +1672,13 @@ comms:
 - at: 2026-11-09 09:14
   from: devin
   text: Investigating runner-agent.timer on idc02 — checking declared state vs systemctl.
+- at: 2026-11-09 09:16
+  from: devin
+  text: 'RESOLVED — both transitions were deliberate. Disable: Tony containment 2026-11-08 ~15:55 (diagnose-unattended-devin-session-storm-20261108).
+    Re-enable: today 09:06:10 via ssh from tony-dell (journal: systemctl reload PID 252076 + sshd disconnect 100.68.142.13
+    same second) — manual resumption, idc02 only. Timer enabled+active, claiming normally at cap 3 (claimed this
+    session 09:14:45). Other hosts runner-agent/kanban-dispatch still disabled per their own alert cards — consistent
+    with a one-host c'
 action:
   type: dispatch
   status: running
