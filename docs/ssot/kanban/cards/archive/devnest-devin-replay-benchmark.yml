@@ -1,0 +1,89 @@
+id: devnest-devin-replay-benchmark
+title: Benchmark DevNest against historical Devin jobs — replay corpus + gates
+column: done
+updated: 2026-11-09 20:16
+brief: Use the 110-session Devin CLI archive to build a privacy-safe, held-out replay benchmark for DevNest/OpenCode/JEV/runner-agent
+  against the work Devin actually handled.
+priority: high
+program: ai-workforce
+tags:
+- devnest
+- devin
+- benchmark
+- replay
+- rainy-day
+spec: 'Read-only mine sessions.db and durable artifacts. Select 12-20 completed engineering/ops/education jobs with
+  explicit target_host, repo/base commit, prompt, artifact, and done-condition. Normalize each into a frozen task
+  fixture: task.yaml, prompt, base ref, held-out verifier, expected artifact, source session id, and redaction report.
+  Arms: Devin historical outcome baseline; DevNest/JEV lane selection; OpenCode interactive/executor; deterministic
+  codemod where applicable. Metrics: gate pass, graduated score, latency, tokens/cost, human interventions, merge/closeout
+  success, unrelated-test breakage. Never replay destructive actions or secrets. Start with 5 safe read-only/report/code
+  tasks; expand after verifier validation.'
+ref: DEV-0861
+comms:
+- at: 2026-10-25 15:28
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 15:31
+  from: devin
+  text: 'READ-ONLY MINING STARTED: sessions.db has 80 visible sessions (110 total before hidden filtering). Candidate
+    artifact generated at /home/tony/evals/results/devnest-replay-candidates.json with 40 operational/code/report
+    candidates, including Omen lag, Kanban, monitoring, runner, mddb, reports, and infrastructure jobs. No replay
+    or mutation yet. Next: select 5 safe fixtures, redact, freeze base refs, add held-out gates.'
+- at: 2026-10-25 15:41
+  from: devin
+  text: 'FIRST REAL DEVNEST SKILL BATCH COMPLETE: packaged skill.md + assess.py + verify.py and ran read-only host
+    assessments against tony-dell, idc02, idc03, mn01, tony-macbook. All 5 artifacts passed verifier with zero SSH
+    errors. Load/core snapshot: dell 0.44, idc02 2.40 (hot), idc03 1.28, mn01 0.85, macbook 1.03. Omen remains offline/rescue.
+    This is a reusable low-urgency DevNest job; no remediation performed.'
+- at: 2026-10-25 16:04
+  from: devin
+  text: 'UPDATED REAL SKILL BATCH: tony-omen is reachable again after rescue work. Read-only assessment passed:
+    load/core 0.44 in artifact parser (raw load 5.28 on 12 CPUs), /data 65% with ~148G free, GPU GTX1650 98%/75C,
+    memory available ~9.2G, 6 failed user units reported. Omen assessment artifact saved as evals/results/devnest-host-tony-omen.json;
+    no remediation performed. This validates the skill across 6 hosts.'
+- at: 2026-10-25 19:11
+  from: tony
+  text: queued for processing
+- at: 2026-10-25 19:12
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 19:20
+  from: mn01
+  text: claimed
+- at: 2026-10-25 19:20
+  from: chaba
+  text: started devin-task-20261025-122017-read-only-mine-sessions-db-and on mn01 (dispatch)
+- at: 2026-10-25 19:20
+  from: mn01
+  text: 'finished (ok): exit=0  devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Failed with result
+    ''exit-code''. | devin-task-'
+- at: 2026-10-25 19:20
+  from: chaba
+  text: pushed dispatch/20261025-122017-read-only-mine-sessions-db-and to origin
+- at: 2026-10-25 19:20
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-122017-read-only-mine-sessions-db-and,
+    branch dispatch/20261025-122017-read-only-mine-sessions-db-and'
+- at: 2026-10-25 19:30
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-122017-read-only-mine-sessions-db-and on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (14d in done, board over card cap)
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0  devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Failed with result ''exit-code''.
+    | devin-task-20261025-122017-read-only-mine-sessions-db-and.service: Consumed 338ms CPU time over 599ms wall
+    clock time, 108.9M memory peak.'
+  sweep:
+    session_gone: 2026-10-25 19:30
+review_kind: verify
+claim: {}
