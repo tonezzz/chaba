@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: backlog
-updated: 2026-11-09 11:03
+updated: 2026-11-09 11:13
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -83,6 +83,13 @@ comms:
 - at: 2026-11-09 11:03
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 11:13
+  from: devin
+  text: Tony approved proceeding. Fresh attempt ops1255-20261109T041258Z started on idc02. Runner timer paused after
+    drain; no inflight markers. Original stage+ledger backed up under ~/.local/state/opencode-lane/ops1255-20261109T041258Z;
+    161359-byte historical ledger prefix fingerprinted. Five idc02-targeted frozen S0 envelopes prepared. Paired
+    L0/OpenCode Flash-lite replays running sequentially; batch stops on safety failure and restores timer in finally.
+    S1 watch time will not be fabricated.
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
