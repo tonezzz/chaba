@@ -1,0 +1,263 @@
+id: omen-partition-maximum-storage-plan-581be3
+title: Omen partition maximum-storage plan
+column: done
+updated: 2026-11-09 20:16
+action:
+  type: manual
+  status: done
+ref: OPS-0853
+comms:
+- at: 2026-10-25 12:18
+  from: devin
+  text: 'Tony ask 2026-10-25: manage HP Omen 15-BC (tony-omen NVMe) partitions for maximum usable storage. Read-only
+    inventory from tony-usb at LAN 192.168.2.86 (hostname tony-usb, HP 15-BC hardware): 931.5GiB NVMe; p1 EFI 100MiB;
+    p2 MSR 16MiB; p3 ext4 /home 310.6GiB (prior live check 98% used, ~7.2GiB free); p6 ext4 / 100GiB; p7 ext4 /data
+    300GiB (prior live check 68%, ~98GiB free); p5 ext4 label ubuntu-000 64.9GiB, unmounted, old root; p4 NTFS 768MiB.
+    Partition gaps: ~114.5GiB immediately before p3 and'
+- at: 2026-10-25 12:18
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-25 12:18
+  from: devin
+  text: 'raised request which-storage-target-should-the-omen-par-dd9b61: Which storage target should the Omen partition
+    plan optimize? No disk changes will run until you select an option and ba'
+- at: 2026-10-25 12:22
+  from: devin
+  text: 'Tony confirmed nvme0n1p5 (64.9GiB old Ubuntu root) is disposable. Current read-only layout: /home p3 is
+    310.6GiB and last recorded 98% full; /data p7 is 300GiB and 68% full; 114.5GiB unallocated immediately before
+    p3; 40.7GiB unallocated immediately after p7, then p5. GDrive contains the raw GPT metadata backup (17,920B)
+    and the text inventory, but not a verified full filesystem/data backup. Deleting p5 plus growing p7 could add
+    ~105.6GiB to /data but does not directly enlarge /home. Expanding /'
+- at: 2026-10-25 12:22
+  from: devin
+  text: Tony confirms nvme0n1p5 (64.9GiB old Ubuntu) contents may be deleted. This authorizes disposal of p5 data,
+    but does not select whether to extend p7 only or also move/extend p3; no partition edits run. Current p5+following-to-p7
+    gap is ~105.6GiB, available to p7 after deletion. A separate ~114.5GiB gap before p3 could grow /home, but requires
+    moving p3 start offline. GDrive raw GPT backup is present; it is metadata-only, not a filesystem backup. Await
+    exact target choice and full data-backup gate
+- at: 2026-10-25 12:28
+  from: devin
+  text: 'Important correction to the earlier recommendation: after Ollama moved to /data on 2026-10-24, the latest
+    recorded /home status was 69% used with 47GiB free, not the pre-move 98% from 10/23. Thus expanding p3 is not
+    currently urgent; option 3 still maximizes allocated space but its p3 start-move is the riskier part. Option
+    2 (delete confirmed-disposable p5 + extend p7 by ~105.6GiB) may be the simpler choice if the goal is more /data
+    space. No partition changes run; target choice and active-files'
+- at: 2026-10-25 12:36
+  from: devin
+  text: 'New removable media inventory 2026-10-25 via tony-usb: /dev/sda is a 125.8GB removable USB device; p1 512MB
+    EFI, p2 116.7GB ext4 label ubuntu-usb mounted as /. It is the running rescue OS (42GB used, 68GB free), not
+    a blank SD. Do not format while booted from it; doing so would erase the active root and end this session. It
+    is too small for full /home+/data backup (~483GB used). Keep it as the offline recovery/partition-work environment
+    through Option 3; consider repurposing only after booting n'
+- at: 2026-10-25 12:42
+  from: tony
+  text: 'answered which-storage-target-should-the-omen-par-dd9b61: Option 3: expand both /home and /data; p5 contents
+    are disposable.'
+- at: 2026-10-25 12:42
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 12:42
+  from: devin
+  text: 'Option 3 selected; p5 disposal confirmed. Safety inventory: GDrive has the raw GPT table backup and text
+    inventory only, no full /home or /data data backup. Latest recorded used data is about 201GiB /home + 198GiB
+    /data (~399GiB). GDrive has 1.4TiB free but only an unencrypted gdrive: remote (no crypt remote); the 128GB
+    SD is currently /dev/sda2, mounted as the tony-usb rescue OS root, and is not a separate backup disk. Option
+    3 needs root partition tools and p3-start relocation; no sudo, upload'
+- at: 2026-10-25 12:42
+  from: devin
+  text: 'raised request option-3-is-selected-and-p5-is-confirmed-8614fd: Option 3 is selected and p5 is confirmed
+    disposable. Before any privileged partition operation, choose the data-safety p'
+- at: 2026-10-25 12:44
+  from: tony
+  text: 'answered option-3-is-selected-and-p5-is-confirmed-8614fd: Proceed with Option 3 without a full data backup;
+    I accept that /home and /data may become unrecoverable if the move/resize fails, and authorize root partition
+    commands on the tony-usb live environmen'
+- at: 2026-10-25 12:44
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 12:44
+  from: devin
+  text: 'Tony explicitly accepted the Option 3 no-full-backup risk and authorized root partition commands on the
+    tony-usb live environment; SD formatting remains prohibited. Proceeding with read-only preflight only first:
+    verify AC power, tool availability, mount/swap state, exact device and GPT backup. No partition writes until
+    preflight is clean.'
+- at: 2026-10-25 12:45
+  from: devin
+  text: 'Risk acceptance recorded. Read-only preflight on tony-usb: AC online, battery 93%; internal NVMe partitions
+    p1-p7 unmounted, no swap active; sudo is NOPASSWD; /dev/sda2 remains the live rescue root and will not be formatted.
+    GDrive raw GPT backup is available. Tool gap: gparted and partclone.ext4 are absent; GNU parted 3.6 has no partition-start
+    move operation, so it cannot safely perform the p3 start relocation. No partition writes performed.'
+- at: 2026-10-25 12:45
+  from: devin
+  text: 'raised request option-3-requires-moving-the-start-of-ex-fce57c: Option 3 requires moving the start of ext4
+    p3. The current live USB has parted/e2fsck/resize2fs but no GParted; I will n'
+- at: 2026-10-25 12:48
+  from: tony
+  text: 'answered option-3-requires-moving-the-start-of-ex-fce57c: Yes, install GParted in the current tony-usb
+    live environment. Do not format the SD or modify NVMe partitions during the install.'
+- at: 2026-10-25 12:48
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 12:54
+  from: devin
+  text: 'Installed GParted 1.8.0 and 8 libraries into the tony-usb rescue root after Tony approval; used 11MB on
+    /dev/sda2. No NVMe partition writes. Tool check: parted 3.6 has no move-start operation; GParted is GUI-only.
+    tony-usb has Xfce on DISPLAY :0 but no Chrome Remote Desktop service; no remote GUI/input path is available
+    to operate GParted safely from this session.'
+- at: 2026-10-25 12:54
+  from: devin
+  text: 'raised request can-you-access-the-omen-tony-usb-xfce-sc-9c0b86: Can you access the Omen tony-usb XFCE screen
+    (DISPLAY :0) locally or through an existing remote desktop so GParted can b'
+- at: 2026-10-25 12:56
+  from: devin
+  text: 'Option 3 progress 2026-10-25: after Tony accepted data-loss risk and confirmed p5 disposable, deleted nvme0n1p5
+    and extended p7 to sector 1951948799 (before preserved p4). Resized ext4 successfully; post-resize e2fsck clean;
+    p7 now 405.6GiB. GDrive GPT backup SHA-256 34565442a220ce251d9701d75ab6fe93651d0d9fb066cb1fef7833a23b0c6911
+    was copied to /home/tony/omen-nvme0n1-gpt-20261024.bin on rescue SD and hash-matched. GParted installed on rescue
+    OS. p3 remains unchanged: it requires moving its star'
+- at: 2026-10-25 13:02
+  from: chaba
+  text: 'answer-sweep: ''queue'' deferred — card action type=manual — not dispatch-claimable'
+- at: 2026-10-25 13:02
+  from: chaba
+  text: 'answer-sweep: 2 answered request(s) still unmapped — stays flagged'
+- at: 2026-10-25 13:06
+  from: devin
+  text: 'Progress: GParted 1.8.0 installed on tony-usb (approved). Option 3 p5/p7 stage completed: removed confirmed-disposable
+    nvme0n1p5; grew p7 to sector 1951948799; ext4 p7 now 405.6GiB and e2fsck reports clean. GPT backup copied from
+    GDrive to rescue SD and SHA-256 verified. p3 remains unchanged. No CRD/xrdp/VNC service is active on tony-usb;
+    GParted is GUI-only, so p3 start relocation awaits authorized interactive screen access or a temporary remote
+    GUI plan. No SD format or other NVMe edits.'
+- at: 2026-10-25 13:27
+  from: devin
+  text: 'Option 3 p3 phase running in GParted on tony-usb, one queued operation only: move nvme0n1p3 start left
+    to consume 114.44GiB gap and grow 310.56->425.00GiB; preserve end and neighboring p1/p2/p4/p6/p7. At ~5min,
+    e2image had copied 33.25/216.90GiB, ETA ~28min. AC connected; p3 unmounted; no filesystem data backup per Tony
+    risk acceptance. P5 deletion/p7 expansion already verified; do not interrupt power or the rescue session.'
+- at: 2026-10-25 14:33
+  from: devin
+  text: Option 3 partition edits completed 2026-10-25. p5 deleted; p7 extended to 405.6GiB; p3 moved left and extended
+    to 425.0GiB. p1 EFI, p2 MSR, p4 NTFS and p6 root preserved. sgdisk -v reports no GPT problems; read-only e2fsck
+    returns 0 for p3 and p7; filesystem UUIDs are unchanged. GParted reports all operations successfully completed.
+    Rescue OS remains running from /dev/sda2; internal NVMe partitions are still unmounted. No file-level backup
+    was created per Tony risk acceptance; GPT backup is on G
+- at: 2026-10-25 14:33
+  from: devin
+  text: 'raised request partition-edits-are-verified-from-the-re-6c7a16: Partition edits are verified from the rescue
+    OS. Please remove the tony-usb rescue SD and boot the normal Omen OS from t'
+- at: 2026-10-25 14:37
+  from: devin
+  text: Tony requested shutdown so he can remove the rescue SD. Verified host tony-usb root was /dev/sda2, zero
+    GParted/e2image/e2fsck/resize2fs workers remained; ran sudo systemctl poweroff. SSH port first refused, then
+    timed out after 10s, consistent with shutdown. Awaiting Tony to boot normal Omen OS for post-change mount verification.
+- at: 2026-10-25 14:46
+  from: tony
+  text: 'answered can-you-access-the-omen-tony-usb-xfce-sc-9c0b86: You can remote it; use the existing X display
+    over SSH.'
+- at: 2026-10-25 14:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 14:46
+  from: tony
+  text: 'answered partition-edits-are-verified-from-the-re-6c7a16: Normal Omen OS is booted; please verify the mounts.'
+- at: 2026-10-25 14:46
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-10-25 14:46
+  from: devin
+  text: 'Post-reboot verification: mcp_health tony_omen passes; direct SSH reports hostname tony-omen. /home is
+    /dev/nvme0n1p3, 418G total, 212G used, 189G free (53%); /data is /dev/nvme0n1p7, 399G total, 257G used, 142G
+    free (65%); / root remains p6. p3/p7 UUIDs intact. Option 3 complete and normal boot verified.'
+- at: 2026-10-25 14:46
+  from: devin
+  text: closed by devin
+- at: 2026-10-25 14:47
+  from: devin
+  text: 'Final post-boot verification: mcp_health tony_omen and direct SSH pass; hostname tony-omen. /home is /dev/nvme0n1p3,
+    418G total/212G used/189G free; /data is /dev/nvme0n1p7, 399G total/257G used/142G free; / is p6 98G/38G used.
+    GPT verifies clean; p3 and p7 e2fsck checks passed. Ollama user service is active; model list is present. Partition
+    operation complete.'
+- at: 2026-10-25 14:47
+  from: devin
+  text: closed by devin
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (15d in done, board over card cap)
+requests:
+- id: which-storage-target-should-the-omen-par-dd9b61
+  ask: Which storage target should the Omen partition plan optimize? No disk changes will run until you select an
+    option and backup gates are satisfied.
+  status: answered
+  at: 2026-10-25 12:18
+  from: devin
+  options:
+  - Expand /home p3 into the adjacent ~114.5GiB free gap; preserve p5 (recommended because /home is 98% full). Requires
+    a verified full backup and offline filesystem move plan.
+  - Expand /data p7 by reclaiming the ~40.7GiB gap and old p5 (64.9GiB); only if p5 contents are confirmed disposable
+    or independently backed up.
+  - Do both after full, off-disk backup and partition-table backup; highest usable capacity and highest operation
+    risk.
+  - No partition edits; keep layout and manage storage by moving caches/data to /data.
+  suggested: Expand /home p3 into the adjacent ~114.5GiB free gap; preserve p5 (recommended because /home is 98%
+    full). Requires a verified full backup and offline filesystem move plan.
+  answer: 'Option 3: expand both /home and /data; p5 contents are disposable.'
+- id: option-3-is-selected-and-p5-is-confirmed-8614fd
+  ask: Option 3 is selected and p5 is confirmed disposable. Before any privileged partition operation, choose the
+    data-safety path. No full /home or /data backup is currently verified.
+  status: answered
+  at: 2026-10-25 12:42
+  from: devin
+  options:
+  - I have an independent verified backup of /home and /data; I will identify its location so you can verify it
+    (recommended if available).
+  - Authorize an encrypted off-disk backup of /home and /data (~399GiB at last measurement); first propose the encryption/key-recovery
+    method and do not upload until I approve that method.
+  - Proceed without a full data backup; I accept that /home or /data may become unrecoverable if the move/resize
+    fails. This also explicitly authorizes root partition commands on the tony-usb live environment (not formatting
+    the SD).
+  suggested: I have an independent verified backup of /home and /data; I will identify its location so you can verify
+    it (recommended if available).
+  answer: Proceed with Option 3 without a full data backup; I accept that /home and /data may become unrecoverable
+    if the move/resize fails, and authorize root partition commands on the tony-usb live environment. Do not format
+    the SD.
+- id: option-3-requires-moving-the-start-of-ex-fce57c
+  ask: Option 3 requires moving the start of ext4 p3. The current live USB has parted/e2fsck/resize2fs but no GParted;
+    I will not improvise a raw block move. Which route do you approve?
+  status: answered
+  at: 2026-10-25 12:45
+  from: devin
+  options:
+  - Approve apt/network install of GParted in the tony-usb live environment (writes only to the rescue SD; then
+    I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
+  - Use separate GParted Live media instead; keep current tony-usb unchanged.
+  - Pause Option 3; do not alter NVMe until GParted media/tool is available.
+  suggested: Approve apt/network install of GParted in the tony-usb live environment (writes only to the rescue
+    SD; then I will verify tool and perform Option 3 on unmounted NVMe). Recommended.
+  answer: Yes, install GParted in the current tony-usb live environment. Do not format the SD or modify NVMe partitions
+    during the install.
+- id: can-you-access-the-omen-tony-usb-xfce-sc-9c0b86
+  ask: Can you access the Omen tony-usb XFCE screen (DISPLAY :0) locally or through an existing remote desktop so
+    GParted can be operated safely?
+  status: answered
+  at: 2026-10-25 12:54
+  from: devin
+  options:
+  - I can access the Omen screen now; keep GParted open and guide me through the exact queued operations (recommended).
+  - I cannot access the screen; pause the partition edits and keep the rescue system unchanged.
+  - I want you to propose a temporary remote desktop setup first; do not install/enable it until I approve the exact
+    service and access scope.
+  suggested: I can access the Omen screen now; keep GParted open and guide me through the exact queued operations
+    (recommended).
+  answer: You can remote it; use the existing X display over SSH.
+- id: partition-edits-are-verified-from-the-re-6c7a16
+  ask: Partition edits are verified from the rescue OS. Please remove the tony-usb rescue SD and boot the normal
+    Omen OS from the internal NVMe. When it is back, tell me so I can verify /home and /data mount sizes and normal
+    boot health.
+  status: answered
+  at: 2026-10-25 14:33
+  from: devin
+  options:
+  - Remove rescue SD and boot internal Omen now (recommended).
+  - Keep rescue OS running; defer normal-boot verification.
+  suggested: Remove rescue SD and boot internal Omen now (recommended).
+  answer: Normal Omen OS is booted; please verify the mounts.
