@@ -1,0 +1,19 @@
+id: timer-sentinel-stale-respawn
+title: timer-sentinel re-spawns just-fixed timer cards off stale sweep state
+column: backlog
+updated: 2026-11-09 09:12
+priority: medium
+tags:
+- sentinel
+- false-positive
+- follow-up
+note: 'Observed 2026-11-09 on timer-alert-idc03-kraut-rain-watch: timer fixed 15:45, card closed 15:46, sentinel
+  re-queued it 15:50 because timer-timeline sweep state (15min cadence on tony-dell) still carried result=exit-code
+  from the 15:41 run — _recent() passes for 48h so one stale sweep re-fires a closed card. Cost: ~5h of dispatch
+  churn + one full session that only re-verified the fix. Options: (a) sentinel re-checks live systemctl Result
+  before re-queuing a card closed <sweep_interval ago; (b) sk'
+ref: OPS-1246
+comms:
+- at: 2026-11-09 09:12
+  from: devin
+  text: card captured via board-api
