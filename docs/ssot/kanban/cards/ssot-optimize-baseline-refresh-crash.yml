@@ -1,7 +1,7 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
 column: doing
-updated: 2026-11-09 18:18
+updated: 2026-11-09 18:20
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
   files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
@@ -56,6 +56,11 @@ comms:
   from: devin
   text: 'Investigating: crash is execSync of ssot-validate-all.mjs in scripts/ssot-optimize.mjs:82 (default maxBuffer).
     Reproducing now.'
+- at: 2026-11-09 18:20
+  from: devin
+  text: 'Fixed: execSync→spawnSync in scripts/ssot-optimize.mjs — validator exit 1 (any file with errors) no longer
+    throws and dumps 320k chars of stdout. Full run verified: completes, refreshes WARNINGS.json (102 bloat/23 data-isolation/8
+    other). Committed on dispatch branch.'
 action:
   type: dispatch
   status: running
