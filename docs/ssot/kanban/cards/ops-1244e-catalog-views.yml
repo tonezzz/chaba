@@ -1,0 +1,31 @@
+id: ops-1244e-catalog-views
+title: 'OPS-1244e ops: generate night-jobs/automation catalogs from ssot.jobs.yml (sub of devnest-queue-consolidation)'
+column: backlog
+updated: 2026-11-09 09:21
+priority: low
+tags:
+- devnest
+- ops
+spec: 'Sub-card of devnest-queue-consolidation (OPS-1244). Mechanical — no agent lane.
+
+
+  4 parallel schedule catalogs drift: ssot.jobs.yml (canonical), ssot.night-jobs.{yml,dell,omen,macbook}, ssot.automation.{yml,dell,omen,macbook},
+  ssot.audit.hosts.yml per-host unit lists. Already drifted: night-jobs.tony-dell says focus-dispatcher-overnight
+  runs on dell — it renders+runs on idc03.
+
+
+  DO: make ssot.jobs.yml the only hand-maintained schedule catalog. Extend render-jobs.py (or a small script) to
+  EMIT per-host night-jobs/automation views from the same source; mark the generated files (header: generated —
+  do not edit); fold remaining audit.hosts unit lists the same way or point at systemctl inventory.
+
+  DONE-CONDITION: one canonical schedule file; generated views carry a do-not-edit header; drift impossible.'
+action:
+  type: manual
+ref: OPS-1251
+comms:
+- at: 2026-11-09 09:21
+  from: tony
+  text: mechanical — batch with ops-1244a or a later ops pass
+- at: 2026-11-09 09:21
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
