@@ -1,7 +1,7 @@
 id: devnest-queue-consolidation
 title: DevNest jobs queue — consolidate 13 control surfaces into one queue/claimer/catalog
 column: backlog
-updated: 2026-11-09 09:06
+updated: 2026-11-09 09:10
 priority: high
 tags:
 - devnest
@@ -72,3 +72,10 @@ comms:
   from: tony
   text: DevNest queue efficiency assessment filed by devin session on tony-dell — see spec. Verified live state
     on 4 hosts.
+- at: 2026-11-09 09:10
+  from: devin
+  text: 'Immediate fixes applied 2026-11-09 ~09:10 +07 (devin session, tony-dell): (1) runner-agent.timer re-enabled+active
+    on idc03/idc02/mn01/tony-omen — claim plane was down fleet-wide since ~Nov 8 16:32 SIGTERM; (2) kanban-dispatch.timer
+    re-enabled on idc03; queue draining 25->19, 6 claims running; (3) jev-lane.conf fixed on mn01+tony-omen (missing
+    [Service] header — JEV_LANE was inert); OPENCODE_LANES commented on omen pending OPS-0846 gate; (4) focus-dispatcher-overnight
+    abort root-caused to 1 inva'
