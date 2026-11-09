@@ -1,6 +1,6 @@
 id: timer-alert-idc03-device-telemetry-prune
 title: Timer device-telemetry-prune on idc03 failing
-column: backlog
+column: done
 updated: 2026-11-10 04:31
 priority: high
 tags:
@@ -533,8 +533,13 @@ comms:
 - at: 2026-11-10 04:31
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-10 04:31
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of device-telemetry-prune.service on idc03, which previously exited with an error
   during a high-load window. The runner must inspect the journal via journalctl --user -u device-telemetry-prune.service
   on idc03 to verify if subsequent runs recovered successfully. Constraints are to inspect the specified host and
   service without inventing paths. The done-condition is confirmed successful execution of the timer in the system
   journal or CMS timeline.
+action:
+  status: done
