@@ -1,0 +1,276 @@
+id: dispatch-triage-corpus-inventory
+title: dispatch-triage specialist — corpus inventory + labeling strategy decision
+date: 2026-11-09
+card: dispatch-triage-corpus-inventory
+host: idc02
+status: analysis-complete   # labeling decision pending Tony — board request posted
+ref: OPS-1278
+
+goal: >-
+  Inventory the candidate labeled data for the dispatch-triage suite
+  (ada-voice tests/bench/suites.yml `dispatch-triage`, domains.yml kind
+  `triage`) and put a costed labeling-strategy decision to Tony.
+  Analysis only — nothing trained, nothing changed.
+
+# ------------------------------------------------------------------
+# 0. What the suite actually needs
+# ------------------------------------------------------------------
+suite_needs:
+  decision_surface: >-
+    domains.yml `triage` — a Choice over {code, docs, ops, research,
+    clarify} for an operator request ({turn}). This is WORK-TYPE
+    routing — a different taxonomy from the executor-lane surface that
+    dispatch_repos.classify_lane owns ({free_lane, paid_frontier,
+    codemod, devin, manual} + LANE_EXECUTORS jules/nlm_batch). Every
+    source below is marked for which surface it can label.
+  row_schema: '{text, kind: triage, label, set: triage, slice}'
+  text_source: the operator request phrase (card title/brief closest)
+  tiers:
+    golden:
+      status: spec — EMPTY
+      needs: ~10-15 frozen rows; suites.yml defines golden as
+             hand-labeled + card-reviewed — no automated strategy can
+             fill it alone
+    hard:
+      set: triage
+      source: orch-triage-cases.jsonl
+      cases_today: 30   # labels: code 5, docs 5, ops 8, research 7,
+                        # clarify 5; slices: clear-* 24 + boundary 6
+      rotates: 'corpus-harvest (labeled rows appended, slice: harvest-<date>)'
+    adversarial:
+      status: spec — EMPTY
+      needs: ~14-21 attack-shaped rows (mimic-golden phrasing bait)
+
+# ------------------------------------------------------------------
+# 1. Per-source inventory — REAL COUNTS measured 2026-11-09
+#    (mddb queried live on all 4 banks; card corpus parsed in worktree;
+#     task dirs counted on this runner)
+# ------------------------------------------------------------------
+sources:
+
+  cascade_outcomes_mddb:
+    rows: 0
+    evidence: >-
+      POST /v1/search {collection: cascade-outcomes} on all four banks
+      (100.102.134.91 :11023 main, :11026 ops, :11027 cms, :11028 embed)
+      returns []; /v1/collection-config says configured:false; not in
+      /v1/vector-stats collection lists. The P5 outcome log designed in
+      docs/kb/cheap-agent-cascade.md was never populated — no
+      scripts/bench-cascade.py exists; the cascade is still design-stage.
+    labelable_fraction: 0
+    note: >-
+      The richest PLANNED source does not exist yet. Filling it is an
+      instrumentation task (kanban-dispatch/runner-agent append one row
+      per lane attempt), not a labeling task.
+
+  kanban_card_corpus:
+    files: 1411            # docs/ssot/kanban/cards/*.yml + archive/*.yml
+    parse_failures: 0
+    with_action: 1127
+    type_dispatch: 675     # all have usable request text (>20 chars)
+    columns: {done: 1090, backlog: 245, doing: 43, review: 32, lab: 1}
+    action_fields:
+      repo: 361          # chaba 239, ada-pi 90, ada-voice 28, mddb-fork 2, +2
+      model: 49          # gemini-3.5-flash-lite 23, swe-2-medium 8,
+                         # ollama-qwen38b-kkmac 6, gemini-2.5-flash 4, +8
+      executor: 37       # opencode 27, jules 5, kk_mac_local 4, nlm_batch 1
+      lane: 82           # classifier-stamped or explicitly pinned
+      task_class: 4
+    outcomes:
+      verified: {true: 374, false: 34}   # of 408 stamped; merge-gate
+                                         # semantics — NOT "routing was right"
+      status: {done: 1058, failed: 23, idle: 14, queued: 10, running: 3}
+      attempts_gt0: 54
+      last_failure: 34
+      retry_evidence_union: 66
+    comms_trail:
+      dispatched_events: 200   # 'dispatched <task_id>' lines, 166 cards
+      manual_lane_notes: 3
+    labelable_fraction:
+      work_type (triage surface): >-
+        text present on all 675 dispatch cards; rough keyword heuristic
+        multi-match = code-ish 353 / ops-ish 282 / docs-ish 261 /
+        research-ish 212 — heavy overlap proves boundary noise is real;
+        `clarify` has ~no natural positives (ambiguous asks die in chat
+        or focus-inbox, not as cards)
+      executor_lane (other surface): >-
+        lane stamped on 82; model/executor/repo weak labels on ~360;
+        verified/attempts give pass/fail per attempt
+
+  classify_lane_history:
+    stamped_cards: 82
+    why_so_few: >-
+      action.lane is only persisted when the classifier ran at claim
+      (JEV_LANE-gated) or a human pinned it; lane wiring landed
+      2026-10-25, so 593 of 675 dispatch cards predate it.
+    lane_x_outcome:
+      free_lane:     {n: 25, verified_true: 10, verified_false: 10, status_failed: 1, retries: 1}
+      paid_frontier: {n: 6,  verified_true: 3,  status_failed: 1, retries: 1}
+      devin:         {n: 36, verified_true: 18, status_failed: 10, retries: 1}
+      codemod:       {n: 12, verified_true: 5,  status_failed: 3, retries: 2}
+      jules:         {n: 3,  status_failed: 3,  retries: 0}
+    note: >-
+      devin-lane failed-status concentration (10/36) and free_lane
+      verified=False (10/25) are the interesting cells — but verified
+      here means merge-gate, and free_lane cards often produce no commit
+      by design (analysis/docs), so False != wrongly-routed.
+
+  retry_rails_negatives:
+    cards: 66              # attempts>0 (54) OR last_failure (34)
+    confounds: >-
+      retries also come from test-gate failures, dispatch crashes,
+      worktree/zombie-claim restarts — not just wrong lane. Reason
+      coding needs last_failure text (present on 34/66) + comms read.
+    use: candidate "wrongly-easy-routed" negative pool, needs adjudication
+
+  on_disk_task_outcomes:   # NOT in the card's listed sources — found live
+    path: ~/.local/share/devin-dispatch/tasks/ (this runner, idc02)
+    task_dirs: 739
+    plain_devin_dispatch: 490   # meta.json + exit_code only —
+                                # repo/branch/unit, NO lane/verdict
+    opencode_lane_attempts: 249 # meta+usage+verdict+manifest:
+                                # {card, executor, model, profile, lane,
+                                #  verdict, artifact_landed, tokens}
+    distinct_cards: 33          # pilot-skewed: video-render-dispatcher
+                                # family = 180/249 rows (72%)
+    verdicts: {fail: 199, pass: 17, skip: 4}
+    models: {gemini-3.5-flash-lite: 207, ollama-qwen38b-kkmac: 11,
+             or-claude-fable-5.1: 11, or-free-nemotron-nano: 4, +6}
+    note: >-
+      This IS the cascade-outcomes schema (lane_path + gate_verdicts +
+      final_pass), just file-per-attempt on each runner host instead of
+      mddb — and only this host's slice was counted; idc03/mn01/dell/omen
+      keep their own dirs. Verifier-graded labels, real but narrow.
+
+  adjacent_labeled_corpora:
+    card_judgment_v4:
+      path: scripts/bench/card-judgment/corpus-v4.jsonl
+      rows: 94    # category: correct 30, defer 30, act 26, observe 8
+      surface: board-review judgment — NOT dispatch triage; usable as
+               format reference + proof the corpus-build pattern works
+    decision_arena_50:
+      path: evals/results/jev/decision-arena-50.json
+      rows: 50    # confirm/noul arena results, different domain
+    existing_triage_hard:
+      path: ada-voice tests/bench/orch-triage-cases.jsonl
+      rows: 30    # already hand-labeled — proves (c) is proven process
+    focus_inbox:
+      path: docs/ssot/focus-inbox/*.yml
+      rows: 929   # raw operator-ask text, unlabeled — best `clarify`
+                  # and long-tail {turn} source once labels exist
+
+# ------------------------------------------------------------------
+# 2. Schema map — source fields -> suite row fields
+# ------------------------------------------------------------------
+schema_map:
+  text:   card title+brief (or task prompt.txt head) — trim to request phrase
+  kind:   constant 'triage'
+  label:  >-
+    NO direct source field — must be derived or assigned:
+    (a) rules on action.*+text, (b) arbiter model, (c) hand
+  set:    'triage'
+  slice:  assigned at append time (clear-* / boundary / harvest-<date>)
+  executor_surface_alternative: >-
+    If the specialist should predict LANE (which executor suffices)
+    instead of work-type, the suite's Choice criteria must change to
+    lane names — then the action.lane x attempts x verdict join
+    (82 card + 249 task-dir rows) is the natural label source and
+    options (a)/(b) shift underneath it. The registered suite tests
+    work-type; this is a spec decision, not a data problem.
+
+# ------------------------------------------------------------------
+# 3. Gap list
+# ------------------------------------------------------------------
+gaps:
+  - cascade-outcomes log is EMPTY — the designed P5 flywheel was never
+    built; instrumenting dispatch to append outcome rows is the real
+    upstream fix (writer change, not labeling).
+  - golden + adversarial tiers are spec-empty; golden is hand-labeled by
+    definition — no cheap strategy fills it alone.
+  - "'clarify' class has almost no positive corpus: ambiguous asks die in
+    chat/focus-inbox before becoming cards. Needs construction
+    (focus-inbox mining + arbiter, or Tony-written cases)."
+  - classifier-pick x outcome join exists for only 82/675 dispatch cards
+    (lane stamping is post-2026-10-25, JEV_LANE-gated).
+  - attempts>0 is a confounded negative signal (test gates, crashes,
+    zombie claims); only 34/66 carry last_failure reason text.
+  - opencode verdict rows are verifier-real but pilot-skewed (3 cards =
+    72% of 249) and single-host; other runners' dirs uncounted here.
+  - verified = merge-gate verdict, not "the routing was right" —
+    free_lane's 10 verified=False+done rows show the skew.
+
+# ------------------------------------------------------------------
+# 4. Labeling strategies — honest costs
+# ------------------------------------------------------------------
+labeling_strategies:
+
+  a_weak_supervision:
+    mechanism: >-
+      Script derives labels from action.type/repo/paths + LANE_KW-style
+      text rules; verified/attempts as outcome signal. One pass, no
+      model calls.
+    cost: '~1-2h agent scripting, $0 tokens, no human time'
+    yield: >-
+      ~600 noisy work-type labels (multi-tag overlap measured: code/
+      ops/docs/research each hit 30-50% of cards); clarify coverage ~0;
+      ≤330 executor-lane labels on the OTHER taxonomy.
+    noise: 'est. 15-30% label error on boundary cases; systematic on
+            clarify (absent) and ops-vs-code (overlap)'
+    verdict: cheapest, labels the wrong surface at scale for this suite —
+             right surface only if the suite flips to lane-prediction
+
+  b_arbiter_adjudication:
+    recommendation: '★ RECOMMENDED'
+    mechanism: >-
+      L2/L3 model (litellm/gemini-3.5-flash-lite free quota; paid_frontier
+      gemini-2.5-flash as fallback) labels each card's request text into
+      {code,docs,ops,research,clarify} + confidence; low-confidence rows
+      queue for human. Exactly the arbiter-label pass the
+      ssot.nest-training open_question proposes for diverged rows.
+    cost: >-
+      ~700-1400 Choice calls ≈ $0 on free-lane quota (<$0.15 paid worst
+      case at ~300 tok/call); ~2-3h agent to wire arbiter prompt +
+      emit orch-triage-cases.jsonl + sample the spot-check queue;
+      Tony spot-check ~100 rows x ~20-30s ≈ 30-50 min.
+    yield: >-
+      Full-corpus coverage INCLUDING clarify (arbiter can flag ambiguous
+      asks rules can't see); the mandatory human spot-check IS the
+      ~100-row hand-labeled sample, which doubles as the golden seed.
+    noise: 'est. ~85-92% agreement with human on clear slices; boundary
+            cases route to human by design — noise is surfaced, not buried'
+    verdict: >-
+      answers the standing "who labels the diverged queue" question for
+      ALL nest specialists, not just triage; reusable pass; spot-check
+      supplies the golden tier that (a) cannot produce.
+
+  c_hand_labeled_sample:
+    mechanism: 'Tony/agent hand-labels ~100 rows for the golden tier.'
+    cost: '~45-90 min human time (~20-30s/row); zero tokens'
+    yield: 'golden-quality labels by definition; golden seed only —
+            does not fill the hard tier bulk'
+    verdict: >-
+      required for golden REGARDLESS of the choice (suites.yml defines
+      golden as hand-labeled + card-reviewed); inside (b) it is the
+      spot-check step, so (b) subsumes it.
+
+decision: >-
+  ★ (b) arbiter adjudication — with (c) folded in as its human
+  spot-check (~100 rows covers the golden seed). (a) alone produces
+  volume on the wrong taxonomy and nothing for clarify; (c) alone
+  leaves the hard tier empty. Posted as a board request on
+  dispatch-triage-corpus-inventory for Tony to confirm.
+
+followups_if_approved:
+  - instrument dispatch (kanban-dispatch + runner-agent) to append
+    cascade-outcomes rows — the designed P5 flywheel is currently 0 rows
+  - mine focus-inbox (929 entries) for clarify/long-tail {turn} rows
+  - aggregate task-dir outcomes across runner hosts (249 rows on idc02
+    alone; idc03/mn01/dell/omen dirs uncounted)
+
+verify:
+  - 'curl -s -X POST http://100.102.134.91:11023/v1/search -d
+     {"collection":"cascade-outcomes","query":"","limit":5} -> []'
+  - 'python3 yaml-scan of docs/ssot/kanban/cards/**/*.yml (counts above)'
+  - 'ls ~/.local/share/devin-dispatch/tasks | wc -l -> 739'
+  - 'wc -l ada-voice:tests/bench/orch-triage-cases.jsonl -> 30'
+  - 'board request exists on dispatch-triage-corpus-inventory (comms)'
