@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: backlog
-updated: 2026-11-09 10:46
+updated: 2026-11-09 10:49
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -50,3 +50,10 @@ comms:
     to /v1/models; ephemeral LITELLM_KEY_BENCH mapping makes full gate probe litellm=true, litellm_authed=true.
     No rotation, secret output, or persistent config edit. Review draft at dell /home/tony/CascadeProjects/chaba-ops1255-review,
     branch fix/ops-1255-requalification (unco'
+- at: 2026-11-09 10:49
+  from: devin
+  text: Self-review completed; draft committed locally as 9fcecc83fb on fix/ops-1255-requalification in /home/tony/CascadeProjects/chaba-ops1255-review.
+    Not pushed/deployed. Added regressions and fixes for NaN/infinite/boolean/string human-watch metrics (hold rather
+    than promote/crash), incomplete final ledger record (hold even if valid JSON), and invalid boundary metadata.
+    Focused lane_gate/profile/session-audit suite now 131 tests passed; commit pre-hook full pytest tests/devnest
+    fast gate passed; dif
