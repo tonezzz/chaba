@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: doing
-updated: 2026-11-09 13:59
+updated: 2026-11-09 14:08
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -157,6 +157,13 @@ comms:
     filename-derived skip, incomplete-pack retry, 3/3 hard cap) was prepared on a local-only branch that never reached
     this worktree — re-implementing it here, plus full envelope normalization, Colab queue observation, and a per-cycle
     capacity ledger in the shared broker. No deploy from this worktree.
+- at: 2026-11-09 14:08
+  from: devin
+  text: 'DONE (code-side, no deploy): commit 7f4e4a37d4 on dispatch/20261109-135506-implement-a-shared-devnest-cap.
+    Re-implemented approved atomic-3-3 (ready-marker sealed staging, filename-derived skip, incomplete-pack retry,
+    3/3 hard caps) + full spec envelope normalization in broker, Colab lane observation (heartbeat/runtimes/pending/JOBS
+    drift), per-cycle capacity ledger at devnest/capacity/. Worker enforces markers: required on kk-llm, optional
+    elsewhere. 38 focused tests + 249 devnest green. Deploy'
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
