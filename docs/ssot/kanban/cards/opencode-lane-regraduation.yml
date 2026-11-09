@@ -100,6 +100,10 @@ comms:
 - at: 2026-11-09 11:16
   from: devin
   text: moved backlog -> doing
+- at: 2026-11-09 11:16
+  from: devin
+  text: 'raised request ops1255-s1-human-watch: S0 requalification passed at the configured 60% threshold with zero
+    safety flags; lane is now S1. Next is a read-only ca'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -118,3 +122,16 @@ requests:
   answer: 'Tony approved in chat: I approve please deploy and verify. Recorded by Devin on behalf of Tony. Deployment
     only completed via fa6b864ce9 on idc02, 131 tests pass, state/ledger hashes unchanged. No requalify, live counter
     reset or stage promotion.'
+- id: ops1255-s1-human-watch
+  ask: 'S0 requalification passed at the configured 60% threshold with zero safety flags; lane is now S1. Next is
+    a read-only canary that requires a real human watcher and positive recorded human_minutes, zero denials/escalations,
+    and verified artifact. Are you available to watch the next canary? Preparation must also add explicit watch-time
+    recording: the existing profile runner currently defaults human_minutes to zero. No S1 canary will run or watch
+    minutes be invented without actual observation.'
+  status: open
+  at: 2026-11-09 11:16
+  from: devin
+  options:
+  - available to watch next canary
+  - leave at S1 for later
+  suggested: available to watch next canary
