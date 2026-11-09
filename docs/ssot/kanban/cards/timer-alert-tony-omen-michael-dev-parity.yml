@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-michael-dev-parity
 title: Timer michael-dev-parity on tony-omen failing
 column: doing
-updated: 2026-11-09 09:49
+updated: 2026-11-09 09:51
 priority: high
 tags:
 - timer-alert
@@ -453,6 +453,10 @@ comms:
   text: 'merge-sweep: devin-task-20261109-093644-timer-michael-dev-parity-on-to failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261109-093644-timer-michael-dev-parity-on-to by
     hand.'
+- at: 2026-11-09 09:51
+  from: devin
+  text: '[still suspicious] Last run (11-09 06:15) of `michael-dev-parity.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u michael-dev-parity.service` on the host. See CMS `timer-timeline-tony-omen`.'
 action:
   status: failed
   type: dispatch
@@ -461,3 +465,5 @@ action:
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093644-timer-michael-dev-parity-on-to.service:
     Failed with result ''exit-code''. | devin-task-20261109-093644-timer-michael-dev-parity-on-to.service: Consumed
     3.698s CPU time.'
+  sweep:
+    failed_noted: 2026-11-09 09:49
