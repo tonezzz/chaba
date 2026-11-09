@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-timer-sentinel
 title: Timer timer-sentinel on tony-omen failing
 column: doing
-updated: 2026-11-09 13:54
+updated: 2026-11-09 13:57
 priority: high
 tags:
 - timer-alert
@@ -55,6 +55,13 @@ comms:
 - at: 2026-11-09 13:54
   from: devin
   text: latency probe 3 from sentinel investigation
+- at: 2026-11-09 13:57
+  from: devin
+  text: 'RCA (OPS-1261): not a sentinel bug on omen — board-api write congestion. ~85 serial writes x 30s timeout
+    vs TimeoutStartSec=180; kanban-commit on idc03 held git locks on the served checkout in both stall windows (11:00-11:03
+    failed run; 13:48-13:50 non-FF push retry). Sentinel calls queued -> killed at 180s -> it carded itself. board-api
+    healthy again (0.2s). Fix on dispatch branch: SENTINEL_BUDGET_SEC=150 wall-clock budget in timer-sentinel.py
+    — defers remaining idempotent writes to next tick, '
 action:
   type: dispatch
   status: running
