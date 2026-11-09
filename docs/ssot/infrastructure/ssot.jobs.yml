@@ -1447,6 +1447,41 @@ jobs:
     KK admission/load gates remain authoritative. Colab packs are staged but
     never launched by this broker; a fresh managed GPU and explicit queue
     start remain required. No synthetic filler or duplicate runner.'
+- id: ada-nest-heartbeat-tony-dell
+  name: Ada Nest heartbeat — tony-dell
+  host: tony_dell
+  dispatch: systemd
+  every: 5m
+  timeout: 30s
+  exec: /bin/sh %h/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh
+  env: {NEST_ROLE: job-runner}
+  note: 'OPS-1258 follow-on — all-host monitoring: every member device
+    phones home into MDDB ada-nest-heartbeats (age/load/disk/ollama/
+    cpu_temp_c); the nest-queue-health snapshot aggregates them.'
+- id: ada-nest-heartbeat-idc02
+  name: Ada Nest heartbeat — idc02
+  host: idc02
+  dispatch: systemd
+  every: 5m
+  timeout: 30s
+  exec: /bin/sh %h/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh
+  env: {NEST_ROLE: opencode-runner}
+- id: ada-nest-heartbeat-idc03
+  name: Ada Nest heartbeat — idc03
+  host: idc03
+  dispatch: systemd
+  every: 5m
+  timeout: 30s
+  exec: /bin/sh %h/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh
+  env: {NEST_ROLE: control-plane}
+- id: ada-nest-heartbeat-tony-omen
+  name: Ada Nest heartbeat — tony-omen
+  host: tony_omen
+  dispatch: systemd
+  every: 5m
+  timeout: 30s
+  exec: /bin/sh %h/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh
+  env: {NEST_ROLE: jev-decision}
 - id: nest-queue-health
   name: Nest queue health snapshot — ada-nest + kk-llm + video + KK worker
   host: tony_dell

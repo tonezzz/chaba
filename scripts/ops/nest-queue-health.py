@@ -110,6 +110,52 @@ def parse_hb(text):
     return epoch, state
 
 
+def _hb_ts(b):
+    try:
+        raw = b['ts']
+        return (float(raw) if isinstance(raw, (int, float)) else
+                datetime.fromisoformat(
+                    str(raw).replace('Z', '+00:00')).timestamp())
+    except (KeyError, TypeError, ValueError):
+        return 0.0
+
+
+def all_host_heartbeats(now):
+    """Every device in ada-nest-heartbeats -> compact per-host status."""
+    try:
+        docs = mddb_search('ada-nest-heartbeats')
+    except Exception as e:
+        return {'error': f'mddb: {e}'}
+    hosts = {}
+    for doc in docs:
+        try:
+            b = json.loads(doc.get('contentMd', '{}'))
+        except (TypeError, json.JSONDecodeError):
+            continue
+        host = b.get('host')
+        if not host:
+            continue
+        ts = _hb_ts(b)
+        prev = hosts.get(host)
+        if prev and prev.get('_ts', 0) >= ts:
+            continue
+        age = max(0, round(now - ts, 1)) if ts else None
+        hosts[host] = {
+            '_ts': ts,
+            'role': b.get('role'),
+            'age_s': age,
+            'stale': (age is None or age > KK_HB_STALE_S),
+            'ollama_ok': b.get('ollama_ok'),
+            'load_1m': b.get('load_1m'),
+            'disk_free_gb': b.get('disk_free_gb'),
+            'cpu_temp_c': b.get('cpu_temp_c'),
+            'node_busy': b.get('node_busy'),
+        }
+    for h in hosts.values():
+        h.pop('_ts', None)
+    return {'count': len(hosts), 'by_host': hosts}
+
+
 def mddb_search(collection, url=MDDB_URL):
     req = urllib.request.Request(
         url.rstrip('/') + '/search',
@@ -299,6 +345,7 @@ def main():
     snap['kk_worker'] = kk_worker_heartbeat(now)
     snap['kk_worker'].update(kk_thermal())
     snap['kk_llm'] = kk
+    snap['hosts'] = all_host_heartbeats(now)
 
     video = pack_stats(KK_VIDEO)
     vhb_epoch, vhb_state = parse_hb(cat(f'{KK_VIDEO}/queue/heartbeat'))
