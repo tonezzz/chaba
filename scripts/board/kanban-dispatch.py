@@ -660,7 +660,7 @@ def start_pending(path: Path) -> str:
     # classification stays out (executor=devin pins the devin path and
     # keeps action.model as the native devin id it declared).
     if not lane and JEV_LANE and not ex:
-        lane = classify_lane(card)
+        lane = classify_lane(card)[0]
         if lane:
             a["lane"] = lane
             # Persist the cheapest model too, so ANY claimer (runner-agent

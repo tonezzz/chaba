@@ -203,6 +203,44 @@ class LessonDoorTest(DoorTestBase):
         self.assertNotIn("ไทย", wp.posts[-1][1]["content"])
 
 
+class ActionQueueClassifyTest(DoorTestBase):
+    def test_kw_hit_codemod(self):
+        self.mod.dr.classify_lane = lambda card: ("codemod", "kw", 1.0)
+        card = {"id": "c1", "title": "do codemod things"}
+        res = self.mod.do_action(card, "queue", "test")
+        self.assertEqual(res, "queued — kanban-dispatch will claim it")
+        self.assertEqual(card["action"]["lane"], "codemod")
+        self.assertIsNone(card["action"].get("model"))
+        self.assertEqual(card["action"]["status"], "queued")
+        self.assertEqual(card["action"]["type"], "dispatch")
+        self.assertTrue(any("classified lane codemod via kw (conf: 1.00)" in c.get("text", "") for c in card.get("comms", [])))
+
+    def test_jevos_down_fallback(self):
+        self.mod.dr.classify_lane = lambda card: ("devin", "fallback", 0.0)
+        card = {"id": "c1", "title": "do things"}
+        res = self.mod.do_action(card, "queue", "test")
+        self.assertEqual(card["action"]["lane"], "devin")
+        self.assertEqual(card["action"]["status"], "queued")
+        self.assertTrue(any("classified lane devin via fallback (conf: 0.00)" in c.get("text", "") for c in card.get("comms", [])))
+
+    def test_explicit_action_model_wins(self):
+        card = {"id": "c1", "title": "do things", "action": {"lane": "some-lane", "model": "some-model"}}
+        self.mod.dr.classify_lane = lambda c: (self.fail("should not be called"), "", 0.0)
+        res = self.mod.do_action(card, "queue", "test")
+        self.assertEqual(card["action"]["lane"], "some-lane")
+        self.assertEqual(card["action"]["model"], "some-model")
+        self.assertEqual(card["action"]["status"], "queued")
+
+    def test_manual_refuses(self):
+        self.mod.dr.classify_lane = lambda card: ("manual", "kw", 1.0)
+        card = {"id": "c1", "title": "manual thing", "column": "doing", "action": {"status": "idle"}}
+        res = self.mod.do_action(card, "queue", "test")
+        self.assertEqual(res, "classified manual — not queued")
+        self.assertEqual(card["action"]["type"], "manual")
+        self.assertEqual(card["column"], "backlog")
+        self.assertEqual(card["action"]["status"], "idle")
+
+
 class JobDoorTest(DoorTestBase):
     def test_actor(self):
         j = self.mod.job_actor

@@ -2581,7 +2581,7 @@ def start_task(card: dict, typ: str) -> tuple:
             # with UnboundLocalError (OPS-0846 review 2026-10-25).
             lane = str(a.get("lane") or "")
             if not lane:
-                lane = classify_lane(card)
+                lane = classify_lane(card)[0]
                 if lane and lane != "manual":
                     a["lane"] = lane
                     if lane in LANE_MODELS and not a.get("model"):
@@ -2622,7 +2622,7 @@ def start_task(card: dict, typ: str) -> tuple:
         lane_models = getattr(dr, "LANE_MODELS", {}) if dr else {}
         if not lane and dr and getattr(dr, "classify_lane", None) \
                 and os.environ.get("JEV_LANE", "0") == "1":
-            lane = dr.classify_lane(card) or ""
+            lane = dr.classify_lane(card)[0] if dr.classify_lane(card) else ""
         if lane == "manual":
             return "", "", "manual lane — not dispatched (Tony's hands)"
         if lane in lane_models:
@@ -3110,7 +3110,7 @@ def claim_pass(st: dict) -> bool:
             # codemod/paid_frontier lanes (OPS-0885 miss class).
             lane = str(a.get("lane") or "")
             if not lane:
-                lane = classify_lane(card)
+                lane = classify_lane(card)[0]
             if lane == "manual":
                 continue
             a["lane"] = lane

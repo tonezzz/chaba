@@ -702,6 +702,16 @@ def do_action(card: dict, verb: str, frm: str) -> str:
     if verb == "queue":
         if st in ("queued", "running"):
             return f"already {st}"
+        if os.environ.get("BOARD_CLASSIFY_AT_QUEUE", "1") == "1" and not a.get("lane"):
+            lane, source, conf = dr.classify_lane(card)
+            a["lane"] = lane
+            if lane in getattr(dr, "LANE_MODELS", {}):
+                a["model"] = dr.LANE_MODELS[lane]
+            comms_add(card, frm, f"classified lane {lane} via {source} (conf: {conf:.2f})")
+            if lane == "manual":
+                a["type"] = "manual"
+                card["column"] = "backlog"
+                return "classified manual — not queued"
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         a.pop("runner", None)   # a re-queue after done/failed must be

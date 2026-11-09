@@ -90,7 +90,7 @@ class StartTaskLaneTest(unittest.TestCase):
     def test_unset_lane_classifies_and_persists(self):
         """Unset lane -> classify_lane result persisted on the action."""
         self.mod.OPENCODE_LANES = False
-        self.mod.classify_lane = lambda card: "paid_frontier"
+        self.mod.classify_lane = lambda card: ("paid_frontier", "kw", 1.0)
         card = _card()
         unit, tid, err = self.mod.start_task(card, "dispatch")
         self.assertEqual(err, "")
@@ -100,7 +100,7 @@ class StartTaskLaneTest(unittest.TestCase):
 
     def test_unset_lane_classified_free_lane_uses_opencode(self):
         self.mod.OPENCODE_LANES = True
-        self.mod.classify_lane = lambda card: "free_lane"
+        self.mod.classify_lane = lambda card: ("free_lane", "kw", 1.0)
         seen = []
         self.mod.start_opencode_lane = lambda card, lane, unit: (
             seen.append(lane) or ("devin-task-y", "y", ""))
@@ -148,7 +148,7 @@ class StartTaskLaneTest(unittest.TestCase):
 
     def test_classified_manual_is_refused_not_dispatched(self):
         """manual lane = Tony's hands — fail loudly, never burn tokens."""
-        self.mod.classify_lane = lambda card: "manual"
+        self.mod.classify_lane = lambda card: ("manual", "kw", 1.0)
         card = _card()
         unit, tid, err = self.mod.start_task(card, "dispatch")
         self.assertEqual(unit, "")
@@ -330,7 +330,7 @@ class ClaimPassLaneTest(unittest.TestCase):
             return {}
         m.api = fake_api
         m.classify_lane = lambda card: (
-            self.classified.append(card.get("id")) or "paid_frontier")
+            self.classified.append(card.get("id")) or ("paid_frontier", "kw", 1.0))
 
     def tearDown(self):
         m = self.mod
@@ -398,7 +398,7 @@ class ClaimPassScriptOnlyTest(unittest.TestCase):
         m.dr_module = lambda: None
         m.push_capable = lambda repo: True
         m.gpu_preflight = lambda card: ""
-        m.classify_lane = lambda card: "paid_frontier"
+        m.classify_lane = lambda card: ("paid_frontier", "kw", 1.0)
         self.posts = []
         self.cards = []
         self.defers = []

@@ -220,7 +220,7 @@ class StartTaskContractTest(unittest.TestCase):
             oc_calls.append(a) or ("u", "t", ""))
         cls = []
         self.mod.classify_lane = lambda card: (
-            cls.append(card) or "free_lane")
+            cls.append(card) or ("free_lane", "kw", 1.0))
         unit, tid, err = self.mod.start_task(
             _card(executor="devin", lane="free_lane",
                   agent_profile="ops-readonly"), "dispatch")
@@ -242,7 +242,7 @@ class StartTaskContractTest(unittest.TestCase):
     def test_no_executor_classifier_fallback(self):
         """No executor -> the old safe fallback: classifier decides."""
         self.mod.OPENCODE_LANES = False
-        self.mod.classify_lane = lambda card: "paid_frontier"
+        self.mod.classify_lane = lambda card: ("paid_frontier", "kw", 1.0)
         card = _card()
         unit, tid, err = self.mod.start_task(card, "dispatch")
         self.assertEqual(err, "")
@@ -799,7 +799,7 @@ class KkMacExecutorContractTest(unittest.TestCase):
         self.mod.KK_MAC_LANES = True
         self.mod.start_kk_mac_lane = lambda card, unit: (
             self.mod.KK_MAC_FALLBACK, "", "ineligible: heartbeat_stale")
-        self.mod.classify_lane = lambda card: "devin"
+        self.mod.classify_lane = lambda card: ("devin", "kw", 1.0)
         unit, tid, err = self.mod.start_task(self._kk_card(), "dispatch")
         self.assertEqual(err, "")
         self.assertEqual(unit, "devin-task-fake-tid-9")
@@ -810,7 +810,7 @@ class KkMacExecutorContractTest(unittest.TestCase):
 
     def test_start_unservable_goes_next_lane(self):
         self.mod.KK_MAC_LANES = False
-        self.mod.classify_lane = lambda card: "devin"
+        self.mod.classify_lane = lambda card: ("devin", "kw", 1.0)
         unit, tid, err = self.mod.start_task(self._kk_card(), "dispatch")
         self.assertEqual(err, "")
         self.assertEqual(unit, "devin-task-fake-tid-9")
