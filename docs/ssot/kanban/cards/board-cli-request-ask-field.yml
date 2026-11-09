@@ -1,7 +1,7 @@
 id: board-cli-request-ask-field
 title: Fix board-cli request subcommand — posts 'text' but API expects 'ask'
 column: backlog
-updated: 2026-11-09 09:26
+updated: 2026-11-09 11:03
 brief: 'board-cli.py request subcommand POSTs {text: ...} to /request, but do_request() reads body[''ask''] — every
   ''board-cli request'' returns HTTP 400 ''ask required''. Confirmed identical bug in dell and idc03 checkouts (line
   ~168). One-word fix in the payload dict. Requests meanwhile go via curl with ''ask'' — workaround proven 2026-11-09
@@ -18,3 +18,9 @@ comms:
 - at: 2026-11-09 09:26
   from: tony
   text: card captured via board-api
+- at: 2026-11-09 11:03
+  from: devin
+  text: 'Additional verified CLI mismatch during OPS-1255 approval recording: respond sends request_id/from/text
+    but omits card id; API documents POST /respond {id,request_id,answer,from}. CLI respond returned HTTP 400. Direct
+    /respond with id=opencode-lane-regraduation used as workaround. Include card-id routing in regression coverage
+    along with request ask field; text remains accepted by do_respond.'
