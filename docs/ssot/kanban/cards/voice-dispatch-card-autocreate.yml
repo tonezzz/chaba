@@ -1,7 +1,7 @@
 id: voice-dispatch-card-autocreate
 title: Voice dispatch auto-card — Ada's devin_dispatch files a queued card instead of bare start
 column: doing
-updated: 2026-11-09 18:16
+updated: 2026-11-09 18:18
 brief: 'Ada''s voice/chat devin_dispatch path (ada-voice backend/devin_dispatch.py → ssh devin-dispatch start) bypasses
   the entire tuned kanban path: no card, no KNOWN_PITFALLS primer, no card comms, no RETRY_RAILS, no board visibility.
   Tony''s decision (2026-11-09): voice dispatches auto-create a queued kanban card and ride the normal dispatch
@@ -54,7 +54,7 @@ spec: 'Repo: ada-voice (primary change). Files: backend/devin_dispatch.py, backe
 action:
   type: dispatch
   repo: ada-voice
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 16:09
   executor: devin
@@ -62,6 +62,7 @@ action:
     Main process exited, code=exited, status=1/FAILURE | devin-task-voice-dispatch-card-autocreate-1794214565.service:
     Failed with result ''exit-code''.'
   attempts: 1
+  runner: idc02
 ref: ADA-1273
 comms:
 - at: 2026-11-09 15:44
@@ -147,3 +148,6 @@ comms:
 - at: 2026-11-09 18:16
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:18
+  from: idc02
+  text: claimed
