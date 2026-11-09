@@ -1,7 +1,7 @@
 id: lesson-qc-sweep
 title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
 column: review
-updated: 2026-11-09 16:22
+updated: 2026-11-09 17:23
 brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
   an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
   publishes a report. Advisory only — it never deletes.'
@@ -123,5 +123,10 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261109-155049-new-script-scripts-board-lesso on tony-omen still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 17:23
+  from: devin
+  text: 'note: held test-gate failure is environmental — test_patch_state_vs_checkout fails on plain master on tony-omen
+    too (live ada-voice checkout diverged from write-fidelity.patch; unrelated to this card). Leftover assessment
+    file committed + pushed; branch head 2ac2cbd7 on origin.'
 review_kind: verify
 claim: {}
