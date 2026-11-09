@@ -1,7 +1,7 @@
 id: rotate-ada-code-litellm-key-20261109
 title: Rotate exposed Ada-code LiteLLM key without weakening budget controls
 column: doing
-updated: 2026-11-09 18:22
+updated: 2026-11-09 18:27
 priority: high
 program: ai-workforce
 tags:
@@ -39,3 +39,10 @@ comms:
     preserves model permissions, and inherits tier schedule. Pending credential is stored only as LITELLM_KEY_ADA_PENDING_SEC1286
     in the existing idc03 secret env; no values in comms. Old ada remains blocked/401. Confirmed old references:
     idc02 litellm-keys.env ADA and ada-code.env LITEL'
+- at: 2026-11-09 18:27
+  from: devin
+  text: 'Rotation checkpoint: new ada-sec1286 remains BLOCKED; Dec1 budget and carried spend verified. Promoted
+    LITELLM_KEY_ADA in existing key envs on idc02, idc03 and macbook; dell had no old matching reference. Consumer
+    ada-code restart command returned nonzero, although systemd now reports active/running, Result=success, ExecMainStatus=0.
+    Activation was NOT reached. Critical: updater changed only idc02 litellm-keys.env, NOT ada-code.env despite
+    earlier inventory matching LITELLM_KEY there; diagnose r'
