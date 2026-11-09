@@ -1,7 +1,7 @@
 id: devnest-capacity-aware-dispatch
 title: Build shared DevNest capacity-aware dispatcher
 column: doing
-updated: 2026-11-09 13:55
+updated: 2026-11-09 13:59
 brief: Keep KK-Mac and Colab productive when eligible by converting real ready work into normalized lane packages
   before capacity appears.
 priority: high
@@ -151,6 +151,12 @@ comms:
 - at: 2026-11-09 13:55
   from: chaba
   text: started devin-task-20261109-135506-implement-a-shared-devnest-cap on tony-omen (dispatch)
+- at: 2026-11-09 13:59
+  from: devin
+  text: Dispatch picked up. Prior broker/feed/producer v1 exist; the approved atomic-3-3 fix (ready-marker staging,
+    filename-derived skip, incomplete-pack retry, 3/3 hard cap) was prepared on a local-only branch that never reached
+    this worktree — re-implementing it here, plus full envelope normalization, Colab queue observation, and a per-cycle
+    capacity ledger in the shared broker. No deploy from this worktree.
 requests:
 - id: producer-staging-timeout-recovery-20261031
   ask: 'Live flow is enabled: the three timers are active, KK admission was eligible (78 GB free, load 3.54, not
