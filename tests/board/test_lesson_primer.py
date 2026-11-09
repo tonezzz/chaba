@@ -14,11 +14,14 @@ Runs against a synthetic repo root in tmp; no dispatch, no git.
 from __future__ import annotations
 
 import importlib.util
+import io
+import json
 import os
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -265,6 +268,111 @@ class GoodPrimerTest(unittest.TestCase):
             "work:", block)
         self.assertIn("- [c] a", block)
         self.assertNotIn("KNOWN_PITFALLS", block)
+
+
+class BankPrimerTest(unittest.TestCase):
+    """mddb devin-handoff bank source (cross-repo-lesson-harvest):
+    kind=lesson docs ride /v1/search, ~60s cache, fail-open, rank 0 —
+    the repo-agnostic corpus for dispatches whose outcome docs land
+    outside the chaba checkout."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.mod = _load()
+
+    def setUp(self):
+        self.mod._BANK_CACHE[0] = 0.0
+        self.mod._BANK_CACHE[1] = []
+
+    def _fake_urlopen(self, docs, calls=None):
+        def fake(req, timeout=0):
+            if calls is not None:
+                calls.append((req.full_url, json.loads(req.data)))
+            return io.BytesIO(json.dumps(docs).encode())
+        return fake
+
+    def test_bank_lesson_surfaces(self):
+        docs = [{"key": f"lesson/{t}/0", "lang": "en",
+                 "contentMd": "GOTCHA: whisper bench fails on ada-voice "
+                              "remote checkouts",
+                 "meta": {"kind": ["lesson"]}}
+                for t in ("20991101-a", "20991101-b")]
+        with tempfile.TemporaryDirectory() as td:
+            root = _mkroot(Path(td))
+            card = {"id": "voice-bench", "title": "whisper bench rerun",
+                    "spec": "run the whisper bench on the gpu host",
+                    "action": {"repo": "ada-voice"}}
+            with mock.patch.object(self.mod.urllib.request, "urlopen",
+                                   self._fake_urlopen(docs)):
+                lines = self.mod.build(card, "tony-omen", "ada-voice",
+                                       root)
+        joined = "\n".join(lines)
+        self.assertIn("remote checkouts", joined)
+        # rank-0 parity: the outcome-doc lesson still surfaces too
+        self.assertIn("never run two sessions on one GPU", joined)
+
+    def test_bank_search_request_shape(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as td:
+            root = _mkroot(Path(td))
+            with mock.patch.object(
+                    self.mod.urllib.request, "urlopen",
+                    self._fake_urlopen([], calls)):
+                self.mod.build({"id": "x", "spec": "whisper bench",
+                                "action": {}}, "h", "r", root)
+        self.assertEqual(len(calls), 1)
+        url, body = calls[0]
+        self.assertTrue(url.endswith("/search"), url)
+        self.assertEqual(body["collection"], self.mod.BANK_COLLECTION)
+        self.assertEqual(body["filterMeta"], {"kind": ["lesson"]})
+
+    def test_bank_unreachable_fails_open(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = _mkroot(Path(td))
+            card = {"id": "voice-bench", "title": "whisper bench",
+                    "spec": "run the whisper bench", "action": {}}
+
+            def boom(req, timeout=0):
+                raise OSError("mddb down")
+
+            with mock.patch.object(self.mod.urllib.request, "urlopen",
+                                   boom):
+                lines = self.mod.build(card, "tony-omen", "ada-voice",
+                                       root)
+        # outcome-doc fallback still supplies lines
+        self.assertIn("never run two sessions on one GPU",
+                      "\n".join(lines))
+
+    def test_bank_cache_ttl(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as td:
+            root = _mkroot(Path(td))
+            card = {"id": "x", "spec": "whisper bench", "action": {}}
+            with mock.patch.object(
+                    self.mod.urllib.request, "urlopen",
+                    self._fake_urlopen([], calls)):
+                self.mod.build(card, "h", "r", root)
+                self.mod.build(card, "h", "r", root)
+        self.assertEqual(len(calls), 1)   # second build rides the cache
+
+    def test_bank_env_off(self):
+        saved = os.environ.get("LESSON_BANK")
+        os.environ["LESSON_BANK"] = "0"
+        try:
+            calls = []
+            with tempfile.TemporaryDirectory() as td:
+                root = _mkroot(Path(td))
+                with mock.patch.object(
+                        self.mod.urllib.request, "urlopen",
+                        self._fake_urlopen([], calls)):
+                    self.mod.build({"id": "x", "spec": "whisper bench",
+                                    "action": {}}, "h", "r", root)
+            self.assertEqual(calls, [])
+        finally:
+            if saved is None:
+                os.environ.pop("LESSON_BANK", None)
+            else:
+                os.environ["LESSON_BANK"] = saved
 
 
 def _load_dispatch():

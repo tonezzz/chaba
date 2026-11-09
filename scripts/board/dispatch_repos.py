@@ -20,6 +20,10 @@ Consumers:
   scripts/board/runner-agent.py    — close_out merge + worktree GC at
                                      card close + the same claim order
                                      via dr_module()
+
+close_out also banks each session outcome doc's ``lessons:`` lines into
+the mddb devin-handoff collection (cross-repo-lesson-harvest) — the
+repo-agnostic corpus lesson_primer reads back over /v1/search.
 """
 import base64
 import json
@@ -1500,6 +1504,117 @@ def _merge_and_gate(mwt: Path, mref: str, repo_name: str,
     return True, [], "", tests, []
 
 
+# ------------------------------------------------------- lesson bank
+#
+# cross-repo-lesson-harvest: lesson_primer's outcome-doc corpus was a
+# chaba-checkout glob — dispatch-outcome-*.md written inside ada-voice /
+# sunsynk-card / mddb-fork worktrees never reached it. close_out is the
+# one place every dispatch passes with task_id + worktree both in scope
+# (runner-agent runs it on the runner before reporting finish;
+# kanban-dispatch runs it for local claims), so this is where the
+# `lessons:` list gets banked: each line POSTs to the mddb devin-handoff
+# collection as lesson/<task_id>/<n> (kind=lesson) and the primer reads
+# the corpus back over /v1/search. Upsert-by-key dedupes re-runs.
+# Best-effort, same posture as devin-dispatch.sh's mddb_job: a bank
+# write must NEVER block or fail the merge — every error is a stderr
+# warn riding the result as lesson_bank.error. LESSON_BANK=0 disables.
+
+MDDB = os.environ.get(
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+LESSON_BANK = os.environ.get(
+    "LESSON_BANK_COLLECTION", "ada-ha-bank-devin-handoff")
+
+
+def _outcome_lesson_lines(text: str) -> list:
+    """`lessons:` list items out of a dispatch-outcome doc — the parse
+    lesson_primer._outcome_candidates applies (kept local: this module
+    is imported by runners where the primer may not exist)."""
+    lines = text.splitlines()
+    out = []
+    for i, ln in enumerate(lines):
+        if not re.match(r"^\s*lessons:\s*$", ln):
+            continue
+        for item in lines[i + 1:]:
+            m = re.match(r"^\s*-\s+(.+)$", item)
+            if not m:
+                break
+            line = m.group(1).strip()
+            if line:
+                out.append(line)
+    return out
+
+
+def bank_outcome_lessons(card: dict, s: dict) -> dict:
+    """Bank the session outcome doc's `lessons:` lines into the
+    devin-handoff mddb collection — one doc per line keyed
+    lesson/<task_id>/<n>, so re-runs upsert instead of duplicating.
+
+    Result: {ran, docs, error?}. Never raises, never blocks: the bank
+    write is advisory like mddb_job — close-out goes on without it."""
+    if os.environ.get("LESSON_BANK", "1") == "0":
+        return {"ran": False}
+    tid = str(s.get("task_id") or "")
+    if not tid:
+        return {"ran": False}
+    try:
+        texts = []
+        wt = s.get("worktree")
+        if wt:
+            for p in sorted(Path(wt).glob("dispatch-outcome*.md")):
+                try:
+                    texts.append(p.read_text(errors="replace"))
+                except Exception:
+                    continue
+        if not texts and s.get("repo_root") and s.get("branch"):
+            # worktree already gone — outcome docs ride the session
+            # branch (SESSION_SCRATCH_RE); read them off the ref.
+            r = sh(["git", "-C", str(s["repo_root"]), "ls-tree", "-r",
+                    "--name-only", s["branch"]], timeout=30)
+            for name in sorted((r.stdout or "").splitlines()):
+                if not SESSION_SCRATCH_RE.match(name):
+                    continue
+                rr = sh(["git", "-C", str(s["repo_root"]), "show",
+                         f"{s['branch']}:{name}"], timeout=30)
+                if rr.returncode == 0:
+                    texts.append(rr.stdout or "")
+        lines = []
+        for t in texts:
+            lines += _outcome_lesson_lines(t)
+        if not lines:
+            return {"ran": True, "docs": 0}
+        now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        repo = str(s.get("repo_name") or
+                   (card.get("action") or {}).get("repo") or "")
+        cid = str(card.get("id") or "")
+        posted = 0
+        for n, line in enumerate(lines):
+            meta = {"kind": ["lesson"], "job_id": [tid], "ts": [now],
+                    "source": ["dispatch-outcome"],
+                    "written_by": ["dispatch-close-out"]}
+            if repo:
+                meta["repo"] = [repo]
+            if cid:
+                meta["card"] = [cid]
+            doc = {"collection": LESSON_BANK,
+                   "key": f"lesson/{tid}/{n}",
+                   "lang": "en", "contentMd": line[:500], "meta": meta}
+            try:
+                req = urllib.request.Request(
+                    f"{MDDB}/add", data=json.dumps(doc).encode(),
+                    headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=10).read()
+                posted += 1
+            except Exception as e:
+                print(f"warn: lesson bank write failed "
+                      f"(lesson/{tid}/{n}): {e}", file=sys.stderr)
+                return {"ran": True, "docs": posted,
+                        "error": str(e)[:160]}
+        return {"ran": True, "docs": posted}
+    except Exception as e:
+        print(f"warn: lesson bank harvest failed: {e}", file=sys.stderr)
+        return {"ran": True, "docs": 0, "error": str(e)[:160]}
+
+
 def close_out(card: dict) -> dict:
     """Dispatch close-out merge step. Consumed by close_out_notes().
 
@@ -1507,7 +1622,9 @@ def close_out(card: dict) -> dict:
     checkpoint, pushed/push_error, gate, conflicts, shadows (pre-push
     gitignored-dir shadow guard), merged_sha,
     tests/test_failures (post-merge test gate), skipped|error, note,
-    session, executor/provider/model/profile (from task meta)."""
+    session, executor/provider/model/profile (from task meta),
+    lesson_bank (best-effort mddb harvest of the outcome doc's
+    lessons: lines — advisory, never gates the merge)."""
     out: dict = {"merged": False}
     s = session(card)
     out["session"] = s
@@ -1517,6 +1634,9 @@ def close_out(card: dict) -> dict:
     if not s.get("task_id") and not s.get("branch"):
         out.update(noop=True, skipped="not a dispatch session")
         return out
+    # Bank the outcome doc's lessons: lines while the worktree is still
+    # reachable — repo-agnostic corpus, best-effort, never gates.
+    out["lesson_bank"] = bank_outcome_lessons(card, s)
     if not s.get("repo_root"):
         out.update(skipped=f"no session repo for {s['task_id'] or '?'}")
         return out
@@ -1664,6 +1784,10 @@ def close_out_notes(res: dict) -> list:
                      f"{cp['files']} leftover file(s) committed")
     elif cp.get("error"):
         notes.append(f"checkpoint failed: {cp['error']}")
+    lb = res.get("lesson_bank") or {}
+    if lb.get("docs"):
+        notes.append(f"banked {lb['docs']} outcome lesson(s) → "
+                     "devin-handoff bank")
     if res.get("push_error"):
         notes.append(f"branch push failed: {res['push_error']}")
     elif res.get("pushed") and (res.get("session") or {}).get("branch"):

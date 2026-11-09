@@ -362,6 +362,109 @@ class Case(unittest.TestCase):
         self.assertFalse(res["merged"])
         self.assertTrue(res.get("skipped"))
 
+    # ---------------------------------------------------- lesson bank
+    # cross-repo-lesson-harvest: close_out banks the session outcome
+    # doc's lessons: lines into the devin-handoff mddb collection so
+    # non-chaba repos' lessons reach the primer corpus.
+
+    def test_lessons_banked_at_close_out(self):
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        (self.wt / "dispatch-outcome-x.md").write_text(
+            "# outcome\n\nlessons:\n"
+            "- git gotcha one never do x\n"
+            "- second lesson line\n\n## tail\n")
+
+        posts = []
+
+        def fake_urlopen(req, timeout=0):
+            posts.append((req.full_url, json.loads(req.data)))
+
+            class _R:
+                def read(self):
+                    return b"{}"
+            return _R()
+
+        with mock.patch.object(dr.urllib.request, "urlopen",
+                               fake_urlopen):
+            res = dr.close_out(self.card)
+
+        self.assertTrue(res["merged"], res)
+        adds = [b for u, b in posts if u.endswith("/add")
+                and b.get("collection") == dr.LESSON_BANK]
+        self.assertEqual([d["key"] for d in adds],
+                         [f"lesson/{TID}/0", f"lesson/{TID}/1"])
+        self.assertEqual(adds[0]["contentMd"],
+                         "git gotcha one never do x")
+        meta = adds[0]["meta"]
+        self.assertEqual(meta["kind"], ["lesson"])
+        self.assertEqual(meta["job_id"], [TID])
+        self.assertEqual(meta["card"], ["test-card"])
+        self.assertEqual(meta["repo"], ["chaba"])
+        self.assertEqual(meta["source"], ["dispatch-outcome"])
+        lb = res.get("lesson_bank") or {}
+        self.assertEqual(lb.get("docs"), 2)
+        self.assertTrue(any("banked 2 outcome lesson" in n
+                            for n in dr.close_out_notes(res)))
+
+        # dedupe by key: a second close_out re-POSTs the same keys —
+        # mddb upserts by key, so re-runs can't duplicate
+        posts.clear()
+        with mock.patch.object(dr.urllib.request, "urlopen",
+                               fake_urlopen):
+            dr.close_out(self.card)
+        adds2 = [b for u, b in posts if u.endswith("/add")
+                 and b.get("collection") == dr.LESSON_BANK]
+        self.assertEqual([d["key"] for d in adds2],
+                         [f"lesson/{TID}/0", f"lesson/{TID}/1"])
+
+    def test_lesson_bank_failure_never_blocks(self):
+        # mddb down -> stderr warn + lesson_bank.error, merge unaffected
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        (self.wt / "dispatch-outcome-x.md").write_text(
+            "lessons:\n- a lesson line\n")
+
+        def boom(req, timeout=0):
+            raise OSError("mddb down")
+
+        with mock.patch.object(dr.urllib.request, "urlopen", boom):
+            res = dr.close_out(self.card)
+        self.assertTrue(res["merged"], res)
+        lb = res.get("lesson_bank") or {}
+        self.assertEqual(lb.get("docs"), 0)
+        self.assertTrue(lb.get("error"), lb)
+
+    def test_lessons_banked_from_branch_when_worktree_gone(self):
+        # runner-agent path leaves the worktree; a later close_out on a
+        # host where only the branch survives still banks the lessons.
+        commit(self.wt, "feature.py", "x=1\n", "work")
+        (self.wt / "dispatch-outcome-x.md").write_text(
+            "lessons:\n- branch-resident lesson\n")
+        subprocess.run(["git", "-C", str(self.wt), "add",
+                        "dispatch-outcome-x.md"], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.wt), "-c", "user.name=t",
+             "-c", "user.email=t@t", "commit", "-qm", "outcome"],
+            check=True)
+        posts = []
+
+        def fake_urlopen(req, timeout=0):
+            posts.append((req.full_url, json.loads(req.data)))
+
+            class _R:
+                def read(self):
+                    return b"{}"
+            return _R()
+
+        s = dr.session(self.card)
+        self.assertTrue(s.get("worktree"))
+        s["worktree"] = None            # simulate GC'd worktree
+        with mock.patch.object(dr.urllib.request, "urlopen",
+                               fake_urlopen):
+            lb = dr.bank_outcome_lessons(self.card, s)
+        self.assertEqual(lb.get("docs"), 1, lb)
+        self.assertEqual(posts[0][1]["contentMd"],
+                         "branch-resident lesson")
+
     # ---------------------------------------------------- patch relay
     # runner-push-cred-gap (the 2026-10-14 ADA-0673 incident): a runner
     # whose creds don't cover the repo finishes, can't push, and relays

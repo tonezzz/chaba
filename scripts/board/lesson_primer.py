@@ -8,7 +8,17 @@ closes the loop by injecting the top-K lesson lines matching the card's
 Sources, in rank order:
 
   1. dispatch-outcome-*.md ``lessons:`` lists — self-seeded: TASK_RAILS
-     tells every session to write short gotcha lines there.
+     tells every session to write short gotcha lines there. Kept as the
+     fallback corpus for chaba-local docs that predate bank writes.
+  1b. the mddb devin-handoff bank — kind=lesson docs that
+     dispatch_repos.bank_outcome_lessons POSTs at every dispatch
+     close-out, keyed lesson/<task_id>/<n>. This is the repo-agnostic
+     corpus (cross-repo-lesson-harvest): outcome docs written inside
+     ada-voice / sunsynk-card / mddb-fork checkouts never reach the
+     chaba-root glob but DO reach the bank. Fetched over /v1/search
+     (base MDDB_BASE_URL, default http://100.102.134.91:11023/v1 — the
+     kanban-dispatch convention), ~60s in-process cache, fail-open
+     with a stderr warn when unreachable. LESSON_BANK=0 disables.
   2. docs/ssot/jobs/**/*.yml — fields named method_notes / side_findings /
      gotchas / lessons / pitfalls (any depth), split into signal lines.
   3. kanban card comms matching gotcha|failed|lesson|do NOT|never|...
@@ -34,8 +44,12 @@ a KNOWN_GOOD block via format_good_block(); KANBAN_PRIMER_GOOD=0
 disables. Both channels share _select() so eligibility/scoring stays in
 one place (the scoring-fixes card edits it once for both).
 """
+import json
+import os
 import re
+import sys
 import time
+import urllib.request
 from pathlib import Path
 
 import yaml
@@ -63,6 +77,18 @@ LESSON_KEYS = {"method_notes", "side_findings", "gotchas", "lessons",
 KEY_RE = re.compile(r"gotcha|lesson|pitfall|fail", re.I)
 
 COMMS_RE = re.compile(r"gotcha|failed|lesson|do not|never", re.I)
+
+# Lesson bank (cross-repo-lesson-harvest): kind=lesson docs in the
+# devin-handoff collection — written by dispatch_repos.bank_outcome_lessons
+# at every close-out, keyed lesson/<task_id>/<n>. Same MDDB_BASE_URL
+# convention as kanban-dispatch.
+MDDB = os.environ.get(
+    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+BANK_COLLECTION = os.environ.get(
+    "LESSON_BANK_COLLECTION", "ada-ha-bank-devin-handoff")
+BANK_LIMIT = 500              # kind=lesson docs fetched per refresh
+BANK_TTL = 60                 # seconds between /v1/search refreshes
+_BANK_CACHE = [0.0, []]       # [fetched_at, docs] — also caches failures
 
 STOPWORDS = {
     "this", "that", "with", "from", "into", "when", "then", "than",
@@ -199,6 +225,46 @@ def _outcome_candidates(root: Path) -> list:
     return out
 
 
+def _bank_docs() -> list:
+    """kind=lesson docs from the devin-handoff bank, BANK_TTL-cached.
+    Fail-open: an unreachable bank warns on stderr (at most once per
+    TTL) and yields no docs — the primer must never stall a dispatch
+    on mddb. LESSON_BANK=0 disables the source."""
+    if os.environ.get("LESSON_BANK", "1") == "0":
+        return []
+    now = time.time()
+    if now - _BANK_CACHE[0] < BANK_TTL:
+        return list(_BANK_CACHE[1])
+    try:
+        req = urllib.request.Request(
+            f"{MDDB}/search",
+            data=json.dumps({
+                "collection": BANK_COLLECTION,
+                "filterMeta": {"kind": ["lesson"]},
+                "limit": BANK_LIMIT}).encode(),
+            headers={"Content-Type": "application/json"})
+        body = json.load(urllib.request.urlopen(req, timeout=10))
+        docs = body if isinstance(body, list) else []
+    except Exception as e:
+        print(f"warn: lesson bank unreachable: {e}", file=sys.stderr)
+        docs = []
+    _BANK_CACHE[0], _BANK_CACHE[1] = now, docs
+    return list(docs)
+
+
+def _bank_candidates() -> list:
+    """Bank lessons at outcome-doc rank — each contentMd line was
+    already extracted from a `lessons:` list at close-out, so no
+    signal re-filter. src is the doc key (non-Path -> never stale)."""
+    out = []
+    for d in _bank_docs():
+        for ln in str(d.get("contentMd") or "").splitlines():
+            ln = ln.strip()
+            if ln:
+                out.append((_clip(ln), 0, d.get("key") or "bank"))
+    return out
+
+
 def _kb_candidates(root: Path, kws: set) -> list:
     """Runbook pointer lines when title+abstract shares >=2 keywords."""
     out = []
@@ -228,8 +294,11 @@ def _kb_candidates(root: Path, kws: set) -> list:
     return out
 
 
-def _stale(path: Path, now: float) -> bool:
-    """Source file untouched for >STALE_DAYS -> its lines score -1."""
+def _stale(path, now: float) -> bool:
+    """Source file untouched for >STALE_DAYS -> its lines score -1.
+    Non-path sources (bank doc keys) carry no mtime — never stale."""
+    if not isinstance(path, Path):
+        return False
     try:
         return (now - path.stat().st_mtime) > STALE_DAYS * 86400
     except OSError:
@@ -277,8 +346,9 @@ def build(card: dict, host: str, repo: str = "",
     root = Path(root) if root else Path(__file__).resolve().parents[2]
     task_kws, host_repo_kws = keywords(card, host, repo)
     kws = task_kws | host_repo_kws
-    cands = (_outcome_candidates(root) + _job_candidates(root)
-             + _comms_candidates(root) + _kb_candidates(root, kws))
+    cands = (_outcome_candidates(root) + _bank_candidates()
+             + _job_candidates(root) + _comms_candidates(root)
+             + _kb_candidates(root, kws))
     return _select(cands, card, host, repo, MAX_LINES, MAX_CHARS)
 
 
