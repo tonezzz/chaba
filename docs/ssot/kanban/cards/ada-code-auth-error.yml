@@ -1,7 +1,7 @@
 id: ada-code-auth-error
 title: ada-code authentication error — investigate scope + fix
 column: backlog
-updated: 2026-11-09 17:47
+updated: 2026-11-09 17:52
 priority: high
 tags:
 - ada
@@ -28,3 +28,10 @@ comms:
     enroll restarted 12:27 (prior instance exit 137), container healthy, PublishPort 127.0.0.1:8378:8080, env complete
     (CF_ACCESS_AUDIENCE+JWKS present, cookie ada_opencode_sess). Local :8378 → 401 is CORRECT (REQUIRE_EDGE_HEADER=1
     — unauthenticated is by design). Cosmetic: server.mjs SCOPE'
+- at: 2026-11-09 17:52
+  from: devin
+  text: 'FIXED 2026-11-09 17:52 +07: root cause = crash-loop, not CF. server.mjs line ~227 set x-forwarded-for to
+    req.socket.remoteAddress unguarded — sockets without remoteAddress threw ERR_HTTP_INVALID_HEADER_VALUE, killing
+    the process (audit showed 4+ boots today). Patched (guard added), rebuilt localhost/ada-enroll on idc02, ada-code-enroll
+    restarted on the fixed image — active. Source fix committed on writer (3a6d7f1e01). NOTE: jack-enroll:latest
+    is the same crashing code — needs the same rebuild wh'
