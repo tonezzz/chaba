@@ -1447,6 +1447,19 @@ jobs:
     KK admission/load gates remain authoritative. Colab packs are staged but
     never launched by this broker; a fresh managed GPU and explicit queue
     start remain required. No synthetic filler or duplicate runner.'
+- id: nest-queue-health
+  name: Nest queue health snapshot — ada-nest + kk-llm + video + KK worker
+  host: tony_dell
+  dispatch: systemd
+  every: 2m
+  timeout: 3m
+  persistent: false
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ops/nest-queue-health.py --quiet
+  note: 'OPS-1258 — writes ~/var/chaba/health/nest-queue-status.json
+    (bind-mounted read-only into Node-RED as /var/chaba-health). Covers the
+    general queue plus kk-llm pack counts, kk-mac-video-pilot pack counts,
+    and the KK-Mac worker heartbeat from MDDB ada-nest-heartbeats. Read-only;
+    always exits 0.'
 - id: devnest-report-feed
   name: DevNest durable report feed
   host: tony_dell
