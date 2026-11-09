@@ -261,6 +261,9 @@ def main():
     ap.add_argument("--temperature", type=float, default=0.0,
                     help=">0 for consecutive-run variance (T3 gate needs 3 independent passes)")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--delay", type=float, default=0.0,
+                    help="sleep seconds between cases — stay under free-lane "
+                    "RPM windows (429 bursts show as parse-fail otherwise)")
     ap.add_argument("--briefs", default="",
                     help="per-case job briefs json from brief_builder.py "
                     "--corpus-briefs (leave-one-out); injects job_brief "
@@ -283,6 +286,8 @@ def main():
             fails += 1
         print(f"[{i}/{len(cases)}] {c['case_id']}: gold={c['category']} pred={p}",
               file=sys.stderr)
+        if args.delay:
+            time.sleep(args.delay)
 
     metrics = score(cases, preds)
     metrics["entity"] = args.entity

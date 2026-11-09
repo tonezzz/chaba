@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chaba.local/schemas/card-distill-slots.schema.json",
+  "title": "Card distilled brief — fixed slot template (card-distill-free-lane)",
+  "description": "The ONLY output shape a lane may return from scripts/bench/card-judgment/distill.py. Fixed slots, not freeform summary — anything decisive stays a slot so compression cannot drop it. Underscore keys (_lane, _key) are distiller metadata, not model output.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "state", "open_asks", "gates", "evidence_present", "staleness",
+    "last_action", "needed_move_class"
+  ],
+  "properties": {
+    "state": {
+      "type": "string",
+      "description": "One line: where the card actually is (column + what's happening)."
+    },
+    "open_asks": {
+      "type": "string",
+      "description": "'none' or the pending requests[] ask — an open ask IS the defer signal."
+    },
+    "gates": {
+      "type": "string",
+      "description": "'none' or the authority gates present: priority:high / review_kind:decide / prod-security tags."
+    },
+    "evidence_present": {
+      "type": "string",
+      "description": "'no' or 'checkable fact present: <what>' — a fact a verify could re-check."
+    },
+    "staleness": {
+      "enum": ["fresh", "stale", "dead"],
+      "description": "Driven by days since card.updated + comms cadence."
+    },
+    "last_action": {
+      "type": "string",
+      "description": "One line: the last thing that happened (comms tail)."
+    },
+    "needed_move_class": {
+      "enum": ["execute", "decide", "correct", "monitor"],
+      "description": "execute = rails can run it; decide = Tony's call; correct = live state contradicts card; monitor = check and report only."
+    }
+  }
+}
