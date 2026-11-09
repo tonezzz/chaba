@@ -1,0 +1,96 @@
+id: chaba-ci-standard
+title: Establish plan → structure → develop → audit → benchmark CI standard
+program: chaba-ci
+column: done
+note: Define the standard pipeline every card-sized piece of work flows through, and wire it into the repo so it
+  runs hands-off.
+updated: 2026-11-09 20:08
+help: "Goal: one declared pipeline — PLAN (spec the card), STRUCTURE (worktree +\nfiles), DEVELOP (implement), AUDIT\
+  \ (ssot-validate, lint, tests),\nBENCHMARK (measurable before/after) — that any card can opt into via\n`pipeline:\
+  \ ci` and that kanban-dispatch runs hands-off.\n\nDeliverables:\n1. docs/ssot/ssot.ci.yml — stages, gates, required\
+  \ artifacts per stage\n2. scripts/ci/ runner — executes a card through the stages, records\n   stage results back\
+  \ into the card's comms\n3. card_schema addition: `pipeline: ci` opt-in field\n4. audit + benchmark wiring: pre-commit\
+  \ / timer / report node in\n   ssot.reports.yml\n5. a demonstration run on a real card\n"
+spec: "Design and implement the standard Chaba CI pipeline for card-sized work:\nplan → structure → develop → audit\
+  \ → benchmark.\n\nRead first: docs/ssot/kanban/ssot.kanban.yml (card standard),\nscripts/ssot-validate-all.mjs,\
+  \ scripts/ssot-optimize.mjs, the pre-commit\nhook, and docs/ssot/infrastructure/ssot.reports.yml (report nodes).\n\
+  \nDeliverables:\n1. docs/ssot/ssot.ci.yml declaring the five stages, the gate that ends\n   each stage, and the\
+  \ artifact each stage must produce.\n2. scripts/ci/ — a runner that takes a card id, executes the stages it\n\
+  \   can automate, and writes stage results into the card's comms +\n   a `pipeline:` status block. Gates it can't\
+  \ automate (e.g. Tony\n   approval) become requests: entries on the card.\n3. Card schema addition: `pipeline:\
+  \ ci` opt-in field (documented in\n   ssot.kanban.yml card_schema).\n4. Wire the audit stage to the existing validators;\
+  \ wire the benchmark\n   stage to produce a before/after metric recorded on the card.\n5. Demonstrate on one real\
+  \ small card.\n"
+action:
+  type: dispatch
+  status: done
+  button: ▶ Build the pipeline
+  repo: chaba
+  task_id: 20261004-202031-design-and-implement-the-stand
+  runner: tony-dell
+  result: 20261004-202031-design-and-implement-the-stand finished (inactive) — see `devin-dispatch logs 20261004-202031-design-and-implement-the-stand`
+requests:
+- id: demo-card
+  ask: Which existing card should be the demo run — or let the agent pick a small one?
+  status: answered
+  answer: 'tts-artifact-clean — small, self-contained, objectively verifiable (artifacts present vs absent in TTS
+    output): ideal plan→structure→develop→audit→benchmark demo'
+comms:
+- at: 2026-10-04 08:40
+  from: tony
+  text: Seeded — start structuring/development/audit/benchmark per our standard CI.
+- at: 2026-10-04 08:51
+  from: devin
+  text: board-api write path verified end-to-end — button clicks reach the card files
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered demo-card: tts-artifact-clean — small, self-contained, objectively verifiable (artifacts present
+    vs absent in TTS output): ideal plan→structure→develop→audit→benchmark demo'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
+- at: 2026-10-04 19:59
+  from: devin
+  text: 'remaining: demo run on tts-artifact-clean (small, verifiable).'
+- at: 2026-10-04 20:19
+  from: devin
+  text: 'demo-card answered by Tony: tts-artifact-clean is the demonstration target. Queueing for dispatch.'
+- at: 2026-10-04 20:19
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 20:20
+  from: chaba
+  text: dispatched 20261004-202031-design-and-implement-the-stand on chaba
+- at: 2026-10-04 20:31
+  from: devin
+  text: 'Read ssot.kanban/quality/reports + validators + board-api. Design: ssot.ci.yml standard, scripts/ci/card-pipeline.py
+    (file-mode under flock + api-mode via /comment,/request,new /pipeline), /pipeline endpoint on board-api, kanban-dispatch
+    rails hook, demo on tts-artifact-clean. Building now.'
+- at: 2026-10-04 20:41
+  from: devin
+  text: 'Pipeline built + demoed: tts-artifact-clean run -> plan=pass structure=pass develop=delegated(ada-pi) audit=pass(8
+    checks) benchmark=blocked(before=2, after pending). Requests raised for delegated gates. Writing trail docs
+    now.'
+- at: 2026-10-04 20:43
+  from: devin
+  text: 'Done — standard card CI pipeline implemented + demoed. Deliverables: docs/ssot/ssot.ci.yml (5 stages/gates/artifacts),
+    scripts/ci/card-pipeline.py (file+api sinks, selftest), board-api POST /pipeline, kanban-dispatch rails hook,
+    card_schema pipeline:+benchmark: fields, ci-pipeline node in ssot.reports, card-pipeline lane in ssot.quality.
+    Demo on tts-artifact-clean: plan=pass structure=pass develop=delegated(ada-pi) audit=pass benchmark=blocked(before=2,
+    after via request). Trail: docs/ssot/jobs/'
+- at: 2026-10-04 20:46
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-04 20:55
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0037'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+claim:
+  since: 2026-10-04 20:20
+ref: OPS-0037
