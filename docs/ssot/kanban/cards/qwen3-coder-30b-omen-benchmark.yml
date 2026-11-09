@@ -1,0 +1,41 @@
+id: qwen3-coder-30b-omen-benchmark
+title: Benchmark Qwen3-Coder-30B-A3B on Tony-Omen
+column: doing
+updated: 2026-11-09 20:35
+brief: Assess this exact GGUF as a local coding-agent lane on Omen, with a strict host resource gate.
+priority: high
+program: ai-workforce
+blocked_by: 'Tony-Omen resource headroom: current swap is saturated and only 1.4 GB VRAM is free.'
+tags:
+- benchmark
+- qwen3-coder
+- llama.cpp
+- tony-omen
+- resource-gated
+spec: 'Evaluate Qwen3-Coder-30B-A3B-Instruct-UD-Q4_K_XL.gguf as a hybrid CPU/GPU coding-agent candidate on tony-omen;
+  this is not an Ada voice-model replacement assessment.
+
+
+  Preflight evidence (2026-11-09): model file is not present under ~/model-bench; 13 GiB RAM available, swap 15/15
+  GiB used (1.4 MiB free), load average 9.79/10.76/10.86; GTX 1650 4 GiB with 1,404 MiB free while existing chaba-ml-gpu
+  Python process uses 2,278 MiB. DO NOT download/load this 17.7 GB GGUF or stop/restart/kill existing services under
+  this state. Resume only after a fresh preflight demonstrates adequate RAM/VRAM headroom, swap is no longer saturated,
+  and the existing GPU workload is not displaced.
+
+
+  When safe, use llama.cpp hybrid MoE offload, start with 8K context, one request at a time, and omit --mlock for
+  the first run. Measure model-speed harness fixed prompts (TTFT, decode tok/s, peak RSS, VRAM, CPU, swap); then
+  run the existing agent-cost-bench coding task(s) with the same verifier against the Qwen3 8B baseline. Repeat
+  matched runs enough to report variance; distinguish deterministic verifier scores from stochastic model output.
+
+
+  Land JSON/Markdown results in reports/model-bench/ and update the matching Education lesson with measured results,
+  resource envelope, limitations, and follow-up. Do not change Ada production routing or install a persistent service
+  as part of this benchmark.'
+note: Processing started with read-only preflight. Benchmark launch is deliberately blocked by current Omen resource
+  pressure; see spec and first comms for measurements.
+ref: BEN-1303
+comms:
+- at: 2026-11-09 20:35
+  from: tony
+  text: Carded and started resource preflight; model execution is gated on safe Omen headroom.
