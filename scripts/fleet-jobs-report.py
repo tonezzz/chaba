@@ -72,8 +72,6 @@ def read_declared_timers() -> dict:
             timers_by_host[host] = data.get("jobs", [])
     return timers_by_host
 
-if __name__ == "__main__":
-    pass
 
 def read_claim_stats() -> dict:
     cards_dir = REPO / "docs/ssot/kanban/cards"
@@ -162,15 +160,21 @@ def main():
 
         md.append("")
 
-        # Last-run Failures (Mocked from health data if available)
+        # Last-run Failures
         md.append("### Last-run Failures")
-        if host in health:
-            md.append(f"- (Found health snapshot for {host})")
-            if "failed" in health[host]:
-               for fail in health[host]["failed"]:
-                   md.append(f"  - `{fail}`")
+        failed_jobs = []
+        if host in health and "failed" in health[host]:
+            failed_jobs.extend(health[host]["failed"])
+
+        for ev in events:
+            if ev.get("host") == host and ev.get("status") == "failing":
+                failed_jobs.append(ev.get("timer", "unknown"))
+
+        if failed_jobs:
+            for fail in set(failed_jobs):
+                md.append(f"- `{fail}`")
         else:
-            md.append("- No health data found.")
+            md.append("- No failures detected in the last run.")
         md.append("")
 
     # Lanes Section
