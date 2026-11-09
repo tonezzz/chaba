@@ -7,7 +7,7 @@ brief: 'The report registry now declares the standard (bounded_surfaces in ssot.
 column: doing
 priority: medium
 created: 2026-10-08
-updated: 2026-11-09 19:33
+updated: 2026-11-09 19:37
 pipeline: ci
 autonomy: t2
 metric: 'SYSTEM-REPORT.md renders with a declared budget: over-budget sections shed in declared order (not arbitrary
@@ -258,6 +258,13 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-11: merge-sweep can''t land dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e:
     1 commit(s) conflict with origin/master '
+- at: 2026-11-09 19:37
+  from: devin
+  text: 'Verified 2026-11-09: salvage commit bb60959c2 is an ancestor of origin/master and the requested bounded-surface
+    library, memory-render wiring, report-system pilot, report-watch, and registry are present on master. The stale
+    worktree HEAD 86db834c08 is an old checkpoint 31,902 commits behind origin/master; its content was salvaged
+    via bb60959c2 with later fixes (drop_kind and normalized job-doc scalars). Do not merge/rebase this stale branch
+    or delete its worktree as part of this card. The repeat'
 claim: {}
 requests:
 - id: merge-conflict
@@ -408,3 +415,4 @@ requests:
   - hold the card
   suggested: let devin resolve the conflict and land it ★
 ref: KNB-0416
+awaiting_action: true
