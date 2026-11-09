@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: doing
-updated: 2026-11-09 09:09
+updated: 2026-11-09 09:10
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -105,6 +105,11 @@ comms:
 - at: 2026-11-09 09:09
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 09:10
+  from: devin
+  text: Picked up on tony-omen (GTX1650 4GB). Prior scaffold upscale-eval.py + comparison-d dogfood found; now fetching
+    comparison-b from gdrive:ada-nest-adobe-stock and measuring classical-SR backends. Diffusion candidates (SeeSR/OSEDiff/SUPIR)
+    will be scored analytically — 4GB VRAM cannot run them, which is itself host-fit data.
 action:
   type: dispatch
   status: running
