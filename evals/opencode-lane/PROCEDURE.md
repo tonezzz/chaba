@@ -163,7 +163,7 @@ failure-reason histogram, per-stage breakdown.
   failure appears in the stage ledger (tool_denial, denied_tool,
   scope_violation, mutating_command, verifier_peek).
 
-## Requalification after rollback (OPS-1255 — review draft, not deployed)
+## Requalification after rollback (OPS-1255)
 
 A fresh attempt is an explicit operator decision, never an automatic retry or
 ledger deletion. First adjudicate the incident, quiesce all lane writers, and
@@ -192,6 +192,26 @@ Authentication preflight: the shadow gate reads `LITELLM_KEY_BENCH` or
 credential authenticated successfully when explicitly mapped to
 `LITELLM_KEY_BENCH` for a single probe process. Do not rotate keys or weaken auth
 checks to resolve this environment mismatch. No persistent mapping was deployed.
+
+2026-11-09, idc02: attempt `ops1255-20261109T041258Z` replayed all five
+fixtures. L0 passed 5/5; OpenCode Flash-lite passed 3/5 (60%), with zero safety
+flags. Storage failed `used_pct` validation; worktree-safety omitted its artifact.
+The unchanged S0 gate recommended promotion and the lane advanced to S1. Evidence
+is under `~/.local/state/opencode-lane/ops1255-20261109T041258Z/`; historical ledger
+prefix integrity and restoration of `runner-agent.timer` were verified.
+
+### Human-watched S1 canary
+
+`opencode_profiles.py run <job> --supervised --human-observer tony` requires
+an interactive terminal. It prints the live event-log path and waits for the
+observer's `start <job-id>` readiness confirmation before executing the job.
+Watch that file from a separate terminal using `tail -n +1 -F <event-log>`.
+At completion, only an explicit `watched <job-id>` attestation records the
+measured model-process duration as `human_minutes`, with observer and timestamp.
+Declining, EOF or interruption at that prompt records zero minutes. Mere
+availability, automatic execution, or a missing observer never proves watch.
+Safety/verifier failures remain failures regardless of observation. Do not
+provide either confirmation on an observer's behalf without their actual consent.
 
 ## Weekly promotion review
 

@@ -12,6 +12,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 SCRIPT = REPO / "scripts/devnest/opencode_profiles.py"
@@ -66,6 +68,89 @@ def mk_env(profile="ops-readonly", **kw):
                                    "max_retries": 0}})
     env.update(kw)
     return env
+
+
+class HumanWatch(unittest.TestCase):
+    def test_confirmation_records_measured_minutes_and_observer(self):
+        result = mod.confirm_human_watch("tony", "j-test", 90,
+                                        read=lambda _: "watched j-test")
+        self.assertEqual(result["human_minutes"], 1.5)
+        self.assertEqual(result["human_observer"], "tony")
+        self.assertTrue(result["human_watch_confirmed"])
+        self.assertIn("human_watch_confirmed_at", result)
+
+    def test_decline_eof_or_wrong_job_never_records_watch_minutes(self):
+        for read in (lambda _: "no", lambda _: "watched other-job",
+                     mock.Mock(side_effect=EOFError)):
+            result = mod.confirm_human_watch("tony", "j-test", 90, read=read)
+            self.assertEqual(result["human_minutes"], 0)
+            self.assertFalse(result["human_watch_confirmed"])
+
+    def test_invalid_duration_never_prompts_or_records_watch(self):
+        for seconds in (0, -1, float("nan"), float("inf"), True):
+            read = mock.Mock()
+            result = mod.confirm_human_watch("tony", "j-test", seconds, read=read)
+            self.assertEqual(result["human_minutes"], 0)
+            read.assert_not_called()
+
+    def test_observer_requires_supervised_interactive_run(self):
+        for unattended, tty in ((True, True), (False, False)):
+            args = SimpleNamespace(human_observer="tony", unattended=unattended,
+                                   job="does-not-exist", skip_scope=False)
+            with mock.patch.object(mod.sys, "stdin") as stdin:
+                stdin.isatty.return_value = tty
+                self.assertEqual(mod.cmd_run(args), 2)
+
+    def test_no_run_or_metric_without_watcher_readiness(self):
+        with tempfile.TemporaryDirectory() as td:
+            def render(env, prof, rd):
+                rd.mkdir(parents=True)
+                (rd / "prompt.md").write_text("read-only canary")
+                return {}
+
+            args = SimpleNamespace(human_observer="tony", unattended=False,
+                                   job="fixture", skip_scope=False)
+            with mock.patch.object(mod.sys, "stdin") as stdin, \
+                    mock.patch.object(mod, "RUNS", Path(td)), \
+                    mock.patch.object(mod.lane_gate, "load_envelope", return_value=mk_env()), \
+                    mock.patch.object(mod, "run_preflight", return_value={"admit": True, "profile": {}}) as preflight, \
+                    mock.patch.object(mod, "render_bundle", side_effect=render), \
+                    mock.patch("builtins.input", return_value=""), \
+                    mock.patch.object(mod, "run_profile_process") as process, \
+                    mock.patch.object(mod.lane_gate, "record_metric") as record:
+                stdin.isatty.return_value = True
+                self.assertEqual(mod.cmd_run(args), 2)
+                self.assertFalse(preflight.call_args.args[0]["unattended"])
+                process.assert_not_called()
+                record.assert_not_called()
+
+    def test_nonobserver_process_keeps_captured_event_behavior(self):
+        with tempfile.TemporaryDirectory() as td:
+            rd = Path(td)
+            result = mod.run_profile_process(
+                [sys.executable, "-c", "print('ordinary-event')"], rd, 5,
+                dict(os.environ), cwd=td)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("ordinary-event", (rd / "events.jsonl").read_text())
+
+    def test_live_process_timeout_preserves_partial_events(self):
+        with tempfile.TemporaryDirectory() as td:
+            rd = Path(td)
+            with self.assertRaises(mod.subprocess.TimeoutExpired):
+                mod.run_profile_process(
+                    [sys.executable, "-c", "import time; print('started', flush=True); time.sleep(5)"],
+                    rd, 0.2, dict(os.environ), observer="tony", cwd=td)
+            self.assertIn("started", (rd / "events.jsonl").read_text())
+
+    def test_live_process_writes_events_before_confirmation(self):
+        with tempfile.TemporaryDirectory() as td:
+            rd = Path(td)
+            result = mod.run_profile_process(
+                [sys.executable, "-c", "print('watch-event')"], rd, 5,
+                dict(os.environ), observer="tony", cwd=td)
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("watch-event", (rd / "events.jsonl").read_text())
+            self.assertEqual((rd / "stderr.log").read_text(), "")
 
 
 class LintProfiles(unittest.TestCase):

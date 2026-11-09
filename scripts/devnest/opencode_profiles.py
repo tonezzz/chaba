@@ -40,6 +40,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import math
 import os
 import re
 import subprocess
@@ -678,9 +679,46 @@ def _verify(rd: Path, env: dict) -> dict:
     return res
 
 
+def confirm_human_watch(observer, job_id, seconds, read=None):
+    result = {"human_observer": observer, "human_minutes": 0,
+              "human_watch_confirmed": False}
+    if not observer or type(seconds) not in (int, float) or not math.isfinite(seconds) or seconds <= 0:
+        return result
+    prompt = (f"Observer {observer}: only if you watched the complete run, type "
+              f"'watched {job_id}' to attest {seconds / 60:.2f} measured minutes; "
+              "otherwise press Enter: ")
+    try:
+        confirmed = (read or input)(prompt).strip() == f"watched {job_id}"
+    except (EOFError, KeyboardInterrupt):
+        confirmed = False
+    if confirmed:
+        result.update(human_minutes=seconds / 60, human_watch_confirmed=True,
+                      human_watch_confirmed_at=now_iso())
+    return result
+
+
+def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
+    if observer:
+        print(f"LIVE_EVENTS {rd / 'events.jsonl'}", flush=True)
+        with (rd / "events.jsonl").open("w") as events, (rd / "stderr.log").open("w") as errors:
+            return subprocess.run(cmd, stdout=events, stderr=errors, text=True,
+                                  timeout=timeout, env=env, cwd=cwd)
+    result = subprocess.run(cmd, capture_output=True, text=True,
+                            timeout=timeout, env=env, cwd=cwd)
+    (rd / "events.jsonl").write_text(result.stdout or "")
+    (rd / "stderr.log").write_text(result.stderr or "")
+    return result
+
+
 def cmd_run(args):
+    observer = (getattr(args, "human_observer", "") or "").strip()
+    if observer and (args.unattended or not sys.stdin.isatty()):
+        print(json.dumps({"error": "human observer requires --supervised and an interactive terminal"}))
+        return 2
     env = lane_gate.load_envelope(Path(args.job))
     env.setdefault("unattended", args.unattended)
+    if not args.unattended:
+        env["unattended"] = False
     pre = run_preflight(env)
     if not pre["admit"]:
         m = _record_denial_metric(env, pre["reasons"])
@@ -692,6 +730,15 @@ def cmd_run(args):
     rd = RUNS / f"{env['id']}-{run_id}"
     man = render_bundle(env, prof, rd)
     prompt = (rd / "prompt.md").read_text()
+    if observer:
+        print(f"WATCH_EVENTS {rd / 'events.jsonl'}", flush=True)
+        try:
+            ready = input(f"Observer {observer}: type 'start {env['id']}' when ready to watch: ")
+        except (EOFError, KeyboardInterrupt):
+            ready = ""
+        if ready.strip() != f"start {env['id']}":
+            print(json.dumps({"error": "human watcher did not confirm readiness; no job executed"}))
+            return 2
     # begin inflight + heartbeat (supervised stages demand a fresh one)
     lane_gate.inflight_dir().mkdir(parents=True, exist_ok=True)
     (lane_gate.inflight_dir() / f"{env['id']}.json").write_text(
@@ -719,15 +766,14 @@ def cmd_run(args):
            "--dir", str(REPO), "--model", str(env["model"]),
            "--agent", agent_name(prof["id"]), prompt]
     rec = {"exit_code": None, "error": None}
+    watch_start = time.monotonic()
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True,
-                           timeout=timeout, env=oenv, cwd=str(REPO))
-        (rd / "events.jsonl").write_text(r.stdout or "")
-        (rd / "stderr.log").write_text(r.stderr or "")
+        r = run_profile_process(cmd, rd, timeout, oenv, observer=observer, cwd=str(REPO))
         rec["exit_code"] = r.returncode
     except subprocess.TimeoutExpired:
         rec["exit_code"] = -2
         rec["error"] = f"timeout {timeout}s"
+    watch_seconds = time.monotonic() - watch_start
     audit = audit_events(rd / "events.jsonl", env, prof) \
         if (rd / "events.jsonl").is_file() else {
             "tokens": {}, "tool_calls": [], "denials": [],
@@ -798,6 +844,10 @@ def cmd_run(args):
     elif not m["verifier_pass"]:
         fr = "unverified_exit"
     m["failure_reason"] = fr
+    if observer:
+        print(json.dumps({"job": env["id"], "verdict": verdict.get("verdict"),
+                          "failure_reason": fr, "run_dir": str(rd)}), flush=True)
+        m.update(confirm_human_watch(observer, env["id"], watch_seconds))
     lane_gate.record_metric(m)
 
     f = lane_gate.inflight_dir() / f"{env['id']}.json"
@@ -851,6 +901,8 @@ def main():
                     action="store_false", default=True,
                     help="mark the run supervised (unattended:false "
                          "profiles still refuse)")
+    sp.add_argument("--human-observer", default="",
+                    help="named human watcher; requires --supervised, a terminal, and end-of-run attestation")
     sp.add_argument("--skip-scope", action="store_true",
                     help="skip before/after git-status scope diff")
 
