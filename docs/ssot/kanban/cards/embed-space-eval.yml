@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-11-08 18:49
+updated: 2026-11-09 08:57
 priority: medium
 ref: MEM-0695
 comms:
@@ -90,6 +90,13 @@ comms:
     .216/.848; Thai .283/.929. Baseline BGE dense .224/.767, Gemini .244/.893, top-10 rerank .262/.938. Result:
     cheap distillation materially improves BGE MRR (+.104) and Thai, but does not beat the top-10 reranker or Gemini
     overall; full fine-tune is optional, not needed for current se'
+- at: 2026-11-09 08:57
+  from: devin
+  text: 'MDDB + PRODUCTION READINESS ASSESSMENT (2026-11-09): vector-reindex failure fixed in #132 (bounded retries
+    on stats/health and per-collection POST). After propagating through the tony-dell mirror to con01, live reindex
+    completed SUCCESS: embedded=0, skipped=20469, failed=0. idc03 hand reindex also completed SUCCESS: embedded=0,
+    skipped=20481, failed=0. All health checks green/durable: idc03 11023 primary + 11027 CMS + 11028 embed; idc02
+    11023 read-only; con01 11123 read-only. MDDB upgrade plan c'
 action:
   type: dispatch
   status: done
