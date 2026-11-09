@@ -1,7 +1,7 @@
 id: rotate-ada-code-litellm-key-20261109
 title: Rotate exposed Ada-code LiteLLM key without weakening budget controls
 column: doing
-updated: 2026-11-09 18:27
+updated: 2026-11-09 18:34
 priority: high
 program: ai-workforce
 tags:
@@ -46,3 +46,10 @@ comms:
     ada-code restart command returned nonzero, although systemd now reports active/running, Result=success, ExecMainStatus=0.
     Activation was NOT reached. Critical: updater changed only idc02 litellm-keys.env, NOT ada-code.env despite
     earlier inventory matching LITELLM_KEY there; diagnose r'
+- at: 2026-11-09 18:34
+  from: devin
+  text: 'Correction: exact-match guard was correct. Ada-code now uses a DIFFERENT key, alias ada-code, created 2026-11-09T11:07Z:
+    USD10/30d, reset Dec1, spend 0.01439. Native consumer key-info/models both 200; MCP connected. Did NOT retarget
+    it to shared USD30. Shared replacement ada-sec1286 remains BLOCKED; Dec1 tier/spend carry verified; key env
+    refs updated on idc02/idc03/macbook. Need policy confirmation before activating additional shared allowance.
+    No model jobs/S3 evidence generated here.'
