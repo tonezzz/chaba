@@ -1,7 +1,7 @@
 id: lesson-qc-sweep
 title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
-column: doing
-updated: 2026-11-09 16:07
+column: review
+updated: 2026-11-09 16:14
 brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
   an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
   publishes a report. Advisory only — it never deletes.'
@@ -44,9 +44,12 @@ spec: 'New script scripts/board/lesson_qc.py (plus a thin invocation — run it 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: tony-omen
+  result: 'exit=0 d skip home/absolute/cross-repo paths (30→12 flags, all true). | devin-task-20261109-155049-new-script-scripts-board-lesso.service:
+    Consumed 5min 33.518s CPU time over 16min 35.315s wall clock time, 1018M memory peak, 316K memory swap peak.'
+  verified: false
 ref: OPS-1275
 comms:
 - at: 2026-11-09 15:44
@@ -99,3 +102,8 @@ comms:
     stale, 0 contra]; 8 idc01 refs flagged; ops-event emitted to ada-ha-events-tony (fingerprint-deduped). Reports:
     docs/ssot/jobs/kanban/2026-11-09-lesson-qc.yml + reports/lesson-qc-2026-11-09.md. Notables: self-seed compliance
     only 7% post-rule; primer crashes on 2 cards with bare-stri'
+- at: 2026-11-09 16:14
+  from: tony-omen
+  text: 'finished (ok): exit=0 d skip home/absolute/cross-repo paths (30→12 flags, all true). | devin-task-20261109-155049-new-script-scripts-bo'
+review_kind: verify
+claim: {}
