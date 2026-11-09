@@ -1,6 +1,6 @@
 id: timer-alert-cards-auto-close-on-next-gre-723ebc
 title: 'timer-alert cards: auto-close on next green run (reconcile, not accumulate)'
-column: backlog
+column: done
 updated: 2026-11-09 13:38
 ref: KNB-0577
 comms:
@@ -29,9 +29,15 @@ comms:
     action close. First live run on tony-omen: 28 healed cards auto-closed, 29 real findings stayed open. Also fixed
     a crash uncovered by the run: fire() 400''d creating a card whose id existed-but-closed — now reopens (move->backlog)
     + comments instead of dying. On master 4600ac0b1f + '
+- at: 2026-11-09 13:38
+  from: devin
+  text: moved backlog -> done
 spec: The goal is to prevent timer-alert cards from accumulating in the backlog by automatically closing them when
   the corresponding systemd unit run succeeds. The host and repository context must be derived from the existing
   chaba or infrastructure management scripts where audit-hosts or a sweeper runs. Constraints require verifying
   the unit's last run status via systemctl before closing the card. The testable done-condition is that open timer-alert-<host>-<unit>
   cards with a currently succeeding systemd Result automatically transition to closed during the next reconciliation
   sweep.
+action:
+  status: done
+claim: {}
