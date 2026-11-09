@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 12:04
+updated: 2026-11-09 13:35
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -154,6 +154,13 @@ comms:
     caveat verified in scripts/board/runner-agent.py:950-969: generic dispatch metrics use stage="" and cannot qualify
     S3. Next: select real read-only card work and run full S3 envelopes via opencode_profiles.py, or explicitly
     integrate gate-aware dispatch accounting; do not relabe'
+- at: 2026-11-09 13:35
+  from: devin
+  text: 'Next-step assessment: verified OPS-0846 proves OpenCode worktree/push/merge for marker change, not general
+    code autonomy; ADA-1115 exposes confirmed queue/hold. Consumer discrepancy reproduced: board-cli get OPS-1255
+    returns backlog/10:50 predeployment comms, while idc03 served and exec YAML both say doing/12:04 with S3 evidence.
+    Writes durable; GET/read projection stale. Resolve read freshness and stage-aware execution/closeout, then finish
+    ONE genuine report-only card end-to-end before scaling'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
