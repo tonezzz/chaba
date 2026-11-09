@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: backlog
-updated: 2026-11-09 11:01
+updated: 2026-11-09 11:03
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -75,6 +75,14 @@ comms:
     S0 (1/5 jobs, 0% verified). SHA256 stage.json AND metrics.jsonl unchanged from predeploy. Process-scoped BENCH=runner-key
     auth probe passes; no persistent auth edit. NO requalify/counter reset/promotion. OPS-1255 remains open for
     fresh qualification and supervised canaries.'
+- at: 2026-11-09 11:03
+  from: devin
+  text: 'answered ops1255-requalification-deployment-review: Tony approved in chat: I approve please deploy and
+    verify. Recorded by Devin on behalf of Tony. Deployment only completed via fa6b864ce9 on idc02, 131 tests pass,
+    state/ledger hashes unchanged. No req'
+- at: 2026-11-09 11:03
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -83,10 +91,14 @@ requests:
     S1 watch time. Limitation: operator must stop lane writers before requalify; no new cross-process locking. Approval
     covers shipping the revision only, NOT running requalify, resetting live counters, or promoting a stage. Recommended:
     independent review first.'
-  status: open
+  status: answered
   at: 2026-11-09 10:50
   from: devin
   options:
   - hold for independent review
   - approve deployment only
   suggested: hold for independent review
+  answer: 'Tony approved in chat: I approve please deploy and verify. Recorded by Devin on behalf of Tony. Deployment
+    only completed via fa6b864ce9 on idc02, 131 tests pass, state/ledger hashes unchanged. No requalify, live counter
+    reset or stage promotion.'
+awaiting_action: true
