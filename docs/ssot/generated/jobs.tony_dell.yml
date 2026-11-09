@@ -1,0 +1,63 @@
+title: Scheduled jobs — tony_dell
+generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
+source: docs/ssot/infrastructure/ssot.jobs.yml
+jobs:
+  - id: adobe-stock-reindex-sync
+    schedule: every 1h
+    dispatch: systemd
+    persistent: true
+  - id: check-serve-config
+    schedule: *-*-* *:23:00
+    dispatch: systemd
+    persistent: true
+  - id: devnest-capacity-broker
+    schedule: every 5m
+    dispatch: systemd
+  - id: devnest-report-feed
+    schedule: every 15m
+    dispatch: systemd
+  - id: flood-alert
+    schedule: every 15m
+    dispatch: systemd
+    persistent: true
+  - id: jevnest-kk-mac-capacity-producer
+    schedule: every 5m
+    dispatch: systemd
+  - id: lesson-drift-check
+    schedule: every 1d
+    dispatch: systemd
+  - id: log-shipper
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-mha
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe-mha
+    schedule: every 1h
+    dispatch: systemd
+  - id: mcp-debug-h3-sync
+    schedule: every 10m
+    dispatch: systemd
+  - id: nest-queue-health
+    schedule: every 2m
+    dispatch: systemd
+  - id: network-scan-tony
+    schedule: every 15m
+    dispatch: systemd
+  - id: podman-lock-watchdog
+    schedule: every 2min
+    dispatch: systemd
+  - id: system-report-watchdog
+    schedule: hourly
+    dispatch: systemd
+    persistent: true
+  - id: tony-dell-health-snapshot
+    schedule: every 5m
+    dispatch: systemd
+  - id: wp-cam-snapshot
+    schedule: *-*-* *:2/15:00
+    dispatch: systemd
+    persistent: true

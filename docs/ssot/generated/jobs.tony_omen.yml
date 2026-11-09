@@ -1,0 +1,57 @@
+title: Scheduled jobs — tony_omen
+generated: true  # DO NOT EDIT — rendered by scripts/render-jobs-catalog.py from ssot.jobs.yml
+source: docs/ssot/infrastructure/ssot.jobs.yml
+jobs:
+  - id: ada-pi-orch-bench
+    schedule: Mon *-*-* 04:30
+    dispatch: systemd
+    persistent: true
+  - id: cam-frame-refresh
+    schedule: every 5s
+    dispatch: systemd
+  - id: device-telemetry
+    schedule: *:0/5
+    dispatch: systemd
+    persistent: true
+  - id: devin-session-prune
+    schedule: Sun *-*-* 03:00:00
+    dispatch: systemd
+    persistent: true
+  - id: devin-summaries-sync
+    schedule: *-*-* *:45:00
+    dispatch: systemd
+    persistent: true
+  - id: ha-config-backup
+    schedule: *-*-* 03:30:00
+    dispatch: systemd
+    persistent: true
+  - id: log-shipper
+    schedule: every 1h
+    dispatch: systemd
+  - id: log-shipper-severe
+    schedule: every 1h
+    dispatch: systemd
+  - id: model-bench
+    schedule: Sun *-*-* 05:15
+    dispatch: systemd
+    persistent: true
+  - id: session-audit
+    schedule: *-*-* 05:30:00
+    dispatch: systemd
+    persistent: true
+  - id: telemetry-ha-push
+    schedule: *:0/5
+    dispatch: systemd
+    persistent: true
+  - id: timer-sentinel
+    schedule: every 10min
+    dispatch: systemd
+    persistent: true
+  - id: timer-timeline-update
+    schedule: every 15min
+    dispatch: systemd
+    persistent: true
+  - id: xiaomi-token-refresh
+    schedule: daily
+    dispatch: systemd
+    persistent: true
