@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-09 22:00
+updated: 2026-11-09 22:10
 priority: high
 tags:
 - timer-alert
@@ -886,6 +886,10 @@ comms:
 - at: 2026-11-09 22:00
   from: devin
   text: '[still suspicious] Last run (11-09 21:41) of `network-scan-tony.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-09 22:10
+  from: devin
+  text: '[still suspicious] Last run (11-09 21:56) of `network-scan-tony.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   type: dispatch
