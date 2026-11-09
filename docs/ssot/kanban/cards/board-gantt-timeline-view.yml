@@ -1,0 +1,48 @@
+id: board-gantt-timeline-view
+title: 'Board: Gantt timeline tab — frappe/gantt over cards.json, activity-span bars grouped by project'
+column: backlog
+updated: 2026-11-09 11:45
+brief: 'Blank /apps/board-gantt/ stub + chaba-admin ''Gantt'' tab are live (2026-11-09). This card builds the real
+  view: frappe/gantt timeline of kanban cards grouped by project:<slug>, bars = first-activity to last-activity.'
+priority: medium
+tags:
+- kanban-ux
+- board
+spec: 'Build the gantt view on the existing /apps/board-gantt/ stub (stacks/web/public/apps/board-gantt/index.html
+  — currently a placeholder; route + Caddy handle + routes.json + HA tab already live, commits a63ebe9f28 + 344f37ffe2).
+
+
+  Data: fetch /apps/board2/cards.json (same origin, full card dicts, ~10-30s poll already proven). No backend changes.
+
+
+  Vendor frappe/gantt locally (frappe-gantt.min.js/.css under apps/board-gantt/vendor/) — no CDN.
+
+
+  Mapping (decided with Tony 2026-11-09):
+
+  - start = first comms[].at, fallback claim.since, fallback created
+
+  - end = last activity (updated / last comms at); open cards (column != done) run to today
+
+  - progress by column: backlog 0, lab 10, doing 50, review 75, done 100
+
+  - bar color per column; click bar -> lightweight detail popover from card data (title, brief, column, last comms)
+
+
+  Hierarchy (frappe/gantt has no subtasks): group rows by project:<slug> tag (ssot.project-lifecycle.yml convention);
+  project header rows sort first in each group; untagged cards in ''unfiled'' group.
+
+
+  Scope default: all non-done columns + done cards updated within ~30 days (keeps SVG light).
+
+
+  Dark theme to match board (#1a1a2e/#16213e). Top bar: title + project filter + refresh.
+
+
+  Verify: page renders at https://tony-ha.surf-thailand.com/apps/board-gantt/ (CF Access) and inside chaba-admin
+  gantt tab on ada-ha; spot-check bar dates against known cards.'
+ref: KNB-1263
+comms:
+- at: 2026-11-09 11:45
+  from: devin
+  text: card captured via board-api
