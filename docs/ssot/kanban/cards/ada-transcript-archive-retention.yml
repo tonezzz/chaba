@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-09 19:45
+updated: 2026-11-09 19:46
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -42,16 +42,19 @@ comms:
   text: dispatch 20261109-183239 failed on retryable 'free model rate limit' (cognition errorKind=unavailable) after
     ~12min of design work — not a spec problem. Retrying. Branch dispatch/20261109-183239-scheduled-per-l kept for
     reference.
+- at: 2026-11-09 19:46
+  from: devin
+  text: retry requested
 action:
   type: dispatch
   repo: chaba
   host: idc02
   executor: devin
   lane: paid_frontier
-  status: failed
-  runner: idc02
-  result: 'exit=1 RE | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Failed with result ''exit-code''.
-    | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Consumed 33.553s CPU time, 212.1M memory
-    peak, 0B memory swap peak.'
+  status: queued
   sweep:
     failed_noted: 2026-11-09 18:49
+  last_failure: 'exit=1 RE | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Failed with result
+    ''exit-code''. | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Consumed 33.553s CPU time,
+    212.1M memory peak, 0B memory swap peak.'
+  attempts: 1
