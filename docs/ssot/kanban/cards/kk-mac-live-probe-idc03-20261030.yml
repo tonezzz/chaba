@@ -1,7 +1,7 @@
 id: kk-mac-live-probe-idc03-20261030
 title: Run one supervised KK-Mac JEV probe from idc03
 column: done
-updated: 2026-11-09 21:17
+updated: 2026-11-10 03:10
 brief: Run the one bounded local-Qwen summary probe already approved on OPS-0978, using the newly authorized idc03
   SSH key; do not enable automatic KK-Mac routing.
 priority: high
@@ -152,6 +152,11 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
+- at: 2026-11-10 03:10
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 review_kind: verify
 claim: {}
 requests:
@@ -169,3 +174,4 @@ requests:
     label: Keep the JEV lane off and wait for a later idle window.
   suggested: reachable
   answer: 'reachable — Recommended: KK-Mac is awake and SSH/Tailscale responds; rerun the one bounded probe.'
+awaiting_action: true
