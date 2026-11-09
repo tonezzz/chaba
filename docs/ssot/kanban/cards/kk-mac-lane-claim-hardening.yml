@@ -1,0 +1,34 @@
+id: kk-mac-lane-claim-hardening
+title: kk_mac lane hardening — non-armed hosts can claim+fail; idc02 opencode --dir drift breaks the executor
+column: backlog
+updated: 2026-11-09 10:56
+priority: medium
+tags:
+- devnest
+- kk-mac
+- bug
+spec: 'Two bugs surfaced by the kk-mac-lane-live-probe card (OPS-1259) failing on idc02 2026-11-09:
+
+
+  1. CLAIM GATE: the probe (executor=kk_mac_local, unpinned) was claimed by idc02 — a host with KK_MAC_LANES unset
+  — and failed instead of deferring to a servable host. Claim path: contract_ok -> kk_mac_servable -> lane probe.
+  Expected: non-servable host with a LIVE lane probe defers. Actual: idc02 claimed and ran anyway (its probe probably
+  returned ineligible -> next-lane fallback ran the kk_mac executor locally anyway). Fix: when action.executor is
+  explicitly kk_mac_local, never run a local fallback executor — defer for a servable host, same as the nlm_batch/jules
+  explicit-executor contracts.
+
+  2. EXECUTOR DRIFT: kk_mac_executor invoked `opencode run --dir` — idc02 opencode build lacks --dir (exit 1). Either
+  pin kk_mac-capable hosts or make the executor flag-portable (detect --dir support / use cwd instead).
+
+
+  Probe card re-pinned to host:idc03 (commit 13b6b08e61).'
+action:
+  type: manual
+ref: OPS-1260
+comms:
+- at: 2026-11-09 10:56
+  from: tony
+  text: surfaced by OPS-1259 first claim — evidence in card comms + devin-task journal on idc02
+- at: 2026-11-09 10:56
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
