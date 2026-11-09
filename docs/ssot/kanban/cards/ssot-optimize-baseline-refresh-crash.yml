@@ -1,7 +1,7 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
-column: doing
-updated: 2026-11-09 18:20
+column: review
+updated: 2026-11-09 18:22
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
   files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
@@ -61,8 +61,18 @@ comms:
   text: 'Fixed: execSync→spawnSync in scripts/ssot-optimize.mjs — validator exit 1 (any file with errors) no longer
     throws and dumps 320k chars of stdout. Full run verified: completes, refreshes WARNINGS.json (102 bloat/23 data-isolation/8
     other). Committed on dispatch branch.'
+- at: 2026-11-09 18:22
+  from: idc02
+  text: 'finished (ok): exit=0 ent bug in the staged-diff gate — this fix removes the crash in the remediation path
+    it points to. | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   runner: idc02
+  result: 'exit=0 ent bug in the staged-diff gate — this fix removes the crash in the remediation path it points
+    to. | devin-task-20261109-181759-bug-running-node-scripts-ssot-.service: Consumed 1min 45.527s CPU time, 179.1M
+    memory peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
