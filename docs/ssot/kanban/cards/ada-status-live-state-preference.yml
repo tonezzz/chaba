@@ -1,0 +1,33 @@
+id: ada-status-live-state-preference
+title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
+column: backlog
+updated: 2026-11-09 18:36
+priority: high
+tags:
+- ada
+- tools
+- jules
+spec: 'Observed 2026-11-09: Tony asked ada-code "what is kk-mac processing" — tool answered from board records (OPS-1045,
+  hours stale): "offline 22h, 15GiB free" while the live host was online with ~92-115GiB free (kk_mac lane probe:
+  eligible, heartbeat 4min). Confidently-stale answer.
+
+
+  DO (repo work, ada-voice + chaba sides as applicable): (1) for host-health/status questions, query live surfaces
+  first — kk_mac_capacity/probe data, nest-mgr nest-<host> pages, runner state — before board records; (2) when
+  answering from board/card state, attach the record age ("as of Xh ago"); (3) when live telemetry CONTRADICTS board
+  state (offline-vs-eligible, disk figures disagree), say both + flag the conflict instead of parroting the stale
+  record.
+
+  DONE-CONDITION: asking kk-mac status returns live probe data or a freshness-tagged board answer; contradiction
+  case covered by a test.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  lane: jules
+  status: queued
+ref: ADA-1294
+comms:
+- at: 2026-11-09 18:36
+  from: tony
+  text: queued for jules — ada_status truthfulness fix; session transcript evidence in opencode.db ses_e400bdd87ffeBs3lslHc2OdA6L
