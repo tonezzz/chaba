@@ -709,6 +709,19 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a.pop("verified", None)  # stale stamp must not survive a re-queue
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
+
+        if os.environ.get("BOARD_CLASSIFY_AT_QUEUE", "1") == "1" and not a.get("lane"):
+            lane, source, conf = dr.classify_lane(card, return_details=True)
+            a["lane"] = lane
+            if lane in dr.LANE_MODELS:
+                a["model"] = dr.LANE_MODELS[lane]
+            comms_add(card, "chaba", f"classified lane={lane} (source={source}, conf={conf:.2f})")
+            if lane == "manual":
+                a["status"] = "idle"
+                a["executor"] = "manual"
+                card.pop("awaiting_action", None)
+                return "classified manual — skipping queue"
+
         comms_add(card, frm, "queued for processing")
         warn = queue_starve_warn(card)
         uncl = queue_unclaimable_warn(card)

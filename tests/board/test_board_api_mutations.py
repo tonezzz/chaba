@@ -373,3 +373,34 @@ class ReportDoorTest(DoorTestBase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class ActionQueueClassifyTest(DoorTestBase):
+    def test_explicit_lane_wins(self):
+        c = {"id": "c-exp", "title": "write the plan", "action": {"lane": "free_lane"}}
+        msg = self.mod.do_action(c, "queue", "devin")
+        self.assertEqual(c["action"]["lane"], "free_lane")
+        self.assertNotIn("classified lane=", str(c.get("comms", [])))
+
+    def test_keyword_hit(self):
+        c = {"id": "c-kw", "title": "write the plan"}
+        msg = self.mod.do_action(c, "queue", "devin")
+        self.assertEqual(c["action"]["lane"], "free_lane")
+        self.assertIn("classified lane=free_lane (source=kw", str(c.get("comms", [])))
+
+    @unittest.mock.patch("urllib.request.urlopen")
+    def test_jevos_fallback(self, mock_urlopen):
+        import urllib.error
+        mock_urlopen.side_effect = urllib.error.URLError("test")
+        c = {"id": "c-fail", "title": "unrelated"}
+        msg = self.mod.do_action(c, "queue", "devin")
+        self.assertEqual(c["action"]["lane"], "devin")
+        self.assertIn("classified lane=devin (source=fallback", str(c.get("comms", [])))
+
+    def test_manual_refuses(self):
+        c = {"id": "c-man", "title": "hardware"}
+        msg = self.mod.do_action(c, "queue", "devin")
+        self.assertEqual(c["action"]["status"], "idle")
+        self.assertEqual(c["action"]["executor"], "manual")
+        self.assertEqual(c["action"]["lane"], "manual")
+        self.assertIsNone(c.get("awaiting_action"))
+        self.assertEqual(msg, "classified manual — skipping queue")

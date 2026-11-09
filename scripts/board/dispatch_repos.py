@@ -251,20 +251,20 @@ LANE_KW = {
 LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
 
-def classify_lane(card: dict) -> str:
+def classify_lane(card: dict, return_details: bool = False):
     """Cheapest lane for this card: keyword-first, jevos gated fallback."""
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
     if any(k in text for k in LANE_KW["manual"]):
-        return "manual"
+        return ("manual", "kw", 1.0) if return_details else "manual"
     if re.search(LANE_COMPARE, text):
-        return "paid_frontier"
+        return ("paid_frontier", "kw", 1.0) if return_details else "paid_frontier"
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
                       ("devin", LANE_KW["devin"]),
                       ("free_lane", LANE_KW["free_lane"])):
         if any(k in text for k in kws):
-            return lane
+            return (lane, "kw", 1.0) if return_details else lane
     state = {"card": card.get("id"), "title": card.get("title", ""),
              "brief": (card.get("brief") or card.get("spec") or "")[:250]}
     q = {"lane": {"type": "choice",
@@ -285,10 +285,12 @@ def classify_lane(card: dict) -> str:
         lane = ans.get("choice")
         conf = float(ans.get("confidence") or 0.0)
         if conf < float(os.environ.get("JEV_LANE_MIN_CONF", "0.5")):
-            return "devin"  # safe multi-step default when unsure
-        return lane if lane in LANE_MODELS or lane in LANE_EXECUTORS else "devin"
+            return ("devin", "fallback", conf) if return_details else "devin"
+        if lane in LANE_MODELS or lane in LANE_EXECUTORS:
+            return (lane, "jevos", conf) if return_details else lane
+        return ("devin", "fallback", conf) if return_details else "devin"
     except Exception:
-        return "devin"  # jevos down -> safe default, not None
+        return ("devin", "fallback", 0.0) if return_details else "devin"
 
 
 def repos() -> dict:
