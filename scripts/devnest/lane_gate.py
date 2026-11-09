@@ -75,8 +75,10 @@ Subcommands:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
+import math
 import os
 import shutil
 import statistics
@@ -745,17 +747,88 @@ def aggregate(recs: list) -> dict:
 
 # --------------------------------------------------------------- review
 
+def qualification_ledger(st: dict) -> list:
+    boundary = st["qualification"]
+    raw = ledger_file().read_bytes() if ledger_file().exists() else b""
+    size = boundary["ledger_bytes"]
+    if type(size) is not int or size < 0 or len(raw) < size:
+        raise ValueError("qualification ledger truncated or invalid boundary")
+    if raw and not raw.endswith(b"\n"):
+        raise ValueError("qualification ledger has an incomplete record")
+    if hashlib.sha256(raw[:size]).hexdigest() != boundary["ledger_sha256"]:
+        raise ValueError("qualification historical ledger fingerprint mismatch")
+    if size and raw[size - 1:size] != b"\n":
+        raise ValueError("qualification boundary is not a complete record")
+    rows = [json.loads(line) for line in raw[size:].splitlines() if line.strip()]
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("qualification ledger contains a non-object record")
+    return rows
+
+
+def requalify(operator: str, resolution: str, incident_review: Path,
+              confirm_quiescent: bool = False) -> dict:
+    st = load_stage()
+    if not operator.strip() or not resolution.strip() or not confirm_quiescent:
+        return {"error": "operator, incident resolution and quiescence confirmation required"}
+    if st.get("current_stage") != "S0" or killed():
+        return {"error": "requalification requires S0 with no kill switch"}
+    if inflight_dir().exists() and any(inflight_dir().iterdir()):
+        return {"error": "requalification refused while inflight markers exist"}
+    try:
+        evidence = incident_review.read_bytes()
+        incident = json.loads(evidence)
+        if not isinstance(incident, dict) or incident.get("decision") != "rollback":
+            return {"error": "incident review must document a rollback"}
+        raw = ledger_file().read_bytes() if ledger_file().exists() else b""
+        if raw and not raw.endswith(b"\n"):
+            return {"error": "ledger must end at a complete record boundary"}
+        rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        if any(not isinstance(row, dict) for row in rows):
+            return {"error": "ledger contains a non-object record"}
+    except (OSError, ValueError) as exc:
+        return {"error": f"invalid incident review or ledger: {type(exc).__name__}"}
+    at = now_iso()
+    boundary = {"at": at, "operator": operator, "resolution": resolution,
+                "incident_review": str(incident_review.resolve()),
+                "incident_sha256": hashlib.sha256(evidence).hexdigest(),
+                "incident": incident, "ledger_bytes": len(raw),
+                "ledger_sha256": hashlib.sha256(raw).hexdigest()}
+    st.setdefault("history", []).append({
+        "at": at, "from": "S0", "to": "S0", "by": operator,
+        "reason": "explicit requalification: " + resolution,
+        "previous_jobs_completed": st.get("jobs_completed", {}),
+        "previous_qualification": st.get("qualification"),
+        "qualification": boundary})
+    st["qualification"] = boundary
+    st["jobs_completed"] = {}
+    st["review_due"] = datetime.now(timezone.utc).date().isoformat()
+    save_stage(st)
+    return {"requalification": boundary, "current_stage": "S0"}
+
+
 def review(stage_state: dict = None, recs: list = None) -> dict:
     """Weekly promotion review. Compares ledger evidence for the current
     stage against its promote_gate and emits promote|hold|rollback."""
     st = stage_state or load_stage()
     cur = st.get("current_stage", "S0")
     stage = STAGES[cur]
-    recs = load_ledger(stage=cur) if recs is None else recs
+    qualification_error = None
+    if st.get("qualification"):
+        try:
+            recs = [m for m in qualification_ledger(st) if m.get("stage") == cur]
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            recs, qualification_error = [], f"qualification ledger invalid: {type(exc).__name__}"
+    else:
+        recs = load_ledger(stage=cur) if recs is None else recs
     # the gate measures the lane arm only — l0/devin baseline records
     # stay in the ledger for pairing but never inflate promotion math
     recs = [m for m in recs if m.get("executor") == LANE_EXECUTOR]
-    agg = aggregate(recs)
+    invalid_watch = any(type(m.get("human_minutes", 0)) not in (int, float)
+                        or not math.isfinite(m.get("human_minutes", 0))
+                        for m in recs)
+    if invalid_watch:
+        qualification_error = qualification_error or "invalid human-watch metric"
+    agg = aggregate([dict(m, human_minutes=0) for m in recs] if invalid_watch else recs)
     gate = stage.get("promote_gate")
     reasons, decision = [], "hold"
 
@@ -764,7 +837,9 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
            m["failure_reason"].split(":")[0] in
            ("tool_denial", "denied_tool", "scope_violation",
             "mutating_command", "verifier_peek")]
-    if killed():
+    if qualification_error:
+        decision, reasons = "hold", [qualification_error]
+    elif killed():
         decision, reasons = "hold", ["kill switch engaged"]
     elif bad:
         decision = "rollback"
@@ -789,6 +864,8 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
         if me is not None and agg["escalations"] > me:
             reasons.append(
                 f"escalations {agg['escalations']} > {me}")
+        if cur == "S1" and any((m.get("human_minutes") or 0) <= 0 for m in recs):
+            reasons.append("S1 requires recorded human watch on every canary")
         if not reasons:
             decision = "promote"
             reasons = [gate["note"]]
@@ -801,6 +878,7 @@ def review(stage_state: dict = None, recs: list = None) -> dict:
     return {"at": now_iso(), "stage": cur, "decision": decision,
             "promote_to": nxt, "rollback_to": prev,
             "reasons": reasons, "aggregate": agg,
+            "qualification": st.get("qualification"),
             "ledger": recs,     # embedded so a committed review stays
                                 # re-derivable after state loss (AUD-0950)
             "gate": gate, "next_review_due":
@@ -854,6 +932,8 @@ def restore_stage(stage: str, review_path: Path) -> dict:
     requested stage — the restore is evidence-backed, never bare."""
     st = load_stage()
     cur = st.get("current_stage", "S0")
+    if st.get("qualification"):
+        return {"error": "active requalification requires fresh review and promote, not restore"}
     if stage_file().is_file() and \
             STAGE_ORDER.index(cur) >= STAGE_ORDER.index(stage):
         return {"error": f"lane already at {cur} — use promote/demote"}
@@ -995,6 +1075,11 @@ def main():
     sub.add_parser("stage")
     sub.add_parser("review")
     sub.add_parser("promote")
+    sp = sub.add_parser("requalify")
+    sp.add_argument("--operator", required=True)
+    sp.add_argument("--resolution", required=True)
+    sp.add_argument("--incident-review", required=True)
+    sp.add_argument("--confirm-quiescent", action="store_true", required=True)
     sp = sub.add_parser("demote")
     sp.add_argument("stage", choices=STAGE_ORDER)
     sp = sub.add_parser("restore")
@@ -1051,6 +1136,11 @@ def main():
         print(json.dumps({"promoted": r["promote_to"],
                           "history": st["history"][-1]}, indent=1))
         return 0
+    if args.cmd == "requalify":
+        result = requalify(args.operator, args.resolution,
+                           Path(args.incident_review), args.confirm_quiescent)
+        print(json.dumps(result, indent=1))
+        return 1 if "error" in result else 0
     if args.cmd == "demote":
         st = load_stage()
         cur = st.get("current_stage", "S0")

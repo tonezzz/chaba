@@ -163,6 +163,36 @@ failure-reason histogram, per-stage breakdown.
   failure appears in the stage ledger (tool_denial, denied_tool,
   scope_violation, mutating_command, verifier_peek).
 
+## Requalification after rollback (OPS-1255 — review draft, not deployed)
+
+A fresh attempt is an explicit operator decision, never an automatic retry or
+ledger deletion. First adjudicate the incident, quiesce all lane writers, and
+retain the rollback review. The proposed command is:
+
+```bash
+python3 scripts/devnest/lane_gate.py requalify --operator <operator> \
+    --resolution '<incident reference and remediation decision>' \
+    --incident-review <rollback-review.json> --confirm-quiescent
+```
+
+This is permitted only at S0, without a kill switch or inflight markers. It
+preserves previous counters and attempt metadata in stage history, embeds the
+incident review, fingerprints the entire historical ledger prefix, and starts
+fresh quota counters at S0. It does not promote or enable any profile. Promotion
+uses only appended evidence from the new attempt; ledger truncation, historical
+prefix changes or malformed new records hold the review. Aggregate metrics still
+include historical attempts. New safety failures still trigger rollback. An
+active attempt cannot use `restore` to skip fresh qualification. Every S1 canary
+must record positive human-watch minutes; this is evidence, not proof of presence.
+The command relies on operator-enforced quiescence and the existing host-local
+state write discipline; do not run it while scheduled or manual lane writers run.
+
+Authentication preflight: the shadow gate reads `LITELLM_KEY_BENCH` or
+`LITELLM_KEY_CHABA`, not the runner's `LITELLM_KEY`. On idc02, the existing runner
+credential authenticated successfully when explicitly mapped to
+`LITELLM_KEY_BENCH` for a single probe process. Do not rotate keys or weaken auth
+checks to resolve this environment mismatch. No persistent mapping was deployed.
+
 ## Weekly promotion review
 
 `lane_gate.py review` — run weekly (calendar cadence; `review_due` is

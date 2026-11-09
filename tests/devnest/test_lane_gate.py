@@ -331,6 +331,20 @@ class ReviewAndMetrics(unittest.TestCase):
         r = mod.review(stage_state("S3"), recs)
         self.assertEqual(r["rollback_to"], "S2")
 
+    def test_s1_requires_recorded_human_watch(self):
+        result = mod.review(stage_state("S1"), [self._rec(stage="S1")])
+        self.assertEqual(result["decision"], "hold")
+        result = mod.review(stage_state("S1"),
+                            [self._rec(stage="S1", human_minutes=1)])
+        self.assertEqual(result["decision"], "promote")
+
+    def test_s1_rejects_invalid_human_watch_values(self):
+        for value in (float("nan"), float("inf"), -1, True, "watched"):
+            with self.subTest(value=value):
+                result = mod.review(stage_state("S1"),
+                                    [self._rec(stage="S1", human_minutes=value)])
+                self.assertEqual(result["decision"], "hold")
+
     def test_terminal_stage_holds(self):
         recs = [self._rec(stage="S5") for _ in range(9)]
         r = mod.review(stage_state("S5"), recs)
@@ -389,6 +403,120 @@ class ReviewAndMetrics(unittest.TestCase):
         self.assertEqual(len(r["ledger"]), 5)  # lane arm only
         self.assertTrue(all(m["executor"] == "opencode"
                             for m in r["ledger"]))
+
+
+class Requalification(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.old = os.environ["OPENCODE_LANE_STATE"]
+        os.environ["OPENCODE_LANE_STATE"] = self.td.name
+        self.incident = Path(self.td.name) / "incident.json"
+        self.incident.write_text(json.dumps({"decision": "rollback",
+                                             "stage": "S1"}))
+        self.st = stage_state("S0")
+        self.st["jobs_completed"]["S1"] = 3
+        mod.save_stage(self.st)
+        self.old_record = ReviewAndMetrics()._rec(
+            stage="S1", ok=False, fail="tool_denial", tool_denials=1)
+        mod.record_metric(self.old_record)
+
+    def tearDown(self):
+        os.environ["OPENCODE_LANE_STATE"] = self.old
+        self.td.cleanup()
+
+    def start(self):
+        return mod.requalify("tony", "OPS-1255: denied write attempts reviewed",
+                             self.incident, confirm_quiescent=True)
+
+    def test_preserves_history_and_requires_fresh_s0(self):
+        before = mod.ledger_file().read_bytes()
+        result = self.start()
+        self.assertNotIn("error", result)
+        st = mod.load_stage()
+        self.assertEqual(st["current_stage"], "S0")
+        self.assertEqual(st["jobs_completed"], {})
+        self.assertEqual(st["history"][-1]["previous_jobs_completed"]["S1"], 3)
+        self.assertEqual(mod.ledger_file().read_bytes(), before)
+        self.assertEqual(mod.review(st)["decision"], "hold")
+        for _ in range(5):
+            mod.record_metric(ReviewAndMetrics()._rec())
+        review = mod.review(st)
+        self.assertEqual(review["decision"], "promote")
+        self.assertEqual(review["promote_to"], "S1")
+        self.assertEqual(review["qualification"], st["qualification"])
+        st["current_stage"] = "S1"
+        self.assertEqual(mod.review(st)["decision"], "hold")
+
+    def test_historical_restore_cannot_skip_requalification(self):
+        self.start()
+        self.incident.write_text(json.dumps({"decision": "promote",
+                                             "promote_to": "S1"}))
+        self.assertIn("error", mod.restore_stage("S1", self.incident))
+        self.assertEqual(mod.load_stage()["current_stage"], "S0")
+
+    def test_new_safety_failure_still_rolls_back(self):
+        self.start()
+        mod.record_metric(ReviewAndMetrics()._rec(fail="mutating_command"))
+        self.assertEqual(mod.review()["decision"], "rollback")
+
+    def test_ledger_tamper_or_truncation_holds(self):
+        self.start()
+        for replacement in (b"", b"{}\n"):
+            mod.ledger_file().write_bytes(replacement)
+            result = mod.review()
+            self.assertEqual(result["decision"], "hold")
+            self.assertTrue(any("qualification" in r for r in result["reasons"]))
+
+    def test_malformed_new_record_holds(self):
+        self.start()
+        with mod.ledger_file().open("ab") as f:
+            f.write(b"not-json\n")
+        self.assertEqual(mod.review()["decision"], "hold")
+
+    def test_incomplete_record_holds_even_when_valid_json(self):
+        self.start()
+        for _ in range(4):
+            mod.record_metric(ReviewAndMetrics()._rec())
+        with mod.ledger_file().open("ab") as f:
+            f.write(json.dumps(ReviewAndMetrics()._rec()).encode())
+        self.assertEqual(mod.review()["decision"], "hold")
+
+    def test_invalid_boundary_metadata_holds(self):
+        self.start()
+        st = mod.load_stage()
+        for value in (True, -1, "0", None):
+            with self.subTest(value=value):
+                st["qualification"]["ledger_bytes"] = value
+                self.assertEqual(mod.review(st)["decision"], "hold")
+
+    def test_refuses_without_operator_resolution_or_quiescence(self):
+        for operator, resolution, quiet in (("", "resolved", True),
+                                            ("tony", "", True),
+                                            ("tony", "resolved", False)):
+            result = mod.requalify(operator, resolution, self.incident,
+                                   confirm_quiescent=quiet)
+            self.assertIn("error", result)
+        self.assertNotIn("qualification", mod.load_stage())
+
+    def test_refuses_non_s0_killed_or_inflight(self):
+        st = mod.load_stage()
+        st["current_stage"] = "S1"
+        mod.save_stage(st)
+        self.assertIn("error", self.start())
+        st["current_stage"] = "S0"
+        mod.save_stage(st)
+        mod.kill_file().write_text("{}")
+        self.assertIn("error", self.start())
+        mod.kill_file().unlink()
+        mod.inflight_dir().mkdir()
+        (mod.inflight_dir() / "job.json").write_text("{}")
+        self.assertIn("error", self.start())
+
+    def test_refuses_missing_or_nonrollback_incident(self):
+        self.incident.write_text(json.dumps({"decision": "promote"}))
+        self.assertIn("error", self.start())
+        self.incident.unlink()
+        self.assertIn("error", self.start())
 
 
 class StateDir(unittest.TestCase):
