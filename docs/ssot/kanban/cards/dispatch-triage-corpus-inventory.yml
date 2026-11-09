@@ -1,7 +1,7 @@
 id: dispatch-triage-corpus-inventory
 title: dispatch-triage specialist — corpus inventory and labeling strategy proposal
-column: backlog
-updated: 2026-11-09 15:46
+column: review
+updated: 2026-11-09 16:22
 brief: 'The dispatch-triage suite is registered in ada-voice tests/bench/suites.yml but has no trained incumbent
   — the open question (ssot.nest-training) is who labels the data. Analysis card: inventory candidate labeled sources
   for the routing/triage surface, propose labeling strategies with costs, and put the decision to Tony as a board
@@ -48,7 +48,15 @@ spec: 'This is an ANALYSIS card — produce a decision doc, do NOT train anythin
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
+  lane: devin
+  runner: idc02
+  result: 'exit=0 s committed on the dispatch branch only; no push, no deploy, outcome file written alongside the
+    doc. | devin-task-20261109-155744-this-is-an-analysis-card-produ.service: Consumed 2min 28.617s CPU time, 2.9G
+    memory peak, 0B memory swap peak.'
+  verified: true
+  sweep:
+    close_held: 2026-11-09 16:22
 ref: OPS-1278
 comms:
 - at: 2026-11-09 15:44
@@ -63,3 +71,117 @@ comms:
 - at: 2026-11-09 15:46
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 15:48
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.66 > 1.0)'
+- at: 2026-11-09 15:51
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-09 15:51
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
+- at: 2026-11-09 15:51
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 15:52
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 3.02 > 1.0)'
+- at: 2026-11-09 15:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.73 > 0.85)'
+- at: 2026-11-09 15:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.56 > 1.0)'
+- at: 2026-11-09 15:54
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.86 > 0.85)'
+- at: 2026-11-09 15:54
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.24 > 1.0)'
+- at: 2026-11-09 15:55
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.09 > 0.85)'
+- at: 2026-11-09 15:55
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.98 > 1.0)'
+- at: 2026-11-09 15:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.26 > 0.85)'
+- at: 2026-11-09 15:56
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.80 > 1.0)'
+- at: 2026-11-09 15:57
+  from: idc02
+  text: claimed
+- at: 2026-11-09 15:57
+  from: chaba
+  text: started devin-task-20261109-155744-this-is-an-analysis-card-produ on idc02 (dispatch)
+- at: 2026-11-09 15:58
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.64 > 1.0)'
+- at: 2026-11-09 16:06
+  from: devin
+  text: 'Inventory measured: mddb cascade-outcomes = 0 rows on all 4 banks (never populated). Card corpus: 1411
+    files, 675 dispatch, 82 lane-stamped, 66 retry-evidence, verified 374T/34F. idc02 task dirs: 739 (249 opencode-lane
+    attempts w/ verdicts, 33 cards). Suite hard tier has 30 rows; golden+adversarial empty. Writing job doc now.'
+- at: 2026-11-09 16:06
+  from: devin
+  text: 'Inventory measured: mddb cascade-outcomes = 0 rows on all 4 banks (never populated). Card corpus: 1411
+    files, 675 dispatch, 82 lane-stamped, 66 retry-evidence, verified 374T/34F. idc02 task dirs: 739 (249 opencode-lane
+    attempts w/ verdicts, 33 distinct cards). Suite hard tier has 30 rows; golden+adversarial empty. Writing job
+    doc now.'
+- at: 2026-11-09 16:08
+  from: devin
+  text: 'raised request labeling-strategy-for-the-dispatch-triag-e44673: Labeling strategy for the dispatch-triage
+    corpus — pick one: (a) weak supervision — derive labels from verified outcomes'
+- at: 2026-11-09 16:09
+  from: devin
+  text: 'Analysis done — job doc docs/ssot/jobs/nest/2026-11-09-dispatch-triage-corpus.yml. Real counts: cascade-outcomes=0
+    rows all banks; cards 1411 (675 dispatch, 82 lane-stamped, 66 retry); idc02 task dirs 739 (249 opencode attempts
+    w/ verdicts). Recommendation posted as request: ★ arbiter adjudication (b).'
+- at: 2026-11-09 16:12
+  from: idc02
+  text: 'finished (ok): exit=0 s committed on the dispatch branch only; no push, no deploy, outcome file written
+    alongside the doc. | devin-task'
+- at: 2026-11-09 16:12
+  from: chaba
+  text: pushed dispatch/20261109-155744-this-is-an-analysis-card-produ to origin
+- at: 2026-11-09 16:12
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 16:12
+  from: chaba
+  text: auto-merged 86b00cff (dispatch/20261109-155744-this-is-an-analysis-card-produ) → origin/master
+- at: 2026-11-09 16:12
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-155744-this-is-an-analysis-card-produ,
+    branch dispatch/20261109-155744-this-is-an-analysis-card-produ'
+- at: 2026-11-09 16:22
+  from: chaba
+  text: 'merge-sweep: verified — held in review (open request(s) [''labeling-strategy-for-the-disp''] block close)'
+requests:
+- id: labeling-strategy-for-the-dispatch-triag-e44673
+  ask: 'Labeling strategy for the dispatch-triage corpus — pick one: (a) weak supervision — derive labels from verified
+    outcomes automatically, ~1-2h agent, $0, but noisy and labels the wrong surface for this suite; (b) ★ arbiter
+    adjudication — L2/L3 model (flash-lite free lane) labels ~700-1400 card texts into code/docs/ops/research/clarify,
+    low-confidence queued to you, ~100-row human spot-check doubles as the golden seed (~30-50 min your time); (c)
+    hand-labeled ~100 rows for golden only (~45-90 min, does not fill hard tier). Recommendation: (b) — it is the
+    ssot.nest-training open-question answer and (c) folds inside its spot-check. Full counts + costs: docs/ssot/jobs/nest/2026-11-09-dispatch-triage-corpus.yml'
+  status: open
+  at: 2026-11-09 16:08
+  from: devin
+  options:
+  - proceed
+  - hold
+review_kind: verify
+claim: {}

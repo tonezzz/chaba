@@ -1,0 +1,36 @@
+id: fleet-jobs-report-and-ada-verb
+title: fleet-jobs report — deterministic aggregator job + Ada report-verb read path (zero-token report)
+column: backlog
+updated: 2026-11-09 16:37
+priority: high
+tags:
+- devnest
+- report
+- ada
+- jules
+spec: 'Two-part deliverable, repo work only (jules-shaped):
+
+
+  1) AGGREGATOR — scripts/fleet-jobs-report.py: per-host jobs/queue/lane status from EXISTING sources (no new instrumentation):
+  timer-timeline collection + runner-fleet-health + board-api /cards claim stats + LiteLLM spend ledger + docs/ssot/generated/jobs.<host>.yml
+  declared timers. Emits reports/fleet-jobs-<date>.md + a CMS page node (L2-domain, ssot.reports.yml conventions).
+  Register as ssot.jobs.yml entry fleet-jobs-report (every:4h, host:idc03, deterministic — no LLM).
+
+  2) ADA READ PATH — document the report-verb contract so Ada answers how-are-jobs from the rendered artifact (sub-second
+  read, never live-compute on a voice turn); ada-voice tool wiring is a follow-up card (separate repo).
+
+
+  DONE-CONDITION: one rendered page shows per-host timers/claims/lanes/spend; job registered; Ada verb contract
+  written.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: jules
+  lane: jules
+  status: queued
+ref: ADA-1279
+comms:
+- at: 2026-11-09 16:37
+  from: tony
+  text: queued for jules — deterministic aggregator + report verb contract; producer/consumer split (scheduled write,
+    Ada reads artifact)

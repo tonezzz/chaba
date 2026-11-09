@@ -1,7 +1,7 @@
 id: primer-efficacy-measurement
 title: Dispatch primer efficacy — measure repeat-failure rate and primer value
-column: doing
-updated: 2026-11-09 15:47
+column: done
+updated: 2026-11-09 16:22
 brief: 'The lesson primer claims compounding (each failure makes the next dispatch smarter) but nothing measures
   it. Build scripts/board/primer_efficacy.py: an offline analysis over the card corpus + outcome docs that computes
   whether injected lessons correlate with better outcomes, and reports the numbers honestly.'
@@ -57,9 +57,15 @@ spec: 'Goal: prove or kill the primer''s compounding claim with numbers, and pro
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: tony-omen
+  result: 'exit=0 on, primer the runner lane) needed before the A/B means anything. | devin-task-20261109-154659-goal-prove-or-kill-the-primer-.service:
+    Consumed 8min 54.371s CPU time over 17min 30.091s wall clock time, 1G memory peak, 8.7M memory swap peak.'
+  verified: true
+  sweep:
+    stale_running: 2026-11-09 16:09
+    dirty: 4
 ref: OPS-1270
 comms:
 - at: 2026-11-09 15:44
@@ -90,3 +96,65 @@ comms:
 - at: 2026-11-09 15:47
   from: devin
   text: 'started: exploring primer mechanism + card corpus'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 16:04
+  from: devin
+  text: 'DONE: verdict CONTRADICTED — primer injected 15 lessons ever (all 10-09→10-11), zero for ~a month. lp.build()
+    crashes on string comms (kraut-* cards) + runner-agent lane (96% of dispatches) has no primer + zero-injection
+    is never logged. Warned-failure match 8/12 when it ran. A/B design + 3 fix followups in reports/primer-efficacy-2026-11-09.md
+    + job doc.'
+- at: 2026-11-09 16:06
+  from: tony-omen
+  text: 'finished (ok): exit=0 on, primer the runner lane) needed before the A/B means anything. | devin-task-20261109-154659-goal-prove-or-kill'
+- at: 2026-11-09 16:07
+  from: chaba
+  text: "checkpoint failed: commit: ⚠️  single-writer: /home/tony/CascadeProjects/dispatch-wt-20261109-154659-goal-prove-or-kill-the-primer-\
+    \ is 158 commits behind origin/master —\n   run 'git pull"
+- at: 2026-11-09 16:08
+  from: chaba
+  text: pushed dispatch/20261109-154659-goal-prove-or-kill-the-primer- to origin
+- at: 2026-11-09 16:08
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-154659-goal-prove-or-kill-the-primer- no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-154659-goal-prove-or-kill-the-primer- no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-09 16:09
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261109-154659-goal-prove-or-kill-the-primer- on tony-omen still dirty
+    — 4 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-09 16:15
+  from: chaba
+  text: 'checkpoint failed: commit: 🧪 Fast test gate: pytest tests/board (≤15s)
+
+    ⚠️  test gate hit the 15s budget — not blocking; run pytest manually before pushing
+
+    🔍 Validating SSOT files...
+
+    📋 Fou'
+- at: 2026-11-09 16:15
+  from: chaba
+  text: pushed dispatch/20261109-154659-goal-prove-or-kill-the-primer- to origin
+- at: 2026-11-09 16:15
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-09 16:15
+  from: chaba
+  text: 'worktree kept: dirty — 4 uncommitted file(s)'
+- at: 2026-11-09 16:22
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 16:22
+  note: verified — evidence checks green, closing itself

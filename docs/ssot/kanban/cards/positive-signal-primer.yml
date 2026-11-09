@@ -1,7 +1,7 @@
 id: positive-signal-primer
 title: Positive-signal primer — harvest what worked, not only pitfalls
-column: backlog
-updated: 2026-11-09 15:47
+column: review
+updated: 2026-11-09 16:39
 brief: 'KNOWN_PITFALLS is failure-only, so the prompt accrues prohibitions and never distills what worked. Add a
   positive channel: KNOWN_GOOD lines harvested from first-try-verified dispatches (spec shapes, approaches that
   merged clean) rendered as a second small block.'
@@ -35,7 +35,12 @@ spec: 'Files: scripts/board/lesson_primer.py, scripts/board/kanban-dispatch.py (
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: done
+  lane: codemod
+  runner: tony-omen
+  result: 'exit=0 tch-outcome-20261109-155120-files-scripts-board-lesson-pri.md`. | devin-task-20261109-155120-files-scripts-board-lesson-pri.service:
+    Consumed 40min 35.943s CPU time over 47min 21.478s wall clock time, 1G memory peak, 39.8M memory swap peak.'
+  verified: false
 ref: OPS-1274
 comms:
 - at: 2026-11-09 15:44
@@ -54,3 +59,57 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 15:48
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.66 > 1.0)'
+- at: 2026-11-09 15:50
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-09 15:50
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.46 > 1.0)'
+- at: 2026-11-09 15:51
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 15:51
+  from: chaba
+  text: started devin-task-20261109-155120-files-scripts-board-lesson-pri on tony-omen (dispatch)
+- at: 2026-11-09 15:51
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 16:25
+  from: devin
+  text: 'implemented: _positive_candidates + build_good/format_good_block in lesson_primer (verified+attempts<=1
+    cards -> 1 line each, wins|worked|success_patterns job fields; word-bounded signal re + noise filter), build_task
+    appends KNOWN_GOOD after KNOWN_PITFALLS (KANBAN_PRIMER_GOOD=0 off), good: lines merged into primer comms. tests
+    + live smoke on real card OK; full tests/board green on prior run, re-verifying touched files'
+- at: 2026-11-09 16:38
+  from: devin
+  text: 'done on this worktree — lesson_primer gains _positive_candidates (135 lines on live board: first-try-verified
+    cards -> 1 [card-id] line each via signal+noise regexes, plus wins|worked|success_patterns job fields), build_good/format_good_block
+    sharing _select() with pitfalls so scoring-fixes lands once; build_task appends KNOWN_GOOD after KNOWN_PITFALLS
+    (KANBAN_PRIMER_GOOD=0 off, warn-only); comms log gains good: prefix. Also fixed a latent lp.build crash on bare-string
+    comms entries. tests/board'
+- at: 2026-11-09 16:39
+  from: tony-omen
+  text: 'finished (ok): exit=0 tch-outcome-20261109-155120-files-scripts-board-lesson-pri.md`. | devin-task-20261109-155120-files-scripts-board-'
+- at: 2026-11-09 16:39
+  from: chaba
+  text: 'session-end checkpoint 566f1de8: 1 leftover file(s) committed'
+- at: 2026-11-09 16:39
+  from: chaba
+  text: pushed dispatch/20261109-155120-files-scripts-board-lesson-pri to origin
+- at: 2026-11-09 16:39
+  from: chaba
+  text: 'auto-merge conflicts: scripts/board/lesson_primer.py — card stays in review for manual resolution'
+- at: 2026-11-09 16:39
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+review_kind: verify
+claim: {}
