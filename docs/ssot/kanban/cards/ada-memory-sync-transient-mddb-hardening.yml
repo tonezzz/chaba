@@ -1,0 +1,24 @@
+id: ada-memory-sync-transient-mddb-hardening
+title: 'ada-memory-sync: tolerate transient MDDB blips (retry/backoff or timeout bump)'
+column: backlog
+updated: 2026-11-09 09:21
+priority: medium
+tags:
+- hardening
+- timer-alert
+- mddb
+spec: 'Follow-up from timer-alert-idc03-ada-memory-sync (diagnosed 2026-11-09). ada-memory-sync.service on idc03
+  exits 1 on transient MDDB faults, producing red timer-alert cards that self-heal next hourly run. Two observed
+  modes: (a) weekly mddb-restart.timer (Sun 05:00) kills an in-flight POST /add -> RemoteDisconnected; (b) degraded
+  embed path (embed-pool-shim circuit-open + Gemini 429) makes /add exceed the sync client 20s read timeout -> ReadTimeout.
+  Options: 1) add bounded retry w/ backoff in sync-ada-memory-to-mddb.py Mddb._post (2-3 tries, ~30-60s backoff
+  covers a restart); 2) bump read timeout past worst inline-embed stall (~40-60s); 3) move ada-memory-sync.timer
+  off :00 so it never collides with Sun-05:00 mddb-restart; 4) fold into the pending exit-0 contract migration already
+  listed for this unit in docs/kb/timer-expectations.md. Recommend (1)+(3) — cheap, keeps real crashes red.'
+note: Filed by dispatch investigation 2026-11-09 — see card timer-alert-idc03-ada-memory-sync comms for journal
+  evidence.
+ref: MEM-1253
+comms:
+- at: 2026-11-09 09:21
+  from: devin
+  text: card captured via board-api
