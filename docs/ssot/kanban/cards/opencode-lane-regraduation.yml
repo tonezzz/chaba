@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 17:33
+updated: 2026-11-09 19:12
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -193,6 +193,12 @@ comms:
     read-only typed fix passes 48 focused tests, broader run pending. SEC-1286 tracks approved credential rotation:
     old ada key blocked/401; Tony requires Dec1 reset, no replacement yet. Native Ada v2 API is /api/* with schema
     /openapi.json; ada-control connected.'
+- at: 2026-11-09 19:12
+  from: devin
+  text: 'Typed API correction df965aae8c pushed via ff1858b9b5 and live after verified restart. Host unittest: 71
+    executor-contract +12 primer +28 reads passed. Actual HTTP typed-report validation reached expected existing-card
+    guard; no new card/job. Shared key rotation SEC-1286 closed separately, no S3 evidence generated. Remaining:
+    installed runner/producer verification and one genuine Ada-to-executor/verifier closeout. No write/code promotion.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
