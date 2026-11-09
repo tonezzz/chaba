@@ -1,14 +1,14 @@
 id: timer-alert-tony-omen-ada-review-refresh
 title: Timer ada-review-refresh on tony-omen failing
 column: backlog
-updated: 2026-11-08 10:52
+updated: 2026-11-09 09:10
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-08 08:56) of `ada-review-refresh.service` on `tony-omen` result=exit-code — investigate
-  journal: `journalctl --user -u ada-review-refresh.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-08 08:56) of `ada-review-refresh.service` on `tony-omen` result=exit-code — investigate journal:
+  `journalctl --user -u ada-review-refresh.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: ADA-1138
 comms:
 - at: 2026-11-08 10:29
@@ -25,8 +25,11 @@ comms:
 - at: 2026-11-08 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failing systemd user timer and service 'ada-review-refresh.service' on host 'tony-omen'
-  by examining the journal logs using 'journalctl --user -u ada-review-refresh.service'. The goal is to
-  diagnose the root cause of the exit-code failure from the 11-08 08:56 run and reference CMS 'timer-timeline-tony-omen'.
-  The done-condition is verified when the failure cause is identified from the journal logs and documented
-  or resolved.
+- at: 2026-11-09 09:10
+  from: devin
+  text: '[still suspicious] Last run (11-09 08:56) of `ada-review-refresh.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u ada-review-refresh.service` on the host. See CMS `timer-timeline-tony-omen`.'
+spec: Investigate the failing systemd user timer and service 'ada-review-refresh.service' on host 'tony-omen' by
+  examining the journal logs using 'journalctl --user -u ada-review-refresh.service'. The goal is to diagnose the
+  root cause of the exit-code failure from the 11-08 08:56 run and reference CMS 'timer-timeline-tony-omen'. The
+  done-condition is verified when the failure cause is identified from the journal logs and documented or resolved.
