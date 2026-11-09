@@ -1,0 +1,64 @@
+id: jev-opencode-closeout-probe
+title: 'OpenCode closeout probe: append marker and merge via worktree'
+column: done
+updated: 2026-11-09 20:16
+brief: Small free-lane marker job to prove the new dispatch-compatible OpenCode worktree and auto-merge closeout.
+priority: low
+program: chaba-ci
+tags:
+- opencode
+- jev
+- closeout
+- probe
+spec: 'Append a single line to README.md and commit it. Expected: runner creates dispatch-compatible worktree/branch,
+  OpenCode runs with flash-lite, close_out_merge verifies and merges, card done. No deploy.'
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0  devin-task-20261025-110557-append-a-single-line-to-readme.service: Failed with result ''exit-code''.
+    | devin-task-20261025-110557-append-a-single-line-to-readme.service: Consumed 376ms CPU time over 627ms wall
+    clock time, 104.9M memory peak.'
+  sweep:
+    session_gone: 2026-10-25 18:15
+ref: OPS-0868
+comms:
+- at: 2026-10-25 18:03
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 18:04
+  from: devin
+  text: queued for processing
+- at: 2026-10-25 18:05
+  from: chaba
+  text: 'tony-omen defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 18:05
+  from: mn01
+  text: claimed
+- at: 2026-10-25 18:05
+  from: chaba
+  text: started devin-task-20261025-110557-append-a-single-line-to-readme on mn01 (dispatch)
+- at: 2026-10-25 18:07
+  from: mn01
+  text: 'finished (ok): exit=0  devin-task-20261025-110557-append-a-single-line-to-readme.service: Failed with result
+    ''exit-code''. | devin-task-'
+- at: 2026-10-25 18:07
+  from: chaba
+  text: pushed dispatch/20261025-110557-append-a-single-line-to-readme to origin
+- at: 2026-10-25 18:07
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261025-110557-append-a-single-line-to-readme,
+    branch dispatch/20261025-110557-append-a-single-line-to-readme'
+- at: 2026-10-25 18:15
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261025-110557-append-a-single-line-to-readme on
+    mn01 — if the work was never pushed it may be gone'
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (14d in done, board over card cap)
+review_kind: verify
+claim: {}
