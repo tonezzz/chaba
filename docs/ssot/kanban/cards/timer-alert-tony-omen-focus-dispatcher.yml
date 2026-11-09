@@ -1,14 +1,14 @@
 id: timer-alert-tony-omen-focus-dispatcher
 title: Timer focus-dispatcher on tony-omen failing
 column: backlog
-updated: 2026-11-08 14:29
+updated: 2026-11-09 13:37
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-08 14:00) of `focus-dispatcher.service` on `tony-omen` result=exit-code — investigate
-  journal: `journalctl --user -u focus-dispatcher.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-08 14:00) of `focus-dispatcher.service` on `tony-omen` result=exit-code — investigate journal:
+  `journalctl --user -u focus-dispatcher.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: OPS-1205
 comms:
 - at: 2026-11-08 14:09
@@ -25,9 +25,11 @@ comms:
 - at: 2026-11-09 07:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of focus-dispatcher.service on the host tony-omen by examining the journal
-  logs using journalctl --user -u focus-dispatcher.service. Review the CMS timeline timer-timeline-tony-omen
-  for additional context regarding the last run at 11-08 14:00 which resulted in an exit-code. Identify
-  the root cause of the non-zero exit status and ensure the service is functioning correctly or report
-  the specific error found. The done-condition is a documented diagnosis of the exit-code cause derived
-  directly from the host journal and CMS timeline.
+- at: 2026-11-09 13:37
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-09 13:30 — closing (timer-sentinel KNB-0577)'
+spec: Investigate the failure of focus-dispatcher.service on the host tony-omen by examining the journal logs using
+  journalctl --user -u focus-dispatcher.service. Review the CMS timeline timer-timeline-tony-omen for additional
+  context regarding the last run at 11-08 14:00 which resulted in an exit-code. Identify the root cause of the non-zero
+  exit status and ensure the service is functioning correctly or report the specific error found. The done-condition
+  is a documented diagnosis of the exit-code cause derived directly from the host journal and CMS timeline.
