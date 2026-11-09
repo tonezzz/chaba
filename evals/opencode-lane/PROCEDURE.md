@@ -236,6 +236,34 @@ certificate or silently retried past the five-job quota. S2 requires five genuin
 independently verified artifacts before S3. The pilot scope is read-only ops;
 it does not qualify free models for branch/code work.
 
+### S3 board dispatch and report closeout
+
+New OpenCode starts require `action.lane_envelope`, a complete job object using
+this procedure's envelope schema. The board preserves that object; the runner
+freezes it with the actual execution id and the card spec before launching.
+The currently qualified adapter is restricted to S3 `ops-readonly` health reports
+on idc02, with no MCP tools and the profile's held-out verifier. Card, host,
+model, class and artifact declarations must agree. Unsupported or unstaged new
+starts are held, not silently routed to a different executor.
+
+The dispatch worktree runs the existing `opencode_profiles.py run` controller,
+not a raw model shell. `--controller-heartbeat` records the real controller PID
+immediately before admission; it is liveness evidence, never human-watch time.
+The controller admits against the live gate and records its own staged metric.
+Completion charges the admitted stage even if the current stage changes while
+execution is running. Historical generic dispatch rows remain unstaged and must
+not be relabeled or counted as S3 evidence.
+
+Board closeout independently checks the frozen request/profile/prompt/config,
+original successful host-snapshot tool output, landed artifact bytes, active
+qualification ledger row, event/scope audits, and pinned held-out verifier.
+It copies the report and a hash receipt into the durable dispatch task directory.
+A verified report-only card needs no source-code merge; this path must never be
+used to claim branch/code qualification or close an underlying remediation card
+merely because diagnostic evidence was produced. Failed evidence is retained.
+Use genuine requested production work; do not manufacture snapshot cards to
+fill the sample quota.
+
 ## Weekly promotion review
 
 `lane_gate.py review` — run weekly (calendar cadence; `review_due` is

@@ -20,6 +20,7 @@ import urllib.request
 import urllib.error
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -158,7 +159,12 @@ class GetRoutingTest(unittest.TestCase):
             {"generated": "2026-10-31 08:00", "page_version": 1,
              "columns": [], "cards": FIXTURE_CARDS}))
         cls._saved = cls.mod.CARDS_JSON
+        cls._saved_card_dir = cls.mod.CARD_DIR
+        cls._saved_lock = cls.mod.LOCK
+        cls.mod.LOCK = Path(cls.tmp.name) / "board-api.lock"
         cls.mod.CARDS_JSON = fixture
+        cls.mod.CARD_DIR = Path(cls.tmp.name) / "cards"
+        cls.mod.CARD_DIR.mkdir()
         cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), cls.mod.H)
         cls.port = cls.srv.server_address[1]
         cls.th = threading.Thread(target=cls.srv.serve_forever,
@@ -168,8 +174,17 @@ class GetRoutingTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.srv.shutdown()
+        cls.srv.server_close()
         cls.mod.CARDS_JSON = cls._saved
+        cls.mod.CARD_DIR = cls._saved_card_dir
+        cls.mod.LOCK = cls._saved_lock
         cls.tmp.cleanup()
+
+    def setUp(self):
+        for path in self.mod.CARD_DIR.glob("*.yml"):
+            path.unlink()
+        for card in FIXTURE_CARDS:
+            (self.mod.CARD_DIR / f"{card['id']}.yml").write_text(json.dumps(card))
 
     def get(self, path):
         url = f"http://127.0.0.1:{self.port}{path}"
@@ -219,6 +234,44 @@ class GetRoutingTest(unittest.TestCase):
         st, body = self.get("/card")
         self.assertEqual(st, 400)
         self.assertIn("hint", body)
+
+    def test_post_comment_is_immediately_visible_without_render(self):
+        body = json.dumps({"id": "c-one", "from": "devin", "text": "fresh canonical comment"}).encode()
+        req = urllib.request.Request(f"http://127.0.0.1:{self.port}/comment", data=body,
+                                     headers={"Content-Type": "application/json"})
+        with mock.patch.object(self.mod, "_commit_write"), mock.patch.object(self.mod, "render_async"):
+            with urllib.request.urlopen(req, timeout=5) as response:
+                self.assertTrue(json.load(response)["ok"])
+        for path in ("/cards?id=c-one", "/card/c-one"):
+            status, response = self.get(path)
+            card = response["card"] if "card" in response else response["cards"][0]
+            self.assertEqual(status, 200)
+            self.assertEqual(card["comms"][-1]["text"], "fresh canonical comment")
+
+    def test_canonical_new_deleted_and_updated_cards_ignore_stale_projection(self):
+        self.get("/cards")
+        path = self.mod.CARD_DIR / "c-one.yml"
+        card = dict(FIXTURE_CARDS[0], column="review")
+        card.pop("action")
+        path.write_text(json.dumps(card))
+        (self.mod.CARD_DIR / "c-four.yml").unlink()
+        (self.mod.CARD_DIR / "new-card.yml").write_text(json.dumps({"id": "new-card", "title": "New", "column": "review"}))
+        status, result = self.get("/cards?column=review")
+        self.assertEqual(status, 200)
+        self.assertEqual({c["id"] for c in result["cards"]}, {"c-one", "new-card"})
+        self.assertNotIn("action", next(c for c in result["cards"] if c["id"] == "c-one"))
+        self.assertEqual(self.get("/card/c-four")[0], 404)
+
+    def test_corrupt_canonical_card_fails_explicitly_not_stale_or_empty(self):
+        (self.mod.CARD_DIR / "c-one.yml").write_text("bad: [")
+        for path in ("/cards?column=doing", "/card/c-one"):
+            self.assertEqual(self.get(path)[0], 503)
+
+    def test_missing_render_does_not_hide_canonical_cards(self):
+        with mock.patch.object(self.mod, "CARDS_JSON", Path(self.tmp.name) / "absent.json"):
+            status, response = self.get("/cards?id=c-one")
+            self.assertEqual(status, 200)
+            self.assertEqual(response["cards"][0]["id"], "c-one")
 
     def test_queue_still_works(self):
         st, body = self.get("/queue")

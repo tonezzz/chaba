@@ -209,7 +209,7 @@ LLM_KEY_ALIASES = {"ada", "chaba", "bench", "kk", "michael", "cline"}
 ACTION_KEYS = ("type", "repo", "host", "labels", "button", "model",
                "executor", "agent_profile", "profile", "target_host",
                "artifact", "task_class", "prompt", "expect", "lane",
-               "subject_host", "llm_key_alias", "nlm_notebook",
+               "subject_host", "llm_key_alias", "lane_envelope", "nlm_notebook",
                "nlm_source_file", "nlm_source_text", "nlm_source_url")
 
 # --- write gate (card board-api-auth) ------------------------------------
@@ -414,7 +414,7 @@ def ref_cat(card: dict, body: dict) -> str:
 
 
 def load(p: Path) -> dict:
-    d = yaml.safe_load(p.read_text()) or {}
+    d = yaml.load(p.read_text(), Loader=getattr(yaml, "CSafeLoader", yaml.SafeLoader)) or {}
     if not isinstance(d, dict):
         raise ValueError(f"card {p.name} is not a YAML mapping")
     return d
@@ -1316,6 +1316,8 @@ def do_create(body: dict, frm: str) -> dict:
                 raise ValueError(
                     f"action.{pk} must be a profile id "
                     "([a-z0-9][a-z0-9-], max 61)")
+        if "lane_envelope" in act and not isinstance(act["lane_envelope"], dict):
+            raise ValueError("action.lane_envelope must be an object")
         key_alias = str(act.get("llm_key_alias") or "").strip().lower()
         if key_alias and key_alias not in LLM_KEY_ALIASES:
             raise ValueError(
@@ -3613,13 +3615,38 @@ COMPACT_FIELDS = ("id", "title", "column", "updated", "priority", "ref",
 CARDS_MAX_LIMIT = 1000
 
 
+_card_read_cache = {}
+_card_read_lock = threading.Lock()
+
+
 def load_cards() -> dict:
-    """Parsed rendered board payload; {} when the file is absent/corrupt
-    (readers degrade to empty results, never a 500)."""
+    """Current canonical cards with legacy rendered board metadata.
+    Unreadable canonical sources fail explicitly, never as stale/empty data."""
     try:
-        return json.loads(CARDS_JSON.read_text()) or {}
-    except Exception:
-        return {}
+        payload = json.loads(CARDS_JSON.read_text()) or {}
+    except (OSError, ValueError):
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    if not CARD_DIR.is_dir():
+        raise OSError("canonical card directory missing")
+    with _card_read_lock:
+        current = {}
+        cards = []
+        for path in sorted(CARD_DIR.glob("*.yml")):
+            stat = path.stat()
+            signature = (stat.st_mtime_ns, stat.st_ctime_ns, stat.st_ino, stat.st_size)
+            cached = _card_read_cache.get(path)
+            if cached and cached[0] == signature:
+                card = cached[1]
+            else:
+                card = load(path)
+                card.setdefault("id", path.stem)
+            current[path] = (signature, card)
+            cards.append(card)
+        _card_read_cache.clear()
+        _card_read_cache.update(current)
+    return dict(payload, cards=cards)
 
 
 def _q1(q: dict, name: str, default: str = "") -> str:
@@ -3779,8 +3806,12 @@ class H(BaseHTTPRequestHandler):
         path = url.path
         if path == "/health":
             return self._send(200, {"ok": True})
+        if path == "/cards" or path.startswith("/card/"):
+            try:
+                payload = load_cards()
+            except (OSError, ValueError, yaml.YAMLError):
+                return self._send(503, {"error": "canonical card store unavailable"})
         if path == "/cards":
-            payload = load_cards()
             if not payload:
                 return self._send(404, {"error": "no cards.json yet"})
             q = parse_qs(url.query)
@@ -3794,7 +3825,7 @@ class H(BaseHTTPRequestHandler):
                 "hint": "use /card/<id> or /cards?id=<id>"})
         if path.startswith("/card/"):
             cid = unquote(path[len("/card/"):])
-            hit = next((c for c in (load_cards().get("cards") or [])
+            hit = next((c for c in (payload.get("cards") or [])
                         if c.get("id") == cid), None)
             if hit is None:
                 # archived cards leave cards.json — resolve them via the

@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
-column: doing
-updated: 2026-11-09 15:43
+column: backlog
+updated: 2026-11-09 16:36
 priority: high
 tags:
 - ada
@@ -181,9 +181,34 @@ comms:
   text: 'qwen3:8b NOT QUALIFIED — 4 composite runs went PASS/miss/PASS/miss (temp-0.3 variance swings both directions:
     over-act r1/r4, over-defer r2). Cannot hold 3x streak. kk-mac now on qwen2.5:32b x3 series (~51min/run, ~2.5h)
     — the litellm consultant alias already targets it.'
+- at: 2026-11-09 16:24
+  from: devin
+  text: put on hold
+- at: 2026-11-09 16:24
+  from: devin
+  text: 'HELD per zero-devin-spend direction 2026-11-09 — monolithic multi-model bench is genuinely agent-class
+    and would burn a Devin session. Non-Devin decomposition: (a) per-model script cards driving an existing bench
+    harness (e.g. scripts/ops/decision-arena.py pattern) with declared cmd+args, or (b) a jules card that writes
+    the bench harness first, then script cards run it. Unhold when a decomposition is carded.'
+- at: 2026-11-09 16:36
+  from: devin
+  text: 'FINAL: lane built + e2e-verified (defer->consultant->evidence->close on local board-api). Bench verdict:
+    NO BRAIN QUALIFIED — qwen3:8b straddles gate (P/m/P/m), qwen2.5:32b deterministic-misses both bars by ~0.003
+    on the same ~12 over-deferred cases every run, gpt-oss:20b DQ throughput, or-* quota-blocked. ADA_JOBS_CONSULTANT
+    stays OFF. Cheapest path forward: corpus audit of the 12 consistent-miss cases (act-001/003/005/007/012/014/006,
+    observe-001/003/004/006/008) — if relabeled, 32b passes; el'
+- at: 2026-11-09 16:36
+  from: chaba
+  text: pushed dispatch/20261109-135333-tiered-judgment-instead-of-ada to origin
+- at: 2026-11-09 16:36
+  from: chaba
+  text: 'auto-merge conflicts: scripts/ada-jobs/verify_worker.py — card stays in review for manual resolution'
+- at: 2026-11-09 16:36
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
 action:
   type: dispatch
-  status: running
+  status: idle
   sweep:
     failed_noted: 2026-11-09 09:33
     stale_running: 2026-11-09 14:04

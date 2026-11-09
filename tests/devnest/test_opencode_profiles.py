@@ -209,22 +209,29 @@ class IndependentReview(unittest.TestCase):
         replay = lane_gate.review(lane_gate.load_stage(), result["source_ledger"])
         self.assertEqual(replay["aggregate"], result["aggregate"])
 
-    def test_real_message_landing_normalizes_both_artifacts(self):
+    def test_real_message_landing_normalizes_artifacts_and_keeps_admitted_stage(self):
         self.env["unattended"] = True
-        args = SimpleNamespace(job="fixture", unattended=True, skip_scope=False, human_observer="")
+        args = SimpleNamespace(job="fixture", unattended=True, skip_scope=False, human_observer="", controller_heartbeat=True)
         prof = mod.load_profile("ops-readonly")
         def render(env, profile, rd):
             rd.mkdir(parents=True)
             (rd / "prompt.md").write_text("read-only health")
             (rd / "manifest.json").write_text("{}")
             return {}
+        def preflight(env):
+            heartbeat = json.loads((lane_gate.state_dir() / f"heartbeat-{env['id']}.json").read_text())
+            self.assertEqual(heartbeat["pid"], os.getpid())
+            return {"admit": True, "profile": prof, "lane": {"admit": True}}
         def execute(cmd, rd, *args, **kwargs):
             (rd / "events.jsonl").write_text('{"sessionID":"producer-session"}\n')
+            stage = lane_gate.load_stage()
+            stage["current_stage"] = "S3"
+            lane_gate.save_stage(stage)
             return SimpleNamespace(returncode=0)
         audit = {"tokens": {}, "denials": [], "write_attempts": [], "mutating_commands": [], "verifier_peeks": []}
         with mock.patch.object(mod, "RUNS", self.root / "runs"), \
                 mock.patch.object(mod.lane_gate, "load_envelope", return_value=self.env), \
-                mock.patch.object(mod, "run_preflight", return_value={"admit": True, "profile": prof, "lane": {"admit": True}}), \
+                mock.patch.object(mod, "run_preflight", side_effect=preflight), \
                 mock.patch.object(mod, "render_bundle", side_effect=render), \
                 mock.patch.object(mod, "run_profile_process", side_effect=execute), \
                 mock.patch.object(mod, "arm_env", return_value={}), \
@@ -236,6 +243,7 @@ class IndependentReview(unittest.TestCase):
         self.assertEqual((rd / "artifact.out").read_bytes(), self.dest.read_bytes())
         self.assertTrue((rd / "pending-review.json").exists())
         self.assertEqual(lane_gate.load_ledger()[-1]["verification_status"], "pending_independent")
+        self.assertEqual(lane_gate.load_stage()["jobs_completed"], {"S2": 2})
 
     def test_changed_attempt_rejects_stale_attestation(self):
         pending = self.prepare()
@@ -243,6 +251,30 @@ class IndependentReview(unittest.TestCase):
         st["qualification"] = {"at": "a-new-attempt"}
         lane_gate.save_stage(st)
         self.assertIn("error", mod.finalize_independent_review(self.rd, self.certificate(pending)))
+
+
+class DispatchEvidence(unittest.TestCase):
+    def test_card_request_is_included_without_changing_historical_prompts(self):
+        env = mk_env(task="Collect the current snapshot for operator triage")
+        prof = mod.load_profile("ops-readonly")
+        self.assertNotIn(env["task"], mod.build_prompt(env, prof))
+        self.assertIn(env["task"], mod.build_prompt(dict(env, dispatch_card=True), prof))
+
+    def test_artifact_must_match_successful_original_tool_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            rd = Path(tmp)
+            (rd / "artifact.out").write_text('{"host":"idc02"}')
+            state = {"status": "completed", "input": {"command": "python3 scripts/devnest/host_snapshot.py"},
+                     "metadata": {"exit": 0}, "output": '{"host":"idc02"}'}
+            event = {"part": {"tool": "bash", "state": state}}
+            (rd / "events.jsonl").write_text(json.dumps(event) + "\n")
+            self.assertTrue(mod.artifact_matches_snapshot(rd))
+            (rd / "artifact.out").write_text('{"host":"fabricated"}')
+            self.assertFalse(mod.artifact_matches_snapshot(rd))
+            (rd / "artifact.out").write_text('{"host":"idc02"}')
+            state["metadata"]["exit"] = 1
+            (rd / "events.jsonl").write_text(json.dumps(event) + "\n")
+            self.assertFalse(mod.artifact_matches_snapshot(rd))
 
 
 class HumanWatch(unittest.TestCase):
