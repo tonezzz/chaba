@@ -1,0 +1,65 @@
+id: primer-efficacy-measurement
+title: Dispatch primer efficacy — measure repeat-failure rate and primer value
+column: backlog
+updated: 2026-11-09 15:44
+brief: 'The lesson primer claims compounding (each failure makes the next dispatch smarter) but nothing measures
+  it. Build scripts/board/primer_efficacy.py: an offline analysis over the card corpus + outcome docs that computes
+  whether injected lessons correlate with better outcomes, and reports the numbers honestly.'
+priority: high
+tags:
+- dispatch-tuning
+- primer
+- measurement
+spec: 'Goal: prove or kill the primer''s compounding claim with numbers, and produce the A/B design.
+
+
+  Build scripts/board/primer_efficacy.py (read-only analysis, runs anywhere with a chaba checkout):
+
+
+  Inputs:
+
+  - docs/ssot/kanban/cards/*.yml — comms lines ''primer injected N lesson(s): <previews>'', action.attempts, action.last_failure,
+  action.verified, action.status, action.result, updated timestamps.
+
+  - dispatch-outcome-*.md at repo root.
+
+
+  Metrics:
+
+  - Coverage: % of dispatches since 2026-10-09 (primer launch) where >=1 lesson was injected; distribution of line
+  counts.
+
+  - Repeat-failure rate: for cards with a recorded failure after a primer injection, classify the failure''s topic
+  signature (keyword signature over last_failure/result, same tokenization the primer uses) and count how often
+  a matching lesson class had been injected — i.e., did we fail on something we were warned about?
+
+  - Success comparison: verified/merge rate for primer-era dispatches vs pre-primer era baseline — report raw numbers
+  AND label the confounds (no causal claim).
+
+  - Dead-primer rate: dispatches where 0 lines injected (corpus gaps).
+
+
+  Deliverables:
+
+  - The script (idempotent, --json and --md output modes).
+
+  - docs/ssot/jobs/kanban/<date>-primer-efficacy.yml job doc + reports/primer-efficacy-<date>.md with the computed
+  table + verdict (supported / inconclusive / contradicted).
+
+  - A/B design written into the report: run KANBAN_PRIMER=0 on a sample fraction of dispatches (propose the mechanism
+  — e.g., hash(card_id)%k in kanban-dispatch) and which metric to watch.
+
+
+  Constraints: read-only on the corpus; never blocks anything; cite this analysis card in comms.
+
+  Verify: script runs clean on the live corpus; report lands; spot-check 3 counted cases against the actual card
+  YAML.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-1270
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
