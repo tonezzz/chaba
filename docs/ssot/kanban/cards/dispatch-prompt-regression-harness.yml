@@ -1,7 +1,7 @@
 id: dispatch-prompt-regression-harness
 title: build_task regression harness — prompt-layer gates for rails and primer
-column: doing
-updated: 2026-11-09 16:09
+column: review
+updated: 2026-11-09 16:10
 brief: 'The dispatch prompt is the highest-blast-radius, lowest-verification artifact in the system: rails and primer
   merge on anecdote while micro-models get golden/hard/adversarial gates. Add a regression suite that pins build_task''s
   contract plus a byte-budget tripwire on rail accretion.'
@@ -43,9 +43,13 @@ spec: 'New tests/board/test_build_task_regressions.py (pytest, same conventions 
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: devin
   runner: idc02
+  result: 'exit=0 push — and outcome written to `dispatch-outcome-20261109-154742-new-tests-board-test-build-tas.md`.
+    | devin-task-20261109-154742-new-tests-board-test-build-tas.service: Consumed 10min 20.374s CPU time, 2.2G memory
+    peak, 0B memory swap peak.'
+  verified: true
 ref: KNB-1276
 comms:
 - at: 2026-11-09 15:44
@@ -89,3 +93,9 @@ comms:
     fallback, KANBAN_PRIMER=0, primer ordering+<=8 cap, 6KB rail tripwire @ ~2.8KB now). tests/board 470p/6s green;
     full suite clean of lp-leak side-effects (3 pre-existing env failures unrelated). committed on session branch,
     no push'
+- at: 2026-11-09 16:10
+  from: idc02
+  text: 'finished (ok): exit=0 push — and outcome written to `dispatch-outcome-20261109-154742-new-tests-board-test-build-tas.md`.
+    | devin-task-'
+review_kind: verify
+claim: {}
