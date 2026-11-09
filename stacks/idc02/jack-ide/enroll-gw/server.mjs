@@ -224,7 +224,7 @@ function proxyHttp(req, res, sess) {
   delete headers["tailscale-user-profile-pic"];
   delete headers["cf-access-jwt-assertion"];
   delete headers["cf-access-authenticated-user-email"];
-  headers["x-forwarded-for"] = req.socket.remoteAddress;
+  if (req.socket.remoteAddress) headers["x-forwarded-for"] = req.socket.remoteAddress;
   headers["x-jack-session"] = sess.id;
 
   const preq = http.request(
