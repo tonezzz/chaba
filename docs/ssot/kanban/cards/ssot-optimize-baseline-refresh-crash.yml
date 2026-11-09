@@ -1,7 +1,7 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
-column: review
-updated: 2026-11-09 18:22
+column: done
+updated: 2026-11-09 18:34
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
   files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
@@ -81,6 +81,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-181759-bug-running-node-scripts-ssot-,
     branch dispatch/20261109-181759-bug-running-node-scripts-ssot-'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
   status: done
@@ -92,3 +95,7 @@ action:
   verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 18:34
+  note: verified — evidence checks green, closing itself
