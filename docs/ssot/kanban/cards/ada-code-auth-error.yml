@@ -1,0 +1,23 @@
+id: ada-code-auth-error
+title: ada-code authentication error — investigate scope + fix
+column: backlog
+updated: 2026-11-09 17:39
+priority: high
+tags:
+- ada
+- ops
+- bug
+spec: 'Tony reported "Authentication error on ada-code" 2026-11-09 ~12:00 +07. Determine which surface ada-code
+  is (checkout? service? MCP? token file) — only known reference so far is secrets file devnest-branch-code-fable-202611.txt
+  and a mention in ssot.audit.hosts.yml. Likely candidates: expired token, revoked session, or stale creds in ~/.config/secrets/.
+  Fix = rotate/remount creds per secrets convention; if the surface is dead, declare it dead per host-hygiene.'
+action:
+  type: manual
+ref: ADA-1289
+comms:
+- at: 2026-11-09 17:39
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-09 17:39
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
