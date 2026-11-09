@@ -1,7 +1,7 @@
 id: ops-1244d-janitor-merge
 title: 'OPS-1244d opencode: merge board sweep scripts into one janitor tick (sub of devnest-queue-consolidation)'
-column: backlog
-updated: 2026-11-09 09:25
+column: doing
+updated: 2026-11-09 09:36
 priority: medium
 tags:
 - devnest
@@ -33,7 +33,8 @@ action:
   host: idc02
   executor: opencode
   lane: paid_frontier
-  status: queued
+  status: running
+  runner: idc02
 ref: OPS-1250
 comms:
 - at: 2026-11-09 09:21
@@ -42,3 +43,6 @@ comms:
 - at: 2026-11-09 09:25
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 09:36
+  from: idc02
+  text: claimed
