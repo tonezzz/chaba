@@ -1,0 +1,23 @@
+id: ada-write-fidelity-drop-parity
+title: Review staged Ada write-fidelity drop parity without weakening guards
+column: backlog
+updated: 2026-11-09 20:14
+brief: 'Pre-commit blocks PR #138 CI repair because the staged write-fidelity.patch diverges against canonical Ada
+  main; canonical fidelity tests still pass 17/17.'
+priority: high
+tags:
+- ada
+- integrity
+- maintenance
+spec: 'Observed on tony-dell: Chaba tests/ada/test_write_fidelity_drop.py::test_patch_state_vs_checkout fails with
+  diverged after 269 passes and one skip. Ada canonical checkout is clean main edb7c83; its tests/test_write_fidelity.py
+  passes 17/17 and read-back/provider guard markers remain present. Do not disable hooks, relax _drops/drop_guard_ok,
+  skip safety tests, or change runtime guards to unblock CI. Owner direction required before preparing a separately
+  reviewed integration-artifact parity refresh. Preserve guard implementation and all tests; verify artifact applicability
+  and canonical functional fidelity tests. Blocks committing seven SSOT fixes for PR #138. Worktree /home/tony/CascadeProjects/chaba-knb1257;
+  staged generator/catalog regression plus unstaged three dossier repairs; all 4003 SSOT files validate locally.'
+ref: ADA-1300
+comms:
+- at: 2026-11-09 20:14
+  from: devin
+  text: card captured via board-api
