@@ -29,6 +29,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -42,14 +43,8 @@ HEARTBEAT = STATE_DIR / "sentinel-heartbeat.json"
 SWEEP_STALE_MIN = 30
 ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 
-# timers whose silence must always card — the load-bearing ones.
-# chaba-jobs dropped 2026-11-08: the dispatcher was retired by OPS-0790
-# (zero dispatch:dispatcher jobs remain; per-job rendered timers replaced
-# the tick). Hosts that still expect it declare it in the audit census —
-# expected_state:active there is what keeps the dell unit covered during
-# the rollout, and what flagged nothing on idc03 once it was deliberately
-# disabled (timer-alert-idc03-chaba-jobs was a false positive of this set).
-CRITICAL = {"kanban-commit", "kanban-dispatch",
+# timers whose silence must always card — the load-bearing ones
+CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
             "timer-timeline-update", "timer-sentinel"}
 
 # hosts that are EXPECTED to be off regularly — unreachable ≠ suspicious
@@ -82,31 +77,34 @@ def open_card_ids():
 
 
 def fire(card_id, title, body, dry_run, open_ids):
-    """Create card if no open one; else comment on it. on_exists:queue
-    re-arms a done card when its condition recurs (a duplicate POST /card
-    fails closed with 400 — that crash killed whole sweeps)."""
+    """Create card if no open one; else comment on it."""
     if open_ids is None:
         print(f"SKIP {card_id}: board unreachable")
         return
-    try:
-        if card_id in open_ids:
-            if not dry_run:
-                api("comment", {"id": card_id, "from": ACTOR,
-                                "text": f"[still suspicious] {body}"})
-            print(f"COMMENT {card_id}: {body[:80]}")
-            return
+    if card_id in open_ids:
         if not dry_run:
-            api("card", {"id": card_id, "title": title,
-                         "column": "backlog", "priority": "high",
-                         "from": ACTOR, "on_exists": "queue",
-                         "action": {"type": "manual"},
+            api("comment", {"id": card_id, "from": ACTOR,
+                            "text": f"[still suspicious] {body}"})
+        print(f"COMMENT {card_id}: {body[:80]}")
+        return
+    if not dry_run:
+        try:
+            api("card", {"id": card_id, "title": title, "column": "backlog",
+                         "priority": "high", "from": ACTOR,
                          "tags": ["timer-alert", "auto",
                                   "by:timer-sentinel"],
                          "note": body})
-        print(f"CARD {card_id}: {body[:80]}")
-    except Exception as e:
-        # one bad fire must not kill the remaining findings
-        print(f"WARN {card_id}: fire failed: {e}", file=sys.stderr)
+        except urllib.error.HTTPError as e:
+            if e.code != 400:
+                raise
+            # id exists but closed — reopen + comment instead of crashing
+            api("action", {"id": card_id, "do": "move",
+                           "column": "backlog"})
+            api("comment", {"id": card_id, "from": ACTOR,
+                            "text": f"[reopened — condition recurred] {body}"})
+            print(f"REOPEN {card_id}: {body[:80]}")
+            return
+    print(f"CARD {card_id}: {body[:80]}")
 
 
 def _heal_reason(cid, sweep, sweep_age_min):
@@ -248,7 +246,7 @@ def main():
                     f"ssh-fail, not a timer failure)."))
         for host, tt in timers.items():
             for name, t in tt.items():
-                cid = f"timer-alert-{host}-{name}"[:61]
+                cid = f"timer-alert-{host}-{name}"[:120]
                 exp = (expected.get(host) or {}).get(name)
                 enabled = str(t.get("enabled") or "")
                 crit = name in CRITICAL or exp == "active"
@@ -281,7 +279,7 @@ def main():
     # synthetic fault for verification runs
     if args.inject:
         kind, host, name = args.inject.split(":", 2)
-        cid = f"timer-alert-{host}-{name}"[:61]
+        cid = f"timer-alert-{host}-{name}"[:120]
         findings.append((cid, f"[synthetic] {kind} {name} on {host}",
                          f"Injected test condition: {kind}. This card "
                          f"proves the sentinel pipeline works; close it."))
