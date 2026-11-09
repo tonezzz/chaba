@@ -2,7 +2,7 @@ id: ada-consultant-bench-harness
 title: ada-consultant bench harness — per-model runner so the held bench card runs as script cards, not a Devin
   session
 column: doing
-updated: 2026-11-09 18:18
+updated: 2026-11-09 19:03
 priority: high
 tags:
 - ada
@@ -26,8 +26,11 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   runner: tony-omen
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) _IM_MODULE='''' XMODIFIERS=''''
+    |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-ada-consultant-bench-harness-1794223099.service:
+    Consumed 1.549s CPU time over 45min 25.294s wall clock time, 20.3M memory peak, 96K'
 ref: ADA-1283
 comms:
 - at: 2026-11-09 17:05
@@ -59,3 +62,7 @@ comms:
 - at: 2026-11-09 18:18
   from: chaba
   text: started devin-task-ada-consultant-bench-harness-1794223099 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 19:03
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) _IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_CON'
