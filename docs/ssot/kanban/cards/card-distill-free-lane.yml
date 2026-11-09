@@ -1,7 +1,7 @@
 id: card-distill-free-lane
 title: Card distiller — free-lane LLM distills each card to slot-template brief (save tokens on every lane)
-column: doing
-updated: 2026-11-09 14:23
+column: review
+updated: 2026-11-09 14:25
 priority: high
 tags:
 - ada
@@ -67,9 +67,19 @@ comms:
     (94 cases, -45% snapshot), verify_worker --with-distill, tests (8 green). Bench A/B on flash-lite-free: action_accuracy
     raw 0.50 → v4 0.52 all-case, +1.37pts paired n=73 — no >2pt drop. correction_precision fell 0.93→0.78 (v4 reaches
     for correct more) — w'
+- at: 2026-11-09 14:25
+  from: idc02
+  text: 'finished (ok): exit=0 `docs/ssot/jobs/bench/2026-11-09-card-distill-v4-gate.yml` and `v4-gate-comparison.md`;
+    card commented. | devin-t'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   runner: idc02
+  result: 'exit=0 `docs/ssot/jobs/bench/2026-11-09-card-distill-v4-gate.yml` and `v4-gate-comparison.md`; card commented.
+    | devin-task-20261109-135325-tony-s-idea-use-free-lanes-to-.service: Consumed 58.155s CPU time, 263.8M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
