@@ -1,0 +1,27 @@
+id: rotate-ada-code-litellm-key-20261109
+title: Rotate exposed Ada-code LiteLLM key without weakening budget controls
+column: doing
+updated: 2026-11-09 17:24
+priority: high
+program: ai-workforce
+tags:
+- security
+- litellm
+- ada-code
+spec: 'Tony explicitly authorized revoking and replacing the exposed Ada-code LiteLLM virtual key. Alias ada; original
+  cap USD30/30d, accrued spend retained, reset 2026-12-01T00:00:00Z. Exposed key was blocked via supported management
+  API; key-info and model-list now reject it with 401. No replacement created. Native regeneration is Enterprise-only;
+  gateway is Community. Tony then selected Keep December 1: do not shift budget timing. Review an exact-window supported
+  replacement before creating or activating it. Do not bypass licensing, weaken caps, print key values, or commit
+  secrets. Update only confirmed consumers and verify old denial/new readiness. Model runs paused. Parent OPS-1255
+  remains S3, historical ledger unchanged.'
+action:
+  type: manual
+ref: SEC-1286
+comms:
+- at: 2026-11-09 17:24
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-09 17:24
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
