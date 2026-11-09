@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
-column: backlog
-updated: 2026-11-09 09:33
+column: doing
+updated: 2026-11-09 09:49
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -74,6 +74,9 @@ comms:
 - at: 2026-11-09 09:33
   from: chaba
   text: 'answer-sweep: 1 answered request(s) still unmapped — stays flagged'
+- at: 2026-11-09 09:49
+  from: idc02
+  text: claimed
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
@@ -113,7 +116,8 @@ requests:
   suggested: No — hold MacBook at 3000.11.3 until a noninteractive update path is confirmed.
   answer: Yes — run the installer and setup wizard; preserve/reuse existing auth and MCP settings wherever offered.
   executed: 2026-11-09 queue
-awaiting_action: true
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: devin
+  runner: idc02
