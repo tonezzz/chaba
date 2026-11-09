@@ -29,15 +29,34 @@ HEALTH_DEADLINE_S = int(os.environ.get("MDDB_REINDEX_HEALTH_WAIT", "300"))
 PER_COLLECTION_TIMEOUT_S = int(os.environ.get("MDDB_REINDEX_TIMEOUT", "600"))
 
 
-def _post(path: str, payload: dict, timeout: int = 30) -> dict:
+def _post(path: str, payload: dict, timeout: int = 30,
+          attempts: int = 3) -> dict:
     req = urllib.request.Request(
         MDDB + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    err = None
+    for attempt in range(attempts):
+        try:
+            return json.loads(urllib.request.urlopen(
+                req, timeout=timeout).read())
+        except Exception as exc:
+            err = exc
+            if attempt + 1 < attempts:
+                time.sleep(2 * (attempt + 1))
+    raise err
 
 
-def _get(path: str, timeout: int = 30) -> dict:
-    return json.loads(urllib.request.urlopen(MDDB + path, timeout=timeout).read())
+def _get(path: str, timeout: int = 30, attempts: int = 3) -> dict:
+    err = None
+    for attempt in range(attempts):
+        try:
+            return json.loads(urllib.request.urlopen(
+                MDDB + path, timeout=timeout).read())
+        except Exception as exc:
+            err = exc
+            if attempt + 1 < attempts:
+                time.sleep(2 * (attempt + 1))
+    raise err
 
 
 def _emit(ev_type: str, detail: str) -> None:
