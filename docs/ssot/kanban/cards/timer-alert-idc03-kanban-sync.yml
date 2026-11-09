@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kanban-sync
 title: Timer kanban-sync on idc03 failing
-column: doing
-updated: 2026-11-09 09:26
+column: review
+updated: 2026-11-09 09:27
 priority: high
 tags:
 - timer-alert
@@ -767,8 +767,18 @@ comms:
     fetch 3x/10s (OPS-0834 pattern), in dispatch branch pending merge. (2) ~24x overnight 00:19-06:49: mddb-cms
     embed queue saturated (4000 deep, all embed providers down — mddb-embed was mid-9h40m vector-index load) so
     /add blocked server-side and connections dropped -> kanban-cms pu'
+- at: 2026-11-09 09:27
+  from: idc02
+  text: 'finished (ok): exit=0 : ~2300 CMS docs lost vectors during the outage (reindex if semantic search misses)
+    and mddb-embed probe still sh'
 action:
-  status: running
+  status: done
   type: dispatch
   lane: devin
   runner: idc02
+  result: 'exit=0 : ~2300 CMS docs lost vectors during the outage (reindex if semantic search misses) and mddb-embed
+    probe still shows slow queue-stats responses. | devin-task-20261109-092457-timer-kanban-sync-on-idc03-fai.service:
+    Consumed 12.319s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
