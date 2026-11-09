@@ -1,7 +1,7 @@
 id: card-distill-free-lane
 title: Card distiller — free-lane LLM distills each card to slot-template brief (save tokens on every lane)
 column: doing
-updated: 2026-11-09 13:53
+updated: 2026-11-09 14:10
 priority: high
 tags:
 - ada
@@ -54,6 +54,12 @@ comms:
   from: devin
   text: '[progress] dispatch started on idc02 — exploring verify_worker lane chain + bench corpus to design the
     fixed-slot distiller'
+- at: 2026-11-09 14:10
+  from: devin
+  text: '[progress] distill.py rewritten: 5-lane chain cf-70b→local-ollama→or-free→flash-lite-free→gemini-direct,
+    sidecar cache keyed (card_id,updated), slot schema at schemas/card-distill-slots.schema.json, verify_worker
+    --with-distill wired, corpus-v4.jsonl built (94/94 cases distilled, 0 fails). Now benching raw-vs-v4 A/B on
+    flash-lite-free.'
 action:
   type: dispatch
   status: running
