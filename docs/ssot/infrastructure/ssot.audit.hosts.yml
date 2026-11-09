@@ -2196,6 +2196,14 @@ hosts:
       - {name: gev-gemini.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation, moved by parallel session)"}
       - {name: gods-eye-view-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19 (GEV constellation)"}
       - {name: gev-cmd-relay.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-19"}
+      # --- ada-code control-plane (ADA-1225 rename; formerly ada-opencode/ada-enroll quadlets) ---
+      - {name: ada-code.service, type: service, scope: user, note: "Ada OpenCode responder backend (quadlet, ada-code container on ada-code podnet) — renamed from ada-opencode.service 2026-11-08"}
+      - {name: ada-code-enroll.service, type: service, scope: user, note: "CF-Access JWT gateway :8378 for ada-code.surf-thailand.com — renamed from ada-enroll.service 2026-11-08"}
+      - {name: ada-code-network.service, type: service, scope: user, note: "podnet for the ada-code pair — renamed from ada-opencode.network 2026-11-08"}
+      - {name: jack-opencode.service, type: service, scope: user, note: "Jack isolated OpenCode IDE (rootless podman)"}
+      - {name: jack-enroll.service, type: service, scope: user, note: "Jack IDE enroll gateway"}
+      - {name: jack-ide-network.service, type: service, scope: user, note: "podnet for the jack-ide pair"}
+      - {name: ada-stt.service, type: service, scope: user, note: "Ada local STT (audio.cpp Qwen3-ASR, CPU)"}
     expected_absent:
       - name: chaba-audit.timer
         scope: user

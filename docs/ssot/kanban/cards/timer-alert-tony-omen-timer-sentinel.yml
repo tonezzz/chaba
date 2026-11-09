@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-timer-sentinel
 title: Timer timer-sentinel on tony-omen failing
-column: backlog
-updated: 2026-11-09 11:20
+column: done
+updated: 2026-11-09 14:31
 priority: high
 tags:
 - timer-alert
@@ -17,6 +17,132 @@ comms:
 - at: 2026-11-09 11:20
   from: devin
   text: re-spawned from report page
+- at: 2026-11-09 13:52
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails — this host can''t land the
+    branch'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
+- at: 2026-11-09 13:53
+  from: idc02
+  text: claimed
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.85)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: started devin-task-20261109-135329-timer-timer-sentinel-on-tony-o on idc02 (dispatch)
+- at: 2026-11-09 13:53
+  from: devin
+  text: dispatch started — investigating timer-sentinel timeout on tony-omen (last run 11-09 11:03)
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 13:54
+  from: devin
+  text: latency probe 1 from sentinel investigation
+- at: 2026-11-09 13:54
+  from: devin
+  text: latency probe 2 from sentinel investigation
+- at: 2026-11-09 13:54
+  from: devin
+  text: latency probe 3 from sentinel investigation
+- at: 2026-11-09 13:57
+  from: devin
+  text: 'RCA (OPS-1261): not a sentinel bug on omen — board-api write congestion. ~85 serial writes x 30s timeout
+    vs TimeoutStartSec=180; kanban-commit on idc03 held git locks on the served checkout in both stall windows (11:00-11:03
+    failed run; 13:48-13:50 non-FF push retry). Sentinel calls queued -> killed at 180s -> it carded itself. board-api
+    healthy again (0.2s). Fix on dispatch branch: SENTINEL_BUDGET_SEC=150 wall-clock budget in timer-sentinel.py
+    — defers remaining idempotent writes to next tick, '
+- at: 2026-11-09 13:59
+  from: idc02
+  text: 'finished (ok): exit=0 nt record at `docs/ssot/jobs/ada/2026-11-09-timer-sentinel-api-budget.yml`, outcome
+    file written; nothing pushed '
+- at: 2026-11-09 13:59
+  from: chaba
+  text: pushed dispatch/20261109-135329-timer-timer-sentinel-on-tony-o to origin
+- at: 2026-11-09 13:59
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 13:59
+  from: chaba
+  text: auto-merged 9d0680c2 (dispatch/20261109-135329-timer-timer-sentinel-on-tony-o) → origin/master
+- at: 2026-11-09 13:59
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-135329-timer-timer-sentinel-on-tony-o,
+    branch dispatch/20261109-135329-timer-timer-sentinel-on-tony-o'
+- at: 2026-11-09 14:04
+  from: chaba
+  text: restarted zombie claim as devin-task-20261109-140407-timer-timer-sentinel-on-tony-o on idc02 — claim committed
+    but the response was lost (OPS-1071)
+- at: 2026-11-09 14:04
+  from: devin
+  text: '[devin] dispatch started — investigating timer-sentinel.service timeout on tony-omen (last run 11-09 11:03
+    result=timeout)'
+- at: 2026-11-09 14:07
+  from: devin
+  text: '[devin] RCA update: 14:00 run crashed exit-code — chaba-repo-sync autostash-pop CONFLICTED scripts/ada/timer-sentinel.py
+    at 14:00:19 mid-run (old bytecode + conflicted file). Resolved file to upstream HEAD; compiles clean; stash@​{0}
+    retains local drift. Awaiting 14:10 tick to verify.'
+- at: 2026-11-09 14:08
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-09 14:08
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-09 14:10
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-09 14:10
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-09 14:00) of `timer-sentinel.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u timer-sentinel.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-09 14:12
+  from: devin
+  text: 'VERIFIED FIXED (14:10 tick): Result=success, exit 0, 52.9s wall, 26 findings + 7 auto-closes landed. Root
+    cause of this second failure wave: NOT the script — chaba-repo-sync at 14:00:19 autostash-pop-CONFLICTED scripts/ada/timer-sentinel.py
+    mid-run (file outside SAFE_PULL_GENERATED_RE → kept for manual merge with live conflict markers → SyntaxError
+    landmine). 14:00 crash = old pre-fix bytecode hitting the known uncaught TimeoutError while the conflicted file
+    was being written. Resolved: file res'
+- at: 2026-11-09 14:14
+  from: chaba
+  text: pushed dispatch/20261109-140407-timer-timer-sentinel-on-tony-o to origin
+- at: 2026-11-09 14:14
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 14:14
+  from: chaba
+  text: auto-merged 197d0a07 (dispatch/20261109-140407-timer-timer-sentinel-on-tony-o) → origin/master
+- at: 2026-11-09 14:14
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-140407-timer-timer-sentinel-on-tony-o,
+    branch dispatch/20261109-140407-timer-timer-sentinel-on-tony-o'
+- at: 2026-11-09 14:31
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-09 14:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 14:31
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
-  status: queued
+  status: done
+  lane: devin
+  runner: idc02
+  result: 'exit=0 nt record at `docs/ssot/jobs/ada/2026-11-09-timer-sentinel-api-budget.yml`, outcome file written;
+    nothing pushed or deployed per dispatch rails. | devin-task-20261109-135329-timer-timer-sentinel-on-tony-o.service:
+    Consumed 22.775s CPU time.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 14:08
+  note: verified — evidence checks green, closing itself

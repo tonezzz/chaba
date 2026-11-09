@@ -1,0 +1,65 @@
+id: lesson-qc-sweep
+title: Lesson corpus QC sweep — dedupe, staleness flags, contradiction report
+column: backlog
+updated: 2026-11-09 15:47
+brief: 'Self-reported lessons are unverified and never retire — the feedback loop has no damping. Build scripts/board/lesson_qc.py:
+  an advisory QC pass over the lesson corpus that clusters near-duplicates, flags stale/contradicting lines, and
+  publishes a report. Advisory only — it never deletes.'
+priority: medium
+tags:
+- dispatch-tuning
+- primer
+- qc
+spec: 'New script scripts/board/lesson_qc.py (plus a thin invocation — run it as a best-effort step at the tail
+  of devin-dispatch-watch.timer''s run like render-handoff-inbox.py does, OR standalone; pick the same mechanism
+  that file uses and document the choice).
+
+
+  Pass over the same corpus lesson_primer harvests (dispatch-outcome-*.md lessons lists + docs/ssot/jobs/** lesson
+  fields + card comms):
+
+  1. Duplicates: normalize lines (lowercase, strip punctuation), cluster by token-jaccard >= 0.8 — report clusters
+  with counts and representative line (dedupe is REPORT ONLY for now).
+
+  2. Staleness: flag lines referencing retired infra or removed paths — retired hosts (idc01 ada/mddb), deleted
+  files (check existence in repo), renamed repos. Same RETIRED_RE constant convention as lesson-primer-scoring-fixes.
+
+  3. Contradictions (candidate detection, report only): lines sharing a keyword signature (top-3 content tokens)
+  but carrying opposing directive markers (never|do not|must not vs must|always|required).
+
+  4. Health counts: corpus size per source, growth since last run (state file ~/.local/share/board/lesson-qc-state.json),
+  % of outcome docs carrying a parseable lessons: list (self-seeding compliance).
+
+
+  Output: docs/ssot/jobs/kanban/<date>-lesson-qc.yml + reports/lesson-qc-<date>.md; append a one-line summary ops-event
+  (same shape as kanban-dispatch.py ops_event) when flag count > threshold.
+
+
+  Constraints: read-only on the corpus; best-effort (failure warns, never breaks the watcher); no auto-deletion
+  — QC is the damping layer, humans/agents retire lessons deliberately.
+
+
+  Verify: run on the live corpus; report lands; flags at least one known-stale line (idc01 references exist in the
+  corpus today); idempotent re-run.'
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+ref: OPS-1275
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.08 > 1.0)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.83 > 1.0)'
+- at: 2026-11-09 15:47
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'

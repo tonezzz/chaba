@@ -1,7 +1,7 @@
 id: timer-alert-idc02-log-shipper-severe
 title: Timer log-shipper-severe on idc02 failing
 column: backlog
-updated: 2026-11-09 11:40
+updated: 2026-11-09 15:40
 priority: high
 tags:
 - timer-alert
@@ -113,7 +113,66 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-09 11:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
     journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 11:50
+  from: devin
+  text: '[still suspicious] Last run (11-09 11:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 12:02
+  from: devin
+  text: '[still suspicious] Last run (11-09 11:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 12:30
+  from: devin
+  text: '[still suspicious] Last run (11-09 12:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 12:40
+  from: devin
+  text: '[still suspicious] Last run (11-09 12:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 12:50
+  from: devin
+  text: '[still suspicious] Last run (11-09 12:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 13:02
+  from: devin
+  text: '[still suspicious] Last run (11-09 12:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 13:30
+  from: devin
+  text: '[still suspicious] Last run (11-09 13:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 13:36
+  from: devin
+  text: '[still suspicious] Last run (11-09 13:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 13:40
+  from: devin
+  text: '[still suspicious] Last run (11-09 13:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 13:51
+  from: devin
+  text: '[still suspicious] Last run (11-09 13:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 14:10
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-09 14:03 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 14:10
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 15:31
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-09 15:31
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-09 15:12) of `log-shipper-severe.service` on `idc02` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-09 15:40
+  from: devin
+  text: '[still suspicious] Last run (11-09 15:12) of `log-shipper-severe.service` on `idc02` result=timeout — investigate
+    journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-idc02`.'
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
   during its recent run. Access the host logs using `journalctl --user -u log-shipper-severe.service` and review
   the CMS record `timer-timeline-idc02` for historical context. The done-condition is verified when the root cause
   of the timeout is identified and documented in the CMS timeline, or the service execution is successfully resolved.
+action:
+  status: done

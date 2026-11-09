@@ -1,7 +1,7 @@
 id: ada-consultant-tier
 title: Consultant tier — stronger model reviews Ada's judgment-call boundary cases (tiered T3)
 column: doing
-updated: 2026-11-09 11:43
+updated: 2026-11-09 15:43
 priority: high
 tags:
 - ada
@@ -125,11 +125,72 @@ comms:
     flag; (2) register model_name=consultant in LiteLLM (ollama-qwen32b-kkmac now live, gpt-oss:20b when Colab returns);
     (3) add consultant route in dispatch_repos/classify; (4) quality gate = verifier scoring; (5) measure Tony-deferral
     rate as the production met'
+- at: 2026-11-09 13:52
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails — this host can''t land the
+    branch'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.85)'
+- at: 2026-11-09 13:53
+  from: idc02
+  text: claimed
+- at: 2026-11-09 13:53
+  from: chaba
+  text: started devin-task-20261109-135333-tiered-judgment-instead-of-ada on idc02 (dispatch)
+- at: 2026-11-09 13:56
+  from: devin
+  text: '[progress] Retry on idc02. Bench lanes verified reachable: kk-mac ollama HTTP (qwen3:8b, qwen2.5:32b) +
+    tony-omen ollama (gpt-oss:20b) — no ssh needed. Corpus v3 = 98 cases, briefs.json covers all. Probing per-case
+    latency then 3x composite runs per candidate; verify_worker consultant routing in parallel.'
+- at: 2026-11-09 14:04
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-090808-tiered-judgment-instead-of-ada no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-09 14:04
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-090808-tiered-judgment-instead-of-ada no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-09 14:05
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261109-090808-tiered-judgment-instead-of-ada'
+- at: 2026-11-09 14:50
+  from: devin
+  text: '[progress] kk-mac qwen3:8b composite (ada-matrix prompt + enforce + briefs) run1: 0.898 acc / 0.918 def
+    / 0.936 prec — PASS all gates. Generic-prompt control run was 0.816/0.867 (miss). gpt-oss:20b CPU-bound 4min+/case,
+    timeouts — disqualified on throughput. or-* lane dead today (OR free cap 429 + gemma slug 400). Runs 2/3 in
+    flight; qwen2.5:32b next.'
+- at: 2026-11-09 14:51
+  from: devin
+  text: 'progress: kk-mac qwen3:8b composite run1 0.898/0.918/0.936 PASS; runs2-3 inflight'
+- at: 2026-11-09 14:56
+  from: devin
+  text: '[progress] qwen3:8b composite run1 PASS 0.898/0.918/0.936 (generic-prompt control missed at 0.816/0.867);
+    gpt-oss:20b disqualified on throughput; or-* down today (429/400); 32b next; lane code (ACTORS+verify_worker+consultant_worker+jobs+litellm)
+    done on branch.'
+- at: 2026-11-09 15:23
+  from: devin
+  text: 'qwen3:8b composite (ada-entity, enforce+briefs): r1 PASS 0.898/0.918, r2 miss def=0.898, r3 PASS 0.929/0.949
+    — streak reset, runs 4-5 in flight. E2E lane verified: defer->consultant->evidence->close full loop on local
+    board-api harness. gpt-oss:20b DQ throughput (CPU-bound, 4min+/case); or-* blocked (OR daily cap).'
+- at: 2026-11-09 15:43
+  from: devin
+  text: 'qwen3:8b NOT QUALIFIED — 4 composite runs went PASS/miss/PASS/miss (temp-0.3 variance swings both directions:
+    over-act r1/r4, over-defer r2). Cannot hold 3x streak. kk-mac now on qwen2.5:32b x3 series (~51min/run, ~2.5h)
+    — the litellm consultant alias already targets it.'
 action:
   type: dispatch
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 09:33
+    stale_running: 2026-11-09 14:04
+    no_repo: 2026-11-09 14:05
   last_failure: 'exit=1 gment-instead-of-ada.service: Failed with result ''exit-code''. | devin-task-20261109-090808-tiered-judgment-instead-of-ada.service:
     Consumed 1min 7.618s CPU time over 23min 52.290s wall clock time, 706.7M memory peak, 37.7M memory swap peak.'
   attempts: 1
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: idc02

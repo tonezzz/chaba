@@ -1,0 +1,19 @@
+id: exec-sync-autostash-conflict-codefile
+title: git-safe-pull autostash-pop conflict leaves broken code file on exec checkouts
+column: backlog
+updated: 2026-11-09 14:12
+priority: medium
+tags:
+- infra
+- single-writer
+- git-safe-pull
+note: 'Incident 2026-11-09 (OPS-1261 follow-on): chaba-repo-sync on tony-omen autostash-popped onto upstream that
+  rewrote scripts/ada/timer-sentinel.py; the file is outside SAFE_PULL_GENERATED_RE so it was ''kept for manual
+  merge'' — leaving live conflict markers in a file a systemd job executes every 10min. The 14:00 sentinel run crashed
+  (old bytecode + mid-run file swap) and every subsequent tick would SyntaxError until manually resolved; chaba-repo-sync
+  still reported Result=success. Same class hit id'
+ref: SYS-1267
+comms:
+- at: 2026-11-09 14:12
+  from: devin
+  text: card captured via board-api

@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1a1a2e">
 <title>Gantt</title>
+<link rel="stylesheet" href="vendor/frappe-gantt.css">
+<link rel="stylesheet" href="css/theme.css">
 <style>
   html { font-size: 18px; }
   body { margin:0; background:#1a1a2e; color:#cbd5e1;
@@ -15,8 +17,9 @@
         padding:10px 16px; }
   nav a { color:#7dd3fc; text-decoration:none; font-size:14px; }
   nav .t { font-weight:600; font-size:15px; }
-  main { flex:1; display:flex; align-items:center; justify-content:center; }
-  .ph { color:#475569; font-size:14px; letter-spacing:.5px; }
+  #gantt-status { margin-left:auto; font-size:11px; color:#64748b; }
+  main { flex:1; min-height:0; display:flex; flex-direction:column; padding:10px 12px 12px; }
+  #gantt { flex:1; min-height:0; }
 </style>
 </head>
 <body>
@@ -24,7 +27,10 @@
     <a href="/apps/">&larr; Apps</a>
     <span style="color:#334155">|</span>
     <span class="t">Gantt</span>
+    <a href="/apps/board2/" style="font-size:12px">board &rarr;</a>
+    <span id="gantt-status">loading…</span>
   </nav>
-  <main><div class="ph">timeline view — coming soon</div></main>
+  <main><div id="gantt"></div></main>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

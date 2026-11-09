@@ -1,7 +1,7 @@
 id: opencode-retry-stale-worktree
 title: 'runner-agent: GC stale dispatch worktree on opencode retry'
 column: doing
-updated: 2026-11-08 12:51
+updated: 2026-11-09 13:59
 priority: low
 tags:
 - opencode
@@ -366,10 +366,33 @@ comms:
     (PR #111 merged d19126f); idc02 push creds verified live. Gemini strong route SERVED: litellm config adds or-gemini-3.1-pro-preview
     -> openrouter/google/gemini-3.1-pro-preview (PR #112 merged 1bd5326); native gemini-3.1-pro also responds. Bounded
     probes run per answered benchmark-bot'
+- at: 2026-11-09 13:37
+  from: devin
+  text: 'Re-armed for ONE supervised attempt on the Tony-approved route (gemini-3-pro-route): model litellm/or-gemini-3.1-pro-preview,
+    llm_key_alias ada (the alias ada-code probed → HTTP 200). Prior unblock evidence stands: idc02 push:chaba verified
+    (PR #111), strong route served (PR #112). Dedicated Fable OR key remains available but not required for this
+    attempt.'
+- at: 2026-11-09 13:38
+  from: tony
+  text: re-spawned from report page
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 13:59
+  from: idc02
+  text: claimed
+- at: 2026-11-09 13:59
+  from: chaba
+  text: started devin-task-opencode-retry-stale-worktree-1794207589 on idc02 (dispatch executor=opencode profile=branch-code-supervised-pilot
+    model=litellm/or-gemini-3.1-pro-preview)
+- at: 2026-11-09 13:59
+  from: idc02
+  text: 'finished (failed): exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Main process exite'
 action:
   type: dispatch
   repo: chaba
-  model: litellm/or-claude-fable-5.1
+  model: litellm/or-gemini-3.1-pro-preview
   executor: opencode
   agent_profile: branch-code-supervised-pilot
   target_host: idc02
@@ -384,15 +407,15 @@ action:
   status: failed
   labels:
   - push:chaba
-  result: 'exit=1 ice: Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1793971989.service:
-    Failed with result ''exit-code''. | devin-task-opencode-retry-stale-worktree-1793971989.service: Consumed 12.350s
-    CPU time.'
+  result: 'exit=1 : --dir in command opencode run | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-opencode-retry-stale-worktree-1794207589.service:
+    Failed with result ''exit-code''.'
   sweep:
     stale_running: 2026-11-04 14:30
     zero_commit: 2026-11-06 20:32
     failed_noted: 2026-11-06 20:47
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
-  llm_key_alias: bench
+  llm_key_alias: ada
   button: test-key-alias
   verified: false
   runner: idc02
@@ -437,4 +460,3 @@ requests:
   answer: 'Yes: run two tiny read-only model probes, bounded tokens/cost, no card dispatch.'
   executed: 2026-11-06 queue
 claim: {}
-awaiting_action: true

@@ -1,7 +1,7 @@
 id: card-distill-free-lane
 title: Card distiller — free-lane LLM distills each card to slot-template brief (save tokens on every lane)
-column: backlog
-updated: 2026-11-09 10:58
+column: done
+updated: 2026-11-09 14:34
 priority: high
 tags:
 - ada
@@ -24,6 +24,85 @@ comms:
 - at: 2026-11-09 10:58
   from: tony
   text: queued for processing
+- at: 2026-11-09 13:52
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails — this host can''t land the
+    branch'
+- at: 2026-11-09 13:52
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.43 > 1.0)'
+- at: 2026-11-09 13:53
+  from: idc02
+  text: claimed
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: started devin-task-20261109-135325-tony-s-idea-use-free-lanes-to- on idc02 (dispatch)
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 0.98 > 0.85)'
+- at: 2026-11-09 13:53
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 13:53
+  from: devin
+  text: '[progress] dispatch started on idc02 — exploring verify_worker lane chain + bench corpus to design the
+    fixed-slot distiller'
+- at: 2026-11-09 14:10
+  from: devin
+  text: '[progress] distill.py rewritten: 5-lane chain cf-70b→local-ollama→or-free→flash-lite-free→gemini-direct,
+    sidecar cache keyed (card_id,updated), slot schema at schemas/card-distill-slots.schema.json, verify_worker
+    --with-distill wired, corpus-v4.jsonl built (94/94 cases distilled, 0 fails). Now benching raw-vs-v4 A/B on
+    flash-lite-free.'
+- at: 2026-11-09 14:23
+  from: devin
+  text: '[done] GATE PASSED — adopt distilled briefs. Built: distill.py (5-lane chain cf-70b→ollama→or-free→flash-lite-free→gemini-direct,
+    sidecar cache keyed card_id+updated), schemas/card-distill-slots.schema.json, build_corpus_v4.py + corpus-v4.jsonl
+    (94 cases, -45% snapshot), verify_worker --with-distill, tests (8 green). Bench A/B on flash-lite-free: action_accuracy
+    raw 0.50 → v4 0.52 all-case, +1.37pts paired n=73 — no >2pt drop. correction_precision fell 0.93→0.78 (v4 reaches
+    for correct more) — w'
+- at: 2026-11-09 14:25
+  from: idc02
+  text: 'finished (ok): exit=0 `docs/ssot/jobs/bench/2026-11-09-card-distill-v4-gate.yml` and `v4-gate-comparison.md`;
+    card commented. | devin-t'
+- at: 2026-11-09 14:25
+  from: chaba
+  text: 'session-end checkpoint 35ced241: 1 leftover file(s) committed'
+- at: 2026-11-09 14:25
+  from: chaba
+  text: pushed dispatch/20261109-135325-tony-s-idea-use-free-lanes-to- to origin
+- at: 2026-11-09 14:25
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-09 14:25
+  from: chaba
+  text: auto-merged a66a5ae4 (dispatch/20261109-135325-tony-s-idea-use-free-lanes-to-) → origin/master
+- at: 2026-11-09 14:25
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-135325-tony-s-idea-use-free-lanes-to-,
+    branch dispatch/20261109-135325-tony-s-idea-use-free-lanes-to-'
+- at: 2026-11-09 14:34
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 action:
   type: dispatch
-  status: queued
+  status: done
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: idc02
+  result: 'exit=0 `docs/ssot/jobs/bench/2026-11-09-card-distill-v4-gate.yml` and `v4-gate-comparison.md`; card commented.
+    | devin-task-20261109-135325-tony-s-idea-use-free-lanes-to-.service: Consumed 58.155s CPU time, 263.8M memory
+    peak, 0B memory swap peak.'
+  verified: true
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-09 14:34
+  note: verified — evidence checks green, closing itself

@@ -29,6 +29,8 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -42,14 +44,25 @@ HEARTBEAT = STATE_DIR / "sentinel-heartbeat.json"
 SWEEP_STALE_MIN = 30
 ACTOR = "devin"  # board-api allowlist: ada|chaba|devin|tony
 
-# timers whose silence must always card — the load-bearing ones.
-# chaba-jobs dropped 2026-11-08: the dispatcher was retired by OPS-0790
-# (zero dispatch:dispatcher jobs remain; per-job rendered timers replaced
-# the tick). Hosts that still expect it declare it in the audit census —
-# expected_state:active there is what keeps the dell unit covered during
-# the rollout, and what flagged nothing on idc03 once it was deliberately
-# disabled (timer-alert-idc03-chaba-jobs was a false positive of this set).
-CRITICAL = {"kanban-commit", "kanban-dispatch",
+# Wall-clock budget for board-api work. The unit's TimeoutStartSec is
+# 180s (ssot.jobs.yml timer-sentinel timeout:3m); ~85 serial writes at
+# up to 30s each can exceed that when board-api writes stall behind
+# kanban-commit git locks (OPS-1261: run killed at 180s -> sentinel
+# cards itself). Finish gracefully instead: remaining writes are
+# idempotent and retried on the next 10min tick.
+START = time.monotonic()
+BUDGET_SEC = float(os.environ.get("SENTINEL_BUDGET_SEC", "150"))
+
+
+class BudgetExhausted(Exception):
+    pass
+
+
+def budget_left():
+    return BUDGET_SEC - (time.monotonic() - START)
+
+# timers whose silence must always card — the load-bearing ones
+CRITICAL = {"chaba-jobs", "kanban-commit", "kanban-dispatch",
             "timer-timeline-update", "timer-sentinel"}
 
 # hosts that are EXPECTED to be off regularly — unreachable ≠ suspicious
@@ -57,6 +70,10 @@ OPTIONAL_HOSTS = {"tony-macbook"}
 
 
 def api(path, payload=None, timeout=30):
+    left = budget_left()
+    if left < 10:
+        raise BudgetExhausted(f"{left:.0f}s of {BUDGET_SEC:.0f}s budget left")
+    timeout = min(timeout, left)
     if payload is None:
         return json.load(urllib.request.urlopen(
             f"{BOARD_API}/{path}", timeout=timeout))
@@ -82,9 +99,9 @@ def open_card_ids():
 
 
 def fire(card_id, title, body, dry_run, open_ids):
-    """Create card if no open one; else comment on it. on_exists:queue
-    re-arms a done card when its condition recurs (a duplicate POST /card
-    fails closed with 400 — that crash killed whole sweeps)."""
+    """Create card if no open one; else comment on it. One bad fire must
+    not kill the remaining findings (board-api stalls are transient —
+    the next tick retries; BudgetExhausted aborts the whole sweep)."""
     if open_ids is None:
         print(f"SKIP {card_id}: board unreachable")
         return
@@ -96,17 +113,90 @@ def fire(card_id, title, body, dry_run, open_ids):
             print(f"COMMENT {card_id}: {body[:80]}")
             return
         if not dry_run:
-            api("card", {"id": card_id, "title": title,
-                         "column": "backlog", "priority": "high",
-                         "from": ACTOR, "on_exists": "queue",
-                         "action": {"type": "manual"},
-                         "tags": ["timer-alert", "auto",
-                                  "by:timer-sentinel"],
-                         "note": body})
+            try:
+                api("card", {"id": card_id, "title": title,
+                             "column": "backlog", "priority": "high",
+                             "from": ACTOR,
+                             "tags": ["timer-alert", "auto",
+                                      "by:timer-sentinel"],
+                             "note": body})
+            except urllib.error.HTTPError as e:
+                if e.code != 400:
+                    raise
+                # id exists but closed — reopen + comment instead of crashing
+                api("action", {"id": card_id, "do": "move",
+                               "column": "backlog"})
+                api("comment", {"id": card_id, "from": ACTOR,
+                                "text": f"[reopened — condition recurred] {body}"})
+                print(f"REOPEN {card_id}: {body[:80]}")
+                return
         print(f"CARD {card_id}: {body[:80]}")
+    except BudgetExhausted:
+        raise
     except Exception as e:
-        # one bad fire must not kill the remaining findings
-        print(f"WARN {card_id}: fire failed: {e}", file=sys.stderr)
+        print(f"warn: fire {card_id} failed ({e})", file=sys.stderr)
+
+
+def _heal_reason(cid, sweep, sweep_age_min):
+    """KNB-0577: return a close reason when the card's condition healed,
+    else None. We only close what the latest sweep can actually verify —
+    unverifiable stays open for a human."""
+    host_ok = (sweep or {}).get("host_ok") or {}
+    timers = (sweep or {}).get("timers") or {}
+    if cid == "timer-alert-collector":
+        if sweep_age_min is not None and sweep_age_min <= SWEEP_STALE_MIN:
+            return "collector sweep fresh again"
+        return None
+    if cid.startswith("timer-alert-host-"):
+        host = cid[len("timer-alert-host-"):]
+        if host in host_ok and host_ok[host]:
+            return "host reachable again"
+        return None
+    for host, tt in timers.items():
+        prefix = f"timer-alert-{host}-"
+        if not cid.startswith(prefix):
+            continue
+        if not host_ok.get(host):
+            return None  # host unverified — don't guess
+        name = cid[len(prefix):]
+        t = tt.get(name)
+        if not t:
+            return None
+        enabled = str(t.get("enabled") or "")
+        if (t.get("result") == "success" and not t.get("failed_now")
+                and enabled not in ("disabled", "masked", "missing")):
+            return f"last run result=success at {t.get('last') or '?'}"
+        return None
+    return None
+
+
+def reconcile(open_ids, sweep, sweep_age_min, findings, dry_run):
+    """Close open timer-alert-* cards whose condition healed (KNB-0577)."""
+    if not open_ids:
+        return 0
+    fired = {f[0] for f in findings}
+    closed = 0
+    for cid in sorted(open_ids):
+        if not cid.startswith("timer-alert-") or cid in fired:
+            continue
+        reason = _heal_reason(cid, sweep, sweep_age_min)
+        if not reason:
+            continue
+        note = f"[auto-resolved] {reason} — closing (timer-sentinel KNB-0577)"
+        if not dry_run:
+            try:
+                api("comment", {"id": cid, "from": ACTOR, "text": note})
+                api("action", {"id": cid, "do": "close"})
+            except BudgetExhausted:
+                print(f"warn: budget exhausted — remaining heals "
+                      f"deferred to next tick", file=sys.stderr)
+                break
+            except Exception as e:
+                print(f"warn: close {cid} failed ({e})", file=sys.stderr)
+                continue
+        print(f"CLOSE {cid}: {reason}")
+        closed += 1
+    return closed
 
 
 def _recent(last_us, now, hours=48):
@@ -190,7 +280,7 @@ def main():
                     f"ssh-fail, not a timer failure)."))
         for host, tt in timers.items():
             for name, t in tt.items():
-                cid = f"timer-alert-{host}-{name}"[:61]
+                cid = f"timer-alert-{host}-{name}"[:120]
                 exp = (expected.get(host) or {}).get(name)
                 enabled = str(t.get("enabled") or "")
                 crit = name in CRITICAL or exp == "active"
@@ -223,14 +313,22 @@ def main():
     # synthetic fault for verification runs
     if args.inject:
         kind, host, name = args.inject.split(":", 2)
-        cid = f"timer-alert-{host}-{name}"[:61]
+        cid = f"timer-alert-{host}-{name}"[:120]
         findings.append((cid, f"[synthetic] {kind} {name} on {host}",
                          f"Injected test condition: {kind}. This card "
                          f"proves the sentinel pipeline works; close it."))
 
     open_ids = open_card_ids()
-    for cid, title, body in findings:
-        fire(cid, title, body, args.dry_run, open_ids)
+    try:
+        for cid, title, body in findings:
+            fire(cid, title, body, args.dry_run, open_ids)
+    except BudgetExhausted as e:
+        print(f"warn: {e} — remaining fires deferred to next tick",
+              file=sys.stderr)
+
+    healed = reconcile(open_ids, sweep, sweep_age_min, findings,
+                       args.dry_run)
+    print(f"timer-sentinel: {healed} cards auto-closed")
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     HEARTBEAT.write_text(json.dumps({

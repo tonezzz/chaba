@@ -1,0 +1,71 @@
+id: lesson-primer-scoring-fixes
+title: lesson_primer scoring fixes — word boundaries, host-token eligibility, staleness
+column: doing
+updated: 2026-11-09 15:46
+brief: 'Three known scoring bugs in scripts/board/lesson_primer.py: substring matching false-hits (e.g. keyword
+  ''test'' matches ''latest''), host tokens alone reach MIN_SCORE=2 so host-specific lessons always crowd the 8
+  slots regardless of task relevance, and lessons never decay so stale references persist. Fix the scoring, keep
+  the contract.'
+priority: high
+tags:
+- dispatch-tuning
+- primer
+spec: 'Files: scripts/board/lesson_primer.py, tests/board/test_lesson_primer.py.
+
+
+  Changes:
+
+  1. _score(): match keywords on word boundaries (regex \b, or tokenize the line and intersect sets) instead of
+  substring `k in tl`. Regression case: keyword ''test'' must NOT match ''latest''/''protest''; ''card'' must not
+  match ''discard''.
+
+  2. Eligibility: split keywords() output into task_kws (card-derived) and host_repo_kws (host+repo). A candidate
+  line is eligible only when score >= MIN_SCORE AND it contains >=1 task keyword. Host/repo tokens still count toward
+  the score for ranking, but cannot alone qualify a line. Rationale: host-specific lessons are the least generalizable
+  yet currently auto-qualify.
+
+  3. Staleness (keep simple, document the rule): demote (-1 score) lines from sources whose file mtime is older
+  than 90 days, and filter lines referencing retired infra — start with a small RETIRED_RE (e.g. r''\bidc01\b''
+  for the retired ada/mddb host) defined as a module constant with a comment that it needs periodic review; a lesson
+  line that also hits >=2 task keywords survives the retired-host filter.
+
+  4. Keep contracts: MAX_LINES=8, MAX_CHARS=5500, LINE_CAP=240, MIN_SCORE=2, rank order (outcome<job<comms<kb),
+  KANBAN_PRIMER=0 off-switch, warn-only failure in build_task.
+
+
+  Tests: update/extend test_lesson_primer.py — substring false-match case, host-only line rejected, task+host line
+  accepted, stale demotion works, retired-host filter works with the 2-task-kw escape.
+
+
+  Verify: pytest tests/board/ green; live smoke — call lp.build() on 2 real cards (e.g. a chaba card and an ada-voice
+  card) and print the selected lines to show the mix improved.'
+action:
+  type: dispatch
+  repo: chaba
+  status: running
+  lane: codemod
+  runner: idc02
+ref: OPS-1271
+comms:
+- at: 2026-11-09 15:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.05 > 0.85)'
+- at: 2026-11-09 15:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.08 > 1.0)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 15:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
+- at: 2026-11-09 15:46
+  from: idc02
+  text: claimed
+- at: 2026-11-09 15:46
+  from: chaba
+  text: started devin-task-20261109-154625-files-scripts-board-lesson-pri on idc02 (dispatch)

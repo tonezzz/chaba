@@ -1,14 +1,14 @@
 id: timer-alert-tony-omen-devin-bank-distill
 title: Timer devin-bank-distill on tony-omen failing
-column: backlog
-updated: 2026-11-08 10:39
+column: done
+updated: 2026-11-09 13:40
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-08 10:15) of `devin-bank-distill.service` on `tony-omen` result=exit-code — investigate
-  journal: `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-08 10:15) of `devin-bank-distill.service` on `tony-omen` result=exit-code — investigate journal:
+  `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: DEV-1142
 comms:
 - at: 2026-11-08 10:29
@@ -21,6 +21,20 @@ comms:
 - at: 2026-11-08 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failing systemd timer run for devin-bank-distill.service on host tony-omen. Check
-  the service journal using journalctl --user -u devin-bank-distill.service and reference the CMS timer-timeline-tony-omen.
+- at: 2026-11-09 13:37
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-08 10:15 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 13:37
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 13:40
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-08 10:15 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 13:40
+  from: tony
+  text: closed by tony
+spec: Investigate the failing systemd timer run for devin-bank-distill.service on host tony-omen. Check the service
+  journal using journalctl --user -u devin-bank-distill.service and reference the CMS timer-timeline-tony-omen.
   The done-condition is verified when the root cause of the exit-code failure is identified and documented.
+action:
+  status: done

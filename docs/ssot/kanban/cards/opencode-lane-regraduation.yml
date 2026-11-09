@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 11:34
+updated: 2026-11-09 13:35
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -125,6 +125,42 @@ comms:
     such artifacts unverified. Do not fabricate pass or mutate ledger rows. Need pending-review evidence + independently
     recorded finalization before five-job pilot. S1 is genuinely passed; lane at S2; no S2 jobs consumed. Runner
     timer active. Separate Devin review requires exp'
+- at: 2026-11-09 11:50
+  from: devin
+  text: S2 plumbing independently reviewed by agent cb2b39dd, committed 465d232f1e, integrated master 9b23bdc8c7
+    and deployed idc02 via repo sync. 152 focused tests pass deployed. Append-only pending/finalization with frozen
+    portable hashes, live revalidation, duplicate/replay protection, no raw pass bypass, safety rollback preserved.
+    Five sequential ops-readonly snapshots now generating; remain unverified until separate reviewer attestations.
+    No threshold or branch-code relaxation.
+- at: 2026-11-09 11:52
+  from: devin
+  text: 'answered ops1255-s1-human-watch: Tony selected A for availability, readiness and full observation in chat.
+    S1 canary passed with 0.14778794 measured human minutes and explicit attestation; zero safety flags. Gate promoted
+    to S2. Reco'
+- at: 2026-11-09 11:52
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 11:56
+  from: devin
+  text: 'S2 COMPLETE: reviewer cb2b39dd independently passed 5/5 idc02 ops-readonly artifacts; recomputed hashes/audits
+    and checked original tool output+stable host facts. Five certificates ingested append-only; gate reports jobs5
+    verified5 (raw rows10), zero denials/escalations. Promoted S2->S3 2026-11-09T04:55:16Z. Historical prefix intact,
+    runner active. Scope: ops-readonly health only, NOT free code. Evidence ~/.local/state/opencode-lane/ops1255-20261109T041258Z/s2-final-review.json
+    + s2-promotion.js'
+- at: 2026-11-09 11:56
+  from: devin
+  text: 'REMAINING / keep doing: S3 needs 10-20 genuine read-only production samples (>=80% verified, zero denials);
+    S4 needs reversible artifacts + rollback drills; S5 remains separately gated and branch-code disabled. Accounting
+    caveat verified in scripts/board/runner-agent.py:950-969: generic dispatch metrics use stage="" and cannot qualify
+    S3. Next: select real read-only card work and run full S3 envelopes via opencode_profiles.py, or explicitly
+    integrate gate-aware dispatch accounting; do not relabe'
+- at: 2026-11-09 13:35
+  from: devin
+  text: 'Next-step assessment: verified OPS-0846 proves OpenCode worktree/push/merge for marker change, not general
+    code autonomy; ADA-1115 exposes confirmed queue/hold. Consumer discrepancy reproduced: board-cli get OPS-1255
+    returns backlog/10:50 predeployment comms, while idc03 served and exec YAML both say doing/12:04 with S3 evidence.
+    Writes durable; GET/read projection stale. Resolve read freshness and stage-aware execution/closeout, then finish
+    ONE genuine report-only card end-to-end before scaling'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -149,10 +185,14 @@ requests:
     and verified artifact. Are you available to watch the next canary? Preparation must also add explicit watch-time
     recording: the existing profile runner currently defaults human_minutes to zero. No S1 canary will run or watch
     minutes be invented without actual observation.'
-  status: open
+  status: answered
   at: 2026-11-09 11:16
   from: devin
   options:
   - available to watch next canary
   - leave at S1 for later
   suggested: available to watch next canary
+  answer: Tony selected A for availability, readiness and full observation in chat. S1 canary passed with 0.14778794
+    measured human minutes and explicit attestation; zero safety flags. Gate promoted to S2. Recorded by Devin on
+    behalf of Tony. Tony also authorized S2 tooling and separate reviewer via A; deployed with 152 tests.
+awaiting_action: true

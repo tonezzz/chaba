@@ -1,14 +1,14 @@
 id: timer-alert-idc03-ada-embed-bench
 title: Timer ada-embed-bench on idc03 failing
-column: backlog
-updated: 2026-11-08 13:06
+column: done
+updated: 2026-11-09 13:51
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-07 06:00) of `ada-embed-bench.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u ada-embed-bench.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-07 06:00) of `ada-embed-bench.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u ada-embed-bench.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: ADA-1145
 comms:
 - at: 2026-11-08 10:29
@@ -16,23 +16,42 @@ comms:
   text: card captured via board-api
 - at: 2026-11-08 10:39
   from: devin
-  text: '[still suspicious] Last run (11-07 06:00) of `ada-embed-bench.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u ada-embed-bench.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-07 06:00) of `ada-embed-bench.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u ada-embed-bench.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-08 13:06
   from: devin
-  text: '2026-11-08 sweep: last run exited 1 during the mddb-embed runaway window (idc03 load ~5 on 4cpu,
-    embed worker wedged at 89% CPU). mddb-embed restarted 13:00 +07, load decaying; next scheduled run
-    is the real test — leaving open for timer-sentinel to confirm recovery rather than closing on a stale
-    alert.'
+  text: '2026-11-08 sweep: last run exited 1 during the mddb-embed runaway window (idc03 load ~5 on 4cpu, embed
+    worker wedged at 89% CPU). mddb-embed restarted 13:00 +07, load decaying; next scheduled run is the real test
+    — leaving open for timer-sentinel to confirm recovery rather than closing on a stale alert.'
 - at: 2026-11-08 19:20
   from: backlog-spec-enrich
-  text: skipped — The card notes that the run failure was due to a known runaway window on idc03, load
-    is decaying, and the card is explicitly left open for the timer-sentinel to confirm recovery on the
-    next scheduled run rather than closing on a stale alert.
+  text: skipped — The card notes that the run failure was due to a known runaway window on idc03, load is decaying,
+    and the card is explicitly left open for the timer-sentinel to confirm recovery on the next scheduled run rather
+    than closing on a stale alert.
 - at: 2026-11-09 01:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of `ada-embed-bench.service` on host `idc03` following the mddb-embed runaway
-  window. The runner must check the journal logs via `journalctl --user -u ada-embed-bench.service` on
-  idc03 and verify the status of the next scheduled run. The done-condition is confirmed recovery of the
-  timer service on idc03 based on the timer-sentinel check.
+- at: 2026-11-09 13:36
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-07 06:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 13:36
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 13:40
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-07 06:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 13:40
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 13:51
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-07 06:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-09 13:51
+  from: tony
+  text: closed by tony
+spec: Investigate the failure of `ada-embed-bench.service` on host `idc03` following the mddb-embed runaway window.
+  The runner must check the journal logs via `journalctl --user -u ada-embed-bench.service` on idc03 and verify
+  the status of the next scheduled run. The done-condition is confirmed recovery of the timer service on idc03 based
+  on the timer-sentinel check.
+action:
+  status: done
