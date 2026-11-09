@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kraut-rain-watch
 title: Timer kraut-rain-watch on idc03 failing
 column: doing
-updated: 2026-11-09 09:09
+updated: 2026-11-09 09:11
 priority: high
 tags:
 - timer-alert
@@ -1041,6 +1041,11 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 09:11
+  from: devin
+  text: 2026-11-09 VERIFY — same root cause as weather-bakeoff-daily (shared ada-ai-kraut.env lost ~Oct 23 + idc03->michael-ha:8123
+    unreachable). Fixed 11-08 15:45 via tunnel env (127.0.0.1:18123 through tony-omen). Runs every 30min green since
+    — last 08:41 today clean (cond=partlycloudy, no event). Closing.
 action:
   status: running
   type: dispatch
