@@ -7,18 +7,12 @@ generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
 priority: high
-note: 'Failing: ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca != repo 71a2c26532c597f4
-  — installed copy drifted; redeploy. Info: chaba origin is fetch-only (by design
-  — no push creds); merge-sweep salvage path verified; ada-voice: push probe ok —
-  declare push:ada-voice in RUNNER_LABELS for the fast path (live probe still gates);
-  sunsynk-card: push probe ok — declare push:sunsynk-card in RUNNER_LABELS for the
-  fast path (live probe still gates); no mddb-fork checkout — host can''t take action.repo=mddb-fork
-  cards; no gods-eye-view checkout — host can''t take action.repo=gods-eye-view cards;
-  devin: /home/tony/.local/bin/devin (devin 3000.12.32 (1126aba4a596)).'
+note: 'Failing: probe failed: Command ''[''ssh'', ''-o'', ''BatchMode=yes'', ''-o'',
+  ''ConnectTimeout=8'', ''tony-omen'', ''python3'', ''-'']'' timed out after 120 seconds.'
 help: 'Per-check fixes:
 
-  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
-  && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
+  - unreachable: ssh <host> fails — the runner can''t be probed, claimed, or salvaged.
+  Check tailscale + sshd + the key on the host.'
 updated: '2026-11-08'
 review_kind: triage
 action:
