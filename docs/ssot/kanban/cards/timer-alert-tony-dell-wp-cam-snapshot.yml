@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
 column: backlog
-updated: 2026-11-10 19:11
+updated: 2026-11-10 19:23
 priority: high
 tags:
 - timer-alert
@@ -1183,5 +1183,16 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-10 19:03) of `wp-cam-snapshot.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-10 19:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-10 19:23
+  from: devin
+  text: '[still suspicious] Last run (11-10 19:03) of `wp-cam-snapshot.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   status: done
+spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining
+  the systemd user journal via journalctl --user -u wp-cam-snapshot.service. Identify the root cause of the snapshot
+  failure, implement a fix, and verify that subsequent runs of the timer execute successfully without exit-code
+  errors.
