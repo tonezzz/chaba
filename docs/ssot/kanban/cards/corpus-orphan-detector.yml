@@ -3,7 +3,7 @@ title: Corpus orphan detector — scripts/docs with no references surface in sta
 column: done
 priority: medium
 created: '2026-10-11'
-updated: 2026-11-08 16:04
+updated: 2026-11-10 22:23
 review_kind: triage
 domain: chaba-ci
 spec: "ssot.artifact-lifecycle.yml declares an Orphans detector that does not\nexist yet. Build it as a section\
@@ -75,6 +75,11 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 verify: standard-drift page shows an Orphans section; a known-dead script (e.g. one never referenced) appears; count
   only shrinks over time.
 requests: []
@@ -94,3 +99,4 @@ action:
   sweep:
     close_held: 2026-10-23 09:09
 claim: {}
+awaiting_action: true
