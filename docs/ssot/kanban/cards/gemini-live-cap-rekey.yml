@@ -1,7 +1,7 @@
 id: gemini-live-cap-rekey
 title: 'Un-latch lane tony: Gemini monthly cap + key rotation'
 column: backlog
-updated: 2026-11-10 07:06
+updated: 2026-11-10 19:16
 ref: ADA-0761
 comms:
 - at: 2026-10-20 20:08
@@ -22,6 +22,9 @@ comms:
   from: devin
   text: 'raised request post-deploy-live-test-is-blocked-nest-st-ed7263: Post-deploy live test is blocked: nest_status.yaml
     connected to Ada on idc03 but the provider rejected the session befor'
+- at: 2026-11-10 19:16
+  from: chaba
+  text: 'request-sweep: 1 request(s) unanswered >12h — escalation pushed'
 spec: 'Goal: Un-latch the tony lane in ada-voice by putting a new paid-project Gemini key into idc03 at ~/.config/secrets/
   (following ~/.config/secrets/gemini-keys.template.env) and clearing the ProviderCapLatched state in ~/CascadeProjects/ada-voice/data/lane-budget.json.
   Host: idc03. Repo: ada-voice. Constraints: Keys are pending from Tony via the specified template path; do not
@@ -41,3 +44,4 @@ requests:
   - top-up — authorize a paid-project key/top-up (spend required)
   - defer — keep deployment and accept no live prompt test until later
   suggested: wait — wait for the 2026-12-01 rollover (recommended; no spend)
+  escalated_at: 2026-11-10 19:16
