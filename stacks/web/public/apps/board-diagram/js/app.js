@@ -1,6 +1,6 @@
 // app.js — bootstrap: fetch cards, render selected diagram, poll.
-import { fetchCards } from '../board-gantt/js/data.js';
-import { groupLabel } from '../board-gantt/js/groups.js';
+import { fetchCards } from '../../board-gantt/js/data.js';
+import { groupLabel } from '../../board-gantt/js/groups.js';
 import { renderDiagram } from './diagram.js';
 import { DIAGRAMS, POLL_MS } from './config.js';
 

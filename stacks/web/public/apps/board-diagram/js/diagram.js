@@ -2,8 +2,8 @@
 // Lanes = project sub-groups (project: parent/child slugs); direct members
 // sit in a 'members' lane. Cards are nodes colored by kanban column.
 // Renders SVG into a container element; returns {height} for layout.
-import { DONE_RECENT_DAYS } from '../board-gantt/js/config.js';
-import { groupOf, groupLabel } from '../board-gantt/js/groups.js';
+import { DONE_RECENT_DAYS } from '../../board-gantt/js/config.js';
+import { groupOf, groupLabel } from '../../board-gantt/js/groups.js';
 
 const DAY = 86400000;
 const VIEW_W = 1040;
