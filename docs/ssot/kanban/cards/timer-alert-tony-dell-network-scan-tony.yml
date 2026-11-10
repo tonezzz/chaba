@@ -1527,6 +1527,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-10 23:58) of `network-scan-tony.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-11 00:33
+  from: devin
+  text: '[still suspicious] Last run (11-11 00:13) of `network-scan-tony.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   type: dispatch
   status: done
@@ -1545,3 +1549,4 @@ spec: Investigate the failure of network-scan-tony.service on the host tony-dell
   context regarding the repeated exit-code failures. Determine the root cause of the non-zero exit status and resolve
   the underlying issue so the service can complete successfully. The done-condition is verified when network-scan-tony.service
   executes successfully on tony-dell without resulting in an exit-code failure.
+awaiting_action: true
