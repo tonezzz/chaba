@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-10 22:21
+updated: 2026-11-10 22:25
 priority: high
 tags:
 - timer-alert
@@ -1474,6 +1474,11 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-10 21:58) of `network-scan-tony.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u network-scan-tony.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-10 22:25
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 action:
   type: dispatch
   status: done
@@ -1492,3 +1497,4 @@ spec: Investigate the failure of network-scan-tony.service on the host tony-dell
   context regarding the repeated exit-code failures. Determine the root cause of the non-zero exit status and resolve
   the underlying issue so the service can complete successfully. The done-condition is verified when network-scan-tony.service
   executes successfully on tony-dell without resulting in an exit-code failure.
+awaiting_action: true
