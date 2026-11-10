@@ -1,7 +1,7 @@
 id: scenario-sessions-hitting-ada-ha-tony-in-4d180d
 title: Scenario sessions hitting ada-ha-tony instead of ada-dev free lane
 column: done
-updated: 2026-11-08 16:04
+updated: 2026-11-10 22:23
 priority: high
 tags:
 - ada
@@ -55,6 +55,11 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 spec: Investigate why admin sessions still connect to ada-ha-tony at 6.6s intervals during suite windows despite
   smoke retargeting working for actual usage. The target repository is ada-voice and the operations run on host
   tony-dell. Constraints include relying solely on existing logs and connection metrics without modifying live routing
@@ -71,3 +76,4 @@ action:
     session_gone: 2026-10-23 19:41
 review_kind: verify
 claim: {}
+awaiting_action: true
