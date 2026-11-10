@@ -1,7 +1,7 @@
 id: qwen3-coder-30b-omen-benchmark
 title: Benchmark Qwen3-Coder-30B-A3B on Tony-Omen
 column: doing
-updated: 2026-11-09 20:40
+updated: 2026-11-10 07:03
 brief: Assess this exact GGUF as a local coding-agent lane on Omen, with a strict host resource gate.
 priority: high
 program: ai-workforce
@@ -51,3 +51,9 @@ comms:
   text: 'Follow-up host-scoped check at 20:39 confirms this is tony-omen: nvidia-smi reports 2,312/4,096 MiB allocated
     (2,278 MiB held by the incumbent chaba-ml-gpu worker; GPU utilization 0%). Memory remains reserved even while
     utilization is idle, so the no-displacement/no-launch gate still stands.'
+- at: 2026-11-10 07:03
+  from: devin
+  text: 'Fresh Omen preflight 2026-11-10 07:02: still blocked. RAM available 9.8 GiB; swap 15/15 GiB used (164 KiB
+    free); load average 9.78/10.66/11.31. GTX 1650 has 2,368/4,096 MiB allocated (1,728 MiB free), with the incumbent
+    chaba-ml-gpu process still holding 2,278 MiB; GPU utilization 0%. No model download or candidate run. Continue
+    waiting for a healthy resource window; do not displace the incumbent workload.'
