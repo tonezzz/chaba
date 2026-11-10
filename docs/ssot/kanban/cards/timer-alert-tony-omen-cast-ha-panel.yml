@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-cast-ha-panel
 title: Timer cast-ha-panel on tony-omen disabled
 column: backlog
-updated: 2026-11-11 01:12
+updated: 2026-11-11 01:21
 priority: high
 tags:
 - timer-alert
@@ -1346,3 +1346,14 @@ comms:
   from: devin
   text: '[still suspicious] `cast-ha-panel.timer` on `tony-omen` is disabled but expected active (audit census /
     critical list). Deliberate? If not: `systemctl --user enable --now cast-ha-panel.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-11 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-11 01:21
+  from: devin
+  text: '[still suspicious] `cast-ha-panel.timer` on `tony-omen` is disabled but expected active (audit census /
+    critical list). Deliberate? If not: `systemctl --user enable --now cast-ha-panel.timer`. See CMS `timer-timeline`.'
+spec: The goal is to verify if the disabled state of cast-ha-panel.timer on tony-omen is deliberate and, if not,
+  enable and start it. The target host is tony-omen. The testable done-condition is verified when systemctl --user
+  is-active --quiet cast-ha-panel.timer returns zero and systemctl --user is-enabled --quiet cast-ha-panel.timer
+  confirms it is enabled.
