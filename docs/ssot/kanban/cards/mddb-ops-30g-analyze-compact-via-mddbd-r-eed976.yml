@@ -1,7 +1,7 @@
 id: mddb-ops-30g-analyze-compact-via-mddbd-r-eed976
 title: 'mddb-ops 30G: analyze + compact via mddbd -repair-db if freelist-bloated'
-column: doing
-updated: 2026-11-11 23:49
+column: done
+updated: 2026-11-12 00:06
 brief: Native backup copied ~29.7G of 30G file. If most is live docs (host-logs/telemetry) retention pruning is
   the lever; if freelist, offline -repair-db compaction reclaims it.
 ref: MEM-0023
@@ -15,3 +15,8 @@ comms:
     (proc B) used: full /v1/export 142,245 host-logs docs -> fresh mddbd -> swap. Live db 31G -> ~640M post-swap.
     First import landed only a partial window (truncated jsonl); batch refill via /v1/add-batch now restoring full
     3d window in progress. Tmp copies (~62G in /tmp/ops-compact) pending removal after final count verify.'
+- at: 2026-11-12 00:06
+  from: tony
+  text: closed by tony
+action:
+  status: done
