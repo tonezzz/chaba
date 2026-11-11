@@ -1,7 +1,7 @@
 id: timer-alert-idc03-served-checkout-watchdog
 title: Timer served-checkout-watchdog on idc03 failing
-column: done
-updated: 2026-11-09 13:52
+column: backlog
+updated: 2026-11-11 20:43
 priority: high
 tags:
 - timer-alert
@@ -124,6 +124,9 @@ comms:
 - at: 2026-11-09 13:52
   from: devin
   text: '[auto-resolved] last run result=success at 11-09 13:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-11 20:43
+  from: tony
+  text: moved done -> backlog
 spec: Investigate why the user service `served-checkout-watchdog.service` on host `idc03` failed with an exit-code
   result during its recent runs, as indicated by the recurring timer alerts and journal entries. Review the journal
   logs via `journalctl --user -u served-checkout-watchdog.service` on `idc03` and cross-reference the CMS `timer-timeline-idc03`
