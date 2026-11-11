@@ -1124,11 +1124,19 @@ def _claimable(card: dict) -> tuple:
                 return "", ("executor=kk_mac_local: task_class "
                             f"{a.get('task_class') or '(missing)'!r} not "
                             "admitted or artifact outside lane roots")
-            if not kk_mac_servable() and \
-                    kk_mac_probe().get("eligible"):
+            if kk_mac_servable():
+                # Local lane — like nlm_batch it claims without push
+                # creds: the artifact lands in the task dir/worktree
+                # and the close-out bundle relay covers hosts with no
+                # GitHub egress (OPS-1259 on tony-omen).
+                return "dispatch", ""
+            if kk_mac_probe().get("eligible"):
                 # lane is live elsewhere — leave for it
                 return "", ("kk_mac lane is live but this host can't "
                             "serve it")
+            # lane ineligible — falls through to the generic dispatch
+            # gates (the claim runs the fallback path, which is real
+            # repo work and still needs push capability)
         if ex == "nlm_batch" or (not ex and a.get("lane") == "nlm_batch"):
             # Declared nlm_batch executor / lane pin: needs nlm installed
             # + authed on this host. No repo checkout or push creds —
