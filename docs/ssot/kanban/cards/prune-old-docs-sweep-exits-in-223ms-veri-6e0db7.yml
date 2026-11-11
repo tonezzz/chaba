@@ -1,7 +1,7 @@
 id: prune-old-docs-sweep-exits-in-223ms-veri-6e0db7
 title: prune-old-docs sweep exits in 223ms — verify it actually deletes
 column: doing
-updated: 2026-11-11 23:50
+updated: 2026-11-12 01:18
 brief: Timer ran 09:35 status=0 in 223ms — too fast to page 100k+ docs. Ops still holds host-logs docs older than
   the 3d policy. Either sweep silently no-ops or listing is failing.
 ref: OPS-0026
@@ -20,3 +20,10 @@ comms:
   text: 'Progress: post-compaction enumeration now completes in ~5s (was: remote-close under 142k-doc collection).
     Dry-run found 8,963 stale. First real sweep raced a bulk refill (offset-paging shift under concurrent inserts)
     -> scanned 25,313, deleted 0; re-run queued after refill drains to confirm deletes land.'
+- at: 2026-11-12 01:18
+  from: devin
+  text: 'RESOLVED mechanism-wise 2026-11-12: post-compaction the sweep enumerates ops host-logs in ~5-56s (was:
+    remote-close / instant-exit). Runs deleted ~17k+ stale docs (collection 114,678 -> ~99k and shrinking). Caveat
+    found and documented in docs/kb/mddb-prune-compact.md: offset-paging race under concurrent bulk writes under-counts
+    stale docs - a third sweep is converging the last ~15.6k; daily 09:30 timer finishes convergence under normal
+    load. Note: refill re-created stale docs by restoring the No'
