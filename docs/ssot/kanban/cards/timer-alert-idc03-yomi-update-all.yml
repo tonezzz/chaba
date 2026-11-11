@@ -1,14 +1,14 @@
 id: timer-alert-idc03-yomi-update-all
 title: Timer yomi-update-all on idc03 failing
 column: backlog
-updated: 2026-11-11 20:53
+updated: 2026-11-12 03:53
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-11 20:00) of `yomi-update-all.service` on `idc03` result=exit-code — investigate journal:
-  `journalctl --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-11 20:00) of `yomi-update-all.service` on `idc03` result=exit-code — investigate journal: `journalctl
+  --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-0019
 comms:
 - at: 2026-11-11 20:43
@@ -16,12 +16,15 @@ comms:
   text: card captured via board-api
 - at: 2026-11-11 20:53
   from: devin
-  text: '[still suspicious] Last run (11-11 20:00) of `yomi-update-all.service` on `idc03` result=exit-code
-    — investigate journal: `journalctl --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-11 20:00) of `yomi-update-all.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u yomi-update-all.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 01:22
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of yomi-update-all.service on host idc03, which exited with an error code
-  during its last run on 11-11 at 20:00. Inspect the systemd user journal using journalctl --user -u yomi-update-all.service
-  on idc03 and cross-reference the CMS timer-timeline-idc03 for additional context. The done-condition
-  is verified when the root cause of the exit-code failure is identified and documented in the card comments.
+- at: 2026-11-12 03:53
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 03:00 — closing (timer-sentinel KNB-0577)'
+spec: Investigate the failure of yomi-update-all.service on host idc03, which exited with an error code during its
+  last run on 11-11 at 20:00. Inspect the systemd user journal using journalctl --user -u yomi-update-all.service
+  on idc03 and cross-reference the CMS timer-timeline-idc03 for additional context. The done-condition is verified
+  when the root cause of the exit-code failure is identified and documented in the card comments.
