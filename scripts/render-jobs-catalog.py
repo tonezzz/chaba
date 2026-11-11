@@ -7,7 +7,7 @@ ssot.night-jobs.* / ssot.automation.* catalogs that drifted
 (ops-1244e). Regenerate after any ssot.jobs.yml edit:
     python3 scripts/render-jobs-catalog.py [--out docs/ssot/generated]
 """
-import re, sys, argparse
+import re, sys, argparse, json
 from pathlib import Path
 try:
     import yaml
@@ -39,8 +39,8 @@ def main():
             for j in sorted(js, key=lambda x: x.get("id","")):
                 sched = j.get("on_calendar") or ("every "+str(j["every"]) if j.get("every") else "-")
                 f.write("  - id: %s\n" % j["id"])
-                f.write("    schedule: %s\n" % sched)
-                f.write("    dispatch: %s\n" % j.get("dispatch","?"))
+                f.write("    schedule: %s\n" % json.dumps(str(sched), ensure_ascii=False))
+                f.write("    dispatch: %s\n" % json.dumps(str(j.get("dispatch", "?")), ensure_ascii=False))
                 if j.get("persistent"):
                     f.write("    persistent: true\n")
         print("wrote", p, len(js), "jobs")
