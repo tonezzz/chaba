@@ -1,0 +1,41 @@
+id: raceman-php-placement-decision
+title: Raceman PHP placement — restore on omen or retire backend
+column: backlog
+updated: 2026-11-11 20:39
+priority: medium
+tags:
+- ssot
+- service-placement
+- raceman
+spec: 'Found while reconciling KNB-0003 service inventory drift.
+
+
+  Verified live state 2026-11-11:
+
+  - raceman-web.service is active on tony-omen and http://127.0.0.1:8083/apps/raceman/ returns 200.
+
+  - raceman-php.service is enabled but inactive on tony-dell since 2026-10-20; no raceman-php container is present
+  there.
+
+  - tony-omen nginx config still fastcgi_passes PHP requests to 127.0.0.1:9001, but nothing listens on :9001; /apps/raceman/index.php
+  and /apps/raceman/api/status.php return 404.
+
+  - ssot.audit.hosts.yml still expects raceman-php.service active on tony-dell, so this is a real placement/outage
+  decision, not just stale monitoring.
+
+
+  Decide one path:
+
+  1. Restore raceman-php on tony-omen beside raceman-web (keeps PHP routes working locally), update audit/health
+  SSOT to expect it there.
+
+  2. Keep/restore raceman-php on tony-dell and repoint omen nginx fastcgi_pass to the dell tailnet address.
+
+  3. Retire the PHP backend if raceman is now static-only; remove raceman-php from audit expected_services and disable
+  its health check with a retirement note.'
+note: Split from ssot-service-inventory-drift so the SSOT cleanup can close without silently deciding the app backend.
+ref: OPS-0004
+comms:
+- at: 2026-11-11 20:39
+  from: devin
+  text: card captured via board-api
