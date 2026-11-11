@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-11 21:04
+updated: 2026-11-11 21:13
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -205,6 +205,15 @@ comms:
     SHA256 aa21002babc4857381bbe65e05d5d8baec0ea0e41f83b46043548915e548da66; runner-agent.timer active. This is
     installed producer proof, not a genuine Ada handoff/card closeout or new S3 sample. OPS-1254 now verified closed;
     DeepSeek is a narrow canary candidate only. Operational/write/code gates remain unchanged.'
+- at: 2026-11-11 21:12
+  from: devin
+  text: 'S3 window opened: 2/10+ verified pass (opsread-01/02, zero denials). INCIDENT: litellm on idc03 was down
+    ~13h (clean container exit, Restart=on-failure did not fire) - restarted, liveliness OK. LITELLM_KEY_BENCH is
+    dead (422); CHABA/ADA 200. Remaining 8-18 samples need direction - contract admits only idc02 health snapshots.'
+- at: 2026-11-11 21:13
+  from: devin
+  text: 'raised request s3-needs-8-18-more-verified-samples-but-fc52ca: S3 needs 8-18 more verified samples but
+    the typed contract admits ONLY idc02 host-health snapshots - no backlog card mat'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -239,4 +248,15 @@ requests:
   answer: Tony selected A for availability, readiness and full observation in chat. S1 canary passed with 0.14778794
     measured human minutes and explicit attestation; zero safety flags. Gate promoted to S2. Recorded by Devin on
     behalf of Tony. Tony also authorized S2 tooling and separate reviewer via A; deployed with 152 tests.
+- id: s3-needs-8-18-more-verified-samples-but-fc52ca
+  ask: 'S3 needs 8-18 more verified samples but the typed contract admits ONLY idc02 host-health snapshots - no
+    backlog card matches, and bursting identical snapshots is filler. Pick: (A) broaden contract to ssot-research/storage-dryrun
+    profiles so real backlog asks feed S3 (small code change) (B) spread identical snapshots across real triggers
+    over days (post-sync, post-incident) (C) lower S3 sample requirement. Recommend A.'
+  status: open
+  at: 2026-11-11 21:13
+  from: devin
+  options:
+  - proceed
+  - hold
 awaiting_action: true
