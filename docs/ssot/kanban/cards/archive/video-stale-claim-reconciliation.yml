@@ -1,0 +1,94 @@
+id: video-stale-claim-reconciliation
+title: 'OpenCode: reconcile stale video queue claims'
+column: done
+updated: 2026-11-12 04:21
+brief: Have Ada/OpenCode classify stale video claims without releasing or deleting anything.
+priority: high
+program: ai-workforce
+tags:
+- video
+- queue
+- stale-claims
+- opencode
+- artifact-write
+spec: Run scripts/devnest/video_queue_status.py read-only against gdrive:ada-nest-kk-mac-video-pilot and gdrive:ada-nest.
+  Classify each stale claim as historical/support, done-artifact, failed, or canonical current Sacred Father candidate.
+  Recommend retire/release/hold, but do not mutate queues. Write the report artifact and preserve claim history.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/video-stale-claim-reconciliation.md
+  prompt: Run the read-only video queue status tool, classify every stale claim, and write the declared report.
+    Never delete/release claims, start renders, or modify cards.
+  expect:
+    facts:
+    - historical
+    - canonical
+    - release
+    - hold
+    - read-only
+  lane: free_lane
+  status: done
+  agent_profile: artifact-write
+  runner: idc02
+  result: 'exit=0 d87ffe2Jr2NsSQl5IbZj","type":"step-finish","tokens":{"total":43229,"input":43130,"output":99,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-video-stale-claim-reconciliation-1793692299.service: Consumed 17.603s CPU time.'
+  verified: true
+ref: OPS-1054
+comms:
+- at: 2026-11-03 14:51
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-03 14:51
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 14:51
+  from: idc02
+  text: claimed
+- at: 2026-11-03 14:51
+  from: chaba
+  text: started devin-task-video-stale-claim-reconciliation-1793692299 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-03 14:52
+  from: idc02
+  text: 'finished (ok): exit=0 d87ffe2Jr2NsSQl5IbZj","type":"step-finish","tokens":{"total":43229,"input":43130,"output":99,"reasoning":0,"cache'
+- at: 2026-11-03 14:52
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/video-stale-claim-reconciliation.md
+- at: 2026-11-03 14:52
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-03 14:52
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=artifact-write
+- at: 2026-11-03 14:52
+  from: chaba
+  text: 'session-end checkpoint 7d5e94e5: 1 leftover file(s) committed'
+- at: 2026-11-03 14:52
+  from: chaba
+  text: pushed dispatch/video-stale-claim-reconciliation-1793692299 to origin
+- at: 2026-11-03 14:52
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-03 14:52
+  from: chaba
+  text: auto-merged 24b1796d (dispatch/video-stale-claim-reconciliation-1793692299) → origin/master
+- at: 2026-11-03 14:52
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-video-stale-claim-reconciliation-1793692299,
+    branch dispatch/video-stale-claim-reconciliation-1793692299'
+- at: 2026-11-03 14:58
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-12 04:21
+  from: tony
+  text: archived (8d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-03 14:58
+  note: verified — evidence checks green, closing itself
