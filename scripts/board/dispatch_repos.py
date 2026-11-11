@@ -67,6 +67,12 @@ def canon_repo(name: str) -> str:
     return REPO_ALIASES.get(name or "", name or "")
 
 
+def canon_host(name) -> str:
+    """Canonical host key — SSOT/card pins use `tony_omen` while
+    nodename/RUNNER_HOST use `tony-omen`; compare in one form."""
+    return str(name or "").strip().lower().replace("-", "_")
+
+
 DEFAULT_BOARD_API = "https://idc03.taila0626a.ts.net:10000"
 
 

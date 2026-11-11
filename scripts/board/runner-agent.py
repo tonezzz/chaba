@@ -147,7 +147,16 @@ API = os.environ.get(
 # dispatch_repos.board_api_base() reads BOARD_API/RUNNER_API — export the
 # resolved base so the close-out patch-relay posts to the same api.
 os.environ.setdefault("BOARD_API", API)
+
+
+def _canon_host(name) -> str:
+    """Canonical host key — SSOT/card pins use `tony_omen` while
+    nodename/RUNNER_HOST use `tony-omen`; compare in one form."""
+    return str(name or "").strip().lower().replace("-", "_")
+
+
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
+HOST_KEY = _canon_host(HOST)
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # OPS-1182: script-type claims are near-free (a 2s probe) and should not
@@ -478,8 +487,8 @@ def push_guard_reason(card: dict) -> str:
     a = card.get("action") or {}
     if (a.get("type") or "dispatch") != "dispatch" \
             or a.get("status") != "queued" \
-            or (a.get("runner") and a["runner"] != HOST) \
-            or (a.get("host") and a["host"] != HOST) \
+            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
+            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
             or not set(a.get("labels") or []) <= LABELS \
             or not Path(DISPATCH).exists():
         return ""
@@ -1064,16 +1073,16 @@ def _claimable(card: dict) -> tuple:
     a = card.get("action") or {}
     if a.get("status") != "queued":
         return "", "not queued"
-    if a.get("runner") and a["runner"] != HOST:
+    if a.get("runner") and _canon_host(a["runner"]) != HOST_KEY:
         # queued but tagged with another host's runner
         return "", f"pinned to runner {a['runner']}"
     pinned = a.get("host")
-    if pinned and pinned != HOST:
+    if pinned and _canon_host(pinned) != HOST_KEY:
         return "", f"host-pinned to {pinned}"
     # executor contract host pin (action.target_host) — independent of
     # action.host; both must be satisfied.
     th = str(a.get("target_host") or "").strip()
-    if th and th != HOST:
+    if th and _canon_host(th) != HOST_KEY:
         return "", f"target_host {th}"
     needs = set(a.get("labels") or [])
     if not needs <= LABELS:
@@ -1189,9 +1198,9 @@ def executor_defer_reason(card: dict) -> str:
     a = card.get("action") or {}
     ex = str(a.get("executor") or "").strip()
     if a.get("status") != "queued" \
-            or (a.get("runner") and a["runner"] != HOST) \
-            or (a.get("host") and a["host"] != HOST) \
-            or (a.get("target_host") and a["target_host"] != HOST) \
+            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
+            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
+            or (a.get("target_host") and _canon_host(a["target_host"]) != HOST_KEY) \
             or not set(a.get("labels") or []) <= LABELS:
         return ""
     if ex == "opencode":
@@ -1972,9 +1981,10 @@ def prepare_profile_dispatch(card, tid, prof, model, ocp):
     if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] != "ops-readonly"
             or env.get("mcp_allowlist") != []
             or env.get("task_class") not in ("read_only", "report")
-            or a.get("target_host") != HOST or env.get("unattended", True) is not True
-            or env.get("subject_host") not in (None, "", HOST)
-            or a.get("subject_host") not in (None, "", HOST)):
+            or _canon_host(a.get("target_host")) != HOST_KEY \
+            or env.get("unattended", True) is not True
+            or _canon_host(env.get("subject_host")) not in ("", HOST_KEY)
+            or _canon_host(a.get("subject_host")) not in ("", HOST_KEY)):
         raise ValueError("staged dispatch currently admits only unattended S3 idc02 ops-readonly reports")
     art = str((env.get("artifact") or {}).get("path") or "")
     if not art or Path(art).is_absolute() or ".." in Path(art).parts or art != a.get("artifact"):
