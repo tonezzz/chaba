@@ -1,7 +1,7 @@
 id: prune-old-docs-sweep-exits-in-223ms-veri-6e0db7
 title: prune-old-docs sweep exits in 223ms — verify it actually deletes
 column: done
-updated: 2026-11-12 01:18
+updated: 2026-11-12 01:20
 brief: Timer ran 09:35 status=0 in 223ms — too fast to page 100k+ docs. Ops still holds host-logs docs older than
   the 3d policy. Either sweep silently no-ops or listing is failing.
 ref: OPS-0026
@@ -28,6 +28,9 @@ comms:
     stale docs - a third sweep is converging the last ~15.6k; daily 09:30 timer finishes convergence under normal
     load. Note: refill re-created stale docs by restoring the No'
 - at: 2026-11-12 01:18
+  from: tony
+  text: closed by tony
+- at: 2026-11-12 01:20
   from: tony
   text: closed by tony
 action:
