@@ -1,0 +1,45 @@
+id: ssot-service-inventory-drift
+title: SSOT service inventory drift — expected-active vs expected-absent
+column: backlog
+updated: 2026-11-11 20:23
+priority: medium
+spec: 'SSOT service inventory drift found during the 2026-11-11 fleet check.
+
+
+  Facts:
+
+  - ssot.audit.hosts.yml is the operational expected-state contract; it currently lists 356 active-expected unit
+  rows across active hosts.
+
+  - tony-dell has 22 unit names in BOTH expected_services (expected_state defaults to active, or explicit active)
+  and expected_absent. Examples: go2rtc.service, tony-ha.service, playlived.service, ha-live.service, node-red.service,
+  gemini-ollama-proxy.service.
+
+  - ssot.health.home.system.yml still expects yomi-update-all/active.timer, chaba-audit.timer, chaba-kb-audit.timer,
+  gemini-ollama-proxy.service, and go2rtc.service on tony_dell; the audit SSOT marks those moved/expected-absent
+  (yomi timers -> idc03, audit timers -> con01, LAN cohort -> tony-omen).
+
+  - ssot.health home also probes mcp-debug-sse.service and trade-automation.service on tony_dell, but those units
+  are absent/missing from the audit expected_services contract.
+
+  - The live MCP health run reported errors for those stale probes, so some red is SSOT drift, not service outage.
+
+
+  Task:
+
+  1. Reconcile ssot.audit.hosts.yml tony-dell expected_services vs expected_absent; remove or mark expected_state:absent
+  for migrated units.
+
+  2. Re-point or retire stale ssot.health.* systemd probes so health checks target the declared current host.
+
+  3. Reconcile ssot.services.yml status notes where they disagree with audit/current placement; keep historical
+  entries labeled historical/retired.
+
+  4. Re-run scripts/audit-hosts.py where available plus mcp-health check_health and report remaining real failures
+  separately from stale declarations.'
+note: Found by Devin while reconciling MCP health failures against SSOT on 2026-11-11.
+ref: KNB-0003
+comms:
+- at: 2026-11-11 20:23
+  from: tony
+  text: card captured via board-api
