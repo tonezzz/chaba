@@ -1,7 +1,7 @@
 id: mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c
 title: mddb 2.15.4 -> v2.18.10 upgrade (custom -lsn/-breaker builds)
 column: backlog
-updated: 2026-11-11 21:39
+updated: 2026-11-11 23:50
 brief: All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images — upgrade means
   rebasing local patches onto 2.18.x and rebuilding, not a pull.
 ref: MEM-0024
@@ -9,3 +9,9 @@ comms:
 - at: 2026-11-11 21:39
   from: devin
   text: card captured via board-api
+- at: 2026-11-11 23:50
+  from: devin
+  text: 'Session notes for the upgrade work: all 5 containers on localhost/mddb:2.15.4-lsn/-breaker; upstream v2.18.10.
+    Confirmed live: freeBytes metric is sampled once at startup (MEM-0027 root cause - check if 2.18 fixes it);
+    -repair-db crashes nil-ptr on FTS payload entries (do NOT rely on it for the upgrade path - use export/import
+    or bbolt compact per docs/kb/mddb-prune-compact.md).'
