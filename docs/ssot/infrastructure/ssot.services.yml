@@ -48,20 +48,19 @@ tony-dell:
     container: yomi-api
     image: docker.io/library/node:22-slim
     runtime: rootless podman
+    host: idc03
     port: 3000
-    host_port: 127.0.0.1:3000
+    host_port: 127.0.0.1:3000 + tailscale serve
     tailscale_serve: --bg --tcp 3000 127.0.0.1:3000
-    caddy_upstream: tony-dell:3000
+    caddy_upstream: idc03:3000
     data_volume: /home/tony/.local/share/yomi
-    quadlet:
-      container_unit: ~/.config/containers/systemd/yomi-api.container
-      service_unit: ~/.config/systemd/user/yomi-api.service
+    service_unit: ~/.config/systemd/user/yomi-api.service
     related_units:
       - yomi-api.service
       - yomi-update-all.timer
       - yomi-update-active.timer
       - yomi-backup.timer
-    status: implemented (2026-08-16)
+    status: migrated to idc03 (2026-10-19); dell copy retired
     failover_plan: docs/ssot/infrastructure/ssot.yomi-failover.yml
   redis:
     container: redis
@@ -233,19 +232,13 @@ tony-dell:
         note: home consumers get a local read replica; promotion to standalone is manual
     note: "Primary moved tony-dell -> idc01 2026-09-22, then idc01 -> idc03 2026-10-05/06 (public VPS, tailnet-only access — UFW allows tailscale0 only). All consumers point at 100.102.134.91. Embedding via gemini-ollama-proxy on idc03 (option A — Gemini-compatible vectors preserved); embeddings replicate to followers via binlog. tony-dell copy retired after soak, then re-deployed as follower. Cold-start caveats — vector index load takes ~45 min after HTTP is up and /v1/stats blocks during it; on a follower, initial BoltDB open of a seeded DB can take hours if the seed carries freelist damage (see corruption_repair_20260930)."
   mddb-panel:
-    container: mddb-panel
-    image: docker.io/tradik/mddb:panel-latest
-    runtime: rootless podman
-    network: host
+    service: chaba-monitoring-dashboard.service
+    runtime: node monitoring dashboard behind Caddy
+    host: idc02
     port: 3002
-    host_port: 100.68.142.13:3002
-    quadlet:
-      container_unit: ~/.config/containers/systemd/mddb-panel.container
-      service_unit: ~/.config/systemd/user/mddb-panel.service
-    related_units:
-      - mddb-panel.service
-    status: implemented (2026-08-17)
-    note: Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.
+    host_port: 127.0.0.1:3002 + 100.123.163.11:3002
+    status: current surface on idc02 (2026-10-19); legacy dell quadlet retired
+    note: Port 3002 is served by scripts/monitoring-dashboard.mjs on idc02; the old mddb-panel container/service on dell is no longer the live implementation.
   raceman-php:
     container: raceman-php
     image: docker.io/library/chaba-raceman-raceman-php:latest
@@ -264,14 +257,15 @@ tony-dell:
     image: docker.io/library/nginx:alpine
     runtime: rootless podman
     network: host
+    host: tony_omen
     port: 8083
-    host_port: 100.68.142.13:8083
+    host_port: 0.0.0.0:8083
     data_volume: /home/tony/CascadeProjects/chaba-raceman
     quadlet:
       container_unit: ~/.config/containers/systemd/raceman-web.container
       service_unit: ~/.config/systemd/user/raceman-web.service
-    status: implemented (2026-08-17)
-    note: Nginx listens on 8083; Caddy /apps/raceman/* and /apps/common.css and /apps/nav.js now proxy to 100.68.142.13:8083.
+    status: migrated to tony-omen (2026-10-20); dell copy retired
+    note: Nginx listens on tony-omen:8083 and serves the raceman app plus yt-live media; the old dell listener is gone.
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest
@@ -383,7 +377,7 @@ tony-dell:
     service: Gemini-Ollama embedding proxy
     provider: Chaba (Google Gemini API backend)
     runtime: rootless podman
-    host: idc03 (also still on tony_dell until its mddb retires)
+    host: idc03 + tony_omen (dell copy retired 2026-10-20)
     port: 11435
     host_port: 0.0.0.0:11435
     quadlet:
@@ -391,11 +385,11 @@ tony-dell:
       service_unit: ~/.config/systemd/user/gemini-ollama-proxy.service
     source: /home/tony/CascadeProjects/chaba/scripts/mddb/gemini-ollama-proxy.mjs (idc03 copy at ~/.config/containers/mddb/proxy/)
     secrets:
-      - gemini-api-key (idc03: ~/.config/secrets/mddb-gemini.env EnvironmentFile)
+      - "gemini-api-key (idc03: ~/.config/secrets/mddb-gemini.env EnvironmentFile)"
     environment:
       - GEMINI_EMBEDDING_MODEL=gemini-embedding-2
-    status: active
       - GEMINI_EMBEDDING_FALLBACK_MODEL=gemini-embedding-001
+    status: active
     upstream_model: gemini-embedding-001
     requested_model_alias: text-embedding-004
     dimensions: 768
@@ -551,11 +545,11 @@ tony-dell:
     note: "Dev staging container for michael-ha. Runs on idc02 podman bridge (moved from idc03 2026-10-26, capacity-move-michael-dev); UI 127.0.0.1:8124 (+ public https://michael-dev.surf-thailand.com via idc02 edge/CF), MCP 9585 on tailnet IP + loopback."
   go2rtc:
     service: go2rtc.service
-    host: tony_dell
+    host: tony_omen
     port: 1984
-    host_port: 127.0.0.1:1984
+    host_port: 0.0.0.0:1984
     rtsp_port: 8554
-    rtsp_host_port: 127.0.0.1:8554
+    rtsp_host_port: 0.0.0.0:8554
     webrtc_port: 8555
     webrtc_host_port: 127.0.0.1:8555
     purpose: H.264 transcoding proxy for the IP camera so Home Assistant can display the high-res stream in browsers
@@ -565,7 +559,7 @@ tony-dell:
     health_check: systemctl --user is-active go2rtc
     hls_url: "http://tony-omen.taila0626a.ts.net:1984/api/stream.m3u8?src=ip_cam_65_hd"
     tailnet_url: "http://tony-omen.taila0626a.ts.net:1984"
-    status: implemented (2026-08-31)
+    status: migrated to tony-omen (2026-10-20); dell copy retired
   gpu-queue:
     container: gpu-queue
     image: docker.io/library/node:22-alpine
@@ -634,27 +628,25 @@ tony-dell:
     status: implemented (2026-08-25)
   status-data-api:
     container: status-data-api
-    image: docker.io/library/chaba-tony-dell-status-data-api:latest
+    image: localhost/status-data-api:latest
     runtime: rootless podman
-    host: tony_dell
+    host: idc02
     port: 8000
-    host_port: 0.0.0.0:8000
+    host_port: 127.0.0.1:8000 + 100.123.163.11:8000
     source: tony-dell/status-data-api
-    quadlet:
-      container_unit: ~/.config/containers/systemd/status-data-api.container
-      service_unit: ~/.config/systemd/user/status-data-api.service
-    upstream: 100.68.142.13:8000
-    caddy_upstream: 100.68.142.13:8000
+    service_unit: ~/.config/systemd/user/status-data-api.service
+    upstream: 100.123.163.11:8000
+    caddy_upstream: 100.123.163.11:8000
     depends_on:
       - sensor-reader
-    status: implemented (2026-08-18)
-    note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy /api/* now proxies to tony-dell.
+    status: migrated to idc02 (2026-10-19); dell copy retired
+    note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy fronts the idc02 tailnet listener on :8000.
   notebooklm-mcp:
     container: notebooklm-mcp
     image: localhost/notebooklm-mcp
     runtime: rootless podman
     network: host
-    host: tony_dell
+    host: idc02
     data_volume: /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-mcp.container
@@ -667,15 +659,15 @@ tony-dell:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
-    status: implemented (2026-09-15)
-    note: "Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen. Google Drive collection for sources: gdrive:notebooklm/chaba. The nlm-add helper uploads local files to gdrive:notebooklm/chaba/notebooks/<nb-id>/files, converts text to .docx, adds by Drive ID, and writes a local manifest."
+    status: migrated to idc02 (2026-10-19); dell copy retired
+    note: "Persistent rootless Podman container on idc02. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on idc02 or ssh there from client hosts. Google Drive collection for sources: gdrive:notebooklm/chaba. The nlm-add helper uploads local files to gdrive:notebooklm/chaba/notebooks/<nb-id>/files, converts text to .docx, adds by Drive ID, and writes a local manifest."
 
   notebooklm-rest:
     container: notebooklm-rest
     image: localhost/notebooklm-rest
     runtime: rootless podman
     port: 8000
-    host: tony_dell
+    host: idc02
     data_volume: /home/tony/.local/share/notebooklm/notebooklm-rest-data
     secrets:
       - notebooklm-rest-api-key
@@ -684,7 +676,7 @@ tony-dell:
     env_file: ~/.config/secrets/notebooklm-rest-api.env
     caddy_path: ~  # removed 2026-09-25 — no public edge route anymore
     public_url: ~  # consumers use tailnet address directly
-    tailnet_url: 'http://100.68.142.13:3011/v1'
+    tailnet_url: 'http://100.123.163.11:3011/v1'
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-rest.container
       service_unit: ~/.config/systemd/user/notebooklm-rest.service
@@ -695,14 +687,14 @@ tony-dell:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
-    host_port: '100.68.142.13:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")} + 127.0.0.1 (tailnet-bound since 2026-09-17 so /health/auth is monitorable)'
-    status: "implemented (2026-09-15); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency)"
+    host_port: '100.123.163.11:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")} + 127.0.0.1 (tailnet-bound so /health/auth is monitorable)'
+    status: "migrated to idc02 (2026-10-19); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency); dell copy retired"
     security_notes:
-      - "master_token.json is a Google OAuth refresh token for tonezzzz@gmail.com — full-account blast radius, not NotebookLM-scoped. File is 0600, on tony-dell only, NOT covered by any backup script (verified 2026-09-17: backup-mn01.sh, ha-config-backup, yomi-backup all exclude it)."
+      - "master_token.json is a Google OAuth refresh token for tonezzzz@gmail.com — full-account blast radius, not NotebookLM-scoped. File is 0600, on idc02 only, NOT covered by any backup script (verified 2026-09-17: backup-mn01.sh, ha-config-backup, yomi-backup all exclude it)."
       - "Notebook scoping (ada-michael/ada-tony keys) is REST-layer only — the underlying Google session sees all notebooks. If master_token dies (revocation/password change), keepalive silently fails: GET /health/auth returns 503; manual re-extraction via notebooklm login required."
       - "GET /health* is intentionally unauthenticated for monitors (returns ok/expired only); POST /health/auth/refresh and all /v1/* remain key-gated."
       - 'auth check via CLI must pass --storage /data/storage_state.json (or NOTEBOOKLM_STORAGE_PATH); default profile path reports a false-negative "error".'
-    note: "FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Not on the Caddy edge since 2026-09-25 — Ada and other consumers call the tailnet address http://100.68.142.13:3011/v1 directly (NOTEBOOKLM_REST_BASE_URL). Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/ (deploy.sh pushes, rebuilds, restarts); live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files."
+    note: "FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Not on the Caddy edge since 2026-09-25 — Ada and other consumers call the tailnet address http://100.123.163.11:3011/v1 directly (NOTEBOOKLM_REST_BASE_URL). Keys live in ~/.config/secrets/notebooklm-rest-api.env on idc02 (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/; deploy.sh accepts the target host and should be run with idc02 until the stack is renamed. Live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to idc02. Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files."
 
 tony-omen:
   ollama:

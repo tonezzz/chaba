@@ -4,6 +4,7 @@ icon: bug
 services:
   - id: mcp-debug-sse
     name: MCP Debug SSE server
+    disabled: true
     type: systemd
     service: mcp-debug-sse.service
     scope: user
@@ -14,8 +15,8 @@ services:
     profiles:
       - home
       - mobile
-    note: MCP Debug SSE server on tony-dell. Clients connect via stdio-to-SSH wrapper
-      (mcp-debug-ssh.sh) or directly to http://tony-dell.taila0626a.ts.net:8446/sse/.
+    note: "Retired 2026-10-20 — SSE backend removed with the dell app-origin drain;
+      :8446 is intentionally gone. Disabled so the monitor no longer reports a service outage."
     verification:
       - "Check systemd: ssh tony-dell systemctl --user status mcp-debug-sse.service"
       - "Check tailscale serve: ssh tony-dell tailscale serve status | grep 8446"
