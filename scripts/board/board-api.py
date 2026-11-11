@@ -844,7 +844,7 @@ def do_claim(card: dict, body: dict) -> str:
     if not host:
         raise ValueError("claim needs host")
     pinned = a.get("host")
-    if pinned and pinned != host:
+    if pinned and dr.canon_host(pinned) != dr.canon_host(host):
         raise ValueError(f"card is pinned to {pinned}")
     # Claim-time JEV routing metadata is written atomically with the
     # first-wins claim, so every remote claimer preserves the lane/model.
@@ -905,7 +905,7 @@ def do_finish(card: dict, body: dict) -> str:
         raise ValueError("finish needs host")
     if a.get("status") != "running":
         raise ValueError(f"not running (status={a.get('status', 'idle')})")
-    if a.get("runner") and a["runner"] != host:
+    if a.get("runner") and dr.canon_host(a["runner"]) != dr.canon_host(host):
         raise ValueError(f"claimed by {a['runner']}")
     ok = bool(body.get("ok", True))
     a["status"] = "done" if ok else "failed"
