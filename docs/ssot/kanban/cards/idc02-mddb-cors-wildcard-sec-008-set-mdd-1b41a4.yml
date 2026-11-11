@@ -1,6 +1,6 @@
 id: idc02-mddb-cors-wildcard-sec-008-set-mdd-1b41a4
 title: 'idc02 mddb: CORS wildcard SEC-008 — set MDDB_CORS_ORIGINS'
-column: backlog
+column: done
 updated: 2026-11-11 23:46
 brief: Follower logs CORS wildcard at startup; any website can read it from a browser. Low risk on tailnet but should
   be allowlisted before the port ever escapes.
@@ -14,3 +14,8 @@ comms:
   text: 'Done 2026-11-11 ~23:30. quadlet mddb.container MDDB_CORS_ORIGINS=* -> http://100.102.134.91:11025 (mddb-panel
     origin). daemon-reload + restart mddb.service: health 200 mode=read, no SEC-008 in post-restart logs, replication
     reconnected to leader at persisted LSN 250751935. If another tailnet UI needs browser access, append its origin.'
+- at: 2026-11-11 23:46
+  from: tony
+  text: closed by tony
+action:
+  status: done
