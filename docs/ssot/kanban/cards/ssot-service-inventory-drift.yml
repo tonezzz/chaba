@@ -1,7 +1,7 @@
 id: ssot-service-inventory-drift
 title: SSOT service inventory drift — expected-active vs expected-absent
 column: backlog
-updated: 2026-11-11 20:23
+updated: 2026-11-11 20:40
 priority: medium
 spec: 'SSOT service inventory drift found during the 2026-11-11 fleet check.
 
@@ -43,3 +43,16 @@ comms:
 - at: 2026-11-11 20:23
   from: tony
   text: card captured via board-api
+- at: 2026-11-11 20:40
+  from: devin
+  text: 'Reconciled in branch fix/ssot-service-inventory-drift, commit f0144ab892b (rebased on origin/master 3f6bd40b617).
+
+
+    Changes:
+
+    - Removed all 22 tony-dell expected-active vs expected-absent conflicts; audit contract now has 53 unambiguous
+    expected-active rows and zero conflicts.
+
+    - Retargeted stale health declarations to declared/live hosts: yomi timers -> idc03, chaba audit timers -> con01,
+    gemini-ollama-proxy -> idc03, go2rtc/camera/raceman-web/ha-live -> tony-omen, mddb/notebooklm/status-data ->
+    i'
