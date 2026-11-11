@@ -1,0 +1,24 @@
+id: open-jev-omen-oom-loop
+title: Fix open-jev.service OOM crash loop on tony-omen
+column: backlog
+updated: 2026-11-11 21:20
+priority: high
+tags:
+- nest
+- open-jev
+- tony-omen
+- oom
+- reliability
+spec: 'open-jev.service (gemma-3-4b-it, torch CPU, :8777, ''local /v1/systemone decision service'') OOM-crash-loops
+  on tony-omen: 4,577 status=137 kills in journal, restart counter 5,577, ~36s load(14GB)->SIGKILL->restart cycle,
+  never reaches ''Uvicorn running''. It was the main cause of Omen''s swap saturation (15/15 GiB) and load ~10.
+  Stopped manually 2026-11-11 21:16 for BEN-1303 benchmark. Root cause candidates: torch fp32 weights ~14-16 GB
+  RSS for a 4B model; available RAM ~10-14 GiB. Fix options: (a) use a quantized/GGUF backend instead of torch CPU;
+  (b) cap threads/memory; (c) run the decision lane on a bigger host; (d) drop to gemma-3-1b (the two idle scorers
+  fit fine). Unit lives at ~/.config/systemd/user/open-jev.service on tony-omen. Restart=always — will resume on
+  next boot or manual start; keep it stopped until fixed or Omen will thrash again.'
+ref: OPS-0020
+comms:
+- at: 2026-11-11 21:20
+  from: tony
+  text: card captured via board-api
