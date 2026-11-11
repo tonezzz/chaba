@@ -1,0 +1,77 @@
+id: devnest-fl-pilot-artwrite4
+title: 'OpenCode artifact-write pilot 4: branch-code gate summary'
+column: done
+updated: 2026-11-12 04:21
+spec: 'Write docs/reports/branch-code-gate-2026-11-02.md — a short gate summary. Read exactly ONE file: evals/opencode-lane/profiles/branch-code/profile.yml.
+  Report: its status, task_classes, required stage, model tier, which tools are enabled, verifier type, rollback
+  kind, and the S5 entry requirements from its comments/escalation. A short markdown doc with a small table. WRITE
+  the file with the write tool at EXACTLY docs/reports/branch-code-gate-2026-11-02.md — no other filename. Do NOT
+  emit the doc as your message; end with a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen38b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/branch-code-gate-2026-11-02.md
+  status: done
+  runner: idc02
+  result: 'exit=0 5fe788b1ffe5P1rwAZYeqPFhY","type":"step-finish","tokens":{"total":28294,"input":28023,"output":8,"reasoning":263,"cache":{"write":0,"read":0}},"cost":0}}
+    | devin-task-devnest-fl-pilot-artwrite4-1793687316.service: Consumed 18.513s CPU time.'
+  verified: true
+ref: OPS-1034
+comms:
+- at: 2026-11-03 13:25
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-03 13:28
+  from: devin
+  text: queued for processing
+- at: 2026-11-03 13:28
+  from: idc02
+  text: claimed
+- at: 2026-11-03 13:28
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite4-1793687316 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-11-03 13:32
+  from: idc02
+  text: 'finished (ok): exit=0 5fe788b1ffe5P1rwAZYeqPFhY","type":"step-finish","tokens":{"total":28294,"input":28023,"output":8,"reasoning":263,'
+- at: 2026-11-03 13:32
+  from: chaba
+  text: opencode artifact landed docs/reports/branch-code-gate-2026-11-02.md
+- at: 2026-11-03 13:32
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-03 13:32
+  from: chaba
+  text: ran under executor=opencode:artifact-write provider=litellm model=litellm/ollama-qwen38b-kkmac profile=artifact-write
+- at: 2026-11-03 13:32
+  from: chaba
+  text: 'session-end checkpoint ea448416: 2 leftover file(s) committed'
+- at: 2026-11-03 13:32
+  from: chaba
+  text: pushed dispatch/devnest-fl-pilot-artwrite4-1793687316 to origin
+- at: 2026-11-03 13:32
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-03 13:32
+  from: chaba
+  text: auto-merged b89a1d43 (dispatch/devnest-fl-pilot-artwrite4-1793687316) → origin/master
+- at: 2026-11-03 13:32
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-devnest-fl-pilot-artwrite4-1793687316,
+    branch dispatch/devnest-fl-pilot-artwrite4-1793687316'
+- at: 2026-11-03 13:42
+  from: devin
+  text: 'PASS end-to-end: qwen3:8b, 1-read+1-write right-sized task, exact declared path, 0 denials, verifier pass,
+    merge b89a1d43ee — S4 verified write #3. Content verified accurate against branch-code/profile.yml.'
+- at: 2026-11-03 13:42
+  from: devin
+  text: closed by devin
+- at: 2026-11-12 04:21
+  from: tony
+  text: archived (8d in done, verified)
+review_kind: verify
+claim: {}
