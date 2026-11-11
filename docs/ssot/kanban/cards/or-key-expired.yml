@@ -1,7 +1,7 @@
 id: or-key-expired
 title: OpenRouter key expired - embedding OR leg dead
 column: backlog
-updated: 2026-10-26 07:36
+updated: 2026-11-11 20:50
 ref: SEC-0505
 comms:
 - at: 2026-10-12 13:19
@@ -17,6 +17,13 @@ comms:
 - at: 2026-10-26 07:36
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-11 20:50
+  from: devin
+  text: 'Re-confirmed 2026-11-11: OPENROUTER_API_KEY returns 401 ''API key expired'' on BOTH tony-dell (~/.config/secrets/openrouter.env)
+    and idc03 (~/.config/secrets/mddb-gemini.env) — fleet-wide OR outage for OR-dependent paths. Weekly rotation
+    overdue: Tony mints next key at openrouter.ai/keys, drops it in ~/.config/secrets/or-next-key, then scripts/ops/rotate-or-key.sh
+    propagates to all 4 stores. Related: OPS-1256 $10 credit approved 11-09 but needs dashboard purchase; free-tier
+    unlocks blocked until k'
 requests:
 - id: the-openrouter-api-key-used-fo-63157a
   ask: The OpenRouter API key used for embedding has expired, causing the embedding or OpenRouter leg to fail, but
