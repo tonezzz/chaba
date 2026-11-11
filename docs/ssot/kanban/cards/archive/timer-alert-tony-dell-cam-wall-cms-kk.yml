@@ -1,0 +1,42 @@
+id: timer-alert-tony-dell-cam-wall-cms-kk
+title: Timer cam-wall-cms-kk on tony-dell failing
+column: done
+updated: 2026-11-09 20:15
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (10-16 16:12) of `cam-wall-cms-kk.service` on `tony-dell` result=timeout — investigate journal:
+  `journalctl --user -u cam-wall-cms-kk.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: KNB-0721
+comms:
+- at: 2026-10-16 16:19
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-16 16:30
+  from: devin
+  text: '[still suspicious] Last run (10-16 16:12) of `cam-wall-cms-kk.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u cam-wall-cms-kk.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-16 17:19
+  from: devin
+  text: '[still suspicious] Last run (10-16 17:12) of `cam-wall-cms-kk.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u cam-wall-cms-kk.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-16 17:30
+  from: devin
+  text: '[still suspicious] Last run (10-16 17:12) of `cam-wall-cms-kk.service` on `tony-dell` result=timeout —
+    investigate journal: `journalctl --user -u cam-wall-cms-kk.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-10-20 15:59
+  from: devin
+  text: 'sweep 2026-10-20: obsolete — unit no longer exists on tony-dell (verified: systemctl not-found); job now
+    maps to idc02/idc03 per ssot.jobs.yml. Dell-side straggler cleanup is OPS-0749. If this refires, the timer-sweep
+    expectation list is stale.'
+- at: 2026-10-20 15:59
+  from: devin
+  text: moved backlog -> done
+- at: 2026-11-09 20:15
+  from: tony
+  text: archived (20d in done, board over card cap)
+action:
+  status: done
+claim: {}

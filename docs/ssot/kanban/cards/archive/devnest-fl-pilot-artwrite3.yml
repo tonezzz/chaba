@@ -1,0 +1,155 @@
+id: devnest-fl-pilot-artwrite3
+title: 'OpenCode artifact-write pilot 3: profile inventory report'
+column: done
+updated: 2026-11-09 20:16
+spec: 'Write docs/reports/opencode-profile-inventory-2026-10-30.md — an inventory of every profile under evals/opencode-lane/profiles/.
+  The files exist — read them directly: evals/opencode-lane/profiles/ops-readonly/profile.yml and the six siblings
+  in that same directory. Report each profile file id, status, task_classes, artifact mode+format, which tools are
+  enabled (read/grep/bash/write/edit), the verifier type, and rollback kind. A table is expected. Must name all
+  of: ops-readonly, doc-draft, artifact-write, ssot-research, mddb-sequence, storage-dryrun, branch-code — and mark
+  branch-code as status:disabled.
+
+
+  WRITE the file at the declared path using the write tool — the filename must be exactly opencode-profile-inventory-2026-10-30.md
+  (date 2026-10-30, not any other). Do NOT emit the document as your message. End with a one-line summary.'
+action:
+  type: dispatch
+  repo: chaba
+  host: idc02
+  model: litellm/ollama-qwen32b-kkmac
+  executor: opencode
+  agent_profile: artifact-write
+  artifact: docs/reports/opencode-profile-inventory-2026-10-30.md
+  timeout_s: 2400
+  status: done
+  result: 'journal=timeout ring: Invalid argument | devin-task-devnest-fl-pilot-artwrite3-1793415194.service: Failed
+    with result ''timeout''. | devin-task-devnest-fl-pilot-artwrite3-1793415194.service: Consumed 27.351s CPU time,
+    637.1M memory peak, 0B memory swap peak.'
+  runner: idc02
+  verified: false
+  sweep:
+    stale_running: 2026-10-31 09:04
+    dirty: 2
+    failed_noted: 2026-10-31 10:34
+ref: OPS-1035
+comms:
+- at: 2026-10-31 08:26
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-31 08:26
+  from: devin
+  text: queued for processing
+- at: 2026-10-31 08:34
+  from: idc02
+  text: claimed
+- at: 2026-10-31 08:34
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793410460 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 08:39
+  from: idc02
+  text: 'finished (ok): exit=0 0680598ffe0xrvVKQGxPgCc5","type":"step-finish","tokens":{"total":26872,"input":26554,"output":57,"reasoning":261,'
+- at: 2026-10-31 08:39
+  from: chaba
+  text: opencode artifact landed docs/reports/opencode-profile-inventory-2026-10-30.md
+- at: 2026-10-31 08:39
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-31 08:39
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact non-empty=True; markdown
+    shape=True; not rails echo=True; no placeholder markers=False)
+- at: 2026-10-31 08:39
+  from: devin
+  text: queued for processing
+- at: 2026-10-31 08:40
+  from: idc02
+  text: claimed
+- at: 2026-10-31 08:40
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793410843 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 08:45
+  from: idc02
+  text: 'finished (ok): exit=0 622e0bffeSY3xbdjkd69fps","type":"step-finish","tokens":{"total":33039,"input":32556,"output":195,"reasoning":288,'
+- at: 2026-10-31 08:45
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-31 08:45
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-31 08:49
+  from: idc02
+  text: claimed
+- at: 2026-10-31 08:49
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793411380 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 08:56
+  from: idc02
+  text: 'finished (failed): journal=timeout 93411380.service: Service reached runtime time limit. Stopping. | devin-task-devnest-fl-pilot-artwrite3-'
+- at: 2026-10-31 09:03
+  from: idc02
+  text: claimed
+- at: 2026-10-31 09:04
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793412240 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen38b-kkmac)
+- at: 2026-10-31 09:04
+  from: chaba
+  text: 'merge-sweep: devin-task-devnest-fl-pilot-artwrite3-1793410460 no longer active on idc02 but card still
+    says running — sweeping its branch'
+- at: 2026-10-31 09:04
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-devnest-fl-pilot-artwrite3-1793410460 on idc02 still dirty — 2 uncommitted
+    file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-10-31 09:13
+  from: idc02
+  text: 'finished (ok): exit=0 inish","tokens":{"total":32488,"input":32341,"output":58,"reasoning":89,"cache":{"write":0,"read":0}},"cost":0}} '
+- at: 2026-10-31 09:13
+  from: chaba
+  text: 'opencode verifier: fail'
+- at: 2026-10-31 09:13
+  from: chaba
+  text: merge held — executor contract requires declared artifact + verifier pass (artifact landed=False)
+- at: 2026-10-31 09:14
+  from: idc02
+  text: claimed
+- at: 2026-10-31 09:14
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793412854 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen32b-kkmac)
+- at: 2026-10-31 09:39
+  from: idc02
+  text: 'finished (failed): journal=timeout  time limit. Stopping. | devin-task-devnest-fl-pilot-artwrite3-1793412854.service:
+    Failed with result ''t'
+- at: 2026-10-31 09:53
+  from: idc02
+  text: claimed
+- at: 2026-10-31 09:53
+  from: chaba
+  text: started devin-task-devnest-fl-pilot-artwrite3-1793415194 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/ollama-qwen32b-kkmac)
+- at: 2026-10-31 10:34
+  from: idc02
+  text: 'finished (failed): journal=timeout ring: Invalid argument | devin-task-devnest-fl-pilot-artwrite3-1793415194.service:
+    Failed with result ''t'
+- at: 2026-10-31 10:34
+  from: chaba
+  text: 'merge-sweep: devin-task-devnest-fl-pilot-artwrite3-1793410460 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/devnest-fl-pilot-artwrite3-1793410460 by hand.'
+- at: 2026-11-02 10:58
+  from: devin
+  text: 'evidence-complete after 6 attempts — deliverable never landed, findings captured: (1) verifier false-positives
+    fixed en route (4f3ab7aef); (2) qwen3:8b path-discipline broken on file-mode writes — 3 attempts, 3 wrong/invented
+    paths (2023-10-27 filename, docs/ssot-research/inventory.md, claimed-absent dir); message-mode profiles unaffected
+    since runner lands artifact; (3) qwen2.5:32b latency floor — ~6tok/s via 3-hop path = >40min to read 7 profiles,
+    hit 2400s bound twice; (4) RuntimeMaxSec bound'
+- at: 2026-11-02 10:58
+  from: devin
+  text: closed by devin
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (7d in done, board over card cap)
+review_kind: verify
+claim: {}

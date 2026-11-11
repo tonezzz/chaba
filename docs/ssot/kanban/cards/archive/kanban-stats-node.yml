@@ -1,0 +1,59 @@
+id: kanban-stats-node
+title: Kanban stats as a reports-layer node (L2)
+column: done
+note: No standing statistics view exists for the board — counts are computed ad-hoc. The reports standard (ssot.reports.yml)
+  wants every producer to emit meta.yml so L3 SYSTEM-REPORT can roll it up; kanban is the busiest producer and emits
+  nothing.
+spec: 'New node ''kanban'' in ssot.reports.yml nodes: layer L2-domain, cadence 15min (aligns kanban-sync). Generator
+  scripts/board/kanban-stats.py: counts by column, action.status breakdown, open requests, cards-touched-24h, dispatch
+  throughput (queued->done last 7d), and stale-in-review (>48h). Emits meta.yml via scripts/lib/report.py::write_meta()
+  + append_timeline; renders a small markdown rollup into stacks/web/public/apps/system-report/data/ or board page
+  section. Run under kanban-sync.timer or its own timer.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  task: 'Create the kanban reports node per card spec: register node in ssot.reports.yml, write scripts/board/kanban-stats.py
+    emitting meta.yml + timeline + markdown rollup, wire a timer. Verify: meta.yml exists after a run and SYSTEM-REPORT
+    picks the node up.'
+  task_id: 20261005-105130-new-node-kanban-in-ssot-report
+  runner: tony-dell
+  result: 20261005-105130-new-node-kanban-in-ssot-report finished (inactive) — see `devin-dispatch logs 20261005-105130-new-node-kanban-in-ssot-report`
+updated: 2026-11-09 20:08
+comms:
+- at: 2026-10-05 10:48
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 10:51
+  from: chaba
+  text: dispatched 20261005-105130-new-node-kanban-in-ssot-report on chaba
+- at: 2026-10-05 10:54
+  from: devin
+  text: starting — spec confirmed; writing scripts/board/kanban-stats.py + registering kanban L2 node in ssot.reports.yml,
+    wiring under kanban-sync.timer
+- at: 2026-10-05 10:56
+  from: devin
+  text: 'done on branch dispatch/20261005-105130-new-node-kanban-in-ssot-report (commit a52334d1): kanban L2 node
+    registered in ssot.reports.yml + system-report children; new scripts/board/kanban-stats.py (columns, action.status,
+    open requests, touched-24h, dispatch 7d throughput + median cycle, stale-review>48h) emits reports/kanban/meta.yml+kanban-stats.yml,
+    timeline event, and apps/system-report/data/kanban.md — mirrored to chaba-tony-dell; wired into kanban-sync.sh
+    reading live cards. Verified: real '
+- at: 2026-10-05 10:58
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 11:12
+  from: devin
+  text: 'verified+merged: a52334d1 -> chaba master (20dc26e0). scripts/board/kanban-stats.py (328 LOC) + reports
+    node registration + job yml + kanban-sync wiring — stats now feed the reports layer.'
+- at: 2026-10-05 11:12
+  from: tony
+  text: moved review -> done
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0050'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+claim:
+  since: 2026-10-05 10:51
+ref: KNB-0050

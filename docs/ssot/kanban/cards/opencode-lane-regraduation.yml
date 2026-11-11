@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-09 19:12
+updated: 2026-11-09 20:14
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -199,6 +199,12 @@ comms:
     executor-contract +12 primer +28 reads passed. Actual HTTP typed-report validation reached expected existing-card
     guard; no new card/job. Shared key rotation SEC-1286 closed separately, no S3 evidence generated. Remaining:
     installed runner/producer verification and one genuine Ada-to-executor/verifier closeout. No write/code promotion.'
+- at: 2026-11-09 20:14
+  from: devin
+  text: 'Fresh installed-runner check on idc02: ~/.local/bin/runner-agent byte-matches exec scripts/board/runner-agent.py,
+    SHA256 aa21002babc4857381bbe65e05d5d8baec0ea0e41f83b46043548915e548da66; runner-agent.timer active. This is
+    installed producer proof, not a genuine Ada handoff/card closeout or new S3 sample. OPS-1254 now verified closed;
+    DeepSeek is a narrow canary candidate only. Operational/write/code gates remain unchanged.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus

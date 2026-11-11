@@ -4,10 +4,10 @@ brief: 'The report registry now declares the standard (bounded_surfaces in ssot.
   gets limits, suppression, explicit empties, and ordered overflow — the same knobs the memory render just gained.
   This card implements it: extract the shared helpers, wire the L3 system report as pilot, and teach report-watch
   to flag surfaces that breach their declared budget.'
-column: doing
+column: done
 priority: medium
 created: 2026-10-08
-updated: 2026-11-09 19:33
+updated: 2026-11-10 21:33
 pipeline: ci
 autonomy: t2
 metric: 'SYSTEM-REPORT.md renders with a declared budget: over-budget sections shed in declared order (not arbitrary
@@ -258,6 +258,49 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-11: merge-sweep can''t land dispatch/20261009-195511-1-scripts-lib-bounded-py-new-e:
     1 commit(s) conflict with origin/master '
+- at: 2026-11-09 19:37
+  from: devin
+  text: 'Verified 2026-11-09: salvage commit bb60959c2 is an ancestor of origin/master and the requested bounded-surface
+    library, memory-render wiring, report-system pilot, report-watch, and registry are present on master. The stale
+    worktree HEAD 86db834c08 is an old checkpoint 31,902 commits behind origin/master; its content was salvaged
+    via bb60959c2 with later fixes (drop_kind and normalized job-doc scalars). Do not merge/rebase this stale branch
+    or delete its worktree as part of this card. The repeat'
+- at: 2026-11-09 19:38
+  from: devin
+  text: 'answered merge-conflict-11: Verified: this implementation is already salvaged in bb60959c2, which is an
+    ancestor of origin/master. Do not merge the stale checkpoint branch; it is superseded by the salvaged master
+    commit and late'
+- at: 2026-11-09 19:38
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-09 19:38
+  from: devin
+  text: moved doing -> done
+- at: 2026-11-09 21:13
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-10 03:13
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-10 09:14
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-10 15:16
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-10 21:17
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 claim: {}
 requests:
 - id: merge-conflict
@@ -399,7 +442,7 @@ requests:
     origin/master in chaba — conflicted paths: docs/ssot/jobs/infrastructure/2026-10-09-bounded-surfaces.yml, scripts/chaba/render-memory.py.
     Merge idc03:/home/tony/CascadeProjects/dispatch-wt-20261009-195511-1-scripts-lib-bounded-py-new-e by hand, or
     retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-09 19:19
   from: chaba
   options:
@@ -407,4 +450,6 @@ requests:
   - drop this dispatch — re-dispatch fresh from current main
   - hold the card
   suggested: let devin resolve the conflict and land it ★
+  answer: 'Verified: this implementation is already salvaged in bb60959c2, which is an ancestor of origin/master.
+    Do not merge the stale checkpoint branch; it is superseded by the salvaged master commit and later fixes.'
 ref: KNB-0416

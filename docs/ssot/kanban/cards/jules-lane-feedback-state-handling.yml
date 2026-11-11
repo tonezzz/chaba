@@ -2,7 +2,7 @@ id: jules-lane-feedback-state-handling
 title: 'jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail — map the state to card surface,
   not death'
 column: doing
-updated: 2026-11-09 19:21
+updated: 2026-11-10 22:33
 priority: high
 tags:
 - devnest
@@ -27,8 +27,13 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   runner: tony-omen
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) ER_IM_MODULE='''' SDL_IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-jules-lane-feedback-state-handling-1794226868.service:
+    Consumed 1.921s CPU time over 1h 29.944s wall clock time, '
+  sweep:
+    failed_noted: 2026-11-09 20:34
 ref: OPS-1295
 comms:
 - at: 2026-11-09 18:47
@@ -108,3 +113,17 @@ comms:
 - at: 2026-11-09 19:21
   from: chaba
   text: started devin-task-jules-lane-feedback-state-handling-1794226868 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 20:22
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) ER_IM_MODULE=''''
+    SDL_IM_MODULE='''' XMODIFIER'
+- at: 2026-11-09 20:34
+  from: chaba
+  text: 'merge-sweep: devin-task-jules-lane-feedback-state-handling-1794226868 failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/jules-lane-feedback-state-handling-1794226868 by
+    hand.'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'

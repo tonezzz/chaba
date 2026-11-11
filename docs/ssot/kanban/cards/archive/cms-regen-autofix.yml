@@ -1,0 +1,187 @@
+id: cms-regen-autofix
+title: cms-regen auto-fix playbook — close the detect→fix loop on CMS automations
+column: done
+note: cms-auto-health detects and cards stale automations, but a human still presses the fix. This playbook makes
+  the cards self-healing.
+updated: 2026-11-09 20:08
+help: 'Today: cms-auto-health.py writes cms-auto-<slug> cards when a CMS
+
+  automation is stale, and auto-closes them on recovery — but recovery
+
+  still needs a human (or luck). cms-regen is the act step.
+
+
+  Trigger: cms-auto-<slug> card enters review (or cms-auto-health flags
+
+  an unhealthy doc). Actions, in order:
+
+  1. POST /api/cms/pages/<slug>/regenerate (or cms_automation run_now)
+
+  2. Recheck the registry doc''s last_run/last_status after interval
+
+  3. If still stale: read the generator command from the registry doc,
+
+  check its logs/timer on the owning host, fix or escalate
+
+  4. Phantom case: registry doc exists but the page is really refreshed
+
+  by a bulk generator (e.g. cam-wall-cms.timer) — mark the doc
+
+  interval_min=0 + managed_by instead of flagging (the camwall-noble-a
+
+  pattern, fixed manually 2026-10-04)
+
+  5. Post outcome to the card''s comms; card auto-closes on next sweep
+
+
+  Gates: owner-only, confirm NOT required for the regen step (read-mostly
+
+  — a regen is idempotent and recoverable), confirm required for any
+
+  config/schema change to the registry doc beyond managed_by/interval.
+
+  '
+spec: 'Build the cms-regen auto-fix playbook for Ada/kanban.
+
+
+  Read first: scripts/ada/cms-auto-health.py (card lifecycle),
+
+  docs/ssot/kanban/ssot.kanban.yml (dispatch semantics),
+
+  ada-pi backend/devteam.py + backend/devin_dispatch.py (pipeline + gate
+
+  conventions), backend/tools.d/manifest.yml (tool policies), and the
+
+  ada-cms-automation MDDB collection shape (enabled, interval_min,
+
+  run_now, last_run, last_status, generator params).
+
+
+  Deliverables:
+
+  1. A cms-regen playbook in ada-pi backend/playbooks/ (if the playbook
+
+  registry exists by then — else a tools.d ada_cms_regen tool with the
+
+  same contract): given a slug, POST regenerate, poll the registry doc
+
+  until last_run advances or a bounded timeout, then re-check health.
+
+  2. Phantom-registry handling: when the registry doc has no working
+
+  generator but the page updates via a bulk timer, write
+
+  interval_min=0 + managed_by=<owner> instead of leaving the health
+
+  check to re-flag it.
+
+  3. kanban-dispatch (or cms-auto-health) gains an optional
+
+  auto_fix: [cms-auto-*] rule — cards matching the prefix dispatch the
+
+  playbook on entering review, with results posted to comms.
+
+  4. Unit tests for the regen/phantom logic (mocked MDDB + HTTP).
+
+  5. Report to the card comms + job ledger.
+
+
+  Do NOT modify the confirm-gate internals, do NOT auto-dispatch on
+
+  non-cms-auto cards, do NOT deploy to ada-ha-tony.
+
+  '
+action:
+  type: dispatch
+  status: done
+  button: ▶ Build cms-regen playbook
+  repo: ada-pi
+  result: 20261006-093347-build-the-cms-regen-auto-fix-p finished (inactive) — see `devin-dispatch logs 20261006-093347-build-the-cms-regen-auto-fix-p`
+  runner: tony-dell
+  task_id: 20261006-093347-build-the-cms-regen-auto-fix-p
+comms:
+- at: 2026-10-04 19:40
+  from: devin
+  text: 'Seeded after the 2026-10-04 sweep: all three cms-auto-* cards auto-recovered, but camwall-noble-a needed
+    a manual phantom-registry fix — that''s the case this playbook automates.'
+- at: 2026-10-05 22:52
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 22:56
+  from: chaba
+  text: dispatched 20261005-225638-build-the-cms-regen-auto-fix-p on ada-pi
+- at: 2026-10-05 22:57
+  from: tony
+  text: Status?
+- at: 2026-10-05 22:57
+  from: devin
+  text: 'Exploring ada-pi worktree: playbook registry exists (backend/playbooks/*.yml), cms_automation lives in
+    tool_runner. Kanban ssot/card files are not in this repo — working from pwa_server regenerate endpoint + tool_runner
+    cms_automation contract.'
+- at: 2026-10-05 23:25
+  from: devin
+  text: 'Landed: backend/playbooks/cms-regen.yml + scripts/ada/cms_regen.py executor (regen->poll->health->phantom
+    mark) + scripts/ada/kanban_autofix.py (auto_fix cms-auto-* rule, dispatch|run modes) + 25 unit tests, all mocked.
+    chaba-side wiring (call site in kanban-dispatch) is a followup — different repo.'
+- at: 2026-10-05 23:26
+  from: devin
+  text: 'Done. ada-pi side shipped on dispatch/20261005-225638 (commit a578cb0): backend/playbooks/cms-regen.yml
+    (gate owner, confirm=false per card), scripts/ada/cms_regen.py executor (POST regenerate -> poll last_run ->
+    health re-check -> phantom mark interval_min=0+managed_by), scripts/ada/kanban_autofix.py auto_fix rule (cms-auto-*
+    -> cms-regen on review-enter, dispatch|run, 30min dedup), 25 mocked tests all green. Comms post as devin (board
+    whitelist). REMAINING: chaba-side wiring — kanban-dispatch '
+- at: 2026-10-05 23:26
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 23:26
+  from: chaba
+  text: auto-merged dispatch/20261005-225638-build-the-cms-regen-auto-fix-p → origin/main
+- at: 2026-10-06 09:32
+  from: devin
+  text: 'verified: dispatch commits are ancestors of origin default branch'
+- at: 2026-10-06 09:32
+  from: tony
+  text: queued for processing
+- at: 2026-10-06 09:33
+  from: chaba
+  text: dispatched 20261006-093347-build-the-cms-regen-auto-fix-p on ada-pi
+- at: 2026-10-06 09:34
+  from: devin
+  text: 'Re-dispatched session: prior dispatch already merged cms-regen playbook + cms_regen.py + kanban_autofix.py
+    + tests (a578cb0). Verifying deliverables against spec and re-running tests now.'
+- at: 2026-10-06 09:36
+  from: devin
+  text: 'Re-dispatch 20261006-093347: no new work needed — all 5 deliverables merged in a578cb0. Verified: cms-regen
+    playbook loads in registry (gate owner/confirm:false), cms_regen.py + kanban_autofix.py present, 51 tests OK,
+    tool-lint clean, dry-run hook correctly fires only on cms-auto-* cards entering review and no-ops everything
+    else. Open followup unchanged: chaba-side call site wiring kanban-dispatch -> kanban_autofix.py on column-enter-review
+    (in docs/ssot/jobs/ada/2026-10-05-cms-regen-autofix.ym'
+- at: 2026-10-06 09:37
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-06 09:37
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (1 file(s)) — commit first — close will block until merged'
+- at: 2026-10-06 09:37
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261006-093347-build-the-cms-regen-auto-fix-p dirty — 1 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'merge guard: dispatch/20261006-093347-build-the-cms-regen-auto-fix-p merged into origin/main; worktree
+    still dirty: 1 uncommitted file(s)'
+- at: 2026-10-06 09:44
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:44
+  from: chaba
+  text: session muddled-glasses… hidden
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0100'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (34d in done, board over card cap)
+claim:
+  since: 2026-10-06 09:33
+ref: KNB-0100

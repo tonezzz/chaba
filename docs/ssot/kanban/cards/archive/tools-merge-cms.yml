@@ -1,0 +1,58 @@
+id: tools-merge-cms
+title: Consolidate cms_* publish/verify/note/delete tools
+column: done
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-11-09 20:08
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  task_id: 20261005-100603-merge-the-cms-tool-group-7-3-p
+  runner: tony-dell
+  result: 20261005-100603-merge-the-cms-tool-group-7-3-p finished (inactive) — see `devin-dispatch logs 20261005-100603-merge-the-cms-tool-group-7-3-p`
+spec: "Merge the cms tool group (7 -> 3) per the consolidation spec:\n- cms_publish_page: unchanged (the big writer)\n\
+  - NEW cms_read absorbs cms_get_page, cms_list_pages, cms_verify_page ->\n  cms_read(action=get|list|verify, key=...)\n\
+  - NEW cms_edit absorbs cms_note_update, cms_delete_page, cms_automation ->\n  cms_edit(action=note|delete|automate,\
+  \ ...)\nRules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES; DEVIN_CONFIRMED_TOOLS/confirm_strip\
+  \ unchanged (gate keys off resolved tool name, not alias). Full design doc: chaba docs/assessments/tool-consolidation-spec-2026-10-04.md\
+  \ on tony-dell — may be UNREADABLE from an ada-pi worktree, so this spec is self-contained. Verify: tool decl\
+  \ lint passes, each absorbed alias routes to its parent, post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 10:05
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 10:06
+  from: chaba
+  text: dispatched 20261005-100603-merge-the-cms-tool-group-7-3-p on ada-pi
+- at: 2026-10-05 10:15
+  from: devin
+  text: 'starting: cms 7->3 merge — cms_read absorbs get/list/verify, cms_edit absorbs note/delete/automation; publish
+    stays. Alias+gate pattern follows tools-merge-memory/camera.'
+- at: 2026-10-05 10:29
+  from: devin
+  text: 'Done: cms group merged 7->3 on branch dispatch/20261005-100603-merge-the-cms-tool-group-7-3-p (commit 418a131,
+    not pushed). cms_publish_page unchanged; cms_read absorbs list/get/verify (action=, key=slug); cms_edit absorbs
+    note/delete/automate (action=, op= carries the registry op). All 6 absorbed names stay callable via tool_runner._ALIASES
+    (15 aliases total now). Gates preserved: cms_edit holds the CMS_WRITE_TOOLS seat, note + automate list/get stay
+    free, delete/automate-writes confirmed, publ'
+- at: 2026-10-05 10:32
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 11:12
+  from: devin
+  text: 'verified+merged: 418a131 -> ada-pi main (a54b322). cms group 7->3 — cms_read/cms_edit absorb six names
+    (list_pages/get_page/verify_page/note_update/delete_page/automation) with arg-mapping for _page variants. cms_publish_page
+    stays confirm-gated.'
+- at: 2026-10-05 11:12
+  from: tony
+  text: moved review -> done
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: KNB-0051'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+claim:
+  since: 2026-10-05 10:06
+ref: KNB-0051

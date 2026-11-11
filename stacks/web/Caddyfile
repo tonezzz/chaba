@@ -543,6 +543,14 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	handle /apps/board-diagram {
+		redir * /apps/board-diagram/ 308
+	}
+	handle_path /apps/board-diagram/* {
+		root * /srv/public/apps/board-diagram
+		file_server
+	}
+
 	handle /apps/sw.js {
 		root * /srv/public/apps/sw.js
 		file_server

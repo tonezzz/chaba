@@ -1,0 +1,24 @@
+id: m1-behavioral-fixture-activation-and-skips
+title: Activate prepared M1 fixture hook and expose skipped required tests
+column: backlog
+updated: 2026-11-09 20:14
+brief: OPS-1254 closed with a qualified candidate verdict, not a full frozen-verifier claim. Canonical M1 task still
+  skips its fourth required idle-follower case.
+priority: medium
+tags:
+- eval
+- verification
+spec: 'Actual consumer: /home/tony/evals/tasks/m1-behavioral/task.yaml pins ed1ff116ed794a03dfbf338a88bc4f1a6823e143
+  without SetStreamStateForTest. Held-out tests live in task tests/, not verify/tests/. Review the prepared hook
+  referenced by archived m1-stream-test-hook and fixture comments (c66b563) before activating it; do not select
+  an arbitrary latest base. Make required skips explicit/fail qualification rather than silently shrink the denominator.
+  Preserve run 20261109_022656_b016d7 and original scores. Independently tested exact DeepSeek M1 artifact already
+  passed all five client/handler states including idle 24h; this is separate evidence, not a rewritten 4/4 result.
+  Done: compatible pinned fixture executes all four held-out cases; skip-accounting regressions pass; retained historical
+  evidence unchanged. No paid model reruns, stage/provider/code promotion or threshold relaxation authorized by
+  this card.'
+ref: OPS-1301
+comms:
+- at: 2026-11-09 20:14
+  from: devin
+  text: card captured via board-api

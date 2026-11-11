@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
 column: done
-updated: 2026-11-08 16:04
+updated: 2026-11-10 22:33
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -91,6 +91,11 @@ comms:
   from: chaba
   text: 'ref assigned: KNB-0119'
 - at: 2026-11-08 10:55
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-10 22:25
   from: chaba
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host

@@ -1,0 +1,68 @@
+id: jev-opencode-free-probe
+title: 'JEV OpenCode free-lane probe: append marker to README'
+column: done
+updated: 2026-11-09 20:16
+brief: 'Small verified chore: append a single line to README.md and commit. Expected free_lane -> OpenCode with
+  LiteLLM Gemini Flash Lite.'
+priority: low
+program: chaba-ci
+tags:
+- jev
+- opencode
+- probe
+- free_lane
+spec: 'Probe the OpenCode lane executor after da71c8070. Expected: runner classifies free_lane, starts OpenCode,
+  uses litellm/gemini-3.5-flash-lite, commits marker.'
+action:
+  type: dispatch
+  status: done
+  runner: idc02
+  sweep:
+    stale_running: 2026-10-25 08:00
+    no_repo: 2026-10-25 08:00
+  result: 'exit=0 ":"step-finish","tokens":{"total":2355,"input":2050,"output":305,"reasoning":0,"cache":{"write":0,"read":0}},"cost":0}}
+    | runner-jev-opencode-free-probe-1792889850.service: Consumed 14.813s CPU time, 555.8M memory peak, 0B memory
+    swap peak.'
+ref: OPS-0845
+comms:
+- at: 2026-10-25 07:57
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 07:57
+  from: devin
+  text: queued for processing
+- at: 2026-10-25 07:57
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-25 07:57
+  from: idc02
+  text: claimed
+- at: 2026-10-25 07:57
+  from: chaba
+  text: started runner-jev-opencode-free-probe-1792889850 on idc02 (dispatch)
+- at: 2026-10-25 07:58
+  from: devin
+  text: Probing OpenCode lane executor on idc02 after da71c8070...
+- at: 2026-10-25 08:00
+  from: chaba
+  text: 'merge-sweep: devin-task-runner-jev-opencode-free-probe-1792889850 no longer active on idc02 but card still
+    says running — sweeping its branch'
+- at: 2026-10-25 08:00
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-runner-jev-opencode-free-probe-1792889850'
+- at: 2026-10-25 08:03
+  from: idc02
+  text: 'finished (ok): exit=0 ":"step-finish","tokens":{"total":2355,"input":2050,"output":305,"reasoning":0,"cache":{"write":0,"read":0}},"cos'
+- at: 2026-10-25 08:03
+  from: chaba
+  text: 'auto-merge not done: no session repo for runner-jev-opencode-free-probe-1792889850 — close will block until
+    merged'
+- at: 2026-10-26 07:18
+  from: tony
+  text: moved review -> done
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (14d in done, board over card cap)
+review_kind: verify
+claim: {}

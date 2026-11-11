@@ -1,0 +1,45 @@
+id: lab-review-sweep-blind-spot-lab-cards-mi-c833d1
+title: 'lab-review-sweep blind spot: lab cards missing review_by are never flagged'
+column: done
+updated: 2026-11-09 20:11
+brief: 'lab-review-sweep.py skips lab cards with no review_by entirely (if not review_by: continue) — but lab rules
+  make review_by REQUIRED. All 3 live lab cards (lab-ada-session-boundaries, lab-gold-thb-causality, lab-meshtastic-th)
+  have review_by unset, so they are invisible to the weekly sweep and can sit in lab forever — exactly what the
+  lane exists to prevent.'
+priority: medium
+tags:
+- kanban
+- chaba-ci
+spec: 'Fix lab-review-sweep.py: treat a missing review_by the same as an overdue one — raise the lab-review request
+  (promote/retire/extend options). Then apply to the 3 live cards so each gets its open lab-review request. Note:
+  cards lab-ada-session-boundaries (upd 10-08), lab-gold-thb-causality (upd 10-05), lab-meshtastic-th (upd 10-04).'
+action:
+  type: dispatch
+  repo: chaba
+  labels:
+  - cpu
+  - small
+  status: done
+ref: KNB-0460
+comms:
+- at: 2026-10-11 15:06
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-11 15:06
+  from: tony
+  text: queued for processing
+- at: 2026-10-12 22:28
+  from: tony
+  text: closed by tony
+- at: 2026-10-12 22:28
+  from: devin
+  text: 'VERIFIED: all 3 lab cards carry review_by — blind spot gone.'
+- at: 2026-10-13 06:00
+  from: tony
+  text: closed by tony
+- at: 2026-10-13 06:00
+  from: devin
+  text: 'RE-CLOSED: all lab cards have review_by.'
+- at: 2026-11-09 20:11
+  from: tony
+  text: archived (27d in done, board over card cap)

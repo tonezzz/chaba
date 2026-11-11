@@ -1,0 +1,23 @@
+id: vnc-bridge-remove
+title: Audit and remove VNC websockify bridges on idc02 (:6080/:6082) + /apps/vnc
+column: backlog
+updated: 2026-11-10 07:03
+brief: 'Tony 2026-11-09: dig the VNC bridge and card removal. Two websockify units on idc02 tailnet-IP binds: :6080
+  -> kk-macbook:5900, :6082 -> mn01 vms:5900; routes /apps/vnc/ws* + static /apps/vnc/*; vnc app in apps.yml.'
+priority: low
+tags:
+- retirement
+- vnc
+- idc02
+- cleanup
+spec: 'Phase 1 audit: check who actually uses it — journal/logs on idc02 websockify units for connection counts,
+  consumers of /apps/vnc in dashboard JSONs and deployed www/*.js, whether vcast/gesture/input-bridge depend on
+  it, whether mn01:5900 and kk-macbook:5900 VNC servers are still needed at all. Phase 2: if dead — stop+disable
+  websockify units on idc02, remove vnc-ws/vnc-ws-mn01/vnc-ws-macbook/vnc routes from ssot.routes.yml + Caddyfile,
+  remove apps/vnc static + apps.yml entry, document docs/kb/retired-apps/vnc-bridge.md with restore steps. If alive
+  — report usage and leave running.'
+ref: OPS-1312
+comms:
+- at: 2026-11-10 07:03
+  from: tony
+  text: card captured via board-api

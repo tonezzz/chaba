@@ -1,0 +1,21 @@
+id: ada-bge-memory-search-shadow
+title: Run BGE retrieval as an isolated Ada memory_search shadow
+column: doing
+updated: 2026-11-09 19:57
+priority: high
+tags:
+- ada
+- bge
+- shadow
+- memory-search
+spec: Add an opt-in, asynchronous shadow alongside Ada’s existing Gemini memory_search. For the same authorized
+  bank scope, query the isolated local BGE-M3 MDDB plane, rerank a bounded top-10 candidate set through Omen, and
+  record privacy-minimized operational/overlap metrics. The shadow must never change Gemini results, block the voice
+  response, write to MDDB, or log query/document text. Keep Gemini as the only returned retrieval result until separately
+  approved. Validate timeout, queue bounds, ACL/person scoping, failure isolation, and an off switch; test on idc02
+  before any idc03 deployment.
+ref: ADA-1299
+comms:
+- at: 2026-11-09 19:57
+  from: devin
+  text: card captured via board-api

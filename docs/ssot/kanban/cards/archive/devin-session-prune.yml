@@ -1,0 +1,67 @@
+id: devin-session-prune
+title: Prune old headless dispatch sessions from sessions.db
+column: done
+note: 160 sessions accumulated — every devin-dispatch run creates one. They clutter the IDE session list. Vacuum
+  path exists (devin-vacuum-when-closed.sh -> ~/.config/devin/scripts/vacuum-devin-db.sh) but isn't scheduled.
+spec: 'Build a session-prune housekeeping job for tony-dell:
+
+  1. scripts/devin/session-prune.py — delete dispatch-era sessions older than N days (default 14, keep sessions
+  with unmerged worktrees or needs-input.txt), then run the existing vacuum-devin-db.sh guarded path (only when
+  no devin/devin-desktop process holds sessions.db — reuse the two-clear-checks logic from devin-vacuum-when-closed.sh).
+
+  2. Identify dispatch sessions by title prefix (''You are running unattended via devin-dispatch'') or by ~/.local/share/devin-dispatch/tasks/<id>
+  meta; never prune interactive sessions.
+
+  3. systemd user timer (weekly, e.g. Sun 03:00) generated into systemd/generated/tony_dell/; install on tony-dell.
+
+  4. Log each pruned session id+title to ~/var/chaba/reports/timeline.jsonl via scripts/lib/report.py so the cleanup
+  is auditable.
+
+  5. Verify: run once with --dry-run listing what would be pruned; then a real run; confirm devin CLI still opens
+  and sessions.db integrity (sqlite3 ''PRAGMA integrity_check'').'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  task_id: 20261005-143056-build-a-session-prune-housekee
+  runner: tony-dell
+  result: 20261005-143056-build-a-session-prune-housekee finished (inactive) — see `devin-dispatch logs 20261005-143056-build-a-session-prune-housekee`
+updated: 2026-11-09 20:08
+comms:
+- at: 2026-10-05 13:45
+  from: devin
+  text: filed after tony asked what to do about 160 IDE sessions — all dispatch spawn records; prune is the housekeeping
+    answer
+- at: 2026-10-05 14:31
+  from: chaba
+  text: dispatched 20261005-143056-build-a-session-prune-housekee on chaba
+- at: 2026-10-05 14:38
+  from: devin
+  text: 'starting: explored sessions.db schema, devin-dispatch task meta, devin-vacuum-when-closed.sh two-clear-checks,
+    render-jobs.py pipeline. Writing session-prune.py next.'
+- at: 2026-10-05 15:14
+  from: devin
+  text: 'Done on dispatch/20261005-143056 (c4163d6a). scripts/devin/session-prune.py: prunes dispatch-era sessions
+    >14d only (title prefix / dispatch-wt+task meta / resume-<sid>); keeps needs-input, live locks, dirty/unmerged
+    worktrees+branches; per-session timeline.jsonl audit via lib/report.py; two-clear-checks + watchdog-flag guard
+    then vacuum-devin-db.sh. ssot.jobs.yml entry + rendered units; timer installed on tony-dell, next fire Sun 2026-10-11
+    03:00 (needs this branch merged first). Verified: snap'
+- at: 2026-10-05 15:25
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 15:25
+  from: chaba
+  text: 'session end: 3 commit(s) on dispatch/20261005-143056-build-a-session-prune-housekee not in origin/master
+    — close will block until merged'
+- at: 2026-10-05 20:34
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: DEV-0059'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (34d in done, board over card cap)
+claim:
+  since: 2026-10-05 14:31
+ref: DEV-0059

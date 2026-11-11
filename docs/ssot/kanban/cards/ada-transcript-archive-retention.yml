@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-09 18:49
+updated: 2026-11-09 19:51
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -37,6 +37,37 @@ comms:
   text: 'merge-sweep: devin-task-20261109-183239-scheduled-per-lane-retention-j failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261109-183239-scheduled-per-lane-retention-j by
     hand.'
+- at: 2026-11-09 19:45
+  from: devin
+  text: dispatch 20261109-183239 failed on retryable 'free model rate limit' (cognition errorKind=unavailable) after
+    ~12min of design work — not a spec problem. Retrying. Branch dispatch/20261109-183239-scheduled-per-l kept for
+    reference.
+- at: 2026-11-09 19:46
+  from: devin
+  text: retry requested
+- at: 2026-11-09 19:46
+  from: idc02
+  text: claimed
+- at: 2026-11-09 19:46
+  from: chaba
+  text: started devin-task-20261109-194653-scheduled-per-lane-retention-j on idc02 (dispatch executor=devin)
+- at: 2026-11-09 19:49
+  from: chaba
+  text: 'merge-sweep: devin-task-20261109-183239-scheduled-per-lane-retention-j no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-09 19:49
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — head is an old base commit — nothing committed;
+    unit: exit_code=1; auto-retry queued (attempt 2/2)'
+- at: 2026-11-09 19:49
+  from: idc02
+  text: claimed
+- at: 2026-11-09 19:50
+  from: chaba
+  text: started devin-task-20261109-194957-scheduled-per-lane-retention-j on idc02 (dispatch executor=devin)
+- at: 2026-11-09 19:51
+  from: idc02
+  text: 'finished (failed): exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-194957-scheduled-per-lane-retention-j.service:'
 action:
   type: dispatch
   repo: chaba
@@ -44,9 +75,15 @@ action:
   executor: devin
   lane: paid_frontier
   status: failed
-  runner: idc02
-  result: 'exit=1 RE | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Failed with result ''exit-code''.
-    | devin-task-20261109-183239-scheduled-per-lane-retention-j.service: Consumed 33.553s CPU time, 212.1M memory
-    peak, 0B memory swap peak.'
   sweep:
     failed_noted: 2026-11-09 18:49
+    stale_running: 2026-11-09 19:49
+    zero_commit: 2026-11-09 19:49
+  last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
+  attempts: 1
+  verified: false
+  runner: idc02
+  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-194957-scheduled-per-lane-retention-j.service:
+    Failed with result ''exit-code''. | devin-task-20261109-194957-scheduled-per-lane-retention-j.service: Consumed
+    7.389s CPU time.'
+claim: {}

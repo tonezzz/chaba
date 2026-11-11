@@ -1,0 +1,121 @@
+id: kk-video-preview-pack
+title: Build private KK teaser preview pack
+column: done
+updated: 2026-11-09 20:16
+brief: Turn the approved KK planning package into a private 60–90 second teaser preview with Thai narration and
+  Thai/English subtitles.
+priority: high
+program: devnest
+tags:
+- devnest
+- kk
+- video
+- colab
+- preview
+- qc
+spec: 'Build a runnable ada-nest pack for project kk-video-c9f99fee6146 using the existing pack contract. Inputs:
+  brief/creative-brief.md, story/scene-plan.md, shots/prompt-pack-v1.md, assets/rights-matrix.md. Produce a private
+  60–90s teaser MP4, Thai narration, Thai SRT, English SRT, and QC report. Use symbolic/non-identifying characters
+  by default; no real likeness or voice clone. Use existing LTX/video and Thai TTS pack patterns where compatible;
+  do not pull paid services or publish. Pack must declare GPU/disk/timeout needs, verify artifacts before done,
+  and report measured resource/time data. Add a dry-run/unit verifier for manifest, inputs, output globs, language/subtitle
+  files, and privacy policy. Queue the private preview only after the pack passes its own verification; final master
+  remains a later stage.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  sweep:
+    session_gone: 2026-10-27 08:16
+  last_failure: 'exit=0 .6, deepseek-v4-pro | devin-task-20261027-080158-build-a-runnable-ada-nest-pack.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-20261027-080158-build-a-runnable-ada-nest-pack.service:
+    Failed with result ''exit-code''.'
+  attempts: 1
+  runner: tony-macbook
+  result: 'exit=0 | devin-task-20261027-082836-build-a-runnable-ada-nest-pack.service: Failed with result ''exit-code''.
+    | devin-task-20261027-082836-build-a-runnable-ada-nest-pack.service: Consumed 922ms CPU time over 673ms wall
+    clock time, 80.9M memory peak.'
+ref: OPS-0920
+comms:
+- at: 2026-10-27 08:01
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 08:01
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 08:02
+  from: chaba
+  text: started devin-task-20261027-080158-build-a-runnable-ada-nest-pack on tony-macbook (dispatch)
+- at: 2026-10-27 08:02
+  from: tony-macbook
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-080158-build-a-runnable-ada-nest-pack.service:
+    Main process exited, cod'
+- at: 2026-10-27 08:02
+  from: chaba
+  text: pushed dispatch/20261027-080158-build-a-runnable-ada-nest-pack to origin
+- at: 2026-10-27 08:02
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-080158-build-a-runnable-ada-nest-pack,
+    branch dispatch/20261027-080158-build-a-runnable-ada-nest-pack'
+- at: 2026-10-27 08:16
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-080158-build-a-runnable-ada-nest-pack on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-27 08:28
+  from: tony
+  text: retry requested
+- at: 2026-10-27 08:28
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 08:28
+  from: devin
+  text: 'RETRY: previous OPS-0920 dispatch exited failure without delivering a runnable pack. Re-queued for a clean
+    implementation. Required output is a real pack.yml + inputs + run/prep contract, unit/dry-run verifier, and
+    a clear Colab launch decision; do not mark done on a plan-only artifact.'
+- at: 2026-10-27 08:28
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 08:28
+  from: chaba
+  text: started devin-task-20261027-082836-build-a-runnable-ada-nest-pack on tony-macbook (dispatch)
+- at: 2026-10-27 08:29
+  from: tony-macbook
+  text: 'finished (ok): exit=0 | devin-task-20261027-082836-build-a-runnable-ada-nest-pack.service: Failed with
+    result ''exit-code''. | devin-task'
+- at: 2026-10-27 08:29
+  from: chaba
+  text: pushed dispatch/20261027-082836-build-a-runnable-ada-nest-pack to origin
+- at: 2026-10-27 08:29
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-082836-build-a-runnable-ada-nest-pack,
+    branch dispatch/20261027-082836-build-a-runnable-ada-nest-pack'
+- at: 2026-10-27 08:42
+  from: devin
+  text: 'EVALUATION FINDING: Nest/JEV claimed OPS-0920 twice (tony-macbook) but both dispatch sessions exited within
+    <1s with status=1 and delivered no pack/artifacts. This is not a preview failure; it is a delegation/closeout
+    failure. Stop blind retries. Next action is to inspect the runner transcript/task exit and either fix the dispatch
+    harness or implement the minimal runnable pack in a verified worktree. No Colab/GPU launch occurred.'
+- at: 2026-10-27 09:30
+  from: devin
+  text: 'EXECUTOR ROOT CAUSE: both retries on tony-macbook exited status 1 before producing artifacts; the host
+    lacks the expected Devin executor in its service/runtime path. Created OPS-0921 pinned to idc02, where the DevNest/Devin
+    executor is available. OPS-0920 remains an honest failed evaluation; no Colab launch occurred.'
+- at: 2026-10-27 14:23
+  from: tony
+  text: closed by tony
+- at: 2026-10-27 17:11
+  from: devin
+  text: 'STATUS CORRECTION: board action was marked done, but live verdict.md says missing shots [3,4,5,7,9] and
+    no final teaser-preview.mp4 is present. Reopened for review; no final preview claim.'
+- at: 2026-10-27 17:11
+  from: tony
+  text: moved done -> review
+- at: 2026-10-27 19:30
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (13d in done, board over card cap)
+review_kind: verify
+claim: {}

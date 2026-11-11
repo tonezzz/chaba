@@ -1,0 +1,101 @@
+title: Efficient card status and processing for Devin and Ada
+subtitle: Define a one-pass, evidence-preserving workflow that avoids repeated board/session reads
+icon: target
+
+planning:
+  goal: Reduce repeated status lookups, context reads, and feedback loops while preserving accurate card closeout and cost boundaries.
+  scope: Chaba procedure and Devin skill plus a minimal Ada prompt mirror using existing nest_status and kanban-brief surfaces.
+  success_criteria:
+    - Named-card work avoids full-board fetches and repeated polls.
+    - Executor session, board card, and PR states are explicitly reconciled before claiming completion.
+    - Ada's prompt points to existing compact status tools without adding a duplicate runtime tool or large prompt block.
+    - Chaba SSOT validation and focused Ada tests pass.
+  risks:
+    - A shorter workflow could omit evidence; mitigate by requiring source and checked time for every status claim.
+    - The Ada prompt is always loaded; keep its mirror concise and reuse existing tools.
+    - Source changes do not mean Ada is deployed; deployment remains out of scope.
+  resources:
+    - Chaba board-api read door, /queue and /card/<id>
+    - Ada nest_status, kanban-brief, and kanban card read
+    - ada-voice tests and tool-lint
+  owner: tony
+  estimated_duration: 1 session
+  related_focus: []
+
+processing:
+  status: completed
+  started_at: 2026-11-09
+  steps:
+    - id: 1
+      label: Inspect prior token work and existing compact status tools
+      status: completed
+      notes: Found existing board-api read projections, DevNest performance/read procedure, completed live-session-token-diet work, and Ada nest_status. Avoiding a duplicate tool.
+    - id: 2
+      label: Add shared procedure and Devin skill
+      status: completed
+      notes: Added the shared procedure, a triggerable Devin skill, and the procedure-index entry.
+    - id: 3
+      label: Mirror the compact workflow in Ada source
+      status: completed
+      notes: Updated DEFAULT_ADA_INSTRUCTIONS to prefer live compact status; added a prompt regression test. Ada was not deployed.
+    - id: 4
+      label: Validate, record evidence, and commit branch changes
+      status: completed
+      notes: Focused Ada test passed (1/1), tool-lint clean, Python compilation passed, and both changed Chaba YAML files parse. Full Chaba validation found 7 unrelated pre-existing errors; the new job and procedures file validate.
+  decisions:
+    - label: Reuse existing tools
+      rationale: Chaba already has narrow board reads and Ada already has nest_status plus kanban-brief; a new status API would duplicate working surfaces.
+      alternatives_considered: Add another queue/status tool; rejected unless later evidence shows a concrete missing field.
+  changes:
+    - file: docs/kb/card-status-and-processing.md
+      summary: Shared one-pass procedure for concise, evidence-preserving card processing.
+    - file: .devin/skills/card-ops-sweep/SKILL.md
+      summary: Devin trigger skill for card status and processing requests.
+    - file: /home/tony/CascadeProjects/ada-voice-wt-card-ops-efficiency/backend/realtime_provider.py
+      summary: Ada's default prompt now uses existing compact DevNest and Kanban status tools first.
+    - file: /home/tony/CascadeProjects/ada-voice-wt-card-ops-efficiency/tests/test_card_ops_instructions.py
+      summary: Regression test for the Ada status workflow instructions.
+
+followup:
+  verification:
+    - Focused Ada regression test: 1 passed.
+    - Ada tool-lint: clean (60 existing warnings); Python compilation passed.
+    - Chaba changed YAML files parse and are valid; full validator still reports 7 unrelated baseline errors in generated job catalogs and existing job lifecycle documents.
+    - Ada prompt delta is +4 characters; no new runtime tool was added.
+  rollback_plan:
+    - Revert the feature-branch commits; no live service or queue state is changed.
+  handoff:
+    - Keep Ada source changes un-deployed until separately approved for deployment.
+  deferred:
+    - Build a dedicated batch status API only if the existing /queue, /card/<id>, and nest_status surfaces prove insufficient.
+
+report:
+  status: completed
+  completed_at: 2026-11-09
+  summary: Added a compact, shared card-processing procedure and Devin skill; mirrored the minimum status guidance into Ada's source prompt without adding a duplicate tool or increasing its prompt materially.
+  metrics:
+    - metric: ada_prompt_char_delta
+      value: 4
+    - metric: ada_focused_tests
+      value: 1 passed
+    - metric: new_runtime_tools
+      value: 0
+  links:
+    - title: Shared card processing procedure
+      file: docs/kb/card-status-and-processing.md
+    - title: Devin skill
+      file: .devin/skills/card-ops-sweep/SKILL.md
+    - title: Ada prompt source branch
+      file: /home/tony/CascadeProjects/ada-voice-wt-card-ops-efficiency/backend/realtime_provider.py
+  kb_review:
+    - Reuse the existing compact surfaces; the gap was the status-selection procedure, not missing infrastructure.
+  lessons_learned:
+    - Check the target prompt constant before patching; CMS_INSTRUCTIONS is distinct from DEFAULT_ADA_INSTRUCTIONS.
+
+config:
+  version: 1
+  created_at: 2026-11-09
+  last_updated: 2026-11-09
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

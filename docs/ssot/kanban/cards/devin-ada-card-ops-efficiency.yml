@@ -1,0 +1,77 @@
+id: devin-ada-card-ops-efficiency
+title: Devin + Ada efficient card status and processing procedure
+column: done
+updated: 2026-11-09 20:39
+priority: medium
+tags:
+- devin
+- ada
+- efficiency
+- workflow
+spec: 'Reduce repeated context reads, board scans, session polls, and unanswered feedback loops during multi-card
+  status/processing work. Reuse existing compact surfaces; do not add a duplicate queue/status tool unless a demonstrated
+  gap remains.
+
+
+  Deliverables:
+
+  1. Shared procedure docs/kb/card-status-and-processing.md covering one-pass scope, narrow board reads, batched
+  independent checks, Jules/session/PR reconciliation, reuse of answered requests, no polling loops, cost/ETA caveats,
+  and concise evidence-based reporting.
+
+  2. Devin skill .devin/skills/card-ops-sweep/SKILL.md triggered by status/process/continue-card asks; reference
+  the shared procedure and existing /queue, /card/<id>, Jules client, and GitHub paths.
+
+  3. Ada mirror in ada-voice DEFAULT_ADA_INSTRUCTIONS: use nest_status once for DevNest overview; use kanban-brief
+  then named-card reads; refresh only if stale/contradictory or requested; distinguish session, card, and PR state.
+  Keep added prompt text short.
+
+  4. Add a procedure-index entry. Validate Chaba SSOT and focused Ada lint/tests. Do not deploy Ada; source change
+  is prepared for later review/deploy.
+
+
+  Done when the doc/skill/Ada prompt agree, focused tests pass, and the card records evidence plus the deployment
+  boundary.'
+ref: DEV-1298
+comms:
+- at: 2026-11-09 19:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-09 19:49
+  from: devin
+  text: 'Initial assessment: reuse existing compact surfaces rather than adding another status tool: Chaba board-api
+    read door (/queue, /card/<id>) and Ada nest_status + kanban-brief. Implementing a short shared procedure/Devin
+    skill and a minimal Ada instruction mirror; no deployment planned.'
+- at: 2026-11-09 19:59
+  from: devin
+  text: 'Implemented and committed locally: Chaba 3edb8d65ae (shared procedure, card-ops-sweep skill, procedure
+    index); ada-voice bf16a93 (live-first status instruction + regression test). Existing /queue, /card/<id>, nest_status,
+    and kanban-brief are reused; no duplicate runtime tool. Ada focused test 1/1 passed, tool-lint clean, py_compile
+    passed, and Chaba commit hooks passed. Ada source is not pushed/deployed; this card is ready for review before
+    activation.'
+- at: 2026-11-09 20:00
+  from: devin
+  text: moved doing -> review
+- at: 2026-11-09 20:02
+  from: devin
+  text: 'Review handoff: Chaba change is on local branch dispatch/devin-token-efficiency at 3edb8d65ae; it is now
+    159 commits behind origin/master, so rebase/safe-push is still required before publication. Ada source is on
+    local feat/card-ops-efficiency at bf16a93, +4 DEFAULT_ADA_INSTRUCTIONS characters, and is not deployed. No runtime
+    tool or service was added/changed.'
+- at: 2026-11-09 20:16
+  from: devin
+  text: 'Published draft PRs for review: Chaba #140 and ada-voice #11. Chaba PR is draft because the full SSOT validator
+    has 7 unrelated errors; Ada PR is draft because its live prompt scenario was not run and deployment is intentionally
+    deferred. No live model call or deployment was performed.'
+- at: 2026-11-09 20:20
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:39
+  from: devin
+  text: 'Post-deploy 2026-11-09: PR #11 is live on idc03 revision 80777c4b; deploy gates passed (tool-lint + 1747
+    tests) and all 10 services are active. Direct nest_status read returned snapshot_age=2m, stale=false. The live
+    prompt scenario did not reach Gemini: provider lane is latched by an existing prepayment-credit exhaustion.
+    No top-up or latch reset was done. A separate startup issue for ada_adobe_stock is recorded on ADA-1130.'
+review_kind: verify
+action:
+  status: done
