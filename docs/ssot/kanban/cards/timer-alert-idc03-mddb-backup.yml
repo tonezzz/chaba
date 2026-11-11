@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-backup
 title: Timer mddb-backup on idc03 failing
 column: backlog
-updated: 2026-11-11 23:13
+updated: 2026-11-11 23:50
 priority: high
 tags:
 - timer-alert
@@ -22,3 +22,8 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-11 02:36) of `mddb-backup.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-backup.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-11 23:50
+  from: devin
+  text: 'Still failing: this morning run exited status=125 under the old script. New generalized backup script deployed
+    21:42 (covers 4 instances, poll-for-native + fallback). Root cause of 125 not yet confirmed - will trigger a
+    manual run after disk cleanup and watch tonight 02:30 timer.'
