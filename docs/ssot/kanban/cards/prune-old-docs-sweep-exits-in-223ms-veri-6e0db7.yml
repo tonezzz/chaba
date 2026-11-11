@@ -1,7 +1,7 @@
 id: prune-old-docs-sweep-exits-in-223ms-veri-6e0db7
 title: prune-old-docs sweep exits in 223ms — verify it actually deletes
 column: doing
-updated: 2026-11-11 21:40
+updated: 2026-11-11 22:56
 brief: Timer ran 09:35 status=0 in 223ms — too fast to page 100k+ docs. Ops still holds host-logs docs older than
   the 3d policy. Either sweep silently no-ops or listing is failing.
 ref: OPS-0026
@@ -9,3 +9,9 @@ comms:
 - at: 2026-11-11 21:40
   from: devin
   text: card captured via board-api
+- at: 2026-11-11 22:56
+  from: devin
+  text: 'Root cause found: the /v1/search enumeration dies on host-logs (142k docs on the strained ops instance)
+    — sweep reported list failed / Remote end closed connection. 58,877 stale docs confirmed via dry-run. Fix path:
+    compact+filter rebuild of ops DB (in flight) which drops >3d docs at import; enumerate-path needs export-based
+    or server-side-cutoff prune for collections past the paging wall.'
