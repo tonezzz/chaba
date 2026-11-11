@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-backup
 title: Timer mddb-backup on idc03 failing
 column: backlog
-updated: 2026-11-11 23:50
+updated: 2026-11-12 00:41
 priority: high
 tags:
 - timer-alert
@@ -27,3 +27,9 @@ comms:
   text: 'Still failing: this morning run exited status=125 under the old script. New generalized backup script deployed
     21:42 (covers 4 instances, poll-for-native + fallback). Root cause of 125 not yet confirmed - will trigger a
     manual run after disk cleanup and watch tonight 02:30 timer.'
+- at: 2026-11-12 00:41
+  from: devin
+  text: 'Root cause of latest failure found and fixed: deployed script had local name=... out=$BK/$name.db on one
+    line - under set -u the $name ref in out= is unbound -> instant exit. Split into two locals; manual run 2026-11-12
+    00:03-00:35 completed all 4 native backups cleanly (service exit 0). Note: the 02:30 status=125 was the older
+    script build failing differently; todays filecopy still landed. Watch tomorrows 02:30 run.'
