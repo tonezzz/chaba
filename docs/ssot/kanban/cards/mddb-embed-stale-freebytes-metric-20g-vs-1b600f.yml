@@ -1,7 +1,7 @@
 id: mddb-embed-stale-freebytes-metric-20g-vs-1b600f
 title: 'mddb-embed: stale freeBytes metric (20G vs actual ~75G)'
 column: done
-updated: 2026-11-11 23:46
+updated: 2026-11-11 23:51
 brief: /v1/health freeBytes on :11028 is cached from a much earlier disk state; other instances report live values.
   Minor but could mask a real full-disk.
 ref: MEM-0027
@@ -16,6 +16,9 @@ comms:
     45.8G = actual; restarting mddb-embed refreshed it to 45.7G = actual. Workaround = restart refreshes; real fix
     needs upstream periodic statfs — track under MEM-0024 (v2.18.x rebuild).'
 - at: 2026-11-11 23:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-11 23:51
   from: tony
   text: closed by tony
 action:
