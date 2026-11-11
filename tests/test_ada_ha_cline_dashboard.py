@@ -55,7 +55,7 @@ class AdaHaClineDashboardTests(unittest.TestCase):
         )
 
     def test_refuses_to_save_if_board_view_is_missing(self):
-        with self.assertRaisesRegex(ValueError, "no Board view"):
+        with self.assertRaisesRegex(ValueError, "no Kanban/Board view"):
             MODULE.mutate({"views": [{"title": "Pair", "path": "pair"}]})
 
 
