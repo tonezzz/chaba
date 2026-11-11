@@ -187,6 +187,11 @@ comms:
 - at: 2026-11-11 20:42
   from: tony
   text: moved done -> backlog
+- at: 2026-11-11 20:42
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-11 07:00) of `chaba-bge-education-shadow.service` on `idc03`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-bge-education-shadow.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 spec: Investigate the recurring failures and timeouts of the user service chaba-bge-education-shadow.service on
   host idc03. The agent must inspect the systemd user journal using journalctl --user -u chaba-bge-education-shadow.service
   on idc03, cross-reference the CMS timer-timeline-idc03 timeline, and identify the root cause of the exit-code
