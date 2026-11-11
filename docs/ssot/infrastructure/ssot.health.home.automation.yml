@@ -4,6 +4,7 @@ icon: robot
 services:
   - id: trade-automation
     name: Trade Automation
+    disabled: true
     type: systemd
     service: trade-automation.service
     scope: user
@@ -13,8 +14,8 @@ services:
     category: automation
     profiles:
       - home
-    note: Background trade automation worker on tony-dell rootless podman (same image
-      as trade-api, no exposed host port)
+    note: "Retired on tony-dell 2026-10-23 and no current host is declared in
+      ssot.jobs.yml. Disabled until the worker is deliberately redeployed."
     verification:
       - "Check service: ssh tony-dell systemctl --user status trade-automation.service"
       - "Check container: ssh tony-dell podman ps | grep trade-automation"

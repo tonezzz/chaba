@@ -12,7 +12,7 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: idc03
 - id: yomi-update-active-timer
   name: Yomi Update Active Timer
   type: systemd
@@ -23,7 +23,7 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: idc03
 - id: weaviate-index-timer
   name: Weaviate Index Timer
   type: systemd
@@ -47,7 +47,7 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: con01
 - id: chaba-kb-audit-timer
   name: Chaba KB Audit Timer
   type: systemd
@@ -58,7 +58,7 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: con01
 - id: cpu-frequency-monitor
   name: CPU Frequency Monitor
   type: systemd
@@ -209,9 +209,9 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: tony_omen
   note: 'Dual-host: also runs on idc03 for mddb embeddings. Sustained 429s in spend-digest = Gemini quota, not this unit''s
-    health.'
+    health. Moved off tony-dell in the phase-5 LAN cohort.'
 - id: dnsmasq-postgre
   name: dnsmasq postgre alias
   type: systemd
@@ -234,9 +234,9 @@ services:
   profiles:
   - home
   - mobile
-  host: tony_dell
-  note: H.264 camera proxy for HA high-res display. Live API port is 18554 (services.yml says 1984 — drift). camera-monitor.service
-    also watches it.
+  host: tony_omen
+  note: H.264 camera proxy for HA high-res display. Current live API ports are 1984/8554 on tony-omen; the retired dell copy
+    used 18554.
 - id: mcp-link-monitor
   name: mcp link monitor (mn01)
   type: systemd
