@@ -1,7 +1,7 @@
 id: backup-coverage-mddb-ops-mddb-cms-mddb-e-a70965
 title: 'Backup coverage: mddb-ops, mddb-cms, mddb-embed (53G unprotected)'
 column: doing
-updated: 2026-11-11 23:49
+updated: 2026-11-12 00:41
 brief: Only the leader mddb (:11023) has mddb-backup.timer. ops=30G, cms=21G, embed=2.8G have no backup path. Extend
   backup script to loop the instances with same 3d retention.
 ref: MEM-0022
@@ -15,3 +15,8 @@ comms:
     - native /v1/backup with .tmp-rename poll + container staging cleanup + filecopy+open-verify fallback + 3d retention.
     Last timed run (02:30) used old leader-only script and exited 125; verification run queued after ops-compact
     tmp cleanup frees ~93G (disk 86% now).'
+- at: 2026-11-12 00:41
+  from: devin
+  text: 'VERIFIED 2026-11-12 00:35: manual mddb-backup.service run produced native backups for all 4: mddb 11G,
+    mddb-ops 2.8G, mddb-cms 22G, mddb-embed 2.8G - all server-verified snapshots pulled to ~/mddb-backups, container
+    staging cleaned. Timer fires 02:30 daily; 3d retention active.'
