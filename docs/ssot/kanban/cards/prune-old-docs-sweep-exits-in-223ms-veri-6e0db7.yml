@@ -1,7 +1,7 @@
 id: prune-old-docs-sweep-exits-in-223ms-veri-6e0db7
 title: prune-old-docs sweep exits in 223ms — verify it actually deletes
 column: doing
-updated: 2026-11-11 22:56
+updated: 2026-11-11 23:50
 brief: Timer ran 09:35 status=0 in 223ms — too fast to page 100k+ docs. Ops still holds host-logs docs older than
   the 3d policy. Either sweep silently no-ops or listing is failing.
 ref: OPS-0026
@@ -15,3 +15,8 @@ comms:
     — sweep reported list failed / Remote end closed connection. 58,877 stale docs confirmed via dry-run. Fix path:
     compact+filter rebuild of ops DB (in flight) which drops >3d docs at import; enumerate-path needs export-based
     or server-side-cutoff prune for collections past the paging wall.'
+- at: 2026-11-11 23:50
+  from: devin
+  text: 'Progress: post-compaction enumeration now completes in ~5s (was: remote-close under 142k-doc collection).
+    Dry-run found 8,963 stale. First real sweep raced a bulk refill (offset-paging shift under concurrent inserts)
+    -> scanned 25,313, deleted 0; re-run queued after refill drains to confirm deletes land.'
