@@ -1690,12 +1690,27 @@ def watchdog_pass(st: dict) -> bool:
     return changed
 
 
+def _devnest_script(name: str) -> Path | None:
+    """scripts/devnest/<name> resolver — works both in-checkout
+    (scripts/board/runner-agent.py) and deployed to ~/.local/bin
+    (single-file install; parents[2] then points at ~/)."""
+    cands = [Path(__file__).resolve().parents[2] / "scripts" / "devnest"
+             / name,
+             Path.home() / "CascadeProjects/chaba/scripts/devnest" / name]
+    env = os.environ.get("DEVNEST_SCRIPTS_DIR")
+    if env:
+        cands.insert(0, Path(env) / name)
+    for p in cands:
+        if p.is_file():
+            return p
+    return None
+
+
 def oc_profiles_module():
     """Import scripts/devnest/opencode_profiles.py from this checkout —
     same lazy pattern as dr_module(); None when unavailable."""
-    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
-        "opencode_profiles.py"
-    if not p.is_file():
+    p = _devnest_script("opencode_profiles.py")
+    if p is None:
         return None
     spec = importlib.util.spec_from_file_location("opencode_profiles", p)
     m = importlib.util.module_from_spec(spec)
@@ -1708,16 +1723,14 @@ _KK_MAC_TRIED = False
 
 
 def kk_mac_module():
-    """Import scripts/devnest/kk_mac_executor.py from this checkout —
-    same lazy pattern as dr_module()/oc_profiles_module(); None when
-    unavailable."""
+    """Import scripts/devnest/kk_mac_executor.py — same lazy pattern as
+    dr_module(); None when unavailable."""
     global _KK_MAC, _KK_MAC_TRIED
     if _KK_MAC_TRIED:
         return _KK_MAC
     _KK_MAC_TRIED = True
-    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
-        "kk_mac_executor.py"
-    if not p.is_file():
+    p = _devnest_script("kk_mac_executor.py")
+    if p is None:
         return None
     try:
         spec = importlib.util.spec_from_file_location(
