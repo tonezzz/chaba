@@ -34,6 +34,10 @@ comms:
 - at: 2026-11-12 07:23
   from: tony
   text: moved done -> backlog
+- at: 2026-11-12 07:23
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-12 07:02) of `chaba-nag.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-nag.service` on the host. See CMS `timer-timeline-idc03`.'
 spec: Investigate the failing runs of the user service `chaba-nag.service` on host `idc03` by checking the systemd
   journal via `journalctl --user -u chaba-nag.service`. The target host is `idc03` and the repository context is
   `chaba`. The done-condition is verified when the root cause of the exit-code failure is identified and documented
