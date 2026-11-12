@@ -70,9 +70,12 @@ comms:
 - at: 2026-11-12 15:39
   from: devin
   text: queued for processing
+- at: 2026-11-12 15:39
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   last_failure: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line).
     Verified via wc/od. CI pending." --from devin 2>&1 | head -40
@@ -84,3 +87,4 @@ action:
   result: 'lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
 
     fatal: a branch named ''card/knb-0065'' already exists'
+  runner: tony-dell
