@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:48
+updated: 2026-11-12 15:49
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -99,23 +99,14 @@ comms:
   from: devin
   text: 'CORRECTION to spec: use docs/card-runner/lifecycle-test.md — reports/* is gitignored so the file can never
     be committed. Same content: single line lifecycle ok.'
+- at: 2026-11-12 15:49
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
-  last_failure: 'session rc=0, no repo changes. tail: a reports/card-runner/
-
-    total 12
-
-    drwxrwxr-x 2 tony tony 4096 Nov 12 15:26 .
-
-    drwxrwxr-x 6 tony tony 4096 Nov 12 15:26 ..
-
-    -rw-rw-r-- 1 tony tony   13 Nov 12 15:26 lifecycle-test.md
-
-    > build · iceman-free'
-  attempts: 2
-  runner: tony-dell
-  result: "session rc=1, no repo changes. tail: fecycle ok\n\n---HEXDUMP---\n 6c 69 66 65 63 79 63 6c 65 20 6f 6b\
-    \ 0a\n---STATUS---\\n\n> build · iceman-free\n\e[91m\e[1mError: \e[0mUpstream request failed: [server_error]\
+  last_failure: "session rc=1, no repo changes. tail: fecycle ok\n\n---HEXDUMP---\n 6c 69 66 65 63 79 63 6c 65 20\
+    \ 6f 6b 0a\n---STATUS---\\n\n> build · iceman-free\n\e[91m\e[1mError: \e[0mUpstream request failed: [server_error]\
     \ Upstream response was not valid JSON"
+  attempts: 3
