@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
 column: doing
-updated: 2026-11-12 09:59
+updated: 2026-11-12 10:00
 priority: high
 tags:
 - ada
@@ -25,7 +25,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-09 20:19
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) TTER_IM_MODULE=''''
@@ -33,6 +33,9 @@ action:
     Consumed 1.892s CPU time over 1h 29.693s wall clock time, '
   attempts: 1
   runner: tony-omen
+  result: 'journal=exit-code D_PRECONDITION" |   } | } | devin-task-ada-status-live-state-preference-1794452380.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-ada-status-live-state-preference-1794452380.service:
+    Failed with result ''exit-code''.'
 ref: ADA-1294
 comms:
 - at: 2026-11-09 18:36
@@ -150,3 +153,7 @@ comms:
 - at: 2026-11-12 09:59
   from: chaba
   text: started devin-task-ada-status-live-state-preference-1794452380 on tony-omen (dispatch executor=jules)
+- at: 2026-11-12 10:00
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code D_PRECONDITION" |   } | } | devin-task-ada-status-live-state-preference-1794452380.service:
+    Main proce'
