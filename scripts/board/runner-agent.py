@@ -1954,6 +1954,15 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     return False, notes, fb
 
 
+# S3 staged-dispatch admission (OPS-1255): the read-only profiles Tony
+# approved for the sampling window. ssot-research + storage-dryrun were
+# added 2026-11-12 (option A on the S3-source request). Other profiles
+# that merely declare stages:[S3] (doc-draft, gs-capture-eval,
+# mddb-sequence, ops-remote-read) stay unadmitted until their own cards
+# approve them.
+S3_STAGED_PROFILES = {"ops-readonly", "ssot-research", "storage-dryrun"}
+
+
 def prepare_profile_dispatch(card, tid, prof, model, ocp):
     a = card.get("action") or {}
     raw = a.get("lane_envelope")
@@ -1969,13 +1978,14 @@ def prepare_profile_dispatch(card, tid, prof, model, ocp):
                 "target_host": HOST, "task_class": a.get("task_class")}
     if any(env.get(k) != v for k, v in expected.items()):
         raise ValueError("lane envelope differs from the declared executor/card/host/model/class")
-    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] != "ops-readonly"
+    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] not in S3_STAGED_PROFILES
             or env.get("mcp_allowlist") != []
             or env.get("task_class") not in ("read_only", "report")
             or a.get("target_host") != HOST or env.get("unattended", True) is not True
             or env.get("subject_host") not in (None, "", HOST)
             or a.get("subject_host") not in (None, "", HOST)):
-        raise ValueError("staged dispatch currently admits only unattended S3 idc02 ops-readonly reports")
+        raise ValueError("staged dispatch currently admits only unattended S3 idc02 read-only reports "
+                         "(" + "/".join(sorted(S3_STAGED_PROFILES)) + ")")
     art = str((env.get("artifact") or {}).get("path") or "")
     if not art or Path(art).is_absolute() or ".." in Path(art).parts or art != a.get("artifact"):
         raise ValueError("lane artifact must match the declared relative artifact path")

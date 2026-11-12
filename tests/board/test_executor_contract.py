@@ -387,6 +387,36 @@ class StagedProfileDispatchTest(unittest.TestCase):
             self.prepare()
 
 
+class StagedProfileAdmissionTest(unittest.TestCase):
+    """S3 admit-set: only the Tony-approved read-only profiles
+    (ops-readonly + ssot-research + storage-dryrun, 2026-11-12 option A).
+    Profiles that merely declare stages:[S3] stay rejected."""
+
+    def _try(self, profile_id, env_file, task_class):
+        mod = _load("runner-agent.py")
+        mod.HOST = "idc02"
+        ocp = mod.oc_profiles_module()
+        prof = ocp.load_profile(profile_id)
+        env = ocp.lane_gate.load_envelope(REPO / "evals/opencode-lane/jobs" / env_file)
+        env.update(id="job", card="ex-card", stage="S3", profile=profile_id)
+        card = _card(executor="opencode", agent_profile=profile_id, model=env["model"],
+                     task_class=task_class, target_host="idc02",
+                     artifact=env["artifact"]["path"], lane_envelope=env)
+        return mod.prepare_profile_dispatch(card, "actual-task", prof, env["model"], ocp)
+
+    def test_admits_the_three_approved_s3_profiles(self):
+        for pid, f, tc in (("ops-readonly", "p1-ops-readonly-idc02.yaml", "report"),
+                           ("ssot-research", "p1-ssot-research-idc02.yaml", "read_only"),
+                           ("storage-dryrun", "p1-storage-dryrun-idc02.yaml", "read_only")):
+            with self.subTest(profile=pid):
+                self.assertEqual(self._try(pid, f, tc)["profile"], pid)
+
+    def test_rejects_s3_profiles_outside_the_approved_set(self):
+        # doc-draft declares stages:[S1,S2,S3] but has no S3 card approval
+        with self.assertRaises(ValueError):
+            self._try("doc-draft", "p1-ssot-research-idc02.yaml", "read_only")
+
+
 class FinishOpenCodeLaneTest(unittest.TestCase):
     """finish_opencode_lane: declared artifact must land + verifier pass
     before the merge gate runs; contract failures hold the merge."""
