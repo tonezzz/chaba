@@ -36,3 +36,24 @@ comms:
     (podman; note docker on dell IS podman — needs docker.io/ prefix; docker compose plugin absent so ran container
     directly, spec from compose.yaml). .env.tmpl staged with generated TOKEN_ENCRYPTION_KEY/DASHBOARD_JWT_SECRET/REMOTE_RUNTIME_TOKEN_SECRET
     and 13 __GATE__ placeholders.'
+- at: 2026-11-12 15:11
+  from: tony
+  text: 'raised request 4-gated-items-needed-to-boot-robin-optio-41e2b0: 4 gated items needed to boot Robin (options
+    in spec): (1) LangSmith account + API key — agent loop + cloud sandboxes liv'
+requests:
+- id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
+  ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
+    sandboxes live there; sandbox quota may need a paid tier, unknown. (2) Model key — ANTHROPIC_API_KEY (spend)
+    or LangSmith gateway key. (3) GitHub App in your org: callback https://oswe.surf-thailand.com/dashboard/api/auth/callback,
+    webhook https://oswe.surf-thailand.com/webhooks/github (or leave webhook inactive — dashboard-started runs only),
+    install on eval repo(s); grab APP_ID/CLIENT_ID/CLIENT_SECRET/PRIVATE_KEY/INSTALLATION_ID. (4) Slack app in a
+    workspace you control — 5 vars (BOT_TOKEN/SIGNING_SECRET/BOT_USER_ID + APP_ID); docs say backend refuses to
+    start without them. Which items can you provide / should I proceed without Slack by patching the startup check?'
+  status: open
+  at: 2026-11-12 15:11
+  from: tony
+  options:
+  - Provide all 4 — I'll continue wiring
+  - Provide GitHub+LangSmith+Anthropic; skip Slack, I patch around the startup check
+  - Hold — I'll do the account setup myself later
+  suggested: Provide all 4 — I'll continue wiring
