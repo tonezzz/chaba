@@ -191,6 +191,10 @@ TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
 # done+verified cards older than this move to cards/archive/ via
 # /action do=archive (KNB-1178; SSOT column_sla.done convention).
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
+# Queue-time lane classification (OPS-0838): when a card queues with no
+# lane/executor, run the fleet classifier once and persist the pin.
+BOARD_CLASSIFY_AT_QUEUE = \
+    os.environ.get("BOARD_CLASSIFY_AT_QUEUE", "1") == "1"
 COLUMNS = {"backlog", "doing", "review", "done"}
 
 # /card spawn fields (report-session-loop §1a)
@@ -695,6 +699,28 @@ def queue_unclaimable_warn(card: dict) -> str:
               "capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)")
 
 
+def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
+    """Queue-time classification (OPS-0838). Sets lane and model, and
+    returns an abort message if classified as manual."""
+    if not BOARD_CLASSIFY_AT_QUEUE:
+        return None
+    if a.get("type") == "dispatch" and not a.get("lane") \
+            and not a.get("executor"):
+        lane, source, conf = dr.classify_lane(card, with_detail=True)
+        if lane == "manual":
+            a["lane"] = "manual"
+            a["status"] = "idle"
+            comms_add(card, "chaba",
+                      f"classified as manual ({source} conf {conf:.2f})")
+            return "classified as manual — queue skipped"
+        a["lane"] = lane
+        if lane in dr.LANE_MODELS and not a.get("model"):
+            a["model"] = dr.LANE_MODELS[lane]
+        comms_add(card, "chaba",
+                  f"classified as {lane} ({source} conf {conf:.2f})")
+    return None
+
+
 def do_action(card: dict, verb: str, frm: str) -> str:
     a = card.setdefault("action", {})
     card.pop("awaiting_action", None)  # any deliberate action is triage
@@ -707,6 +733,9 @@ def do_action(card: dict, verb: str, frm: str) -> str:
         a.pop("runner", None)   # a re-queue after done/failed must be
         a.pop("task_id", None)  # claimable by any host, not its last one
         a.pop("verified", None)  # stale stamp must not survive a re-queue
+        msg = _apply_classify_at_queue(card, a)
+        if msg:
+            return msg
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "queued for processing")
