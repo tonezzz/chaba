@@ -1,7 +1,7 @@
 id: mddb-embed-free-first
 title: 'Flip mddb embed order: free Gemini first, OR fallback'
 column: backlog
-updated: 2026-11-12 14:23
+updated: 2026-11-12 14:24
 spec: mddb-gemini.env on idc03 sets OPENROUTER_PRIMARY=1 (OR unconditional when key set). Bench 2026-09-27 proved
   AI-Studio direct == OR (cosine 1.000, same vector space). Billed OR as unconditional primary buys nothing the
   free Gemini leg doesn't. Flip to Gemini-first, OR-fallback -> OR spend ~0 except genuine outages. Edit ~tony/.config/secrets/mddb-gemini.env
@@ -39,6 +39,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-12 14:24
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
 action:
   type: dispatch
   status: queued
