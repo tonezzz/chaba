@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-report-watch
 title: Timer chaba-report-watch on tony-dell disabled
 column: backlog
-updated: 2026-11-12 09:12
+updated: 2026-11-12 09:39
 priority: high
 tags:
 - timer-alert
@@ -1829,6 +1829,9 @@ comms:
   from: devin
   text: '[still suspicious] `chaba-report-watch.timer` on `tony-dell` is disabled but expected active (audit census
     / critical list). Deliberate? If not: `systemctl --user enable --now chaba-report-watch.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-12 09:39
+  from: devin
+  text: '[sweep 2026-11-12] verified: chaba-report-watch.service result=success on tony-dell — healed. Closing.'
 spec: The goal is to ensure the expected critical timer `chaba-report-watch.timer` is active on `tony-dell`. The
   target host is `tony-dell` and the repository context relates to `chaba`. The runner must check if the disabled
   state is deliberate against the audit census; if not, execute `systemctl --user enable --now chaba-report-watch.timer`.
