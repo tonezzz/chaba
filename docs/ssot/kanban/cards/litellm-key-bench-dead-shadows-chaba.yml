@@ -1,0 +1,19 @@
+id: litellm-key-bench-dead-shadows-chaba
+title: LITELLM_KEY_BENCH returns 422 — dead virtual key shadows working CHABA in lane_gate probe
+column: backlog
+updated: 2026-11-12 14:11
+priority: high
+program: devnest
+tags:
+- litellm
+- opencode-lane
+spec: 'shadow_eval.bench_key() returns the FIRST present env var (BENCH before CHABA). LITELLM_KEY_BENCH is dead
+  on the proxy (GET /v1/models -> 422) so probe() reports litellm_authed:false -> every lane_gate admit fails with
+  failed_provider:litellm. Two fixes: (a) rotate/re-create the BENCH virtual key in litellm; (b) bench_key() should
+  probe each candidate key against /v1/models and pick the first that returns 2xx, not the first present. Workaround
+  in use: export LITELLM_KEY_BENCH=$LITELLM_KEY_CHABA.'
+ref: SEC-0052
+comms:
+- at: 2026-11-12 14:11
+  from: tony
+  text: card captured via board-api
