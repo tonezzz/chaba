@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:59
+updated: 2026-11-12 16:02
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -145,21 +145,14 @@ comms:
   text: 'finished (failed): lifecycle stopped at changes: salvage apply: error: patch failed: .gitignore:18
 
     error: .gitignore: patch does not apply'
+- at: 2026-11-12 16:02
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
-  last_failure: 'session rc=0, no repo changes. Session wrote gitignored files — the card''s target path may be
-    inside an ignored dir. tail: ard-runner/lifecycle-test.md || echo "---MISSING---") 2>&1; echo "---STATUS---";
-    git status --short -- reports/card-runner 2>&1 | head -20
-
-    ---EXISTS---
-
-    lifecycle ok
-
-    ---STATUS---'
-  attempts: 4
-  runner: tony-dell
-  result: 'lifecycle stopped at changes: salvage apply: error: patch failed: .gitignore:18
+  last_failure: 'lifecycle stopped at changes: salvage apply: error: patch failed: .gitignore:18
 
     error: .gitignore: patch does not apply'
+  attempts: 5
