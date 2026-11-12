@@ -1,7 +1,7 @@
 id: mddb-follower-read-offload
 title: Point read-only mddb consumers at idc02 follower
-column: backlog
-updated: 2026-11-12 14:52
+column: done
+updated: 2026-11-12 14:53
 spec: idc02 already runs the replicating follower. Audit which consumers use read-only query endpoints on the leader
   (:11023) and repoint eligible ones at the follower — takes read load off the hot idc03 box. Needs consumer inventory
   first (probe vector-search callers).
@@ -17,3 +17,8 @@ comms:
     \ point at leader :11023 —\n  • 14 are log-shipper/log-shipper-severe WRITERS (host-logs appends) — cannot move.\n\
     \  • Rest are benches/audits/scenario jobs — intermittent, and most write results\n    back (read-own-write\
     \ on a replica races replication lag).\nUnit-file sweep on idc03/omen/dell f"
+- at: 2026-11-12 14:53
+  from: tony
+  text: closed by tony
+action:
+  status: done
