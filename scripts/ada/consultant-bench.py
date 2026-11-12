@@ -7,7 +7,7 @@ import urllib.request
 import urllib.error
 import statistics
 
-def ask_litellm(model, task, timeout=10):
+def ask_litellm(model, task, timeout=10, max_tokens=8):
     url = os.environ.get("LITELLM_URL", "http://100.102.134.91:4000").rstrip("/")
     url = f"{url}/v1/chat/completions"
     key = os.environ.get("LITELLM_KEY") or os.environ.get("LITELLM_KEY_BENCH", "")
@@ -25,7 +25,7 @@ def ask_litellm(model, task, timeout=10):
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 8,
+        "max_tokens": max_tokens,
         "temperature": 0.0
     }
 
@@ -48,8 +48,9 @@ def parse_fixture(filepath):
 
 def write_reports(model, records, summary):
     os.makedirs("reports", exist_ok=True)
-    json_path = f"reports/consultant-bench-{model}.json"
-    md_path = f"reports/consultant-bench-{model}.md"
+    safe = model.replace("/", "-")
+    json_path = f"reports/consultant-bench-{safe}.json"
+    md_path = f"reports/consultant-bench-{safe}.md"
 
     with open(json_path, 'w') as f:
         json.dump({"summary": summary, "verdicts": records}, f, indent=2)
@@ -77,6 +78,8 @@ def main():
     parser = argparse.ArgumentParser(description="Consultant Bench Harness")
     parser.add_argument("--model", required=True, help="LiteLLM model name")
     parser.add_argument("--fixture", required=True, help="Path to tasks.jsonl fixture")
+    parser.add_argument("--max-tokens", type=int, default=8,
+                        help="response cap; raise for thinking models (default 8)")
     args = parser.parse_args()
 
     tasks = parse_fixture(args.fixture)
@@ -88,7 +91,8 @@ def main():
     total_count = len(tasks)
 
     for task in tasks:
-        ans, ms = ask_litellm(args.model, task["task"])
+        ans, ms = ask_litellm(args.model, task["task"],
+                              max_tokens=args.max_tokens)
         got = ans.get("decision", ans.get("_err", "error"))
         expected = task["expected"].lower()
 
