@@ -1378,13 +1378,6 @@ hosts:
         expected_state: active
         critical: false
         note: YOLOv8 person detection on :8780 — moved from tony-omen 2026-09-27
-      - name: weaviate-embedding.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: all-MiniLM-L6-v2 embeddings on :5000 — moved from tony-omen
-          2026-09-27; omen keeps 127.0.0.1:5000 -> mn01 socket proxy
       # ada-memory-* timers moved to idc01 2026-09-24 (consolidation step 6,
       # jobs/infrastructure/2026-09-24-idc01-consolidation.yml), then to idc03
       # with the 2026-10-05/06 migration — unit files remain on mn01 disabled
@@ -2137,6 +2130,15 @@ hosts:
           leader, embeds via embed-pool-shim on idc03 (:11436) racing fleet
           ollama bge-m3 (1024d); relocated idc03→idc02 2026-11-12 to offload
           the hot box (card mddb-embed-relocate-idc03-to-idc02)"
+      - name: weaviate-embedding.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "all-MiniLM-L6-v2 embeddings on :5000 — relocated mn01→idc02
+          2026-11-12 (mn01 was the thinnest-margin box; card
+          mn01-embed-relocate-idc02). omen keeps 127.0.0.1:5000 ->
+          100.123.163.11:5000 socket proxy."
       - name: vcast-real@6.service
         type: service
         scope: user
