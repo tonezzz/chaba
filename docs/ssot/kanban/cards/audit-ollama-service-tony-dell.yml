@@ -1,7 +1,7 @@
 id: audit-ollama-service-tony-dell
 title: 'Resolve unexpected fleet service: ollama.service on tony-dell'
 column: backlog
-updated: 2026-11-12 14:49
+updated: 2026-11-12 14:59
 brief: 'audit-hosts.py --host tony-dell flags ''Unexpected fleet-looking system service: ollama.service'' — a running
   unit never declared in ssot.audit.hosts.yml and not in allowed_running. Per declared-or-dead host hygiene it must
   be declared, retired, or explained.'
@@ -20,3 +20,9 @@ comms:
 - at: 2026-11-12 14:49
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 14:59
+  from: devin
+  text: 'DONE (PR #159 merged). ollama.service declared in ssot.audit.hosts.yml under tony-dell — legitimate LiteLLM
+    backend (127.0.0.1:11434, consumed via tonydell-ollama-tunnel.service :11446 on idc03). Done-condition verified:
+    audit-hosts.py no longer flags it as unexpected. Ran via card-run.py pilot in dispatch worktree; gates respected
+    (no commit, no card writes from the session itself).'
