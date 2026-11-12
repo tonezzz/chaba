@@ -1,7 +1,7 @@
 id: nest-queue-health-kk-coverage
 title: 'nest-queue-health: extend snapshot to kk-llm + video queues + KK worker heartbeat'
-column: doing
-updated: 2026-11-09 10:56
+column: done
+updated: 2026-11-12 09:55
 tags:
 - devnest
 - kk-mac
@@ -62,9 +62,12 @@ comms:
     nest_status (ada-voice 6f01c7e) reads it: per-lane verdicts, KK worker heartbeat, pack counts, snapshot-staleness
     flag; smoke scenario nest_status.yaml added; tool-lint + 1739 tests green; deployed to idc03 prod, all 10 services
     restarted active. Ada can now answer kk-mac/queue/video st'
+- at: 2026-11-12 09:55
+  from: devin
+  text: moved doing -> done
 action:
   type: dispatch
-  status: failed
+  status: done
   lane: devin
   runner: idc02
   result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-094338-nest-queue-health-extend-snaps.service:
@@ -72,3 +75,4 @@ action:
     4.156s CPU time.'
   sweep:
     failed_noted: 2026-11-09 09:49
+claim: {}
