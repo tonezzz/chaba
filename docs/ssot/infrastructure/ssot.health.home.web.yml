@@ -190,6 +190,29 @@ services:
   - 'ssh tony-dell systemctl --user restart openchamber.service'
   - 'Restore serve: ssh tony-dell tailscale serve --bg --https=8443 http://127.0.0.1:3000'
 
+- id: ada-ocb-public-edge
+  name: ada-ocb public edge
+  type: http
+  url: 'https://ada-ocb.surf-thailand.com/'
+  expected_status: 302
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: cloud
+  note: 'The URL the ada-ocb iframe loads (ADA-0032). 302 to
+    cloudflareaccess.com = chain healthy: CF edge -> Access (opencode-ada
+    app) -> idc02 caddy -> tony-dell :8443. A 200 would mean Access is
+    bypassed (misconfig); 5xx = caddy/upstream down.'
+  verification:
+  - 'curl -sI https://ada-ocb.surf-thailand.com/ — expect 302 to Access'
+  - 'ssh idc02 podman logs caddy-edge --tail 30'
+  - 'ssh idc02 podman exec caddy-edge caddy validate --config /etc/caddy/Caddyfile'
+  recovery_actions:
+  - 'DNS/Access: CF dashboard -> surf-thailand.com A record + opencode-ada app'
+  - 'Restart edge: ssh idc02 systemctl --user restart caddy-edge.service'
+
 - id: node-red
   name: Node-RED
   type: http

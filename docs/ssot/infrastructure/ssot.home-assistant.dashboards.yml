@@ -279,8 +279,15 @@ instances:
       https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
       push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
       web UI on tony-dell:3000 via tailscale serve at
-      https://tony-dell.taila0626a.ts.net:8443/ (tailnet-only; Tony chose
-      tailnet over a public ada-ocb edge, ADA-0032 closed).
+      https://ada-ocb.surf-thailand.com/ — public edge built 2026-11-12
+      (ADA-0032 reopened by Tony): DNS A -> idc02, covered by the
+      opencode-ada CF Access app (same AUD/allowlist as ada-code), idc02
+      caddy-edge proxies to https://tony-dell.taila0626a.ts.net:8443
+      (tailscale serve -> OpenChamber 127.0.0.1:3000). Same-site with the
+      dashboard origin so OpenChamber's SameSite=Strict session cookie
+      works in the iframe on the public ada-ha URL — the tailnet iframe
+      URL could only log in when the dashboard itself was opened via
+      tailnet. tailscale serve :8443 remains as a private backup path.
       Cline is a full-page panel iframe
       to https://cline.surf-thailand.com/?v=1; its Cloudflare Access app
       reuses Ada HA's allowlist and session, and its Tailnet proxy verifies
