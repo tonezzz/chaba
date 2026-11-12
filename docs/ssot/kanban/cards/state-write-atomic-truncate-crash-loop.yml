@@ -1,0 +1,18 @@
+id: state-write-atomic-truncate-crash-loop
+title: Non-atomic state writes -> 0-byte files -> permanent crash loops
+column: backlog
+updated: 2026-11-12 09:40
+priority: medium
+tags:
+- ops
+- hardening
+note: '2026-11-12 sweep: 3 services on idc03 crash-looped because their state files were 0 bytes — chaba-nag.json
+  (fails every run since Nov 11 07:04), wp-timeline-state.json (line-chat-timeline), rika-wx-alert/state.json. Pattern:
+  open(STATE,"w") truncates immediately; if the process is killed/times out before json.dump finishes, the file
+  is 0 bytes and every subsequent run dies on json.load (exists-check passes, decode fails). No OOM logged — likely
+  SIGKILL/timeout mid-write. Fix: write to STATE.tmp '
+ref: OPS-0036
+comms:
+- at: 2026-11-12 09:40
+  from: devin
+  text: card captured via board-api
