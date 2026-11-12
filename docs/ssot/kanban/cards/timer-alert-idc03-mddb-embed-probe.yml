@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-12 08:23
+updated: 2026-11-12 08:36
 priority: high
 tags:
 - timer-alert
@@ -554,6 +554,13 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-12 08:15) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 08:36
+  from: devin
+  text: 'VERDICT CHANGED - probe is working correctly, this is a REAL outage not a probe bug. Live vector-search
+    on leader returns: failed to embed query - ollama API error 502 all same-space providers down (OR circuit-open
+    + Gemini failed). 12,358 failures in last 6h. Chain: mddb -> gemini-ollama-proxy :11435 -> litellm:4000 (OpenRouter,
+    circuit-open) with direct-Gemini fallback (429 quota). Proxy restart did not help - both upstreams genuinely
+    quota-limited. litellm itself healthy for chat (was stale-s'
 action:
   status: done
   type: dispatch
