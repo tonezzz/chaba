@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: backlog
-updated: 2026-11-12 17:38
+updated: 2026-11-12 17:49
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -47,6 +47,12 @@ comms:
     vendored SDK crates/mda/src/dev/mod.rs). Removing it = forking, not worth it for an eval. BUT the cheap path
     works: a FREE LangSmith account key satisfies the boot check; with LANGSMITH_TRACING=false + bridged threads
     via the robin CLI (commands run on tony-dell, no cloud sandbox ever cr'
+- at: 2026-11-12 17:49
+  from: devin
+  text: 'LangSmith naming recommendation: Organization ''Chaba Lab'', workspace ''Ada Test'', project ''ada-oswe-eval''.
+    Created ~/CascadeProjects/open-swe/langsmith.env.example on tony-dell with blank LANGSMITH_API_KEY, api endpoint,
+    project, and LANGSMITH_TRACING=false. After registering, create the key scoped to the Ada Test workspace and
+    put it locally into both repo-root .env and mda/.env; do not paste it into chat or commit it.'
 requests:
 - id: 4-gated-items-needed-to-boot-robin-optio-41e2b0
   ask: '4 gated items needed to boot Robin (options in spec): (1) LangSmith account + API key — agent loop + cloud
