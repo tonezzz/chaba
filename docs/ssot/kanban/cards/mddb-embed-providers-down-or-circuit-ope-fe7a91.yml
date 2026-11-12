@@ -1,0 +1,16 @@
+id: mddb-embed-providers-down-or-circuit-ope-fe7a91
+title: mddb embed providers down — OR circuit-open + Gemini 429 (vector-search dead on leader)
+column: backlog
+updated: 2026-11-12 08:37
+brief: 'Embed path for leader :11023 is DOWN (found via MEM-0570 probe doing its job): gemini-ollama-proxy :11435
+  returns 502 all same-space providers down — litellm:4000 OpenRouter circuit-open AND direct-Gemini fallback 429
+  quota-exceeded; 12,358 failures in 6h (queue retry storm). Proxy restart does not help — upstream quota issue,
+  not stuck breaker. Needs Tony: check OpenRouter spend/key state and Gemini quota window; alternatives: bump OR
+  limit, switch embed model, or add a local 768-dim same-space provider to the proxy roster. Queue currently 0/4000
+  so no backlog crisis yet; ada bank embeds fail'
+priority: high
+ref: MEM-0030
+comms:
+- at: 2026-11-12 08:37
+  from: tony
+  text: card captured via board-api
