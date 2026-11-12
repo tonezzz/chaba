@@ -1,7 +1,7 @@
 id: tony-omen-chaba-repo-sync-silently-stale-6d03b3
 title: tony-omen chaba-repo-sync silently stale — no GitHub egress, upstream check no-ops
 column: backlog
-updated: 2026-11-12 08:49
+updated: 2026-11-12 08:53
 priority: high
 tags:
 - devnest
@@ -26,3 +26,10 @@ comms:
 - at: 2026-11-12 08:49
   from: chaba
   text: 'WARNING: action.executor=manual — never claimed by automation; this card will starve in queue'
+- at: 2026-11-12 08:53
+  from: devin
+  text: 'CORRECTION to spec: root cause was NOT persistent zero egress. omen fetches github fine over https (port
+    22/ssh push is blocked, https fetch works). Reflog shows hourly sync works normally — the drift was a ~4.75h
+    transient egress outage (03:00->07:45 on 2026-11-12), during which `git fetch ... || true` swallowed failures
+    and the stale local upstream ref passed the ancestor check, so every hourly run printed "upstream already in
+    HEAD" + exit 0 while drifting. FIX merged in PR #146 (commit 1963f8'
