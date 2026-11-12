@@ -106,7 +106,20 @@ def excerpt(path: Path, head: int) -> str:
     return "\n".join(lines)
 
 
-def build(card: dict, repo: Path, max_files: int, head: int) -> str:
+DEFAULT_GATES = [
+    "Work in a dispatch worktree; never edit the live checkout.",
+    "Card mutations go through board-api (see "
+    "scripts/board/board-cli.py), never card-YAML edits.",
+    "Push via scripts/git-safe-push.sh; open a PR, let CI gate.",
+    "Verify real state before asserting done "
+    "(unit status, curl codes, file contents — not memory).",
+    "No secrets in chat/commits; never print token/password "
+    "values.",
+]
+
+
+def build(card: dict, repo: Path, max_files: int, head: int,
+          gates: list[str] | None = None) -> str:
     text = card_text(card)
     files = referenced_files(text, repo)[:max_files]
     md = []
@@ -146,15 +159,10 @@ def build(card: dict, repo: Path, max_files: int, head: int) -> str:
             rel = f.relative_to(repo)
             md += [f"### {rel}", "", "```",
                    excerpt(f, head), "```", ""]
-    md += ["## Gates & conventions", "",
-           "- Work in a dispatch worktree; never edit the live checkout.",
-           "- Card mutations go through board-api (see "
-           "scripts/board/board-cli.py), never card-YAML edits.",
-           "- Push via scripts/git-safe-push.sh; open a PR, let CI gate.",
-           "- Verify real state before asserting done "
-           "(unit status, curl codes, file contents — not memory).",
-           "- No secrets in chat/commits; never print token/password "
-           "values.", ""]
+    md += ["## Gates & conventions", ""]
+    md += [f"- {g}" for g in (gates if gates is not None
+                              else DEFAULT_GATES)]
+    md.append("")
     md += ["## Done-condition (synthesized — check before finishing)", "",
            done_condition(card), ""]
     return "\n".join(md)
