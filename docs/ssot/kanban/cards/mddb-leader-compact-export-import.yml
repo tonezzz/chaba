@@ -1,14 +1,26 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
 column: backlog
-updated: 2026-11-12 16:25
-spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages. Same export/import procedure.
-  Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify after). Schedule alongside cms compaction; backup first.'
+updated: 2026-11-12 16:39
+spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
+  Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
+  after). Schedule alongside cms compaction; backup first.'
 ref: MEM-0069
 comms:
 - at: 2026-11-12 16:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 16:39
+  from: chaba
+  text: classified as codemod (kw conf 1.00)
+- at: 2026-11-12 16:39
+  from: tony
+  text: queued for processing
+- at: 2026-11-12 16:39
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
+    or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
 recoverability: R2
 auto_done_when:
 - verified_true
@@ -16,6 +28,10 @@ action:
   type: dispatch
   target_host: idc03
   artifact: compacted leader mddb.db at ~/.config/containers/mddb/data/ + parity log + follower re-sync evidence
-  verifier: 'all goals must pass on idc03: (1) curl -sf http://100.102.134.91:11023/v1/health -> 200; (2) doc counts match pre-run export counts
-    in comms; (3) du -sh ~/.config/containers/mddb/data/mddb.db < 9G; (4) idc02 follower (100.123.163.11:11023) catches up or is re-seeded and
-    serves /v1/health 200; (5) POST /v1/vector-search returns results. Any failure => rollback and hold.'
+  verifier: 'all goals must pass on idc03: (1) curl -sf http://100.102.134.91:11023/v1/health -> 200; (2) doc counts
+    match pre-run export counts in comms; (3) du -sh ~/.config/containers/mddb/data/mddb.db < 9G; (4) idc02 follower
+    (100.123.163.11:11023) catches up or is re-seeded and serves /v1/health 200; (5) POST /v1/vector-search returns
+    results. Any failure => rollback and hold.'
+  status: queued
+  lane: codemod
+awaiting_action: true
