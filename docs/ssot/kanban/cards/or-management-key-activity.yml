@@ -1,7 +1,7 @@
 id: or-management-key-activity
 title: OR management key for per-call activity attribution
 column: backlog
-updated: 2026-11-12 14:11
+updated: 2026-11-12 16:21
 spec: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
   is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
   tooling.'
@@ -12,3 +12,20 @@ comms:
   text: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
     is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
     tooling.'
+- at: 2026-11-12 16:21
+  from: devin
+  text: 'raised request create-an-openrouter-management-key-dash-bae1d6: Create an OpenRouter management key (dashboard
+    -> Keys -> management) so /api/v1/activity gives per-call spend attributi'
+requests:
+- id: create-an-openrouter-management-key-dash-bae1d6
+  ask: Create an OpenRouter management key (dashboard -> Keys -> management) so /api/v1/activity gives per-call
+    spend attribution next time? Stored to ~/.config/secrets/ on dell+idc03.
+  status: open
+  at: 2026-11-12 16:21
+  from: devin
+  options:
+  - id: create-mgmt-key
+    label: I'll create it and hand it over
+  - id: skip
+    label: skip — infer from logs is enough
+  suggested: create-mgmt-key
