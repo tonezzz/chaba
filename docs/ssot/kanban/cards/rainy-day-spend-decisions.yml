@@ -1,7 +1,7 @@
 id: rainy-day-spend-decisions
 title: Rainy-day spend decisions — OR credit + Devin default model
 column: backlog
-updated: 2026-11-12 08:41
+updated: 2026-11-12 08:49
 brief: 'Two Tony calls blocking the next spend-reduction steps: (a) $10 OpenRouter credit — unlocks 1000/day :free
   models (vs 50) + paid pass-through so we can bench DeepSeek V4 Flash (~$0.05-0.11/session) as the cheap code brain.
   (b) Devin default model is swe-2-high (expensive tier); a free model is available per Tony 2026-11-09 — need the
@@ -14040,6 +14040,12 @@ comms:
   from: devin
   text: 'raised request three-tony-side-unblockers-1-top-up-the-06e1ea: Three Tony-side unblockers: (1) top up the
     approved 0 on openrouter.io, (2) rotate the expired OR key per SEC-0505, (3) '
+- at: 2026-11-12 08:49
+  from: tony
+  text: 'answered three-tony-side-unblockers-1-top-up-the-06e1ea: 2'
+- at: 2026-11-12 08:49
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: approve-10-usd-openrouter-credit-unlocks-6e9934
   ask: Approve 10 USD OpenRouter credit — unlocks 1000/day :free models + DeepSeek V4 Flash code bench (~0.05-0.11
@@ -14068,12 +14074,14 @@ requests:
   ask: 'Three Tony-side unblockers: (1) top up the approved 0 on openrouter.io, (2) rotate the expired OR key per
     SEC-0505, (3) reply with the free Devin model slug (run ''devin models'' or pick in /model picker). I do the
     litellm model-group + bench + config.json write once unblocked.'
-  status: open
+  status: answered
   at: 2026-11-12 08:41
   from: devin
   options:
   - proceed
   - hold
+  answer: '2'
 action:
   type: dispatch
   status: idle
+awaiting_action: true
