@@ -1,7 +1,7 @@
 id: keywatch-absolute-spend-floor
 title: 'key-watch: warn on absolute remaining + spend rate'
-column: backlog
-updated: 2026-11-12 16:26
+column: doing
+updated: 2026-11-12 16:28
 spec: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
   $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to catch
   spend velocity. scripts/ops/key-watch.py.
@@ -15,6 +15,9 @@ comms:
 - at: 2026-11-12 16:26
   from: devin
   text: re-spawned from report page
+- at: 2026-11-12 16:28
+  from: idc02
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -38,4 +41,6 @@ action:
     - budget_usd<=2.0
     - max_turns=40
   lane: paid_frontier
-  status: queued
+  status: running
+  agent_profile: branch-code-supervised-pilot
+  runner: idc02
