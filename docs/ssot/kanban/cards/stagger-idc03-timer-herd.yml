@@ -1,0 +1,19 @@
+id: stagger-idc03-timer-herd
+title: Stagger idc03 timer herd — ~25 jobs fire at :00/:30 and congest board-api/CMS
+column: backlog
+updated: 2026-11-12 10:37
+priority: medium
+tags:
+- ops
+- timers
+- congestion
+note: '2026-11-12 sweep RCA: ~25 idc03 timers share on_calendar *:0/30 or :00 — they fire simultaneously, hammer
+  board-api serialized writes + CMS + MDDB -> RemoteDisconnected/timeout failures (kanban-brief, starboard, standard-drift,
+  scenario-smoke, sentinel SKIPs). Comment-throttle shipped (6fac535ac6) removes ~200 writes/hr, but the request
+  herd remains. Fix options: (a) jitter — change on_calendar to per-job offsets (*:3/30, *:7/30, *:11/30...) in
+  ssot.jobs.yml then render+install; (b) systemd Rand'
+ref: OPS-0038
+comms:
+- at: 2026-11-12 10:37
+  from: devin
+  text: card captured via board-api
