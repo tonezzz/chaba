@@ -1,0 +1,12 @@
+id: mddb-ops-regrowth-watch
+title: 'mddb-ops regrowth: 2.8G→6.0G in ~1 month post-compaction'
+column: backlog
+updated: 2026-11-12 16:25
+spec: mddb-ops compacted 31G→2.8G is back at 6.0G (~1G/wk from host-logs churn). Check whether delete-rewrite cycles
+  outrun FREELIST_SYNC, and whether telemetry-prune retention is the right lever vs periodic compaction. Low urgency
+  — review at ~10G.
+ref: MEM-0070
+comms:
+- at: 2026-11-12 16:25
+  from: devin
+  text: card captured via board-api
