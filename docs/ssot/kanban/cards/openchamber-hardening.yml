@@ -1,7 +1,7 @@
 id: openchamber-hardening
 title: OpenChamber (ada-ocb) hardening
 column: doing
-updated: 2026-11-12 13:09
+updated: 2026-11-12 13:21
 brief: 'Post-merge hardening for OpenChamber on tony-dell (ada-ocb tab). Done 2026-11-12 via PRs 152+153: localhost-only
   bind, ssot.health coverage (unit + :8443 surface), monthly update timer, audit declaration. Remaining: passkey
   registration (Tony browser action), CF public edge (opt-in — see ada-ocb-public-edge).'
@@ -32,6 +32,11 @@ comms:
 - at: 2026-11-12 13:09
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-12 13:21
+  from: devin
+  text: 'CF edge built per ''build CF edge'' answer — see ada-ocb-public-edge for the full record (DNS, opencode-ada
+    Access app, idc02 caddy block, iframe re-mutated, PR #154). Remaining open item on this card: passkey registration
+    on the new ada-ocb.surf-thailand.com origin — Tony browser action, one-time.'
 requests:
 - id: two-tony-actions-remain-a-passkey-log-in-45b1da
   ask: 'Two Tony actions remain: (a) passkey — log into https://tony-dell.taila0626a.ts.net:8443 (or via ada-ocb
@@ -40,7 +45,6 @@ requests:
     the public ada-ha URL / phone off-tailnet? Reuses the ada-code CF Access pattern; exposes an agent console publicly
     (CF Access + its own password, i.e. two auth layers).'
   status: answered
-  answer: build CF edge
   at: 2026-11-12 12:26
   from: devin
   options:
@@ -48,4 +52,5 @@ requests:
   - skip passkey
   - build CF edge
   - skip CF edge
+  answer: build CF edge
 awaiting_action: true
