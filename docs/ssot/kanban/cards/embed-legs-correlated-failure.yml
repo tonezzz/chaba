@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
 column: backlog
-updated: 2026-11-12 16:26
+updated: 2026-11-12 17:50
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -23,11 +23,18 @@ comms:
   from: devin
   text: 'raised request root-cause-found-gemini-429-quota-exhaus-73c15d: Root cause found (Gemini 429 quota exhaustion
     + OR over-cap). Probe now pages degradation/recovery. Close after first em'
+- at: 2026-11-12 17:50
+  from: tony
+  text: 'answered root-cause-found-gemini-429-quota-exhaus-73c15d: close-on-restore — auto-close when restored event
+    lands'
+- at: 2026-11-12 17:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
     after first embed_provider_restored event?
-  status: open
+  status: answered
   at: 2026-11-12 16:26
   from: devin
   options:
@@ -36,3 +43,5 @@ requests:
   - id: keep-open
     label: keep open for multi-key rotation work
   suggested: close-on-restore
+  answer: close-on-restore — auto-close when restored event lands
+awaiting_action: true
