@@ -1,0 +1,18 @@
+id: dispatch-retry-storm-worktree-flood
+title: Dispatch retry loop spawned ~125 worktrees on omen (Nov 8-9) — needs dedupe/backoff
+column: backlog
+updated: 2026-11-12 12:25
+priority: high
+tags:
+- dispatch
+- ops
+note: 'Omen accumulated ~130 dispatch worktrees in ~36h: the same 3-4 cards (timer-log-shipper-severe, timer-log-shipper-on-idc03-fai,
+  timer-ada-scenario-smoke, ada-proactive-digest-morning-b) re-dispatched every ~15-30min on Nov 8, more on Nov
+  9. Nearly all clean spawn-and-die at 5 base commits — the dispatchers are retrying failed cards without backoff/dedupe.
+  131 swept 2026-11-12 (clean removed, 7 dirty salvaged to ~/wt-salvage). Fix: dispatch retry needs per-card backoff
+  + a cap on live retries, an'
+ref: OPS-0039
+comms:
+- at: 2026-11-12 12:25
+  from: devin
+  text: card captured via board-api
