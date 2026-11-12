@@ -1,0 +1,46 @@
+id: idc03-writer-hardening-index-lock-race-l-f77129
+title: idc03 writer hardening — index.lock race, .local-conflict debris, report-watch ping-pong
+column: backlog
+updated: 2026-11-12 16:37
+tags:
+- ops
+- idc03
+- served-checkout
+- kanban
+spec: 'Root-cause follow-up to 2026-11-12 served-checkout-unhealthy flag (235 ahead). VERDICT: writer is self-healing
+  — every ~15min kanban-commit cycle pulls+reconciles+pushes; backlog drained 235→~2 by 16:31. Accumulation cause:
+  2 blocked cycles overnight (index.lock race 05:43 — a live git process held index.lock so commit failed outright;
+  pull-needs-manual-resolution 06:29) + high board-api write volume (each /card|/comment|/action|/inbox = 1 commit;
+  65 unpushed at one point — normal lag, drains on push).
+
+
+  RESIDUAL HARDENING:
+
+  1. index.lock resilience — kanban-commit.sh fails outright when .git/index.lock exists; add stale-lock recovery
+  (if holder pid dead or lock >N min old, remove+retry once) so one crashed git op cannot stall the writer for cycles.
+
+  2. .local-conflict debris — 18 TRACKED docs/ssot/focus-inbox/*.local-conflict-* files committed on the writer
+  (reconcile stashes non-card conflict sides as files; nothing cleans/reviews them). Needs a policy: review-then-delete,
+  and probably exclude *.local-conflict-* from kanban-commit''s scoped add.
+
+  3. report-watch placeholder<->healed ping-pong — two writers touch the same focus-inbox items: report-watch job
+  stamps processed_reason ''healed — node reports delta'' while an SSOT-validation-cleanup writer regenerates fuller
+  ''Report watch recovered'' placeholders; consecutive pulls re-conflict on the same files (seen 2026-11-11/12,
+  e.g. 2026-11-11-092222-report-watch-chaba-nest.yml.local-conflict-205750 + -211251). Writers should stop re-touching
+  processed items or write identical convergent content.
+
+  4. board-render.lock held >60s on nearly every pull cycle — lock contention stalls board-api writes >60s (observed
+  this session: POSTs time out but land eventually). Investigate who holds it so long.
+
+
+  Not fixed intentionally: no manual git surgery on the live writer — converged on its own.'
+action:
+  type: manual
+ref: OPS-0072
+comms:
+- at: 2026-11-12 16:37
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-12 16:37
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
