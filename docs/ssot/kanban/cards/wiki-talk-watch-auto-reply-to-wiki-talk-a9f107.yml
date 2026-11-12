@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
-column: backlog
-updated: 2026-11-12 17:34
+column: doing
+updated: 2026-11-12 17:35
 tags:
 - wiki
 - dispatch
@@ -27,9 +27,15 @@ spec: "Supersedes manual card wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 (p
   \ Education_talk:Ada-Ocb-Card-Runner as precedent (rev 243)."
 action:
   type: dispatch
-  status: queued
+  status: running
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: tony-omen
 ref: OPS-0074
 comms:
 - at: 2026-11-12 17:34
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 17:35
+  from: tony-omen
+  text: claimed
