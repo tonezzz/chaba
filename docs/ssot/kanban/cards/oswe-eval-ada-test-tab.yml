@@ -1,7 +1,7 @@
 id: oswe-eval-ada-test-tab
 title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
 column: backlog
-updated: 2026-11-12 15:10
+updated: 2026-11-12 15:11
 brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
   (OSWE first) on ada-ha chaba-admin.
 priority: medium
@@ -29,3 +29,10 @@ comms:
 - at: 2026-11-12 15:10
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 15:11
+  from: devin
+  text: 'Prep done 2026-11-12 on tony-dell: ~/CascadeProjects/open-swe cloned (0dd610f), uv venv + uv sync --all-extras
+    OK, mda-cli cargo build OK (release, 2m47s), pnpm install OK, open-swe-postgres container up on 127.0.0.1:5433
+    (podman; note docker on dell IS podman — needs docker.io/ prefix; docker compose plugin absent so ran container
+    directly, spec from compose.yaml). .env.tmpl staged with generated TOKEN_ENCRYPTION_KEY/DASHBOARD_JWT_SECRET/REMOTE_RUNTIME_TOKEN_SECRET
+    and 13 __GATE__ placeholders.'
