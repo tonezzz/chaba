@@ -129,8 +129,9 @@ REMOTE="${UPSTREAM%%/*}"
 REF="${UPSTREAM#*/}"
 [ "$REF" = "$REMOTE" ] && REF=""   # upstream without slash (unlikely)
 
+FETCH_FAILED=""
 git fetch -q "$REMOTE" ${REF:+"$REF"} >/dev/null 2>&1 \
-  || git fetch -q "$REMOTE" >/dev/null 2>&1 || true
+  || git fetch -q "$REMOTE" >/dev/null 2>&1 || FETCH_FAILED=1
 
 _is_tracked() { git ls-files --error-unmatch -- "$1" >/dev/null 2>&1; }
 
@@ -514,6 +515,16 @@ COLGUARD="$REPO/scripts/board/card-column-guard.py"
 
 if _pull_needed; then
   _pull_phase
+elif [ -n "${FETCH_FAILED:-}" ]; then
+  # The stale local upstream ref passing the ancestor check is what makes
+  # a dead fetch look like "nothing to do" — exec checkouts sat 4.75h
+  # behind during the 2026-11-12 egress outage while every hourly run
+  # printed the skip line and exited 0 (card tony-omen-chaba-repo-sync-
+  # silently-stale). Exit non-zero so the timer-alert surface sees it.
+  UP_TS="$(git reflog show -1 --format=%cd --date=iso "$UPSTREAM" \
+           2>/dev/null || echo "never fetched")"
+  echo "git-safe-pull: fetch failed — cannot confirm $UPSTREAM (last ref update $UP_TS); checkout may be silently drifting" >&2
+  exit 1
 else
   echo "git-safe-pull: upstream already in HEAD — skipped board lock + pull phase" >&2
 fi
