@@ -1,7 +1,7 @@
 id: ada-status-live-state-preference
 title: 'ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags'
 column: doing
-updated: 2026-11-12 06:48
+updated: 2026-11-12 09:59
 priority: high
 tags:
 - ada
@@ -25,13 +25,13 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: failed
-  runner: tony-omen
-  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) TTER_IM_MODULE='''' SDL_IM_MODULE=''''
-    XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-ada-status-live-state-preference-1794225961.service:
-    Consumed 1.892s CPU time over 1h 29.693s wall clock time, '
+  status: queued
   sweep:
     failed_noted: 2026-11-09 20:19
+  last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) TTER_IM_MODULE=''''
+    SDL_IM_MODULE='''' XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-ada-status-live-state-preference-1794225961.service:
+    Consumed 1.892s CPU time over 1h 29.693s wall clock time, '
+  attempts: 1
 ref: ADA-1294
 comms:
 - at: 2026-11-09 18:36
@@ -134,3 +134,6 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-12 09:59
+  from: devin
+  text: retry requested
