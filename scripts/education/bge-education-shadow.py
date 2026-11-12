@@ -48,7 +48,7 @@ def main():
     parser.add_argument("--adapter", required=True)
     parser.add_argument("--index", required=True)
     parser.add_argument("--base",
-                        default="http://100.102.134.91:11028/v1")
+                        default="http://100.123.163.11:11028/v1")
     parser.add_argument("--output", required=True)
     parser.add_argument(
         "--collections", default="bge-lessons-shadow",

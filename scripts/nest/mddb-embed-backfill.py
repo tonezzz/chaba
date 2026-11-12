@@ -21,7 +21,7 @@ import urllib.request
 import urllib.error
 
 SRC = "http://100.102.134.91:11023/v1"
-DST = "http://100.102.134.91:11028/v1"
+DST = "http://100.123.163.11:11028/v1"
 COLLECTION = "ada-ha-bank-devin-tony"
 
 

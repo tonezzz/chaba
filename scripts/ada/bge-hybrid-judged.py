@@ -86,7 +86,7 @@ def main():
     ap.add_argument("--index", default=os.path.expanduser(
         "~/.local/share/bge-hybrid/docs.json"))
     ap.add_argument("--base", default=os.environ.get(
-        "BGE_HYBRID_MDDB_URL", "http://100.102.134.91:11028/v1"))
+        "BGE_HYBRID_MDDB_URL", "http://100.123.163.11:11028/v1"))
     ap.add_argument("--adapter",
                     default="scripts/ada/bge-hybrid-recall.py")
     ap.add_argument("--evalmod",
