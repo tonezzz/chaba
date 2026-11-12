@@ -36,7 +36,7 @@ Env:
     ~/.config/secrets/litellm-chaba.env then mddb-gemini.env
   EMBED_LANE_DIR              store dir (default ~/.local/share/embed-lane)
   BOARD_API                   lesson read door (default tailnet board-api)
-  MDDB_EMBED_URL              banks target (default 100.102.134.91:11028)
+  MDDB_EMBED_URL              banks target (default 100.123.163.11:11028)
 
 Run where the store is consumed: news-digest + edu surfaces live on
 idc03 — declared jobs write ~/var/embed-lane there; ad-hoc runs write
@@ -65,7 +65,7 @@ BOARD_API = os.environ.get(
 WP_PUBLIC = os.environ.get(
     "WP_PUBLIC", "https://boards.surf-thailand.com/wp")
 MDDB_EMBED = os.environ.get(
-    "MDDB_EMBED_URL", "http://100.102.134.91:11028")
+    "MDDB_EMBED_URL", "http://100.123.163.11:11028")
 EMBED_DIR = os.environ.get(
     "EMBED_LANE_DIR", os.path.expanduser("~/.local/share/embed-lane"))
 

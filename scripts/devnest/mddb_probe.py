@@ -41,7 +41,7 @@ BANKS = {
     "main": "http://idc03:11023",
     "ops": "http://idc03:11026",
     "cms": "http://idc03:11027",
-    "embed": "http://idc03:11028",
+    "embed": "http://idc02:11028",
 }
 
 PAGE = 5000          # matches prune-old-docs.py — stays ~1s even deep

@@ -22,7 +22,7 @@ from collections import Counter, defaultdict
 
 
 DEFAULT_BASE = os.environ.get("BGE_HYBRID_MDDB_URL",
-                              "http://100.102.134.91:11028/v1").rstrip("/")
+                              "http://100.123.163.11:11028/v1").rstrip("/")
 DEFAULT_INDEX = os.path.expanduser(
     os.environ.get("BGE_HYBRID_INDEX",
                    "~/.local/share/bge-hybrid/docs.json"))

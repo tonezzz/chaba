@@ -1653,15 +1653,6 @@ hosts:
         expected_state: active
         critical: false
         note: No-embed ops instance on :11026 — host-logs/host-logs-state collections
-      - name: mddb-embed.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "Local-embedding bank on :11028 — same collection names as leader,
-          embeds via embed-pool-shim (:11436) racing fleet ollama bge-m3
-          (1024d) instead of the gemini proxy (MEM-0788/MEM-0805);
-          ada-ha-bank-devin-tony backfilled 2560/2560 2026-10-23"
       - name: kkmac-ollama-tunnel.service
         type: service
         scope: user
@@ -2137,6 +2128,15 @@ hosts:
         critical: false
         note: Second /v1/systemone decision service on tailnet :8777 —
           coexists with the omen instance (verified healthy 2026-09-30)
+      - name: mddb-embed.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Local-embedding bank on :11028 — same collection names as
+          leader, embeds via embed-pool-shim on idc03 (:11436) racing fleet
+          ollama bge-m3 (1024d); relocated idc03→idc02 2026-11-12 to offload
+          the hot box (card mddb-embed-relocate-idc03-to-idc02)"
       - name: vcast-real@6.service
         type: service
         scope: user

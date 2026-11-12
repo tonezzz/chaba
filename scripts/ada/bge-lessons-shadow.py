@@ -19,7 +19,7 @@ from html.parser import HTMLParser
 BOARD_API = os.environ.get(
     "BOARD_API", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 MDDB = os.environ.get(
-    "BGE_HYBRID_MDDB_URL", "http://100.102.134.91:11028/v1").rstrip("/")
+    "BGE_HYBRID_MDDB_URL", "http://100.123.163.11:11028/v1").rstrip("/")
 COLLECTION = "bge-lessons-shadow"
 
 
