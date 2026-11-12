@@ -1,7 +1,7 @@
 id: mddb-backup-tier2-idc02
 title: 'Off-host backup tier: idc03 leader/cms sets → idc02'
 column: backlog
-updated: 2026-11-12 14:13
+updated: 2026-11-12 14:48
 spec: 'idc02 already stores its own compressed mddb-ops backup (75M). Add an off-host copy tier: rsync/scp the gzipped
   leader + cms sets from idc03 to idc02 ~/mddb-backups-tier2/ after nightly backup, same 3-day retention. LAN-cheap
   insurance against idc03 loss (90% disk).'
@@ -10,3 +10,10 @@ comms:
 - at: 2026-11-12 14:13
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 14:48
+  from: devin
+  text: 'Done 2026-11-12. ~/mddb-tier2-pull.sh on idc02 rsyncs idc03:~/mddb-backups/*.db.gz → ~/mddb-backups-tier2/
+    daily at 05:00 (after idc03''s 02:30 backup), 3-day retention, enabled via mddb-tier2-pull.timer. Pull verified
+    (rsync works both directions). Also: in-place gzip -9 of idc03''s 92G uncompressed backup backlog is running
+    now — frees ~75G on the 90%-full disk AND makes today''s sets tier-2-eligible tonight. Fixed idc03 INSTANCES
+    dropping relocated mddb-embed (idc02''s script covers it).'
