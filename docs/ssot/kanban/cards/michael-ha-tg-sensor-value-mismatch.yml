@@ -1,7 +1,7 @@
 id: michael-ha-tg-sensor-value-mismatch
 title: 'Michael HA: sensor values in TG reports differ from michael-ha'
 column: doing
-updated: 2026-11-12 15:07
+updated: 2026-11-12 15:10
 spec: 'Michael noticed the sensor values sent via TG (weather-bakeoff / rain-watch reports) differ from what michael-ha
   shows. Suspects: (a) relay 127.0.0.1:18123 landing on the wrong HA instance; (b) weather-bakeoff reading a different
   entity/source than the HA dashboard; (c) stale/cached values or unit bucketing. Verify by fetching the same entity
@@ -11,3 +11,10 @@ comms:
 - at: 2026-11-12 15:07
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 15:10
+  from: devin
+  text: 'ROOT CAUSE + FIX 2026-11-12. No data bug — a source/unit mismatch: TG NOW line showed RK600 station measured
+    values (m/s wind) while Michael''s HA weather card shows weather.forecast_home (met.no): temp/humidity/wind
+    km/h. e.g. at check time RK600 31.1°C·60.6%·2.0km/h vs HA-FC 30.0°C·62%·22.3km/h·rainy — legitimately different
+    instruments. Fix in weather-bakeoff.py (served+exec checkouts): (1) NOW line now appends ''HA-FC NOW: 30.0°C
+    · 62% RH · wind 22.3km/h · rainy'' — the exact numbers on Michael'
