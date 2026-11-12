@@ -1,0 +1,14 @@
+id: prune-old-docs-log-expired-count-separat-fb03e3
+title: 'prune-old-docs: log expired count separately from deleted'
+column: backlog
+updated: 2026-11-12 08:54
+brief: Sweep log line reads deleted N/M where M=scanned - under the offset race a run can print deleted 0/25313
+  while thousands of stale docs exist, misleading operators into thinking the collection is clean. Add expired_seen
+  counter (docs matching the stale predicate during enumeration, independent of delete attempts) so the line reads
+  expired E, deleted D, scanned S. 5-line change in sweep(); mirror in device-telemetry prune.py.
+priority: low
+ref: OPS-0034
+comms:
+- at: 2026-11-12 08:54
+  from: tony
+  text: card captured via board-api
