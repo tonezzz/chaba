@@ -30,6 +30,17 @@ corpus must stay on ONE path or scores collapse to ~0.
   Both fallbacks are different spaces — degraded-emergency only.
 - Response `fallback` field reports which provider served each request
   (`google/gemini-embedding-2` = OR, `nomic-embed-text` = Ollama).
+- Ops paging (2026-11-12, card mddb-circuit-open-page): the proxy emits
+  ops-event docs into `ada-ha-events-tony` at failure time —
+  `embed_circuit_open` when a provider circuit trips closed→open,
+  `embed_providers_down` after `EMBED_FAIL_ALERT_AFTER` (3) consecutive
+  failed embed requests, `embed_provider_restored` on recovery. Emits
+  are fire-and-forget POSTs to `MDDB_OPS_URL` (default
+  `http://100.102.134.91:11023`), rate-limited `OPS_ALERT_MIN_MS`
+  (15min) per type, and `/health` exposes `embed.consecutive_failures`
+  / `failures_total` / `last_error` so mddb-embed-probe corroborates.
+  Deploy = copy the .mjs into `~/.config/containers/mddb/proxy/` +
+  `systemctl --user restart gemini-ollama-proxy`.
 
 ## Rollback to direct Gemini (kept for later)
 

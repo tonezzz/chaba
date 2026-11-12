@@ -47,6 +47,56 @@ let lastBackupProvider = null;
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
+// ---- ops-event emit ------------------------------------------------------
+// Same door as scripts/ada/embed-probe.py::_emit — an ops-event doc in the
+// ada-ha-events collection (ops-digest flags the type, Ada surfaces read
+// it). The probe only polls every 15min, so a provider cap-hit ran silent
+// for ~30min on 2026-11-12 (298 failed embeds) before its next tick.
+// Emitting HERE at the circuit-open / failure-streak moment is what pages
+// at minute ~2 instead.
+const MDDB_OPS_URL = (process.env.MDDB_OPS_URL || "http://100.102.134.91:11023")
+  .replace(/\/+$/, "").replace(/\/v1$/, "");
+const OPS_COLLECTION = process.env.ADA_OPS_COLLECTION || "ada-ha-events-tony";
+// N consecutive failed embed requests before embed_providers_down fires.
+const EMBED_FAIL_ALERT_AFTER = parseInt(process.env.EMBED_FAIL_ALERT_AFTER || "3", 10);
+// Min gap between repeat emits of the same event type (flap damping).
+const OPS_ALERT_MIN_MS = parseInt(process.env.OPS_ALERT_MIN_MS || "900000", 10);
+const opsAlertSentAt = {};
+let consecutiveEmbedFailures = 0;
+let embedFailuresTotal = 0;
+let embedOkTotal = 0;
+let lastEmbedError = null;
+let alertedProvidersDown = false;
+
+function emitOpsEvent(evType, detail) {
+  const now = Date.now();
+  if (now - (opsAlertSentAt[evType] || 0) < OPS_ALERT_MIN_MS) return;
+  opsAlertSentAt[evType] = now;
+  const ts = new Date().toISOString();
+  const body = JSON.stringify({
+    collection: OPS_COLLECTION,
+    key: `ops-embed-proxy-${evType}-${ts.replace(/[-:T.]/g, "").slice(0, 14)}`,
+    lang: "en",
+    contentMd: detail,
+    meta: {
+      kind: ["ops-event"], type: [evType], instance: ["tony"],
+      session_id: ["gemini-ollama-proxy"], ts: [ts],
+    },
+  });
+  // Fire-and-forget — alerting must never delay or fail the embed path.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  fetch(`${MDDB_OPS_URL}/v1/add`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    signal: ctrl.signal,
+  })
+    .then(() => console.log(`ops event ${evType} emitted`))
+    .catch((e) => console.log(`ops event write failed (${evType}): ${e.message}`))
+    .finally(() => clearTimeout(timer));
+}
+
 // Alias map — anything unmapped falls through to GEMINI_EMBEDDING_MODEL
 // (the active space). Deliberately no text-embedding-004 → -001 alias:
 // -001 is a different vector space than -2 and would poison the index.
@@ -246,6 +296,12 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       } catch (err) {
         console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
         orCircuitOpenUntil = Date.now() + OR_CIRCUIT_COOLDOWN_MS;
+        // Circuit closed->open transition (inside !orCircuitOpen branch):
+        // a key/spend-cap failure pages now, not at the next probe tick.
+        emitOpsEvent("embed_circuit_open",
+          `OpenRouter embed circuit OPEN for ${OR_CIRCUIT_COOLDOWN_MS / 1000}s — ` +
+          `${String(err.message).slice(0, 200)} — ` +
+          `serving direct-Gemini fallback while it holds`);
       }
     }
     // Same-space fallback: embed-bench verified direct Gemini
@@ -380,6 +436,9 @@ async function handleEmbed(req, res) {
           console.log(
             `Gemini failed (${err.message.slice(0, 80)}); circuit open ${CIRCUIT_COOLDOWN_MS / 1000}s`
           );
+          emitOpsEvent("embed_circuit_open",
+            `Gemini embed circuit OPEN for ${CIRCUIT_COOLDOWN_MS / 1000}s — ` +
+            `${String(err.message).slice(0, 200)} — routing to backup chain`);
           chunkEmbeddings = await fetchBackupBatch(
             chunk, geminiModel, outputDimensionality, true);
           usedFallback = true;
@@ -388,8 +447,29 @@ async function handleEmbed(req, res) {
       embeddings.push(...chunkEmbeddings);
     }
   } catch (err) {
+    consecutiveEmbedFailures++;
+    embedFailuresTotal++;
+    lastEmbedError = String(err.message).slice(0, 200);
+    if (!alertedProvidersDown &&
+        consecutiveEmbedFailures >= EMBED_FAIL_ALERT_AFTER) {
+      // N consecutive dead requests = all same-space providers down
+      // (cap-hit, quota outage). Once per episode; restored event re-arms.
+      alertedProvidersDown = true;
+      emitOpsEvent("embed_providers_down",
+        `${consecutiveEmbedFailures} consecutive embed failures — ` +
+        `last: ${lastEmbedError} — circuit or_open=${Date.now() < orCircuitOpenUntil} ` +
+        `gemini_open=${Date.now() < geminiCircuitOpenUntil}`);
+    }
     return sendJson(res, 502, { error: err.message });
   }
+  if (alertedProvidersDown) {
+    alertedProvidersDown = false;
+    emitOpsEvent("embed_provider_restored",
+      `embeds serving again after ${consecutiveEmbedFailures} consecutive ` +
+      `failure(s) — provider=${usedFallback ? lastBackupProvider : geminiModel}`);
+  }
+  consecutiveEmbedFailures = 0;
+  embedOkTotal++;
   const end = process.hrtime.bigint();
   const durationMs = Number((end - start) / 1000000n);
 
@@ -432,6 +512,12 @@ const server = createServer((req, res) => {
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,
+      },
+      embed: {
+        consecutive_failures: consecutiveEmbedFailures,
+        failures_total: embedFailuresTotal,
+        ok_total: embedOkTotal,
+        last_error: lastEmbedError,
       },
       last_backup_provider: lastBackupProvider,
     });
