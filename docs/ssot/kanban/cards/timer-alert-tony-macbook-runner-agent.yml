@@ -1,6 +1,6 @@
 id: timer-alert-tony-macbook-runner-agent
 title: Timer runner-agent on tony-macbook failing
-column: backlog
+column: done
 updated: 2026-11-12 10:43
 priority: high
 tags:
@@ -888,7 +888,12 @@ comms:
 - at: 2026-11-12 10:43
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 10:43
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `runner-agent.service` on `tony-macbook` which resulted in a signal on the last
   run (11-08 15:46). Access the host to inspect the journal using `journalctl --user -u runner-agent.service` and
   review CMS `timer-timeline-tony-macbook` for context. The done-condition is verified when the root cause of the
   signal termination is identified and documented or the service is successfully stabilized.
+action:
+  status: done
