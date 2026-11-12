@@ -1,8 +1,8 @@
 id: ada-consultant-bench-harness
 title: ada-consultant bench harness — per-model runner so the held bench card runs as script cards, not a Devin
   session
-column: backlog
-updated: 2026-11-09 17:05
+column: done
+updated: 2026-11-12 06:48
 priority: high
 tags:
 - ada
@@ -26,9 +26,92 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: queued
+  status: done
+  runner: tony-omen
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) _IM_MODULE='''' XMODIFIERS=''''
+    |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-ada-consultant-bench-harness-1794223099.service:
+    Consumed 1.549s CPU time over 45min 25.294s wall clock time, 20.3M memory peak, 96K'
+  sweep:
+    stale_running: 2026-11-09 19:04
+    session_gone: 2026-11-09 19:04
+    failed_noted: 2026-11-09 19:19
 ref: ADA-1283
 comms:
 - at: 2026-11-09 17:05
   from: tony
   text: queued for jules — harness makes the held consultant bench runnable as $0 script cards
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.28 > 0.85)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 18:18
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 18:18
+  from: chaba
+  text: started devin-task-ada-consultant-bench-harness-1794223099 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 19:03
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) _IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_CON'
+- at: 2026-11-09 19:04
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-consultant-bench-harness-1794223099 no longer active on tony-omen but card
+    still says running — sweeping its branch'
+- at: 2026-11-09 19:04
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-ada-consultant-bench-harness-1794223099 on tony-omen
+    — if the work was never pushed it may be gone'
+- at: 2026-11-09 19:19
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-consultant-bench-harness-1794223099 failed — its branch isn''t auto-merged
+    (unverified partial work). Retry the card or merge dispatch/ada-consultant-bench-harness-1794223099 by hand.'
+- at: 2026-11-09 19:37
+  from: devin
+  text: 'Devin verification 2026-11-09: Jules session completed and PR #135 is open (not merged). GitHub syntax
+    check passed; tests run against the exact PR head in isolation: 4/4 unit tests passed, and CLI --help passed.
+    No LiteLLM request was made (avoids model spend). This belongs in review, not done, until a human approves/merges
+    the PR. The runner''s ''no exit record'' failure is inconsistent with the completed Jules session and PR evidence.'
+- at: 2026-11-09 19:37
+  from: devin
+  text: moved doing -> review
+- at: 2026-11-09 19:44
+  from: devin
+  text: 'PR #135 merged by Tony on 2026-11-09 as 9ca978eb1b1e8a2e9c0c2aaf08acc7017fb31c2e. Devin verified the exact
+    PR head: 4/4 unit tests pass, CLI help passes, and GitHub syntax check passes; no live LiteLLM calls were made.'
+- at: 2026-11-09 19:44
+  from: devin
+  text: moved review -> done
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:21
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+review_kind: verify
+claim: {}

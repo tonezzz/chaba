@@ -1,0 +1,120 @@
+id: idc01-to-idc03-migration
+title: Migrate idc01 -> idc03 (maintenance window)
+column: done
+blocked_by: idc-vps-game
+note: 'Plan: provision idc03 (card idc-vps-game) -> mddb via replication (fork image follower on idc03 -> promote
+  -> idc02 re-points leader addr) -> edge: caddy-edge + DNS/CF to idc03 public IP -> small containers (ollama/input-bridge/vcast/gemini-proxy/mddb-panel)
+  via rsync+quadlet -> ada-* units + timers + secrets via rsync -> soak 24-48h.'
+help: 'Inventory (2026-10-05): 9 containers, ~20 systemd units+timers, ~/.config/secrets/*, ~26G state (17G mddb-backups,
+  4.1G mddb data, 3.8G ollama). Public edge: caddy-edge holds the VPS public 80/443. Portability standards to apply
+  while moving: state in ~/.local/share/<svc>/, secrets ~/.config/secrets/<svc>.env, quadlets rendered from stacks/<host>/<svc>/
+  (xmeye-vms is the model), images via podman image scp or the idc02 build host.'
+requests:
+- id: scope
+  ask: Migrate everything off idc03, or keep idc01 as edge/backup after maintenance?
+  status: answered
+  answer: everything to idc03 now.
+- id: idc03-ssh-access-tony-idc03-and-root-rej-308cc5
+  ask: 'idc03 ssh access: tony@idc03 and root@ reject all keys from tony-dell/idc01/idc02 (tailnet + public :22
+    answer but no authorized key). Please authorize tony-dell''s ed25519 key on idc03 via the Siamdata panel so
+    Phase 2 (baseline + capacity check) can start. Also confirm idc03 spec (vCPU/RAM/disk) from the provider panel.'
+  status: answered
+  answer: can you install keys from tony-omen?
+updated: 2026-11-09 20:08
+comms:
+- at: 2026-10-05 20:17
+  from: tony
+  text: 'answered scope: everything to idc03 now.'
+- at: 2026-10-05 21:40
+  from: devin
+  text: 'MIGRATED. idc03 tailnet 100.102.134.91 (public IP in ssot.values.yml). mddb leader moved (LSN continuity
+    kept via binlog copy — 139.16M); idc02 follower repointed, healthy lag 0. ada-pi-pwa+ha workers+relays+edges+doc-archive+jev-student+obsidian-vault+
+    vcast+input-bridge+mddb-panel live on idc03. api.surf-thailand.com DNS flipped (CF), certs carried over, public
+    path 200. 24 timers enabled on idc03, disabled on idc01. idc01 mddb MASKED (its restart timer split-brained
+    it — never unmask on this host). ~10+54 stray docs reconciled old->new leader. Sessions: repoint any 100.74.146.0
+    refs to 100.102.134.91; SSOT/memory updated.'
+- at: 2026-10-05 20:48
+  from: devin
+  text: answer recorded (migrate everything). Spec'd phase 1 = read-only inventory + plan doc; armed for dispatch
+    — press Start to run. Migration itself phases out per plan, each phase gated.
+- at: 2026-10-05 20:49
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 20:50
+  from: chaba
+  text: dispatched 20261005-205012-phase-1-inventory-plan-only-no on chaba
+- at: 2026-10-05 20:50
+  from: devin
+  text: 'Phase 1 started: reading SSOT + inventorying idc01/idc03 read-only.'
+- at: 2026-10-05 21:00
+  from: devin
+  text: 'Inventory done: 9 containers, 24 timers, 20 svc units, ~30G state, TLS routes mapped. idc03 ssh not authorized
+    for any key — capacity check pending (flagged). Writing plan doc.'
+- at: 2026-10-05 21:03
+  from: devin
+  text: 'Phase 1 done (read-only, no prod changes). Deliverable: docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+    + job artifact docs/ssot/jobs/infrastructure/2026-10-05-idc01-to-idc03-migration.yml. Inventory: 9 containers,
+    20 svc units, 22 enabled timers, ~30G state (12G essential), full port+TLS map. Found drift: idc01 is actually
+    2vCPU/31Gi (SSOT says 8-12G); input-bridge wildcard :3010; doc-archive :11025 undocumented; chaba-vault 41 dirty
+    files on idc01. BLOCKER for Phase 2: idc03 (157.85.'
+- at: 2026-10-05 21:03
+  from: devin
+  text: 'raised request idc03-ssh-access-tony-idc03-and-root-rej-308cc5: idc03 ssh access: tony@idc03 and root@
+    reject all keys from tony-dell/idc01/idc02 (tailnet + public :22 answer but no au'
+- at: 2026-10-05 21:04
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 21:04
+  from: chaba
+  text: 'auto-merge not done: worktree dirty (2 file(s)) — commit first — close will block until merged'
+- at: 2026-10-05 21:04
+  from: chaba
+  text: 'session end: worktree dispatch-wt-20261005-205012-phase-1-inventory-plan-only-no dirty — 2 uncommitted
+    file(s); commit or clean before pruning'
+- at: 2026-10-05 21:04
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261005-205012-phase-1-inventory-plan-only-no not in origin/master
+    — close will block until merged'
+- at: 2026-10-05 21:26
+  from: tony
+  text: 'answered idc03-ssh-access-tony-idc03-and-root-rej-308cc5: can you install keys from tony-omen?'
+- at: 2026-10-05 21:58
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-205012-phase-1-inventory-plan-only-no — 1 commit(s) not in
+    origin/master: Devin checkpoint for session quilted-jacket; worktree still dirty: 2 uncommitted file(s)'
+- at: 2026-10-06 09:44
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261005-205012-phase-1-inventory-plan-only-no — 2 commit(s) not in
+    origin/master: chore(dispatch): salvage uncommitted dispatch artifacts; Devin checkpoint for session quilted-jacket'
+- at: 2026-10-06 09:46
+  from: chaba
+  text: 'merge guard: dispatch/20261005-205012-phase-1-inventory-plan-only-no merged into origin/master'
+- at: 2026-10-06 09:46
+  from: tony
+  text: closed by Tony
+- at: 2026-10-06 09:46
+  from: chaba
+  text: session quilted-jacket… hidden
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0103'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (34d in done, board over card cap)
+spec: 'Phase 1 — inventory + plan only, NO changes to production. Tony''s decision: migrate EVERYTHING off idc01
+  onto idc03 (answered 2026-10-05). ssh tony@idc01 + tony@idc03. Produce docs/ssot/infrastructure/idc01-to-idc03-migration-plan.md
+  with: (a) full inventory of idc01 services/containers/quadlets/timers/cron + data dirs + ports + TLS routes, (b)
+  per-item migrate/retire decision and dependency order, (c) idc03 capacity check (RAM/disk), (d) cutover steps
+  + rollback per item, (e) what stays (if anything). Read-only commands only; do not stop, move, or change any service.
+  Flag items needing Tony approval for later phases.'
+action:
+  type: dispatch
+  repo: chaba
+  status: done
+  button: ▶ Plan migration
+  task_id: 20261005-205012-phase-1-inventory-plan-only-no
+  runner: tony-dell
+  result: 20261005-205012-phase-1-inventory-plan-only-no finished (inactive) — see `devin-dispatch logs 20261005-205012-phase-1-inventory-plan-only-no`
+claim:
+  since: 2026-10-05 20:50
+ref: OPS-0103

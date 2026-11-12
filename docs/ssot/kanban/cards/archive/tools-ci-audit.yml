@@ -1,0 +1,69 @@
+id: tools-ci-audit
+title: Tool-surface CI audit — lint, usage report, regression gate
+column: done
+blocked_by: chaba-ci-standard
+note: 'Tool standard rides the CI pipeline (chaba-ci-standard): tools-lint in ssot-validate (alias table complete,
+  count under budget, scenario coverage), weekly usage report -> report/tool-usage CMS page, regression scenarios
+  gate merge cards at review.'
+updated: 2026-11-09 20:08
+help: "Deliverables:\n1. scripts/tool-lint.py — fails on: tool declared without alias entry\n   when spec says absorbed;\
+  \ declared count > cap; tool with no\n   scenario file reference\n2. Wire into ssot-validate-all.mjs or ci runner\
+  \ as the audit stage\n3. scripts/tool-usage-report.py — journal scan -> CMS page\n   report/tool-usage (daily\
+  \ or weekly timer)\n4. Gate: tools-merge-* cards can't move to done until their family's\n   regression scenario\
+  \ exists and passes\n"
+spec: 'Make the tool-consolidation work self-auditing:
+
+  - tool-lint.py enforces the alias table and count cap
+
+  - a timer refreshes the usage report so census stays live
+
+  - merge cards can''t close without a passing scenario for their family
+
+  Read: docs/assessments/tool-consolidation-spec-2026-10-04.md,
+
+  scripts/ssot-validate-all.mjs, tool_runner._ALIASES once it exists.
+
+  '
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  task_id: 20261004-180803-make-the-tool-consolidation-wo
+  runner: tony-dell
+  result: 20261004-180803-make-the-tool-consolidation-wo finished (inactive) — see `devin-dispatch logs 20261004-180803-make-the-tool-consolidation-wo`
+comms:
+- at: 2026-10-04 18:06
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 18:08
+  from: chaba
+  text: dispatched 20261004-180803-make-the-tool-consolidation-wo on ada-pi
+- at: 2026-10-04 18:09
+  from: devin
+  text: session started — exploring worktree; spec/card files absent, will create them
+- at: 2026-10-04 18:22
+  from: devin
+  text: 'Done on dispatch/20261004-180803 (3d8656e, not pushed). Deliverables: scripts/tool-lint.py (count cap,
+    alias-table integrity, gate-set/benchmark resolution, scenario coverage w/ debt ratchet — runs in suite via
+    tests/test_tool_audit.py, 19 tests green), scripts/tool-usage-report.py + ada-tool-usage.{service,timer} (journal
+    scan -> CMS report/tool-usage daily), scripts/tools-merge-gate.py (tools-merge-* in done needs existing family
+    scenario + latest pass|flaky report; --card-id is the close-time'
+- at: 2026-10-04 18:24
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-04 18:51
+  from: devin
+  text: 'Merged to ada-pi main (3d8656e) + verified: 19/19 tool-audit tests green, tool-lint clean (106 declared,
+    43 coverage-debt warnings by design). ada-tool-usage timer install rides the next idc01 deploy.'
+- at: 2026-10-04 18:51
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: AUD-0025'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (36d in done, board over card cap)
+claim:
+  since: 2026-10-04 18:08
+ref: AUD-0025

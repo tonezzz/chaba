@@ -1,0 +1,35 @@
+title: Cross-repo lesson harvest — outcome lessons banked to mddb
+subtitle: lesson_primer corpus moves from chaba-root glob to the
+  devin-handoff bank so non-chaba dispatches contribute lessons
+id: 2026-11-09-cross-repo-lesson-harvest
+status: done
+project: chaba
+card: cross-repo-lesson-harvest
+started: '2026-11-09'
+completed: '2026-11-09'
+method_notes: |
+  dispatch_repos.close_out now runs bank_outcome_lessons(card, session)
+  before the merge path: it parses the session outcome doc's `lessons:`
+  list (worktree glob, falling back to `git ls-tree`/`git show` on the
+  session branch when the worktree is GC'd) and POSTs each line to
+  mddb /v1/add in ada-ha-bank-devin-handoff as lesson/<task_id>/<n>,
+  meta {kind:[lesson], job_id, repo, card, ts,
+  source:[dispatch-outcome]}. Upsert-by-key dedupes re-runs; failures
+  are stderr-warn only and ride the result as lesson_bank.error —
+  the write never gates the merge (mddb_job posture).
+  lesson_primer gains _bank_candidates(): kind=lesson docs fetched via
+  /v1/search (MDDB_BASE_URL, default http://100.102.134.91:11023/v1 —
+  the kanban-dispatch convention), 60s in-process cache (also caches
+  failures), fail-open stderr warn. Bank lessons rank at the
+  outcome-doc tier (rank 0); the repo-root glob remains as the
+  fallback corpus for docs predating bank writes. LESSON_BANK=0
+  disables both the writer and the reader source.
+verify: |
+  pytest tests/board green (506 passed, 6 skipped). Live loop probed
+  on mn01: /v1/add twice on one key -> single doc (dedupe),
+  lp._bank_docs()/_bank_candidates() returned it, /v1/delete cleanup.
+files:
+- scripts/board/dispatch_repos.py
+- scripts/board/lesson_primer.py
+- tests/board/test_dispatch_close_out.py
+- tests/board/test_lesson_primer.py

@@ -1,0 +1,37 @@
+id: rotate-key-updates-ada-code-env
+title: 'rotate-or-key.sh: update ada-code.env dependent on idc02 — pinned LITELLM_KEY broke ada-code after rotation
+  (ADA-1289)'
+column: done
+updated: 2026-11-09 18:10
+priority: high
+tags:
+- ops
+- litellm
+- bug
+- manual
+spec: 'Root cause of ADA-1289: weekly rotate-or-key.sh rotated LiteLLM keys but ~/.config/secrets/ada-code.env on
+  idc02 pins LITELLM_KEY — old key blocked, service broke (auth error in UI). Script already handles mddb-gemini.env
+  (mounted into the litellm container, local to idc03). DO: extend the rotation script to also rewrite LITELLM_KEY
+  in ada-code.env ON idc02 over ssh (BatchMode) and restart ada-code.service — same pattern, remote variant. Verify:
+  next rotation leaves ada-code serving.'
+action:
+  type: manual
+  status: done
+ref: OPS-1291
+comms:
+- at: 2026-11-09 18:09
+  from: tony
+  text: carding before implementing per open-ask rule; mirroring mddb-gemini.env handling
+- at: 2026-11-09 18:09
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 18:10
+  from: devin
+  text: 'DONE 2026-11-09 ~18:15 +07: mint-key.sh now captures the new key and syncs dependents by alias — alias
+    ada|ada-code rewrites LITELLM_KEY in ~/.config/secrets/ada-code.env on idc02 via ssh + restarts ada-code.service
+    (commit c8fca9fae0, writer; exec checkout picks it up on next repo-sync). Rotation path now covered end-to-end:
+    rotate->mint->dependent env+restart. Also updated ADA-1289: root cause chain was LiteLLM key rotation blocking
+    the pinned ada key — fresh key minted earlier (sk-yjyeQnI…, a'
+- at: 2026-11-09 18:10
+  from: devin
+  text: closed by devin

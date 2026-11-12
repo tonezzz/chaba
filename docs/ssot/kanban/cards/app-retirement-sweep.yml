@@ -1,0 +1,25 @@
+id: app-retirement-sweep
+title: Retire likely-dead apps — wiki docs + restore steps each
+column: backlog
+updated: 2026-11-10 07:04
+brief: Tony 2026-11-09 approved retiring likely-dead apps. Each gets docs/kb/retired-apps/<app>.md with restore
+  steps + status:retired markers; cline and node-red confirmed first.
+priority: medium
+tags:
+- retirement
+- cleanup
+- apps
+spec: 'Candidates (verify each is actually dead before retiring — check units, routes, consumers, last git activity):
+  cline (cline-kanban on con01 :3484, cline-intake.timer already skipping, cline.surf-thailand.com edge on idc02,
+  stacks/idc02/cline.*.caddy), node-red (on tony-omen :1880 per routes — SSOT ssot.apps.node-red.yml stale says
+  tony-dell; only demo/devnest-map flows), temp-graph, test-carplay, charts3d, pegion, thai-legal (marked offline-GPU-constraints),
+  notebooklm-v0, tailscale-funnel (legacy landing), raj (static preview), figma-gallery, dance2energy, gemini-mic-test,
+  and overlapping chat playgrounds neo-chat/chatlocal/chatllama/dev-v0 (propose keeping ONE). Per app: stop/disable
+  unit or container, remove route + apps.yml entry + HA dashboard tab if present, write docs/kb/retired-apps/<app>.md
+  (what it was, where it ran, how to restore), set status:retired in ssot.apps.*.yml. File a card request listing
+  the final retire/keep list for Tony sign-off BEFORE executing stops.'
+ref: OPS-1313
+comms:
+- at: 2026-11-10 07:04
+  from: tony
+  text: card captured via board-api

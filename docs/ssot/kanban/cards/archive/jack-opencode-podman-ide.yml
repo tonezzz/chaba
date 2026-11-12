@@ -1,0 +1,183 @@
+id: jack-opencode-podman-ide
+title: Create isolated Podman OpenCode IDE for Jack
+column: done
+updated: 2026-11-09 20:16
+brief: Provide Jack a disposable hands-on OpenCode Web/TUI environment without Ada/Devin memory, host secrets, or
+  production paths.
+priority: high
+program: devnest
+tags:
+- opencode
+- podman
+- jack
+- ide
+- isolation
+- devnest
+spec: Create a rootless Podman/Quadlet OpenCode IDE sandbox for Jack. Use a dedicated image/runtime, a dedicated
+  scratch Git workspace or seeded sample repo, loopback-only host binding initially, and a separate optional tailnet-authenticated
+  browser route only after the local smoke passes. Mount only the Jack workspace read/write; no host home, ~/.config/secrets,
+  SSH keys, Devin sessions, Ada MDDB, Chaba credentials, /dev devices, or Network=host. Give it a scoped LiteLLM
+  key through a host-only EnvironmentFile, no MCP by default, and a disposable OpenCode session/config directory.
+  Add health/readiness, resource caps, teardown/rollback, workspace reset, and an evidence report. Verify Jack can
+  open the UI, run a read-only explanation task, make a scratch edit, run tests, and cannot access a sentinel secret
+  or outside workspace. Keep devnest-ha separate and inactive.
+ref: OPS-0942
+comms:
+- at: 2026-10-27 16:51
+  from: tony
+  text: card captured via board-api
+- at: 2026-10-27 16:54
+  from: devin
+  text: 'Host recommendation: tony-dell for the supervised first pilot because OpenCode Web is already proven there
+    and no GPU is required. Keep it rootless/loopback-only initially; add a Tailscale-authenticated route only after
+    isolation tests. Consider idc02 later for always-on hosting. Do not use idc03 control-plane or devnest-ha sandbox.
+    Education lesson filed as WP post 2737.'
+- at: 2026-10-27 16:57
+  from: devin
+  text: 'Ingress recommendation: idc02 already has tailnet-only Tailscale Serve at `https://idc02.taila0626a.ts.net`
+    -> Caddy. After the isolated container is built, expose it behind a dedicated path such as `/apps/opencode-jack/`
+    with a Caddy upstream to the loopback OpenCode port. Target URL: `https://idc02.taila0626a.ts.net/apps/opencode-jack/`,
+    tailnet-only. No public port or direct container port. If Jack is not a member of the tailnet, use a Tailscale
+    share/ACL or an authenticated access layer befo'
+- at: 2026-10-27 16:59
+  from: devin
+  text: 'Access decision: if Jack cannot use Tailscale, use a public HTTPS hostname behind Cloudflare Access/Zero
+    Trust with email one-time PIN or allowlisted identity, reverse-proxying WebSockets to the isolated container.
+    Candidate URL: https://opencode-jack.surf-thailand.com/ (not live yet). A one-time registration link may enroll
+    Jack, but it must be HTTPS, short-lived, single-use, random, and exchange for a session/cookie; never put a
+    permanent bearer token in a bookmark/query URL. Fast fallback is '
+- at: 2026-10-27 17:01
+  from: devin
+  text: 'Clarification: support a human-pasted one-time pairing code in Chrome. Flow: Jack opens stable /enroll
+    URL, pastes a short random code, server verifies hashed single-use code with short TTL, consumes it, then issues
+    a Secure/HttpOnly/SameSite session cookie or Cloudflare Access enrollment session. Never send LLM/API/MCP access
+    keys to browser JS/localStorage; scoped LiteLLM credentials remain server/container-side. Jack bookmarks the
+    normal IDE URL after enrollment; Tony can revoke the session/c'
+- at: 2026-10-27 17:03
+  from: devin
+  text: 'VCAST pattern confirmed: reuse the existing one-time redeem flow (ada-key-url.sh -> /api/auth/redeem-token;
+    chaba-gate.html consumes one-time token and saves a browser session). For Jack, implement an OpenCode-specific
+    `/enroll` + `/redeem` gateway on idc02: paste code/URL in Chrome, single-use short-TTL token exchanges for a
+    Jack-scoped session cookie/ticket, browser saves the session, proxy gates the Podman OpenCode route. Do not
+    put the LiteLLM/MCP/host credentials in localStorage; only the s'
+- at: 2026-10-27 17:22
+  from: devin
+  text: 'Dependency landed: jack-ide stack on idc02 now includes a minimal isolated opencode pod (rootless, private
+    podnet, workspace+disposable-home mounts only, mcp:{}, 2G/200% caps) because the enrollment card needed a real
+    upstream. Remaining IDE hardening for this card: (1) dedicated jack-scoped spend-capped LiteLLM virtual key
+    — shared litellm-chaba key is a placeholder, /key/generate needs proxy admin on idc03; (2) seeded sample-repo
+    polish + teardown/rollback runbook refinement; (3) public CF Acc'
+- at: 2026-10-27 18:11
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 18:11
+  from: devin
+  text: 'Queued for DevNest processing. Remaining scope: create/verify Cloudflare Access or equivalent non-Tailscale
+    enrollment route, finish dedicated Jack LiteLLM key decision, seed sample workspace, and complete teardown/reset
+    evidence. Preserve the already-verified tailnet enrollment gateway; no public route is accepted without auth/WebSocket/isolation
+    smoke.'
+- at: 2026-10-27 18:12
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-27 18:12
+  from: idc02
+  text: claimed
+- at: 2026-10-27 18:12
+  from: chaba
+  text: started devin-task-20261027-181224-create-a-rootless-podman-quadl on idc02 (dispatch)
+- at: 2026-10-27 18:13
+  from: idc02
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261027-181224-create-a-rootless-podman-quadl.service:
+    Main process exited, cod'
+- at: 2026-10-27 18:13
+  from: chaba
+  text: pushed dispatch/20261027-181224-create-a-rootless-podman-quadl to origin
+- at: 2026-10-27 18:13
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-27 18:13
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-181224-create-a-rootless-podman-quadl,
+    branch dispatch/20261027-181224-create-a-rootless-podman-quadl'
+- at: 2026-10-27 18:17
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261027-181224-create-a-rootless-podman-quadl on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-10-27 19:00
+  from: devin
+  text: 'State correction: live idc02 stack is already healthy despite failed dispatch closeout. jack-opencode and
+    jack-enroll containers are running/healthy on private jack-ide.network; local gateway /health=200 and upstream=up;
+    tailnet serve is configured on :8448. Remaining work is external access only: Cloudflare Access/public hostname
+    plus dedicated Jack-scoped LiteLLM key. Need Jack email/identity and final hostname/policy before configuring
+    CF; no public route should be opened by assumption.'
+- at: 2026-10-27 19:14
+  from: devin
+  text: 'Cloudflare route completion plan: DNS/proxied hostname `opencode-jack.surf-thailand.com`; Caddy edge block
+    -> loopback :8377 with WebSocket support; Cloudflare Access self-hosted app + allow policy for javkster@gmail.com;
+    gateway must validate CF identity header in addition to tailnet mode; then browser/redeem/replay/WebSocket smoke.
+    OpenCode can prepare the config/tests in an isolated worktree, but final CF DNS/Access and host reload remain
+    a Tony-gated production operation. Dedicated Jack Lite'
+- at: 2026-10-27 19:15
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 19:15
+  from: devin
+  text: 'Queued to continue. First deliverable is implementation/test prep, not public exposure: Caddy/Cloudflare
+    config, CF identity-header validation, WebSocket route, dedicated LiteLLM-key integration point, rollback, and
+    browser smoke tests. Final DNS/Access creation and edge reload remain Tony-gated.'
+- at: 2026-10-27 19:16
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-27 19:16
+  from: chaba
+  text: started devin-task-20261027-191610-create-a-rootless-podman-quadl on tony-macbook (dispatch)
+- at: 2026-10-27 19:17
+  from: tony-macbook
+  text: 'finished (ok): exit=0 | devin-task-20261027-191610-create-a-rootless-podman-quadl.service: Failed with
+    result ''exit-code''. | devin-task'
+- at: 2026-10-27 19:17
+  from: chaba
+  text: pushed dispatch/20261027-191610-create-a-rootless-podman-quadl to origin
+- at: 2026-10-27 19:17
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-10-27 19:17
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261027-191610-create-a-rootless-podman-quadl,
+    branch dispatch/20261027-191610-create-a-rootless-podman-quadl'
+- at: 2026-10-27 19:17
+  from: chaba
+  text: 'merge-sweep: devin-task-20261027-181224-create-a-rootless-podman-quadl no longer active on tony-macbook
+    but card still says running — sweeping its branch'
+- at: 2026-10-27 19:17
+  from: chaba
+  text: 'merge-sweep: no served checkout for repo ''?'' — can''t land devin-task-20261027-181224-create-a-rootless-podman-quadl'
+- at: 2026-10-27 19:30
+  from: tony
+  text: closed by tony
+- at: 2026-10-28 18:12
+  from: devin
+  text: 'Direct CF route attempt: zone/DNS API access works, but the current Cloudflare token returns 403 for Access
+    Applications write. I briefly created the DNS record as a controlled probe and removed it immediately because
+    no Access policy/Caddy block was ready. No public route remains. Blocker: Tony must create the Cloudflare Access
+    self-hosted app/policy for opencode-jack.surf-thailand.com (allow javkster@gmail.com) in dashboard or provide
+    a token with Access Apps write permission; then we can fini'
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (12d in done, board over card cap)
+action:
+  type: dispatch
+  status: done
+  result: 'exit=0 | devin-task-20261027-191610-create-a-rootless-podman-quadl.service: Failed with result ''exit-code''.
+    | devin-task-20261027-191610-create-a-rootless-podman-quadl.service: Consumed 762ms CPU time over 672ms wall
+    clock time, 83.3M memory peak.'
+  sweep:
+    session_gone: 2026-10-27 18:17
+    stale_running: 2026-10-27 19:17
+    no_repo: 2026-10-27 19:17
+  runner: tony-macbook
+review_kind: verify
+claim: {}

@@ -147,7 +147,16 @@ API = os.environ.get(
 # dispatch_repos.board_api_base() reads BOARD_API/RUNNER_API — export the
 # resolved base so the close-out patch-relay posts to the same api.
 os.environ.setdefault("BOARD_API", API)
+
+
+def _canon_host(name) -> str:
+    """Canonical host key — SSOT/card pins use `tony_omen` while
+    nodename/RUNNER_HOST use `tony-omen`; compare in one form."""
+    return str(name or "").strip().lower().replace("-", "_")
+
+
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
+HOST_KEY = _canon_host(HOST)
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # OPS-1182: script-type claims are near-free (a 2s probe) and should not
@@ -478,8 +487,8 @@ def push_guard_reason(card: dict) -> str:
     a = card.get("action") or {}
     if (a.get("type") or "dispatch") != "dispatch" \
             or a.get("status") != "queued" \
-            or (a.get("runner") and a["runner"] != HOST) \
-            or (a.get("host") and a["host"] != HOST) \
+            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
+            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
             or not set(a.get("labels") or []) <= LABELS \
             or not Path(DISPATCH).exists():
         return ""
@@ -1064,16 +1073,16 @@ def _claimable(card: dict) -> tuple:
     a = card.get("action") or {}
     if a.get("status") != "queued":
         return "", "not queued"
-    if a.get("runner") and a["runner"] != HOST:
+    if a.get("runner") and _canon_host(a["runner"]) != HOST_KEY:
         # queued but tagged with another host's runner
         return "", f"pinned to runner {a['runner']}"
     pinned = a.get("host")
-    if pinned and pinned != HOST:
+    if pinned and _canon_host(pinned) != HOST_KEY:
         return "", f"host-pinned to {pinned}"
     # executor contract host pin (action.target_host) — independent of
     # action.host; both must be satisfied.
     th = str(a.get("target_host") or "").strip()
-    if th and th != HOST:
+    if th and _canon_host(th) != HOST_KEY:
         return "", f"target_host {th}"
     needs = set(a.get("labels") or [])
     if not needs <= LABELS:
@@ -1115,11 +1124,19 @@ def _claimable(card: dict) -> tuple:
                 return "", ("executor=kk_mac_local: task_class "
                             f"{a.get('task_class') or '(missing)'!r} not "
                             "admitted or artifact outside lane roots")
-            if not kk_mac_servable() and \
-                    kk_mac_probe().get("eligible"):
+            if kk_mac_servable():
+                # Local lane — like nlm_batch it claims without push
+                # creds: the artifact lands in the task dir/worktree
+                # and the close-out bundle relay covers hosts with no
+                # GitHub egress (OPS-1259 on tony-omen).
+                return "dispatch", ""
+            if kk_mac_probe().get("eligible"):
                 # lane is live elsewhere — leave for it
                 return "", ("kk_mac lane is live but this host can't "
                             "serve it")
+            # lane ineligible — falls through to the generic dispatch
+            # gates (the claim runs the fallback path, which is real
+            # repo work and still needs push capability)
         if ex == "nlm_batch" or (not ex and a.get("lane") == "nlm_batch"):
             # Declared nlm_batch executor / lane pin: needs nlm installed
             # + authed on this host. No repo checkout or push creds —
@@ -1189,9 +1206,9 @@ def executor_defer_reason(card: dict) -> str:
     a = card.get("action") or {}
     ex = str(a.get("executor") or "").strip()
     if a.get("status") != "queued" \
-            or (a.get("runner") and a["runner"] != HOST) \
-            or (a.get("host") and a["host"] != HOST) \
-            or (a.get("target_host") and a["target_host"] != HOST) \
+            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
+            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
+            or (a.get("target_host") and _canon_host(a["target_host"]) != HOST_KEY) \
             or not set(a.get("labels") or []) <= LABELS:
         return ""
     if ex == "opencode":
@@ -1673,12 +1690,27 @@ def watchdog_pass(st: dict) -> bool:
     return changed
 
 
+def _devnest_script(name: str) -> Path | None:
+    """scripts/devnest/<name> resolver — works both in-checkout
+    (scripts/board/runner-agent.py) and deployed to ~/.local/bin
+    (single-file install; parents[2] then points at ~/)."""
+    cands = [Path(__file__).resolve().parents[2] / "scripts" / "devnest"
+             / name,
+             Path.home() / "CascadeProjects/chaba/scripts/devnest" / name]
+    env = os.environ.get("DEVNEST_SCRIPTS_DIR")
+    if env:
+        cands.insert(0, Path(env) / name)
+    for p in cands:
+        if p.is_file():
+            return p
+    return None
+
+
 def oc_profiles_module():
     """Import scripts/devnest/opencode_profiles.py from this checkout —
     same lazy pattern as dr_module(); None when unavailable."""
-    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
-        "opencode_profiles.py"
-    if not p.is_file():
+    p = _devnest_script("opencode_profiles.py")
+    if p is None:
         return None
     spec = importlib.util.spec_from_file_location("opencode_profiles", p)
     m = importlib.util.module_from_spec(spec)
@@ -1691,16 +1723,14 @@ _KK_MAC_TRIED = False
 
 
 def kk_mac_module():
-    """Import scripts/devnest/kk_mac_executor.py from this checkout —
-    same lazy pattern as dr_module()/oc_profiles_module(); None when
-    unavailable."""
+    """Import scripts/devnest/kk_mac_executor.py — same lazy pattern as
+    dr_module(); None when unavailable."""
     global _KK_MAC, _KK_MAC_TRIED
     if _KK_MAC_TRIED:
         return _KK_MAC
     _KK_MAC_TRIED = True
-    p = Path(__file__).resolve().parents[2] / "scripts" / "devnest" / \
-        "kk_mac_executor.py"
-    if not p.is_file():
+    p = _devnest_script("kk_mac_executor.py")
+    if p is None:
         return None
     try:
         spec = importlib.util.spec_from_file_location(
@@ -1981,9 +2011,10 @@ def prepare_profile_dispatch(card, tid, prof, model, ocp):
     if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] not in S3_STAGED_PROFILES
             or env.get("mcp_allowlist") != []
             or env.get("task_class") not in ("read_only", "report")
-            or a.get("target_host") != HOST or env.get("unattended", True) is not True
-            or env.get("subject_host") not in (None, "", HOST)
-            or a.get("subject_host") not in (None, "", HOST)):
+            or _canon_host(a.get("target_host")) != HOST_KEY \
+            or env.get("unattended", True) is not True
+            or _canon_host(env.get("subject_host")) not in ("", HOST_KEY)
+            or _canon_host(a.get("subject_host")) not in ("", HOST_KEY)):
         raise ValueError("staged dispatch currently admits only unattended S3 idc02 read-only reports "
                          "(" + "/".join(sorted(S3_STAGED_PROFILES)) + ")")
     art = str((env.get("artifact") or {}).get("path") or "")

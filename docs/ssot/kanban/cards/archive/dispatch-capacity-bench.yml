@@ -1,0 +1,143 @@
+id: dispatch-capacity-bench
+title: Dispatch capacity benchmark — all hosts, podman vs bare systemd
+program: chaba-ci
+column: done
+note: 'Measure before deciding multi-host dispatch architecture. Key gap found 2026-10-04: devin CLI exists ONLY
+  on tony-dell — remote hosts can''t dispatch today regardless of the card system.'
+updated: 2026-11-09 20:08
+help: "Current capacity snapshot (measured 2026-10-04):\n  tony-omen  12c / 3G avail / load 7.0   — loaded, not\
+  \ free capacity\n  idc01       2c / 26G avail / load 0.6  — RAM-rich CPU-poor, runs ada+mddb\n  mn01        4c\
+  \ / 2G avail  / load 2.0  — standby-sized\n  idc02       4c / 11G avail / load 0.08 — idle VPS, best free capacity\n\
+  \  tony-dell  RAM-tight — dispatch-queue already caps at 3\n\nPodman angle: a dispatch image (devin CLI + git\
+  \ + toolchain) makes ANY\npodman host dispatchable without per-host installs, and MemoryMax-style\ncgroup bounds\
+  \ answer dell's RAM-tightness directly.\n"
+spec: "Benchmark minimal dispatch per host BEFORE building multi-host dispatch —\ndecide bare-systemd vs podman-wrapped\
+  \ devin-task on evidence.\n\nKnown facts (verify, don't re-measure): devin CLI absent on\nomen/idc01/mn01/idc02;\
+  \ host load table in `help`.\n\nSteps:\n1. Baseline on tony-dell: run one trivial devin-task, record RSS peak\n\
+  \   (systemd unit cgroup) + startup latency. Repeat at 2 concurrent —\n   watch available memory.\n2. Per remote\
+  \ host: document the prerequisite list to dispatch —\n   devin CLI install + auth, dispatch script, repo checkout\
+  \ freshness.\n   Do NOT install anything without the request answers below.\n3. Podman evaluation: spec a devin-dispatch\
+  \ image (devin CLI + git +\n   python + ssh client); measure image size and container-start latency\n   vs systemd-run;\
+  \ check cgroup delegation under rootless podman for\n   per-task memory caps. Compare isolation/portability vs\
+  \ overhead.\n4. Deliverables: docs/assessments/dispatch-capacity-2026-10.md with the\n   capacity table (host\
+  \ → safe concurrent tasks, with evidence) and a\n   recommendation covering: podman vs bare, per-host cap values,\
+  \ and\n   which hosts (if any) should get runners first.\nPost interim findings to this card's comms as you go.\n"
+action:
+  type: dispatch
+  status: done
+  button: ▶ Run benchmark
+  repo: chaba
+  task_id: 20261004-204237-benchmark-minimal-dispatch-per
+  runner: tony-dell
+  result: 20261004-204237-benchmark-minimal-dispatch-per finished (inactive) — see `devin-dispatch logs 20261004-204237-benchmark-minimal-dispatch-per`
+requests:
+- id: cli-install-ok
+  ask: OK to install the devin CLI on remote hosts for the benchmark? Each host needs an auth token — how should
+    that be provisioned?
+  status: answered
+  options:
+  - id: 'yes'
+    label: yes — install devin CLI on test hosts
+  - id: podman-only
+    label: skip CLI install — test podman path only
+  - id: 'no'
+    label: no — hold the benchmark
+  answer: podman-only — skip CLI install; per-host auth-token provisioning is the heavy lift and spreads secrets
+    across test hosts. The podman path exercises the dispatch mechanism itself; revisit CLI if podman results justify
+    it
+- id: podman-test-host
+  ask: 'Preferred host for the podman-wrapped dispatch test: idc02 (idle) or omen (if you free it)?'
+  status: answered
+  options:
+  - id: idc02
+    label: idc02 — idle VPS
+  - id: tony-omen
+    label: tony-omen — if freed
+  - id: neither
+    label: neither — design only
+  answer: 'idc02 — idle VPS: zero contention, already tailscale-connected; tony-omen would need freeing first'
+- id: multi-host-dispatch-is-unblocked-except-915b8b
+  ask: 'Multi-host dispatch is unblocked except auth: how should remote runners get devin credentials? (a) bind-mount
+    credentials.toml read-only into the idc02 podman container per run; (b) copy credentials.toml to each bare runner
+    (omen/mn01 already have it); (c) hold until a dispatch-scoped token exists. Details in docs/assessments/dispatch-capacity-2026-10.md
+    section 6.'
+  status: answered
+  answer: b — copy credentials.toml to each runner; omen/mn01 already have it, place on idc02 and bind-mount into
+    the dispatch container
+comms:
+- at: 2026-10-04 10:20
+  from: devin
+  text: Seeded with measured host table — devin CLI missing on all remotes is the real blocker, not the card protocol
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered cli-install-ok: podman-only — skip CLI install; per-host auth-token provisioning is the heavy
+    lift and spreads secrets across test hosts. The podman path exercises the dispatch mechanism itself; revisit
+    CLI if podman'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered podman-test-host: idc02 — idle VPS: zero contention, already tailscale-connected; tony-omen would
+    need freeing first'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
+- at: 2026-10-04 19:59
+  from: devin
+  text: 'remaining: podman-only benchmark on idc02; skip devin CLI/token provisioning on remote hosts.'
+- at: 2026-10-04 20:25
+  from: devin
+  text: 'Constraints per Tony: podman-only (no CLI install — per-host token provisioning spreads secrets), test
+    host = idc02 (idle VPS, zero contention). Queueing.'
+- at: 2026-10-04 20:25
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 20:42
+  from: chaba
+  text: dispatched 20261004-204237-benchmark-minimal-dispatch-per on chaba
+- at: 2026-10-04 20:44
+  from: devin
+  text: 'Benchmark started. Dispatch path confirmed: devin-dispatch -> worktree + systemd-run --user devin-task-<id>
+    -> devin -p. Gathering host facts + devin binary details next.'
+- at: 2026-10-04 20:54
+  from: devin
+  text: 'Measured. tony-dell: dispatch overhead ~6.5s (worktree+unit), session init ~23s to first transcript. Trivial
+    task peak 549-660MB cgroup RSS; REAL task (npm work) peaked 1.07GB — use ~1.1GB/task for capacity math. 4 concurrent
+    sessions dropped MemAvailable to 3.1GB; cap=3 validated. Correction to card premise: tony-omen AND mn01 already
+    have devin 3000.10.31 + credentials.toml + devin-dispatch installed — bare-dispatch capable today. idc01/idc02
+    still CLI-less. Podman on idc02: devin-dispatch ima'
+- at: 2026-10-04 20:56
+  from: devin
+  text: 'raised request multi-host-dispatch-is-unblocked-except-915b8b: Multi-host dispatch is unblocked except
+    auth: how should remote runners get devin credentials? (a) bind-mount credential'
+- at: 2026-10-04 20:56
+  from: devin
+  text: 'DONE. Deliverables: docs/assessments/dispatch-capacity-2026-10.md (+ raw cgroup logs) and job record docs/ssot/jobs/infrastructure/2026-10-04-dispatch-capacity-bench.yml,
+    committed on the dispatch worktree. Recap: ~1.1GB per real task; dell cap 3 validated; omen/mn01 already bare-capable
+    (CLI+creds+script present — card premise was stale); idc02 = first podman runner cap 4 (402MB image, 0.27s start,
+    rootless mem/cpu caps verified); avoid idc01. One decision raised as board request: credentials.t'
+- at: 2026-10-04 20:58
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 08:09
+  from: tony
+  text: 'answered multi-host-dispatch-is-unblocked-except-915b8b: b — copy credentials.toml to each runner; omen/mn01
+    already have it, place on idc02 and bind-mount into the dispatch container'
+- at: 2026-10-05 08:10
+  from: devin
+  text: 'Acted on answer b: credentials.toml + config.json provisioned on idc02 (mode 600/700). devin -p verified
+    END-TO-END inside rootless podman container — real session ran, rc=0, with --memory=1536m/--cpus=1.5 enforced.
+    Working run recipe documented in assessment section 4 (--userns=keep-id + $HOME mounts + --respect-workspace-trust
+    false). Committed a06560ac. Podman runner path on idc02 is now fully proven — remaining gaps for multi-host
+    dispatch are queue fan-out, repo-checkout freshness, and imag'
+- at: 2026-10-05 13:13
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0055'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+claim:
+  since: 2026-10-04 20:42
+ref: OPS-0055

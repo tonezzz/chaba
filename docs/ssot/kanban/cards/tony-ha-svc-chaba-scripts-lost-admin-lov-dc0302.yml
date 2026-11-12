@@ -1,0 +1,18 @@
+id: tony-ha-svc-chaba-scripts-lost-admin-lov-dc0302
+title: 'tony-ha: svc-chaba-scripts lost admin — lovelace saves unauthorized'
+column: backlog
+updated: 2026-11-10 06:51
+program: infrastructure
+tags:
+- ops
+- ha
+- auth
+note: 'network-scan-tony fails nightly at build-dossier-devices.py tony-ha: WS auth_ok as svc-chaba-scripts but
+  is_admin=false -> lovelace/config/save returns unauthorized. Token itself valid (REST /api/ 200). Fix needs HA
+  admin: promote svc-chaba-scripts to admin on tony-omen HA, or supply an admin token. Affects any script pushing
+  lovelace/dashboard config to tony-ha.'
+ref: OPS-1305
+comms:
+- at: 2026-11-10 06:51
+  from: devin
+  text: card captured via board-api

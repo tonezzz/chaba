@@ -1,0 +1,52 @@
+id: idc02-offload
+title: Move timer/service offload to idc02
+column: done
+note: 'Migrated (7): ada-flood-news, chaba-system-report, chaba-audit, chaba-kb-audit, ssot-optimization-snapshot,
+  devin-bank-distill (gemini key provisioned), chaba-audit-full (verified; exit-1 = audit findings). Reclassified
+  to STAY (host-bound): overnight-assessment, mcp-debug-h3-sync, devin-dispatch-watch (watches local devin-task-*
+  units + task dirs, notifies via HA loopback :8123), focus-dispatcher-overnight (mutates live chaba-tony-dell checkout,
+  commits/pushes, dispatches local devin sessions), kanban-commit/kanban-dispatch/chaba-board-render (live checkout),
+  yomi-* (podman+env on dell), mddb-standby-pull (dell is the standby target), devin-summaries-sync (local devin
+  cli summaries), cam-wall-* (CMS+guest secret), audit-cast/network-scan-tony (LAN-scoped), ha-config-backup/xiaomi/cam-frame
+  (local HA/go2rtc), devin-cleanup (local session dirs). Portable set now exhausted — remaining: macbook key (offline),
+  optionally yomi-mddb-digest (podman+env copy). Follow-up 2026-10-04: audit env gaps fixed (podman caddy, mcp-config
+  skip, host-scoped health); security-audit de-noised + made host-agnostic (58->0 findings omen, 0 idc02, 1 real
+  on dell — stale gdrive fuse mount, fixed via rclone-gdrive restart); security-posture SSOT now declares all observed
+  listeners — 6/6 hosts PASS.'
+updated: 2026-11-09 20:08
+claim:
+  session: b36ac352
+  since: '2026-10-03'
+comms:
+- at: 2026-10-05 12:19
+  from: tony
+  text: status?
+- at: 2026-10-05 13:14
+  from: devin
+  text: 'status: 7 timers migrated + verified on idc02 (ada-flood-news, chaba-system-report, chaba-audit, chaba-kb-audit,
+    ssot-optimization-snapshot, devin-bank-distill, chaba-audit-full). Remaining items in the note were classified
+    STAY (host-bound). Nothing outstanding that I can see — close candidate if you agree.'
+- at: 2026-10-05 21:12
+  from: devin
+  text: 7 timers migrated + verified per comms — moving to review for your close.
+- at: 2026-10-05 21:15
+  from: tony
+  text: finish&close
+- at: 2026-10-05 21:15
+  from: tony
+  text: finish&close
+- at: 2026-10-05 21:58
+  from: tony
+  text: finish&close
+- at: 2026-10-06 10:03
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0106'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (34d in done, board over card cap)
+action:
+  status: done
+ref: OPS-0106

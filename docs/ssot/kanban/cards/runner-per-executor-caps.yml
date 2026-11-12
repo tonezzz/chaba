@@ -1,8 +1,8 @@
 id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
-column: backlog
-updated: 2026-11-09 17:07
+column: doing
+updated: 2026-11-12 06:48
 priority: high
 tags:
 - devnest
@@ -37,9 +37,181 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: queued
+  status: failed
+  runner: tony-omen
+  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '''' SDL_IM_MODULE=''''
+    XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-runner-per-executor-caps-1794226908.service:
+    Consumed 1.839s CPU time over 1h 24.268s wall clock time, 19.6M memory peak, 296K'
+  sweep:
+    failed_noted: 2026-11-09 20:34
 ref: OPS-1284
 comms:
 - at: 2026-11-09 17:07
   from: tony
   text: queued for jules — concurrency fix observed live today (omen 3/3 jules starved local claims)
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.28 > 0.85)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 18:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.72 > 0.85)'
+- at: 2026-11-09 18:22
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.14 > 0.85)'
+- at: 2026-11-09 18:23
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.85)'
+- at: 2026-11-09 18:24
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.75 > 0.85)'
+- at: 2026-11-09 18:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
+- at: 2026-11-09 18:26
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-09 18:30
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.35 > 0.85)'
+- at: 2026-11-09 18:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.85)'
+- at: 2026-11-09 18:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.51 > 0.85)'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-09 18:36
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.50 > 0.85)'
+- at: 2026-11-09 18:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
+- at: 2026-11-09 18:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.23 > 0.85)'
+- at: 2026-11-09 18:40
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:41
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.36 > 0.85)'
+- at: 2026-11-09 18:43
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.29 > 0.85)'
+- at: 2026-11-09 18:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.77 > 0.85)'
+- at: 2026-11-09 18:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.54 > 0.85)'
+- at: 2026-11-09 18:50
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.58 > 0.85)'
+- at: 2026-11-09 18:51
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.73 > 0.85)'
+- at: 2026-11-09 18:52
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.87 > 0.85)'
+- at: 2026-11-09 18:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.84 > 0.85)'
+- at: 2026-11-09 18:54
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.74 > 0.85)'
+- at: 2026-11-09 18:55
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-09 18:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.47 > 0.85)'
+- at: 2026-11-09 18:57
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-09 19:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
+- at: 2026-11-09 19:04
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.36 > 0.85)'
+- at: 2026-11-09 19:06
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.55 > 0.85)'
+- at: 2026-11-09 19:07
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.44 > 0.85)'
+- at: 2026-11-09 19:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.39 > 0.85)'
+- at: 2026-11-09 19:10
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.43 > 0.85)'
+- at: 2026-11-09 19:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.20 > 0.85)'
+- at: 2026-11-09 19:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.05 > 0.85)'
+- at: 2026-11-09 19:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.85 > 0.85)'
+- at: 2026-11-09 19:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.99 > 0.85)'
+- at: 2026-11-09 19:21
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 19:21
+  from: chaba
+  text: started devin-task-runner-per-executor-caps-1794226908 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 19:21
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.50 > 0.85)'
+- at: 2026-11-09 20:23
+  from: tony-omen
+  text: 'finished (failed): no exit record — unit not-found reports collected defaults (unproven, not ok) '''' SDL_IM_MODULE=''''
+    XMODIFIERS='''' |   Set '
+- at: 2026-11-09 20:34
+  from: chaba
+  text: 'merge-sweep: devin-task-runner-per-executor-caps-1794226908 failed — its branch isn''t auto-merged (unverified
+    partial work). Retry the card or merge dispatch/runner-per-executor-caps-1794226908 by hand.'
+- at: 2026-11-10 22:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 00:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
+- at: 2026-11-12 06:23
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'

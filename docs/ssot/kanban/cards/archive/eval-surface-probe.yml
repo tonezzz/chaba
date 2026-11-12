@@ -1,0 +1,54 @@
+id: eval-surface-probe
+title: eval probe — kanban script executor on idc02
+column: done
+priority: low
+created: '2026-10-23'
+updated: 2026-11-09 20:15
+tags:
+- eval
+- surface-test
+brief: Proof that the kanban surface carries tasks to runner hosts end-to-end (eval Phase 3, OPS-0792).
+note: Script-type card pinned to idc02. Runs a trivial probe under systemd-run; result lands in comms via do=finish.
+spec: Surface probe only — no agent. Verifies POST queue -> runner-agent claim -> systemd-run -> do=finish comms
+  loop.
+action:
+  type: script
+  host: idc02
+  labels:
+  - cpu
+  script:
+    repo: chaba
+    cmd: uname -a; uptime; echo PROBE_OK $(hostname) $(date -Is); pwd
+    timeout: 300
+  status: done
+  runner: idc02
+  result: exit=0 Started runner-eval-surface-probe-1792748883.service - runner eval-surface-probe. | PROBE_OK idc02
+    2026-10-23T16:48:12+07:00 | /home/tony/.local/share/runner-agent/repos/chaba
+comms:
+- at: 2026-10-23 17:05
+  from: devin
+  text: created by devin — eval Phase-3 surface probe (OPS-0792)
+- at: 2026-10-23 16:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-23 16:47
+  from: chaba
+  text: 'WARNING: action.type=script — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-23 16:48
+  from: idc02
+  text: claimed
+- at: 2026-10-23 16:48
+  from: chaba
+  text: started runner-eval-surface-probe-1792748883 on idc02 (script)
+- at: 2026-10-23 16:49
+  from: idc02
+  text: 'finished (ok): exit=0 Started runner-eval-surface-probe-1792748883.service - runner eval-surface-probe.
+    | PROBE_OK idc02 2026-10-23T16:'
+- at: 2026-10-23 16:50
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:15
+  from: tony
+  text: archived (17d in done, board over card cap)
+review_kind: verify
+claim: {}

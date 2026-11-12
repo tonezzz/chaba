@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1a1a2e">
+<title>Diagram</title>
+<link rel="stylesheet" href="css/theme.css">
+<style>
+  html { font-size: 18px; }
+  body { margin:0; background:#1a1a2e; color:#cbd5e1;
+         font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+         height:100vh; display:flex; flex-direction:column; }
+  nav { display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+        background:#16213e; border-bottom:1px solid #2a3a63;
+        padding:10px 16px; }
+  nav a { color:#7dd3fc; text-decoration:none; font-size:14px; }
+  nav .t { font-weight:600; font-size:15px; }
+  nav select {
+    background:#101a30; color:#e2e8f0; border:1px solid #2f3f6b;
+    border-radius:6px; padding:4px 8px; font-size:13px;
+  }
+  #diagram-status { margin-left:auto; font-size:11px; color:#64748b; }
+  main { flex:1; min-height:0; overflow:auto; padding:14px 16px 20px; }
+  #diagram { min-width:720px; }
+  svg text { user-select:none; }
+  .node { cursor:pointer; }
+  .node:hover .node-box { stroke:#7dd3fc; }
+  .lane-head { cursor:pointer; }
+  #popup {
+    position:fixed; z-index:50; display:none; max-width:340px;
+    background:#16213e; border:1px solid #2f3f6b; border-radius:8px;
+    padding:10px 12px; font-size:12px; color:#cbd5e1;
+    box-shadow:0 8px 24px rgba(0,0,0,.45); pointer-events:none;
+  }
+  #popup .pt { font-weight:600; color:#e2e8f0; margin-bottom:2px; }
+  #popup .ps { color:#94a3b8; margin-bottom:4px; }
+  #popup .pd { color:#64748b; }
+</style>
+</head>
+<body>
+  <nav>
+    <a href="/apps/">&larr; Apps</a>
+    <span style="color:#334155">|</span>
+    <span class="t">Diagram</span>
+    <select id="diagram-select" title="diagram"></select>
+    <a href="/apps/board2/" style="font-size:12px">board &rarr;</a>
+    <span id="diagram-status">loading…</span>
+  </nav>
+  <main><div id="diagram"></div></main>
+  <div id="popup"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

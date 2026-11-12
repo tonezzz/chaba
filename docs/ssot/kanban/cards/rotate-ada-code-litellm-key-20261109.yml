@@ -1,7 +1,7 @@
 id: rotate-ada-code-litellm-key-20261109
 title: Rotate exposed Ada-code LiteLLM key without weakening budget controls
-column: doing
-updated: 2026-11-09 17:24
+column: done
+updated: 2026-11-09 19:03
 priority: high
 program: ai-workforce
 tags:
@@ -17,6 +17,7 @@ spec: 'Tony explicitly authorized revoking and replacing the exposed Ada-code Li
   remains S3, historical ledger unchanged.'
 action:
   type: manual
+  status: done
 ref: SEC-1286
 comms:
 - at: 2026-11-09 17:24
@@ -25,3 +26,52 @@ comms:
 - at: 2026-11-09 17:24
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-09 17:38
+  from: devin
+  text: 'Tony selected Keep December 1. Old ada key remains blocked and returns 401; no replacement or budget created.
+    Read-only review found a possible supported exact-window route: BudgetNewRequest accepts budget_reset_at; Community
+    /budget/new has no license gate. Key generation with budget_id and omitted key budget_duration inherits the
+    linked tier schedule; the native reset job explicitly resets linked-key spend atomically. Before any activation,
+    verify the active scheduler/cascade, preserve latest '
+- at: 2026-11-09 18:22
+  from: devin
+  text: 'Tony approved dedicated Community budget record. Created and verified sec1286-ada-20261201: USD30/30d,
+    initial reset 2026-12-01T00:00:00Z. Replacement ada-sec1286 is created BLOCKED, carries 2.159097620000001 spend,
+    preserves model permissions, and inherits tier schedule. Pending credential is stored only as LITELLM_KEY_ADA_PENDING_SEC1286
+    in the existing idc03 secret env; no values in comms. Old ada remains blocked/401. Confirmed old references:
+    idc02 litellm-keys.env ADA and ada-code.env LITEL'
+- at: 2026-11-09 18:27
+  from: devin
+  text: 'Rotation checkpoint: new ada-sec1286 remains BLOCKED; Dec1 budget and carried spend verified. Promoted
+    LITELLM_KEY_ADA in existing key envs on idc02, idc03 and macbook; dell had no old matching reference. Consumer
+    ada-code restart command returned nonzero, although systemd now reports active/running, Result=success, ExecMainStatus=0.
+    Activation was NOT reached. Critical: updater changed only idc02 litellm-keys.env, NOT ada-code.env despite
+    earlier inventory matching LITELLM_KEY there; diagnose r'
+- at: 2026-11-09 18:34
+  from: devin
+  text: 'Correction: exact-match guard was correct. Ada-code now uses a DIFFERENT key, alias ada-code, created 2026-11-09T11:07Z:
+    USD10/30d, reset Dec1, spend 0.01439. Native consumer key-info/models both 200; MCP connected. Did NOT retarget
+    it to shared USD30. Shared replacement ada-sec1286 remains BLOCKED; Dec1 tier/spend carry verified; key env
+    refs updated on idc02/idc03/macbook. Need policy confirmation before activating additional shared allowance.
+    No model jobs/S3 evidence generated here.'
+- at: 2026-11-09 18:49
+  from: devin
+  text: 'Tony explicitly chose Activate shared USD30 alongside independent ada-code USD10. Activated ada-sec1286:
+    USD30/30d, Dec1 reset via tier sec1286-ada-20261201, spend carry 2.159097620000001, permissions unchanged. Key-info/models
+    authenticated successfully; old ada remains blocked (previously verified 401). No model inference or S3 sample
+    was run.'
+- at: 2026-11-09 18:49
+  from: devin
+  text: 'Consumer proof: shared key env references match replacement on idc02/idc03/macbook, each mode 0600; pending
+    staging variable removed. Ada-code preserves its independent USD10/30d key, Dec1 reset; actual key-info/models
+    200, native MCP connected, unit active. Existing interactive sessions caching the revoked shared key must reopen;
+    no processes were killed.'
+- at: 2026-11-09 18:49
+  from: devin
+  text: 'Post-change host audits completed; compliance NOT clean. idc02: 15 deltas (missing JEV timers; undeclared
+    running services; failed distill/log-shipper/snapshot/enrollment units). idc03: 27 deltas incl missing key-watch
+    timer and failed ada-spend-ledger. macbook: 4 deltas incl failed/missing runner-agent, zram, undeclared vcast.
+    Snapshot reports/audit-hosts/*-20261109-18*.yml. Unrelated services were not changed; follow-up needed.'
+- at: 2026-11-09 19:03
+  from: devin
+  text: closed by devin

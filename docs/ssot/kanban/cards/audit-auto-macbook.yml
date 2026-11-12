@@ -1,0 +1,18 @@
+id: audit-auto-macbook
+title: Reconcile macbook host-audit drift
+column: backlog
+updated: 2026-11-09 19:03
+brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
+priority: medium
+tags:
+- ops
+- host-audit
+spec: '2026-11-09 audit: runner-agent.timer expected missing; runner-agent.service and zram-swap.service failed;
+  vcast-real-macbook.service running but undeclared. Source reports/audit-hosts/macbook-20261109-184036.yml. Investigate
+  and reconcile SSOT intent before fixes; do not blindly enable runner execution, stop services, or change lane
+  stages. Related SEC-1286. Not S3 sampling.'
+ref: OPS-1296
+comms:
+- at: 2026-11-09 19:03
+  from: devin
+  text: card captured via board-api

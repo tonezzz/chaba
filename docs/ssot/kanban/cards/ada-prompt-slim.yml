@@ -1,7 +1,7 @@
 id: ada-prompt-slim
 title: Ada prompt slim — compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers
-column: backlog
-updated: 2026-11-09 17:05
+column: doing
+updated: 2026-11-12 01:34
 priority: medium
 tags:
 - ada
@@ -22,9 +22,331 @@ action:
   repo: ada-voice
   executor: jules
   lane: jules
-  status: queued
+  status: failed
+  runner: tony-omen
+  result: 'journal=exit-code  code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794229791.service: Failed
+    with result ''exit-code''. | devin-task-ada-prompt-slim-1794229791.service: Consumed 1.427s CPU time over 24min
+    42.780s wall clock time, 17.7M memory peak.'
+  sweep:
+    failed_noted: 2026-11-09 20:48
 ref: ADA-1282
 comms:
 - at: 2026-11-09 17:05
   from: tony
   text: queued for jules — prompt compaction + parity check
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc02 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.28 > 0.85)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'mn01 defers: runner at cap (1/1)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-09 18:18
+  from: chaba
+  text: 'tony-omen defers: runner at cap (3/3)'
+- at: 2026-11-09 18:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.72 > 0.85)'
+- at: 2026-11-09 18:22
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.14 > 0.85)'
+- at: 2026-11-09 18:23
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.94 > 0.85)'
+- at: 2026-11-09 18:24
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.75 > 0.85)'
+- at: 2026-11-09 18:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.67 > 0.85)'
+- at: 2026-11-09 18:26
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-09 18:28
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.35 > 0.85)'
+- at: 2026-11-09 18:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.85)'
+- at: 2026-11-09 18:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.30 > 0.85)'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.51 > 0.85)'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'mn01 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-09 18:34
+  from: chaba
+  text: 'mn01 defers: executor=jules declared but this runner can''t serve it (JULES_LANES=0, no jules key) — the
+    card stays queued for a Jules-capable runner; it will never silently fall back to devin'
+- at: 2026-11-09 18:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-09 18:36
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.50 > 0.85)'
+- at: 2026-11-09 18:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
+- at: 2026-11-09 18:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.23 > 0.85)'
+- at: 2026-11-09 18:40
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 18:41
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.36 > 0.85)'
+- at: 2026-11-09 18:43
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.29 > 0.85)'
+- at: 2026-11-09 18:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.77 > 0.85)'
+- at: 2026-11-09 18:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.54 > 0.85)'
+- at: 2026-11-09 18:50
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.58 > 0.85)'
+- at: 2026-11-09 18:51
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.73 > 0.85)'
+- at: 2026-11-09 18:52
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.87 > 0.85)'
+- at: 2026-11-09 18:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.84 > 0.85)'
+- at: 2026-11-09 18:54
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.74 > 0.85)'
+- at: 2026-11-09 18:55
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.64 > 0.85)'
+- at: 2026-11-09 18:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.47 > 0.85)'
+- at: 2026-11-09 18:57
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.38 > 0.85)'
+- at: 2026-11-09 18:59
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.37 > 0.85)'
+- at: 2026-11-09 19:04
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.36 > 0.85)'
+- at: 2026-11-09 19:06
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.55 > 0.85)'
+- at: 2026-11-09 19:07
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.44 > 0.85)'
+- at: 2026-11-09 19:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.39 > 0.85)'
+- at: 2026-11-09 19:10
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.43 > 0.85)'
+- at: 2026-11-09 19:12
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.20 > 0.85)'
+- at: 2026-11-09 19:14
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.05 > 0.85)'
+- at: 2026-11-09 19:17
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.85 > 0.85)'
+- at: 2026-11-09 19:19
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.99 > 0.85)'
+- at: 2026-11-09 19:21
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.50 > 0.85)'
+- at: 2026-11-09 19:23
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.41 > 0.85)'
+- at: 2026-11-09 19:24
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.16 > 0.85)'
+- at: 2026-11-09 19:25
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.23 > 0.85)'
+- at: 2026-11-09 19:27
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.14 > 0.85)'
+- at: 2026-11-09 19:27
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.08 > 1.0)'
+- at: 2026-11-09 19:30
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.01 > 1.0)'
+- at: 2026-11-09 19:31
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.03 > 0.85)'
+- at: 2026-11-09 19:31
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.00 > 1.0)'
+- at: 2026-11-09 19:32
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.88 > 0.85)'
+- at: 2026-11-09 19:34
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.02 > 0.85)'
+- at: 2026-11-09 19:35
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.05 > 0.85)'
+- at: 2026-11-09 19:36
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.85 > 0.85)'
+- at: 2026-11-09 19:37
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.69 > 0.85)'
+- at: 2026-11-09 19:38
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-09 19:39
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.40 > 0.85)'
+- at: 2026-11-09 19:39
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.01 > 1.0)'
+- at: 2026-11-09 19:40
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.35 > 0.85)'
+- at: 2026-11-09 19:41
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.27 > 0.85)'
+- at: 2026-11-09 19:42
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.05 > 1.0)'
+- at: 2026-11-09 19:43
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.22 > 0.85)'
+- at: 2026-11-09 19:45
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.00 > 0.85)'
+- at: 2026-11-09 19:46
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.07 > 0.85)'
+- at: 2026-11-09 19:46
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.09 > 1.0)'
+- at: 2026-11-09 19:47
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.12 > 0.85)'
+- at: 2026-11-09 19:47
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.03 > 1.0)'
+- at: 2026-11-09 19:48
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.27 > 0.85)'
+- at: 2026-11-09 19:48
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.04 > 1.0)'
+- at: 2026-11-09 19:49
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.26 > 0.85)'
+- at: 2026-11-09 19:50
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.25 > 0.85)'
+- at: 2026-11-09 19:51
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.22 > 0.85)'
+- at: 2026-11-09 19:52
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
+- at: 2026-11-09 19:53
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.05 > 1.0)'
+- at: 2026-11-09 19:53
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.07 > 0.85)'
+- at: 2026-11-09 19:54
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.07 > 1.0)'
+- at: 2026-11-09 19:54
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.03 > 0.85)'
+- at: 2026-11-09 19:55
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.05 > 1.0)'
+- at: 2026-11-09 19:55
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.14 > 0.85)'
+- at: 2026-11-09 19:56
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.05 > 0.85)'
+- at: 2026-11-09 19:57
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.07 > 1.0)'
+- at: 2026-11-09 19:59
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.10 > 0.85)'
+- at: 2026-11-09 19:59
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.08 > 1.0)'
+- at: 2026-11-09 20:02
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.70 > 1.0)'
+- at: 2026-11-09 20:02
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.39 > 0.85)'
+- at: 2026-11-09 20:04
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.46 > 1.0)'
+- at: 2026-11-09 20:05
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 2.15 > 1.0)'
+- at: 2026-11-09 20:06
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.89 > 0.85)'
+- at: 2026-11-09 20:06
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.92 > 1.0)'
+- at: 2026-11-09 20:06
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.90 > 0.85)'
+- at: 2026-11-09 20:07
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.70 > 1.0)'
+- at: 2026-11-09 20:08
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.83 > 0.85)'
+- at: 2026-11-09 20:09
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.44 > 1.0)'
+- at: 2026-11-09 20:09
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.68 > 0.85)'
+- at: 2026-11-09 20:09
+  from: tony-omen
+  text: claimed
+- at: 2026-11-09 20:09
+  from: chaba
+  text: started devin-task-ada-prompt-slim-1794229791 on tony-omen (dispatch executor=jules)
+- at: 2026-11-09 20:34
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code  code=exited, status=1/FAILURE | devin-task-ada-prompt-slim-1794229791.service:
+    Failed with result ''ex'
+- at: 2026-11-09 20:48
+  from: chaba
+  text: 'merge-sweep: devin-task-ada-prompt-slim-1794229791 failed — its branch isn''t auto-merged (unverified partial
+    work). Retry the card or merge dispatch/ada-prompt-slim-1794229791 by hand.'
+- at: 2026-11-12 01:17
+  from: chaba
+  text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
+    only eligible runner (tony-omen) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'

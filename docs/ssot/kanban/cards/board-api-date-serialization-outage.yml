@@ -1,0 +1,27 @@
+id: board-api-date-serialization-outage
+title: board-api /cards 502 — YAML bare dates crash json.dumps (fleet-wide Ada status outage 2026-11-09)
+column: backlog
+updated: 2026-11-09 18:16
+priority: medium
+tags:
+- devnest
+- board
+- bug
+- postmortem
+spec: 'Postmortem 2026-11-09 ~18:10-18:40 +07: Tony could not query kk-mac status via ada-code — tool calls to board-api
+  returned 502. Root cause: 42 card YAMLs carry bare created:/updated: date scalars (PyYAML -> datetime.date); board-api
+  json.dumps had no default=str so EVERY /cards request died TypeError -> tailscale-serve 502. Fixed at commit 7ea2e37e47
+  (default=str). REMAINING HYGIENE: (a) card schema should quote/normalize date scalars at write time — otherwise
+  any YAML consumer hitting these fields hits the same edge; (b) board-api needs a watchdog/liveness check — the
+  API was dead long enough to notice only via Ada symptoms; (c) ada_status tool could surface backend-down explicitly
+  instead of a generic failure.'
+action:
+  type: manual
+ref: KNB-1292
+comms:
+- at: 2026-11-09 18:16
+  from: tony
+  text: fixed same-day; keeping the hygiene follow-ups carded
+- at: 2026-11-09 18:16
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'

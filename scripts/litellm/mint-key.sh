@@ -17,6 +17,21 @@ PY
 BODY="$(python3 -c "$JQ")"
 
 KEY="$(ssh -o BatchMode=yes idc03 'grep -oP "^LITELLM_MASTER_KEY=\K.*" ~/.config/secrets/litellm.env')"
-curl -sf -X POST "$GW/key/generate" \
+NEWKEY="$(curl -sf -X POST "$GW/key/generate" \
   -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
-  -d "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin)['key'])"
+  -d "$BODY" | python3 -c "import json,sys; print(json.load(sys.stdin)['key'])")"
+
+# dependent env sync (OPS-1291): services that pin LITELLM_KEY in a
+# per-service secrets file must follow rotation or they break at next
+# restart (ada-code outage 2026-11-09). Map: alias -> host envfile unit.
+case "$ALIAS" in
+  ada|ada-code)
+    ssh -o BatchMode=yes -o ConnectTimeout=8 idc02       "grep -q LITELLM_KEY ~/.config/secrets/ada-code.env \
+        && sed -i 's|^LITELLM_KEY=.*|LITELLM_KEY='"$NEWKEY"'|' ~/.config/secrets/ada-code.env \
+        || echo LITELLM_KEY=$NEWKEY >> ~/.config/secrets/ada-code.env; \
+       systemctl --user restart ada-code.service" \
+      && echo "dependent synced: idc02 ada-code.env + ada-code.service restarted" \
+      || echo "WARN: dependent sync failed for ada-code (idc02) — update ada-code.env manually" >&2
+    ;;
+esac
+printf '%s\n' "$NEWKEY"

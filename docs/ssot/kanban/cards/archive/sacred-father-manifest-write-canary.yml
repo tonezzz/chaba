@@ -1,0 +1,100 @@
+id: sacred-father-manifest-write-canary
+title: 'OpenCode artifact canary: Sacred Father manifest'
+column: done
+updated: 2026-11-12 04:21
+brief: Verify artifact-write on a small Sacred Father manifest task before dispatcher implementation.
+priority: high
+program: ai-workforce
+tags:
+- video
+- manifest
+- opencode
+- artifact-write
+- canary
+spec: Canary only. Read reports/sacred-father-canonical-manifest-20261103.yml and write a concise manifest review
+  to the declared artifact. Do not modify canonical files, queues, claims, or services.
+action:
+  type: dispatch
+  model: litellm/gemini-3.5-flash-lite
+  executor: opencode
+  profile: artifact-write
+  target_host: idc02
+  artifact: evals/opencode-lane/out/sacred-father-manifest-review.md
+  prompt: Use the write tool immediately to create evals/opencode-lane/out/sacred-father-manifest-review.md. Read
+    reports/sacred-father-canonical-manifest-20261103.yml. Write a concise review covering project_id, source hash,
+    10 approved shots, LTX renderer, output artifact, QC, and private-only status. Do not edit any other file or
+    queue. Do not emit the report in chat; end only after the file exists with one summary line.
+  expect:
+    facts:
+    - project_id
+    - source hash
+    - 10 approved shots
+    - LTX
+    - QC
+    - private
+  lane: free_lane
+  status: done
+  agent_profile: artifact-write
+  runner: idc02
+  result: 'exit=0 k23f3zi5ccm8JX","type":"step-finish","tokens":{"total":28435,"input":2182,"output":13,"reasoning":0,"cache":{"write":0,"read":26240}},"cost":0}}
+    | devin-task-sacred-father-manifest-write-canary-1793776083.service: Consumed 15.160s CPU time.'
+  verified: true
+ref: OPS-1063
+comms:
+- at: 2026-11-04 14:07
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-04 14:07
+  from: devin
+  text: queued for processing
+- at: 2026-11-04 14:07
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-04 14:08
+  from: idc02
+  text: claimed
+- at: 2026-11-04 14:08
+  from: chaba
+  text: started devin-task-sacred-father-manifest-write-canary-1793776083 on idc02 (dispatch executor=opencode profile=artifact-write
+    model=litellm/gemini-3.5-flash-lite)
+- at: 2026-11-04 14:09
+  from: idc02
+  text: 'finished (ok): exit=0 k23f3zi5ccm8JX","type":"step-finish","tokens":{"total":28435,"input":2182,"output":13,"reasoning":0,"cache":{"wri'
+- at: 2026-11-04 14:09
+  from: chaba
+  text: opencode artifact landed evals/opencode-lane/out/sacred-father-manifest-review.md
+- at: 2026-11-04 14:09
+  from: chaba
+  text: 'opencode verifier: pass'
+- at: 2026-11-04 14:09
+  from: chaba
+  text: ran under executor=opencode:free_lane provider=litellm model=litellm/gemini-3.5-flash-lite profile=artifact-write
+- at: 2026-11-04 14:09
+  from: chaba
+  text: 'session-end checkpoint 87c63830: 1 leftover file(s) committed'
+- at: 2026-11-04 14:09
+  from: chaba
+  text: pushed dispatch/sacred-father-manifest-write-canary-1793776083 to origin
+- at: 2026-11-04 14:09
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-04 14:09
+  from: chaba
+  text: auto-merged 8b183a48 (dispatch/sacred-father-manifest-write-canary-1793776083) → origin/master
+- at: 2026-11-04 14:09
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-sacred-father-manifest-write-canary-1793776083,
+    branch dispatch/sacred-father-manifest-write-canary-1793776083'
+- at: 2026-11-04 14:15
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-12 04:21
+  from: tony
+  text: archived (7d in done, verified)
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-04 14:15
+  note: verified — evidence checks green, closing itself

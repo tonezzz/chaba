@@ -1,0 +1,24 @@
+id: helm-retire-leftovers
+title: Finish helm retirement — remove idc02:3003 service, /apps/helm static+route, stale SSOT
+column: backlog
+updated: 2026-11-10 07:03
+brief: 'helm-retirement card is done (2026-09-30) but leftovers remain: helm service on idc02:3003 in ssot.routes.yml,
+  static bundle stacks/web/public/apps/helm/, ssot.apps.helm.yml still status:active. Tony 2026-11-09 confirmed
+  retire.'
+priority: low
+tags:
+- retirement
+- cleanup
+- idc02
+spec: 'Remove: (1) helm service entry + any /apps/helm route in ssot.routes.yml and stacks/web/Caddyfile; (2) stacks/web/public/apps/helm/
+  static bundle; (3) whatever serves :3003 on idc02 (check podman/systemd units on idc02, audit-hosts); (4) mark
+  ssot.apps.helm.yml status:retired or move to docs/kb/retired-apps/helm.md with restore steps (source repo /home/tony/CascadeProjects/helm
+  may still exist — record its state). Cherry-pick for Ada (do NOT port code): helm src/lib/ai/{safe-executor,intent-parser,task-planner}.ts
+  concepts — file a short lesson via scripts/lesson-add.py noting safe-executor validation patterns may inform Ada
+  tool design; verdict likely superseded by board-api validated endpoints. Verify no consumers grep for /apps/helm
+  or :3003 before removing.'
+ref: OPS-1310
+comms:
+- at: 2026-11-10 07:03
+  from: tony
+  text: card captured via board-api

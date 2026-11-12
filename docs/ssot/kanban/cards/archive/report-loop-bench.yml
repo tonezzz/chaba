@@ -1,0 +1,103 @@
+id: report-loop-bench
+title: 'Report loop: report_opinion_loop live scenario + bench corpus wiring'
+brief: 'Part 6 of the report→session loop (umbrella: report-session-loop). Installs the live scenario that catches
+  regressions in Ada''s read-report→post-[opinion] loop, and points the nest bench domain at the accruing corpus.
+  Queued when Tony presses Start.'
+column: done
+priority: medium
+program: ada-tools
+updated: 2026-11-09 20:09
+tags:
+- report-session-loop
+- ada-pi
+- bench
+blocked_by: report-loop-ada-opinion
+spec: "Design: docs/design/report-session-loop.md §4 (contract). Repo: ada-pi.\n1. Install tests/scenarios-live/report_opinion_loop.yaml\
+  \ — a STAGED copy\n   exists in the chaba repo at\n   stacks/services/ada-scenario-runner/scenarios-staging/report_opinion_loop.yaml\n\
+  \   (cms_first_answer.yaml precedent); review + copy it in, adjust\n   key_name/url conventions to match the other\
+  \ live scenarios. It asks\n   Ada for her opinion of the dev-kanban report and asserts she reads\n   the page\
+  \ (cms_get_page) and posts to the board (ada_board_write).\n   Probe card scenario-report-opinion (report: dev-kanban)\
+  \ already\n   exists in chaba as the comms sink — scenario opinions accumulate\n   there.\n2. Confirm the scenario\
+  \ passes once live on ada-ha-tony — run it\n   manually via scripts/scenario-live.py rather than waiting for the\n\
+  \   batch timer, and record the result on this card.\n3. Bench domain report-opinion is already declared (status:\
+  \ spec) in\n   chaba docs/ssot/infrastructure/ssot.nest-bench.yml — corpus = real\n   [opinion] comms on report-linked\
+  \ cards. No scorer yet (a scorer with\n   no corpus is dead code — domain rule). If a cheap seed-miner is easy\n\
+  \   (scan done cards' comms for [opinion] lines into a corpus jsonl),\n   add it under tests/bench/; otherwise\
+  \ leave corpus growth to live use\n   and say so in comms.\n4. orch-bench/nest topologies for the opinion-forming\
+  \ step: explicitly\n   deferred until the corpus exists (card text) — do not build\n   topologies; record that\
+  \ decision in comms.\n\nDeploy (scenario install lands via the normal ada-pi deploy) needs Tony's approval — do\
+  \ NOT deploy; finish with a note."
+action:
+  type: dispatch
+  status: done
+  repo: ada-pi
+  runner: tony-dell
+  task_id: 20261007-202820-design-docs-design-report-sess
+  result: 20261007-202820-design-docs-design-report-sess finished (inactive) — see `devin-dispatch logs 20261007-202820-design-docs-design-report-sess`
+  verified: false
+comms:
+- at: 2026-10-07 19:30
+  from: devin
+  text: filed by the report-session-loop design session — see docs/design/report-session-loop.md
+- at: 2026-10-07 20:18
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 20:28
+  from: chaba
+  text: dispatched 20261007-202820-design-docs-design-report-sess on ada-pi
+- at: 2026-10-07 20:34
+  from: devin
+  text: '[progress] installing report_opinion_loop into ada-pi tests/scenarios-live — adapting staged yaml: flat
+    asserts -> expect: blocks, dropping url (default = ada-ha-tony :8002) and key_name user-tony (NOT in ada-ha-tony-keys.json
+    — would skip every batch run; default ADA_API_KEY path is the convention). tier: smoke auto-joins hourly batch
+    via @smoke; ada_board_write not in write_tools so no write_allowed_in entry needed.'
+- at: 2026-10-07 20:44
+  from: devin
+  text: '[done] report_opinion_loop installed at ada-pi tests/scenarios-live/report_opinion_loop.yaml (tier: smoke,
+    joins hourly batch via @smoke). Adaptations: flat asserts -> expect: blocks; dropped url + key_name user-tony
+    (not in ada-ha-tony-keys.json — would skip every batch run); hardened turn 2 with call_args_contain ada_board_write:[scenario-report-opinion]
+    after live run 1 showed a bare calls_any passing while the opinion landed on report-loop-ada-opinion (title
+    match, wrong card). LIVE VERIFY o'
+- at: 2026-10-07 20:46
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-07 20:46
+  from: chaba
+  text: pushed dispatch/20261007-202820-design-docs-design-report-sess to origin
+- at: 2026-10-07 20:46
+  from: chaba
+  text: 'auto-merge conflicts: tests/scenarios-live/report_opinion_loop.yaml — card stays in review for manual resolution'
+- at: 2026-10-07 20:46
+  from: chaba
+  text: 'session end: 1 commit(s) on dispatch/20261007-202820-design-docs-design-report-sess not in origin/main
+    — close will block until merged'
+- at: 2026-10-07 20:48
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261007-202820-design-docs-design-report-sess — 1 commit(s) not in
+    origin/main: test(scenarios-live): report_opinion_loop + report-opinion corpus miner'
+- at: 2026-10-07 20:48
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261007-202820-design-docs-design-report-sess — 1 commit(s) not in
+    origin/main: test(scenarios-live): report_opinion_loop + report-opinion corpus miner'
+- at: 2026-10-07 20:57
+  from: chaba
+  text: 'unmerged commits remain on dispatch/20261007-202820-design-docs-design-report-sess — 1 commit(s) not in
+    origin/main: test(scenarios-live): report_opinion_loop + report-opinion corpus miner'
+- at: 2026-10-08 05:51
+  from: chaba
+  text: 'merge guard: dispatch/20261007-202820-design-docs-design-report-sess merged into origin/main'
+- at: 2026-10-08 05:51
+  from: tony
+  text: closed by Tony
+- at: 2026-10-08 05:51
+  from: chaba
+  text: session coral-baboon… hidden
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: BEN-0189'
+- at: 2026-11-09 20:09
+  from: tony
+  text: archived (32d in done, board over card cap)
+claim:
+  since: 2026-10-07 20:28
+ref: BEN-0189

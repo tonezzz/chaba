@@ -1,0 +1,48 @@
+id: timer-alert-tony-dell-log-shipper-severe
+title: Timer log-shipper-severe on tony-dell failing
+column: done
+updated: 2026-11-12 03:54
+priority: high
+tags:
+- timer-alert
+- auto
+- by:timer-sentinel
+note: 'Last run (11-11 20:32) of `log-shipper-severe.service` on `tony-dell` result=timeout — investigate journal:
+  `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+ref: OPS-0005
+comms:
+- at: 2026-11-11 20:42
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-11 20:51
+  from: devin
+  text: '[still suspicious] Last run (11-11 20:32) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-11 21:05
+  from: devin
+  text: '[still suspicious] Last run (11-11 20:32) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-11 21:13
+  from: devin
+  text: '[still suspicious] Last run (11-11 20:32) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-11 21:25
+  from: devin
+  text: '[still suspicious] Last run (11-11 20:32) of `log-shipper-severe.service` on `tony-dell` result=timeout
+    — investigate journal: `journalctl --user -u log-shipper-severe.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-12 01:22
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-12 03:54
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-12 03:23 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 03:54
+  from: tony
+  text: closed by tony
+spec: Investigate the timeout failure of `log-shipper-severe.service` on host `tony-dell` by checking the systemd
+  user journal via `journalctl --user -u log-shipper-severe.service` and reviewing the CMS entry `timer-timeline-tony-dell`.
+  The target host is `tony-dell`. Constraints include using only factual data from the card and journal without
+  inventing paths or decisions. The verifiable done-condition is identifying the root cause of the timeout and documenting
+  the findings or fixing the underlying issue on the host.
+action:
+  status: done

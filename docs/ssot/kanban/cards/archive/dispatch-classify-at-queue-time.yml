@@ -1,0 +1,48 @@
+id: dispatch-classify-at-queue-time
+title: 'Classify lane at queue time: board-api queue verb must persist action.lane+model'
+column: done
+updated: 2026-11-09 20:16
+priority: medium
+program: chaba-ci
+tags:
+- dispatch
+- lane
+- model
+- runner
+spec: 'jev-model-chain-probe2 (OPS-0837) proved c4fc7cac insufficient: it persists action.lane+model only inside
+  kanban-dispatch start_pending, but remote runner-agents claim queued cards via board-api do:claim before kanban-dispatch
+  ever sees them — so action.model is never written, DISPATCH_MODEL/DEVIN_MODEL stay unset, sessions run the default
+  model. Fix: run classify_lane inside board-api do_action("queue") and persist action.lane+action.model before
+  the card becomes claimable (single mutation door all claimers read). Alternative: runner-agent classifies at claim
+  time — duplicates logic, still racy. Verify: queue a probe card, check card yaml has action.model, check systemd
+  unit Environment has DEVIN_MODEL and ExecStart carries --model.'
+action:
+  type: manual
+  status: done
+ref: OPS-0838
+comms:
+- at: 2026-10-25 06:15
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-25 06:15
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-25 06:28
+  from: devin
+  text: 'probe5 evidence (jev-model-chain-probe5): tony-macbook claimed the card running a pre-patch Oct-15 runner-agent
+    — no classify code, so action.lane/model never landed and DEVIN_MODEL was never set. Patching claim-time classify
+    per-runner is whack-a-mole (fleet has 4+ runners; the brief only patched 3). Queue-time classify in board-api
+    is the claimer-agnostic fix — even old binaries already forward action.model -> DISPATCH_MODEL. Recommend bumping
+    this out of backlog.'
+- at: 2026-10-27 05:34
+  from: tony
+  text: queued for processing
+- at: 2026-10-27 05:34
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-10-27 06:46
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (13d in done, board over card cap)

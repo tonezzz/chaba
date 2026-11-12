@@ -1,0 +1,18 @@
+id: system-report-chain-17h-stale-watchdog-e-ab1511
+title: system-report chain 17h+ stale; watchdog exit-1 is by design but nodes missing
+column: backlog
+updated: 2026-11-10 06:51
+program: infrastructure
+tags:
+- ops
+- monitor
+- system-report
+note: 'system-report-watchdog exits 1 hourly BY DESIGN when red nodes exist (verified in scripts/report/system-report-watchdog.py
+  rc=1 path). Real issues: (a) chain generated_at stuck at 2026-11-09T06:50+01 — ~17h stale vs 26h threshold, find
+  the generator on idc02; (b) persistent missing/unreachable: audit-hosts/{tony-omen,mn01,macbook}, health-monitor,
+  host-loads, disk-trend, kanban, daily-brief, ~10 nest-lanes/nest-brains/nest-bench nodes, chaba-nest.'
+ref: OPS-1306
+comms:
+- at: 2026-11-10 06:51
+  from: devin
+  text: card captured via board-api

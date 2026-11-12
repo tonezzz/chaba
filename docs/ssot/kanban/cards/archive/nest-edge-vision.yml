@@ -1,0 +1,106 @@
+id: nest-edge-vision
+title: Chaba Nest edge vision — browser YOLO overlay, castable, benchable
+brief: A page that shows a camera feed and draws object labels on it right in the browser, castable to the TV. Waiting
+  in the backlog — no action needed.
+column: done
+priority: medium
+created: 2026-10-07
+updated: 2026-11-09 20:09
+note: 'Extends the Nest to the client''s eyes: a page that plays a camera feed and runs detection in-browser (WASM),
+  overlay drawn locally, and the whole page castable to TV via the proven screenlive lane. Server compute stays
+  at zero — the client does vision.'
+spec: "Phases: 1. `/apps/eye/` page (ada-pi `pwa/eye/` or apps stack) — video element\n   fed by cam HLS (xmeye\
+  \ channels via existing proxy) OR device cam via\n   getUserMedia. Detection model in-browser: onnxruntime-web\
+  \ is already\n   vendored (pwa/vendor/transformers) — pick yolov8n-int8 (~12MB) with\n   JS NMS, or MediaPipe\
+  \ efficientdet-lite0 (~4MB, proven WASM path from\n   gesture work). Overlay = canvas over video.\n2. Bench mode\
+  \ on the same page: run N frames, report fps/inference-ms/\n   device UA to MDDB (ada-ha-scenario-reports bench/edge-*);\
+  \ a\n   `bench-edge` CMS page trends it — answers \"can my iPhone carry it\"\n   with data, per device, per model.\n\
+  3. Cast what Ada sees: point the cast lane (screenlive/workspace cast,\n   verified 2026-10-07 on GEV) at the\
+  \ eye page — TV shows live YOLO\n   overlay. No server-side annotate/encode needed.\n4. Ada hookup: latest detections\
+  \ land in MDDB → an ada tool\n   (`ada_look`?) answers \"what do you see\" from the freshest frame;\n   keeps\
+  \ the confirm-gate authority model for any action on detections."
+links:
+- chaba-nest
+- gesture-ui-options
+- benchmark-casting
+- ada-kanban-access
+help: 'Reuses: vendored onnxruntime-web (pwa/vendor/transformers, committed a14238f), screenlive cast path (verified),
+  xmeye HLS shim, MDDB bench doc pattern. Constraints: iOS PWA-mode mic/cam quirks (Safari vs home-screen), model
+  size one-time download, JS NMS cost on old devices.'
+blocked_by: []
+autonomy: t1
+action:
+  type: dispatch
+  status: done
+  runner: mn01
+  result: 'exit=0 s 404 until then), timer install, ada-pi implementation, and the first real TV cast. | devin-task-20261007-141922-phases-1-apps-eye-page-ada-pi-.service:
+    Consumed 1min 22.607s CPU time over 40min 48.556s wall clock time, 178.5M memory peak.'
+comms:
+- at: 2026-10-07 21:02
+  from: tony
+  text: queued for processing
+- at: 2026-10-07 21:04
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:04
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 21:09
+  from: tony
+  text: retry requested
+- at: 2026-10-07 21:10
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:10
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 21:15
+  from: tony
+  text: retry requested
+- at: 2026-10-07 21:16
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:16
+  from: mn01
+  text: 'finished (failed): start failed: worktree failed for /home/tony/CascadeProjects/chaba'
+- at: 2026-10-07 21:18
+  from: tony
+  text: retry requested
+- at: 2026-10-07 21:19
+  from: mn01
+  text: claimed
+- at: 2026-10-07 21:19
+  from: chaba
+  text: started devin-task-20261007-141922-phases-1-apps-eye-page-ada-pi- on mn01 (dispatch)
+- at: 2026-10-07 21:41
+  from: devin
+  text: 'picked up — phase 1 page exists on master (e236153). Gaps found: MDDB endpoint hardcoded to a nonexistent
+    /mddb route (bench POST silently fails), no xmeye source, no bench-edge CMS page, no cast script, no ada_look
+    spec. Implementing: same-origin /apps/eye-mddb write route + camwall-thumb/vms-snap sources + pub=N detections
+    to eye/latest + bench-edge CMS generator + cast-eye.sh + ada-pi handoff spec.'
+- at: 2026-10-07 21:59
+  from: devin
+  text: 'done on dispatch branch (b598b5a). Phase1 page existed but MDDB writes silently 404d — now same-origin
+    /apps/eye-mddb/v1/add route (tailnet-gated, add-only) + vms-snap proxy. xmeye sources: snap:<zone>/<key> camwall
+    thumbs + vms:<ch> fresh snaps. Phase2: bench-edge-cms.py + hourly timer -> ada-cms-pages/bench-edge (written,
+    empty-state). Phase3: cast-eye.sh + runbook (vcast nav lane + tony-omen:workspace -> HLS -> TV). Phase4: eye/latest
+    pub contract + ada_look spec; ada-pi impl filed as card ad'
+- at: 2026-10-07 22:00
+  from: mn01
+  text: 'finished (ok): exit=0 s 404 until then), timer install, ada-pi implementation, and the first real TV cast.
+    | devin-task-20261007-141922'
+- at: 2026-10-07 22:00
+  from: chaba
+  text: 'auto-merge not done: push: fatal: could not read Username for ''https://github.com'': No such device or
+    address — close will block until merged'
+- at: 2026-10-08 05:51
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0187'
+- at: 2026-11-09 20:09
+  from: tony
+  text: archived (32d in done, board over card cap)
+claim: {}
+ref: OPS-0187

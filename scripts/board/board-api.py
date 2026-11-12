@@ -773,15 +773,21 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
     return f"moved to {col}"
 
 
-def do_archive(card: dict, frm: str) -> str:
+def do_archive(card: dict, frm: str, cap: bool = False) -> str:
     """Eligibility gate for /action do=archive — the file move itself is
     done by the caller (_archive_move). Only verified done work ages out;
-    unverified done cards stay on the board for human review."""
+    unverified done cards stay on the board for human review — unless
+    cap=True (board over its card cap, archive-done.py --cap): then any
+    done card ages out, but never one with an unanswered request."""
     if card.get("column") != "done":
         raise ValueError("archive needs column=done")
-    if not (card.get("action") or {}).get("verified"):
+    verified = bool((card.get("action") or {}).get("verified"))
+    if not verified and not cap:
         raise ValueError("archive needs action.verified=true "
-                         "(verified done work only)")
+                         "(verified done work only) or cap=true")
+    if cap and any(not r.get("answer") for r in (card.get("requests") or [])
+                   if isinstance(r, dict)):
+        raise ValueError("cap archive skips cards with unanswered requests")
     upd = str(card.get("updated") or "")
     try:
         dt = datetime.strptime(upd, "%Y-%m-%d %H:%M")
@@ -791,7 +797,8 @@ def do_archive(card: dict, frm: str) -> str:
     if age < ARCHIVE_MIN_DAYS:
         raise ValueError(
             f"too fresh: updated {upd} ({age}d < {ARCHIVE_MIN_DAYS}d)")
-    comms_add(card, frm, f"archived ({age}d in done, verified)")
+    comms_add(card, frm, f"archived ({age}d in done, "
+                         f"{'verified' if verified else 'board over card cap'})")
     return f"archived ({age}d in done)"
 
 
@@ -837,7 +844,7 @@ def do_claim(card: dict, body: dict) -> str:
     if not host:
         raise ValueError("claim needs host")
     pinned = a.get("host")
-    if pinned and pinned != host:
+    if pinned and dr.canon_host(pinned) != dr.canon_host(host):
         raise ValueError(f"card is pinned to {pinned}")
     # Claim-time JEV routing metadata is written atomically with the
     # first-wins claim, so every remote claimer preserves the lane/model.
@@ -898,7 +905,7 @@ def do_finish(card: dict, body: dict) -> str:
         raise ValueError("finish needs host")
     if a.get("status") != "running":
         raise ValueError(f"not running (status={a.get('status', 'idle')})")
-    if a.get("runner") and a["runner"] != host:
+    if a.get("runner") and dr.canon_host(a["runner"]) != dr.canon_host(host):
         raise ValueError(f"claimed by {a['runner']}")
     ok = bool(body.get("ok", True))
     a["status"] = "done" if ok else "failed"
@@ -3796,7 +3803,7 @@ def queue_view() -> dict:
 
 class H(BaseHTTPRequestHandler):
     def _send(self, code: int, obj):
-        body = json.dumps(obj, ensure_ascii=False).encode()
+        body = json.dumps(obj, ensure_ascii=False, default=str).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
@@ -3949,7 +3956,8 @@ class H(BaseHTTPRequestHandler):
                         card["updated"] = now()
                         save(p, card)
                     elif verb == "archive":
-                        msg = do_archive(card, actor(body))
+                        msg = do_archive(card, actor(body),
+                                         cap=body.get("cap") is True)
                         card["updated"] = now()
                         _archive_move(p, card)
                     elif verb == "unarchive":

@@ -1,0 +1,22 @@
+id: michael-dev-migrate-mn01
+title: Migrate michael-dev HA instance from idc02:8124 to mn01
+column: backlog
+updated: 2026-11-10 07:03
+brief: 'Tony 2026-11-09: move michael-dev to mn01 (currently on idc02 since 2026-10-26 migration).'
+priority: medium
+tags:
+- migration
+- home-assistant
+- mn01
+- idc02
+spec: 'michael-dev currently listens 127.0.0.1:8124 on idc02 (ssot.routes.yml services.michael-dev, migrated 2026-10-26
+  OPS-0725 ph follow-up). Move the HA instance/container to mn01. Update: ssot.routes.yml service entry (host, listen,
+  tailnet URL), any tailscale-serve mounts referencing idc02:8124, stacks/web/public/apps/apps.yml host_url, HA
+  dashboard iframes/tabs that point at michael-dev, caddy edge upstreams if any, ssot.health checks. Verify consumer
+  surfaces (dashboard tab loads, ada-michael lane if it depends on it). Follow docs/kb/host-migration-tony-dell.md
+  runbook patterns; state rollback before executing.'
+ref: HOM-1309
+comms:
+- at: 2026-11-10 07:03
+  from: tony
+  text: card captured via board-api

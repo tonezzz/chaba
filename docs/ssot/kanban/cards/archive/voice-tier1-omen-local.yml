@@ -1,0 +1,40 @@
+id: voice-tier1-omen-local
+title: 'voice Tier-1 test: local voice loop on omen (qwen3:4b + whisper + Piper)'
+column: done
+updated: 2026-11-09 20:15
+brief: 'Prove the fully-local voice loop on the weakest box (omen GTX 1650 4GB): Mic → Silero VAD → whisper STT
+  → qwen3:4b LLM → Piper/Kokoro TTS. Baseline to measure the T4 version against later (lesson local-voice-full-landscape,
+  post 2270).'
+priority: high
+program: chaba-ci
+tags:
+- voice
+- local
+- omen
+- qwen3
+- rainy-day
+spec: 'Pick fastest path on omen: check Go toolchain (sherpa-voice-assistant) vs Python (speech-to-speech CPU mode).
+  Pull qwen3:4b on omen Ollama. Wire STT (whisper — ada already has it) + TTS (Piper/Kokoro). Test the loop end-to-end.
+  Accept when: spoken question → spoken answer, fully local, no cloud. Measure latency.'
+note: 'Tony 2026-10-24: excited about voice again, start instead of waiting. Tier-1 = omen local; Tier-2 (T4 full-duplex)
+  blocked on Colab worker.'
+ref: ADA-0816
+comms:
+- at: 2026-10-24 13:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-24 14:12
+  from: tony
+  text: closed by tony
+- at: 2026-10-24 14:12
+  from: devin
+  text: '✅ LIVE + VERIFIED 2026-10-24 14:11: iPhone voice round-trip complete: MediaRecorder webm → ffmpeg decode
+    → whisper STT → hermes3:8b → Piper TTS → audio played on phone. Root cause of earlier failures: iOS Safari rejects
+    AudioContext forced sampleRate AND ScriptProcessor is flaky — fixed with MediaRecorder + server-side ffmpeg
+    decode. URL: https://tony-omen.taila0626a.ts.net/ (tailscale HTTPS, secure context). Runs as systemd unit voice-miniapp
+    on omen. Fully local, $0. Upgrade path: T4/qwen3:8b '
+- at: 2026-11-09 20:15
+  from: tony
+  text: archived (16d in done, board over card cap)
+action:
+  status: done

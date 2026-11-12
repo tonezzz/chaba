@@ -1,0 +1,81 @@
+id: worktree-sprawl
+title: Branch/worktree sprawl — 20 branches ahead, 51 worktrees
+column: done
+note: 'Standing con from DEV_SYSTEM_ASSESSMENT (was hard-failing SSOT CI until 2026-10-03 — now advisory). Work:
+  list worktrees, classify merged/stale/ active, archive or delete merged branches, consolidate long-tail work.'
+help: '1. git worktree list — classify each: merged / stale / active-session
+
+  2. git branch --merged master → delete merged branches (local + remote)
+
+  3. For branches ahead of master: either PR/merge, or archive label + remove
+
+  4. Worktrees belonging to dead sessions → git worktree remove
+
+  5. Re-run reports/DEV_SYSTEM_ASSESSMENT — cons should drop to 0'
+comms:
+- at: 2026-10-04 12:08
+  from: devin
+  text: 'Audit 2026-10-04 12:0x — the 51-worktree figure is stale: actual = 8 dirs (7 dispatch-wt-* on chaba + 1
+    ada-pi-wt), all clean, all on unmerged dispatch/* branches. Remote: 21 unmerged branches (0 merged), all diverged
+    pre-rewrite — cherry/diff cant auto-classify; each carries real topical deltas (esp32, yolo-ha, rview-gemini,
+    tpl-design, tailscale...). STRUCTURAL GAP: dispatch sessions cut worktrees but nothing merges or removes them
+    — sprawl self-regenerates with every dispatch. Needs: (a) deci'
+- ts: '2026-10-04T12:08:49'
+  from: devin
+  text: 'Added needs-you: branch-disposition (archive / review-top-5 / leave). The dispatch merge-back policy piece
+    goes to session-claim-rules.'
+- at: 2026-10-04 18:16
+  from: tony
+  text: 'answered branch-disposition: review-top — review the top-5 by recency (snapshot, yolo-ha, ai-hub, rk900,
+    tpl) for salvageable deltas, then tag+archive the rest with a manifest'
+- at: 2026-10-04 18:16
+  from: devin
+  text: open request(s) answered by devin per Tony's 'do all' instruction in the board triage session — recommendations,
+    flip any that are wrong
+- at: 2026-10-04 18:55
+  from: devin
+  text: 'Stash audit: 18→12. Cleared 6 generated-churn/superseded autostashes (verified byte-identical to HEAD before
+    dropping — incl. one accidentally dropped mid-audit, recovered via fsck+stash store). Remaining 12 contain real
+    edits from past sessions — cam-wall-cms/pull.py, input-bridge/server.mjs, vcast UI, gev tools.json, ssot.mcp.yml,
+    ha-howto, tradecanvas UI, named WIPs on test/ultralytics-yolo-ha. Same decision class as branch-disposition.'
+- at: 2026-10-04 19:59
+  from: devin
+  text: 'remaining: review top-5 branches by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) then tag+archive the
+    rest with manifest.'
+- at: 2026-10-04 20:37
+  from: tony
+  text: queued for processing
+- at: 2026-10-04 20:45
+  from: devin
+  text: 'Done. Top-5 audited: snapshot branch already salvaged via e27c9075; ai-hub + yolo + rk900 verified superseded
+    on master; tpl-design held the only real salvage — promote-michael.sh + promote-tony.sh restored (6c963fc0,
+    AGENTS.md referenced them but they were missing). All 21 stale remote branches tagged archive/* and deleted;
+    manifest at docs/ssot/audit/branch-archive-20261004.md. Additionally merged 7 orphaned dispatch branches (JEV
+    training pipeline, GEV zoom/flight, ada inbox triage r2, job re'
+- at: 2026-10-04 20:45
+  from: tony
+  text: closed by Tony
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: OPS-0032'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+updated: 2026-11-09 20:08
+requests:
+- id: branch-disposition
+  ask: 21 unmerged remote branches all carry real topical deltas from pre-rewrite master — how to handle?
+  status: answered
+  options:
+  - id: archive
+    label: archive — tag each, delete branch refs, keep a manifest
+  - id: review-top
+    label: review top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) — rest archive
+  - id: leave
+    label: leave them — branch refs are cheap, revisit never
+  answer: review-top — review the top-5 by recency (snapshot, yolo-ha, ai-hub, rk900, tpl) for salvageable deltas,
+    then tag+archive the rest with a manifest
+action:
+  type: dispatch
+  status: done
+ref: OPS-0032

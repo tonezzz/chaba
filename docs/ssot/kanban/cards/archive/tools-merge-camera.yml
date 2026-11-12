@@ -1,0 +1,58 @@
+id: tools-merge-camera
+title: Consolidate cctv + traffic + snapshot camera tools
+column: done
+blocked_by: tool-consolidation-design
+note: Implement per consolidation spec; keep old names as soft aliases initially.
+updated: 2026-11-09 20:08
+action:
+  type: dispatch
+  repo: ada-pi
+  status: done
+  task_id: 20261005-004926-merge-the-camera-tool-group-5-
+  runner: tony-dell
+  result: 20261005-004926-merge-the-camera-tool-group-5- finished (inactive) — see `devin-dispatch logs 20261005-004926-merge-the-camera-tool-group-5-`
+spec: "Merge the camera tool group (5 -> 2) per the consolidation spec:\n- ada_camera_snapshot absorbs cctv_snapshot,\
+  \ traffic_camera ->\n  camera_snapshot(source=auto|vms|traffic, view=..., screen=N)\n- cctv_wall: unchanged (wall\
+  \ != single frame)\n- vcast_snapshot keeps display capture; capture_frame retires into it.\n- Gate: ada_camera_snapshot\
+  \ live-freshness behaviour unchanged.\nRules: absorbed names stay registered but hidden (x-legacy: true) via tool_runner._ALIASES;\
+  \ DEVIN_CONFIRMED_TOOLS/confirm_strip unchanged (gate keys off resolved tool name, not alias). Full design doc:\
+  \ chaba docs/assessments/tool-consolidation-spec-2026-10-04.md on tony-dell — may be UNREADABLE from an ada-pi\
+  \ worktree, so this spec is self-contained. Verify: tool decl lint passes, each absorbed alias routes to its parent,\
+  \ post outcome + merged count in the card comms."
+comms:
+- at: 2026-10-05 00:47
+  from: tony
+  text: queued for processing
+- at: 2026-10-05 00:50
+  from: chaba
+  text: dispatched 20261005-004926-merge-the-camera-tool-group-5- on ada-pi
+- at: 2026-10-05 00:51
+  from: devin
+  text: 'starting: exploring camera tool group'
+- at: 2026-10-05 01:13
+  from: devin
+  text: 'DONE — camera group merged 5->2. Canonical: ada_camera_snapshot (source=auto|vms|traffic, view=, screen=/target=)
+    + vcast_snapshot (display self-capture); cctv_wall unchanged. 3 aliases: cctv_snapshot->ada_camera_snapshot{source:vms,target:tv},
+    traffic_camera->ada_camera_snapshot{source:traffic}, capture_frame->vcast_snapshot. tool-lint clean (104 declared,
+    3 aliases). pytest: 469 pass, 8 pre-existing env fails (ai_edge_litert/mddb/CMS-index stale asserts, none touched
+    by this diff); alias routi'
+- at: 2026-10-05 01:15
+  from: chaba
+  text: run finished (inactive) → review
+- at: 2026-10-05 08:58
+  from: devin
+  text: 'merged+deployed to ada-pi main (7e835dc): camera tools consolidated — cctv_snapshot+traffic_camera absorbed
+    into ada_camera_snapshot source= param, capture_frame into vcast_snapshot. _ALIASES/_ALIAS_ARG_DEFAULTS union-merged
+    with memory family. Worktree work was uncommitted — salvaged before merge.'
+- at: 2026-10-05 08:58
+  from: tony
+  text: moved review -> done
+- at: 2026-10-11 08:35
+  from: chaba
+  text: 'ref assigned: MED-0043'
+- at: 2026-11-09 20:08
+  from: tony
+  text: archived (35d in done, board over card cap)
+claim:
+  since: 2026-10-05 00:50
+ref: MED-0043

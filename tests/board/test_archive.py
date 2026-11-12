@@ -66,6 +66,62 @@ class DoArchiveTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mod.do_archive(_card(updated="not-a-date"), "devin")
 
+    def test_cap_archives_unverified_old_done(self):
+        card = _card(verified=False)
+        msg = self.mod.do_archive(card, "devin", cap=True)
+        self.assertIn("archived", msg)
+        self.assertIn("card cap", card["comms"][-1]["text"])
+
+    def test_cap_still_rejects_non_done_and_fresh(self):
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(column="backlog", verified=False),
+                                "devin", cap=True)
+        fresh = (dt.datetime.now() - dt.timedelta(days=1)).strftime(
+            "%Y-%m-%d %H:%M")
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(_card(verified=False, updated=fresh),
+                                "devin", cap=True)
+
+    def test_cap_skips_unanswered_request(self):
+        card = _card(verified=False)
+        card["requests"] = [{"id": "r1", "ask": "?"}]
+        with self.assertRaises(ValueError):
+            self.mod.do_archive(card, "devin", cap=True)
+
+
+class SweepPlanTest(unittest.TestCase):
+    """archive-done.py plan(): verified first, then oldest done to cap."""
+
+    def _sweep(self, td):
+        os.environ["KANBAN_CARD_DIR"] = td
+        spec = importlib.util.spec_from_file_location(
+            "archive_done", REPO / "scripts" / "board" / "archive-done.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_cap_takes_oldest_unverified_done_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            def put(cid, **kw):
+                c = _card(**kw)
+                c["id"] = cid
+                Path(td, f"{cid}.yml").write_text(yaml.safe_dump(c))
+            old = lambda d: (dt.datetime.now() - dt.timedelta(days=d)
+                             ).strftime("%Y-%m-%d %H:%M")
+            put("v1", verified=True)
+            put("u-old", verified=False, updated=old(40))
+            put("u-mid", verified=False, updated=old(20))
+            put("u-fresh", verified=False, updated=old(1))
+            put("live", column="backlog", verified=False)
+            mod = self._sweep(td)
+            try:
+                total, verified, capped = mod.plan(7.0, 2)
+            finally:
+                os.environ.pop("KANBAN_CARD_DIR", None)
+            self.assertEqual(total, 5)
+            self.assertEqual([c["id"] for c in verified], ["v1"])
+            self.assertEqual([c["id"] for c in capped], ["u-old", "u-mid"])
+
 
 class ArchiveMoveTest(unittest.TestCase):
     @classmethod

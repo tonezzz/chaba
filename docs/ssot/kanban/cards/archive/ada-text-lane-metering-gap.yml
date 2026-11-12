@@ -1,0 +1,66 @@
+id: ada-text-lane-metering-gap
+title: 'Text-relay turns are unmetered: usage.jsonl + journal-report miss LINE/TG text-mode token cost'
+column: done
+updated: 2026-11-09 20:16
+brief: 'LINE_TEXT_MODE=1 means the main messaging lane runs OpenRouterTextProvider via gemini_pool.generate — which
+  never calls usage_ledger.record and emits no "usage turn in=" log line. All 76k records in data/usage.jsonl are
+  source=live. Result: the actual chat lanes token/day is invisible to journal-report and the usage endpoint; only
+  the LiteLLM gateway meters it. Found during lab-ada-session-boundaries spike.'
+priority: low
+spec: 'Add usage recording to the text path: either usage_ledger.record inside gemini_pool.generate (source=text-relay,
+  session_id passthrough) or a usage turn log line in OpenRouterTextProvider._complete so scripts/ada/journal-report.py
+  counts it. Also two hygiene items from the same spike: (1) LINE_IDLE_SESSION_S_NIGHT=120 is set in secrets but
+  no code reads it — either implement the night-idle in line_relay.py or drop the env var; (2) OpenRouterTextProvider._turns
+  grows unbounded within a WS session — add a sliding cap (e.g. keep last N turns + re-prime) for parity with Live
+  sliding window.'
+ref: ADA-0752
+comms:
+- at: 2026-10-20 15:44
+  from: devin
+  text: card captured via board-api
+- at: 2026-10-26 08:28
+  from: tony
+  text: queued for processing
+- at: 2026-10-26 08:29
+  from: chaba
+  text: 'idc03 defers: push guard: no push:ada-voice label and `git push --dry-run` fails in /home/tony/CascadeProjects/ada-voice
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-10-26 08:58
+  from: tony-macbook
+  text: claimed
+- at: 2026-10-26 08:58
+  from: chaba
+  text: started devin-task-20261026-085845-add-usage-recording-to-the-tex on tony-macbook (dispatch)
+- at: 2026-10-26 08:59
+  from: tony-macbook
+  text: 'finished (ok): exit=0 devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Failed with result
+    ''exit-code''. | devin-task-2'
+- at: 2026-10-26 08:59
+  from: chaba
+  text: pushed dispatch/20261026-085845-add-usage-recording-to-the-tex to origin
+- at: 2026-10-26 08:59
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261026-085845-add-usage-recording-to-the-tex,
+    branch dispatch/20261026-085845-add-usage-recording-to-the-tex'
+- at: 2026-10-26 09:01
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261026-085845-add-usage-recording-to-the-tex on
+    tony-macbook — if the work was never pushed it may be gone'
+- at: 2026-10-31 08:16
+  from: tony
+  text: closed by tony
+- at: 2026-11-09 20:16
+  from: tony
+  text: archived (9d in done, board over card cap)
+action:
+  repo: ada-voice
+  type: dispatch
+  status: done
+  runner: tony-macbook
+  result: 'exit=0 devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Failed with result ''exit-code''.
+    | devin-task-20261026-085845-add-usage-recording-to-the-tex.service: Consumed 2.390s CPU time over 1.460s wall
+    clock time, 42.1M memory peak.'
+  sweep:
+    session_gone: 2026-10-26 09:01
+review_kind: verify
+claim: {}

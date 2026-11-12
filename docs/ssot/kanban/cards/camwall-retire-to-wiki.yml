@@ -1,0 +1,25 @@
+id: camwall-retire-to-wiki
+title: Camwall retirement — map consumers, stop units, document restore in wiki
+column: backlog
+updated: 2026-11-10 07:03
+brief: 'Tony 2026-11-09: stop camwall and migrate documentation to wiki hierarchy for later restore. WARNING: camwall
+  is a subsystem, not just an app — it feeds Ada stale-snapshot fallback, CMS cam pages, vcast walls, KK twin.'
+priority: medium
+tags:
+- retirement
+- camwall
+- idc02
+- idc03
+- tony-dell
+spec: 'Phase 1 (required before any stop): map ALL consumers — scripts/cam-wall/cam-wall-pull.py timer on tony-dell,
+  cam-wall-cms.py + cam-wall-cms-kk.timer, camwall-edge containers on idc02+idc03 (stacks/services/camwall-edge,
+  stacks/idc03/camwall-edge), /apps/camwall route + static page, zones.yml, Ada backend/vms_camera.py stale_snapshot
+  fallback + cctv_wall tool, vcast wall casting, CMS ada-cms-pages camwall-* pages, mn01 vms-snap shim :8377 usage
+  by other features. Phase 2: get Tony sign-off on consumer list (card request with options: full stop vs keep-Ada-snapshot-only),
+  then stop/disable units, remove routes, write docs/kb/retired-apps/camwall.md with full restore steps (units,
+  timers, env files, zone config location). Do NOT delete data dirs or zones.yml.'
+ref: MED-1311
+comms:
+- at: 2026-11-10 07:03
+  from: tony
+  text: card captured via board-api

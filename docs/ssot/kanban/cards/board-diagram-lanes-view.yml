@@ -1,0 +1,30 @@
+id: board-diagram-lanes-view
+title: 'Board: finish /apps/board-diagram lane view — prototype exists, needs commit+deploy+tab+controls'
+column: backlog
+updated: 2026-11-10 07:03
+brief: Lane/sub lane diagram of kanban cards per project, starting with Adobe Stock; Tony wants a mental image of
+  project flow and manual control (claim/move/finish) without n8n.
+priority: high
+tags:
+- kanban-ux
+- board
+- adobe-stock
+spec: 'PROTOTYPE ALREADY EXISTS uncommitted in tony-macbook exec checkout ~/CascadeProjects/chaba: stacks/web/public/apps/board-diagram/{index.html,css/theme.css,js/{app,config,diagram}.js}
+  plus matching uncommitted edits in docs/ssot/infrastructure/ssot.routes.yml (board-diagram route) and stacks/web/Caddyfile
+  (handle_path block). Copy those files into your worktree first — do NOT rewrite from scratch.
+
+
+  Remaining work: (1) verify js imports resolve (diagram.js imports DONE_RECENT_DAYS from ../board-gantt/js/config.js
+  and groupOf/groupLabel from ../board-gantt/js/groups.js — confirm exports match); (2) node smoke-test buildLanes
+  against live /apps/board2/cards.json like the gantt card did; (3) commit+push via git-safe-push; (4) deploy static
+  dir to web root on idc02 (same path as board-gantt deploy); (5) render-routes.py regen routes.json if needed;
+  (6) add chaba-admin HA dashboard tab via scripts/home-assistant/push-dashboard.py + sync-ada-ha-chaba-admin.py
+  — order: Kanban, Diagram, Gantt… and move Gantt after Obsidian per Tony 2026-11-09; (7) CONTROL: add per-node/per-lane
+  action buttons posting to board-api /action (claim/move/finish) — read scripts/board/board-api.py for exact verbs;
+  keep auth model identical to board2 (tailnet identity / edge key). Verify live at https://tony-ha.surf-thailand.com/apps/board-diagram/
+  behind CF Access.'
+ref: KNB-1307
+comms:
+- at: 2026-11-10 07:03
+  from: tony
+  text: card captured via board-api
