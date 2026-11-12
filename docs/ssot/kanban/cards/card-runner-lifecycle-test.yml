@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:38
+updated: 2026-11-12 15:39
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -67,9 +67,12 @@ comms:
   text: 'finished (failed): lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
 
     fatal: a branch named ''card'
+- at: 2026-11-12 15:39
+  from: devin
+  text: queued for processing
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
   last_failure: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line).
     Verified via wc/od. CI pending." --from devin 2>&1 | head -40
@@ -78,7 +81,6 @@ action:
 
     > build · iceman-free'
   attempts: 1
-  runner: tony-dell
   result: 'lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
 
     fatal: a branch named ''card/knb-0065'' already exists'
