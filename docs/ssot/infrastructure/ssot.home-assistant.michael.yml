@@ -53,6 +53,12 @@ quarantine:
     (proven by tailscale0 tcpdump: the :8123 SYN never leaves idc03's tun).
   restore: "sudo systemctl stop mn-ha-quarantine (removes both rules; disable
     to make permanent). ssh michael-ha stays open — admin path."
+  relay_exception: >-
+    2026-11-12: reporting consumers on idc03 use the declared
+    michael-ha-via-omen-tunnel.service relay (127.0.0.1:18123 via tony-omen)
+    rather than weakening this quarantine. The relay preserves the direct
+    idc03 -> michael-ha:8123 block and is limited to the Home Assistant API
+    port through tony-omen.
   note: >-
     The ONLY live HA credential is HOME_ASSISTANT_TOKEN inside
     idc03:~/.config/secrets/ada-ai-kraut.env (kraut backend) — now behind
