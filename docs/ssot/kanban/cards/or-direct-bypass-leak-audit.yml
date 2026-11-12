@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
 column: doing
-updated: 2026-11-12 14:41
+updated: 2026-11-12 15:42
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -26,3 +26,10 @@ comms:
     key deleted. (2) openrouter_provider.py _or_turn now prefers ADA_GEMINI_REST_BASE_URL+KEY with gw chain ADA_OR_GW_FALLBACK_MODEL;
     raw OR only when no gateway. Committed 0540fbb, pushed to ada-voice main via tony-dell. (3) OPENROUTER_API_KEY
     stripped from ada-chaba/ada-dev/ada-pi
+- at: 2026-11-12 15:42
+  from: devin
+  text: 'Closeout handoff: weather fix committed 70c51bf11c. OR work is NOT fully complete: key rotation remains
+    undone; zero unexplained spend not yet proven; failed OR fallbacks alone do not establish paid usage attribution.
+    Earlier OR dashboard/routes/health/LiteLLM hook scripts and units remain dirty or untracked in idc03 served
+    checkout; review, validate, reconcile live dashboard SSOT and commit those specific artifacts before closeout.
+    Do not include unrelated board2/out changes.'
