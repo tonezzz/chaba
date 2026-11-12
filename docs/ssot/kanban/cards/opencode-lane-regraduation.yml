@@ -227,6 +227,10 @@ comms:
     clean; stor-01 VERIFIER PASSED but flash-lite probed 3 denied bash verbs (find/mkdir/git status) despite explicit
     prompt warning - failure_reason=tool_denial. Gate verdict: ROLLBACK to S2. No void mechanism; demote+repromote
     re-hits the same row. Options needed.'
+- at: 2026-11-12 09:09
+  from: devin
+  text: 'raised request stor-01-tool-denial-3-refused-bash-probe-25909d: stor-01 tool_denial (3 refused bash probes,
+    verifier passed) trips the S3 rollback verdict permanently - no void mechani'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -274,4 +278,16 @@ requests:
   - hold
   answer: 'Tony selected A in chat: broaden contract to ssot-research/storage-dryrun profiles so real backlog asks
     feed S3. Recorded by Devin on behalf of Tony.'
+- id: stor-01-tool-denial-3-refused-bash-probe-25909d
+  ask: 'stor-01 tool_denial (3 refused bash probes, verifier passed) trips the S3 rollback verdict permanently -
+    no void mechanism. Pick: (A) execute contract rollback: demote S3->S2, then requalify to S0 and re-earn S1/S2/S3
+    fresh (designed path, preserves integrity, heaviest) (B) amend gate: refused-probe-with-clean-recovery becomes
+    hold not rollback AND allow <=3 denials/window - weaker integrity, keeps 4 samples (C) demote to S2 and freeze
+    S3 (park the lane). Recommend A - rules dont bend after a violation. Reply A/B/C.'
+  status: open
+  at: 2026-11-12 09:09
+  from: devin
+  options:
+  - proceed
+  - hold
 awaiting_action: true
