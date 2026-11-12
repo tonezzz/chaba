@@ -1,7 +1,7 @@
 id: keywatch-absolute-spend-floor
 title: 'key-watch: warn on absolute remaining + spend rate'
 column: backlog
-updated: 2026-11-12 14:10
+updated: 2026-11-12 16:26
 spec: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
   $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to catch
   spend velocity. scripts/ops/key-watch.py.
@@ -12,3 +12,30 @@ comms:
   text: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
     $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to
     catch spend velocity. scripts/ops/key-watch.py.
+- at: 2026-11-12 16:26
+  from: devin
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/gemini-3-pro
+  executor: opencode
+  profile: branch-code-supervised-pilot
+  target_host: idc02
+  artifact: evals/opencode-lane/out/keywatch-spend-floor.json
+  prompt: 'In scripts/ops/key-watch.py add two spend-safety checks to the openrouter slot path (it already warns
+    at usage/limit >= 80%): (a) absolute floor — warn via the existing warn path when any OR slot''s limit_remaining
+    < OR_REMAIN_FLOOR_USD (env, default 0.50); (b) rate check — persist last-seen usage_daily per slot in the existing
+    state file and warn when it jumps > OR_DAILY_JUMP_USD (env, default 0.25) day-over-day. Keep output shape unchanged;
+    add fields not new channels. Write evals/opencode-lane/out/keywatch-spend-floor.json summarising {artifact,
+    tests, verifier} then commit.'
+  expect:
+    required_keys:
+    - artifact
+    - tests
+    - verifier
+    facts:
+    - budget_usd<=2.0
+    - max_turns=40
+  lane: paid_frontier
+  status: queued
