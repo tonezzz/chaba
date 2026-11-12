@@ -865,6 +865,24 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
+      - name: gh-radar.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "oneshot — daily GitHub repo news digest
+          (~/CascadeProjects/gh-radar/bin/gh-radar.py --summarize
+          --notify): gh api releases -> reports/<date>.md + ollama
+          qwen3:8b TL;DR + HA iPhone push + MDDB bank doc + rolling
+          ada-cms-pages wiki page via board-api /report. Declared
+          2026-11-12 (card gh-radar); fired by gh-radar.timer"
+      - name: gh-radar.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Daily 07:20 Persistent=true — declared in ssot.jobs.yml
+          as job gh-radar (card gh-radar / SYS-0067)"
       - name: clip-sync-dell.service
         type: service
         scope: user

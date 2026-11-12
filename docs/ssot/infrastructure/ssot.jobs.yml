@@ -112,6 +112,26 @@ jobs:
   timeout: 10m
   exec: '%h/.config/home-assistant/ha-live/snapshot-config.sh'
   note: reads tony-ha config — host-bound until moved to an idc02 remote pull
+- id: gh-radar
+  name: GH Radar — daily GitHub repo news digest
+  host: tony_omen
+  dispatch: systemd
+  on_calendar: '*-*-* 07:20:00'
+  persistent: true
+  timeout: 30m
+  exec: '%h/CascadeProjects/gh-radar/bin/gh-radar.py --summarize --notify'
+  env:
+    OLLAMA_MODEL: qwen3:8b
+    MDDB_URL: http://100.102.134.91:11023/v1
+    BOARD_API: https://idc03.taila0626a.ts.net:10000
+  note: standalone project %h/CascadeProjects/gh-radar (own git repo —
+    NOT a chaba checkout; exec path is absolute, not chaba-relative).
+    gh api releases -> reports/<date>.md + local ollama qwen3:8b
+    (think:false) TL;DR + HA mobile_app_tony_ip push + MDDB
+    ada-ha-bank-devin-tony bank doc gh-radar/<date> + rolling
+    ada-cms-pages wiki page 'gh-radar' via board-api /report. Free
+    lane only — no paid APIs. Watchlist watchlist.yml groups->repos.
+    Landed 2026-11-12 (card gh-radar / SYS-0067).
 - id: chaba-audit
   name: Chaba Audit Suite (weekly)
   host: con01
