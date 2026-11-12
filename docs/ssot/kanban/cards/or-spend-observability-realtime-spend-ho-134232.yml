@@ -1,0 +1,21 @@
+id: or-spend-observability-realtime-spend-ho-134232
+title: OR spend observability — realtime spend hook + OR panel report
+column: doing
+updated: 2026-11-12 13:37
+priority: high
+tags:
+- litellm
+- openrouter
+- observability
+- idc03
+spec: 'Tony: OR credits drain fast, wants per-call observability. Design: (1) LiteLLM success/failure webhook callback
+  -> tiny receiver on idc03 appending spend-events.jsonl; (2) hourly OR /auth/key credits poller to expose gateway-bypass
+  consumers (credit delta minus gateway spend); (3) near-realtime report page ''or-panel'' in ada-cms-pages (per
+  key_alias x model x hour + unexplained-credit line), 15-min refresh timer; (4) burn-rate alert -> LINE push per
+  budget-watch pattern. Done-condition: Tony gets a working URL showing realtime OR spend per consumer + unexplained
+  credit leakage.'
+ref: OPS-0044
+comms:
+- at: 2026-11-12 13:37
+  from: tony
+  text: card captured via board-api
