@@ -1,0 +1,22 @@
+id: audit-ollama-service-tony-dell
+title: 'Resolve unexpected fleet service: ollama.service on tony-dell'
+column: backlog
+updated: 2026-11-12 14:49
+brief: 'audit-hosts.py --host tony-dell flags ''Unexpected fleet-looking system service: ollama.service'' — a running
+  unit never declared in ssot.audit.hosts.yml and not in allowed_running. Per declared-or-dead host hygiene it must
+  be declared, retired, or explained.'
+priority: low
+program: devnest
+tags:
+- audit
+- tony-dell
+spec: 'Investigate ollama.service on tony-dell: is it used (by whom — check ports :11434, consumers, timers)? Options:
+  (a) declare in ssot.audit.hosts.yml expected_services with a note of its role; (b) if unused, disable+remove and
+  note in card; (c) if a legitimate one-off, add to allowed_running with a comment. Verify: systemctl status ollama.service;
+  curl -s http://127.0.0.1:11434/api/tags; rg consumers in docs/ssot + scripts. Done-condition: audit-hosts.py --host
+  tony-dell no longer flags ollama.service as unexpected.'
+ref: AUD-0060
+comms:
+- at: 2026-11-12 14:49
+  from: tony
+  text: card captured via board-api
