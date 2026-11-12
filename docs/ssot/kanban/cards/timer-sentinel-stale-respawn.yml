@@ -1,7 +1,7 @@
 id: timer-sentinel-stale-respawn
 title: timer-sentinel re-spawns just-fixed timer cards off stale sweep state
 column: done
-updated: 2026-11-12 09:40
+updated: 2026-11-12 10:37
 priority: medium
 tags:
 - sentinel
@@ -51,5 +51,11 @@ comms:
     findings AND heals lost; (b) units that no longer exist (not-found) are unverifiable -> their alerts never auto-heal
     (fixed 3 manually today: dell cam-wall-roster-audit + chaba-jobs, omen wp-cam-snapshot). Suggest: heal pass
     should run BEFORE comment writes within budget, and not-f'
+- at: 2026-11-12 10:37
+  from: devin
+  text: '[sweep 2026-11-12] SHIPPED in 6fac535ac6: (a) comment-throttle — skip [still suspicious] when normalized
+    condition unchanged (~200 writes/hr -> ~0 steady-state); (b) reconcile now runs BEFORE fires so heals land even
+    when the write budget exhausts. Deployed to omen exec checkout. Remaining open gap from this mornings sweep:
+    not-found units stay unverifiable/open forever — suggest close-with-note after N consecutive sweeps absent.'
 action:
   status: done
