@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 16:02
+updated: 2026-11-12 16:12
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -148,11 +148,15 @@ comms:
 - at: 2026-11-12 16:02
   from: devin
   text: retry requested
+- at: 2026-11-12 16:12
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   last_failure: 'lifecycle stopped at changes: salvage apply: error: patch failed: .gitignore:18
 
     error: .gitignore: patch does not apply'
   attempts: 5
+  runner: tony-dell
