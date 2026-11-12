@@ -1,0 +1,63 @@
+id: 2026-11-12-mddb-embed-circuit-open-page
+kind: change-record
+title: Page on embed circuit-open / N consecutive failures at the proxy, not at the 15-min probe tick
+card: mddb-circuit-open-page
+ref: MEM-0046
+date: 2026-11-12
+host: idc03
+summary: >-
+  2026-11-12: "all same-space providers down (OR circuit-open + Gemini
+  failed)" ran ~30min silent — 298 failed embed attempts — because the
+  only alerting path was mddb-embed-probe's state transition on a 15-min
+  timer (worst case ~2 ticks + jitter). The component that knows first is
+  the proxy itself, so the emit moved to failure time: the proxy now
+  writes the same kind=ops-event doc the probe writes, the moment a
+  circuit trips or a failure streak crosses threshold.
+changes:
+  - file: scripts/mddb/gemini-ollama-proxy.mjs
+    what: >-
+      New emitOpsEvent() — fire-and-forget POST {MDDB_OPS_URL}/v1/add
+      (default http://100.102.134.91:11023) into ADA_OPS_COLLECTION
+      (ada-ha-events-tony), same doc shape as embed-probe's _emit,
+      session_id=gemini-ollama-proxy. Emits:
+        embed_circuit_open     — OR or Gemini circuit trips closed->open
+        embed_providers_down   — EMBED_FAIL_ALERT_AFTER (3) consecutive
+                                 failed embed requests (the cap-hit case)
+        embed_provider_restored — first success after an alerted episode
+      Rate limit OPS_ALERT_MIN_MS (15min) per type; providers_down fires
+      once per episode (restored re-arms). /health gains an `embed`
+      block: consecutive_failures / failures_total / ok_total /
+      last_error. Emit is wrapped so it can never delay or fail an
+      embed response.
+  - file: scripts/ada/embed-probe.py
+    what: >-
+      check_provider_health() now reads health.embed.consecutive_failures
+      and treats >= EMBED_PROXY_FAIL_ALERT (3) as degraded — backstop
+      that still pages on the next probe tick if the proxy's own emit
+      could not reach the ops collection.
+  - file: scripts/ops-digest.py
+    what: >-
+      FLAGGED gains embed_outage, embed_providers_down,
+      embed_circuit_open so the nightly digest marks them flagged.
+  - file: docs/kb/mddb-embedding-providers.md, ssot.services.yml
+    what: env vars + event types documented.
+verify:
+  - >-
+    Local simulation (mn01, stub OR + stub ops receiver):
+    OR 401 -> embed_circuit_open on request 1; requests 2-4 502 with
+    "all same-space providers down (OR circuit-open ...)" ->
+    embed_providers_down at request 3; OR stub flipped to 200 ->
+    embed_provider_restored on next call and consecutive_failures reset
+    to 0. `node --check` clean.
+deploy_note: >-
+  Repo is the source; the live copy is a manual file copy —
+  cp scripts/mddb/gemini-ollama-proxy.mjs to
+  idc03:~/.config/containers/mddb/proxy/ then
+  `systemctl --user restart gemini-ollama-proxy`. Same for idc01 standby.
+  The probe change ships via normal repo sync (chaba-repo-sync.timer);
+  mddb-embed-probe.timer needs no change.
+residual_gap: >-
+  If mddb /v1/add itself is down, the proxy emit fails (logged only) —
+  the probe's embed_outage transition remains the backstop for that
+  class. Wrong-space fallback events are still probe-domain
+  (embed_provider_degraded) and unchanged.

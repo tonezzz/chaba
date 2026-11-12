@@ -137,6 +137,10 @@ def check_queue() -> str:
 
 PROXY_HEALTH = os.environ.get(
     "EMBED_PROXY_HEALTH_URL", "http://127.0.0.1:11435/health")
+# Mirror of the proxy's EMBED_FAIL_ALERT_AFTER — this many consecutive
+# embed failures visible in /health counts as provider-down even if no
+# circuit reports open yet.
+EMBED_PROXY_FAIL_ALERT = int(os.environ.get("EMBED_PROXY_FAIL_ALERT", "3"))
 
 
 def check_provider_health() -> str:
@@ -147,6 +151,10 @@ def check_provider_health() -> str:
       embed_provider_restored — all circuits closed again
     Catches the silent mode the vector-search probe can't see: serving
     "up" on a paid/fallback leg while the primary is circuit-open.
+    Also treats the proxy's own consecutive-failure counter (added
+    2026-11-12, card mddb-circuit-open-page) as degraded — backstop for
+    the proxy-side embed_providers_down emit in case it can't reach the
+    ops collection.
     """
     try:
         h = json.loads(urllib.request.urlopen(PROXY_HEALTH, timeout=10).read())
@@ -154,10 +162,12 @@ def check_provider_health() -> str:
         print(f"proxy health unavailable: {exc}", file=sys.stderr)
         return ""
     circuit = h.get("circuit") or {}
-    degraded = circuit.get("or_open") or circuit.get("gemini_open")
+    consec_fail = int((h.get("embed") or {}).get("consecutive_failures", 0))
+    degraded = (circuit.get("or_open") or circuit.get("gemini_open")
+                or consec_fail >= EMBED_PROXY_FAIL_ALERT)
     which = ",".join(k for k, v in circuit.items() if v) or "none"
     note = (f"provider_mode={h.get('provider_mode','?')} "
-            f"circuits_open={which} "
+            f"circuits_open={which} consec_fail={consec_fail} "
             f"last_backup={h.get('last_backup_provider')}")
     print(note)
     try:
