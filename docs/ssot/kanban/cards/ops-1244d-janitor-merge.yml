@@ -1,7 +1,7 @@
 id: ops-1244d-janitor-merge
 title: 'OPS-1244d opencode: merge board sweep scripts into one janitor tick (sub of devnest-queue-consolidation)'
 column: done
-updated: 2026-11-12 09:58
+updated: 2026-11-12 10:37
 priority: medium
 tags:
 - devnest
@@ -122,4 +122,10 @@ comms:
 - at: 2026-11-12 09:58
   from: devin
   text: moved doing -> done
+- at: 2026-11-12 10:37
+  from: devin
+  text: '[sweep 2026-11-12] board-janitor is declared in ssot.jobs.yml but NEVER INSTALLED on idc03 — no board-janitor.timer
+    exists; merge-sweep runs standalone, review-digest runs on its own hand-installed unit (chaba-review-digest.timer,
+    *:0/15). Deployment step missing. Meanwhile bumped chaba-review-digest.service TimeoutStartSec 120->900 manually
+    (hand unit, not rendered).'
 claim: {}
