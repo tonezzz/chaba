@@ -1,7 +1,7 @@
 id: openchamber-hardening
 title: OpenChamber (ada-ocb) hardening
 column: doing
-updated: 2026-11-12 13:21
+updated: 2026-11-12 15:14
 brief: 'Post-merge hardening for OpenChamber on tony-dell (ada-ocb tab). Done 2026-11-12 via PRs 152+153: localhost-only
   bind, ssot.health coverage (unit + :8443 surface), monthly update timer, audit declaration. Remaining: passkey
   registration (Tony browser action), CF public edge (opt-in — see ada-ocb-public-edge).'
@@ -37,6 +37,12 @@ comms:
   text: 'CF edge built per ''build CF edge'' answer — see ada-ocb-public-edge for the full record (DNS, opencode-ada
     Access app, idc02 caddy block, iframe re-mutated, PR #154). Remaining open item on this card: passkey registration
     on the new ada-ocb.surf-thailand.com origin — Tony browser action, one-time.'
+- at: 2026-11-12 15:14
+  from: devin
+  text: 'CLOSING — all in-scope items done and verified live: localhost bind (127.0.0.1:3000), health checks (systemd
+    + tailnet http + public-edge 302), monthly update timer (test-ran clean), node24 ExecStart, public CF edge +
+    same-site iframe confirmed working in-browser by Tony. Passkey registration remains optional per-origin setup,
+    noted in comms.'
 requests:
 - id: two-tony-actions-remain-a-passkey-log-in-45b1da
   ask: 'Two Tony actions remain: (a) passkey — log into https://tony-dell.taila0626a.ts.net:8443 (or via ada-ocb
