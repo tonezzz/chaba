@@ -1,7 +1,7 @@
 id: ada-card-runner
 title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
 column: backlog
-updated: 2026-11-12 15:00
+updated: 2026-11-12 16:25
 brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
   assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
   to production.'
@@ -31,3 +31,10 @@ comms:
     LiteLLM backend, declared it in audit SSOT, verified the done-condition, respected all gates. Metrics n=1: 0
     human rescues, CI passed after baseline refresh (gate caught documented IP in card, not a code fault), done-condition
     was machine-checkable, pack was sufficient (~5KB). Next: '
+- at: 2026-11-12 16:25
+  from: devin
+  text: 'LIFECYCLE LANDED (PR #163 merged). card-run.py --lifecycle does the full loop on the dispatch contract:
+    queue→claim(host)→worktree→opencode run→verify→commit/push→PR→finish(ok)→review, finish(fail) marks the failed
+    stage. Proven end-to-end on KNB-0065 (PR #162). Also added: ada_card_pick + ada_card_context MCP tools (ada-voice
+    main, ada-control registered globally on tony-dell — OpenChamber sessions get them). Hardening from live debugging:
+    resume own stale claim, idempotent worktree (reused wt '
