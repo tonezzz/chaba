@@ -1,7 +1,7 @@
 id: mddb-breaker-rollout-remaining
 title: Roll embed circuit-breaker image to remaining mddb containers after soak
 column: backlog
-updated: 2026-11-12 00:05
+updated: 2026-11-12 08:54
 priority: low
 tags:
 - mddb
@@ -20,3 +20,7 @@ comms:
   text: 'Not rolled this session. Note for whoever picks it up: -breaker image is on the ops/cms/embed trio already?
     (verified: ops/cms/embed + leader all report 2.15.4); embed freeBytes startup-statfs bug (MEM-0027) should be
     checked against the 2.18.x rebuild under MEM-0024 rather than a same-version re-roll.'
+- at: 2026-11-12 08:54
+  from: devin
+  text: Folded into MEM-0024 checklist - breaker rollout happens through the 2.18.10 rebuild anyway; a same-version
+    re-roll would be wasted work.
