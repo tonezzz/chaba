@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:49
+updated: 2026-11-12 15:51
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -102,11 +102,15 @@ comms:
 - at: 2026-11-12 15:49
   from: devin
   text: retry requested
+- at: 2026-11-12 15:51
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   last_failure: "session rc=1, no repo changes. tail: fecycle ok\n\n---HEXDUMP---\n 6c 69 66 65 63 79 63 6c 65 20\
     \ 6f 6b 0a\n---STATUS---\\n\n> build · iceman-free\n\e[91m\e[1mError: \e[0mUpstream request failed: [server_error]\
     \ Upstream response was not valid JSON"
   attempts: 3
+  runner: tony-dell
