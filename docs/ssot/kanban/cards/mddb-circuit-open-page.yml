@@ -1,6 +1,6 @@
 id: mddb-circuit-open-page
 title: Page on embed circuit-open, not just probe-down
-column: backlog
+column: doing
 updated: 2026-11-12 14:22
 spec: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
   attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
@@ -32,7 +32,11 @@ comms:
     embed-probe new check_provider_health() emits embed_provider_degraded/embed_provider_restored ops-events on
     transitions. Verified live: first degraded event fired on deploy (gemini_open detected). Queue state file now
     merges keys.'
+- at: 2026-11-12 14:22
+  from: mn01
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: codemod
+  runner: mn01
