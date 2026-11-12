@@ -62,9 +62,14 @@ comms:
   text: 'lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
 
     fatal: a branch named ''card/knb-0065'' already exists'
+- at: 2026-11-12 15:38
+  from: tony-dell
+  text: 'finished (failed): lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
+
+    fatal: a branch named ''card'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   last_failure: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line).
     Verified via wc/od. CI pending." --from devin 2>&1 | head -40
@@ -74,3 +79,6 @@ action:
     > build · iceman-free'
   attempts: 1
   runner: tony-dell
+  result: 'lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
+
+    fatal: a branch named ''card/knb-0065'' already exists'
