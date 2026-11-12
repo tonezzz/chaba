@@ -1,7 +1,7 @@
 id: root-cause-idc03-michael-ha-8123-asymmet-1f9347
 title: Root-cause idc03 -> michael-ha:8123 asymmetric TCP failure
 column: backlog
-updated: 2026-11-12 13:19
+updated: 2026-11-12 13:23
 priority: medium
 tags:
 - infra
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-12 13:19
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 13:23
+  from: devin
+  text: 'ROOT CAUSE (re-verified 2026-11-12; first root-caused 2026-10-22 on card mn-ha-v4-8123-blocked): idc03
+    runs mn-ha-quarantine.service — DELIBERATE Tony order 2026-10-16 (do not touch Michael house infra). Live rule:
+    iptables OUTPUT DROP to 100.80.105.88 dpt:8123 v4+v6 — counter now 14M pkts / 815M dropped. Explains the asymmetry:
+    every other host fine; idc03 hits its own egress DROP (:22/:1883 pass, :8123 dropped, SYN never leaves tailscale0).
+    NOT a HAOS firewall or tailnet ACL issue — netmap Pac'
