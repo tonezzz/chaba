@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:42
+updated: 2026-11-12 15:43
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -91,9 +91,13 @@ comms:
 - at: 2026-11-12 15:42
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 2.09 > 0.85)'
+- at: 2026-11-12 15:43
+  from: tony-dell
+  text: "finished (failed): session rc=1, no repo changes. tail: fecycle ok\n\n---HEXDUMP---\n 6c 69 66 65 63 79\
+    \ 63 6c 65 20 6f 6b 0a\n---STATUS---\\n\n> "
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   last_failure: 'session rc=0, no repo changes. tail: a reports/card-runner/
 
@@ -108,3 +112,6 @@ action:
     > build · iceman-free'
   attempts: 2
   runner: tony-dell
+  result: "session rc=1, no repo changes. tail: fecycle ok\n\n---HEXDUMP---\n 6c 69 66 65 63 79 63 6c 65 20 6f 6b\
+    \ 0a\n---STATUS---\\n\n> build · iceman-free\n\e[91m\e[1mError: \e[0mUpstream request failed: [server_error]\
+    \ Upstream response was not valid JSON"
