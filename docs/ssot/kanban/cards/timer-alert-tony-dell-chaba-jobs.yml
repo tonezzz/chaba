@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-jobs
 title: Timer chaba-jobs on tony-dell failing
-column: backlog
-updated: 2026-11-12 09:36
+column: done
+updated: 2026-11-12 09:37
 priority: high
 tags:
 - timer-alert
@@ -350,7 +350,12 @@ comms:
   from: devin
   text: '[sweep 2026-11-12] chaba-jobs.timer not-found on tony-dell (retired, root cause noted Oct 27) — stale alert.
     Closing.'
+- at: 2026-11-12 09:37
+  from: devin
+  text: closed by devin
 spec: Investigate the recurring exit-code failures of chaba-jobs.service on tony-dell by inspecting the user journal
   via journalctl --user -u chaba-jobs.service and checking CMS timer-timeline-tony-dell. The target host is tony-dell
   and the relevant repository is chaba. The done-condition is verified when chaba-jobs runs successfully to completion
   without yielding an exit-code failure, allowing the timer-sentinel auto-close mechanism to trigger on green.
+action:
+  status: done
