@@ -41,7 +41,7 @@ def main():
                 sched = j.get("on_calendar") or ("every "+str(j["every"]) if j.get("every") else "-")
                 f.write("  - id: %s\n" % j["id"])
                 f.write("    schedule: %s\n" % json.dumps(sched, ensure_ascii=False))
-                f.write("    dispatch: %s\n" % j.get("dispatch","?"))
+                f.write("    dispatch: %s\n" % json.dumps(str(j.get("dispatch","?")), ensure_ascii=False))
                 if j.get("persistent"):
                     f.write("    persistent: true\n")
         print("wrote", p, len(js), "jobs")

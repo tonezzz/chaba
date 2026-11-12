@@ -152,7 +152,7 @@ index 6192072..b88a3cc 100644
 +                    turn_fidelity_calls = []
                      segment_tool_pending = False
                      self._dead_retried = False
-                     self._leak_active = False
+                     self._revoice_in_flight = False
 @@ -6063,6 +6186,29 @@ class GeminiLiveProvider(RealtimeProvider):
                              f"this turn ({'; '.join(_media_flags)}): "
                              f"{assistant_turn_text.strip()[:160]!r}",
@@ -180,9 +180,9 @@ index 6192072..b88a3cc 100644
 +                            turn_fidelity_calls)
 +                        for _ff in _fidelity_flags:
 +                            self._emit_ops_event("write_fidelity", _ff)
-                     tool_calls_this_turn = 0
-                     failed_results_this_turn = 0
-                     backing_calls_this_turn = 0
+                     if not tools_pending:
+                         # Claim-gate counters reset at the FINAL boundary
+                         # only — a mid-task reset orphaned the call from
 @@ -6155,6 +6301,7 @@ class GeminiLiveProvider(RealtimeProvider):
                          # Keep results across a mid-task boundary so a dead
                          # FINAL segment can still speak them as the fallback.
