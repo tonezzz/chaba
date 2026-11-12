@@ -36,6 +36,9 @@ comms:
 - at: 2026-11-12 16:43
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 2.07 > 0.85)'
+- at: 2026-11-12 16:43
+  from: tony
+  text: put on hold
 recoverability: R2
 auto_done_when:
 - verified_true
@@ -47,6 +50,5 @@ action:
     match pre-run export counts in comms; (3) du -sh ~/.config/containers/mddb/data/mddb.db < 9G; (4) idc02 follower
     (100.123.163.11:11023) catches up or is re-seeded and serves /v1/health 200; (5) POST /v1/vector-search returns
     results. Any failure => rollback and hold.'
-  status: queued
+  status: idle
   lane: codemod
-awaiting_action: true
