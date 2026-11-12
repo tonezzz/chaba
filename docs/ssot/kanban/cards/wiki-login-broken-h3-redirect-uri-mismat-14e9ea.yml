@@ -1,7 +1,7 @@
 id: wiki-login-broken-h3-redirect-uri-mismat-14e9ea
 title: wiki login broken — h3 redirect_uri_mismatch + iframe Google sign-in impossible
 column: done
-updated: 2026-11-12 16:12
+updated: 2026-11-12 16:13
 tags:
 - wiki
 - oidc
@@ -51,6 +51,13 @@ comms:
   from: tony
   text: closed by tony
 - at: 2026-11-12 16:12
+  from: devin
+  text: 'Follow-up fix 2026-11-12: clicking ปรับปรุงล่าสุด/Education: links inside the ada-ha wiki iframe showed
+    refused-to-connect — protected pages (Education:, Reports:, login, RecentChanges) send X-Frame-Options: SAMEORIGIN.
+    Fix deployed via FTP: LocalSettings.php now emits Content-Security-Policy: frame-ancestors self + https://*.surf-thailand.com
+    + https://*.gizmo-thailand.com — modern browsers ignore XFO when frame-ancestors is present, so our dashboards
+    can frame the wiki while clickjacking prote'
+- at: 2026-11-12 16:13
   from: devin
   text: 'Follow-up fix 2026-11-12: clicking ปรับปรุงล่าสุด/Education: links inside the ada-ha wiki iframe showed
     refused-to-connect — protected pages (Education:, Reports:, login, RecentChanges) send X-Frame-Options: SAMEORIGIN.
