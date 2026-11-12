@@ -1,6 +1,6 @@
 id: idc03-michael-ha-omen-relay
 title: Declare idc03 -> tony-omen -> michael-ha relay in host SSOT
-column: backlog
+column: done
 updated: 2026-11-12 08:53
 brief: 'Temporary operational fix is live: idc03 cannot TCP-reach michael-ha:8123 directly, while tony-omen can
   SSH/HTTP reach it. Installed ~/.config/systemd/user/michael-ha-via-omen-tunnel.service on idc03 (127.0.0.1:18123
@@ -27,3 +27,8 @@ comms:
     in ssot.services.yml and ssot.home-assistant.michael.yml. Important correction: idc03->michael-ha:8123 is intentionally
     blocked by mn-ha-quarantine.service (not an accidental firewall bug); the relay preserves that quarantine and
     forwards only HA API traffic via tony-omen. I'
+- at: 2026-11-12 08:53
+  from: devin
+  text: closed by devin
+action:
+  status: done
