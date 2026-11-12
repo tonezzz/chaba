@@ -177,6 +177,29 @@ hosts:
           or a stale sweep"
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
+      - name: openchamber.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "OpenChamber (@openchamber/web npm pkg) — web UI control panel
+          for opencode agent sessions: browse/spawn sessions, watch agent
+          output, session archive. Serves :3000 on 0.0.0.0 (LAN+tailnet);
+          tailscale serve exposes https://tony-dell.taila0626a.ts.net:8443.
+          Embeds in ada-ha chaba-admin as the ada-ocb iframe tab (card
+          ada-ocb-public-edge, merged PR #149). Declared 2026-11-12 —
+          previously ran as ad-hoc `openchamber start` daemon; promoted to
+          a systemd unit so env (OPENCHAMBER_FRAME_ANCESTORS CSP, UI
+          password, OPENCODE_BINARY) and restart survive reboots.
+          Config/env: ~/.config/openchamber/startup.env (mode 600, holds
+          OPENCHAMBER_UI_PASSWORD — do not commit). Requires node >=24.14
+          (PATH pins ~/.local/node24/bin first) and opencode >=2.2.4
+          (@opencode/cli, spawns `opencode serve` per session on an
+          allocated port). Debug: `journalctl --user -u openchamber.service`,
+          `openchamber logs -p 3000`, ~/.config/openchamber/logs/.
+          Gotchas: SameSite=Strict session cookie => iframe only works when
+          dashboard is opened same-site (tony-omen tailnet URL), not via
+          ada-ha.surf-thailand.com; refuses LAN bind without UI auth."
       - {name: chaba-tunnel.service, type: service, scope: user}
       - {name: dnsmasq-postgre.service, type: service, scope: user}
       - {name: gesture-relay.service, type: service, scope: user}
