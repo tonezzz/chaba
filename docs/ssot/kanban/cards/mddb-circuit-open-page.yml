@@ -1,7 +1,7 @@
 id: mddb-circuit-open-page
 title: Page on embed circuit-open, not just probe-down
 column: doing
-updated: 2026-11-12 14:25
+updated: 2026-11-12 14:28
 spec: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
   attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
   to an ops event so a cap-hit pages at minute ~2 instead of silent outage. Probe: scripts or unit mddb-embed-probe.service
@@ -42,6 +42,13 @@ comms:
   from: devin
   text: '[dispatch mn01] picked up — wiring circuit-open + consecutive-embed-failure ops events into gemini-ollama-proxy.mjs
     (emit at failure time, not probe tick) with probe/digest corroboration.'
+- at: 2026-11-12 14:28
+  from: devin
+  text: '[done — dispatch mn01, commit 3f2439f3b8] Proxy now pages at failure time, not probe tick: emits embed_circuit_open
+    on OR/Gemini circuit trip, embed_providers_down after 3 consecutive failed embeds (once/episode, re-armed by
+    embed_provider_restored), 15min/type rate-limit, fire-and-forget so it cannot stall embeds. /health exposes
+    embed.consecutive_failures; embed-probe treats >=3 as degraded (backstop); ops-digest flags new types + embed_outage.
+    Verified via stub-OR simulation (circuit_open at '
 action:
   type: dispatch
   status: running
