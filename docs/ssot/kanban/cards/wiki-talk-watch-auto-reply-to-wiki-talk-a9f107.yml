@@ -1,7 +1,7 @@
 id: wiki-talk-watch-auto-reply-to-wiki-talk-a9f107
 title: wiki-talk-watch — auto-reply to wiki talk-page comments (dispatch)
 column: doing
-updated: 2026-11-12 17:36
+updated: 2026-11-12 17:44
 tags:
 - wiki
 - dispatch
@@ -27,10 +27,13 @@ spec: "Supersedes manual card wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318 (p
   \ Education_talk:Ada-Ocb-Card-Runner as precedent (rev 243)."
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=1 n-task-20261112-173553-supersedes-manual-card-wiki-ta.service: Failed with result ''exit-code''.
+    | devin-task-20261112-173553-supersedes-manual-card-wiki-ta.service: Consumed 52.532s CPU time over 7min 25.293s
+    wall clock time, 1G memory peak.'
 ref: OPS-0074
 comms:
 - at: 2026-11-12 17:34
@@ -49,3 +52,7 @@ comms:
 - at: 2026-11-12 17:36
   from: devin
   text: dispatch picked up; reading card spec + report-watch template now
+- at: 2026-11-12 17:44
+  from: tony-omen
+  text: 'finished (failed): exit=1 n-task-20261112-173553-supersedes-manual-card-wiki-ta.service: Failed with result
+    ''exit-code''. | devin-task-20261'
