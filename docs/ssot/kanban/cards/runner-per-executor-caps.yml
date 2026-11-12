@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: doing
-updated: 2026-11-12 09:59
+updated: 2026-11-12 10:00
 priority: high
 tags:
 - devnest
@@ -37,7 +37,7 @@ action:
   repo: chaba
   executor: jules
   lane: jules
-  status: running
+  status: failed
   sweep:
     failed_noted: 2026-11-09 20:34
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '''' SDL_IM_MODULE=''''
@@ -45,6 +45,9 @@ action:
     Consumed 1.839s CPU time over 1h 24.268s wall clock time, 19.6M memory peak, 296K'
   attempts: 1
   runner: tony-omen
+  result: 'journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794452393.service:
+    Main process exited, code=exited, status=1/FAILURE | devin-task-runner-per-executor-caps-1794452393.service:
+    Failed with result ''exit-code''.'
 ref: OPS-1284
 comms:
 - at: 2026-11-09 17:07
@@ -231,3 +234,7 @@ comms:
 - at: 2026-11-12 09:59
   from: chaba
   text: started devin-task-runner-per-executor-caps-1794452393 on tony-omen (dispatch executor=jules)
+- at: 2026-11-12 10:00
+  from: tony-omen
+  text: 'finished (failed): journal=exit-code "status": "FAILED_PRECONDITION" |   } | } | devin-task-runner-per-executor-caps-1794452393.service:
+    Ma'
