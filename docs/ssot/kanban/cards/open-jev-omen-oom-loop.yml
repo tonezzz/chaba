@@ -1,7 +1,7 @@
 id: open-jev-omen-oom-loop
 title: Fix open-jev.service OOM crash loop on tony-omen
 column: backlog
-updated: 2026-11-12 08:22
+updated: 2026-11-12 08:27
 priority: high
 tags:
 - nest
@@ -27,3 +27,10 @@ comms:
   text: 'open-jev.service now DISABLED (was only stopped): systemctl --user disable open-jev.service 2026-11-12
     08:22 — will not resume the OOM crash loop on next boot. Re-enable with: systemctl --user enable --now open-jev.service
     once the memory fix lands.'
+- at: 2026-11-12 08:27
+  from: devin
+  text: 'FIXED 2026-11-12 08:26. Root cause: openjev/torch_backend.py hardcoded dtype=torch.float32 on CPU — the
+    bf16 checkpoint upcast to fp32, doubling RSS to ~16 GiB → OOM-kill at 14.2 GB peak every restart (4,577 kills).
+    Fix: CPU now loads torch.bfloat16 (checkpoint-native, zero precision loss) → ~8-9 GiB RSS. Verified: Uvicorn
+    running (first successful start in journal), /health 200 load_s=52s, /score returns sensible inference. Unit
+    re-enabled (auto-start restored). CAVEAT: patch is an uncommitted '
