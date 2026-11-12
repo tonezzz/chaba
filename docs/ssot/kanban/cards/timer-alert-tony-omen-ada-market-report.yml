@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-ada-market-report
 title: Timer ada-market-report on tony-omen failing
-column: backlog
+column: done
 updated: 2026-11-13 06:53
 priority: high
 tags:
@@ -100,9 +100,14 @@ comms:
 - at: 2026-11-13 06:53
   from: devin
   text: '[auto-resolved] last run result=success at 11-13 06:45 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-13 06:53
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of `ada-market-report.service` on host `tony-omen` where the last run resulted in
   an exit code. Inspect the systemd journal using `journalctl --user -u ada-market-report.service` on the target
   host and cross-reference the CMS record `timer-timeline-tony-omen`. Evidence indicates an external connection
   refusal (ECONNREFUSED) to the OIL/WTI feed endpoint, meaning the data source is currently unreachable rather than
   a local fault. The done-condition is verified when the root cause is confirmed in the journal and documented,
   leaving the card or feed state handled appropriately.
+action:
+  status: done
