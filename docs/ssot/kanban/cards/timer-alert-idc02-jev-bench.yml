@@ -1,7 +1,7 @@
 id: timer-alert-idc02-jev-bench
 title: Timer jev-bench on idc02 disabled
 column: backlog
-updated: 2026-11-12 09:14
+updated: 2026-11-12 09:50
 priority: high
 tags:
 - timer-alert
@@ -1407,6 +1407,9 @@ comms:
   from: devin
   text: '[still suspicious] `jev-bench.timer` on `idc02` is disabled but expected active (audit census / critical
     list). Deliberate? If not: `systemctl --user enable --now jev-bench.timer`. See CMS `timer-timeline`.'
+- at: 2026-11-12 09:50
+  from: devin
+  text: 'Mass verify: jev-bench.service Result=success; timer was disabled -> enabled --now per card spec (is-active=active).'
 action:
   status: done
 spec: The goal is to ensure `jev-bench.timer` on `idc02` is enabled and active as required by the audit census and

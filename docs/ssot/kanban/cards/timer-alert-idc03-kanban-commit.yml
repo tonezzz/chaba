@@ -1,7 +1,7 @@
 id: timer-alert-idc03-kanban-commit
 title: Timer kanban-commit on idc03 failing
 column: backlog
-updated: 2026-11-12 08:53
+updated: 2026-11-12 09:50
 priority: high
 tags:
 - timer-alert
@@ -139,5 +139,8 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-12 08:43) of `kanban-commit.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u kanban-commit.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 09:50
+  from: devin
+  text: 'Root cause found: stale .git/index.lock in served checkout blocked add+push (crashed git). Lock cleared; manual run Result=success — edits persist again. Watch: any crashed git in this checkout wedges the unit silently.'
 action:
   status: done
