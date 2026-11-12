@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
@@ -98,7 +99,48 @@ def open_card_ids():
     return out
 
 
-def fire(card_id, title, body, dry_run, open_ids):
+def _live_verify(cid, sweep):
+    """OPS-1246: confirm a finding's condition is still present LIVE
+    before reopening a closed card — never reopen off stale sweep data.
+    True = condition confirmed; False = healed; None = inconclusive."""
+    if cid == "timer-alert-collector":
+        return True  # staleness is measured from state.json each tick
+    if cid.startswith("timer-alert-host-"):
+        host = cid[len("timer-alert-host-"):]
+        try:
+            res = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+                 host, "true"], capture_output=True, timeout=15)
+            return res.returncode != 0
+        except Exception:
+            return None
+    hosts = (set((sweep or {}).get("timers") or {})
+             | set(expected_timers()))
+    for host in hosts:
+        prefix = f"timer-alert-{host}-"
+        if not cid.startswith(prefix):
+            continue
+        name = cid[len(prefix):]
+        try:
+            res = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+                 host,
+                 f"systemctl --user show {name}.service -p Result "
+                 f"--value; systemctl --user is-enabled {name}.timer"],
+                capture_output=True, text=True, timeout=15)
+        except Exception:
+            return None
+        if res.returncode != 0:
+            return None
+        lines = [l.strip() for l in res.stdout.splitlines() if l.strip()]
+        result = lines[0] if lines else ""
+        enabled = lines[1] if len(lines) > 1 else ""
+        return (result in ("failed", "exit-code", "timeout")
+                or enabled in ("disabled", "masked"))
+    return None
+
+
+def fire(card_id, title, body, dry_run, open_ids, sweep=None):
     """Create card if no open one; else comment on it. One bad fire must
     not kill the remaining findings (board-api stalls are transient —
     the next tick retries; BudgetExhausted aborts the whole sweep)."""
@@ -123,7 +165,13 @@ def fire(card_id, title, body, dry_run, open_ids):
             except urllib.error.HTTPError as e:
                 if e.code != 400:
                     raise
-                # id exists but closed — reopen + comment instead of crashing
+                # id exists but closed — reopen ONLY if the condition is
+                # still present live; stale sweep data must not respawn
+                # just-fixed cards (OPS-1246).
+                if _live_verify(card_id, sweep) is not True:
+                    print(f"SKIP-REOPEN {card_id}: live check "
+                          f"healed/inconclusive")
+                    return
                 api("action", {"id": card_id, "do": "move",
                                "column": "backlog"})
                 api("comment", {"id": card_id, "from": ACTOR,
@@ -267,7 +315,13 @@ def main():
 
     expected = expected_timers()
 
-    if sweep:
+    # OPS-1246: stale sweep data describes a world that may no longer
+    # exist — only the collector-stale finding may fire from it; per-
+    # timer/host findings and heal-checks require a fresh sweep.
+    sweep_fresh = (sweep is not None and sweep_age_min is not None
+                   and sweep_age_min <= SWEEP_STALE_MIN)
+
+    if sweep and sweep_fresh:
         host_ok = sweep.get("host_ok") or {}
         timers = sweep.get("timers") or {}
         for host, ok in host_ok.items():
@@ -321,13 +375,13 @@ def main():
     open_ids = open_card_ids()
     try:
         for cid, title, body in findings:
-            fire(cid, title, body, args.dry_run, open_ids)
+            fire(cid, title, body, args.dry_run, open_ids, sweep)
     except BudgetExhausted as e:
         print(f"warn: {e} — remaining fires deferred to next tick",
               file=sys.stderr)
 
-    healed = reconcile(open_ids, sweep, sweep_age_min, findings,
-                       args.dry_run)
+    healed = reconcile(open_ids, sweep if sweep_fresh else None,
+                       sweep_age_min, findings, args.dry_run)
     print(f"timer-sentinel: {healed} cards auto-closed")
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
