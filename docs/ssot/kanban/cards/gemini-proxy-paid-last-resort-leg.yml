@@ -1,0 +1,19 @@
+id: gemini-proxy-paid-last-resort-leg
+title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
+column: backlog
+updated: 2026-11-12 09:51
+priority: low
+tags:
+- mddb
+- embedding
+- resilience
+note: 'During the 2026-11-12 OR-key outage the proxy order OR -> free-Gemini -> Ollama meant a hard down when OR
+  401d AND free key 429d — while GEMINI_API_KEY_PAID in gemini-keys.env was healthy. Proposed: add a paid-Gemini
+  leg AFTER free, BEFORE Ollama (different vector space), so provider outages degrade gracefully. Spend is bounded
+  to outage windows only (embed queue was 0/4000). ~10 lines in ~/.config/containers/mddb/proxy/gemini-ollama-proxy.mjs
+  fetchBackupBatch + GEMINI_API_KEY_PAID env passthrou'
+ref: MEM-0037
+comms:
+- at: 2026-11-12 09:51
+  from: devin
+  text: card captured via board-api
