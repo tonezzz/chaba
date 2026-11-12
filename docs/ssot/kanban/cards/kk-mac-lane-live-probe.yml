@@ -1,7 +1,7 @@
 id: kk-mac-lane-live-probe
 title: kk_mac_local lane live probe — first real claim through the armed lane
 column: doing
-updated: 2026-11-12 09:13
+updated: 2026-11-12 09:15
 priority: high
 tags:
 - devnest
@@ -23,13 +23,12 @@ action:
     model — entry-level prediction of the cheapest lane expected to pass, work plane vs decision plane, escalation
     on gate failure; (2) one line noting this artifact was produced by the kk_mac_local lane on KKs-Mac-Studio.
     Keep it under 40 lines.'
-  status: failed
+  status: queued
   result: 'exit=1 task-20261111-215314-probe-card-for-the-kk-mac-loca.service: Failed with result ''exit-code''.
     | devin-task-20261111-215314-probe-card-for-the-kk-mac-loca.service: Consumed 21.688s CPU time over 2min 13.098s
     wall clock time, 773M memory peak.'
   sweep:
     failed_noted: 2026-11-09 10:49
-  runner: tony-omen
 ref: OPS-1259
 comms:
 - at: 2026-11-09 10:45
@@ -280,4 +279,11 @@ comms:
   from: chaba
   text: 'mn01 defers: unclaimable by the declared runner fleet: action.host=tony_omen names no declared runner —
     fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-12 09:15
+  from: devin
+  text: queued for processing
+- at: 2026-11-12 09:15
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — action.host=tony_omen names no declared runner. Fix
+    action.labels/host pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
 awaiting_action: true
