@@ -1,0 +1,19 @@
+id: root-cause-idc03-michael-ha-8123-asymmet-1f9347
+title: Root-cause idc03 -> michael-ha:8123 asymmetric TCP failure
+column: backlog
+updated: 2026-11-12 13:19
+priority: medium
+tags:
+- infra
+- tailscale
+- michael-ha
+- idc03
+spec: 'tailscale ping idc03->michael-ha OK but TCP :8123 times out (since ~Oct 23). tony-dell/mn01/tony-omen reach
+  it fine — asymmetric, idc03-specific. Investigate: HAOS firewall/iptables on michael-ha, tailscale ACL/route policy
+  for idc03, SNAT/conntrack weirdness. Done-condition: direct TCP idc03->michael-ha:8123 works OR documented upstream
+  cause; then retire michael-ha-via-omen tunnel (rollback path in card idc03-michael-ha-omen-relay).'
+ref: SYS-1208
+comms:
+- at: 2026-11-12 13:19
+  from: tony
+  text: card captured via board-api
