@@ -1,7 +1,7 @@
 id: mddb-embed-relocate-idc03-to-idc02
 title: Relocate mddb-embed instance idc03 → idc02
 column: backlog
-updated: 2026-11-12 14:13
+updated: 2026-11-12 14:30
 spec: 'idc03 runs the whole mddb fleet on 4 cores (load ~8): mddb-embed alone ~60% CPU. idc02 sits at load 1.4 /
   7-of-15G / 171G free and already hosts the mddb follower + mddb-ops. Move the mddb-embed container/unit to idc02,
   repoint producers (env/config), verify /v1/* endpoints + embed queue green on the new host, then retire the idc03
@@ -12,3 +12,10 @@ comms:
 - at: 2026-11-12 14:13
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 14:30
+  from: devin
+  text: 'Done 2026-11-12. mddb-embed quadlet + 2.8G DB relocated idc03→idc02 (localhost/mddb:2.15.4-breaker image
+    copied; data tar''d via podman unshare, byte-exact). Live at http://100.123.163.11:11028 — /v1/health 200, vector-stats
+    intact (ada-cms-pages 1216/1252 embedded), POST /v1/search returns 50 results; embed calls still route to embed-pool-shim
+    on idc03 :11436 over tailnet. idc03 quadlet retired as mddb-embed.container.retired (rollback = rename back;
+    data intact). Consumer defaults repointed on '
