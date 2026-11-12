@@ -357,6 +357,27 @@ tony-dell:
     systemd: systemd/playlive-macbook-tunnel.service
     status: obsolete (2026-10-11)
     note: "macOS wiped — no CDP on ::1:9222 anymore. Tunnel now connects to the Linux box but forwards to nothing; safe to disable/remove the unit on tony-dell."
+  michael-ha-via-omen-tunnel:
+    service: michael-ha-via-omen-tunnel.service
+    host: idc03
+    purpose: "Relay Home Assistant API traffic for Kraut weather/rain consumers through tony-omen"
+    systemd: systemd/michael-ha-via-omen-tunnel.service
+    local_endpoint: "127.0.0.1:18123"
+    upstream: "tony-omen -> michael-ha:8123"
+    consumers:
+      - ada-ai-kraut.service
+      - weather-bakeoff-daily.service
+      - kraut-rain-watch.service
+    status: implemented (2026-11-12)
+    note: >-
+      Direct idc03 -> michael-ha:8123 remains intentionally blocked by
+      mn-ha-quarantine.service. This relay uses idc03's existing key-only SSH
+      access to tony-omen, where michael-ha is reachable. The secret env files
+      point HOME_ASSISTANT_URL at http://127.0.0.1:18123. Health check:
+      systemctl --user is-active michael-ha-via-omen-tunnel.service and an
+      authenticated GET /api/config through the local endpoint. Roll back only
+      after direct connectivity is explicitly restored: stop/disable the unit
+      and restore the HOME_ASSISTANT_URL values.
   focus-dispatcher-overnight:
     timer: focus-dispatcher-overnight.timer
     host: tony_dell

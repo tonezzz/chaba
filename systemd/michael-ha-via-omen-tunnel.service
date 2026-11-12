@@ -1,0 +1,13 @@
+[Unit]
+Description=SSH relay to michael-ha through tony-omen
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -N -T -o BatchMode=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o TCPKeepAlive=yes -o StrictHostKeyChecking=accept-new -L 127.0.0.1:18123:michael-ha:8123 tony-omen
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
