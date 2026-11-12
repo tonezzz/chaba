@@ -1,7 +1,7 @@
 id: kk-mac-lane-live-probe
 title: kk_mac_local lane live probe — first real claim through the armed lane
 column: doing
-updated: 2026-11-12 09:21
+updated: 2026-11-12 09:24
 priority: high
 tags:
 - devnest
@@ -30,6 +30,7 @@ action:
   sweep:
     failed_noted: 2026-11-09 10:49
     stale_running: 2026-11-12 09:21
+    session_gone: 2026-11-12 09:21
   runner: tony-omen
 ref: OPS-1259
 comms:
@@ -317,6 +318,13 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-kk-mac-lane-live-probe-1794196044 on tony-omen —
     if the work was never pushed it may be gone'
+- at: 2026-11-12 09:24
+  from: devin
+  text: 'EXECUTOR RECORD: artifact reports/kk-mac-lane-probe.md produced by the kk_mac_local lane itself — kk_mac_executor
+    contract run inside dispatch worktree on tony-omen (verdict=pass, artifact_written=true). Model qwen3:8b via
+    ollama on KKs-Mac-Studio, eval_count=1184 ~19.6s, admission eligible (heartbeat 102s, ollama_ok, disk 112G,
+    load 2.8, temp 40C, not busy). Earlier claim-time declines (heartbeat_stale/load_unknown) had recovered by run
+    time. Caveat: qwen3:8b summarized lane routing loosely (tr'
 requests:
 - id: kk-mac-heartbeat-script-is-the-old-versi-759483
   ask: 'kk-mac heartbeat script is the OLD version — no load_1m/cpu_temp_c fields, so the lane gates load_unknown
