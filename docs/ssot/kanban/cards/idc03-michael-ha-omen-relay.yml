@@ -1,7 +1,7 @@
 id: idc03-michael-ha-omen-relay
 title: Declare idc03 -> tony-omen -> michael-ha relay in host SSOT
 column: done
-updated: 2026-11-12 13:18
+updated: 2026-11-12 13:23
 brief: 'Temporary operational fix is live: idc03 cannot TCP-reach michael-ha:8123 directly, while tony-omen can
   SSH/HTTP reach it. Installed ~/.config/systemd/user/michael-ha-via-omen-tunnel.service on idc03 (127.0.0.1:18123
   -> via tony-omen -> michael-ha:8123) and pointed kraut weather/backend envs at it. Weather and rain TG sends now
@@ -35,5 +35,12 @@ comms:
   text: 'Picked up 2026-11-12 (tony-omen session). Plan: declare tunnel in host SSOT + canonical deploy, add health
     check + consumer ordering for weather-bakeoff/kraut-rain-watch/ada-ai-kraut, keep rollback. Paired with new
     route root-cause card.'
+- at: 2026-11-12 13:23
+  from: devin
+  text: 'Spec complete 2026-11-12: (1) unit + consumer ordering drop-ins declared & deployed via PR #147 (verified
+    live on idc03 — all 3 drop-ins active, Requires/After set). (2) ssot.services.yml + ssot.home-assistant.michael.yml
+    relay_exception updated. (3) Health check added: michael-ha-via-omen-tunnel systemd check in ssot.health.home.tailscale.yml
+    (served checkout, auto-commit pending). (4) Route audit done — see root-cause card: the block is deliberate
+    mn-ha-quarantine.service, not a fault; relay I'
 action:
   status: done
