@@ -1,7 +1,7 @@
 id: mddb-embed-providers-down-or-circuit-ope-fe7a91
 title: mddb embed providers down — OR circuit-open + Gemini 429 (vector-search dead on leader)
 column: backlog
-updated: 2026-11-12 08:37
+updated: 2026-11-12 09:29
 brief: 'Embed path for leader :11023 is DOWN (found via MEM-0570 probe doing its job): gemini-ollama-proxy :11435
   returns 502 all same-space providers down — litellm:4000 OpenRouter circuit-open AND direct-Gemini fallback 429
   quota-exceeded; 12,358 failures in 6h (queue retry storm). Proxy restart does not help — upstream quota issue,
@@ -14,3 +14,10 @@ comms:
 - at: 2026-11-12 08:37
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 09:29
+  from: devin
+  text: '[update 09:30 ICT] Restarted litellm + gemini-ollama-proxy after Tony marked the OR-side item done. OR
+    leg still circuit-open post-restart (re-tripped on first probe — litellm still rejecting OR, likely old key
+    still deployed in config/env on idc03 OR fix has not propagated). Direct Gemini fallback still HTTP 429 quota-exhausted.
+    vector-search still down. Needs: confirm WHICH config holds the OR key on idc03 (litellm env file vs dashboard
+    virtual key) so the rotated key lands in the deployed con'
