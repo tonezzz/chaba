@@ -27,5 +27,12 @@ comms:
 - at: 2026-11-12 09:25
   from: tony
   text: closed by tony
+- at: 2026-11-12 09:25
+  from: devin
+  text: '[fixed] commit 6068271a46 on master. Closed timer-alert cards were reopened whenever the finding still
+    appeared in sweep state (lags reality up to a sweep interval). Fix: (1) reopen path calls _live_verify — one
+    ssh checking service Result + is-enabled — reopens only on confirmed-live condition; (2) per-timer/host findings
+    now require a fresh sweep so a dead collector cannot mass-respawn stale state; (3) reconcile() gets sweep=None
+    when stale. Verified: timer-alert-idc02-jev-bench -> SKIP-REOPEN'
 action:
   status: done
