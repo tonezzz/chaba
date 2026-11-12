@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-cast-ha-panel
 title: Timer cast-ha-panel on tony-omen disabled
-column: backlog
+column: done
 updated: 2026-11-12 09:39
 priority: high
 tags:
@@ -1581,7 +1581,12 @@ comms:
   from: devin
   text: '[sweep 2026-11-12] verified: cast-ha-panel.timer enabled+active, service result=success on tony-omen (09:32).
     Closing.'
+- at: 2026-11-12 09:39
+  from: devin
+  text: closed by devin
 spec: The goal is to verify if the disabled state of cast-ha-panel.timer on tony-omen is deliberate and, if not,
   enable and start it. The target host is tony-omen. The testable done-condition is verified when systemctl --user
   is-active --quiet cast-ha-panel.timer returns zero and systemctl --user is-enabled --quiet cast-ha-panel.timer
   confirms it is enabled.
+action:
+  status: done
