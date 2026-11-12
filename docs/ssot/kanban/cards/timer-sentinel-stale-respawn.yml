@@ -1,7 +1,7 @@
 id: timer-sentinel-stale-respawn
 title: timer-sentinel re-spawns just-fixed timer cards off stale sweep state
 column: backlog
-updated: 2026-11-09 09:12
+updated: 2026-11-12 09:24
 priority: medium
 tags:
 - sentinel
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-09 09:12
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 09:24
+  from: devin
+  text: '[fixed] commit 6068271a46 on master. Root cause: closed timer-alert cards were reopened whenever the finding
+    still appeared in sweep state (lags reality up to a sweep interval). Fix: (1) reopen path now calls _live_verify
+    — one targeted ssh checking service Result + is-enabled — reopens only on confirmed-live condition; (2) per-timer/host
+    findings now require fresh sweep (<=30min) so a dead collector cannot mass-respawn from stale state; (3) reconcile()
+    gets sweep=None when stale so heal-closes '
