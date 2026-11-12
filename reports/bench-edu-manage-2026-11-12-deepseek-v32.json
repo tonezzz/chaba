@@ -1,0 +1,527 @@
+{
+ "at": "2026-11-12 14:06:41",
+ "date": "2026-11-12",
+ "config": {
+  "lanes": {
+   "clawbot": {
+    "base": "https://openrouter.ai/api/v1",
+    "model": "deepseek/deepseek-v3.2",
+    "json_mode": true
+   }
+  },
+  "judge": "gemini-3.5-flash-lite",
+  "agent_topics": false,
+  "repetitions": 1,
+  "corpus": "/home/tony/CascadeProjects/chaba-wt-ssot-service-inventory-drift/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "clawbot": [
+   {
+    "lane": "clawbot",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 5,
+     "total": 5,
+     "score": 1.0
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 4,
+     "creates": 4
+    },
+    "recall": {
+     "correct": 3,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 14.9,
+     "lat_p50": 11.1,
+     "tokens_in": 74191,
+     "tokens_out": 6049,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": {
+     "n": 8,
+     "mean": 4.67,
+     "direct_answer": 4.88,
+     "accuracy": 5.0,
+     "structure": 5.0,
+     "hygiene": 5.0,
+     "length": 3.5
+    }
+   }
+  ]
+ },
+ "tasks": {
+  "clawbot": [
+   {
+    "rep": 1,
+    "task": "t1-create-bbr-cubic",
+    "final_text": "Created lesson `lesson-3a64ca409edf` (\"TCP BBR vs CUBIC congestion control\", working/open, next review 2026-11-19) — no prior lesson matched, so this was a new filing rather than an update.",
+    "llm_calls": 4,
+    "tokens_in": 6804,
+    "tokens_out": 915,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 22.965086936950684,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-3a64ca409edf",
+      "topic": "TCP BBR vs CUBIC congestion control",
+      "created": true,
+      "content": "<h3>TCP BBR vs CUBIC</h3>\n<p><strong>CUBIC is loss-based</strong>: it grows the congestion window until packets are dropped, then backs off. <strong>BBR is model-based</strong>: it measures the bottleneck bandwidth and round-trip time, then paces sends to sit at that operating point rather than filling buffers.</p>\n<h4>How CUBIC works</h4>\n<ul>\n<li>Window growth follows a cubic function of time since the last loss event, so it probes aggressively after a loss and plateaus near the operating point.</li>\n<li>Its signal for \"the path is full\" is <em>packet loss</em>, which means it must overfill queues to detect capacity.</li>\n<li>Consequence: persistent queues in front of the bottleneck — <em>bufferbloat</em> — which raises latency for everyone sharing that link.</li>\n<li>Loss-based designs also struggle on lossy-but-not-congested paths (wireless errors), where a drop is misread as congestion.</li>\n</ul>\n<h4>How BBR works</h4>\n<ul>\n<li>Estimates two values: bottleneck bandwidth (BtlBw) and round-trip propagation delay (RTprop).</li>\n<li>Sends at roughly <code>BtlBw</code> while keeping in-flight data near <code>BtlBw * RTprop</code> (the bandwidth-delay product), so the queue stays small.</li>\n<li>Periodically probes by slightly increasing or decreasing the send rate to track changes in the path.</li>\n<li>Because it does not rely on loss as the congestion signal, it tolerates random loss far better and drains standing queues.</li>\n</ul>\n<h4>Choosing between them</h4>\n<ul>\n<li><strong>BBR</strong> tends to keep latency noticeably lower on buffer-bloated or long-fat links, and on paths with random loss.</li>\n<li><strong>CUBIC</strong> can still win on short, high-bandwidth, low-loss paths (e.g. datacenter or LAN transfers), where its loss-based probing is efficient and its buffer-filling behaviour costs little.</li>\n<li>CUBIC is the Linux default and is friendlier to fair-share expectations; BBR flows can capture more than their share when competing with loss-based flows.</li>\n</ul>\n<p>Rule of thumb: loss as a signal (CUBIC) vs. an explicit model of the path (BBR) — the difference is <em>what the sender treats as evidence of congestion</em>.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 4
+   },
+   {
+    "rep": 1,
+    "task": "t2-skip-commands",
+    "final_text": "skipped — no lesson-worthy content (device command, reminder, and thanks only).",
+    "llm_calls": 2,
+    "tokens_in": 2935,
+    "tokens_out": 167,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 4.359304189682007,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "t3-update-tailscale",
+    "final_text": "Updated lesson-90f614241c87 (tailscale acl basics) - refreshed review date to today+7.",
+    "llm_calls": 4,
+    "tokens_in": 6559,
+    "tokens_out": 288,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 16.667215824127197,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "t4-mixed-cap-private",
+    "final_text": "Created `lesson-80a7b20bd1e4` (\"CAP theorem in distributed systems\", level working, open, next review 2026-11-19); skipped the electricity-bill question as a private, moment-specific query.",
+    "llm_calls": 3,
+    "tokens_in": 5247,
+    "tokens_out": 784,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 16.62392568588257,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-80a7b20bd1e4",
+      "topic": "CAP theorem in distributed systems",
+      "created": true,
+      "content": "<h3>Direct answer</h3>\n<p>The CAP theorem says a distributed data store can only guarantee two of three properties — <strong>Consistency</strong>, <strong>Availability</strong>, and <strong>Partition tolerance</strong> — and when a network partition actually occurs it must choose between consistency and availability.</p>\n<h3>The three properties</h3>\n<ul>\n<li><strong>Consistency</strong> (linearizability): every read sees the most recent write or an error; all replicas agree.</li>\n<li><strong>Availability</strong>: every request to a non-failing node gets a response, even if it may be stale.</li>\n<li><strong>Partition tolerance</strong>: the system keeps working despite messages being dropped or delayed between nodes.</li>\n</ul>\n<h3>Why the choice only bites during a partition</h3>\n<p>Partitions are unavoidable in real networks, so P is not optional. With no partition, a well-designed system can deliver both C and A. The theorem matters only in the failure window: either refuse some writes/reads to keep replicas in agreement (<strong>CP</strong>), or keep serving and reconcile the divergence later (<strong>AP</strong>).</p>\n<h3>Typical trade-off examples</h3>\n<ul>\n<li><strong>CP</strong>: ZooKeeper, etcd, HBase — a minority side loses availability so that committed data stays consistent. Good for locks, leader election, config.</li>\n<li><strong>AP</strong>: Cassandra, DynamoDB-style stores — every node keeps accepting writes; conflicts are resolved with last-writer-wins, vector clocks, or application-level merge. Good for carts, profiles, telemetry.</li>\n</ul>\n<h3>Common pitfalls</h3>\n<p>\"2-of-3\" is a simplification: the real statement is about behaviour <em>during</em> a partition, not a permanent capability cap. PACELC extends it — if partitioned choose A or C, otherwise (else) choose latency or consistency. Also note CAP's consistency is stronger than the C in BASE-style eventual consistency, and network failures are partial, not total, so real systems tune this per operation and per quorum rather than picking one global label.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "t5-thai-quantization",
+    "final_text": "Created lesson `lesson-6943784810c2` — \"LLM Quantization and GGUF Speed\" (level working, status open, review 2026-11-19): what quantization is, why fewer bits = less memory traffic/cheaper math, block scale+zero-point representation, GGUF as an mmap-friendly container format, and the quality/speed trade-offs.",
+    "llm_calls": 3,
+    "tokens_in": 5373,
+    "tokens_out": 1261,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 25.046990871429443,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-6943784810c2",
+      "topic": "LLM Quantization and GGUF Speed",
+      "created": true,
+      "content": "<p><strong>Quantization</strong> is reducing the numeric precision of a model's weights (and often activations) — e.g. from 16/32-bit floats down to 8, 4, or fewer bits. The model gets smaller and arithmetic gets cheaper, at the cost of a small accuracy drop. <strong>GGUF</strong> is fast for local inference because it stores those quantized weights in a layout that can be memory-mapped directly, so the file is used almost as-is without a heavy parse/convert step.</p>\n\n<h3>Why lower precision makes things faster</h3>\n<ul>\n  <li><strong>Less memory traffic.</strong> Inference on CPU and consumer GPUs is usually bandwidth-bound: every token requires reading all the weights. Halving the bits per weight roughly halves the bytes that must be moved.</li>\n  <li><strong>Smaller footprint.</strong> A 7B model is ~14 GB at FP16 but ~4 GB at 4-bit, so it fits in RAM (or VRAM) that the full-precision model cannot, and more of it stays cached.</li>\n  <li><strong>Cheaper math.</strong> Integer dot-products and fused dequantize-multiply kernels beat full FP32 multiply-accumulate per element.</li>\n  <li><strong>Faster load.</strong> Fewer bytes to read from disk means quicker startup.</li>\n</ul>\n\n<h3>How a quantized weight is represented</h3>\n<pre>\nw_real  ~=  scale * q + zero_point     # q is a small integer (e.g. 0..15 for 4-bit)\n</pre>\n<p>Weights are grouped into blocks, each with its own <code>scale</code> (and sometimes a <code>zero_point</code>). Fine-grained grouping is what keeps the error small despite so few bits. Common schemes you will see as file suffixes: <code>Q4_K_M</code>, <code>Q5_K_M</code>, <code>Q8_0</code> — higher number = more bits = larger and slower but more accurate; <code>K</code>/<code>Q</code> variants use grouped/quantile tricks, <code>S</code> uses importance-matrix tuning.</p>\n\n<h3>Why GGUF specifically</h3>\n<ul>\n  <li>Single self-contained file: weights, tokenizer, vocabulary, chat template, and full metadata in key-value pairs.</li>\n  <li>Tensor layout is aligned and mmap-friendly — the OS pages weights in on demand instead of the program copying them into a fresh buffer.</li>\n  <li>Designed for CPU + mixed CPU/GPU inference (llama.cpp lineage), with partial offload of layers to the GPU.</li>\n  <li>It is a <em>container format</em>, not a quantization algorithm — the quantization scheme is chosen when the model is converted.</li>\n</ul>\n\n<h3>Trade-offs to remember</h3>\n<ul>\n  <li>Aggressive quantization (2–3 bit) degrades reasoning, long-context and multilingual quality more than it degrades simple recall.</li>\n  <li>Speedups are largest when bandwidth-limited (batch size 1, long generations); at large batches compute dominates and the gap narrows.</li>\n  <li>Compare quality at equal model size, not equal bit-width, and always re-test on your own task.</li>\n</ul>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "Created lesson \"ada-nest-heartbeat-escalation\" (slug lesson-9c1cd7c9ea45) and updated hub \"ada-nest-map\" to include it in the family inventory.",
+    "llm_calls": 6,
+    "tokens_in": 11235,
+    "tokens_out": 969,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 40.145403146743774,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-9c1cd7c9ea45",
+      "topic": "ada-nest-heartbeat-escalation",
+      "created": true,
+      "content": "<h3>Ada Nest heartbeat escalation mechanism</h3>\n<p>The Ada Nest heartbeat escalation system prevents unnecessary alerts by implementing a multi-stage failure detection process. Each member node sends regular heartbeat signals to the hub, which monitors their freshness and triggers escalation only after sustained failure.</p>\n\n<h4>Heartbeat monitoring stages</h4>\n<ul>\n<li><strong>Normal operation:</strong> Member nodes send heartbeats at regular intervals (e.g., every 30 seconds)</li>\n<li><strong>Stale state:</strong> When a member misses N consecutive heartbeats, its state transitions to \"stale\"</li>\n<li><strong>Degraded state:</strong> After remaining stale for a defined period, the state becomes \"degraded\"</li>\n<li><strong>Escalation to page:</strong> Only after the degraded window passes without recovery does the system alert you</li>\n</ul>\n\n<h4>Purpose of staged escalation</h4>\n<p>This multi-stage approach filters out transient issues like brief WiFi disconnections, temporary network congestion, or momentary device sleep states. A single missed heartbeat or short connectivity flap won't trigger an alert, preventing notification fatigue while still catching genuine, sustained failures.</p>\n\n<h4>Key design principles</h4>\n<ul>\n<li><strong>Resilience to noise:</strong> The system tolerates occasional missed beats without false alarms</li>\n<li><strong>Intentional delay:</strong> There's a deliberate waiting period before escalation to allow for self-recovery</li>\n<li><strong>State persistence:</strong> The hub maintains state across restarts to avoid resetting escalation counters</li>\n<li><strong>Configurable thresholds:</strong> N (missed beats) and degraded window durations are tunable parameters</li>\n</ul>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     },
+     {
+      "slug": "lesson-1786273bba0d",
+      "topic": "ada-nest-map",
+      "created": false,
+      "content": "<h3>Ada Nest — hub</h3>\n<p>Hub lesson for the ada-nest-* topic family (the member-node heartbeat/monitoring design). Sub-topics get their own ada-nest-&lt;topic&gt; lessons; this page keeps the family inventory.</p>\n\n<h4>Family members</h4>\n<ul>\n<li><a href=\"#lesson-9c1cd7c9ea45\">ada-nest-heartbeat-escalation</a> — multi-stage failure detection and alerting</li>\n</ul>\n\n<p>Add new ada-nest-* lessons here as they're created.</p>",
+      "next_review": "2026-11-17",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 5
+   },
+   {
+    "rep": 1,
+    "task": "t7-ephemeral",
+    "final_text": "Skipped: transcript contained only momentary, time-sensitive queries unsuitable for durable knowledge capture.",
+    "llm_calls": 6,
+    "tokens_in": 9656,
+    "tokens_out": 438,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 21.91235613822937,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 5
+   },
+   {
+    "rep": 1,
+    "task": "o1-mark-learned",
+    "final_text": "Marked lesson-abdcd6c6c5e1 (\"spaced repetition\") as status=learned.",
+    "llm_calls": 3,
+    "tokens_in": 4771,
+    "tokens_out": 215,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 9.401325702667236,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-11-11",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "o2-push-review",
+    "final_text": "lesson-90f614241c87 (tailscale acl basics): next_review pushed 30 days from today → 2026-12-12.",
+    "llm_calls": 3,
+    "tokens_in": 4248,
+    "tokens_out": 278,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 8.835238695144653,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-12-12",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "o3-due-list",
+    "final_text": "Due for review: `lesson-abdcd6c6c5e1` (spaced repetition, intro, next_review 2026-11-11) — the only lesson currently due; no changes made.",
+    "llm_calls": 2,
+    "tokens_in": 2655,
+    "tokens_out": 171,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 5.258714914321899,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "r1-recall-spaced",
+    "final_text": "lesson-abdcd6c6c5e1 — the \"spaced repetition\" explainer (reviewing at expanding intervals, the spacing effect) is the lesson that answers this.",
+    "llm_calls": 3,
+    "tokens_in": 4417,
+    "tokens_out": 215,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 6.7667529582977295,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "r2-recall-tailscale",
+    "final_text": "lesson-90f614241c87",
+    "llm_calls": 3,
+    "tokens_in": 4722,
+    "tokens_out": 175,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 5.234393835067749,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "r3-recall-none",
+    "final_text": "none",
+    "llm_calls": 4,
+    "tokens_in": 5569,
+    "tokens_out": 173,
+    "models": [
+     "deepseek/deepseek-v3.2"
+    ],
+    "latency": 11.080583095550537,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "clawbot",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-3a64ca409edf",
+   "topic": "TCP BBR vs CUBIC congestion control",
+   "q": "bbr",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 5
+   },
+   "html_len": 2179
+  },
+  {
+   "lane": "clawbot",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "judge": {
+    "direct_answer": 4,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 1
+   },
+   "html_len": 244
+  },
+  {
+   "lane": "clawbot",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-80a7b20bd1e4",
+   "topic": "CAP theorem in distributed systems",
+   "q": "cap theorem",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 5
+   },
+   "html_len": 2070
+  },
+  {
+   "lane": "clawbot",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-6943784810c2",
+   "topic": "LLM Quantization and GGUF Speed",
+   "q": "quantiz",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 5
+   },
+   "html_len": 2831
+  },
+  {
+   "lane": "clawbot",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-9c1cd7c9ea45",
+   "topic": "ada-nest-heartbeat-escalation",
+   "q": "heartbeat",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 5
+   },
+   "html_len": 1739
+  },
+  {
+   "lane": "clawbot",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-1786273bba0d",
+   "topic": "ada-nest-map",
+   "q": "ada-nest-map",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 3
+   },
+   "html_len": 430
+  },
+  {
+   "lane": "clawbot",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 2
+   },
+   "html_len": 286
+  },
+  {
+   "lane": "clawbot",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 2
+   },
+   "html_len": 244
+  }
+ ]
+}
