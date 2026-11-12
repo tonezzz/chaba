@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
 column: backlog
-updated: 2026-11-12 14:10
+updated: 2026-11-12 14:21
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -12,3 +12,10 @@ comms:
   text: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
     (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
     key? same upstream?).'
+- at: 2026-11-12 14:21
+  from: devin
+  text: 'ROOT CAUSE FOUND: Gemini leg fails with 429 ''You exceeded your current quota'' — the free-tier embed quota
+    is exhausted (likely by today''s ~1800-attempt churn). Earlier both legs died together because OR was simultaneously
+    402 over-cap. With OPENROUTER_PRIMARY=0 now live, OR serves paid-fallback during each 300s Gemini circuit window
+    until quota resets. Open Qs: is the quota per-minute or daily? does another key slot have headroom (gemini-keys.env
+    has multiple vars)?'
