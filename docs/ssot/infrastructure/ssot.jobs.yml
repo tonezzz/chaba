@@ -194,7 +194,7 @@ jobs:
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
-  timeout: 2m
+  timeout: 15m  # 2m was timing out under board-api/CMS congestion (2026-11-12 sweep)
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/cached-videos-update.py
   note: scans ~/.cache/yt-live-media (real entries need info.json id match; mismatches listed as misplaced) + ~/.cache/yt-live-subs
     into CMS page cached-videos-report (en+th); replaces the hand-written 2026-09-27 snapshot
@@ -204,7 +204,7 @@ jobs:
   dispatch: systemd
   on_calendar: '*:0/30'
   persistent: true
-  timeout: 2m
+  timeout: 15m  # 2m was timing out under board-api/CMS congestion (2026-11-12 sweep)
   exec: /usr/bin/python3 %h/CascadeProjects/chaba-tony-dell/scripts/ada/starboard-tracker-update.py
   note: renders kanban card starboard-windsurf-catalogs + manifest reports/starboard-catalogs/catalogs.yml into
     a managed block on CMS page starboard-catalogs (en+th); interval-gated via ada-cms-automation registry doc

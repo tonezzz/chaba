@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -84,19 +85,36 @@ def api(path, payload=None, timeout=30):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
-def open_card_ids():
-    """ids of cards not in a closed column."""
+def open_cards():
+    """open cards as {id: card} — comms included so we can throttle comments."""
     try:
         data = api("cards")
     except Exception:
         return None  # board unreachable — sentinel is blind
     cards = data.get("cards", data) if isinstance(data, dict) else data
-    out = set()
+    out = {}
     for c in cards:
         col = str(c.get("column") or "").lower()
         if col not in ("done", "closed", "cancelled", "archive"):
-            out.add(str(c.get("id")))
+            out[str(c.get("id"))] = c
     return out
+
+
+_TS_RE = re.compile(r"\(\d{2}-\d{2} \d{2}:\d{2}\)")
+
+
+def _same_condition(card, body):
+    """True if the last sentinel comment on `card` reports the same condition
+    (timestamps stripped) — throttles '[still suspicious]' noise so a stable
+    failure costs one comment instead of one per 10-min tick."""
+    for comm in reversed(card.get("comms") or []):
+        text = str(comm.get("text") or "")
+        if text.startswith("[still suspicious]"):
+            last = text[len("[still suspicious]"):].strip()
+            return _TS_RE.sub("()", last) == _TS_RE.sub("()", body)
+        if text.startswith("[reopened"):
+            return False  # a human-visible reopen — always re-report
+    return False
 
 
 def _live_verify(cid, sweep):
@@ -149,6 +167,9 @@ def fire(card_id, title, body, dry_run, open_ids, sweep=None):
         return
     try:
         if card_id in open_ids:
+            if _same_condition(open_ids[card_id], body):
+                print(f"UNCHANGED {card_id}: {body[:80]}")
+                return
             if not dry_run:
                 api("comment", {"id": card_id, "from": ACTOR,
                                 "text": f"[still suspicious] {body}"})
@@ -372,7 +393,13 @@ def main():
                          f"Injected test condition: {kind}. This card "
                          f"proves the sentinel pipeline works; close it."))
 
-    open_ids = open_card_ids()
+    open_ids = open_cards()
+    # Heal FIRST: reconcile is cheap, idempotent, and more valuable than
+    # comment noise — when the write budget runs out mid-tick, heals must
+    # already have landed (2026-11-12: 33 findings starved reconcile to 0).
+    healed = reconcile(open_ids, sweep if sweep_fresh else None,
+                       sweep_age_min, findings, args.dry_run)
+
     try:
         for cid, title, body in findings:
             fire(cid, title, body, args.dry_run, open_ids, sweep)
@@ -380,8 +407,6 @@ def main():
         print(f"warn: {e} — remaining fires deferred to next tick",
               file=sys.stderr)
 
-    healed = reconcile(open_ids, sweep if sweep_fresh else None,
-                       sweep_age_min, findings, args.dry_run)
     print(f"timer-sentinel: {healed} cards auto-closed")
 
     STATE_DIR.mkdir(parents=True, exist_ok=True)
