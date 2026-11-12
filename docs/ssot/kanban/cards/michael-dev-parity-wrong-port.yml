@@ -1,0 +1,17 @@
+id: michael-dev-parity-wrong-port
+title: michael-dev-parity checks :8124 (loopback-only) — repoint to tailscale :9585
+column: backlog
+updated: 2026-11-12 12:25
+priority: medium
+tags:
+- fix
+- michael-dev
+note: 'michael-dev-parity.service on omen (mirror-sweep.py --fail-on-missing) fails ECONNREFUSED on 100.123.163.11:8124
+  — but that port is deliberately loopbound: michael-dev.container publishes 127.0.0.1:8124:8124 + 100.123.163.11:9585:9585.
+  The HA instance is healthy; only the check target is wrong. Fix: repoint the parity check at :9585 (or document
+  if 8124 used to be published and the hardening change needs a check-side update in scripts/home-assistant/mirror-sweep.py).'
+ref: OPS-0040
+comms:
+- at: 2026-11-12 12:25
+  from: devin
+  text: card captured via board-api
