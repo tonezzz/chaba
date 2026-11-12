@@ -286,4 +286,21 @@ comms:
   from: chaba
   text: 'WARNING: unclaimable by the declared runner fleet — action.host=tony_omen names no declared runner. Fix
     action.labels/host pins or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-12 09:15
+  from: devin
+  text: 'raised request kk-mac-heartbeat-script-is-the-old-versi-759483: kk-mac heartbeat script is the OLD version
+    — no load_1m/cpu_temp_c fields, so the lane gates load_unknown forever (and f'
 awaiting_action: true
+requests:
+- id: kk-mac-heartbeat-script-is-the-old-versi-759483
+  ask: 'kk-mac heartbeat script is the OLD version — no load_1m/cpu_temp_c fields, so the lane gates load_unknown
+    forever (and fallback ssh only works from idc03 via the kk-mac alias, not raw host/IP). Producer is root-owned
+    — needs your sudo on kk-mac: scp tony-dell:~/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh /tmp/ &&
+    sudo cp /tmp/ada-nest-heartbeat.sh /Users/adanest/bin/ && sudo chmod +x /Users/adanest/bin/ada-nest-heartbeat.sh'
+  status: open
+  at: 2026-11-12 09:15
+  from: devin
+  options:
+  - ★ run the sudo update on kk-mac
+  - raise max_load_1m gate (current load ~4.15 > 4.0)
+  - leave lane paused — no probe needed now
