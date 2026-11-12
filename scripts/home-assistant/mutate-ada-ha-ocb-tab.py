@@ -10,7 +10,7 @@ OCB_VIEW = {
     "cards": [
         {
             "type": "iframe",
-            "url": "https://tony-dell.taila0626a.ts.net:8443/",
+            "url": "https://ada-ocb.surf-thailand.com/",
         }
     ],
 }
