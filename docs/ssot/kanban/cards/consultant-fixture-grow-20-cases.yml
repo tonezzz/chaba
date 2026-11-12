@@ -1,0 +1,19 @@
+id: consultant-fixture-grow-20-cases
+title: Grow consultant bench fixture to ~20 real consult prompts
+column: backlog
+updated: 2026-11-12 14:50
+priority: high
+program: devnest
+tags:
+- ada
+- consultant
+- bench
+spec: fixtures/consultant-tasks.jsonl is only 6 toy cases — cannot distinguish candidates (qwen3:8b 6/6 vs deepseek-v3.2
+  5/6 is within noise). Mine ~20 real answer/escalate consult prompts from kanban card history (failed dispatches,
+  manual-escalation comms, answered requests) with expected verdicts; rerun consultant-bench on qwen3:8b + deepseek-v3.2
+  + fable; result decides the consultant first-filter model.
+ref: ADA-0062
+comms:
+- at: 2026-11-12 14:50
+  from: tony
+  text: card captured via board-api
