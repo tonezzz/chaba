@@ -1,7 +1,7 @@
 id: timer-alert-idc03-chaba-kanban-brief
 title: Timer chaba-kanban-brief on idc03 failing
 column: backlog
-updated: 2026-11-12 06:53
+updated: 2026-11-12 07:23
 priority: high
 tags:
 - timer-alert
@@ -346,5 +346,17 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-12 06:33) of `chaba-kanban-brief.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u chaba-kanban-brief.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-12 07:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-12 07:23
+  from: devin
+  text: '[still suspicious] Last run (11-12 07:03) of `chaba-kanban-brief.service` on `idc03` result=exit-code —
+    investigate journal: `journalctl --user -u chaba-kanban-brief.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done
+spec: Investigate the recurring exit-code failure of the systemd user service `chaba-kanban-brief.service` on host
+  `idc03`. The runner must check the service logs via `journalctl --user -u chaba-kanban-brief.service` on `idc03`
+  and inspect the CMS entry `timer-timeline-idc03` to diagnose the root cause. The done-condition is verified when
+  the underlying error causing the non-zero exit code is identified and resolved, and a subsequent manual trigger
+  or scheduled run of the service completes successfully with exit code 0.
