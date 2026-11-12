@@ -1,0 +1,16 @@
+id: mddb-circuit-open-page
+title: Page on embed circuit-open, not just probe-down
+column: backlog
+updated: 2026-11-12 14:10
+spec: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
+  attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
+  to an ops event so a cap-hit pages at minute ~2 instead of silent outage. Probe: scripts or unit mddb-embed-probe.service
+  on idc03.'
+ref: MEM-0046
+comms:
+- at: 2026-11-12 14:10
+  from: devin
+  text: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
+    attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
+    to an ops event so a cap-hit pages at minute ~2 instead of silent outage. Probe: scripts or unit mddb-embed-probe.service
+    on idc03.'
