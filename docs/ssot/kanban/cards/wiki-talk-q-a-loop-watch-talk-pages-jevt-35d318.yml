@@ -1,7 +1,7 @@
 id: wiki-talk-q-a-loop-watch-talk-pages-jevt-35d318
 title: wiki-talk Q&A loop — watch talk pages, JevTeam routes, ada-code responds
 column: backlog
-updated: 2026-11-12 16:49
+updated: 2026-11-12 16:58
 tags:
 - wiki
 - jevteam
@@ -36,3 +36,10 @@ comms:
 - at: 2026-11-12 16:49
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-12 16:58
+  from: devin
+  text: 'STANDARD PROCEDURE (Tony 2026-11-12 ask — hook vs timer: TIMER, not hook; MediaWiki has no outbound webhook
+    and a LocalSettings PHP hook would put an HTTP call inside the web request path): wiki-talk-watch = systemd
+    user timer on idc03 every ~15min (offset from kanban-commit). Steps: (1) poll api.php list=recentchanges rctype=edit|new
+    rcnamespace=all talk ns (1-15 odd + 3001/3003/3005/3007) rcend=watermark; (2) dedupe by rcid watermark in ~/.local/state/wiki-talk-watch/,
+    idempotent reruns; (3) n'
