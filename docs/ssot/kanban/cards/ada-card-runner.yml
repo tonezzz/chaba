@@ -1,0 +1,26 @@
+id: ada-card-runner
+title: 'ada-card-runner: pick-a-card tool + just-enough context pack → OpenChamber session → eval-to-deploy'
+column: backlog
+updated: 2026-11-12 13:22
+brief: 'Tony idea 2026-11-12: an ada-tool that selects a kanban card by strategy (sweep, high-value, stale, queue),
+  assembles just-enough context, launches an OpenChamber/opencode session with it, and evaluates until deployed
+  to production.'
+priority: medium
+program: devnest
+tags:
+- ada
+- openchamber
+- kanban
+- pilot
+spec: 'Pieces: (1) card_pick strategy selector (read-only, board-api GETs); (2) context-pack builder — card YAML
+  + spec-referenced files + repo conventions + done-condition + gates, emitted as one markdown brief; (3) session
+  launcher — opencode serve API session in the right repo/worktree with the pack as prompt; (4) eval loop = existing
+  gates (repo validate, PR, CI, merge) with bounded retries + board-api moves. Pilot: audit-drift cards — audit-hosts.py
+  findings are already small, verifiable, card-shaped (declare-or-fix a unit, done-condition machine-checkable via
+  systemctl/health). Suggested first card: resolve ''unexpected fleet-looking system service: ollama.service'' —
+  declare, retire, or explain it.'
+ref: ADA-0042
+comms:
+- at: 2026-11-12 13:22
+  from: tony
+  text: card captured via board-api
