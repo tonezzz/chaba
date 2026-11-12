@@ -1,0 +1,15 @@
+id: mddb-cms-compact-export-import
+title: 'Compact mddb-cms: 23G DB → export/import (est <1G live data)'
+column: backlog
+updated: 2026-11-12 16:16
+spec: 'mddb-cms on idc03 is 23G but holds only ~8k docs across 19 colls (~10KB avg) — ~22G is freelist/dead-page
+  bloat, same signature as mddb-ops 31G→2.8G. repair-db proven unusable (FTS nil-ptr). Use the proven path: /tmp/ops-compact/export-import.sh
+  pattern — export all 19 collections (infrastructure-ssot 5645, ada-cms-pages 1253, kb-*, documents, chaba-lessons…),
+  fresh scratch DB on :11088, /v1/add re-import, verify counts, swap data dirs, restart. Needs a brief write-freeze
+  window (cms consumers: embed-lane-banks writes ada-cms-pages? verify writers first). Run AFTER tonight''s gzipped
+  backup lands so rollback exists.'
+ref: MEM-0068
+comms:
+- at: 2026-11-12 16:16
+  from: devin
+  text: card captured via board-api
