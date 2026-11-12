@@ -166,6 +166,30 @@ services:
   host: tony_dell
   note: Verifies the GEV Gemini Live test page and Caddy route.
 
+- id: openchamber-tailnet
+  name: OpenChamber (ada-ocb tab)
+  type: http
+  url: 'https://tony-dell.taila0626a.ts.net:8443/'
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: 'The surface the ada-ocb iframe actually loads — covers tailscale
+    serve :8443 + the OpenChamber app + cert. Unit check: openchamber
+    service in system.yml. Note: dies with tony-dell (desktop, not
+    always-on); a fail here while tailscale ping works = check
+    openchamber.service first, then tailscale serve status on dell.'
+  verification:
+  - 'ssh tony-dell systemctl --user status openchamber.service'
+  - 'ssh tony-dell tailscale serve status'
+  - 'curl -sI https://tony-dell.taila0626a.ts.net:8443/'
+  recovery_actions:
+  - 'ssh tony-dell systemctl --user restart openchamber.service'
+  - 'Restore serve: ssh tony-dell tailscale serve --bg --https=8443 http://127.0.0.1:3000'
+
 - id: node-red
   name: Node-RED
   type: http
