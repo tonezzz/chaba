@@ -1,0 +1,28 @@
+id: tony-omen-chaba-repo-sync-silently-stale-6d03b3
+title: tony-omen chaba-repo-sync silently stale — no GitHub egress, upstream check no-ops
+column: backlog
+updated: 2026-11-12 08:49
+priority: high
+tags:
+- devnest
+- repo-sync
+- tony-omen
+spec: 'tony-omen''s chaba-repo-sync.timer runs git-safe-pull.sh, but omen has ZERO GitHub egress (github.com:443
+  connect timeout, :22 no route to host). git-safe-pull compares against the stale local origin/master ref and reports
+  ''upstream already in HEAD — skipped'' — the exec checkout was ~19h behind while sync reported success. Consequences:
+  runner-agent and lane code on omen silently drift from master; fixes require manual scp (done for runner-agent.py
+  2026-11-11). Fix needs: (a) repo-sync fetch path that works without github egress — e.g. fetch over tailnet ssh
+  from idc03''s served checkout, or a git mirror remote; (b) the silent-skip check should detect a stale/unfetchable
+  upstream and flag it instead of reporting success.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: manual
+ref: OPS-0031
+comms:
+- at: 2026-11-12 08:49
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-12 08:49
+  from: chaba
+  text: 'WARNING: action.executor=manual — never claimed by automation; this card will starve in queue'
