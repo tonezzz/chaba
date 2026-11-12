@@ -272,8 +272,16 @@ instances:
     repo_snapshot: docs/home-assistant/dashboards/ada-ha-chaba-admin-current.json
     note: >-
       Ada HA lab copy of chaba-admin, distinct from the tony-ha dashboard
-      above. Live view order: Pair → Kanban → Cline → DevNest → Ada Pages →
-      Monitor → Events → Log → Obsidian. Cline is a full-page panel iframe
+      above. Live view order (2026-11-12): Pair → Kanban → Diagram →
+      OpenChamber (ada-ocb) → Ada Code → Ada Control → Cline → Node-RED →
+      DevNest → Wiki → Private Wiki → Ada Pages → Monitor → Events → Log →
+      Obsidian → Gantt. Ada Code is a full-page panel iframe to
+      https://ada-code.surf-thailand.com/; OpenChamber (added 2026-11-12 via
+      push-dashboard.py + mutate-ada-ha-ocb-tab.py) iframes the OpenChamber
+      web UI on tony-dell:3000 via tailscale serve at
+      https://tony-dell.taila0626a.ts.net:8443/ (tailnet-only; Tony chose
+      tailnet over a public ada-ocb edge, ADA-0032 closed).
+      Cline is a full-page panel iframe
       to https://cline.surf-thailand.com/?v=1; its Cloudflare Access app
       reuses Ada HA's allowlist and session, and its Tailnet proxy verifies
       the signed app-specific JWT. The snapshot redacts existing CMS api_key
@@ -551,5 +559,5 @@ conventions:
 
 status:
   last_updated: "2026-10-29"
-  last_verified: '2026-11-08'
+  last_verified: '2026-11-12'
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
