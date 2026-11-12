@@ -1,7 +1,7 @@
 id: wiki-login-broken-h3-redirect-uri-mismat-14e9ea
 title: wiki login broken — h3 redirect_uri_mismatch + iframe Google sign-in impossible
 column: backlog
-updated: 2026-11-12 15:40
+updated: 2026-11-12 15:59
 tags:
 - wiki
 - oidc
@@ -39,3 +39,10 @@ comms:
 - at: 2026-11-12 15:40
   from: chaba
   text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-12 15:59
+  from: devin
+  text: 'RESOLVED 2026-11-12. Tony added the redirect URIs in Google Cloud Console — note: console REJECTS raw Thai
+    chars; the percent-encoded form https://wiki.h3.gizmo-thailand.com/index.php?title=%E0%B8%9E%E0%B8%B4%E0%B9%80%E0%B8%A8%E0%B8%A9:PluggableAuthLogin
+    is what MediaWiki actually sends and must be the stored value. Re-verified from tony-omen: Special:UserLogin
+    -> pluggableauthlogin0 now lands on accounts.google.com/v3/signin/identifier (was redirect_uri_mismatch). Tony
+    confirms login works. Res'
