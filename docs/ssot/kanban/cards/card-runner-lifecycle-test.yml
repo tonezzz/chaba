@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:27
+updated: 2026-11-12 15:28
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -28,8 +28,18 @@ comms:
   from: devin
   text: 'PR opened: https://github.com/tonezzz/chaba/pull/161 (branch card/knb-0065-lifecycle-test). Added reports/card-runner/lifecycle-test.md
     with exact content ''lifecycle ok'' (1 line). Verified via wc/od. CI pending.'
+- at: 2026-11-12 15:28
+  from: tony-dell
+  text: 'finished (failed): session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok''
+    (1 line). Verified via wc/od. CI p'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   runner: tony-dell
+  result: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line). Verified
+    via wc/od. CI pending." --from devin 2>&1 | head -40
+
+    {"ok": true, "message": "comment added", "via": "local"}
+
+    > build · iceman-free'
