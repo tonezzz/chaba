@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:40
+updated: 2026-11-12 15:42
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -82,18 +82,14 @@ comms:
     drwxrwxr-x 2 tony tony 4096 Nov 12 15:26 .
 
     drwxrwxr'
+- at: 2026-11-12 15:42
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
-  last_failure: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line).
-    Verified via wc/od. CI pending." --from devin 2>&1 | head -40
-
-    {"ok": true, "message": "comment added", "via": "local"}
-
-    > build · iceman-free'
-  attempts: 1
-  result: 'session rc=0, no repo changes. tail: a reports/card-runner/
+  last_failure: 'session rc=0, no repo changes. tail: a reports/card-runner/
 
     total 12
 
@@ -104,4 +100,4 @@ action:
     -rw-rw-r-- 1 tony tony   13 Nov 12 15:26 lifecycle-test.md
 
     > build · iceman-free'
-  runner: tony-dell
+  attempts: 2
