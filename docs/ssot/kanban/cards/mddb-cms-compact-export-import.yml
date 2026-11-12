@@ -52,16 +52,19 @@ comms:
 - at: 2026-11-12 16:43
   from: tony
   text: put on hold
+- at: 2026-11-12 16:43
+  from: tony
+  text: re-spawned from report page
 recoverability: R2
 auto_done_when:
 - verified_true
 action:
   type: dispatch
-  target_host: idc03
+  target_host: tony-dell
   artifact: compacted mddb.db at ~/.config/containers/mddb-cms/data/ + parity log in comms
   verifier: 'all goals must pass on idc03: (1) curl -sf http://100.102.134.91:11027/v1/health -> 200; (2) post-swap
     doc counts per collection match the pre-run export counts posted in comms; (3) du -sh ~/.config/containers/mddb-cms/data/mddb.db
     < 4G; (4) POST /v1/search on infrastructure-ssot returns >0 results. Any failure => rollback and hold.'
-  status: idle
+  status: queued
   lane: devin
   host: tony-dell
