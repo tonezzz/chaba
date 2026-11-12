@@ -237,6 +237,44 @@ services:
   host: tony_omen
   note: H.264 camera proxy for HA high-res display. Current live API ports are 1984/8554 on tony-omen; the retired dell copy
     used 18554.
+- id: openchamber
+  name: OpenChamber web server
+  type: systemd
+  service: openchamber.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: 'Web control panel for opencode agent sessions (ada-ocb dashboard
+    tab). Serves 127.0.0.1:3000; tailnet HTTPS via tailscale serve :8443.
+    Runs under node24 (engine >=24.14), spawns @opencode/cli v2 serve per
+    session. Env/secret file: ~/.config/openchamber/startup.env.'
+  verification:
+  - 'Status: ssh tony-dell systemctl --user status openchamber.service'
+  - 'Health: curl -s http://127.0.0.1:3000/health (from tony-dell)'
+  - 'Tailnet surface: curl -sI https://tony-dell.taila0626a.ts.net:8443/'
+  - 'Logs: ssh tony-dell journalctl --user -u openchamber.service -n 50'
+  recovery_actions:
+  - 'Restart: ssh tony-dell systemctl --user restart openchamber.service'
+  - 'Check env: ssh tony-dell cat ~/.config/openchamber/startup.env'
+  - 'Update: ssh tony-dell "~/.local/node24/bin/npm exec openchamber update"'
+- id: openchamber-update-timer
+  name: OpenChamber update timer
+  type: systemd
+  service: openchamber-update.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: 'Monthly 1st 06:30 — npm i -g @openchamber/web @opencode/cli then
+    restarts openchamber.service. Failures surface in the service unit
+    journal: ssh tony-dell journalctl --user -u openchamber-update.service'
 - id: mcp-link-monitor
   name: mcp link monitor (mn01)
   type: systemd
