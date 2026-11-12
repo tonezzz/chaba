@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-11 21:13
+updated: 2026-11-12 08:34
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -214,6 +214,13 @@ comms:
   from: devin
   text: 'raised request s3-needs-8-18-more-verified-samples-but-fc52ca: S3 needs 8-18 more verified samples but
     the typed contract admits ONLY idc02 host-health snapshots - no backlog card mat'
+- at: 2026-11-12 08:34
+  from: devin
+  text: 'answered s3-needs-8-18-more-verified-samples-but-fc52ca: Tony selected A in chat: broaden contract to ssot-research/storage-dryrun
+    profiles so real backlog asks feed S3. Recorded by Devin on behalf of Tony.'
+- at: 2026-11-12 08:34
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
@@ -253,10 +260,12 @@ requests:
     backlog card matches, and bursting identical snapshots is filler. Pick: (A) broaden contract to ssot-research/storage-dryrun
     profiles so real backlog asks feed S3 (small code change) (B) spread identical snapshots across real triggers
     over days (post-sync, post-incident) (C) lower S3 sample requirement. Recommend A.'
-  status: open
+  status: answered
   at: 2026-11-11 21:13
   from: devin
   options:
   - proceed
   - hold
+  answer: 'Tony selected A in chat: broaden contract to ssot-research/storage-dryrun profiles so real backlog asks
+    feed S3. Recorded by Devin on behalf of Tony.'
 awaiting_action: true
