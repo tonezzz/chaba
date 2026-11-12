@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
 column: backlog
-updated: 2026-11-12 09:50
+updated: 2026-11-12 09:35
 priority: high
 tags:
 - timer-alert
@@ -1529,6 +1529,10 @@ comms:
 - at: 2026-11-12 09:50
   from: devin
   text: 'Still failing: Result=exit-code(2) on tony-dell (omen twin passes).'
+- at: 2026-11-12 09:35
+  from: devin
+  text: '[still suspicious] Last run (11-12 09:18) of `wp-cam-snapshot.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u wp-cam-snapshot.service` on the host. See CMS `timer-timeline-tony-dell`.'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining
