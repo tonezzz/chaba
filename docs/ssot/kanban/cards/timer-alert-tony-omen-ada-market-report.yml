@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-12 06:46) of `ada-market-report.service` on `tony-omen` result=exit-code — investigate journal:
-  `journalctl --user -u ada-market-report.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-12 06:46) of `ada-market-report.service` on `tony-omen` result=exit-code — investigate
+  journal: `journalctl --user -u ada-market-report.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: ADA-0029
 comms:
 - at: 2026-11-12 06:52
@@ -91,6 +91,15 @@ comms:
     — investigate journal: `journalctl --user -u ada-market-report.service` on the host. See CMS `timer-timeline-tony-omen`.'
 - at: 2026-11-12 12:24
   from: devin
-  text: '[evidence] exit 1 — oil feed endpoint refusing connections (OIL/WTI urlopen ECONNREFUSED then Remote end
-    closed). External data source down/unreachable, not a local fault. Leave open until feed recovers or source
-    is swapped.'
+  text: '[evidence] exit 1 — oil feed endpoint refusing connections (OIL/WTI urlopen ECONNREFUSED then
+    Remote end closed). External data source down/unreachable, not a local fault. Leave open until feed
+    recovers or source is swapped.'
+- at: 2026-11-12 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of `ada-market-report.service` on host `tony-omen` where the last run resulted
+  in an exit code. Inspect the systemd journal using `journalctl --user -u ada-market-report.service`
+  on the target host and cross-reference the CMS record `timer-timeline-tony-omen`. Evidence indicates
+  an external connection refusal (ECONNREFUSED) to the OIL/WTI feed endpoint, meaning the data source
+  is currently unreachable rather than a local fault. The done-condition is verified when the root cause
+  is confirmed in the journal and documented, leaving the card or feed state handled appropriately.
