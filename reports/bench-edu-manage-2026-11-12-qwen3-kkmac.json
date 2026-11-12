@@ -1,0 +1,528 @@
+{
+ "at": "2026-11-12 13:27:47",
+ "date": "2026-11-12",
+ "config": {
+  "lanes": {
+   "local-qwen3-8b": {
+    "base": "http://100.108.217.17:11434/v1",
+    "model": "qwen3:8b",
+    "json_mode": true
+   }
+  },
+  "judge": "gemini-3.5-flash-lite",
+  "agent_topics": false,
+  "repetitions": 1,
+  "corpus": "/home/tony/CascadeProjects/chaba-wt-ssot-service-inventory-drift/scripts/bench-edu-corpus.json"
+ },
+ "scores": {
+  "local-qwen3-8b": [
+   {
+    "lane": "local-qwen3-8b",
+    "capture": {
+     "tp": 5,
+     "fp": 0,
+     "fn": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "f1": 1.0
+    },
+    "dedupe": {
+     "correct": 4,
+     "total": 5,
+     "score": 0.8
+    },
+    "sched_ops": {
+     "pass": 5,
+     "total": 5,
+     "score": 1.0,
+     "next_review_default_ok": 5,
+     "creates": 5
+    },
+    "recall": {
+     "correct": 1,
+     "total": 3
+    },
+    "loop": {
+     "completed": 13,
+     "total": 13,
+     "lat_mean": 20.3,
+     "lat_p50": 17.9,
+     "tokens_in": 42774,
+     "tokens_out": 14363,
+     "arg_repairs": 0,
+     "arg_errors": 0,
+     "json_retries": 0,
+     "json_mode": true,
+     "cost_usd": 0.0
+    },
+    "draft_quality": {
+     "n": 8,
+     "mean": 4.45,
+     "direct_answer": 4.88,
+     "accuracy": 5.0,
+     "structure": 5.0,
+     "hygiene": 5.0,
+     "length": 2.38
+    }
+   }
+  ]
+ },
+ "tasks": {
+  "local-qwen3-8b": [
+   {
+    "rep": 1,
+    "task": "t1-create-bbr-cubic",
+    "final_text": "lesson-create: lesson-3a64ca409edf (TCP BBR vs CUBIC Congestion Control)",
+    "llm_calls": 3,
+    "tokens_in": 3674,
+    "tokens_out": 1052,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 24.137919664382935,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-3a64ca409edf",
+      "topic": "TCP BBR vs CUBIC Congestion Control",
+      "created": true,
+      "content": "<h3>TCP BBR vs CUBIC Congestion Control</h3><p>CUBIC is loss-based — it grows the congestion window until packet loss, then backs off, which fills buffers and adds latency. BBR is model-based: it measures bottleneck bandwidth and round-trip time and paces sends to sit at that operating point instead of filling buffers.</p><p>In practice BBR keeps latency lower on buffer-bloated links; CUBIC can win on short high-bandwidth paths.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "t2-skip-commands",
+    "final_text": "No lessons created or updated. All interactions were commands, reminders, or chit-chat.",
+    "llm_calls": 2,
+    "tokens_in": 2191,
+    "tokens_out": 562,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 10.011772155761719,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "t3-update-tailscale",
+    "final_text": "lesson-90f614241c87 updated with tag vs regular ACL rule explanation",
+    "llm_calls": 4,
+    "tokens_in": 5564,
+    "tokens_out": 2488,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 45.26087236404419,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p><h4>Tag vs Regular ACL Rules</h4><ul><li><strong>Tag</strong>: An identity you put on a device instead of a user - tagged devices stop being owned by a person, so servers keep access when users leave</li><li><strong>Regular ACL Rule</strong>: Specifies which sources can reach which destinations and ports (e.g., 'group:admins can reach tag:server on port 22')</li></ul>",
+      "next_review": "2026-11-17",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "t4-mixed-cap-private",
+    "final_text": "Created lesson-80a7b20bd1e4 (CAP Theorem in Distributed Systems) with intro-level content about distributed systems trade-offs. Skipped electricity bill inquiry as it's a private matter without durable knowledge.",
+    "llm_calls": 3,
+    "tokens_in": 3751,
+    "tokens_out": 1461,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 26.127432823181152,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-80a7b20bd1e4",
+      "topic": "CAP Theorem in Distributed Systems",
+      "created": true,
+      "content": "<h3>CAP Theorem in Distributed Systems</h3><p>The CAP theorem states a distributed data store must choose between consistency and availability during network partitions. You can't guarantee both simultaneously. Systems typically opt for CP (consistent, no writes during partitions) or AP (available, reconcile inconsistencies later). Without partitions, systems achieve both consistency and availability.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "t5-thai-quantization",
+    "final_text": "Lesson created: \"Quantization in LLM Models GGUF\" (slug: lesson-8c2b2127f0e9) with intro-level content explaining quantization's role in reducing model precision and GGUF's efficiency for local inference. No existing lessons found, so this is a new entry with status=open and next review set to 2026-11-19.",
+    "llm_calls": 3,
+    "tokens_in": 3853,
+    "tokens_out": 1833,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 32.91438364982605,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-8c2b2127f0e9",
+      "topic": "Quantization in LLM Models GGUF",
+      "created": true,
+      "content": "<h3>Quantization in LLM Models and GGUF Efficiency</h3><p>Quantization is the process of reducing the precision of model weights, typically from 16 or 32 bits to 8, 4, or fewer bits. This reduces model size and speeds up calculations, albeit with a slight decrease in accuracy.</p><p>GGUF is a file format that stores quantized weights along with an optimized layout for memory mapping, making it ideal for local inference due to its efficiency.</p>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "t6-hub-ada-nest-heartbeat",
+    "final_text": "lesson_create: ada nest heartbeat escalation (created)",
+    "llm_calls": 3,
+    "tokens_in": 3568,
+    "tokens_out": 991,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 17.93964958190918,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-69cd1a5df775",
+      "topic": "ada nest heartbeat escalation",
+      "created": true,
+      "content": "<h3>Ada Nest Heartbeat Escalation</h3><p>A member node pages when a node enters <strong>degraded</strong> state after missing N heartbeats, then remains degraded for the <strong>escalation window</strong> without recovery. Single missed beats or brief connectivity issues (e.g., wifi flaps) don't trigger alerts. The hub monitors freshness and escalates only after sustained failure.",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "t7-ephemeral",
+    "final_text": "The user's questions about Tokyo time and rain forecasts are time-specific and situational, lacking durable knowledge. No lessons were created or updated.",
+    "llm_calls": 4,
+    "tokens_in": 4578,
+    "tokens_out": 1156,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 20.520623922348022,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 3
+   },
+   {
+    "rep": 1,
+    "task": "o1-mark-learned",
+    "final_text": "Marked the \"spaced repetition\" lesson as learned, updating its status and next review date.  \n(lesson-abdcd6c6c5e1 +status=learned, next_review=2026-11-19)",
+    "llm_calls": 3,
+    "tokens_in": 3177,
+    "tokens_out": 1486,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 26.437169075012207,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-abdcd6c6c5e1",
+      "topic": "spaced repetition",
+      "created": false,
+      "content": "<h3>Spaced repetition</h3><p>Reviewing material at expanding intervals (1d, 3d, 7d, 30d) exploits the spacing effect: each successful recall just before forgetting strengthens retention far more than re-reading. Anki and similar systems schedule the next review from recall quality.</p>",
+      "next_review": "2026-11-19",
+      "status": "learned"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "o2-push-review",
+    "final_text": "Updated the next_review date of the \"tailscale acl basics\" lesson from 2026-11-17 to 2026-12-12 (slug: lesson-90f614241c87).",
+    "llm_calls": 3,
+    "tokens_in": 3230,
+    "tokens_out": 805,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 14.741990804672241,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-90f614241c87",
+      "topic": "tailscale acl basics",
+      "created": false,
+      "content": "<h3>Tailscale ACLs</h3><p>ACLs gate which tailnet nodes can reach which ports. Tags replace a node's user identity with a role identity so servers keep access when people leave; rules then say 'group:admins can reach tag:server on port 22'.</p>",
+      "next_review": "2026-12-12",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   },
+   {
+    "rep": 1,
+    "task": "o3-due-list",
+    "final_text": "The lesson due for review is:  \n**\"Education — spaced repetition\"** (slug: `lesson-abdcd6c6c5e1`), topic: spaced repetition, status: open, next_review: 2026-11-11 (past due).  \n\nSummary: `lesson-abdcd6c6c5e1` marked as due for review.",
+    "llm_calls": 2,
+    "tokens_in": 1987,
+    "tokens_out": 606,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 10.757265090942383,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "r1-recall-spaced",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1948,
+    "tokens_out": 543,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 9.643368005752563,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "r2-recall-tailscale",
+    "final_text": "none",
+    "llm_calls": 2,
+    "tokens_in": 1928,
+    "tokens_out": 614,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 10.710983753204346,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [],
+    "tool_calls": 1
+   },
+   {
+    "rep": 1,
+    "task": "r3-recall-none",
+    "final_text": "quantum-annealing",
+    "llm_calls": 3,
+    "tokens_in": 3325,
+    "tokens_out": 766,
+    "models": [
+     "qwen3:8b"
+    ],
+    "latency": 14.049360275268555,
+    "err": null,
+    "arg_repairs": 0,
+    "arg_errors": 0,
+    "json_retries": 0,
+    "json_mode": true,
+    "completed": true,
+    "filings": [
+     {
+      "slug": "lesson-1a97f325b4e1",
+      "topic": "quantum annealing",
+      "created": true,
+      "content": "<h3>Quantum annealing</h3><p>Quantum annealing is a quantum computing paradigm using superconducting qubits to find global minima in complex optimization problems. Unlike gate-based quantum computing, it leverages quantum tunneling and thermal fluctuations to escape local minima. The D-Wave system is a commercial example, using a programmable superconducting processor to solve combinatorial optimization problems.</p><ul><li>Uses quantum fluctuations to traverse energy landscapes</li><li>Specialized for optimization problems</li><li>Complementary to gate-model quantum computers</li><li>Current hardware achieves ~0.1% precision for 5600+ qubit problems</li></ul>",
+      "next_review": "2026-11-19",
+      "status": "open"
+     }
+    ],
+    "tool_calls": 2
+   }
+  ]
+ },
+ "drafts": [
+  {
+   "lane": "local-qwen3-8b",
+   "task": "t1-create-bbr-cubic",
+   "slug": "lesson-3a64ca409edf",
+   "topic": "TCP BBR vs CUBIC Congestion Control",
+   "q": "bbr",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 3
+   },
+   "html_len": 436
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "t3-update-tailscale",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 2
+   },
+   "html_len": 614
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "t4-mixed-cap-private",
+   "slug": "lesson-80a7b20bd1e4",
+   "topic": "CAP Theorem in Distributed Systems",
+   "q": "cap theorem",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 1
+   },
+   "html_len": 408
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "t5-thai-quantization",
+   "slug": "lesson-8c2b2127f0e9",
+   "topic": "Quantization in LLM Models GGUF",
+   "q": "quantiz",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 3
+   },
+   "html_len": 449
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "t6-hub-ada-nest-heartbeat",
+   "slug": "lesson-69cd1a5df775",
+   "topic": "ada nest heartbeat escalation",
+   "q": "heartbeat",
+   "judge": {
+    "direct_answer": 4,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 1
+   },
+   "html_len": 383
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "o1-mark-learned",
+   "slug": "lesson-abdcd6c6c5e1",
+   "topic": "spaced repetition",
+   "q": "spaced repetition",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 2
+   },
+   "html_len": 286
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "o2-push-review",
+   "slug": "lesson-90f614241c87",
+   "topic": "tailscale acl basics",
+   "q": "tailscale acl basics",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 2
+   },
+   "html_len": 244
+  },
+  {
+   "lane": "local-qwen3-8b",
+   "task": "r3-recall-none",
+   "slug": "lesson-1a97f325b4e1",
+   "topic": "quantum annealing",
+   "q": "quantum annealing",
+   "judge": {
+    "direct_answer": 5,
+    "accuracy": 5,
+    "structure": 5,
+    "hygiene": 5,
+    "length": 5
+   },
+   "html_len": 668
+  }
+ ]
+}
