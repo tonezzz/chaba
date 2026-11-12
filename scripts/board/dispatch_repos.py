@@ -736,20 +736,22 @@ def unsatisfiable_reasons(card: dict, fleet: dict | None = None,
         return []                # no declared evidence — never flag
     needs = set(a.get("labels") or [])
     reasons = []
+    fleet_canon = {canon_host(h): h for h in fleet}
     cands = set(fleet)
     for pin_key in ("host", "target_host", "runner"):
         pin = str(a.get(pin_key) or "").strip()
         if not pin:
             continue
-        if pin not in fleet:
+        fh = fleet_canon.get(canon_host(pin))
+        if fh is None:
             reasons.append(f"action.{pin_key}={pin} names no declared "
                            "runner")
             cands.clear()
             break
-        cands &= {pin}
+        cands &= {fh}
     pin_host = str(a.get("host") or "").strip()
     pin_th = str(a.get("target_host") or "").strip()
-    if pin_host and pin_th and pin_host != pin_th:
+    if pin_host and pin_th and canon_host(pin_host) != canon_host(pin_th):
         reasons.append(f"action.host={pin_host} conflicts "
                        f"target_host={pin_th}")
         cands.clear()
