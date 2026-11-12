@@ -1,17 +1,29 @@
 id: mddb-cms-compact-export-import
 title: 'Compact mddb-cms: 23G DB → export/import (est <1G live data)'
 column: backlog
-updated: 2026-11-12 16:16
-spec: 'mddb-cms on idc03 is 23G but holds only ~8k docs across 19 colls (~10KB avg) — ~22G is freelist/dead-page bloat, same signature as mddb-ops
-  31G→2.8G. repair-db proven unusable (FTS nil-ptr). Use the proven path: /tmp/ops-compact/export-import.sh pattern — export all 19 collections
-  (infrastructure-ssot 5645, ada-cms-pages 1253, kb-*, documents, chaba-lessons…), fresh scratch DB on :11088, /v1/add re-import, verify counts,
-  swap data dirs, restart. Needs a brief write-freeze window (cms consumers: embed-lane-banks writes ada-cms-pages? verify writers first). Run
-  AFTER tonight''s gzipped backup lands so rollback exists.'
+updated: 2026-11-12 16:39
+spec: 'mddb-cms on idc03 is 23G but holds only ~8k docs across 19 colls (~10KB avg) — ~22G is freelist/dead-page
+  bloat, same signature as mddb-ops 31G→2.8G. repair-db proven unusable (FTS nil-ptr). Use the proven path: /tmp/ops-compact/export-import.sh
+  pattern — export all 19 collections (infrastructure-ssot 5645, ada-cms-pages 1253, kb-*, documents, chaba-lessons…),
+  fresh scratch DB on :11088, /v1/add re-import, verify counts, swap data dirs, restart. Needs a brief write-freeze
+  window (cms consumers: embed-lane-banks writes ada-cms-pages? verify writers first). Run AFTER tonight''s gzipped
+  backup lands so rollback exists.'
 ref: MEM-0068
 comms:
 - at: 2026-11-12 16:16
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 16:39
+  from: chaba
+  text: classified as devin (fallback conf 0.17)
+- at: 2026-11-12 16:39
+  from: tony
+  text: queued for processing
+- at: 2026-11-12 16:39
+  from: chaba
+  text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
+    or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
 recoverability: R2
 auto_done_when:
 - verified_true
@@ -19,6 +31,9 @@ action:
   type: dispatch
   target_host: idc03
   artifact: compacted mddb.db at ~/.config/containers/mddb-cms/data/ + parity log in comms
-  verifier: 'all goals must pass on idc03: (1) curl -sf http://100.102.134.91:11027/v1/health -> 200; (2) post-swap doc counts per collection
-    match the pre-run export counts posted in comms; (3) du -sh ~/.config/containers/mddb-cms/data/mddb.db < 4G; (4) POST /v1/search on infrastructure-ssot
-    returns >0 results. Any failure => rollback and hold.'
+  verifier: 'all goals must pass on idc03: (1) curl -sf http://100.102.134.91:11027/v1/health -> 200; (2) post-swap
+    doc counts per collection match the pre-run export counts posted in comms; (3) du -sh ~/.config/containers/mddb-cms/data/mddb.db
+    < 4G; (4) POST /v1/search on infrastructure-ssot returns >0 results. Any failure => rollback and hold.'
+  status: queued
+  lane: devin
+awaiting_action: true
