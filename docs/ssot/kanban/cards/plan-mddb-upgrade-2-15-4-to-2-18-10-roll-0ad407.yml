@@ -1,7 +1,7 @@
 id: plan-mddb-upgrade-2-15-4-to-2-18-10-roll-0ad407
 title: Plan MDDB upgrade 2.15.4 to 2.18.10 — rolling validation and rollback
 column: backlog
-updated: 2026-11-12 00:06
+updated: 2026-11-12 08:54
 priority: medium
 tags:
 - mddb
@@ -31,3 +31,7 @@ comms:
   text: 'Update from ops-compaction work 2026-11-11: export/import rebuild path proven at 142k-doc scale (26s export,
     ~90-140/s via /v1/add-batch skipEmbeddings) - viable upgrade/migration path. -repair-db crashes nil-ptr on FTS
     payload entries: exclude it from upgrade tooling. Live ops db now 2.6G so a full export-based migration is cheap.'
+- at: 2026-11-12 08:54
+  from: devin
+  text: 'Folded into MEM-0024 as checklist (see its comment). Session notes: export/import rebuild proven at 142k-doc
+    scale; ops now 2.6-4.4G so migration is cheap.'
