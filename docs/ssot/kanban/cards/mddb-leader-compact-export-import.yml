@@ -1,7 +1,7 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
 column: backlog
-updated: 2026-11-12 16:39
+updated: 2026-11-12 16:40
 spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
   Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
   after). Schedule alongside cms compaction; backup first.'
@@ -21,6 +21,11 @@ comms:
   text: 'WARNING: unclaimable by the declared runner fleet — push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing. Fix action.labels/host pins
     or teach a runner the capability (RUNNER_LABELS + ssot.kanban.yml runner_fleet)'
+- at: 2026-11-12 16:40
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
 recoverability: R2
 auto_done_when:
 - verified_true
