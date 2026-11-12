@@ -1,0 +1,31 @@
+id: oswe-eval-ada-test-tab
+title: Self-deploy OpenSWE (Robin) on tony-dell + Ada Test tab on ada-ha
+column: backlog
+updated: 2026-11-12 15:10
+brief: Evaluate OpenSWE/Robin; self-deploy on tony-dell dev-mode, expose like ada-ocb, add 'Ada Test' sidebar tab
+  (OSWE first) on ada-ha chaba-admin.
+priority: medium
+program: devnest
+tags:
+- oswe
+- openswe
+- eval
+- ada
+- infra
+spec: 'Tony decision 2026-11-12: evaluate OpenSWE (langchain-ai/open-swe, rebranded Robin) and add sidebar tab ''Ada
+  Test'' on https://ada-ha.surf-thailand.com/chaba-admin with OSWE as first tab — same tab mechanics as ada-ocb
+  (panel view + iframe via push-dashboard.py --mutate + sync-ssot-from-live.sh --instance ada-ha), but self-deploy
+  the backend first. PLAN: (1) prep tony-dell toolchain (uv, rustup/cargo, node>=26, pnpm; py3.14+docker already
+  present); (2) clone open-swe, run dev-mode stack: langgraph dev backend :2024 + make dev-mda :2025 + postgres:16
+  container; (3) gates — needs LangSmith account+API key (cloud sandboxes), Anthropic key (or LLM gateway), GitHub
+  App created in Tony''s org + installed on eval repos, Slack app (REQUIRED — backend refuses to start without 5
+  Slack vars), ngrok static domain for webhooks; (4) expose dashboard via tailscale serve + public edge (same chain
+  as ada-ocb: idc02 caddy-edge -> serve -> app); fix frame-ancestors/SameSite if needed; (5) add Ada Test view (path
+  ada-test, panel+iframe) to ada-ha chaba-admin dashboard; (6) eval: 3 representative tasks (bugfix, small feature,
+  refactor) vs Devin/Jev, score plan quality/PR quality/cycles-to-mergeable/cost; verdict to Education lesson +
+  SSOT one-liner.'
+ref: ADA-0064
+comms:
+- at: 2026-11-12 15:10
+  from: tony
+  text: card captured via board-api
