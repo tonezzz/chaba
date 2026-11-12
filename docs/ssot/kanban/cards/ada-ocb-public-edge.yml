@@ -1,7 +1,7 @@
 id: ada-ocb-public-edge
 title: Expose OpenChamber publicly as ada-ocb.surf-thailand.com
 column: done
-updated: 2026-11-12 10:21
+updated: 2026-11-12 13:20
 brief: The ada-ocb chaba-admin tab on ada-ha (added 2026-11-12) iframes https://ada-ocb.surf-thailand.com/, which
   does not exist yet. OpenChamber web (@openchamber/web) runs on tony-dell 0.0.0.0:3000, also reachable at http://100.68.142.13:3000
   on the tailnet.
@@ -63,6 +63,13 @@ comms:
     page x ts.net app). No config knob. Workaround (live): open the dashboard via its tailnet HTTPS URL https://tony-omen.taila0626a.ts.net:8125/chaba-admin/ada-ocb
     - same-site (https, taila0626a.ts.net) as the iframe, cookies flow; origin added to OPENCHAMBER_FRAME_ANCESTORS.
     The tab can '
+- at: 2026-11-12 13:20
+  from: devin
+  text: 'REOPENED+DONE 2026-11-12 (Tony reversed tailnet-only via ''process sys-0041, ada-0032''): public edge is
+    LIVE — DNS A ada-ocb.surf-thailand.com -> 45.136.236.190 proxied; added to opencode-ada CF Access app self_hosted_domains
+    (same AUD/allowlist/720h); idc02 caddy-edge block reverse_proxy -> https://tony-dell.taila0626a.ts.net:8443
+    (validated+reloaded, verified 302->cloudflareaccess.com through public path); ada-ocb iframe re-mutated to public
+    URL (websocket save + .storage verified + snapshot sy'
 action:
   status: done
 claim: {}
