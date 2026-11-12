@@ -1,0 +1,41 @@
+id: wiki-login-broken-h3-redirect-uri-mismat-14e9ea
+title: wiki login broken — h3 redirect_uri_mismatch + iframe Google sign-in impossible
+column: backlog
+updated: 2026-11-12 15:40
+tags:
+- wiki
+- oidc
+- members
+- bug
+spec: 'VERIFIED 2026-11-12 (tony-omen session): two separate wiki login defects.
+
+
+  1) wiki.h3.gizmo-thailand.com Google-OIDC is broken: Special:UserLogin -> pluggableauthlogin0 -> Google returns
+  redirect_uri_mismatch. OpenIDConnect builds redirect_uri as SpecialPage::getTitleFor(PluggableAuthLogin)->getFullURL()
+  = https://wiki.h3.gizmo-thailand.com/index.php?title=พิเศษ:PluggableAuthLogin (Thai localized alias) — NOT registered
+  in OAuth client 517766007004-7vp0c2qjdeee515qp5d580g0nh02p2qh. Same flow on wiki.surf-thailand.com IS accepted
+  by Google (Thai-alias URI registered for that host only). FIX (Tony, Google Cloud Console): add authorized redirect
+  URIs https://wiki.h3.gizmo-thailand.com/index.php?title=พิเศษ:PluggableAuthLogin and (if used for member login)
+  https://wiki-internal.surf-thailand.com/index.php?title=พิเศษ:PluggableAuthLogin to client 517766007004-7vp0c2qjdeee515qp5d580g0nh02p2qh.apps.googleusercontent.com.
+  Blocks KNB-1163 KK/Nhong onboarding (card tells them to sign in at wiki.h3).
+
+
+  2) Login inside the ada-ha chaba-admin/wiki HA iframe can NEVER complete: iframe navigates to accounts.google.com
+  which sends X-Frame-Options: DENY -> browser shows refused-to-connect inside the frame. WORKAROUND: open https://wiki.surf-thailand.com/index.php?title=Special:UserLogin
+  in a normal tab, click the button labeled "0" (the PluggableAuth Google button — label is broken/cosmetic), complete
+  sign-in; iframe then shows logged-in state (same-site surf-thailand.com cookies). Optional UX card: add weblink
+  card Open-wiki-in-new-tab or userloginprompt note.
+
+
+  3) Cosmetic: the Google sign-in button on Special:UserLogin renders with label "0" (missing button label in $wgPluggableAuth_Config)
+  — confusing but functional.'
+action:
+  type: manual
+ref: OPS-0066
+comms:
+- at: 2026-11-12 15:40
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-12 15:40
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
