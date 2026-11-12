@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-weaviate-index
 title: Timer weaviate-index on tony-omen failing
 column: backlog
-updated: 2026-11-12 12:24
+updated: 2026-11-13 02:13
 priority: high
 tags:
 - timer-alert
@@ -1119,6 +1119,9 @@ comms:
     at 25min+ on Nov-11 run). weaviate itself lives on idc02:8084 (up 3w), embed proxy healthy. Bumped timeout to
     3h via drop-in (~/.config/systemd/user/weaviate-index.service.d/timeout.conf). Watch next 02:00 run; if still
     timing out, job needs incremental indexing.'
+- at: 2026-11-13 02:13
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `weaviate-index.service` on the host `tony-omen`. Run `journalctl
