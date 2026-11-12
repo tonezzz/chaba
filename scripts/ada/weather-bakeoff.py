@@ -362,6 +362,15 @@ def ha_condition(ha_url: str, token: str) -> str:
     return st.get("state", "unknown")
 
 
+def wind_knots(value, unit: str) -> str:
+    factors = {"m/s": 3.6 / 1.852, "km/h": 1 / 1.852,
+               "kn": 1, "kts": 1, "knots": 1, "mph": 1 / 1.150779448}
+    try:
+        return f"{float(value) * factors[unit]:.1f}kts"
+    except (ValueError, TypeError, KeyError):
+        return "-"
+
+
 def rk600_line(rk: dict) -> str:
     def pick(sub):
         for eid, s in rk.items():
@@ -371,8 +380,32 @@ def rk600_line(rk: dict) -> str:
                 except ValueError:
                     return s["state"]
         return "-"
+    # wind normalized to knots for the TG report
+    wind = "-"
+    for eid, st in rk.items():
+        if "wind_speed" in eid and st["state"] not in ("unknown", "unavailable"):
+            try:
+                v = float(st["state"])
+                u = st["unit"]
+                wind = wind_knots(v, u)
+                break
+            except ValueError:
+                wind = st["state"]
+                break
     return (f"{pick('temperature')} · {pick('humidity')} RH · "
-            f"wind {pick('wind_speed')}")
+            f"wind {wind}")
+
+
+def ha_now(ha_url: str, token: str) -> str:
+    """Current conditions from the HA weather entity (weather.forecast_home)
+    so the report shows the same numbers Michael sees on his weather card."""
+    st = http_json(f"{ha_url}/api/states/weather.forecast_home",
+                   {"Authorization": f"Bearer {token}"})
+    a = st.get("attributes", {})
+    return (f"{a.get('temperature', '?')}°C · "
+            f"{a.get('humidity', '?')}% RH · "
+            f"wind {wind_knots(a.get('wind_speed'), a.get('wind_speed_unit', ''))} · "
+            f"{st.get('state', '?')}")
 
 
 def rain_check(env: dict, ha_url: str, token: str, lat: float,
@@ -537,6 +570,10 @@ def main() -> int:
 
     # --- now line (RK600 measured)
     now_txt = f"NOW (RK600 station, measured): {rk600_line(rk)}"
+    try:
+        now_txt += "\nHA-FC NOW: " + ha_now(ha_url, token)
+    except Exception:
+        pass
 
     # --- daily matrix
     sources_daily: dict[str, list[dict]] = {}
