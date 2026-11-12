@@ -1,7 +1,7 @@
 id: backup-coverage-mddb-ops-mddb-cms-mddb-e-a70965
 title: 'Backup coverage: mddb-ops, mddb-cms, mddb-embed (53G unprotected)'
 column: done
-updated: 2026-11-12 00:41
+updated: 2026-11-12 08:54
 brief: Only the leader mddb (:11023) has mddb-backup.timer. ops=30G, cms=21G, embed=2.8G have no backup path. Extend
   backup script to loop the instances with same 3d retention.
 ref: MEM-0022
@@ -23,5 +23,10 @@ comms:
 - at: 2026-11-12 00:41
   from: tony
   text: closed by tony
+- at: 2026-11-12 08:54
+  from: devin
+  text: 'Follow-up done: pulled backups now gzip in-place (~10x on telemetry: idc02 ops 778M -> 75M). idc02 mddb-ops
+    now covered by its own mddb-backup.sh + timer 03:30 daily - verified end-to-end (native -> pull -> gzip, exit
+    0). Remaining AUD-1186 gap closed.'
 action:
   status: done
