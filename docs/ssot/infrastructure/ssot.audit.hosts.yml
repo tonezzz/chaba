@@ -261,6 +261,12 @@ hosts:
       - {name: tony-dell-health-snapshot.timer, type: timer, scope: user}
       - {name: tony-dell-mcp-health.timer, type: timer, scope: user}
       - {name: tony-dell-monitor.timer, type: timer, scope: user}
+      - name: ollama.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: false
+        note: "Local Ollama 127.0.0.1:11434 (qwen2.5:7b-instruct, nomic-embed-text) — chat-local/embedding backend consumed by idc03 LiteLLM via tonydell-ollama-tunnel.service (:11446 -> tony-dell:11434); SYS-1101"
     expected_absent:   # migrated/retired in OPS-0725 drain — must NOT run on dell
       - {name: bserver.service, scope: user}
       - {name: chaba-board-api.service, scope: user}
