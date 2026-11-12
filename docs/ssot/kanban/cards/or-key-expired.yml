@@ -1,6 +1,6 @@
 id: or-key-expired
 title: OpenRouter key expired - embedding OR leg dead
-column: backlog
+column: done
 updated: 2026-11-12 09:40
 ref: SEC-0505
 comms:
@@ -29,6 +29,9 @@ comms:
   text: '[resolved] New OR key deployed to mddb-gemini.env (both proxy + litellm read it), services restarted. OR
     /key endpoint confirms valid, litellm or-gemini-embedding-2 leg now serves. Note: litellm config + proxy env
     both source this one file — single rotation point.'
+- at: 2026-11-12 09:40
+  from: tony
+  text: closed by tony
 requests:
 - id: the-openrouter-api-key-used-fo-63157a
   ask: The OpenRouter API key used for embedding has expired, causing the embedding or OpenRouter leg to fail, but
@@ -42,4 +45,5 @@ requests:
   at: 2026-10-26 01:20
   from: backlog-spec-enrich
   answer: Attempt to scan all managed hosts for OpenRouter environment variables or config files.
-awaiting_action: true
+action:
+  status: done
