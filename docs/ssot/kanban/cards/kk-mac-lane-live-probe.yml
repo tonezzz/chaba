@@ -1,7 +1,7 @@
 id: kk-mac-lane-live-probe
 title: kk_mac_local lane live probe — first real claim through the armed lane
-column: doing
-updated: 2026-11-12 09:24
+column: review
+updated: 2026-11-12 09:33
 priority: high
 tags:
 - devnest
@@ -23,15 +23,16 @@ action:
     model — entry-level prediction of the cheapest lane expected to pass, work plane vs decision plane, escalation
     on gate failure; (2) one line noting this artifact was produced by the kk_mac_local lane on KKs-Mac-Studio.
     Keep it under 40 lines.'
-  status: running
-  result: 'exit=1 task-20261111-215314-probe-card-for-the-kk-mac-loca.service: Failed with result ''exit-code''.
-    | devin-task-20261111-215314-probe-card-for-the-kk-mac-loca.service: Consumed 21.688s CPU time over 2min 13.098s
-    wall clock time, 773M memory peak.'
+  status: done
+  result: 'exit=0 t.json,kk_mac.log}`, and `dispatch-outcome-20261112-091946-probe-card-for-the-kk-mac-loca.md`.
+    | devin-task-20261112-091946-probe-card-for-the-kk-mac-loca.service: Consumed 40.029s CPU time over 5min 37.277s
+    wall clock time, 1G memory peak.'
   sweep:
     failed_noted: 2026-11-09 10:49
     stale_running: 2026-11-12 09:21
     session_gone: 2026-11-12 09:21
   runner: tony-omen
+  verified: false
 ref: OPS-1259
 comms:
 - at: 2026-11-09 10:45
@@ -325,6 +326,10 @@ comms:
     ollama on KKs-Mac-Studio, eval_count=1184 ~19.6s, admission eligible (heartbeat 102s, ollama_ok, disk 112G,
     load 2.8, temp 40C, not busy). Earlier claim-time declines (heartbeat_stale/load_unknown) had recovered by run
     time. Caveat: qwen3:8b summarized lane routing loosely (tr'
+- at: 2026-11-12 09:33
+  from: tony-omen
+  text: 'finished (ok): exit=0 t.json,kk_mac.log}`, and `dispatch-outcome-20261112-091946-probe-card-for-the-kk-mac-loca.md`.
+    | devin-task-20261'
 requests:
 - id: kk-mac-heartbeat-script-is-the-old-versi-759483
   ask: 'kk-mac heartbeat script is the OLD version — no load_1m/cpu_temp_c fields, so the lane gates load_unknown
@@ -338,3 +343,5 @@ requests:
   - ★ run the sudo update on kk-mac
   - raise max_load_1m gate (current load ~4.15 > 4.0)
   - leave lane paused — no probe needed now
+review_kind: verify
+claim: {}
