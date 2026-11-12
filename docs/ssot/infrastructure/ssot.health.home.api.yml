@@ -143,14 +143,14 @@ services:
     category: api
     profiles:
       - home
-    host: tony_dell
+    host: idc02
     verification:
-      - "Test auth health: curl -s http://tony-dell:3011/health/auth (200=ok, 503=expired)"
-      - "Check keepalive: ssh tony-dell podman logs notebooklm-rest --tail 30 | grep -i refresh"
-      - "Manual probe: ssh tony-dell docker exec notebooklm-rest notebooklm --storage /data/storage_state.json auth check --json"
+      - "Test auth health: curl -s http://idc02:3011/health/auth (200=ok, 503=expired)"
+      - "Check keepalive: ssh idc02 podman logs notebooklm-rest --tail 30 | grep -i refresh"
+      - "Manual probe: ssh idc02 podman exec notebooklm-rest notebooklm --storage /data/storage_state.json auth check --json"
     recovery_actions:
-      - 'Force refresh: curl -s -X POST http://tony-dell:3011/health/auth/refresh -H "X-API-Key: <admin-key>"'
-      - "Restart container: ssh tony-dell systemctl --user restart notebooklm-rest"
+      - 'Force refresh: curl -s -X POST http://idc02:3011/health/auth/refresh -H "X-API-Key: <admin-key>"'
+      - "Restart container: ssh idc02 systemctl --user restart notebooklm-rest"
       - "If master_token revoked: re-extract via notebooklm login on a browser host, then rsync master_token.json to ~/.local/share/notebooklm/notebooklm-rest-data/ and restart"
   - id: input-bridge-relay
     name: Input Bridge Relay (vcast)

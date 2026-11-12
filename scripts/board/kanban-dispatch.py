@@ -904,7 +904,7 @@ def main() -> int:
                     print(f"{card['id']}: parked (retry cap)")
                     continue
                 pinned = a.get("host")
-                if pinned and pinned != HOST:
+                if pinned and dr.canon_host(pinned) != dr.canon_host(HOST):
                     if _flag_unclaimable(p, card, fleet) == "new":
                         changed = True
                     else:

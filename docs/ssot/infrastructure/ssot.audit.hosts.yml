@@ -2,7 +2,7 @@ title: Host Service & Resource Audit
 subtitle: Expected and observed state for tony-dell, tony-omen and tony-macbook (Linux since 2026-10-10)
 icon: server
 version: 1
-last_updated: "2026-09-11"
+last_updated: "2026-11-11"
 maintainer: tony
 overview:
   purpose: "Single source of truth for which services and resources each Chaba host
@@ -84,23 +84,6 @@ hosts:
         critical: true
         verification: pgrep -a devin-desktop
         note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
-      - name: cast-ha-panel.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Quasi-live tony-ha panel cast to TONY-TV every 60s — replaces
-          the retired cast-desktop@1.service instance on this host.
-      - name: playlived.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: go2rtc.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
       - name: michael-dev.service
         type: service
         scope: user
@@ -109,11 +92,6 @@ hosts:
         note: Currently disabled — migrated to idc03 2026-10-09 (verified
           active there, :8124 serving 200). Dell quadlet kept for manual
           fallback only.
-      - name: tony-ha.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
       - name: gpu-queue.service
         type: service
         scope: user
@@ -199,37 +177,20 @@ hosts:
           or a stale sweep"
       # --- census 2026-10-12 (drift-reconcile OPS-0521): active units that
       # were running but never declared ---
-      - {name: ada-ha.service, type: service, scope: user}
-      - {name: camera-panel.service, type: service, scope: user}
-      - {name: chaba-guest-lan.service, type: service, scope: user}
-      - {name: chaba-guest.service, type: service, scope: user}
       - {name: chaba-tunnel.service, type: service, scope: user}
       - {name: dnsmasq-postgre.service, type: service, scope: user}
-      - {name: gemini-ollama-proxy.service, type: service, scope: user}
       - {name: gesture-relay.service, type: service, scope: user}
-      - {name: google-home-mcp.service, type: service, scope: user}
-      - {name: ha-guest-lan.service, type: service, scope: user}
-      - {name: ha-live.service, type: service, scope: user}
-      - {name: ha-stall-watchdog.service, type: service, scope: user}
-      - {name: michael-ha-mcp-tunnel.service, type: service, scope: user}
       - {name: ms-playwright-mcp-ram-cache.service, type: service, scope: user}
       - {name: ms-playwright-ram-cache.service, type: service, scope: user}
-      - {name: nest-mgr.service, type: service, scope: user}
-      - {name: node-red.service, type: service, scope: user}
       - {name: npm-cache-ram-cache.service, type: service, scope: user}
-      - {name: plug-watch.service, type: service, scope: user}
       - {name: raceman-php.service, type: service, scope: user}
-      - {name: raceman-web.service, type: service, scope: user}
       - {name: rclone-gdrive.service, type: service, scope: user}
       - {name: weaviate.service, type: service, scope: user}
       - {name: web.service, type: service, scope: user}
-      - {name: workflows-mcp.service, type: service, scope: user}
       - {name: xvfb-99.service, type: service, scope: user}
-      - {name: yt-live-api.service, type: service, scope: user}
       # --- timer census 2026-10-13 (OPS-0531 sweep): live fleet timers declared so drift-reconcile flags disabled/missing ticks ---
       - {name: ada-flood-news.timer, type: timer, scope: user}
       - {name: ada-market-report.timer, type: timer, scope: user}
-      - {name: audit-cast.timer, type: timer, scope: user}
       - {name: cam-frame-refresh.timer, type: timer, scope: user}
       - {name: cam-wall-cms.timer, type: timer, scope: user}
       - {name: cam-wall-roster-audit.timer, type: timer, scope: user}
@@ -249,7 +210,6 @@ hosts:
       - {name: devin-summaries-sync.timer, type: timer, scope: user}
       - {name: flood-alert.timer, type: timer, scope: user}
       - {name: ha-auth-watch.timer, type: timer, scope: user}
-      - {name: ha-config-backup.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-mha.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
@@ -301,6 +261,7 @@ hosts:
       - {name: ssot-optimization-snapshot.timer, scope: user}
       - {name: status-data-api.service, scope: user}
       - {name: trade-api.service, scope: user}
+      - {name: trade-automation.service, scope: user, note: "retired 2026-10-23; no current host in ssot.jobs.yml"}
       - {name: websockify-macbook.service, scope: user}
       - {name: websockify-vms-mn01.service, scope: user}
       - {name: yomi-api.service, scope: user}

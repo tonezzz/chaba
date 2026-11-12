@@ -4,24 +4,24 @@ column: review
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
-priority: high
+priority: medium
 note: 'Expected log sources vs what actually ships:
 
 
-  - `idc02` — ok [local]; shipped 0/320 matched
+  - `idc02` — ok [local]; shipped 267/267 matched
 
-  - `idc03` — ok [local]; shipped 0/0 matched
+  - `idc03` — silent 3h [local]; shipped 1773/1773 matched
 
-  - `mn01` — ok [local]; shipped 75/75 matched
+  - `mn01` — ok [local]; shipped 42/42 matched
 
-  - `tony-dell` — silent 6h [local]; shipped 1/444 matched
+  - `tony-dell` — ok [local]; shipped 336/336 matched
 
-  - `tony-omen` — silent 6h [local]; shipped 68/675 matched
+  - `tony-omen` — ok [local]; shipped 697/697 matched
 
   - `michael-ha` — ok [ha-cli-ssh]; shipped 0/0 matched'
 help: Fix each gap or remove the host from log-shipper DEFAULT_HOSTS. Journal gaps
   usually mean `journalctl --user` isn't permitted for the ssh login.
-updated: '2026-11-10'
+updated: '2026-11-12'
 comms:
 - at: 2026-10-04 14:16
   from: devin

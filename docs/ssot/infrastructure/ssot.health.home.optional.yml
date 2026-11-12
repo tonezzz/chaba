@@ -31,13 +31,13 @@ services:
       docker compose -f frigate/docker-compose.yml up -d"
     host: tony_dell
   - id: camera-control
-    name: Camera Control
+    name: Camera Panel
     type: http
-    url: http://127.0.0.1:8090/
+    url: http://127.0.0.1:8091/
     expected_status: 200
     timeout: 5
     category: optional
     profiles:
       - home
-    note: "Camera control frontend on tony-dell:8090."
-    host: tony_dell
+    note: "Camera panel moved to tony-omen:8091 in the phase-5 LAN cohort; tony-dell:8090 is cast-shots."
+    host: tony_omen
