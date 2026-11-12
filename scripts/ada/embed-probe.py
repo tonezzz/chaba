@@ -128,10 +128,49 @@ def check_queue() -> str:
                   f"embed queue {level.upper()} — {note} "
                   f"(warn>={QUEUE_WARN_DEPTH} crit>={QUEUE_CRIT_DEPTH})")
 
+    prev.update({"level": level, "dropped": dropped,
+                 "last_drop_alert": last_drop_alert})
     os.makedirs(os.path.dirname(QUEUE_STATE), exist_ok=True)
-    open(QUEUE_STATE, "w").write(json.dumps(
-        {"level": level, "dropped": dropped,
-         "last_drop_alert": last_drop_alert}))
+    open(QUEUE_STATE, "w").write(json.dumps(prev))
+    return note
+
+
+PROXY_HEALTH = os.environ.get(
+    "EMBED_PROXY_HEALTH_URL", "http://127.0.0.1:11435/health")
+
+
+def check_provider_health() -> str:
+    """Embed-provider degradation tripwire. Reads the gemini-ollama-proxy
+    /health and emits ops-events on transitions:
+      embed_provider_degraded — a provider circuit opened (paid fallback
+        active, or a leg dead while another still serves)
+      embed_provider_restored — all circuits closed again
+    Catches the silent mode the vector-search probe can't see: serving
+    "up" on a paid/fallback leg while the primary is circuit-open.
+    """
+    try:
+        h = json.loads(urllib.request.urlopen(PROXY_HEALTH, timeout=10).read())
+    except Exception as exc:
+        print(f"proxy health unavailable: {exc}", file=sys.stderr)
+        return ""
+    circuit = h.get("circuit") or {}
+    degraded = circuit.get("or_open") or circuit.get("gemini_open")
+    which = ",".join(k for k, v in circuit.items() if v) or "none"
+    note = (f"provider_mode={h.get('provider_mode','?')} "
+            f"circuits_open={which} "
+            f"last_backup={h.get('last_backup_provider')}")
+    print(note)
+    try:
+        prev = json.loads(open(QUEUE_STATE).read())
+    except Exception:
+        prev = {}
+    was_degraded = bool(prev.get("proxy_degraded", False))
+    if bool(degraded) != was_degraded:
+        _emit("embed_provider_degraded" if degraded else "embed_provider_restored",
+              f"embed provider {'DEGRADED' if degraded else 'restored'} — {note}")
+        prev["proxy_degraded"] = bool(degraded)
+        os.makedirs(os.path.dirname(QUEUE_STATE), exist_ok=True)
+        open(QUEUE_STATE, "w").write(json.dumps(prev))
     return note
 
 
@@ -164,8 +203,10 @@ def probe() -> tuple[bool, str, int, bool]:
 def main() -> int:
     ok, detail, index_size, wiped = probe()
     qnote = check_queue()
-    if qnote:
-        detail = f"{detail} | {qnote}"
+    pnote = check_provider_health()
+    for n in (qnote, pnote):
+        if n:
+            detail = f"{detail} | {n}"
     try:
         prev = open(STATE).read().strip()
     except OSError:
