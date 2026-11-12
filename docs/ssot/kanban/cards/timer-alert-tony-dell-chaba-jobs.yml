@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-jobs
 title: Timer chaba-jobs on tony-dell failing
 column: backlog
-updated: 2026-10-27 14:31
+updated: 2026-11-12 09:36
 priority: high
 tags:
 - timer-alert
@@ -346,6 +346,10 @@ comms:
     fails every tick during `scripts/network-scan.py --push` at `build-ha-devices-ui.py`/`build-dossier-devices.py`
     subprocess check=True. Fix for efficiency: isolate per-job failure, add retry/backoff and preserve last successful
     state; network scan failure must not make the whole chaba-jobs unit fail. Add tests and explicit report/alert.'
+- at: 2026-11-12 09:36
+  from: devin
+  text: '[sweep 2026-11-12] chaba-jobs.timer not-found on tony-dell (retired, root cause noted Oct 27) — stale alert.
+    Closing.'
 spec: Investigate the recurring exit-code failures of chaba-jobs.service on tony-dell by inspecting the user journal
   via journalctl --user -u chaba-jobs.service and checking CMS timer-timeline-tony-dell. The target host is tony-dell
   and the relevant repository is chaba. The done-condition is verified when chaba-jobs runs successfully to completion
