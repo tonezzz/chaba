@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-adobe-stock-reindex-sync
 title: Timer adobe-stock-reindex-sync on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-12 10:43
 priority: high
 tags:
@@ -1588,8 +1588,13 @@ comms:
 - at: 2026-11-12 10:43
   from: devin
   text: '[auto-resolved] last run result=success at 11-12 10:17 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-12 10:43
+  from: tony
+  text: closed by tony
 spec: Investigate the failing systemd user timer and service 'adobe-stock-reindex-sync.service' on host 'tony-dell'.
   Access the host via SSH and inspect the recent journal logs using the command 'journalctl --user -u adobe-stock-reindex-sync.service'
   to determine the root cause of the exit-code failure. Resolve the underlying issue causing the service to fail
   during its scheduled runs. The done-condition is met when a manual or triggered run of 'adobe-stock-reindex-sync.service'
   on 'tony-dell' completes successfully with a zero exit code and the systemctl status shows no active failure.
+action:
+  status: done
