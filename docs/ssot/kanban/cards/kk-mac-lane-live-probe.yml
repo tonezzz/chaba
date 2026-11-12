@@ -1,7 +1,7 @@
 id: kk-mac-lane-live-probe
 title: kk_mac_local lane live probe — first real claim through the armed lane
 column: done
-updated: 2026-11-12 10:29
+updated: 2026-11-12 12:21
 priority: high
 tags:
 - devnest
@@ -368,19 +368,23 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: action.host=tony_omen names no declared
     runner — fix action.labels/host pins or teach a runner the capability'
+- at: 2026-11-12 12:21
+  from: tony
+  text: 'answered kk-mac-heartbeat-script-is-the-old-versi-759483: ★ run the sudo update on kk-mac'
 requests:
 - id: kk-mac-heartbeat-script-is-the-old-versi-759483
   ask: 'kk-mac heartbeat script is the OLD version — no load_1m/cpu_temp_c fields, so the lane gates load_unknown
     forever (and fallback ssh only works from idc03 via the kk-mac alias, not raw host/IP). Producer is root-owned
     — needs your sudo on kk-mac: scp tony-dell:~/CascadeProjects/chaba/scripts/ops/ada-nest-heartbeat.sh /tmp/ &&
     sudo cp /tmp/ada-nest-heartbeat.sh /Users/adanest/bin/ && sudo chmod +x /Users/adanest/bin/ada-nest-heartbeat.sh'
-  status: open
+  status: answered
   at: 2026-11-12 09:15
   from: devin
   options:
   - ★ run the sudo update on kk-mac
   - raise max_load_1m gate (current load ~4.15 > 4.0)
   - leave lane paused — no probe needed now
+  answer: ★ run the sudo update on kk-mac
 review_kind: verify
 claim: {}
 awaiting_action: true
