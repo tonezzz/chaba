@@ -1,0 +1,14 @@
+id: keywatch-absolute-spend-floor
+title: 'key-watch: warn on absolute remaining + spend rate'
+column: backlog
+updated: 2026-11-12 14:10
+spec: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
+  $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to catch
+  spend velocity. scripts/ops/key-watch.py.
+ref: SEC-0047
+comms:
+- at: 2026-11-12 14:10
+  from: devin
+  text: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
+    $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to
+    catch spend velocity. scripts/ops/key-watch.py.
