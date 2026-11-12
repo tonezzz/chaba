@@ -157,6 +157,13 @@ def _canon_host(name) -> str:
 
 HOST = os.environ.get("RUNNER_HOST") or os.uname().nodename
 HOST_KEY = _canon_host(HOST)
+
+
+def _host_key() -> str:
+    """Call-time canonical host key — reads the (stubbable) module HOST
+    rather than the import-time HOST_KEY constant so tests and
+    RUNNER_HOST overrides stay consistent."""
+    return _canon_host(HOST)
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # OPS-1182: script-type claims are near-free (a 2s probe) and should not
@@ -487,8 +494,8 @@ def push_guard_reason(card: dict) -> str:
     a = card.get("action") or {}
     if (a.get("type") or "dispatch") != "dispatch" \
             or a.get("status") != "queued" \
-            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
-            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
+            or (a.get("runner") and _canon_host(a["runner"]) != _host_key()) \
+            or (a.get("host") and _canon_host(a["host"]) != _host_key()) \
             or not set(a.get("labels") or []) <= LABELS \
             or not Path(DISPATCH).exists():
         return ""
@@ -1073,16 +1080,16 @@ def _claimable(card: dict) -> tuple:
     a = card.get("action") or {}
     if a.get("status") != "queued":
         return "", "not queued"
-    if a.get("runner") and _canon_host(a["runner"]) != HOST_KEY:
+    if a.get("runner") and _canon_host(a["runner"]) != _host_key():
         # queued but tagged with another host's runner
         return "", f"pinned to runner {a['runner']}"
     pinned = a.get("host")
-    if pinned and _canon_host(pinned) != HOST_KEY:
+    if pinned and _canon_host(pinned) != _host_key():
         return "", f"host-pinned to {pinned}"
     # executor contract host pin (action.target_host) — independent of
     # action.host; both must be satisfied.
     th = str(a.get("target_host") or "").strip()
-    if th and _canon_host(th) != HOST_KEY:
+    if th and _canon_host(th) != _host_key():
         return "", f"target_host {th}"
     needs = set(a.get("labels") or [])
     if not needs <= LABELS:
@@ -1206,9 +1213,9 @@ def executor_defer_reason(card: dict) -> str:
     a = card.get("action") or {}
     ex = str(a.get("executor") or "").strip()
     if a.get("status") != "queued" \
-            or (a.get("runner") and _canon_host(a["runner"]) != HOST_KEY) \
-            or (a.get("host") and _canon_host(a["host"]) != HOST_KEY) \
-            or (a.get("target_host") and _canon_host(a["target_host"]) != HOST_KEY) \
+            or (a.get("runner") and _canon_host(a["runner"]) != _host_key()) \
+            or (a.get("host") and _canon_host(a["host"]) != _host_key()) \
+            or (a.get("target_host") and _canon_host(a["target_host"]) != _host_key()) \
             or not set(a.get("labels") or []) <= LABELS:
         return ""
     if ex == "opencode":
@@ -1984,6 +1991,15 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     return False, notes, fb
 
 
+# S3 staged-dispatch admission (OPS-1255): the read-only profiles Tony
+# approved for the sampling window. ssot-research + storage-dryrun were
+# added 2026-11-12 (option A on the S3-source request). Other profiles
+# that merely declare stages:[S3] (doc-draft, gs-capture-eval,
+# mddb-sequence, ops-remote-read) stay unadmitted until their own cards
+# approve them.
+S3_STAGED_PROFILES = {"ops-readonly", "ssot-research", "storage-dryrun"}
+
+
 def prepare_profile_dispatch(card, tid, prof, model, ocp):
     a = card.get("action") or {}
     raw = a.get("lane_envelope")
@@ -1999,14 +2015,15 @@ def prepare_profile_dispatch(card, tid, prof, model, ocp):
                 "target_host": HOST, "task_class": a.get("task_class")}
     if any(env.get(k) != v for k, v in expected.items()):
         raise ValueError("lane envelope differs from the declared executor/card/host/model/class")
-    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] != "ops-readonly"
+    if (HOST != "idc02" or env.get("stage") != "S3" or prof["id"] not in S3_STAGED_PROFILES
             or env.get("mcp_allowlist") != []
             or env.get("task_class") not in ("read_only", "report")
-            or _canon_host(a.get("target_host")) != HOST_KEY \
+            or _canon_host(a.get("target_host")) != _host_key() \
             or env.get("unattended", True) is not True
-            or _canon_host(env.get("subject_host")) not in ("", HOST_KEY)
-            or _canon_host(a.get("subject_host")) not in ("", HOST_KEY)):
-        raise ValueError("staged dispatch currently admits only unattended S3 idc02 ops-readonly reports")
+            or _canon_host(env.get("subject_host")) not in ("", _host_key())
+            or _canon_host(a.get("subject_host")) not in ("", _host_key())):
+        raise ValueError("staged dispatch currently admits only unattended S3 idc02 read-only reports "
+                         "(" + "/".join(sorted(S3_STAGED_PROFILES)) + ")")
     art = str((env.get("artifact") or {}).get("path") or "")
     if not art or Path(art).is_absolute() or ".." in Path(art).parts or art != a.get("artifact"):
         raise ValueError("lane artifact must match the declared relative artifact path")
