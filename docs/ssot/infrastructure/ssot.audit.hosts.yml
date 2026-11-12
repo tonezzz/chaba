@@ -878,6 +878,10 @@ hosts:
       - {name: notebooklm-kb-sync.timer, type: timer, scope: user}
       - {name: report-ai-edge.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # 2026-11-12 audit: vcast headed-display service is intentional
+      # (enabled + running); telemetry service verified posting OK.
+      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: secrets-collect.timer, type: timer, scope: user}
       - {name: ssh-canary.timer, type: timer, scope: user}
       - {name: ssh-mesh-sync.timer, type: timer, scope: user}
@@ -1267,6 +1271,10 @@ hosts:
       # --- census 2026-10-12 (drift-reconcile OPS-0521) ---
       - {name: lid-blank-watch.service, type: service, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # 2026-11-12 audit: vcast headed-display service is intentional
+      # (enabled + running); telemetry service verified posting OK.
+      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
       # --- 2026-10-13: fleet-standard zram swap (same zram-swap.service as
       #     tony-dell: 8G zstd, prio 100 ahead of /swap.img; /tmp tmpfs is
       #     Ubuntu default here, no unit needed) ---
@@ -1361,6 +1369,10 @@ hosts:
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mn01-canary.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # 2026-11-12 audit: vcast headed-display service is intentional
+      # (enabled + running); telemetry service verified posting OK.
+      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -1964,6 +1976,10 @@ hosts:
       - {name: mddb-memory-standard.timer, type: timer, scope: user}
       - {name: mddb-restart.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # 2026-11-12 audit: vcast headed-display service is intentional
+      # (enabled + running); telemetry service verified posting OK.
+      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: ada-line-digest.timer, type: timer, scope: user, note: "weekly Mon 09:00 per-member LINE digest push via relay /send (card cmssurface-render-digest); members=tony until rollout approved"}
       - {name: chaba-board-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-board-render.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2142,6 +2158,10 @@ hosts:
       - {name: mddb-lab-pull.timer, type: timer, scope: user}
       - {name: mddb-watchdog.timer, type: timer, scope: user}
       - {name: runner-agent.timer, type: timer, scope: user}
+      # 2026-11-12 audit: vcast headed-display service is intentional
+      # (enabled + running); telemetry service verified posting OK.
+      - {name: vcast-real-macbook.service, type: service, scope: user}
+      - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: bserver.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-monitoring-dashboard.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
       - {name: chaba-report-api.service, type: service, scope: user, note: "migrated from tony-dell 2026-10-18/19 (OPS-0725 ph3/ph4)"}
