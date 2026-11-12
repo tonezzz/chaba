@@ -1,7 +1,7 @@
 id: opencode-lane-regraduation
 title: Re-graduate OpenCode lane — idc02 gate at S0 after Oct-29 rollback
 column: doing
-updated: 2026-11-12 08:34
+updated: 2026-11-12 09:08
 brief: 'idc02 ~/.local/state/opencode-lane/stage.json: current_stage=S0 after manual rollback 2026-10-29 (S1 had
   3 jobs done, review_due 2026-11-05 now overdue). OPENCODE_LANES=1 + JEV_LANE=1 are live in runner envs on idc02
   and dell — the executor + closeout are proven (opencode-lane-branch-closeout, merged marker). But the stage gate
@@ -221,6 +221,12 @@ comms:
 - at: 2026-11-12 08:34
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-12 09:08
+  from: devin
+  text: 'Contract broadened per option A (PR #148 merged+deployed to idc02). S3 samples now 4: opsread-01/02 + ssot-01
+    clean; stor-01 VERIFIER PASSED but flash-lite probed 3 denied bash verbs (find/mkdir/git status) despite explicit
+    prompt warning - failure_reason=tool_denial. Gate verdict: ROLLBACK to S2. No void mechanism; demote+repromote
+    re-hits the same row. Options needed.'
 requests:
 - id: ops1255-requalification-deployment-review
   ask: 'OPS-1255 revision 9fcecc83fb is locally committed, author-reviewed and verified (131 focused tests plus
