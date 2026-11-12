@@ -1,0 +1,35 @@
+title: wiki-frame-ancestors-deployed
+subtitle: Focus inbox item
+icon: inbox
+focus:
+  label: wiki-frame-ancestors-deployed
+  text: 'DEPLOYED 2026-11-12 — wiki iframe frame-ancestors fix (relates to closed card wiki-login-broken-h3-redirect-uri-mismat-14e9ea).
+    Symptom: clicking ปรับปรุงล่าสุด/Education: links inside ada-ha chaba-admin/wiki iframe -> refused-to-connect;
+    protected pages (Education:, Reports:, login, RecentChanges) send X-Frame-Options: SAMEORIGIN. Fix: appended
+    to LocalSettings.php on the Plesk host via FTP -> header(Content-Security-Policy: frame-ancestors self + https://*.surf-thailand.com
+    + https://*.gizmo-thailand.com). Browsers ignore XFO when frame-ancestors present, so our dashboards can frame
+    the wiki; clickjacking protection retained for other origins. Verified response headers on Education:Index +
+    Special:RecentChanges. Backup on server: LocalSettings.php.devin-backup-frameancestors-20261112-160319. Still-broken:
+    Google sign-in inside the iframe (accounts.google.com sends its own XFO DENY) — log in via a normal browser
+    tab first. Note: earlier FTP RNFR/RNTO rename briefly removed LocalSettings.php (~2min installer page); restored
+    immediately — use download+upload, not rename, in the FTP jail.'
+  priority: low
+  status: draft
+  tags:
+  - wiki
+  - iframe
+  - deployed
+  - ops
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: ''
+  subtasks: []
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-11-12'
