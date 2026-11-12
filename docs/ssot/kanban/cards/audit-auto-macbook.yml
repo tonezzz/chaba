@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: backlog
-updated: 2026-11-09 19:03
+updated: 2026-11-12 10:24
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -16,3 +16,10 @@ comms:
 - at: 2026-11-09 19:03
   from: devin
   text: card captured via board-api
+- at: 2026-11-12 10:24
+  from: devin
+  text: '[processed 2026-11-12 ~10:25 ICT] Audit deltas resolved: (1) runner-agent.timer — was disabled, now enabled
+    (--now) per SSOT expected:active. (2) device-telemetry.service — transient tailscale blip; manual trigger posts
+    hist+latest OK, 5min timer retries itself. (3) vcast-real-macbook.service — intentional headed display; declared
+    expected in ssot.audit.hosts.yml (commit da0b6b832d) + device-telemetry.timer added. REMAINING (needs Tony sudo
+    on the box): stick-announce.service ghost — enabled sys'
