@@ -1,7 +1,7 @@
 id: mddb-cms-compact-export-import
 title: 'Compact mddb-cms: 23G DB → export/import (est <1G live data)'
 column: backlog
-updated: 2026-11-12 16:41
+updated: 2026-11-12 16:43
 spec: 'mddb-cms on idc03 is 23G but holds only ~8k docs across 19 colls (~10KB avg) — ~22G is freelist/dead-page
   bloat, same signature as mddb-ops 31G→2.8G. repair-db proven unusable (FTS nil-ptr). Use the proven path: /tmp/ops-compact/export-import.sh
   pattern — export all 19 collections (infrastructure-ssot 5645, ada-cms-pages 1253, kb-*, documents, chaba-lessons…),
@@ -36,6 +36,9 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-12 16:43
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 2.07 > 0.85)'
 recoverability: R2
 auto_done_when:
 - verified_true
