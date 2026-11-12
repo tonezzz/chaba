@@ -1,7 +1,7 @@
 id: or-spend-observability-realtime-spend-ho-134232
 title: OR spend observability — realtime spend hook + OR panel report
 column: doing
-updated: 2026-11-12 13:37
+updated: 2026-11-12 13:53
 priority: high
 tags:
 - litellm
@@ -19,3 +19,10 @@ comms:
 - at: 2026-11-12 13:37
   from: tony
   text: card captured via board-api
+- at: 2026-11-12 13:53
+  from: devin
+  text: 'SHIPPED + VERIFIED 2026-11-12. Panel: https://tony-dell.taila0626a.ts.net/apps/or-panel/ (tailnet). Data:
+    https://idc03.taila0626a.ts.net:18443/or-panel.json. Pipeline live: (1) litellm generic_api success+failure
+    callback -> litellm-spend-hook.service (127.0.0.1:18001) -> events.jsonl; verified real event e2e incl. batched
+    json_array fix. (2) or-credits-poll.timer hourly -> or-credits.jsonl (OR /auth/key). (3) panel JSON joins SpendLogs
+    x VerificationToken for key-alias attribution + unexplaine'
