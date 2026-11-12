@@ -1,7 +1,7 @@
 id: michael-ha-tg-sensor-value-mismatch
 title: 'Michael HA: sensor values in TG reports differ from michael-ha'
 column: done
-updated: 2026-11-12 15:11
+updated: 2026-11-12 15:41
 spec: 'Michael noticed the sensor values sent via TG (weather-bakeoff / rain-watch reports) differ from what michael-ha
   shows. Suspects: (a) relay 127.0.0.1:18123 landing on the wrong HA instance; (b) weather-bakeoff reading a different
   entity/source than the HA dashboard; (c) stale/cached values or unit bucketing. Verify by fetching the same entity
@@ -21,6 +21,12 @@ comms:
 - at: 2026-11-12 15:11
   from: devin
   text: moved doing -> done
+- at: 2026-11-12 15:41
+  from: devin
+  text: 'Session close: Tony requested wind speed in knots (kts). Both RK600 and HA-FC NOW use unit-aware knots
+    conversion, deployed to served and exec weather-bakeoff.py. Conversion/rendering tests passed for m/s, km/h,
+    kn and kts. No additional TG message sent; next scheduled report uses kts. Earlier diagnosis of which dashboard
+    Michael viewed was inferred, not confirmed by screenshot.'
 action:
   status: done
 claim: {}
