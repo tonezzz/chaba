@@ -1,7 +1,7 @@
 id: card-runner-lifecycle-test
 title: card-runner lifecycle end-to-end test
 column: doing
-updated: 2026-11-12 15:39
+updated: 2026-11-12 15:40
 brief: 'Test card for the --lifecycle pipeline: claim -> worktree -> opencode -> verify -> PR -> review.'
 priority: low
 tags:
@@ -73,9 +73,18 @@ comms:
 - at: 2026-11-12 15:39
   from: tony-dell
   text: claimed
+- at: 2026-11-12 15:40
+  from: tony-dell
+  text: 'finished (failed): session rc=0, no repo changes. tail: a reports/card-runner/
+
+    total 12
+
+    drwxrwxr-x 2 tony tony 4096 Nov 12 15:26 .
+
+    drwxrwxr'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: devin
   last_failure: 'session rc=0, no repo changes. tail: ecycle-test.md with exact content ''lifecycle ok'' (1 line).
     Verified via wc/od. CI pending." --from devin 2>&1 | head -40
@@ -84,7 +93,15 @@ action:
 
     > build · iceman-free'
   attempts: 1
-  result: 'lifecycle stopped at worktree: worktree add: Preparing worktree (new branch ''card/knb-0065'')
+  result: 'session rc=0, no repo changes. tail: a reports/card-runner/
 
-    fatal: a branch named ''card/knb-0065'' already exists'
+    total 12
+
+    drwxrwxr-x 2 tony tony 4096 Nov 12 15:26 .
+
+    drwxrwxr-x 6 tony tony 4096 Nov 12 15:26 ..
+
+    -rw-rw-r-- 1 tony tony   13 Nov 12 15:26 lifecycle-test.md
+
+    > build · iceman-free'
   runner: tony-dell
