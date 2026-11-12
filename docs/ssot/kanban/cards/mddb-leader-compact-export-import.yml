@@ -52,6 +52,12 @@ comms:
 - at: 2026-11-12 16:43
   from: tony
   text: re-spawned from report page
+- at: 2026-11-12 16:43
+  from: devin
+  text: 'Execution note: claims on tony-dell (idc03 has no push:chaba — push guard blocks it); perform all work
+    over `ssh idc03`. Preflight aborts: (a) newest ~/mddb-backups/*.db.gz older than 6h => abort, no rollback net;
+    (b) gzip pass still running (pgrep ''gzip -9'') => wait; (c) target instance not healthy before start => abort.
+    Freeze writers during export; rollback = swap data dir back (.pre-compact kept) + restart, then hold + comms.'
 recoverability: R2
 auto_done_when:
 - verified_true
