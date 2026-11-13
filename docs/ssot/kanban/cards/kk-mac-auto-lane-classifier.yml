@@ -1,7 +1,7 @@
 id: kk-mac-auto-lane-classifier
 title: Auto-route bounded task classes to kk_mac_local at queue time
-column: review
-updated: 2026-11-13 18:21
+column: done
+updated: 2026-11-13 18:25
 brief: Cards with bounded read-only task classes (summary/operator_brief/structured_extract/safe_route) should auto-get
   executor=kk_mac_local instead of requiring an explicit pin.
 priority: medium
@@ -28,7 +28,7 @@ action:
   runner: tony-omen
   result: 'exit=0 h branch, and the final status was posted to the card — no pushes or deploys were made. | devin-task-20261113-172448-goal-cards-with-bounded-read-o.service:
     Consumed 36min 55.255s CPU time over 46min 11.612s wall clock time, 2G memory peak.'
-  verified: false
+  verified: true
 ref: OPS-0093
 comms:
 - at: 2026-11-13 17:24
@@ -74,5 +74,14 @@ comms:
 - at: 2026-11-13 18:21
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-13 18:25
+  from: chaba
+  text: 'merge-sweep: merged ebe20520 (dispatch/20261113-172448-goal-cards-with-bounded-read-o from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261113-172448-goal-cards-with-bounded-read-o.md)
+    — auto-closed'
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-13 18:25
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261113-172448-goal-cards-with-bounded-read-o.md
