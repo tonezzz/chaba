@@ -52,6 +52,10 @@ comms:
 - at: 2026-11-14 06:14
   from: tony
   text: moved done -> backlog
+- at: 2026-11-14 06:14
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-14 06:00) of `ada-embed-bench.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u ada-embed-bench.service` on the host. See CMS `timer-timeline-idc03`.'
 spec: Investigate the failure of `ada-embed-bench.service` on host `idc03` following the mddb-embed runaway window.
   The runner must check the journal logs via `journalctl --user -u ada-embed-bench.service` on idc03 and verify
   the status of the next scheduled run. The done-condition is confirmed recovery of the timer service on idc03 based
