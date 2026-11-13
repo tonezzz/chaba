@@ -1,7 +1,7 @@
 id: mddb-embed-retry-cap
 title: Cap mddbd embed retry burst on provider recovery
-column: backlog
-updated: 2026-11-13 20:15
+column: done
+updated: 2026-11-13 20:42
 spec: When OR cap opened 2026-11-12, backlog drained as a burst — +$0.20 immediately. Bounded retry + capped daily
   embed volume prevents cap-hit -> spend-spike on lift. mddbd embed retry loop on idc03.
 ref: MEM-0048
@@ -36,6 +36,9 @@ comms:
 
     DEPLOYED image localhost/mddb:2.15.4-retry (breaker+retry overlay on -breaker): mddb-cms@idc03 + mddb-embed@idc02
     both active, vector-stats queue.retried live. NOT yet on the replication pair (idc03 '
+- at: 2026-11-13 20:42
+  from: devin
+  text: moved backlog -> done
 requests:
 - id: retry-cap-work-is-mddbd-go-changes-bound-5f5605
   ask: Retry-cap work is mddbd Go changes (bounded retry + daily embed volume cap). Which lane?
@@ -51,4 +54,6 @@ requests:
     label: hold — the retry storm self-limits
   suggested: devin
   answer: devin — Devin session (multi-file, needs care)
-awaiting_action: true
+action:
+  status: done
+claim: {}
