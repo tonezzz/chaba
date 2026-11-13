@@ -1,7 +1,7 @@
 id: timer-alert-idc03-consumer-canary
 title: Timer consumer-canary on idc03 failing
 column: backlog
-updated: 2026-11-12 19:52
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
@@ -167,6 +167,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-12 19:20) of `consumer-canary.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u consumer-canary.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: `board-api comment failed: timed out` — board-api write contention again (same class
+    as card-lock stalls).'
 action:
   status: done
   type: dispatch
