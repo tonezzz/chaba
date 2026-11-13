@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: backlog
-updated: 2026-11-12 10:24
+updated: 2026-11-13 23:13
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -23,3 +23,10 @@ comms:
     hist+latest OK, 5min timer retries itself. (3) vcast-real-macbook.service — intentional headed display; declared
     expected in ssot.audit.hosts.yml (commit da0b6b832d) + device-telemetry.timer added. REMAINING (needs Tony sudo
     on the box): stick-announce.service ghost — enabled sys'
+- at: 2026-11-13 23:13
+  from: devin
+  text: '2026-11-13 diag: host ONLINE on tailnet (direct, 10ms) + sshd healthy (auth OK, -L forwarding works) BUT
+    session channels hang pre-shell — user@1000/logind layer wedged, consistent with black-screen+caps-lock-alive
+    report. No remote exec path exists (ssh needs session channel; runner-agent is user-scope = dead with user manager).
+    Physical fix needed: Ctrl+Alt+F3 TTY test, else 10s power hold → cold boot. Blocks tony-macbook-daytime-runner
+    + stick-announce.'
