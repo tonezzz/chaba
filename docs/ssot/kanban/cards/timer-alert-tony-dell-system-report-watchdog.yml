@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
 column: backlog
-updated: 2026-11-12 10:34
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
@@ -1797,6 +1797,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-12 10:00) of `system-report-watchdog.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u system-report-watchdog.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: exit-code 18:00 — watchdog exits 1 on stale-data findings? verify if it alerts-by-failure
+    (then exit 1 = working-as-designed misclassified).'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
