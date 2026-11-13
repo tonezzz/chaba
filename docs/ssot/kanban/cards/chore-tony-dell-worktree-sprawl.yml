@@ -1,0 +1,46 @@
+id: chore-tony-dell-worktree-sprawl
+title: tony-dell chaba worktree/branch sprawl cleanup
+column: backlog
+updated: 2026-11-13 11:58
+brief: CascadeProjects on tony-dell has ~24 linked worktrees and ~75 branches ahead of master (ssot.dev-system.assessment
+  flags this high-severity). Triage each worktree against its owning kanban card, then remove verified-safe ones.
+priority: medium
+tags:
+- chore
+- tony-dell
+- git-hygiene
+spec: 'Context: 2026-11-13 home-dir cleanup on tony-dell reclaimed ~42G. During it, merged worktrees chaba-nest-health-kk
+  and dispatch-wt-embed-free-first were removed; card-wt-knb-0065 was kept because it holds uncommitted work (reports/card-runner/lifecycle-test.md
+  + .gitignore change not in master — preserve or commit first).
+
+
+  Remaining linked worktrees on ~/CascadeProjects/chaba (branch, last commit, dirty count):
+
+  - feat/ada-envelope-transitions 11-06 clean; fix/s0-jobs-target-idc02 11-08 dirty=1; fix/lesson-translation-cache
+  11-07 clean; feat/devin-memory-pointers 11-05 clean; feat/ada-access-auto-enroll 11-08 dirty=8; fix/knb-1257-request-field
+  11-12 dirty=1; feat/ada-opencode-dashboard-tab 11-06 clean; fix/ops-1255-requalification 11-12 dirty=1; detached
+  chaba-pack-manifest 11-07; ops/private-news-lane 11-06 clean; feat/r7-gpu-cap 11-08 clean; fix/mddb-reindex-retries
+  11-09 clean; feat/bge-rerank-server 11-08 clean; fix/lessons-shadow-retry 11-08 clean; fix/bge-rerank-unit 11-08
+  clean; fix/education-shadow-timeout 11-08 clean; fix/metno-rain-units 11-12 dirty=1; dispatch/devin-token-efficiency
+  11-09 dirty=1; feat/devin-ada-card-ops-efficiency 11-09 clean; detached chaba-wt-memguard-verify 11-06; consult-bench
+  11-12 dirty=1; feat/card-run-lifecycle 11-12 clean (THIS IS THE ACTIVE DEVIN WORKSPACE - keep).
+
+
+  Merged into master (worktree+branch safe to remove): card/knb-0065*, nest-health-kk*, dispatch/mddb-embed-free-first*
+  (*worktrees already removed; branches still exist).
+
+
+  Task: for each remaining worktree, look up the owning kanban card / PR status, check whether the branch is merged
+  or superseded, inspect dirty files for uncommitted work product, then produce a keep/remove/archive table. Remove
+  only verified-safe worktrees (git worktree remove; --force only after confirming dirty content is regenerable).
+  Anything ambiguous gets a card comm or request, not a silent delete. Also sweep stale LOCAL branches that are
+  merged into master (git branch --merged).
+
+
+  Constraints: tony-dell ~/CascadeProjects/chaba is role=exec - no commits there; card mutations via board-api.
+  Do not touch ~/CascadeProjects/chaba (exec checkout) or chaba-tony-dell (readonly mirror).'
+ref: OPS-0078
+comms:
+- at: 2026-11-13 11:58
+  from: tony
+  text: card captured via board-api
