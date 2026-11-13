@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
-column: backlog
-updated: 2026-11-13 22:46
+column: doing
+updated: 2026-11-13 22:47
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -47,8 +47,9 @@ spec: 'Build scripts/trade-lesson-migrate.py in chaba (repo=chaba dispatch).
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
+  runner: tony-dell
 ref: OPS-0103
 comms:
 - at: 2026-11-13 21:42
@@ -60,3 +61,6 @@ comms:
 - at: 2026-11-13 22:46
   from: devin
   text: queued for processing
+- at: 2026-11-13 22:47
+  from: tony-dell
+  text: claimed
