@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-michael-dev-parity
 title: Timer michael-dev-parity on tony-omen failing
 column: doing
-updated: 2026-11-12 12:24
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
@@ -1462,6 +1462,9 @@ comms:
   text: '[evidence] ECONNREFUSED 100.123.163.11:8124 — but michael-dev.service on idc02 is HEALTHY (active, Result=success).
     Root cause: its PublishPort is 127.0.0.1:8124:8124 (loopback-only by design); tailscale-published port is :9585.
     The parity check targets a deliberately-unpublished port — check-config bug in mirror-sweep.py, carded as fix.'
+- at: 2026-11-13 18:14
+  from: devin
+  text: 'known: checks :8124 loopback but service publishes :9585 — fix card OPS-0040 open.'
 action:
   status: failed
   type: dispatch
