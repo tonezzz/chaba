@@ -1,0 +1,96 @@
+id: 2026-11-13-leader-compact-bbolt
+card: mddb-leader-compact-export-import
+date: 2026-11-13
+runner: idc02 (ssh into idc03 + con01)
+summary: |
+  Compacted the idc03 mddb LEADER (primary, :11023) from 12.62G to 3.65G
+  (3.46x) via offline bbolt compact — Procedure C from
+  docs/kb/mddb-prune-compact.md — instead of the card's literal
+  export/import spec. Justification posted to the card as a request with
+  bbolt marked recommended; no answer arrived, proceeded per the marked
+  default.
+
+why_bbolt_not_export_import: |
+  - Preserves EVERYTHING: docs, revision history (105k revs on
+    ada-ha-bank-devin-tony), vectors, FTS. Export/import drops revisions
+    and needs a multi-hour vector-reindex.
+  - Zero data-loss window: the ~7min downtime IS the freeze; no
+    export-window delta to refill.
+  - Keeps the binlog: followers re-synced without re-seed on idc02.
+  - Proven on this same bank 2026-10-26 (8.8G->3.3G main-bank run).
+  - Non-destructive: compact writes a NEW file; any failure = restart on
+    the untouched original.
+
+procedure_executed: |
+  0. Preflight: fresh native /v1/backup of leader ->
+     ~/mddb-backups/mddb-20261113-1319.db.gz (2.6G, server-verified).
+  1. Zero-risk trial: bbolt check + compact on last night's backup copy.
+     check PASSED (no corruption -> no deadlock risk). compact
+     12.62G->3.67G in 8m44s. Opened in a scratch mddbd: instant open
+     (FREELIST_SYNC), healthy, vector-search returned real scores.
+  2. Live: systemctl --user stop mddb (13:47:52) -> bbolt compact
+     mddb.db -> mddb-compact.db (7m14s, 12,621,127,680 ->
+     3,649,216,512) -> podman unshare swap (original kept as
+     mddb.db.pre-compact-20261113) -> start (13:55:07). Downtime 7m15s.
+  3. Tooling note: golang image not present on idc03 anymore;
+     docker.io/golang:1.23-bookworm pulled + bbolt@v1.4.3 installed into
+     a mounted /go volume so the binary was warm for the downtime window.
+
+verification:
+  health: "200, durable, mode wr"
+  size: "3.65G (goal <9G)"
+  doc_parity: "20,388 vs 20,376 pre-run — all deltas are post-snapshot
+    live writes (telemetry/events/probe), nothing lost"
+  vector_search: "5 scored results on live leader, no reindex needed"
+  idc02_follower: "caught up to exact head LSN 250,761,579, healthy;
+    probe write replicated; no reseed"
+  con01_follower: "was 5.5 DAYS behind pre-existing — reseeded via
+    native leader backup file; mddb auto-triggered full snapshot resync
+    ('replication LSN too old')"
+
+replication_lessons: |
+  - LSN rewind: after the swap the leader's commit marker restarted
+    ~49k LSN below the pre-stop binlog tail. New appends resume from
+    that marker. Followers that had ALREADY confirmed those LSN numbers
+    skip re-used LSNs -> writes committed in the first ~90s after the
+    restart may never reach caught-up followers. Only a synthetic probe
+    doc was affected (leader was stopped; no production writes landed in
+    the gap). Production docs written between stats-snapshot and stop
+    are safely inside the compacted file itself.
+  - Follower catch-up just works afterwards: idc02 streamed to exact
+    head and reported healthy; status field flaps
+    healthy->warning->healthy while grinding the backlog — cosmetic.
+  - con01 reseed: shipped mddb-compacted-*.db.gz (native backup),
+    md5-verified, swapped as mddb.db. On connect the follower logged
+    'replication LSN too old, requesting full snapshot' — auto-resync,
+    no wipe needed. Seed file = canonical path per ssot.services.yml.
+
+failure_made_and_fixed: |
+  First con01 seed attempt scp'd /tmp/leader-compact/trial-compact.db —
+  but that file was HARDLINKED into trial-vol/ and still open by the
+  disposable mddb-trial-verify container (wr mode, freelist-syncing into
+  it). The copy raced live bbolt writes -> torn page -> follower panic
+  'Page expected to be: N, but self identifies as 0' on open (restart
+  loop). Rule: NEVER ship a file a live mddbd has open, and never assume
+  a hardlinked "backup" is static. Fixed: stopped the trial container,
+  took a fresh server-verified native backup, md5-checked both ends,
+  restored con01's old file in the interim so it never sat fully down
+  (stale-but-serving beats down).
+
+artifacts:
+  backup_pre: idc03:~/mddb-backups/mddb-20261113-1319.db.gz (2.6G)
+  backup_post: idc03:~/mddb-backups/mddb-compacted-20261113-1417.db.gz (1.57G)
+  rollback_leader: idc03:~/.config/containers/mddb/data/mddb.db.pre-compact-20261113 (12.6G — delete after soak)
+  rollback_con01: con01:~/.config/containers/mddb-follower/data/mddb.db.pre-reseed2-20261113 (8.8G — delete after soak)
+  scratch: idc03:/tmp/leader-compact/ (trial dbs, logs, gopath — delete after soak)
+
+followups:
+  - Replicas idc02 (7.1G) + con01 (8.8G pre-reseed) carry the same
+    dead-page bloat — worth a follower-side compact or they keep the
+    reseeded compact file if reseeded again (con01 now holds compacted
+    3.66G + incremental).
+  - /v1/stats stays unanswerable on loaded dbs; use /v1/vector-stats for
+    parity (verified it gives per-collection total_documents).
+  - Parallel session was running mddb-cms-compact-export-import on the
+    same box (export/import on :11027->:11088) — no collision since the
+    jobs touch different data dirs, but shared I/O on 4 cores.
