@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
 column: doing
-updated: 2026-11-13 22:47
+updated: 2026-11-13 22:58
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -47,9 +47,8 @@ spec: 'Build scripts/trade-lesson-migrate.py in chaba (repo=chaba dispatch).
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: queued
   lane: codemod
-  runner: tony-dell
 ref: OPS-0103
 comms:
 - at: 2026-11-13 21:42
@@ -67,3 +66,11 @@ comms:
 - at: 2026-11-13 22:47
   from: chaba
   text: started devin-task-20261113-224719-build-scripts-trade-lesson-mig on tony-dell (dispatch)
+- at: 2026-11-13 22:58
+  from: chaba
+  text: runner tony-dell unreachable 3 passes — requeued
+- at: 2026-11-13 22:58
+  from: local
+  text: 'pub alert: card stalled: trade-lesson-migrate-script on idc03 — runner tony-dell unreachable — requeued
+    — runner tony-dell unreachable — requeued [evt-aade5cdbfb031af6]'
+claim: {}
