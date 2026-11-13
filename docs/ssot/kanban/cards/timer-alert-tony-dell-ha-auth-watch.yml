@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-13 23:23
 priority: high
 tags:
@@ -96,6 +96,9 @@ comms:
 - at: 2026-11-13 23:23
   from: devin
   text: 'Self-healed 2026-11-13: last run polled 2 instances, deduped alerts, 0 errors, Finished clean.'
+- at: 2026-11-13 23:23
+  from: tony
+  text: closed by tony
 spec: Investigate the recurring exit-code failure of the `ha-auth-watch.service` on `tony-dell` by inspecting the
   user journal via `journalctl --user -u ha-auth-watch.service`. Resolve or decommission the service as tracked
   under OPS-0749, noting that it still polls `tony-ha` after a move to `tony-omen`. The task is complete when `ha-auth-watch.service`
