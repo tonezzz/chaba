@@ -539,9 +539,8 @@ def run_arm(run_id: str, fid: str, arm: str, model: str = "",
             model = model or DEFAULT_OC_MODEL
             env = dict(os.environ)
             env.update(load_arm_env(rung or "L2", model))
-            cmd = ["opencode", "run", "--format", "json",
-                   "--dir", str(wt), "--model", model,
-                   prompt + rails]
+            cmd = ["opencode", "run", "--format", "json", "--standalone",
+                   "--model", model, prompt + rails]
             attempt = 0
             while True:
                 attempt += 1
@@ -564,6 +563,32 @@ def run_arm(run_id: str, fid: str, arm: str, model: str = "",
                 rec["exit_code"] = r.returncode
                 parsed = parse_opencode_events(rd / "events.jsonl")
                 rec.update(parsed)
+                # opencode resolves the project root to the MAIN checkout
+                # for linked worktrees (wt/.git is a file), so agents can
+                # write the artifact under REPO/evals/shadow/task/ instead
+                # of wt/. Rescue files touched during this run window.
+                repo_arts = REPO / TASK_SUBDIR / "artifacts"
+                wt_arts = wt / TASK_SUBDIR / "artifacts"
+                if repo_arts.is_dir():
+                    try:
+                        started_ts = datetime.fromisoformat(
+                            rec["started"]).timestamp()
+                    except Exception:
+                        started_ts = t0 - 5
+                    rescued = []
+                    for f in repo_arts.iterdir():
+                        if f.is_file() and f.stat().st_mtime >= started_ts:
+                            wt_arts.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(f, wt_arts / f.name)
+                            f.unlink()
+                            rescued.append(f.name)
+                    if rescued:
+                        rec["artifact_rescued_from_repo_root"] = rescued
+                    try:
+                        repo_arts.rmdir()
+                        (REPO / TASK_SUBDIR).rmdir()
+                    except OSError:
+                        pass
         elif arm == "devin":
             # shadow worktrees aren't in the user's workspace-trust list;
             # print mode can't prompt, so pass the scoped CLI flag — the
