@@ -1,7 +1,7 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
-column: review
-updated: 2026-11-13 18:09
+column: done
+updated: 2026-11-13 18:11
 spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
   Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
   after). Schedule alongside cms compaction; backup first.'
@@ -141,6 +141,9 @@ comms:
 - at: 2026-11-13 18:09
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-13 18:11
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
 recoverability: R2
 auto_done_when:
 - verified_true
@@ -178,3 +181,7 @@ requests:
 review_kind: verify
 claim: {}
 awaiting_action: true
+auto_close:
+  by: merge-sweep
+  at: 2026-11-13 18:10
+  note: verified — evidence checks green, closing itself
