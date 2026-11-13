@@ -1,0 +1,20 @@
+id: kk-mac-usage-to-lane-savings
+title: Wire kk_mac token usage into lane-savings evidence
+column: backlog
+updated: 2026-11-13 20:53
+priority: low
+tags:
+- kk-mac
+- lane-savings
+- evidence
+spec: 'lane-savings.py now attributes action.executor=kk_mac_local (patched 2026-11-13, card kk-mac-routing-proposal)
+  but reports counts only — kk_mac_result.json usage (eval_count/eval_duration/load_duration) lives in the taskdir,
+  which lane-savings does not scan, so kk_mac runs stay token-unevidenced. Pick one: (a) recommended — finish_kk_mac_lane()
+  in scripts/board/runner-agent.py copies usage {prompt_tokens/eval_count} into action.result as a TOKENS_RE-parseable
+  fragment; (b) monthly rollup artifact under docs/reports/ in the bench-edu-manage scores.<lane>.loop shape. Done
+  when: a kk_mac_local card closed with usage evidence shows tokens in/out in the monthly lane-savings report.'
+ref: OPS-0099
+comms:
+- at: 2026-11-13 20:53
+  from: tony
+  text: card captured via board-api
