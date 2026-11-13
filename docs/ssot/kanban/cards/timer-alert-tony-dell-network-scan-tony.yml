@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:23
 priority: high
 tags:
 - timer-alert
@@ -1931,6 +1931,12 @@ comms:
 - at: 2026-11-13 18:14
   from: devin
   text: '2026-11-13 sweep: exit-code 18:02 — needs stderr (likely scan timeout/host unreachable).'
+- at: 2026-11-13 23:23
+  from: devin
+  text: 'Root cause found 2026-11-13: build-dossier-devices.py tony-ha fails at lovelace/config/save — HA auth OK
+    (token valid, /api/states 200) but save returns unauthorized. The scripts-dell HA user lost dashboard-write
+    permission (HA update or user perm change). NEEDS: HA admin re-grant dashboard write for scripts-dell user,
+    or mint new long-lived token as admin. Not fixable from CLI.'
 action:
   type: dispatch
   status: done
