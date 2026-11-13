@@ -1,7 +1,7 @@
 id: hosts-view-extend-chaba-admin-hosts-tab-b74748
 title: 'Hosts view: extend chaba-admin hosts tab to all fleet hosts'
 column: backlog
-updated: 2026-11-13 20:46
+updated: 2026-11-13 20:57
 priority: medium
 spec: 'Tony asked (2026-11-13) to plan adding all hosts to the tony-ha chaba-admin Hosts view (iframed in ada-ha
   chaba-nest hosts tab). Current state: view has tony-omen + tony-macbook cards fed by device-telemetry beacon ->
@@ -18,3 +18,10 @@ comms:
 - at: 2026-11-13 20:46
   from: devin
   text: card captured via board-api
+- at: 2026-11-13 20:57
+  from: devin
+  text: 'DONE 2026-11-13: all-hosts telemetry live. Beacons installed on tony-dell/idc02/idc03/mn01/con01 (kk-macbook
+    unreachable by ssh name — skipped); telemetry-ha-push now also mirrors binary_sensor.<dev>_online, sensor.<dev>_uptime(h),
+    sensor.<dev>_users for TELEMETRY_DEVICES=tony-dell,tony-omen,tony-macbook,idc02,idc03,mn01,con01. hosts view
+    now has 7 entity cards (existing omen/macbook cards kept + new generic fields). Verified: push ran clean on
+    tony-omen (all fresh=on), entities exist in tony-ha'
