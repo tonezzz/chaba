@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-smoke
 title: Timer ada-scenario-smoke on idc03 failing
 column: backlog
-updated: 2026-11-12 10:23
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
@@ -1772,6 +1772,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-12 10:00) of `ada-scenario-smoke.service` on `idc03` result=exit-code —
     investigate journal: `journalctl --user -u ada-scenario-smoke.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: still failing — journal shows work completes (spend-ledger + report published) then exits
+    nonzero → real scenario failure inside, needs scenario log read.'
 action:
   status: done
   type: dispatch
