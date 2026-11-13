@@ -1,0 +1,40 @@
+id: trade-lesson-knowledge-base
+title: 'Trade lesson draft: trade-knowledge (free-lane drafting)'
+column: backlog
+updated: 2026-11-13 21:45
+brief: Distill trade docs (knowledge/** (README, lessons-learned, best-practices, patterns, api-patterns, ssot-configuration-pattern,
+  code-conventions) + kb/* research notes) into lesson trade-trade-knowledge; drafting on the $0 free lane via trade-lesson-migrate.py.
+priority: low
+program: education
+blocked_by: trade-lesson-migrate-script
+tags:
+- education
+- trade
+- free-lane
+spec: 'Free-lane draft+publish for trade docs topic ''trade-knowledge'' (parent: trade-docs-education-migration
+  / OPS-0102; depends on trade-lesson-migrate-script / OPS-0103).
+
+
+  Executor note: pinned devin because the board-api /card door cannot yet create type:script cards (ACTION_TYPES
+  dispatch|manual, and action.script is not in ACTION_KEYS) and opencode profiles all deny bash — the actual LLM
+  drafting inside the script still runs on the FREE lane (opencode run + litellm/gemini-3.5-flash-lite). If a script-card
+  door lands first, convert to type:script host:tony_dell (or idc02 — both have opencode + litellm-chaba.env + ~/CascadeProjects/trade).
+
+
+  Work: on a host with the trade checkout + opencode (tony_dell or idc02), run `python3 scripts/trade-lesson-migrate.py
+  --topic trade-knowledge --apply` from the synced chaba checkout. Source pages: knowledge/** (README, lessons-learned,
+  best-practices, patterns, api-patterns, ssot-configuration-pattern, code-conventions) + kb/* research notes
+
+
+  Gate: exit=0 AND /lesson op:list shows a lesson for topic trade-trade-knowledge AND scripts/lesson-drift-map.yml
+  has a trade-trade-knowledge entry. On opencode failure: review with run.log tail — do NOT retry silently; escalate
+  to devin if the free model can''t handle the doc set.'
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+ref: OPS-0107
+comms:
+- at: 2026-11-13 21:45
+  from: devin
+  text: card captured via board-api (trade docs -> education migration, free lane)
