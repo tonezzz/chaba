@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-served-mirror-sync
 title: Timer chaba-served-mirror-sync on tony-dell failing
 column: backlog
-updated: 2026-11-13 23:13
+updated: 2026-11-13 23:23
 priority: high
 tags:
 - timer-alert
@@ -14,3 +14,10 @@ comms:
 - at: 2026-11-13 23:13
   from: devin
   text: card captured via board-api
+- at: 2026-11-13 23:23
+  from: devin
+  text: 'Root cause 2026-11-13: pull succeeds (HEAD=master current) but unit exits 1 — the readonly mirror checkout
+    is dirty BY DESIGN: exec units run code from this path and write runtime state (percussion state.json, card
+    yml touches, focus-inbox .local-conflict files). git-safe-pull flags untracked collisions -> exit 1 -> timer-alert
+    loops forever. NEEDS DECISION: (a) gitignore/exclude runtime paths so mirror stays clean, (b) relax sync exit
+    criteria to warn-only on dirty, or (c) move exec jobs off th'
