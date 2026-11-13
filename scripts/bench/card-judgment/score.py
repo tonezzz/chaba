@@ -26,7 +26,7 @@ Usage:
   score.py --entity ollama --model qwen3:8b [--limit 20]
   score.py --corpus corpus.jsonl --out-md report.md --out-json report.json
 """
-import argparse, json, os, re, sys, time, urllib.request
+import argparse, json, os, re, subprocess, sys, time, urllib.request
 from pathlib import Path
 
 from authority import GATED_SUMMARY  # single source (ADA-1128)
@@ -270,6 +270,11 @@ def main():
                     "into the case payload — the --with-brief analog")
     ap.add_argument("--out-md", default="")
     ap.add_argument("--out-json", default="")
+    ap.add_argument("--temp-host", default="",
+                    help="ssh host to poll for CPU temp (member-device gate)")
+    ap.add_argument("--temp-ssh-user", default="")
+    ap.add_argument("--max-temp-c", type=float, default=0.0,
+                    help="pause between cases while temp exceeds this (0=off)")
     args = ap.parse_args()
 
     cases = load_corpus(args.corpus)
@@ -277,8 +282,37 @@ def main():
         cases = cases[:args.limit]
     ent = entity_from_args(args)
 
+    def temp_c() -> float | None:
+        if not args.temp_host:
+            return None
+        target = (f"{args.temp_ssh_user}@" if args.temp_ssh_user else "") \
+            + args.temp_host
+        try:
+            r = subprocess.run(
+                ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8",
+                 target,
+                 "~/.local/bin/smctemp -c 2>/dev/null || smctemp -c 2>/dev/null"],
+                capture_output=True, text=True, timeout=15)
+            if r.returncode == 0 and r.stdout.strip():
+                return float(r.stdout.strip().splitlines()[-1])
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            pass
+        return None
+
+    def thermal_pause(case_id: str) -> None:
+        """Member-device gate: hold between cases while the node runs hot.
+        Unknown temp never blocks (mirrors kk_mac_admission)."""
+        while args.max_temp_c > 0:
+            t = temp_c()
+            if t is None or t <= args.max_temp_c:
+                return
+            print(f"[{case_id}] thermal gate: {t:.1f}C > "
+                  f"{args.max_temp_c:.0f}C — pausing 30s", file=sys.stderr)
+            time.sleep(30)
+
     preds, per_case, fails = [], [], 0
     for i, c in enumerate(cases, 1):
+        thermal_pause(c["case_id"])
         p = ent(c)
         preds.append(p)
         per_case.append((c["case_id"], c["category"], p))
