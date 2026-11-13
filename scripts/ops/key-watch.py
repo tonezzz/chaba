@@ -84,6 +84,15 @@ QUIET = tuple(int(x) for x in
               os.environ.get("KEY_WATCH_QUIET", "0-7").split("-", 1))
 EXPIRY_WARN_H = float(os.environ.get("KEY_WATCH_EXPIRY_WARN_H", "48"))
 QUOTA_WARN_PCT = float(os.environ.get("KEY_WATCH_QUOTA_WARN_PCT", "80"))
+# Absolute-remaining floor: on a $1 cap 80% means $0.20 left (fires too
+# late); on $5 it means $1 left (fires too early). A dollar floor catches
+# the "nearly empty" state regardless of cap size. 2026-11-12: a $5 cap
+# drained silently overnight — the % check never saw it coming.
+OR_REMAIN_FLOOR_USD = float(os.environ.get("OR_REMAIN_FLOOR_USD", "0.50"))
+# Daily-spend velocity: usage_daily jumping > this between consecutive
+# runs means something is burning fast (embed retry storms). The % check
+# can't see velocity; this can.
+OR_DAILY_JUMP_USD = float(os.environ.get("OR_DAILY_JUMP_USD", "0.25"))
 RESEND_MIN = int(os.environ.get("KEY_WATCH_RESEND_MIN", "240"))
 LOOKBACK_H = float(os.environ.get("KEY_WATCH_LOOKBACK_H", "24"))
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
@@ -215,6 +224,7 @@ def probe_or(tok):
         return "valid", {"label": d.get("label"),
                          "expires_at": d.get("expires_at"),
                          "usage": d.get("usage"), "limit": d.get("limit"),
+                         "usage_daily": d.get("usage_daily"),
                          "limit_remaining": d.get("limit_remaining"),
                          "is_free_tier": d.get("is_free_tier")}
     if st in (401, 403):
@@ -447,6 +457,11 @@ def judge(slot: dict, rec: dict) -> dict:
                         "why": f"OR key {rec.get('masked')} "
                                f"limit_remaining={rem} — bridge dead "
                                f"(the 2026-10-12 failure mode)"}
+            if rem is not None and rem < OR_REMAIN_FLOOR_USD:
+                return {"level": "warn",
+                        "why": f"OR key {rec.get('masked')} "
+                               f"limit_remaining=${rem:.2f} below floor "
+                               f"${OR_REMAIN_FLOOR_USD:.2f}"}
             if lim and use is not None and lim > 0 and \
                     use / lim * 100 >= QUOTA_WARN_PCT:
                 return {"level": "warn",
@@ -626,9 +641,9 @@ def emit_ops_event(verdict: str, findings: list[dict], notes: list[str]) -> str:
 SELFTEST_RESULTS = {
     "or-idc03": {"status": "valid", "masked": "sk-or-…aa11", "fp": "aa11",
                  "detail": {"label": "ada-safety",
-                            "expires_at": "2026-10-24T00:00:00Z",
+                            "expires_at": "2099-10-24T00:00:00Z",
                             "usage": 9.9, "limit": 10.0,
-                            "limit_remaining": 0.1}},
+                            "limit_remaining": 0.75}},
     "or-tony-dell": {"status": "host-unreachable",
                      "detail": {"why": "timeout"}},
     "ha-tony-ada-mn01": {"status": "dead", "masked": "eyJh…zz99",
@@ -680,7 +695,8 @@ def format_line(alerts, warns, unknowns) -> str:
                  [f"  · {f['id']}: {f['why'][:80]}" for f in alerts] + \
                  ["  → incident card(s) filed on the board"]
     if warns:
-        lines += ["", f"▸ WARN ({len(warns)}) — expiry<48h / quota>80%:"] + \
+        lines += ["", f"▸ WARN ({len(warns)}) — expiry<48h / quota>80% / "
+                      "spend floor+rate:"] + \
                  [f"  · {f['id']}: {f['why'][:80]}" for f in warns]
     if unknowns:
         lines += ["", f"▸ probe gaps ({len(unknowns)}):"] + \
@@ -728,6 +744,7 @@ def main() -> int:
                           "file": GEMINI_KEYS_FILE, "var": var})
 
     results = probe_all(slots)
+    st = load_state()
     findings = []
     for s in slots:
         rec = results.get(s["id"], {"status": "error",
@@ -740,6 +757,30 @@ def main() -> int:
     drift = or_drift_finding(results)
     if drift:
         findings.append(drift)
+
+    # OR daily-spend velocity: compare each slot's usage_daily against the
+    # last recorded value (persists in state["or_daily"]). A >$0.25 jump
+    # since the previous record means something is burning fast.
+    daily = st.setdefault("or_daily", {})
+    today = datetime.date.today().isoformat()
+    for s in slots:
+        if s["kind"] != "openrouter":
+            continue
+        rec = results.get(s["id"]) or {}
+        d = rec.get("detail") or {}
+        ud = d.get("usage_daily")
+        if rec.get("status") != "valid" or ud is None:
+            continue
+        prev = daily.get(s["id"]) or {}
+        if prev.get("usage_daily") is not None and prev.get("date") != today:
+            delta = ud - float(prev["usage_daily"])
+            if delta > OR_DAILY_JUMP_USD:
+                findings.append({
+                    "id": s["id"], "level": "warn",
+                    "why": f"OR daily spend jumped +${delta:.2f} "
+                           f"(${float(prev['usage_daily']):.2f}->"
+                           f"${ud:.2f}) since {prev['date']}"})
+        daily[s["id"]] = {"date": today, "usage_daily": ud}
 
     gscan = gemini_quota_scan(LOOKBACK_H)
     notes = [f"gemini ops-scan: {len(gscan['hits'])} quota markers "
@@ -765,7 +806,6 @@ def main() -> int:
           f"{len(alerts)} alert / {len(warns)} warn / "
           f"{len(unknowns)} unknown of {len(findings)}")
 
-    st = load_state()
     now_epoch = datetime.datetime.now().timestamp()
 
     # incident cards: file for alerts, auto-close recovered ones we filed

@@ -44,6 +44,19 @@ let geminiCircuitOpenUntil = 0;
 const OR_CIRCUIT_COOLDOWN_MS = parseInt(process.env.OR_CIRCUIT_COOLDOWN_MS || "300000", 10);
 let orCircuitOpenUntil = 0;
 let lastBackupProvider = null;
+// Spend firewall (2026-11-12: an exhausted Gemini leg + open OR cap let a
+// retry storm burn $3.80 overnight — 39k billed OR calls in 20h). When
+// OR_FALLBACK_DAILY_CAP > 0, at most that many OR batches may be billed per
+// UTC day; beyond it the OR leg is skipped exactly like an open circuit so
+// the caller hard-fails instead of silently draining a key limit.
+const OR_FALLBACK_DAILY_CAP = parseInt(process.env.OR_FALLBACK_DAILY_CAP || "0", 10);
+let orCallsToday = 0;
+let orCallsDay = new Date().toISOString().slice(0, 10);
+function orDailyCapHit() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== orCallsDay) { orCallsDay = today; orCallsToday = 0; }
+  return OR_FALLBACK_DAILY_CAP > 0 && orCallsToday >= OR_FALLBACK_DAILY_CAP;
+}
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
@@ -287,10 +300,12 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   if (OPENROUTER_API_KEY) {
     const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
     const orCircuitOpen = Date.now() < orCircuitOpenUntil;
-    if (!orCircuitOpen) {
+    const orCapped = orDailyCapHit();
+    if (!orCircuitOpen && !orCapped) {
       console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
       try {
         const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
+        orCallsToday += 1;
         lastBackupProvider = orModel;
         return out;
       } catch (err) {
@@ -322,7 +337,8 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     }
     // Fail hard — wrong-space fallback is worse than surfacing the
     // failure to the caller.
-    throw new Error(`all same-space providers down (OR${orCircuitOpen ? " circuit-open" : ""} + Gemini failed)`);
+    const orState = orCircuitOpen ? " circuit-open" : (orCapped ? ` daily-cap ${OR_FALLBACK_DAILY_CAP} hit` : "");
+    throw new Error(`all same-space providers down (OR${orState} + Gemini failed)`);
   }
   if (GEMINI_API_KEY && !skipGemini) {
     try {
@@ -512,6 +528,8 @@ const server = createServer((req, res) => {
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,
+        or_daily_cap: OR_FALLBACK_DAILY_CAP || null,
+        or_calls_today: orCallsToday,
       },
       embed: {
         consecutive_failures: consecutiveEmbedFailures,
