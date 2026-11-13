@@ -1,11 +1,25 @@
 # ada-voice drop-ins
 
 Staged files for the **ada-voice repo** (`tonezzz/ada-voice`), produced by
-chaba dispatches. Seventeen drops live here:
+chaba dispatches. Eighteen drops live here:
 
-1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13)
+**Patch currency (audited 2026-11-13 vs ada-voice `main` @ `8223b56`,
+card `chaba-merge-gate-ada-drops-rot-audit`):** a staged `.patch` has
+three states — applies (drop still pending), reverse-applies (merged
+upstream verbatim), diverged (neither direction applies). Every
+diverged patch in this tree sits on a **deployed** drop: the feature
+shipped and the upstream file has since drifted, so the staged patch is
+a *record copy* — do not re-apply it; install from upstream. Divergence
+on a drop whose patches are ALL pending is a rotted base — repair by
+re-staging the diff, never by hand-merging hunks.
+
+1. `trip_calendar` — card `ada-trip-calendar-pages` (2026-10-13) —
+   **already deployed** (ada-voice `6148f64`, later schema work
+   `932550d`/`56cd9b6`)
 2. `doc_read` + line_relay file ingest — card `line-file-doc-ingest`
-   (2026-10-13)
+   (2026-10-13) — **already deployed** (ada-voice `6148f64`, hardened by
+   `2c3ee2f`/`5f6ff95`/`0c2fe89`); the staged
+   `line_relay.file-doc-ingest.patch` is a drifted record copy
 3. calendar create dedup — card `calendar-write-idempotency` (2026-10-13)
 4. `place_report` — card `maps-url-to-cms-line-maps-link-resolved-c418f8`
    (2026-10-13) — **already deployed** (ada-voice `074c7a8`+`e24b14d`); this
@@ -13,6 +27,7 @@ chaba dispatches. Seventeen drops live here:
 5. file-input speaker ID + LINE enroll-on-clips + boss rule — card
    `line-voice-enroll-recognize` (2026-10-13) — **already deployed**
    (ada-voice `02c5058`); this drop is the repo-of-record copy
+   (`line_relay.voice-enroll-recognize.patch` has since drifted)
 6. draft-hit frame — card `ada-memory-search-draft-gap-notes-mislea-406683`
    (ADA-0607, 2026-10-13) — **already deployed** (ada-voice `02c5058`);
    this drop is the repo-of-record copy
@@ -20,23 +35,29 @@ chaba dispatches. Seventeen drops live here:
    text become real LINE image messages — card
    `line-delivery-send-actual-images-not-jus-652ad3` (2026-10-13) —
    **already deployed** (ada-voice `02c5058`); this drop is the
-   repo-of-record copy
+   repo-of-record copy (`line_relay.image-delivery.patch` has since
+   drifted)
 8. reply-context routing — LINE sends bind to the originating chat —
    card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13) —
    **already deployed** (ada-voice `8f8f488`); this drop is the
-   repo-of-record copy
+   repo-of-record copy (all but `test_line_relay_group.reply-routing`
+   have since drifted)
 9. whisper-url transcription — card `stt-omen-large-v3` (2026-10-14),
-   **already deployed** (ada-voice `daa0e0a`)
+   **already deployed** (ada-voice `af310ef` LINE + `c8c07c7` TG; both
+   staged patches have since drifted)
 10. cast wrong-target honesty + goal-loop breaker + frustration budget —
     card `ada-cast-wrong-target-verbose-loop` (ADA-0684, 2026-10-15)
 11. correction commands self-authorize memory writes — card
     `correction-commands-die-at-the-confirm-g-05902a` (OPS-0567,
     2026-10-16)
 12. `cpt_post` — LINE save-asks route to the right chaba-boards CPT +
-    registered meta — card `line-cpt-writer-router` (OPS-0656, 2026-10-15)
+    registered meta — card `line-cpt-writer-router` (OPS-0656,
+    2026-10-15) — **already deployed** (ada-voice `f015b52`);
+    `ssot.tool-surface.cpt-post.patch` is a drifted record copy
 13. write fidelity — narrated-vs-stored divergence guard for
     `cms_publish_page` — card `ada-cms-write-fidelity` (ADA-0732,
-    2026-10-17)
+    2026-10-17) — **already deployed** (ada-voice `04154f6`, applied
+    verbatim — patch reverse-applies)
 14. tg forward provenance gaps — hidden-origin flagging + forwarded
     other-media turns — card `tg-forward-provenance` (2026-10-17)
 15. `chat_send` page= — a CMS page's images attached server-side in one
@@ -53,6 +74,12 @@ chaba dispatches. Seventeen drops live here:
 ---
 
 ## Drop 1 — trip_calendar tool
+
+**Status (2026-11-13 audit): DEPLOYED** — landed as ada-voice `6148f64`
+(tool + manifest + guide), reworked upstream since (`932550d` lazy decl
+schemas, `56cd9b6`). The staged `tools.d/trip_calendar.py` is the
+drop-time record copy and has drifted behind upstream — install from
+upstream, not from here.
 
 The generator half (`scripts/ada/trip-calendar.py`) lives in THIS repo;
 these files are the Ada-side surface.
@@ -92,6 +119,14 @@ these files are the Ada-side surface.
 ---
 
 ## Drop 2 — doc_read + LINE file ingest
+
+**Status (2026-11-13 audit): DEPLOYED** — landed as ada-voice `6148f64`,
+then hardened upstream (`2c3ee2f` media-inbox sha256/persona manifest +
+doc_read T2/T3 dedup-extract cache, `5f6ff95` mime sniff, `0c2fe89` .bin
+magic bytes). The staged `line_relay.file-doc-ingest.patch` and
+`tools.d/doc_read.py` are the drop-time record copies — both have
+drifted behind upstream; do not re-apply/install them. `doc_read` lives
+in the upstream manifest + tool_guide.
 
 Card `line-file-doc-ingest` (Tony 2026-10-13): a PDF sent to a lane over
 LINE was dropped — `type:file` had no handler and `_MIME_EXT` archived
@@ -299,6 +334,13 @@ page — keep History in one place.
 
 ## Drop 5 — file-input speaker ID (LINE voice enroll + recognize + boss rule)
 
+**Status (2026-11-13 audit): DEPLOYED** (ada-voice `02c5058`). Of the
+six staged patches, five still reverse-apply verbatim;
+`line_relay.voice-enroll-recognize.patch` has diverged — upstream
+`line_relay.py` drifted post-merge (the enroll flow is live there:
+`LINE_VOICE_ENROLL`/`match_file`/`VOICE_ENROLL_CLIPS`). Record copy
+only — do not re-apply.
+
 Card `line-voice-enroll-recognize` (Tony 2026-10-13): members send a few
 voice clips over LINE to enroll; the lane then recognizes who is
 speaking on voice messages (boss recognition — completes the MEM-0572
@@ -484,6 +526,13 @@ effect on the next ada-memory-gaps timer run (mn01, Sun 09:30).
   exercised via ast-extracted methods from the patched source.
 ## Drop 7 — LINE image delivery (real images, not text links)
 
+**Status (2026-11-13 audit): DEPLOYED** (ada-voice `02c5058`).
+`tool_guide.image-delivery` + `realtime_provider.image-delivery` still
+reverse-apply verbatim; `line_relay.image-delivery.patch` has diverged —
+upstream `line_relay.py` drifted post-merge (`_mine_image_urls`,
+`send_image_turn`, `_resolve_doc_media` are live there). Record copy
+only — do not re-apply.
+
 Card `line-delivery-send-actual-images-not-jus-652ad3` (Tony 2026-10-13):
 "ส่งรูปรถของผมให้หน่อย" produced a reply whose text contained a
 `drive.google.com/file/d/...` share link — LINE delivered a text link,
@@ -567,6 +616,13 @@ never Drive links, never `drive_get`'s `media_url`.
   is a separate fix (session dropped twice at 21:46 in the same
   journal); this patch only touches delivery, not routing.
 ## Drop 8 — reply-context routing (answers stay in the originating chat)
+
+**Status (2026-11-13 audit): DEPLOYED** (ada-voice `8f8f488`). Only
+`test_line_relay_group.reply-routing.patch` still reverse-applies;
+`line_relay`, `tg_relay`, `tool_runner`, and `pwa_server`
+`.reply-routing.patch` have all diverged — upstream drifted post-merge
+(the `chat_id` session binding + `SESSION_CHAT` registry are live
+there). Record copies only — do not re-apply.
 
 Card `line-tool-reply-routing-answers-leave-th-5c73e7` (2026-10-13):
 a persona's `chat_send` inside a LINE turn left the originating chat —
@@ -662,7 +718,11 @@ The fix binds each backend session to the chat it was opened for; a bare
 ## Drop 9 — whisper-url transcription (STT endpoint on omen GPU)
 
 Card `stt-omen-large-v3` (2026-10-14) — **already deployed** (ada-voice
-`daa0e0a`); these patches are the repo-of-record copy.
+`af310ef` for the LINE relay, `c8c07c7` for the TG relay — the `daa0e0a`
+ref recorded earlier was a pre-push local id). Both staged patches have
+since diverged (upstream drifted: `LINE_WHISPER_URL`/`TG_WHISPER_URL`
+remote-endpoint-first logic is live there) — record copies only, do not
+re-apply.
 
 - `backend/tg_relay.whisper-url.patch` — `TG_WHISPER_URL` remote
   endpoint first (httpx multipart POST, 120s), local faster-whisper as
@@ -909,6 +969,12 @@ uncertain facts, and for every other gated tool.
   pronoun rule — Thai has no such ambiguity (จำไว้ is unambiguous).
 ## Drop 12 — cpt_post tool (LINE saves -> the right WP CPT)
 
+**Status (2026-11-13 audit): DEPLOYED** — landed as ada-voice `f015b52`
+("cpt_post: apply staged drop (OPS-0656)"). The three backend patches
+still reverse-apply verbatim; `ssot.tool-surface.cpt-post.patch` has
+diverged — `cpt_post` sits in upstream's `coverage_debt` but the
+surrounding tool list drifted. Record copy only — do not re-apply.
+
 Card `line-cpt-writer-router` (OPS-0656, 2026-10-15): every LINE "post
 this" ask used to land as a free-form post via wp_post. Now save-asks
 classify — receipt photo -> `expense`, "save this contact" ->
@@ -1001,6 +1067,9 @@ are extracted by the model, not an OCR step in the tool).
   contact: Honda service 02-1234567").
 
 ## Drop 13 — write fidelity (narrated vs stored, cms_publish_page)
+
+**Status (2026-11-13 audit): DEPLOYED** — landed as ada-voice `04154f6`;
+`write-fidelity.patch` still reverse-applies verbatim upstream.
 
 Card `ada-cms-write-fidelity` (ADA-0732, 2026-10-17): the kk-cms-only
 bench caught Kaewta storing "Tuesdays" in `cms_publish_page` content

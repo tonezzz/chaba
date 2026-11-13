@@ -1,0 +1,81 @@
+title: ada-voice drop patch rot audit — all 12 diverged patches are post-merge drift on deployed drops
+id: 2026-11-13-ada-voice-drop-rot-audit
+kind: audit
+card: chaba-merge-gate-ada-drops-rot-audit
+host: idc02
+repo: chaba
+upstream: tonezzz/ada-voice main @ 8223b56 (audit task cited 07119b1; 18 commits landed between)
+summary: >-
+  The dispatch merge gate held branch
+  dispatch/20261113-123251-evidence-2026-11-13-clean-orig on
+  tests/ada/test_correction_command.py. A 50-patch tri-state audit
+  (git apply --check / -R --check, tests/ada/_drops.py semantics) was
+  re-run against current ada-voice main @ 8223b56. Between the cited
+  audit base 07119b1 and 8223b56, upstream drift un-rotted both
+  genuinely pending patches (realtime_provider.cast-loop — the
+  ADA-0080 repair already on master via PR #138 b591a9b2 — and
+  realtime_provider.correction-command): both apply forward again.
+  Every remaining diverged patch sits on a drop whose feature is
+  already deployed upstream — post-merge drift, not a rotted pending
+  base. Nothing needed repair; the correct action was marking the
+  deployed drops and their stale record copies in
+  integrations/ada-voice/README.md.
+diverged_patches:
+  - patch: backend/line_relay.file-doc-ingest.patch
+    drop: 2
+    verdict: deployed-upstream (6148f64 + 2c3ee2f/5f6ff95/0c2fe89 hardening) — record copy
+  - patch: backend/line_relay.image-delivery.patch
+    drop: 7
+    verdict: deployed-upstream (02c5058) — record copy; 2 siblings still reverse-apply
+  - patch: backend/line_relay.reply-routing.patch
+    drop: 8
+    verdict: deployed-upstream (8f8f488) — record copy
+  - patch: backend/line_relay.voice-enroll-recognize.patch
+    drop: 5
+    verdict: deployed-upstream (02c5058) — record copy; not guarded by any tests/ada file (orphaned-but-deployed, benign)
+  - patch: backend/line_relay.whisper-url.patch
+    drop: 9
+    verdict: deployed-upstream (af310ef) — record copy; unguarded, benign
+  - patch: backend/tg_relay.reply-routing.patch
+    drop: 8
+    verdict: deployed-upstream (8f8f488) — record copy
+  - patch: backend/tg_relay.whisper-url.patch
+    drop: 9
+    verdict: deployed-upstream (c8c07c7) — record copy; unguarded, benign
+  - patch: backend/tool_runner.reply-routing.patch
+    drop: 8
+    verdict: deployed-upstream (8f8f488) — record copy
+  - patch: pwa_server.reply-routing.patch
+    drop: 8
+    verdict: deployed-upstream (8f8f488) — record copy
+  - patch: ssot.tool-surface.cpt-post.patch
+    drop: 12
+    verdict: deployed-upstream (f015b52) — record copy; cpt_post sits in upstream coverage_debt
+also_diverged_on_audit_base_now_clean:
+  - backend/realtime_provider.cast-loop.patch — applies @ 8223b56 (drop 10 pending; ADA-0080 repair already merged via PR #138)
+  - backend/realtime_provider.correction-command.patch — applies @ 8223b56 (drop 11 pending)
+pending_drops_verified_absent_upstream:
+  - 'drop 3  calendar create-dedup (no _find_duplicate upstream)'
+  - 'drop 10 cast-loop (no _goal_loop/GOAL_LOOP_ASK upstream)'
+  - 'drop 11 correction-command (no _memory_directed_call upstream)'
+  - 'drop 14 tg forward-provenance gaps (no "origin hidden"/_media_desc upstream)'
+  - 'drop 15 chat_send page= (no page= handling upstream)'
+  - 'drop 16 cms slug derivation (no derive path upstream)'
+  - 'drop 17 map_embed (no tool/manifest entry upstream)'
+  - 'drop 18 LINE proactive persona (no proactive intent upstream)'
+readme_updates:
+  - 'Header: drop count 17->18; added a Patch currency paragraph explaining the tri-state and the record-copy rule.'
+  - 'Marked deployed: drop 1 (6148f64), drop 2 (6148f64 + hardening), drop 12 (f015b52), drop 13 (04154f6).'
+  - 'Corrected drop 9 deploy ref daa0e0a (stale pre-push id) -> af310ef + c8c07c7.'
+  - 'Per-drop drift notes added for drops 5, 7, 8, 9 — which staged patches still reverse-apply vs are record copies.'
+verification: >-
+  ADA_PI=<in-worktree ada-voice clone @ 8223b56 with .venv -> pytest-capable
+  venv bridged into ada-voice site-packages> .venv-gate/bin/python -m pytest
+  tests/ada -q -rf  =>  270 passed, 1 skipped (test_cms_render — pre-existing
+  self-skip, needs jinja2). Local runner note: idc02 has NO pytest-capable
+  interpreter for the gate's default resolution and the ada-voice staging
+  venv lacks pytest — the merge gate itself runs on the merge-sweep host,
+  not here.
+followups:
+  - 'idc02 ada-voice staging venv lacks pytest — the inner drop tests can never run on this host; install pytest there if idc02 should verify drops locally.'
+  - 'Drop 2/1 staged tool copies drifted BEHIND upstream (hardened there); kept as drop-time records rather than refreshed — a refresh would break the chaba-side contract tests that stub the original seams.'
