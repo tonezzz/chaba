@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-bench-casting
 title: Timer ada-bench-casting on idc03 failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:35
 priority: high
 tags:
 - timer-alert
@@ -1157,6 +1157,12 @@ comms:
   from: devin
   text: '2026-11-13 sweep: preflight-bench.sh prints NOT READY → exit 1. Gate misclassification: skip-on-not-ready
     counts as failure — needs success-on-skip.'
+- at: 2026-11-13 23:35
+  from: devin
+  text: 'Root cause 2026-11-13: NOT READY is a gate verdict, not a failure — preflight-bench.sh exits 1 when load>=2
+    (idc03 is legitimately loaded). Unit ExecStart is only the gate script, so exit 1 fires timer-alert on every
+    busy window. FIX: in ada-voice/scripts/preflight-bench.sh change the final line so NOT READY exits 0 (gate=skip
+    semantics) — or add a systemd ExecCondition. One-line change, needs ada-voice repo commit.'
 spec: Investigate the failure of `ada-bench-casting.service` on host idc03 which resulted in an exit-code on 11-09
   02:00. Inspect the systemd user journal using `journalctl --user -u ada-bench-casting.service` on idc03 and cross-reference
   the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the service failure is identified
