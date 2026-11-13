@@ -18,3 +18,21 @@ comms:
 - at: 2026-11-13 23:11
   from: tony
   text: card captured via board-api
+- at: 2026-11-13 23:11
+  from: devin
+  text: 'raised request where-should-the-daily-embed-budget-live-41c823: Where should the daily embed budget live?
+    Note: query embeds bypass the worker queue entirely (vector-search calls the p'
+requests:
+- id: where-should-the-daily-embed-budget-live-41c823
+  ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
+    calls the provider directly), so the real question is reserving quota headroom for them. ★(a) mddb worker-side
+    daily budget ~700/day for index jobs — leaves ~300/day for queries, precise but needs a per-worker counter +
+    config; (b) proxy token-bucket pacing — spreads bulk calls but doesn''t reserve query headroom and delays rather
+    than budgets; (c) accept — OR fallback cap (~$0.10/day) already bounds overflow cost; outage risk is lag-until-reset,
+    not spend.'
+  status: open
+  at: 2026-11-13 23:11
+  from: devin
+  options:
+  - proceed
+  - hold
