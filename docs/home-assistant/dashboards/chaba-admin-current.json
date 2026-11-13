@@ -177,155 +177,171 @@
       "icon": "mdi:server",
       "cards": [
         {
-          "type": "vertical-stack",
+          "type": "custom:layout-card",
+          "layout_type": "custom:grid-layout",
+          "layout": {
+            "grid-template-columns": "repeat(auto-fit, minmax(340px, 1fr))",
+            "grid-gap": "8px"
+          },
           "cards": [
             {
-              "type": "horizontal-stack",
-              "cards": [
+              "type": "entities",
+              "title": "tony-omen",
+              "entities": [
                 {
-                  "type": "entities",
-                  "title": "tony-omen",
-                  "entities": [
-                    {
-                      "entity": "sensor.tony_omen_battery_level"
-                    },
-                    {
-                      "entity": "sensor.tony_omen_battery_state"
-                    },
-                    {
-                      "entity": "sensor.tony_omen_cpu_package_temp"
-                    },
-                    {
-                      "entity": "sensor.tony_omen_gpu_temp"
-                    },
-                    {
-                      "entity": "binary_sensor.tony_omen_online"
-                    },
-                    {
-                      "entity": "sensor.tony_omen_uptime"
-                    },
-                    {
-                      "entity": "sensor.tony_omen_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_omen_battery_level"
                 },
                 {
-                  "type": "entities",
-                  "title": "tony-macbook",
-                  "entities": [
-                    {
-                      "entity": "switch.mac_plug"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_level"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_state"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_health"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_temp"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_voltage"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_battery_cycles"
-                    },
-                    {
-                      "entity": "binary_sensor.tony_macbook_online"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_uptime"
-                    },
-                    {
-                      "entity": "sensor.tony_macbook_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_omen_battery_state"
                 },
                 {
-                  "type": "entities",
-                  "title": "tony-dell",
-                  "entities": [
-                    {
-                      "entity": "binary_sensor.tony_dell_online"
-                    },
-                    {
-                      "entity": "sensor.tony_dell_uptime"
-                    },
-                    {
-                      "entity": "sensor.tony_dell_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_omen_cpu_package_temp"
                 },
                 {
-                  "type": "entities",
-                  "title": "idc02",
-                  "entities": [
-                    {
-                      "entity": "binary_sensor.idc02_online"
-                    },
-                    {
-                      "entity": "sensor.idc02_uptime"
-                    },
-                    {
-                      "entity": "sensor.idc02_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_omen_gpu_temp"
+                },
+                {
+                  "entity": "binary_sensor.tony_omen_online"
+                },
+                {
+                  "entity": "sensor.tony_omen_uptime"
+                },
+                {
+                  "entity": "sensor.tony_omen_users"
                 }
-              ]
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
             },
             {
-              "type": "horizontal-stack",
-              "cards": [
+              "type": "entities",
+              "title": "tony-macbook",
+              "entities": [
                 {
-                  "type": "entities",
-                  "title": "idc03",
-                  "entities": [
-                    {
-                      "entity": "binary_sensor.idc03_online"
-                    },
-                    {
-                      "entity": "sensor.idc03_uptime"
-                    },
-                    {
-                      "entity": "sensor.idc03_users"
-                    }
-                  ]
+                  "entity": "switch.mac_plug"
                 },
                 {
-                  "type": "entities",
-                  "title": "mn01",
-                  "entities": [
-                    {
-                      "entity": "binary_sensor.mn01_online"
-                    },
-                    {
-                      "entity": "sensor.mn01_uptime"
-                    },
-                    {
-                      "entity": "sensor.mn01_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_macbook_battery_level"
                 },
                 {
-                  "type": "entities",
-                  "title": "con01",
-                  "entities": [
-                    {
-                      "entity": "binary_sensor.con01_online"
-                    },
-                    {
-                      "entity": "sensor.con01_uptime"
-                    },
-                    {
-                      "entity": "sensor.con01_users"
-                    }
-                  ]
+                  "entity": "sensor.tony_macbook_battery_state"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_health"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_temp"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_voltage"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_cycles"
+                },
+                {
+                  "entity": "binary_sensor.tony_macbook_online"
+                },
+                {
+                  "entity": "sensor.tony_macbook_uptime"
+                },
+                {
+                  "entity": "sensor.tony_macbook_users"
                 }
-              ]
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "tony-dell",
+              "entities": [
+                {
+                  "entity": "binary_sensor.tony_dell_online"
+                },
+                {
+                  "entity": "sensor.tony_dell_uptime"
+                },
+                {
+                  "entity": "sensor.tony_dell_users"
+                }
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "idc02",
+              "entities": [
+                {
+                  "entity": "binary_sensor.idc02_online"
+                },
+                {
+                  "entity": "sensor.idc02_uptime"
+                },
+                {
+                  "entity": "sensor.idc02_users"
+                }
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "idc03",
+              "entities": [
+                {
+                  "entity": "binary_sensor.idc03_online"
+                },
+                {
+                  "entity": "sensor.idc03_uptime"
+                },
+                {
+                  "entity": "sensor.idc03_users"
+                }
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "mn01",
+              "entities": [
+                {
+                  "entity": "binary_sensor.mn01_online"
+                },
+                {
+                  "entity": "sensor.mn01_uptime"
+                },
+                {
+                  "entity": "sensor.mn01_users"
+                }
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
+            },
+            {
+              "type": "entities",
+              "title": "con01",
+              "entities": [
+                {
+                  "entity": "binary_sensor.con01_online"
+                },
+                {
+                  "entity": "sensor.con01_uptime"
+                },
+                {
+                  "entity": "sensor.con01_users"
+                }
+              ],
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              }
             }
           ]
         }
