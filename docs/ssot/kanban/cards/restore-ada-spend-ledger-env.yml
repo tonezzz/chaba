@@ -1,7 +1,7 @@
 id: restore-ada-spend-ledger-env
 title: Restore ada-ha-tony.env for ada-spend-ledger
 column: backlog
-updated: 2026-11-12 17:51
+updated: 2026-11-13 18:15
 spec: ada-spend-ledger.service can't spawn — EnvironmentFile ~/.config/secrets/ada-ha-tony.env missing (only .bak
   files, newest .bak-20261014). The job that tracks this exact spend can't run. Restore from bak or repoint unit.
   Verify contents without printing secrets.
@@ -22,6 +22,12 @@ comms:
 - at: 2026-11-12 17:51
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-13 18:15
+  from: devin
+  text: 'DONE per Tony''s answer (repoint): EnvironmentFile -> %h/.config/secrets/ada-ha/backend.env (exists, has
+    MDDB_BASE_URL — the only var the script truly needs; HA vars absent but unused). daemon-reload + manual start:
+    SUCCESS — ''14 days -> spend-ledger.jsonl'', published ada-cms-pages/spend-ledger + report/spend-2026-11-13.
+    Timer remains on cadence.'
 requests:
 - id: ada-spend-ledger-can-t-spawn-config-secr-d0adeb
   ask: ada-spend-ledger can't spawn — ~/.config/secrets/ada-ha-tony.env missing (only .bak files, newest .bak-20261014).
