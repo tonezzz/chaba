@@ -1,7 +1,7 @@
 id: mddb-embed-spend-cap
 title: 'MDDB embed spend: OR daily cap exhausted by device-telemetry volume — raise cap + route telemetry to mddb-ops'
 column: backlog
-updated: 2026-11-13 21:38
+updated: 2026-11-13 21:40
 brief: '2026-11-13: gemini-ollama-proxy hit OR_FALLBACK_DAILY_CAP=1500 (self-imposed spend firewall added after
   the 2026-11-12 $3.80 retry-storm). All same-space embed providers down ~6h; semantic search dead. Root volume
   driver is device-telemetry continuous writes, not a storm.'
@@ -22,3 +22,10 @@ comms:
 - at: 2026-11-13 21:38
   from: tony
   text: card captured via board-api
+- at: 2026-11-13 21:40
+  from: devin
+  text: '2026-11-13 ~21:45 +07: fix #2 deployed — OR_FALLBACK_DAILY_CAP raised 1500->5000 in ~/.config/secrets/mddb-gemini.env
+    (backup .bak-20261113), gemini-ollama-proxy restarted. Verified live: embeds flowing again via OR Vertex route
+    (ok_total climbing, consec_fail=0, or_calls_today counting under new cap). Gemini still 429ing so OR carries
+    the load — OR key only has ~$1.89 of $7 remaining, top-up still needed (Tony). Remaining: fix #3 route device-telemetry
+    to mddb-ops (:11025, embeddings OFF) — the'
