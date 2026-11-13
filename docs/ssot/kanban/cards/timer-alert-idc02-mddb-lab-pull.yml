@@ -1,14 +1,14 @@
 id: timer-alert-idc02-mddb-lab-pull
 title: Timer mddb-lab-pull on idc02 failing
 column: backlog
-updated: 2026-11-13 03:34
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-13 03:15) of `mddb-lab-pull.service` on `idc02` result=exit-code — investigate journal:
-  `journalctl --user -u mddb-lab-pull.service` on the host. See CMS `timer-timeline-idc02`.'
+note: 'Last run (11-13 03:15) of `mddb-lab-pull.service` on `idc02` result=exit-code — investigate journal: `journalctl
+  --user -u mddb-lab-pull.service` on the host. See CMS `timer-timeline-idc02`.'
 ref: MEM-0076
 comms:
 - at: 2026-11-13 03:23
@@ -16,13 +16,15 @@ comms:
   text: card captured via board-api
 - at: 2026-11-13 03:34
   from: devin
-  text: '[still suspicious] Last run (11-13 03:15) of `mddb-lab-pull.service` on `idc02` result=exit-code
-    — investigate journal: `journalctl --user -u mddb-lab-pull.service` on the host. See CMS `timer-timeline-idc02`.'
+  text: '[still suspicious] Last run (11-13 03:15) of `mddb-lab-pull.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-lab-pull.service` on the host. See CMS `timer-timeline-idc02`.'
 - at: 2026-11-13 07:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the failure of the user service `mddb-lab-pull.service` on host `idc02` which failed
-  with exit-code on 2026-11-13 at 03:15. Inspect the systemd journal using `journalctl --user -u mddb-lab-pull.service`
-  on `idc02` and cross-reference the CMS timeline `timer-timeline-idc02` to identify the root cause of
-  the failure. The done-condition is met once the specific error causing the non-zero exit code is identified
-  and documented in the card notes.
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: exit-code at 03:15 — needs journal stderr.'
+spec: Investigate the failure of the user service `mddb-lab-pull.service` on host `idc02` which failed with exit-code
+  on 2026-11-13 at 03:15. Inspect the systemd journal using `journalctl --user -u mddb-lab-pull.service` on `idc02`
+  and cross-reference the CMS timeline `timer-timeline-idc02` to identify the root cause of the failure. The done-condition
+  is met once the specific error causing the non-zero exit code is identified and documented in the card notes.
