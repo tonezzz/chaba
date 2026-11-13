@@ -22,8 +22,23 @@ target_host:
 model:
   tier: cheap
   default: litellm/gemini-3.5-flash-lite
-  allowed: [litellm/gemini-3.5-flash-lite, litellm/gemini-3.5-flash, litellm/ollama-qwen38b-kkmac, litellm/ollama-qwen32b-kkmac]
-providers: [litellm]
+  allowed:
+  - litellm/gemini-3.5-flash-lite
+  - litellm/gemini-3.5-flash
+  - litellm/ollama-qwen38b-kkmac
+  - litellm/ollama-qwen32b-kkmac
+  # Free lanes verified via opencode shadow evals 2026-11-13
+  # (litellm-free-provider-replacement-survey): OpenRouter :free via
+  # the idc03 LiteLLM gateway, and client-locked Zen free models via
+  # the native opencode provider.
+  - litellm/or-free-nemotron-ultra
+  - litellm/or-free-nemotron-35
+  - litellm/or-free-north-code
+  - opencode/big-pickle
+  - opencode/deepseek-v4.1-flash-free
+  - opencode/glm-5.3-flash-free
+  - opencode/mimo-v2.6-flash-free
+providers: [litellm, opencode]
 agent:
   mode: primary
 tools:
