@@ -193,6 +193,9 @@ TRANSITIONS = {"queue", "close", "hold", "retry", "claim", "move",
 ARCHIVE_MIN_DAYS = float(os.environ.get("BOARD_API_ARCHIVE_DAYS", "7"))
 # Queue-time lane classification (OPS-0838): when a card queues with no
 # lane/executor, run the fleet classifier once and persist the pin.
+# kk-mac-auto-lane-classifier (2026-11-13): a bounded read-only task
+# class first self-routes to executor=kk_mac_local (dr.kk_mac_route) —
+# no author pin needed; strict executors stay explicit-only.
 BOARD_CLASSIFY_AT_QUEUE = \
     os.environ.get("BOARD_CLASSIFY_AT_QUEUE", "1") == "1"
 COLUMNS = {"backlog", "doing", "review", "done"}
@@ -706,6 +709,17 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
         return None
     if a.get("type") == "dispatch" and not a.get("lane") \
             and not a.get("executor"):
+        # bounded read-only classes self-route to the kk_mac lane
+        # (kk-mac-auto-lane-classifier) — try-first, so a miss still
+        # lands on the next lane under the same claim, never starves.
+        tc = dr.kk_mac_route(card)
+        if tc:
+            a["task_class"] = tc
+            a["executor"] = "kk_mac_local"
+            comms_add(card, "chaba",
+                      f"auto-routed to executor=kk_mac_local "
+                      f"(task_class={tc})")
+            return None
         lane, source, conf = dr.classify_lane(card, with_detail=True)
         if lane == "manual":
             a["lane"] = "manual"
@@ -903,6 +917,17 @@ def do_claim(card: dict, body: dict) -> str:
                 f"card declares executor={a['executor']} — a claim "
                 "can't change the contract")
         a["executor"] = ex
+    tc = str(body.get("task_class") or "").strip()
+    if tc:
+        # the kk_mac claim-time auto-route persists its resolved class
+        # atomically with the executor it just set — refuse anything
+        # that doesn't pair with kk_mac_local
+        if (ex or str(a.get("executor") or "")) != "kk_mac_local" \
+                or tc not in dr.KK_MAC_TASK_CLASSES:
+            raise ValueError(
+                "claim task_class needs executor=kk_mac_local and an "
+                f"admitted class {sorted(dr.KK_MAC_TASK_CLASSES)}")
+        a["task_class"] = tc
     prof = str(body.get("agent_profile") or body.get("profile")
                or "").strip()
     if prof:
@@ -1389,9 +1414,17 @@ def do_create(body: dict, frm: str) -> dict:
                     or envelope.get("task_class") != tc):
                 raise ValueError("executor=opencode requires a read_only/report task_class matching lane_envelope")
         elif tc and ex != "kk_mac_local":
-            raise ValueError(
-                "action.task_class is only valid with "
-                "executor=kk_mac_local")
+            # A bare task_class (no executor pin) is the auto-route
+            # hint (kk-mac-auto-lane-classifier): queue-time
+            # classification pins executor=kk_mac_local for admitted
+            # classes. A pin to another executor, or a class outside
+            # the admitted set, still fails closed.
+            if ex or tc not in dr.KK_MAC_TASK_CLASSES:
+                raise ValueError(
+                    "action.task_class is only valid with "
+                    "executor=kk_mac_local or, without an executor, "
+                    "an admitted class in "
+                    f"{sorted(dr.KK_MAC_TASK_CLASSES)}")
         if ex == "kk_mac_local" and tc not in dr.KK_MAC_TASK_CLASSES:
             raise ValueError(
                 "executor=kk_mac_local requires action.task_class in "
@@ -1460,6 +1493,7 @@ def do_create(body: dict, frm: str) -> dict:
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue
         a.pop("task_id", None)
+        cmsg = _apply_classify_at_queue(card, a)
         if card.get("column") in ("done", "review"):
             card["column"] = "backlog"
         comms_add(card, frm, "re-spawned from report page")
@@ -1473,9 +1507,9 @@ def do_create(body: dict, frm: str) -> dict:
             comms_add(card, "chaba", warn)
         save(p, card)
         warn_all = " ".join(x for x in (warn, uncl) if x)
-        return {"message": f"card {cid} re-queued"
-                + (f" ({warn_all})" if warn_all else ""),
-                "id": cid, "status": "queued"}
+        return {"message": (f"card {cid} " + (cmsg or "re-queued")
+                            + (f" ({warn_all})" if warn_all else "")),
+                "id": cid, "status": a.get("status") or "queued"}
 
     card = {"id": cid, "title": title[:160], "column": col,
             "updated": now()}
@@ -1531,10 +1565,15 @@ def do_create(body: dict, frm: str) -> dict:
         dnote = str(dep.get("note") or "").strip()
         if dnote:
             card["deploy"]["note"] = dnote[:300]
+    cmsg = None
     if body.get("queue"):
         a = card.setdefault("action", {})
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
+        # same queue-time classification as /action do=queue (OPS-0838 +
+        # kk-mac-auto-lane-classifier) — a spawn-and-queue gets the same
+        # route pins instead of silently bypassing classification
+        cmsg = _apply_classify_at_queue(card, a)
     note = str(body.get("note") or "").strip()
     if note:
         card["note"] = note[:500]
@@ -1544,9 +1583,10 @@ def do_create(body: dict, frm: str) -> dict:
     want_ref = str(body.get("ref") or "").strip().upper()
     card["ref"] = (want_ref if REF_RE.match(want_ref)
                    else alloc_ref(ref_cat(card, body)))
-    card["comms"] = [{"at": now(), "from": frm,
-                      "text": str(body.get("text") or
-                                   "card captured via board-api")[:500]}]
+    card.setdefault("comms", []).append(  # setdefault — queue-time
+        {"at": now(), "from": frm,      # classification notes land
+         "text": str(body.get("text") or  # before the first comms entry
+                    "card captured via board-api")[:500]})
     warn = queue_starve_warn(card)
     uncl = queue_unclaimable_warn(card)
     if uncl:
@@ -1566,6 +1606,8 @@ def do_create(body: dict, frm: str) -> dict:
         if a["status"] == "queued":
             res["message"] = msg + " (queued)" \
                 + (f" {warn_all}" if warn_all else "")
+        elif cmsg:
+            res["message"] = msg + f" — {cmsg}"
     return res
 
 

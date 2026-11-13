@@ -3325,15 +3325,31 @@ def claim_pass(st: dict) -> bool:
             # re-classifying here clobbered pinned free_lane cards into
             # codemod/paid_frontier lanes (OPS-0885 miss class).
             lane = str(a.get("lane") or "")
+            kk_tc = ""
             if not lane:
-                lane = classify_lane(card)
+                # Bounded read-only classes self-route to the kk_mac
+                # executor (kk-mac-auto-lane-classifier) — the same rule
+                # board-api applies at queue time, for cards that missed
+                # it; the pin persists atomically with the claim.
+                dr = dr_module()
+                if dr and getattr(dr, "kk_mac_route", None):
+                    kk_tc = dr.kk_mac_route(card)
+                if not kk_tc:
+                    lane = classify_lane(card)
             if lane == "manual":
                 continue
-            a["lane"] = lane
-            if lane in LANE_MODELS and not a.get("model"):
-                a["model"] = LANE_MODELS[lane]
-            claim_body["lane"] = lane
-            claim_body["model"] = a.get("model", "")
+            if kk_tc:
+                a["executor"] = "kk_mac_local"
+                a["task_class"] = kk_tc
+                ex_decl = "kk_mac_local"   # started-comms reports it
+                claim_body["executor"] = "kk_mac_local"
+                claim_body["task_class"] = kk_tc
+            else:
+                a["lane"] = lane
+                if lane in LANE_MODELS and not a.get("model"):
+                    a["model"] = LANE_MODELS[lane]
+                claim_body["lane"] = lane
+                claim_body["model"] = a.get("model", "")
         resp = api("/action", claim_body)
         if resp.get("error"):
             # rejections (lost race, already running on a stale view)
