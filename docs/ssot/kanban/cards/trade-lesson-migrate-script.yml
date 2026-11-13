@@ -1,0 +1,54 @@
+id: trade-lesson-migrate-script
+title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
+column: backlog
+updated: 2026-11-13 21:42
+brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
+  upsert -> drift-map update.'
+priority: medium
+program: education
+tags:
+- education
+- trade
+- free-lane
+- docs
+spec: 'Build scripts/trade-lesson-migrate.py in chaba (repo=chaba dispatch).
+
+
+  Purpose: deterministic orchestrator for the trade-docs -> Education migration (parent card trade-docs-education-migration).
+  The LLM only distills prose; everything else is script-side.
+
+
+  Requirements:
+
+  - Input: trade docs at ~/CascadeProjects/trade/docs (override with --docs-root) + index ~/CascadeProjects/trade/.docs-mcp/documents.json
+  for the page inventory.
+
+  - Coverage map: scripts/trade-lesson-map.yml — page path -> {topic, level, skip?}. Seed it from scripts/lesson-drift-map.yml
+  (existing trade-* lessons) and emit a proposed mapping for uncovered pages on --dry-run.
+
+  - Per uncovered topic: bundle the mapped docs'' markdown into a single prompt, run `opencode run` headless on
+  the free lane (model litellm/gemini-3.5-flash-lite via ~/.config/secrets/litellm-chaba.env; allow --model override
+  to opencode/big-pickle etc.), ask for an HTML lesson body in the lesson-add.py format.
+
+  - Publish: POST /lesson via scripts/lesson-add.py semantics (upsert by topic slug trade-<name>) — script calls
+  board-api directly, never WP creds.
+
+  - Update scripts/lesson-drift-map.yml + SERIES in scripts/wiki-lesson-migrate.py (''trade'': ''Trade'') on --apply.
+
+  - Flags: --dry-run (default: print plan, no LLM calls, no writes), --topic SUBSTR, --apply, --model.
+
+  - Idempotent: re-run upserts in place; content-hash skip optional.
+
+  - Verify: --dry-run output + one real --apply on a single --topic before batch.
+
+
+  Done when: dry-run plan looks right, one topic lesson lands via /lesson and appears in /lesson op:list, drift-map
+  covers it.'
+action:
+  type: dispatch
+  repo: chaba
+ref: OPS-0103
+comms:
+- at: 2026-11-13 21:42
+  from: devin
+  text: card captured via board-api (trade docs -> education migration, free lane)
