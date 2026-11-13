@@ -447,8 +447,11 @@ def parse_opencode_events(log_path: Path) -> dict:
             if cmd and MUTATING_RE.search(cmd):
                 mutating.append(cmd[:200])
             fpath = inp.get("filePath") or inp.get("path") or ""
-            peek_hit = ("verify.py" in fpath) or (
-                "shadow/fixtures/" in fpath)
+            # Held-out = verify.py + l0.py (the deterministic baseline
+            # solver). inputs/, task.yaml and prompt.md are declared task
+            # spec — reading them is the job, not a peek.
+            peek_hit = ("verify.py" in fpath) or bool(re.search(
+                r"shadow/fixtures/\S*(?:verify\.py|l0\.py)", fpath))
             if not peek_hit and cmd:
                 if re.search(r"\bverify\.py\b", cmd):
                     peek_hit = True
