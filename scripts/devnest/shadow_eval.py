@@ -453,12 +453,23 @@ def parse_opencode_events(log_path: Path) -> dict:
             peek_hit = ("verify.py" in fpath) or bool(re.search(
                 r"shadow/fixtures/\S*(?:verify\.py|l0\.py)", fpath))
             if not peek_hit and cmd:
-                if re.search(r"\bverify\.py\b", cmd):
+                if re.search(r"\b(?:verify\.py|l0\.py)\b", cmd):
                     peek_hit = True
-                elif re.search(
-                        r"(?:cat|head|tail|less|more|sed|grep|find|ls|"
-                        r"xxd|od|file)\s+[^\n;&|]*shadow/fixtures/", cmd):
-                    peek_hit = True
+                else:
+                    # Token-wise: inputs/, task.yaml, prompt.md are task
+                    # spec; verify.py/l0.py and bare fixture dirs are held-out.
+                    for tok in re.findall(r"shadow/fixtures/\S*", cmd):
+                        rel = tok.split("shadow/fixtures/", 1)[1] \
+                            .rstrip("\"'|&;,) ")
+                        rel = rel.rstrip("/")
+                        base = rel.rsplit("/", 1)[-1]
+                        if base in ("verify.py", "l0.py") or \
+                                "/" not in rel or \
+                                not ("/inputs/" in "/" + rel or
+                                     rel.endswith("/inputs") or
+                                     base in ("task.yaml", "prompt.md")):
+                            peek_hit = True
+                            break
             if peek_hit:
                 peeks.append(f"{name}:{(fpath or cmd)[:160]}")
     return {"tokens": tokens, "tool_calls": tools,
