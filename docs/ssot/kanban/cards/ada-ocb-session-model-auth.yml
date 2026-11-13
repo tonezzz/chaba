@@ -1,0 +1,28 @@
+id: ada-ocb-session-model-auth
+title: 'Ada OpenChamber new-session prompt fails: missing model API key'
+column: backlog
+updated: 2026-11-13 11:24
+brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
+  session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
+  ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
+  failed to send message with error: Authentication Error, No api key passed in.'' Selected model was Gemini 3.5
+  Flash Lite (provider label ada). OpenCode compatibility reports 2.2.7 compatible. No credential/model config changed.
+  Diagnostic session titled ''OpenChamber dia'
+priority: medium
+program: devnest
+tags:
+- ada
+- openchamber
+- auth
+- model
+spec: Fix Ada OpenChamber prompt execution for new sessions. The session create path succeeds; first model call
+  fails with missing API key for selected Gemini 3.5 Flash Lite / ada provider. Decide whether to restore the provider
+  credential or use an available free model for this project. Do not put API keys in card comments or chat; use
+  the approved secret path.
+note: The separate OpenChamber UI unlock is required in addition to Cloudflare Access. After unlock auth/session=200,
+  GET /api/session=200. The log warnings about turn-duration/session-assist were not proven causal.
+ref: ADA-0077
+comms:
+- at: 2026-11-13 11:24
+  from: tony
+  text: card captured via board-api
