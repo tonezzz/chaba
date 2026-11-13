@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
 column: doing
-updated: 2026-11-13 22:59
+updated: 2026-11-13 23:07
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -84,4 +84,10 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-13 23:07
+  from: devin
+  text: 'progress: design settled — trade-lesson-map.yml (page->{topic,level,skip}) seeded from lesson-drift-map.yml
+    slugs; opencode run --format json --standalone -m litellm/gemini-3.5-flash-lite; /lesson upsert; drift-map text-append
+    + SERIES edit on --apply. Docs absent on idc02 (checkout has config/data only) — verifying against an idc03
+    copy via --docs-root.'
 claim: {}
