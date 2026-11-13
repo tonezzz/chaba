@@ -1,7 +1,7 @@
 id: litellm-free-provider-replacement-survey
 title: Survey free hosted LLM providers to replace GitHub Models in litellm
 column: backlog
-updated: 2026-11-07 15:39
+updated: 2026-11-13 20:50
 priority: medium
 tags:
 - infra
@@ -78,3 +78,10 @@ comms:
     - cf-gpt-oss-120b: FAIL 99.7s — only 4 tool calls, spent budget reasoning, never wrote the artifact.
 
     Plumbing fixed en route: dell ~/.config/opencode/opencode.json litellm provider (openai-compat'
+- at: 2026-11-13 20:50
+  from: devin
+  text: 'DONE 2026-11-13 (devin+dell session): free provider set is live on the idc03 LiteLLM gateway — (1) Cloudflare
+    Workers AI: CF_API_WORKER_TOKEN works, 7 cf-* routes deployed (llama-70b/8b, qwen3-30b, gpt-oss-120b, mistral-small,
+    nemotron-120b, embed-m3) BUT free tier = 10k neurons/day and llama-70b ctx=24k too small for opencode, gpt-oss
+    rejects array content — unproven for agentic use, retest after neuron reset; (2) OpenRouter :free: or-free-nemotron-ultra/north-code/nemotron-35
+    added — all PASS '
