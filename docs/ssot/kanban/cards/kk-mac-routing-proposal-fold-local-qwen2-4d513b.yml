@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: doing
-updated: 2026-11-13 20:29
+updated: 2026-11-13 20:30
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -39,6 +39,13 @@ comms:
   from: devin
   text: 'raised request approve-gateway-leg-placement-proposal-i-9310b0: Approve gateway leg placement? Proposal
     in docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml. Options: (a) r'
+- at: 2026-11-13 20:30
+  from: devin
+  text: 'DONE — routing proposal at docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml (committed on
+    dispatch branch 747b44bbd). Recommendation: ollama-qwen32b-kkmac as leg 1 on summary/classify/bench + leg 2
+    on chat-local (free-first, batch-tolerant); tool-call gets leg-3 position only after 3 consecutive qualifying
+    runs (deference 0.878 < 0.90 bar); voice-aux/chat/vision/image/embedding excluded. Also shipped: kk_mac_executor
+    DEFAULT_MODEL repinned qwen3:8b->qwen2.5:32b (eval: 16 parse-fails'
 action:
   type: dispatch
   repo: chaba
