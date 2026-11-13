@@ -1,14 +1,14 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-12 10:23
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (10-09 17:48) of `ada-scenario-memory.service` on `idc03` result=exit-code — investigate
-  journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (10-09 17:48) of `ada-scenario-memory.service` on `idc03` result=exit-code — investigate journal:
+  `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: ADA-0551
 comms:
 - at: 2026-10-13 08:07
@@ -88,9 +88,8 @@ comms:
     — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-10-13 11:03
   from: devin
-  text: '[triage 2026-10-13] still exit=1 — BUT weekly scenario benches: exit-1 means the suite FOUND
-    policy violations (last run Oct 9), not a crashed timer. Category question for sentinel: distinguish
-    service-crash from suite-found-issues?'
+  text: '[triage 2026-10-13] still exit=1 — BUT weekly scenario benches: exit-1 means the suite FOUND policy violations
+    (last run Oct 9), not a crashed timer. Category question for sentinel: distinguish service-crash from suite-found-issues?'
 - at: 2026-10-13 11:14
   from: devin
   text: '[still suspicious] Last run (10-09 17:48) of `ada-scenario-memory.service` on `idc03` result=exit-code
@@ -205,15 +204,14 @@ comms:
     — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-10-13 16:05
   from: devin
-  text: Covered by timer-finding-reporter-semantics — exit1 means the suite found policy violations, not
-    a crash. Reclassify rather than 'fix'.
+  text: Covered by timer-finding-reporter-semantics — exit1 means the suite found policy violations, not a crash.
+    Reclassify rather than 'fix'.
 - at: 2026-10-13 16:18
   from: devin
-  text: '[triage 2026-10-13] exit-code was the job''s finding signal, not a crash — standardized under
-    OPS-0581 (card timer-finding-reporter-semantics, branch dispatch/20261013-160436-affected-arp-inventory-scan-ex):
-    job now exits 0 on completed runs, findings on their own channels. After the fix deploys (repo-sync;
-    idc03 wrapper needs install.sh re-run), a fresh nonzero = real crash. Verify next run green, then
-    close.'
+  text: '[triage 2026-10-13] exit-code was the job''s finding signal, not a crash — standardized under OPS-0581
+    (card timer-finding-reporter-semantics, branch dispatch/20261013-160436-affected-arp-inventory-scan-ex): job
+    now exits 0 on completed runs, findings on their own channels. After the fix deploys (repo-sync; idc03 wrapper
+    needs install.sh re-run), a fresh nonzero = real crash. Verify next run green, then close.'
 - at: 2026-10-13 18:24
   from: devin
   text: 'RESOLVED — Contract shipped: suite wrapper maps exit-1-with-report to 0; real crashes still alert.'
@@ -234,32 +232,32 @@ comms:
   text: Dispatch started — investigating ada-scenario-memory.service journal on idc03.
 - at: 2026-11-08 10:35
   from: devin
-  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite
-    completed, **Score: 0.269 printed). Wrapper updated Nov 7 now maps exit-1-with-report to 0 AND parks
-    paid lanes (memory stays prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed
-    the 5 stale scenario units + ran ada-scenario-memory.service once — parked with zero sessions, exit
-    0, Result=success. Next Wed 05:55 run goes green. Separate real failures remain carded: ada-embed'
+  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite completed,
+    **Score: 0.269 printed). Wrapper updated Nov 7 now maps exit-1-with-report to 0 AND parks paid lanes (memory
+    stays prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed the 5 stale scenario
+    units + ran ada-scenario-memory.service once — parked with zero sessions, exit 0, Result=success. Next Wed 05:55
+    run goes green. Separate real failures remain carded: ada-embed'
 - at: 2026-11-08 10:35
   from: devin
-  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite
-    completed, **Score: 0.269 printed). Wrapper updated Nov 7 maps exit-1-with-report to 0 AND parks paid
-    lanes (memory stays prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed
-    the 5 stale scenario units + ran ada-scenario-memory.service once — parked with zero sessions, exit
-    0, Result=success. Next Wed 05:55 run goes green. Separate real failures remain carded: ada-embed-ben'
+  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite completed,
+    **Score: 0.269 printed). Wrapper updated Nov 7 maps exit-1-with-report to 0 AND parks paid lanes (memory stays
+    prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed the 5 stale scenario units
+    + ran ada-scenario-memory.service once — parked with zero sessions, exit 0, Result=success. Next Wed 05:55 run
+    goes green. Separate real failures remain carded: ada-embed-ben'
 - at: 2026-11-08 10:36
   from: devin
   text: connectivity probe — please ignore
 - at: 2026-11-08 10:36
   from: devin
-  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite
-    completed, **Score: 0.269 printed). Wrapper updated Nov 7 maps exit-1-with-report to 0 AND parks paid
-    lanes (memory stays prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed
-    the 5 stale scenario units + ran ada-scenario-memory.service once — parked with zero sessions, exit
-    0, Result=success. Next Wed 05:55 run goes green. Side-fix: chaba-board-api was wedged on a hung outb'
+  text: '[triage 2026-11-08] Nov 4 exit-1 was a stale finding-signal under the pre-Nov-7 wrapper (suite completed,
+    **Score: 0.269 printed). Wrapper updated Nov 7 maps exit-1-with-report to 0 AND parks paid lanes (memory stays
+    prod-targeted :8002 by design, bench-off-paid-lanes). Verified live: reset-failed the 5 stale scenario units
+    + ran ada-scenario-memory.service once — parked with zero sessions, exit 0, Result=success. Next Wed 05:55 run
+    goes green. Side-fix: chaba-board-api was wedged on a hung outb'
 - at: 2026-11-08 10:37
   from: idc02
-  text: 'finished (ok): exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real
-    but already carded separately. | devin-t'
+  text: 'finished (ok): exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real but already
+    carded separately. | devin-t'
 - at: 2026-11-08 10:37
   from: chaba
   text: 'session-end checkpoint 4e2a3e32: 1 leftover file(s) committed'
@@ -291,178 +289,181 @@ comms:
     — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-11 20:52
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-11 23:13
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-11 23:24
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 00:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 00:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 00:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 01:24
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 01:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 01:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 02:13
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 02:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 02:33
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 02:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 02:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 03:24
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 03:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 03:52
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 04:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 04:52
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 05:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 05:33
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 05:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 05:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 06:14
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 06:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 06:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 06:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 07:14
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 07:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 07:33
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 07:42
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 07:52
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 08:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 08:34
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 08:43
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 08:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 09:13
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 09:50
   from: devin
   text: 'Still failing: Result=resources (OOM/resource-limit class).'
 - at: 2026-11-12 09:42
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 09:53
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 10:23
   from: devin
-  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources
-    — investigate journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (-) of `ada-scenario-memory.service` on `idc03` result=resources — investigate
+    journal: `journalctl --user -u ada-scenario-memory.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: Result=resources (likely OOM-kill class) — needs journal -k / memory check.'
 action:
   status: done
   type: dispatch
   lane: devin
   runner: idc02
-  result: 'exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real but already
-    carded separately. | devin-task-20261108-103146-timer-ada-scenario-memory-on-i.service: Consumed 10.447s
-    CPU time, 131.3M memory peak, 0B memory swap peak.'
+  result: 'exit=0 ada-embed-bench` (real 403 crash) and the hourly smoke timeouts are real but already carded separately.
+    | devin-task-20261108-103146-timer-ada-scenario-memory-on-i.service: Consumed 10.447s CPU time, 131.3M memory
+    peak, 0B memory swap peak.'
   verified: true
 review_kind: verify
 claim: {}
@@ -471,7 +472,6 @@ auto_close:
   at: 2026-11-08 10:52
   note: verified — evidence checks green, closing itself
 spec: Investigate and resolve the OOM / resource-limit failure of the user systemd service `ada-scenario-memory.service`
-  on host `idc03`. Inspect the service journal logs using `journalctl --user -u ada-scenario-memory.service`
-  on `idc03` to diagnose the root cause of the resource exhaustion. The done-condition is verified when
-  `ada-scenario-memory.service` successfully executes on `idc03` without failing with a resource-limit
-  or OOM exit code.
+  on host `idc03`. Inspect the service journal logs using `journalctl --user -u ada-scenario-memory.service` on
+  `idc03` to diagnose the root cause of the resource exhaustion. The done-condition is verified when `ada-scenario-memory.service`
+  successfully executes on `idc03` without failing with a resource-limit or OOM exit code.
