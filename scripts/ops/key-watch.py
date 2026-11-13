@@ -47,7 +47,9 @@ Usage:
 Env: MDDB_BASE_URL, BOARD_API, KEY_WATCH_STATE, KEY_WATCH_RELAY_URL,
      KEY_WATCH_RELAY_SSH, KEY_WATCH_QUIET (e.g. "0-7"), KEY_WATCH_LOOKBACK_H,
      KEY_WATCH_EXPIRY_WARN_H, KEY_WATCH_QUOTA_WARN_PCT, KEY_WATCH_RESEND_MIN,
-     KEY_WATCH_SSH_TIMEOUT, GEMINI_KEYS_FILE, GEMINI_KEY_VARS, GEMINI_MODEL.
+     KEY_WATCH_SSH_TIMEOUT, GEMINI_KEYS_FILE, GEMINI_KEY_VARS, GEMINI_MODEL,
+     OR_MGMT_KEY_FILE, OR_ACTIVITY_DAILY_WARN_USD, OR_ACTIVITY_ALLOW,
+     OR_ACTIVITY_MODEL_EPS_USD.
 """
 from __future__ import annotations
 
@@ -93,6 +95,29 @@ OR_REMAIN_FLOOR_USD = float(os.environ.get("OR_REMAIN_FLOOR_USD", "0.50"))
 # runs means something is burning fast (embed retry storms). The % check
 # can't see velocity; this can.
 OR_DAILY_JUMP_USD = float(os.environ.get("OR_DAILY_JUMP_USD", "0.25"))
+# Account-level spend attribution via the OR management key — the
+# per-key /auth/key probe sees limit_remaining but not WHICH model or
+# key burned it. 2026-11-13: two cap-drains (~$0.98 + ~$3.39, both
+# google/gemini-embedding-2 via tony-mddb) were only reconstructable
+# from container logs until /api/v1/activity existed here.
+OR_MGMT_KEY_FILE = os.environ.get(
+    "OR_MGMT_KEY_FILE", "~/.config/secrets/or-management.txt")
+# Warn when the most recent completed UTC day's account spend exceeds
+# this — complements the per-key floor because spend can spread across
+# several keys and still be a storm.
+OR_ACTIVITY_DAILY_WARN_USD = float(
+    os.environ.get("OR_ACTIVITY_DAILY_WARN_USD", "0.50"))
+# Model prefixes allowed to show spend in /activity — anything else is
+# an unexpected lane (new key, new consumer, or a leak). Prefix match
+# so dated slugs (…-20251201) still match their family.
+OR_ACTIVITY_ALLOW = tuple(
+    p.strip() for p in os.environ.get(
+        "OR_ACTIVITY_ALLOW", "google/gemini-embedding-2").split(",")
+    if p.strip())
+# Per-model dust floor: an unlisted model below this isn't a lane, it's
+# rounding error (a stray $0.01 test call shouldn't warn forever).
+OR_ACTIVITY_MODEL_EPS_USD = float(
+    os.environ.get("OR_ACTIVITY_MODEL_EPS_USD", "0.05"))
 RESEND_MIN = int(os.environ.get("KEY_WATCH_RESEND_MIN", "240"))
 LOOKBACK_H = float(os.environ.get("KEY_WATCH_LOOKBACK_H", "24"))
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
@@ -511,6 +536,78 @@ def judge(slot: dict, rec: dict) -> dict:
     return {"level": "unknown", "why": f"unhandled kind {slot['kind']}"}
 
 
+def or_activity_fetch(key_file: str = OR_MGMT_KEY_FILE):
+    """-> (rows, err): one GET /api/v1/activity with the management key.
+    The key file holds a bare token (first line). Never logs the value."""
+    try:
+        tok = Path(key_file).expanduser().read_text(
+            errors="replace").splitlines()[0].strip()
+    except Exception as e:
+        return None, f"key file unreadable: {type(e).__name__}"
+    if not tok:
+        return None, "key file empty"
+    req = urllib.request.Request(
+        "https://openrouter.ai/api/v1/activity",
+        headers={"Authorization": "Bearer " + tok})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return (json.loads(r.read()).get("data") or []), None
+    except urllib.error.HTTPError as e:
+        return None, f"HTTP {e.code}"
+    except Exception as e:
+        return None, f"{type(e).__name__}: {e}"
+
+
+def judge_or_activity(rows: list) -> list[dict]:
+    """Aggregate /activity rows -> findings.
+
+    Rows are per-(date, model, endpoint) for COMPLETED UTC days only —
+    today never appears, so partial-day noise can't warn. We judge the
+    most recent date carrying spend:
+      - a model outside OR_ACTIVITY_ALLOW spent money -> warn (unknown
+        lane: new key/consumer or a leak)
+      - total spend over OR_ACTIVITY_DAILY_WARN_USD -> warn (storm
+        ceiling the per-key floor can't see across keys)
+    """
+    by_date: dict[str, dict] = {}
+    for r in rows or []:
+        day = str(r.get("date") or "")[:10]
+        try:
+            cost = float(r.get("usage") or 0)
+        except (TypeError, ValueError):
+            continue
+        if not day or cost <= 0:
+            continue
+        agg = by_date.setdefault(day, {"total": 0.0, "models": {}})
+        agg["total"] += cost
+        m = r.get("model_permaslug") or r.get("model") or "?"
+        agg["models"][m] = agg["models"].get(m, 0.0) + cost
+    if not by_date:
+        return []
+    day = max(by_date)
+    agg = by_date[day]
+    findings = []
+    unexpected = {m: c for m, c in agg["models"].items()
+                  if c >= OR_ACTIVITY_MODEL_EPS_USD
+                  and not any(m.startswith(p) for p in OR_ACTIVITY_ALLOW)}
+    if unexpected:
+        top = ", ".join(f"{m} ${c:.3f}"
+                        for m, c in sorted(unexpected.items(),
+                                           key=lambda x: -x[1])[:3])
+        findings.append({
+            "id": "or-activity-unexpected", "level": "warn",
+            "why": f"OR spend on unlisted model(s) {day}: {top} — "
+                   f"which key/lane? (allowlist: "
+                   f"{','.join(OR_ACTIVITY_ALLOW)})"})
+    if agg["total"] > OR_ACTIVITY_DAILY_WARN_USD:
+        findings.append({
+            "id": "or-activity-daily", "level": "warn",
+            "why": f"OR account spend ${agg['total']:.2f} on {day} "
+                   f"exceeds daily warn ${OR_ACTIVITY_DAILY_WARN_USD:.2f}"
+                   f" — storm or new spender?"})
+    return findings
+
+
 def or_drift_finding(recs: dict) -> dict | None:
     """All OR slots should hold the SAME fleet key — differing fps mean a
     stale slot (the 2026-10-12 ada-*.env sweep miss)."""
@@ -683,6 +780,41 @@ def selftest() -> int:
     assert by_id["ha-tony-ada-mn01"]["level"] == "alert"
     assert by_id["cf-idc03"]["level"] == "ok"
     assert by_id["or-tony-dell"]["level"] == "unknown"
+    # OR /activity attribution fixtures — allowlisted embed spend under
+    # the daily ceiling is clean; an unlisted model or over-ceiling day
+    # warns.
+    act_clean = [
+        {"date": "2026-11-12 00:00:00",
+         "model_permaslug": "google/gemini-embedding-2",
+         "usage": 0.10, "requests": 1400},
+        {"date": "2026-11-11 00:00:00",
+         "model_permaslug": "google/gemini-embedding-2",
+         "usage": 0.97, "requests": 12965},
+    ]
+    assert judge_or_activity(act_clean) == [], \
+        "allowlisted spend under ceiling must be clean"
+    act_bad = act_clean + [
+        {"date": "2026-11-12 00:00:00",
+         "model_permaslug": "anthropic/claude-opus-4.1",
+         "usage": 0.80, "requests": 3},
+    ]
+    act_ids = {f["id"] for f in judge_or_activity(act_bad)}
+    assert "or-activity-unexpected" in act_ids, "unlisted model must warn"
+    assert "or-activity-daily" in act_ids, "over-ceiling day must warn"
+    act_daily_only = [{"date": "2026-11-12 00:00:00",
+                       "model_permaslug": "google/gemini-embedding-2",
+                       "usage": 0.80, "requests": 9000}]
+    act_ids2 = {f["id"] for f in judge_or_activity(act_daily_only)}
+    assert act_ids2 == {"or-activity-daily"}, \
+        "allowlisted over-ceiling spend warns daily only"
+    act_dust = act_clean + [
+        {"date": "2026-11-12 00:00:00",
+         "model_permaslug": "deepseek/deepseek-v3.2-20251201",
+         "usage": 0.012, "requests": 58},
+    ]
+    assert not any(f["id"] == "or-activity-unexpected"
+                   for f in judge_or_activity(act_dust)), \
+        "sub-epsilon unlisted spend is dust, not a lane"
     print("selftest OK")
     return 0
 
@@ -781,6 +913,27 @@ def main() -> int:
                            f"(${float(prev['usage_daily']):.2f}->"
                            f"${ud:.2f}) since {prev['date']}"})
         daily[s["id"]] = {"date": today, "usage_daily": ud}
+
+    # OR account-level attribution — per-key probes can't name the
+    # spender; the management key's /activity can. Missing/rejected key
+    # is 'unknown' (attribution blind), never silent.
+    arows, aerr = or_activity_fetch()
+    if aerr:
+        findings.append({"id": "or-mgmt-key", "level": "unknown",
+                         "why": f"OR activity probe failed: {aerr}"})
+    else:
+        # Emit each (finding, amount/day) signature once — the judged day
+        # is always 'most recent completed UTC day', so without dedup a
+        # known storm re-warns every 6h tick until the day rolls over.
+        # Growing spend changes the signature and re-warns; a new day
+        # gets a fresh signature naturally.
+        act_seen = st.setdefault("or_activity_seen", [])
+        for f in judge_or_activity(arows):
+            sig = f"{f['id']}|{f['why']}"
+            if sig not in act_seen:
+                findings.append(f)
+                act_seen.append(sig)
+        del act_seen[:-50]
 
     gscan = gemini_quota_scan(LOOKBACK_H)
     notes = [f"gemini ops-scan: {len(gscan['hits'])} quota markers "
