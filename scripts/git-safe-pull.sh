@@ -115,6 +115,41 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
 REPO_OK=1
 
 TS="$(date '+%Y%m%d-%H%M%S')"
+
+# Serialize concurrent safe-pulls per checkout (card
+# idc03-served-checkout-stuck-rebase, OPS-0088): kanban-commit and
+# chaba-repo-sync both fire around :00 — two pulls racing is how the
+# phantom rebase-merge below was born. Wait up to 4min (chaba-repo-sync's
+# TimeoutStartSec is 300s), then proceed anyway so a wedged holder
+# cannot stall the lane forever.
+GITDIR_ABS="$(git rev-parse --absolute-git-dir 2>/dev/null \
+  || git rev-parse --git-dir)"
+if command -v flock >/dev/null 2>&1; then
+  { exec {SAFE_PULL_SELF_FD}>>"$GITDIR_ABS/safe-pull.lock"; } 2>/dev/null \
+    || SAFE_PULL_SELF_FD=""
+  if [ -n "$SAFE_PULL_SELF_FD" ]; then
+    flock -w "${SAFE_PULL_SELF_LOCK_WAIT_S:-240}" "$SAFE_PULL_SELF_FD" \
+      || echo "git-safe-pull: self lock held >${SAFE_PULL_SELF_LOCK_WAIT_S:-240}s — proceeding anyway" >&2
+  fi
+fi
+
+# Phantom rebase-state guard (OPS-0088): a pull killed after autostash
+# creation but before the state files leaves .git/rebase-merge holding
+# ONLY `autostash` — git then reports "rebasing" forever and
+# kanban-commit refuses every tick. A real rebase-merge always has
+# onto/head-name, a real rebase-apply always has next/last; a dir with
+# none of those never started. Move it aside (evidence kept inside .git)
+# instead of refusing forever.
+for _st in rebase-merge rebase-apply; do
+  if [ -d "$GITDIR_ABS/$_st" ] \
+     && [ ! -f "$GITDIR_ABS/$_st/onto" ] \
+     && [ ! -f "$GITDIR_ABS/$_st/head-name" ] \
+     && [ ! -f "$GITDIR_ABS/$_st/next" ] \
+     && [ ! -f "$GITDIR_ABS/$_st/last" ]; then
+    mv "$GITDIR_ABS/$_st" "$GITDIR_ABS/${_st}.phantom-$TS" \
+      && echo "git-safe-pull: cleared phantom $_st state -> ${_st}.phantom-$TS" >&2
+  fi
+done
 GENERATED_RE="${SAFE_PULL_GENERATED_RE:-^docs/ssot/|^reports/SSOT_OPTIMIZATION_WARNINGS\.json$}"
 GC_DAYS="${SAFE_PULL_AUTOSTASH_GC_DAYS:-7}"
 ARCHIVE_DIR="${SAFE_PULL_STASH_ARCHIVE:-$HOME/.local/share/chaba-stash-archive}"
