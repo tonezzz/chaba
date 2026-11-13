@@ -1,7 +1,7 @@
 id: or-management-key-activity
 title: OR management key for per-call activity attribution
 column: backlog
-updated: 2026-11-13 18:15
+updated: 2026-11-13 21:15
 spec: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
   is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
   tooling.'
@@ -29,6 +29,13 @@ comms:
     403 ''Only management keys can fetch activity'', /api/v1/keys -> 401 invalid. Management keys are a separate
     credential created in the OR dashboard (provisioning/management section), not a normal sk-or-v1 chat key. Still
     needs the right key type.'
+- at: 2026-11-13 21:15
+  from: devin
+  text: 'DONE 2026-11-13. Tony minted the management key → ~/.config/secrets/or-management.txt (dell + copied to
+    idc03, declared in ssot.secrets.yml as openrouter-mgmt-key). Verified live: /api/v1/activity + /api/v1/keys
+    return 200 (regular keys get 401/403).\n\nSHIPPED chaba 7c975e3204a: key-watch.py now pulls /activity each run
+    — warns on unlisted-model spend (OR_ACTIVITY_ALLOW, default google/gemini-embedding-2 only) and most-recent-completed-day
+    totals >bash.50 (OR_ACTIVITY_DAILY_WARN_USD); sub-$0.05'
 requests:
 - id: create-an-openrouter-management-key-dash-bae1d6
   ask: Create an OpenRouter management key (dashboard -> Keys -> management) so /api/v1/activity gives per-call
