@@ -1,7 +1,7 @@
 id: kk-mac-auto-lane-classifier
 title: Auto-route bounded task classes to kk_mac_local at queue time
 column: doing
-updated: 2026-11-13 17:25
+updated: 2026-11-13 17:45
 brief: Cards with bounded read-only task classes (summary/operator_brief/structured_extract/safe_route) should auto-get
   executor=kk_mac_local instead of requiring an explicit pin.
 priority: medium
@@ -41,3 +41,8 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-13 17:45
+  from: devin
+  text: 'implemented: dr.kk_mac_route() auto-pins executor=kk_mac_local at queue time (board-api _apply_classify_at_queue
+    + runner claim-time JEV_LANE parity, do_claim persists task_class). Guards: no executor/lane/host pin, admitted
+    class or unambiguous kw, no mutation intent, prompt<=6000. 21 new tests; targeted suite green, full suite running.'
