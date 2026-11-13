@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: review
-updated: 2026-11-13 20:40
+updated: 2026-11-13 20:44
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -72,6 +72,14 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261113-202232-card-judgment-eval-done-2026-1 on tony-dell still dirty
     — 1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-13 20:44
+  from: devin
+  text: 'answered approve-gateway-leg-placement-proposal-i-9310b0: a — approved by Tony in chat; DEPLOYED 2026-11-13
+    20:45: summary/classify/bench leg1=qwen2.5:32b@kkmac, chat-local leg2=kkmac behind tonydell-qwen7b, tool-call
+    unchanged. Verified live via x-litellm-m'
+- at: 2026-11-13 20:44
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: chaba
@@ -84,6 +92,7 @@ action:
   verified: false
   sweep:
     stale_running: 2026-11-13 20:40
+    dirty: 1
 requests:
 - id: approve-gateway-leg-placement-proposal-i-9310b0
   ask: 'Approve gateway leg placement? Proposal in docs/ssot/jobs/devnest/2026-11-13-kk-mac-routing-proposal.yml.
@@ -91,11 +100,15 @@ requests:
     deferred to leg 3 pending 3-run gate (reversible, $0 to test); (b) canary only — bench+chat-local legs, leave
     summary/classify on paid until rerun gate; (c) no gateway legs yet — executor lane only, revisit after 3 qualifying
     runs.'
-  status: open
+  status: answered
   at: 2026-11-13 20:29
   from: devin
   options:
   - proceed
   - hold
+  answer: 'a — approved by Tony in chat; DEPLOYED 2026-11-13 20:45: summary/classify/bench leg1=qwen2.5:32b@kkmac,
+    chat-local leg2=kkmac behind tonydell-qwen7b, tool-call unchanged. Verified live via x-litellm-model-api-base=:11445,
+    $0.00, ~250ms.'
 review_kind: verify
 claim: {}
+awaiting_action: true
