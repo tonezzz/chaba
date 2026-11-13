@@ -1,7 +1,7 @@
 id: or-management-key-activity
 title: OR management key for per-call activity attribution
 column: backlog
-updated: 2026-11-12 17:53
+updated: 2026-11-13 18:15
 spec: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
   is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
   tooling.'
@@ -23,6 +23,12 @@ comms:
 - at: 2026-11-12 17:53
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-13 18:15
+  from: devin
+  text: 'The file at secrets/ada-management.txt is a regular API key, not a management key: /api/v1/activity ->
+    403 ''Only management keys can fetch activity'', /api/v1/keys -> 401 invalid. Management keys are a separate
+    credential created in the OR dashboard (provisioning/management section), not a normal sk-or-v1 chat key. Still
+    needs the right key type.'
 requests:
 - id: create-an-openrouter-management-key-dash-bae1d6
   ask: Create an OpenRouter management key (dashboard -> Keys -> management) so /api/v1/activity gives per-call
