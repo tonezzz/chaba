@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-memory-sync
 title: Timer ada-memory-sync on idc03 failing
-column: backlog
-updated: 2026-11-13 11:24
+column: done
+updated: 2026-11-13 12:13
 priority: high
 tags:
 - timer-alert
@@ -266,6 +266,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-13 11:03) of `ada-memory-sync.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u ada-memory-sync.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 12:13
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-13 12:04 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-13 12:13
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of the `ada-memory-sync.service` timer on host `idc03` which failed with exit-code
   on 10-16 14:00. The runner must inspect the journal using `journalctl --user -u ada-memory-sync.service` on `idc03`
   and reference the CMS `timer-timeline-idc03`. The done-condition is verified when the root cause of the exit-code

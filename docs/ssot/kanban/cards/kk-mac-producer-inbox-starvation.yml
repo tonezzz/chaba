@@ -1,0 +1,72 @@
+id: kk-mac-producer-inbox-starvation
+title: kk-mac capacity producer starves on 103-file inbox — new specs never staged
+column: done
+updated: 2026-11-13 15:06
+priority: medium
+tags:
+- devnest,kk-mac
+spec: 'Found 2026-11-13 while checking why kk-mac lane was idle.
+
+
+  SYMPTOM: gdrive:ada-nest/kk-llm/inbox/ holds 103 task specs (report-review-* etc, newest 2026-11-13) but packs/
+  has produced nothing new since 2026-11-12; queue_before stuck at 1.
+
+
+  ROOT CAUSE (scripts/devnest/kk_mac_capacity_producer.py):
+
+  1. Starvation: produce() iterates inbox files in rclone-lsf order and calls load_task() (an `rclone cat` per file,
+  ~5-20s each over gdrive) BEFORE the cheap `pack_name in existing_packs` check. With 90s budget it reaches only
+  ~17 files/run; every run re-validates the same already-staged head of the list and hits budget_exhausted before
+  reaching the ~86 unstaged specs. Runs every 5min forever, never converging.
+
+  2. Inbox is never drained — consumed specs stay in inbox/ forever, so the already_staged re-check cost repeats
+  every run and grows with the backlog.
+
+  3. Wedged pack: kk-mac-task-report-review-a8ff708e96d4/ exists on Drive but is EMPTY (dir created 2026-10-31,
+  rclone copy died mid-upload). pack_name in existing_packs -> its inbox spec reports already_staged forever, and
+  the hollow dir counts as a live pack (queue_before=1 of max-depth 3) since it can never get done/failed.
+
+
+  FIX OPTIONS:
+
+  - Reorder: check pack existence BEFORE load_task (task_id == filename stem for report-review specs — verified),
+  or skip cat entirely when a marker file (e.g. inbox .staged) exists.
+
+  - Drain/move consumed inbox specs to inbox/done/ so the listing shrinks.
+
+  - Treat empty pack dirs (no pack.yml) as not-staged so a8ff can re-stage; or have submit verify upload.
+
+  - Alternatively batch: single rclone cat of a manifest, or raise budget within the 4m unit timeout.
+
+
+  VERIFY: after fix, producer log shows staged:[...] non-empty and new kk-mac-task-report-review-* packs appear
+  on Drive; kk-mac (ollama lane) claims and completes them.'
+ref: OPS-0083
+comms:
+- at: 2026-11-13 13:59
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-13 14:05
+  from: devin
+  text: 'Fix implemented on branch fix/kk-mac-producer-starvation (commit 09c4bda501): pack_listing now requires
+    pack.yml (empty failed-upload dirs no longer wedge specs or queue slots) and produce() rejects already-staged
+    specs on the filename-derived pack name before paying an rclone cat. New tests/devnest/test_kk_mac_producer.py
+    (4 cases); 235 devnest tests pass. Live --dry-run verified: queue_before 1->0 and unstaged report-review specs
+    now stage within budget. Awaiting merge to master to deploy via '
+- at: 2026-11-13 14:15
+  from: devin
+  text: DEPLOYED + verified live. Merged to master as 8d159eba25 (fast-forward); tony-dell chaba-repo-sync pulled
+    it ~14:09. First fixed run at 14:13 staged 3 real packs (kk-mac-task-report-review-368818c08427 / 3ab1ed577f17
+    / 4476519d7c42) — all confirmed on Drive with pack.yml+inputs/task.json. queue_before now 0 (empty a8ff dir
+    no longer counted; its spec will re-stage once a queue slot frees). ~86-spec backlog drains at max-new 3 per
+    5min.
+- at: 2026-11-13 14:15
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-13 15:04
+  from: devin
+  text: moved review -> done
+review_kind: verify
+action:
+  status: done
+claim: {}

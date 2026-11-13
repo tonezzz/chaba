@@ -1,0 +1,99 @@
+id: chaba-merge-gate-ada-drops-rot-audit
+title: Chaba merge gate still red — audit & repair all rotted ada-voice drops
+column: done
+updated: 2026-11-13 13:12
+brief: After ADA-0080's cast-loop repair the gate now fails on test_correction_command; 12 patches diverged vs ada-voice
+  07119b1 — fix all rotted drops in one pass.
+priority: high
+spec: 'Evidence 2026-11-13: after ADA-0080 repaired drop 10 (cast-loop), the dispatch merge gate (python3 -m pytest
+  tests -q) held branch dispatch/20261113-123251-evidence-2026-11-13-clean-orig with tests/ada/test_correction_command.py::test_patches_apply_and_directive_tests_pass
+  failing. Audit of all 50 integrations/ada-voice patches on origin/master against ada-voice main @ 07119b1 (depth-1
+  clone; git apply --check / -R --check, same tri-state as tests/ada/_drops.py) found 12 diverged: backend/line_relay.file-doc-ingest.patch,
+  backend/line_relay.image-delivery.patch, backend/line_relay.reply-routing.patch, backend/line_relay.voice-enroll-recognize.patch,
+  backend/line_relay.whisper-url.patch, backend/realtime_provider.cast-loop.patch (ALREADY repaired on ADA-0080''s
+  branch — do not duplicate; if it has merged, just verify), backend/realtime_provider.correction-command.patch,
+  backend/tg_relay.reply-routing.patch, backend/tg_relay.whisper-url.patch, backend/tool_runner.reply-routing.patch,
+  pwa_server.reply-routing.patch, ssot.tool-surface.cpt-post.patch. drop_guard_ok fails per drop when a patch diverges
+  and no sibling merged (pending drop on rotted base). voice-enroll-recognize and whisper-url patches are not referenced
+  by any tests/ada file — check whether they belong to a drop with a guard elsewhere or are orphaned. Done-condition:
+  on clean origin/master, python3 -m pytest tests/ada -q -rf is green (every remaining failure is a genuinely unrelated
+  pre-existing non-drop issue, carded separately). For each rotted drop: verify the drop''s intent is still absent
+  upstream (else it merged — mark merged/retire), then either rebase/repair the patch against current ada-voice
+  (method from ADA-0080: clone ada-voice inside the worktree, re-apply the intended change at the surviving anchor,
+  git diff -> patch; keep added lines byte-identical) or intentionally retire/mark the drop with README + test updates.
+  Update integrations/ada-voice/README.md per drop and file a job record under docs/ssot/jobs/ada/. Verify by the
+  full tests/ada suite passing on the dispatch branch so the merge gate goes green.'
+action:
+  type: dispatch
+  repo: chaba
+  lane: paid_frontier
+  status: done
+  model: litellm/gemini-2.5-flash
+  runner: idc02
+  result: 'exit=0 ackages — the merge gate itself runs on the merge-sweep host, where the suite should now go green.
+    | devin-task-20261113-124849-evidence-2026-11-13-after-ada-.service: Consumed 2min 13.642s CPU time, 980.9M
+    memory peak, 0B memory swap peak.'
+  verified: true
+ref: AUD-0081
+comms:
+- at: 2026-11-13 12:48
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-13 12:48
+  from: idc02
+  text: claimed
+- at: 2026-11-13 12:49
+  from: chaba
+  text: 'idc03 defers: host overloaded (5m load/core 1.53 > 0.85)'
+- at: 2026-11-13 12:49
+  from: chaba
+  text: started devin-task-20261113-124849-evidence-2026-11-13-after-ada- on idc02 (dispatch)
+- at: 2026-11-13 12:49
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.38 > 1.0)'
+- at: 2026-11-13 12:49
+  from: devin
+  text: '[evidence dispatch] started — auditing 12 diverged ada-voice patches, repairing drop bases per ADA-0080
+    method'
+- at: 2026-11-13 12:57
+  from: devin
+  text: '[evidence dispatch] DONE: re-audited all 50 patches vs ada-voice main @ 8223b56 (moved +18 since 07119b1).
+    Zero rotted pending drops — cast-loop + correction-command apply again (ADA-0080 repair already on master via
+    PR #138); all 10 other diverged patches are post-merge drift on deployed drops 2/5/7/8/9/12 — marked record
+    copies in README, no repair needed. voice-enroll + whisper-url confirmed unguarded-but-deployed (drops 5/9).
+    tests/ada: 270 passed, 1 pre-existing skip. Committed on dispatch '
+- at: 2026-11-13 12:58
+  from: idc02
+  text: 'finished (ok): exit=0 ackages — the merge gate itself runs on the merge-sweep host, where the suite should
+    now go green. | devin-task-2'
+- at: 2026-11-13 12:58
+  from: chaba
+  text: 'session-end checkpoint 12ecde4c: 1 leftover file(s) committed'
+- at: 2026-11-13 12:58
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-13 12:58
+  from: chaba
+  text: pushed dispatch/20261113-124849-evidence-2026-11-13-after-ada- to origin
+- at: 2026-11-13 12:58
+  from: chaba
+  text: 'test gate skipped: pytest unavailable — fail-open'
+- at: 2026-11-13 12:58
+  from: chaba
+  text: auto-merged 5b9e58a6 (dispatch/20261113-124849-evidence-2026-11-13-after-ada-) → origin/master
+- at: 2026-11-13 12:58
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261113-124849-evidence-2026-11-13-after-ada-,
+    branch dispatch/20261113-124849-evidence-2026-11-13-after-ada-'
+- at: 2026-11-13 13:12
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-13 13:12
+  from: chaba
+  text: 'merge-sweep: verified — auto-closed (column -> done)'
+review_kind: verify
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-13 13:11
+  note: verified — evidence checks green, closing itself

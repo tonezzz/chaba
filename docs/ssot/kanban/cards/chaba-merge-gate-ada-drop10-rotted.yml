@@ -1,0 +1,113 @@
+id: chaba-merge-gate-ada-drop10-rotted
+title: Chaba merge gate red — ada-voice drop 10 cast-loop patch rotted
+column: done
+updated: 2026-11-13 13:28
+brief: tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean fails on clean origin/master, holding unrelated
+  dispatch merges.
+priority: high
+program: ada-voice
+tags:
+- chaba
+- ada-voice
+- merge-gate
+- drop-10
+- tests
+spec: 'Evidence 2026-11-13: clean origin/master worktree run `python3 -m pytest tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
+  -q` fails. Patch states: backend/screens.delivered-zero.patch=applies, backend/ha.unavailable-precheck.patch=applies,
+  backend/tool_runner.goal-loop.patch=applies, backend/common.goal-loop.patch=applies, backend/tool_guide.target-fidelity.patch=applies,
+  backend/realtime_provider.cast-loop.patch=diverged. tests/ada/_drops.py drop_guard_ok fails because one patch
+  diverged and no sibling merged — i.e. staged ada-voice drop 10 (ADA-0684 / e125a5b5cf) has a rotted pending base.
+  This held kk-mac-supervised-probe-20261113 merge (kk_mac_local artifact+verifier passed) and previously hit kk-mac-lane-live-probe
+  on 2026-11-12. Done-condition: either rebase/repair integrations/ada-voice drop 10 against current ada-voice so
+  the guard passes, or intentionally retire/mark the drop with README/test updates; verified by the single test
+  passing on clean origin/master and a subsequent unrelated dispatch merge unblocked.'
+action:
+  type: dispatch
+  repo: chaba
+  lane: paid_frontier
+  status: done
+  model: litellm/gemini-2.5-flash
+  runner: tony-omen
+  sweep:
+    stale_running: 2026-11-13 12:37
+    dirty: 2
+  result: 'exit=0 run — so the guard is green and the held dispatch merges should unblock once this lands. | devin-task-20261113-123251-evidence-2026-11-13-clean-orig.service:
+    Consumed 1min 8.232s CPU time over 4min 32.207s wall clock time, 1.2G memory peak.'
+  verified: false
+ref: ADA-0080
+comms:
+- at: 2026-11-13 12:23
+  from: devin
+  text: carded from kk_mac_local lane verification — unrelated test gate failure is now the blocker for verified
+    merges
+- at: 2026-11-13 12:32
+  from: devin
+  text: re-spawned from report page
+- at: 2026-11-13 12:32
+  from: tony-omen
+  text: claimed
+- at: 2026-11-13 12:33
+  from: chaba
+  text: started devin-task-20261113-123251-evidence-2026-11-13-clean-orig on tony-omen (dispatch)
+- at: 2026-11-13 12:33
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-13 12:36
+  from: devin
+  text: 'repaired: realtime_provider.cast-loop.patch rebased vs ada-voice 07119b1 (context-line rot only — upstream
+    rewrote the adjacent instructions bullet; the 3 added bullets unchanged). test_patches_apply_clean + full scenario
+    test both pass now. README drop-10 base updated.'
+- at: 2026-11-13 12:36
+  from: devin
+  text: 'repaired: realtime_provider.cast-loop.patch rebased vs ada-voice 07119b1 (context-line rot only — upstream
+    rewrote the adjacent instructions bullet; the 3 added bullets unchanged). test_patches_apply_clean + full scenario
+    test both pass. README drop-10 base updated.'
+- at: 2026-11-13 12:37
+  from: chaba
+  text: 'merge-sweep: devin-task-20261113-123251-evidence-2026-11-13-clean-orig no longer active on tony-omen but
+    card still says running — sweeping its branch'
+- at: 2026-11-13 12:37
+  from: chaba
+  text: 'merge-sweep: worktree dispatch-wt-20261113-123251-evidence-2026-11-13-clean-orig on tony-omen still dirty
+    — 2 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-13 12:43
+  from: tony-omen
+  text: 'finished (ok): exit=0 run — so the guard is green and the held dispatch merges should unblock once this
+    lands. | devin-task-20261113-12'
+- at: 2026-11-13 12:43
+  from: chaba
+  text: 'session-end checkpoint 7b2532f5: 2 leftover file(s) committed'
+- at: 2026-11-13 12:43
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-13 12:43
+  from: chaba
+  text: pushed dispatch/20261113-123251-evidence-2026-11-13-clean-orig to origin
+- at: 2026-11-13 12:43
+  from: chaba
+  text: 'test gate failed — merge held: tests/ada/test_correction_command.py::test_patches_apply_and_directive_tests_pass'
+- at: 2026-11-13 12:43
+  from: chaba
+  text: 'worktree kept: dirty — 1 uncommitted file(s)'
+- at: 2026-11-13 12:48
+  from: devin
+  text: 'merge held again — now tests/ada/test_correction_command.py::test_patches_apply_and_directive_tests_pass.
+    Pre-existing rot, not this branch: vs ada-voice 07119b1, realtime_provider.correction-command.patch=diverged
+    (tool_guide sibling applies, none merged). Audit found 12 diverged patches total; filing a comprehensive repair
+    card.'
+- at: 2026-11-13 13:16
+  from: devin
+  text: 'update 2026-11-13 ~13:1x: tony-omen ada-voice checkout fast-forwarded to origin/main @ 8223b56 (was 07119b1,
+    18 behind). Re-check vs that base: chaba master realtime_provider.cast-loop.patch now APPLIES forward (upstream
+    drift un-rotted it) and correction-command.patch applies too — master gate should be green. BUT this branch''s
+    repaired cast-loop.patch now DIVERGES @ 8223b56: merging it would re-rot test_cast_loop_breaker. Recommend:
+    do NOT merge this branch — close as superseded (upstream drif'
+- at: 2026-11-13 13:27
+  from: devin
+  text: closed by devin
+- at: 2026-11-13 13:28
+  from: devin
+  text: closed by devin
+review_kind: verify
+claim: {}
