@@ -46,6 +46,10 @@ routing:
       ~/.config/secrets/jules.env)"
     NLM_LANES: "1 = executor=nlm_batch cards claimable (needs
       ~/.local/bin/nlm + ~/.notebooklm profile)"
+    KK_MAC_LANES: "1 = this runner serves executor=kk_mac_local (needs
+      scripts/devnest/kk_mac_executor.py + a live Ada Nest heartbeat);
+      queue-time classification auto-pins bounded read-only classes —
+      dr.kk_mac_route, card kk-mac-auto-lane-classifier"
   never_dispatched: manual (Tony's hands — hardware, spend, accounts)
 
 lanes:
@@ -356,6 +360,53 @@ lanes:
     escalation: >-
       auth expiry/quota window -> verified=False review, human reruns
       or reroutes; never a silent devin fallback
+
+  kk_mac_local:
+    label: KK-Mac bounded read-only LLM lane — KKs-Mac-Studio ollama
+    status: live (OPS-0079 supervised probe passed 2026-11-13; auto-route
+      added same day, card kk-mac-auto-lane-classifier)
+    plane: work
+    executor: >-
+      action.executor=kk_mac_local — try-first, not strict: the lane
+      gets one shot per claim; heartbeat stale/ollama down/node busy/
+      invalid output all fail closed and the SAME claim continues on
+      the next lane (action.kk_mac_tried consumed). Since
+      kk-mac-auto-lane-classifier the pin is normally written by
+      queue-time classification (dr.kk_mac_route): no executor/lane/
+      host pin + admitted task_class (declared or unambiguous prompt
+      keywords) + no mutation intent + prompt <=6000 chars. Authors
+      may still pin it explicitly; every other executor pin, lane pin,
+      host pin, or side-effect ask keeps the normal classifier.
+      Execution is scripts/devnest/kk_mac_executor.py run over
+      ssh+ollama /api/generate (kk_mac_llm.py) — no shell, no code
+      mutation, no publish; the artifact is the only write.
+    task_classes:
+      - "summary | operator_brief | structured_extract | safe_route
+        (mirrors kk_mac_llm.ALLOWED_TASKS / dr.KK_MAC_TASK_CLASSES)"
+      - "NOT repo writes beyond the bounded artifact, NOT infra
+        mutation — the class bound is the safety surface"
+    verifier: >-
+      independent deterministic check (kk_mac_executor.verify): JSON
+      parses for the JSON classes + expect.required_keys/enums/facts;
+      verdict=pass only when the artifact landed under
+      evals/kk-mac-lane/out/ | reports/ | docs/reports/ AND all checks
+      pass — finish_kk_mac_lane gates the merge on it
+    target_host: >-
+      any runner with KK_MAC_LANES=1 + the devnest checkout + kk-mac
+      ssh access (tony-omen proven OPS-0079); claimable() on other
+      hosts defers while the lane probe is live, claims as next-lane
+      when ineligible
+    expected_cost: "$0 marginal — local ollama on KKs-Mac-Studio"
+    expected_tokens: "qwen3:8b default; prompt <=6000 chars
+      (MAX_PROMPT_CHARS)"
+    evidence_artifact: >-
+      evals/kk-mac-lane/out/<card>.json (usage/admission/response/
+      verdict) + taskdir kk_mac_result.json + verdict.json +
+      kk_mac.log
+    escalation: >-
+      every decline -> same-claim fallback to the next lane (never a
+      starved card); contract violation (unadmitted class, artifact
+      outside roots) -> verdict=fail, merge held for a human
 
   devin:
     label: Devin default — fallback + heavy lane

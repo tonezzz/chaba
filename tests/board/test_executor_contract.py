@@ -1162,6 +1162,73 @@ class KkMacBoardApiTest(unittest.TestCase):
                                  "task_class": "summary"}},
                      "only valid with")
 
+    def test_bare_task_class_is_the_auto_route_hint(self):
+        """kk-mac-auto-lane-classifier: a bare task_class (no executor
+        pin) is accepted as the auto-route hint — queue-time
+        classification pins executor=kk_mac_local for it."""
+        res = self.mod.do_create(
+            {"id": "c-hint", "title": "t",
+             "action": {"type": "dispatch", "task_class": "summary",
+                        "prompt": "summarize this"}},
+            "devin")
+        import yaml
+        saved = yaml.safe_load((Path(self.td.name) / "c-hint.yml")
+                               .read_text())
+        self.assertEqual(saved["action"]["task_class"], "summary")
+        self.assertNotIn("executor", saved["action"])
+
+    def test_bare_unadmitted_task_class_rejected(self):
+        self.rejects({"id": "c-bad", "title": "t",
+                      "action": {"type": "dispatch",
+                                 "task_class": "code_mutation"}},
+                     "only valid with")
+
+    def test_create_queue_true_auto_routes(self):
+        """The do_create queue:true path runs the same queue-time
+        classification — a spawned card with a bare admitted task_class
+        comes out pinned to executor=kk_mac_local."""
+        self.mod.do_create(
+            {"id": "c-spawn", "title": "t", "queue": True,
+             "action": {"type": "dispatch", "task_class": "summary",
+                        "prompt": "summarize this"}},
+            "devin")
+        import yaml
+        saved = yaml.safe_load((Path(self.td.name) / "c-spawn.yml")
+                               .read_text())
+        a = saved["action"]
+        self.assertEqual(a["status"], "queued")
+        self.assertEqual(a["executor"], "kk_mac_local")
+        self.assertEqual(a["task_class"], "summary")
+        self.assertTrue(any("auto-routed" in c["text"]
+                            for c in saved["comms"]))
+
+    def test_claim_persists_kk_mac_route(self):
+        """The claim-time auto-route persists executor+task_class
+        atomically with the claim."""
+        card = {"id": "c-kkclaim",
+                "action": {"type": "dispatch", "status": "queued"}}
+        self.mod.do_claim(card, {"host": "h1",
+                                 "executor": "kk_mac_local",
+                                 "task_class": "summary"})
+        a = card["action"]
+        self.assertEqual(a["executor"], "kk_mac_local")
+        self.assertEqual(a["task_class"], "summary")
+
+    def test_claim_task_class_requires_kk_mac(self):
+        for body in ({"host": "h1", "task_class": "summary"},
+                     {"host": "h1", "executor": "devin",
+                      "task_class": "summary"},
+                     {"host": "h1", "executor": "kk_mac_local",
+                      "task_class": "code_mutation"}):
+            card = {"id": "c-kkclaim-bad",
+                    "action": {"type": "dispatch", "status": "queued"}}
+            try:
+                self.mod.do_claim(card, body)
+            except ValueError as e:
+                self.assertIn("task_class", str(e))
+                continue
+            raise AssertionError(f"expected ValueError for {body}")
+
     def test_kk_mac_artifact_roots(self):
         self.rejects({"id": "c-bad", "title": "t",
                       "action": {"type": "dispatch",

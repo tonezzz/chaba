@@ -307,6 +307,94 @@ def classify_lane(card: dict, with_detail: bool = False):
             else "devin"  # jevos down -> safe default, not None
 
 
+# --- kk_mac auto-route (card kk-mac-auto-lane-classifier, OPS-0079
+# follow-up; decision standard rank 3 in ssot.repo-decision.yml) -------
+# Bounded read-only task classes self-route to executor=kk_mac_local at
+# queue time instead of needing an author pin. The lane contract is the
+# safety surface (bounded class + prompt cap + no shell/publish), so the
+# keyword map stays narrow: only unambiguous asks infer a class; every
+# other card keeps the normal lane classifier. Try-first keeps this
+# safe — a wrong route costs one admission probe, then the claim runs
+# the next lane.
+KK_MAC_MAX_PROMPT_CHARS = 6000  # mirrors kk_mac_llm.MAX_PROMPT_CHARS
+KK_MAC_ROUTE_KW = {
+    "summary": ("summar", "recap", "tl;dr", "tl dr"),
+    "operator_brief": ("operator_brief", "operator brief",
+                       "ops brief", "status brief"),
+    "structured_extract": ("structured_extract", "extract the",
+                           "extract a ", "extract key", "pull out"),
+    "safe_route": ("safe_route", "which lane", "route this",
+                   "triage this", "classify this", "categorize this",
+                   "categorise this"),
+}
+# mutation/side-effect intent — any hit keeps the card off the
+# read-only lane no matter which class matched. Deliberately not in
+# the list: write/edit/produce (authoring a report artifact is the
+# lane's own output) and bare service/code mentions (a summary ABOUT
+# a service is read-only).
+KK_MAC_MUTATING_RE = re.compile(
+    r"\b(push|deploy|commit|merges?\b|merged\b|merging\b|restart|"
+    r"systemctl|install|uninstall|delete|remove|purge|refactor|"
+    r"implement|modify|patch|migrat\w*|kill|reboot|shutdown|chmod|"
+    r"chown|ssh|scp|rsync|podman|docker|sudo|git\s+(push|commit|"
+    r"merge)|fix|add|upgrade)\b")
+
+
+def kk_mac_prompt(card: dict) -> str:
+    """The prompt the kk_mac lane would run — same resolution order as
+    runner-agent.start_kk_mac_lane: action.prompt, then spec, then
+    title+note."""
+    a = card.get("action") or {}
+    return (str(a.get("prompt") or "").strip()
+            or str(card.get("spec") or "").strip()
+            or f"{card.get('title', '')}\n\n{card.get('note', '')}"
+            .strip())
+
+
+def kk_mac_route(card: dict) -> str:
+    """Bounded-lane auto-route: the kk_mac_local task class this card
+    should pin at queue time, or "" to leave routing alone. A card
+    routes only when ALL hold:
+
+      - nothing is already routed: no action.executor, no action.lane
+        (any declaration is the author's own routing and wins);
+      - no host pin: action.host/target_host/runner all unset — a
+        pinned card must run where it says;
+      - dispatch-typed (the only type the lane serves);
+      - an admitted task class — action.task_class when declared, else
+        inferred from unambiguous prompt keywords;
+      - no mutation/side-effect intent in the card text;
+      - the resolved prompt fits the lane's 6000-char budget.
+    """
+    a = card.get("action") or {}
+    if str(a.get("type") or "dispatch") != "dispatch":
+        return ""
+    if a.get("executor") or a.get("lane"):
+        return ""
+    if a.get("host") or a.get("target_host") or a.get("runner"):
+        return ""
+    tc = str(a.get("task_class") or "").strip()
+    if tc and tc not in KK_MAC_TASK_CLASSES:
+        return ""  # declared but unadmitted — never guess a route
+    text = " ".join(str(x) for x in
+                    (card.get("title"), card.get("brief"),
+                     card.get("spec"), card.get("note"),
+                     a.get("prompt")) if x).lower()
+    if KK_MAC_MUTATING_RE.search(text):
+        return ""
+    if not tc:
+        for cls, kws in KK_MAC_ROUTE_KW.items():
+            if any(k in text for k in kws):
+                tc = cls
+                break
+        if not tc:
+            return ""
+    prompt = kk_mac_prompt(card)
+    if not prompt or len(prompt) > KK_MAC_MAX_PROMPT_CHARS:
+        return ""
+    return tc
+
+
 def repos() -> dict:
     """{name: {"path": Path, "default_branch": str}} — repos.conf wins."""
     table = {k: {"path": Path(v[0]).expanduser(), "default_branch": v[1]}
