@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-13 23:24
+updated: 2026-11-13 23:35
 priority: high
 tags:
 - timer-alert
@@ -653,6 +653,11 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-13 23:00) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
     journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 23:35
+  from: devin
+  text: 'RECOVERED 2026-11-13 ~20:20: manual embed-probe run shows transition down->up, consec_fail=0, state=up,
+    reindex triggered. Root cause was provider exhaustion (gemini circuit open + OR daily cap) — the new paid-Gemini
+    leg (gemini-proxy-paid-last-resort-leg, deployed same day) now covers free-key outages. 312-fail streak ended.'
 action:
   status: done
   type: dispatch
