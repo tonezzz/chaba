@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: backlog
-updated: 2026-11-13 11:24
+updated: 2026-11-13 11:29
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -30,6 +30,13 @@ comms:
   from: devin
   text: 'raised request model-auth-remediation: How should we fix the selected model authentication failure for
     Ada OpenChamber sessions? The new-session request succee'
+- at: 2026-11-13 11:29
+  from: devin
+  text: 'Follow-up verified 2026-11-12: OpenChamber New session blank view is draft-only; one approved prompt created
+    session ses_e2cdde286ffeAKJswC0WhnOnhS (then PATCH-titled OpenChamber diagnostic - new-session smoke test -
+    2026-11-12). POST /api/session/<id>/prompt returned 200, but model failed immediately with Authentication Error,
+    No api key passed in; no assistant response or tool call. Actual project config (/home/tony/DevNest-ada-agent/opencode.json)
+    selects litellm/gemini-3.5-flash-lite and ref'
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
