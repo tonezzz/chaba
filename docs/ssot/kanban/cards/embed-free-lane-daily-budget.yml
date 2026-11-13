@@ -1,0 +1,20 @@
+id: embed-free-lane-daily-budget
+title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
+column: backlog
+updated: 2026-11-13 23:11
+brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
+  → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
+  still exhaust the day by noon, starving interactive/query embeds until reset.
+priority: medium
+tags:
+- embeddings,quota,spend
+spec: 'Goal: bulk/index embedding work must not starve the free lane''s daily quota. Options: (a) mddbd-side daily
+  embed budget — count provider calls/day per worker, defer index jobs past budget while letting query embeds through
+  (needs query/index job distinction — check if EmbeddingJob carries it); (b) proxy-side pacing — gemini-ollama-proxy
+  token-buckets the Gemini leg to spread bulk calls across the day; (c) accept — quota resets daily, OR fallback
+  capped at ~$0.10/day covers overflow. Decide where the budget lives and whether query embeds get priority.'
+ref: MEM-0108
+comms:
+- at: 2026-11-13 23:11
+  from: tony
+  text: card captured via board-api
