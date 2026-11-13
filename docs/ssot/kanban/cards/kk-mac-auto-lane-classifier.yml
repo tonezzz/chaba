@@ -1,0 +1,31 @@
+id: kk-mac-auto-lane-classifier
+title: Auto-route bounded task classes to kk_mac_local at queue time
+column: backlog
+updated: 2026-11-13 17:24
+brief: Cards with bounded read-only task classes (summary/operator_brief/structured_extract/safe_route) should auto-get
+  executor=kk_mac_local instead of requiring an explicit pin.
+priority: medium
+spec: 'Goal: cards with bounded read-only task classes should auto-route to executor=kk_mac_local at queue time
+  instead of requiring the author to pin action.executor. Context: OPS-0079 (kk-mac-supervised-probe-20261113) proved
+  the lane end-to-end; kk_mac_local contract lives in scripts/devnest/kk_mac_llm.py (ALLOWED_TASKS = summary, operator_brief,
+  structured_extract, safe_route; MAX_PROMPT_CHARS=6000) and scripts/devnest/kk_mac_executor.py; runner side in
+  scripts/board/runner-agent.py (kk_mac_servable needs KK_MAC_LANES=1; start/finish_kk_mac_lane). Lane classification
+  at queue is done by the JEV/classifier path (JEV_LANE=1 on runners). Task: find where queued dispatch cards get
+  their lane/executor assigned (runner-agent claim path / classifier), and add a rule: when a card has NO explicit
+  executor pin and its task_class (or prompt keywords) matches a bounded class — summary, operator_brief, structured_extract,
+  safe_route — set executor=kk_mac_local and task_class accordingly, provided the card is read-only (no push/deploy
+  intent) and prompt length <=6000 chars. Do NOT auto-route cards that pin another executor/lane, host-pinned cards,
+  or cards with side-effect intent. Add unit tests for the classifier rule (positive + negative cases). Verify:
+  python3 -m pytest tests -q stays green and a queued test card with task_class=summary and no executor gets executor=kk_mac_local
+  in /queue eligibility on a KK_MAC_LANES=1 runner. Leave a job record under docs/ssot/jobs/ and update the lane
+  docs if they describe manual pinning as required.'
+action:
+  type: dispatch
+  repo: chaba
+  lane: paid_frontier
+  status: queued
+ref: OPS-0093
+comms:
+- at: 2026-11-13 17:24
+  from: tony
+  text: card captured via board-api
