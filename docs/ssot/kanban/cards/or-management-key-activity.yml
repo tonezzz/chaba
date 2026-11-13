@@ -1,6 +1,6 @@
 id: or-management-key-activity
 title: OR management key for per-call activity attribution
-column: backlog
+column: done
 updated: 2026-11-13 21:15
 spec: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
   is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
@@ -36,6 +36,9 @@ comms:
     return 200 (regular keys get 401/403).\n\nSHIPPED chaba 7c975e3204a: key-watch.py now pulls /activity each run
     — warns on unlisted-model spend (OR_ACTIVITY_ALLOW, default google/gemini-embedding-2 only) and most-recent-completed-day
     totals >bash.50 (OR_ACTIVITY_DAILY_WARN_USD); sub-$0.05'
+- at: 2026-11-13 21:15
+  from: devin
+  text: moved backlog -> done
 requests:
 - id: create-an-openrouter-management-key-dash-bae1d6
   ask: Create an OpenRouter management key (dashboard -> Keys -> management) so /api/v1/activity gives per-call
@@ -50,4 +53,6 @@ requests:
     label: skip — infer from logs is enough
   suggested: create-mgmt-key
   answer: see secrets/ada-management.txt for a single line key.
-awaiting_action: true
+action:
+  status: done
+claim: {}
