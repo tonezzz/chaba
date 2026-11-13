@@ -1,6 +1,6 @@
 id: timer-alert-idc03-device-telemetry-prune
 title: Timer device-telemetry-prune on idc03 failing
-column: backlog
+column: done
 updated: 2026-11-13 23:35
 priority: high
 tags:
@@ -1084,6 +1084,9 @@ comms:
   text: 'FIXED 2026-11-13: prune.py deep-offset /search paging hit 120s urlopen timeout. Bumped timeout to 300s,
     manual run verified: deleted 459/3585 stale (>7d) docs, unit Finished clean. NOTE: offset-paging is O(n^2) —
     if collection grows much larger, switch to key-prefix delete or time-bounded query.'
+- at: 2026-11-13 23:35
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of device-telemetry-prune.service on idc03, which previously exited with an error
   during a high-load window. The runner must inspect the journal via journalctl --user -u device-telemetry-prune.service
   on idc03 to verify if subsequent runs recovered successfully. Constraints are to inspect the specified host and
