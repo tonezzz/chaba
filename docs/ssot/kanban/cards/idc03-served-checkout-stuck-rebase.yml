@@ -1,7 +1,7 @@
 id: idc03-served-checkout-stuck-rebase
 title: idc03 served checkout wedged mid-rebase — kanban-commit refusing, board writes stalling
 column: done
-updated: 2026-11-13 16:06
+updated: 2026-11-13 17:45
 priority: high
 tags:
 - infra,idc03,kanban
@@ -54,6 +54,13 @@ comms:
 - at: 2026-11-13 16:06
   from: devin
   text: moved backlog -> done
+- at: 2026-11-13 17:45
+  from: devin
+  text: 'Follow-up shipped to master as d40573247b (branch fix/safe-pull-phantom-rebase): git-safe-pull.sh now takes
+    a per-checkout flock (safe-pull.lock, 240s wait — serializes the kanban-commit/chaba-repo-sync ~:00 race that
+    likely caused the phantom state) and both git-safe-pull.sh and kanban-commit.sh auto-clear degenerate rebase-merge/rebase-apply
+    dirs (no onto/head-name/next/last => never started) by renaming to *.phantom-<ts>. Self-heals next tick instead
+    of refusing forever. 59/59 kanban-commit t'
 action:
   status: done
 claim: {}
