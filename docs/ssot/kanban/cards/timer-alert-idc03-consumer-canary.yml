@@ -1,7 +1,7 @@
 id: timer-alert-idc03-consumer-canary
 title: Timer consumer-canary on idc03 failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:35
 priority: high
 tags:
 - timer-alert
@@ -171,6 +171,11 @@ comms:
   from: devin
   text: '2026-11-13 sweep: `board-api comment failed: timed out` — board-api write contention again (same class
     as card-lock stalls).'
+- at: 2026-11-13 23:35
+  from: devin
+  text: '2026-11-13: canary ran but board-api comment POST timed out — same write-lock contention seen fleet-wide
+    today. Infra issue not canary bug; will recur until board-api write latency is addressed (card board-api-write-latency
+    exists).'
 action:
   status: done
   type: dispatch
