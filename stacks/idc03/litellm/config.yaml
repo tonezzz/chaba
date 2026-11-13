@@ -229,6 +229,86 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
       api_base: https://openrouter.ai/api/v1
 
+  # ── Cloudflare Workers AI — free neuron tier (added 2026-11-13) ──
+  # OpenAI-compatible endpoint; CF_API_WORKER_TOKEN + CF_API_ACCOUNT_ID
+  # in cloudflare.env. Reasoning models emit reasoning_content — merged
+  # into content so opencode/clients see plain text.
+  - model_name: cf-llama-70b
+    litellm_params:
+      model: openai/@cf/meta/llama-3.3-70b-instruct-fp8-fast
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+    model_info:
+      max_input_tokens: 24000
+      max_output_tokens: 8192
+  - model_name: cf-qwen3-30b
+    litellm_params:
+      model: openai/@cf/qwen/qwen3-30b-a3b-fp8
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+    model_info:
+      max_input_tokens: 32768
+      max_output_tokens: 8192
+      merge_reasoning_content_in_choices: true
+  - model_name: cf-gpt-oss-120b
+    litellm_params:
+      model: openai/@cf/openai/gpt-oss-120b
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+    model_info:
+      max_input_tokens: 128000
+      max_output_tokens: 8192
+      merge_reasoning_content_in_choices: true
+
+  - model_name: cf-llama-8b
+    litellm_params:
+      model: openai/@cf/meta/llama-3.1-8b-instruct-fp8
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+    model_info:
+      max_input_tokens: 32000
+      max_output_tokens: 8192
+  - model_name: cf-embed-m3
+    litellm_params:
+      model: openai/@cf/baai/bge-m3
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+
+  - model_name: cf-mistral-small
+    litellm_params:
+      model: openai/@cf/mistralai/mistral-small-3.1-24b-instruct
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+    model_info:
+      max_input_tokens: 128000
+      max_output_tokens: 8192
+  - model_name: cf-nemotron-120b
+    litellm_params:
+      model: openai/@cf/nvidia/nemotron-3-120b-a12b
+      api_base: https://api.cloudflare.com/client/v4/accounts/ea384314a1d3abf699998fe0b4b2adad/ai/v1
+      api_key: os.environ/CF_API_WORKER_TOKEN
+      merge_reasoning_content_in_choices: true
+    model_info:
+      max_input_tokens: 256000
+      max_output_tokens: 8192
+
+  # ── OpenRouter :free additions — zero-cost upstreams ────────────
+  - model_name: or-free-nemotron-ultra
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3-ultra-550b-a55b:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: or-free-nemotron-35
+    litellm_params:
+      model: openrouter/nvidia/nemotron-3.5-lightning:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+  - model_name: or-free-north-code
+    litellm_params:
+      model: openrouter/cohere/north-mini-code:free
+      api_key: os.environ/OPENROUTER_API_KEY
+      api_base: https://openrouter.ai/api/v1
+
 router_settings:
   # ordered fallbacks per deployed model_name — paid first, free-tier
   # second, OpenRouter third, local ollama last for text-only classes.
@@ -257,6 +337,8 @@ general_settings:
   database_url: os.environ/DATABASE_URL
 
 litellm_settings:
+  success_callback: ["generic_api"]   # -> spend-hook :18001
+  failure_callback: ["generic_api"]
   drop_params: true
   # proxy-wide spend cap — belt over the per-virtual-key budgets
   max_budget: 50
