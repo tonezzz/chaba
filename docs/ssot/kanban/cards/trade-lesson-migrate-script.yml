@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
-column: doing
-updated: 2026-11-13 23:14
+column: review
+updated: 2026-11-13 23:15
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -47,12 +47,16 @@ spec: 'Build scripts/trade-lesson-migrate.py in chaba (repo=chaba dispatch).
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   lane: codemod
   runner: idc02
   sweep:
     stale_running: 2026-11-13 23:10
     session_gone: 2026-11-13 23:10
+  result: 'exit=0 those three remaining topics are ready to draft via `--apply --topic <x>` on a host with the docs
+    tree. | devin-task-20261113-225925-build-scripts-trade-lesson-mig.service: Consumed 43.193s CPU time, 568.6M
+    memory peak, 0B memory swap peak.'
+  verified: false
 ref: OPS-0103
 comms:
 - at: 2026-11-13 21:42
@@ -144,4 +148,9 @@ comms:
     published lesson-0f4811f49a34 (Education:Trade-Getting-Started) via /lesson on the free lane; drift-map + SERIES
     updated; re-run skips (idempotent). Note: child cards gate on topic trade-trade-* — real topic is single-prefix
     trade-getting-started.'
+- at: 2026-11-13 23:15
+  from: idc02
+  text: 'finished (ok): exit=0 those three remaining topics are ready to draft via `--apply --topic <x>` on a host
+    with the docs tree. | devin-t'
 claim: {}
+review_kind: verify
