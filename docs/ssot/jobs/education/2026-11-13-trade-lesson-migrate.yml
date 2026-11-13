@@ -1,0 +1,85 @@
+title: trade-lesson-migrate — trade docs -> Education via free-lane drafting
+subtitle: deterministic orchestrator; opencode only distills prose; /lesson
+  door owns the write; drift-map + SERIES updated on --apply
+icon: education
+version: 1
+
+card: trade-lesson-migrate-script
+ref: OPS-0103
+date: 2026-11-13
+dispatch: 20261113-225925-build-scripts-trade-lesson-mig
+parent: trade-docs-education-migration (OPS-0102)
+
+job:
+  id: trade-lesson-migrate
+  manual: true               # run on demand per topic card, not scheduled
+  host: tony_dell            # ~/CascadeProjects/trade docs live there; idc03 also has them
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/trade-lesson-migrate.py
+
+files:
+  - scripts/trade-lesson-migrate.py — the orchestrator
+  - >-
+    scripts/trade-lesson-map.yml — coverage: docs-mcp page ->
+    {topic, level, skip?}; seeded from lesson-drift-map.yml + the four
+    topic cards
+  - scripts/lesson-drift-map.yml — appended per published lesson (slug ->
+    pages) so the daily drift check covers new topics
+  - >-
+    scripts/wiki-lesson-migrate.py — SERIES gains trade->Trade on first
+    successful --apply
+
+mechanism: |
+  1. Inventory: documents.json (page -> {title,body,lastModified}); page
+     markdown read from docs_root/<page>.md first, index body as fallback.
+  2. Coverage: trade-lesson-map.yml; missing file seeds from
+     lesson-drift-map.yml (topic/level parsed from slug comments) and is
+     persisted on --apply. Pages absent from the map get a proposed
+     mapping printed in --dry-run (paste-to-grow).
+  3. Draft: per uncovered topic the bundle (===== PAGE: p ===== frames)
+     is attached to `opencode run --format json --standalone
+     --model litellm/gemini-3.5-flash-lite -f bundle.md`; last text part
+     -> HTML fragment (fences stripped). LITELLM_KEY armed from
+     ~/.config/secrets/litellm-chaba.env for litellm/* models.
+  4. Publish: POST board-api /lesson (source:"link") — upsert by topic
+     slug; run evidence under ~/var/chaba/trade-lesson-migrate/runs/.
+  5. Record: drift-map entry appended (EOF append preserves comments);
+     SERIES edit is a one-time text patch. Content hash in
+     ~/var/chaba/trade-lesson-migrate/state.json skips unchanged topics.
+
+decision:
+  topic_naming: |
+    Lesson topics are trade-<shortname> (trade-getting-started,
+    trade-ui, trade-workflows, trade-knowledge) — matching the existing
+    family (trade-map, trade-architecture) and the family_prefix:
+    trade- drift check. The four child cards' gates read
+    "trade-trade-<x>" which is a double-prefix typo in the card spec;
+    the real topics carry a single prefix.
+  page_ownership: |
+    One primary topic per page; shared sources (trade-gold-thb re-reads
+    data/DATA_SOURCES etc.) ride topics.<name>.extra_pages. Doc-governance
+    meta pages and host/project evals are skip:true with a reason — a
+    trade-docs-governance lesson can claim them later.
+
+coverage: |
+  62 docs-mcp pages: 5 existing lessons (17 pages), 4 new topics
+  (trade-getting-started 1p, trade-ui 8p, trade-workflows 8p,
+  trade-knowledge 15p), 8 pages skip:true (docs-governance/eval meta),
+  0 uncovered.
+
+maintain:
+  new_docs_page: shows up as an UNCOVERED proposal in --dry-run output —
+    paste the proposed {topic, level} into trade-lesson-map.yml.
+  new_topic: add pages -> {topic, level} entries + a topics.<name> level;
+    the next --apply drafts + publishes it.
+  verify: >
+    python3 scripts/trade-lesson-migrate.py --dry-run
+    python3 scripts/trade-lesson-migrate.py --apply --topic getting-started
+    curl -X POST $BOARD_API/lesson -d '{"op":"list"}' | grep getting-started
+
+tested: |
+  2026-11-13 idc02 dispatch worktree: dry-run over an idc03 rsync of the
+  docs tree (62 pages, correct plan). --apply --topic getting-started:
+  opencode litellm/gemini-3.5-flash-lite -> 2370B HTML -> created
+  lesson-0f4811f49a34 (Education:Trade-Getting-Started, Thai appended by
+  the door), drift-map entry + SERIES edit landed; re-run skipped as
+  covered (idempotent).

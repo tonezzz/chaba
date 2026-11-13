@@ -37,7 +37,7 @@ except Exception:
 
 # topic-stem -> hub page name. '<stem>-map' lessons carry the hub's
 # curated content; other '<stem>-*' topics are series members.
-SERIES = {"ada-nest": "Ada-Nest"}
+SERIES = {"ada-nest": "Ada-Nest", "trade": "Trade"}
 
 META_KEYS = ("level", "source", "learned_at", "next_review", "status",
              "updated", "no_th")

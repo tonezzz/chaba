@@ -1,0 +1,111 @@
+# Coverage map for scripts/trade-lesson-migrate.py (card
+# trade-lesson-migrate-script, OPS-0103; parent
+# trade-docs-education-migration / OPS-0102).
+#
+# Every docs-mcp page maps to exactly one lesson topic (or skip:true).
+# Synthesis lessons that re-read pages owned by another topic declare
+# their sources under topics.<name>.extra_pages instead.
+#
+# Seeded from scripts/lesson-drift-map.yml (the existing trade-* lesson
+# family) plus the four per-topic cards: trade-lesson-getting-started,
+# trade-lesson-ui-integration, trade-lesson-workflows-automation,
+# trade-lesson-knowledge-base. Dry-run proposes mappings for any page
+# not listed here.
+
+docs_root: ~/CascadeProjects/trade/docs
+index_json: ~/CascadeProjects/trade/.docs-mcp/documents.json
+
+topics:
+  trade-map: {level: intro}
+  trade-architecture: {level: intro}
+  trade-data-sources: {level: working}
+  trade-signals-backtest: {level: working}
+  trade-gold-thb:
+    level: deep
+    # synthesis lesson — all sources are owned by other topics
+    extra_pages:
+      - data/DATA_SOURCES
+      - kb/metal-price-api-research
+      - kb/thai-holiday-data-gap-analysis-2026-08-14
+      - knowledge/commodity-validation-sources
+  trade-getting-started: {level: intro}
+  trade-ui: {level: working}
+  trade-workflows: {level: working}
+  trade-knowledge: {level: working}
+
+pages:
+  # --- existing family (mirrors lesson-drift-map.yml) ---
+  INDEX: {topic: trade-map}
+  PORTAL: {topic: trade-map}
+
+  core/ARCHITECTURE: {topic: trade-architecture}
+  core/API_GUIDE: {topic: trade-architecture}
+  core/DEPLOYMENT: {topic: trade-architecture}
+  core/TROUBLESHOOTING: {topic: trade-architecture}
+  core/DECISION_LOG: {topic: trade-architecture}
+  knowledge/architecture/README: {topic: trade-architecture}
+  knowledge/architecture/ssot-configuration-pattern: {topic: trade-architecture}
+  intermittent-availability-plan: {topic: trade-architecture}
+
+  data/DATA_SOURCES: {topic: trade-data-sources}
+  DATA_QUALITY_SYSTEM: {topic: trade-data-sources}
+  knowledge/commodity-validation-sources: {topic: trade-data-sources}
+  kb/metal-price-api-research: {topic: trade-data-sources}
+  kb/thai-holiday-data-gap-analysis-2026-08-14: {topic: trade-data-sources}
+
+  features/signals/SIGNALS: {topic: trade-signals-backtest}
+  features/signals/SIGNALS_IMPLEMENTATION_SUMMARY: {topic: trade-signals-backtest}
+  features/signals/SIGNALS_QUICKSTART: {topic: trade-signals-backtest}
+  features/backtesting/BACKTESTING: {topic: trade-signals-backtest}
+  features/backtesting/BACKTESTING_SUMMARY: {topic: trade-signals-backtest}
+  features/websocket/WEBSOCKET: {topic: trade-signals-backtest}
+  features/websocket/WEBSOCKET_IMPLEMENTATION_SUMMARY: {topic: trade-signals-backtest}
+
+  # --- new topics (the four per-topic cards) ---
+  getting-started/quickstart: {topic: trade-getting-started}
+
+  features/ui/TRADECANVAS_INTEGRATION: {topic: trade-ui}
+  features/ui/TRADECANVAS_QUICKSTART: {topic: trade-ui}
+  features/ui/TRADING_TERMINAL_INTEGRATION: {topic: trade-ui}
+  features/ui/TRADING_TERMINAL_QUICKSTART: {topic: trade-ui}
+  features/ui/UI_COMPARISON_EVALUATION: {topic: trade-ui}
+  features/ui/WICK_INTEGRATION: {topic: trade-ui}
+  core/VISUALIZATION_GUIDE: {topic: trade-ui}
+  ssot/ui-compare-family-design: {topic: trade-ui}
+
+  workflows/README: {topic: trade-workflows}
+  workflows/configuration-update: {topic: trade-workflows}
+  features/automation/AUTOMATION_GUIDE: {topic: trade-workflows}
+  features/automation/AUTOMATION_QUICK_START: {topic: trade-workflows}
+  MANUAL_WORKFLOW: {topic: trade-workflows}
+  DEVELOPMENT_WORKFLOW: {topic: trade-workflows}
+  CHANGELOG_WORKFLOW: {topic: trade-workflows}
+  CHANGELOG_AUTOMATION: {topic: trade-workflows}
+
+  knowledge/README: {topic: trade-knowledge}
+  knowledge/best-practices/README: {topic: trade-knowledge}
+  knowledge/best-practices/best-practices: {topic: trade-knowledge}
+  knowledge/best-practices/code-conventions: {topic: trade-knowledge}
+  knowledge/lessons/lessons-learned: {topic: trade-knowledge}
+  knowledge/operations/README: {topic: trade-knowledge}
+  knowledge/operations/SCREEN_TIMEOUT_CONFIGURATION: {topic: trade-knowledge}
+  knowledge/patterns/api-patterns: {topic: trade-knowledge}
+  knowledge/patterns/patterns: {topic: trade-knowledge}
+  knowledge/troubleshooting/README: {topic: trade-knowledge}
+  kb/hindsight-strategies-implementation-2026-08-08: {topic: trade-knowledge}
+  kb/trade-containerized-postgres: {topic: trade-knowledge}
+  kb/trade-ui-improvements-2026-08-07: {topic: trade-knowledge}
+  kb/tradecanvas-chart-graph-display-issues: {topic: trade-knowledge}
+  kb/tradecanvas-ui-ssot-workflow: {topic: trade-knowledge}
+
+  # --- skipped: docs-governance meta + host/project evals, not trade
+  #     system knowledge. A trade-docs-governance lesson can claim them
+  #     later if one is ever wanted. ---
+  ARCHIVE_MANAGEMENT_PROCEDURES: {skip: true, reason: docs-governance meta}
+  ARCHIVE_RETENTION_POLICY: {skip: true, reason: docs-governance meta}
+  DOCUMENTATION_REVIEW_SCHEDULE: {skip: true, reason: docs-governance meta}
+  DOC_COORDINATOR_REPORT: {skip: true, reason: docs-governance meta}
+  KNOWLEDGE_CAPTURE_GUIDELINES: {skip: true, reason: docs-governance meta}
+  LAST_UPDATED_STANDARD: {skip: true, reason: docs-governance meta}
+  reference/PROJECT_PLAN: {skip: true, reason: project management, not system knowledge}
+  tony-dell-evaluation: {skip: true, reason: host eval, not system knowledge}
