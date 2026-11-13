@@ -1,0 +1,20 @@
+id: idc01-permanent-retirement
+title: idc01 permanently retired — purge host inventory and references
+column: backlog
+updated: 2026-11-13 20:45
+brief: 'Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove
+  it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it
+  as a fleet member.'
+priority: high
+spec: '1) ssot.audit.hosts.yml: mark idc01 retired (or remove section per SSOT convention — check how other retired
+  hosts are recorded). 2) Grep repo + ~/bin + systemd units fleet-wide for idc01 references: scripts, docs/ssot,
+  caddy configs, tailscale ACLs, monitor targets, dispatch_repos.py, ssot.jobs.yml host maps. 3) Remove idc01 from
+  expected-host audits and any probe/monitor targets; confirm audit-hosts.py no longer expects it reachable. 4)
+  Update docs/kb host-migration notes to record permanent retirement (date, successor idc03). 5) Tailscale: leave
+  node key removal to Tony/manual unless already documented. Do NOT delete historical docs/reports mentioning idc01
+  — only live config/inventory.'
+ref: OPS-0096
+comms:
+- at: 2026-11-13 20:45
+  from: tony
+  text: card captured via board-api
