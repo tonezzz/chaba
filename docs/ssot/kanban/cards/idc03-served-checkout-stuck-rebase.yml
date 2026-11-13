@@ -1,7 +1,7 @@
 id: idc03-served-checkout-stuck-rebase
 title: idc03 served checkout wedged mid-rebase — kanban-commit refusing, board writes stalling
 column: backlog
-updated: 2026-11-13 16:03
+updated: 2026-11-13 16:06
 priority: high
 tags:
 - infra,idc03,kanban
@@ -44,3 +44,10 @@ comms:
     files ever written, no rebase commits in reflog. Fix: snapshotted state to /tmp/rebase-rescue-20261113 (worktree.diff
     + status + stash list), removed .git/rebase-merge, ran scripts/git-safe-pull.sh — rebase replayed clean (card-union
     driver + generated-path upstream-wins), master...o'
+- at: 2026-11-13 16:06
+  from: devin
+  text: 'RESOLVED 2026-11-13 ~16:00. .git/rebase-merge/ held ONLY an autostash pointer (c08b11a6, still in stash
+    list) — phantom state from a killed git-safe-pull ~12:02; no REBASE_HEAD/onto/done, no rebase commits in reflog.
+    Fix: snapshot to /tmp/rebase-rescue-20261113 (worktree.diff+status+stashes), removed .git/rebase-merge, ran
+    git-safe-pull.sh — replayed clean via card-union driver; master...origin/master now 0/0. kanban-commit 15:59
+    run completed normally. Dirty set back to 9 residual files. Note: '
