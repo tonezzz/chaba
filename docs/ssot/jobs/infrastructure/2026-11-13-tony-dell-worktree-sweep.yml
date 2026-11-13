@@ -1,0 +1,68 @@
+title: tony-dell chaba worktree/branch sprawl cleanup
+id: 2026-11-13-tony-dell-worktree-sweep
+kind: maintenance
+card: chore-tony-dell-worktree-sprawl
+host: tony-dell
+repo: ~/CascadeProjects/chaba (role=exec)
+summary: >-
+  Follow-up to the 2026-11-13 ~42G home-dir cleanup. Audited all 24 linked
+  worktrees on tony-dell's exec checkout: per-worktree dirty state, merge
+  status vs origin/master (ancestry + git cherry patch-id), and owning
+  kanban card. Removed 21 worktrees, kept 2. Deleted 9 local branches
+  (5 ancestor-merged, 4 cherry-verified content-merged). Salvaged all
+  non-regenerable uncommitted content to
+  ~/CascadeProjects/worktree-salvage-20261113/ before any --force removal.
+key_finding: >-
+  ~13 surviving branches are on a DISJOINT history lineage (zero shared
+  commits with origin/master — likely a pre-rewrite/grafted lineage).
+  `git branch --merged` can never flag them; content-level audit
+  (patch-id or tree diff) is required before any branch deletion.
+  They are retained pending that audit.
+removed_worktrees: 21
+kept_worktrees:
+  - path: ~/CascadeProjects/chaba-ops1255-review
+    branch: fix/ops-1255-requalification
+    reason: card opencode-lane-regraduation is `doing`; card comms reference this path as the review draft location; 4 unlanded commits
+  - path: ~/CascadeProjects/dispatch-wt-20261002-132426-use-existing-training-data-and
+    branch: feat/card-run-lifecycle
+    reason: active devin workspace (card-runner lifecycle work)
+branches_deleted_merged:
+  - card/knb-0065
+  - nest-health-kk
+  - dispatch/mddb-embed-free-first
+  - ops-embed-relocate
+  - ops-mn01-embed-relocate
+branches_deleted_content_merged:  # git cherry origin/master = all '-'
+  - fix/mddb-reindex-retries
+  - dispatch/devin-token-efficiency
+  - feat/devin-ada-card-ops-efficiency
+  - consult-bench
+branches_retained_unmerged:
+  - fix/knb-1257-request-field        # 9 unlanded commits; card board-cli-request-ask-field backlog
+  - fix/metno-rain-units              # 1 unlanded docs commit
+  - fix/ops-1255-requalification      # worktree kept (see above)
+  - fix/kk-mac-memory-guard           # NEW ref created to pin detached memguard commit 0809ead3a3b (card in review)
+  - feat/ada-envelope-transitions     # disjoint lineage — audit pending
+  - fix/s0-jobs-target-idc02          # disjoint lineage
+  - fix/lesson-translation-cache      # disjoint lineage
+  - feat/devin-memory-pointers        # disjoint lineage
+  - feat/ada-access-auto-enroll       # disjoint lineage
+  - feat/ada-opencode-dashboard-tab   # disjoint lineage
+  - ops/private-news-lane             # disjoint lineage
+  - feat/r7-gpu-cap                   # disjoint lineage
+  - feat/bge-rerank-server            # disjoint lineage
+  - fix/lessons-shadow-retry          # disjoint lineage
+  - fix/bge-rerank-unit               # disjoint lineage
+  - fix/education-shadow-timeout      # disjoint lineage
+  - feat/card-run-lifecycle           # active workspace
+salvage:
+  location: 'tony-dell:~/CascadeProjects/worktree-salvage-20261113/'
+  contents:
+    - knb-0065/lifecycle-test.md + gitignore.diff (also committed via dispatch merge)
+    - board2/ — 6.6MB prototype board app, untracked, not in master (from chaba-ada-ha-kanban-wt)
+    - jack-cf-bge/ — bge-hybrid-shadow pack + script variants differing from master (from chaba-jack-cf-ada-gateway)
+notes:
+  - '~/CascadeProjects/chaba-tony-dell-worktrees/knb-0928-hands-off is NOT a registered worktree but a plain checkout dir with a live picker-server process (Nov-08); left untouched.'
+  - 'Dirty docs/ssot/ssot.dev-system.assessment.yml in 5 worktrees was regenerated assessment output; discarded as regenerable.'
+  - 'Detached chaba-pack-manifest commit 7a687f6ffec (baseline refresh) left unreachable — regenerable artifact.'
+verify: 'ssh tony-dell "cd ~/CascadeProjects/chaba && git worktree list && git branch --merged origin/master"'
