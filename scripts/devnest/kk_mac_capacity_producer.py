@@ -112,12 +112,14 @@ def stage_task(
 
 def pack_listing(remote: str) -> tuple[set[str], set[str]]:
     """One recursive lsf -> (live pack dir names, terminal pack names).
-    A pack dir always contains files, so only entries with a '/' count."""
+    A pack only counts once its pack.yml has landed — a dir left behind
+    by a failed rclone copy is empty and must not wedge its inbox spec
+    or occupy a queue slot."""
     entries = [
         x for x in rclone("lsf", f"{remote}/packs", "--recursive")
         .splitlines() if x.strip()
     ]
-    dirs = {x.split("/", 1)[0] for x in entries if "/" in x}
+    dirs = {x.split("/", 1)[0] for x in entries if x.endswith("/pack.yml")}
     terminal = {
         x.split("/", 1)[0] for x in entries
         if x.endswith("/done") or x.endswith("/failed")
@@ -176,6 +178,12 @@ def produce(
             max_new, max_depth - result["queue_before"]
         ):
             break
+        # Cheap reject first: inbox filenames are task_id slugs, so an
+        # already-staged spec costs zero rclone cats. Only unstaged
+        # specs pay the load_task round-trip.
+        if f"kk-mac-task-{filename[:-5]}" in existing_packs:
+            result["skipped"].append(f"{filename}:already_staged")
+            continue
         try:
             task = load_task(remote, filename)
             pack_name = f"kk-mac-task-{task['task_id']}"
