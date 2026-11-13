@@ -1,7 +1,7 @@
 id: timer-alert-idc03-mddb-embed-probe
 title: Timer mddb-embed-probe on idc03 failing
 column: backlog
-updated: 2026-11-13 19:14
+updated: 2026-11-13 19:24
 priority: high
 tags:
 - timer-alert
@@ -626,6 +626,13 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-13 19:00) of `mddb-embed-probe.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-13 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-13 19:24
+  from: devin
+  text: '[still suspicious] Last run (11-13 19:00) of `mddb-embed-probe.service` on `idc03` result=exit-code — investigate
+    journal: `journalctl --user -u mddb-embed-probe.service` on the host. See CMS `timer-timeline-idc03`.'
 action:
   status: done
   type: dispatch
@@ -636,3 +643,7 @@ action:
     3.716s CPU time.'
   sweep:
     failed_noted: 2026-11-09 09:36
+spec: Investigate the recurring failure of mddb-embed-probe.service on host idc03, where the last run at 11-13 19:00
+  resulted in an exit-code. Check the journal using `journalctl --user -u mddb-embed-probe.service` on idc03 and
+  reference CMS `timer-timeline-idc03` for context. The done-condition is verified when the root cause of the exit-code
+  failure is identified and documented or resolved so that subsequent timer runs succeed.
