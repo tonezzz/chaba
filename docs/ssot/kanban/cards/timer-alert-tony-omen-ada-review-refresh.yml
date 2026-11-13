@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ada-review-refresh
 title: Timer ada-review-refresh on tony-omen failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -1113,6 +1113,10 @@ comms:
 - at: 2026-11-13 18:14
   from: devin
   text: '2026-11-13 sweep: exit-code 08:56 — known log-shipper.py 600s stall class.'
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: ran 11min27s then exit 1 — real work happened (85M peak). Earlier evidence pointed at log-shipper
+    600s stall inside the refresh chain. Needs the failing stage named from the unit stdout/log artifact.'
 spec: Investigate the failing systemd user timer and service 'ada-review-refresh.service' on host 'tony-omen' by
   examining the journal logs using 'journalctl --user -u ada-review-refresh.service'. The goal is to diagnose the
   root cause of the exit-code failure from the 11-08 08:56 run and reference CMS 'timer-timeline-tony-omen'. The
