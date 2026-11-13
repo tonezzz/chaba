@@ -1,7 +1,7 @@
 id: mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c
 title: mddb 2.15.4 -> v2.18.10 upgrade (custom -lsn/-breaker builds)
 column: backlog
-updated: 2026-11-12 08:54
+updated: 2026-11-13 20:16
 brief: All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images — upgrade means
   rebasing local patches onto 2.18.x and rebuilding, not a pull.
 ref: MEM-0024
@@ -22,3 +22,10 @@ comms:
     proven rebuild path); 4) cms + embed; 5) idc02 follower; 6) leader last; 7) verify per step: health, stats counts,
     replication, vector-search. Rollback per step = keep previous .db + image tag. Note: embed freeBytes statfs-at-start
     bug (MEM-0027) - check fixed in 2.18; -repair-db cras'
+- at: 2026-11-13 20:16
+  from: devin
+  text: 'Deployment-relevant finding 2026-11-13: mddb-cms@idc03 + mddb-embed@idc02 now run new tag 2.15.4-retry
+    (breaker 2767cdca + bounded job retry ad7d3f72). Leader mddb@idc03 + follower mddb@idc02 + mddb-ops still on
+    -lsn — upgrading them requires merging follower-lsn-persist (e1192e2a, d6ee6fd6, absent from feat/vector-algorithms)
+    + repl-heartbeat (498cdc38) into one maintained branch. Leader embeds (was a storm source) so it still loses
+    failed docs silently until then. Patch matrix: 3 live tags (ls'
