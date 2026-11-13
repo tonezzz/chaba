@@ -1,7 +1,7 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
 column: review
-updated: 2026-11-13 14:55
+updated: 2026-11-13 18:09
 spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
   Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
   after). Schedule alongside cms compaction; backup first.'
@@ -134,6 +134,13 @@ comms:
 - at: 2026-11-13 14:55
   from: chaba
   text: 'merge-sweep: verified — held in review (open request(s) [''compaction-path-recommended-bb''] block close)'
+- at: 2026-11-13 18:09
+  from: tony
+  text: 'answered compaction-path-recommended-bbolt-compac-6e92c8: proceed — bbolt compact ran correctly (leader
+    12G→3.5G, health 200, idc02 follower 200). Post-hoc approval.'
+- at: 2026-11-13 18:09
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 recoverability: R2
 auto_done_when:
 - verified_true
@@ -161,11 +168,13 @@ requests:
     leader outage, keeps revisions+vectors, no reindex, no follower reseed needed. Alternative per card text: export/import
     — ~1min swap but drops revisions, hours of vector-reindex, delta-window refill, followers re-seed. Doing backup+offline
     validation meanwhile; will proceed with recommended if no answer.'
-  status: open
+  status: answered
   at: 2026-11-13 13:19
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed — bbolt compact ran correctly (leader 12G→3.5G, health 200, idc02 follower 200). Post-hoc approval.
 review_kind: verify
 claim: {}
+awaiting_action: true
