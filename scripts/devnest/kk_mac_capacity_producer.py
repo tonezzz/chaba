@@ -127,6 +127,16 @@ def pack_listing(remote: str) -> tuple[set[str], set[str]]:
     return dirs, terminal
 
 
+def archive_spec(remote: str, filename: str, dest: str) -> None:
+    """Move an inbox spec out of the scan path. Best-effort: the pack
+    decision is already made, so a failed move only costs a redundant
+    check next run."""
+    rclone(
+        "moveto", f"{remote}/inbox/{filename}",
+        f"{remote}/inbox/{dest}/{filename}",
+    )
+
+
 def produce(
     *,
     remote: str = DEFAULT_REMOTE,
@@ -180,22 +190,55 @@ def produce(
             break
         # Cheap reject first: inbox filenames are task_id slugs, so an
         # already-staged spec costs zero rclone cats. Only unstaged
-        # specs pay the load_task round-trip.
+        # specs pay the load_task round-trip. Staged specs are archived
+        # to inbox/done so the backlog drains itself over a few runs.
         if f"kk-mac-task-{filename[:-5]}" in existing_packs:
             result["skipped"].append(f"{filename}:already_staged")
+            if not dry_run:
+                try:
+                    archive_spec(remote, filename, "done")
+                except Exception:
+                    pass
             continue
         try:
             task = load_task(remote, filename)
-            pack_name = f"kk-mac-task-{task['task_id']}"
-            if pack_name in existing_packs:
-                result["skipped"].append(f"{filename}:already_staged")
-                continue
+        except ValueError as exc:
+            # Invalid spec — quarantine it so it stops costing an
+            # rclone cat every run. ValueError covers bad JSON
+            # (JSONDecodeError) and every validation failure; rclone
+            # errors raise RuntimeError and stay retryable.
+            result["skipped"].append(f"{filename}:{type(exc).__name__}")
+            if not dry_run:
+                try:
+                    archive_spec(remote, filename, "quarantine")
+                except Exception:
+                    pass
+            continue
+        except Exception as exc:
+            result["skipped"].append(f"{filename}:{type(exc).__name__}")
+            continue
+        pack_name = f"kk-mac-task-{task['task_id']}"
+        if pack_name in existing_packs:
+            result["skipped"].append(f"{filename}:already_staged")
+            if not dry_run:
+                try:
+                    archive_spec(remote, filename, "done")
+                except Exception:
+                    pass
+            continue
+        try:
             result["staged"].append(stage_task(
                 task, remote=remote, template=template, dry_run=dry_run
             ))
-            existing_packs.add(pack_name)
         except Exception as exc:
             result["skipped"].append(f"{filename}:{type(exc).__name__}")
+            continue
+        existing_packs.add(pack_name)
+        if not dry_run:
+            try:
+                archive_spec(remote, filename, "done")
+            except Exception:
+                pass
     return result
 
 
