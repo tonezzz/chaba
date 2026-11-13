@@ -254,7 +254,13 @@ free_lane_aliases:
       - cf-nemotron-120b        # @cf/nvidia/nemotron-3-120b-a12b (256k, reasoning)
       - cf-embed-m3             # @cf/baai/bge-m3 embeddings (1024d)
   not_added:
-    opencode_zen: "big-pickle/deepseek-v4-flash-free/mimo-v2.5-free etc — no Zen credential on any host; needs opencode auth login or a key in ~/.config/secrets/"
+    opencode_zen: >-
+      Zen free models (opencode/big-pickle, deepseek-v4.1-flash-free,
+      glm-5.3-flash-free, mimo-v2.6-flash-free — all PASS host-health
+      2026-11-13) work with NO credential inside the opencode client, but
+      the raw Zen API rejects non-opencode clients (FreeUsageLimitError)
+      so they CANNOT ride this gateway — dispatch them as
+      model=opencode/<id> (provider opencode, admitted in ops-readonly).
 
 verification:
   - curl -sf http://100.102.134.91:4000/health/liveliness
