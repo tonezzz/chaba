@@ -1427,9 +1427,9 @@ jobs:
   persistent: false
   env:
     DEVNEST_KK_MAC_ENABLED: 'true'
-  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 3 --max-new 3 --budget-s 90
+  exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_capacity_producer.py --max-depth 5 --max-new 5 --budget-s 90
   note: 'OPS-1001 — reads only explicit task specs from
-    gdrive:ada-nest/kk-llm/inbox/; stages at most three admitted
+    gdrive:ada-nest/kk-llm/inbox/; stages at most five admitted
     read-only packages when the KK-Mac heartbeat/load/Ollama/disk gates
     pass. It never invents work and never claims video/coding/destructive
     packs. Falls back by leaving the inbox untouched when KK is unavailable.'
