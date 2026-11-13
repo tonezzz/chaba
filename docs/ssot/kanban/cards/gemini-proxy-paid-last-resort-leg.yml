@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: backlog
-updated: 2026-11-13 23:18
+updated: 2026-11-13 23:20
 priority: low
 tags:
 - mddb
@@ -31,3 +31,10 @@ comms:
     found+fixed: paid key lived in gemini-keys.env but the service reads mddb-gemini.env — copied var over (no secret
     exposure), restarted gemini-ollama-proxy.service on idc03. Verified: /api/embed returns 768-dim via google/gemini-embedding-2;
     provider field shows -paid suffix '
+- at: 2026-11-13 23:20
+  from: devin
+  text: 'DONE 2026-11-13: paid-Gemini leg shipped (PRs #171+#172 merged). fetchBackupBatch tries GEMINI_API_KEY_PAID
+    after free-key retries, before Ollama — in BOTH OR-primary chain and free-first path. Env gotcha fixed: paid
+    key lived in gemini-keys.env but service reads mddb-gemini.env — var copied over (sha-verified match, no secret
+    exposure), service restarted. Verified /api/embed 768-dim OK; provider shows -paid suffix when leg engages.
+    ssot.secrets.yml updated.'
