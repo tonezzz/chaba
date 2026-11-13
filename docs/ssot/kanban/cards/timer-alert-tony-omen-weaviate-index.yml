@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-weaviate-index
 title: Timer weaviate-index on tony-omen failing
 column: backlog
-updated: 2026-11-14 03:13
+updated: 2026-11-14 03:23
 priority: high
 tags:
 - timer-alert
@@ -1132,6 +1132,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-14 03:00) of `weaviate-index.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u weaviate-index.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-14 03:23
+  from: devin
+  text: '[still suspicious] Last run (11-14 03:00) of `weaviate-index.service` on `tony-omen` result=exit-code —
+    investigate journal: `journalctl --user -u weaviate-index.service` on the host. See CMS `timer-timeline-tony-omen`.'
 action:
   status: done
 spec: Investigate the recurring timeout failure of `weaviate-index.service` on the host `tony-omen`. Run `journalctl
