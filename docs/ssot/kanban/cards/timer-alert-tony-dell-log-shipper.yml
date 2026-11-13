@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-log-shipper
 title: Timer log-shipper on tony-dell failing
 column: backlog
-updated: 2026-11-13 10:53
+updated: 2026-11-13 11:43
 priority: high
 tags:
 - timer-alert
@@ -848,6 +848,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-13 10:33) of `log-shipper.service` on `tony-dell` result=timeout — investigate
     journal: `journalctl --user -u log-shipper.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-13 11:43
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-13 11:29 — closing (timer-sentinel KNB-0577)'
 action:
   status: done
 spec: Investigate the recurring timeout failures of log-shipper.service on tony-dell by inspecting the user journal
