@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-system-report-watchdog
 title: Timer system-report-watchdog on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-13 23:23
 priority: high
 tags:
@@ -1805,9 +1805,14 @@ comms:
   from: devin
   text: 'Self-healed 2026-11-13: idc02 ssh verified working now (IDC02_OK) — earlier timeout was transient tailnet
     blip.'
+- at: 2026-11-13 23:23
+  from: tony
+  text: closed by tony
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
   for additional context. The goal is to diagnose the root cause of the exit-code failure and either resolve the
   underlying issue or confirm the fix. The done-condition is verified when `system-report-watchdog.service` completes
   a successful run without exiting with an error code.
+action:
+  status: done
