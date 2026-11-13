@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-device-telemetry
 title: Timer device-telemetry on tony-macbook failing
 column: backlog
-updated: 2026-11-12 21:09
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -10,8 +10,8 @@ tags:
 action:
   type: manual
   status: done
-note: 'Last run (11-09 12:01) of `device-telemetry.service` on `tony-macbook` result=exit-code — investigate
-  journal: `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-macbook`.'
+note: 'Last run (11-09 12:01) of `device-telemetry.service` on `tony-macbook` result=exit-code — investigate journal:
+  `journalctl --user -u device-telemetry.service` on the host. See CMS `timer-timeline-tony-macbook`.'
 ref: SYS-1265
 comms:
 - at: 2026-11-09 12:10
@@ -19,15 +19,13 @@ comms:
   text: card captured via board-api
 - at: 2026-11-09 12:10
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
-    in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
 - at: 2026-11-09 12:20
   from: devin
   text: re-spawned from report page
 - at: 2026-11-09 12:20
   from: chaba
-  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve
-    in queue'
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
 - at: 2026-11-09 13:53
   from: chaba
   text: 'tony-omen defers: runner at cap (3/3)'
@@ -118,8 +116,8 @@ comms:
 - at: 2026-11-10 03:40
   from: devin
   text: '[reopened — condition recurred] Last run (11-10 03:32) of `device-telemetry.service` on `tony-macbook`
-    result=exit-code — investigate journal: `journalctl --user -u device-telemetry.service` on the host.
-    See CMS `timer-timeline-tony-macbook`.'
+    result=exit-code — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS
+    `timer-timeline-tony-macbook`.'
 - at: 2026-11-10 03:50
   from: devin
   text: '[still suspicious] Last run (11-10 03:32) of `device-telemetry.service` on `tony-macbook` result=exit-code
@@ -136,8 +134,8 @@ comms:
 - at: 2026-11-12 20:53
   from: devin
   text: '[reopened — condition recurred] Last run (11-12 20:49) of `device-telemetry.service` on `tony-macbook`
-    result=exit-code — investigate journal: `journalctl --user -u device-telemetry.service` on the host.
-    See CMS `timer-timeline-tony-macbook`.'
+    result=exit-code — investigate journal: `journalctl --user -u device-telemetry.service` on the host. See CMS
+    `timer-timeline-tony-macbook`.'
 - at: 2026-11-12 21:09
   from: devin
   text: '[still suspicious] Last run (11-12 20:49) of `device-telemetry.service` on `tony-macbook` result=exit-code
@@ -145,7 +143,12 @@ comms:
 - at: 2026-11-13 01:21
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate why `device-telemetry.service` on `tony-macbook` failed with an exit code on the last
-  run at 11-12 20:49 by inspecting the user journal via `journalctl --user -u device-telemetry.service`
-  on the host. Reference the CMS card `timer-timeline-tony-macbook` for timeline context. The done-condition
-  is verified when the root cause of the exit-code failure is identified and documented or resolved.
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: host is tailnet-up but user-session layer wedged (ssh auth OK, sessions hang pre-shell; black
+    screen + caps-lock alive). Telemetry agent is user-scope = dead with user manager. Resolves on physical reboot
+    — see audit-auto-macbook for the power-cycle procedure.'
+spec: Investigate why `device-telemetry.service` on `tony-macbook` failed with an exit code on the last run at 11-12
+  20:49 by inspecting the user journal via `journalctl --user -u device-telemetry.service` on the host. Reference
+  the CMS card `timer-timeline-tony-macbook` for timeline context. The done-condition is verified when the root
+  cause of the exit-code failure is identified and documented or resolved.
