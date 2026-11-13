@@ -1,0 +1,20 @@
+id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
+title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
+column: backlog
+updated: 2026-11-13 20:16
+priority: medium
+spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
+  action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
+  corpus — at the T3 accuracy bar (0.85) and just under deference (0.90). Draft a routing proposal: where kk_mac_local
+  (executor contract, bounded task classes summary/operator_brief/structured_extract/safe_route, admission-gated
+  incl. 60C temp) should sit in fallback chains vs paid flash-lite side-calls. Include: which job_classes in ssot.llm-gateway.yml
+  are candidates, expected savings evidence path (lane-savings.py), risks (member-device availability, temp/load
+  gating, qwen3:8b parse-fragility means model pin qwen2.5:32b for judgment work). T3 needs 3 consecutive qualifying
+  runs — propose rerun cadence.'
+note: 'Eval artifacts: scripts/bench/card-judgment/run-kkmac-*.{md,json}. Lesson filed: kk-mac-local-llm-lane-card-judgment-eval.
+  Blocker cleared: kk-mac was offline 2026-11-07, online and evaled 2026-11-13.'
+ref: OPS-0095
+comms:
+- at: 2026-11-13 20:16
+  from: devin
+  text: card captured via board-api
