@@ -1,7 +1,7 @@
 id: ha-ada-isolation
 title: Isolate tony-ha + kk-ha from Ada failures (runbook ha-ada-isolation)
 column: done
-updated: 2026-11-13 14:26
+updated: 2026-11-13 20:27
 brief: Execute docs/kb/ha-ada-isolation.md — an Ada backend failure (quota storm, tool loop, token leak, bad deploy,
   idc03 resource exhaustion) must not damage or take down tony-ha (prod) or kk-ha (member node).
 priority: high
@@ -278,6 +278,11 @@ comms:
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
     or teach a runner the capability'
 - at: 2026-11-13 14:26
+  from: chaba
+  text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
+    eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
+    or teach a runner the capability'
+- at: 2026-11-13 20:27
   from: chaba
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host pins
