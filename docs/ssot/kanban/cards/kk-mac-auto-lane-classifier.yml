@@ -1,6 +1,6 @@
 id: kk-mac-auto-lane-classifier
 title: Auto-route bounded task classes to kk_mac_local at queue time
-column: backlog
+column: doing
 updated: 2026-11-13 17:24
 brief: Cards with bounded read-only task classes (summary/operator_brief/structured_extract/safe_route) should auto-get
   executor=kk_mac_local instead of requiring an explicit pin.
@@ -23,9 +23,14 @@ action:
   type: dispatch
   repo: chaba
   lane: paid_frontier
-  status: queued
+  status: running
+  model: litellm/gemini-2.5-flash
+  runner: tony-omen
 ref: OPS-0093
 comms:
 - at: 2026-11-13 17:24
   from: tony
   text: card captured via board-api
+- at: 2026-11-13 17:24
+  from: tony-omen
+  text: claimed
