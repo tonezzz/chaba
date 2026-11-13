@@ -1,7 +1,7 @@
 id: kk-mac-auto-lane-classifier
 title: Auto-route bounded task classes to kk_mac_local at queue time
 column: doing
-updated: 2026-11-13 17:45
+updated: 2026-11-13 18:10
 brief: Cards with bounded read-only task classes (summary/operator_brief/structured_extract/safe_route) should auto-get
   executor=kk_mac_local instead of requiring an explicit pin.
 priority: medium
@@ -46,3 +46,9 @@ comms:
   text: 'implemented: dr.kk_mac_route() auto-pins executor=kk_mac_local at queue time (board-api _apply_classify_at_queue
     + runner claim-time JEV_LANE parity, do_claim persists task_class). Guards: no executor/lane/host pin, admitted
     class or unambiguous kw, no mutation intent, prompt<=6000. 21 new tests; targeted suite green, full suite running.'
+- at: 2026-11-13 18:10
+  from: devin
+  text: 'Done. dr.kk_mac_route() auto-routes unrouted+unpinned dispatch cards with bounded classes (summary/operator_brief/structured_extract/safe_route,
+    no mutation intent, prompt<=6000) to executor=kk_mac_local — applied at queue time (do=queue + create queue:true
+    + requeue), and at claim time on JEV_LANE runners with atomic executor+task_class pin. 18 new tests; suite 1446
+    passed / 1 unrelated pre-existing ops-render drift failure. Job record: docs/ssot/jobs/devnest/2026-11-13-kk-mac-auto-lane-classif'
