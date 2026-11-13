@@ -1,7 +1,7 @@
 id: mddb-embed-retry-cap
 title: Cap mddbd embed retry burst on provider recovery
 column: backlog
-updated: 2026-11-13 18:15
+updated: 2026-11-13 20:15
 spec: When OR cap opened 2026-11-12, backlog drained as a burst — +$0.20 immediately. Bounded retry + capped daily
   embed volume prevents cap-hit -> spend-spike on lift. mddbd embed retry loop on idc03.
 ref: MEM-0048
@@ -27,6 +27,15 @@ comms:
     in gemini-ollama-proxy — billed OR batches per UTC day are now hard-capped; beyond it embeds fail like an open
     circuit instead of draining the key. /health exposes or_daily_cap+or_calls_today. This bounds worst-case OR
     spend to ~$0.15-0.30/day. The mddbd-side bounde'
+- at: 2026-11-13 20:15
+  from: devin
+  text: 'SHIPPED mddb-fork ad7d3f72 (feat/vector-algorithms): failed embed jobs now requeue with bounded attempts
+    (MDDB_EMBEDDING_JOB_MAX_ATTEMPTS=50 default) instead of silently vanishing; queue.retried exposed via /v1/vector-stats.
+    Tests: RetryThenSucceeds + AttemptBudgetDropsPoisonJob + full suite green.
+
+
+    DEPLOYED image localhost/mddb:2.15.4-retry (breaker+retry overlay on -breaker): mddb-cms@idc03 + mddb-embed@idc02
+    both active, vector-stats queue.retried live. NOT yet on the replication pair (idc03 '
 requests:
 - id: retry-cap-work-is-mddbd-go-changes-bound-5f5605
   ask: Retry-cap work is mddbd Go changes (bounded retry + daily embed volume cap). Which lane?
