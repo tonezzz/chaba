@@ -1,7 +1,7 @@
 id: timer-alert-idc03-embed-lane-lessons
 title: Timer embed-lane-lessons on idc03 failing
 column: backlog
-updated: 2026-11-13 16:06
+updated: 2026-11-13 18:14
 priority: high
 tags:
 - timer-alert
@@ -1330,6 +1330,10 @@ comms:
 - at: 2026-11-13 16:06
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-13 18:14
+  from: devin
+  text: '2026-11-13 sweep: `start operation timed out` (TimeoutStartSec) — check timeout vs embed-path latency;
+    possibly slower after bank moves, verify endpoint it calls.'
 spec: Investigate the recurring timeout failure of embed-lane-lessons.service on idc03 by examining the systemd
   user journal using `journalctl --user -u embed-lane-lessons.service` on the host. Analyze the root cause of the
   timeout observed in recent runs and consult the CMS timer-timeline-idc03 for additional context. The task is successfully
