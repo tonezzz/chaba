@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: backlog
-updated: 2026-11-13 11:49
+updated: 2026-11-13 11:50
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -50,6 +50,13 @@ comms:
     root default from `litellm/gemini-3.5-flash-lite` to `opencode/iceman-free`; the next blank session draft displayed
     Iceman Free. Local commit da160f3 on feat/opencode-ada-agent (not pushed). Build agent still has explicit Gemini
     override, unchanged. No API key was co
+- at: 2026-11-13 11:50
+  from: devin
+  text: 'Resolution verified: selected `opencode/iceman-free` for the diagnostic session; it returned `OK` with
+    no tool calls. Changed only the project root model in /home/tony/DevNest-ada-agent/opencode.json from `litellm/gemini-3.5-flash-lite`
+    to `opencode/iceman-free`; new session draft now defaults to Iceman Free. Local commit da160f3 (not pushed).
+    No Gemini or LiteLLM secret was changed. Explicit `agent.build.model` remains Gemini and would still need the
+    missing LITELLM_KEY if used; left unchanged.'
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
