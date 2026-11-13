@@ -1,7 +1,7 @@
 id: keywatch-absolute-spend-floor
 title: 'key-watch: warn on absolute remaining + spend rate'
 column: doing
-updated: 2026-11-12 16:28
+updated: 2026-11-13 18:15
 spec: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
   $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to catch
   spend velocity. scripts/ops/key-watch.py.
@@ -26,6 +26,13 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-13 18:15
+  from: devin
+  text: 'DONE (aa8399e4ef9) — implemented directly. Correction on the lane: the opencode dispatch admission contract
+    only serves S3 read-only/report profiles (ops-readonly/ssot-research/storage-dryrun); branch-code-supervised-pilot
+    can never be claimed via card dispatch — that''s why it deferred. key-watch.py now has: (a) OR_REMAIN_FLOOR_USD
+    absolute floor warn (default $0.50 — fires regardless of cap size), (b) OR_DAILY_JUMP_USD velocity warn (default
+    $0.25/day) from persisted usage_daily, (c) usage_dail'
 action:
   type: dispatch
   repo: chaba
