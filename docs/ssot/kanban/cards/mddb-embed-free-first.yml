@@ -1,7 +1,7 @@
 id: mddb-embed-free-first
 title: 'Flip mddb embed order: free Gemini first, OR fallback'
 column: backlog
-updated: 2026-11-13 11:44
+updated: 2026-11-13 11:45
 spec: mddb-gemini.env on idc03 sets OPENROUTER_PRIMARY=1 (OR unconditional when key set). Bench 2026-09-27 proved
   AI-Studio direct == OR (cosine 1.000, same vector space). Billed OR as unconditional primary buys nothing the
   free Gemini leg doesn't. Flip to Gemini-first, OR-fallback -> OR spend ~0 except genuine outages. Edit ~tony/.config/secrets/mddb-gemini.env
@@ -3862,6 +3862,9 @@ comms:
 - at: 2026-11-13 11:44
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.50 > 0.85)'
+- at: 2026-11-13 11:45
+  from: chaba
+  text: 'mn01 defers: host overloaded (5m load/core 1.16 > 1.0)'
 action:
   type: dispatch
   status: queued
