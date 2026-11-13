@@ -179,6 +179,23 @@ PY
       || true
 }
 
+# Phantom rebase-state guard (OPS-0088): a git-safe-pull killed mid-setup
+# can leave .git/rebase-merge holding only `autostash` — git reports
+# "rebasing" forever and this check would refuse every tick. A real
+# rebase-merge always has onto/head-name, a real rebase-apply always has
+# next/last; a dir with none of those never started. Move it aside so the
+# tick self-heals instead of wedging the writer.
+for _st in rebase-merge rebase-apply; do
+    if [ -d "$gitdir/$_st" ] \
+       && [ ! -f "$gitdir/$_st/onto" ] \
+       && [ ! -f "$gitdir/$_st/head-name" ] \
+       && [ ! -f "$gitdir/$_st/next" ] \
+       && [ ! -f "$gitdir/$_st/last" ]; then
+        mv "$gitdir/$_st" "$gitdir/${_st}.phantom-$(date +%Y%m%d-%H%M%S)" \
+          && echo "kanban-commit: cleared phantom $_st state" >&2
+    fi
+done
+
 if [ -d "$gitdir/rebase-merge" ] || [ -d "$gitdir/rebase-apply" ] || \
    [ -f "$gitdir/MERGE_HEAD" ] || [ -f "$gitdir/CHERRY_PICK_HEAD" ]; then
     echo "kanban-commit: REFUSING to commit — rebase/merge/cherry-pick in progress ($gitdir)" >&2
