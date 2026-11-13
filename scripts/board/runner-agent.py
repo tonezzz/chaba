@@ -1304,6 +1304,26 @@ def opencode_bin() -> str:
     return ""
 
 
+_OPENCODE_V2: bool | None = None
+
+
+def opencode_needs_standalone(oc_bin: str) -> bool:
+    """opencode v2 `run` attaches to a shared `opencode serve` when one
+    is up — that server keeps its own env, so a card's LITELLM_KEY never
+    reaches the provider ("Key is blocked" on idc02, 2026-11-13). v2
+    needs --standalone; v1.x rejects the flag."""
+    global _OPENCODE_V2
+    if _OPENCODE_V2 is None:
+        try:
+            r = subprocess.run([oc_bin, "--version"], capture_output=True,
+                               text=True, timeout=15)
+            m = re.search(r"(\d+)\.", r.stdout or "")
+            _OPENCODE_V2 = bool(m and int(m.group(1)) >= 2)
+        except Exception:
+            _OPENCODE_V2 = False
+    return _OPENCODE_V2
+
+
 def jules_script() -> str:
     """scripts/jules/jules.py in the chaba dispatch checkout, else ""."""
     root = (_repo_checkout("chaba")
@@ -2249,7 +2269,8 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
         f"export OPENCODE_CONFIG={shlex.quote(str(confdir / 'opencode.json'))}; "
         f"cd {shlex.quote(str(worktree))} && "
         f"{shlex.quote(oc_bin)} run --format json "
-        f"--model {shlex.quote(model)} "
+        + ("--standalone " if opencode_needs_standalone(oc_bin) else "")
+        + f"--model {shlex.quote(model)} "
         f"--agent {shlex.quote(ocp.agent_name(prof_id))} "
         f"{shlex.quote(task)} 2>&1 | "
         f"tee {shlex.quote(str(taskdir / 'events.jsonl'))}; "

@@ -795,6 +795,25 @@ def confirm_human_watch(observer, job_id, seconds, read=None):
     return result
 
 
+_OPENCODE_V2: bool | None = None
+
+
+def opencode_is_v2() -> bool:
+    """v2 dropped --dir and attaches `run` to a shared `opencode serve`
+    (env doesn't reach the provider -> 'Key is blocked'); v1 rejects
+    --standalone. Detect once per process."""
+    global _OPENCODE_V2
+    if _OPENCODE_V2 is None:
+        try:
+            r = subprocess.run(["opencode", "--version"],
+                               capture_output=True, text=True, timeout=15)
+            m = re.search(r"(\d+)\.", r.stdout or "")
+            _OPENCODE_V2 = bool(m and int(m.group(1)) >= 2)
+        except Exception:
+            _OPENCODE_V2 = False
+    return _OPENCODE_V2
+
+
 def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
     if observer:
         print(f"LIVE_EVENTS {rd / 'events.jsonl'}", flush=True)
@@ -886,9 +905,13 @@ def cmd_run(args):
     oenv = dict(os.environ)
     oenv.update(arm_env(env))
     oenv["OPENCODE_CONFIG"] = str(rd / "opencode.json")
-    cmd = ["opencode", "run", "--format", "json",
-           "--dir", str(REPO), "--model", str(env["model"]),
-           "--agent", agent_name(prof["id"]), prompt]
+    cmd = ["opencode", "run", "--format", "json"]
+    if opencode_is_v2():
+        cmd.append("--standalone")
+    else:
+        cmd += ["--dir", str(REPO)]
+    cmd += ["--model", str(env["model"]),
+            "--agent", agent_name(prof["id"]), prompt]
     rec = {"exit_code": None, "error": None}
     watch_start = time.monotonic()
     try:
