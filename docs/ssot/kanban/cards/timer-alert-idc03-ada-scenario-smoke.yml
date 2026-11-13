@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-smoke
 title: Timer ada-scenario-smoke on idc03 failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:35
 priority: high
 tags:
 - timer-alert
@@ -1776,6 +1776,11 @@ comms:
   from: devin
   text: '2026-11-13 sweep: still failing — journal shows work completes (spend-ledger + report published) then exits
     nonzero → real scenario failure inside, needs scenario log read.'
+- at: 2026-11-13 23:35
+  from: devin
+  text: '2026-11-13: run published spend-ledger + report OK then exited nonzero — a scenario step inside failed.
+    Needs per-step drill-down of scenario-suite-run.sh output; journal tail only shows publish success. Likely same
+    class as memory-suite env break or a live-scenario flake — check next run detail.'
 action:
   status: done
   type: dispatch
