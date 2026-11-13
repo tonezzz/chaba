@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
 column: backlog
-updated: 2026-11-12 17:50
+updated: 2026-11-13 18:15
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -30,6 +30,13 @@ comms:
 - at: 2026-11-12 17:50
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-13 18:15
+  from: devin
+  text: 'State check 11-13: both circuits open — Gemini still 429 (quota never reset overnight, suggesting daily/monthly
+    pool shared across all Gemini consumers or a low embedding quota), OR leg now 403 key-limit-exceeded. Embed
+    lane hard-down until one recovers. Probe pages on every degraded/restored transition (verified firing 10:15
+    + 15:30). Per Tony''s answer: closing is armed for the first embed_provider_restored event — leaving open until
+    then as the live outage tracker.'
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
