@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit
 title: Timer chaba-audit on tony-omen disabled
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -45,6 +45,10 @@ comms:
   from: devin
   text: '2026-11-13 sweep: no journal entries in 24h — timer disabled; confirm intentional (holds batch) then close
     or re-enable.'
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: exit 1 after 50s real run (158M peak). Weekly SSOT/memory/services/timers audit — failure is
+    inside the audit checks themselves, not infra. Needs the audit score/output artifact to see which check failed.'
 spec: Ensure that `chaba-audit.timer` is enabled and active on the host `tony-omen`. Execute `systemctl --user enable
   --now chaba-audit.timer` to bring the critical audit census timer to its expected active state. Verify success
   by confirming the systemd user timer is active and running.
