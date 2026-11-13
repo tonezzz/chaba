@@ -1,0 +1,21 @@
+id: kk-mac-gateway-admission-shim
+title: Admission shim in front of kk-mac ollama tunnel for LiteLLM legs
+column: backlog
+updated: 2026-11-13 20:53
+priority: medium
+tags:
+- kk-mac
+- litellm
+- llm-lane
+spec: 'kk-mac legs are now leg-1 on summary/classify/bench and leg-2 on chat-local (deployed 2026-11-13). At the
+  LiteLLM layer there is NO admission gate — a hot/busy Mac (60C thermal cap, KK local load) still receives calls
+  and just answers slowly until the 120s timeout. Build a small healthcheck shim on idc03 that proxies :11445 (or
+  wraps it): returns 503 when the Ada Nest heartbeat is stale (>900s), cpu_temp_c>60, disk<20G, or load1/cores>1.0
+  — reusing scripts/devnest/kk_mac_admission.py snapshot() logic — so LiteLLM fails fast to the paid leg instead
+  of queueing slow calls on a busy member device. Done when: shim unit declared (quadlet/systemd), litellm api_base
+  repointed at the shim, a simulated temp-high heartbeat produces instant fallback, zero config drift vs repo.'
+ref: OPS-0098
+comms:
+- at: 2026-11-13 20:53
+  from: tony
+  text: card captured via board-api
