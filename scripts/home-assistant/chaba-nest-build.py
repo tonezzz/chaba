@@ -122,7 +122,7 @@ def discover(spec, key):
 def build_views(spec, key):
     cms = f"{spec['dashboard']['cms_base']}?api_key={key}"
     zoom, ratio = spec["dashboard"]["zoom"], spec["dashboard"]["tile_aspect"]
-    views = []
+    views = [dict(v) for v in spec["dashboard"].get("extra_views") or []]
     for t in spec["topics"]:
         name, path = t["name"], t["path"]
         pending = sum(1 for x in t["tiles"] if tile_state(x) != "pinned")

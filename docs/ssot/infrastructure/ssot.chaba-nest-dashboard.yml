@@ -32,6 +32,47 @@ dashboard:
   cms_base: https://idc03.taila0626a.ts.net/apps/ha/ada-tony/cms/
   zoom: '1.15'
   tile_aspect: 55%
+  # extra_views = hand-managed panel views prepended before the generated
+  # topic views (added 2026-11-13 — or-panel/hosts/board were live-only and
+  # a --apply would have dropped them). Keep in sync with the live
+  # lovelace config.
+  extra_views:
+  - type: panel
+    title: OR Panel
+    path: or-panel
+    icon: mdi:currency-usd
+    show_icon_and_title: false
+    layout: {}
+    cards:
+    - type: iframe
+      url: https://tony-ha.surf-thailand.com/apps/or-panel/?v=1
+      aspect_ratio: 50%
+      title: OR Spend Panel
+      hide_background: false
+  - type: panel
+    title: Hosts
+    path: hosts
+    icon: mdi:server-network
+    show_icon_and_title: false
+    layout: {}
+    cards:
+    - type: iframe
+      url: https://tony-ha.surf-thailand.com/chaba-admin/hosts
+      aspect_ratio: 50%
+      title: Tony HA — Hosts
+      hide_background: false
+  - type: panel
+    title: Board
+    path: board
+    icon: mdi:developer-board
+    show_icon_and_title: false
+    layout: {}
+    cards:
+    - type: iframe
+      url: https://tony-ha.surf-thailand.com/apps/board/?v=6
+      aspect_ratio: 50%
+      title: Working Board
+      hide_background: false
 topics:
 - name: Nest
   path: nest
@@ -104,4 +145,8 @@ topics:
   reports: tab=flood
 status:
   health: active — generated + pushed 2026-10-09, verified via playlive
-  last_updated: '2026-10-09'
+  last_updated: '2026-11-13'
+  note: >-
+    2026-11-13: extra_views added (or-panel, hosts, board) — live dashboard
+    mutated over websocket on ada-ha; or-panel api route restored on the
+    idc02 edge + web origin (see ssot.routes.yml or-panel-api).

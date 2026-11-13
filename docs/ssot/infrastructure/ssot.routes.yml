@@ -102,6 +102,12 @@ edges:
   #   /apps/roster* -> 127.0.0.1:8099 web origin (agents roster console,
   #   card roster-agents-tab; explicit handle needed — catch-all falls to
   #   HA :8123 and 404s unlisted /apps/*) added 2026-10-20
+  #   /apps/or-panel* -> 127.0.0.1:8099 web origin (OR spend panel,
+  #   card or-spend-observability; added 2026-11-13 — was missing, fell
+  #   through to HA :8123 and 404'd the whole panel)
+  #   /chaba-admin*   -> tony-ha :8123 with X-Frame-Options stripped
+  #   (header_down) so ada-ha chaba-nest can iframe /chaba-admin/hosts;
+  #   CF Access + HA auth still gate it. added 2026-11-13
 
 services:
   # fabric exports — where an app actually listens (bind 127.0.0.1 unless
@@ -152,6 +158,8 @@ routes:
   - {id: board-api,        kind: proxy,  path: /apps/board-api/*,      strip: /apps/board-api, upstream: "https://idc03.taila0626a.ts.net:10000", auth: tailnet-identity-write, owner: chaba, note: "canonical writer on idc03 — forward via tailscale serve so tailnet identity headers stay valid. 2026-10-22: CF-Access-gated public vhosts (tony-ha.surf-thailand.com) inject X-Board-Edge-Key (BOARD_EDGE_KEY env on the edge, BOARD_API_EDGE_KEY on the api) so public-edge writes verify as edge:<cf-email>; tailnet front :8088 keeps tailnet-only guard"}
   - {id: report-api,       kind: proxy,  path: /apps/system-report/api/*, strip: /apps/system-report/api, upstream: "idc02.taila0626a.ts.net:8792", auth: tailnet-identity-write, owner: chaba}
   - {id: system-report,    kind: static, path: /apps/system-report/*,  owner: chaba, public_host: monitor.surf-thailand.com}
+  - {id: or-panel-api,     kind: proxy,  path: /apps/or-panel/api/*, strip: /apps/or-panel/api, upstream: "https://idc03.taila0626a.ts.net:18443", owner: chaba, note: "spend-hook :18001 on idc03 via tailscale serve :18443 (card or-spend-observability); lives inside each web origin's Caddyfile, NOT the edge"}
+  - {id: or-panel,         kind: static, path: /apps/or-panel/*,      owner: chaba, note: "OR spend panel static (stacks/web/public/apps/or-panel); edge handle -> :8099 web origin added 2026-11-13"}
   # usage-feed — card wp-usage-pull-render-plesk-worker (OPS-0661):
   # idc03 usage-feed.py pushes aggregate JSON into the idc02 caddy-edge
   # webroot (/data/www/feeds/); edge serves it under a bearer gate so the
