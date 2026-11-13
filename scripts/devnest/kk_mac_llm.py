@@ -40,7 +40,7 @@ def call_remote(
     prompt: str,
     *,
     host: str = "kk-mac",
-    model: str = "qwen3:8b",
+    model: str = "qwen2.5:32b",
     ssh_run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
 ) -> dict:
     payload = json.dumps({
@@ -74,7 +74,7 @@ def run_task(task_class: str, prompt: str, **kwargs) -> dict:
     return {
         "ok": True,
         "admission": gate,
-        "model": kwargs.get("model", "qwen3:8b"),
+        "model": kwargs.get("model", "qwen2.5:32b"),
         "task_class": task_class,
         "response": response.get("response", ""),
         "usage": {

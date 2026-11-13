@@ -73,7 +73,10 @@ JSON_CLASSES = frozenset(
 # scripts/, secrets, or anything executable/deployable
 ARTIFACT_ROOTS = ("evals/kk-mac-lane/out/", "reports/", "docs/reports/")
 DEFAULT_ARTIFACT_ROOT = "evals/kk-mac-lane/out/"
-DEFAULT_MODEL = "qwen3:8b"
+# qwen2.5:32b, not qwen3:8b — 2026-11-13 card-judgment eval (card
+# kk-mac-card-judgment-eval): qwen3:8b scored 0.674 acc with 16 parse
+# failures; qwen2.5:32b hit 0.857/0.878/0.909/1.0 with zero parse-fails.
+DEFAULT_MODEL = "qwen2.5:32b"
 MAX_RESPONSE_CHARS = 20000
 FALLBACK = "__kk_mac_fallback__"
 
