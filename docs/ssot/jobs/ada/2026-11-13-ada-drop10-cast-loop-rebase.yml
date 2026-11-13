@@ -1,0 +1,50 @@
+date: 2026-11-13
+title: ada-voice drop 10 rebase — realtime_provider.cast-loop.patch rotted on context drift
+domain: ada
+job: dispatch-wt-20261113-123251-evidence-2026-11-13-clean-orig
+cards: [chaba-merge-gate-ada-drop10-rotted, ada-cast-wrong-target-verbose-loop]
+host: tony-omen
+summary: >
+  Merge-gate test tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean
+  red-held unrelated dispatch merges (kk-mac-supervised-probe-20261113,
+  kk-mac-lane-live-probe 2026-11-12): drop 10's
+  realtime_provider.cast-loop.patch reported 'diverged' with no sibling
+  'merged', so drop_guard_ok judged the pending drop's base rotted.
+  Root cause was context-line rot only — upstream ada-voice rewrote the
+  DEFAULT_ADA_INSTRUCTIONS bullet adjacent to the insert anchor
+  ("Live status: use nest_status…" → "Questions about ongoing work…");
+  the three bullets the patch adds (TARGET FIDELITY / FRUSTRATION BUDGET /
+  FAILED-ACTION LOOP) are still absent upstream, so the drop remains
+  pending. Fix: regenerated the patch against ada-voice HEAD 07119b1
+  (identical 19 added lines, fresh context + hunk offsets), updated the
+  drop-10 base note in integrations/ada-voice/README.md.
+
+evidence:
+  - 'pre-fix states: screens.delivered-zero/ha.unavailable-precheck/
+    tool_runner.goal-loop/common.goal-loop/tool_guide.target-fidelity
+    = applies; realtime_provider.cast-loop = diverged; guard FAIL.'
+  - 'grep ada-voice HEAD: no TARGET FIDELITY, FRUSTRATION BUDGET,
+    FAILED-ACTION LOOP, or stop_and_ask — intent not landed, repair (not
+    retire) was the right branch.'
+  - 'post-fix: pytest tests/ada/test_cast_loop_breaker.py -q → 2 passed
+    (apply-gate AND the full patched-tree cast_wrong_target_loop
+    scenario run via the checkout venv).'
+
+resolution:
+  - 'integrations/ada-voice/backend/realtime_provider.cast-loop.patch
+    regenerated vs ada-voice main @ 07119b1 (was staged vs 5dc7665).'
+  - 'integrations/ada-voice/README.md drop-10 install note + Verified
+    section record the rebase and the new base hash.'
+
+verify:
+  - 'python3 -m pytest tests/ada/test_cast_loop_breaker.py::test_patches_apply_clean -q'
+  - 'subsequent unrelated dispatch merge should pass the gate
+    (kk-mac-supervised-probe-20261113 was the held case).'
+
+notes:
+  - 'Rebase recipe when a drop rots again: clone ada-voice depth-1
+    inside the worktree, insert the patch''s + lines at the surviving
+    anchor, git diff > patch. Keep hunk content byte-identical.'
+  - 'If upstream ever lands equivalent instruction text, the patch
+    flips to merged/diverged-with-sibling-merged and the guard
+    tolerates it — retire only then.'
