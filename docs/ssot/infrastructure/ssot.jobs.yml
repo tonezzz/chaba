@@ -456,11 +456,15 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
   env:
     TELEMETRY_DEVICES: tony-macbook
+  env_file: '%h/.config/secrets/telemetry-ha-push.env'
   note: reads device-telemetry/<dev>/latest from MDDB :11023 and mirrors battery sensors
     (sensor.<dev>_battery{,_health,_cycles,_temp,_voltage} + binary_sensor.<dev>_telemetry_fresh)
-    into tony-ha via REST. Token file is the same home-assistant-token env file board_notify.py
-    uses — credential stays on tony_omen, never on the laptop. Stale beacon docs set fresh=off
-    without zeroing sensors — asleep/off-net is quiet. Card macbook-battery-swell; added 2026-10-21.
+    into tony-ha via REST. env_file carries HA_LONG_LIVED_TOKEN for the dedicated
+    'telemetry-ha-push' LLAT (minted 2026-11-13 under the Tony owner account —
+    POST /api/states is admin-only since the HA http hardening, so the old
+    svc-chaba-scripts token 401'd every run and the chaba-admin hosts card went
+    'entity not found'). Stale beacon docs set fresh=off without zeroing sensors —
+    asleep/off-net is quiet. Card macbook-battery-swell; added 2026-10-21.
 - id: device-telemetry-prune
   name: Device telemetry retention prune (7d)
   host: idc03
