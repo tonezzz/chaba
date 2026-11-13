@@ -1,0 +1,85 @@
+title: NCM+JEV+Nest P0 — worker contract & provider-free replay benchmark
+subtitle: Frozen corpus replayed through 8 arms; gate = schema validity + deterministic replay from manifest.json
+icon: flask
+card: ncm-jev-p0-replay-contract  # OPS-0094
+related:
+  procedure: docs/kb/ncm-jev-nest-exploration-procedure.md  # P0 stage
+  parent: ncm-jev-nest-mixed-benchmark  # done card; design + education
+  code: experiments/ncm-jev-p0/
+  packet: experiments/ncm-jev-p0/packet/
+
+decision_context:
+  mode: dispatch  # card ncm-jev-p0-replay-contract, runner tony-omen
+  guardrails: |
+    No account upgrade, no paid GPU, no paid inference. GPU training
+    stages (P1) stay blocked until authorized compute exists. LLM arms
+    used the already-running local Ollama lane on tony-omen — recorded
+    once at freeze time, replayed provider-free. No production routing
+    changes.
+
+what_was_built:
+  harness: |
+    experiments/ncm-jev-p0/p0harness/ — stdlib-only python3 pipeline:
+    contract.py (worker-contract-v1 schema, canonical-json hashing,
+    authority-guard scan), fixtures.py (seeded Sudoku port of
+    ncmthai.sudoku_data + authored Thai corpus + fixed prompts),
+    workers.py (char-trigram AR baseline, two-level NCM-shaped stand-in,
+    Ollama freeze/record + replay clients, jev-rules-v1 router),
+    verifier.py (deterministic per-kind scorer: sudoku wellformed/valid/
+    clues/solved, thai ratio+degenerate guard, prompt checks, decision
+    schema check), registry.py (arm pins), freeze.py, harness.py,
+    replay.py, packet.py. CLI: python3 -m p0harness freeze|run|replay|
+    packet|all.
+  corpus: |
+    corpus/frozen.json — 10 tasks (4 seeded Sudoku @40 clues, 3 Thai
+    continuation fixtures, 3 short prompts), 24-line authored Thai
+    training corpus (generic text, no personal data), pinned model
+    metadata (ollama sha256 digests, GGUF quant, observed processor),
+    and 60 recorded LLM outputs (3 arms x 10 tasks x seeds {42,7}).
+  arms: |
+    5 generative: ar_char_ngram (real order-3 char AR on frozen corpus),
+    ncm_2level (contract stand-in, NOT trained NCM — checkpoint blocked
+    pending P1 GPU), llm_qwen3_0p6b / llm_llama32_1b / llm_qwen3_4b
+    (pinned digest + quant + decode). 1 decision: jev_route (rules
+    router, scored as decision not text). 2 composite: jev_routed
+    (route+pool pick), parallel_verified (bounded pool + deterministic
+    ranker). 150 contract rows total.
+  gate: |
+    P0 gate = deterministic schema validity + reproducible replay from
+    manifest.json without provider calls. Replay regenerates all rows
+    and compares identity fields (all but wall-clock latency_ms).
+    Authority guard escalates any output minting permission keys
+    (allowed_paths/tools/credentials/...).
+
+results:
+  gate: |
+    PASS — 150 rows, 0 schema errors, replay ok=true (0 identity
+    mismatches), 0 authority-guard violations, 0 providers called at
+    replay. Packet: manifest.json + results.json + report.md +
+    verdict.json (watch) + education.html.
+  quality_signal: |
+    Provisional, contract-exercise only (claimed-answer scoring — last
+    non-empty line / last grid): llm_qwen3_0p6b 12/20 pass (mean 0.68),
+    llm_llama32_1b 10/20 (0.58), llm_qwen3_4b 4/20 (0.455) — verbose
+    reasoning style needs pinned 900/600/500 num_predict and still
+    truncates on Thai cells; sim arms pass only Thai cells (7/20);
+    jev_route 10/10 wellformed decisions; jev_routed 10/20; bounded
+    parallel_verified 12/20 via best-of-pool. No arm solved a Sudoku
+    (4b reached wellformed+clues-preserved but invalid grids) — honest
+    signal for P3 design, no quality claims at P0.
+
+verdict:
+  call: watch
+  why: |
+    Contract machinery proven end-to-end and replay-deterministic — the
+    P0 deliverable. Adoption decisions need the trained NCM (P1, blocked
+    on authorized GPU) and P3 paired repetitions; nothing here justifies
+    a routing change.
+
+next:
+  - P1 needs authorized GPU (Colab); frozen SP tokenizer + VQ codes +
+    generator training; stays blocked per resource guard
+  - P2 JEV route-accuracy benchmark on metadata-only features + held-out
+    labels
+  - adding an LLM arm = registry.LLM_ARMS entry + freeze --only-arm id
+    (incremental, keeps other cells)
