@@ -4,6 +4,12 @@ import { createServer } from "node:http";
 const PORT = parseInt(process.env.GEMINI_PROXY_PORT || "11435", 10);
 const HOST = process.env.GEMINI_PROXY_HOST || "0.0.0.0";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Paid-tier Gemini key — same models, same vector space as the free key,
+// billed per call. Engaged only after the free leg exhausts retries and
+// BEFORE the Ollama fallback (different vector space): during a free-quota
+// outage this keeps vectors index-safe at bounded spend. gemini-keys.env
+// carries it; unset = leg skipped.
+const GEMINI_API_KEY_PAID = process.env.GEMINI_API_KEY_PAID || "";
 const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2";
 // Fallback model is OFF by default — gemini-embedding-001 and -2 are
 // DIFFERENT vector spaces (measured cos ≈ 0.00), so cross-model retry
@@ -188,8 +194,8 @@ function parseGeminiBatch(data, count) {
   });
 }
 
-async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${GEMINI_API_KEY}`;
+async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality, apiKey = GEMINI_API_KEY) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${apiKey}`;
   const requests = texts.map((text) => ({
     model: `models/${geminiModel}`,
     content: { parts: [{ text }] },
@@ -237,15 +243,15 @@ async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionalit
   throw new Error(lastError);
 }
 
-async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null) {
+async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null, apiKey = GEMINI_API_KEY) {
   try {
-    return await _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality);
+    return await _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality, apiKey);
   } catch (err) {
     if (fallbackModel && String(err).includes("429")) {
       console.log(
         `Primary Gemini model ${geminiModel} rate-limited; trying fallback ${fallbackModel}`
       );
-      return await _fetchGeminiBatchForModel(texts, fallbackModel, outputDimensionality);
+      return await _fetchGeminiBatchForModel(texts, fallbackModel, outputDimensionality, apiKey);
     }
     throw err;
   }
@@ -335,6 +341,19 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
         console.log(`direct Gemini fallback failed (${String(e2.message).slice(0, 80)})`);
       }
     }
+    // Paid-Gemini leg: same model/vector space as free — strictly better
+    // than the hard-fail below during a free-quota outage.
+    if (GEMINI_API_KEY_PAID) {
+      try {
+        const out = await fetchGeminiBatch(
+          texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+        lastBackupProvider = `${geminiModel}-paid`;
+        console.log(`served via paid Gemini fallback (${geminiModel})`);
+        return out;
+      } catch (e3) {
+        console.log(`paid Gemini fallback failed (${String(e3.message).slice(0, 80)})`);
+      }
+    }
     // Fail hard — wrong-space fallback is worse than surfacing the
     // failure to the caller.
     const orState = orCircuitOpen ? " circuit-open" : (orCapped ? ` daily-cap ${OR_FALLBACK_DAILY_CAP} hit` : "");
@@ -350,6 +369,21 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       return out;
     } catch (err) {
       console.log(`backup Gemini failed (${String(err.message).slice(0, 80)})`);
+    }
+  }
+  // Paid-Gemini leg: identical model + vector space as the free key, so
+  // serving it during a free-quota outage keeps the index consistent —
+  // strictly better than the different-space Ollama fallback below.
+  // Bounded spend: only reached after the free leg's retries are spent.
+  if (GEMINI_API_KEY_PAID) {
+    try {
+      const out = await fetchGeminiBatch(
+        texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+      lastBackupProvider = `${geminiModel}-paid`;
+      console.log(`served via paid Gemini fallback (${geminiModel})`);
+      return out;
+    } catch (err) {
+      console.log(`paid Gemini failed (${String(err.message).slice(0, 80)})`);
     }
   }
   if (!OLLAMA_FALLBACK_BASE) {
@@ -411,7 +445,7 @@ async function handleEmbed(req, res) {
     ? parseInt(outputDimensionality, 10)
     : DEFAULT_DIMENSIONS;
 
-  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY) {
+  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY && !GEMINI_API_KEY_PAID) {
     return sendJson(res, 500, {
       error: "no embedding provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)",
     });
