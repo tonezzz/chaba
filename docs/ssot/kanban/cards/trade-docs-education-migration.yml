@@ -1,0 +1,49 @@
+id: trade-docs-education-migration
+title: Trade docs -> Education wiki + news migration (free-lane pipeline)
+column: backlog
+updated: 2026-11-13 21:42
+brief: Migrate ~/CascadeProjects/trade/docs into WP lessons + wiki Education + one news milestone, drafting on the
+  $0 free lane.
+priority: medium
+program: education
+tags:
+- education
+- trade
+- free-lane
+- docs
+- wiki
+spec: 'Migrate the trade system docs (~/CascadeProjects/trade/docs, ~40 pages, indexed in trade/.docs-mcp/documents.json)
+  into the wiki education + news surfaces, with drafting done on the FREE lane ($0 models).
+
+
+  TARGET SURFACES (all via board-api doors — agents never hold WP/wiki creds):
+
+  - Education lessons: POST /lesson (scripts/lesson-add.py) — WP lesson CPT, auto-mirrored to MDDB chaba-lessons.
+  Existing family: trade-map hub + trade-architecture, trade-data-sources, trade-signals-backtest, trade-gold-thb.
+  Upsert by topic slug; extend scripts/lesson-drift-map.yml coverage + SERIES[''trade'']=''Trade'' in scripts/wiki-lesson-migrate.py.
+
+  - Wiki Education: namespace on wiki.h3 via /publish sink wiki-education (scripts/wiki-lesson-migrate.py --apply
+  --only trade) after LocalSettings gate exists.
+
+  - News: ONE milestone event via POST /publish kind=news (requires confidence=verified + evidence links) when migration
+  completes — NOT per lesson (noise policy).
+
+
+  FREE LANE: executor=opencode / lane=free_lane -> litellm/gemini-3.5-flash-lite or opencode/*-free / or-free-nemotron-*.
+  Constraint found 2026-11-13: ~/CascadeProjects/trade is NOT a git repo, so no dispatch worktree — drafting runs
+  host-side via `opencode run` headless (gh-radar leaf precedent) inside a type:script card on tony_dell (has opencode
+  + litellm-chaba.env + trade checkout; idc02 also has all three).
+
+
+  ORDER: (1) build scripts/trade-lesson-migrate.py [card trade-lesson-migrate-script], (2) per-topic draft cards
+  [trade-lesson-*], (3) wiki Education mirror, (4) news milestone, (5) update trade-map hub lesson inventory + lesson-drift-map.yml
+  so the daily drift check covers new topics.
+
+
+  Gate per topic: lesson slug returned by /lesson + drift-map entry present. Flash-lite is single-doc->single-lesson
+  only; Thai prose and multi-step reasoning escalate to devin.'
+ref: OPS-0102
+comms:
+- at: 2026-11-13 21:42
+  from: devin
+  text: card captured via board-api (trade docs -> education migration, free lane)
