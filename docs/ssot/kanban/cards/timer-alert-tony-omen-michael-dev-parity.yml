@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-michael-dev-parity
 title: Timer michael-dev-parity on tony-omen failing
 column: doing
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -1465,6 +1465,11 @@ comms:
 - at: 2026-11-13 18:14
   from: devin
   text: 'known: checks :8124 loopback but service publishes :9585 — fix card OPS-0040 open.'
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: ConnectionRefused idc02:8124 — this is the KNOWN wrong-port bug already carded as OPS-0040
+    (mirror-sweep should target :9585 not loopback :8124). This timer card is the symptom; fix lands via OPS-0040.
+    Keeping open until parity check goes green post-fix.'
 action:
   status: failed
   type: dispatch
