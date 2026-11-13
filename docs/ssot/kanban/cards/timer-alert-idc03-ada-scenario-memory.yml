@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-13 23:35
 priority: high
 tags:
 - timer-alert
@@ -456,6 +456,13 @@ comms:
 - at: 2026-11-13 18:14
   from: devin
   text: '2026-11-13 sweep: Result=resources (likely OOM-kill class) — needs journal -k / memory check.'
+- at: 2026-11-13 23:35
+  from: devin
+  text: 'Root cause 2026-11-13: EnvironmentFile ada-ha-tony.env MISSING on idc03 — only .bak-* files remain (svcada
+    migration 2026-10-15 moved auth to service-account/keys.json). Unit + ExecCondition both reference the dead
+    path -> resources failure before start. NEEDS: repoint ada-scenario-*.service EnvironmentFile/ExecCondition
+    to current auth (check ada-chaba.env or ada-ha keys mechanism used by live ada services). Same break likely
+    hits other ada-scenario-* units still referencing the file.'
 action:
   status: done
   type: dispatch
