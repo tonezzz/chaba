@@ -453,23 +453,39 @@ def parse_opencode_events(log_path: Path) -> dict:
             peek_hit = ("verify.py" in fpath) or bool(re.search(
                 r"shadow/fixtures/\S*(?:verify\.py|l0\.py)", fpath))
             if not peek_hit and cmd:
-                if re.search(r"\b(?:verify\.py|l0\.py)\b", cmd):
-                    peek_hit = True
-                else:
-                    # Token-wise: inputs/, task.yaml, prompt.md are task
-                    # spec; verify.py/l0.py and bare fixture dirs are held-out.
-                    for tok in re.findall(r"shadow/fixtures/\S*", cmd):
-                        rel = tok.split("shadow/fixtures/", 1)[1] \
-                            .rstrip("\"'|&;,) ")
-                        rel = rel.rstrip("/")
-                        base = rel.rsplit("/", 1)[-1]
-                        if base in ("verify.py", "l0.py") or \
-                                "/" not in rel or \
-                                not ("/inputs/" in "/" + rel or
-                                     rel.endswith("/inputs") or
-                                     base in ("task.yaml", "prompt.md")):
+                # Content/execution verbs can expose held-out file
+                # contents; metadata verbs (du/stat/find/ls/df/file)
+                # cannot — storage-dryrun legitimately stats fixture
+                # dirs because candidate_scan.root="." includes them.
+                content_verb = re.search(
+                    r"\b(?:cat|head|tail|less|more|sed|awk|grep|egrep|"
+                    r"fgrep|xxd|od|strings|python\d*|perl|ruby|node|"
+                    r"bash|sh|source|dd|tar|unzip|zip|cp|mv|rm|tee|"
+                    r"scp|rsync)\b", cmd)
+                for tok in re.findall(r"shadow/fixtures/\S*", cmd):
+                    rel = tok.split("shadow/fixtures/", 1)[1] \
+                        .rstrip("\"'|&;,) ")
+                    rel = rel.rstrip("/")
+                    base = rel.rsplit("/", 1)[-1]
+                    if base in ("verify.py", "l0.py"):
+                        peek_hit = True
+                        break
+                    if "/" not in rel:
+                        # bare fixture name or fixture root
+                        if content_verb:
                             peek_hit = True
                             break
+                        continue
+                    if "/inputs/" in "/" + rel or \
+                            rel.endswith("/inputs") or \
+                            base in ("task.yaml", "prompt.md"):
+                        continue
+                    # unknown file or subdir under a fixture
+                    peek_hit = True
+                    break
+                if not peek_hit and content_verb and re.search(
+                        r"\b(?:verify\.py|l0\.py)\b", cmd):
+                    peek_hit = True
             if peek_hit:
                 peeks.append(f"{name}:{(fpath or cmd)[:160]}")
     return {"tokens": tokens, "tool_calls": tools,
