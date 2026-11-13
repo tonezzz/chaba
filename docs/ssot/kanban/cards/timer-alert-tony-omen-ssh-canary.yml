@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ssh-canary
 title: Timer ssh-canary on tony-omen failing
 column: backlog
-updated: 2026-11-13 22:53
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -639,5 +639,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-13 22:35) of `ssh-canary.service` on `tony-omen` result=exit-code — investigate
     journal: `journalctl --user -u ssh-canary.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: exit 1 but journal tail shows no error detail (scrolled). Canary checks tony-dell via LAN+tailnet
+    — dell ssh verified healthy from this host today, so likely the omen->dell LAN path or a stale route. Needs
+    the canary stdout artifact for the failing leg.'
 action:
   status: done
