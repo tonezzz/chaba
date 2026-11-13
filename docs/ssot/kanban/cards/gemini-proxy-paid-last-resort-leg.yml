@@ -1,7 +1,7 @@
 id: gemini-proxy-paid-last-resort-leg
 title: 'gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)'
 column: backlog
-updated: 2026-11-12 09:51
+updated: 2026-11-13 23:18
 priority: low
 tags:
 - mddb
@@ -17,3 +17,10 @@ comms:
 - at: 2026-11-12 09:51
   from: devin
   text: card captured via board-api
+- at: 2026-11-13 23:18
+  from: devin
+  text: 'DONE 2026-11-13: paid-Gemini leg shipped (PR #171 squash-merged). fetchBackupBatch now tries GEMINI_API_KEY_PAID
+    after free-key retries, before Ollama — in BOTH OR-primary chain (before hard-fail) and free-first path. Gotcha
+    found+fixed: paid key lived in gemini-keys.env but the service reads mddb-gemini.env — copied var over (no secret
+    exposure), restarted gemini-ollama-proxy.service on idc03. Verified: /api/embed returns 768-dim via google/gemini-embedding-2,
+    provider field will show -paid whe'
