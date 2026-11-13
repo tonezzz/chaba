@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-omen failing
 column: backlog
-updated: 2026-11-13 23:24
+updated: 2026-11-13 23:39
 priority: high
 tags:
 - timer-alert
@@ -18,3 +18,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-13 23:01) of `chaba-repo-sync.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-13 23:39
+  from: devin
+  text: '2026-11-13: reconcile deferred 10 conflict files (60s budget) + could not reach board-api for ops-local-conflict-guard
+    flag -> exit 1. Same dirty-checkout class as tony-dell mirror-sync: omen exec checkout accumulates .local-conflict
+    files faster than reconcile drains them while board-api is contended. Structural fix = same decision as dell
+    card (runtime-path exclusion or relaxed exit).'
