@@ -1,0 +1,105 @@
+title: "kk_mac auto-route — bounded read-only classes self-pin executor=kk_mac_local at queue time"
+date: 2026-11-13
+card: kk-mac-auto-lane-classifier
+session: "dispatch-wt-20261113-172448-goal-cards-with-bounded-read-o (tony-omen)"
+status: "implemented — 18 new cases; full suite 1446 passed / 1 unrelated
+  pre-existing ops-render drift failure; awaiting merge"
+
+context: >
+  OPS-0079 (kk-mac-supervised-probe-20261113) proved the kk_mac_local lane
+  end-to-end on a KK_MAC_LANES=1 runner, but routing to it still required the
+  author to pin action.executor by hand. Decision standard rank 3
+  (ssot.repo-decision.yml) already prescribes auto-selecting kk_mac_local for
+  read-only bounded classes; this change implements that rank in the
+  classifier instead of leaving it to card authors.
+
+rule:
+  name: "dr.kk_mac_route(card) -> task_class | ''"
+  fires_when_all:
+    - "nothing already routed: no action.executor, no action.lane"
+    - "no host pin: action.host / target_host / runner all unset"
+    - "action.type is dispatch (the only type the lane serves)"
+    - "an admitted class: action.task_class in KK_MAC_TASK_CLASSES, or
+       unambiguous prompt keywords infer one (KK_MAC_ROUTE_KW)"
+    - "no mutation/side-effect intent in card text (KK_MAC_MUTATING_RE)"
+    - "resolved prompt (prompt -> spec -> title+note, same order as
+       start_kk_mac_lane) is non-empty and <= 6000 chars"
+  never_routes:
+    - "cards pinning another executor or lane"
+    - "host-pinned cards (host/target_host/runner)"
+    - "cards with push/deploy/commit/merge/restart/install-style intent"
+    - "unadmitted task_class values (fail closed, never guess)"
+    - "script/container typed cards"
+  safety: "try-first contract is unchanged — a mis-routed card costs one
+    admission probe and falls back to the next lane under the same claim;
+    it never starves and never runs outside the admitted classes"
+
+surfaces:
+  scripts/board/dispatch_repos.py: "kk_mac_route() + kk_mac_prompt() +
+    KK_MAC_ROUTE_KW / KK_MAC_MUTATING_RE / KK_MAC_MAX_PROMPT_CHARS —
+    canonical home, same module as classify_lane"
+  scripts/board/board-api.py: "_apply_classify_at_queue tries
+    dr.kk_mac_route before the lane classifier and persists
+    executor+task_class + a comms note; it now also runs on the
+    do_create queue:true and on_exists:'queue' paths (they used to arm
+    queued status with no classification at all); do_create accepts a
+    bare task_class in the admitted set as the auto-route hint (other
+    executor pins and unadmitted classes still fail closed); do_claim
+    persists claim-time task_class only when paired with
+    executor=kk_mac_local"
+  scripts/board/runner-agent.py: "claim_pass JEV_LANE classify block
+    runs dr.kk_mac_route before the lane classifier for cards that
+    queued outside board-api; the executor+task_class pin rides the
+    atomic /action do=claim body like lane/model already do"
+
+behavior:
+  queue: "/action do=queue on a card with task_class=summary and no
+    executor now stamps executor=kk_mac_local + comms
+    'auto-routed to executor=kk_mac_local (task_class=summary)'"
+  claim: "a KK_MAC_LANES=1 runner's claimable() serves the card; other
+    hosts defer while the lane probe is live, or claim it as a
+    next-lane run when the lane is ineligible (existing try-first)"
+  fallback: "no KK_MAC_LANES runner in the fleet -> first claimer's
+    start_task marks kk_mac_tried and continues on the normal lane —
+    auto-route degrades to pre-change behavior"
+
+tests:
+  - "tests/board/test_queue_time_classify.py::KkMacRouteUnitTest —
+     8 cases: declared class, keyword inference, executor/lane/host
+     pins, mutation intent, unadmitted class, 6000/6001 boundary,
+     script type"
+  - "tests/board/test_queue_time_classify.py::KkMacAutoRouteQueueTest —
+     6 cases: queue stamps executor+task_class (+comms), keyword-only
+     card routes, executor/lane/host pins untouched, mutation intent
+     falls to devin lane, oversized prompt falls through; pin verified
+     claimable on a KK_MAC_LANES=1 runner"
+  - "tests/board/test_executor_contract.py — +4 cases: bare admitted
+     task_class accepted at create, bare unadmitted rejected, do_claim
+     persists kk_mac task_class, do_claim rejects task_class without
+     kk_mac_local pairing"
+
+docs_updated:
+  - "docs/ssot/ssot.procedures.yml ai-lane-delegate trigger — executor
+     pin no longer required for bounded classes"
+  - "docs/ssot/infrastructure/ssot.devnest-lanes.yml — kk_mac_local lane
+     section + KK_MAC_LANES env gate + auto-route description (it had no
+     lane entry at all before)"
+  - "this file"
+
+verify:
+  - "python3 -m pytest tests/board/test_queue_time_classify.py
+     tests/board/test_executor_contract.py -q — 97 passed"
+  - "python3 -m pytest tests -q — 1446 passed, 47 skipped, 1 failed:
+     tests/ops/test_render_jobs.py GeneratedTree drift in
+     systemd/generated/idc03 (chaba-cached-videos / chaba-review-digest /
+     chaba-starboard-tracker / fleet-jobs-report) — pre-existing manifest
+     vs generated-tree drift on this branch; this change touches neither
+     ssot.jobs.yml nor systemd/generated"
+
+known_limits:
+  - "keyword inference is deliberately narrow — ambiguous prose keeps
+     the normal lane classifier; declare action.task_class for a
+     deterministic route"
+  - "mutation-intent is a keyword denylist, not a proof — the lane
+     contract (bounded class, read-only executor, admission probe)
+     remains the actual safety boundary"
