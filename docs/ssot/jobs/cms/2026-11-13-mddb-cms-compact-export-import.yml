@@ -1,0 +1,64 @@
+job: mddb-cms-compact-export-import
+date: 2026-11-13
+host: idc03
+instance: mddb-cms (:11027, ~/.config/containers/mddb-cms/data)
+result: success
+summary: >-
+  Freelist/dead-page bloat compacted via export->fresh-db->reimport->swap
+  (procedure B from docs/kb/mddb-prune-compact.md). mddb.db 24G -> 2.4G,
+  all 19 collections / 8445 doc-langs preserved byte-identical.
+verifier_goals:
+  health_200: pass
+  doc_count_parity: pass (8445 docs, per-collection exact)
+  size_lt_4G: pass (2.4G)
+  search_infrastructure_ssot: pass (returns hits)
+notes:
+  - >-
+    cms IS vector-enabled (ollama 127.0.0.1:11435, gemini-embedding-2, 768d).
+    Scratch must replicate embedding env AND use --network=host so
+    127.0.0.1:11435 resolves to host ollama.
+  - >-
+    MDDB_EMBEDDING_QUEUE_SIZE=40000 on scratch is the key tweak vs the ops
+    run: default queue 4000 + wait=30s throttles /v1/add to embed-drain rate
+    (~2 docs/s for chunky colls) and starts dropping adds. With a 40k queue
+    nothing blocks and nothing drops.
+  - >-
+    Embed queue is NOT persisted in the db file — post-swap ~7.2k of 8.4k
+    docs had no vectors. Fixed by running scripts/mddb/vector-reindex.py
+    with MDDB_BASE_URL=http://100.102.134.91:11027 (re-embeds by
+    content-hash; ~30k chunks through gemini-embedding-2).
+  - >-
+    /v1/export emits one line per (key,lang) — en+th variants share a key.
+    Stats documentCount counts doc-langs. Any diff/converge logic MUST key
+    on (key,lang), not key alone — a key-only diff silently under-imports
+    thai variants.
+  - >-
+    Freeze set: idc03 timers (media-inbox-*, voice-burn-ledger,
+    house-timeline, ops-health-report, cam-wall-cms-vps, chaba-report-watch,
+    chaba-cms-regen, kanban-commit, kanban-sync, chaba-kanban-brief,
+    chaba-review-digest, chaba-standard-drift, chaba-starboard-tracker,
+    chaba-tony-ideas, chaba-cached-videos, daily-brief, qc-scoreboard,
+    chaba-bge-education-shadow, chaba-lessons-*, overnight-assessment,
+    focus-dispatcher-overnight, wp-comment-sync, chaba-repeat-asks-sync);
+    dell (cms-h3-publish, flood-alert, chaba-cms-reflect); omen
+    (cam-wall-cms, cam-wall-cms-kk); con01 (ada-flood-news, doc-mirror,
+    jev-bench); board-api remote writes held via flock
+    /tmp/board-api-wp.lock.
+  - >-
+    Straggler safety: post-swap, the old db was mounted on :11089 and
+    diffed vs live — 0 stragglers (freeze held). Ada's backend can write
+    cms directly (unfreezable) so this check stays mandatory.
+  - >-
+    collection-config maxRevisions=5 reapplied on scratch for all colls
+    except chaba-lessons (unconfigured on live — left default).
+  - >-
+    Rollback kept: ~/.config/containers/mddb-cms/data/mddb.db.pre-compact
+    (24G) until tonight's nightly backup lands; also
+    ~/mddb-backups/mddb-cms-20261113-0313.db.gz. Delete .pre-compact after
+    next backup: podman unshare rm <path>.
+  - >-
+    Follow-up for the sibling card mddb-leader-compact-export-import:
+    same procedure, plus replication caveat (followers re-seed).
+artifacts:
+  workdir: /tmp/cms-compact on idc03 (exports pass1-3, delta.py, parity.py, logs)
+  card: mddb-cms-compact-export-import
