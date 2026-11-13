@@ -1,0 +1,77 @@
+{
+ "executor": "kk_mac_local",
+ "card": "kk-mac-supervised-probe-20261113",
+ "task_id": "kk-mac-supervised-probe-20261113-1794546848",
+ "task_class": "summary",
+ "model": "qwen3:8b",
+ "at": "2026-11-13T05:14:13.307581+00:00",
+ "prompt_sha256": "53dc08a710e8226f9648807f4acdc2ed36cef06281a18ec4e60d44e0159d2a62",
+ "prompt_chars": 355,
+ "artifact": "evals/kk-mac-lane/out/kk-mac-supervised-probe-20261113.json",
+ "artifact_written": true,
+ "verdict": "pass",
+ "reasons": [],
+ "checks": {
+  "response_nonempty": true,
+  "response_bounded": true,
+  "fact:KK-Mac": true,
+  "fact:kk_mac_local": true,
+  "fact:DevNest": true,
+  "fact:fallback": true
+ },
+ "admission": {
+  "host": "KKs-Mac-Studio",
+  "eligible": true,
+  "lane": "kk_mac_local",
+  "reasons": [],
+  "heartbeat_age_s": 82.3,
+  "ollama_ok": true,
+  "disk_free_gb": 98,
+  "load_1m": 3.32,
+  "identity_alias": false,
+  "node_busy": false,
+  "cpu_temp_c": 40.0
+ },
+ "usage": {
+  "eval_count": 856,
+  "eval_duration": 14173075000,
+  "load_duration": 799864834
+ },
+ "response": "# DevNest Lane Routing Model Summary  \n**Source:** Bounded read-only output from `kk_mac_local` lane on **KKs-Mac-Studio**.  \n\n- **Purpose:** Optimizes lane traffic flow and resource allocation within DevNest.  \n- **Routing Logic:** Prioritizes routes based on latency, bandwidth, and queue length.  \n- **Components:**  \n  - `DevNest` core routing engine.  \n  - Priority queues for high/medium/low traffic.  \n  - Fallback mechanisms for failed primary routes.  \n- **Fallback:** Activates when primary routes are unavailable, rerouting via `kk_mac_local` or predefined secondary paths.  \n- **Dynamic Handling:** Adjusts routes in real-time based on congestion and node availability.  \n- **Constraints:** Respects lane-specific policies (e.g., bandwidth caps, latency thresholds).  \n- **Monitoring:** Tracks metrics like packet loss, throughput, and route stability.  \n- **Security:** No external secrets or commands executed; all operations confined to lane scope.  \n- **Scalability:** Supports multi-lane coordination without external dependencies.  \n- **Validation:** Ensures compliance with DevNest lane protocols and fallback rules.  \n- **Read-Only:** Output is static; no modifications allowed outside lane boundaries.  \n- **Tokens Included:** `KK-Mac`, `kk_mac_local`, `DevNest`, `fallback`.  \n- **Limitations:** Cannot access external systems or paths outside the lane.  \n- **Stability:** Prioritizes route resilience to prevent cascading failures.  \n- **Performance:** Minimizes latency through predictive routing and load balancing.  \n- **Documentation:** Refer to `kk_mac_local` for detailed lane-specific configurations.  \n- **Usage:** Intended for operator oversight, not direct execution.  \n- **Termination:** Routes terminate at lane boundaries unless explicitly extended.  \n- **Dependencies:** Relies solely on internal DevNest lane resources.  \n- **Error Handling:** Logs route failures to `kk_mac_local` for analysis.  \n- **Final Note:** This summary reflects current lane state as of `kk_mac_local` output.  \n\n**End of Summary** (30 lines max).",
+ "memory": {
+  "pre": {
+   "ok": true,
+   "free_pct": 84.0,
+   "level": null,
+   "raw": "The system has 38654705664 (2359296 pages with a page size of 16384).\nSystem-wide memory free percentage: 84%",
+   "at": "2026-11-13T05:14:13.538478+00:00",
+   "error": null
+  },
+  "during": [
+   {
+    "ok": true,
+    "free_pct": 84.0,
+    "level": null,
+    "raw": "The system has 38654705664 (2359296 pages with a page size of 16384).\nSystem-wide memory free percentage: 84%",
+    "at": "2026-11-13T05:14:13.746601+00:00",
+    "error": null
+   },
+   {
+    "ok": true,
+    "free_pct": 63.0,
+    "level": null,
+    "raw": "The system has 38654705664 (2359296 pages with a page size of 16384).\nSystem-wide memory free percentage: 63%",
+    "at": "2026-11-13T05:14:28.963644+00:00",
+    "error": null
+   }
+  ],
+  "post": {
+   "ok": true,
+   "free_pct": 63.0,
+   "level": null,
+   "raw": "The system has 38654705664 (2359296 pages with a page size of 16384).\nSystem-wide memory free percentage: 63%",
+   "at": "2026-11-13T05:14:29.321681+00:00",
+   "error": null
+  }
+ }
+}
