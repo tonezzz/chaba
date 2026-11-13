@@ -1,0 +1,24 @@
+id: mddb-embed-spend-cap
+title: 'MDDB embed spend: OR daily cap exhausted by device-telemetry volume — raise cap + route telemetry to mddb-ops'
+column: backlog
+updated: 2026-11-13 21:38
+brief: '2026-11-13: gemini-ollama-proxy hit OR_FALLBACK_DAILY_CAP=1500 (self-imposed spend firewall added after
+  the 2026-11-12 $3.80 retry-storm). All same-space embed providers down ~6h; semantic search dead. Root volume
+  driver is device-telemetry continuous writes, not a storm.'
+priority: high
+spec: 'Facts: OR key sk-or-v1-a26 limit $7, remaining ~$1.89, usage_daily ~$1.69 (~1500 billed batches). ~38k embed
+  attempts today, mostly device-telemetry|<host> docs from scripts/device-telemetry/agent.py on every host -> mddb
+  :11023 embeds each on write. Cap is in-memory, resets 00:00 UTC AND on proxy restart. LiteLLM (:4000) is live
+  but unused by the embed path. GEMINI_API_KEY_FREE 429s under load (free-tier quota); paid Gemini key rotated out
+  2026-10-23. mddb-ops instance exists for embedding-free telemetry but the 2026-10-22 sweep deliberately left device-telemetry
+  on :11023. Fixes: (1) Tony tops up OR key limit — without it cap raise is moot, ~$1.7/day burn. (2) Raise OR_FALLBACK_DAILY_CAP
+  1500->~5000 in ~/.config/secrets/mddb-gemini.env on idc03 + restart gemini-ollama-proxy (deploy approval needed).
+  (3) Structural: route device-telemetry writes to mddb-ops (:11025, embeddings OFF) — revisit stays_on_11023 decision
+  in docs/ssot/jobs/cms/2026-10-22-mddb-11023-parked-writers-sweep.yml; telemetry is filter-query data, semantic
+  search on it is worthless. (4) Optional later: LiteLLM embed route — verify Vertex-vs-AI-Studio vector-space parity
+  first, risky. (5) Consider per-collection embed disable if mddb ever supports it.'
+ref: MEM-0101
+comms:
+- at: 2026-11-13 21:38
+  from: tony
+  text: card captured via board-api
