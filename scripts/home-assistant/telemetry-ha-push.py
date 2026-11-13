@@ -72,6 +72,17 @@ def _push(token: str, entity: str, state, attrs: dict) -> None:
           {"state": state, "attributes": attrs}, token=token)
 
 
+def common_attrs(doc: dict, age: int) -> dict:
+    return {
+        "last_seen": time.strftime("%Y-%m-%dT%H:%M:%S%z",
+                                   time.localtime(int(doc["ts"]))),
+        "telemetry_age_s": age,
+        "os": doc.get("os"),
+        "wan_city": (doc.get("wan") or {}).get("city"),
+        "wan_country": (doc.get("wan") or {}).get("country"),
+    }
+
+
 def push_device(dev: str, token: str) -> str:
     eid = dev.replace("-", "_")  # entity_ids may not contain hyphens
     doc = _latest(dev)
@@ -80,6 +91,29 @@ def push_device(dev: str, token: str) -> str:
         return f"{dev}: no telemetry doc"
     age = now - int(doc["ts"])
     fresh = "on" if age <= STALE_S else "off"
+    online = "on" if (doc.get("tailnet") or {}).get("online") else "off"
+    _push(token, f"binary_sensor.{eid}_online", online, {
+        "friendly_name": f"{dev} online",
+        "device_class": "connectivity",
+        **common_attrs(doc, age),
+    })
+    up = doc.get("uptime_s")
+    if up is not None:
+        _push(token, f"sensor.{eid}_uptime", round(int(up) / 3600.0, 1), {
+            "friendly_name": f"{dev} uptime",
+            "unit_of_measurement": "h",
+            "state_class": "measurement",
+            "icon": "mdi:clock-outline",
+            **common_attrs(doc, age),
+        })
+    users = doc.get("users") or []
+    _push(token, f"sensor.{eid}_users", len(users), {
+        "friendly_name": f"{dev} users",
+        "state_class": "measurement",
+        "icon": "mdi:account-group",
+        "users": ",".join(users),
+        **common_attrs(doc, age),
+    })
     _push(token, f"binary_sensor.{eid}_telemetry_fresh", fresh, {
         "friendly_name": f"{dev} telemetry fresh",
         "device_class": "connectivity",
