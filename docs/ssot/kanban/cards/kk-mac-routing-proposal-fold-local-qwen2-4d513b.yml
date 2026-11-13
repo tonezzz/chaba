@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: doing
-updated: 2026-11-13 20:22
+updated: 2026-11-13 20:26
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -30,6 +30,11 @@ comms:
 - at: 2026-11-13 20:22
   from: chaba
   text: started devin-task-20261113-202232-card-judgment-eval-done-2026-1 on tony-dell (dispatch)
+- at: 2026-11-13 20:26
+  from: devin
+  text: 'started — drafting routing proposal for kk_mac_local vs paid flash-lite chains. Eval numbers in hand (qwen2.5:32b
+    0.857/0.878/0.909/1.0/0). Found evidence-path gap: lane-savings.py ignores action.executor so kk_mac_local runs
+    count as devin; will patch + repin executor default qwen3:8b->qwen2.5:32b per eval.'
 action:
   type: dispatch
   repo: chaba
