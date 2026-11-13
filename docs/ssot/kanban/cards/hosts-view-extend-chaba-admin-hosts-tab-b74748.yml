@@ -1,0 +1,20 @@
+id: hosts-view-extend-chaba-admin-hosts-tab-b74748
+title: 'Hosts view: extend chaba-admin hosts tab to all fleet hosts'
+column: backlog
+updated: 2026-11-13 20:46
+priority: medium
+spec: 'Tony asked (2026-11-13) to plan adding all hosts to the tony-ha chaba-admin Hosts view (iframed in ada-ha
+  chaba-nest hosts tab). Current state: view has tony-omen + tony-macbook cards fed by device-telemetry beacon ->
+  MDDB device-telemetry/<dev>/latest -> telemetry-ha-push (tony-omen, 5min) -> HA REST sensors. Beacon (scripts/device-telemetry/agent.py
+  + install.sh) currently runs only on tony-omen and tony-macbook. Plan: (1) install beacon on tony-dell, idc02,
+  idc03, mn01, con01 (and kk-macbook if desired) via install.sh; (2) extend TELEMETRY_DEVICES in ssot.jobs.yml telemetry-ha-push
+  to the full device list and re-render/install; (3) extend telemetry-ha-push.py to mirror non-battery fields (uptime_s,
+  users, tailnet.online, wan geo) as sensors so non-laptop hosts show something; (4) add one entities card per host
+  to the chaba-admin hosts view (websocket lovelace/config/save on tony-ha :8123). Done-condition: every fleet host
+  shows a live card with freshness indicator on https://tony-ha.surf-thailand.com/chaba-admin/hosts.'
+note: 'origin: chaba-nest hosts tab work 2026-11-13; token fix shipped same day (telemetry-ha-push admin LLAT)'
+ref: SYS-0097
+comms:
+- at: 2026-11-13 20:46
+  from: devin
+  text: card captured via board-api
