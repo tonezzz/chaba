@@ -1811,6 +1811,11 @@ comms:
 - at: 2026-11-13 23:24
   from: tony
   text: moved done -> backlog
+- at: 2026-11-13 23:24
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-13 23:00) of `system-report-watchdog.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u system-report-watchdog.service` on the host. See
+    CMS `timer-timeline-tony-dell`.'
 spec: Investigate the failing systemd user service `system-report-watchdog.service` on the host `tony-dell`, which
   has repeatedly exited with a non-zero exit code as recorded in recent timer alerts. Access the host and examine
   the journal using `journalctl --user -u system-report-watchdog.service`, consulting the CMS `timer-timeline-tony-dell`
