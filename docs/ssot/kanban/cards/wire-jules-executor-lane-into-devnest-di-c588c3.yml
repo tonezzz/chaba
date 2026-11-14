@@ -1,7 +1,7 @@
 id: wire-jules-executor-lane-into-devnest-di-c588c3
 title: Wire `jules` executor lane into DevNest dispatch (runner-agent + merge path)
 column: done
-updated: 2026-11-07 11:55
+updated: 2026-11-14 14:10
 priority: medium
 blocked_by: OPS-1048
 tags:
@@ -82,6 +82,10 @@ comms:
     COMPLETED -> finish_jules_lane squash-merged PR #80 head to master via gh-chaba deploy key -> close_out verified=True.
     Fix during verify: https origin has no push creds — push now via gh-chaba ssh alias (JULES_PUSH_URL override).
     Residual: sweeper still races jules closeouts (OPS-1066).'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
