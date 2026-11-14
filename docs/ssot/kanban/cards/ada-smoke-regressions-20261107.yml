@@ -1,7 +1,7 @@
 id: ada-smoke-regressions-20261107
 title: Smoke tier regressions — 4 fails surfaced after runner repair
 column: backlog
-updated: 2026-11-08 11:00
+updated: 2026-11-14 14:10
 priority: medium
 tags:
 - ada
@@ -46,3 +46,7 @@ comms:
     → serial denials (journal: 10x ''request registered'' translate-probe Nov 7 20:06-20:09, page never landed).
     Fix: _confirmed_truthy in cms gate + same latent bug in _check_capture_confirmed. ada-voice 07119b1, deployed,
     unit-verified. (2) CURRENT failures are QUOTA not code: bench LiteL'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
