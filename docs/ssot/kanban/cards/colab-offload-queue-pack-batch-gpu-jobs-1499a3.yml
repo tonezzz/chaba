@@ -1,7 +1,7 @@
 id: colab-offload-queue-pack-batch-gpu-jobs-1499a3
 title: colab-offload queue — pack batch GPU jobs into Colab Pro sessions
 column: backlog
-updated: 2026-10-23 14:04
+updated: 2026-11-14 14:14
 priority: low
 note: 'Tony idea 2026-10-20: since NCM training will open Colab Pro sessions anyway, fill the GPU with other batch
   work. Honest frame: Colab Pro = ~100 prepaid compute-units/mo, A100 burns ~5x T4 — the win is amortizing sessions,
@@ -42,3 +42,7 @@ comms:
     re-reads lease every 15s + inline check before every mutating step (claim/done/artifact) — zombie that resurfaces
     self-exits process group BEFORE it writes. Zombie paths closed: same-VM survivor (kernel restart), 2-VM race
     (the 2-colab-tabs case — newer epoch wins, loser suici'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
