@@ -3,7 +3,7 @@ title: Chaba Nest portable brains — gdrive brain store, respawn anywhere
 column: done
 priority: medium
 created: 2026-10-07
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:12
 note: 'Every Nest entity gets a versioned brain bundle (manifest + weights + memory slice + config + state anchors)
   stored on gdrive as an append-only artifact. Any host can fetch → hydrate → resume with RPO = time since last
   checkpoint. Same tier model as the deployed mddb backup offload: hot local, warm on tailnet, cold on gdrive. Research
@@ -153,6 +153,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: approve-creating-a-gcrypt-rclone-remote-e597ab
   ask: Approve creating a gcrypt rclone remote (crypt over gdrive:nest-brains/) for restricted brains? Blocks only
