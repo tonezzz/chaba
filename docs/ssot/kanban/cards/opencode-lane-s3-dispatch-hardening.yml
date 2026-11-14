@@ -1,7 +1,7 @@
 id: opencode-lane-s3-dispatch-hardening
 title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
 column: done
-updated: 2026-11-14 12:18
+updated: 2026-11-14 12:29
 priority: medium
 tags:
 - opencode-lane
@@ -93,6 +93,13 @@ comms:
   from: devin
   text: 'dispatch started — working 4 hardening items: TimeoutExpired evidence capture, runner-agent claimable()
     version gate, OPENCODE_LANES self-contained unit env, free-model retry/schema hint'
+- at: 2026-11-14 12:29
+  from: devin
+  text: 'verification pass (2nd dispatch): all 4 spec items already merged to master via dispatch/20261114-102801
+    (dc8dee1851 + 4edd6031f2). Verified in-worktree: TimeoutExpired now writes partial stdout/stderr to run dir;
+    self_stale_reason() gates _claimable() fail-closed on the deployed ~/.local/bin snapshot; transient devin-task-*
+    units export OPENCODE_LANES=1; cmd_run retries retryable failures up to escalation.max_retries with deterministic
+    RETRY_HINT. Tests: 83+83 OK. Residual: tony-dell Oct-26 bin'
 action:
   type: dispatch
   status: done
