@@ -1,7 +1,7 @@
 id: idc01-permanent-retirement
 title: idc01 permanently retired — purge host inventory and references
 column: backlog
-updated: 2026-11-13 20:45
+updated: 2026-11-14 11:10
 brief: 'Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove
   it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it
   as a fleet member.'
@@ -18,3 +18,10 @@ comms:
 - at: 2026-11-13 20:45
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 11:10
+  from: devin
+  text: '2026-11-14 ~11:20 +07: DONE — merged to master 8445702201. idc01 was already retired:true in ssot.audit.hosts
+    since 10-12; this pass purged the remaining LIVE references: ssot.jobs.yml (audit loop, AUDIT_HOSTS, 2 dead
+    log-shipper job entries + regenerated units), ssot.cleanup.yml (all backup/cleanup host lists + idc01_notes
+    + retired open_notebook_backups), ssot.mcp.yml host entry, audit.hosts permanent-retirement note + fixed mddb
+    follower list (idc02+con01), host-capacity note, scripts (audit-'
