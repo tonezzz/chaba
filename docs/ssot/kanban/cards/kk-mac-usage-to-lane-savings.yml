@@ -1,7 +1,7 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
 column: review
-updated: 2026-11-14 12:21
+updated: 2026-11-14 12:33
 priority: low
 tags:
 - kk-mac
@@ -93,6 +93,13 @@ comms:
   from: devin
   text: 'started — found the 2026-11-13 attribution patch (747b44bbd0) never merged (held on test-gate timeout);
     re-landing it plus option (a): finish_kk_mac_lane copies usage into action.result as TOKENS_RE fragment'
+- at: 2026-11-14 12:33
+  from: devin
+  text: 'DONE (option a). finish_kk_mac_lane returns a TOKENS_RE fragment from kk_mac_result.json usage (prompt_eval_count/eval_count);
+    finish_pass prepends it so it survives board-api result[:300] -> action.result. kk_mac_llm now captures prompt_eval_count
+    (was dropped). ALSO: the 2026-11-13 EXECUTOR_LANES attribution the spec assumed was live never merged (held
+    on test-gate timeout, 747b44bbd0) — cherry-picked it back plus the qwen2.5:32b repin + proposal doc. Verified:
+    KkMac tests 24/24, fragment pars'
 action:
   type: dispatch
   repo: chaba
