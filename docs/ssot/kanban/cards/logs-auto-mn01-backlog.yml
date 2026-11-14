@@ -4,11 +4,9 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-20: `mn01-backlog` condition cleared — shipper healthy
-  again.'
-help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until
-  it drains.
-updated: '2026-10-20'
+note: 'Auto-recovered 2026-10-20: `mn01-backlog` condition cleared — shipper healthy again.'
+help: Tighten the GREP/KINDS filter (noise share too high) or raise --max-docs until it drains.
+updated: 2026-11-14 14:06
 action:
   status: done
   verified: true
@@ -33,9 +31,13 @@ comms:
   text: 'ref assigned: OPS-0380'
 - at: 2026-10-20 16:01
   from: devin
-  text: 'sweep 2026-10-20: mn01 is alive (ssh+tailscale verified) — earlier close
-    attempts landed; card stays review pending actual log-backlog evidence.'
-brief: 'The log digest flagged something worth a look: logs `mn01` backlog 4201. Read
-  the note, then fix it or close the card.'
+  text: 'sweep 2026-10-20: mn01 is alive (ssh+tailscale verified) — earlier close attempts landed; card stays review
+    pending actual log-backlog evidence.'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+brief: 'The log digest flagged something worth a look: logs `mn01` backlog 4201. Read the note, then fix it or close
+  the card.'
 review_kind: triage
 ref: OPS-0380
