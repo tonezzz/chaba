@@ -387,6 +387,115 @@ class StagedProfileDispatchTest(unittest.TestCase):
             self.prepare()
 
 
+class SelfStaleGateTest(unittest.TestCase):
+    """claimable() version gate (card opencode-lane-s3-dispatch-hardening):
+    a deployed snapshot byte-different from the repo reference declines
+    every claim — a stale agent's gates may be missing fixes."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.addCleanup(self.td.cleanup)
+        self.home = Path(self.td.name) / "home"
+        self.mod = _load("runner-agent.py")
+        m = self.mod
+        self._saved = {k: getattr(m, k) for k in
+                       ("DISPATCH", "LABELS", "HOST", "_SELF_STALE",
+                        "__file__")}
+        self._saved_fn = {k: getattr(m, k) for k in
+                          ("push_capable", "shutil_which", "_self_ref")}
+        self._home_old = os.environ.get("HOME")
+        self.addCleanup(self._restore_home)
+        m.DISPATCH = str(SCRIPT)
+        m.push_capable = lambda repo: True
+        m.shutil_which = lambda name: True
+        m.HOST = "testhost"
+        m.LABELS = set()
+        m._SELF_STALE = None
+
+    def _restore_home(self):
+        if self._home_old is None:
+            os.environ.pop("HOME", None)
+        else:
+            os.environ["HOME"] = self._home_old
+
+    def tearDown(self):
+        m = self.mod
+        for k, v in {**self._saved, **self._saved_fn}.items():
+            setattr(m, k, v)
+
+    def _deploy(self, snap_bytes: bytes, ref_bytes: bytes):
+        snap = self.home / ".local/bin/runner-agent"
+        snap.parent.mkdir(parents=True, exist_ok=True)
+        snap.write_bytes(snap_bytes)
+        ref = self.home / "chaba/scripts/board/runner-agent.py"
+        ref.parent.mkdir(parents=True, exist_ok=True)
+        ref.write_bytes(ref_bytes)
+        os.environ["HOME"] = str(self.home)
+        self.mod.__file__ = str(snap)
+        self.mod._self_ref = lambda: ref
+        self.mod._SELF_STALE = None
+
+    def test_drifted_snapshot_declines_every_claim_with_reason(self):
+        self._deploy(b"old-binary", b"new-binary")
+        typ, reason = self.mod._claimable(_card())
+        self.assertEqual(typ, "")
+        self.assertIn("drifted", reason)
+        self.assertIn("runner-agent", reason)
+
+    def test_matching_snapshot_claims_normally(self):
+        self._deploy(b"same-bytes", b"same-bytes")
+        self.assertEqual(self.mod.claimable(_card()), "dispatch")
+
+    def test_in_place_checkout_run_is_never_stale(self):
+        # __file__ outside ~/.local/bin (repo checkout, worktree, test
+        # import) is a dev run — the gate only watches the snapshot.
+        ref = self.home / "chaba/scripts/board/runner-agent.py"
+        ref.parent.mkdir(parents=True, exist_ok=True)
+        ref.write_bytes(b"different-content")
+        self.mod._self_ref = lambda: ref
+        self.mod._SELF_STALE = None
+        self.assertEqual(self.mod.self_stale_reason(), "")
+        self.assertEqual(self.mod.claimable(_card()), "dispatch")
+
+    def test_missing_reference_does_not_gate(self):
+        snap = self.home / ".local/bin/runner-agent"
+        snap.parent.mkdir(parents=True, exist_ok=True)
+        snap.write_bytes(b"only-copy")
+        os.environ["HOME"] = str(self.home)
+        self.mod.__file__ = str(snap)
+        self.mod._self_ref = lambda: None
+        self.mod._SELF_STALE = None
+        self.assertEqual(self.mod.claimable(_card()), "dispatch")
+
+
+class StagedDispatchShellTest(unittest.TestCase):
+    """launch_profile_dispatch's transient devin-task-* unit must carry
+    OPENCODE_LANES itself — it does not inherit runner-agent.service's
+    drop-in env (idc02 env_gate failure, 2026-11-14)."""
+
+    def test_unit_shell_exports_opencode_lanes(self):
+        m = _load("runner-agent.py")
+        with tempfile.TemporaryDirectory() as td:
+            taskdir = Path(td) / "task"
+            taskdir.mkdir()
+            (taskdir / "meta.json").write_text(json.dumps({"card": "c"}))
+            wt = Path(td) / "wt"
+            (wt / "v").mkdir(parents=True)
+            (wt / "v/verify.py").write_text("def verify(x): return {}")
+            env = {"id": "job", "timeout_s": 60,
+                   "verifier": {"ref": "v/verify.py"}}
+            argv = []
+            with mock.patch.object(m.shutil, "which",
+                                   return_value="/usr/bin/opencode"), \
+                    mock.patch.object(m, "sh",
+                                      return_value=_proc(0)) as sh:
+                unit, tid, err = m.launch_profile_dispatch(
+                    _card(), env, taskdir, wt, "tid-1")
+            self.assertEqual(err, "")
+            shell = sh.call_args.args[0][-1]
+            self.assertIn("export OPENCODE_LANES=1", shell)
+
+
 class StagedProfileAdmissionTest(unittest.TestCase):
     """S3 admit-set: only the Tony-approved read-only profiles
     (ops-readonly + ssot-research + storage-dryrun, 2026-11-12 option A).

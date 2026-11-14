@@ -408,6 +408,21 @@ def agent_prompt(env: dict, prof: dict) -> str:
     return str(prof.get("rails") or "") + "\n" + "\n".join(rails)
 
 
+# appended to the run message on retry attempts — a fixed, deterministic
+# block so the staged closeout can re-derive the allowed prompt (the
+# free-model variance class — malformed citations, wrong schema — needs
+# the contract restated, not a fresh failure mode)
+RETRY_HINT = """
+## Retry — a previous attempt was rejected
+
+An earlier attempt at this job was rejected by the held-out verifier
+(missing or malformed artifact). Re-read the artifact contract above
+and emit the artifact EXACTLY per it: every required key present,
+correct value types (structured fields are objects, not strings), and
+exactly one JSON object as your final message — no prose around it.
+""".strip()
+
+
 def build_prompt(env: dict, prof: dict) -> str:
     """Run message = the profile's fixture prompt.md (the canonical
     task template + output contract) with {{HOST}}/{{TASK}}/{{JOB}}
@@ -429,7 +444,10 @@ def build_prompt(env: dict, prof: dict) -> str:
     task = task.replace("{{HOST}}", str(env.get("target_host") or ""))
     task = task.replace("{{TASK}}", q)
     task = task.replace("{{JOB}}", str(env.get("id") or ""))
-    return (task or "") + "\n\n" + agent_prompt(env, prof)
+    text = (task or "") + "\n\n" + agent_prompt(env, prof)
+    if env.get("_retry_hint"):
+        text += "\n\n" + RETRY_HINT
+    return text
 
 
 def render_bundle(env: dict, prof: dict, outdir: Path) -> dict:
@@ -814,14 +832,30 @@ def opencode_is_v2() -> bool:
     return _OPENCODE_V2
 
 
+def _partial_text(data) -> str:
+    """TimeoutExpired.stdout/.stderr are bytes on POSIX even under
+    text=True (communicate() raises before decoding); str on Windows."""
+    if isinstance(data, bytes):
+        return data.decode("utf-8", errors="replace")
+    return data or ""
+
+
 def run_profile_process(cmd, rd, timeout, env, observer="", cwd=None):
     if observer:
         print(f"LIVE_EVENTS {rd / 'events.jsonl'}", flush=True)
         with (rd / "events.jsonl").open("w") as events, (rd / "stderr.log").open("w") as errors:
             return subprocess.run(cmd, stdout=events, stderr=errors, text=True,
                                   timeout=timeout, env=env, cwd=cwd)
-    result = subprocess.run(cmd, capture_output=True, text=True,
-                            timeout=timeout, env=env, cwd=cwd)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True,
+                                timeout=timeout, env=env, cwd=cwd)
+    except subprocess.TimeoutExpired as e:
+        # the captured partial output is the ONLY evidence a timed-out
+        # run leaves — discarding it makes the failure undiagnosable
+        # (two S3 pilot runs lost all events, 2026-11-14)
+        (rd / "events.jsonl").write_text(_partial_text(e.stdout))
+        (rd / "stderr.log").write_text(_partial_text(e.stderr))
+        raise
     (rd / "events.jsonl").write_text(result.stdout or "")
     (rd / "stderr.log").write_text(result.stderr or "")
     return result
@@ -845,53 +879,35 @@ def artifact_matches_snapshot(rd: Path) -> bool:
         return False
 
 
-def cmd_run(args):
-    observer = (getattr(args, "human_observer", "") or "").strip()
-    if observer and (args.unattended or not sys.stdin.isatty()):
-        print(json.dumps({"error": "human observer requires --supervised and an interactive terminal"}))
-        return 2
-    env = lane_gate.load_envelope(Path(args.job))
-    env.setdefault("unattended", args.unattended)
-    if not args.unattended:
-        env["unattended"] = False
-    if getattr(args, "controller_heartbeat", False):
-        job_id = str(env.get("id") or "")
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,199}", job_id):
-            print(json.dumps({"error": "invalid controller job identity"}))
-            return 2
-        lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
-        (lane_gate.state_dir() / f"heartbeat-{job_id}.json").write_text(
-            json.dumps({"job": job_id, "at": now_iso(), "pid": os.getpid(), "source": "profile-controller"}))
-    pre = run_preflight(env)
-    if not pre["admit"]:
-        m = _record_denial_metric(env, pre["reasons"])
-        print(json.dumps({"admit": False, "reasons": pre["reasons"],
-                          "metric": m["job_id"]}, indent=1))
-        return 2
-    prof = pre["profile"]
+# outcome variance retries (card opencode-lane-s3-dispatch-hardening):
+# a failed attempt with a retryable outcome gets a fresh model shot —
+# free-model variance on ssot-research (2026-11-14) produced a
+# verifier-pass artifact on attempt 1 of 3 while the other two were
+# malformed-citations/wrong-schema. Contract violations (mutating
+# commands, verifier peeks, scope violations, tool denials) never
+# retry — they escalate, they don't re-roll.
+RETRYABLE_FAILURES = {
+    "missing_artifact", "unverified_exit", "timeout", "executor_error"}
+MAX_RUN_ATTEMPTS = 4          # hard ceiling regardless of declared budget
+
+
+def _run_attempt(env, prof, pre, args, attempt, observer, final):
+    """One admitted profile execution: render -> run -> audit -> verify
+    -> metric + run.json. `final` marks the last allowed attempt — only
+    it may set the metric's escalated flag (an intermediate failure is
+    a retry in progress, not an escalation). Returns (run, rc)."""
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    if attempt > 1:
+        run_id += f"-r{attempt}"
     rd = RUNS / f"{env['id']}-{run_id}"
     man = render_bundle(env, prof, rd)
     prompt = (rd / "prompt.md").read_text()
     if observer:
         print(f"WATCH_EVENTS {rd / 'events.jsonl'}", flush=True)
-        try:
-            ready = input(f"Observer {observer}: type 'start {env['id']}' when ready to watch: ")
-        except (EOFError, KeyboardInterrupt):
-            ready = ""
-        if ready.strip() != f"start {env['id']}":
-            print(json.dumps({"error": "human watcher did not confirm readiness; no job executed"}))
-            return 2
-    # begin inflight + heartbeat (supervised stages demand a fresh one)
-    lane_gate.inflight_dir().mkdir(parents=True, exist_ok=True)
-    (lane_gate.inflight_dir() / f"{env['id']}.json").write_text(
-        json.dumps({"job": env["id"], "at": now_iso(),
-                    "pid": os.getpid()}))
-    lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
-    (lane_gate.state_dir() / f"heartbeat-{env['id']}.json").write_text(
-        json.dumps({"job": env["id"], "at": now_iso()}))
 
     m = lane_gate.new_metric(env, env.get("executor", "opencode"))
+    m["attempt"] = attempt
+    m["retries"] = attempt - 1
     t0 = time.time()
     scope_before = _git_status() if not args.skip_scope else set()
     timeout = int(env.get("timeout_s") or 0)
@@ -979,7 +995,7 @@ def cmd_run(args):
     den = len(audit["denials"]) + len(audit["write_attempts"])
     m["tool_denials"] = den
     esc = (env.get("escalation") or {})
-    m["escalated"] = not m["verifier_pass"] and \
+    m["escalated"] = final and not m["verifier_pass"] and \
         esc.get("on_fail") in ("manual", "devin", "retry_then_manual")
     fr = None
     if audit["mutating_commands"]:
@@ -1015,18 +1031,10 @@ def cmd_run(args):
             print(json.dumps({"error": str(exc)}), flush=True)
     lane_gate.record_metric(m)
 
-    f = lane_gate.inflight_dir() / f"{env['id']}.json"
-    if f.is_file():
-        f.unlink()
-    st = lane_gate.load_stage()
-    st.setdefault("jobs_completed", {})
-    cur = env["stage"]
-    st["jobs_completed"][cur] = st["jobs_completed"].get(cur, 0) + 1
-    lane_gate.save_stage(st)
-
     run = {"job": env["id"], "profile": prof["id"], "at": now_iso(),
            "verification_status": "pending_independent" if pending_review else "complete",
-           "admit": pre["lane"], "run_dir": str(rd),
+           "admit": pre["lane"], "run_dir": str(rd), "attempt": attempt,
+           "retry_hint": bool(env.get("_retry_hint")),
            "exit_code": rec["exit_code"], "error": rec["error"],
            "verdict": verdict.get("verdict"), "checks": verdict.get("checks"),
            "artifact_landed": landed, "denials": audit["denials"],
@@ -1036,11 +1044,85 @@ def cmd_run(args):
            "scope_violations": scope_new, "metric": m,
            "mcp_rendered": man.get("mcp_rendered")}
     (rd / "run.json").write_text(json.dumps(run, indent=1))
-    print(json.dumps({k: run[k] for k in
-                      ("job", "profile", "verdict", "verification_status", "artifact_landed",
-                       "denials", "mutating", "verifier_peeks",
-                       "scope_violations", "run_dir")}, indent=1))
-    return 0 if pending_review or (run["verdict"] == "pass" and not fr) else 1
+    return run, 0 if pending_review or (run["verdict"] == "pass" and not fr) else 1
+
+
+def cmd_run(args):
+    observer = (getattr(args, "human_observer", "") or "").strip()
+    if observer and (args.unattended or not sys.stdin.isatty()):
+        print(json.dumps({"error": "human observer requires --supervised and an interactive terminal"}))
+        return 2
+    env = lane_gate.load_envelope(Path(args.job))
+    env.setdefault("unattended", args.unattended)
+    if not args.unattended:
+        env["unattended"] = False
+    if getattr(args, "controller_heartbeat", False):
+        job_id = str(env.get("id") or "")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,199}", job_id):
+            print(json.dumps({"error": "invalid controller job identity"}))
+            return 2
+        lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
+        (lane_gate.state_dir() / f"heartbeat-{job_id}.json").write_text(
+            json.dumps({"job": job_id, "at": now_iso(), "pid": os.getpid(), "source": "profile-controller"}))
+    pre = run_preflight(env)
+    if not pre["admit"]:
+        m = _record_denial_metric(env, pre["reasons"])
+        print(json.dumps({"admit": False, "reasons": pre["reasons"],
+                          "metric": m["job_id"]}, indent=1))
+        return 2
+    prof = pre["profile"]
+    if observer:
+        try:
+            ready = input(f"Observer {observer}: type 'start {env['id']}' when ready to watch: ")
+        except (EOFError, KeyboardInterrupt):
+            ready = ""
+        if ready.strip() != f"start {env['id']}":
+            print(json.dumps({"error": "human watcher did not confirm readiness; no job executed"}))
+            return 2
+    # begin inflight + heartbeat (supervised stages demand a fresh one)
+    lane_gate.inflight_dir().mkdir(parents=True, exist_ok=True)
+    (lane_gate.inflight_dir() / f"{env['id']}.json").write_text(
+        json.dumps({"job": env["id"], "at": now_iso(),
+                    "pid": os.getpid()}))
+    lane_gate.state_dir().mkdir(parents=True, exist_ok=True)
+    (lane_gate.state_dir() / f"heartbeat-{env['id']}.json").write_text(
+        json.dumps({"job": env["id"], "at": now_iso()}))
+
+    # retry budget: envelope escalation.max_retries (ceiling-checked
+    # against the profile at admission) — unattended runs only;
+    # supervised single-attempt semantics are unchanged.
+    budget = 0
+    if env.get("unattended", True) and not observer:
+        budget = min(int((env.get("escalation") or {})
+                         .get("max_retries") or 0),
+                     MAX_RUN_ATTEMPTS - 1)
+    run, rc = None, 1
+    for attempt in range(1, budget + 2):
+        run, rc = _run_attempt(env, prof, pre, args, attempt, observer,
+                               final=(attempt == budget + 1))
+        fr = (run.get("metric") or {}).get("failure_reason")
+        if rc == 0 or fr not in RETRYABLE_FAILURES or \
+                attempt == budget + 1:
+            break
+        # the schema-retry hint is a deterministic prompt block — the
+        # staged closeout re-derives it from the frozen envelope, so it
+        # stays inside the admission contract
+        env["_retry_hint"] = True
+    f = lane_gate.inflight_dir() / f"{env['id']}.json"
+    if f.is_file():
+        f.unlink()
+    st = lane_gate.load_stage()
+    st.setdefault("jobs_completed", {})
+    cur = env["stage"]
+    st["jobs_completed"][cur] = st["jobs_completed"].get(cur, 0) + 1
+    lane_gate.save_stage(st)
+
+    print(json.dumps({**{k: run[k] for k in
+                         ("job", "profile", "verdict", "verification_status", "artifact_landed",
+                          "denials", "mutating", "verifier_peeks",
+                          "scope_violations", "run_dir", "attempt")},
+                      "attempts_used": run["attempt"]}, indent=1))
+    return rc
 
 
 # -------------------------------------------------------------------- cli

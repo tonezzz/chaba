@@ -801,7 +801,12 @@ def finish_profile_dispatch(cid, taskdir, meta, card, ocp):
         if (manifest["envelope"] != env or run.get("job") != env["id"] or meta.get("card") != cid
                 or manifest.get("profile") != {k: v for k, v in prof.items() if k != "_path"}):
             raise ValueError("profile evidence differs from the frozen envelope")
-        if (rd / "prompt.md").read_text() != ocp.build_prompt(env, prof):
+        # a retried attempt's prompt carries the deterministic
+        # _retry_hint block (opencode_profiles.cmd_run) — both prompt
+        # forms are derived from the frozen envelope, so both verify
+        prompts = {ocp.build_prompt(env, prof),
+                   ocp.build_prompt(dict(env, _retry_hint=True), prof)}
+        if (rd / "prompt.md").read_text() not in prompts:
             raise ValueError("profile prompt differs from the frozen request")
         config = ocp.render_config(env, prof)
         config.pop("_allowfile", None)
@@ -1073,6 +1078,54 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
     return True, notes
 
 
+def _self_ref() -> Path | None:
+    """Repo reference copy of this agent — the deploy source of truth.
+    ~/.local/bin/runner-agent is a verbatim snapshot of
+    scripts/board/runner-agent.py in this host's chaba checkout."""
+    root = _repo_checkout("chaba") or (Path.home() / "CascadeProjects/chaba")
+    cand = Path(root) / "scripts" / "board" / "runner-agent.py"
+    return cand if cand.is_file() else None
+
+
+_SELF_STALE: str | None = None
+
+
+def self_stale_reason() -> str:
+    """"" when this running file matches the repo reference byte-for-byte,
+    else a decline reason for every claim. _self_update() heals drift it
+    can see, but it can't fire everywhere — a snapshot under a different
+    path, an unreadable checkout, or the mtime guard refusing a
+    downgrade all leave a byte-different copy running. Its gates may be
+    missing fixes (tony-dell's Oct-26 build had no target_host gate and
+    claimed S3 cards pinned to idc02, 2026-11-14), so drift fails
+    closed; runner-fleet-health cards the redeploy."""
+    global _SELF_STALE
+    if _SELF_STALE is None:
+        _SELF_STALE = _self_stale_check()
+    return _SELF_STALE
+
+
+def _self_stale_check() -> str:
+    try:
+        me = Path(__file__).resolve()
+    except OSError:
+        return ""
+    if me != Path.home() / ".local/bin/runner-agent":
+        return ""             # in-place checkout/dev run — same
+                              # predicate as _self_update()
+    ref = _self_ref()
+    if ref is None or ref.resolve() == me:
+        return ""                      # no reference — can't judge drift
+    try:
+        if ref.read_bytes() == me.read_bytes():
+            return ""
+    except OSError:
+        return ""
+    return (f"installed runner-agent drifted from repo {ref} — redeploy "
+            "it (scp scripts/board/runner-agent.py "
+            "<host>:~/.local/bin/runner-agent)")
+
+
 def _claimable(card: dict) -> tuple:
     """(task type, block reason) — typ ""/reason text when unclaimable.
     The gate order IS claimable(); the reason feeds /ready verdicts so
@@ -1080,6 +1133,9 @@ def _claimable(card: dict) -> tuple:
     a = card.get("action") or {}
     if a.get("status") != "queued":
         return "", "not queued"
+    stale = self_stale_reason()
+    if stale:
+        return "", stale
     if a.get("runner") and _canon_host(a["runner"]) != _host_key():
         # queued but tagged with another host's runner
         return "", f"pinned to runner {a['runner']}"
@@ -2080,6 +2136,10 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
         f". $$HOME/.config/secrets/litellm-keys.env; export LITELLM_KEY={key_expr}; "
         "else . $$HOME/.config/secrets/litellm-chaba.env; fi; "
         "export LITELLM_KEY_BENCH=$$LITELLM_KEY; "
+        # transient devin-task-* units don't inherit runner-agent.service
+        # drop-in env — admit()'s S1+ env_gate needs OPENCODE_LANES=1 in
+        # the unit's own env (idc02 staged-dispatch failure, 2026-11-14)
+        "export OPENCODE_LANES=1; "
         f"export PATH={shlex.quote(str(Path(oc_bin).parent))}:$$PATH; "
         f"cd {shlex.quote(str(worktree))} && python3 scripts/devnest/opencode_profiles.py run "
         f"{shlex.quote(str(job))} --controller-heartbeat "
@@ -3263,6 +3323,10 @@ def claim_pass(st: dict) -> bool:
         cid = card.get("id") or ""
         typ = claimable(card)
         if not typ:
+            stale = self_stale_reason()
+            if stale:
+                note_defer(card, "stale", stale)
+                continue
             # distinguish "not for me" from "would claim but can't push"
             # — the latter wants a board note so the gap is visible
             pg = push_guard_reason(card)
@@ -3469,18 +3533,7 @@ def _self_update():
     me = Path(__file__).resolve()
     if me != Path.home() / ".local/bin/runner-agent":
         return                     # repo checkout/dev run — not the snapshot
-    src = None
-    dr = dr_module()
-    ent = (dr.repos().get("chaba") if dr else None) or {}
-    cand = Path(str(ent.get("path") or "")) / "scripts" / "board" \
-        / "runner-agent.py"
-    if cand.is_file():
-        src = cand
-    else:
-        alt = Path.home() / "CascadeProjects/chaba/scripts/board" \
-            / "runner-agent.py"
-        if alt.is_file():
-            src = alt
+    src = _self_ref()
     if src is None:
         return
     try:

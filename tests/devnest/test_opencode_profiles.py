@@ -359,6 +359,132 @@ class HumanWatch(unittest.TestCase):
             self.assertIn("watch-event", (rd / "events.jsonl").read_text())
             self.assertEqual((rd / "stderr.log").read_text(), "")
 
+    def test_nonobserver_timeout_preserves_partial_output(self):
+        """S3 pilot evidence loss (2026-11-14): a timed-out unattended
+        run must still land its partial stdout/stderr — the captured
+        bytes on TimeoutExpired are the only diagnosable trace."""
+        with tempfile.TemporaryDirectory() as td:
+            rd = Path(td)
+            with self.assertRaises(mod.subprocess.TimeoutExpired):
+                mod.run_profile_process(
+                    [sys.executable, "-c",
+                     "import sys,time;print('partial-event',flush=True);"
+                     "print('partial-err',file=sys.stderr,flush=True);"
+                     "time.sleep(5)"],
+                    rd, 0.2, dict(os.environ), cwd=td)
+            self.assertIn("partial-event",
+                          (rd / "events.jsonl").read_text())
+            self.assertIn("partial-err", (rd / "stderr.log").read_text())
+
+
+class RetryAttempts(unittest.TestCase):
+    """escalation.max_retries consumption in cmd_run — free-model
+    variance needs a fresh attempt with the contract restated, not a
+    new card (card opencode-lane-s3-dispatch-hardening)."""
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.root = Path(self.td.name)
+        self.old_state = os.environ["OPENCODE_LANE_STATE"]
+        os.environ["OPENCODE_LANE_STATE"] = str(self.root / "state")
+        self.prof = mod.load_profile("ops-readonly")
+        self.env = mk_env(stage="S3", unattended=True,
+                          escalation={"on_fail": "manual",
+                                      "max_retries": 1})
+        self.args = SimpleNamespace(job="fixture", unattended=True,
+                                    skip_scope=True, human_observer="",
+                                    controller_heartbeat=False)
+
+    def tearDown(self):
+        os.environ["OPENCODE_LANE_STATE"] = self.old_state
+        self.td.cleanup()
+
+    def _run(self, event_payloads, audit=None, verdict=None):
+        """cmd_run with the process layer stubbed; each event_payload is
+        the events.jsonl content for that attempt."""
+        calls = []
+
+        def execute(cmd, rd, *a, **kw):
+            calls.append(rd)
+            (rd / "events.jsonl").write_text(event_payloads[len(calls) - 1])
+            return SimpleNamespace(returncode=0)
+
+        clean_audit = {"tokens": {}, "tool_calls": [], "denials": [],
+                       "mutating_commands": [], "verifier_peeks": [],
+                       "write_attempts": []}
+        with mock.patch.object(mod, "RUNS", self.root / "runs"), \
+                mock.patch.object(mod.lane_gate, "load_envelope",
+                                  return_value=dict(self.env)), \
+                mock.patch.object(mod, "run_preflight",
+                                  return_value={"admit": True,
+                                                "profile": self.prof,
+                                                "lane": {"admit": True}}), \
+                mock.patch.object(mod, "run_profile_process",
+                                  side_effect=execute), \
+                mock.patch.object(mod, "arm_env", return_value={}), \
+                mock.patch.object(mod, "audit_events",
+                                  return_value=audit or clean_audit), \
+                mock.patch.object(mod, "_verify",
+                                  return_value=verdict or
+                                  {"verdict": "pass", "checks": {}}), \
+                mock.patch.object(mod, "opencode_is_v2",
+                                  return_value=False):
+            return mod.cmd_run(self.args), calls
+
+    def test_retryable_failure_reruns_with_schema_hint_and_can_pass(self):
+        good = ('{"part":{"type":"text","text":"```json\\n'
+                '{\\"read_only\\":true}\\n```"}}\n')
+        rc, calls = self._run(["", good])
+        self.assertEqual(rc, 0)
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(calls[1].name.endswith("-r2"))
+        # the retry prompt carries the deterministic contract hint
+        prompt2 = (calls[1] / "prompt.md").read_text()
+        self.assertIn("a previous attempt was rejected", prompt2)
+        self.assertNotIn("a previous attempt was rejected",
+                         (calls[0] / "prompt.md").read_text())
+        run2 = json.loads((calls[1] / "run.json").read_text())
+        self.assertEqual(run2["attempt"], 2)
+        self.assertTrue(run2["retry_hint"])
+        # each attempt lands its own evidence + ledger record; the
+        # job counts once in stage progress
+        ledger = lane_gate.load_ledger()
+        self.assertEqual(len(ledger), 2)
+        self.assertEqual(ledger[0]["failure_reason"], "missing_artifact")
+        self.assertFalse(ledger[0]["escalated"])
+        self.assertTrue(ledger[1]["verifier_pass"])
+        self.assertEqual(ledger[1]["retries"], 1)
+        self.assertEqual(lane_gate.load_stage()["jobs_completed"]["S3"], 1)
+
+    def test_contract_violation_never_retries(self):
+        bad_audit = {"tokens": {}, "tool_calls": [],
+                     "denials": ["write:/etc/x"],
+                     "mutating_commands": [], "verifier_peeks": [],
+                     "write_attempts": ["write:/etc/x"]}
+        rc, calls = self._run(["x"], audit=bad_audit)
+        self.assertEqual(rc, 1)
+        self.assertEqual(len(calls), 1)
+        # final attempt still escalates under on_fail=manual
+        self.assertTrue(lane_gate.load_ledger()[-1]["escalated"])
+        self.assertEqual(lane_gate.load_ledger()[-1]["failure_reason"],
+                         "tool_denial")
+
+    def test_zero_budget_stays_single_attempt(self):
+        self.env["escalation"]["max_retries"] = 0
+        rc, calls = self._run([""])
+        self.assertEqual(rc, 1)
+        self.assertEqual(len(calls), 1)
+
+    def test_retry_hint_stays_out_of_frozen_envelope(self):
+        """manifest.envelope must equal the frozen lane_envelope at
+        staged closeout — the _-prefixed hint is runner-local state,
+        not envelope data."""
+        env = dict(self.env, _retry_hint=True)
+        man = mod.render_bundle(env, self.prof, self.root / "render")
+        self.assertNotIn("_retry_hint", man["envelope"])
+        self.assertIn("a previous attempt was rejected",
+                      (self.root / "render" / "prompt.md").read_text())
+
 
 class LintProfiles(unittest.TestCase):
     def test_all_committed_profiles_lint_clean(self):
