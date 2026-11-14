@@ -1,7 +1,7 @@
 id: ssot-optimize-baseline-refresh-crash
 title: ssot-optimize.mjs baseline refresh crashes — E2BIG/output overflow on full run
 column: done
-updated: 2026-11-09 18:34
+updated: 2026-11-14 14:11
 brief: '`node scripts/ssot-optimize.mjs` (the documented escape hatch when the pre-commit gate flags non-baseline
   warnings) crashes — Node spawnSync/execSync dies on output overflow while validating hundreds of focus-inbox yml
   files (observed 2026-11-09 on tony-omen worktree, Node v24.21.0). The gate''s own remediation path is broken.'
@@ -84,6 +84,10 @@ comms:
 - at: 2026-11-09 18:34
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
