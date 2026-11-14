@@ -1,7 +1,7 @@
 id: audit-hosts-macos-blindspot
 title: audit-hosts.py misses macOS hosts + other-user launchd domains (kk-mac adanest ollama ran undeclared)
 column: backlog
-updated: 2026-10-30 19:18
+updated: 2026-11-14 14:14
 spec: 'Evidence 2026-10-30: kk-mac ran ollama serve under the adanest account for days/weeks — fleet didn''t know.
   Three stacked gaps: (1) kk-mac is not in audit-hosts.py HOSTS map (macos_services() exists but is never called
   for it — SSOT says ''host-loads probe only''); (2) even if it were, `launchctl list` only sees the caller''s domain
@@ -14,3 +14,7 @@ comms:
 - at: 2026-10-30 19:18
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
