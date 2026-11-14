@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-ssh-canary
 title: Timer ssh-canary on tony-omen failing
 column: backlog
-updated: 2026-11-14 22:05
+updated: 2026-11-15 00:45
 priority: high
 tags:
 - timer-alert
@@ -791,6 +791,9 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-14 21:50) of `ssh-canary.service` on `tony-omen` result=exit-code — investigate
     journal: `journalctl --user -u ssh-canary.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-15 00:45
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the user-level systemd timer ssh-canary.service on the host
