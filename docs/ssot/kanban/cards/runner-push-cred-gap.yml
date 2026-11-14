@@ -1,7 +1,7 @@
 id: runner-push-cred-gap
 title: Runners without repo push creds strand dispatch branches (macbook, idc03)
 column: done
-updated: 2026-11-07 14:00
+updated: 2026-11-14 14:14
 spec: 'ADA-0673 hit the documented failure mode: tony-macbook claimed an ada-pi dispatch, finished, checkpoint committed
   — but its SSH key is a chaba-only deploy key, so the branch never reached origin; card still marked done+verified
   (misleading). Same gap on idc03 (daa0e0a stranded). Options: (a) add ada-voice deploy keys to each runner host;
@@ -73,6 +73,10 @@ comms:
     — mddb-fork not selected) in ~/.config/secrets/github-mcp-new.env + github-mcp.env; git credential.helper=git-cred-github-pat.sh
     sources it for github.com; gh CLI re-authed; push+delete verified live on tonezzz/chaba. ssot.secrets.yml slots
     updated (49c088088).'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
