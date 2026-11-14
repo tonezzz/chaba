@@ -1,28 +1,28 @@
 id: cast-auto-command-truth
 title: 'Command-truth: 3 unattributed device state change(s)'
-brief: A watched device changed state with no allowlisted commander — attribute it
-  (logbook context, unit, automation, device-side schedule) then either fix the commander
-  or add it to ssot.command-truth.yml allowed_commanders.
+brief: A watched device changed state with no allowlisted commander — attribute it (logbook context, unit, automation,
+  device-side schedule) then either fix the commander or add it to ssot.command-truth.yml allowed_commanders.
 column: done
 review_kind: triage
 generated: command-truth
 program: chaba-ci
 area: ha-ops
 priority: high
-note: '- media_player.tony_tv: history fetch failed: <urlopen error [Errno 111] Connection
-  refused>
+note: '- media_player.tony_tv: history fetch failed: <urlopen error [Errno 111] Connection refused>
 
-  - media_player.tony_tv_cast: history fetch failed: <urlopen error [Errno 111] Connection
-  refused>
+  - media_player.tony_tv_cast: history fetch failed: <urlopen error [Errno 111] Connection refused>
 
   - switch.plug_tv: history fetch failed: <urlopen error [Errno 111] Connection refused>'
-help: 'config: docs/ssot/infrastructure/ssot.command-truth.yml. context.user_id =
-  HA user/API caller; parent_id = automation/script run; neither = device-side schedule,
-  integration poll, or LAN chatter.'
-updated: '2026-10-22'
+help: 'config: docs/ssot/infrastructure/ssot.command-truth.yml. context.user_id = HA user/API caller; parent_id
+  = automation/script run; neither = device-side schedule, integration poll, or LAN chatter.'
+updated: 2026-11-14 14:06
 action:
   status: done
 comms:
 - at: 2026-10-20 18:11
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
