@@ -466,6 +466,9 @@ comms:
 - at: 2026-11-14 10:59
   from: devin
   text: retry requested
+- at: 2026-11-14 10:59
+  from: tony-dell
+  text: claimed
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
@@ -498,8 +501,9 @@ review_kind: verify
 action:
   type: dispatch
   repo: chaba
-  lane: jules
+  lane: codemod
   executor: jules
-  status: queued
+  status: running
   last_failure: 'start failed: jules daily cap reached (20 sessions today >= 20) — retry after the daily window'
   attempts: 1
+  runner: tony-dell
