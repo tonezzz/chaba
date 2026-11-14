@@ -1,7 +1,7 @@
 id: ada-opencode-v2-upgrade
 title: Upgrade ada-opencode executor to opencode v2 (pin 1.19.4 -> v2.2.5)
 column: backlog
-updated: 2026-11-08 12:26
+updated: 2026-11-14 14:10
 priority: medium
 tags:
 - ada
@@ -26,3 +26,7 @@ comms:
     200, 14 ada-control_* MCP tools exposed. Host binary: v2 at ~/.opencode/bin + runner-agent drop-in OPENCODE_BIN
     (next dispatch resolves v2). Config migrations: workspace opencode.json + .opencode/ → mcp.servers shape (v1
     1.19.4 tolerated it — verified). Code: render_config emits mcp'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
