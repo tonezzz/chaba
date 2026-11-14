@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
-column: review
-updated: 2026-11-14 11:36
+column: done
+updated: 2026-11-14 11:37
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -536,6 +536,11 @@ comms:
 - at: 2026-11-14 11:36
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 11:37
+  from: chaba
+  text: 'merge-sweep: merged fe3ec5c2 (dispatch/20261114-105957-build-the-first-bounded-image- from tony-dell) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-105957-build-the-first-bounded-image-.md)
+    — auto-closed'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
@@ -576,8 +581,12 @@ action:
   runner: tony-dell
   result: 'exit=0 ntainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261114-105957-build-the-first-bounded-image-.service:
     Consumed 2min 29.615s CPU time over 11min 19.671s wall clock time, 1G memory peak, 603.2M memory swap peak.'
-  verified: false
+  verified: true
   sweep:
     stale_running: 2026-11-14 11:23
     dirty: 1
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 11:37
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-105957-build-the-first-bounded-image-.md
