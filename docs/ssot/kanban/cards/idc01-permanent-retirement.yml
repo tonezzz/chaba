@@ -1,7 +1,7 @@
 id: idc01-permanent-retirement
 title: idc01 permanently retired — purge host inventory and references
 column: done
-updated: 2026-11-14 14:15
+updated: 2026-11-14 14:16
 brief: 'Tony confirmed 2026-11-13: idc01 is retired permanently (superseded by idc03 since 2026-10-05/06). Remove
   it from host inventory, expected-unit audits, and live references so drift-reconcile and docs stop treating it
   as a fleet member.'
@@ -31,6 +31,10 @@ comms:
 - at: 2026-11-14 14:15
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
