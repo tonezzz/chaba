@@ -1,16 +1,16 @@
 id: dispatch-retry-storm-worktree-flood
 title: Dispatch retry loop spawned ~125 worktrees on omen (Nov 8-9) — needs dedupe/backoff
 column: backlog
-updated: 2026-11-12 12:25
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - dispatch
 - ops
-note: 'Omen accumulated ~130 dispatch worktrees in ~36h: the same 3-4 cards (timer-log-shipper-severe,
-  timer-log-shipper-on-idc03-fai, timer-ada-scenario-smoke, ada-proactive-digest-morning-b) re-dispatched
-  every ~15-30min on Nov 8, more on Nov 9. Nearly all clean spawn-and-die at 5 base commits — the dispatchers
-  are retrying failed cards without backoff/dedupe. 131 swept 2026-11-12 (clean removed, 7 dirty salvaged
-  to ~/wt-salvage). Fix: dispatch retry needs per-card backoff + a cap on live retries, an'
+note: 'Omen accumulated ~130 dispatch worktrees in ~36h: the same 3-4 cards (timer-log-shipper-severe, timer-log-shipper-on-idc03-fai,
+  timer-ada-scenario-smoke, ada-proactive-digest-morning-b) re-dispatched every ~15-30min on Nov 8, more on Nov
+  9. Nearly all clean spawn-and-die at 5 base commits — the dispatchers are retrying failed cards without backoff/dedupe.
+  131 swept 2026-11-12 (clean removed, 7 dirty salvaged to ~/wt-salvage). Fix: dispatch retry needs per-card backoff
+  + a cap on live retries, an'
 ref: OPS-0039
 comms:
 - at: 2026-11-12 12:25
@@ -19,9 +19,12 @@ comms:
 - at: 2026-11-12 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: 'Goal: Implement per-card backoff and a live retry cap in the dispatch loop on tony-omen to prevent
-  worktree floods like the ~130 accumulated on Nov 8-9 for cards such as timer-log-shipper-severe and
-  ada-proactive-digest-morning-b. Host/repo: tony-omen, chaba. Constraints: Prevent rapid continuous re-dispatching
-  of failed cards without backoff and deduplication. Testable done-condition: The dispatch loop enforces
-  backoff and retry limits on failed cards, verified via automated test or dry-run inspection ensuring
-  failing cards are not re-spawned every 15-30 minutes.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: 'Goal: Implement per-card backoff and a live retry cap in the dispatch loop on tony-omen to prevent worktree
+  floods like the ~130 accumulated on Nov 8-9 for cards such as timer-log-shipper-severe and ada-proactive-digest-morning-b.
+  Host/repo: tony-omen, chaba. Constraints: Prevent rapid continuous re-dispatching of failed cards without backoff
+  and deduplication. Testable done-condition: The dispatch loop enforces backoff and retry limits on failed cards,
+  verified via automated test or dry-run inspection ensuring failing cards are not re-spawned every 15-30 minutes.'
