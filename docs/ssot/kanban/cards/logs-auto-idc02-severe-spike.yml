@@ -4,20 +4,16 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-11-07: `idc02-severe-spike` condition cleared — shipper
-  healthy again.'
-help: Read the digest's repeat-offender lines for idc02; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-11-07'
+note: 'Auto-recovered 2026-11-07: `idc02-severe-spike` condition cleared — shipper healthy again.'
+help: Read the digest's repeat-offender lines for idc02; this is a real incident signal, not pipeline breakage.
+updated: 2026-11-14 14:06
 comms:
 - at: 2026-10-04 17:20
   from: devin
-  text: 'Triaged: 8445/8678 lines = gpg-agent scdaemon IPC noise (benign, filterable).
-    Real signals all resolved: ada-flood-news status=2 failures = same interval-boundary
-    bug fixed on dell (2bb1e5e, idc02 has it — last run exit 0); camwall-render-check
-    x16 transient, latest run all-green; vcast input-bridge wss 502s x8 (tony-dell
-    blip). Suggest: add scdaemon pattern to shipper GREP exclude — it is 97% of the
-    spike.'
+  text: 'Triaged: 8445/8678 lines = gpg-agent scdaemon IPC noise (benign, filterable). Real signals all resolved:
+    ada-flood-news status=2 failures = same interval-boundary bug fixed on dell (2bb1e5e, idc02 has it — last run
+    exit 0); camwall-render-check x16 transient, latest run all-green; vcast input-bridge wss 502s x8 (tony-dell
+    blip). Suggest: add scdaemon pattern to shipper GREP exclude — it is 97% of the spike.'
 - at: 2026-10-04 17:58
   from: tony
   text: closed by Tony
@@ -30,10 +26,14 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0269'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
   verified: true
-brief: 'The log digest flagged something worth a look: logs `idc02` 5156 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `idc02` 5156 severe/24h. Read the note, then fix it
+  or close the card.'
 review_kind: triage
 ref: OPS-0269
