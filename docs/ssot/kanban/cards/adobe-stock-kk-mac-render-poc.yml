@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
 column: doing
-updated: 2026-11-14 11:06
+updated: 2026-11-14 11:10
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -477,6 +477,13 @@ comms:
   text: 'Dispatch session: rebuilding the pack (prior commits 40d04803c/97e62f5ec never pushed and are not in this
     object store). Recreating pack.yml + render.py + disabled inputs/render-request.json per spec, plus stdlib contract
     tests.'
+- at: 2026-11-14 11:10
+  from: devin
+  text: 'Pack rebuilt on dispatch branch dispatch/20261114-105957-build-the-first-bounded-image- (d59fa5206d8+a795991bc80;
+    prior commits were never pushed). scripts/colab/packs/kk-mac-image-render-poc: pack.yml + render.py + disabled
+    inputs/render-request.json. 16 fail-closed gates (approval, owner_approved, adobe_upload=false, model manifest/revision
+    match, local snapshot, disk 30GiB floor, load limit, single image, render window). Verified: 8/8 new tests,
+    78 tests/colab OK, nest-pack-submit --dry-run v'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
