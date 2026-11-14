@@ -1,0 +1,17 @@
+{
+  "task_id": "soak-05",
+  "task_class": "structured_extract",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Extract fields as JSON with keys queue, worker, marker from: packs stage to gdrive:ada-nest/kk-llm, the launchd worker claims one at a time, and results land as done or fallback markers.",
+  "expect": {
+    "required_keys": [
+      "queue",
+      "worker",
+      "marker"
+    ],
+    "facts": [
+      "fallback"
+    ]
+  }
+}

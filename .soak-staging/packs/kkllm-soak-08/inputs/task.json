@@ -1,0 +1,24 @@
+{
+  "task_id": "soak-08",
+  "task_class": "operator_brief",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Return a JSON operator brief with keys headline (string), risk (one of low|medium|high), next (string) for: a stale heartbeat doc shadowed the fresh one and the admission snapshot now takes the freshest alias doc.",
+  "expect": {
+    "required_keys": [
+      "headline",
+      "risk",
+      "next"
+    ],
+    "enums": {
+      "risk": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "facts": [
+      "heartbeat"
+    ]
+  }
+}

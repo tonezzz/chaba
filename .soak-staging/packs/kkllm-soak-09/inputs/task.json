@@ -1,0 +1,23 @@
+{
+  "task_id": "soak-09",
+  "task_class": "safe_route",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Route this task as JSON with keys route (one of kk_mac_local|free_lane|blocked) and reason (string): a bounded summary pack with a fresh heartbeat, idle node, and disk headroom.",
+  "expect": {
+    "required_keys": [
+      "route",
+      "reason"
+    ],
+    "enums": {
+      "route": [
+        "kk_mac_local",
+        "free_lane",
+        "blocked"
+      ]
+    },
+    "facts": [
+      "heartbeat"
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "task_id": "soak-07",
+  "task_class": "operator_brief",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Return a JSON operator brief with keys headline (string), risk (one of low|medium|high), next (string) for: the dedicated kk-llm worker passed its supervised soak and is ready for launchd cutover review.",
+  "expect": {
+    "required_keys": [
+      "headline",
+      "risk",
+      "next"
+    ],
+    "enums": {
+      "risk": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "facts": [
+      "launchd"
+    ]
+  }
+}

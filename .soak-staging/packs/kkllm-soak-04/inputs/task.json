@@ -1,0 +1,17 @@
+{
+  "task_id": "soak-04",
+  "task_class": "structured_extract",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Extract fields as JSON with keys host, model, lane from: the kk-llm lane on KKs-Mac-Studio runs qwen3:8b for bounded tasks.",
+  "expect": {
+    "required_keys": [
+      "host",
+      "model",
+      "lane"
+    ],
+    "facts": [
+      "qwen3:8b"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "task_id": "soak-06",
+  "task_class": "structured_extract",
+  "model": "qwen3:8b",
+  "format": "json",
+  "prompt": "Extract fields as JSON with keys gate, metric, verdict from: the admission gate checks heartbeat age; metrics roll up queue wait and wall time; the independent verifier emits a pass or fallback verdict.",
+  "expect": {
+    "required_keys": [
+      "gate",
+      "metric",
+      "verdict"
+    ],
+    "facts": [
+      "verifier"
+    ]
+  }
+}
