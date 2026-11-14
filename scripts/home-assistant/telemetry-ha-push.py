@@ -59,9 +59,14 @@ def _post(url: str, body: dict, token: str = "", timeout: int = 20):
 
 
 def _latest(dev: str) -> dict | None:
-    doc = _post(f"{MDDB}/get",
-                {"collection": COLLECTION, "key": f"{dev}/latest",
-                 "lang": "en"}, timeout=10)
+    try:
+        doc = _post(f"{MDDB}/get",
+                    {"collection": COLLECTION, "key": f"{dev}/latest",
+                     "lang": "en"}, timeout=10)
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 404):
+            return None
+        raise
     if not doc:
         return None
     return json.loads(doc.get("contentMd") or "{}")
