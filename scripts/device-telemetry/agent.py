@@ -9,7 +9,7 @@ or launchd every few minutes — single file, stdlib only, no icon, no
 tray, ~5ms when idle.
 
 Env:
-  DEVICE_TELEMETRY_MDBB   default http://100.102.134.91:11023/v1
+  DEVICE_TELEMETRY_MDBB   default http://100.102.134.91:11026/v1
   DEVICE_TELEMETRY_NAME   default short hostname
   DEVICE_TELEMETRY_GEO    "0" to skip WAN geo lookup (privacy/offline)
   DEVICE_TELEMETRY_PROC   max processes to list (default 8, 0=off)
@@ -25,7 +25,7 @@ import time
 import urllib.request
 
 MDBB = os.environ.get("DEVICE_TELEMETRY_MDBB",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11026/v1").rstrip("/")
 NAME = os.environ.get("DEVICE_TELEMETRY_NAME",
                       socket.gethostname().split(".")[0])
 COLLECTION = "device-telemetry"

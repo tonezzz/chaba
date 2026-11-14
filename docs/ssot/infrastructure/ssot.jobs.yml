@@ -456,8 +456,11 @@ jobs:
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
   env:
     TELEMETRY_DEVICES: tony-dell,tony-omen,tony-macbook,kk-mac,idc02,idc03,mn01,con01
+    TELEMETRY_MDBB: http://100.102.134.91:11026/v1
   env_file: '%h/.config/secrets/telemetry-ha-push.env'
-  note: reads device-telemetry/<dev>/latest from MDDB :11023 and mirrors host sensors
+  note: reads device-telemetry/<dev>/latest from MDDB :11026 (mddb-ops,
+    embeddings off — beacons write there per mddb-embed-spend-cap; :11023
+    never receives beacon docs) and mirrors host sensors
     (battery suite when present + binary_sensor.<dev>_online/_telemetry_fresh,
     sensor.<dev>_uptime/_users)
     into tony-ha via REST. env_file carries HA_LONG_LIVED_TOKEN for the dedicated
