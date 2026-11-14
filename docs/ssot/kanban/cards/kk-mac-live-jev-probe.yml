@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe
 title: KK-Mac supervised JEV executor probe
-column: review
-updated: 2026-11-14 13:16
+column: done
+updated: 2026-11-14 13:23
 brief: Run one supervised explicit kk_mac_local executor job on tony-dell runner against KK-Mac qwen3:8b.
 priority: high
 program: devnest
@@ -47,6 +47,11 @@ comms:
 - at: 2026-11-14 13:16
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 13:23
+  from: chaba
+  text: 'merge-sweep: merged ab1b9495 (dispatch/20261114-130943-read-only-summary-probe-do-not from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-130943-read-only-summary-probe-do-not.md)
+    — auto-closed'
 action:
   type: dispatch
   repo: chaba
@@ -56,6 +61,10 @@ action:
   result: 'exit=0 NB-1087. Verify via `git status` (only the outcome file untracked) and the unchanged card file.
     | devin-task-20261114-130943-read-only-summary-probe-do-not.service: Consumed 28.401s CPU time over 32.846s
     wall clock time, 826.3M memory peak.'
-  verified: false
+  verified: true
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 13:23
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-130943-read-only-summary-probe-do-not.md
