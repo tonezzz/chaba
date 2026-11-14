@@ -1,20 +1,22 @@
 id: ada-benchmark-coverage-scenarios-for-kan-152a4f
 title: Ada benchmark coverage — scenarios for kanban/dispatch/wiki/new tools
 column: backlog
-updated: 2026-11-08 13:52
+updated: 2026-11-14 14:14
 ref: ADA-1204
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec (ada-voice repo, main): tests/benchmark.yml (432 lines) covers core
-    scenarios but NOT the newer surfaces — kanban card ops, devin/opencode dispatch
-    triggers, CMS writes, and the incoming wiki/spend/card-spec tools.
+  text: 'spec (ada-voice repo, main): tests/benchmark.yml (432 lines) covers core scenarios but NOT the newer surfaces
+    — kanban card ops, devin/opencode dispatch triggers, CMS writes, and the incoming wiki/spend/card-spec tools.
 
 
-    Add scenario coverage: (a) card create/comment/request flows via board-api (dry-run
-    or test board), (b) dispatch trigger returns sane task_id without actually spending
-    a dispatch (mock/stub the ssh call), (c) wiki_read/wiki_search once those tools
-    land, (d) spend-cap refusal pat'
+    Add scenario coverage: (a) card create/comment/request flows via board-api (dry-run or test board), (b) dispatch
+    trigger returns sane task_id without actually spending a dispatch (mock/stub the ssh call), (c) wiki_read/wiki_search
+    once those tools land, (d) spend-cap refusal pat'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   repo: ada-voice
