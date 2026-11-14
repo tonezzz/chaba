@@ -1,7 +1,7 @@
 id: ada-opencode-command-publisher-20261108
 title: Version and safely publish OpenCode-Ada commands
 column: backlog
-updated: 2026-11-08 21:02
+updated: 2026-11-14 14:11
 brief: Make the OpenCode-Ada command fix durable and callable from both Ada and Devin without arbitrary repo writes.
 priority: medium
 tags:
@@ -56,6 +56,10 @@ comms:
     endpoint to the existing board-api, plus an idc02 sync job that atomically copies the committed command into
     the persistent OpenCode workspace and verifies SHA. Ada''s MCP wrapper and a Devin CLI client can call the same
     endpoint. No arbitrary paths or shell. Token savings'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: which-publisher-scope-should-i-implement-d42d5b
   ask: Which publisher scope should I implement, given that the current OpenCode workspace has no remote and the
