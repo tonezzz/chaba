@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-mddb-standby-pull
 title: Timer mddb-standby-pull on tony-dell failing
 column: done
-updated: 2026-11-11 23:51
+updated: 2026-11-14 14:08
 priority: high
 tags:
 - timer-alert
@@ -35,6 +35,10 @@ comms:
 - at: 2026-11-11 23:51
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `mddb-standby-pull.service` on the host `tony-dell` by examining the systemd user
   journal using `journalctl --user -u mddb-standby-pull.service`. Review the CMS `timer-timeline-tony-dell` to cross-reference
   historical execution details for the timer. The done-condition is met when the root cause of the exit-code failure
