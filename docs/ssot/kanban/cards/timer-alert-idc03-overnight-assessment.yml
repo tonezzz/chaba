@@ -1,7 +1,7 @@
 id: timer-alert-idc03-overnight-assessment
 title: Timer overnight-assessment on idc03 failing
 column: backlog
-updated: 2026-11-13 23:35
+updated: 2026-11-14 08:10
 priority: high
 tags:
 - timer-alert
@@ -1078,6 +1078,12 @@ comms:
   text: '2026-11-13: workflow ran 6 steps, ok=False — one or more steps failed but journal tail does not name which.
     Needs the workflow step report (check overnight-assessment output artifact/log path in ssot.jobs.yml). 21.6s
     CPU = real work happened.'
+- at: 2026-11-14 08:10
+  from: devin
+  text: 'Drill-down 2026-11-14: meta.overnight-assessment.yml says 4/6 steps ok — FAILED: ssot_validate + health_snapshot
+    (both on_fail:continue node scripts). ssot_validate = scripts/ssot-validate-all.mjs failing on real SSOT content;
+    health_snapshot = scripts/audits/http-health-audit.mjs. Next step: run those two directly on idc03 served checkout
+    to name the failing file/host.'
 spec: Investigate the failure of overnight-assessment.service on idc03 from the 11-08 02:01 run which exited with
   an exit-code during the mddb-embed runaway window. Examine the journal using journalctl --user -u overnight-assessment.service
   on idc03 and cross-reference with CMS timer-timeline-idc03. Confirm successful execution of the next scheduled
