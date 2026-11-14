@@ -1,7 +1,7 @@
 id: education-maintenance-consolidated-report
 title: Consolidate Education maintenance audit, drift, due review, and trend report
 column: done
-updated: 2026-11-08 18:49
+updated: 2026-11-14 14:11
 brief: Combine lesson policy audit, source drift, due review, human-review status, and compliance trend into one
   recurring maintenance artifact.
 priority: medium
@@ -137,6 +137,10 @@ comms:
   text: 'OPS SWEEP FINDING: BGE education shadow retry fixed board-api 502, but manual rerun at 13:32 hit the 15-minute
     systemd timeout before producing a fresh report; old report remained and due page degraded safely. Need raise
     service timeout or reduce/batch query work before calling refresh healthy. No user-facing breakage observed.'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
 auto_close:
