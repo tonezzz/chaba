@@ -1,7 +1,7 @@
 id: mediawiki-private-sso-boundary
 title: MediaWiki private Wiki SSO and in-house access boundary
 column: backlog
-updated: 2026-11-06 09:05
+updated: 2026-11-14 14:06
 brief: Give the shared MediaWiki instance a private in-house hostname and identity-based login so Ada HA can open
   Infrastructure pages without a second manual login, while public News remains anonymous-safe.
 priority: high
@@ -111,6 +111,10 @@ comms:
     (app id 189b0d42-1b10-4ef8-a336-c23e0ad0306c). Access challenge verified. Private Wiki dashboard tab now targets
     wiki-internal.surf-thailand.com. Remaining: add exact new Google OIDC callback for wiki-internal.surf-thailand.com
     and ensure MediaWiki host allowlist/config acce'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: oidc-provider-choice
   ask: 'Which identity provider should wiki-internal trust for automatic Tony/Ada login? Recommended: reuse the
