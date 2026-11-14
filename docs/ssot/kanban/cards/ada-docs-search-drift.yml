@@ -1,7 +1,7 @@
 id: ada-docs-search-drift
 title: docs tool drifts off-topic — UPS query surfaced Starboard catalog
 column: doing
-updated: 2026-11-14 08:59
+updated: 2026-11-14 09:06
 spec: 'Text-mode session 4585f3b060: user asked แสดงข้อมูลยูพีเอส after a morning UPS-battery thread. docs FTS returned
   Starboard product catalog (01cover) instead of the recent UPS context. Fixes: recency/session-topic boost in docs
   search ranking, or model-side clarification when top hit is unrelated to active topic. Also related loop-close
@@ -66,8 +66,11 @@ comms:
   from: idc02
   text: 'finished (failed): exit=1  code=exited, status=1/FAILURE | devin-task-ada-docs-search-drift-1794621238.service:
     Failed with result ''exit-co'
+- at: 2026-11-14 09:06
+  from: tony
+  text: re-spawned from report page
 action:
-  status: failed
+  status: queued
   type: dispatch
   repo: chaba
   model: litellm/or-free-nemotron-ultra
@@ -111,6 +114,5 @@ action:
     result ''exit-code''. | devin-task-ada-docs-search-drift-1794621238.service: Consumed 18.744s CPU time, 447.7M
     memory peak, 0B memory swap peak.'
   host: idc02
-  runner: idc02
 review_kind: verify
 claim: {}
