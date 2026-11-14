@@ -1,7 +1,7 @@
 id: kk-video-devnest-topic-event-feed
 title: Route Sacred Father project activity to DevNestHA topic
 column: backlog
-updated: 2026-10-29 11:33
+updated: 2026-11-14 14:14
 spec: 'Use the existing DevNestHA topic thread_id 33 (chat_id -1003998821809) for project kk-video-c9f99fee6146;
   preserve the visible topic title. Bind the topic to the project, then route project intake/source-received events,
   generated artifact milestones (Drive refs, hash/QC), and meaningful job status transitions (queued/claimed/running/done/failed/stalled/cancelled)
@@ -76,6 +76,10 @@ comms:
   text: 'Missed-job sweep 2026-10-29: the related job SSOT file exists only in /tmp/chaba-wt-kk-video-topic-event-feed
     and is absent from origin/master. The card is already held in Backlog per the answered wait-clean-deploy decision;
     no live publication or route change was made.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: live-publication-route
   ask: The Sacred Father topic is now bound, but the live board-api POST /publish returns 404. Its served checkout
