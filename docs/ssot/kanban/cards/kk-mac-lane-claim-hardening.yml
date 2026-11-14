@@ -1,7 +1,7 @@
 id: kk-mac-lane-claim-hardening
 title: kk_mac lane hardening — non-armed hosts can claim+fail; idc02 opencode --dir drift breaks the executor
-column: doing
-updated: 2026-11-14 10:59
+column: review
+updated: 2026-11-14 11:03
 priority: medium
 tags:
 - devnest
@@ -27,7 +27,7 @@ action:
   repo: chaba
   lane: paid_frontier
   executor: jules
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-11-09 21:34
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '' CLUTTER_IM_MODULE=''''
@@ -36,6 +36,9 @@ action:
   attempts: 1
   model: litellm/or-claude-fable-5.1
   runner: tony-dell
+  result: 'exit=0 tatus=1/FAILURE | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Failed with result
+    ''exit-code''. | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Consumed 466ms CPU time over 395ms
+    wall clock time, 81.9M memory peak.'
 comms:
 - at: 2026-11-09 18:16
   from: chaba
@@ -434,3 +437,9 @@ comms:
 - at: 2026-11-14 10:59
   from: chaba
   text: started devin-task-kk-mac-lane-claim-hardening-1794628789 on tony-dell (dispatch)
+- at: 2026-11-14 11:03
+  from: tony-dell
+  text: 'finished (ok): exit=0 tatus=1/FAILURE | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Failed
+    with result ''exit-code''. | de'
+review_kind: verify
+claim: {}
