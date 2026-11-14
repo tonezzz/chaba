@@ -1,6 +1,6 @@
 id: kk-mac-live-jev-probe3
 title: KK-Mac supervised JEV executor probe (tony-dell)
-column: backlog
+column: doing
 updated: 2026-11-14 13:09
 brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
 priority: high
@@ -20,7 +20,7 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-10-29 23:18
     dirty: 1
@@ -29,6 +29,9 @@ action:
     or changes detected.  \n- **Note:** Local bounded read-only lane operational; no interve
   attempts: 2
   repo: chaba
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
+  runner: tony-dell
 ref: OPS-0988
 comms:
 - at: 2026-10-29 23:16
@@ -86,3 +89,6 @@ comms:
 - at: 2026-11-14 13:09
   from: devin
   text: re-spawned from report page
+- at: 2026-11-14 13:09
+  from: tony-dell
+  text: claimed
