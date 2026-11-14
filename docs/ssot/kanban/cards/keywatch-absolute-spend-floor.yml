@@ -1,7 +1,7 @@
 id: keywatch-absolute-spend-floor
 title: 'key-watch: warn on absolute remaining + spend rate'
 column: done
-updated: 2026-11-13 18:15
+updated: 2026-11-14 14:14
 spec: key-watch warns at usage/limit>=80% — on $1 cap that fires at $0.80 nearly-gone; on $5, 20% left is still
   $1. Add absolute floor (LINE warn when limit_remaining < ~$0.50) + rate check (usage_daily jump vs prior) to catch
   spend velocity. scripts/ops/key-watch.py.
@@ -36,6 +36,10 @@ comms:
 - at: 2026-11-13 18:15
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   repo: chaba
