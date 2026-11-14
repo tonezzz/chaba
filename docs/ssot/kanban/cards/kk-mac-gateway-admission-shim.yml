@@ -1,7 +1,7 @@
 id: kk-mac-gateway-admission-shim
 title: Admission shim in front of kk-mac ollama tunnel for LiteLLM legs
-column: doing
-updated: 2026-11-14 10:52
+column: done
+updated: 2026-11-14 10:53
 priority: medium
 tags:
 - kk-mac
@@ -52,9 +52,22 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261114-103405-kk-mac-legs-are-now-leg-1-on-s no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-14 10:53
+  from: chaba
+  text: 'merge-sweep: merged d89eaaac (dispatch/20261114-103405-kk-mac-legs-are-now-leg-1-on-s from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-103405-kk-mac-legs-are-now-leg-1-on-s.md)
+    — auto-closed'
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: tony-omen
+  sweep:
+    stale_running: 2026-11-14 10:52
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 10:53
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-103405-kk-mac-legs-are-now-leg-1-on-s.md
