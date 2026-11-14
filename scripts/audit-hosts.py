@@ -59,7 +59,6 @@ HOSTS = {
     "tony-dell": {"tailnet": "tony-dell", "os": "linux", "user": "tony"},
     "tony-omen": {"tailnet": "tony-omen", "os": "linux", "user": "tony"},
     "mn01": {"tailnet": "mn01", "os": "linux", "user": "tony"},
-    "idc01": {"tailnet": "idc01", "os": "linux", "user": "tony"},
     "idc02": {"tailnet": "idc02", "os": "linux", "user": "tony"},
     "idc03": {"tailnet": "idc03", "os": "linux", "user": "tony"},
     "con01": {"tailnet": "con01", "os": "linux", "user": "tony"},

@@ -154,7 +154,7 @@ jobs:
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 con01 macbook;
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
     --consolidate; /usr/bin/python3 scripts/report-system.py && scp -q
     stacks/web/public/apps/system-report/data/system-report.yml
@@ -682,7 +682,7 @@ jobs:
   env:
     MDDB_BASE_URL: http://100.102.134.91:11023/v1
     MDDB_CMS_URL: http://100.102.134.91:11027/v1
-    AUDIT_HOSTS: idc03,idc01
+    AUDIT_HOSTS: idc03
   note: 'card ada-session-audit-daily. Window = transcripts newer than ~/.local/share/devin/ada-audit-marker (mtime;
     marker bumps after a clean run). Publishes ada-ha-scenario-reports/audit/session-<date> (kind session-audit),
     refreshes CMS page ada-session-audit, files focus-inbox entries for surfaced friction only (high-sev or repeated
@@ -922,16 +922,6 @@ jobs:
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
-  host: idc01
-  dispatch: systemd
-  every: 1h
-  timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
-  env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
-    MDDB_OPS_URL: http://100.102.134.91:11026/v1
-- id: log-shipper
-  name: Log shipper (local journald -> MDDB host-logs)
   host: idc02
   dispatch: systemd
   every: 1h
@@ -1000,16 +990,6 @@ jobs:
 - id: log-shipper-severe
   name: Log shipper — severe kinds fast lane
   host: tony_omen
-  dispatch: systemd
-  every: 1h
-  timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
-  env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
-    MDDB_OPS_URL: http://100.102.134.91:11026/v1
-- id: log-shipper-severe
-  name: Log shipper — severe kinds fast lane
-  host: idc01
   dispatch: systemd
   every: 1h
   timeout: 10m

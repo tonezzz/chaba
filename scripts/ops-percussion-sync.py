@@ -25,7 +25,7 @@ HEALTH_GLOB = "/home/tony/var/chaba/health/*-mcp-health.json"
 OUT = [REPO / "stacks/web/public/apps/percussion/state.json"]
 
 # host → drum voice (heavier host = heavier drum)
-HOST_ROLES = {"idc03": "kick", "idc01": "kick", "idc02": "kick",
+HOST_ROLES = {"idc03": "kick", "idc02": "kick",
               "tony_dell": "snare", "tony-dell": "snare",
               "tony_omen": "tom", "tony-omen": "tom",
               "mn01": "hat", "michael_ha": "shaker", "michael-ha": "shaker",

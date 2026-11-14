@@ -5,4 +5,6 @@ Description=Device telemetry -> tony-ha sensor mirror (job:telemetry-ha-push, re
 Type=oneshot
 TimeoutStartSec=60
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
-Environment="TELEMETRY_DEVICES=tony-macbook"
+EnvironmentFile=%h/.config/secrets/telemetry-ha-push.env
+Environment="TELEMETRY_DEVICES=tony-dell,tony-omen,tony-macbook,kk-mac,idc02,idc03,mn01,con01"
+Environment="TELEMETRY_MDBB=http://100.102.134.91:11026/v1"

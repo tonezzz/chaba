@@ -1597,8 +1597,9 @@ hosts:
         - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.646831+07:00
     deltas: []
   idc01:
-    retired: true   # 2026-10-12 — lease teardown pending (OPS-0520); ssh dead,
-                    # excluded from the daily audit fleet
+    retired: true   # permanently retired 2026-11-14 per Tony (OPS-0096);
+                    # was lease-teardown-pending since 2026-10-12 (OPS-0520);
+                    # ssh dead, excluded from the daily audit fleet
     tailscale_ip: 100.74.146.0
     description: "RETIRED public VPS — ssh dead 2026-10-12. Was warm-DR node
       since the 2026-10-05/06 idc03 migration (mddb-follower, standby
@@ -1648,7 +1649,7 @@ hosts:
         critical: true
         note: "MDDB replication leader on tailnet 100.102.134.91:11023 http /
           :11024 gRPC / :9000 MCP (quadlet, env-file ~/.config/secrets/mddb.env);
-          followers on idc02 and idc01 (mddb-follower.service :11123)"
+          followers on idc02 and con01 (mddb-follower.service :11123); idc01 follower lost with host"
       - name: mddb-ops.service
         type: service
         scope: user
