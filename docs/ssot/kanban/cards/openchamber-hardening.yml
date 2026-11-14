@@ -1,7 +1,7 @@
 id: openchamber-hardening
 title: OpenChamber (ada-ocb) hardening
 column: done
-updated: 2026-11-12 15:14
+updated: 2026-11-14 14:12
 brief: 'Post-merge hardening for OpenChamber on tony-dell (ada-ocb tab). Done 2026-11-12 via PRs 152+153: localhost-only
   bind, ssot.health coverage (unit + :8443 surface), monthly update timer, audit declaration. Remaining: passkey
   registration (Tony browser action), CF public edge (opt-in — see ada-ocb-public-edge).'
@@ -46,6 +46,10 @@ comms:
 - at: 2026-11-12 15:14
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: two-tony-actions-remain-a-passkey-log-in-45b1da
   ask: 'Two Tony actions remain: (a) passkey — log into https://tony-dell.taila0626a.ts.net:8443 (or via ada-ocb
