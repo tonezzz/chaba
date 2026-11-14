@@ -337,6 +337,7 @@ def render_one(request, facts, out_dir):
     os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
     os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
     import torch
+    import diffusers
     from diffusers import AutoencoderKL, StableDiffusionXLPipeline
 
     r = request["render"]
@@ -382,7 +383,7 @@ def render_one(request, facts, out_dir):
         "load_s": round(load_s, 2),
         "render_s": round(render_s, 2),
         "torch": torch.__version__,
-        "diffusers": __import__("diffusers").__version__,
+        "diffusers": diffusers.__version__,
     }
 
 
