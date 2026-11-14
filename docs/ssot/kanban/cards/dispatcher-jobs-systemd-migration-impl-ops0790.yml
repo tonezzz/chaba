@@ -1,7 +1,7 @@
 id: dispatcher-jobs-systemd-migration-impl-ops0790
 title: Implement OPS-0790 legacy dispatcher migration
 column: done
-updated: 2026-11-08 16:04
+updated: 2026-11-14 14:08
 brief: Turn OPS-0790's answered migration decision into a testable code change; do not make live timer changes in
   this phase.
 priority: high
@@ -68,6 +68,10 @@ comms:
   from: chaba
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: idc02 lacks labels [''push:chaba''] — fix
     action.labels/host pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
 auto_close:
