@@ -1,7 +1,7 @@
 id: model-route-registration-unify
 title: 'Unify model registration: LiteLLM config → opencode provider map → profile allowlist is 3 manual surfaces'
 column: backlog
-updated: 2026-10-30 19:18
+updated: 2026-11-14 14:14
 spec: 'Adding one model today required edits in: stacks/idc03/litellm/config.yaml (+restart), ~/.config/litellm/config.yaml
   live copy, idc02 ~/.config/opencode/opencode.json provider models map, and each evals/opencode-lane/profiles/*/profile.yml
   model.allowed. Four surfaces, zero of them cross-validated — drift is guaranteed. Options: (a) scripts/devnest/sync-opencode-models.py
@@ -13,3 +13,7 @@ comms:
 - at: 2026-10-30 19:18
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
