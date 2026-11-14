@@ -41,11 +41,16 @@ def _run(cmd: list[str], timeout: int = 5) -> str:
 
 def _tailnet() -> dict:
     out = {"online": False}
+    candidates = ["tailscale"]
     if platform.system() == "Darwin":
-        js = _run(["/Applications/Tailscale.app/Contents/MacOS/Tailscale",
-                   "status", "--json"])
-    else:
-        js = _run(["tailscale", "status", "--json"])
+        candidates += ["/opt/homebrew/bin/tailscale",
+                       "/usr/local/bin/tailscale",
+                       "/Applications/Tailscale.app/Contents/MacOS/Tailscale"]
+    js = ""
+    for c in candidates:
+        js = _run([c, "status", "--json"])
+        if js:
+            break
     if js:
         try:
             st = json.loads(js)
