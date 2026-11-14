@@ -25,6 +25,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 os.environ["BOARD_API_COMMIT"] = "0"  # tmp card dirs aren't repo files
 

@@ -413,6 +413,7 @@ class RetryAttempts(unittest.TestCase):
                        "mutating_commands": [], "verifier_peeks": [],
                        "write_attempts": []}
         with mock.patch.object(mod, "RUNS", self.root / "runs"), \
+                mock.patch.object(mod, "REPO", self.root), \
                 mock.patch.object(mod.lane_gate, "load_envelope",
                                   return_value=dict(self.env)), \
                 mock.patch.object(mod, "run_preflight",

@@ -891,11 +891,13 @@ RETRYABLE_FAILURES = {
 MAX_RUN_ATTEMPTS = 4          # hard ceiling regardless of declared budget
 
 
-def _run_attempt(env, prof, pre, args, attempt, observer, final):
+def _run_attempt(env, prof, pre, args, attempt, observer, max_attempts):
     """One admitted profile execution: render -> run -> audit -> verify
-    -> metric + run.json. `final` marks the last allowed attempt — only
-    it may set the metric's escalated flag (an intermediate failure is
-    a retry in progress, not an escalation). Returns (run, rc)."""
+    -> metric + run.json. `max_attempts` bounds the retry budget — only
+    a terminal failure may set the metric's escalated flag (either the
+    last allowed attempt, or a failure that is never retryable); an
+    intermediate failure is a retry in progress, not an escalation.
+    Returns (run, rc)."""
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     if attempt > 1:
         run_id += f"-r{attempt}"
@@ -995,8 +997,6 @@ def _run_attempt(env, prof, pre, args, attempt, observer, final):
     den = len(audit["denials"]) + len(audit["write_attempts"])
     m["tool_denials"] = den
     esc = (env.get("escalation") or {})
-    m["escalated"] = final and not m["verifier_pass"] and \
-        esc.get("on_fail") in ("manual", "devin", "retry_then_manual")
     fr = None
     if audit["mutating_commands"]:
         fr = "mutating_command"
@@ -1029,6 +1029,10 @@ def _run_attempt(env, prof, pre, args, attempt, observer, final):
             m.update(verification_status="failed", failure_reason="independent_review_preparation_error")
             fr = m["failure_reason"]
             print(json.dumps({"error": str(exc)}), flush=True)
+    m["escalated"] = bool(
+        fr and not m["verifier_pass"] and
+        (attempt == max_attempts or fr not in RETRYABLE_FAILURES) and
+        esc.get("on_fail") in ("manual", "devin", "retry_then_manual"))
     lane_gate.record_metric(m)
 
     run = {"job": env["id"], "profile": prof["id"], "at": now_iso(),
@@ -1099,7 +1103,7 @@ def cmd_run(args):
     run, rc = None, 1
     for attempt in range(1, budget + 2):
         run, rc = _run_attempt(env, prof, pre, args, attempt, observer,
-                               final=(attempt == budget + 1))
+                               max_attempts=budget + 1)
         fr = (run.get("metric") or {}).get("failure_reason")
         if rc == 0 or fr not in RETRYABLE_FAILURES or \
                 attempt == budget + 1:
