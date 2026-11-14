@@ -41,7 +41,11 @@ def _run(cmd: list[str], timeout: int = 5) -> str:
 
 def _tailnet() -> dict:
     out = {"online": False}
-    js = _run(["tailscale", "status", "--json"])
+    if platform.system() == "Darwin":
+        js = _run(["/Applications/Tailscale.app/Contents/MacOS/Tailscale",
+                   "status", "--json"])
+    else:
+        js = _run(["tailscale", "status", "--json"])
     if js:
         try:
             st = json.loads(js)
@@ -132,8 +136,10 @@ def collect() -> dict:
         "device": NAME,
         "ts": int(time.time()),
         "os": f"{platform.system()} {platform.release()}",
-        "uptime_s": int(_run(["cat", "/proc/uptime"]).split()[0].split(".")[0])
-        if os.path.exists("/proc/uptime") else None,
+        "uptime_s": (int(_run(["cat", "/proc/uptime"]).split()[0].split(".")[0])
+                     if os.path.exists("/proc/uptime")
+                     else (int(time.time()) - int(boot)
+                           if boot.isdigit() else None)),
         "boot_time": int(boot) if boot.isdigit() else None,
         "users": _users(),
         "top_procs": _procs(),
