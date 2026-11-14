@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>net.adanest.kk-llm-worker</string>
+  <key>ProgramArguments</key><array>
+    <string>/Users/kkkakk/.cache/nest-worker/venv/bin/python</string>
+    <string>/Users/kkkakk/CascadeProjects/chaba/scripts/devnest/kk_mac_lane_worker.py</string>
+    <string>--remote</string><string>gdrive:ada-nest/kk-llm</string>
+    <string>--host</string><string>local</string>
+    <string>--workdir</string><string>/Users/kkkakk/.cache/kk-llm-worker</string>
+    <string>--max-packs</string><string>1</string>
+  </array>
+  <key>StartInterval</key><integer>60</integer>
+  <key>RunAtLoad</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>LowPriorityIO</key><true/>
+  <key>StandardOutPath</key><string>/Users/kkkakk/.cache/kk-llm-worker/worker.log</string>
+  <key>StandardErrorPath</key><string>/Users/kkkakk/.cache/kk-llm-worker/worker.err</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/Users/kkkakk/.local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+  </dict>
+</dict></plist>

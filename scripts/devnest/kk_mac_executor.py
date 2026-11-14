@@ -246,15 +246,23 @@ def run_contract(task: dict, *, run_task=None,
     monitor = (make_monitor or kk_mac_memory.MemoryMonitor)(host)
     monitor.start()
     try:
-        res = run_task(tc, prompt, model=model, host=host)
+        res = run_task(tc, prompt, model=model, host=host,
+                       format=task.get("format"),
+                       think=task.get("think"))
     except Exception as exc:
-        monitor.stop()
+        try:
+            monitor.stop()
+        except Exception:
+            pass
         result["verdict"] = "fallback"
         result["reasons"].append(
             f"executor_error:{type(exc).__name__}:{exc}"[:300])
         _persist(result, worktree, taskdir)
         return result
-    monitor.stop()
+    try:
+        monitor.stop()
+    except Exception:
+        pass
     mem["during"] = list(getattr(monitor, "samples", []) or [])[-20:]
     post = sampler(host)
     mem["post"] = post

@@ -38,6 +38,20 @@ class ParseTests(unittest.TestCase):
         c = km.pack_metrics(packs["pack-c"])
         self.assertEqual(c["status"], "live")
 
+    def test_fallback_status_and_terminal_precedence(self):
+        files = {"pack.yml": (1700000000.0, 800),
+                 "fallback": (1700000100.0, 10)}
+        m = km.pack_metrics(files)
+        self.assertEqual(m["status"], "fallback")
+        # a terminal marker outranks a stale fallback hold
+        files["done"] = (1700000200.0, 10)
+        m = km.pack_metrics(files)
+        self.assertEqual(m["status"], "done")
+        files2 = {"pack.yml": (1700000000.0, 800),
+                  "fallback": (1700000100.0, 10),
+                  "failed": (1700000200.0, 10)}
+        self.assertEqual(km.pack_metrics(files2)["status"], "failed")
+
 
 class CollectTests(unittest.TestCase):
     def test_collect_counts_and_wait_stats(self):
@@ -48,7 +62,9 @@ class CollectTests(unittest.TestCase):
         finally:
             km.rclone = orig
         self.assertEqual(out["packs"],
-                         {"total": 3, "done": 1, "failed": 1, "live": 1})
+                         {"total": 3, "done": 1, "failed": 1,
+                          "fallback": 0, "live": 1})
+        self.assertEqual(out["interventions"], 1)
         self.assertEqual(out["queue_wait_seconds"]["n"], 1)
         self.assertEqual(out["queue_wait_seconds"]["mean"], 100.0)
 

@@ -80,16 +80,27 @@ def snapshot(
     # docs: inject heartbeat docs instead of querying MDDB (tests /
     # simulated heartbeats for the LiteLLM admission shim).
     candidates = [_parse(d) for d in (_search(url) if docs is None else docs)]
+
+    def _ts(x: dict) -> float:
+        try:
+            raw = x.get("ts")
+            if isinstance(raw, (int, float)):
+                return float(raw)
+            return datetime.fromisoformat(
+                str(raw).replace("Z", "+00:00")).timestamp()
+        except (TypeError, ValueError):
+            return 0.0
     body = next((x for x in candidates if x and x.get("host") == host), None)
     identity_alias = False
     if body is None:
         # Older installed Mac heartbeat scripts used the LAN address as the
         # host key (for example "192"). Accept it only when the tailnet IP
-        # identifies the expected machine; freshness and health gates remain.
-        body = next(
-            (x for x in candidates if x and x.get("tailnet_ip") == tailnet_ip),
-            None,
-        )
+        # identifies the expected machine — and when several alias docs
+        # exist (renamed host keys accumulate) take the FRESHEST, so a stale
+        # shadow doc cannot deny a healthy node.
+        alias = [x for x in candidates
+                 if x and x.get("tailnet_ip") == tailnet_ip]
+        body = max(alias, key=_ts) if alias else None
         identity_alias = body is not None
     result = {
         "host": host,
@@ -191,9 +202,142 @@ def snapshot(
     return result
 
 
+LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})
+
+
+def _which(*names: str) -> str | None:
+    for name in names:
+        for d in ("/opt/homebrew/bin", "/usr/local/bin", "/usr/bin",
+                  "/usr/sbin", "/sbin",
+                  os.path.expanduser("~/.local/bin")):
+            p = os.path.join(d, name)
+            if os.path.isfile(p) and os.access(p, os.X_OK):
+                return p
+    return None
+
+
+def _run_text(cmd: list[str], timeout: int = 10) -> str | None:
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=timeout)
+        return r.stdout if r.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def _local_load_1m() -> float | None:
+    if os.uname().sysname == "Darwin":
+        sysctl = _which("sysctl") or "/usr/sbin/sysctl"
+        out = _run_text([sysctl, "-n", "vm.loadavg"])
+        if out:
+            m = re.search(r"\d+(?:\.\d+)?", out)
+            return float(m.group(0)) if m else None
+        return None
+    try:
+        return float(open("/proc/loadavg").read().split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def _local_tmux_jobs() -> str:
+    tmux = _which("tmux")
+    if not tmux:
+        return ""
+    out = _run_text([tmux, "ls"])
+    if not out:
+        return ""
+    return ",".join(
+        line.split(":", 1)[0] for line in out.splitlines() if line.strip())
+
+
+def _local_temp_c() -> float | None:
+    smctemp = _which("smctemp")
+    if not smctemp:
+        return None
+    out = _run_text([smctemp, "-c"])
+    try:
+        return float((out or "").strip())
+    except ValueError:
+        return None
+
+
+def local_snapshot(
+    *,
+    host: str = "local",
+    min_disk_gb: int = 20,
+    max_load_1m: float = 4.0,
+    max_temp_c: float = 60.0,
+    require_idle: bool = True,
+    max_load_pc: float = 1.0,
+    ollama_url: str = "http://127.0.0.1:11434",
+) -> dict:
+    """On-host self-gate for the dedicated lane worker — the same
+    thresholds as snapshot() but sourced from local ground truth instead
+    of the MDDB heartbeat, so a worker sitting on the node itself gates
+    on what is true right now, not on a heartbeat up to 15 min old.
+    Read-only probes only: ollama /api/version, loadavg, statvfs,
+    smctemp, tmux ls."""
+    result = {
+        "host": host,
+        "eligible": False,
+        "lane": "kk_mac_local",
+        "source": "local_self",
+        "reasons": [],
+        "heartbeat_age_s": 0.0,
+        "ollama_ok": None,
+        "disk_free_gb": None,
+        "load_1m": None,
+        "cpu_temp_c": None,
+        "node_busy": None,
+    }
+    try:
+        req = urllib.request.Request(
+            ollama_url.rstrip("/") + "/api/version")
+        with urllib.request.urlopen(req, timeout=5) as r:
+            result["ollama_ok"] = r.status == 200
+    except Exception:
+        result["ollama_ok"] = False
+    if result["ollama_ok"] is not True:
+        result["reasons"].append("ollama_unhealthy")
+    try:
+        st = os.statvfs("/")
+        result["disk_free_gb"] = round(st.f_bavail * st.f_frsize / 1e9, 1)
+        if result["disk_free_gb"] < min_disk_gb:
+            result["reasons"].append("disk_low")
+    except OSError:
+        result["reasons"].append("disk_unknown")
+    load = _local_load_1m()
+    result["load_1m"] = load
+    if load is None:
+        result["reasons"].append("load_unknown")
+    elif load > max_load_1m:
+        result["reasons"].append("load_high")
+    temp = _local_temp_c()
+    result["cpu_temp_c"] = temp
+    if temp is not None and temp > max_temp_c:
+        result["reasons"].append("temp_high")
+    busy = []
+    if require_idle:
+        tmux = _local_tmux_jobs()
+        result["tmux_jobs"] = tmux
+        if tmux:
+            busy.append("tmux_jobs")
+    cores = os.cpu_count() or 0
+    if cores > 0 and load is not None and load / cores > max_load_pc:
+        busy.append("load1")
+    result["node_busy"] = bool(busy)
+    if busy:
+        result["reasons"].append("node_busy:" + "+".join(busy))
+    result["eligible"] = not result["reasons"]
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="KKs-Mac-Studio")
+    parser.add_argument("--local", action="store_true",
+                        help="on-host self-gate (run on the node itself) "
+                             "instead of the MDDB heartbeat snapshot")
     parser.add_argument("--url", default="http://100.102.134.91:11026/v1")
     parser.add_argument("--max-age-s", type=int, default=900)
     parser.add_argument("--min-disk-gb", type=int, default=20)
@@ -201,6 +345,12 @@ def main() -> int:
                         help="admit even when the node reports work")
     parser.add_argument("--max-load-pc", type=float, default=1.0)
     args = parser.parse_args()
+    if args.local:
+        result = local_snapshot(min_disk_gb=args.min_disk_gb,
+                                require_idle=not args.allow_busy,
+                                max_load_pc=args.max_load_pc)
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result["eligible"] else 2
     try:
         result = snapshot(
             host=args.host,

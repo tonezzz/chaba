@@ -11,6 +11,7 @@ import argparse
 import json
 import subprocess
 import sys
+import urllib.request
 from typing import Callable
 
 try:
@@ -25,6 +26,16 @@ ALLOWED_TASKS = {
     "safe_route",
 }
 MAX_PROMPT_CHARS = 6000
+LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})
+OLLAMA_LOCAL_URL = "http://127.0.0.1:11434"
+
+
+def is_local_host(host: str) -> bool:
+    """True when the LLM target is this machine's own Ollama — the
+    dedicated lane worker runs on KK-Mac itself, so the same executor
+    contract serves both the ssh path (fleet runners) and the local path
+    (on-host launchd worker) without a second implementation."""
+    return str(host or "").strip().lower() in LOCAL_HOSTS
 
 
 def validate_task(task_class: str, prompt: str) -> None:
@@ -36,19 +47,49 @@ def validate_task(task_class: str, prompt: str) -> None:
         raise ValueError("prompt exceeds read-only lane limit")
 
 
+def _generate_payload(model: str, prompt: str, format: str | None,
+                      think: bool | None) -> bytes:
+    body = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        # bounded lane: no chain-of-thought burn — qwen3 thinking is
+        # what stalled the first 2026-10-30 packs
+        "think": False if think is None else bool(think),
+        "options": {"temperature": 0},
+    }
+    if format:
+        body["format"] = format
+    return json.dumps(body).encode()
+
+
+def _call_local(payload: bytes, url: str,
+                urlopen: Callable = urllib.request.urlopen) -> dict:
+    req = urllib.request.Request(
+        url.rstrip("/") + "/api/generate", data=payload,
+        headers={"Content-Type": "application/json"})
+    try:
+        with urlopen(req, timeout=300) as response:
+            return json.loads(response.read())
+    except Exception as exc:
+        raise RuntimeError(f"local ollama failed:{type(exc).__name__}:"
+                           f"{exc}"[:400]) from exc
+
+
 def call_remote(
     prompt: str,
     *,
     host: str = "kk-mac",
     model: str = "qwen3:8b",
+    format: str | None = None,
+    think: bool | None = None,
+    local_url: str = OLLAMA_LOCAL_URL,
     ssh_run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+    urlopen: Callable = urllib.request.urlopen,
 ) -> dict:
-    payload = json.dumps({
-        "model": model,
-        "prompt": prompt,
-        "stream": False,
-        "options": {"temperature": 0},
-    }).encode()
+    payload = _generate_payload(model, prompt, format, think)
+    if is_local_host(host):
+        return _call_local(payload, local_url, urlopen=urlopen)
     command = [
         "ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", host,
         "curl -fsS http://127.0.0.1:11434/api/generate "
