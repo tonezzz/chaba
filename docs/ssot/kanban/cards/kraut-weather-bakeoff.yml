@@ -1,41 +1,35 @@
 id: kraut-weather-bakeoff
-title: "Kraut weather report — add forecast bake-off (all sources, numbers)"
-brief: >-
-  Tony+Michael decision 2026-10-20: keep the RK600 measured report on top,
-  append every candidate forecast source below in engineer numbers, compare
-  together, pick a winner as a team. Demo = one-shot TG report to the mn lane.
+title: Kraut weather report — add forecast bake-off (all sources, numbers)
+brief: 'Tony+Michael decision 2026-10-20: keep the RK600 measured report on top, append every candidate forecast
+  source below in engineer numbers, compare together, pick a winner as a team. Demo = one-shot TG report to the
+  mn lane.'
 column: done
 priority: medium
-tags: [mn-ha, weather, tg]
-spec: >-
-  scripts/ada/weather-bakeoff.py (idc03): fetch (1) RK600 live readings via
-  michael-ha HA REST, (2) HA weather.forecast_home get_forecasts daily,
-  (3) Open-Meteo multi-model ECMWF/GFS/ICON daily+hourly, (4) Met.no
-  locationforecast compact, (5) TMD WeatherForecast7Days (Rayong, demo key),
-  (6) GEMINI baseline via lane REST key + google_search grounding (= what
-  web_search answers today). Render a PIL PNG table into
-  ~/.local/share/ada/line-media/bakeoff/ (public via /relay-img/arch/) and
-  POST photo_url+text to ADA_TG_SEND_URL (:8917/send). Demo lands in Tony's
-  DM 8960073266 first — NOT the mn group.
-note: >-
-  Sources verified live 2026-10-20. Found while building: idc03 cannot reach
-  michael-ha:8123 right now — ada-ai-kraut's HOME_ASSISTANT_URL is dead from
-  that host (get_rk600_weather/home_search errors in journal) — demo runs
-  through an ssh tunnel via tony-omen. Michael's house coords pulled from
-  michael-ha /api/config: 12.898N 100.908E (Ban Chang, Rayong).
-  If the demo lands: becomes an ssot.jobs timer + RK600 actuals scoring
-  (RMSE per source over ~7d) before picking the production source.
-column: done
+tags:
+- mn-ha
+- weather
+- tg
+spec: 'scripts/ada/weather-bakeoff.py (idc03): fetch (1) RK600 live readings via michael-ha HA REST, (2) HA weather.forecast_home
+  get_forecasts daily, (3) Open-Meteo multi-model ECMWF/GFS/ICON daily+hourly, (4) Met.no locationforecast compact,
+  (5) TMD WeatherForecast7Days (Rayong, demo key), (6) GEMINI baseline via lane REST key + google_search grounding
+  (= what web_search answers today). Render a PIL PNG table into ~/.local/share/ada/line-media/bakeoff/ (public
+  via /relay-img/arch/) and POST photo_url+text to ADA_TG_SEND_URL (:8917/send). Demo lands in Tony''s DM 8960073266
+  first — NOT the mn group.'
+note: 'Sources verified live 2026-10-20. Found while building: idc03 cannot reach michael-ha:8123 right now — ada-ai-kraut''s
+  HOME_ASSISTANT_URL is dead from that host (get_rk600_weather/home_search errors in journal) — demo runs through
+  an ssh tunnel via tony-omen. Michael''s house coords pulled from michael-ha /api/config: 12.898N 100.908E (Ban
+  Chang, Rayong). If the demo lands: becomes an ssot.jobs timer + RK600 actuals scoring (RMSE per source over ~7d)
+  before picking the production source.'
 comms:
-  - >-
-    [done] 2026-10-20 demo delivered to Tony's mn-lane DM (8960073266) via
-    ada-tg-relay-mn :8917 — journal verified sendMessage 200 + arch PNG fetch
-    200 + sendPhoto 200. All 6 sources returned live data (RK600 30.3°C/74%RH
-    measured, HA-FC, ECMWF/GFS/ICON, METNO, TMD-Rayong, GEMINI grounded).
-    Run note: HA calls went through a throwaway `ssh -L 18123:michael-ha:8123
-    tony-omen` tunnel because idc03→michael-ha:8123 is dead — that's a real
-    outage for Kraut's HA tools, not a demo artifact (tunnel killed after
-    run). Follow-ups when approved: (a) restore the idc03→michael-ha path or
-    repoint ada-ai-kraut HA, (b) daily timer + RMSE scoring vs RK600.
+- '[done] 2026-10-20 demo delivered to Tony''s mn-lane DM (8960073266) via ada-tg-relay-mn :8917 — journal verified
+  sendMessage 200 + arch PNG fetch 200 + sendPhoto 200. All 6 sources returned live data (RK600 30.3°C/74%RH measured,
+  HA-FC, ECMWF/GFS/ICON, METNO, TMD-Rayong, GEMINI grounded). Run note: HA calls went through a throwaway `ssh -L
+  18123:michael-ha:8123 tony-omen` tunnel because idc03→michael-ha:8123 is dead — that''s a real outage for Kraut''s
+  HA tools, not a demo artifact (tunnel killed after run). Follow-ups when approved: (a) restore the idc03→michael-ha
+  path or repoint ada-ai-kraut HA, (b) daily timer + RMSE scoring vs RK600.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests: []
-updated: '2026-10-20'
+updated: 2026-11-14 14:09
