@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
 column: doing
-updated: 2026-11-14 13:13
+updated: 2026-11-14 13:19
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -64,6 +64,13 @@ comms:
     POST /api/embed on the pool side, long-poll claim/result on the worker side — so pull-based workers (browser
     bge-m3 page, member devices behind NAT) join EMBED_POOL_UPSTREAMS like any fleet ollama. Shim gains a deferred
     tier so browser workers only burn cycles when the fleet cant answer fast. Building in dispatch worktree.'
+- at: 2026-11-14 13:19
+  from: devin
+  text: '[done 2026-11-14, dispatch tony-omen] Lane B shipped to worktree: nest workers now sit behind the pool''s
+    one ollama-shaped endpoint. (1) scripts/nest/embed-nest-bridge.py — pull→push bridge: POST /api/embed enqueues+blocks,
+    workers long-poll GET /v1/job + POST /v1/result; instant 503 when no worker seen in 45s, 7s job TTL under the
+    pool deadline, claim lease requeues dead workers. (2) Shim gained a DEFER tier — EMBED_POOL_DEFER_UPSTREAMS
+    joins the race only after DEFER_AFTER_MS with no primary w'
 action:
   type: dispatch
   repo: chaba
