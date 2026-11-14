@@ -1,7 +1,7 @@
 id: ops-1036
 title: 'Dispatch worktree GC: reap failed-run worktrees after evidence capture'
 column: backlog
-updated: 2026-10-31 09:16
+updated: 2026-11-14 14:14
 spec: 'idc02 has 68 stale dispatch-wt-* worktrees (~14GB) from failed dispatch runs. Successful runs GC their worktree
   after merge; failed runs keep theirs for forensics — but nothing ever reaps them. Add a bounded sweeper: keep
   failed worktrees N days (suggest 3) or until evidence (events.jsonl, usage.json, verdict.json) is confirmed captured
@@ -12,3 +12,7 @@ comms:
 - at: 2026-10-31 09:16
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
