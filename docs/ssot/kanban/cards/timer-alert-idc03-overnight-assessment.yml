@@ -1,7 +1,7 @@
 id: timer-alert-idc03-overnight-assessment
 title: Timer overnight-assessment on idc03 failing
 column: backlog
-updated: 2026-11-14 08:10
+updated: 2026-11-14 14:15
 priority: high
 tags:
 - timer-alert
@@ -1084,6 +1084,10 @@ comms:
     (both on_fail:continue node scripts). ssot_validate = scripts/ssot-validate-all.mjs failing on real SSOT content;
     health_snapshot = scripts/audits/http-health-audit.mjs. Next step: run those two directly on idc03 served checkout
     to name the failing file/host.'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of overnight-assessment.service on idc03 from the 11-08 02:01 run which exited with
   an exit-code during the mddb-embed runaway window. Examine the journal using journalctl --user -u overnight-assessment.service
   on idc03 and cross-reference with CMS timer-timeline-idc03. Confirm successful execution of the next scheduled
