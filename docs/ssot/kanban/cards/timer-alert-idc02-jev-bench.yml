@@ -1,7 +1,7 @@
 id: timer-alert-idc02-jev-bench
 title: Timer jev-bench on idc02 disabled
 column: backlog
-updated: 2026-11-14 19:14
+updated: 2026-11-14 19:25
 priority: high
 tags:
 - timer-alert
@@ -1466,6 +1466,10 @@ comms:
   from: devin
   text: '[reopened — condition recurred] Last run (11-14 19:00) of `jev-bench.service` on `idc02` result=exit-code
     — investigate journal: `journalctl --user -u jev-bench.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-14 19:25
+  from: devin
+  text: '[still suspicious] Last run (11-14 19:00) of `jev-bench.service` on `idc02` result=exit-code — investigate
+    journal: `journalctl --user -u jev-bench.service` on the host. See CMS `timer-timeline-idc02`.'
 action:
   status: done
 spec: The goal is to ensure `jev-bench.timer` on `idc02` is enabled and active as required by the audit census and
