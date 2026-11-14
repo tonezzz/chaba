@@ -1,14 +1,14 @@
 id: timer-alert-idc03-chaba-lessons-audit
 title: Timer chaba-lessons-audit on idc03 failing
 column: backlog
-updated: 2026-11-14 08:06
+updated: 2026-11-14 14:15
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-11 07:45) of `chaba-lessons-audit.service` on `idc03` result=exit-code — investigate
-  journal: `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-11 07:45) of `chaba-lessons-audit.service` on `idc03` result=exit-code — investigate journal:
+  `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: AUD-0008
 comms:
 - at: 2026-11-11 20:42
@@ -121,20 +121,23 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-14 07:54
   from: devin
-  text: '[reopened — condition recurred] Last run (11-14 07:50) of `chaba-lessons-audit.service` on `idc03`
-    result=timeout — investigate journal: `journalctl --user -u chaba-lessons-audit.service` on the host.
-    See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-14 07:50) of `chaba-lessons-audit.service` on `idc03` result=timeout
+    — investigate journal: `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-14 08:06
   from: devin
-  text: '[still suspicious] Last run (11-14 07:50) of `chaba-lessons-audit.service` on `idc03` result=timeout
-    — investigate journal: `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
+  text: '[still suspicious] Last run (11-14 07:50) of `chaba-lessons-audit.service` on `idc03` result=timeout —
+    investigate journal: `journalctl --user -u chaba-lessons-audit.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-14 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
-spec: Investigate the recurring timeout failure of `chaba-lessons-audit.service` on host idc03 by examining
-  the systemd user journal via `journalctl --user -u chaba-lessons-audit.service` and checking CMS `timer-timeline-idc03`.
-  Fix the underlying cause of the timeout so that subsequent runs complete successfully without exiting
-  via timeout. The done-condition is verified when a manual or scheduled run of `chaba-lessons-audit.service`
-  on idc03 finishes with a zero exit code and no timeout.
+spec: Investigate the recurring timeout failure of `chaba-lessons-audit.service` on host idc03 by examining the
+  systemd user journal via `journalctl --user -u chaba-lessons-audit.service` and checking CMS `timer-timeline-idc03`.
+  Fix the underlying cause of the timeout so that subsequent runs complete successfully without exiting via timeout.
+  The done-condition is verified when a manual or scheduled run of `chaba-lessons-audit.service` on idc03 finishes
+  with a zero exit code and no timeout.
