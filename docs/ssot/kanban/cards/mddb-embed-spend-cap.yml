@@ -1,7 +1,7 @@
 id: mddb-embed-spend-cap
 title: 'MDDB embed spend: OR daily cap exhausted by device-telemetry volume — raise cap + route telemetry to mddb-ops'
 column: backlog
-updated: 2026-11-14 08:52
+updated: 2026-11-14 10:26
 brief: '2026-11-13: gemini-ollama-proxy hit OR_FALLBACK_DAILY_CAP=1500 (self-imposed spend firewall added after
   the 2026-11-12 $3.80 retry-storm). All same-space embed providers down ~6h; semantic search dead. Root volume
   driver is device-telemetry continuous writes, not a storm.'
@@ -36,3 +36,10 @@ comms:
     — verified fresh <dev>/latest docs landing on :11026 from all six. Zero device-telemetry embed attempts on :11023
     in the last check window. Final :11023 prune run deleted 109 stale keys (~3.7k residual keys age out unmanaged
     — harmless). SSOT updat'
+- at: 2026-11-14 10:26
+  from: devin
+  text: '2026-11-14 ~10:30 +07: tony-macbook DONE — Mac came up, agent.py+prune.py copied to :11026, service ran
+    clean, tony-macbook/latest verified on mddb-ops. telemetry-ha-push needed NO flip: live unit already has TELEMETRY_MDBB=:11026
+    + all-device TELEMETRY_DEVICES (master commit a816eaa2fb ''beacons+pusher on mddb-ops'' had already moved the
+    reader). ALL seven writers now on :11026. Note: origin/master agent.py was already :11026 — my dispatch-branch
+    commit d9541ca981 still adds prune.py default + SS'
