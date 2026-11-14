@@ -1,7 +1,7 @@
 id: runner-agent-opencode-lane-profile-bug
 title: 'runner-agent: explicit executor=opencode ignores card lane when resolving profile'
 column: backlog
-updated: 2026-10-30 21:56
+updated: 2026-11-14 14:14
 priority: low
 spec: 'start_task calls start_opencode_lane(card, "", unit) for declared executor=opencode — the card''s own action.lane
   never reaches the lane->LANE_PROFILES map, so an executor=opencode + lane=free_lane card fails with "no task profile
@@ -26,3 +26,7 @@ comms:
   text: 'Follow-up: the action.lane regression assertion and temp-state isolation are committed/pushed on `feat/cline-ready-mirror-20261030`
     at 9316bb32a. Full test_executor_contract passes 59/59, including explicit free_lane forwarding; no live lane
     task or dispatch was run.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
