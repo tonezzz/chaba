@@ -111,6 +111,21 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:clock-outline",
             **common_attrs(doc, age),
         })
+    def _metric(key, suffix, label, unit, icon):
+        v = doc.get(key)
+        if v is None:
+            return
+        _push(token, f"sensor.{eid}_{suffix}", v, {
+            "friendly_name": f"{dev} {label}",
+            "unit_of_measurement": unit,
+            "state_class": "measurement",
+            "icon": icon,
+            **common_attrs(doc, age),
+        })
+    _metric("load1", "load", "load", None, "mdi:server")
+    _metric("mem_pct", "mem", "memory", "%", "mdi:memory")
+    _metric("disk_pct", "disk", "disk", "%", "mdi:harddisk")
+    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer")
     users = doc.get("users") or []
     _push(token, f"sensor.{eid}_users", len(users), {
         "friendly_name": f"{dev} users",

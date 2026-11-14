@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import time
@@ -57,7 +58,8 @@ def _tailnet() -> dict:
             me = st.get("Self", {})
             out["online"] = st.get("BackendState") == "Running"
             out["ips"] = me.get("TailscaleIPs", [])
-            out["last_handshake"] = me.get("LastHandshake")
+            hs = me.get("LastHandshake") or ""
+            out["last_handshake"] = hs if hs.startswith("2") else None
         except Exception:
             pass
     return out
@@ -134,6 +136,61 @@ def _users() -> list[str]:
     return sorted(set(_run(["users"]).split()))
 
 
+def _load() -> float | None:
+    try:
+        return round(os.getloadavg()[0], 2)
+    except (AttributeError, OSError):
+        return None
+
+
+def _mem_pct() -> float | None:
+    if os.path.exists("/proc/meminfo"):
+        kv = {}
+        for l in open("/proc/meminfo"):
+            k, _, v = l.partition(":")
+            kv[k.strip()] = int(v.split()[0])
+        total = kv.get("MemTotal")
+        avail = kv.get("MemAvailable")
+        if total and avail is not None:
+            return round(100.0 * (total - avail) / total, 1)
+        return None
+    if platform.system() == "Darwin":
+        out = _run(["/usr/bin/vm_stat"])
+        if "page size of" not in out:
+            return None
+        try:
+            ps = int(out.split("page size of")[1].split("bytes")[0])
+            vals = {l.split(":")[0].strip(): int(l.split(":")[1].strip().rstrip("."))
+                    for l in out.splitlines() if ":" in l}
+            total_b = int(_run(["sysctl", "-n", "hw.memsize"]))
+            free = (vals.get("Pages free", 0)
+                    + vals.get("Pages inactive", 0)) * ps
+            return round(100.0 * (total_b - free) / total_b, 1)
+        except Exception:
+            return None
+    return None
+
+
+def _disk_pct() -> float | None:
+    try:
+        u = shutil.disk_usage("/")
+        return round(100.0 * u.used / u.total, 1)
+    except OSError:
+        return None
+
+
+def _temp_c() -> float | None:
+    best = None
+    for z in sorted(__import__("glob").glob(
+            "/sys/class/thermal/thermal_zone*/temp")):
+        v = _run(["cat", z])
+        if v.isdigit():
+            t = int(v) / 1000.0
+            best = t if best is None else max(best, t)
+    return round(best, 1) if best is not None else None
+
+
+
 def collect() -> dict:
     boot = _run(["sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
@@ -147,6 +204,10 @@ def collect() -> dict:
                            if boot.isdigit() else None)),
         "boot_time": int(boot) if boot.isdigit() else None,
         "users": _users(),
+        "load1": _load(),
+        "mem_pct": _mem_pct(),
+        "disk_pct": _disk_pct(),
+        "temp_c": _temp_c(),
         "top_procs": _procs(),
         "battery": _battery(),
         "tailnet": _tailnet(),
