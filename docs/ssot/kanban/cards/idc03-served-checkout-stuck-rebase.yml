@@ -1,7 +1,7 @@
 id: idc03-served-checkout-stuck-rebase
 title: idc03 served checkout wedged mid-rebase — kanban-commit refusing, board writes stalling
 column: done
-updated: 2026-11-13 17:45
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - infra,idc03,kanban
@@ -61,6 +61,10 @@ comms:
     likely caused the phantom state) and both git-safe-pull.sh and kanban-commit.sh auto-clear degenerate rebase-merge/rebase-apply
     dirs (no onto/head-name/next/last => never started) by renaming to *.phantom-<ts>. Self-heals next tick instead
     of refusing forever. 59/59 kanban-commit t'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 claim: {}
