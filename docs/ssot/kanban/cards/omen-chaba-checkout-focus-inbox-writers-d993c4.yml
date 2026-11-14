@@ -1,0 +1,23 @@
+id: omen-chaba-checkout-focus-inbox-writers-d993c4
+title: 'omen chaba checkout: focus-inbox writers must use board-api /inbox, not local files'
+column: backlog
+updated: 2026-11-14 09:08
+priority: medium
+tags:
+- chaba
+- hygiene
+- omen
+spec: 'tony-omen exec checkout accumulated 875 untracked docs/ssot/focus-inbox/*.yml (report-watch-*, handoff-*,
+  *-health alerts) — writers run locally against the exec checkout whose files can never commit (exec role blocks
+  commits), so alerts were invisible AND the tree stayed dirty. Cleaned 2026-11-14 (archived ~/inbox-litter-20261114.tar.gz,
+  deleted). FIX: identify the local invokers (devin-dispatch-watch -> render-handoff-inbox.py every ~5min is prime
+  suspect; report-watch.py also writes INBOX relative to its own repo path with no served-checkout guard) and route
+  writes through board-api POST /inbox — or add a chaba-role guard so non-served checkouts skip file writes (canonical
+  report-watch.timer runs on idc03 served anyway).'
+note: 'Also noted: omen checkout has tracked modifications in backups/ada-memory/*.json (runtime state churn — autostash
+  handles, but worth a gitignore review).'
+ref: OPS-0119
+comms:
+- at: 2026-11-14 09:08
+  from: tony
+  text: card captured via board-api
