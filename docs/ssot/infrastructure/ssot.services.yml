@@ -83,7 +83,7 @@ tony-dell:
       - maxmemory-policy = volatile-lru
   mddb:
     container: mddb
-    image: docker.io/tradik/mddb:2.15.3  # pinned 2026-09-27 — never 'latest' (re-pull broke warmup)
+    image: localhost/mddb:2.18.10-merge (upgrade/2.18.10 fork branch — upstream 2.18.10 + LSN persist, heartbeat, breaker, bounded retry, vector allowlist, freelist; upgraded 2026-11-14)  # upgraded 2026-11-14; never 'latest'
     runtime: rootless podman
     network: host
     port: 11023 (API), 11024 (gRPC), 9000 (MCP)
@@ -123,7 +123,7 @@ tony-dell:
       - mddb-embed-probe.timer  # idc03, 15min — vector-search canary + embed-queue
   mddb-cms:
     container: mddb-cms
-    image: localhost/mddb:2.15.4-lsn
+    image: localhost/mddb:2.18.10-merge (upgrade/2.18.10 fork branch — upstream 2.18.10 + LSN persist, heartbeat, breaker, bounded retry, vector allowlist, freelist; upgraded 2026-11-14)
     runtime: rootless podman
     network: host
     port: 11027 (API)
@@ -156,7 +156,7 @@ tony-dell:
         host: idc02
         node_id: idc02
         host_port: 100.123.163.11:11023
-        image: localhost/mddb:2.15.4-blrotate (local fork build — binlog rotation, snapshot-on-recv, vector-algorithm allowlist; built in ~/CascadeProjects/mddb-fork on tony-dell)
+        image: localhost/mddb:2.18.10-merge (upgrade/2.18.10 fork branch — upstream 2.18.10 + LSN persist, heartbeat, breaker, bounded retry, vector allowlist, freelist; upgraded 2026-11-14)
         mode: read-only (forced by follower role)
         migration_20261005: |
           Follower moved tony-dell -> idc02. Root cause: fork's snapshot-replace
@@ -178,8 +178,7 @@ tony-dell:
           node_id: con01
           host_port: 100.72.146.39:11123
           service: mddb-follower.service (quadlet stacks/con01/mddb-follower/)
-          image: localhost/mddb:2.15.4-lsn (podman-save transferred from idc02
-            2026-10-22 — no registry)
+          image: localhost/mddb:2.18.10-merge (upgrade/2.18.10 fork branch — upstream 2.18.10 + LSN persist, heartbeat, breaker, bounded retry, vector allowlist, freelist; upgraded 2026-11-14) (podman-save transferred — no registry)
           status: deployed 2026-10-22 — warm-DR replica; promote-first
             path if the leader dies (replaces retired idc01 tier;
             3rd provider/geo failure domain — Contabo EU vs Siamdata BKK)
