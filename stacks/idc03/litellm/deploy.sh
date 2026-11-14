@@ -6,16 +6,24 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 FILES=(litellm-db.container litellm.container litellm-ledger.service litellm-ledger.timer)
+# plain user units — ~/.config/systemd/user (NOT the quadlet dir)
+USER_UNITS=(kkmac-admission-shim.service)
 
 if [ "${1:-}" = "--local" ]; then
   for f in "${FILES[@]}"; do
     install -m 644 "$HERE/$f" "$HOME/.config/containers/systemd/$f"
   done
+  for f in "${USER_UNITS[@]}"; do
+    install -Dm 644 "$HERE/$f" "$HOME/.config/systemd/user/$f"
+  done
   install -Dm 644 "$HERE/config.yaml" "$HOME/.config/litellm/config.yaml"
 else
-  ssh -o BatchMode=yes idc03 'mkdir -p ~/.config/containers/systemd ~/.config/litellm'
+  ssh -o BatchMode=yes idc03 'mkdir -p ~/.config/containers/systemd ~/.config/systemd/user ~/.config/litellm'
   for f in "${FILES[@]}"; do
     scp -q "$HERE/$f" "idc03:.config/containers/systemd/$f"
+  done
+  for f in "${USER_UNITS[@]}"; do
+    scp -q "$HERE/$f" "idc03:.config/systemd/user/$f"
   done
   scp -q "$HERE/config.yaml" "idc03:.config/litellm/config.yaml"
 fi
@@ -40,6 +48,8 @@ if [ ! -f "$ENVF" ]; then
   echo "created $ENVF"
 fi
 systemctl --user daemon-reload
+# admission gate must be up before litellm repoints at it
+systemctl --user enable --now kkmac-admission-shim.service
 # quadlet units are generated — [Install] WantedBy already persists them; just start
 systemctl --user restart litellm-db.service
 systemctl --user restart litellm.service

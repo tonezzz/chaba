@@ -1661,6 +1661,18 @@ hosts:
           reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
           feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
           dies with kk-mac (member device, offline_ok)"
+      - name: kkmac-admission-shim.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Ada Nest admission gate on 127.0.0.1:11447 in front of
+          kkmac-ollama-tunnel :11445 (card kk-mac-gateway-admission-shim,
+          2026-11-14) — 503s instantly when kk-mac heartbeat is stale
+          >900s / temp>60C / disk<20G / busy, so LiteLLM kk-mac legs
+          (summary/classify/bench leg-1, chat-local leg-2) fail fast to
+          the paid leg. Drain switch: touch
+          $XDG_RUNTIME_DIR/kkmac-admission-shim.deny; GET /health = snapshot"
       - name: embed-pool-shim.service
         type: service
         scope: user
