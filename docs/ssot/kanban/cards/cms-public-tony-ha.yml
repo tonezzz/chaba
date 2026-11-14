@@ -11,9 +11,13 @@ note: 'DONE 2026-10-03: idc02 edge routes /cms* + /api/cms* -> idc01 tailnet sit
   (CNAME -> edge, proxied) — site block serves only /apps/system-report*, else 404, root redirs to the report. CF
   Access app `monitor` + `tony` OTP policy gate it (interim basicauth was removed once CF intercept verified — CF
   is sole gate, origin not directly reachable).'
-updated: '2026-10-04'
+updated: 2026-11-14 14:14
 ref: KNB-0010
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0010'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
