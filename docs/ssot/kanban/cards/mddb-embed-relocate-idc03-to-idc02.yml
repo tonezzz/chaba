@@ -1,7 +1,7 @@
 id: mddb-embed-relocate-idc03-to-idc02
 title: Relocate mddb-embed instance idc03 → idc02
 column: done
-updated: 2026-11-12 14:31
+updated: 2026-11-14 14:14
 spec: 'idc03 runs the whole mddb fleet on 4 cores (load ~8): mddb-embed alone ~60% CPU. idc02 sits at load 1.4 /
   7-of-15G / 171G free and already hosts the mddb follower + mddb-ops. Move the mddb-embed container/unit to idc02,
   repoint producers (env/config), verify /v1/* endpoints + embed queue green on the new host, then retire the idc03
@@ -22,5 +22,9 @@ comms:
 - at: 2026-11-12 14:31
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
