@@ -1,7 +1,7 @@
 id: idc03-michael-ha-omen-relay
 title: Declare idc03 -> tony-omen -> michael-ha relay in host SSOT
 column: done
-updated: 2026-11-14 14:12
+updated: 2026-11-14 14:14
 brief: 'Temporary operational fix is live: idc03 cannot TCP-reach michael-ha:8123 directly, while tony-omen can
   SSH/HTTP reach it. Installed ~/.config/systemd/user/michael-ha-via-omen-tunnel.service on idc03 (127.0.0.1:18123
   -> via tony-omen -> michael-ha:8123) and pointed kraut weather/backend envs at it. Weather and rain TG sends now
@@ -48,6 +48,10 @@ comms:
 - at: 2026-11-14 14:12
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
