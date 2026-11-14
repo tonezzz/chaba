@@ -1,7 +1,7 @@
 id: mn01-embed-relocate-idc02
 title: Move mn01 all-MiniLM embed service to idc02
 column: done
-updated: 2026-11-12 14:46
+updated: 2026-11-14 14:14
 spec: mn01 = thinnest box (4c/7G, ~1G free, load 20+, just killed a 7-day glycin runaway). The CPU all-MiniLM embed
   microservice can run on idc02 which already runs gpu-queue. Verify mn01 consumers' endpoint URLs, move unit, update
   SSOT.
@@ -20,5 +20,9 @@ comms:
 - at: 2026-11-12 14:46
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
