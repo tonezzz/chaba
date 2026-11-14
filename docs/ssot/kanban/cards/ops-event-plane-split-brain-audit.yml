@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
 column: doing
-updated: 2026-11-14 09:32
+updated: 2026-11-14 09:38
 priority: medium
 tags:
 - mddb
@@ -129,6 +129,10 @@ comms:
   from: chaba
   text: started devin-task-ops-event-plane-split-brain-audit-1794623525 on idc02 (dispatch executor=opencode profile=ssot-research
     model=litellm/or-free-nemotron-ultra)
+- at: 2026-11-14 09:38
+  from: idc02
+  text: 'finished (failed): exit=1 AILURE | devin-task-ops-event-plane-split-brain-audit-1794623525.service: Failed
+    with result ''exit-code''. | devin'
 action:
   type: dispatch
   repo: chaba
@@ -168,10 +172,10 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: running
+  status: failed
   lane: codemod
-  result: 'exit=1 AILURE | devin-task-ops-event-plane-split-brain-audit-1794622782.service: Failed with result ''exit-code''.
-    | devin-task-ops-event-plane-split-brain-audit-1794622782.service: Consumed 21.477s CPU time, 446.7M memory
+  result: 'exit=1 AILURE | devin-task-ops-event-plane-split-brain-audit-1794623525.service: Failed with result ''exit-code''.
+    | devin-task-ops-event-plane-split-brain-audit-1794623525.service: Consumed 28.112s CPU time, 600.9M memory
     peak, 0B memory swap peak.'
   host: idc02
   sweep:
