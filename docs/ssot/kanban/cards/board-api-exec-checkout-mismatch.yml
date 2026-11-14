@@ -1,7 +1,7 @@
 id: board-api-exec-checkout-mismatch
 title: board-api running from exec checkout — card writes not reaching served/web board
 column: done
-updated: 2026-11-07 16:57
+updated: 2026-11-14 14:07
 brief: 'New board-api cards/commits land in idc03 ~/CascadeProjects/chaba (exec) and stay unpushed, while kanban-commit
   sweeps ~/CascadeProjects/chaba-tony-dell (served). Result: cards exist via /cards but never appear on the static
   kanban page.'
@@ -44,6 +44,10 @@ comms:
     active since 15:45 ICT running the served-checkout process (my earlier ''unit inactive / hand-started'' read
     was system-scope). Door is properly declared+systemd-managed. Residual gap (no health coverage) is carded on
     fix-flagged-ops-health-services-ab5ac9.'
+- at: 2026-11-14 14:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
   status: done
