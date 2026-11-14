@@ -1,7 +1,7 @@
 id: education-lesson-no-th-marker-readback
 title: Verify Education no_th metadata persists through board-api
 column: backlog
-updated: 2026-10-30 10:57
+updated: 2026-11-14 14:10
 brief: A draft Education lesson was created through lesson-add.py with --no-th, but a supported board-api /lesson
   op=get read-back returned meta.no_th as null. The lesson content is English-only and the writer code intends to
   persist no_th=true.
@@ -24,3 +24,7 @@ comms:
   text: 'Observed on Education post 3033 (lesson-5b285de4e9ef): lesson-add.py was called with --no-th; post read-back
     showed title, status draft, next_review, and content, but meta.no_th was null. Card is diagnostic follow-up;
     no direct WP fallback or translation call was made.'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
