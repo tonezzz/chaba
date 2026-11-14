@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: backlog
-updated: 2026-11-13 23:13
+updated: 2026-11-14 10:27
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -30,3 +30,10 @@ comms:
     report. No remote exec path exists (ssh needs session channel; runner-agent is user-scope = dead with user manager).
     Physical fix needed: Ctrl+Alt+F3 TTY test, else 10s power hold → cold boot. Blocks tony-macbook-daytime-runner
     + stick-announce.'
+- at: 2026-11-14 10:27
+  from: devin
+  text: 'POST-REBOOT 2026-11-14 ~10:30 ICT (Tony cold-booted; user-manager wedge cleared — ssh session channels
+    work again). PASS: tailscale0 up, sshd+key auth, runner-agent.timer active/polling, device-telemetry posting
+    (hist+latest true — HA freshness will recover), vcast-real-macbook active, all devin timers enabled, chaba checkout
+    synced to a27cb29d19 (manual pull DONE-0 after unit TimeoutStartSec=300 kill — BT-PAN link is slow; incremental
+    syncs should fit). FIXED: 19 stale .local-conflict files del'
