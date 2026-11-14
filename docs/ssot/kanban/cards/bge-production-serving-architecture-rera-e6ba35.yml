@@ -1,7 +1,7 @@
 id: bge-production-serving-architecture-rera-e6ba35
 title: BGE production serving architecture — rerank depth/latency tradeoff decision
 column: doing
-updated: 2026-11-08 10:37
+updated: 2026-11-14 14:10
 priority: medium
 tags:
 - embedding
@@ -40,3 +40,7 @@ comms:
     /health ok device=cuda; /rerank 10 docs ~1.1s cold, correct semantic ordering (mddb doc 0.075 top, curry/football/shopping
     at bottom). Serving recipe: dense top-10 via mddb-embed -> POST /rerank -> ~700ms voice path. Remaining: wire
     into a shadow memory_search door, then cutover decis'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
