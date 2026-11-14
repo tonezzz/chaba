@@ -1,7 +1,7 @@
 id: boards-502-residuals-dns-h3-access
 title: 'Boards 502 residuals: idc02 edge DNS flakiness + h3 forensic access gap'
 column: backlog
-updated: 2026-11-09 09:11
+updated: 2026-11-14 14:11
 brief: 'Two residuals from boards-public-origin-502 RCA (docs/ssot/jobs/infrastructure/2026-11-09-boards-origin-502-rca.yml):
   (1) idc02 caddy-edge gets sporadic systemd-resolved lookup i/o timeouts for boards.h3.gizmo-thailand.com (zone
   NS lin3/lin4.readyidc.com) — each blip = a public 502; still seen 11-06/11-07. Fix: pin resolved upstreams or
@@ -23,3 +23,7 @@ comms:
 - at: 2026-11-09 09:11
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
