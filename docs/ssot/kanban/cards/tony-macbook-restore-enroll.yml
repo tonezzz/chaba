@@ -1,7 +1,7 @@
 id: tony-macbook-restore-enroll
 title: 'tony-macbook: restore KK files + enroll runner-agent'
 column: backlog
-updated: 2026-10-26 11:20
+updated: 2026-11-14 14:09
 brief: 'Tony approved on tony-macbook-ubuntu: restore KK files into ~/, enroll runner-agent lane (cap 2, cpu/dev/portable
   per hardware doc). Skip redis — no backup exists. Backup source: macOS backup recovered during rejoin (see jobs/infrastructure/2026-10-11-tony-macbook-ubuntu-rejoin.yml).'
 priority: medium
@@ -67,4 +67,8 @@ comms:
   text: Tony clarified on 2026-10-25 that Barrier KVM is no longer needed while working from MacBook. Do not install
     the planned `barrier-client` on MacBook; that spec line is superseded. Keep the separate Dell CRD/physical-seat
     helpers out of this change.
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: SYS-0452
