@@ -1,7 +1,7 @@
 id: distiller-enrich-productionize
 title: Productionize enriched T1 distiller — enable --enrich hook + hybrid T1/T2 recall path
 column: backlog
-updated: 2026-10-29 15:13
+updated: 2026-11-14 14:14
 brief: 'Bench v2 validated (session-mddb-recall-benchmark): T1-v2 hit@3 66.7%, oracle coverage 41.7%->86.1%, hybrid
   T1 semantic + T2 keyword = 91.7% > 80% AQ. Work to ship: (1) enable sync-devin-summaries.py --enrich in the production
   pipeline so devin-session docs get the Artifacts section in the pre-delete window; (2) recall hook runs hybrid
@@ -21,6 +21,10 @@ comms:
 - at: 2026-10-29 15:13
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-card-requests-productioniz-2005e7
   ask: The card requests productionizing the enriched T1 distiller by enabling the --enrich hook and hybrid T1/T2
