@@ -1,7 +1,7 @@
 id: mddb-embed-retry-cap
 title: Cap mddbd embed retry burst on provider recovery
 column: done
-updated: 2026-11-13 20:42
+updated: 2026-11-14 14:14
 spec: When OR cap opened 2026-11-12, backlog drained as a burst — +$0.20 immediately. Bounded retry + capped daily
   embed volume prevents cap-hit -> spend-spike on lift. mddbd embed retry loop on idc03.
 ref: MEM-0048
@@ -39,6 +39,10 @@ comms:
 - at: 2026-11-13 20:42
   from: devin
   text: moved backlog -> done
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: retry-cap-work-is-mddbd-go-changes-bound-5f5605
   ask: Retry-cap work is mddbd Go changes (bounded retry + daily embed volume cap). Which lane?
