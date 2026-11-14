@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-report-watch
 title: Timer chaba-report-watch on tony-dell disabled
 column: done
-updated: 2026-11-12 09:39
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1835,6 +1835,10 @@ comms:
 - at: 2026-11-12 09:39
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to ensure the expected critical timer `chaba-report-watch.timer` is active on `tony-dell`. The
   target host is `tony-dell` and the repository context relates to `chaba`. The runner must check if the disabled
   state is deliberate against the audit census; if not, execute `systemctl --user enable --now chaba-report-watch.timer`.
