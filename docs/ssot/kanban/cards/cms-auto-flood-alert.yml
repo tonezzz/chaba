@@ -1,31 +1,26 @@
 id: cms-auto-flood-alert
 title: CMS automation `flood-alert` error
-brief: A scheduled report-page job ('flood-alert') is error. Re-run it or check the
-  generator — details in the note.
+brief: A scheduled report-page job ('flood-alert') is error. Re-run it or check the generator — details in the note.
 column: done
 review_kind: triage
 generated: cms-auto-health
 priority: high
 note: 'Auto-recovered 2026-10-25: flood-alert healthy again (status=ok, state=ok).'
-help: 'Trigger a manual regen: cms_automation run_now for ''flood-alert'' (or POST
-  /api/cms/pages/flood-alert/regenerate). If it repeats, check the page''s generator
-  command in the registry doc.'
-updated: '2026-10-25'
+help: 'Trigger a manual regen: cms_automation run_now for ''flood-alert'' (or POST /api/cms/pages/flood-alert/regenerate).
+  If it repeats, check the page''s generator command in the registry doc.'
+updated: 2026-11-14 14:06
 comms:
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
-    was restored accidentally by an autostash-pop conflict resolution — normalizing
-    to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
+    by an autostash-pop conflict resolution — normalizing to done.'
 - at: 2026-10-11 08:10
   from: devin
-  text: 'closed (3rd verification): news-flood.timer on idc03 ran 08:00, next 09:00
-    — automation healthy. Card keeps re-appearing in review via the autostash-pop
-    revert pattern; evidence unchanged.'
+  text: 'closed (3rd verification): news-flood.timer on idc03 ran 08:00, next 09:00 — automation healthy. Card keeps
+    re-appearing in review via the autostash-pop revert pattern; evidence unchanged.'
 - at: 2026-10-11 08:35
   from: devin
-  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified
-    live this session).'
+  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified live this session).'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0403'
@@ -37,8 +32,11 @@ comms:
   text: moved review -> done
 - at: 2026-10-11 13:40
   from: devin
-  text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands.
-    Fix card: git-autostash-column-guard.'
+  text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands. Fix card: git-autostash-column-guard.'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: KNB-0403
 action:
   status: done
