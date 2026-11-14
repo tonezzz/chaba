@@ -1,7 +1,7 @@
 id: nest-job-done-evidence-gate
 title: Enforce Nest job terminal-state evidence and stale-state reconciliation
 column: backlog
-updated: 2026-10-27 10:11
+updated: 2026-11-14 14:14
 spec: Review and harden the runtime job status contract after the new lifecycle SOP. Inspect board-api do_job and
   PublicationEvent job sink. Define/test that terminal `done` requires a durable result_ref and verified artifact
   evidence; generic milestones must not silently complete a job unless explicitly marked. Add tests for invalid
@@ -21,3 +21,7 @@ comms:
     to job_status=done, while evidence is optional and result_ref is only copied when evidence exists. Make done
     explicit (no implicit milestone->done) and reject it without a verified artifact/result_ref receipt; cover both
     /publish and legacy /job with tests. Then add stale-claim reconci'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
