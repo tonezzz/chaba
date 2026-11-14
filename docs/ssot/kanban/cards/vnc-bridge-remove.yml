@@ -1,7 +1,7 @@
 id: vnc-bridge-remove
 title: Audit and remove VNC websockify bridges on idc02 (:6080/:6082) + /apps/vnc
 column: backlog
-updated: 2026-11-10 07:03
+updated: 2026-11-14 14:15
 brief: 'Tony 2026-11-09: dig the VNC bridge and card removal. Two websockify units on idc02 tailnet-IP binds: :6080
   -> kk-macbook:5900, :6082 -> mn01 vms:5900; routes /apps/vnc/ws* + static /apps/vnc/*; vnc app in apps.yml.'
 priority: low
@@ -21,3 +21,7 @@ comms:
 - at: 2026-11-10 07:03
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
