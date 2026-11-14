@@ -1,7 +1,7 @@
 id: board-api-lesson-post-flood
 title: board-api /lesson POST flood starves wp.lock and Ollama
 column: done
-updated: 2026-11-07 17:15
+updated: 2026-11-14 14:10
 brief: 'Observed 2026-11-07 ~11:20-11:45 ICT: ~1.6 POST /lesson/sec sustained against board-api on idc03, driving
   LiteLLM->Ollama chat-local inference that saturated idc02 CPU (load5/core 2.4) and tripped every runner load gate.
   Source likely the lesson/embed job fleet mass-enabled at 11:21 (embed-lane-lessons, bge-lessons-shadow, lessons-audit).'
@@ -28,5 +28,9 @@ comms:
 - at: 2026-11-07 17:15
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
