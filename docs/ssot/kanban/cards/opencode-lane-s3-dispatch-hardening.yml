@@ -1,7 +1,7 @@
 id: opencode-lane-s3-dispatch-hardening
 title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
 column: doing
-updated: 2026-11-14 10:28
+updated: 2026-11-14 11:06
 priority: medium
 tags:
 - opencode-lane
@@ -56,6 +56,13 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-14 11:06
+  from: devin
+  text: 'All 4 hardening items done + tested on dispatch/20261114-102801-found-during-first-s3-card-pil: (1) TimeoutExpired
+    now writes partial events.jsonl/stderr.log before re-raise; (2) installed-snapshot drift gate in claimable()
+    — stale ~/.local/bin/runner-agent defers claims fail-closed with scp-redeploy hint (in-checkout runs never gated);
+    (3) devin-task-* unit shell exports OPENCODE_LANES=1, no longer depends on service drop-in; (4) escalation.max_retries
+    consumed by cmd_run — retryable failures ('
 action:
   type: dispatch
   status: running
