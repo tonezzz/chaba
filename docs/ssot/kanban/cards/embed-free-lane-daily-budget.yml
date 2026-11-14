@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: backlog
-updated: 2026-11-13 23:11
+updated: 2026-11-14 09:56
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -22,6 +22,12 @@ comms:
   from: devin
   text: 'raised request where-should-the-daily-embed-budget-live-41c823: Where should the daily embed budget live?
     Note: query embeds bypass the worker queue entirely (vector-search calls the p'
+- at: 2026-11-14 09:56
+  from: tony
+  text: 'answered where-should-the-daily-embed-budget-live-41c823: proceed'
+- at: 2026-11-14 09:56
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
@@ -30,9 +36,11 @@ requests:
     config; (b) proxy token-bucket pacing — spreads bulk calls but doesn''t reserve query headroom and delays rather
     than budgets; (c) accept — OR fallback cap (~$0.10/day) already bounds overflow cost; outage risk is lag-until-reset,
     not spend.'
-  status: open
+  status: answered
   at: 2026-11-13 23:11
   from: devin
   options:
   - proceed
   - hold
+  answer: proceed
+awaiting_action: true
