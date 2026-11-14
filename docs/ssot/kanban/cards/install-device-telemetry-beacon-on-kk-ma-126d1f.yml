@@ -1,7 +1,7 @@
 id: install-device-telemetry-beacon-on-kk-ma-126d1f
 title: Install device-telemetry beacon on kk-mac (hosts view)
 column: backlog
-updated: 2026-11-14 08:48
+updated: 2026-11-14 09:21
 ref: OPS-0118
 comms:
 - at: 2026-11-14 08:48
@@ -11,3 +11,10 @@ comms:
     — install.sh now writes the name into the launchd plist. Hosts view already has the kk-mac card (first position)
     and telemetry-ha-push already includes kk-mac in TELEMETRY_DEVICES; entities appear automatically once the beacon
     posts. Until then the card shows '
+- at: 2026-11-14 09:21
+  from: devin
+  text: 'DONE 2026-11-14: beacon installed on kk-mac via ssh (launchd, DEVICE_TELEMETRY_NAME=kk-mac). Fixed along
+    the way: agent.py py3.9 compat, Darwin uptime_s, tailscale CLI path (homebrew tailscaled, no GUI app), and repo/deployed
+    MDDB drift — beacons actually write mddb-ops :11026 not :11023 (embed-spend-cap change was never committed to
+    repo; kk-mac initially wrote :11023). Pusher now reads :11026 via TELEMETRY_MDBB. Verified: kk-mac online=on
+    uptime=0.3h users=1 in tony-ha; all other beacons fresh'
