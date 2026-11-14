@@ -1,7 +1,7 @@
 id: mddb-embed-spend-cap
 title: 'MDDB embed spend: OR daily cap exhausted by device-telemetry volume — raise cap + route telemetry to mddb-ops'
 column: done
-updated: 2026-11-14 11:10
+updated: 2026-11-14 14:15
 brief: '2026-11-13: gemini-ollama-proxy hit OR_FALLBACK_DAILY_CAP=1500 (self-imposed spend firewall added after
   the 2026-11-12 $3.80 retry-storm). All same-space embed providers down ~6h; semantic search dead. Root volume
   driver is device-telemetry continuous writes, not a storm.'
@@ -61,5 +61,9 @@ comms:
 - at: 2026-11-14 11:10
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
