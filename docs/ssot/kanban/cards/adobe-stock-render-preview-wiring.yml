@@ -1,7 +1,7 @@
 id: adobe-stock-render-preview-wiring
 title: Wire rendered image URLs into Adobe Stock asset preview metadata
 column: done
-updated: 2026-11-08 12:51
+updated: 2026-11-14 14:08
 brief: Real campaigns need assets.json entries carrying preview_url/thumbnail_url so ada_adobe_stock_reuse renders
   real thumbnails. Today only the fixture has them.
 priority: high
@@ -59,6 +59,10 @@ comms:
     --reindex-only rebuilds bounded indexes from gdrive:ada-nest-adobe-stock, then scp-syncs all 4 index files to
     idc02 workspace fallback — covers the empty /data/gdrive mount. Declared as ssot.jobs.yml job adobe-stock-reindex-sync
     (tony_dell, systemd, hourly, persistent). [orig 20'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
   status: done
