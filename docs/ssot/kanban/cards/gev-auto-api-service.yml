@@ -1,7 +1,7 @@
 id: gev-auto-api-service
 title: gods-eye-view-api service not active
-brief: 'An automated health check flagged: gods-eye-view-api service not active. Read
-  the note, fix it, then close the card.'
+brief: 'An automated health check flagged: gods-eye-view-api service not active. Read the note, fix it, then close
+  the card.'
 column: done
 review_kind: triage
 generated: gev-auto-health
@@ -9,13 +9,16 @@ program: gev
 area: monitoring
 priority: high
 note: 'Auto-recovered 2026-10-22: `api-service` check passing again.'
-help: 'User unit ~/.config/systemd/user/gods-eye-view-api.service runs server.mjs
-  on 4173. Fix: systemctl --user enable --now gods-eye-view-api; logs: journalctl
-  --user -u gods-eye-view-api -n 50'
-updated: '2026-10-22'
+help: 'User unit ~/.config/systemd/user/gods-eye-view-api.service runs server.mjs on 4173. Fix: systemctl --user
+  enable --now gods-eye-view-api; logs: journalctl --user -u gods-eye-view-api -n 50'
+updated: 2026-11-14 14:06
 action:
   status: done
 comms:
 - at: 2026-10-20 18:11
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
