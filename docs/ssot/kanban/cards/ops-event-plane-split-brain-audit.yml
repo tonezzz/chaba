@@ -85,6 +85,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261114-084430-research-audit-read-only-enume no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-14 08:55
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261114-084430-research-audit-read-only-enume on
+    idc02 — if the work was never pushed it may be gone'
 action:
   type: dispatch
   repo: chaba
@@ -131,5 +135,7 @@ action:
     Failed with result ''exit-code''.'
   host: idc02
   runner: idc02
+  sweep:
+    stale_running: 2026-11-14 08:55
 review_kind: verify
 claim: {}
