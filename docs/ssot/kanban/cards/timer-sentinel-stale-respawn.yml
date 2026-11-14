@@ -1,7 +1,7 @@
 id: timer-sentinel-stale-respawn
 title: timer-sentinel re-spawns just-fixed timer cards off stale sweep state
 column: done
-updated: 2026-11-12 10:37
+updated: 2026-11-14 14:12
 priority: medium
 tags:
 - sentinel
@@ -57,5 +57,9 @@ comms:
     condition unchanged (~200 writes/hr -> ~0 steady-state); (b) reconcile now runs BEFORE fires so heals land even
     when the write budget exhausts. Deployed to omen exec checkout. Remaining open gap from this mornings sweep:
     not-found units stay unverifiable/open forever — suggest close-with-note after N consecutive sweeps absent.'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
