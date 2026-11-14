@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
-column: doing
-updated: 2026-11-14 08:44
+column: review
+updated: 2026-11-14 08:45
 priority: medium
 tags:
 - mddb
@@ -39,6 +39,10 @@ comms:
 - at: 2026-11-14 08:44
   from: chaba
   text: started devin-task-20261114-084430-research-audit-read-only-enume on tony-dell (dispatch)
+- at: 2026-11-14 08:45
+  from: tony-dell
+  text: 'finished (ok): exit=0  devin-task-20261114-084430-research-audit-read-only-enume.service: Failed with result
+    ''exit-code''. | devin-task-'
 action:
   type: dispatch
   repo: chaba
@@ -78,6 +82,11 @@ action:
       required: true
       stale_s: 300
     timeout_s: 300
-  status: running
+  status: done
   lane: codemod
   runner: tony-dell
+  result: 'exit=0  devin-task-20261114-084430-research-audit-read-only-enume.service: Failed with result ''exit-code''.
+    | devin-task-20261114-084430-research-audit-read-only-enume.service: Consumed 568ms CPU time over 518ms wall
+    clock time, 118.6M memory peak.'
+review_kind: verify
+claim: {}
