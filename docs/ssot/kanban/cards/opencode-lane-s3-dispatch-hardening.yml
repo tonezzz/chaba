@@ -1,7 +1,7 @@
 id: opencode-lane-s3-dispatch-hardening
 title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
 column: doing
-updated: 2026-11-14 11:06
+updated: 2026-11-14 11:10
 priority: medium
 tags:
 - opencode-lane
@@ -63,6 +63,10 @@ comms:
     — stale ~/.local/bin/runner-agent defers claims fail-closed with scp-redeploy hint (in-checkout runs never gated);
     (3) devin-task-* unit shell exports OPENCODE_LANES=1, no longer depends on service drop-in; (4) escalation.max_retries
     consumed by cmd_run — retryable failures ('
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261114-102801-found-during-first-s3-card-pil no longer active on tony-omen but
+    card still says running — sweeping its branch'
 action:
   type: dispatch
   status: running
