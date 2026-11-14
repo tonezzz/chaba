@@ -1,3 +1,4 @@
+import time
 import unittest
 from unittest.mock import patch
 
@@ -62,6 +63,22 @@ class EvaluateTests(unittest.TestCase):
         self.assertIn("memory_sample_failed",
                       km.evaluate(bad, phase="pre"))
         self.assertEqual(km.evaluate(bad, phase="during"), [])
+
+
+class MonitorLifecycleTests(unittest.TestCase):
+    """The real MemoryMonitor must start and stop without raising — a
+    threading.Event named _stop shadowed Thread._stop() and broke join()
+    (found by the 2026-11-14 lane soak)."""
+
+    def test_start_stop_join_clean(self):
+        mon = km.MemoryMonitor("kk-mac", interval=0.01,
+                               ssh_run=lambda *a, **k: _R(
+                                   out="free percentage: 70%"))
+        mon.start()
+        time.sleep(0.05)
+        mon.stop()  # must not raise
+        self.assertFalse(mon.is_alive())
+        self.assertTrue(mon.samples)
 
 
 if __name__ == "__main__":

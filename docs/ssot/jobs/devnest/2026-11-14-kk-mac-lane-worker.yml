@@ -1,0 +1,151 @@
+title: "kk_mac_lane_worker — dedicated gated consumer for the kk-llm
+  Nest queue + supervised 11-pack soak"
+date: 2026-11-14
+card: kk-mac-continuous-llm-worker
+session: "dispatch-wt-20261114-131026-build-a-dedicated-kk-mac-llm-n (tony-omen)"
+status: "implemented + soak-verified — launchd plist cutover on kk-mac
+  still pending (deploy needs Tony approval); JEV promotion gate
+  unchanged"
+
+context: >
+  The kk-llm lane existed since 2026-10-30 (pack queue + launchd
+  nest-worker + two 10-pack soaks), but three spec deltas remained: the
+  worker had no node-side fitness gate at claim time (only the producer
+  gated), packs ran inline duplicated LLM/verifier code instead of the
+  canonical kk_mac_executor contract, and there was no fallback marker
+  distinguishing lane-condition holds from terminal contract failures.
+  This session closes all three and proves it with a live soak.
+
+worker:
+  script: scripts/devnest/kk_mac_lane_worker.py
+  pass_flow:
+    - "gate: drain switch (DEVNEST_KK_MAC_ENABLED / drain file) then
+       local_snapshot() on-host or heartbeat snapshot() off-host —
+       deny exits clean, queue untouched"
+    - "plan: pack_inventory — skips done/failed, live claims,
+       fresh-fallback holds; releases stale claims (>60min) and stale
+       fallback markers (>30min); requires pack.yml + inputs/task.json"
+    - "pre-claim: task.json must carry admitted task_class and a
+       non-empty prompt <=6000 chars — anything else is never claimed"
+    - "claim: first-writer-wins claim file + settle + verify-first,
+       identical to nest-worker.py (imported, not forked)"
+    - "run: kk_mac_executor.run_contract — heartbeat admission + live
+       memory guard + bounded /api/generate (think:false, temp:0) +
+       independent schema/fact verifier; pack run:/run_sh NEVER
+       executes in this lane"
+    - "close: done / fallback / failed marker + claim release; result
+       record out/result.json + kk_mac_result.json + verdict.json
+       persist admission, memory samples, usage, checks"
+  concurrency: "--max-packs 1 default, hard cap 2 (capacity procedure:
+    2 only after a two-request load test)"
+  drain: "touch ~/.cache/kk-llm-worker.drain or
+    DEVNEST_KK_MAC_ENABLED=false"
+
+gate:
+  local_snapshot: "kk_mac_admission.local_snapshot() — same thresholds
+    as the heartbeat gate (load_1m<=4.0, disk>=20GB, temp<=60C,
+    tmux/owner-busy) sourced from local ground truth: ollama
+    /api/version, sysctl vm.loadavg, statvfs, smctemp, tmux ls.
+    Read-only probes only."
+  executor_probe: "run_contract still runs the MDDB heartbeat snapshot
+    per pack — belt-and-suspenders with the worker's local gate"
+
+bugs_found_and_fixed_in_soak:
+  - "MemoryMonitor named its threading.Event self._stop, shadowing
+     Thread._stop() — join() raised 'TypeError: Event object is not
+     callable' and every executor-contract run fell back. Renamed
+     _stop_event + regression test exercising the real monitor."
+  - "kk_mac_admission.snapshot() tailnet_ip identity-alias picked the
+     FIRST matching doc — a stale '192' heartbeat doc (2026-10-29)
+     shadowed the fresh KKs-Mac-Studio one, denying a healthy node.
+     Now picks the freshest alias doc."
+  - "Unhandled NW.rcat/lsf exceptions (transient rclone failure,
+     TimeoutExpired) crashed the whole pass mid-claim. pass_once now
+     contains every per-pack failure; plan() errors skip the pass."
+  - "monitor.stop() in run_contract is now best-effort — monitor
+     failure can't mask the run result."
+  - "/usr/sbin missing from launchd/ssh PATH -> sysctl unfound ->
+     load_unknown deny; _which() now covers /usr/sbin."
+
+llm_changes:
+  kk_mac_llm: "host=local/localhost/127.0.0.1 -> direct urllib POST to
+    127.0.0.1:11434 (no ssh); think:false always set (qwen thinking is
+    what stalled the first packs); format option passthrough for JSON
+    classes"
+  kk_mac_memory: "host=local -> memory_pressure -Q / vm_stat run
+    locally; Linux -> /proc/meminfo MemAvailable/MemTotal"
+  kk_mac_executor: "task envelope threads format/think/host into
+    run_task"
+
+metrics:
+  script: scripts/devnest/kk_mac_metrics.py
+  added: "fallback status (terminal done/failed outrank it),
+    interventions = failed + fallback-held, verdict:pass counted as
+    verified alongside verified:true, usage nested under result.usage
+    handled, staged_to_done_seconds (queue_wait misses released claims)"
+
+soak:
+  remote: gdrive:ada-nest/kk-llm-soak-20261114
+  supervision: "manual passes via ssh on kk-mac, detached loop for the
+    drain, run against the live LaunchAgent queue in a sibling remote —
+    zero interference observed (live worker kept finding kk-llm empty)"
+  result:
+    staged: 11
+    done_verified: 7
+    fallback_held: 3
+    never_claimed: 1
+    failed: 0
+    wall_seconds: "mean 1.0, p95 1.3 (n=10)"
+    eval_tokens: 390
+    verified: 7
+    notes:
+      - "soak-02 retried after hold-release -> DONE — the release/retry
+         path works"
+      - "soak-02 earlier FALLBACK load_high while KK was actively using
+         the Mac (Chrome+Adobe, load 3.7-4+) — owner-busy gating proved
+         live, not synthetic"
+      - "soak-03/06/10 FALLBACK invalid_output — the verifier rejects
+         responses missing required fact literals; holds are visible,
+         claims released, other packs unaffected"
+      - "soak-11 (task_class video_render) never claimed — file remains
+         pack.yml + inputs/task.json only"
+      - "a mid-pass ssh-session kill left the remote worker finishing
+         its claimed pack cleanly; claim residue swept by stale-claim
+         recovery"
+
+tests:
+  - "tests/devnest/test_kk_mac_lane_worker.py — 18 cases: gate denies
+     (env/drain/probe-error), local vs heartbeat gate selection,
+     plan filters (terminal/live-claim/fallback-hold/not-llm),
+     task validation boundaries, done/fallback/failed marker writes,
+     unadmitted pack never claimed, local call path, memory local
+     sample"
+  - "tests/devnest/test_kk_mac_admission.py — freshest-alias regression"
+  - "tests/devnest/test_kk_mac_memory.py — real MemoryMonitor lifecycle"
+  - "tests/devnest/test_kk_mac_metrics.py — fallback status + counts"
+  - "full suite: 1487 passed, 47 skipped, 1 deselected
+     (ada-voice-checkout env test, unrelated)"
+
+files:
+  - scripts/devnest/kk_mac_lane_worker.py (new)
+  - scripts/devnest/kk_mac_llm.py
+  - scripts/devnest/kk_mac_admission.py
+  - scripts/devnest/kk_mac_memory.py
+  - scripts/devnest/kk_mac_executor.py
+  - scripts/devnest/kk_mac_metrics.py
+  - scripts/ops/net.adanest.kk-llm-worker.plist (new)
+  - tests/devnest/test_kk_mac_lane_worker.py (new)
+  - tests/devnest/test_kk_mac_{admission,memory,metrics}.py
+  - docs/kb/jevnest-kk-mac-capacity-procedure.md
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
+
+pending_gates:
+  - "launchd cutover: swap net.adanest.kk-llm-worker plist to
+     kk_mac_lane_worker.py + sync the kkkakk chaba checkout — deploy to
+     a production member host, needs Tony approval"
+  - "JEV promotion: weekly-review sign-off per capacity procedure —
+     soak evidence now includes owner-busy fallback live"
+  - "rclone shared client_id retirement warning seen on kk-mac during
+     soak — separate ops issue for the gdrive remote"
+  - "persistent invalid-output packs re-hold every 30min indefinitely —
+     consider a retry cap -> failed escalation (noted for follow-up)"

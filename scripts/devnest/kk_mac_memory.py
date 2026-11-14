@@ -16,6 +16,7 @@ best-effort evidence — a breach still fails the verdict.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import threading
@@ -26,6 +27,11 @@ PRELOAD_MIN_FREE_PCT = 60.0
 ABORT_FREE_PCT = 50.0
 DEFAULT_HOST = "kk-mac"
 POLL_S = 15.0
+LOCAL_HOSTS = frozenset({"local", "localhost", "127.0.0.1", "::1"})
+
+
+def is_local_host(host: str) -> bool:
+    return str(host or "").strip().lower() in LOCAL_HOSTS
 
 
 def now_iso() -> str:
@@ -37,16 +43,47 @@ def _default_ssh(cmd: list[str], timeout: int = 25
     return subprocess.run(cmd, capture_output=True, timeout=timeout)
 
 
+def _meminfo_free_pct() -> float | None:
+    """Linux-local fallback: MemAvailable / MemTotal from procfs."""
+    try:
+        vals = {}
+        with open("/proc/meminfo") as f:
+            for line in f:
+                k, _, v = line.partition(":")
+                vals[k.strip()] = int(v.strip().split()[0])
+        total = vals.get("MemTotal")
+        avail = vals.get("MemAvailable", vals.get("MemFree"))
+        if total and avail is not None:
+            return round(100.0 * avail / total, 1)
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
+def _host_cmd(host: str, shell_cmd: str) -> list[str]:
+    if is_local_host(host):
+        return ["sh", "-c", shell_cmd]
+    return ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
+            host, shell_cmd]
+
+
 def sample(host: str = DEFAULT_HOST, *,
            ssh_run: Callable = _default_ssh) -> dict:
     """One memory sample from the KK-Mac host ->
     {ok, free_pct, level, raw, at, error}. ok=False means the sample
     could not be taken — callers treat that as fail-closed at pre-load.
-    """
+    When host is local (the on-host lane worker) the same probes run
+    directly instead of over ssh."""
     out = {"ok": False, "free_pct": None, "level": None, "raw": "",
            "at": now_iso(), "error": None}
-    cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
-           host, "memory_pressure -Q 2>/dev/null || true"]
+    if is_local_host(host) and os.uname().sysname == "Linux":
+        pct = _meminfo_free_pct()
+        if pct is not None:
+            out.update(ok=True, free_pct=pct, raw="procfs_meminfo")
+        else:
+            out["error"] = "meminfo_unreadable"
+        return out
+    cmd = _host_cmd(host, "memory_pressure -Q 2>/dev/null || true")
     try:
         r = ssh_run(cmd, timeout=25)
     except Exception as exc:
@@ -63,8 +100,7 @@ def sample(host: str = DEFAULT_HOST, *,
         out["ok"] = True
         return out
     # memory_pressure -Q may be unavailable; fall back to vm_stat pages.
-    cmd2 = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15",
-            host, "vm_stat | head -12"]
+    cmd2 = _host_cmd(host, "vm_stat | head -12")
     try:
         r2 = ssh_run(cmd2, timeout=25)
     except Exception as exc:
@@ -123,18 +159,19 @@ class MemoryMonitor(threading.Thread):
         self.ssh_run = ssh_run
         self.interval = interval
         self.samples: list[dict] = []
-        self._stop = threading.Event()
+        # must not shadow Thread._stop() — join() calls it internally
+        self._stop_event = threading.Event()
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             try:
                 self.samples.append(sample(self.host, ssh_run=self.ssh_run))
             except Exception:
                 pass
-            self._stop.wait(self.interval)
+            self._stop_event.wait(self.interval)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
         self.join(timeout=5)
 
     def worst_reasons(self) -> list[str]:

@@ -104,6 +104,69 @@ This keeps KK-Mac active without competing with the owner or exhausting
 storage. A missing or stale heartbeat causes safe fallback, not queue
 starvation.
 
+## The lane worker (kk_mac_lane_worker.py)
+
+`scripts/devnest/kk_mac_lane_worker.py` is the dedicated consumer for
+`gdrive:ada-nest/kk-llm`. It replaces generic `nest-worker.py` on this
+remote — generic workers still own `gdrive:ada-nest/packs` (GPU/video/
+coding packs) and never see the kk-llm queue.
+
+Per pass (launchd `StartInterval=60`, always `--once`-equivalent):
+
+1. **Gate** — deny exits clean, queue untouched:
+   - `DEVNEST_KK_MAC_ENABLED != true` or the drain file
+     (`~/.cache/kk-llm-worker.drain` by default) — instant hold.
+   - `--host local` (production on KK-Mac): `local_snapshot()` — local
+     ground truth for ollama /api/version, vm.loadavg, statvfs, smctemp,
+     `tmux ls` owner/busy — same thresholds as the heartbeat gate.
+   - `--host kk-mac` (supervised fleet runs): the MDDB heartbeat
+     `snapshot()` — same fields, ≤15 min stale.
+2. **Claim** — first-writer-wins `claim/<worker>` file, settle,
+   verify-first — identical semantics to `nest-worker.py` (imported,
+   not forked). Stale claims >60 min released; `fallback` markers hold a
+   pack for `--fallback-retry-min` (30 min default) then auto-retry.
+   `--max-packs` bounds claims per pass (1 normal, hard cap 2).
+3. **Pre-claim admission** — `inputs/task.json` must exist and carry an
+   admitted `task_class`, non-empty prompt ≤6000 chars. Anything else —
+   including video/GPU/coding/destructive packs that land in the queue —
+   is never claimed.
+4. **Execute** — `kk_mac_executor.run_contract`, never pack `run:`/`run_sh`
+   code: heartbeat admission + live memory guard + bounded
+   `/api/generate` (`think:false`, `temperature:0`) + independent
+   schema/fact verifier.
+5. **Close** — `done` (verdict pass + artifacts verified remote-side),
+   `fallback` (lane-condition or invalid output — held, retryable), or
+   `failed` (terminal contract violation — needs a human). Claim always
+   released. Result record (`out/result.json` + `kk_mac_result.json` +
+   `verdict.json`) persists admission, memory samples, usage, checks.
+
+### launchd install / rollback (KK-Mac)
+
+Install (one-time, needs the chaba checkout at
+`~/CascadeProjects/chaba` current):
+
+```bash
+cp scripts/ops/net.adanest.kk-llm-worker.plist ~/Library/LaunchAgents/
+launchctl bootout gui/$(id -u)/net.adanest.kk-llm-worker 2>/dev/null
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.adanest.kk-llm-worker.plist
+launchctl print gui/$(id -u)/net.adanest.kk-llm-worker | head
+```
+
+Rollback to the previous generic worker (the plist `.bak` convention —
+keep a timestamped copy before every swap):
+
+```bash
+cp ~/Library/LaunchAgents/net.adanest.kk-llm-worker.plist \
+   ~/Library/LaunchAgents/net.adanest.kk-llm-worker.plist.bak-$(date +%Y%m%d)
+# restore the prior plist, then:
+launchctl bootout gui/$(id -u)/net.adanest.kk-llm-worker
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.adanest.kk-llm-worker.plist
+```
+
+Instant drain without touching launchd: `touch ~/.cache/kk-llm-worker.drain`
+(remove to resume). Queue-side stop: `DEVNEST_KK_MAC_ENABLED=false` in the
+producer/broker unit env holds new intake while the worker drains.
+
 ## Completion and feedback
 
 The worker must write:
@@ -135,6 +198,9 @@ requires a verified soak and no owner-impact incidents.
 
 ## Current next step
 
-The KK-Mac worker and 10-package semantic soak are complete. The missing
-piece is the capacity-aware producer that refills the dedicated queue with
-real report/audit work when KK-Mac is green.
+The dedicated lane worker (`kk_mac_lane_worker.py`), the capacity-aware
+producer, broker, and report feed are built and the 10-package soaks
+passed. Remaining before automatic JEV promotion: swap the live
+LaunchAgent onto the lane worker (plist in `scripts/ops/`), one fresh
+supervised soak against the lane worker, and the weekly-review policy
+sign-off.

@@ -71,10 +71,11 @@ def parse_lsl(text: str) -> dict[str, dict]:
 
 
 def pack_metrics(files: dict) -> dict:
-    """One pack's files {relpath: (mtime,size)} -> status + timings."""
+    """One pack's files {relpath: (mtime,size)} -> status + timings.
+    Status precedence: done/failed terminal > fallback hold > live."""
     m = {"status": "live", "staged_at": None, "claimed_at": None,
          "finished_at": None, "queue_wait_s": None, "wall_s": None,
-         "worker": None}
+         "latency_s": None, "worker": None}
     ts = [v[0] for v in files.values()]
     if ts:
         m["staged_at"] = min(ts)
@@ -88,10 +89,17 @@ def pack_metrics(files: dict) -> dict:
             m["status"] = "done"
             m["finished_at"] = epoch
         elif rel == "failed":
-            m["status"] = "failed"
-            m["finished_at"] = epoch
+            if m["status"] != "done":
+                m["status"] = "failed"
+                m["finished_at"] = epoch
+        elif rel == "fallback":
+            if m["status"] == "live":
+                m["status"] = "fallback"
+                m["finished_at"] = epoch
     if m["staged_at"] and m["claimed_at"]:
         m["queue_wait_s"] = round(m["claimed_at"] - m["staged_at"], 1)
+    if m["staged_at"] and m["finished_at"]:
+        m["latency_s"] = round(m["finished_at"] - m["staged_at"], 1)
     return m
 
 
@@ -117,11 +125,13 @@ def collect(*, remote: str = REMOTE, with_tokens: bool = False,
     started = time.monotonic()
     packs = parse_lsl(rclone("lsl", f"{remote}/packs"))
     per_pack = {name: pack_metrics(f) for name, f in packs.items()}
-    counts = {"done": 0, "failed": 0, "live": 0}
+    counts = {"done": 0, "failed": 0, "fallback": 0, "live": 0}
     for m in per_pack.values():
         counts[m["status"]] += 1
     waits = [m["queue_wait_s"] for m in per_pack.values()
              if m["queue_wait_s"] is not None]
+    latencies = [m["latency_s"] for m in per_pack.values()
+                 if m["latency_s"] is not None]
     walls = []
     tokens = {"eval_count_total": 0, "eval_duration_s_total": 0.0,
               "load_duration_s_total": 0.0, "verified": 0,
@@ -140,22 +150,34 @@ def collect(*, remote: str = REMOTE, with_tokens: bool = False,
         if not isinstance(res, dict):
             continue
         tokens["result_files"] += 1
-        if res.get("verified"):
+        # pack-era results carry verified:true; executor-contract
+        # results carry verdict:pass — both mean the independent
+        # verifier passed
+        if res.get("verified") or res.get("verdict") == "pass":
             tokens["verified"] += 1
         else:
             tokens["unverified"] += 1
-        tokens["eval_count_total"] += int(res.get("eval_count") or 0)
+        usage = res.get("usage") if isinstance(res.get("usage"), dict) \
+            else res
+        tokens["eval_count_total"] += int(usage.get("eval_count") or 0)
         tokens["eval_duration_s_total"] += (
-            res.get("eval_duration") or 0) / 1e9
+            usage.get("eval_duration") or 0) / 1e9
         tokens["load_duration_s_total"] += (
-            res.get("load_duration") or 0) / 1e9
+            usage.get("load_duration") or 0) / 1e9
         if res.get("wall_seconds") is not None:
             walls.append(float(res["wall_seconds"]))
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "remote": remote,
         "packs": {"total": len(per_pack), **counts},
+        # intervention = packs that need a human: terminal contract
+        # failures plus packs currently held on a fallback marker
+        "interventions": counts["failed"] + counts["fallback"],
         "queue_wait_seconds": _stats(waits),
+        # staged->terminal latency: claim files are released on close,
+        # so queue_wait only sees still-claimed packs — latency_s is
+        # the durable end-to-end measure
+        "staged_to_done_seconds": _stats(latencies),
         "wall_seconds": _stats(walls),
     }
     if with_tokens:

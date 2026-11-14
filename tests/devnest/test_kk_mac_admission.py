@@ -118,6 +118,24 @@ class KkMacAdmissionTests(unittest.TestCase):
         self.assertTrue(result["eligible"])
         self.assertTrue(result["identity_alias"])
 
+    def test_alias_prefers_freshest_shadow_doc(self):
+        # renamed host keys accumulate alias docs under one tailnet_ip —
+        # a stale shadow must not deny the fresh canonical heartbeat
+        now = time.time()
+        docs = [
+            doc({"host": "192", "tailnet_ip": "100.108.217.17",
+                 "ts": now - 30000, "ollama_ok": True,
+                 "disk_free_gb": 55}),  # stale alias, listed first
+            doc({"host": "New-Name", "tailnet_ip": "100.108.217.17",
+                 "ts": now - 60, "ollama_ok": True,
+                 "disk_free_gb": 79, "load_1m": 1.5}),
+        ]
+        with patch("scripts.devnest.kk_mac_admission._search",
+                   return_value=docs):
+            result = snapshot(host="kk-mac", now=now)
+        self.assertTrue(result["eligible"])
+        self.assertEqual(result["disk_free_gb"], 79)
+
     def test_busy_node_defers_lane(self):
         now = time.time()
         with patch(
