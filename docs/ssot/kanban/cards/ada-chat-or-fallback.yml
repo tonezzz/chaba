@@ -8,26 +8,26 @@ tags:
 - voice
 - chat
 created: '2026-10-11'
-brief: When Gemini Live is unreachable (billing dunning 2026-10-11 proved it can die
-  for hours), Ada goes fully silent — voice AND chat. Voice has no non-Gemini path,
-  but the TG/LINE/PWA chat channels could degrade to an OpenRouter text model instead
-  of dying at provider connect.
-spec: 'pwa_server provider-connect failure (1008/quota/billing) on text channels →
-  fallback path: create a text-only session backed by OpenRouter chat completions
-  (reuse ada-safety key, mddb-gemini pattern) with the tool surface degraded or disabled;
-  announce degraded mode once. Gate: only for text channels — voice sessions have
-  no equivalent and should fail loudly as today.'
+brief: When Gemini Live is unreachable (billing dunning 2026-10-11 proved it can die for hours), Ada goes fully
+  silent — voice AND chat. Voice has no non-Gemini path, but the TG/LINE/PWA chat channels could degrade to an OpenRouter
+  text model instead of dying at provider connect.
+spec: 'pwa_server provider-connect failure (1008/quota/billing) on text channels → fallback path: create a text-only
+  session backed by OpenRouter chat completions (reuse ada-safety key, mddb-gemini pattern) with the tool surface
+  degraded or disabled; announce degraded mode once. Gate: only for text channels — voice sessions have no equivalent
+  and should fail loudly as today.'
 comms:
 - at: 2026-10-11 11:50
   from: devin
-  text: filed from live incident — dunning killed Live on all channels; chat could
-    have degraded gracefully
+  text: filed from live incident — dunning killed Live on all channels; chat could have degraded gracefully
 - at: 2026-10-11 12:15
   from: devin
-  text: '[prod] shipped 132c2e1+b5946c1+784c77e. Live e2e on ada-dev: Gemini connect
-    fails (dunning 1008) -> ''degraded'' frame -> OR turn ''say ok'' -> assistant
-    reply ''ok'' -> response_completed. Voice still fails loudly by design. OR key
-    added to all 4 ada envs; model chain nvidia-super-120b/nano-30b/liquid-2.6b :free
-    tried in order (gemma:free 400s upstream on this account). Env: OPENROUTER_API_KEY
-    + ADA_OR_FALLBACK_MODEL.'
+  text: '[prod] shipped 132c2e1+b5946c1+784c77e. Live e2e on ada-dev: Gemini connect fails (dunning 1008) -> ''degraded''
+    frame -> OR turn ''say ok'' -> assistant reply ''ok'' -> response_completed. Voice still fails loudly by design.
+    OR key added to all 4 ada envs; model chain nvidia-super-120b/nano-30b/liquid-2.6b :free tried in order (gemma:free
+    400s upstream on this account). Env: OPENROUTER_API_KEY + ADA_OR_FALLBACK_MODEL.'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 done: {}
+updated: 2026-11-14 14:16
