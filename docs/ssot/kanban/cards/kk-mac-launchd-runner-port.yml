@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-port
 title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
 column: doing
-updated: 2026-11-14 13:21
+updated: 2026-11-14 13:46
 spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
   equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
   — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
@@ -39,6 +39,12 @@ comms:
   text: picked up in dispatch wt - building the launchd task-runtime seam in runner-agent.py (rt_launch + launchctl
     bootstrap/print collect path), sysctl vm.loadavg gate, plus kk-mac provisioning script + runbook for kkkakk
     worktree/deploy-key/opencode
+- at: 2026-11-14 13:46
+  from: devin
+  text: 'code complete in dispatch wt: runner-agent launchd seam (rt_launch+_launchd_* — bootstrap/print gui/<uid>/devin-task-*,
+    wrapper watchdog+pgrp+durable .code, $$->$, nice/ulimit plist limits, sysctl vm.loadavg gate, devin executor
+    correctly declines on launchd). 580 board tests OK incl 35 new launchd tests. Provision script + runbook for
+    kkkakk worktree/deploy-key/opencode. NOT run on the metal — provisioning steps listed in job yml gaps.'
 action:
   type: dispatch
   repo: chaba
