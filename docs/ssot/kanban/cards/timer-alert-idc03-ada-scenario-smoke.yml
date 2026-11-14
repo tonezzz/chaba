@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-smoke
 title: Timer ada-scenario-smoke on idc03 failing
 column: backlog
-updated: 2026-11-13 23:35
+updated: 2026-11-14 08:10
 priority: high
 tags:
 - timer-alert
@@ -1781,6 +1781,13 @@ comms:
   text: '2026-11-13: run published spend-ledger + report OK then exited nonzero — a scenario step inside failed.
     Needs per-step drill-down of scenario-suite-run.sh output; journal tail only shows publish success. Likely same
     class as memory-suite env break or a live-scenario flake — check next run detail.'
+- at: 2026-11-14 08:10
+  from: devin
+  text: 'Root cause narrowed 2026-11-14: suite itself is GREEN — journal shows 6 pass / 0 fail / 10 warnings, spend-ledger
+    published. Unit exits nonzero because a podman step tries to initialize docker://localhost/ada-scenario-runner:latest
+    — image absent on idc03, falls through to registry pull on localhost:443 (connection refused). FIX: build/tag
+    the runner image locally OR remove the stale docker:// reference from whatever invokes it (not in scenario-suite-run.sh
+    — likely a scenario def or nested call'
 action:
   status: done
   type: dispatch
