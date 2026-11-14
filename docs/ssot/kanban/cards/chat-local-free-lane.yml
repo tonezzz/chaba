@@ -1,7 +1,7 @@
 id: chat-local-free-lane
 title: Chat-local free lane — ollama on idc02 behind litellm, background-turn offload
 column: done
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:08
 priority: high
 note: 'Ollama podman on idc02 (NOT idc03-prod) serving qwen2.5:7b -> litellm alias chat-local -> route background
   lanes (news-digest synthesis, wp-comment classification, situation summaries, card triage). Keep Thai output on
@@ -83,6 +83,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
