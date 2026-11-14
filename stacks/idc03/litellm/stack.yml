@@ -16,9 +16,11 @@ secrets:
 requires:
   - "tool:podman"
   - "tcp:100.102.134.91:11434 — ollama (self)"
+  - "unit:kkmac-admission-shim.service — Ada Nest gate on :11447 fronting the kk-mac legs (user unit, not a quadlet)"
   - "net: outbound https to generativelanguage.googleapis.com + openrouter.ai"
 state:
   - "~/.config/litellm/config.yaml — router config (canonical copy in this dir)"
+  - "~/.config/systemd/user/kkmac-admission-shim.service — canonical copy in this dir"
   - "podman volume litellm-pgdata — virtual keys + spend ledger"
 restore: >-
   run ./deploy.sh (installs quadlets, config, generates secrets env on

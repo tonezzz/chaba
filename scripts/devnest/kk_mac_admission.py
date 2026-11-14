@@ -73,9 +73,13 @@ def snapshot(
     require_idle: bool = True,
     max_load_pc: float = 1.0,
     now: float | None = None,
+    docs: list[dict] | None = None,
+    ssh_fallback: bool = True,
 ) -> dict:
     now = time.time() if now is None else now
-    candidates = [_parse(d) for d in _search(url)]
+    # docs: inject heartbeat docs instead of querying MDDB (tests /
+    # simulated heartbeats for the LiteLLM admission shim).
+    candidates = [_parse(d) for d in (_search(url) if docs is None else docs)]
     body = next((x for x in candidates if x and x.get("host") == host), None)
     identity_alias = False
     if body is None:
@@ -127,7 +131,11 @@ def snapshot(
     except (TypeError, ValueError):
         result["reasons"].append("disk_unknown")
     load = body.get("load_1m")
-    if load is None:
+    # ssh_fallback=False keeps admission callers (the LiteLLM gateway shim)
+    # fail-fast — a missing field denies instead of probing a dead node.
+    # Probes are also skipped once a deny reason exists: they can only add
+    # reasons, never clear them.
+    if load is None and ssh_fallback and not result["reasons"]:
         load = _ssh_load(os.environ.get("KK_MAC_SSH_HOST", "kk-mac"))
         if load is not None:
             result["load_1m"] = load
@@ -141,7 +149,7 @@ def snapshot(
         result["reasons"].append("load_unknown")
     try:
         temp = body.get("cpu_temp_c")
-        if temp is None:
+        if temp is None and ssh_fallback and not result["reasons"]:
             # heartbeat body lacks temp (root-owned adanest script) —
             # same read-only fallback pattern as the load probe.
             t = subprocess.run(

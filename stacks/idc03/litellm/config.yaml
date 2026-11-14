@@ -102,23 +102,28 @@ model_list:
   # kk-mac ollama via declared ssh tunnel unit on idc03
   # (kkmac-ollama-tunnel.service: 127.0.0.1:11445 -> kk-mac:11434,
   # loopback-bound adanest ollama; free local compute, member device —
-  # route dies with the host)
+  # route dies with the host). api_base points at
+  # kkmac-admission-shim.service (:11447) — an Ada Nest healthcheck gate
+  # that 503s instantly when kk-mac is stale/hot/busy so the router
+  # fails fast to the paid leg instead of queueing on a busy member
+  # device (card kk-mac-gateway-admission-shim, 2026-11-14).
   - model_name: ollama-qwen32b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5:32b
-      api_base: http://127.0.0.1:11445
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: ollama-qwen38b-kkmac
     litellm_params:
       model: ollama_chat/qwen3:8b
-      api_base: http://127.0.0.1:11445
+      api_base: http://127.0.0.1:11447
   - model_name: ollama-qwen25vl7b-kkmac
     litellm_params:
       model: ollama_chat/qwen2.5vl:7b
-      api_base: http://127.0.0.1:11445
+      api_base: http://127.0.0.1:11447
   - model_name: ollama-llama32-3b-kkmac
     litellm_params:
       model: ollama_chat/llama3.2:3b
-      api_base: http://127.0.0.1:11445
+      api_base: http://127.0.0.1:11447
   # tony-dell ollama via declared ssh tunnel on idc03
   # (tonydell-ollama-tunnel.service: 127.0.0.1:11446 -> tony-dell:11434;
   # SYS-1082 — chat-local compute off idc02 onto the batch host)
@@ -196,24 +201,28 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY_PAID
   - model_name: summary
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY_PAID
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: voice-aux
     litellm_params:
       model: gemini/gemini-3.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY_PAID
   - model_name: classify
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY_PAID
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: chat-local
     litellm_params:
-      model: ollama_chat/qwen2.5:32b
-      api_base: http://127.0.0.1:11445
+      model: ollama_chat/qwen2.5:7b-instruct
+      api_base: http://127.0.0.1:11446
+      timeout: 120
   - model_name: bench
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY_PAID
+      model: ollama_chat/qwen2.5:32b
+      api_base: http://127.0.0.1:11447
+      timeout: 120
   - model_name: image
     litellm_params:
       model: gemini/gemini-3.1-flash-image
@@ -317,12 +326,12 @@ router_settings:
     - tool-call: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - chat: [gemini-3.5-flash-free, or-gemini-3.5-flash, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-3.5-flash-lite: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
-    - summary: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - summary: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - voice-aux: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - gemini-2.5-flash-lite: [gemini-2.5-flash-lite-free, or-gemini-2.5-flash-lite, colab-gemma3, ollama-llama3.2]
-    - classify: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
-    - chat-local: [ollama-qwen7b, ollama-llama3.2, colab-gemma3]
-    - bench: [gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - classify: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
+    - chat-local: [ollama-qwen32b-kkmac, ollama-llama3.2, colab-gemma3]
+    - bench: [gemini-3.5-flash-lite, gemini-3.5-flash-lite-free, or-gemini-3.5-flash-lite, colab-gemma3, ollama-llama3.2]
     - image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]
     - gemini-3.1-flash-image: [gemini-3.1-flash-lite-image, or-gemini-3.1-flash-image]
     - vision: [ollama-moondream]
