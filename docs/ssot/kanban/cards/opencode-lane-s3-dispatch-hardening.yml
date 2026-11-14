@@ -1,7 +1,7 @@
 id: opencode-lane-s3-dispatch-hardening
 title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
-column: doing
-updated: 2026-11-14 11:10
+column: done
+updated: 2026-11-14 11:11
 priority: medium
 tags:
 - opencode-lane
@@ -67,9 +67,22 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261114-102801-found-during-first-s3-card-pil no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-14 11:11
+  from: chaba
+  text: 'merge-sweep: merged 1c86a1d9 (dispatch/20261114-102801-found-during-first-s3-card-pil from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261114-102801-found-during-first-s3-card-pil.md)
+    — auto-closed'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  sweep:
+    stale_running: 2026-11-14 11:10
+  verified: true
+claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-14 11:11
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261114-102801-found-during-first-s3-card-pil.md
