@@ -22,7 +22,7 @@ spec: 'In the mddb fork (~/CascadeProjects/mddb-fork): persist follower''s appli
   key in the replicated db or a sidecar file next to mddb.db. Load on startup; flush periodically (interval or batch-count,
   not per-entry). Idempotent replay means a few-second skew is safe. Update idc02+idc03 images after (build on idc02
   via the Dockerfile; image tag bump 2.15.4-blrotate -> next).'
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:14
 comms:
 - at: 2026-10-06 06:57
   from: tony
@@ -134,6 +134,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim:
   since: 2026-10-06 10:30
 requests:
