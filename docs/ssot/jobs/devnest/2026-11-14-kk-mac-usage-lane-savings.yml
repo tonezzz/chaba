@@ -1,0 +1,40 @@
+id: 2026-11-14-kk-mac-usage-lane-savings
+title: kk_mac token usage rides action.result into the lane-savings report
+card: kk-mac-usage-to-lane-savings
+code:
+  - scripts/devnest/kk_mac_llm.py        # usage += prompt_eval_count
+  - scripts/board/runner-agent.py      # finish_kk_mac_lane -> ent[result_extra]; finish_pass prepends
+  - scripts/board/lane-savings.py      # EXECUTOR_LANES attribution (ported from 747b44bbd0)
+why: >-
+  lane-savings attributed kk_mac_local cards but reported counts only:
+  kk_mac_result.json usage (eval_count/eval_duration/load_duration)
+  lived in the dispatch taskdir, which the report does not scan, so
+  every kk_mac run stayed token-unevidenced. Option (a) from the card:
+  the closeout copies usage into action.result as a TOKENS_RE-parseable
+  fragment.
+shape: >-
+  kk_mac_llm.run_task usage now carries prompt_eval_count (ollama
+  /api/generate input tokens; eval_count = output). finish_kk_mac_lane
+  reads kk_mac_result.json and, whenever eval_count recorded, sets
+  ent['result_extra'] = 'kk_mac_local {"tokens":{"total":T,"input":I,
+  "output":O}}' — emitted pass or fail, the spend happened either way.
+  finish_pass prepends result_extra to the finish result so the
+  fragment survives board-api's 300-char result cap; on the
+  fallback-handoff path it is popped so kk spend never pollutes the
+  next lane's result. lane-savings EXECUTOR_LANES + CHEAP_LANES ported
+  verbatim from dispatch commit 747b44bbd0 (was only on branch
+  dispatch/20261113-202232-card-judgment-eval, not master — without it
+  executor-pinned cards attribute to 'devin' and the done-condition
+  cannot hold).
+verified: >-
+  tests/board/test_executor_contract.py KkMacExecutorContractTest 12/12
+  (fragment asserted TOKENS_RE-parseable, total/input/output exact);
+  fixture card action.executor=kk_mac_local + fragment in
+  action.result -> lane-savings --cards-dir reports lane row
+  'kk_mac_local | 1 | 1 | 1 | 1 | 1700/120' and offloaded session with
+  evidence=action.result,tokens,verified-close (1,820 measured tokens).
+note: >-
+  Live evidence lands on the next kk_mac_local close: older taskdirs
+  have no prompt_eval_count so input=0 for legacy results. If
+  dispatch/20261113-202232 merges later, the identical lane-savings
+  hunks resolve clean.
