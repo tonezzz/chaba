@@ -1,23 +1,25 @@
 id: ada-tool-consolidation-merge-overlapping-615ba9
 title: Ada tool consolidation — merge overlapping CMS write surfaces
 column: backlog
-updated: 2026-11-08 13:52
+updated: 2026-11-14 14:14
 ref: ADA-1203
 comms:
 - at: 2026-11-08 13:52
   from: devin
-  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection —
-    cms_publish_page vs cms_edit vs wp_post vs cpt_post (+ place_report variants).
+  text: 'spec (ada-voice repo, main): overlapping write tools confuse selection — cms_publish_page vs cms_edit vs
+    wp_post vs cpt_post (+ place_report variants).
 
 
-    Audit actual overlap: which tools hit the same backend doors (board-api /report,
-    /publish, WP CPTs). Propose+implement consolidation: one canonical write tool
-    per sink with action= param, old names kept as aliases for one release. Update
-    manifest.yml, instructions tool list, and any scenario fixtures referencing old
-    names.
+    Audit actual overlap: which tools hit the same backend doors (board-api /report, /publish, WP CPTs). Propose+implement
+    consolidation: one canonical write tool per sink with action= param, old names kept as aliases for one release.
+    Update manifest.yml, instructions tool list, and any scenario fixtures referencing old names.
 
 
     DEPENDENCY: do NOT di'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   repo: ada-voice
