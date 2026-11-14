@@ -1,0 +1,85 @@
+title: KK-Mac bounded image-render POC pack (Adobe Stock Nest pipeline)
+date: 2026-11-14
+card: adobe-stock-kk-mac-render-poc
+session: dispatch-wt-20261114-105957-build-the-first-bounded-image- (tony-dell)
+
+what:
+  pack: scripts/colab/packs/kk-mac-image-render-poc/
+        # {pack.yml, render.py, inputs/render-request.json (disabled)}
+  queue: gdrive:ada-nest-kk-llm — same Nest worker lane as the kk-llm
+        packs; staging = nest-pack-submit --remote gdrive:ada-nest-kk-llm
+  venv: ~/.local/share/kk-mac-image-renderer (KK-Mac, torch+diffusers, MPS)
+        # run_sh execs $VENV/bin/python render.py — fixed argv, no shell
+        # interpretation of request data
+  model_pin: stabilityai/stable-diffusion-xl-base-1.0 @
+        462165984030d82259a11f4367a4eed129e94a7b
+        # venv-side model-manifest.json is the source of truth; the
+        # request's model block must equal it and the pinned HF snapshot
+        # must already be on disk — no downloads (HF offline flags +
+        # local_files_only)
+  render_path: "SDXL fp16 on MPS, latents -> CPU fp32 VAE decode
+        (the proven KK-Mac fix: fp16 VAE on MPS = black frames + stalls),
+        cpu-seeded generator, num_images_per_prompt=1"
+  artifacts:
+    - out/preflight.json      # always written, incl. on gate failure
+    - out/<output_name>.png   # exactly one (render.count must be 1)
+    - out/render-manifest.json
+    - out/verdict.json
+  tests: tests/colab/test_kk_mac_image_render_poc.py (8 tests, stdlib only)
+
+fail_closed_gates:        # ordered; ids are stable API in preflight.json
+  request_parses:         "render-request.json parses to a JSON object"
+  request_approved:       "status == 'approved' (checked-in template is
+                          'template_disabled' and can never render)"
+  owner_approved:         "owner_approved is true"
+  approval_recorded:      "approved_by names the approver"
+  adobe_upload_disabled:  "adobe_upload is explicitly false"
+  single_render:          "render.count == 1 — no batch generation"
+  render_bounds:          "width/height int, mult of 8, 256-1536; steps
+                          1-60; guidance 0-20; seed int >= 0"
+  output_name_safe:       "plain *.png basename only"
+  prompt_present:         "non-empty prompt <= 4000 chars"
+  render_window:          "optional {not_before_utc, not_after_utc} — if
+                          declared, now must be inside"
+  venv_isolated:          "sys.prefix == ~/.local/share/kk-mac-image-renderer
+                          and its bin/python exists"
+  manifest_pinned:        "model-manifest.json parses, model_id + 40-hex
+                          revision"
+  model_pin_match:        "request.model == manifest {model_id, revision}"
+  snapshot_present:       "pinned snapshot dir + required_files on disk"
+  disk_floor:             "statvfs free >= limits.min_disk_free_gb (30)"
+  load_limit:             "load1 <= limits.max_load_1m (4.0)"
+
+semantics:
+  - "any gate fail -> preflight.json + verdict.json(fail) written, exit 2;
+     worker marks pack failed (no done marker, no upload-back, no retry)"
+  - "render error (incl. limits.max_wall_seconds SIGALRM) -> verdict fail,
+     stray .tmp cleaned, exit 1"
+  - "--preflight-only runs gates + writes preflight.json, never renders —
+     safe arming check on KK-Mac before a real window"
+  - "no Adobe upload, no browser/GUI, no credentials, no arbitrary shell,
+     no batch, no automatic retry — per card safety clause"
+
+verification_2026-11-14:
+  - "python3 -m unittest tests.colab.test_kk_mac_image_render_poc: 8/8"
+  - "python3 -m unittest discover -s tests/colab: 78 ran, 1 skipped"
+  - "nest-pack-submit --remote gdrive:ada-nest-kk-llm --dry-run: valid"
+  - "live CLI run vs checked-in template: exit 2, verdict fail with all
+     16 checks recorded (10 failing on a non-KK host)"
+
+next_gates:             # per card — none done in this session
+  - "commit/push the pack (dispatch branch holds it; no push per rails)"
+  - "provision check on KK-Mac: venv + model-manifest.json + snapshot
+     present (manifest contract documented in the request template)"
+  - "stage ONE approved request to gdrive:ada-nest-kk-llm only during an
+     owner-idle window (KK consent per kk-mac-local-llm-lane policy)"
+  - "verify artifacts + SHA-256, land accepted PNG/manifest into
+     gdrive:ada-nest-adobe-stock campaign folder (land-render.py
+     --lane kk-mac-nest), then qwen2.5vl QC before metadata/submission"
+
+history_note: "First implementation (branch feat/adobe-stock-render-poc,
+  commits 40d04803c + 97e62f5ec) was built and ran render-002 on KK-Mac
+  2026-11-06 but was never pushed; objects are not in this clone. This
+  rebuild follows the card spec + recorded evidence (out/<output_name>
+  writes -> artifacts glob out/*.png; SDXL rev
+  462165984030d82259a11f4367a4eed129e94a7b)."
