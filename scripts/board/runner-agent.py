@@ -1922,7 +1922,11 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
 
 def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     """kk_mac_local closeout — runs BEFORE close_out_merge like
-    finish_opencode_lane. Returns (may_merge, notes, fallback_reason):
+    finish_opencode_lane. Returns (may_merge, notes, fallback_reason).
+    Side channel: when kk_mac_result.json recorded token usage, sets
+    ent['result_extra'] to a TOKENS_RE-parseable fragment the caller
+    prepends to the finish result so action.result is token-evidenced
+    for lane-savings.
 
     - verdict pass AND the declared artifact landed in the worktree ->
       may_merge=True; the merge gate stamps verified.
@@ -1959,6 +1963,26 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
             (taskdir / "kk_mac_result.json").read_text())
     except Exception:
         result = {}
+    # lane-savings token evidence (kk-mac-usage-to-lane-savings): the
+    # usage block lives in the taskdir, which lane-savings does not
+    # scan — hand the finish caller a TOKENS_RE-parseable fragment so
+    # action.result carries measured in/out tokens, not just a count.
+    # Emitted whenever eval_count was recorded, pass or fail — the
+    # tokens were spent either way.
+    try:
+        out_tok = int((result.get("usage") or {}).get("eval_count"))
+    except (TypeError, ValueError):
+        out_tok = -1
+    if out_tok >= 0:
+        u0 = result.get("usage") or {}
+        try:
+            in_tok = int(u0.get("prompt_eval_count")
+                         or u0.get("prompt_tokens") or 0)
+        except (TypeError, ValueError):
+            in_tok = 0
+        ent["result_extra"] = (
+            f'kk_mac_local {{"tokens":{{"total":{in_tok + out_tok},'
+            f'"input":{in_tok},"output":{out_tok}}}}}')
     art = str(verdict.get("artifact")
               or (card.get("action") or {}).get("artifact") or "")
     wt = Path(str(meta.get("worktree") or ""))
@@ -2972,6 +2996,9 @@ def finish_pass(st: dict) -> bool:
                     verified = False
                 else:
                     st[cid].update({"unit": u2, "tid": t2})
+                    # the kk_mac usage fragment must NOT ride into the
+                    # next lane's finish result — different lane's spend
+                    st[cid].pop("result_extra", None)
                     notes.append(f"kk_mac_local fell back ({kk_fb}) — "
                                  f"next lane running as {u2}")
                     for n in notes:
@@ -2995,6 +3022,12 @@ def finish_pass(st: dict) -> bool:
                     verified = False
             else:
                 verified = False
+        # Lane closeouts may leave a result_extra fragment (kk_mac_local
+        # token evidence) — prepend so it survives board-api's 300-char
+        # result cap and lane-savings can parse measured tokens.
+        extra = ent.pop("result_extra", "")
+        if extra:
+            result = f"{extra} | {result}"
         body = {"id": cid, "do": "finish", "host": HOST,
                 "ok": ok, "result": result}
         if verified is not None:

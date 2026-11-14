@@ -78,6 +78,7 @@ def run_task(task_class: str, prompt: str, **kwargs) -> dict:
         "task_class": task_class,
         "response": response.get("response", ""),
         "usage": {
+            "prompt_eval_count": response.get("prompt_eval_count"),
             "eval_count": response.get("eval_count"),
             "eval_duration": response.get("eval_duration"),
             "load_duration": response.get("load_duration"),

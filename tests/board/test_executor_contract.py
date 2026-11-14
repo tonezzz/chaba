@@ -1038,12 +1038,25 @@ class KkMacExecutorContractTest(unittest.TestCase):
                     "verdict": "pass", "checks": {"json": True},
                     "artifact": "evals/kk-mac-lane/out/c.json"}))
                 (taskdir / "kk_mac_result.json").write_text(json.dumps({
-                    "usage": {"eval_count": 5}}))
+                    "usage": {"prompt_eval_count": 10,
+                              "eval_count": 5}}))
+                ent = {"tid": tid}
                 may, notes, fb = self.mod.finish_kk_mac_lane(
-                    "c", {"tid": tid}, self._kk_card())
+                    "c", ent, self._kk_card())
                 self.assertTrue(may)
                 self.assertEqual(fb, "")
                 self.assertIn("artifact landed", " ".join(notes))
+                # lane-savings evidence (kk-mac-usage-to-lane-savings):
+                # the finish caller gets a TOKENS_RE-parseable fragment
+                # for action.result — tokens in/out, not just a count.
+                frag = ent.get("result_extra", "")
+                self.assertIn(
+                    '"tokens":{"total":15,"input":10,"output":5}', frag)
+                # and lane-savings' own regex must parse it back
+                tm = _load("lane-savings.py").TOKENS_RE.search(frag)
+                self.assertIsNotNone(tm)
+                self.assertEqual((tm.group(1), tm.group(2), tm.group(3)),
+                                 ("15", "10", "5"))
             finally:
                 if home is None:
                     os.environ.pop("HOME", None)
