@@ -1,7 +1,7 @@
 id: timer-alert-idc03-served-checkout-watchdog
 title: Timer served-checkout-watchdog on idc03 failing
-column: done
-updated: 2026-11-14 14:16
+column: backlog
+updated: 2026-11-14 18:15
 priority: high
 tags:
 - timer-alert
@@ -226,6 +226,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 18:15
+  from: tony
+  text: moved done -> backlog
 spec: Investigate why the user service `served-checkout-watchdog.service` on host `idc03` failed with an exit-code
   result during its recent runs, as indicated by the recurring timer alerts and journal entries. Review the journal
   logs via `journalctl --user -u served-checkout-watchdog.service` on `idc03` and cross-reference the CMS `timer-timeline-idc03`
