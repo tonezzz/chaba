@@ -1,7 +1,7 @@
 id: model-fleet-benchmark
 title: Model fleet benchmark + multi-host large-model POC
 column: done
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:14
 note: 'Plan for review: docs/kb/model-fleet-benchmark-plan.md — 6-tier size table (micro to superlarge), per-host
   fit map, model-speed harness, llama.cpp RPC multi-host POC for 27B+. Open decisions in doc section 6.'
 ref: BEN-0630
@@ -115,6 +115,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: model-list
   ask: Model list per tier — keep defaults in plan §1 or swap?
