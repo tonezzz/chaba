@@ -1,7 +1,7 @@
 id: board-api-write-latency-60s-under-load-r-939aed
 title: board-api write latency >60s under load — requests queue behind serialized card commits
 column: done
-updated: 2026-11-07 19:11
+updated: 2026-11-14 14:10
 priority: medium
 blocked_by: '[''idc03-served-checkout-convergence-unbloc-0acb20'']'
 tags:
@@ -47,6 +47,10 @@ comms:
   text: 'Assessment verdict: VERIFIED done. Probe write above = 0.43s end-to-end (claim was ~0.35s). Served checkout
     0 behind / 35 ahead / 3 dirty (benign churn); board-api active, NRestarts=0, health 200 in 0.19s. Watch metric:
     if writes regress, check checkout divergence before touching the door.'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 claim: {}
