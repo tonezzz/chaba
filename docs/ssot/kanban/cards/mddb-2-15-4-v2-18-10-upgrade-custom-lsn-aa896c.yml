@@ -1,7 +1,7 @@
 id: mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c
 title: mddb 2.15.4 -> v2.18.10 upgrade (custom -lsn/-breaker builds)
 column: backlog
-updated: 2026-11-13 20:16
+updated: 2026-11-14 12:08
 brief: All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images — upgrade means
   rebasing local patches onto 2.18.x and rebuilding, not a pull.
 ref: MEM-0024
@@ -29,3 +29,10 @@ comms:
     -lsn — upgrading them requires merging follower-lsn-persist (e1192e2a, d6ee6fd6, absent from feat/vector-algorithms)
     + repl-heartbeat (498cdc38) into one maintained branch. Leader embeds (was a storm source) so it still loses
     failed docs silently until then. Patch matrix: 3 live tags (ls'
+- at: 2026-11-14 12:08
+  from: devin
+  text: 'UPGRADE COMPLETE 2026-11-14: all 5 planes on localhost/mddb:2.18.10-merge (fork branch upgrade/2.18.10
+    = upstream v2.18.10 + LSN persist + heartbeat + breaker + bounded retry + vector allowlist + freelist follower
+    default). ops/cms/embed/idc02-follower/con01-follower/leader all healthy; followers heartbeat_capable=true,
+    LSNs in sync. Rollback per host = sed tag back to 2.15.4-lsn + daemon-reload + restart; backups fresh (idc03
+    02:30, idc02 03:30).'
