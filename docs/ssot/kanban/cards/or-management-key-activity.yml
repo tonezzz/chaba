@@ -1,7 +1,7 @@
 id: or-management-key-activity
 title: OR management key for per-call activity attribution
 column: done
-updated: 2026-11-13 21:15
+updated: 2026-11-14 14:14
 spec: '/api/v1/activity needs a management key; the provisioned key can''t see per-call spend. Without it, attribution
   is inferred from logs each time. Optional: create mgmt key in OR dashboard, store in secrets, add to key-watch/report
   tooling.'
@@ -39,6 +39,10 @@ comms:
 - at: 2026-11-13 21:15
   from: devin
   text: moved backlog -> done
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: create-an-openrouter-management-key-dash-bae1d6
   ask: Create an OpenRouter management key (dashboard -> Keys -> management) so /api/v1/activity gives per-call
