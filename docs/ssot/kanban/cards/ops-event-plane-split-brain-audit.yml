@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
 column: backlog
-updated: 2026-11-13 20:52
+updated: 2026-11-14 08:43
 priority: medium
 tags:
 - mddb
@@ -13,6 +13,12 @@ note: 'Found during house-timeline-orphaned-feed-repoint (2026-10-27). Since the
   :11023 (ops-error-posts.py, session-audit.py, host-loads _ops_event, key-watch, gemini_pool...). Result: ops-event
   docs now land on BOTH '
 ref: MEM-0924
+spec: 'Research audit (read-only): enumerate every chaba-side writer and reader that still targets MDDB :11023 for
+  ada-ha-events-* documents while ada-voice MddbClient routes ALL ada-ha-events-* writes (including kind=ops-event
+  emits) to mddb-ops http://100.123.163.11:11025 since the 2026-10-23 ops split. For each surface (script, tool,
+  doc, config) cite the file path; classify writer vs reader and which plane it belongs to; state the consequence
+  of the split (docs landing on both planes, readers missing events). Answer from repo SSOT/code only — cite every
+  claim.'
 comms:
 - at: 2026-10-27 10:37
   from: devin
@@ -24,3 +30,46 @@ comms:
     BLOCKER: idc02 opencode lane is at S0 after the 2026-11-12 OPS-1255 stor-01 rollback — staged dispatch admits
     only S3, so requalification S0->S1->S2->S3 must complete first. Profile allowlist gap fixed in PR #169 (merged):
     ssot-research now admits the verified free mo'
+- at: 2026-11-14 08:43
+  from: tony
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  model: litellm/or-free-nemotron-ultra
+  executor: opencode
+  agent_profile: ssot-research
+  target_host: idc02
+  artifact: evals/opencode-lane/out/ops-event-plane-split-brain-audit.json
+  task_class: read_only
+  llm_key_alias: chaba
+  lane_envelope:
+    id: s3-split-brain-audit
+    card: ops-event-plane-split-brain-audit
+    task_class: read_only
+    stage: S3
+    target_host: idc02
+    executor: opencode
+    profile: ssot-research
+    model: litellm/or-free-nemotron-ultra
+    provider: litellm
+    unattended: true
+    mcp_allowlist: []
+    allowed_paths:
+    - evals/opencode-lane/out/
+    artifact:
+      path: evals/opencode-lane/out/ops-event-plane-split-brain-audit.json
+      schema: 'evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ssot-research/fixture/verify.py
+    escalation:
+      on_fail: manual
+      max_retries: 0
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 300
+  status: queued
