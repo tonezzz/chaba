@@ -1,7 +1,7 @@
 id: dispatch-runner-slot-idc02
 title: Add idc02 as dispatch/bench runner slot
 column: done
-updated: 2026-11-12 14:39
+updated: 2026-11-14 14:14
 spec: Always-on Linux with load 1.4 — better dispatch target than laptops (the 2026-11-08/09 retry storm landed
   ~125 worktrees on omen). Wire idc02 into the dispatch fleet (runner-agent or jobs map), capacity for bench/scenario/overnight
   jobs. Check ssot.jobs.yml repo map + dispatch routing for where hosts are selected.
@@ -20,5 +20,9 @@ comms:
 - at: 2026-11-12 14:39
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
