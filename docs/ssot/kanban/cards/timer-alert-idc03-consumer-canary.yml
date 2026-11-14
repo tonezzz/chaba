@@ -1,7 +1,7 @@
 id: timer-alert-idc03-consumer-canary
 title: Timer consumer-canary on idc03 failing
 column: backlog
-updated: 2026-11-13 23:35
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -176,6 +176,10 @@ comms:
   text: '2026-11-13: canary ran but board-api comment POST timed out — same write-lock contention seen fleet-wide
     today. Infra issue not canary bug; will recur until board-api write latency is addressed (card board-api-write-latency
     exists).'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
   type: dispatch
