@@ -4,11 +4,9 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-11-10: `idc02-silent` condition cleared — shipper healthy
-  again.'
-help: Check ada-review-refresh.service on tony-omen and whether the host was removed
-  from --hosts.
-updated: '2026-11-10'
+note: 'Auto-recovered 2026-11-10: `idc02-silent` condition cleared — shipper healthy again.'
+help: Check ada-review-refresh.service on tony-omen and whether the host was removed from --hosts.
+updated: 2026-11-14 14:08
 action:
   status: idle
 comms:
@@ -17,18 +15,20 @@ comms:
   text: put on hold
 - at: 2026-10-05 21:12
   from: devin
-  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed
-    — SIGTERM then SIGKILL, no crash), which made idc02 jobs error (ada-flood-news
-    exit 2 = MDDB refused). mddb restarted 21:06 + vector reindex OK. Watch whether
-    logs resume.'
+  text: 'likely root cause found: mddb primary on idc01 was stopped 21:00 (unattributed — SIGTERM then SIGKILL,
+    no crash), which made idc02 jobs error (ada-flood-news exit 2 = MDDB refused). mddb restarted 21:06 + vector
+    reindex OK. Watch whether logs resume.'
 - at: 2026-10-05 21:15
   from: devin
-  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage
-    window explains the gap
+  text: closed — checker reported auto-recovery (shipper healthy again); mddb outage window explains the gap
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0179'
-brief: 'The log digest flagged something worth a look: logs `idc02` silent 11h. Read
-  the note, then fix it or close the card.'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+brief: 'The log digest flagged something worth a look: logs `idc02` silent 11h. Read the note, then fix it or close
+  the card.'
 ref: OPS-0179
 review_kind: triage
