@@ -1,7 +1,7 @@
 id: dispatch-merged-branch-prune
 title: Prune merged dispatch/* branches + stale worktrees on a schedule
 column: done
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:15
 note: 'Auto-merge (2026-10-05) grows dispatch/* branch count; devin-precleanup guards unmerged work but nothing
   deletes merged branches/worktrees. Spec: extend devin-precleanup-check (or a new weekly timer) to delete dispatch/*
   branches fully merged into origin/<default> and prune their worktrees; never touch dirty or unmerged ones.'
@@ -110,6 +110,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 requests:
 - id: weekly-prune-shipped-tony-omen-run-ok-cl-00ca3b
