@@ -1,7 +1,7 @@
 id: kk-mac-live-jev-probe3
 title: KK-Mac supervised JEV executor probe (tony-dell)
-column: doing
-updated: 2026-11-14 13:09
+column: review
+updated: 2026-11-14 13:10
 brief: Run one supervised explicit kk_mac_local executor job on the trusted tony-dell runner.
 priority: high
 program: devnest
@@ -20,7 +20,7 @@ action:
   task_class: summary
   prompt: 'Summarize this supervised DevNest probe: KK-Mac qwen3:8b is the local bounded read-only lane; heartbeat
     and Ollama health are fresh; no mutation occurred. Return a concise operator summary.'
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-10-29 23:18
     dirty: 1
@@ -32,6 +32,9 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
+  result: 'exit=0 =exited, status=1/FAILURE | devin-task-kk-mac-live-jev-probe3-1794636588.service: Failed with
+    result ''exit-code''. | devin-task-kk-mac-live-jev-probe3-1794636588.service: Consumed 446ms CPU time over 392ms
+    wall clock time, 85.5M memory peak.'
 ref: OPS-0988
 comms:
 - at: 2026-10-29 23:16
@@ -95,3 +98,9 @@ comms:
 - at: 2026-11-14 13:09
   from: chaba
   text: started devin-task-kk-mac-live-jev-probe3-1794636588 on tony-dell (dispatch)
+- at: 2026-11-14 13:10
+  from: tony-dell
+  text: 'finished (ok): exit=0 =exited, status=1/FAILURE | devin-task-kk-mac-live-jev-probe3-1794636588.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
