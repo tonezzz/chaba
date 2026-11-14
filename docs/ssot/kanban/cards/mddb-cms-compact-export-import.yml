@@ -1,7 +1,7 @@
 id: mddb-cms-compact-export-import
 title: 'Compact mddb-cms: 23G DB → export/import (est <1G live data)'
 column: done
-updated: 2026-11-13 14:10
+updated: 2026-11-14 14:14
 spec: 'mddb-cms on idc03 is 23G but holds only ~8k docs across 19 colls (~10KB avg) — ~22G is freelist/dead-page
   bloat, same signature as mddb-ops 31G→2.8G. repair-db proven unusable (FTS nil-ptr). Use the proven path: /tmp/ops-compact/export-import.sh
   pattern — export all 19 collections (infrastructure-ssot 5645, ada-cms-pages 1253, kb-*, documents, chaba-lessons…),
@@ -125,6 +125,10 @@ comms:
 - at: 2026-11-13 14:10
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 recoverability: R2
 auto_done_when:
 - verified_true
