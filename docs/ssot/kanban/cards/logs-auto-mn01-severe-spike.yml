@@ -1,34 +1,34 @@
 id: logs-auto-mn01-severe-spike
 title: logs `mn01` 1038 severe/24h
-brief: 'The log digest flagged something worth a look: logs `mn01` 1038 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `mn01` 1038 severe/24h. Read the note, then fix it or
+  close the card.'
 column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-11-07: `mn01-severe-spike` condition cleared — shipper
-  healthy again.'
-help: Read the digest's repeat-offender lines for mn01; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-11-07'
+note: 'Auto-recovered 2026-11-07: `mn01-severe-spike` condition cleared — shipper healthy again.'
+help: Read the digest's repeat-offender lines for mn01; this is a real incident signal, not pipeline breakage.
+updated: 2026-11-14 14:06
 comms:
 - at: 2026-10-10 09:51
   from: devin
-  text: 'closed as noise-class: re-measured 60/24h (marginal over 40 limit), 57/60
-    = xmeye-vms wine/x11vnc stderr churn — same stderr-scoring artifact as mddb. Tuning
-    note carried into card mddb-stderr-severity-artifact (fix B covers the digest
-    side).'
+  text: 'closed as noise-class: re-measured 60/24h (marginal over 40 limit), 57/60 = xmeye-vms wine/x11vnc stderr
+    churn — same stderr-scoring artifact as mddb. Tuning note carried into card mddb-stderr-severity-artifact (fix
+    B covers the digest side).'
 - at: 2026-10-09 17:44
   from: devin
-  text: 'RE-MEASURED: 60 severe/24h (limit 40) — marginal, just over threshold. Worth
-    one look; not a fire.'
+  text: 'RE-MEASURED: 60 severe/24h (limit 40) — marginal, just over threshold. Worth one look; not a fire.'
 - at: 2026-10-09 18:09
   from: devin
-  text: 'DRILLED: 57 of 60 = xmeye-vms-vnc container (wine/x11vnc noise — VNC session
-    churn). Marginal over threshold, quiet last 2h. Not a fire; note for the next
-    digest tuning — container stderr noise counts as severe same as mddb on idc03.'
+  text: 'DRILLED: 57 of 60 = xmeye-vms-vnc container (wine/x11vnc noise — VNC session churn). Marginal over threshold,
+    quiet last 2h. Not a fire; note for the next digest tuning — container stderr noise counts as severe same as
+    mddb on idc03.'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0276'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 ref: OPS-0276
