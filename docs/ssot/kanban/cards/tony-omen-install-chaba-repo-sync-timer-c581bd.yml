@@ -23,6 +23,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
   Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,
   and enable --now the timer. The host is tony-omen and the repo is chaba. The done-condition is verified when systemctl
