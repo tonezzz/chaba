@@ -1,7 +1,7 @@
 id: timer-alert-idc03-focus-dispatcher-overnight
 title: Timer focus-dispatcher-overnight on idc03 failing
 column: backlog
-updated: 2026-11-14 03:23
+updated: 2026-11-14 14:15
 priority: high
 tags:
 - timer-alert
@@ -1008,6 +1008,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-14 03:00) of `focus-dispatcher-overnight.service` on `idc03` result=exit-code
     — investigate journal: `journalctl --user -u focus-dispatcher-overnight.service` on the host. See CMS `timer-timeline-idc03`.'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of focus-dispatcher-overnight.service on idc03 from the 11-08 03:00 run, which exited
   with code 1 during the mddb-embed runaway window. Examine the journal via journalctl --user -u focus-dispatcher-overnight.service
   on idc03 and cross-reference CMS timer-timeline-idc03. The done-condition is confirming successful completion
