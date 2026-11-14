@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-michael-dev-parity
 title: Timer michael-dev-parity on tony-omen failing
 column: doing
-updated: 2026-11-14 08:34
+updated: 2026-11-14 14:15
 priority: high
 tags:
 - timer-alert
@@ -1475,6 +1475,10 @@ comms:
   text: 'Connectivity fixed via OPS-0040 (tailnet bind + http scheme, PR #173). Check now runs and reports genuine
     entity drift — ha-missing: dev_wind_speed, dev_wind_speed_meters, dev_wind_to, forecast_baan; dev-missing: script.turn_on.
     Card stays open until mirror-sweep goes green or drift is triaged.'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: failed
   type: dispatch
