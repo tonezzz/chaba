@@ -1,0 +1,32 @@
+# kk-mac-image-render-poc — bounded single-image SDXL render on KK-Mac
+# (Adobe Stock Nest pipeline, card adobe-stock-kk-mac-render-poc).
+#
+# Runs through the gdrive:ada-nest-kk-llm queue on KK-Mac under the
+# dedicated ~/.local/share/kk-mac-image-renderer venv (torch+diffusers,
+# MPS). render.py reads inputs/render-request.json and REFUSES to render
+# unless that request is a real approval: status=approved,
+# owner_approved=true, approved_by set, adobe_upload=false, the request's
+# model pin matches the venv's model-manifest.json, the pinned HF snapshot
+# is already on disk (no downloads), and the host passes the request's
+# own disk/load limits. The checked-in request is a template that fails
+# closed — staging it produces a fail verdict, never an image.
+#
+# Emits out/preflight.json, out/<output_name>.png, out/render-manifest.json,
+# out/verdict.json. Safety: no Adobe upload, no browser/GUI, no creds, no
+# arbitrary shell (fixed argv below), exactly one image, no retry — a gate
+# failure exits nonzero so the worker marks the pack failed.
+name: kk-mac-image-render-poc
+needs:
+  gpu_gb: 0        # MPS path — no CUDA requirement; gate is the venv
+  disk_gb: 30      # mirror of the request floor limits.min_disk_free_gb
+  ram_gb: 24       # SDXL fp16 + fp32 CPU VAE decode on unified memory
+  egress_only_ok: true
+timeout_s: 3600
+artifacts:
+  - packs/kk-mac-image-render-poc/out/preflight.json
+  - packs/kk-mac-image-render-poc/out/*.png
+  - packs/kk-mac-image-render-poc/out/render-manifest.json
+  - packs/kk-mac-image-render-poc/out/verdict.json
+run_sh: |
+  exec "$HOME/.local/share/kk-mac-image-renderer/bin/python" \
+    "$PACK_DIR/render.py" --pack-dir "$PACK_DIR"
