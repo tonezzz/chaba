@@ -1,7 +1,7 @@
 id: ada-docs-search-drift
 title: docs tool drifts off-topic — UPS query surfaced Starboard catalog
-column: review
-updated: 2026-11-14 08:45
+column: backlog
+updated: 2026-11-14 08:47
 spec: 'Text-mode session 4585f3b060: user asked แสดงข้อมูลยูพีเอส after a morning UPS-battery thread. docs FTS returned
   Starboard product catalog (01cover) instead of the recent UPS context. Fixes: recency/session-topic boost in docs
   search ranking, or model-side clarification when top hit is unrelated to active topic. Also related loop-close
@@ -52,8 +52,11 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261114-084435-text-mode-session-4585f3b060-u,
     branch dispatch/20261114-084435-text-mode-session-4585f3b060-u'
+- at: 2026-11-14 08:47
+  from: tony
+  text: re-spawned from report page
 action:
-  status: done
+  status: queued
   type: dispatch
   repo: chaba
   model: litellm/or-free-nemotron-ultra
@@ -93,9 +96,9 @@ action:
       stale_s: 300
     timeout_s: 300
   lane: codemod
-  runner: tony-dell
   result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261114-084435-text-mode-session-4585f3b060-u.service: Main
     process exited, code=exited, status=1/FAILURE | devin-task-20261114-084435-text-mode-session-4585f3b060-u.service:
     Failed with result ''exit-code''.'
+  host: idc02
 review_kind: verify
 claim: {}
