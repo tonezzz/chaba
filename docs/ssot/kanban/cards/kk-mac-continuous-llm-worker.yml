@@ -1,7 +1,7 @@
 id: kk-mac-continuous-llm-worker
 title: Continuous KK-Mac LLM pack worker with heartbeat/load gates
 column: doing
-updated: 2026-11-14 13:57
+updated: 2026-11-14 14:13
 brief: Turn the proven KK-Mac local LLM adapter into a continuously consumable Nest lane so eligible read-only job
   packages arrive without manual one-off commands.
 priority: high
@@ -129,6 +129,13 @@ comms:
     5 done so far, 2 fallback-held (invalid_output), 1 running, 1 unadmitted-class correctly never claimed. Real
     bugs found+fixed: MemoryMonitor _stop shadowing Thread._stop (TypeError on join), stale alias heartbeat doc
     shadowing fresh one, per-pack crash con'
+- at: 2026-11-14 14:13
+  from: devin
+  text: 'DONE — dedicated kk_mac_lane_worker shipped (c1bf7a9a65). Soak gdrive:ada-nest/kk-llm-soak-20261114: 11
+    packs = 7 done-verified, 3 fallback-held (invalid_output + one real load_high owner-busy), 1 video_render pack
+    never claimed, 0 failed; ~1.0s mean wall, 390 eval tokens, no live-lane interference. Soak caught+fixed: MemoryMonitor
+    Thread._stop shadowing, stale heartbeat-alias shadowing, per-pack crash propagation, launchd PATH. Full suite
+    1487 pass. Pending approval: launchd plist cutover on kk'
 review_kind: verify
 action:
   type: dispatch
