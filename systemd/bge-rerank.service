@@ -12,7 +12,9 @@ WorkingDirectory=%h/CascadeProjects/chaba
 Environment=RERANK_ADDR=100.75.102.88:11555
 Environment=RERANK_MODEL=BAAI/bge-reranker-v2-m3
 Environment=RERANK_MAX_LEN=320
+Environment=RERANK_AUTH_REQUIRED=1
 Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+EnvironmentFile=%h/.config/secrets/bge-rerank.env
 ExecStart=%h/.local/share/chaba-ml-gpu-venv/bin/python %h/CascadeProjects/chaba/scripts/ada/bge-rerank-server.py
 Restart=on-failure
 RestartSec=10
