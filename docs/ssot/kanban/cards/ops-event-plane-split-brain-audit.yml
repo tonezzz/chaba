@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
-column: backlog
-updated: 2026-11-14 08:43
+column: doing
+updated: 2026-11-14 08:44
 priority: medium
 tags:
 - mddb
@@ -33,6 +33,9 @@ comms:
 - at: 2026-11-14 08:43
   from: tony
   text: re-spawned from report page
+- at: 2026-11-14 08:44
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
   repo: chaba
@@ -72,4 +75,6 @@ action:
       required: true
       stale_s: 300
     timeout_s: 300
-  status: queued
+  status: running
+  lane: codemod
+  runner: tony-dell
