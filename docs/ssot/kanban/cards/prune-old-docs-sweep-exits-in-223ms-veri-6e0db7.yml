@@ -1,7 +1,7 @@
 id: prune-old-docs-sweep-exits-in-223ms-veri-6e0db7
 title: prune-old-docs sweep exits in 223ms — verify it actually deletes
 column: done
-updated: 2026-11-12 08:22
+updated: 2026-11-14 14:14
 brief: Timer ran 09:35 status=0 in 223ms — too fast to page 100k+ docs. Ops still holds host-logs docs older than
   the 3d policy. Either sweep silently no-ops or listing is failing.
 ref: OPS-0026
@@ -39,5 +39,9 @@ comms:
 - at: 2026-11-12 08:22
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
