@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: done
-updated: 2026-11-13 23:23
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -99,6 +99,10 @@ comms:
 - at: 2026-11-13 23:23
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the recurring exit-code failure of the `ha-auth-watch.service` on `tony-dell` by inspecting the
   user journal via `journalctl --user -u ha-auth-watch.service`. Resolve or decommission the service as tracked
   under OPS-0749, noting that it still polls `tony-ha` after a move to `tony-omen`. The task is complete when `ha-auth-watch.service`
