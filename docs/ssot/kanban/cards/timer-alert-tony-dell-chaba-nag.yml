@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-nag
 title: Timer chaba-nag on tony-dell disabled
 column: done
-updated: 2026-11-12 09:39
+updated: 2026-11-14 14:08
 priority: high
 tags:
 - timer-alert
@@ -1831,6 +1831,10 @@ comms:
 - at: 2026-11-12 09:39
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Ensure the systemd user timer `chaba-nag.timer` is enabled and active on host `tony-dell` as required by the
   audit census critical list. Check the current status of the timer and run `systemctl --user enable --now chaba-nag.timer`
   if it is disabled and not intentionally deactivated. The task is successfully completed when `systemctl --user
