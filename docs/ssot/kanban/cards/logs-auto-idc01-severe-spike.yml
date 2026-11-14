@@ -5,18 +5,15 @@ review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-20: `idc01-severe-spike` condition cleared — shipper
-  healthy again.'
-help: Read the digest's repeat-offender lines for idc01; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-10-20'
+note: 'Auto-recovered 2026-10-20: `idc01-severe-spike` condition cleared — shipper healthy again.'
+help: Read the digest's repeat-offender lines for idc01; this is a real incident signal, not pipeline breakage.
+updated: 2026-11-14 14:06
 comms:
 - at: 2026-10-04 14:16
   from: devin
-  text: 'Triaged 2026-10-04: 190 severe lines = mostly benign service-restart churn
-    (ada-ha-* TERM on restarts). Real signal: mddb.service SIGKILLed 2x (21:50, 05:00)
-    — podman process killed, not an OOM loop; mddb healthy now (487MB/33GB, active).
-    Round-hour timing suggests a scheduled job killed it (backup/compaction window?).
+  text: 'Triaged 2026-10-04: 190 severe lines = mostly benign service-restart churn (ada-ha-* TERM on restarts).
+    Real signal: mddb.service SIGKILLed 2x (21:50, 05:00) — podman process killed, not an OOM loop; mddb healthy
+    now (487MB/33GB, active). Round-hour timing suggests a scheduled job killed it (backup/compaction window?).
     Also noted: 6 failed units on idc01 (ada-bench-casting, ada-recall-canary, ada-scenario-{casting,reports,tools},
     cam-wall-pull-vps) — weekly scenario suite + canary failing, worth'
 - at: 2026-10-04 17:58
@@ -43,9 +40,13 @@ comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0268'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
   verified: true
-brief: 'The log digest flagged something worth a look: logs `idc01` 73 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `idc01` 73 severe/24h. Read the note, then fix it or
+  close the card.'
 ref: OPS-0268
