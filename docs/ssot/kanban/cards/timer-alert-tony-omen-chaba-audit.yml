@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-chaba-audit
 title: Timer chaba-audit on tony-omen disabled
 column: backlog
-updated: 2026-11-13 23:39
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -49,6 +49,10 @@ comms:
   from: devin
   text: '2026-11-13: exit 1 after 50s real run (158M peak). Weekly SSOT/memory/services/timers audit — failure is
     inside the audit checks themselves, not infra. Needs the audit score/output artifact to see which check failed.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Ensure that `chaba-audit.timer` is enabled and active on the host `tony-omen`. Execute `systemctl --user enable
   --now chaba-audit.timer` to bring the critical audit census timer to its expected active state. Verify success
   by confirming the systemd user timer is active and running.
