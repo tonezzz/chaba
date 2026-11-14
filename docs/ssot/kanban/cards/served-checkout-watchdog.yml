@@ -1,7 +1,7 @@
 id: served-checkout-watchdog
 title: served-checkout watchdog — alert on idc03 writer divergence/dirty before board-api writes degrade
 column: done
-updated: 2026-11-08 07:13
+updated: 2026-11-14 14:14
 tags:
 - ops
 - served-checkout
@@ -35,5 +35,9 @@ comms:
     (board-api.py mtime newer than ExecMainStartTimestampUSec — the Nov-7 pre-restart-code case). Verified live
     on idc03: ok, rc=0. Also fixed two pre-existing gate failures: test_dead_pause_pid_removed DEV_SHM isolation
     (was deleting the host real libpod lock during test runs) + refre'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
