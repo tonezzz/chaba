@@ -179,21 +179,64 @@ def _disk_pct() -> float | None:
         return None
 
 
-def _temp_c() -> float | None:
-    best = None
+def _temps() -> tuple[float | None, dict]:
+    zones = {}
     for z in sorted(__import__("glob").glob(
             "/sys/class/thermal/thermal_zone*/temp")):
         v = _run(["cat", z])
         if v.isdigit():
-            t = int(v) / 1000.0
-            best = t if best is None else max(best, t)
-    return round(best, 1) if best is not None else None
+            name = z.split("thermal_zone")[1].split("/")[0]
+            zones[f"zone{name}"] = round(int(v) / 1000.0, 1)
+    if not zones:
+        return None, {}
+    return round(max(zones.values()), 1), zones
+
+
+
+def _swap_pct() -> float | None:
+    if os.path.exists("/proc/meminfo"):
+        kv = {}
+        for l in open("/proc/meminfo"):
+            k, _, v = l.partition(":")
+            kv[k.strip()] = int(v.split()[0])
+        total, free = kv.get("SwapTotal"), kv.get("SwapFree")
+        if total:
+            return round(100.0 * (total - (free or 0)) / total, 1)
+        return 0.0 if total == 0 else None
+    if platform.system() == "Darwin":
+        out = _run(["sysctl", "-n", "vm.swapusage"])
+        # "total = 2048.00M  used = 512.00M  free = ..."
+        try:
+            tot = float(out.split("total =")[1].split("M")[0])
+            used = float(out.split("used =")[1].split("M")[0])
+            return round(100.0 * used / tot, 1) if tot else 0.0
+        except Exception:
+            return None
+    return None
+
+
+def _net() -> tuple[int | None, int | None]:
+    rx = tx = None
+    if os.path.exists("/proc/net/dev"):
+        rx = tx = 0
+        for l in open("/proc/net/dev").read().splitlines()[2:]:
+            if ":" not in l:
+                continue
+            name, _, rest = l.partition(":")
+            if name.strip() == "lo":
+                continue
+            f = rest.split()
+            if len(f) >= 9:
+                rx += int(f[0]); tx += int(f[8])
+    return rx, tx
 
 
 
 def collect() -> dict:
     boot = _run(["sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
+    temps = _temps()
+    rx, tx = _net()
     d = {
         "device": NAME,
         "ts": int(time.time()),
@@ -207,7 +250,11 @@ def collect() -> dict:
         "load1": _load(),
         "mem_pct": _mem_pct(),
         "disk_pct": _disk_pct(),
-        "temp_c": _temp_c(),
+        "swap_pct": _swap_pct(),
+        "net_rx_b": rx,
+        "net_tx_b": tx,
+        "temp_c": temps[0],
+        "temp_zones": temps[1],
         "top_procs": _procs(),
         "battery": _battery(),
         "tailnet": _tailnet(),

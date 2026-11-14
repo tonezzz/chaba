@@ -111,21 +111,54 @@ def push_device(dev: str, token: str) -> str:
             "icon": "mdi:clock-outline",
             **common_attrs(doc, age),
         })
-    def _metric(key, suffix, label, unit, icon):
+    def _metric(key, suffix, label, unit, icon, extra=None):
         v = doc.get(key)
         if v is None:
             return
-        _push(token, f"sensor.{eid}_{suffix}", v, {
-            "friendly_name": f"{dev} {label}",
-            "unit_of_measurement": unit,
-            "state_class": "measurement",
-            "icon": icon,
-            **common_attrs(doc, age),
-        })
+        attrs = {"friendly_name": f"{dev} {label}",
+                 "unit_of_measurement": unit,
+                 "state_class": "measurement",
+                 "icon": icon,
+                 **common_attrs(doc, age)}
+        if extra:
+            attrs.update(extra)
+        _push(token, f"sensor.{eid}_{suffix}", v, attrs)
     _metric("load1", "load", "load", None, "mdi:server")
     _metric("mem_pct", "mem", "memory", "%", "mdi:memory")
     _metric("disk_pct", "disk", "disk", "%", "mdi:harddisk")
-    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer")
+    _metric("swap_pct", "swap", "swap", "%", "mdi:swap-horizontal")
+    _metric("temp_c", "temp", "temp", "°C", "mdi:thermometer",
+            {"temps": doc.get("temp_zones") or {}})
+    for key, suffix, label, icon in (
+            ("net_rx_b", "net_rx", "net rx", "mdi:download-network"),
+            ("net_tx_b", "net_tx", "net tx", "mdi:upload-network")):
+        v = doc.get(key)
+        if v is not None:
+            _push(token, f"sensor.{eid}_{suffix}", round(v / 1e9, 2), {
+                "friendly_name": f"{dev} {label}",
+                "unit_of_measurement": "GB",
+                "state_class": "total_increasing",
+                "icon": icon,
+                **common_attrs(doc, age),
+            })
+    tp = (doc.get("top_procs") or [None])[0]
+    if tp:
+        _push(token, f"sensor.{eid}_top_proc", str(tp)[:80], {
+            "friendly_name": f"{dev} top proc",
+            "icon": "mdi:application-cog",
+            **common_attrs(doc, age),
+        })
+    wan = doc.get("wan") or {}
+    for key, suffix, label in (("city", "wan_city", "wan city"),
+                               ("country", "wan_country", "wan country"),
+                               ("org", "wan_org", "wan isp")):
+        v = wan.get(key)
+        if v:
+            _push(token, f"sensor.{eid}_{suffix}", str(v)[:80], {
+                "friendly_name": f"{dev} {label}",
+                "icon": "mdi:earth",
+                **common_attrs(doc, age),
+            })
     users = doc.get("users") or []
     _push(token, f"sensor.{eid}_users", len(users), {
         "friendly_name": f"{dev} users",
