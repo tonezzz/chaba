@@ -71,9 +71,8 @@ def verify(run_dir):
             tw = words(task)
             qw = words(q)
             ov = len(tw & qw)
-            echoed = bool(tw) and (
-                ov / len(tw) >= 0.4 or
-                (qw and ov / len(qw) >= 0.6))
+            echoed = bool(tw) and bool(qw) and (
+                ov / len(tw) >= 0.4 or ov / len(qw) >= 0.6)
         checks["question echoed"] = echoed
 
     verdict = "pass" if all(v is True for v in checks.values()) \
