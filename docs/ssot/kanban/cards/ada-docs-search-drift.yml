@@ -1,7 +1,7 @@
 id: ada-docs-search-drift
 title: docs tool drifts off-topic — UPS query surfaced Starboard catalog
 column: backlog
-updated: 2026-11-13 20:52
+updated: 2026-11-14 08:43
 spec: 'Text-mode session 4585f3b060: user asked แสดงข้อมูลยูพีเอส after a morning UPS-battery thread. docs FTS returned
   Starboard product catalog (01cover) instead of the recent UPS context. Fixes: recency/session-topic boost in docs
   search ranking, or model-side clarification when top hit is unrelated to active topic. Also related loop-close
@@ -21,5 +21,46 @@ comms:
     BLOCKER: idc02 opencode lane is at S0 after the 2026-11-12 OPS-1255 stor-01 rollback — staged dispatch admits
     only S3, so requalification S0->S1->S2->S3 must complete first. Profile allowlist gap fixed in PR #169 (merged):
     ssot-research now admits the verified free mo'
+- at: 2026-11-14 08:43
+  from: tony
+  text: re-spawned from report page
 action:
-  status: idle
+  status: queued
+  type: dispatch
+  repo: chaba
+  model: litellm/or-free-nemotron-ultra
+  executor: opencode
+  agent_profile: ssot-research
+  target_host: idc02
+  artifact: evals/opencode-lane/out/ada-docs-search-drift.json
+  task_class: read_only
+  llm_key_alias: chaba
+  lane_envelope:
+    id: s3-docs-search-drift
+    card: ada-docs-search-drift
+    task_class: read_only
+    stage: S3
+    target_host: idc02
+    executor: opencode
+    profile: ssot-research
+    model: litellm/or-free-nemotron-ultra
+    provider: litellm
+    unattended: true
+    mcp_allowlist: []
+    allowed_paths:
+    - evals/opencode-lane/out/
+    artifact:
+      path: evals/opencode-lane/out/ada-docs-search-drift.json
+      schema: 'evals/opencode-lane/profiles/ssot-research/fixture/task.yaml #contract.required_fields'
+    verifier:
+      type: held_out_py
+      ref: evals/opencode-lane/profiles/ssot-research/fixture/verify.py
+    escalation:
+      on_fail: manual
+      max_retries: 0
+    rollback:
+      kind: none
+    heartbeat:
+      required: true
+      stale_s: 300
+    timeout_s: 300
