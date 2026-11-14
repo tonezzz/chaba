@@ -1,6 +1,6 @@
 id: ada-docs-search-drift
 title: docs tool drifts off-topic — UPS query surfaced Starboard catalog
-column: doing
+column: review
 updated: 2026-11-14 08:45
 spec: 'Text-mode session 4585f3b060: user asked แสดงข้อมูลยูพีเอส after a morning UPS-battery thread. docs FTS returned
   Starboard product catalog (01cover) instead of the recent UPS context. Fixes: recency/session-topic boost in docs
@@ -34,8 +34,12 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-14 08:45
+  from: tony-dell
+  text: 'finished (ok): exit=0 .6, deepseek-v4-pro | devin-task-20261114-084435-text-mode-session-4585f3b060-u.service:
+    Main process exited, cod'
 action:
-  status: running
+  status: done
   type: dispatch
   repo: chaba
   model: litellm/or-free-nemotron-ultra
@@ -76,3 +80,8 @@ action:
     timeout_s: 300
   lane: codemod
   runner: tony-dell
+  result: 'exit=0 .6, deepseek-v4-pro | devin-task-20261114-084435-text-mode-session-4585f3b060-u.service: Main
+    process exited, code=exited, status=1/FAILURE | devin-task-20261114-084435-text-mode-session-4585f3b060-u.service:
+    Failed with result ''exit-code''.'
+review_kind: verify
+claim: {}
