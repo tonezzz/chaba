@@ -1,7 +1,7 @@
 id: kk-mac-gateway-admission-shim
 title: Admission shim in front of kk-mac ollama tunnel for LiteLLM legs
 column: doing
-updated: 2026-11-14 10:37
+updated: 2026-11-14 10:38
 priority: medium
 tags:
 - kk-mac
@@ -37,6 +37,10 @@ comms:
   text: '[dispatch] picked up. Live config confirms kk-mac leg-1 on summary/classify/bench + leg-2 on chat-local.
     Building kkmac-admission-shim (127.0.0.1:11447 -> tunnel :11445) reusing kk_mac_admission.snapshot(); will repoint
     litellm api_base + sync repo drift.'
+- at: 2026-11-14 10:38
+  from: devin
+  text: 'shim verified locally: temp=75 heartbeat -> 503 in ~14ms; healthy snapshot -> admit; dead upstream -> 502.
+    Wiring unit + config now.'
 action:
   type: dispatch
   repo: chaba
