@@ -81,7 +81,7 @@ def _wan() -> dict:
 
 def _battery() -> dict | None:
     if platform.system() == "Darwin":
-        out = _run(["pmset", "-g", "batt"])
+        out = _run(["/usr/bin/pmset", "-g", "batt"])
         if "%" in out:
             return {"raw": out.splitlines()[-1][:120]}
         return None
@@ -162,7 +162,7 @@ def _mem_pct() -> float | None:
             ps = int(out.split("page size of")[1].split("bytes")[0])
             vals = {l.split(":")[0].strip(): int(l.split(":")[1].strip().rstrip("."))
                     for l in out.splitlines() if ":" in l}
-            total_b = int(_run(["sysctl", "-n", "hw.memsize"]))
+            total_b = int(_run(["/usr/sbin/sysctl", "-n", "hw.memsize"]))
             free = (vals.get("Pages free", 0)
                     + vals.get("Pages inactive", 0)) * ps
             return round(100.0 * (total_b - free) / total_b, 1)
@@ -204,7 +204,7 @@ def _swap_pct() -> float | None:
             return round(100.0 * (total - (free or 0)) / total, 1)
         return 0.0 if total == 0 else None
     if platform.system() == "Darwin":
-        out = _run(["sysctl", "-n", "vm.swapusage"])
+        out = _run(["/usr/sbin/sysctl", "-n", "vm.swapusage"])
         # "total = 2048.00M  used = 512.00M  free = ..."
         try:
             tot = float(out.split("total =")[1].split("M")[0])
@@ -233,7 +233,7 @@ def _net() -> tuple[int | None, int | None]:
 
 
 def collect() -> dict:
-    boot = _run(["sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
+    boot = _run(["/usr/sbin/sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
     temps = _temps()
     rx, tx = _net()
