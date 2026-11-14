@@ -229,6 +229,11 @@ comms:
 - at: 2026-11-14 18:15
   from: tony
   text: moved done -> backlog
+- at: 2026-11-14 18:15
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-14 18:00) of `served-checkout-watchdog.service` on `idc03`
+    result=exit-code — investigate journal: `journalctl --user -u served-checkout-watchdog.service` on the host.
+    See CMS `timer-timeline-idc03`.'
 spec: Investigate why the user service `served-checkout-watchdog.service` on host `idc03` failed with an exit-code
   result during its recent runs, as indicated by the recurring timer alerts and journal entries. Review the journal
   logs via `journalctl --user -u served-checkout-watchdog.service` on `idc03` and cross-reference the CMS `timer-timeline-idc03`
