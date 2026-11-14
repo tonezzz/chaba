@@ -1,7 +1,7 @@
 id: deploy-gate-api-gaps
 title: deploy-preflight gaps found in first live rehearsal
 column: done
-updated: 2026-11-07 19:07
+updated: 2026-11-14 14:10
 priority: medium
 note: 'First real gate run (ADA-1113, 2026-11-07) surfaced two contract gaps: (1) board-api /card silently drops
   the deploy: block — not a whitelisted spawn field, had to hand-edit card YAML on the served checkout; add deploy
@@ -22,5 +22,9 @@ comms:
 - at: 2026-11-07 19:07
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
