@@ -2,7 +2,7 @@ id: runner-per-executor-caps
 title: 'runner-agent: per-executor claim caps + remote-lane load-gate exemption — stop jules/nlm idle slots starving
   local work'
 column: backlog
-updated: 2026-11-12 14:08
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - devnest
@@ -247,3 +247,7 @@ comms:
     (this was the FAILED_PRECONDITION root cause, not quota). Lane is dead for new work. Reroute needed: devin lane
     for code work, script/kk_mac for routine, or wait for opencode lane re-graduation (OPS-1255, now re-earning
     at S0). Held idle — no claim churn.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
