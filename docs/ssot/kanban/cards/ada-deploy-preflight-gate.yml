@@ -1,7 +1,7 @@
 id: ada-deploy-preflight-gate
 title: Deploy-preflight gate — review-ready → preflight → Tony approval → deploy → verify
 column: done
-updated: 2026-11-07 18:51
+updated: 2026-11-14 14:07
 brief: 'Last missing piece of the Ada dev-control-plane loop. Cards currently merge to done with no production-deploy
   stage. Build the gate: card declares deploy target, system collects preflight evidence, Tony approves explicitly,
   deploy runs, post-deploy surface is verified.'
@@ -67,6 +67,10 @@ comms:
     ok -> deploy.status=deployed. Two bugs found+fixed live: PR#91 suggested-must-be-option-string (400 on raise),
     PR#93 verify retry through warmup (false-failed rc=0 deploy). Prod verified: checkout at 7549e6c, tool_guide
     entries present, /api/health ok=true degraded=false. Residual gaps '
+- at: 2026-11-14 14:07
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
   status: done
