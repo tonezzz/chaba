@@ -85,6 +85,13 @@ comms:
     workers long-poll GET /v1/job + POST /v1/result; instant 503 when no worker seen in 45s, 7s job TTL under the
     pool deadline, claim lease requeues dead workers. (2) Shim gained a DEFER tier — EMBED_POOL_DEFER_UPSTREAMS
     joins the race only after DEFER_AFTER_MS with no primary '
+- at: 2026-11-14 13:21
+  from: devin
+  text: '[done 2026-11-14, dispatch tony-omen] Lane B shipped to worktree: nest workers now sit behind the pool''s
+    one ollama-shaped endpoint. (1) scripts/nest/embed-nest-bridge.py — pull->push bridge: POST /api/embed enqueues+blocks,
+    workers long-poll GET /v1/job + POST /v1/result; instant 503 when no worker seen in 45s, 7s job TTL under the
+    pool deadline, claim lease requeues dead workers. (2) Shim gained a DEFER tier — EMBED_POOL_DEFER_UPSTREAMS
+    joins the race only after DEFER_AFTER_MS with no primary '
 action:
   type: dispatch
   repo: chaba
