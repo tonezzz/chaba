@@ -1,7 +1,7 @@
 id: adobe-stock-kk-mac-render-poc
 title: Adobe Stock KK-Mac supervised image-render POC pack
-column: doing
-updated: 2026-11-14 11:10
+column: review
+updated: 2026-11-14 11:22
 spec: 'Build the first bounded image-render slice for the Adobe Stock Nest pipeline.
 
 
@@ -491,6 +491,9 @@ comms:
     + render.py + disabled inputs/render-request.json. 16 fail-closed gates (approval, owner_approved, adobe_upload=false,
     model manifest/revision match, local snapshot, disk 30GiB floor, load limit, single image, render window). Verified:
     8/8 new stdlib tests, 78 tests/colab OK, n'
+- at: 2026-11-14 11:22
+  from: tony-dell
+  text: 'finished (ok): exit=0 ntainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261114-105957-build-the-first-boun'
 requests:
 - id: kk-mac-disk-for-image-render
   ask: KK-Mac has only 15GiB free, below the 30GiB render floor. How should we unblock the Adobe Stock comparison-B
@@ -525,7 +528,11 @@ action:
   repo: chaba
   lane: codemod
   executor: jules
-  status: running
+  status: done
   last_failure: 'start failed: jules daily cap reached (20 sessions today >= 20) — retry after the daily window'
   attempts: 1
   runner: tony-dell
+  result: 'exit=0 ntainers.image.url=https://github.com/github/github-mcp-server) | devin-task-20261114-105957-build-the-first-bounded-image-.service:
+    Consumed 2min 29.615s CPU time over 11min 19.671s wall clock time, 1G memory peak, 603.2M memory swap peak.'
+  verified: false
+claim: {}
