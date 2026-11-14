@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-14 14:00) of `chaba-report-feed.service` on `tony-omen` result=exit-code — investigate journal:
-  `journalctl --user -u chaba-report-feed.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-14 14:00) of `chaba-report-feed.service` on `tony-omen` result=exit-code — investigate
+  journal: `journalctl --user -u chaba-report-feed.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: KNB-0123
 comms:
 - at: 2026-11-14 14:14
@@ -18,3 +18,11 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-14 14:00) of `chaba-report-feed.service` on `tony-omen` result=exit-code
     — investigate journal: `journalctl --user -u chaba-report-feed.service` on the host. See CMS `timer-timeline-tony-omen`.'
+- at: 2026-11-14 19:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of the `chaba-report-feed.service` user timer on `tony-omen`, which exited
+  with a non-zero exit code during the 11-14 14:00 run. Inspect the logs on the host using `journalctl
+  --user -u chaba-report-feed.service` and review the related CMS entry `timer-timeline-tony-omen`. The
+  done-condition is verified when the root cause of the exit-code failure is identified from the journal
+  logs and documented in the card notes.
