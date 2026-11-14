@@ -1,7 +1,7 @@
 id: board-write-lock-scope-narrowing
 title: 'Narrow board-api.lock hold: lock-free no-op ticks in git-safe-pull'
 column: done
-updated: 2026-11-07 12:41
+updated: 2026-11-14 14:10
 brief: Card flock held across whole pull cycle even for no-op ticks; restructure so lock is only taken when a pull
   actually mutates the tree.
 priority: medium
@@ -41,3 +41,7 @@ comms:
 - at: 2026-11-07 12:41
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
