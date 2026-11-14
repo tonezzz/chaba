@@ -444,7 +444,9 @@ jobs:
   timeout: 30s
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/agent.py
   note: hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/ users/top-procs) to MDDB device-telemetry
-    collection on idc03 (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
+    collection on mddb-ops :11026 (embeddings OFF — MEM-0101, moved off embed-paying
+    leader :11023 2026-11-14; tony-macbook beacon still on :11023 until its launchd
+    copy is refreshed) (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
     scripts/device-telemetry/
 - id: telemetry-ha-push
   name: Device telemetry -> tony-ha sensor mirror
@@ -481,7 +483,7 @@ jobs:
     DEVICE_TELEMETRY_RETENTION_DAYS: '7'
   note: 'retention sweep for the beacon collection — deletes <dev>/<unix-ts> history keys older than 7d; never touches
     <dev>/latest or _watch/<dev> armed-watch docs. 7d over 30d: HA logbook already covers long-range history; ~300
-    docs/day/device -> ~2k keys/device steady-state. Runs on idc03 beside the MDDB leader (:11023). Install on the
+    docs/day/device -> ~2k keys/device steady-state. Runs on idc03 against mddb-ops :11026 (collection moved off the embed-paying leader :11023 2026-11-14, MEM-0101); a final :11023-side prune ran at cutover — ~3.7k residual keys age out unmanaged, harmless. Install on the
     host: scripts/device-telemetry/install.sh prune — self-contained ~/.local/share copy like the beacon, so idc03
     checkout drift can never break it. Card device-telemetry-prune; added 2026-10-10.'
 - id: daily-brief

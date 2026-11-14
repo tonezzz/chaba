@@ -10,7 +10,7 @@ Nightly on idc03 via ssot.jobs.yml (job:device-telemetry-prune).
   prune.py --dry-run   # count only
 
 Env:
-  DEVICE_TELEMETRY_MDBB            default http://100.102.134.91:11023/v1
+  DEVICE_TELEMETRY_MDBB            default http://100.102.134.91:11026/v1
   DEVICE_TELEMETRY_RETENTION_DAYS  default 7 (HA logbook covers long range)
 """
 import json
@@ -20,7 +20,7 @@ import time
 import urllib.request
 
 MDBB = os.environ.get("DEVICE_TELEMETRY_MDBB",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11026/v1").rstrip("/")
 DAYS = int(os.environ.get("DEVICE_TELEMETRY_RETENTION_DAYS", "7"))
 COLLECTION = "device-telemetry"
 PAGE = 5000
