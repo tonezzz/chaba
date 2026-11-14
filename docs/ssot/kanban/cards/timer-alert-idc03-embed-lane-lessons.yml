@@ -1,7 +1,7 @@
 id: timer-alert-idc03-embed-lane-lessons
 title: Timer embed-lane-lessons on idc03 failing
 column: backlog
-updated: 2026-11-13 23:35
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1338,6 +1338,10 @@ comms:
   from: devin
   text: 'FIX APPLIED 2026-11-13: TimeoutStartSec was 600s, job needs longer now — added drop-in embed-lane-lessons.service.d/timeout.conf
     TimeoutStartSec=2400 (verified effective 40min). Next scheduled run verifies; alert auto-clears on success.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the recurring timeout failure of embed-lane-lessons.service on idc03 by examining the systemd
   user journal using `journalctl --user -u embed-lane-lessons.service` on the host. Analyze the root cause of the
   timeout observed in recent runs and consult the CMS timer-timeline-idc03 for additional context. The task is successfully
