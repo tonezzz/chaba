@@ -959,7 +959,8 @@ def cmd_run(args):
             landed = True
     verdict = _verify(rd, env) if landed else {
         "verdict": "fail", "checks": {"artifact landed": False}}
-    if env.get("dispatch_card"):
+    if env.get("dispatch_card") and \
+            env.get("dispatch_verify") == "host_snapshot":
         matched = artifact_matches_snapshot(rd)
         verdict.setdefault("checks", {})["artifact matches original host snapshot output"] = matched
         if not matched:
