@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-focus-dispatcher
 title: Timer focus-dispatcher on tony-omen failing
 column: done
-updated: 2026-11-14 08:44
+updated: 2026-11-14 14:15
 priority: high
 tags:
 - timer-alert
@@ -139,6 +139,10 @@ comms:
 - at: 2026-11-14 08:44
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of focus-dispatcher.service on the host tony-omen by examining the journal logs using
   journalctl --user -u focus-dispatcher.service. Review the CMS timeline timer-timeline-tony-omen for additional
   context regarding the last run at 11-08 14:00 which resulted in an exit-code. Identify the root cause of the non-zero
