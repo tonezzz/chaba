@@ -4,16 +4,19 @@ column: done
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-10-25: `mn01-silent` condition cleared — shipper healthy
-  again.'
-help: Run `log-shipper.py --hosts mn01 --dry-run` from tony-omen; if the ssh probe
-  fails, check tailscale auth (browser link).
-updated: '2026-10-25'
-brief: 'The log digest flagged something worth a look: logs `mn01` never shipped state.
-  Read the note, then fix it or close the card.'
+note: 'Auto-recovered 2026-10-25: `mn01-silent` condition cleared — shipper healthy again.'
+help: Run `log-shipper.py --hosts mn01 --dry-run` from tony-omen; if the ssh probe fails, check tailscale auth (browser
+  link).
+updated: 2026-11-14 14:06
+brief: 'The log digest flagged something worth a look: logs `mn01` never shipped state. Read the note, then fix
+  it or close the card.'
 review_kind: triage
 ref: OPS-0297
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0297'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
