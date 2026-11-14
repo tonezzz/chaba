@@ -1,16 +1,16 @@
 id: tony-omen-install-chaba-repo-sync-timer-c581bd
 title: 'tony-omen: install chaba-repo-sync.timer — exec checkout has no periodic pull'
 column: backlog
-updated: 2026-10-16 04:53
+updated: 2026-11-14 14:14
 tags:
 - tony-omen
 - ops
 - drift
 note: 'Sibling of OPS-0479 (tony-dell, fixed 2026-10-16): chaba-repo-sync.timer does hourly/15min git-safe-pull
-  of ~/CascadeProjects/chaba on idc02/idc03/mn01/tony-dell, but is NOT installed on tony-omen (0 unit
-  files, checked 2026-10-16). tony-omen jobs run from ~/CascadeProjects/chaba per ssot.jobs.yml repo:
-  map, so its checkout drifts the same way. Fix: copy systemd/chaba-repo-sync.{service,timer} to ~/.config/systemd/user/
-  + daemon-reload + enable --now. Canonical units now in repo systemd/ (hourly'
+  of ~/CascadeProjects/chaba on idc02/idc03/mn01/tony-dell, but is NOT installed on tony-omen (0 unit files, checked
+  2026-10-16). tony-omen jobs run from ~/CascadeProjects/chaba per ssot.jobs.yml repo: map, so its checkout drifts
+  the same way. Fix: copy systemd/chaba-repo-sync.{service,timer} to ~/.config/systemd/user/ + daemon-reload + enable
+  --now. Canonical units now in repo systemd/ (hourly'
 ref: OPS-0713
 comms:
 - at: 2026-10-16 04:53
@@ -19,7 +19,11 @@ comms:
 - at: 2026-10-28 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in
-  ~/CascadeProjects/chaba. Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run
-  systemctl --user daemon-reload, and enable --now the timer. The host is tony-omen and the repo is chaba.
-  The done-condition is verified when systemctl --user status chaba-repo-sync.timer shows active and running.
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Install chaba-repo-sync.timer and chaba-repo-sync.service on tony-omen to prevent repo drift in ~/CascadeProjects/chaba.
+  Copy the unit files from systemd/ in the repo to ~/.config/systemd/user/, run systemctl --user daemon-reload,
+  and enable --now the timer. The host is tony-omen and the repo is chaba. The done-condition is verified when systemctl
+  --user status chaba-repo-sync.timer shows active and running.
