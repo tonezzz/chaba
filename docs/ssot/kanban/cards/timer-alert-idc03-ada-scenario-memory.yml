@@ -1,7 +1,7 @@
 id: timer-alert-idc03-ada-scenario-memory
 title: Timer ada-scenario-memory on idc03 failing
 column: backlog
-updated: 2026-11-13 23:35
+updated: 2026-11-14 08:08
 priority: high
 tags:
 - timer-alert
@@ -463,6 +463,12 @@ comms:
     path -> resources failure before start. NEEDS: repoint ada-scenario-*.service EnvironmentFile/ExecCondition
     to current auth (check ada-chaba.env or ada-ha keys mechanism used by live ada services). Same break likely
     hits other ada-scenario-* units still referencing the file.'
+- at: 2026-11-14 08:08
+  from: devin
+  text: 'FIXED 2026-11-13: repointed EnvironmentFile+ExecCondition from deleted ada-ha-tony.env to successor tony-ha/backend.env
+    (identical var set — svcada migration rename). Patched ada-scenario-{memory,casting,tools}.service on idc03,
+    daemon-reload, manual start verified: env loads, provider-gate ExecCondition evaluates, unit skips cleanly (skip-quota
+    gate verdict) instead of resources-failure. timer-alert stops firing.'
 action:
   status: done
   type: dispatch
