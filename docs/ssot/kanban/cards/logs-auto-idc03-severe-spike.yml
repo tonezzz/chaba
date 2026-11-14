@@ -1,26 +1,22 @@
 id: logs-auto-idc03-severe-spike
 title: logs `idc03` 3255 severe/24h
-brief: 'The log digest flagged something worth a look: logs `idc03` 3255 severe/24h.
-  Read the note, then fix it or close the card.'
+brief: 'The log digest flagged something worth a look: logs `idc03` 3255 severe/24h. Read the note, then fix it
+  or close the card.'
 column: done
 review_kind: triage
 generated: logs-kanban
 program: logs-digest
 priority: high
-note: 'Auto-recovered 2026-11-07: `idc03-severe-spike` condition cleared — shipper
-  healthy again.'
-help: Read the digest's repeat-offender lines for idc03; this is a real incident signal,
-  not pipeline breakage.
-updated: '2026-11-07'
+note: 'Auto-recovered 2026-11-07: `idc03-severe-spike` condition cleared — shipper healthy again.'
+help: Read the digest's repeat-offender lines for idc03; this is a real incident signal, not pipeline breakage.
+updated: 2026-11-14 14:06
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'DIAGNOSED (25.5k severe/24h): (a) 21k = mddb writing INFO logs to stderr
-    → journald maps stderr=err — artifact, needs mddb log-target or digest fix; (b)
-    728 = runner-agent.service crash-loop from stale binary — FIXED this session (sha
-    synced); (c) 1.5k = michael-dev REST sensors timing out on http://michael-ha:8123
-    — real: LAN hostname unreachable from VPS post-migration, mirrors need the nabu-casa
-    URL or disabling. Keeping open for (a)+(c).'
+  text: 'DIAGNOSED (25.5k severe/24h): (a) 21k = mddb writing INFO logs to stderr → journald maps stderr=err — artifact,
+    needs mddb log-target or digest fix; (b) 728 = runner-agent.service crash-loop from stale binary — FIXED this
+    session (sha synced); (c) 1.5k = michael-dev REST sensors timing out on http://michael-ha:8123 — real: LAN hostname
+    unreachable from VPS post-migration, mirrors need the nabu-casa URL or disabling. Keeping open for (a)+(c).'
 - at: 2026-10-11 06:18
   from: tony
   text: verified
@@ -36,6 +32,10 @@ comms:
 - at: 2026-10-27 16:43
   from: tony
   text: moved review -> done
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 claim: {}
