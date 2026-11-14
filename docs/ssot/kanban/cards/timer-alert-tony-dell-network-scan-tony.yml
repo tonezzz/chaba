@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-network-scan-tony
 title: Timer network-scan-tony on tony-dell failing
 column: backlog
-updated: 2026-11-13 23:23
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1937,6 +1937,10 @@ comms:
     (token valid, /api/states 200) but save returns unauthorized. The scripts-dell HA user lost dashboard-write
     permission (HA update or user perm change). NEEDS: HA admin re-grant dashboard write for scripts-dell user,
     or mint new long-lived token as admin. Not fixable from CLI.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
