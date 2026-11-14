@@ -1,7 +1,7 @@
 id: audit-auto-macbook
 title: Reconcile macbook host-audit drift
 column: backlog
-updated: 2026-11-14 10:27
+updated: 2026-11-14 14:16
 brief: Four post-change audit deltas; reconcile intended roles before enabling or stopping units.
 priority: medium
 tags:
@@ -37,3 +37,7 @@ comms:
     (hist+latest true — HA freshness will recover), vcast-real-macbook active, all devin timers enabled, chaba checkout
     synced to a27cb29d19 (manual pull DONE-0 after unit TimeoutStartSec=300 kill — BT-PAN link is slow; incremental
     syncs should fit). FIXED: 19 stale .local-conflict files del'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
