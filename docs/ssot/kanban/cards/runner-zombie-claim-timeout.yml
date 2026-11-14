@@ -1,7 +1,7 @@
 id: runner-zombie-claim-timeout
 title: 'Runner zombie-claim: board-api write commits after client timeout'
 column: done
-updated: 2026-11-07 16:30
+updated: 2026-11-14 14:06
 brief: POST /action claim can commit server-side while the runner api() client times out at 30s — card lands status=running
   with no unit and no state.json entry; nothing ever finishes it. Observed 2026-11-07 on opencode-executor-routing-smoke
   during the board-api flock storm.
@@ -34,3 +34,7 @@ comms:
 - at: 2026-11-07 16:30
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
