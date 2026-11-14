@@ -161,7 +161,8 @@ def _mem_pct() -> float | None:
         try:
             ps = int(out.split("page size of")[1].split("bytes")[0])
             vals = {l.split(":")[0].strip(): int(l.split(":")[1].strip().rstrip("."))
-                    for l in out.splitlines() if ":" in l}
+                    for l in out.splitlines()
+                    if l.startswith("Pages ") and ":" in l}
             total_b = int(_run(["/usr/sbin/sysctl", "-n", "hw.memsize"]))
             free = (vals.get("Pages free", 0)
                     + vals.get("Pages inactive", 0)) * ps
