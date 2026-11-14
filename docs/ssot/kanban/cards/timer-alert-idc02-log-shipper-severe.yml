@@ -1,7 +1,7 @@
 id: timer-alert-idc02-log-shipper-severe
 title: Timer log-shipper-severe on idc02 failing
 column: done
-updated: 2026-11-13 11:13
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -785,6 +785,10 @@ comms:
 - at: 2026-11-13 11:13
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failing `log-shipper-severe.service` systemd timer on host idc02, which resulted in a timeout
   during its recent run. Access the host logs using `journalctl --user -u log-shipper-severe.service` and review
   the CMS record `timer-timeline-idc02` for historical context. The done-condition is verified when the root cause
