@@ -1602,6 +1602,11 @@ comms:
 - at: 2026-11-14 14:24
   from: tony
   text: moved done -> backlog
+- at: 2026-11-14 14:24
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-14 14:17) of `adobe-stock-reindex-sync.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u adobe-stock-reindex-sync.service` on the host.
+    See CMS `timer-timeline-tony-dell`.'
 spec: Investigate the failing systemd user timer and service 'adobe-stock-reindex-sync.service' on host 'tony-dell'.
   Access the host via SSH and inspect the recent journal logs using the command 'journalctl --user -u adobe-stock-reindex-sync.service'
   to determine the root cause of the exit-code failure. Resolve the underlying issue causing the service to fail
