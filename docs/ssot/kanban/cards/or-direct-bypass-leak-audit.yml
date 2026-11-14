@@ -1,7 +1,7 @@
 id: or-direct-bypass-leak-audit
 title: Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)
 column: doing
-updated: 2026-11-12 15:42
+updated: 2026-11-14 14:14
 spec: 'OR /auth/key usage_daily ~$1.00/day while gateway OR spend=$0 — direct OPENROUTER_API_KEY callers bypass
   LiteLLM. Tasks: (1) audit envs/units holding OPENROUTER_API_KEY across hosts (mddb-gemini.env known; vision_describe.py,
   openrouter_provider.py suspects); (2) repoint callers to gateway http://100.102.134.91:4000; (3) rotate OR key
@@ -33,3 +33,7 @@ comms:
     Earlier OR dashboard/routes/health/LiteLLM hook scripts and units remain dirty or untracked in idc03 served
     checkout; review, validate, reconcile live dashboard SSOT and commit those specific artifacts before closeout.
     Do not include unrelated board2/out changes.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
