@@ -1,7 +1,7 @@
 id: timer-alert-tony-macbook-runner-agent
 title: Timer runner-agent on tony-macbook failing
 column: done
-updated: 2026-11-12 10:43
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -891,6 +891,10 @@ comms:
 - at: 2026-11-12 10:43
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of `runner-agent.service` on `tony-macbook` which resulted in a signal on the last
   run (11-08 15:46). Access the host to inspect the journal using `journalctl --user -u runner-agent.service` and
   review CMS `timer-timeline-tony-macbook` for context. The done-condition is verified when the root cause of the
