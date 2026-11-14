@@ -1,6 +1,6 @@
 id: vcast-audit-cast
 title: audit-cast runaway guard fails — CB_RSS unbound variable
-column: done
+column: doing
 program: vcast
 area: input-bridge
 priority: high
@@ -10,7 +10,7 @@ note: 'DONE 2026-10-04: fix applied to ~/.local/bin/audit-cast.sh at 12:02 (para
   not repo-tracked). Verified: 4 consecutive exit-0 ticks 14:00-14:15, Result=success. Follow-up: script should
   live in the repo (scripts/ or a job) so fixes are versioned — folded into vcast-input-bridge card.'
 help: journalctl --user -u audit-cast; fix the unbound var in the script
-updated: 2026-11-14 14:16
+updated: 2026-11-14 17:16
 comms:
 - at: 2026-10-04 12:02
   from: devin
@@ -31,6 +31,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 17:16
+  from: chaba
+  text: '[lifecycle] bounced done->doing — card declares a `verify:` criterion but closed with no evidence comms.
+    Re-close with a [verify] note naming what was actually run, or amend `verify:` if the criterion is obsolete.'
 action:
   status: done
 ref: AUD-0013

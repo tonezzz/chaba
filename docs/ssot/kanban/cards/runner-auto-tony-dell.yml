@@ -1,35 +1,39 @@
 id: runner-auto-tony-dell
 title: Runner host `tony-dell` fails 4 dispatch bootstrap check(s)
-brief: Automated fleet audit found provisioning gaps on tony-dell that will strand dispatch cards. Read the note,
-  fix on the host, close the card.
+brief: Automated fleet audit found provisioning gaps on tony-dell that will strand
+  dispatch cards. Read the note, fix on the host, close the card.
 column: review
 generated: runner-fleet-health
 program: chaba-ci
 area: dispatch
-priority: high
-note: 'Failing: sunsynk-card: 256 commits behind origin/sunsynk (limit 200, last-fetched basis); mddb-fork: push:mddb-fork
-  declared but the push probe fails (remote: Permission to tradik/mddb.git denied to tonezzz.
+priority: medium
+note: 'Failing: sunsynk-card: 256 commits behind origin/sunsynk (limit 200, last-fetched
+  basis); mddb-fork: push:mddb-fork declared but the push probe fails (remote: Permission
+  to tradik/mddb.git denied to tonezzz.
 
-  fatal: unable to access ''https://github.com/tradik/mddb/'': The requested URL returned error: 403 — the label
-  lies; remove it or fix the key); ~/.local/bin/runner-agent sha 842506794f62faf6 != repo 64bc672d511ec03b — installed
-  copy drifted; redeploy; ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca != repo 71a2c26532c597f4 — installed
-  copy drifted; redeploy. Info: chaba origin is fetch-only (by design — no push creds); merge-sweep salvage path
-  verified; sunsynk-card: push probe fails (?) — sunsynk-card dispatches defer to a pushable host; stranded work
-  relays via board-api; gods-eye-view: push probe fails (?) — gods-eye-view dispatches defer to a pushable host;
-  stranded work relays vi'
+  fatal: unable to access ''https://github.com/tradik/mddb/'': The requested URL returned
+  error: 403 — the label lies; remove it or fix the key); ~/.local/bin/runner-agent
+  sha 842506794f62faf6 != repo 64bc672d511ec03b — installed copy drifted; redeploy;
+  ~/.local/bin/devin-dispatch sha e5b401a3f212a9ca != repo 71a2c26532c597f4 — installed
+  copy drifted; redeploy. Info: chaba origin is fetch-only (by design — no push creds);
+  merge-sweep salvage path verified; sunsynk-card: push probe fails (?) — sunsynk-card
+  dispatches defer to a pushable host; stranded work relays via board-api; gods-eye-view:
+  push probe fails (?) — gods-eye-view dispatches defer to a pushable host; stranded
+  work relays vi'
 help: 'Per-check fixes:
 
-  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host — reclone it or drop it from
-  that host''s repos.conf.
+  - repo-checkout: A declared dispatch repo checkout is missing/.git-less on the host
+  — reclone it or drop it from that host''s repos.conf.
 
-  - push-label-false: RUNNER_LABELS declares push:<repo> but `git push --dry-run` fails in the checkout — the label
-  lies about the credential scope (runner-push-cred-gap). Remove the label or fix the key.
+  - push-label-false: RUNNER_LABELS declares push:<repo> but `git push --dry-run`
+  fails in the checkout — the label lies about the credential scope (runner-push-cred-gap).
+  Remove the label or fix the key.
 
-  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent && ssh <host> chmod
-  +x ~/.local/bin/runner-agent
+  - runner-agent: Redeploy: scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent
+  && ssh <host> chmod +x ~/.local/bin/runner-agent
 
-  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch && ssh <host>
-  chmod +x ~/.local/bin/devin-dispatch'
+  - devin-dispatch: Redeploy: scp scripts/devin/devin-dispatch.sh <host>:~/.local/bin/devin-dispatch
+  && ssh <host> chmod +x ~/.local/bin/devin-dispatch'
 updated: 2026-11-14 14:08
 review_kind: triage
 action:
@@ -38,23 +42,26 @@ action:
 comms:
 - at: 2026-10-09 17:44
   from: devin
-  text: 'FIXED: ~/.local/bin/runner-agent installed (sha 1a196b9d = repo). git ident resolves globally (Tony/tonezzz@hotmail.com)
-    — dispatch checkpoint commits work. Checkout-drift infos (sunsynk 6, gev 770 behind) remain informational —
-    hosts pull on demand.'
+  text: 'FIXED: ~/.local/bin/runner-agent installed (sha 1a196b9d = repo). git ident
+    resolves globally (Tony/tonezzz@hotmail.com) — dispatch checkpoint commits work.
+    Checkout-drift infos (sunsynk 6, gev 770 behind) remain informational — hosts
+    pull on demand.'
 - at: 2026-10-10 19:22
   from: devin
-  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo); timers active. Card left in
-    review by sweep — normalizing.'
+  text: 'VERIFIED FIXED: runner-agent sha synced fleet-wide 10-09 (1a196b9d = repo);
+    timers active. Card left in review by sweep — normalizing.'
 - at: 2026-10-10 20:05
   from: devin
-  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state was restored accidentally
-    by an autostash-pop conflict resolution — normalizing to done.'
+  text: 'closed: doubly-verified this session (18:5x + 19:22 re-verify); review state
+    was restored accidentally by an autostash-pop conflict resolution — normalizing
+    to done.'
 - at: 2026-10-11 07:00
   from: tony
   text: moved review -> done
 - at: 2026-10-11 08:35
   from: devin
-  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified live this session).'
+  text: 'closed: 4th autostash-pop resurrection — prior close evidence stands (verified
+    live this session).'
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: OPS-0407'
@@ -69,25 +76,28 @@ comms:
   text: closed by tony
 - at: 2026-10-11 13:40
   from: devin
-  text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands. Fix card: git-autostash-column-guard.'
+  text: 'closed: autostash-pop resurrection (6th wave) — prior verification stands.
+    Fix card: git-autostash-column-guard.'
 - at: 2026-10-11 17:08
   from: devin
-  text: 'partial fix: sunsynk-power-flow-card repo fetched on dell (was 256 behind) — remaining check(s) re-verify
-    next audit run'
+  text: 'partial fix: sunsynk-power-flow-card repo fetched on dell (was 256 behind)
+    — remaining check(s) re-verify next audit run'
 - at: 2026-10-12 15:42
   from: devin
-  text: 'sweep 2026-10-12: runner-agent has NO journal entries in the last 30min on tony-dell — service exists but
-    is not running. Still failing; needs the bootstrap fix, not just verification.'
+  text: 'sweep 2026-10-12: runner-agent has NO journal entries in the last 30min on
+    tony-dell — service exists but is not running. Still failing; needs the bootstrap
+    fix, not just verification.'
 - at: 2026-10-12 22:16
   from: tony
   text: closed by tony
 - at: 2026-10-13 07:23
   from: devin
-  text: '2026-10-13 sweep: two repos behind. sunsynk-power-flow-card: on local branch sunsynk (a84b9b6 battery3/4
-    feature work + untracked src/cards/ss2-card.ts) — main is 256 behind origin/main but the feature branch carries
-    live work; NOT force-reset. Decision needed: rebase sunsynk onto origin/main, or point bootstrap check at the
-    branch actually used. gods-eye-view: no checkout on tony-dell at all (only stale dispatch-wt-* dirs) — bootstrap
-    repo list may be stale.'
+  text: '2026-10-13 sweep: two repos behind. sunsynk-power-flow-card: on local branch
+    sunsynk (a84b9b6 battery3/4 feature work + untracked src/cards/ss2-card.ts) —
+    main is 256 behind origin/main but the feature branch carries live work; NOT force-reset.
+    Decision needed: rebase sunsynk onto origin/main, or point bootstrap check at
+    the branch actually used. gods-eye-view: no checkout on tony-dell at all (only
+    stale dispatch-wt-* dirs) — bootstrap repo list may be stale.'
 - at: 2026-10-13 15:26
   from: tony
   text: closed by tony

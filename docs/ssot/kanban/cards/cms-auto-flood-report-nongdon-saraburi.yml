@@ -2,11 +2,12 @@ id: cms-auto-flood-report-nongdon-saraburi
 title: CMS automation `flood-report-nongdon-saraburi` error
 column: review
 generated: cms-auto-health
-priority: high
-note: 'last_status=no-items — no detail. last_run=2026-11-14T05:18:22+00:00 interval=120m status=no-items. Page:
-  https://idc03.taila0626a.ts.net/cms/#/flood-report-nongdon-saraburi'
-help: 'Trigger a manual regen: cms_automation run_now for ''flood-report-nongdon-saraburi'' (or POST /api/cms/pages/flood-report-nongdon-saraburi/regenerate).
-  If it repeats, check the page''s generator command in the registry doc.'
+priority: medium
+note: 'last_status=no-items — no detail. last_run=2026-11-14T09:24:00+00:00 interval=120m
+  status=no-items. Page: https://idc03.taila0626a.ts.net/cms/#/flood-report-nongdon-saraburi'
+help: 'Trigger a manual regen: cms_automation run_now for ''flood-report-nongdon-saraburi''
+  (or POST /api/cms/pages/flood-report-nongdon-saraburi/regenerate). If it repeats,
+  check the page''s generator command in the registry doc.'
 updated: 2026-11-14 14:09
 comms:
 - at: 2026-10-05 09:26
@@ -14,21 +15,23 @@ comms:
   text: status?
 - at: 2026-10-05 13:13
   from: devin
-  text: 'status: the 03:46 UTC error was collateral of the MDDB embed outage (OR 403 limit + Gemini 429 — both recovered
-    ~11:00 after Tony raised the OR limit). Dependent writers are healthy again — news-flood.service succeeded 12:00
-    + 13:00 on idc01. This auto-card should self-close on the next clean interval run; leaving it for the checker
-    to confirm.'
+  text: 'status: the 03:46 UTC error was collateral of the MDDB embed outage (OR 403
+    limit + Gemini 429 — both recovered ~11:00 after Tony raised the OR limit). Dependent
+    writers are healthy again — news-flood.service succeeded 12:00 + 13:00 on idc01.
+    This auto-card should self-close on the next clean interval run; leaving it for
+    the checker to confirm.'
 - at: 2026-10-08 20:50
   from: devin
-  text: likely same root cause — last error 11:19Z "remote end closed" overlaps the embedding outage window; expect
-    recovery when providers return
+  text: likely same root cause — last error 11:19Z "remote end closed" overlaps the
+    embedding outage window; expect recovery when providers return
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: KNB-0230'
 - at: 2026-11-07 16:49
   from: devin
-  text: '[KNB-1098] verified: automation healthy — last_run 2026-11-07T07:59Z (1.7h ago), interval 120m, status=no-items
-    is the normal ''no flood items'' outcome, not an error. Closing.'
+  text: '[KNB-1098] verified: automation healthy — last_run 2026-11-07T07:59Z (1.7h
+    ago), interval 120m, status=no-items is the normal ''no flood items'' outcome,
+    not an error. Closing.'
 - at: 2026-11-07 16:49
   from: devin
   text: closed by devin
@@ -40,8 +43,8 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
-brief: A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run it or check the generator
-  — details in the note.
+brief: A scheduled report-page job ('flood-report-nongdon-saraburi') is error. Re-run
+  it or check the generator — details in the note.
 review_kind: triage
 ref: KNB-0230
 action:

@@ -1,16 +1,18 @@
 id: vcast-auto-yt-live-api
 title: yt-live-api :8791/status not 200
-brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read the note, fix it, then close the
-  card.'
+brief: 'An automated health check flagged: yt-live-api :8791/status not 200. Read
+  the note, fix it, then close the card.'
 column: review
 review_kind: triage
 generated: vcast-auto-health
 program: vcast
 area: monitoring
-priority: high
-note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
-help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
-  yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
+priority: medium
+note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno
+  111] Connection refused>'
+help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen
+  systemctl --user status yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api
+  -n 50'
 updated: 2026-11-14 14:08
 ref: MED-0306
 comms:
@@ -19,8 +21,8 @@ comms:
   text: 'ref assigned: MED-0306'
 - at: 2026-11-07 16:49
   from: devin
-  text: '[KNB-1098] fixed live: yt-live-api.service (user unit on tony-omen) was dead — restarted; GET :8791/status
-    now 200, phase=idle. Closing.'
+  text: '[KNB-1098] fixed live: yt-live-api.service (user unit on tony-omen) was dead
+    — restarted; GET :8791/status now 200, phase=idle. Closing.'
 - at: 2026-11-07 16:49
   from: devin
   text: closed by devin

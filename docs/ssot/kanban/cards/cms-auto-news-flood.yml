@@ -1,28 +1,33 @@
 id: cms-auto-news-flood
 title: CMS automation `news-flood` dead
-brief: A scheduled report-page job ('news-flood') is dead. Re-run it or check the generator — details in the note.
+brief: A scheduled report-page job ('news-flood') is dead. Re-run it or check the
+  generator — details in the note.
 column: review
 review_kind: triage
 generated: cms-auto-health
-priority: high
-note: 'enabled every 60m but never ran. last_run=None interval=60m status=None. Page: https://idc03.taila0626a.ts.net/cms/#/news-flood'
-help: 'Trigger a manual regen: cms_automation run_now for ''news-flood'' (or POST /api/cms/pages/news-flood/regenerate).
-  If it repeats, check the page''s generator command in the registry doc.'
+priority: medium
+note: 'enabled every 60m but never ran. last_run=None interval=60m status=None. Page:
+  https://idc03.taila0626a.ts.net/cms/#/news-flood'
+help: 'Trigger a manual regen: cms_automation run_now for ''news-flood'' (or POST
+  /api/cms/pages/news-flood/regenerate). If it repeats, check the page''s generator
+  command in the registry doc.'
 updated: 2026-11-14 14:07
 comms:
 - at: 2026-11-07 16:49
   from: devin
-  text: '[KNB-1098] fixed: automation entry was enabled+interval but had NO generator block so nothing ever invoked
-    it — restored generator {kind:command, cmd:scripts/ada/news-flood-fetch.py} + run_now armed; next cms-regen-sweep
-    tick runs it. Page already exists (updated today). Closing.'
+  text: '[KNB-1098] fixed: automation entry was enabled+interval but had NO generator
+    block so nothing ever invoked it — restored generator {kind:command, cmd:scripts/ada/news-flood-fetch.py}
+    + run_now armed; next cms-regen-sweep tick runs it. Page already exists (updated
+    today). Closing.'
 - at: 2026-11-07 16:49
   from: devin
   text: closed by devin
 - at: 2026-11-07 16:57
   from: devin
-  text: 'CORRECTION: news-flood.timer (hourly, idc03 user unit) already produces this page — the registry entry
-    simply never described the producer, so the checker saw ''never ran''. Entry remodelled to generator={kind:service,
-    unit:news-flood.timer}, interval_min=60, judged on page freshness. No duplicate command-generator is armed.'
+  text: 'CORRECTION: news-flood.timer (hourly, idc03 user unit) already produces this
+    page — the registry entry simply never described the producer, so the checker
+    saw ''never ran''. Entry remodelled to generator={kind:service, unit:news-flood.timer},
+    interval_min=60, judged on page freshness. No duplicate command-generator is armed.'
 - at: 2026-11-14 14:07
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
