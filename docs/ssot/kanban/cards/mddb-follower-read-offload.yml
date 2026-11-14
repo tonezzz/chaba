@@ -1,7 +1,7 @@
 id: mddb-follower-read-offload
 title: Point read-only mddb consumers at idc02 follower
 column: done
-updated: 2026-11-12 14:53
+updated: 2026-11-14 14:14
 spec: idc02 already runs the replicating follower. Audit which consumers use read-only query endpoints on the leader
   (:11023) and repoint eligible ones at the follower — takes read load off the hot idc03 box. Needs consumer inventory
   first (probe vector-search callers).
@@ -20,5 +20,9 @@ comms:
 - at: 2026-11-12 14:53
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
