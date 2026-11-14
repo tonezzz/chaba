@@ -1,7 +1,7 @@
 id: michael-ha-tg-sensor-value-mismatch
 title: 'Michael HA: sensor values in TG reports differ from michael-ha'
 column: done
-updated: 2026-11-12 15:41
+updated: 2026-11-14 14:14
 spec: 'Michael noticed the sensor values sent via TG (weather-bakeoff / rain-watch reports) differ from what michael-ha
   shows. Suspects: (a) relay 127.0.0.1:18123 landing on the wrong HA instance; (b) weather-bakeoff reading a different
   entity/source than the HA dashboard; (c) stale/cached values or unit bucketing. Verify by fetching the same entity
@@ -27,6 +27,10 @@ comms:
     conversion, deployed to served and exec weather-bakeoff.py. Conversion/rendering tests passed for m/s, km/h,
     kn and kts. No additional TG message sent; next scheduled report uses kts. Earlier diagnosis of which dashboard
     Michael viewed was inferred, not confirmed by screenshot.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 claim: {}
