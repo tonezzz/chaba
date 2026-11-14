@@ -105,6 +105,9 @@ comms:
 - at: 2026-11-14 09:18
   from: idc02
   text: 'finished (failed): exit=1 n process exited, code=exited, status=1/FAILURE | devin-task-ops-event-plane-split-brain-audit-1794622261.service'
+- at: 2026-11-14 09:18
+  from: tony
+  text: re-spawned from report page
 action:
   type: dispatch
   repo: chaba
@@ -143,8 +146,8 @@ action:
     heartbeat:
       required: true
       stale_s: 300
-    timeout_s: 300
-  status: failed
+    timeout_s: 420
+  status: queued
   lane: codemod
   result: 'exit=1 n process exited, code=exited, status=1/FAILURE | devin-task-ops-event-plane-split-brain-audit-1794622261.service:
     Failed with result ''exit-code''. | devin-task-ops-event-plane-split-brain-audit-1794622261.service: Consumed
@@ -153,6 +156,5 @@ action:
   sweep:
     stale_running: 2026-11-14 08:55
     session_gone: 2026-11-14 08:55
-  runner: idc02
 review_kind: verify
 claim: {}
