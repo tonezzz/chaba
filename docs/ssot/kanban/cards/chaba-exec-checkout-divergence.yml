@@ -1,7 +1,7 @@
 id: chaba-exec-checkout-divergence
 title: 'tony-dell chaba exec checkout diverged: rogue board-api + 837 unpushed commits'
 column: done
-updated: 2026-11-08 12:52
+updated: 2026-11-14 14:08
 brief: '~/CascadeProjects/chaba on tony-dell is ahead 837 / behind 521 vs origin/master. ROOT CAUSE FOUND 2026-11-08:
   an orphaned board-api.py (PID 262964, spawned inside app-devin-desktop scope ~Nov 4, unit chaba-board-api.service
   is .parked/dead by design) squats on 127.0.0.1:8787 and commits card writes to this exec checkout — writes never
@@ -36,5 +36,9 @@ comms:
     close-verification comms on ada-opencode-control-plane-tab, ada-opencode-nl-card-resolve, adobe-stock-render-preview-wiring;
     OPS-1039 evidence on opencode-retry-stale-worktree; 2 watcher comms on line-wp-site-manager; open flood request
     re-raised on keep-eye-on-floods-4f0f97. Sk'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
