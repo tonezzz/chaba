@@ -1,7 +1,7 @@
 id: mddb-backup-tier2-idc02
 title: 'Off-host backup tier: idc03 leader/cms sets → idc02'
 column: done
-updated: 2026-11-12 14:50
+updated: 2026-11-14 14:14
 spec: 'idc02 already stores its own compressed mddb-ops backup (75M). Add an off-host copy tier: rsync/scp the gzipped
   leader + cms sets from idc03 to idc02 ~/mddb-backups-tier2/ after nightly backup, same 3-day retention. LAN-cheap
   insurance against idc03 loss (90% disk).'
@@ -23,5 +23,9 @@ comms:
 - at: 2026-11-12 14:50
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
