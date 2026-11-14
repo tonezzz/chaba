@@ -1,7 +1,7 @@
 id: kk-mac-usage-to-lane-savings
 title: Wire kk_mac token usage into lane-savings evidence
 column: doing
-updated: 2026-11-14 11:03
+updated: 2026-11-14 11:14
 priority: low
 tags:
 - kk-mac
@@ -37,6 +37,12 @@ comms:
 - at: 2026-11-14 11:03
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 2.07 > 1.0)'
+- at: 2026-11-14 11:14
+  from: devin
+  text: 'option (a) implemented: kk_mac_llm now captures prompt_eval_count; finish_kk_mac_lane hands a TOKENS_RE-parseable
+    fragment to the finish result (ent[result_extra], prepended so it survives the 300-char cap, popped on fallback-handoff);
+    lane-savings EXECUTOR_LANES attribution ported from unmerged 747b44bbd0. Verified: 12/12 kk_mac contract tests
+    + fixture card reports kk_mac_local 1700/120 tokens in monthly report.'
 action:
   type: dispatch
   repo: chaba
