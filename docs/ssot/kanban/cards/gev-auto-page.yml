@@ -1,21 +1,23 @@
 id: gev-auto-page
 title: GEV page /apps/gev/ not 200
-brief: 'An automated health check flagged: GEV page /apps/gev/ not 200. Read the note,
-  fix it, then close the card.'
+brief: 'An automated health check flagged: GEV page /apps/gev/ not 200. Read the note, fix it, then close the card.'
 column: done
 generated: gev-auto-health
 program: gev
 area: monitoring
 priority: high
 note: 'Auto-recovered 2026-10-22: `page` check passing again.'
-help: 'Static bundle is Caddy (`web` container, :80) serving stacks/web/public/apps/gev/.
-  If Caddy answers but 404s, the staged bundle is missing — rebuild + repatch + re-stage
-  per AGENTS.md ''GEV Gemini Live voice deployment''. Check: podman ps | grep web;
-  curl -s -o /dev/null -w ''%{http_code}'' http://127.0.0.1/apps/gev/'
-updated: '2026-10-22'
+help: 'Static bundle is Caddy (`web` container, :80) serving stacks/web/public/apps/gev/. If Caddy answers but 404s,
+  the staged bundle is missing — rebuild + repatch + re-stage per AGENTS.md ''GEV Gemini Live voice deployment''.
+  Check: podman ps | grep web; curl -s -o /dev/null -w ''%{http_code}'' http://127.0.0.1/apps/gev/'
+updated: 2026-11-14 14:06
 review_kind: triage
 ref: MED-0293
 comms:
 - at: 2026-10-11 08:35
   from: chaba
   text: 'ref assigned: MED-0293'
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
