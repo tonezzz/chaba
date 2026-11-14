@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-adobe-stock-reindex-sync
 title: Timer adobe-stock-reindex-sync on tony-dell failing
 column: done
-updated: 2026-11-12 10:43
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1591,6 +1591,10 @@ comms:
 - at: 2026-11-12 10:43
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failing systemd user timer and service 'adobe-stock-reindex-sync.service' on host 'tony-dell'.
   Access the host via SSH and inspect the recent journal logs using the command 'journalctl --user -u adobe-stock-reindex-sync.service'
   to determine the root cause of the exit-code failure. Resolve the underlying issue causing the service to fail
