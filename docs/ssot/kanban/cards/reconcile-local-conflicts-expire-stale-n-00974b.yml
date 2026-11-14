@@ -1,0 +1,20 @@
+id: reconcile-local-conflicts-expire-stale-n-00974b
+title: 'reconcile-local-conflicts: expire stale non-card .local-conflict files'
+column: backlog
+updated: 2026-11-14 08:10
+priority: medium
+tags:
+- chaba
+- sync
+- tech-debt
+spec: 'Focus-inbox (and other generated-path) .local-conflict-* files are kept forever by reconcile-local-conflicts.py
+  (non-card branch only flags, never resolves). They accumulate -> checkout stays dirty -> git-safe-pull exits 1
+  -> chaba-repo-sync/chaba-served-mirror-sync timer-alerts loop (tony-dell + tony-omen 2026-11-13, 18 files each,
+  >24h stale report-watch artifacts). FIX: expire non-card conflict files older than RECONCILE_NONCARD_TTL_S (default
+  86400) — archive or delete after upstream-wins verified (generated paths are upstream-authoritative). Keep flag-on-recent.'
+note: Manual cleanup done 2026-11-13; syncs green immediately. Durable fix prevents recurrence.
+ref: OPS-0117
+comms:
+- at: 2026-11-14 08:10
+  from: tony
+  text: card captured via board-api
