@@ -14,6 +14,8 @@ Env:
   DEVICE_TELEMETRY_GEO    "0" to skip WAN geo lookup (privacy/offline)
   DEVICE_TELEMETRY_PROC   max processes to list (default 8, 0=off)
 """
+from __future__ import annotations
+
 import json
 import os
 import platform
