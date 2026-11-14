@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-port
 title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
-column: doing
-updated: 2026-11-14 13:46
+column: review
+updated: 2026-11-14 13:49
 spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
   equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
   — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
@@ -45,9 +45,19 @@ comms:
     wrapper watchdog+pgrp+durable .code, $$->$, nice/ulimit plist limits, sysctl vm.loadavg gate, devin executor
     correctly declines on launchd). 580 board tests OK incl 35 new launchd tests. Provision script + runbook for
     kkkakk worktree/deploy-key/opencode. NOT run on the metal — provisioning steps listed in job yml gaps.'
+- at: 2026-11-14 13:49
+  from: idc02
+  text: 'finished (ok): exit=0 leet labels), itemized in the job yml''s `gaps_remaining`; no push/deploy performed
+    per the rails. | devin-task-20'
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: idc02
+  result: 'exit=0 leet labels), itemized in the job yml''s `gaps_remaining`; no push/deploy performed per the rails.
+    | devin-task-20261114-131025-kk-approved-full-fleet-use-of-.service: Consumed 20min 51.474s CPU time, 565.9M
+    memory peak, 0B memory swap peak.'
+  verified: false
+review_kind: verify
+claim: {}
