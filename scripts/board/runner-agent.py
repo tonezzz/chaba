@@ -102,6 +102,42 @@ RUNNER_GPU_WATCHDOG = 1; =0 force-off):
                          count as a flood (default 150)
   RUNNER_XRANDR_TIMEOUT  xrandr probe timeout s (default 8)
 
+Task runtime (card kk-mac-launchd-runner-port — kk-mac approved for
+full fleet use 2026-10-30):
+  RUNNER_TASK_RUNTIME  auto|systemd|launchd — which executor serves
+                         task units (default auto: darwin->launchd,
+                         else systemd when systemctl exists)
+  RUNNER_LAUNCHD_DOMAIN  gui|user — the launchd domain task jobs
+                         register in (default gui/<uid>, needs the
+                         runner user logged in; "user" is the headless
+                         domain)
+  The launchd path is the systemd-run equivalent: every task —
+  devin-task-* and runner-* alike — becomes a gui/<uid>/<unit> job
+  bootstrapped from a generated plist + bash wrapper under
+  RUNNER_STATE/launchd/ (deliberately NOT ~/Library/LaunchAgents —
+  login-scanned agents would re-run finished tasks). The wrapper
+  supplies what launchd lacks next to systemd-run: a pgrp watchdog
+  for the wall-clock bound (no RuntimeMaxSec), a recorded payload
+  pgrp for renice/signals, an EXIT trap so a bootout drops the whole
+  tree (launchd kills the leader only), and it always writes the exit
+  code to RUNNER_STATE/exit/<unit>.code — `launchctl print`'s
+  `last exit code` drops with the job record, the same loss class as
+  --collect (OPS-1181). collect() keeps the systemd evidence
+  precedence: task-dir exit_code (devin-task-*) > .code file >
+  registered-job `last exit code` > unproven (never ok). Payloads are
+  authored once in systemd ExecStart form (`$$` = literal `$`); the
+  launchd seam strips one escape layer. Resource limits map to
+  Nice/ProcessType=Background/LowPriorityIO in the plist plus
+  `ulimit -v` in the wrapper (no cgroup v2 — CPUQuota/MemoryMax have
+  no direct equivalent). Logs redirect to
+  RUNNER_STATE/logs/<unit>.log; `log show --predicate 'process ==
+  "runner-agent"'` stays available as a second surface. The overload
+  gate reads `sysctl vm.loadavg` on darwin. devin-dispatch itself
+  stays systemd-only (its port is a separate job) — a launchd runner
+  serves executor=opencode|script|container|jules|nlm_batch|
+  kk_mac_local and the opencode lane route, while plain devin cards
+  wait for a Linux runner.
+
 State is just unit names — a restart re-polls systemctl, so an agent
 crash loses at most bookkeeping, not running work. All API calls are
 idempotent-ish: finish on a card that was moved/reset returns 400 and
@@ -601,21 +637,399 @@ def save_state(st: dict) -> None:
     STATE_FILE.write_text(json.dumps(st, indent=1))
 
 
+# --- task runtime seam (kk-mac-launchd-runner-port) -------------------
+# systemd-run on Linux, launchctl bootstrap/kickstart/print on macOS.
+# Every task unit — devin-task-* and runner-* alike — starts through
+# rt_launch, polls through unit_active()/units_for_card(), and closes
+# out through collect(); the runtime branch lives in these helpers so
+# the claim/finish/reconcile passes stay platform-agnostic. The `$$`
+# payloads keep ONE authoring contract: systemd ExecStart form, where
+# `$$` -> literal `$`; the launchd side strips that escape layer when
+# writing the wrapper (launchd argv is literal, no substitution).
+
+_RT: str | None = None
+
+
+def _detect_runtime() -> str:
+    """RUNNER_TASK_RUNTIME=auto|systemd|launchd — auto picks launchd
+    on darwin, systemd where systemctl exists (the fleet default)."""
+    want = os.environ.get("RUNNER_TASK_RUNTIME", "auto").strip().lower()
+    if want in ("systemd", "launchd"):
+        return want
+    if sys.platform == "darwin":
+        return "launchd" if shutil_which("launchctl") else "systemd"
+    if shutil_which("systemctl"):
+        return "systemd"
+    return "launchd" if shutil_which("launchctl") else "systemd"
+
+
+def task_runtime() -> str:
+    global _RT
+    if _RT is None:
+        _RT = _detect_runtime()
+    return _RT
+
+
+def _launchd_domain() -> str:
+    """Domain task jobs register in — gui/<uid> per the card contract
+    (an Aqua session must exist for the runner user).
+    RUNNER_LAUNCHD_DOMAIN=user swaps to the headless domain for
+    ssh-driven installs."""
+    d = os.environ.get("RUNNER_LAUNCHD_DOMAIN", "gui").strip().lower()
+    if d not in ("gui", "user"):
+        d = "gui"
+    return f"{d}/{os.getuid()}"
+
+
+def _launchd_target(unit: str) -> str:
+    return f"{_launchd_domain()}/{unit.removesuffix('.service')}"
+
+
+def _launchd_dir() -> Path:
+    """Generated launchd artifacts — plists, wrappers, pgrp files —
+    under RUNNER_STATE/launchd. Deliberately NOT ~/Library/LaunchAgents:
+    agents there are scanned at login and would re-run finished tasks."""
+    d = STATE_DIR / "launchd"
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    return d
+
+
+def _exit_dir() -> Path:
+    """Dir for <unit>.code exit files — /run/user tmpfs on systemd
+    (OPS-1181), the durable state dir on launchd (macOS has no
+    /run/user)."""
+    if task_runtime() == "launchd":
+        d = STATE_DIR / "exit"
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+        return d
+    return Path(f"/run/user/{os.getuid()}/runner-exit")
+
+
+def _launchd_log(unit: str) -> Path:
+    d = STATE_DIR / "logs"
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    return d / f"{unit}.log"
+
+
+def _mem_kb(spec: str) -> int:
+    """'12G' -> KiB for ulimit -v; 0 when unparseable."""
+    m = re.fullmatch(r"\s*(\d+)\s*([KMGTkmgt]?)\s*", spec or "")
+    if not m:
+        return 0
+    mult = {"": 1, "K": 1, "M": 1024, "G": 1048576,
+            "T": 1073741824}[m.group(2).upper()]
+    return int(m.group(1)) * mult
+
+
+def _launchd_wrapper(unit: str, shell: str, timeout_s: int) -> str:
+    """bash body the plist's ProgramArguments runs — supplies what
+    launchd lacks next to systemd-run:
+
+    - RuntimeMaxSec: `set -m` puts the payload in its own pgrp so the
+      watchdog can kill the whole tree at the bound (TERM, KILL after
+      15s). Killing the pgrp — never the leader alone — matches
+      systemd's cgroup kill.
+    - exit-code durability: always writes RUNNER_STATE/exit/<unit>.code
+      — `last exit code` in `launchctl print` drops with the job
+      record (bootout/reboot), the same loss class as --collect.
+    - pgrp record: <unit>.pid holds the payload's pgrp leader so
+      unit_pids/signals find the tree — launchctl only prints the
+      wrapper's pid.
+    - orphan guard: the EXIT trap kills the payload pgrp if the
+      wrapper itself is booted out (launchd kills the leader only;
+      systemd kills the cgroup).
+    - resource limits: `ulimit -v` approximates MemoryMax when the
+      desktop-limits profile arms; Nice/LowPriorityIO live in the
+      plist — there is no cgroup on macOS.
+    """
+    code = _exit_dir() / f"{unit}.code"
+    pidf = _launchd_dir() / f"{unit}.pid"
+    lines = ["set -m",
+             "cpid=''",
+             'trap \'[ -n "$cpid" ] && kill -KILL -"$cpid" '
+             '2>/dev/null\' EXIT']
+    if LIMITS_ON:
+        kb = _mem_kb(task_mem_max())
+        if kb:
+            lines.append(f"ulimit -v {kb} 2>/dev/null || true")
+    lines += [f"( {shell} ) &",
+              "cpid=$!",
+              f'echo "$cpid" > {shlex.quote(str(pidf))}']
+    if timeout_s and int(timeout_s) > 0:
+        lines.append(
+            f'( sleep {int(timeout_s)}; kill -TERM -"$cpid" '
+            '2>/dev/null; sleep 15; kill -KILL -"$cpid" 2>/dev/null ) '
+            '& wdog=$!')
+    lines += ['wait "$cpid"',
+              'rc=$?',
+              '[ -n "${wdog:-}" ] && kill "$wdog" 2>/dev/null',
+              'rm -f ' + shlex.quote(str(pidf)),
+              f'mkdir -p {shlex.quote(str(code.parent))}',
+              'printf \'%s\\n\' "$rc" > ' + shlex.quote(str(code)),
+              'exit "$rc"']
+    return "\n".join(lines)
+
+
+def _xml(s) -> str:
+    return (str(s).replace("&", "&amp;").replace("<", "&lt;")
+            .replace(">", "&gt;"))
+
+
+def _launchd_launch(unit: str, shell: str, timeout_s: int = 0,
+                    env: dict | None = None) -> str:
+    """Empty string on success, else the launch error — the launchd equivalent
+    of `systemd-run --user --unit=<u> --collect`. Writes the wrapper +
+    plist under RUNNER_STATE/launchd/ and bootstraps
+    gui/<uid>/<unit> (RunAtLoad starts it). A stale same-label
+    registration is booted out and re-strapped — kickstart would
+    re-run the config cached at bootstrap time, not the plist on
+    disk. `shell` arrives in systemd ExecStart form (`$$` = literal
+    `$`); the seam strips one escape layer before writing the file."""
+    ldir = _launchd_dir()
+    wrapper = ldir / f"{unit}.sh"
+    plist = ldir / f"{unit}.plist"
+    try:
+        wrapper.write_text(
+            "#!/bin/bash\n" + _launchd_wrapper(
+                unit, shell.replace("$$", "$"), timeout_s))
+        wrapper.chmod(0o700)
+        envd = {"HOME": str(Path.home()),
+                "PATH": (str(Path.home() / ".local/bin") +
+                         ":/opt/homebrew/bin:/usr/local/bin:"
+                         "/usr/bin:/bin:/usr/sbin:/sbin")}
+        envd.update({str(k): str(v) for k, v in (env or {}).items()})
+        envxml = "".join(
+            f"    <key>{_xml(k)}</key>\n"
+            f"    <string>{_xml(v)}</string>\n"
+            for k, v in envd.items())
+        limits = ""
+        if LIMITS_ON:
+            limits = (f"  <key>Nice</key>\n  <integer>{TASK_NICE}</integer>\n"
+                      "  <key>LowPriorityIO</key>\n  <true/>\n")
+        logp = _launchd_log(unit)
+        plist.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+            '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n'
+            '<plist version="1.0">\n<dict>\n'
+            f'  <key>Label</key>\n  <string>{_xml(unit)}</string>\n'
+            '  <key>ProgramArguments</key>\n  <array>\n'
+            '    <string>/bin/bash</string>\n'
+            f'    <string>{_xml(str(wrapper))}</string>\n'
+            '  </array>\n'
+            '  <key>RunAtLoad</key>\n  <true/>\n'
+            '  <key>ProcessType</key>\n'
+            '  <string>Background</string>\n'
+            f'{limits}'
+            '  <key>WorkingDirectory</key>\n'
+            f'  <string>{_xml(str(Path.home()))}</string>\n'
+            '  <key>StandardOutPath</key>\n'
+            f'  <string>{_xml(str(logp))}</string>\n'
+            '  <key>StandardErrorPath</key>\n'
+            f'  <string>{_xml(str(logp))}</string>\n'
+            '  <key>EnvironmentVariables</key>\n  <dict>\n'
+            f'{envxml}  </dict>\n'
+            '</dict>\n</plist>\n')
+    except OSError as e:
+        return f"launchd artifact write: {e}"
+    r = sh(["plutil", "-lint", str(plist)], timeout=15)
+    if r.returncode != 0:
+        return ("generated plist invalid: "
+                f"{(r.stderr or r.stdout).strip()[:200]}")
+    tgt = _launchd_target(unit)
+    r = sh(["launchctl", "print", tgt], timeout=15)
+    if r.returncode == 0 and _launchd_state(r.stdout) == "running":
+        return f"launchd job {unit} already running"
+    if r.returncode == 0:
+        sh(["launchctl", "bootout", tgt], timeout=15)
+    r = sh(["launchctl", "bootstrap", _launchd_domain(), str(plist)],
+           timeout=60)
+    if r.returncode != 0:
+        return (r.stderr or r.stdout).strip()[:240]
+    return ""
+
+
+def _launchd_state(out: str) -> str:
+    m = re.search(r"(?m)^\s*state\s*=\s*(.+?)\s*$", out or "")
+    return m.group(1) if m else ""
+
+
+def _launchd_active(unit: str) -> bool:
+    r = sh(["launchctl", "print", _launchd_target(unit)], timeout=15)
+    if r.returncode != 0:
+        return False
+    out = r.stdout or ""
+    m = re.search(r"(?m)^\s*pid\s*=\s*(\d+)", out)
+    if m:
+        return int(m.group(1)) > 0
+    return _launchd_state(out) == "running"
+
+
+def _launchd_gc(unit: str) -> None:
+    """Drop a finished job's registration + generated artifacts —
+    the `systemd-run --collect` equivalent (the log file stays, in
+    journal parity)."""
+    sh(["launchctl", "bootout", _launchd_target(unit)], timeout=15)
+    ldir = _launchd_dir()
+    for p in (ldir / f"{unit}.plist", ldir / f"{unit}.sh",
+              ldir / f"{unit}.pid"):
+        try:
+            p.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def _collect_launchd(unit: str) -> tuple[bool, str]:
+    """launchd twin of collect()'s evidence precedence: task-dir
+    exit_code (devin-task-*) > wrapper <unit>.code > `launchctl
+    print` last exit code while still registered. No usable record
+    -> NOT ok: an unproven exit never reports success."""
+    tail = ""
+    logp = _launchd_log(unit)
+    try:
+        if logp.is_file():
+            lines = [x for x in logp.read_text(
+                errors="replace").splitlines() if x.strip()]
+            tail = " | ".join(lines[-40:])[-240:]
+    except OSError:
+        pass
+    if unit.startswith("devin-task-"):
+        base = re.sub(r"-fu\d+$", "",
+                      unit.removeprefix("devin-task-")
+                      .removesuffix(".service"))
+        try:
+            ecp = (Path.home() / ".local/share/devin-dispatch/tasks"
+                   / base / "exit_code")
+            ec = ecp.read_text().strip() if ecp.is_file() else ""
+        except Exception:
+            ec = ""
+        if ec:
+            _launchd_gc(unit)
+            return ec == "0", f"exit={ec} {tail}".strip()
+    try:
+        ecp = (_exit_dir()
+               / f"{unit.removesuffix('.service')}.code")
+        if ecp.is_file():
+            ec = ecp.read_text().strip()
+            ecp.unlink(missing_ok=True)
+            _launchd_gc(unit)
+            return ec == "0", f"exit={ec} {tail}".strip()
+    except OSError:
+        pass
+    r = sh(["launchctl", "print", _launchd_target(unit)], timeout=15)
+    if r.returncode == 0:
+        m = re.search(r"(?m)^\s*last exit code\s*=\s*(-?\d+)",
+                      r.stdout or "")
+        if m:
+            ec = m.group(1)
+            _launchd_gc(unit)
+            return ec == "0", f"exit={ec} {tail}".strip()
+    return False, ("no exit record — job unregistered and no .code "
+                   f"file (unproven, not ok) {tail}").strip()
+
+
+def _launchd_pids(unit: str) -> list:
+    """Live pids of the job's payload tree — the .pid pgrp file the
+    wrapper writes, else the job's own pid from launchctl print."""
+    try:
+        pg = (_launchd_dir() / f"{unit}.pid").read_text().strip()
+    except OSError:
+        pg = ""
+    if pg.isdigit():
+        r = sh(["pgrep", "-g", pg], timeout=10)
+        pids = [x for x in (r.stdout or "").split() if x.isdigit()]
+        if pids:
+            return pids
+    r = sh(["launchctl", "print", _launchd_target(unit)], timeout=15)
+    m = re.search(r"(?m)^\s*pid\s*=\s*(\d+)", r.stdout or "")
+    return [m.group(1)] if m and m.group(1) != "0" else []
+
+
+def _launchd_signal(unit: str, sig: str) -> None:
+    """Signal the payload's whole pgrp — `systemctl --kill-whom=all`
+    parity (launchctl kill only reaches the job leader)."""
+    try:
+        pg = (_launchd_dir() / f"{unit}.pid").read_text().strip()
+    except OSError:
+        pg = ""
+    if pg.isdigit():
+        sh(["kill", f"-{sig}", f"-{pg}"], timeout=10)
+        return
+    for p in _launchd_pids(unit):
+        sh(["kill", f"-{sig}", p], timeout=10)
+
+
+def _launchd_units_for_card(cid: str) -> list:
+    """devin-task-<cid>-* job labels — generated plists plus labels
+    still registered in the domain (a bootstrapped job outlives its
+    plist file until _launchd_gc)."""
+    out = set()
+    try:
+        for p in _launchd_dir().glob(f"devin-task-{cid}-*.plist"):
+            out.add(p.name[:-len(".plist")])
+    except OSError:
+        pass
+    r = sh(["launchctl", "print", _launchd_domain()], timeout=20)
+    if r.returncode == 0:
+        out.update(x for x in re.findall(
+            r"devin-task-[A-Za-z0-9_-]+", r.stdout or "")
+            if x.startswith(f"devin-task-{cid}-"))
+    return sorted(out)
+
+
+def rt_launch(unit: str, description: str, shell: str,
+              timeout_s: int = 0, env: dict | None = None) -> str:
+    """Start a transient task unit — "" on success, else the error.
+
+    THE executor seam: `systemd-run --user --collect` on Linux,
+    `launchctl bootstrap` on macOS. `shell` is authored once in
+    systemd ExecStart form (`$$` -> literal `$`); the launchd side
+    strips one escape layer. `env` becomes --setenv /
+    EnvironmentVariables. `timeout_s` becomes RuntimeMaxSec / the
+    wrapper watchdog."""
+    if task_runtime() == "launchd":
+        return _launchd_launch(unit, shell, timeout_s=timeout_s,
+                               env=env)
+    argv = ["systemd-run", "--user", f"--unit={unit}", "--collect"]
+    if timeout_s:
+        argv.append(f"--property=RuntimeMaxSec={int(timeout_s)}")
+    argv += ["--description", description] + task_run_props()
+    for k, v in (env or {}).items():
+        argv += ["--setenv", f"{k}={v}"]
+    argv += ["bash", "-lc", shell]
+    r = sh(argv, timeout=180)
+    return "" if r.returncode == 0 else \
+        (r.stderr or r.stdout).strip()[:240]
+
+
 def unit_active(unit: str) -> bool:
+    if task_runtime() == "launchd":
+        return _launchd_active(unit)
     r = sh(["systemctl", "--user", "is-active", unit], timeout=15)
     return r.stdout.strip() in ("active", "activating")
 
 
 def _exit_capture(unit: str, workdir: str | None, cmd: list) -> str:
     """bash -lc body for runner-* units: run the cmd, then write its
-    exit code to /run/user/<uid>/runner-exit/<unit>.code before exiting.
+    exit code to _exit_dir()/<unit>.code before exiting.
 
     --collect can reap the transient unit record before the next finish
     pass reads it (OPS-1181 — a <2s script probe false-failed
     "unit not-found"). The code file is the durable verdict collect()
     reads first; a `cd` failure skips the cmd and still records nonzero.
+    launchd loses the job record the same way on bootout/reboot — the
+    file contract is identical there.
     """
-    run_dir = Path(f"/run/user/{os.getuid()}/runner-exit")
+    run_dir = _exit_dir()
     code = run_dir / f"{unit.removesuffix('.service')}.code"
     head = f"cd {shlex.quote(workdir)} && " if workdir else ""
     return (f"{head}{shlex.join([str(x) for x in cmd])}; "
@@ -636,6 +1050,8 @@ def collect(unit: str) -> tuple[bool, str]:
     still reported 'finished (ok)') > journal Succeeded/Failed lines.
     No usable record -> NOT ok: an unproven exit must never report
     success, or dead sessions close as clean work again."""
+    if task_runtime() == "launchd":
+        return _collect_launchd(unit)
     r = sh(["systemctl", "--user", "show", unit,
             "-p", "ExecMainStatus", "-p", "Result", "-p", "LoadState"],
            timeout=15)
@@ -664,7 +1080,7 @@ def collect(unit: str) -> tuple[bool, str]:
     # finish pass (OPS-1181: a <2s probe lost its exit and false-failed).
     if unit.startswith("runner-"):
         try:
-            ecp = (Path(f"/run/user/{os.getuid()}/runner-exit")
+            ecp = (_exit_dir()
                    / f"{unit.removesuffix('.service')}.code")
             if ecp.is_file():
                 ec = ecp.read_text().strip()
@@ -1235,8 +1651,29 @@ def _claimable(card: dict) -> tuple:
                 return "", "executor=opencode but OPENCODE_LANES=0"
             if not opencode_bin():
                 return "", "executor=opencode but no opencode binary"
-        elif not Path(DISPATCH).exists():
-            return "", "no devin-dispatch on host"
+        elif ex in ("", "devin", "kk_mac_local"):
+            # the devin path launches devin-dispatch, which drives
+            # systemd-run itself — outside the launchd seam's reach. On
+            # a launchd runner it is servable only when the card still
+            # routes to the opencode lane (unset/fallback executor +
+            # classified LANE_MODELS lane + profile + binary);
+            # otherwise it waits for a Linux runner. kk_mac_local with
+            # kk_mac_tried reaches here on the next-lane fallback —
+            # start_task re-routes it through the same opencode check.
+            if task_runtime() != "systemd":
+                lane0 = str(a.get("lane") or "") or classify_lane(card)
+                if not (ex != "devin" and OPENCODE_LANES
+                        and opencode_bin()
+                        and lane0 in LANE_MODELS
+                        and (card_profile(card)
+                             or LANE_PROFILES.get(lane0))):
+                    return "", ("devin executor is systemd-only on "
+                                "this launchd runner and no opencode "
+                                "lane resolves — waits for a Linux "
+                                "runner (declare executor=opencode/"
+                                "script to serve it here)")
+            elif not Path(DISPATCH).exists():
+                return "", "no devin-dispatch on host"
         # runner-push-cred-gap: never claim a repo this host can't push
         # — finishing here strands the branch (ADA-0673). Applies to the
         # OpenCode lane too: its close-out pushes the session branch.
@@ -1325,6 +1762,12 @@ def executor_defer_reason(card: dict) -> str:
                         f"serve it ({', '.join(missing)}) — the card stays "
                         "queued for a Jules-capable runner; it will never "
                         "silently fall back to devin")
+    if ex == "devin" and task_runtime() != "systemd" \
+            and (a.get("type") or "dispatch") == "dispatch":
+        return ("executor=devin declared but this runner is launchd — "
+                "devin-dispatch drives systemd-run internally; the card "
+                "stays queued for a Linux runner (executor=opencode/"
+                "script serve here)")
     if ex and ex not in EXECUTORS:
         return (f"executor={ex!r} is not a known executor "
                 f"({', '.join(sorted(EXECUTORS))}) — fix the card; "
@@ -1426,6 +1869,12 @@ def jules_daily_used() -> int:
 # --- task unit resource limits ---------------------------------------
 
 def _mem_total_gb() -> float:
+    if sys.platform == "darwin":
+        try:
+            r = sh(["sysctl", "-n", "hw.memsize"], timeout=10)
+            return int(r.stdout.strip()) / 1073741824
+        except (ValueError, AttributeError):
+            return 0.0
     try:
         for ln in Path("/proc/meminfo").read_text().splitlines():
             if ln.startswith("MemTotal:"):
@@ -1468,7 +1917,10 @@ def task_run_props() -> list:
 
 
 def unit_pids(unit: str) -> list:
-    """PIDs in the unit's cgroup (cgroup v2), MainPID fallback."""
+    """PIDs in the unit's cgroup (cgroup v2), MainPID fallback — the
+    payload pgrp on launchd (no cgroups on macOS)."""
+    if task_runtime() == "launchd":
+        return _launchd_pids(unit)
     r = sh(["systemctl", "--user", "show", unit,
             "-p", "ControlGroup", "--value"], timeout=15)
     cg = r.stdout.strip()
@@ -1507,6 +1959,12 @@ def enforce_task_limits(unit: str) -> None:
     property, hence the renice."""
     if not LIMITS_ON:
         return
+    if task_runtime() == "launchd":
+        # the plist already carries Nice/LowPriorityIO at bootstrap;
+        # renice covers a unit launched before the limit env landed.
+        # CPUQuota/MemoryMax/IOWeight have no launchd equivalent.
+        renice_unit(unit, TASK_NICE)
+        return
     props = [f"CPUQuota={task_cpu_quota()}",
              f"CPUWeight={TASK_CPU_WEIGHT}"]
     if TASK_IO_WEIGHT:
@@ -1516,6 +1974,38 @@ def enforce_task_limits(unit: str) -> None:
         props.append(f"MemoryMax={mm}")
     sh(["systemctl", "--user", "set-property", unit] + props, timeout=20)
     renice_unit(unit, TASK_NICE)
+
+
+def _deprioritize_unit(unit: str, cpu_quota: str, nice: int) -> None:
+    """Watchdog strike-1 throttle — cgroup quota + renice on systemd;
+    renice-only on launchd (Nice/LowPriorityIO are baked into the
+    plist and there is no cgroup quota to tighten)."""
+    if task_runtime() == "launchd":
+        renice_unit(unit, nice)
+        return
+    sh(["systemctl", "--user", "set-property", unit,
+        f"CPUQuota={cpu_quota}"], timeout=15)
+    renice_unit(unit, nice)
+
+
+def _signal_job(unit: str, sig: str) -> None:
+    """Signal every process of a task unit — systemctl
+    --kill-whom=all on systemd, kill -<pgrp> on launchd."""
+    if task_runtime() == "launchd":
+        _launchd_signal(unit, sig)
+        return
+    sh(["systemctl", "--user", "kill", "--kill-whom=all",
+        "--signal", sig, unit], timeout=15)
+
+
+def _resume_hint(unit: str) -> str:
+    """Comms hint for manually unpausing a watchdog-stopped task."""
+    if task_runtime() == "launchd":
+        return (f"`kill -CONT -$(cat "
+                f"{_launchd_dir() / (unit + '.pid')})` "
+                "(the payload pgrp — launchctl kill only reaches the "
+                "job leader)")
+    return f"`systemctl --user kill -s SIGCONT {unit}`"
 
 
 # --- gpu card pre-flight ----------------------------------------------
@@ -1733,23 +2223,20 @@ def watchdog_pass(st: dict) -> bool:
             wd["strikes"] = wd.get("strikes", 0) + 1
             changed = True
             if wd["strikes"] == 1:
-                sh(["systemctl", "--user", "set-property", unit,
-                    f"CPUQuota={WD_CPU_QUOTA}"], timeout=15)
-                renice_unit(unit, WD_NICE)
+                _deprioritize_unit(unit, WD_CPU_QUOTA, WD_NICE)
                 api("/comment", {"id": cid, "from": "chaba",
                     "text": f"display watchdog: {detail} — deprioritized "
                             f"{unit} (nice {WD_NICE}, CPUQuota "
                             f"{WD_CPU_QUOTA}); will pause if the stall "
                             f"persists"})
             elif wd["strikes"] >= WD_STRIKES and not wd.get("paused"):
-                sh(["systemctl", "--user", "kill", "--kill-whom=all",
-                    "--signal", "SIGSTOP", unit], timeout=15)
+                _signal_job(unit, "SIGSTOP")
                 wd["paused"] = True
                 api("/comment", {"id": cid, "from": "chaba",
                     "text": f"display watchdog: still stalled ({detail}) "
                             f"— PAUSED {unit} (SIGSTOP). " + UNSTICK +
-                            f"; resume the task with `systemctl --user "
-                            f"kill -s SIGCONT {unit}` (or wait — the "
+                            f"; resume the task with {_resume_hint(unit)} "
+                            f"(or wait — the "
                             f"watchdog auto-resumes on healthy probes)"})
             elif wd.get("paused") and wd["strikes"] == WD_STRIKES + 8:
                 api("/comment", {"id": cid, "from": "chaba",
@@ -1762,8 +2249,7 @@ def watchdog_pass(st: dict) -> bool:
                 wd["healthy"] = wd.get("healthy", 0) + 1
                 changed = True
                 if wd["healthy"] >= WD_HEALTHY:
-                    sh(["systemctl", "--user", "kill", "--kill-whom=all",
-                        "--signal", "SIGCONT", unit], timeout=15)
+                    _signal_job(unit, "SIGCONT")
                     wd["paused"] = False
                     wd["healthy"] = 0
                     enforce_task_limits(unit)  # undo the throttle
@@ -1966,13 +2452,10 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
         f"echo \"$$rc\" > {shlex.quote(str(taskdir / 'exit_code'))}; "
         "exit $$rc"
     )
-    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}",
-             "--collect",
-             "--description", f"runner {cid} kk_mac {task_class}"]
-            + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    if r.returncode:
-        return "", "", (r.stderr or r.stdout).strip()[:240]
+    err = rt_launch(f"devin-task-{tid}",
+                    f"runner {cid} kk_mac {task_class}", shell)
+    if err:
+        return "", "", err
     return f"devin-task-{tid}", tid, ""
 
 
@@ -2147,11 +2630,10 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
         f"2> {shlex.quote(str(taskdir / 'profile-stderr.log'))}; "
         f"rc=$$?; echo $$rc > {shlex.quote(str(taskdir / 'exit_code'))}; exit $$rc"
     )
-    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
-             f"--property=RuntimeMaxSec={timeout + 60}", "--description",
-             f"runner {card['id']} staged read-only profile"] + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    return ("", "", (r.stderr or r.stdout).strip()[:240]) if r.returncode else (f"devin-task-{tid}", tid, "")
+    err = rt_launch(f"devin-task-{tid}",
+                    f"runner {card['id']} staged read-only profile",
+                    shell, timeout_s=timeout + 60)
+    return ("", "", err) if err else (f"devin-task-{tid}", tid, "")
 
 
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
@@ -2352,14 +2834,11 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
             tmax = int(m.group(1)) if m else 420
     except Exception:
         tmax = 420
-    argv = (["systemd-run", "--user", f"--unit=devin-task-{tid}", "--collect",
-             f"--property=RuntimeMaxSec={tmax}",
-             "--description", f"runner {card['id']} OpenCode "
-                              f"{lane or prof_id}"]
-            + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    if r.returncode:
-        return "", "", (r.stderr or r.stdout).strip()[:240]
+    err = rt_launch(f"devin-task-{tid}",
+                    f"runner {card['id']} OpenCode {lane or prof_id}",
+                    shell, timeout_s=tmax)
+    if err:
+        return "", "", err
     return f"devin-task-{tid}", tid, ""
 
 
@@ -2415,12 +2894,9 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    argv = (["systemd-run", "--user", f"--unit={u2}", "--collect",
-             "--description", f"runner {cid} nlm {repo}"]
-            + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    if r.returncode:
-        return "", "", (r.stderr or r.stdout).strip()[:240]
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    if err:
+        return "", "", err
     return u2, tid, ""
 
 
@@ -2510,12 +2986,9 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     shell = (f"cd {shlex.quote(str(taskdir))} && "
              f"{shlex.join(argv_n)} > run.log 2>&1")
     u2 = f"devin-task-{tid}"
-    argv = (["systemd-run", "--user", f"--unit={u2}", "--collect",
-             "--description", f"runner {cid} nlm {repo}"]
-            + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    if r.returncode:
-        return "", "", (r.stderr or r.stdout).strip()[:240]
+    err = rt_launch(u2, f"runner {cid} nlm {repo}", shell)
+    if err:
+        return "", "", err
     return u2, tid, ""
 
 
@@ -2625,12 +3098,9 @@ def start_jules_lane(card: dict, unit: str) -> tuple:
         "test \"$STATE\" != \"FAILED\""
     )
     u2 = f"devin-task-{tid}"
-    argv = (["systemd-run", "--user", f"--unit={u2}", "--collect",
-             "--description", f"runner {cid} jules {repo}"]
-            + task_run_props() + ["bash", "-lc", shell])
-    r = sh(argv, timeout=180)
-    if r.returncode:
-        return "", "", (r.stderr or r.stdout).strip()[:240]
+    err = rt_launch(u2, f"runner {cid} jules {repo}", shell)
+    if err:
+        return "", "", err
     return u2, tid, ""
 
 
@@ -2774,13 +3244,14 @@ def start_task(card: dict, typ: str) -> tuple:
         env = []
         for k, v in (c.get("env") or {}).items():
             env += ["-e", f"{k}={v}"]
-        argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
-                 "--description", f"runner {cid}"] + task_run_props() +
-                ["bash", "-lc",
-                 _exit_capture(unit, workdir=None, cmd=[
-                     "podman", "run", "--rm",
-                     f"--pull={c.get('pull', 'missing')}",
-                     f"--name={unit}"] + env + [str(c["image"])] + cmd)])
+        err = rt_launch(
+            unit, f"runner {cid}",
+            _exit_capture(unit, workdir=None,
+                          cmd=["podman", "run", "--rm",
+                               f"--pull={c.get('pull', 'missing')}",
+                               f"--name={unit}"] + env +
+                              [str(c["image"])] + cmd))
+        return ("", "", err) if err else (unit, "", "")
     elif typ == "script":
         c = a.get("script") or {}
         url = c.get("repo_url") or REPO_URLS.get(c.get("repo", "chaba"))
@@ -2793,14 +3264,12 @@ def start_task(card: dict, typ: str) -> tuple:
         cmd = c.get("cmd")
         cmd = (["bash", "-lc", cmd] if isinstance(cmd, str)
                else [str(x) for x in cmd])
-        env = []
-        for k, v in (c.get("env") or {}).items():
-            env += ["--setenv", f"{k}={v}"]
-        argv = (["systemd-run", "--user", f"--unit={unit}", "--collect",
-                 f"--property=RuntimeMaxSec={int(c.get('timeout', 1800))}",
-                 "--description", f"runner {cid}"] + task_run_props() +
-                env +
-                ["bash", "-lc", _exit_capture(unit, workdir, cmd)])
+        senv = {str(k): str(v)
+                for k, v in (c.get("env") or {}).items()}
+        err = rt_launch(unit, f"runner {cid}",
+                        _exit_capture(unit, workdir, cmd),
+                        timeout_s=int(c.get("timeout", 1800)), env=senv)
+        return ("", "", err) if err else (unit, "", "")
     else:  # dispatch
         # Executor contract (opencode-explicit-executor-routing): an
         # explicit action.executor decides the route BEFORE any lane
@@ -2893,6 +3362,13 @@ def start_task(card: dict, typ: str) -> tuple:
         spec = (card.get("spec") or "").strip() or \
             f"{card.get('title', '')}\n\n{card.get('note', '')}"
         task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
+        if task_runtime() != "systemd":
+            # claimable() already declines; double-guard so a forced
+            # claim can never invoke the systemd-run-based launcher.
+            return "", "", ("devin executor unavailable — "
+                            "devin-dispatch drives systemd-run "
+                            "internally; this launchd runner serves "
+                            "opencode/script/container lanes only")
         argv = [DISPATCH, "start", a.get("repo", "chaba"), task]
     env = dict(os.environ)
     if typ == "dispatch":
@@ -3099,6 +3575,8 @@ def units_for_card(cid: str) -> list:
     name embeds the tid (<cid>-<epoch>[-fuN]), so the prefix match is
     exact. Returns unit names without the .service suffix, newest
     first isn't guaranteed — callers take [0]."""
+    if task_runtime() == "launchd":
+        return _launchd_units_for_card(cid)
     r = sh(["systemctl", "--user", "list-units", "--all", "--no-legend",
             "--plain", "devin-task-*"], timeout=15)
     out = []
@@ -3206,10 +3684,35 @@ def overloaded(pc: float | None = None) -> bool:
     cap = MAX_LOAD_PC if pc is None else pc
     if cap <= 0:
         return False
+    l = _load5_per_core()
+    return bool(l is not None and l > cap)
+
+
+def _sysctl_load5() -> float | None:
+    """5-min loadavg via `sysctl -n vm.loadavg` (output like
+    '{ 1.90 2.05 3.10 }') — the darwin probe the kk-mac contract
+    names. getloadavg(3) reports the same numbers and stays the
+    fallback."""
     try:
-        return os.getloadavg()[1] / (os.cpu_count() or 1) > cap
-    except OSError:
-        return False
+        r = sh(["sysctl", "-n", "vm.loadavg"], timeout=10)
+    except Exception:
+        return None
+    m = re.search(r"(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s+"
+                  r"(\d+(?:\.\d+)?)", r.stdout or "")
+    return float(m.group(2)) if m else None
+
+
+def _load5_per_core() -> float | None:
+    """5-min load per core — `sysctl vm.loadavg` first on darwin,
+    getloadavg(3) elsewhere and as fallback."""
+    if sys.platform == "darwin":
+        l = _sysctl_load5()
+        if l is not None:
+            return l / (os.cpu_count() or 1)
+    try:
+        return os.getloadavg()[1] / (os.cpu_count() or 1)
+    except (OSError, AttributeError):
+        return None
 
 
 def blocker_released(blocker: dict) -> bool:
@@ -3259,10 +3762,8 @@ def _capacity_reason(st: dict) -> str:
     except OSError:
         pass
     if overloaded():
-        try:
-            lp = os.getloadavg()[1] / (os.cpu_count() or 1)
-        except OSError:
-            lp = -1
+        lp = _load5_per_core()
+        lp = lp if lp is not None else -1
         return (f"host overloaded (5m load/core {lp:.2f} > "
                 f"{MAX_LOAD_PC})")
     return ""
