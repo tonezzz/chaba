@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
-column: review
-updated: 2026-11-14 08:45
+column: backlog
+updated: 2026-11-14 08:46
 priority: medium
 tags:
 - mddb
@@ -57,6 +57,9 @@ comms:
   from: chaba
   text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261114-084430-research-audit-read-only-enume,
     branch dispatch/20261114-084430-research-audit-read-only-enume'
+- at: 2026-11-14 08:46
+  from: tony
+  text: re-spawned from report page
 action:
   type: dispatch
   repo: chaba
@@ -96,11 +99,11 @@ action:
       required: true
       stale_s: 300
     timeout_s: 300
-  status: done
+  status: queued
   lane: codemod
-  runner: tony-dell
   result: 'exit=0  devin-task-20261114-084430-research-audit-read-only-enume.service: Failed with result ''exit-code''.
     | devin-task-20261114-084430-research-audit-read-only-enume.service: Consumed 568ms CPU time over 518ms wall
     clock time, 118.6M memory peak.'
+  host: idc02
 review_kind: verify
 claim: {}
