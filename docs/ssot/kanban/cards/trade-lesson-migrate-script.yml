@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
 column: review
-updated: 2026-11-13 23:15
+updated: 2026-11-14 08:25
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -164,5 +164,11 @@ comms:
 - at: 2026-11-13 23:15
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 08:25
+  from: devin
+  text: Duplicate dispatch 224719 resumed after its worktree was GC'd mid-session (zero file changes lost — exploration
+    only). Verified parallel session 225925 already shipped the full task on origin (script + map + real --apply
+    -> lesson-0f4811f49a34 trade-getting-started confirmed in /lesson op:list; drift-map + SERIES updates on its
+    branch pending normal merge). This session adds only its outcome doc; no duplicate code.
 claim: {}
 review_kind: verify
