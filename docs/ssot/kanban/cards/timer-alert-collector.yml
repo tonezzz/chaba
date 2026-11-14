@@ -1,7 +1,7 @@
 id: timer-alert-collector
 title: Timer timeline sweep stale — collector may be dead
 column: done
-updated: 2026-11-08 10:30
+updated: 2026-11-14 14:08
 priority: high
 tags:
 - timer-alert
@@ -3579,6 +3579,10 @@ comms:
 - at: 2026-11-08 10:30
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: The goal is to investigate why the timer timeline sweep has not successfully run in the last 30 minutes, checking
   the status of chaba-timer-timeline.timer and the script scripts/ada/timer-timeline-update.py on the host tony-dell.
   Constraints are to inspect the specified systemd timer and script without making unauthorized modifications or
