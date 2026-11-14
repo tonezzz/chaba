@@ -22,7 +22,7 @@ note: 'Observed 2026-10-07 ~21:30 on ada-ha-tony (idc03 :8002) during yt_dub_lia
 spec: Investigate whether 50c3abc/d614648 leak sanitizer writes sanitized text back into the transcript stream;
   check dead-turn guard / memory-hit-cap interplay after live_reconnecting (storm trigger); add a scenario or unit
   test asserting tool-result text never appears in assistant_transcript_delta.
-updated: 2026-11-14 08:26
+updated: 2026-11-14 14:15
 comms:
 - at: 2026-10-08 09:00
   from: devin
@@ -185,6 +185,10 @@ comms:
   text: 'idc03 defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the only
     eligible runner (idc03) — it needs push:ada-voice creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
