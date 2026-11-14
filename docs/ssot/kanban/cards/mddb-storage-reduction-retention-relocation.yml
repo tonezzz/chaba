@@ -1,7 +1,7 @@
 id: mddb-storage-reduction-retention-relocation
 title: mddb storage reduction — retention relocation + compaction pipeline
 column: done
-updated: 2026-11-07 14:45
+updated: 2026-11-14 14:06
 brief: idc03 mddb banks total 28G; ops bank alone is 17G because the retention sweep is chained to ada-review-refresh
   on tony-omen (down for maintenance). Leader host-logs swept (12.8k docs). Ops collection too big to enumerate
   through live API — backup→scratch-mddb→delete-batch→compact pipeline in flight.
@@ -136,6 +136,10 @@ comms:
 - at: 2026-11-07 14:45
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: ops-host-logs-regrew-to-457k-docs-17g-pa-7c9e9d
   ask: ops host-logs regrew to 457k docs/17G — past the enumeration limit so prune cannot bite. 14d retention ≈
