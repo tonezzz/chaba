@@ -1,7 +1,7 @@
 id: ops-1244d-janitor-merge
 title: 'OPS-1244d opencode: merge board sweep scripts into one janitor tick (sub of devnest-queue-consolidation)'
 column: done
-updated: 2026-11-12 10:37
+updated: 2026-11-14 14:12
 priority: medium
 tags:
 - devnest
@@ -128,4 +128,8 @@ comms:
     exists; merge-sweep runs standalone, review-digest runs on its own hand-installed unit (chaba-review-digest.timer,
     *:0/15). Deployment step missing. Meanwhile bumped chaba-review-digest.service TimeoutStartSec 120->900 manually
     (hand unit, not rendered).'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
