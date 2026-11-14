@@ -1,7 +1,7 @@
 id: kk-mac-gateway-admission-shim
 title: Admission shim in front of kk-mac ollama tunnel for LiteLLM legs
 column: doing
-updated: 2026-11-14 10:38
+updated: 2026-11-14 10:50
 priority: medium
 tags:
 - kk-mac
@@ -41,6 +41,13 @@ comms:
   from: devin
   text: 'shim verified locally: temp=75 heartbeat -> 503 in ~14ms; healthy snapshot -> admit; dead upstream -> 502.
     Wiring unit + config now.'
+- at: 2026-11-14 10:50
+  from: devin
+  text: 'DONE. kkmac-admission-shim.service live on idc03 :11447 (gate -> tunnel :11445); all 7 kk-mac api_base
+    entries repointed; repo copy synced incl. the 2026-11-13 live drift. Verified: simulated cpu_temp_c=75 heartbeat
+    -> instant 503 -> gemini-3.5-flash-lite fallback in 3.4s (x-litellm-attempted-fallbacks:1); real heartbeat admits
+    and serves qwen2.5:32b. Byte-identical config/unit/scripts host-vs-repo. Commit 25f28b4e81 on dispatch branch.
+    Rollback + drain-switch details in dispatch-outcome file.'
 action:
   type: dispatch
   repo: chaba
