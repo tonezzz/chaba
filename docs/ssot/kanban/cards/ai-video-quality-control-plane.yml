@@ -1,7 +1,7 @@
 id: ai-video-quality-control-plane
 title: Expand AI video generation quality control plane
 column: backlog
-updated: 2026-10-26 07:25
+updated: 2026-11-14 14:14
 spec: 'Extend the existing Ada Nest documentary pipeline with asset identity and continuity control. Implement in
   stages: P0 immutable per-shot manifest + asset IDs + scratch-VO timing + technical QA; P1 character/object/location
   bibles + continuity ledger + DWPose/depth controls; P2 deterministic Blender/stock/space scenes + Gaussian/camera
@@ -28,3 +28,7 @@ comms:
   from: devin
   text: 'P0 implementation is complete on branch feat/ops-0882-p0, commit 661b8e373. PR: https://github.com/tonezzz/chaba/pull/new/feat/ops-0882-p0.
     It adds deterministic video-qc.py and tests; deploy/merge remains the normal review gate.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
