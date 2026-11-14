@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-michael-dev-parity
 title: Timer michael-dev-parity on tony-omen failing
 column: doing
-updated: 2026-11-13 23:39
+updated: 2026-11-14 08:34
 priority: high
 tags:
 - timer-alert
@@ -1470,6 +1470,11 @@ comms:
   text: '2026-11-13: ConnectionRefused idc02:8124 — this is the KNOWN wrong-port bug already carded as OPS-0040
     (mirror-sweep should target :9585 not loopback :8124). This timer card is the symptom; fix lands via OPS-0040.
     Keeping open until parity check goes green post-fix.'
+- at: 2026-11-14 08:34
+  from: devin
+  text: 'Connectivity fixed via OPS-0040 (tailnet bind + http scheme, PR #173). Check now runs and reports genuine
+    entity drift — ha-missing: dev_wind_speed, dev_wind_speed_meters, dev_wind_to, forecast_baan; dev-missing: script.turn_on.
+    Card stays open until mirror-sweep goes green or drift is triaged.'
 action:
   status: failed
   type: dispatch
