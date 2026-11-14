@@ -1,0 +1,37 @@
+id: opencode-lane-s3-dispatch-hardening
+title: 'S3 dispatch hardening: timeout event loss + runner-agent fleet drift'
+column: backlog
+updated: 2026-11-14 09:55
+priority: medium
+tags:
+- opencode-lane
+- dispatch
+- infra
+spec: 'Found during first S3 card pilots (2026-11-14, ops-event-plane-split-brain-audit + ada-docs-search-drift):
+
+
+  1. run_profile_process (scripts/devnest/opencode_profiles.py) uses capture_output for unattended runs — on TimeoutExpired
+  the partial stdout/stderr is discarded, so events.jsonl/stderr.log never land and the failure is undiagnosable
+  (two pilot runs lost all evidence). Fix: catch TimeoutExpired, write partial e.stdout/e.stderr to the run dir
+  before re-raising/recording.
+
+
+  2. Fleet runner-agent drift: tony-dell runs an Oct-26 binary (~51KB) vs repo scripts/board/runner-agent.py (~164KB)
+  — its stale claimable() lacks target_host gating and claimed S3 cards pinned to idc02, routing them to the generic
+  dispatch executor (failed in 518ms). There is no automated deploy of ~/.local/bin/runner-agent; needs either a
+  sync mechanism or version check in claimable().
+
+
+  3. OPENCODE_LANES env gap: staged dispatch launches transient devin-task-* units that do NOT inherit runner-agent.service
+  drop-in env — admit() failed env_gate until OPENCODE_LANES=1 was added to systemd --user manager env + environment.d
+  on idc02. launch_profile_dispatch should export it in the unit shell (or pass --setenv) so the contract is self-contained.
+
+
+  4. Free-model variance on ssot-research: nemotron-ultra produced 1 verifier-pass artifact, 1 malformed-citations
+  artifact, 1 wrong-schema artifact across 3 attempts on the same card. Consider escalation.max_retries>0 for dispatch
+  cards or a schema-retry hint in the profile prompt.'
+ref: OPS-0121
+comms:
+- at: 2026-11-14 09:55
+  from: devin
+  text: card captured via board-api
