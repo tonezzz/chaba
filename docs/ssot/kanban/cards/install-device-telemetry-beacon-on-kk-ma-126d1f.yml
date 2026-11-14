@@ -1,0 +1,13 @@
+id: install-device-telemetry-beacon-on-kk-ma-126d1f
+title: Install device-telemetry beacon on kk-mac (hosts view)
+column: backlog
+updated: 2026-11-14 08:48
+ref: OPS-0118
+comms:
+- at: 2026-11-14 08:48
+  from: devin
+  text: 'kk-mac (tailscale 100.108.217.17, macOS) is offline — beacon could not be installed 2026-11-14. When it
+    is online: ssh kk-mac, cd ~/CascadeProjects/chaba (or clone), run DEVICE_TELEMETRY_NAME=kk-mac bash scripts/device-telemetry/install.sh
+    — install.sh now writes the name into the launchd plist. Hosts view already has the kk-mac card (first position)
+    and telemetry-ha-push already includes kk-mac in TELEMETRY_DEVICES; entities appear automatically once the beacon
+    posts. Until then the card shows '
