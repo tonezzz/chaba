@@ -1,7 +1,7 @@
 id: kk-mac-worker-idle-poll-efficiency
 title: Reduce KK-Mac worker idle polling and failed-pack retry load
-column: doing
-updated: 2026-11-14 10:59
+column: review
+updated: 2026-11-14 11:06
 brief: KK-Mac's LaunchAgent runs nest-worker --once every 15 seconds even when the queue is empty; measure and reduce
   idle polling/model residency without weakening claim or verifier gates.
 priority: medium
@@ -23,7 +23,7 @@ spec: 'Investigate the live KK-Mac worker: net.adanest.kk-llm-worker LaunchAgent
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: done
   sweep:
     failed_noted: 2026-10-31 08:49
   last_failure: 'exit=1 E | devin-task-20261031-084555-investigate-the-live-kk-mac-wo.service: Failed with result
@@ -33,6 +33,9 @@ action:
   lane: free_lane
   model: litellm/gemini-3.5-flash-lite
   runner: tony-dell
+  result: 'exit=0 E | devin-task-kk-mac-worker-idle-poll-efficiency-1794628792.service: Failed with result ''exit-code''.
+    | devin-task-kk-mac-worker-idle-poll-efficiency-1794628792.service: Consumed 467ms CPU time over 408ms wall
+    clock time, 66.8M memory peak.'
 note: 'Observed 2026-10-31: worker runs every 15s; 55 runs reported, qwen3:8b resident, recent short verified jobs
   completed in ~0.9s, and worker.err contains rclone timeout plus independent-check failures from older packs. Current
   load spike is transient; sustained CPU was also mediaanalysisd, not Nest.'
@@ -75,3 +78,9 @@ comms:
 - at: 2026-11-14 10:59
   from: chaba
   text: started devin-task-kk-mac-worker-idle-poll-efficiency-1794628792 on tony-dell (dispatch)
+- at: 2026-11-14 11:06
+  from: tony-dell
+  text: 'finished (ok): exit=0 E | devin-task-kk-mac-worker-idle-poll-efficiency-1794628792.service: Failed with
+    result ''exit-code''. | devin-tas'
+review_kind: verify
+claim: {}
