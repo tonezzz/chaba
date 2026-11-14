@@ -1,7 +1,7 @@
 id: kk-mac-producer-inbox-starvation
 title: kk-mac capacity producer starves on 103-file inbox — new specs never staged
 column: done
-updated: 2026-11-13 19:41
+updated: 2026-11-14 14:13
 priority: medium
 tags:
 - devnest,kk-mac
@@ -73,6 +73,10 @@ comms:
     live: archive_spec moved report-review-01a3b4471e0f.json to inbox/done/ and it left the scan path. Deploys to
     tony-dell on next chaba-repo-sync (hourly); the ~109-spec backlog then self-drains at budget pace. 237 devnest
     tests pass.'
+- at: 2026-11-14 14:13
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 action:
   status: done
