@@ -1,7 +1,7 @@
 id: mddb-circuit-open-page
 title: Page on embed circuit-open, not just probe-down
 column: done
-updated: 2026-11-12 14:36
+updated: 2026-11-14 14:14
 spec: '''all same-space providers down / OR circuit-open'' ran ~30min silently on 2026-11-12 with 298 failed embed
   attempts. mddb-embed-probe already transitions on state change — wire circuit-open / N consecutive embed failures
   to an ops event so a cap-hit pages at minute ~2 instead of silent outage. Probe: scripts or unit mddb-embed-probe.service
@@ -74,6 +74,10 @@ comms:
 - at: 2026-11-12 14:36
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
