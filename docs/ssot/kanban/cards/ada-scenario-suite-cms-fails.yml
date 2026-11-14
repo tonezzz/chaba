@@ -1,7 +1,7 @@
 id: ada-scenario-suite-cms-fails
 title: 'ada-scenario-smoke failing: auto-report-worthy + cms_public_url_lane + cms-translate (2 runs each)'
 column: done
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:08
 brief: 'ada-scenario-smoke.service failed 2026-10-12 22:04 — three scenario failures (2 runs each): auto-report-worthy,
   cms_public_url_lane, cms-translate. Also stale-failed: ada-scenario-memory/reports/research/tools (Oct 9), mddb-memory-standard
   (18:37 today), mddb-vector-reindex, ada-recall-canary. Root-cause needed — likely CMS lane or free-key degradation.'
@@ -64,6 +64,10 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
