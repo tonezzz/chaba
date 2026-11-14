@@ -25,15 +25,17 @@ spec: 'Two bugs surfaced by the kk-mac-lane-live-probe card (OPS-1259) failing o
 action:
   type: dispatch
   repo: chaba
-  lane: jules
+  lane: paid_frontier
   executor: jules
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 21:34
   last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '' CLUTTER_IM_MODULE=''''
     SDL_IM_MODULE='''' XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-kk-mac-lane-claim-hardening-1794230595.service:
     Consumed 1.894s CPU time over 1h 29.727s wall clock time, '
   attempts: 1
+  model: litellm/or-claude-fable-5.1
+  runner: tony-dell
 comms:
 - at: 2026-11-09 18:16
   from: chaba
@@ -426,3 +428,6 @@ comms:
 - at: 2026-11-14 10:59
   from: devin
   text: retry requested
+- at: 2026-11-14 10:59
+  from: tony-dell
+  text: claimed
