@@ -1,7 +1,7 @@
 id: timer-alert-tony-omen-xiaomi-token-refresh
 title: Timer xiaomi-token-refresh on tony-omen failing
 column: backlog
-updated: 2026-11-12 13:21
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1228,6 +1228,10 @@ comms:
   from: devin
   text: '[hold] Tony: parked until ada-ocb work completes — needs interactive login to account.xiaomi.com on omen,
     then verify service.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the xiaomi-token-refresh.service systemd user timer on the tony-omen host by checking
   the logs with journalctl --user -u xiaomi-token-refresh.service. Diagnose the root cause of the exit-code failure
   reported on recent runs, check the CMS timer-timeline-tony-omen, and resolve the underlying issue so the service
