@@ -1,14 +1,14 @@
 id: timer-alert-idc03-chaba-standard-drift
 title: Timer chaba-standard-drift on idc03 failing
 column: backlog
-updated: 2026-11-14 18:25
+updated: 2026-11-14 20:14
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-09 01:01) of `chaba-standard-drift.service` on `idc03` result=exit-code — investigate
-  journal: `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
+note: 'Last run (11-09 01:01) of `chaba-standard-drift.service` on `idc03` result=exit-code — investigate journal:
+  `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
 ref: OPS-1237
 comms:
 - at: 2026-11-09 01:10
@@ -81,9 +81,8 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-09 15:10
   from: devin
-  text: '[reopened — condition recurred] Last run (11-09 15:03) of `chaba-standard-drift.service` on `idc03`
-    result=exit-code — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the
-    host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-09 15:03) of `chaba-standard-drift.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-09 15:22
   from: devin
   text: '[still suspicious] Last run (11-09 15:03) of `chaba-standard-drift.service` on `idc03` result=exit-code
@@ -111,9 +110,8 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-12 05:23
   from: devin
-  text: '[reopened — condition recurred] Last run (11-12 05:02) of `chaba-standard-drift.service` on `idc03`
-    result=exit-code — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the
-    host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-12 05:02) of `chaba-standard-drift.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-12 05:34
   from: devin
   text: '[still suspicious] Last run (11-12 05:02) of `chaba-standard-drift.service` on `idc03` result=exit-code
@@ -192,9 +190,8 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-14 04:14
   from: devin
-  text: '[reopened — condition recurred] Last run (11-14 04:01) of `chaba-standard-drift.service` on `idc03`
-    result=exit-code — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the
-    host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-14 04:01) of `chaba-standard-drift.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-14 04:24
   from: devin
   text: '[still suspicious] Last run (11-14 04:01) of `chaba-standard-drift.service` on `idc03` result=exit-code
@@ -218,9 +215,8 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-14 18:14
   from: devin
-  text: '[reopened — condition recurred] Last run (11-14 18:01) of `chaba-standard-drift.service` on `idc03`
-    result=exit-code — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the
-    host. See CMS `timer-timeline-idc03`.'
+  text: '[reopened — condition recurred] Last run (11-14 18:01) of `chaba-standard-drift.service` on `idc03` result=exit-code
+    — investigate journal: `journalctl --user -u chaba-standard-drift.service` on the host. See CMS `timer-timeline-idc03`.'
 - at: 2026-11-14 18:25
   from: devin
   text: '[still suspicious] Last run (11-14 18:01) of `chaba-standard-drift.service` on `idc03` result=exit-code
@@ -228,9 +224,12 @@ comms:
 - at: 2026-11-14 19:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-14 20:14
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-14 20:01 — closing (timer-sentinel KNB-0577)'
 action:
   status: done
-spec: Investigate the recurring exit-code failure of chaba-standard-drift.service on idc03 by checking
-  the user journal via journalctl --user -u chaba-standard-drift.service and cross-referencing CMS timer-timeline-idc03.
+spec: Investigate the recurring exit-code failure of chaba-standard-drift.service on idc03 by checking the user
+  journal via journalctl --user -u chaba-standard-drift.service and cross-referencing CMS timer-timeline-idc03.
   Resolve the underlying issue causing the drift timer to fail. The done-condition is verified when chaba-standard-drift.service
   executes successfully on idc03 without returning an exit-code failure.
