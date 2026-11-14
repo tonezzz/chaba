@@ -7,7 +7,7 @@ metric: digest calls out first-seen-in-7d lines; matched/shipped ratio stops car
 note: 'Repeat offenders already collapse to xN via RX_VOLATILE. Add: (a) a ''new today'' flag for normalized lines
   absent from the prior 7d — where real incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal
   not churn (feeds directly into the backlog check''s accuracy).'
-updated: 2026-11-12 06:48
+updated: 2026-11-14 14:15
 spec: 'Digest signal density: (a) ''new today'' flag for normalized lines absent from the prior 7d — where real
   incidents hide; (b) tighten GREP/KINDS/DROP so the 500/run cap carries signal not noise. Repeat offenders already
   collapse via RX_VOLATILE — build on that. Verify: digest shows a new-today marker on an injected novel line and
@@ -90,5 +90,9 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 claim: {}
 ref: OPS-0121
