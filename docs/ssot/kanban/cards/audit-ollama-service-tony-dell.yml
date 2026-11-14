@@ -1,7 +1,7 @@
 id: audit-ollama-service-tony-dell
 title: 'Resolve unexpected fleet service: ollama.service on tony-dell'
 column: done
-updated: 2026-11-12 15:00
+updated: 2026-11-14 14:15
 brief: 'audit-hosts.py --host tony-dell flags ''Unexpected fleet-looking system service: ollama.service'' — a running
   unit never declared in ssot.audit.hosts.yml and not in allowed_running. Per declared-or-dead host hygiene it must
   be declared, retired, or explained.'
@@ -29,5 +29,9 @@ comms:
 - at: 2026-11-12 15:00
   from: devin
   text: closed by devin
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
