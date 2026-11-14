@@ -3,7 +3,7 @@ title: Corpus orphan detector — scripts/docs with no references surface in sta
 column: done
 priority: medium
 created: '2026-10-11'
-updated: 2026-11-14 14:11
+updated: 2026-11-14 14:12
 review_kind: triage
 domain: chaba-ci
 spec: "ssot.artifact-lifecycle.yml declares an Orphans detector that does not\nexist yet. Build it as a section\
@@ -93,6 +93,10 @@ comms:
 - at: 2026-11-14 14:11
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:12
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 verify: standard-drift page shows an Orphans section; a known-dead script (e.g. one never referenced) appears; count
   only shrinks over time.
