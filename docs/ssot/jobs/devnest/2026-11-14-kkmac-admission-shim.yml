@@ -1,0 +1,35 @@
+id: 2026-11-14-kkmac-admission-shim
+title: kkmac-admission-shim — Ada Nest gate between LiteLLM and the kk-mac ollama tunnel
+host: idc03
+unit: kkmac-admission-shim.service   # user unit, ~/.config/systemd/user/
+code:
+  - scripts/devnest/kk_mac_admission_shim.py  # the proxy (:11447 -> :11445)
+  - scripts/devnest/kk_mac_admission.py       # snapshot() — admission verdicts
+card: kk-mac-gateway-admission-shim
+why: >-
+  kk-mac legs (summary/classify/bench leg-1, chat-local leg-2, deployed
+  2026-11-13) had no admission gate — a hot/busy member device still
+  received calls and answered slowly until the 120s timeout. The shim
+  503s instantly on an ineligible heartbeat snapshot so the router fails
+  fast to the paid leg.
+gates: >-
+  snapshot() reasons: heartbeat stale >900s / missing, ollama_ok false,
+  disk_free_gb <20, load_1m >4.0, cpu_temp_c >60 (via smctemp ssh
+  fallback — the installed heartbeat reports null), node_busy
+  (tmux_jobs / load_ok / load1-per-core >1.0). snapshot() gained docs=
+  (simulated heartbeats) and ssh_fallback= params; ssh probes skip once
+  a deny reason exists.
+ops: >-
+  GET 127.0.0.1:11447/health = live snapshot + counters. Drain switch:
+  touch $XDG_RUNTIME_DIR/kkmac-admission-shim.deny. Simulated heartbeat:
+  drop-in env KK_ADMISSION_HEARTBEAT_FILE=<json>. Upstream timeout 130s
+  (> LiteLLM's 120s leg timeout — upstream slowness stays the caller's
+  decision). Cache TTL 10s.
+verified: >-
+  2026-11-14 live: simulated cpu_temp_c=75 heartbeat -> 503 ->
+  gemini-3.5-flash-lite fallback in 3.4s
+  (x-litellm-attempted-fallbacks:1); real heartbeat admits and serves
+  qwen2.5:32b. config.yaml/unit/scripts byte-identical host-vs-repo.
+rollback: >-
+  repoint kk-mac api_base entries back to :11445 in
+  ~/.config/litellm/config.yaml, restart litellm, disable the unit.
