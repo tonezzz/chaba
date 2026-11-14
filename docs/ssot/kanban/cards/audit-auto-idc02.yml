@@ -40,7 +40,7 @@ note: '- Expected service missing: jev-retrain.timer
   - Unexpected failed user service: vcast-real@1.service'
 help: 'ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml hosts.idc02. A delta means declared != observed: either
   restore the expected state, or amend the SSOT so the declaration matches intent (this file IS the placement contract).'
-updated: 2026-11-09 18:56
+updated: 2026-11-14 14:11
 action:
   status: done
 claim: {}
@@ -60,3 +60,7 @@ comms:
     gpu-queue*, mddb-lab, ollama, vcast, weaviate, web. Failed devin-bank-distill, log-shipper*, ssot-optimization-snapshot,
     tony-enroll. Reconcile intent before changes; no unrelated services were changed. Source report reports/audit-hosts/idc02-20261109-183948.yml;
     linked SEC-1286.'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
