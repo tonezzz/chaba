@@ -1,6 +1,6 @@
 id: timer-alert-tony-omen-chaba-report-feed
 title: Timer chaba-report-feed on tony-omen failing
-column: backlog
+column: done
 updated: 2026-11-15 01:14
 priority: high
 tags:
@@ -24,7 +24,12 @@ comms:
 - at: 2026-11-15 01:14
   from: devin
   text: '[auto-resolved] last run result=success at 11-15 01:00 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-15 01:14
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of the `chaba-report-feed.service` user timer on `tony-omen`, which exited with a
   non-zero exit code during the 11-14 14:00 run. Inspect the logs on the host using `journalctl --user -u chaba-report-feed.service`
   and review the related CMS entry `timer-timeline-tony-omen`. The done-condition is verified when the root cause
   of the exit-code failure is identified from the journal logs and documented in the card notes.
+action:
+  status: done
