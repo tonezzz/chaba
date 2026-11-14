@@ -1,7 +1,7 @@
 id: michael-dev-parity-wrong-port
 title: michael-dev-parity checks :8124 (loopback-only) — repoint to tailscale :9585
 column: backlog
-updated: 2026-11-12 12:25
+updated: 2026-11-14 08:34
 priority: medium
 tags:
 - fix
@@ -15,3 +15,10 @@ comms:
 - at: 2026-11-12 12:25
   from: devin
   text: card captured via board-api
+- at: 2026-11-14 08:34
+  from: devin
+  text: 'FIXED 2026-11-14: two-layer bug. (1) idc02 michael-dev quadlet bound 8124 loopback-only — added PublishPort=100.123.163.11:8124:8124
+    (same pattern as 9585), restarted, verified 200 via tailnet. (2) mirror-sweep.py DEV_URL default was https://
+    — HA :8124 is plain HTTP, caused SSL record-layer failure; fixed to http:// (PR #173, merged, pulled on omen).
+    Parity check now runs end-to-end and reports REAL drift: ha-missing sensor.dev_wind_speed{,_meters}, dev_wind_to,
+    weather.forecast_baan; dev-missi'
