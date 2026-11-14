@@ -1,7 +1,7 @@
 id: runner-dispatch-no-timeout
 title: 'runner-agent: dispatch units get RuntimeMaxUSec=infinity — task timeout_s never armed'
 column: backlog
-updated: 2026-10-30 10:45
+updated: 2026-11-14 14:14
 spec: 'Found during devnest-fl-pilot-health (2026-10-30): the dispatch path''s systemd-run units carry no RuntimeMaxSec,
   so an agent in a tool-call loop runs unbounded (nemotron ran 12+ min / 77 calls / 60 denials on a 420s fixture).
   The fixture timeout_s exists in task.yaml but only the synchronous opencode_profiles.run path honors it. Fix:
@@ -14,3 +14,7 @@ comms:
 - at: 2026-10-30 10:45
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
