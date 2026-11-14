@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790-tonydell
 title: Scope rendered timer installation for OPS-0790 rollout
 column: done
-updated: 2026-11-14 10:38
+updated: 2026-11-14 14:15
 brief: Fix the broad --install behavior before the approved host-by-host timer rollout.
 priority: high
 tags:
@@ -369,4 +369,8 @@ comms:
   from: chaba
   text: 'mn01 defers: unclaimable by the declared runner fleet: tony-dell lacks labels [''exec''] — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 14:15
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 awaiting_action: true
