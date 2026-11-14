@@ -1,7 +1,7 @@
 id: embed-pool-fleet-nest-workers-behind-one-85d83b
 title: embed-pool — fleet+nest workers behind one ollama-shaped endpoint
-column: doing
-updated: 2026-11-14 13:21
+column: review
+updated: 2026-11-14 13:23
 ref: MEM-0805
 comms:
 - at: 2026-10-24 08:17
@@ -92,9 +92,17 @@ comms:
     workers long-poll GET /v1/job + POST /v1/result; instant 503 when no worker seen in 45s, 7s job TTL under the
     pool deadline, claim lease requeues dead workers. (2) Shim gained a DEFER tier — EMBED_POOL_DEFER_UPSTREAMS
     joins the race only after DEFER_AFTER_MS with no primary '
+- at: 2026-11-14 13:23
+  from: tony-omen
+  text: 'finished (ok): exit=0 — checklist in `docs/ssot/jobs/nest/2026-11-14-embed-nest-bridge.yml`; board updated.
+    | devin-task-20261114-13103'
 action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: tony-omen
+  result: 'exit=0 — checklist in `docs/ssot/jobs/nest/2026-11-14-embed-nest-bridge.yml`; board updated. | devin-task-20261114-131030-embed-pool-fleet-nest-workers-.service:
+    Consumed 1min 7.100s CPU time over 10min 43.325s wall clock time, 807.5M memory peak.'
+review_kind: verify
+claim: {}
