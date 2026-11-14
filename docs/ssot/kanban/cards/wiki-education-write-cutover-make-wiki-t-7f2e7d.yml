@@ -1,7 +1,7 @@
 id: wiki-education-write-cutover-make-wiki-t-7f2e7d
 title: wiki-education-write-cutover — make wiki the sole lesson store
 column: done
-updated: 2026-11-08 08:36
+updated: 2026-11-14 14:14
 brief: make WIKI_EDUCATION_WRITE=wiki the primary lesson write path (skip WP), keep dual as rollback; then handle
   wp/lesson 301s at edge level; verify no stray WP lesson writers
 tags:
@@ -102,6 +102,10 @@ comms:
     fragment inlined into ~/.config/caddy/Caddyfile boards.surf-thailand.com block (backup Caddyfile.bak-lesson-redirects-20261108;
     import-by-file impossible — container mounts only the Caddyfile, not the dir). caddy validate OK, reloaded.
     (3) VERIFIED: probe /lesson write -> '
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 review_kind: verify
 claim: {}
 auto_close:
