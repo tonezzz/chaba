@@ -1,7 +1,7 @@
 id: tony-macbook-daytime-runner
 title: tony-macbook as daytime-elastic dispatch runner
 column: backlog
-updated: 2026-11-12 14:53
+updated: 2026-11-14 14:14
 spec: 'Macbook (15G RAM) already has runner-agent.timer enabled + devin-dispatch-watch. If it stays awake during
   day at home: inhibit suspend during day hours (systemd-inhibit wrapper on lid-blank-watch or gnome power setting),
   then it serves as a second runner slot for dispatches/bench/media batch + LAN-fast backup target. offline_ok semantics
@@ -17,3 +17,7 @@ comms:
     1) verify runner-agent.timer fires + claims (it''s declared fleet: cap 2, gate 0.8, labels macbook,local-8c,always-home);
     2) implement day-hours suspend-inhibit (systemd-inhibit wrapper or gnome power setting keyed to home-hours);
     3) optional LAN backup-target role. Keeping in backlog until host is reachable.'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
