@@ -1,7 +1,7 @@
 id: embed-space-eval
 title: 'Embedding space eval: gemini-2 vs nomic vs nomic+translate — recall@k benchmark'
 column: done
-updated: 2026-11-09 08:57
+updated: 2026-11-14 14:11
 priority: medium
 ref: MEM-0695
 comms:
@@ -97,6 +97,10 @@ comms:
     completed SUCCESS: embedded=0, skipped=20469, failed=0. idc03 hand reindex also completed SUCCESS: embedded=0,
     skipped=20481, failed=0. All health checks green/durable: idc03 11023 primary + 11027 CMS + 11028 embed; idc02
     11023 read-only; con01 11123 read-only. MDDB upgrade plan c'
+- at: 2026-11-14 14:11
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
