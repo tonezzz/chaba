@@ -1126,10 +1126,10 @@ class KkMacExecutorContractTest(unittest.TestCase):
         return td
 
     def test_finish_noop_for_other_executors(self):
-        may, notes, fb = self.mod.finish_kk_mac_lane(
+        may, notes, fb, tok = self.mod.finish_kk_mac_lane(
             "c", {"tid": "nope"}, self._kk_card())
         self.assertTrue(may)
-        self.assertEqual((notes, fb), ([], ""))
+        self.assertEqual((notes, fb, tok), ([], "", ""))
 
     def test_finish_pass_requires_artifact_landed(self):
         with tempfile.TemporaryDirectory() as td:
@@ -1149,11 +1149,13 @@ class KkMacExecutorContractTest(unittest.TestCase):
                     "artifact": "evals/kk-mac-lane/out/c.json"}))
                 (taskdir / "kk_mac_result.json").write_text(json.dumps({
                     "usage": {"eval_count": 5}}))
-                may, notes, fb = self.mod.finish_kk_mac_lane(
+                may, notes, fb, tok = self.mod.finish_kk_mac_lane(
                     "c", {"tid": tid}, self._kk_card())
                 self.assertTrue(may)
                 self.assertEqual(fb, "")
                 self.assertIn("artifact landed", " ".join(notes))
+                self.assertIn('"tokens":{"total":5,"input":0,'
+                              '"output":5}', tok)
             finally:
                 if home is None:
                     os.environ.pop("HOME", None)
@@ -1177,9 +1179,10 @@ class KkMacExecutorContractTest(unittest.TestCase):
                     "reasons": ["invalid_output:json_parses"],
                     "artifact": "evals/kk-mac-lane/out/c.json"}))
                 (taskdir / "kk_mac_result.json").write_text("{}")
-                may, notes, fb = self.mod.finish_kk_mac_lane(
+                may, notes, fb, tok = self.mod.finish_kk_mac_lane(
                     "c", {"tid": tid}, self._kk_card())
                 self.assertFalse(may)
+                self.assertEqual(tok, "")
                 self.assertIn("invalid_output", fb)
                 self.assertIn("fell back", " ".join(notes))
             finally:
@@ -1203,10 +1206,11 @@ class KkMacExecutorContractTest(unittest.TestCase):
                 (taskdir / "verdict.json").write_text(json.dumps({
                     "verdict": "fail",
                     "reasons": ["class_not_admitted:x"]}))
-                may, notes, fb = self.mod.finish_kk_mac_lane(
+                may, notes, fb, tok = self.mod.finish_kk_mac_lane(
                     "c", {"tid": tid}, self._kk_card())
                 self.assertFalse(may)
                 self.assertEqual(fb, "")
+                self.assertEqual(tok, "")
                 self.assertIn("merge held", " ".join(notes))
             finally:
                 if home is None:

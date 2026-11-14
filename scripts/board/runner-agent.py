@@ -1978,7 +1978,8 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
 
 def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     """kk_mac_local closeout — runs BEFORE close_out_merge like
-    finish_opencode_lane. Returns (may_merge, notes, fallback_reason):
+    finish_opencode_lane. Returns (may_merge, notes, fallback_reason,
+    tokens_fragment):
 
     - verdict pass AND the declared artifact landed in the worktree ->
       may_merge=True; the merge gate stamps verified.
@@ -1986,21 +1987,27 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
       may_merge=False + fallback_reason set; the caller runs the next
       lane under the same claim and the stale worktree is cleaned up.
     - verdict fail/missing (contract violation, crashed unit) ->
-      may_merge=False, no fallback — the card is held for a human."""
+      may_merge=False, no fallback — the card is held for a human.
+
+    tokens_fragment is a TOKENS_RE-parseable snippet built from
+    kk_mac_result.json usage (ollama prompt_eval_count/eval_count) —
+    the caller prepends it to the finish `result` so it lands in
+    action.result inside the 300-char server cut, giving lane-savings
+    durable token evidence for the lane (kk-mac-usage-to-lane-savings)."""
     tid = ent.get("tid") or ""
     if not tid:
         unit = ent.get("unit") or ""
         tid = (unit[len("devin-task-"):]
                if unit.startswith("devin-task-") else "")
     if not tid:
-        return True, [], ""
+        return True, [], "", ""
     taskdir = Path.home() / ".local/share/devin-dispatch/tasks" / tid
     try:
         meta = json.loads((taskdir / "meta.json").read_text())
     except Exception:
-        return True, [], ""  # no meta -> not a kk_mac task
+        return True, [], "", ""  # no meta -> not a kk_mac task
     if str(meta.get("executor") or "") != "kk_mac_local":
-        return True, [], ""
+        return True, [], "", ""
     notes = []
     try:
         usage = json.loads((taskdir / "usage.json").read_text())
@@ -2035,11 +2042,24 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
         (taskdir / "usage.json").write_text(json.dumps(usage, indent=1))
     except OSError:
         pass
+    # lane-savings token evidence: ollama prompt_eval_count is the input
+    # side, eval_count the output side; missing counters read as 0 (the
+    # run still happened — the fragment records what was measured).
+    u = result.get("usage") or {}
+    tok_frag = ""
+    try:
+        tin = int(u.get("prompt_eval_count") or 0)
+        tout = int(u.get("eval_count") or 0)
+    except (TypeError, ValueError):
+        tin = tout = 0
+    if tin or tout:
+        tok_frag = ('kk_mac_local "tokens":' + json.dumps(
+            {"total": tin + tout, "input": tin, "output": tout},
+            separators=(",", ":")))
     if v == "pass" and landed:
-        u = result.get("usage") or {}
         notes.append(f"kk_mac_local artifact landed {art} — verifier "
                      f"pass (eval_tokens={u.get('eval_count')})")
-        return True, notes, ""
+        return True, notes, "", tok_frag
     fb = ""
     if v == "fallback" or (not v and result):
         reasons = ";".join(verdict.get("reasons")
@@ -2064,7 +2084,7 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
         detail = checks or v or "no verdict"
         notes.append("merge held — kk_mac_local contract requires "
                      f"artifact + verifier pass ({detail})")
-    return False, notes, fb
+    return False, notes, fb, tok_frag
 
 
 # S3 staged-dispatch admission (OPS-1255): the read-only profiles Tony
@@ -3014,10 +3034,15 @@ def finish_pass(st: dict) -> bool:
             if may_merge:
                 # kk_mac_local closeout: verdict pass + landed artifact
                 # or the merge is held; a fallback verdict hands the
-                # card to the next lane under the same claim.
-                may_merge, kk_notes, kk_fb = \
+                # card to the next lane under the same claim. The
+                # TOKENS_RE fragment goes FIRST — board-api keeps only
+                # result[:300], so prepending survives the cut and
+                # lands durable token evidence in action.result.
+                may_merge, kk_notes, kk_fb, kk_tok = \
                     finish_kk_mac_lane(cid, ent, card)
                 notes += kk_notes
+                if kk_tok:
+                    result = f"{kk_tok} {result}"
             if kk_fb:
                 # In-claim fallback (kk-mac-jev-adapter-integration):
                 # the bounded lane declined after starting — mark the

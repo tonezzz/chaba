@@ -8,7 +8,9 @@ work ran off the paid Devin lane. Card devnest-token-savings-lane-catalog
 HARD RULE (from the card spec): never claim savings without usage
 evidence. A lane use counts toward savings only when the run COMPLETED
 and left evidence: an action.result string, a token-count JSON fragment
-(opencode step-finish), a declared artifact, or a comms/job-doc
+(opencode step-finish, or the kk_mac_local usage fragment finish_kk_mac_lane
+prepends to the finish result from kk_mac_result.json — ollama
+prompt_eval_count/eval_count), a declared artifact, or a comms/job-doc
 measurement. Unevidenced lane selections are reported as counts only —
 never as dollars or avoided tokens.
 

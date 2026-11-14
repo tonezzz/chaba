@@ -1,0 +1,49 @@
+title: "kk_mac_local token usage reaches lane-savings via action.result fragment"
+date: 2026-11-14
+card: kk-mac-usage-to-lane-savings
+session: "dispatch-wt-20261114-121708-lane-savings-py-now-attributes (tony-omen)"
+status: "implemented — option (a) shipped; KkMac tests 24/24; synthetic e2e
+  shows lane-savings row kk_mac_local 120/45 + offloaded_sessions"
+
+context: >
+  lane-savings.py attributes action.executor=kk_mac_local but kk_mac token
+  usage only lived in <taskdir>/kk_mac_result.json — a surface the report
+  never scans — so kk_mac runs stayed token-unevidenced. The card spec's
+  recommended fix (option a) keeps action.result as the single evidence
+  door: no new scan surface for lane-savings.
+
+mechanism: >
+  finish_kk_mac_lane (scripts/board/runner-agent.py) reads
+  kk_mac_result.json usage — ollama prompt_eval_count is the input side,
+  eval_count the output side — and returns a TOKENS_RE-parseable fragment
+  'kk_mac_local "tokens":{"total":T,"input":I,"output":O}' as a 4th tuple
+  element. finish_pass PREPENDS it to the finish result so it survives
+  board-api's result[:300] cut and lands durable in action.result.
+  kk_mac_llm.run_task now also captures prompt_eval_count,
+  prompt_eval_duration and total_duration from the ollama /api/generate
+  response — prompt tokens were previously dropped, so the input side was
+  unmeasurable. Missing/malformed counters degrade to no fragment rather
+  than fake numbers.
+
+re-landed-work: >
+  The 2026-11-13 attribution patch (EXECUTOR_LANES + CHEAP_LANES +
+  card_lane executor lookup in lane-savings.py) existed only on
+  dispatch/20261113-202232-card-judgment-eval-done-2026-1 (747b44bbd0) —
+  pushed, but its close-out merge was held on a test-gate timeout, so
+  master's lane-savings still attributed executor-pinned kk_mac cards to
+  'devin'. Re-landed here by cherry-pick together with the
+  routing-proposal doc, the eval-backed qwen2.5:32b repin, and the
+  session outcome file (4266b6785f). The stale-assessment leftover
+  (d3ea9c56ad) was skipped — master already carries a newer review.
+
+verification: >
+  tests/board/test_executor_contract.py KkMac suite 24/24 (4 finish_*
+  sites updated for the 4-tuple); fragment verified through the 300-char
+  board-api cut into TOKENS_RE; synthetic e2e card renders 'kk_mac_local
+  | 1 | 1 | 1 | 1 | 120/45' and lands in offloaded_sessions. Real
+  evidence lands on the next kk_mac_local run — pre-patch cards (e.g.
+  kk-mac-supervised-probe-20261113) stay counts-only by design.
+
+done_when: >
+  met — a kk_mac_local card closed with usage evidence shows tokens
+  in/out in the monthly lane-savings report.
