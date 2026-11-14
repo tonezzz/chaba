@@ -1,7 +1,7 @@
 id: gev-auto-api
 title: GEV api 127.0.0.1:4173 not answering
-brief: 'An automated health check flagged: GEV api 127.0.0.1:4173 not answering. Read
-  the note, fix it, then close the card.'
+brief: 'An automated health check flagged: GEV api 127.0.0.1:4173 not answering. Read the note, fix it, then close
+  the card.'
 column: done
 review_kind: triage
 generated: gev-auto-health
@@ -9,7 +9,12 @@ program: gev
 area: monitoring
 priority: high
 note: 'Auto-recovered 2026-10-22: `api` check passing again.'
-help: 'gods-eye-view-api (/home/tony/gods-eye-view/server.mjs) listens on 4173; Caddy
-  routes /apps/gev/api/* to it. The probe GETs a bogus path — 404 counts as alive.
-  systemctl --user status gods-eye-view-api; restart: systemctl --user restart gods-eye-view-api'
-updated: '2026-10-22'
+help: 'gods-eye-view-api (/home/tony/gods-eye-view/server.mjs) listens on 4173; Caddy routes /apps/gev/api/* to
+  it. The probe GETs a bogus path — 404 counts as alive. systemctl --user status gods-eye-view-api; restart: systemctl
+  --user restart gods-eye-view-api'
+updated: 2026-11-14 14:06
+comms:
+- at: 2026-11-14 14:06
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
