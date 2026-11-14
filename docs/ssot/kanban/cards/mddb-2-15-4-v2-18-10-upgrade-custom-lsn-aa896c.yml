@@ -1,7 +1,7 @@
 id: mddb-2-15-4-v2-18-10-upgrade-custom-lsn-aa896c
 title: mddb 2.15.4 -> v2.18.10 upgrade (custom -lsn/-breaker builds)
 column: backlog
-updated: 2026-11-14 12:08
+updated: 2026-11-14 14:16
 brief: All 5 instances report update available. They run localhost/mddb:*-lsn and *-breaker images — upgrade means
   rebasing local patches onto 2.18.x and rebuilding, not a pull.
 ref: MEM-0024
@@ -36,3 +36,7 @@ comms:
     default). ops/cms/embed/idc02-follower/con01-follower/leader all healthy; followers heartbeat_capable=true,
     LSNs in sync. Rollback per host = sed tag back to 2.15.4-lsn + daemon-reload + restart; backups fresh (idc03
     02:30, idc02 03:30).'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
