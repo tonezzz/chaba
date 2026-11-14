@@ -1,7 +1,7 @@
 id: mddb-leader-compact-export-import
 title: 'Compact mddb leader: 12G DB → export/import (followers ~7-8G)'
 column: done
-updated: 2026-11-13 18:11
+updated: 2026-11-14 14:14
 spec: 'Leader on idc03 is 12G; replicas (idc02 7.1G, con01 8.2G) carry logical data at ~7-8G → ~4-5G dead pages.
   Same export/import procedure. Replication caveat: swap changes the DB — followers must re-sync or re-seed (verify
   after). Schedule alongside cms compaction; backup first.'
@@ -147,6 +147,10 @@ comms:
 - at: 2026-11-13 18:11
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-14 14:14
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 recoverability: R2
 auto_done_when:
 - verified_true
