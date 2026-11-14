@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-port
 title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
 column: backlog
-updated: 2026-10-30 19:18
+updated: 2026-11-14 13:09
 spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
   equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
   — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
@@ -13,3 +13,11 @@ comms:
 - at: 2026-10-30 19:18
   from: tony
   text: card captured via board-api
+- at: 2026-11-14 13:09
+  from: devin
+  text: re-spawned from report page
+action:
+  type: dispatch
+  repo: chaba
+  executor: devin
+  status: queued
