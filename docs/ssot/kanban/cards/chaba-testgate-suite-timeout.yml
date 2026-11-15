@@ -1,7 +1,7 @@
 id: chaba-testgate-suite-timeout
 title: chaba merge test gate (240s) can't fit the pytest suite — dispatch merges held on timeout
 column: backlog
-updated: 2026-11-15 17:13
+updated: 2026-11-15 17:56
 brief: dispatch_repos.py REPO_TESTS['chaba'] gate = python3 -m pytest tests -x -q @240s, but the suite (122 test
   files) runs >>1h on tony-omen — every chaba dispatch merge holds on 'suite timeout'. Observed 2026-11-15 holding
   dispatch/20261113-201329-per-docs-kb-ncm-jev-nest-explo (NCM P0 packet). CI has no pytest job, so this gate is
@@ -23,3 +23,10 @@ comms:
   text: 'confirmed 2026-11-15: suite still running >35min at ~57% CPU when probe killed after merge landed manually
     (branch was test-neutral). Suite is orders of magnitude over the 240s gate — every chaba dispatch merge will
     hold until this is fixed. First known victim: ncm-jev-p0 (landed manually as efc1503e89).'
+- at: 2026-11-15 17:56
+  from: devin
+  text: 'FIXED (gate side) 2026-11-15: chaba gate now runs a 12-file merge-smoke set (~60s, 212 tests) instead of
+    the full suite — commit 60dd1cc796 on master. Added _prune_missing_test_paths so explicit-path gates degrade
+    to ''tests'' in fixture/minimal repos. Residual scope: (a) 3 pathological files still slow — test_kanban_dispatch_rails
+    ~300s, test_queue_starvation ~370s, test_executor_contract >300s (real network/subprocess probes — need mocking
+    or scheduled runner); (b) no scheduled full-suite job ex'
