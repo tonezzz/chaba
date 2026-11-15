@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-13 22:58) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u chaba-cms-reflect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-13 22:58) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u chaba-cms-reflect.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: KNB-0109
 comms:
 - at: 2026-11-13 23:13
@@ -25,8 +25,9 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-13 23:23
   from: devin
-  text: '[reopened — condition recurred] Last run (11-13 22:58) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code
-    — investigate journal: `journalctl --user -u chaba-cms-reflect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[reopened — condition recurred] Last run (11-13 22:58) of `chaba-cms-reflect.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-cms-reflect.service` on the host.
+    See CMS `timer-timeline-tony-dell`.'
 - at: 2026-11-13 23:35
   from: devin
   text: '[still suspicious] Last run (11-13 22:58) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code
@@ -50,11 +51,21 @@ comms:
   text: moved done -> backlog
 - at: 2026-11-15 21:25
   from: devin
-  text: '[reopened — condition recurred] Last run (11-15 20:59) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code
-    — investigate journal: `journalctl --user -u chaba-cms-reflect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+  text: '[reopened — condition recurred] Last run (11-15 20:59) of `chaba-cms-reflect.service` on `tony-dell`
+    result=exit-code — investigate journal: `journalctl --user -u chaba-cms-reflect.service` on the host.
+    See CMS `timer-timeline-tony-dell`.'
 - at: 2026-11-15 21:35
   from: devin
   text: '[still suspicious] Last run (11-15 20:59) of `chaba-cms-reflect.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-cms-reflect.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
 action:
   status: done
+spec: Investigate and resolve the failing execution of chaba-cms-reflect.service on host tony-dell, targeting
+  the chaba repo. Check the systemd user journal using journalctl --user -u chaba-cms-reflect.service
+  on tony-dell to diagnose the exit-code failure. Ensure that the runner-agent is up to date by redeploying
+  scripts/board/runner-agent.py from the repo to ~/.local/bin/runner-agent on tony-dell if drifted. The
+  done-condition is verified when chaba-cms-reflect.service runs successfully on tony-dell without resulting
+  in an exit-code failure.
