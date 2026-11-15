@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-chaba-repo-sync
 title: Timer chaba-repo-sync on tony-dell failing
 column: backlog
-updated: 2026-11-15 21:35
+updated: 2026-11-16 01:25
 priority: high
 tags:
 - timer-alert
@@ -261,6 +261,12 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-15 21:08) of `chaba-repo-sync.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u chaba-repo-sync.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 01:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-16 01:25
+  from: devin
+  text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
 action:
   status: done
   type: manual
@@ -275,3 +281,8 @@ auto_close:
   by: merge-sweep
   at: 2026-11-08 13:04
   note: verified — evidence checks green, closing itself
+spec: Investigate why chaba-repo-sync.service failed with an exit-code on host tony-dell by examining the systemd
+  user journal using `journalctl --user -u chaba-repo-sync.service`. Fix any underlying sync failures or configuration
+  errors discovered during the journal inspection. Ensure that the runner-agent is redeployed from /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+  to tony-dell:~/.local/bin/runner-agent if agent drift is present. The done-condition is verified when chaba-repo-sync.service
+  on tony-dell runs successfully without timing out or returning an exit-code.
