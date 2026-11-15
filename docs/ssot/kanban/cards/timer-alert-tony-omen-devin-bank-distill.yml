@@ -44,6 +44,10 @@ comms:
 - at: 2026-11-15 10:25
   from: tony
   text: moved done -> backlog
+- at: 2026-11-15 10:25
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-15 10:15) of `devin-bank-distill.service` on `tony-omen` result=exit-code
+    — investigate journal: `journalctl --user -u devin-bank-distill.service` on the host. See CMS `timer-timeline-tony-omen`.'
 spec: Investigate the failing systemd timer run for devin-bank-distill.service on host tony-omen. Check the service
   journal using journalctl --user -u devin-bank-distill.service and reference the CMS timer-timeline-tony-omen.
   The done-condition is verified when the root cause of the exit-code failure is identified and documented.
