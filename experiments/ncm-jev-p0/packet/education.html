@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>NCM+JEV+Nest P0 — replay contract</title>
+<style>body{font-family:system-ui,sans-serif;max-width:52em;margin:2em auto;line-height:1.5}
+table{border-collapse:collapse}td,th{border:1px solid #ccc;padding:.3em .6em}
+code{background:#f4f4f4;padding:.1em .3em}</style></head><body>
+<h1>P0 replay contract — NCM + JEV + Nest</h1>
+<p><b>What this is.</b> The contract-and-replay stage of the exploration
+procedure: a frozen corpus (seeded Sudoku puzzles, Thai continuation
+fixtures, fixed short prompts) replayed through a common worker
+contract. It proves the machinery — schema-valid rows, deterministic
+verifier, authority guard, provider-free replay — before any GPU spend.</p>
+<p><b>What it is not.</b> A quality benchmark. The NCM arm is a
+two-level stand-in pending the blocked P1 GPU stage; LLM arms are the
+smallest local pinned models. No routing or production change follows.</p>
+<h2>Arms</h2><ul><li><b>ar_char_ngram</b> (generative) — ar-charngram3-local @ src-9541b730fa53f656, none, cpu-python3-stdlib</li><li><b>ncm_2level</b> (generative) — ncm-2level-standin @ src-9541b730fa53f656, none, cpu-python3-stdlib <i>[simulated]</i></li><li><b>llm_qwen3_0p6b</b> (generative) — qwen3:0.6b @ 7df6b6e09427a7698087, Q4_K_M, tony-omen ollama gguf (local)</li><li><b>llm_llama32_1b</b> (generative) — llama3.2:1b @ baf6a787fdffd633537a, Q8_0, tony-omen ollama gguf (local)</li><li><b>llm_qwen3_4b</b> (generative) — qwen3:4b @ 359d7dd4bcdab3d86b87, Q4_K_M, tony-omen ollama gguf (local)</li><li><b>jev_route</b> (decision) — jev-rules-v1 @ src-9541b730fa53f656, none, cpu-python3-stdlib</li><li><b>jev_routed</b> (composite) — jev-rules-v1+pool @ src-9541b730fa53f656, none, cpu+recorded</li><li><b>parallel_verified</b> (composite) — bounded-pool+det-verifier @ src-9541b730fa53f656, none, cpu+recorded</li></ul>
+<h2>Per-arm outcomes</h2>
+<table><tr><th>candidate</th><th>n</th><th>pass</th><th>fail</th>
+<th>escalate</th><th>mean&nbsp;score</th></tr><tr><td>ar_char_ngram</td><td>20</td><td>7</td><td>13</td><td>0</td><td>0.41</td></tr><tr><td>jev_route</td><td>10</td><td>10</td><td>0</td><td>0</td><td>None</td></tr><tr><td>jev_routed</td><td>20</td><td>10</td><td>10</td><td>0</td><td>None</td></tr><tr><td>llm_llama32_1b</td><td>20</td><td>10</td><td>10</td><td>0</td><td>0.58</td></tr><tr><td>llm_qwen3_0p6b</td><td>20</td><td>12</td><td>8</td><td>0</td><td>0.68</td></tr><tr><td>llm_qwen3_4b</td><td>20</td><td>4</td><td>16</td><td>0</td><td>0.455</td></tr><tr><td>ncm_2level</td><td>20</td><td>7</td><td>13</td><td>0</td><td>0.409</td></tr><tr><td>parallel_verified</td><td>20</td><td>12</td><td>8</td><td>0</td><td>None</td></tr></table>
+<h2>Gate &amp; verdict</h2>
+<p>Verdict: <b>watch</b> (high).</p>
+<ul><li>P0 gate: deterministic schema validity + reproducible replay from manifest.json without provider calls — PASS</li><li>150 rows replayed, 0 identity mismatches, 0 schema errors, 0 authority-guard violations</li><li>ncm_2level arm is a deterministic contract stand-in; the trained NCM checkpoint stays blocked until P1 authorized GPU</li><li>LLM arms used pinned local Ollama models recorded at freeze; replay needs no provider</li></ul>
+<h2>Reproduce</h2>
+<pre>cd experiments/ncm-jev-p0
+python3 -m p0harness replay   # provider-free; exit 0 = gate pass</pre>
+<p>Packet: <code>manifest.json</code> <code>results.json</code>
+<code>report.md</code> <code>verdict.json</code>
+<code>education.html</code></p>
+<p>Generated 2026-11-13T14:22:56+00:00
+· procedure: docs/kb/ncm-jev-nest-exploration-procedure.md</p>
+</body></html>
