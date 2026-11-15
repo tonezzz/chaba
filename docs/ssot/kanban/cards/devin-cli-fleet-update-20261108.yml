@@ -1,7 +1,7 @@
 id: devin-cli-fleet-update-20261108
 title: Update Devin CLI and verify agents on Omen, Dell, and MacBook
 column: doing
-updated: 2026-11-14 14:11
+updated: 2026-11-15 16:55
 brief: The requested CLI updates remain incomplete; the non-TTY updater exited 130. Await approval for an interactive
   SSH fallback.
 priority: medium
@@ -108,6 +108,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 16:55
+  from: devin
+  text: 'MacBook update done 2026-11-15: official installer path completed — devin CLI now 3000.12.57 (was 3000.11.3
+    standalone). ~/.local/bin/devin is now a symlink into ~/.local/share/devin/cli/_versions (auto-update-enabled
+    layout); `devin setup` ran non-interactively and reused existing auth ("Logged in"), doctor 3/3 pass. Old binary
+    kept as ~/.local/bin/devin.old-3000.11.3. Direct download to macbook was too slow/flaky (~17KB/s, stalled at
+    20MB) — tarball fetched on omen, checksum-verified against m'
 requests:
 - id: devin-cli-interactive-update-ssh
   ask: May I use an interactive SSH session on Omen, Dell, and MacBook to run the Devin CLI updater? The documented
