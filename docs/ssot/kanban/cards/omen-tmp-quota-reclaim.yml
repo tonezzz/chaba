@@ -1,0 +1,14 @@
+id: omen-tmp-quota-reclaim
+title: tony-omen /tmp tmpfs usrquota exhausted — reclaim stale files
+column: doing
+updated: 2026-11-15 17:44
+spec: 'tony-omen /tmp is tmpfs 16G mounted with usrquota; uid tony is over quota (Errno 122 EDQUOT). Discovered
+  2026-11-14 during kk-mac-continuous-llm-worker: pre-commit pytest gate failed writing artifact tempfiles. Biggest
+  consumers: /tmp/pytest-of-tony ~6.1G (stale pytest tempdirs), /tmp/upsc-eval ~5.5G (torch venv from Nov 9), /tmp/chaba-gh-radar-pr
+  221M, /tmp/embedeval 160M. Task: verify no live process holds them, delete stale entries, confirm quota freed
+  (test write to /tmp). Follow-up: pytest-of-tony regrows — consider tmpfiles.d aging rule.'
+ref: OPS-0128
+comms:
+- at: 2026-11-15 17:44
+  from: tony
+  text: card captured via board-api
