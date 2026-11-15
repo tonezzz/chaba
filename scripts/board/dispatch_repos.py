@@ -1198,7 +1198,31 @@ DEFAULT_TEST_CMD = "python3 -m pytest tests -x -q"
 DEFAULT_TEST_TIMEOUT = 240
 VENV_DIRS = (".venv", "venv")  # checkout venv conventions in use
 REPO_TESTS = {
-    "chaba": {"command": DEFAULT_TEST_CMD, "timeout": 240},
+    # chaba's full suite (1549 tests) runs ~1h — it can never fit the
+    # merge gate, so every dispatch merge held on "suite timeout"
+    # (OPS-0127, first victim ncm-jev-p0 2026-11-13). Gate runs the
+    # merge-critical smoke set instead (~70s measured 2026-11-15 on
+    # tony-omen): dispatch close-out, merge-sweep, claim/queue classify,
+    # runner-agent lanes, worktree GC, push guard, board-api mutations,
+    # ssot refs. Excluded as too slow for a merge gate:
+    #   test_kanban_dispatch_rails.py (~300s), test_queue_starvation.py
+    #   (~370s), test_executor_contract.py (>300s) — they do real
+    #   network/subprocess probes; full suite needs a scheduled runner.
+    "chaba": {"command": "python3 -m pytest "
+              "tests/board/test_merge_sweep.py "
+              "tests/board/test_dispatch_close_out.py "
+              "tests/board/test_claim_order.py "
+              "tests/board/test_queue_time_classify.py "
+              "tests/board/test_runner_agent_lane.py "
+              "tests/board/test_runner_agent_reconcile.py "
+              "tests/board/test_worktree_gc.py "
+              "tests/board/test_runner_push_guard.py "
+              "tests/board/test_board_api_mutations.py "
+              "tests/board/test_kanban_act.py "
+              "tests/board/test_board_api_action_persistence.py "
+              "tests/test_ssot_validate_refs.py "
+              "-x -q",
+              "timeout": 240},
     "ada-voice": {"command": "python3 -m pytest tests -k 'not slow' -x -q",
                "timeout": 300},
     # legacy alias — same suite for cards still saying repo: ada-pi
@@ -1274,6 +1298,31 @@ def gate_python(wt: Path, repo_name: str, cfg: dict) -> str:
 
 
 _PY_LEAD_RE = re.compile(r"^\s*python[\d.]*(?=\s)")  # python, python3, python3.11
+_TEST_PATH_RE = re.compile(r"(^|/)tests?/|test_[\w.-]*\.py$")
+
+
+def _prune_missing_test_paths(cmd: str, wt: Path) -> str:
+    """Drop pytest path args that don't exist in the merged tree.
+
+    Repo gates may name explicit test files (chaba's merge-smoke set);
+    fixture/minimal repos and future file moves must not turn a missing
+    path into a pytest usage error. When every named path is missing the
+    command falls back to `tests` — the same collect-everything semantics
+    a bare `pytest tests` gate always had."""
+    parts = shlex.split(cmd)
+
+    def _is_test_path(p: str) -> bool:
+        return not p.startswith("-") and bool(_TEST_PATH_RE.search(p))
+
+    test_paths = [p for p in parts if _is_test_path(p)]
+    if not test_paths:
+        return cmd
+    kept = [p for p in parts
+            if not _is_test_path(p) or (wt / p).exists()]
+    if len(kept) == len(parts) - len(test_paths):
+        # every named test path was missing — fall back to the tests dir
+        kept.append("tests")
+    return " ".join(shlex.quote(p) for p in kept)
 
 
 def _resolve_gate_cmd(cmd: str, wt: Path, repo_name: str,
@@ -1305,6 +1354,7 @@ def run_test_gate(wt: Path, repo_name: str) -> dict:
         return {"ran": False, "ok": True,
                 "skipped": "no tests/ dir in merged tree"}
     cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
+    cmd = _prune_missing_test_paths(cmd, wt)
     interp = py or ("python3" if _PY_LEAD_RE.match(cmd) else None)
     timeout = int(cfg["timeout"])
     t0 = time.time()
@@ -1359,6 +1409,7 @@ def _gate_failures(wt: Path, repo_name: str) -> tuple:
         # baseline compare; the branch result stands
         return None, {"command": cmd, "skipped": "non-pytest gate"}
     cmd, py = _resolve_gate_cmd(cmd, wt, repo_name, cfg)
+    cmd = _prune_missing_test_paths(cmd, wt)
     cmd = _gate_failfast_strip(cmd)
     try:
         r = subprocess.run(["bash", "-c", cmd], cwd=str(wt),
