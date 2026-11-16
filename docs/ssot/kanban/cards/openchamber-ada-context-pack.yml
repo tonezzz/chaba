@@ -1,0 +1,33 @@
+id: openchamber-ada-context-pack
+title: Add bounded Ada/SSOT context pack for OpenChamber OpenCode
+column: backlog
+updated: 2026-11-16 18:36
+brief: 'Give OpenChamber/OpenCode a Devin-like bounded context load: profile + SSOT/education/Devin/card excerpts
+  with provenance, read-only, before the agent loop instead of relying on ad-hoc tool discovery.'
+priority: high
+program: devnest
+tags:
+- openchamber
+- opencode
+- ada
+- ssot
+- memory
+- mcp
+spec: 'Implement ada_context_pack(query, card_reference?, profile?) in the DevNest ada-control bridge. It must return
+  a compact JSON context pack: profile, allowed_sources, SSOT hits from MDDB infrastructure-ssot/chaba-glossary,
+  Education lessons, Devin session summaries, optional safe card fields, budgets, provenance, and mutations_performed=[].
+  No personal/household banks, no writes, no arbitrary filesystem/MDDB collection access. Wire OpenChamber/OpenCode
+  to inject the pack as a session instruction entry or prepend a compact context header for /ada commands. Acceptance:
+  smoke test returns cited SSOT+lesson+devin hits; read-only profile cannot mutate; stale OpenChamber project path
+  fixed so sessions resolve /home/tony/DevNest.'
+action:
+  type: manual
+  host: tony_dell
+ref: ADA-0141
+comms:
+- at: 2026-11-16 18:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-16 18:36
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
