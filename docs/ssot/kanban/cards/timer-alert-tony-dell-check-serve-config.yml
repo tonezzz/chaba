@@ -1,6 +1,6 @@
 id: timer-alert-tony-dell-check-serve-config
 title: Timer check-serve-config on tony-dell failing
-column: backlog
+column: done
 updated: 2026-11-16 09:56
 priority: high
 tags:
@@ -24,7 +24,12 @@ comms:
 - at: 2026-11-16 09:56
   from: devin
   text: '[auto-resolved] last run result=success at - — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 09:56
+  from: tony
+  text: closed by tony
 spec: Investigate the failure of check-serve-config.service on tony-dell by inspecting the user journal via journalctl
   --user -u check-serve-config.service on the host, referencing the CMS timer-timeline-tony-dell. The target host
   is tony-dell. The done-condition is verified when the root cause of the exit-code failure is identified from the
   journal logs.
+action:
+  status: done
