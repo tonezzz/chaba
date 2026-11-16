@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-audit
 title: ada-ha-events-* ops-event docs split-brained across leader :11023 and mddb-ops :11025
-column: backlog
-updated: 2026-11-16 20:10
+column: done
+updated: 2026-11-16 20:13
 priority: medium
 tags:
 - mddb
@@ -177,6 +177,9 @@ comms:
 - at: 2026-11-16 20:10
   from: tony
   text: queued for processing
+- at: 2026-11-16 20:13
+  from: tony
+  text: closed by tony
 action:
   type: dispatch
   repo: chaba
@@ -216,7 +219,7 @@ action:
       required: true
       stale_s: 300
     timeout_s: 420
-  status: queued
+  status: done
   lane: codemod
   result: 'exit=1 n process exited, code=exited, status=1/FAILURE | devin-task-ops-event-plane-split-brain-audit-1794624164.service:
     Failed with result ''exit-code''. | devin-task-ops-event-plane-split-brain-audit-1794624164.service: Consumed
