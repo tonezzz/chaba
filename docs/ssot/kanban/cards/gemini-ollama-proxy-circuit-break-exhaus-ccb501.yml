@@ -1,0 +1,15 @@
+id: gemini-ollama-proxy-circuit-break-exhaus-ccb501
+title: 'gemini-ollama-proxy: circuit-break exhausted free Gemini key'
+column: doing
+updated: 2026-11-16 11:28
+note: 'Free-tier GEMINI_API_KEY is quota-exhausted (35k 429s/day). Every embed request pays a doomed free-tier call
+  before paid fallback — doubles API calls and adds latency that helps blow the 8s memory_search budget. Add a breaker:
+  after N consecutive free-key 429s, route straight to paid for a cooldown, half-open probe to recover. Also reduces
+  quota burn ~50%.'
+ref: ADA-0138
+comms:
+- at: 2026-11-16 11:28
+  from: devin
+  text: 'Context: MDDB leader+CMS embed workers -> proxy :11435 -> Gemini. ~18k embed req/day driven by CMS automation
+    timers (line-chat-timeline ~5min cadence etc). Side effect found: CMS embed queue saturated since Nov 11, 1184+
+    docs dropped vectors pending reindex.'
