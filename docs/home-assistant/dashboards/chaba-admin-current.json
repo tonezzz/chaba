@@ -175,6 +175,7 @@
       "title": "Hosts",
       "path": "hosts",
       "icon": "mdi:server",
+      "type": "panel",
       "cards": [
         {
           "type": "custom:layout-card",
@@ -193,16 +194,12 @@
               },
               "entities": [
                 {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
                   "entity": "binary_sensor.kk_mac_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.kk_mac_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.kk_mac_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.kk_mac_load",
@@ -215,6 +212,18 @@
                 {
                   "entity": "sensor.kk_mac_disk",
                   "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.kk_mac_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.kk_mac_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.kk_mac_swap",
@@ -241,14 +250,13 @@
             {
               "type": "entities",
               "title": "tony-omen",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
                 {
-                  "entity": "sensor.tony_omen_battery_level",
-                  "name": "battery level"
-                },
-                {
-                  "entity": "sensor.tony_omen_battery_state",
-                  "name": "battery state"
+                  "type": "section",
+                  "label": "Vitals"
                 },
                 {
                   "entity": "sensor.tony_omen_cpu_package_temp",
@@ -261,14 +269,6 @@
                 {
                   "entity": "binary_sensor.tony_omen_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.tony_omen_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.tony_omen_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.tony_omen_load",
@@ -285,6 +285,26 @@
                 {
                   "entity": "sensor.tony_omen_temp",
                   "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.tony_omen_battery_level",
+                  "name": "battery level"
+                },
+                {
+                  "entity": "sensor.tony_omen_battery_state",
+                  "name": "battery state"
+                },
+                {
+                  "entity": "sensor.tony_omen_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.tony_omen_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.tony_omen_swap",
@@ -314,15 +334,47 @@
                   "entity": "sensor.tony_omen_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "tony-macbook",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_temp",
+                  "name": "battery temp"
+                },
+                {
+                  "entity": "binary_sensor.tony_macbook_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.tony_macbook_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_macbook_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_macbook_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_macbook_temp",
+                  "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "switch.mac_plug",
                   "name": "mac plug"
@@ -340,10 +392,6 @@
                   "name": "battery health"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_temp",
-                  "name": "battery temp"
-                },
-                {
                   "entity": "sensor.tony_macbook_battery_voltage",
                   "name": "battery voltage"
                 },
@@ -352,32 +400,12 @@
                   "name": "battery cycles"
                 },
                 {
-                  "entity": "binary_sensor.tony_macbook_online",
-                  "name": "online"
-                },
-                {
                   "entity": "sensor.tony_macbook_uptime",
                   "name": "uptime"
                 },
                 {
                   "entity": "sensor.tony_macbook_users",
                   "name": "users"
-                },
-                {
-                  "entity": "sensor.tony_macbook_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.tony_macbook_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.tony_macbook_disk",
-                  "name": "disk"
-                },
-                {
-                  "entity": "sensor.tony_macbook_temp",
-                  "name": "temp"
                 },
                 {
                   "entity": "sensor.tony_macbook_swap",
@@ -407,26 +435,22 @@
                   "entity": "sensor.tony_macbook_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "tony-dell",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.tony_dell_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.tony_dell_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.tony_dell_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.tony_dell_load",
@@ -443,6 +467,18 @@
                 {
                   "entity": "sensor.tony_dell_temp",
                   "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.tony_dell_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.tony_dell_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.tony_dell_swap",
@@ -472,26 +508,22 @@
                   "entity": "sensor.tony_dell_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "idc02",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.idc02_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.idc02_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.idc02_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.idc02_load",
@@ -504,6 +536,18 @@
                 {
                   "entity": "sensor.idc02_disk",
                   "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.idc02_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.idc02_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.idc02_swap",
@@ -533,26 +577,22 @@
                   "entity": "sensor.idc02_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "idc03",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.idc03_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.idc03_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.idc03_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.idc03_load",
@@ -565,6 +605,18 @@
                 {
                   "entity": "sensor.idc03_disk",
                   "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.idc03_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.idc03_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.idc03_swap",
@@ -594,26 +646,22 @@
                   "entity": "sensor.idc03_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "mn01",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.mn01_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.mn01_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.mn01_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.mn01_load",
@@ -630,6 +678,18 @@
                 {
                   "entity": "sensor.mn01_temp",
                   "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.mn01_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.mn01_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.mn01_swap",
@@ -659,26 +719,22 @@
                   "entity": "sensor.mn01_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             },
             {
               "type": "entities",
               "title": "con01",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.con01_online",
                   "name": "online"
-                },
-                {
-                  "entity": "sensor.con01_uptime",
-                  "name": "uptime"
-                },
-                {
-                  "entity": "sensor.con01_users",
-                  "name": "users"
                 },
                 {
                   "entity": "sensor.con01_load",
@@ -691,6 +747,18 @@
                 {
                   "entity": "sensor.con01_disk",
                   "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
+                {
+                  "entity": "sensor.con01_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.con01_users",
+                  "name": "users"
                 },
                 {
                   "entity": "sensor.con01_swap",
@@ -720,15 +788,11 @@
                   "entity": "sensor.con01_wan_org",
                   "name": "wan isp"
                 }
-              ],
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              }
+              ]
             }
           ]
         }
-      ],
-      "type": "panel"
+      ]
     }
   ]
 }
