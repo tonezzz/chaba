@@ -1,7 +1,7 @@
 id: openchamber-devnest-project-path
 title: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
 column: review
-updated: 2026-11-16 18:44
+updated: 2026-11-16 18:46
 brief: OpenChamber settings.json registers only /home/tony/DevNest-ada-agent, which no longer exists; the live checkout
   is /home/tony/DevNest.
 priority: medium
@@ -33,4 +33,9 @@ comms:
 - at: 2026-11-16 18:43
   from: devin
   text: moved backlog -> review
+- at: 2026-11-16 18:46
+  from: devin
+  text: 'Fixed ~/.config/openchamber/settings.json projects[0] -> /home/tony/DevNest (backup: settings.json.bak-devnest-path).
+    Verified file state and OpenChamber readSettingsFromDiskMigrated path; loopback /api/config/settings returns
+    401 without UI auth, so consumer proof is pending in the OpenChamber UI/session create.'
 review_kind: verify
