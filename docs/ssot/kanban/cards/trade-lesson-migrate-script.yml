@@ -1,7 +1,7 @@
 id: trade-lesson-migrate-script
 title: Build trade-lesson-migrate.py — trade docs -> lesson free-lane pipeline
-column: backlog
-updated: 2026-11-13 21:42
+column: review
+updated: 2026-11-14 14:16
 brief: 'Deterministic orchestrator: docs-mcp inventory -> coverage map -> opencode free-lane distill -> /lesson
   upsert -> drift-map update.'
 priority: medium
@@ -47,8 +47,136 @@ spec: 'Build scripts/trade-lesson-migrate.py in chaba (repo=chaba dispatch).
 action:
   type: dispatch
   repo: chaba
+  status: done
+  lane: codemod
+  runner: idc02
+  sweep:
+    stale_running: 2026-11-13 23:10
+    session_gone: 2026-11-13 23:10
+  result: 'exit=0 those three remaining topics are ready to draft via `--apply --topic <x>` on a host with the docs
+    tree. | devin-task-20261113-225925-build-scripts-trade-lesson-mig.service: Consumed 43.193s CPU time, 568.6M
+    memory peak, 0B memory swap peak.'
+  verified: false
 ref: OPS-0103
 comms:
 - at: 2026-11-13 21:42
   from: devin
   text: card captured via board-api (trade docs -> education migration, free lane)
+- at: 2026-11-13 22:46
+  from: chaba
+  text: classified as codemod (kw conf 1.00)
+- at: 2026-11-13 22:46
+  from: devin
+  text: queued for processing
+- at: 2026-11-13 22:47
+  from: tony-dell
+  text: claimed
+- at: 2026-11-13 22:47
+  from: chaba
+  text: started devin-task-20261113-224719-build-scripts-trade-lesson-mig on tony-dell (dispatch)
+- at: 2026-11-13 22:58
+  from: chaba
+  text: runner tony-dell unreachable 3 passes — requeued
+- at: 2026-11-13 22:58
+  from: local
+  text: 'pub alert: card stalled: trade-lesson-migrate-script on idc03 — runner tony-dell unreachable — requeued
+    — runner tony-dell unreachable — requeued [evt-aade5cdbfb031af6]'
+- at: 2026-11-13 22:59
+  from: idc02
+  text: claimed
+- at: 2026-11-13 22:59
+  from: chaba
+  text: started devin-task-20261113-225925-build-scripts-trade-lesson-mig on idc02 (dispatch)
+- at: 2026-11-13 22:59
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-13 23:07
+  from: devin
+  text: 'progress: design settled — trade-lesson-map.yml (page->{topic,level,skip}) seeded from lesson-drift-map.yml
+    slugs; opencode run --format json --standalone -m litellm/gemini-3.5-flash-lite; /lesson upsert; drift-map text-append
+    + SERIES edit on --apply. Docs absent on idc02 (checkout has config/data only) — verifying against an idc03
+    copy via --docs-root.'
+- at: 2026-11-13 23:08
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261113-224719-build-scripts-trade-lesson-mig — close will block
+    until merged'
+- at: 2026-11-13 23:09
+  from: devin
+  text: 'progress: design settled — trade-lesson-map.yml seeded from lesson-drift-map.yml; opencode run --format
+    json --standalone; /lesson upsert; drift-map append + SERIES edit on --apply. Docs absent on idc02 — verifying
+    against idc03 copy via --docs-root.'
+- at: 2026-11-13 23:09
+  from: devin
+  text: 'progress: design settled; building script now. Docs absent on idc02 — verifying against idc03 copy via
+    --docs-root.'
+- at: 2026-11-13 23:09
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261113-224719-build-scripts-trade-lesson-mig — close will block
+    until merged'
+- at: 2026-11-13 23:09
+  from: devin
+  text: 'progress: design settled; building script now. Docs absent on idc02 — verifying against idc03 copy via
+    --docs-root.'
+- at: 2026-11-13 23:09
+  from: devin
+  text: 'progress: design settled; building script now. Docs absent on idc02 — verifying against idc03 copy via
+    --docs-root.'
+- at: 2026-11-13 23:09
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261113-224719-build-scripts-trade-lesson-mig — close will block
+    until merged'
+- at: 2026-11-13 23:09
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261113-224719-build-scripts-trade-lesson-mig — close will block
+    until merged'
+- at: 2026-11-13 23:10
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261113-224719-build-scripts-trade-lesson-mig — close will block
+    until merged'
+- at: 2026-11-13 23:10
+  from: chaba
+  text: 'merge-sweep: devin-task-20261113-224719-build-scripts-trade-lesson-mig no longer active on idc02 but card
+    still says running — sweeping its branch'
+- at: 2026-11-13 23:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-20261113-224719-build-scripts-trade-lesson-mig on
+    idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-13 23:14
+  from: devin
+  text: 'done+verified on idc02: scripts/trade-lesson-migrate.py + trade-lesson-map.yml built; --apply --topic getting-started
+    published lesson-0f4811f49a34 (Education:Trade-Getting-Started) via /lesson on the free lane; drift-map + SERIES
+    updated; re-run skips (idempotent). Note: child cards gate on topic trade-trade-* — real topic is single-prefix
+    trade-getting-started.'
+- at: 2026-11-13 23:15
+  from: idc02
+  text: 'finished (ok): exit=0 those three remaining topics are ready to draft via `--apply --topic <x>` on a host
+    with the docs tree. | devin-t'
+- at: 2026-11-13 23:15
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-13 23:15
+  from: chaba
+  text: pushed dispatch/20261113-225925-build-scripts-trade-lesson-mig to origin
+- at: 2026-11-13 23:15
+  from: chaba
+  text: 'test gate failed — merge held: tests/ops/test_gs_tools.py'
+- at: 2026-11-13 23:15
+  from: chaba
+  text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-14 08:25
+  from: devin
+  text: Duplicate dispatch 224719 resumed after its worktree was GC'd mid-session (zero file changes lost — exploration
+    only). Verified parallel session 225925 already shipped the full task on origin (script + map + real --apply
+    -> lesson-0f4811f49a34 trade-getting-started confirmed in /lesson op:list; drift-map + SERIES updates on its
+    branch pending normal merge). This session adds only its outcome doc; no duplicate code.
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+claim: {}
+review_kind: verify

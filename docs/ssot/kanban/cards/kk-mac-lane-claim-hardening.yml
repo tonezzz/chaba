@@ -1,7 +1,7 @@
 id: kk-mac-lane-claim-hardening
 title: kk_mac lane hardening — non-armed hosts can claim+fail; idc02 opencode --dir drift breaks the executor
-column: doing
-updated: 2026-11-12 06:48
+column: review
+updated: 2026-11-14 14:16
 priority: medium
 tags:
 - devnest
@@ -25,15 +25,21 @@ spec: 'Two bugs surfaced by the kk-mac-lane-live-probe card (OPS-1259) failing o
 action:
   type: dispatch
   repo: chaba
-  lane: jules
+  lane: paid_frontier
   executor: jules
-  status: failed
-  runner: tony-omen
-  result: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '' CLUTTER_IM_MODULE=''''
-    SDL_IM_MODULE='''' XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-kk-mac-lane-claim-hardening-1794230595.service:
-    Consumed 1.894s CPU time over 1h 29.727s wall clock time, '
+  status: done
   sweep:
     failed_noted: 2026-11-09 21:34
+    session_gone: 2026-11-14 11:10
+  last_failure: 'no exit record — unit not-found reports collected defaults (unproven, not ok) '' CLUTTER_IM_MODULE=''''
+    SDL_IM_MODULE='''' XMODIFIERS='''' |   Set IM_CONFIG_CURRENT_DESKTOP <- ''UNDEFINED'' | devin-task-kk-mac-lane-claim-hardening-1794230595.service:
+    Consumed 1.894s CPU time over 1h 29.727s wall clock time, '
+  attempts: 1
+  model: litellm/or-claude-fable-5.1
+  runner: tony-dell
+  result: 'exit=0 tatus=1/FAILURE | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Failed with result
+    ''exit-code''. | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Consumed 466ms CPU time over 395ms
+    wall clock time, 81.9M memory peak.'
 comms:
 - at: 2026-11-09 18:16
   from: chaba
@@ -423,3 +429,72 @@ comms:
   text: 'tony-omen defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on the
     only eligible runner (tony-omen) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-14 10:59
+  from: devin
+  text: retry requested
+- at: 2026-11-14 10:59
+  from: tony-dell
+  text: claimed
+- at: 2026-11-14 10:59
+  from: chaba
+  text: started devin-task-kk-mac-lane-claim-hardening-1794628789 on tony-dell (dispatch)
+- at: 2026-11-14 11:03
+  from: tony-dell
+  text: 'finished (ok): exit=0 tatus=1/FAILURE | devin-task-kk-mac-lane-claim-hardening-1794628789.service: Failed
+    with result ''exit-code''. | de'
+- at: 2026-11-14 11:04
+  from: chaba
+  text: ran under executor=opencode:paid_frontier
+- at: 2026-11-14 11:05
+  from: chaba
+  text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-14 11:05
+  from: chaba
+  text: pushed dispatch/kk-mac-lane-claim-hardening-1794628789 to origin
+- at: 2026-11-14 11:06
+  from: chaba
+  text: session produced no commits — the branch head is just an old base commit; NOT verified (merge-sweep counts
+    this a failed dispatch attempt)
+- at: 2026-11-14 11:06
+  from: chaba
+  text: 'worktree GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-kk-mac-lane-claim-hardening-1794628789,
+    branch dispatch/kk-mac-lane-claim-hardening-1794628789'
+- at: 2026-11-14 11:10
+  from: chaba
+  text: ran under executor=opencode:paid_frontier
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-kk-mac-lane-claim-hardening-1794230595 on tony-dell
+    — if the work was never pushed it may be gone'
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'auto-merge not done: no session repo for kk-mac-lane-claim-hardening-1794628789 — close will block until
+    merged'
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'merge-sweep: no session/worktree found for devin-task-kk-mac-lane-claim-hardening-1794230595 on tony-dell
+    — if the work was never pushed it may be gone'
+- at: 2026-11-14 11:10
+  from: chaba
+  text: ran under executor=opencode:paid_frontier
+- at: 2026-11-14 11:10
+  from: chaba
+  text: 'auto-merge not done: no session repo for kk-mac-lane-claim-hardening-1794628789 — close will block until
+    merged'
+- at: 2026-11-14 11:11
+  from: chaba
+  text: ran under executor=opencode:paid_frontier
+- at: 2026-11-14 11:11
+  from: chaba
+  text: 'auto-merge not done: no session repo for kk-mac-lane-claim-hardening-1794628789 — close will block until
+    merged'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+review_kind: verify
+claim: {}

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """mddb embed-path probe — POSTs /v1/vector-search every run and writes an
 ops-event doc to ada-ha-events-tony on state TRANSITIONS (up->down, or
-down->up recovery). Catches the silent-quota failure class: 2026-09-28
+down->up recovery). The probe itself targets the leader :11023 — that's
+where the vector index lives (mddb-ops has embeddings OFF); only the
+ops-event docs go to mddb-ops :11025. Catches the silent-quota failure
+class: 2026-09-28
 the OpenRouter key hit its spend limit (403) while the Gemini fallback
 429'd — the vector index was loaded and healthy, only query embedding
 was dead, so nothing noticed until a manual benchmark.
@@ -26,8 +29,12 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 
+# Probe target stays the leader — the vector index/queue only exists
+# there (mddb-ops is no-embed by design). Ops-event emits go to mddb-ops.
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
+MDDB_OPS = os.environ.get("MDDB_OPS_URL", "http://100.123.163.11:11025")
+MDDB_OPS = MDDB_OPS.removesuffix("/v1").removesuffix("/")
 PROBE_COLLECTION = "ada-ha-bank-general"
 PROBE_QUERY = "ada memory recall probe"
 EVENTS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
@@ -42,9 +49,10 @@ QUEUE_CRIT_DEPTH = int(os.environ.get("EMBED_QUEUE_CRIT_DEPTH", "3000"))
 QUEUE_DROP_ALERT_MIN_S = int(os.environ.get("EMBED_QUEUE_DROP_ALERT_MIN_S", "1800"))
 
 
-def _post(path: str, payload: dict, timeout: int = 30) -> dict:
+def _post(path: str, payload: dict, timeout: int = 30,
+          base: str = MDDB) -> dict:
     req = urllib.request.Request(
-        MDDB + path, data=json.dumps(payload).encode(),
+        base + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
 
@@ -63,7 +71,7 @@ def _emit(ev_type: str, detail: str) -> None:
             "meta": {"kind": ["ops-event"], "type": [ev_type],
                      "instance": ["tony"], "session_id": ["embed-probe"],
                      "ts": [now.isoformat(timespec="seconds")]},
-        })
+        }, base=MDDB_OPS)
     except Exception as exc:  # emit must never kill the probe
         print(f"ops event write failed: {exc}", file=sys.stderr)
 

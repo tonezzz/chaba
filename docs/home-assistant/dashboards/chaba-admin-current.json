@@ -178,36 +178,141 @@
       "cards": [
         {
           "type": "custom:layout-card",
-          "layout_type": "custom:grid-layout",
+          "layout_type": "custom:masonry-layout",
           "layout": {
-            "grid-template-columns": "repeat(auto-fit, minmax(340px, 1fr))",
-            "grid-gap": "8px"
+            "width": 260,
+            "max_width": 320,
+            "card_margin": "8px"
           },
           "cards": [
+            {
+              "type": "entities",
+              "title": "kk-mac",
+              "card_mod": {
+                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+              },
+              "entities": [
+                {
+                  "entity": "binary_sensor.kk_mac_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.kk_mac_uptime",
+                  "name": "uptime"
+                },
+                {
+                  "entity": "sensor.kk_mac_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.kk_mac_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.kk_mac_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.kk_mac_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.kk_mac_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.kk_mac_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.kk_mac_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.kk_mac_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.kk_mac_wan_org",
+                  "name": "wan isp"
+                }
+              ]
+            },
             {
               "type": "entities",
               "title": "tony-omen",
               "entities": [
                 {
-                  "entity": "sensor.tony_omen_battery_level"
+                  "entity": "sensor.tony_omen_battery_level",
+                  "name": "battery level"
                 },
                 {
-                  "entity": "sensor.tony_omen_battery_state"
+                  "entity": "sensor.tony_omen_battery_state",
+                  "name": "battery state"
                 },
                 {
-                  "entity": "sensor.tony_omen_cpu_package_temp"
+                  "entity": "sensor.tony_omen_cpu_package_temp",
+                  "name": "cpu package temp"
                 },
                 {
-                  "entity": "sensor.tony_omen_gpu_temp"
+                  "entity": "sensor.tony_omen_gpu_temp",
+                  "name": "gpu temp"
                 },
                 {
-                  "entity": "binary_sensor.tony_omen_online"
+                  "entity": "binary_sensor.tony_omen_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.tony_omen_uptime"
+                  "entity": "sensor.tony_omen_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.tony_omen_users"
+                  "entity": "sensor.tony_omen_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.tony_omen_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_omen_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_omen_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_omen_temp",
+                  "name": "temp"
+                },
+                {
+                  "entity": "sensor.tony_omen_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.tony_omen_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.tony_omen_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.tony_omen_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.tony_omen_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.tony_omen_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.tony_omen_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -219,34 +324,88 @@
               "title": "tony-macbook",
               "entities": [
                 {
-                  "entity": "switch.mac_plug"
+                  "entity": "switch.mac_plug",
+                  "name": "mac plug"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_level"
+                  "entity": "sensor.tony_macbook_battery_level",
+                  "name": "battery level"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_state"
+                  "entity": "sensor.tony_macbook_battery_state",
+                  "name": "battery state"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_health"
+                  "entity": "sensor.tony_macbook_battery_health",
+                  "name": "battery health"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_temp"
+                  "entity": "sensor.tony_macbook_battery_temp",
+                  "name": "battery temp"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_voltage"
+                  "entity": "sensor.tony_macbook_battery_voltage",
+                  "name": "battery voltage"
                 },
                 {
-                  "entity": "sensor.tony_macbook_battery_cycles"
+                  "entity": "sensor.tony_macbook_battery_cycles",
+                  "name": "battery cycles"
                 },
                 {
-                  "entity": "binary_sensor.tony_macbook_online"
+                  "entity": "binary_sensor.tony_macbook_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.tony_macbook_uptime"
+                  "entity": "sensor.tony_macbook_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.tony_macbook_users"
+                  "entity": "sensor.tony_macbook_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.tony_macbook_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_macbook_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_macbook_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_macbook_temp",
+                  "name": "temp"
+                },
+                {
+                  "entity": "sensor.tony_macbook_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.tony_macbook_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.tony_macbook_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.tony_macbook_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.tony_macbook_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.tony_macbook_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.tony_macbook_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -258,13 +417,60 @@
               "title": "tony-dell",
               "entities": [
                 {
-                  "entity": "binary_sensor.tony_dell_online"
+                  "entity": "binary_sensor.tony_dell_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.tony_dell_uptime"
+                  "entity": "sensor.tony_dell_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.tony_dell_users"
+                  "entity": "sensor.tony_dell_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.tony_dell_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_dell_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_dell_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_dell_temp",
+                  "name": "temp"
+                },
+                {
+                  "entity": "sensor.tony_dell_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.tony_dell_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.tony_dell_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.tony_dell_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.tony_dell_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.tony_dell_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.tony_dell_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -276,13 +482,56 @@
               "title": "idc02",
               "entities": [
                 {
-                  "entity": "binary_sensor.idc02_online"
+                  "entity": "binary_sensor.idc02_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.idc02_uptime"
+                  "entity": "sensor.idc02_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.idc02_users"
+                  "entity": "sensor.idc02_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.idc02_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.idc02_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.idc02_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.idc02_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.idc02_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.idc02_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.idc02_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.idc02_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.idc02_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.idc02_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -294,13 +543,56 @@
               "title": "idc03",
               "entities": [
                 {
-                  "entity": "binary_sensor.idc03_online"
+                  "entity": "binary_sensor.idc03_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.idc03_uptime"
+                  "entity": "sensor.idc03_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.idc03_users"
+                  "entity": "sensor.idc03_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.idc03_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.idc03_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.idc03_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.idc03_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.idc03_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.idc03_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.idc03_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.idc03_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.idc03_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.idc03_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -312,13 +604,60 @@
               "title": "mn01",
               "entities": [
                 {
-                  "entity": "binary_sensor.mn01_online"
+                  "entity": "binary_sensor.mn01_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.mn01_uptime"
+                  "entity": "sensor.mn01_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.mn01_users"
+                  "entity": "sensor.mn01_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.mn01_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.mn01_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.mn01_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.mn01_temp",
+                  "name": "temp"
+                },
+                {
+                  "entity": "sensor.mn01_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.mn01_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.mn01_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.mn01_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.mn01_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.mn01_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.mn01_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -330,13 +669,56 @@
               "title": "con01",
               "entities": [
                 {
-                  "entity": "binary_sensor.con01_online"
+                  "entity": "binary_sensor.con01_online",
+                  "name": "online"
                 },
                 {
-                  "entity": "sensor.con01_uptime"
+                  "entity": "sensor.con01_uptime",
+                  "name": "uptime"
                 },
                 {
-                  "entity": "sensor.con01_users"
+                  "entity": "sensor.con01_users",
+                  "name": "users"
+                },
+                {
+                  "entity": "sensor.con01_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.con01_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.con01_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.con01_swap",
+                  "name": "swap"
+                },
+                {
+                  "entity": "sensor.con01_net_rx",
+                  "name": "net rx"
+                },
+                {
+                  "entity": "sensor.con01_net_tx",
+                  "name": "net tx"
+                },
+                {
+                  "entity": "sensor.con01_top_proc",
+                  "name": "top proc"
+                },
+                {
+                  "entity": "sensor.con01_wan_city",
+                  "name": "wan city"
+                },
+                {
+                  "entity": "sensor.con01_wan_country",
+                  "name": "wan country"
+                },
+                {
+                  "entity": "sensor.con01_wan_org",
+                  "name": "wan isp"
                 }
               ],
               "card_mod": {
@@ -345,7 +727,8 @@
             }
           ]
         }
-      ]
+      ],
+      "type": "panel"
     }
   ]
 }

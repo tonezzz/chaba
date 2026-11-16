@@ -41,8 +41,10 @@ BIND = os.environ.get("REPORT_API_BIND", "127.0.0.1")
 TOKEN = os.environ.get("REPORT_API_TOKEN", "")
 # Completion notice — POST a report-updated doc into Ada's ops events
 # collection so she can surface it on the next turn (design §5).
-EVENTS_URL = os.environ.get(
-    "REPORT_EVENTS_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+# ada-ha-events-* lives on mddb-ops since the split — :11023 is residue.
+EVENTS_URL = (os.environ.get("REPORT_EVENTS_URL")
+              or os.environ.get("MDDB_OPS_URL")
+              or "http://100.123.163.11:11025/v1").rstrip("/")
 EVENTS_COLLECTION = os.environ.get(
     "REPORT_EVENTS_COLLECTION", "ada-ha-events-tony")
 RUN_NODE = REPO / "scripts/report/run-node.py"

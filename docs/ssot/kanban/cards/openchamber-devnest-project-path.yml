@@ -1,0 +1,41 @@
+id: openchamber-devnest-project-path
+title: Fix stale OpenChamber project path DevNest-ada-agent -> DevNest
+column: review
+updated: 2026-11-16 18:46
+brief: OpenChamber settings.json registers only /home/tony/DevNest-ada-agent, which no longer exists; the live checkout
+  is /home/tony/DevNest.
+priority: medium
+program: devnest
+tags:
+- openchamber
+- opencode
+- config
+spec: 'Fix by re-adding the project in the OpenChamber UI or editing ~/.config/openchamber/settings.json projects[0].path/label
+  and letting migrateSettingsToDeterministicProjectIds repair the id. Verify a new session resolves the directory
+  and loads .opencode config/agents/commands. Acceptance: project list shows DevNest; session create no longer returns
+  Directory not found; /ada smoke works.'
+action:
+  type: manual
+  host: tony_dell
+ref: OPS-0140
+comms:
+- at: 2026-11-16 18:36
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-16 18:36
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
+- at: 2026-11-16 18:42
+  from: devin
+  text: 'Fixed ~/.config/openchamber/settings.json projects[0] -> /home/tony/DevNest (backup: settings.json.bak-devnest-path).
+    Verified file state and OpenChamber readSettingsFromDiskMigrated path; loopback /api/config/settings returns
+    401 without UI auth, so consumer proof is pending in the OpenChamber UI/session create.'
+- at: 2026-11-16 18:43
+  from: devin
+  text: moved backlog -> review
+- at: 2026-11-16 18:46
+  from: devin
+  text: 'Fixed ~/.config/openchamber/settings.json projects[0] -> /home/tony/DevNest (backup: settings.json.bak-devnest-path).
+    Verified file state and OpenChamber readSettingsFromDiskMigrated path; loopback /api/config/settings returns
+    401 without UI auth, so consumer proof is pending in the OpenChamber UI/session create.'
+review_kind: verify

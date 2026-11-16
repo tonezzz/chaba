@@ -54,7 +54,7 @@ def load_env_file(path: Path) -> dict:
 # Host tokens that must never leak into the public digest, even when a
 # card title names them. Union of ssot.values.yml hosts: + static extras.
 STATIC_HOSTS = {
-    "idc01", "idc02", "idc03", "mn01", "kk-macbook",
+    "idc02", "idc03", "mn01", "kk-macbook",
     "tony-dell", "tony-omen", "tony-ha", "tony-dev", "michael-ha", "michael-dev",
     "ada-voice", "homeassistant",
 }

@@ -1,0 +1,109 @@
+title: runner-agent gains a launchd task runtime — kk-mac runner seam
+subtitle: systemd-run equivalence on macOS — transient gui/<uid> jobs,
+  wrapper-supplied runtime bound + exit-code durability + pgrp control,
+  sysctl vm.loadavg gate; kk-mac provisioning script + runbook
+icon: git
+version: 1
+
+card: kk-mac-launchd-runner-port
+date: 2026-11-14
+dispatch: 20261114-131025-kk-approved-full-fleet-use-of-
+
+context: |
+  KK approved full fleet use of kk-mac (Mac16,9 M4 Max 36GB, kkkakk)
+  2026-10-30. The dispatch lane's task units were Linux-only
+  systemd-run — this job ports the executor seam so the same
+  OPENCODE_LANES/exit_code/timeout contract runs on macOS launchd.
+
+design: |
+  One seam, one payload contract. Every task unit — devin-task-* and
+  runner-* — starts through rt_launch(), polls through
+  unit_active()/units_for_card(), closes through collect(), and
+  reports resource control through unit_pids()/_signal_job()/
+  _deprioritize_unit(). RUNNER_TASK_RUNTIME=auto resolves launchd on
+  darwin, systemd elsewhere; all six former systemd-run call sites
+  (container, script, kk_mac, staged profile, opencode, nlm x2,
+  jules) now emit the same systemd ExecStart payload text — `$$` =
+  literal `$` — and the launchd side strips that one escape layer.
+
+  launchd has no cgroup and no transient-unit record, so the generated
+  bash wrapper supplies: `set -m` + pgrp watchdog for RuntimeMaxSec
+  (TERM then KILL+15s), a recorded payload pgrp for renice/signals,
+  an EXIT trap so a bootout drops the whole tree (launchd kills the
+  leader only), and it always writes
+  RUNNER_STATE/exit/<unit>.code — `last exit code` in `launchctl
+  print` drops with the job record, the same loss class as
+  --collect (OPS-1181). Resource limits map to plist
+  Nice/ProcessType=Background/LowPriorityIO + `ulimit -v` — the
+  documented no-cgroup translation (CPUQuota/MemoryMax/IOWeight have
+  no equivalent). collect() keeps the identical evidence precedence:
+  task-dir exit_code > .code file > registered-job `last exit code` >
+  unproven (never ok). Logs: Standard{Out,Err}Path ->
+  RUNNER_STATE/logs/<unit>.log (log show --predicate stays a second
+  surface). Overload gate: sysctl -n vm.loadavg on darwin.
+
+  The devin executor stays systemd-only — devin-dispatch.sh drives
+  systemd-run internally, outside the seam. claimable() declines
+  executor=devin and unexecutored cards with no opencode route on a
+  launchd runner (explicit reason + defer comms); start_task
+  double-guards so a forced claim can never invoke it.
+  executor=opencode/script/container/jules/nlm_batch/kk_mac_local all
+  serve. DISPATCH-presence check narrowed to the executors that
+  actually invoke it (kk_mac_local/nlm/jules no longer gated by it).
+
+deliverables:
+  - >-
+    scripts/board/runner-agent.py — task-runtime seam:
+    RUNNER_TASK_RUNTIME/RUNNER_LAUNCHD_DOMAIN env, rt_launch() +
+    _launchd_* helpers (domain/target/wrapper/launch/print-parse/gc/
+    pids/signal/units), collect()/_exit_dir()/unit_pids()/
+    enforce_task_limits()/units_for_card()/watchdog throttles runtime-
+    branched, overloaded() via sysctl vm.loadavg on darwin,
+    _mem_total_gb() via hw.memsize, claimable() devin/systemd gate +
+    executor_defer_reason() visibility, docstring mapping section.
+  - >-
+    tests/board/test_runner_agent_launchd.py — 35 tests: runtime
+    detect, plist+wrapper generation (de-escape, watchdog, pgrp, trap,
+    code file), bootstrap/bootout/refuse flows, unit_active parsing,
+    collect evidence precedence, pgrp pids + signals, units_for_card,
+    sysctl loadavg + overload gate, claimable devin gate. All mocked —
+    runs on Linux.
+  - >-
+    scripts/ops/kk-mac-runner-onboard.sh — kkkakk provisioning:
+    preflight (Darwin/arm64/py>=3.10/gui domain), dirs, deploykey
+    (gh-chaba alias + insteadOf rewrite + GitHub enrol gate),
+    exec checkout, repos.conf + push probe, opencode darwin-arm64,
+    secrets check, LaunchAgent poller (60s, RUNNER_CAP=1,
+    labels desktop,mac,arm64,cpu), verify, teardown.
+  - >-
+    docs/kb/kk-mac-launchd-runner.md — systemd->launchd mapping
+    table, per-step provisioning gates, on-metal verification, cap/
+    limits policy for a shared family machine, teardown.
+
+verify:
+  - "python3 -m py_compile scripts/board/runner-agent.py — OK"
+  - >-
+    python3 -m unittest tests.board.test_runner_agent_launchd —
+    35 tests OK (mocked launchctl/sysctl; Linux dev host)
+  - >-
+    python3 -m unittest discover -s tests/board — full suite pass
+    (regressions checked for lane/reconcile/push-guard/executor-
+    contract/claim-order)
+  - "bash -n scripts/ops/kk-mac-runner-onboard.sh — syntax OK"
+
+gaps_remaining: |
+  Code-complete but NOT verified on the metal — every launchd path is
+  mock-tested on Linux. Before kk-mac joins runner_fleet: (1) run
+  scripts/ops/kk-mac-runner-onboard.sh on kk-mac as kkkakk — the
+  deploy key needs manual enrolment at GitHub (write access on
+  tonezzz/chaba); (2) the gui/<uid> domain requires kkkakk logged in —
+  enable auto-login or set LAUNCHD_DOMAIN=user; (3) copy the fleet's
+  litellm-keys.env for opencode lanes; (4) verify the selftest in the
+  runbook's verify section, then declare push:chaba + flip labels.
+  devin-dispatch.sh itself remains systemd-only — a launchd port of
+  that lane is separate cardable work if kk-mac should ever serve
+  executor=devin. Watch for: start_nlm_lane/finish_nlm_lane and the
+  nlm_batch route exist twice in runner-agent.py (pre-existing benign
+  merge duplication — second def wins); the runner's 60s poll also
+  self-updates from the exec checkout, so a merged master keeps the
+  deployed binary fresh.

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "_comment": "DISABLED TEMPLATE — this request cannot render: status is not 'approved' and owner_approved is false, so the pack fails closed at preflight. To arm one render: copy this file, set status='approved', owner_approved=true, approved_by=<who approved>, approved_at=<iso-utc>, fill the final prompt, and set render_window to the approved window. Stage to gdrive:ada-nest-kk-llm only during an owner-idle window on KK-Mac. Never set adobe_upload to anything but false.",
+  "status": "template_disabled",
+  "request_id": "template-disabled-do-not-run",
+  "campaign": "AS-2026-11-05-REMOTE-WORK-001",
+  "purpose": "One bounded SDXL comparison render for the remote-work campaign (comparison-b style baseline exists in gdrive:ada-nest-adobe-stock).",
+  "owner_approved": false,
+  "approved_by": null,
+  "approved_at": null,
+  "adobe_upload": false,
+  "render_window": {
+    "not_before_utc": "2026-01-01T00:00:00Z",
+    "not_after_utc": "2026-01-01T00:00:00Z"
+  },
+  "prompt": "Photorealistic modern home office workspace, laptop on a wooden desk near a bright window, warm morning light, coffee cup and notebook, shallow depth of field, natural colors, commercial stock photo",
+  "negative_prompt": "cartoon, illustration, painting, cgi, text, watermark, logo, signature, people, hands, deformed, blurry, oversaturated",
+  "model": {
+    "id": "stabilityai/stable-diffusion-xl-base-1.0",
+    "revision": "462165984030d82259a11f4367a4eed129e94a7b",
+    "_manifest_contract": "request.model must equal $VENV/model-manifest.json {model_id, revision}; the pinned snapshot must already exist on disk (snapshot_dir in the manifest, else ~/.cache/huggingface/hub/models--<id>/snapshots/<revision>). No downloads — mismatch fails closed."
+  },
+  "render": {
+    "width": 1024,
+    "height": 576,
+    "num_inference_steps": 30,
+    "guidance_scale": 7.5,
+    "seed": 20261105,
+    "count": 1
+  },
+  "limits": {
+    "min_disk_free_gb": 30.0,
+    "max_load_1m": 4.0,
+    "max_wall_seconds": 1800
+  },
+  "output_name": "render.png"
+}

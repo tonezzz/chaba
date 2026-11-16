@@ -1,0 +1,36 @@
+id: gemini-ollama-proxy-circuit-break-exhaus-ccb501
+title: 'gemini-ollama-proxy: circuit-break exhausted free Gemini key'
+column: done
+updated: 2026-11-16 12:34
+note: 'Free-tier GEMINI_API_KEY is quota-exhausted (35k 429s/day). Every embed request pays a doomed free-tier call
+  before paid fallback — doubles API calls and adds latency that helps blow the 8s memory_search budget. Add a breaker:
+  after N consecutive free-key 429s, route straight to paid for a cooldown, half-open probe to recover. Also reduces
+  quota burn ~50%.'
+ref: ADA-0138
+comms:
+- at: 2026-11-16 11:28
+  from: devin
+  text: 'Context: MDDB leader+CMS embed workers -> proxy :11435 -> Gemini. ~18k embed req/day driven by CMS automation
+    timers (line-chat-timeline ~5min cadence etc). Side effect found: CMS embed queue saturated since Nov 11, 1184+
+    docs dropped vectors pending reindex.'
+- at: 2026-11-16 11:47
+  from: devin
+  text: 'DONE 2026-11-16: merged chaba#179, deployed to idc03 proxy dir (bak: gemini-ollama-proxy.mjs.bak-ada0138),
+    service restarted. Verified live: first request tripped breaker (free_gemini_open=true on /health), subsequent
+    embeds serve via OpenRouter in ~960ms vs ~11.6s before. Free key now probed once per 10min instead of 10 retry-storms
+    per request. or_calls_today climbing = backlog draining. Residual 429s are paid-key RPM retries during queue
+    drain — bounded, self-resolving. Rollback: cp .bak file'
+- at: 2026-11-16 11:48
+  from: devin
+  text: 'DONE: chaba#179 merged+deployed on idc03. Breaker verified live — embeds now ~960ms via OR, free key probed
+    1x/10min. bak-ada0138 rollback file in proxy dir.'
+- at: 2026-11-16 12:34
+  from: devin
+  text: 'DONE 2026-11-16: chaba#179 merged, deployed to idc03 (rollback: gemini-ollama-proxy.mjs.bak-ada0138). Verified:
+    free_gemini_open=true on /health, embeds ~960ms via OR vs ~11.6s, 429s down to ~6/15min, CMS queue draining
+    (0 drops/15min). OR cap 5000 hit — paid leg now active by design.'
+- at: 2026-11-16 12:34
+  from: devin
+  text: closed by devin
+action:
+  status: done

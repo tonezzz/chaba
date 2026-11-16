@@ -1,0 +1,17 @@
+[Unit]
+Description=kkmac-admission-shim — fail-fast Ada Nest admission gate in front of the kk-mac ollama tunnel (:11447 -> :11445)
+After=network-online.target kkmac-ollama-tunnel.service
+Wants=network-online.target
+
+[Service]
+Environment=KK_SHIM_ADDR=127.0.0.1:11447
+Environment=KK_SHIM_UPSTREAM=http://127.0.0.1:11445
+Environment=KK_SHIM_CACHE_S=10
+# drain switch: `touch $XDG_RUNTIME_DIR/kkmac-admission-shim.deny` -> instant 503s
+Environment=KK_ADMISSION_FORCE_DENY=%t/kkmac-admission-shim.deny
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/devnest/kk_mac_admission_shim.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

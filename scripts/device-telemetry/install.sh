@@ -27,6 +27,7 @@ if [[ "${1:-}" == "prune" ]]; then
 fi
 
 INT="${1:-5}"
+NAME="${DEVICE_TELEMETRY_NAME:-$(hostname -s)}"
 cp "$DIR/agent.py" "$DEST/agent.py"
 chmod +x "$DEST/agent.py"
 
@@ -58,6 +59,7 @@ Description=Device telemetry beacon
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/python3 $DEST/agent.py
+Environment=DEVICE_TELEMETRY_NAME=$NAME
 SV
   cat > "$SDIR/device-telemetry.timer" <<TM
 [Unit]

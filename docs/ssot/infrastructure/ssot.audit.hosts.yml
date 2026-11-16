@@ -245,6 +245,7 @@ hosts:
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
       - {name: devin-session-prune.timer, type: timer, scope: user}
       - {name: devin-summaries-sync.timer, type: timer, scope: user}
+      - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: flood-alert.timer, type: timer, scope: user}
       - {name: ha-auth-watch.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}
@@ -911,6 +912,7 @@ hosts:
       - {name: chaba-mn01-sync.timer, type: timer, scope: user}
       - {name: device-telemetry.timer, type: timer, scope: user}
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
+      - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: focus-dispatcher.timer, type: timer, scope: user}
       - {name: focus-dispatcher-overnight.timer, type: timer, scope: user}
       - {name: ha-fabric-cms.timer, type: timer, scope: user}
@@ -1401,6 +1403,7 @@ hosts:
       - {name: ada-standby-sync.timer, type: timer, scope: user}
       - {name: chaba-repo-sync.timer, type: timer, scope: user}
       - {name: devin-dispatch-watch.timer, type: timer, scope: user}
+      - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: log-shipper.timer, type: timer, scope: user}
       - {name: log-shipper-severe.timer, type: timer, scope: user}
       - {name: mn01-canary.timer, type: timer, scope: user}
@@ -1594,8 +1597,9 @@ hosts:
         - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.646831+07:00
     deltas: []
   idc01:
-    retired: true   # 2026-10-12 — lease teardown pending (OPS-0520); ssh dead,
-                    # excluded from the daily audit fleet
+    retired: true   # permanently retired 2026-11-14 per Tony (OPS-0096);
+                    # was lease-teardown-pending since 2026-10-12 (OPS-0520);
+                    # ssh dead, excluded from the daily audit fleet
     tailscale_ip: 100.74.146.0
     description: "RETIRED public VPS — ssh dead 2026-10-12. Was warm-DR node
       since the 2026-10-05/06 idc03 migration (mddb-follower, standby
@@ -1645,7 +1649,7 @@ hosts:
         critical: true
         note: "MDDB replication leader on tailnet 100.102.134.91:11023 http /
           :11024 gRPC / :9000 MCP (quadlet, env-file ~/.config/secrets/mddb.env);
-          followers on idc02 and idc01 (mddb-follower.service :11123)"
+          followers on idc02 and con01 (mddb-follower.service :11123); idc01 follower lost with host"
       - name: mddb-ops.service
         type: service
         scope: user
@@ -1661,6 +1665,18 @@ hosts:
           reaches adanest's loopback-bound ollama on kk-mac (OPS-1016);
           feeds LiteLLM ollama-*-kkmac routes + embed-pool upstream;
           dies with kk-mac (member device, offline_ok)"
+      - name: kkmac-admission-shim.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Ada Nest admission gate on 127.0.0.1:11447 in front of
+          kkmac-ollama-tunnel :11445 (card kk-mac-gateway-admission-shim,
+          2026-11-14) — 503s instantly when kk-mac heartbeat is stale
+          >900s / temp>60C / disk<20G / busy, so LiteLLM kk-mac legs
+          (summary/classify/bench leg-1, chat-local leg-2) fail fast to
+          the paid leg. Drain switch: touch
+          $XDG_RUNTIME_DIR/kkmac-admission-shim.deny; GET /health = snapshot"
       - name: embed-pool-shim.service
         type: service
         scope: user
@@ -2020,6 +2036,7 @@ hosts:
       - {name: chaba-starboard-tracker.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: chaba-tony-ideas.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: daily-brief.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
+      - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: focus-dispatcher-overnight.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: kanban-commit.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
       - {name: kanban-dispatch.timer, type: timer, scope: user, note: "migrated from tony-dell 2026-10-16/19 (OPS-0725 ph2/ph4b)"}
@@ -2196,6 +2213,7 @@ hosts:
       - {name: cam-wall-pull-vps.timer, type: timer, scope: user}
       - {name: camwall-render-check.timer, type: timer, scope: user}
       - {name: cms-publish-site.timer, type: timer, scope: user}
+      - {name: dispatch-wt-clean.timer, type: timer, scope: user, note: "weekly worktree GC (~/bin/git-worktree-gc.sh, retain 7d, salvage dirty) — armed fleet-wide 2026-11-13"}
       - {name: jev-bench.timer, type: timer, scope: user}
       - {name: jev-retrain.timer, type: timer, scope: user}
       - {name: log-shipper.timer, type: timer, scope: user}

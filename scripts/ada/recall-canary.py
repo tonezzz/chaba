@@ -28,6 +28,11 @@ MDDB = os.environ.get(
     "ADA_MEMORY_MDDB_URL", "http://100.102.134.91:11023/v1"
 ).rstrip("/")
 INSTANCE = os.environ.get("ADA_INSTANCE_ID", "tony")
+# vector-search probes stay on the leader (banks + index live there);
+# the ops-event verdict doc goes to mddb-ops — ada-ha-events-* moved
+# off the leader in the mddb-ops split.
+MDDB_OPS = os.environ.get(
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 OPS_COLLECTION = f"ada-ha-events-{INSTANCE}"
 BANKS_FILE = Path(os.environ.get(
     "ADA_MEMORY_BANKS_FILE", "~/.config/ada/memory-banks.json"
@@ -111,7 +116,7 @@ def emit_misses(report: dict) -> None:
           + "\n".join(f"- MISS: {r['q']}" for r in misses))
     try:
         req = urllib.request.Request(
-            f"{MDDB}/add", data=json.dumps({
+            f"{MDDB_OPS}/add", data=json.dumps({
                 "collection": OPS_COLLECTION,
                 "key": f"ops-recall-canary-{now.replace(':', '')}",
                 "lang": "en", "contentMd": md,

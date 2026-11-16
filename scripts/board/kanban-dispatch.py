@@ -400,8 +400,10 @@ def now() -> str:
     return datetime.now(timezone(timedelta(hours=7))).strftime("%Y-%m-%d %H:%M")
 
 
+# ops-event docs go to mddb-ops — ada-ha-events-* moved off the leader
+# in the mddb-ops split (:11023 is pre-split residue only).
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 
 
 def ops_event(detail: str) -> None:

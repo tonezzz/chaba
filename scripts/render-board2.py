@@ -721,8 +721,10 @@ function closeModal() {
 
 async function api(path, body) {
   try {
+    // 60s: writes serialize on the board-api flock which kanban-commit
+    // holds across pull+push — 15s aborted mid-commit (broken pipe).
     const r = await fetch(API + path, {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body), signal: AbortSignal.timeout(15000)});
+      body: JSON.stringify(body), signal: AbortSignal.timeout(60000)});
     return await r.json();
   } catch (e) { return {ok:false, error:String(e)}; }
 }

@@ -9,21 +9,24 @@ or launchd every few minutes — single file, stdlib only, no icon, no
 tray, ~5ms when idle.
 
 Env:
-  DEVICE_TELEMETRY_MDBB   default http://100.102.134.91:11023/v1
+  DEVICE_TELEMETRY_MDBB   default http://100.102.134.91:11026/v1
   DEVICE_TELEMETRY_NAME   default short hostname
   DEVICE_TELEMETRY_GEO    "0" to skip WAN geo lookup (privacy/offline)
   DEVICE_TELEMETRY_PROC   max processes to list (default 8, 0=off)
 """
+from __future__ import annotations
+
 import json
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import time
 import urllib.request
 
 MDBB = os.environ.get("DEVICE_TELEMETRY_MDBB",
-                      "http://100.102.134.91:11023/v1").rstrip("/")
+                      "http://100.102.134.91:11026/v1").rstrip("/")
 NAME = os.environ.get("DEVICE_TELEMETRY_NAME",
                       socket.gethostname().split(".")[0])
 COLLECTION = "device-telemetry"
@@ -39,14 +42,24 @@ def _run(cmd: list[str], timeout: int = 5) -> str:
 
 def _tailnet() -> dict:
     out = {"online": False}
-    js = _run(["tailscale", "status", "--json"])
+    candidates = ["tailscale"]
+    if platform.system() == "Darwin":
+        candidates += ["/opt/homebrew/bin/tailscale",
+                       "/usr/local/bin/tailscale",
+                       "/Applications/Tailscale.app/Contents/MacOS/Tailscale"]
+    js = ""
+    for c in candidates:
+        js = _run([c, "status", "--json"])
+        if js:
+            break
     if js:
         try:
             st = json.loads(js)
             me = st.get("Self", {})
             out["online"] = st.get("BackendState") == "Running"
             out["ips"] = me.get("TailscaleIPs", [])
-            out["last_handshake"] = me.get("LastHandshake")
+            hs = me.get("LastHandshake") or ""
+            out["last_handshake"] = hs if hs.startswith("2") else None
         except Exception:
             pass
     return out
@@ -68,7 +81,7 @@ def _wan() -> dict:
 
 def _battery() -> dict | None:
     if platform.system() == "Darwin":
-        out = _run(["pmset", "-g", "batt"])
+        out = _run(["/usr/bin/pmset", "-g", "batt"])
         if "%" in out:
             return {"raw": out.splitlines()[-1][:120]}
         return None
@@ -123,17 +136,126 @@ def _users() -> list[str]:
     return sorted(set(_run(["users"]).split()))
 
 
+def _load() -> float | None:
+    try:
+        return round(os.getloadavg()[0], 2)
+    except (AttributeError, OSError):
+        return None
+
+
+def _mem_pct() -> float | None:
+    if os.path.exists("/proc/meminfo"):
+        kv = {}
+        for l in open("/proc/meminfo"):
+            k, _, v = l.partition(":")
+            kv[k.strip()] = int(v.split()[0])
+        total = kv.get("MemTotal")
+        avail = kv.get("MemAvailable")
+        if total and avail is not None:
+            return round(100.0 * (total - avail) / total, 1)
+        return None
+    if platform.system() == "Darwin":
+        out = _run(["/usr/bin/vm_stat"])
+        if "page size of" not in out:
+            return None
+        try:
+            ps = int(out.split("page size of")[1].split("bytes")[0])
+            vals = {l.split(":")[0].strip(): int(l.split(":")[1].strip().rstrip("."))
+                    for l in out.splitlines()
+                    if l.startswith("Pages ") and ":" in l}
+            total_b = int(_run(["/usr/sbin/sysctl", "-n", "hw.memsize"]))
+            free = (vals.get("Pages free", 0)
+                    + vals.get("Pages inactive", 0)) * ps
+            return round(100.0 * (total_b - free) / total_b, 1)
+        except Exception:
+            return None
+    return None
+
+
+def _disk_pct() -> float | None:
+    try:
+        u = shutil.disk_usage("/")
+        return round(100.0 * u.used / u.total, 1)
+    except OSError:
+        return None
+
+
+def _temps() -> tuple[float | None, dict]:
+    zones = {}
+    for z in sorted(__import__("glob").glob(
+            "/sys/class/thermal/thermal_zone*/temp")):
+        v = _run(["cat", z])
+        if v.isdigit():
+            name = z.split("thermal_zone")[1].split("/")[0]
+            zones[f"zone{name}"] = round(int(v) / 1000.0, 1)
+    if not zones:
+        return None, {}
+    return round(max(zones.values()), 1), zones
+
+
+
+def _swap_pct() -> float | None:
+    if os.path.exists("/proc/meminfo"):
+        kv = {}
+        for l in open("/proc/meminfo"):
+            k, _, v = l.partition(":")
+            kv[k.strip()] = int(v.split()[0])
+        total, free = kv.get("SwapTotal"), kv.get("SwapFree")
+        if total:
+            return round(100.0 * (total - (free or 0)) / total, 1)
+        return 0.0 if total == 0 else None
+    if platform.system() == "Darwin":
+        out = _run(["/usr/sbin/sysctl", "-n", "vm.swapusage"])
+        # "total = 2048.00M  used = 512.00M  free = ..."
+        try:
+            tot = float(out.split("total =")[1].split("M")[0])
+            used = float(out.split("used =")[1].split("M")[0])
+            return round(100.0 * used / tot, 1) if tot else 0.0
+        except Exception:
+            return None
+    return None
+
+
+def _net() -> tuple[int | None, int | None]:
+    rx = tx = None
+    if os.path.exists("/proc/net/dev"):
+        rx = tx = 0
+        for l in open("/proc/net/dev").read().splitlines()[2:]:
+            if ":" not in l:
+                continue
+            name, _, rest = l.partition(":")
+            if name.strip() == "lo":
+                continue
+            f = rest.split()
+            if len(f) >= 9:
+                rx += int(f[0]); tx += int(f[8])
+    return rx, tx
+
+
+
 def collect() -> dict:
-    boot = _run(["sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
+    boot = _run(["/usr/sbin/sysctl", "-n", "kern.boottime"]).split("{ sec = ")[-1].split(",")[0] \
         if platform.system() == "Darwin" else ""
+    temps = _temps()
+    rx, tx = _net()
     d = {
         "device": NAME,
         "ts": int(time.time()),
         "os": f"{platform.system()} {platform.release()}",
-        "uptime_s": int(_run(["cat", "/proc/uptime"]).split()[0].split(".")[0])
-        if os.path.exists("/proc/uptime") else None,
+        "uptime_s": (int(_run(["cat", "/proc/uptime"]).split()[0].split(".")[0])
+                     if os.path.exists("/proc/uptime")
+                     else (int(time.time()) - int(boot)
+                           if boot.isdigit() else None)),
         "boot_time": int(boot) if boot.isdigit() else None,
         "users": _users(),
+        "load1": _load(),
+        "mem_pct": _mem_pct(),
+        "disk_pct": _disk_pct(),
+        "swap_pct": _swap_pct(),
+        "net_rx_b": rx,
+        "net_tx_b": tx,
+        "temp_c": temps[0],
+        "temp_zones": temps[1],
         "top_procs": _procs(),
         "battery": _battery(),
         "tailnet": _tailnet(),

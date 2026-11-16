@@ -1,0 +1,54 @@
+id: embed-free-lane-daily-budget
+title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
+column: backlog
+updated: 2026-11-14 14:16
+brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
+  → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
+  still exhaust the day by noon, starving interactive/query embeds until reset.
+priority: medium
+tags:
+- embeddings,quota,spend
+spec: 'Goal: bulk/index embedding work must not starve the free lane''s daily quota. Options: (a) mddbd-side daily
+  embed budget — count provider calls/day per worker, defer index jobs past budget while letting query embeds through
+  (needs query/index job distinction — check if EmbeddingJob carries it); (b) proxy-side pacing — gemini-ollama-proxy
+  token-buckets the Gemini leg to spread bulk calls across the day; (c) accept — quota resets daily, OR fallback
+  capped at ~$0.10/day covers overflow. Decide where the budget lives and whether query embeds get priority.'
+ref: MEM-0108
+comms:
+- at: 2026-11-13 23:11
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-13 23:11
+  from: devin
+  text: 'raised request where-should-the-daily-embed-budget-live-41c823: Where should the daily embed budget live?
+    Note: query embeds bypass the worker queue entirely (vector-search calls the p'
+- at: 2026-11-14 09:56
+  from: tony
+  text: 'answered where-should-the-daily-embed-budget-live-41c823: proceed'
+- at: 2026-11-14 09:56
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:16
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+requests:
+- id: where-should-the-daily-embed-budget-live-41c823
+  ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
+    calls the provider directly), so the real question is reserving quota headroom for them. ★(a) mddb worker-side
+    daily budget ~700/day for index jobs — leaves ~300/day for queries, precise but needs a per-worker counter +
+    config; (b) proxy token-bucket pacing — spreads bulk calls but doesn''t reserve query headroom and delays rather
+    than budgets; (c) accept — OR fallback cap (~$0.10/day) already bounds overflow cost; outage risk is lag-until-reset,
+    not spend.'
+  status: answered
+  at: 2026-11-13 23:11
+  from: devin
+  options:
+  - proceed
+  - hold
+  answer: proceed
+awaiting_action: true

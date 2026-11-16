@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-wp-cam-snapshot
 title: Timer wp-cam-snapshot on tony-dell failing
 column: backlog
-updated: 2026-11-13 18:14
+updated: 2026-11-14 14:09
 priority: high
 tags:
 - timer-alert
@@ -1560,6 +1560,20 @@ comms:
 - at: 2026-11-13 18:14
   from: devin
   text: '2026-11-13 sweep: status=2 INVALIDARGUMENT — args/config issue, not transient.'
+- at: 2026-11-13 23:23
+  from: devin
+  text: '2026-11-13: 8/8 cams fail — ip_cam_65/omen_cam/xiaomi_c100 all empty-frame. omen+xiaomi camera stacks are
+    on Tony hold (ada-ocb), so this is expected-degraded until hold lifts. Also saw transient DNS failure (Temporary
+    failure in name resolution) + INVALIDARGUMENT exit-2 path. Recommend: mark card blocked-on-hold; when stack
+    returns, re-check DNS + exit-code path.'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
 spec: Investigate the recurring exit-code failure of the wp-cam-snapshot.service timer on host tony-dell by examining

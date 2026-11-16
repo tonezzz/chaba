@@ -58,6 +58,8 @@ for m in "${MODELS[@]}"; do
   python3 "$SCRIPT_DIR/score.py" \
     --entity openai --model "$m" \
     --base-url "http://$KK_HOST:11434/v1" \
+    --temp-host "$KK_HOST" --temp-ssh-user "$KK_USER" \
+    --max-temp-c "${KK_MAC_MAX_TEMP_C:-60}" \
     --corpus "$CORPUS" \
     --out-md "$out_md" --out-json "$out_json" \
     || echo "  model $m failed (see stderr) — continuing"

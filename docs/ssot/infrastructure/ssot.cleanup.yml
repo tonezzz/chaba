@@ -29,9 +29,6 @@ scope:
     mn01:
       role: Ada HA backend host
       cleanup_profile: service-host
-    idc01:
-      role: warm-DR VPS (mddb-follower, standby edge, masked former-prod units); idc03 is the primary Ada/MDDB host
-      cleanup_profile: vps-service-host
     michael-ha:
       role: Michael Home Assistant host
       cleanup_profile: appliance-service-host
@@ -116,36 +113,27 @@ targets:
       - preserve ram-cache sync units until their ExecStop sync has completed
 
   container_storage:
-    hosts: [tony-omen, tony-dell, mn01, idc01]
+    hosts: [tony-omen, tony-dell, mn01]
     automatic_ok: false
     cleanup:
       - remove dangling images and stopped scratch containers only after confirming running services
       - never prune volumes used by mddb, open-notebook, postgres, weaviate, or other stateful services
-    idc01_notes:
-      - MDDB data lives at ~/.config/containers/mddb/data; do not manually delete
-      - open-notebook uses podman volumes open-notebook-data and open-notebook-surreal-data
 
   mddb_backups:
-    hosts: [idc03, idc01]
+    hosts: [idc03]
     automatic_ok: true
     cleanup:
       - prune old local backup archives only after the nightly backup timer (idc03) and tony-omen pull mirror are healthy
       - keep at least one verified recent backup before removing older archives
-      - idc01 retains pre-migration archives only — no new backups land there
     protected:
       - ~/.config/containers/mddb/data
 
   open_notebook_backups:
-    hosts: [idc01]
-    automatic_ok: true
-    paths:
-      - ~/open-notebook-backups/open-notebook-*.surql.gz
-    cleanup:
-      - honor the 7-day retention used by open-notebook-backup.timer
-      - verify the newest export exists before deleting older exports
+    retired: true   # idc01 permanently retired 2026-11-14 (OPS-0096) — section kept for history
+    hosts: []
 
   ada_transcripts:
-    hosts: [mn01, idc01, tony-dell]
+    hosts: [mn01, tony-dell]
     automatic_ok: false
     paths:
       - ~/.local/share/ada/transcripts
@@ -154,7 +142,7 @@ targets:
       - never commit or back up private transcripts into repository-bound backups
 
   logs_and_reports:
-    hosts: [tony-omen, tony-dell, macbook, mn01, idc01, michael-ha]
+    hosts: [tony-omen, tony-dell, macbook, mn01, michael-ha]
     owner_ssot: docs/ssot/infrastructure/ssot.automation.yml
     automatic_ok: true
     cleanup:

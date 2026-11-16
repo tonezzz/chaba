@@ -36,8 +36,10 @@ META = OUT_DIR / "meta.host-loads.yml"
 STATE = OUT_DIR / ".prev-state.json"
 SSH_TIMEOUT = 12
 
+# ops-event docs go to mddb-ops — ada-ha-events-* moved off the leader
+# in the mddb-ops split (:11023 is pre-split residue only).
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 
 
 def _ops_event(etype: str, host: str, detail: str) -> None:

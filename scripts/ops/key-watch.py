@@ -69,8 +69,10 @@ from pathlib import Path
 
 ICT = datetime.timezone(datetime.timedelta(hours=7))
 
+# ada-ha-events-* moved to the ops plane in the mddb-ops split — the
+# leader :11023 only carries pre-split residue now.
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 BOARD_API = os.environ.get(
     "BOARD_API", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 OPS_COLLECTION = "ada-ha-events-tony"

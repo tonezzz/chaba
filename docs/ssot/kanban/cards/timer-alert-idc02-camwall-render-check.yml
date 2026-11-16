@@ -1,7 +1,7 @@
 id: timer-alert-idc02-camwall-render-check
 title: Timer camwall-render-check on idc02 failing
 column: done
-updated: 2026-11-09 13:51
+updated: 2026-11-16 10:45
 priority: high
 tags:
 - timer-alert
@@ -40,5 +40,43 @@ comms:
 - at: 2026-11-09 13:51
   from: tony
   text: closed by tony
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 09:55
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-15 09:55
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-15 09:46) of `camwall-render-check.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-15 10:09
+  from: devin
+  text: '[still suspicious] Last run (11-15 09:46) of `camwall-render-check.service` on `idc02` result=exit-code
+    — investigate journal: `journalctl --user -u camwall-render-check.service` on the host. See CMS `timer-timeline-idc02`.'
+- at: 2026-11-15 13:20
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-16 10:26
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:36
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:45
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:16 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:45
+  from: tony
+  text: closed by tony
 action:
   status: done
+spec: Investigate the failure of the user systemd service `camwall-render-check.service` on host `idc02` which exited
+  with an error code on the last run. Access the host to inspect the logs using `journalctl --user -u camwall-render-check.service`
+  and review the CMS entry `timer-timeline-idc02`. Fix the underlying issue causing the service failure and ensure
+  subsequent runs complete successfully.

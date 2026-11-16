@@ -6,6 +6,12 @@ Holds bge-reranker-v2-m3 resident on GPU (or CPU) and answers:
     -> {"scores": [float, ...]}   (same order as docs)
   GET  /health -> {"ok", "model", "device", "served"}
 
+Auth (ADA-1299): when RERANK_AUTH_TOKEN is set, POST /rerank requires
+`Authorization: Bearer <token>` (constant-time compare); /health stays
+open — it exposes no content. RERANK_AUTH_REQUIRED=1 refuses to start
+without a token, so a missing secret file fails loudly instead of
+silently serving an open endpoint.
+
 Measured on Omen GPU (fp32, max_length 320): ~57ms/pair —
 rerank top-10 ≈ 565ms, the MEM-1129 production arm. fp16 is *slower*
 on this card; don't add it.
@@ -13,6 +19,8 @@ on this card; don't add it.
 Run inside ~/.local/share/chaba-ml-gpu-venv (torch+transformers, cuda).
   RERANK_ADDR=100.75.102.88:11555 python3 bge-rerank-server.py
 """
+import hashlib
+import hmac
 import json
 import os
 import threading
@@ -24,6 +32,21 @@ MODEL = os.environ.get("RERANK_MODEL", "BAAI/bge-reranker-v2-m3")
 ADDR = os.environ.get("RERANK_ADDR", "127.0.0.1:11555")
 MAX_LEN = int(os.environ.get("RERANK_MAX_LEN", "320"))
 MAX_DOCS = int(os.environ.get("RERANK_MAX_DOCS", "100"))
+AUTH_TOKEN = os.environ.get("RERANK_AUTH_TOKEN", "")
+AUTH_REQUIRED = os.environ.get("RERANK_AUTH_REQUIRED", "").strip().lower() \
+    in {"1", "true", "yes", "on"}
+
+
+def _authorized(headers) -> bool:
+    """Bearer-token check; open only when no token is configured."""
+    if not AUTH_TOKEN:
+        return True
+    scheme, _, presented = (headers.get("Authorization") or "").partition(" ")
+    if scheme.lower() != "bearer" or not presented:
+        return False
+    return hmac.compare_digest(
+        hashlib.sha256(presented.encode()).digest(),
+        hashlib.sha256(AUTH_TOKEN.encode()).digest())
 
 _tok = None
 _model = None
@@ -82,6 +105,9 @@ class H(BaseHTTPRequestHandler):
         if self.path != "/rerank":
             self._json(404, {"error": "not found"})
             return
+        if not _authorized(self.headers):
+            self._json(401, {"error": "unauthorized"})
+            return
         try:
             body = json.loads(self.rfile.read(
                 int(self.headers.get("Content-Length", "0"))))
@@ -100,6 +126,10 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if AUTH_REQUIRED and not AUTH_TOKEN:
+        raise SystemExit(
+            "RERANK_AUTH_REQUIRED=1 but RERANK_AUTH_TOKEN is unset — "
+            "refusing to serve an unauthenticated rerank endpoint")
     torch = _load()
     host, port = ADDR.rsplit(":", 1)
     print(f"bge-rerank-server {MODEL} on {_device} at {ADDR}")

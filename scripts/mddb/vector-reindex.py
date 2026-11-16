@@ -13,7 +13,9 @@ Trigger paths:
   - mddb.container ExecStartPost (every start; skips already-embedded docs)
   - mddb-embed-probe.service when it sees indexSize≈0 or a down→up recovery
 
-Writes one ops-event doc to ada-ha-events-tony at the end.
+Writes one ops-event doc to ada-ha-events-tony at the end — that doc
+goes to mddb-ops :11025; the reindex itself must stay on the leader
+:11023 (the ops instance has no vector index to rebuild).
 """
 import json
 import os
@@ -22,17 +24,21 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 
+# Reindex target stays the leader — the vector index only exists there
+# (mddb-ops is no-embed by design). Ops-event emits go to mddb-ops.
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023")
 MDDB = MDDB.removesuffix("/v1").removesuffix("/")
+MDDB_OPS = os.environ.get("MDDB_OPS_URL", "http://100.123.163.11:11025")
+MDDB_OPS = MDDB_OPS.removesuffix("/v1").removesuffix("/")
 EVENTS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 HEALTH_DEADLINE_S = int(os.environ.get("MDDB_REINDEX_HEALTH_WAIT", "300"))
 PER_COLLECTION_TIMEOUT_S = int(os.environ.get("MDDB_REINDEX_TIMEOUT", "600"))
 
 
 def _post(path: str, payload: dict, timeout: int = 30,
-          attempts: int = 3) -> dict:
+          attempts: int = 3, base: str = MDDB) -> dict:
     req = urllib.request.Request(
-        MDDB + path, data=json.dumps(payload).encode(),
+        base + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
     err = None
     for attempt in range(attempts):
@@ -69,7 +75,7 @@ def _emit(ev_type: str, detail: str) -> None:
             "meta": {"kind": ["ops-event"], "type": [ev_type],
                      "instance": ["tony"], "session_id": ["vector-reindex"],
                      "ts": [now.isoformat(timespec="seconds")]},
-        })
+        }, base=MDDB_OPS)
     except Exception as exc:
         print(f"ops event write failed: {exc}", file=sys.stderr)
 

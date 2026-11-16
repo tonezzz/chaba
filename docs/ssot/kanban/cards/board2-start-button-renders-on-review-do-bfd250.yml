@@ -1,0 +1,21 @@
+id: board2-start-button-renders-on-review-do-bfd250
+title: 'board2: Start button renders on review/done cards and re-queues verified work'
+column: backlog
+updated: 2026-11-16 20:16
+priority: low
+tags:
+- board2
+- ux
+- bug
+spec: 'render-board2.py:657 — Start button condition `!queued/running/done.includes(action.status) && (a.type ||
+  !review-columns.includes(column))` renders whenever action.type is set, even for cards in review whose dispatch
+  already ran. Clicking it POSTs /action do=queue which moves review->backlog and re-dispatches (wasteful; nearly
+  caused duplicate free-lane runs on ops-event-plane-split-brain-audit + ada-docs-search-drift 2026-11-16). Fix:
+  gate on column not in (doing,done,verified,review) regardless of a.type, or hide Start when action.status in (done,failed,verified).
+  Also consider: board-api writes starved ~5min behind /tmp/board-api.lock convoy (merge-sweep/deploy-preflight/kanban-dispatch
+  each hold flock for minutes under load) — UI gave no feedback; consider client-side pending state.'
+ref: KNB-0142
+comms:
+- at: 2026-11-16 20:16
+  from: tony
+  text: card captured via board-api

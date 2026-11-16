@@ -1,0 +1,63 @@
+id: tony-omen-post-reboot-2026-11-06
+title: Complete tony-omen post-reboot maintenance
+column: done
+updated: 2026-11-14 04:23
+priority: medium
+blocked_by: Tony approval to repair the GRUB syntax error
+tags:
+- tony-omen
+- ops
+- maintenance
+spec: Run the standard post-reboot verification on tony-omen, then safely vacuum Devin sessions.db and upgrade Chrome/Windsurf/Devin
+  Desktop where updates are available.
+help: 'Verified 2026-11-06: post-boot network, GPU, CPU cap, sensor-reader, timers, Ollama, and mount are healthy.
+  sessions.db is open by active Devin processes and has zero freelist pages, so vacuum is deferred and would reclaim
+  no DB pages. Chrome 157.0.8103.38 is current; windsurf is a transitional package; devin-desktop 3.10.67 has candidate
+  3.11.238. Package config is blocked because linux-image-7.0.0-42 is half-configured: /etc/default/grub line 10
+  has an unterminated quote; update-grub fails. No services or apps stopped; no reboot planned.'
+ref: OPS-1041
+comms:
+- at: 2026-11-06 11:23
+  from: devin
+  text: card captured via board-api
+- at: 2026-11-06 11:23
+  from: devin
+  text: 'raised request may-i-make-the-minimal-privileged-repair-f617ab: May I make the minimal privileged repair
+    to tony-omen /etc/default/grub (close the missing quote on line 10, preserving '
+- at: 2026-11-06 11:39
+  from: tony
+  text: 'answered may-i-make-the-minimal-privileged-repair-f617ab: Approve the minimal GRUB repair and targeted
+    package completion (no reboot)'
+- at: 2026-11-06 11:39
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-06 11:39
+  from: devin
+  text: 'Approved by Tony. Completed 2026-11-06: backed up GRUB config and closed the quote on line 10; configured
+    linux-image-7.0.0-42 and generated GRUB entries, no reboot; devin-desktop updated 3.10.67 to 3.11.238; Chrome
+    157.0.8103.38 and transitional windsurf package already current. Vacuum after Devin closed: integrity ok, DB
+    282M to 282M (160 KiB reclaimed), backup retained locally; no GDrive upload or old-backup pruning. Devin left
+    closed.'
+- at: 2026-11-06 11:39
+  from: devin
+  text: moved backlog -> done
+- at: 2026-11-14 04:23
+  from: tony
+  text: archived (7d in done, board over card cap)
+requests:
+- id: may-i-make-the-minimal-privileged-repair-f617ab
+  ask: May I make the minimal privileged repair to tony-omen /etc/default/grub (close the missing quote on line
+    10, preserving the existing kernel arguments), then configure the pending kernel package and upgrade devin-desktop
+    without rebooting? Devin must also be closed before any future VACUUM; current freelist is zero, so there is
+    no space to reclaim.
+  status: answered
+  at: 2026-11-06 11:23
+  from: devin
+  options:
+  - Approve the minimal GRUB repair and targeted package completion (no reboot)
+  - Leave GRUB and package state unchanged for now
+  suggested: Approve the minimal GRUB repair and targeted package completion (no reboot)
+  answer: Approve the minimal GRUB repair and targeted package completion (no reboot)
+action:
+  status: done
+claim: {}

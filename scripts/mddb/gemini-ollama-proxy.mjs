@@ -4,6 +4,12 @@ import { createServer } from "node:http";
 const PORT = parseInt(process.env.GEMINI_PROXY_PORT || "11435", 10);
 const HOST = process.env.GEMINI_PROXY_HOST || "0.0.0.0";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// Paid-tier Gemini key — same models, same vector space as the free key,
+// billed per call. Engaged only after the free leg exhausts retries and
+// BEFORE the Ollama fallback (different vector space): during a free-quota
+// outage this keeps vectors index-safe at bounded spend. gemini-keys.env
+// carries it; unset = leg skipped.
+const GEMINI_API_KEY_PAID = process.env.GEMINI_API_KEY_PAID || "";
 const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2";
 // Fallback model is OFF by default — gemini-embedding-001 and -2 are
 // DIFFERENT vector spaces (measured cos ≈ 0.00), so cross-model retry
@@ -56,6 +62,20 @@ function orDailyCapHit() {
   const today = new Date().toISOString().slice(0, 10);
   if (today !== orCallsDay) { orCallsDay = today; orCallsToday = 0; }
   return OR_FALLBACK_DAILY_CAP > 0 && orCallsToday >= OR_FALLBACK_DAILY_CAP;
+}
+// Free-key quota breaker (ADA-0138, 2026-11-16): the free GEMINI_API_KEY
+// sat quota-exhausted for days — every request paid up to MAX_RETRIES
+// doomed calls in BOTH the primary leg and the backup chain's
+// direct-Gemini leg (~35k 429s/day) and the retry/backoff latency pushed
+// memory_search past its 8s budget. Once the free leg fails with retries
+// spent, skip it for FREE_GEMINI_CIRCUIT_MS and let the paid leg (same
+// model, same vector space) serve directly; cooldown expiry is the
+// half-open probe — the next request retries free and re-opens on
+// failure. Paid legs are deliberately NOT routed through this wrapper.
+const FREE_GEMINI_CIRCUIT_MS = parseInt(process.env.FREE_GEMINI_CIRCUIT_MS || "600000", 10);
+let freeGeminiCircuitOpenUntil = 0;
+function freeGeminiCircuitOpen() {
+  return Date.now() < freeGeminiCircuitOpenUntil;
 }
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
@@ -188,8 +208,8 @@ function parseGeminiBatch(data, count) {
   });
 }
 
-async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${GEMINI_API_KEY}`;
+async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality, apiKey = GEMINI_API_KEY) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${apiKey}`;
   const requests = texts.map((text) => ({
     model: `models/${geminiModel}`,
     content: { parts: [{ text }] },
@@ -237,15 +257,38 @@ async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionalit
   throw new Error(lastError);
 }
 
-async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null) {
+async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null, apiKey = GEMINI_API_KEY) {
   try {
-    return await _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality);
+    return await _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality, apiKey);
   } catch (err) {
     if (fallbackModel && String(err).includes("429")) {
       console.log(
         `Primary Gemini model ${geminiModel} rate-limited; trying fallback ${fallbackModel}`
       );
-      return await _fetchGeminiBatchForModel(texts, fallbackModel, outputDimensionality);
+      return await _fetchGeminiBatchForModel(texts, fallbackModel, outputDimensionality, apiKey);
+    }
+    throw err;
+  }
+}
+
+// Free-key leg with the quota breaker: instant-fail while the circuit is
+// open, open it (once per window) when the free leg exhausts its retries.
+async function fetchFreeGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null) {
+  if (freeGeminiCircuitOpen()) {
+    throw new Error("free Gemini circuit open (quota breaker)");
+  }
+  try {
+    return await fetchGeminiBatch(
+      texts, geminiModel, outputDimensionality, fallbackModel);
+  } catch (err) {
+    if (!freeGeminiCircuitOpen()) {
+      freeGeminiCircuitOpenUntil = Date.now() + FREE_GEMINI_CIRCUIT_MS;
+      console.log(
+        `free Gemini key failed (${String(err.message).slice(0, 80)}); ` +
+        `circuit open ${FREE_GEMINI_CIRCUIT_MS / 1000}s — paid leg serves directly`);
+      emitOpsEvent("embed_free_gemini_circuit",
+        `Free Gemini key circuit OPEN for ${FREE_GEMINI_CIRCUIT_MS / 1000}s — ` +
+        `${String(err.message).slice(0, 200)} — paid leg serving meanwhile`);
     }
     throw err;
   }
@@ -325,7 +368,7 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     // space). If no GEMINI_API_KEY, fall through to hard-fail.
     if (GEMINI_API_KEY) {
       try {
-        const out = await fetchGeminiBatch(
+        const out = await fetchFreeGeminiBatch(
           texts, geminiModel, outputDimensionality, null);
         lastBackupProvider = `${geminiModel}-direct-fallback`;
         console.log(`served via direct Gemini fallback (${geminiModel}` +
@@ -335,6 +378,19 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
         console.log(`direct Gemini fallback failed (${String(e2.message).slice(0, 80)})`);
       }
     }
+    // Paid-Gemini leg: same model/vector space as free — strictly better
+    // than the hard-fail below during a free-quota outage.
+    if (GEMINI_API_KEY_PAID) {
+      try {
+        const out = await fetchGeminiBatch(
+          texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+        lastBackupProvider = `${geminiModel}-paid`;
+        console.log(`served via paid Gemini fallback (${geminiModel})`);
+        return out;
+      } catch (e3) {
+        console.log(`paid Gemini fallback failed (${String(e3.message).slice(0, 80)})`);
+      }
+    }
     // Fail hard — wrong-space fallback is worse than surfacing the
     // failure to the caller.
     const orState = orCircuitOpen ? " circuit-open" : (orCapped ? ` daily-cap ${OR_FALLBACK_DAILY_CAP} hit` : "");
@@ -342,7 +398,7 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   }
   if (GEMINI_API_KEY && !skipGemini) {
     try {
-      const out = await fetchGeminiBatch(
+      const out = await fetchFreeGeminiBatch(
         texts, geminiModel, outputDimensionality,
         GEMINI_EMBEDDING_FALLBACK_MODEL
       );
@@ -350,6 +406,21 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       return out;
     } catch (err) {
       console.log(`backup Gemini failed (${String(err.message).slice(0, 80)})`);
+    }
+  }
+  // Paid-Gemini leg: identical model + vector space as the free key, so
+  // serving it during a free-quota outage keeps the index consistent —
+  // strictly better than the different-space Ollama fallback below.
+  // Bounded spend: only reached after the free leg's retries are spent.
+  if (GEMINI_API_KEY_PAID) {
+    try {
+      const out = await fetchGeminiBatch(
+        texts, geminiModel, outputDimensionality, null, GEMINI_API_KEY_PAID);
+      lastBackupProvider = `${geminiModel}-paid`;
+      console.log(`served via paid Gemini fallback (${geminiModel})`);
+      return out;
+    } catch (err) {
+      console.log(`paid Gemini failed (${String(err.message).slice(0, 80)})`);
     }
   }
   if (!OLLAMA_FALLBACK_BASE) {
@@ -411,7 +482,7 @@ async function handleEmbed(req, res) {
     ? parseInt(outputDimensionality, 10)
     : DEFAULT_DIMENSIONS;
 
-  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY) {
+  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY && !GEMINI_API_KEY_PAID) {
     return sendJson(res, 500, {
       error: "no embedding provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)",
     });
@@ -426,7 +497,7 @@ async function handleEmbed(req, res) {
       let chunkEmbeddings;
       const circuitOpen =
         (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
-        Date.now() < geminiCircuitOpenUntil;
+        (Date.now() < geminiCircuitOpenUntil || freeGeminiCircuitOpen());
       if (OPENROUTER_API_KEY && OPENROUTER_PRIMARY) {
         // OpenRouter-primary: every request takes the backup chain, which
         // goes OR -> direct Gemini -> fatal. skipGemini is irrelevant
@@ -440,7 +511,7 @@ async function handleEmbed(req, res) {
         usedFallback = true;
       } else {
         try {
-          chunkEmbeddings = await fetchGeminiBatch(
+          chunkEmbeddings = await fetchFreeGeminiBatch(
             chunk,
             geminiModel,
             outputDimensionality,
@@ -528,6 +599,7 @@ const server = createServer((req, res) => {
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,
+        free_gemini_open: freeGeminiCircuitOpen(),
         or_daily_cap: OR_FALLBACK_DAILY_CAP || null,
         or_calls_today: orCallsToday,
       },

@@ -97,6 +97,16 @@ providers:
   gemini-free: "gemini/* via GEMINI_API_KEY_FREE (free tier — 20 req/day/model; use only as fallback)"
   openrouter: "openrouter/<id> via OPENROUTER_API_KEY (weekly-rotated; :free variants for vision/bench)"
   ollama: "ollama_chat/* + ollama/* @ http://100.102.134.91:11434 — llama3.2:3b, moondream, nomic-embed-text"
+  ollama-kkmac: >-
+    ollama_chat/* @ http://127.0.0.1:11447 on idc03 —
+    kkmac-admission-shim.service, an Ada Nest admission gate in front of
+    kkmac-ollama-tunnel.service (:11445 -> kk-mac:11434). Reuses
+    scripts/devnest/kk_mac_admission.snapshot(): 503s instantly when the
+    heartbeat is stale (>900s), ollama unhealthy, disk <20G, load_1m >4,
+    cpu_temp_c >60, or the node is busy (tmux_jobs/load_ok/load1-per-core
+    >1.0) — member device is owner-first, LiteLLM falls back to the paid
+    leg instead of queueing slow calls. GET /health exposes the snapshot;
+    drain switch: touch the file at KK_ADMISSION_FORCE_DENY.
   ollama-idc02: >-
     REMOVED from LiteLLM routing 2026-11-07 (SYS-1082): idc02 was
     overcommitted (edge + OpenCode runner + two inference stacks).
@@ -141,8 +151,13 @@ job_classes:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: ada decision/devteam/doc-check calls. Repointed off gemini-2.5-flash 2026-10-11 — Google retired 2.5-flash/2.5-flash-lite upstream (404 "no longer available to new users").
   summary:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
-    note: posture/cms/session summaries; lite is cheap and sufficient; ollama acceptable last resort.
+    chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
+    note: >-
+      posture/cms/session summaries. kk-mac qwen32b leg-1 since 2026-11-13
+      (free local compute); sits behind kkmac-admission-shim :11447 — the
+      gate 503s instantly on stale/hot(>60C)/busy kk-mac so the chain
+      fails fast to paid lite instead of queueing a 120s call on a busy
+      member device (card kk-mac-gateway-admission-shim).
   voice-aux:
     chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: lightweight classify around the voice path (Live API itself stays direct).
@@ -150,10 +165,10 @@ job_classes:
     chain: [gemini-3.5-flash@paid, gemini-3.5-flash@free, gemini-3.5-flash@openrouter, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
     note: "ada text-mode sessions (ADA_TEXT_MODEL) — full 3.5-flash for voice/text quality parity; lite only as downstream fallback. Added 2026-10-13; virtual keys need 'chat' added to models allowlist."
   classify:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
-    note: doc ingest classify, cheap high-volume calls. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
+    chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
+    note: doc ingest classify, cheap high-volume calls. kk-mac leg-1 since 2026-11-13 via the admission shim (see summary).
   chat-local:
-    chain: [qwen2.5:7b-instruct@ollama-tonydell, llama3.2:3b@ollama, gemma3:12b@colab]
+    chain: [qwen2.5:7b-instruct@ollama-tonydell, qwen2.5:32b@ollama-kkmac, llama3.2:3b@ollama, gemma3:12b@colab]
     note: >-
       FREE background-turn lane (card chat-local-free-lane, 2026-10-15/16) —
       EN summarize/classify work where local 7B quality suffices; Thai-facing
@@ -173,8 +188,8 @@ job_classes:
       kanban-brief caps total llm_why time at KANBAN_BRIEF_LLM_BUDGET=100s
       so a jammed lane can't starve the 300s unit; classify timeout 90s.
   bench:
-    chain: [gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
-    note: benchmark traffic on its own virtual key — spend isolated by design. Repointed 2026-10-11 — 2.5-flash-lite retired upstream.
+    chain: [qwen2.5:32b@ollama-kkmac, gemini-3.5-flash-lite@paid, gemini-3.5-flash-lite@free, gemini-3.5-flash-lite@openrouter, colab-gemma3, llama3.2:3b@ollama]
+    note: benchmark traffic on its own virtual key — spend isolated by design. kk-mac leg-1 since 2026-11-13 via the admission shim (see summary).
   vision:
     chain: [google/gemma-4-31b-it:free@openrouter, moondream@ollama]
     note: ada ADA_VISION_* default reroutes here (ADA_VISION_BASE_URL=<base>/v1).

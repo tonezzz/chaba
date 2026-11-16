@@ -40,17 +40,27 @@ META = REPO / "reports" / "meta.ada-debug.yml"
 PERSONS_YML = REPO / "docs" / "ssot" / "apps" / "ssot.apps.ada-persons.yml"
 MDDB = os.environ.get(
     "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+# ops-plane collections moved off the leader in the mddb-ops split —
+# the leader copies are pre-split residue.
+MDDB_OPS = os.environ.get(
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 MDDB_CMS = os.environ.get(
     "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 _CMS_COLS = ("ada-cms-", "chaba-", "kb-")
 _CMS_EXACT = {"documents", "infrastructure-ssot", "devin-kb", "ada-tools",
               "ada-scenario", "ada-session-audit", "ada-tool-profile", "ssot"}
+# ops collections per docs/kb/mddb-ops-split.md
+_OPS_COLS = ("ada-ha-events-", "ada-ha-actions-", "ada-ha-snapshots-",
+             "ada-ha-recall-summary-", "ada-ha-scenario-reports",
+             "host-logs", "yomi-digest")
 CMS_SLUG = "ada-debug-report"
 DAYS = 30
 
 
 def _base(payload):
     c = str((payload or {}).get("collection", ""))
+    if c.startswith(_OPS_COLS):
+        return MDDB_OPS
     return (MDDB_CMS if c.startswith(_CMS_COLS) or c in _CMS_EXACT
             else MDDB)
 

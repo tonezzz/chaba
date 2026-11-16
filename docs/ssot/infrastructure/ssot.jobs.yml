@@ -154,7 +154,7 @@ jobs:
   on_calendar: '*-*-* 06:45:00'
   persistent: true
   timeout: 15m
-  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc01 idc03 con01 macbook;
+  exec: /bin/bash -c 'cd /home/tony/CascadeProjects/chaba && for h in tony-dell tony-omen mn01 idc03 con01 macbook;
     do /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; done; /usr/bin/python3 scripts/audit-hosts.py
     --consolidate; /usr/bin/python3 scripts/report-system.py && scp -q
     stacks/web/public/apps/system-report/data/system-report.yml
@@ -182,7 +182,14 @@ jobs:
       %h/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/host-loads.yml
       && install -m644 %h/CascadeProjects/chaba/reports/host-loads/host-loads.yml
       %h/web-srv/public/apps/system-report/data/host-loads.yml'
-  note: 're-homed off tony-dell-monitor.service 2026-10-26 (dell drained; sampler dark since
+  env:
+    MDDB_OPS_URL: http://100.123.163.11:11025/v1
+    MDDB_BASE_URL: http://100.123.163.11:11025/v1
+  note: 'ops-event emits repointed to mddb-ops :11025 2026-11-16
+    (ops-event-plane-split-brain-fix) — MDDB_BASE_URL pinned to ops as a
+    transitional pin so a pre-repoint build still lands events on the
+    right plane until the merge reaches this checkout. re-homed off
+    tony-dell-monitor.service 2026-10-26 (dell drained; sampler dark since
     2026-10-23 — card sys-mon-system-monitor-de88ff). First step refreshes
     reports/host-loads/{host-loads,meta.host-loads}.yml (the system-report Host loads
     section + node freshness); second publishes the yml into the idc02 web edge data
@@ -444,7 +451,9 @@ jobs:
   timeout: 30s
   exec: /usr/bin/python3 %h/.local/share/device-telemetry/agent.py
   note: hidden lost-device beacon — posts snapshot (tailnet/wan-geo/battery/ users/top-procs) to MDDB device-telemetry
-    collection on idc03 (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
+    collection on mddb-ops :11026 (embeddings OFF — MEM-0101, moved off embed-paying
+    leader :11023 2026-11-14; tony-macbook beacon still on :11023 until its launchd
+    copy is refreshed) (<device>/<ts> history + <device>/latest). install.sh also supports macOS launchd for tony-macbook.
     scripts/device-telemetry/
 - id: telemetry-ha-push
   name: Device telemetry -> tony-ha sensor mirror
@@ -455,9 +464,12 @@ jobs:
   timeout: 60s
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/home-assistant/telemetry-ha-push.py
   env:
-    TELEMETRY_DEVICES: tony-dell,tony-omen,tony-macbook,idc02,idc03,mn01,con01
+    TELEMETRY_DEVICES: tony-dell,tony-omen,tony-macbook,kk-mac,idc02,idc03,mn01,con01
+    TELEMETRY_MDBB: http://100.102.134.91:11026/v1
   env_file: '%h/.config/secrets/telemetry-ha-push.env'
-  note: reads device-telemetry/<dev>/latest from MDDB :11023 and mirrors host sensors
+  note: reads device-telemetry/<dev>/latest from MDDB :11026 (mddb-ops,
+    embeddings off — beacons write there per mddb-embed-spend-cap; :11023
+    never receives beacon docs) and mirrors host sensors
     (battery suite when present + binary_sensor.<dev>_online/_telemetry_fresh,
     sensor.<dev>_uptime/_users)
     into tony-ha via REST. env_file carries HA_LONG_LIVED_TOKEN for the dedicated
@@ -478,7 +490,7 @@ jobs:
     DEVICE_TELEMETRY_RETENTION_DAYS: '7'
   note: 'retention sweep for the beacon collection — deletes <dev>/<unix-ts> history keys older than 7d; never touches
     <dev>/latest or _watch/<dev> armed-watch docs. 7d over 30d: HA logbook already covers long-range history; ~300
-    docs/day/device -> ~2k keys/device steady-state. Runs on idc03 beside the MDDB leader (:11023). Install on the
+    docs/day/device -> ~2k keys/device steady-state. Runs on idc03 against mddb-ops :11026 (collection moved off the embed-paying leader :11023 2026-11-14, MEM-0101); a final :11023-side prune ran at cutover — ~3.7k residual keys age out unmanaged, harmless. Install on the
     host: scripts/device-telemetry/install.sh prune — self-contained ~/.local/share copy like the beacon, so idc03
     checkout drift can never break it. Card device-telemetry-prune; added 2026-10-10.'
 - id: daily-brief
@@ -675,10 +687,18 @@ jobs:
   timeout: 15m
   exec: /usr/bin/python3 %h/.local/share/session-audit/session-audit.py
   env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
+    MDDB_OPS_URL: http://100.123.163.11:11025/v1
+    MDDB_BASE_URL: http://100.123.163.11:11025/v1
     MDDB_CMS_URL: http://100.102.134.91:11027/v1
-    AUDIT_HOSTS: idc03,idc01
-  note: 'card ada-session-audit-daily. Window = transcripts newer than ~/.local/share/devin/ada-audit-marker (mtime;
+    AUDIT_HOSTS: idc03
+  note: 'card ada-session-audit-daily. Repointed 2026-11-16
+    (ops-event-plane-split-brain-fix): the script reads
+    ada-ha-events-tony ops-events and reads+writes
+    ada-ha-scenario-reports — all ops-plane collections on mddb-ops
+    :11025 since the mddb-ops split; leader :11023 is frozen residue.
+    MDDB_BASE_URL is pinned to the ops store too — transitional, so a
+    pre-repoint build of the script on the install dir still reads the
+    right plane until this repoint reaches it. Window = transcripts newer than ~/.local/share/devin/ada-audit-marker (mtime;
     marker bumps after a clean run). Publishes ada-ha-scenario-reports/audit/session-<date> (kind session-audit),
     refreshes CMS page ada-session-audit, files focus-inbox entries for surfaced friction only (high-sev or repeated
     — capped at 15/run), cards recurring sigs via board-api /card deduped on audit-<sig>, and appends labeled rows
@@ -917,16 +937,6 @@ jobs:
     MDDB_OPS_URL: http://100.102.134.91:11026/v1
 - id: log-shipper
   name: Log shipper (local journald -> MDDB host-logs)
-  host: idc01
-  dispatch: systemd
-  every: 1h
-  timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --max-docs 2000
-  env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
-    MDDB_OPS_URL: http://100.102.134.91:11026/v1
-- id: log-shipper
-  name: Log shipper (local journald -> MDDB host-logs)
   host: idc02
   dispatch: systemd
   every: 1h
@@ -995,16 +1005,6 @@ jobs:
 - id: log-shipper-severe
   name: Log shipper — severe kinds fast lane
   host: tony_omen
-  dispatch: systemd
-  every: 1h
-  timeout: 10m
-  exec: /usr/bin/python3 %h/.local/share/log-shipper/log-shipper.py --self --severe
-  env:
-    MDDB_BASE_URL: http://100.102.134.91:11023/v1
-    MDDB_OPS_URL: http://100.102.134.91:11026/v1
-- id: log-shipper-severe
-  name: Log shipper — severe kinds fast lane
-  host: idc01
   dispatch: systemd
   every: 1h
   timeout: 10m
@@ -1304,7 +1304,14 @@ jobs:
   timeout: 5m
   exec: /usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/ops-error-posts.py
   condition_path: '%h/CascadeProjects/chaba/scripts/ada/ops-error-posts.py'
-  note: 'card boards-error-post-type (ADA-0679) — tails journalctl --user -u
+  env:
+    MDDB_OPS_URL: http://100.123.163.11:11025/v1
+    MDDB_BASE_URL: http://100.123.163.11:11025/v1
+  note: 'ops-event reads repointed to mddb-ops :11025 2026-11-16
+    (ops-event-plane-split-brain-fix) — MDDB_BASE_URL pinned to ops as a
+    transitional pin so a pre-repoint build still reads the right plane
+    until the merge reaches this checkout. card boards-error-post-type
+    (ADA-0679) — tails journalctl --user -u
     ada-kk/ada-ha-tony/ada-michael (since-cursor in
     ~/.local/share/ada/ops-error-posts-state.json) + MDDB ada-ha-events-<lane>
     kind=ops-event; posts one private ops_error CPT row per failure needing a

@@ -1,7 +1,7 @@
 id: fix-cms-publish-page-slug-argument-missi-96152a
 title: 'Fix cms_publish_page: slug argument missing error'
 column: backlog
-updated: 2026-10-29 12:19
+updated: 2026-11-16 10:50
 priority: medium
 note: Error in cms_publish_page call - slug argument not found
 ref: KNB-0624
@@ -80,6 +80,24 @@ comms:
 - at: 2026-10-29 12:19
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:10
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 07:20
+  from: backlog-spec-enrich
+  text: raised a decision request — spec needs owner input
+- at: 2026-11-16 10:50
+  from: tony
+  text: 'answered the-card-reports-a-slug-argume-5766bf: ★ Target repo chaba on host tony-dell to fix the cms_publish_page
+    slug argument error and redeploy drifted runner agents'
+- at: 2026-11-16 10:50
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: an-error-occurred-during-a-cms-3e755e
   ask: An error occurred during a cms_publish_page call due to a missing slug argument, but the target repository
@@ -103,6 +121,20 @@ requests:
   - hold-for-review
   suggested: hold-for-review
   answer: deploy-now
+- id: the-card-reports-a-slug-argume-5766bf
+  ask: The card reports a 'slug argument missing error' in the cms_publish_page call, but lacks specified host and
+    repository contexts to target the fix. Runner agents on idc03 and mn01 have drifted and need redeployment, and
+    past communications reference a merged patch requiring deployment.
+  options:
+  - ★ Target repo chaba on host tony-dell to fix the cms_publish_page slug argument error and redeploy drifted runner
+    agents
+  - Target repo chaba on host idc03 to fix the cms_publish_page slug argument error
+  - Postpone the fix until runner-agent drift is resolved across all nodes
+  status: answered
+  at: 2026-11-15 07:20
+  from: backlog-spec-enrich
+  answer: ★ Target repo chaba on host tony-dell to fix the cms_publish_page slug argument error and redeploy drifted
+    runner agents
 action:
   type: dispatch
   status: idle

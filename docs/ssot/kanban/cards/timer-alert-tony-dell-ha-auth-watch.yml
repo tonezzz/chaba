@@ -1,7 +1,7 @@
 id: timer-alert-tony-dell-ha-auth-watch
 title: Timer ha-auth-watch on tony-dell failing
 column: done
-updated: 2026-11-13 16:13
+updated: 2026-11-16 10:45
 priority: high
 tags:
 - timer-alert
@@ -84,6 +84,53 @@ comms:
   from: devin
   text: '[auto-resolved] last run result=success at 11-13 16:02 — closing (timer-sentinel KNB-0577)'
 - at: 2026-11-13 16:13
+  from: tony
+  text: closed by tony
+- at: 2026-11-13 23:13
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-13 23:13
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-13 23:03) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-13 23:23
+  from: devin
+  text: 'Self-healed 2026-11-13: last run polled 2 instances, deduped alerts, 0 errors, Finished clean.'
+- at: 2026-11-13 23:23
+  from: tony
+  text: closed by tony
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-14 14:09
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-15 21:25
+  from: tony
+  text: moved done -> backlog
+- at: 2026-11-15 21:25
+  from: devin
+  text: '[reopened — condition recurred] Last run (11-15 21:19) of `ha-auth-watch.service` on `tony-dell` result=exit-code
+    — investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-15 21:35
+  from: devin
+  text: '[still suspicious] Last run (11-15 21:19) of `ha-auth-watch.service` on `tony-dell` result=exit-code —
+    investigate journal: `journalctl --user -u ha-auth-watch.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 10:17
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 09:56 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:27
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:38
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:11 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:45
+  from: devin
+  text: '[auto-resolved] last run result=success at 11-16 10:26 — closing (timer-sentinel KNB-0577)'
+- at: 2026-11-16 10:45
   from: tony
   text: closed by tony
 spec: Investigate the recurring exit-code failure of the `ha-auth-watch.service` on `tony-dell` by inspecting the
