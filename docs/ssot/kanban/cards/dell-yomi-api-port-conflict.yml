@@ -1,0 +1,19 @@
+id: dell-yomi-api-port-conflict
+title: 'tony-dell: yomi-api quadlet conflicts with openchamber on :3000'
+column: backlog
+updated: 2026-11-16 09:51
+spec: 'Found during 2026-11-16 tony-dell reboot recovery. yomi-api.service (generated quadlet from ~/.config/containers/systemd/migrated-off/yomi-api.container,
+  WantedBy=default.target) restart-loops: PublishPort=127.0.0.1:3000:3000 collides with openchamber.service which
+  SSOT declares as :3000 owner (declared 2026-11-12, binds 127.0.0.1:3000). yomi-api also binds localhost-only while
+  the mcp-health check hits tailnet tony-dell:3000 — it has been dead since at least openchambers declaration (pre-existing,
+  not reboot-caused). ssot.audit.hosts still declares yomi-api.service under tony-dell (line ~311) AND under idc03
+  with note migrated from tony-dell 2026-10-16/19 — contradictory. Options: (a) retire the dell yomi-api quadlet
+  (move .container out of quadlet scan path + undocument in audit.hosts), (b) repoint dell yomi-api to a different
+  port and update health check, (c) retire the stale mcp-health Yomi-API check if yomi canonically lives elsewhere
+  (yomi-failover). Recommend (a)+(c) unless yomi-on-dell is still wanted. Note: migrated-off/ subdir DOES still
+  generate units (quadlet scans subdirs) — anything parked there is still live.'
+ref: OPS-0135
+comms:
+- at: 2026-11-16 09:51
+  from: tony
+  text: card captured via board-api
