@@ -1,7 +1,7 @@
 id: gemini-ollama-proxy-circuit-break-exhaus-ccb501
 title: 'gemini-ollama-proxy: circuit-break exhausted free Gemini key'
 column: doing
-updated: 2026-11-16 11:47
+updated: 2026-11-16 11:48
 note: 'Free-tier GEMINI_API_KEY is quota-exhausted (35k 429s/day). Every embed request pays a doomed free-tier call
   before paid fallback — doubles API calls and adds latency that helps blow the 8s memory_search budget. Add a breaker:
   after N consecutive free-key 429s, route straight to paid for a cooldown, half-open probe to recover. Also reduces
@@ -20,3 +20,7 @@ comms:
     embeds serve via OpenRouter in ~960ms vs ~11.6s before. Free key now probed once per 10min instead of 10 retry-storms
     per request. or_calls_today climbing = backlog draining. Residual 429s are paid-key RPM retries during queue
     drain — bounded, self-resolving. Rollback: cp .bak file'
+- at: 2026-11-16 11:48
+  from: devin
+  text: 'DONE: chaba#179 merged+deployed on idc03. Breaker verified live — embeds now ~960ms via OR, free key probed
+    1x/10min. bak-ada0138 rollback file in proxy dir.'
