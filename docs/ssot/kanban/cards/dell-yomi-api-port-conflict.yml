@@ -17,36 +17,13 @@ comms:
 - at: 2026-11-16 09:51
   from: tony
   text: card captured via board-api
-- at: 2026-11-16 19:12
+- at: 2026-11-16 19:16
   from: devin
-  text: 'DONE (option A — retire dell yomi). On tony-dell: moved ~/.config/containers/systemd/migrated-off/yomi-api.container
-    -> ~/.config/containers/archive/ (quadlet no longer generates it), unit was already masked + daemon-reloaded,
-    restart-flap dead. Verified canonical yomi is healthy on idc03:3000 — the mcp-health Yomi API check already
-    targets idc03, not dell, so no health.yml change needed. SSOT on served checkout: audit.hosts yomi entries on
-    tony-dell marked retired (OPS-0135), ssot.apps.yomi.yml'
+  text: 'DONE (option A - retire dell yomi; duplicate comms were client-timeout retries of the same board-api write, deduped on review). On tony-dell: moved ~/.config/containers/systemd/migrated-off/yomi-api.container -> ~/.config/containers/archive/ (quadlet no longer generates it); unit already masked, daemon-reloaded, restart-flap dead. Verified canonical yomi healthy on idc03:3000 - mcp-health Yomi API check already targets idc03, no health.yml change needed. SSOT on served checkout: audit.hosts yomi entries on tony-dell marked retired (OPS-0135); ssot.apps.yomi.yml primary corrected tony-dell -> idc03. Note: quadlet scans migrated-off/ subdirs - parked .container files there still generate live units; use archive/ for true retirement.'
 - at: 2026-11-16 19:13
   from: devin
   text: moved backlog -> done
-- at: 2026-11-16 19:13
-  from: devin
-  text: 'DONE (option A — retire dell yomi). On tony-dell: moved ~/.config/containers/systemd/migrated-off/yomi-api.container
-    -> ~/.config/containers/archive/ (quadlet no longer generates it), unit was already masked + daemon-reloaded,
-    restart-flap dead. Verified canonical yomi is healthy on idc03:3000 — the mcp-health Yomi API check already
-    targets idc03, not dell, so no health.yml change needed. SSOT on served checkout: audit.hosts yomi entries on
-    tony-dell marked retired (OPS-0135), ssot.apps.yomi.yml'
-- at: 2026-11-16 19:15
-  from: devin
-  text: 'DONE (option A). Dell yomi-api quadlet moved to ~/.config/containers/archive/ (was masked, no longer generated).
-    Canonical yomi verified healthy on idc03:3000 — health check already targets idc03. SSOT updated on served checkout:
-    audit.hosts dell yomi entries marked retired, ssot.apps.yomi.yml primary corrected to idc03. Note: quadlet scans
-    migrated-off/ too — parked containers there still generate units; archive/ is the real retirement path.'
-- at: 2026-11-16 19:16
-  from: devin
-  text: 'DONE (option A — retire dell yomi). On tony-dell: moved ~/.config/containers/systemd/migrated-off/yomi-api.container
-    -> ~/.config/containers/archive/ (quadlet no longer generates it), unit was already masked + daemon-reloaded,
-    restart-flap dead. Verified canonical yomi is healthy on idc03:3000 — the mcp-health Yomi API check already
-    targets idc03, not dell, so no health.yml change needed. SSOT on served checkout: audit.hosts yomi entries on
-    tony-dell marked retired (OPS-0135), ssot.apps.yomi.yml'
+
 action:
   status: done
 claim: {}
