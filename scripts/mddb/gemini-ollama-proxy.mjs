@@ -63,6 +63,20 @@ function orDailyCapHit() {
   if (today !== orCallsDay) { orCallsDay = today; orCallsToday = 0; }
   return OR_FALLBACK_DAILY_CAP > 0 && orCallsToday >= OR_FALLBACK_DAILY_CAP;
 }
+// Free-key quota breaker (ADA-0138, 2026-11-16): the free GEMINI_API_KEY
+// sat quota-exhausted for days — every request paid up to MAX_RETRIES
+// doomed calls in BOTH the primary leg and the backup chain's
+// direct-Gemini leg (~35k 429s/day) and the retry/backoff latency pushed
+// memory_search past its 8s budget. Once the free leg fails with retries
+// spent, skip it for FREE_GEMINI_CIRCUIT_MS and let the paid leg (same
+// model, same vector space) serve directly; cooldown expiry is the
+// half-open probe — the next request retries free and re-opens on
+// failure. Paid legs are deliberately NOT routed through this wrapper.
+const FREE_GEMINI_CIRCUIT_MS = parseInt(process.env.FREE_GEMINI_CIRCUIT_MS || "600000", 10);
+let freeGeminiCircuitOpenUntil = 0;
+function freeGeminiCircuitOpen() {
+  return Date.now() < freeGeminiCircuitOpenUntil;
+}
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
@@ -257,6 +271,29 @@ async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallba
   }
 }
 
+// Free-key leg with the quota breaker: instant-fail while the circuit is
+// open, open it (once per window) when the free leg exhausts its retries.
+async function fetchFreeGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null) {
+  if (freeGeminiCircuitOpen()) {
+    throw new Error("free Gemini circuit open (quota breaker)");
+  }
+  try {
+    return await fetchGeminiBatch(
+      texts, geminiModel, outputDimensionality, fallbackModel);
+  } catch (err) {
+    if (!freeGeminiCircuitOpen()) {
+      freeGeminiCircuitOpenUntil = Date.now() + FREE_GEMINI_CIRCUIT_MS;
+      console.log(
+        `free Gemini key failed (${String(err.message).slice(0, 80)}); ` +
+        `circuit open ${FREE_GEMINI_CIRCUIT_MS / 1000}s — paid leg serves directly`);
+      emitOpsEvent("embed_free_gemini_circuit",
+        `Free Gemini key circuit OPEN for ${FREE_GEMINI_CIRCUIT_MS / 1000}s — ` +
+        `${String(err.message).slice(0, 200)} — paid leg serving meanwhile`);
+    }
+    throw err;
+  }
+}
+
 async function fetchOllamaBatch(texts) {
   const resp = await fetch(`${OLLAMA_FALLBACK_BASE}/api/embed`, {
     method: "POST",
@@ -331,7 +368,7 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
     // space). If no GEMINI_API_KEY, fall through to hard-fail.
     if (GEMINI_API_KEY) {
       try {
-        const out = await fetchGeminiBatch(
+        const out = await fetchFreeGeminiBatch(
           texts, geminiModel, outputDimensionality, null);
         lastBackupProvider = `${geminiModel}-direct-fallback`;
         console.log(`served via direct Gemini fallback (${geminiModel}` +
@@ -361,7 +398,7 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   }
   if (GEMINI_API_KEY && !skipGemini) {
     try {
-      const out = await fetchGeminiBatch(
+      const out = await fetchFreeGeminiBatch(
         texts, geminiModel, outputDimensionality,
         GEMINI_EMBEDDING_FALLBACK_MODEL
       );
@@ -460,7 +497,7 @@ async function handleEmbed(req, res) {
       let chunkEmbeddings;
       const circuitOpen =
         (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
-        Date.now() < geminiCircuitOpenUntil;
+        (Date.now() < geminiCircuitOpenUntil || freeGeminiCircuitOpen());
       if (OPENROUTER_API_KEY && OPENROUTER_PRIMARY) {
         // OpenRouter-primary: every request takes the backup chain, which
         // goes OR -> direct Gemini -> fatal. skipGemini is irrelevant
@@ -474,7 +511,7 @@ async function handleEmbed(req, res) {
         usedFallback = true;
       } else {
         try {
-          chunkEmbeddings = await fetchGeminiBatch(
+          chunkEmbeddings = await fetchFreeGeminiBatch(
             chunk,
             geminiModel,
             outputDimensionality,
@@ -562,6 +599,7 @@ const server = createServer((req, res) => {
       circuit: {
         or_open: Date.now() < orCircuitOpenUntil,
         gemini_open: Date.now() < geminiCircuitOpenUntil,
+        free_gemini_open: freeGeminiCircuitOpen(),
         or_daily_cap: OR_FALLBACK_DAILY_CAP || null,
         or_calls_today: orCallsToday,
       },
