@@ -175,11 +175,16 @@
       "title": "Hosts",
       "path": "hosts",
       "icon": "mdi:server",
-      "type": "sections",
-      "sections": [
+      "type": "panel",
+      "cards": [
         {
-          "type": "grid",
-          "title": "Vitals",
+          "type": "custom:layout-card",
+          "layout_type": "custom:masonry-layout",
+          "layout": {
+            "width": 260,
+            "max_width": 320,
+            "card_margin": "8px"
+          },
           "cards": [
             {
               "type": "entities",
@@ -188,6 +193,10 @@
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
                 {
                   "entity": "binary_sensor.kk_mac_online",
                   "name": "online"
@@ -203,225 +212,11 @@
                 {
                   "entity": "sensor.kk_mac_disk",
                   "name": "disk"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "tony-omen",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "sensor.tony_omen_cpu_package_temp",
-                  "name": "cpu package temp"
                 },
                 {
-                  "entity": "sensor.tony_omen_gpu_temp",
-                  "name": "gpu temp"
+                  "type": "section",
+                  "label": "Detail"
                 },
-                {
-                  "entity": "binary_sensor.tony_omen_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.tony_omen_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.tony_omen_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.tony_omen_disk",
-                  "name": "disk"
-                },
-                {
-                  "entity": "sensor.tony_omen_temp",
-                  "name": "temp"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "tony-macbook",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "sensor.tony_macbook_battery_temp",
-                  "name": "battery temp"
-                },
-                {
-                  "entity": "binary_sensor.tony_macbook_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.tony_macbook_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.tony_macbook_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.tony_macbook_disk",
-                  "name": "disk"
-                },
-                {
-                  "entity": "sensor.tony_macbook_temp",
-                  "name": "temp"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "tony-dell",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "binary_sensor.tony_dell_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.tony_dell_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.tony_dell_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.tony_dell_disk",
-                  "name": "disk"
-                },
-                {
-                  "entity": "sensor.tony_dell_temp",
-                  "name": "temp"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "idc02",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "binary_sensor.idc02_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.idc02_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.idc02_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.idc02_disk",
-                  "name": "disk"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "idc03",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "binary_sensor.idc03_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.idc03_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.idc03_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.idc03_disk",
-                  "name": "disk"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "mn01",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "binary_sensor.mn01_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.mn01_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.mn01_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.mn01_disk",
-                  "name": "disk"
-                },
-                {
-                  "entity": "sensor.mn01_temp",
-                  "name": "temp"
-                }
-              ]
-            },
-            {
-              "type": "entities",
-              "title": "con01",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
-                {
-                  "entity": "binary_sensor.con01_online",
-                  "name": "online"
-                },
-                {
-                  "entity": "sensor.con01_load",
-                  "name": "load"
-                },
-                {
-                  "entity": "sensor.con01_mem",
-                  "name": "mem"
-                },
-                {
-                  "entity": "sensor.con01_disk",
-                  "name": "disk"
-                }
-              ]
-            }
-          ]
-        },
-        {
-          "type": "grid",
-          "title": "Details",
-          "cards": [
-            {
-              "type": "entities",
-              "title": "kk-mac — detail",
-              "card_mod": {
-                "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
-              },
-              "entities": [
                 {
                   "entity": "sensor.kk_mac_uptime",
                   "name": "uptime"
@@ -454,11 +249,47 @@
             },
             {
               "type": "entities",
-              "title": "tony-omen — detail",
+              "title": "tony-omen",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "sensor.tony_omen_cpu_package_temp",
+                  "name": "cpu package temp"
+                },
+                {
+                  "entity": "sensor.tony_omen_gpu_temp",
+                  "name": "gpu temp"
+                },
+                {
+                  "entity": "binary_sensor.tony_omen_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.tony_omen_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_omen_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_omen_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_omen_temp",
+                  "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.tony_omen_battery_level",
                   "name": "battery level"
@@ -507,11 +338,43 @@
             },
             {
               "type": "entities",
-              "title": "tony-macbook — detail",
+              "title": "tony-macbook",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "sensor.tony_macbook_battery_temp",
+                  "name": "battery temp"
+                },
+                {
+                  "entity": "binary_sensor.tony_macbook_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.tony_macbook_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_macbook_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_macbook_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_macbook_temp",
+                  "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "switch.mac_plug",
                   "name": "mac plug"
@@ -576,11 +439,39 @@
             },
             {
               "type": "entities",
-              "title": "tony-dell — detail",
+              "title": "tony-dell",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "binary_sensor.tony_dell_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.tony_dell_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.tony_dell_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.tony_dell_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.tony_dell_temp",
+                  "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.tony_dell_uptime",
                   "name": "uptime"
@@ -621,11 +512,35 @@
             },
             {
               "type": "entities",
-              "title": "idc02 — detail",
+              "title": "idc02",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "binary_sensor.idc02_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.idc02_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.idc02_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.idc02_disk",
+                  "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.idc02_uptime",
                   "name": "uptime"
@@ -666,11 +581,35 @@
             },
             {
               "type": "entities",
-              "title": "idc03 — detail",
+              "title": "idc03",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "binary_sensor.idc03_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.idc03_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.idc03_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.idc03_disk",
+                  "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.idc03_uptime",
                   "name": "uptime"
@@ -711,11 +650,39 @@
             },
             {
               "type": "entities",
-              "title": "mn01 — detail",
+              "title": "mn01",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "binary_sensor.mn01_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.mn01_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.mn01_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.mn01_disk",
+                  "name": "disk"
+                },
+                {
+                  "entity": "sensor.mn01_temp",
+                  "name": "temp"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.mn01_uptime",
                   "name": "uptime"
@@ -756,11 +723,35 @@
             },
             {
               "type": "entities",
-              "title": "con01 — detail",
+              "title": "con01",
               "card_mod": {
                 "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
               },
               "entities": [
+                {
+                  "type": "section",
+                  "label": "Vitals"
+                },
+                {
+                  "entity": "binary_sensor.con01_online",
+                  "name": "online"
+                },
+                {
+                  "entity": "sensor.con01_load",
+                  "name": "load"
+                },
+                {
+                  "entity": "sensor.con01_mem",
+                  "name": "mem"
+                },
+                {
+                  "entity": "sensor.con01_disk",
+                  "name": "disk"
+                },
+                {
+                  "type": "section",
+                  "label": "Detail"
+                },
                 {
                   "entity": "sensor.con01_uptime",
                   "name": "uptime"
