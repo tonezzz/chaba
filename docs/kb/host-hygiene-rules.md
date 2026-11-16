@@ -99,3 +99,24 @@ this kills. Check with `scripts/host-ready-check.py` (weekly
 chaba-host-ready-check.timer on idc03); fix with
 `scripts/host-capability-bootstrap.sh <host> <cap>` — durable installs
 only (`~/.local/share/`, never /tmp).
+
+## R11 — Workspaces and worktrees have a declared home
+
+Primary checkouts stay in `~/CascadeProjects/` (or the host's declared
+project dir). Every *linked* git worktree lives under the host's worktree
+hub, never loose in the project dir or home:
+
+- tony-dell: `~/CascadeProjects/tony-chaba-dell/worktrees/<repo>/<name>`
+  (hub README + `bin/wt-new` helper)
+- other hosts: `~/CascadeProjects/worktrees/<repo>/<name>`
+
+Non-git leftovers (salvage dumps, report dirs, stale one-off folders)
+go to the hub's `archive/` — moved, not deleted, so cleanup stays
+reversible. Create with `git worktree add`, move with
+`git worktree move` (never plain `mv` — it breaks gitdir links and the
+`chaba-role` stamp), remove clean/merged ones with `git worktree
+remove`. The weekly `dispatch-wt-clean.timer` / `git-worktree-gc.sh`
+janitor is path-agnostic (`git worktree list`), so hub locations are
+still covered. Never move a worktree that a live agent session has as
+its cwd. Applied 2026-11-16: dell hub consolidated 16 worktrees +
+archive; omen moved 7 chaba worktrees + archived ~50 stray artifacts.
