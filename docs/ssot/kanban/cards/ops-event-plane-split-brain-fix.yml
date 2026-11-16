@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-fix
 title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
 column: doing
-updated: 2026-11-16 11:31
+updated: 2026-11-16 11:32
 priority: high
 tags:
 - mddb
@@ -64,6 +64,10 @@ comms:
   from: devin
   text: Dispatch session started on idc02 worktree. Reviewing audit artifact + 10 listed surfaces; will decide repoint-to-:11025
     vs keep-on-leader per surface.
+- at: 2026-11-16 11:32
+  from: chaba
+  text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
+    — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 action:
   type: dispatch
   status: running
