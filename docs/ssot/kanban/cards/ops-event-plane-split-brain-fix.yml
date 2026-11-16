@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-fix
 title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
-column: doing
-updated: 2026-11-16 11:42
+column: review
+updated: 2026-11-16 11:48
 priority: high
 tags:
 - mddb
@@ -79,11 +79,19 @@ comms:
     report-ada-debug, report-api emit, vector-reindex emit, recall-canary emit, budget-watch emit, prune-old-docs).
     Convention: ops-only scripts take MDDB_OPS_URL default :11025 with NO leader fallback; mixed scripts split (banks/vector
     stay leader); _base() dispatchers route '
+- at: 2026-11-16 11:48
+  from: idc02
+  text: 'finished (ok): exit=0 vent-plane-s.md`; trail at `docs/ssot/jobs/infrastructure/2026-11-16-ops-event-plane-repoint.yml`.
+    | devin-task-2'
 action:
   type: dispatch
-  status: running
+  status: done
   lane: codemod
   runner: idc02
+  result: 'exit=0 vent-plane-s.md`; trail at `docs/ssot/jobs/infrastructure/2026-11-16-ops-event-plane-repoint.yml`.
+    | devin-task-20261116-113144-follow-up-to-ops-event-plane-s.service: Consumed 1min 15.579s CPU time, 451.7M
+    memory peak, 0B memory swap peak.'
+  verified: true
 requests:
 - id: backfill-decision-needed-repoint-branch-26e335
   ask: 'Backfill decision needed: repoint branch is done (18 surfaces -> mddb-ops :11025). Since 2026-10-23 chaba-side
@@ -98,3 +106,5 @@ requests:
   options:
   - proceed
   - hold
+review_kind: verify
+claim: {}
