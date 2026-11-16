@@ -1,0 +1,50 @@
+id: ops-event-plane-split-brain-fix
+title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
+column: backlog
+updated: 2026-11-16 10:58
+priority: high
+tags:
+- mddb
+- ops-split
+- bug
+spec: 'Follow-up to ops-event-plane-split-brain-audit (artifact verified PASS on free lane, 2026-11-14).
+
+
+  Audit found 10 chaba-side surfaces still targeting leader MDDB :11023 for ada-ha-events-* while ada-voice MddbClient
+  writes all ada-ha-events-* (incl kind=ops-event) to mddb-ops :11025 — events land on BOTH planes and leader-plane
+  readers miss ops-plane writes.
+
+
+  Writers on :11023 to migrate (or consciously keep + document):
+
+  - scripts/ada/ops-error-posts.py (ops_error -> ada-ha-events-tony)
+
+  - scripts/host-loads.py (host_load)
+
+  - scripts/board/kanban-dispatch.py (kanban_dispatch)
+
+  - scripts/board/lesson_qc.py (lesson_qc)
+
+  - scripts/ada/embed-probe.py (embed_probe)
+
+  - scripts/ada/memory-standard.py (memory_standard -> ada-ha-events-<instance>)
+
+
+  Readers on :11023 to migrate:
+
+  - scripts/ada/session-audit.py, scripts/ops/key-watch.py, scripts/ops-digest.py, scripts/ada/ops-report.py (has
+  MDDB_OPS_URL fallback already)
+
+
+  Full citation detail: evals/opencode-lane/out/ops-event-plane-split-brain-audit.json on idc02.
+
+
+  Decision needed per surface: repoint to mddb-ops :11025 (env MDDB_OPS_URL pattern already exists) vs keep on leader
+  plane if the doc type is intentionally semantic-memory. Backfill question: do historical ada-ha-events-* docs
+  need copying between planes? This is branch-code work — needs strong model + isolated worktree + independent verify
+  (branch-code lane still disabled for free models).'
+ref: MEM-0136
+comms:
+- at: 2026-11-16 10:58
+  from: devin
+  text: card captured via board-api
