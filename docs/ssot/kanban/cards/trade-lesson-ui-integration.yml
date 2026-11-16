@@ -1,6 +1,6 @@
 id: trade-lesson-ui-integration
 title: 'Trade lesson draft: trade-ui (free-lane drafting)'
-column: doing
+column: review
 updated: 2026-11-16 20:42
 brief: Distill trade docs (features/ui/* (TRADECANVAS_INTEGRATION, TRADECANVAS_QUICKSTART, WICK_INTEGRATION, UI_COMPARISON_EVALUATION,
   TRADING_TERMINAL_INTEGRATION, TRADING_TERMINAL_QUICKSTART)) into lesson trade-trade-ui; drafting on the $0 free
@@ -34,8 +34,13 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: idc02
+  sweep:
+    stale_running: 2026-11-16 20:42
+  result: 'exit=0 haba/trade-lesson-migrate/runs/20261116-203051-trade-ui/`; full details in `dispatch-outcome-20261116-202622-free-lane-draft-publish-for-tr.md`.
+    | devin-task-20261116-202622-free-lane-draft-publish-for-tr.service: Consumed 30.400s CPU time.'
+  verified: false
 ref: OPS-0104
 comms:
 - at: 2026-11-13 21:45
@@ -10320,3 +10325,8 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261116-202622-free-lane-draft-publish-for-tr no longer active on idc02 but card
     still says running — sweeping its branch'
+- at: 2026-11-16 20:42
+  from: idc02
+  text: 'finished (ok): exit=0 haba/trade-lesson-migrate/runs/20261116-203051-trade-ui/`; full details in `dispatch-outcome-20261116-202622-free'
+review_kind: verify
+claim: {}
