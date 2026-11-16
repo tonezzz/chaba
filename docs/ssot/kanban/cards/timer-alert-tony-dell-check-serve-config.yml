@@ -7,8 +7,8 @@ tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-15 20:23) of `check-serve-config.service` on `tony-dell` result=exit-code — investigate journal:
-  `journalctl --user -u check-serve-config.service` on the host. See CMS `timer-timeline-tony-dell`.'
+note: 'Last run (11-15 20:23) of `check-serve-config.service` on `tony-dell` result=exit-code — investigate
+  journal: `journalctl --user -u check-serve-config.service` on the host. See CMS `timer-timeline-tony-dell`.'
 ref: OPS-0129
 comms:
 - at: 2026-11-15 21:25
@@ -18,3 +18,10 @@ comms:
   from: devin
   text: '[still suspicious] Last run (11-15 20:23) of `check-serve-config.service` on `tony-dell` result=exit-code
     — investigate journal: `journalctl --user -u check-serve-config.service` on the host. See CMS `timer-timeline-tony-dell`.'
+- at: 2026-11-16 07:21
+  from: backlog-spec-enrich
+  text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+spec: Investigate the failure of check-serve-config.service on tony-dell by inspecting the user journal
+  via journalctl --user -u check-serve-config.service on the host, referencing the CMS timer-timeline-tony-dell.
+  The target host is tony-dell. The done-condition is verified when the root cause of the exit-code failure
+  is identified from the journal logs.
