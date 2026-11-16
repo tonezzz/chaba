@@ -1,6 +1,6 @@
 id: trade-lesson-workflows-automation
 title: 'Trade lesson draft: trade-workflows (free-lane drafting)'
-column: doing
+column: review
 updated: 2026-11-16 20:43
 brief: Distill trade docs (workflows/*, features/automation/*, MANUAL_WORKFLOW.md, DEVELOPMENT_WORKFLOW.md, CHANGELOG_WORKFLOW.md)
   into lesson trade-trade-workflows; drafting on the $0 free lane via trade-lesson-migrate.py.
@@ -33,10 +33,14 @@ action:
   type: dispatch
   repo: chaba
   executor: devin
-  status: running
+  status: done
   runner: idc02
   sweep:
     stale_running: 2026-11-16 20:43
+  result: 'exit=0 an run here unchanged. Outcome written to `dispatch-outcome-20261116-202630-free-lane-draft-publish-for-tr.md`;
+    final status posted to the card. | devin-task-20261116-202630-free-lane-draft-publish-for-tr.service: Consumed
+    19.535s CPU time.'
+  verified: false
 ref: OPS-0106
 comms:
 - at: 2026-11-13 21:45
@@ -10326,3 +10330,9 @@ comms:
   from: chaba
   text: 'merge-sweep: worktree dispatch-wt-20261116-202630-free-lane-draft-publish-for-tr on idc02 still dirty —
     1 uncommitted file(s); not fetching (checkpoint is the runner''s job)'
+- at: 2026-11-16 20:43
+  from: idc02
+  text: 'finished (ok): exit=0 an run here unchanged. Outcome written to `dispatch-outcome-20261116-202630-free-lane-draft-publish-for-tr.md`;
+    f'
+review_kind: verify
+claim: {}
