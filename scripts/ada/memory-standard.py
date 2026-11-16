@@ -14,7 +14,12 @@ import time
 import urllib.request
 from datetime import datetime
 
+# Banks + vector-search stay on the leader; ada-ha-events-* moved to
+# the ops plane in the mddb-ops split (:11023 is pre-split residue —
+# reading it makes the phantom/confirm_strip budget check see nothing).
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.102.134.91:11023/v1")
+MDDB_OPS = os.environ.get(
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 INSTANCE = os.environ.get("ADA_INSTANCE_ID", "tony")
 OPS_COLLECTION = f"ada-ha-events-{INSTANCE}"
 PROFILES = os.path.expanduser("~/.local/share/ada-voice/speaker_profiles.json")
@@ -40,9 +45,10 @@ def _doc_time(d: dict) -> float:
         return float(d.get("addedAt") or 0)
 
 
-def _post(path: str, payload: dict, timeout: int = 60) -> dict:
+def _post(path: str, payload: dict, timeout: int = 60,
+          base: str = MDDB) -> dict:
     req = urllib.request.Request(
-        MDDB + path, data=json.dumps(payload).encode(),
+        base + path, data=json.dumps(payload).encode(),
         headers={"content-type": "application/json"})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read())
 
@@ -58,9 +64,9 @@ def _list_banks() -> list[str]:
                 "ada-ha-bank-purchase", "ada-ha-bank-personal-kk"]
 
 
-def _docs(collection: str) -> list[dict]:
+def _docs(collection: str, base: str = MDDB) -> list[dict]:
     return _post("/search", {"collection": collection, "limit": 2000,
-                                "includeContent": False})
+                                "includeContent": False}, base=base)
 
 
 def main() -> int:
@@ -120,9 +126,10 @@ def main() -> int:
     except Exception as exc:
         violations.append(f"vector-search probe failed: {exc}")
 
-    # 3. ops-event budgets (24h)
+    # 3. ops-event budgets (24h) — the events collection lives on the
+    # ops plane since the mddb-ops split
     try:
-        ops = _docs(OPS_COLLECTION)
+        ops = _docs(OPS_COLLECTION, base=MDDB_OPS)
         day_ago = time.time() - 86400
         phantom = strip = 0
         for d in ops:
@@ -167,7 +174,7 @@ def main() -> int:
             "lang": "en", "contentMd": md,
             "meta": {"kind": ["ops-event"], "type": ["memory_standard"],
                      "instance": [INSTANCE], "verdict": [verdict],
-                     "ts": [now]}})
+                     "ts": [now]}}, base=MDDB_OPS)
     except Exception as exc:
         print(f"ops write failed: {exc}", file=sys.stderr)
 

@@ -11,7 +11,7 @@ The marker advances after a successful run — "since last check" stays true.
 Sources (all over ssh, BatchMode):
   <host>:~/.local/share/ada/transcripts/2026-*.md   per-turn User/Ada text
   <host>: journalctl --user -u ada-ha-tony          function_call pairs
-  mddb ada-ha-events-tony kind=ops-event            containment events
+  mddb-ops ada-ha-events-tony kind=ops-event        containment events
   (post-migration the live unit is on idc03; idc01 keeps the archive —
    both are scanned and deduped by session id.)
 
@@ -74,7 +74,8 @@ Env:
   AUDIT_CORPUS_PATH    corpus file (default ~/.local/share/ada/session-audit-corpus.jsonl)
   AUDIT_INBOX_DIR      focus-inbox dir (default served checkout on dell)
   BOARD_API            board api base (default http://127.0.0.1:8787)
-  MDDB_BASE_URL        mddb base (default http://100.102.134.91:11023/v1)
+  MDDB_OPS_URL         mddb-ops base (default http://100.123.163.11:11025/v1)
+  MDDB_CMS_URL         mddb-cms base (default http://100.102.134.91:11027/v1)
   ADA_OPS_COLLECTION   ops events collection (default ada-ha-events-tony)
   AUDIT_LATENCY_S      user->ada flag threshold (default 8)
   AUDIT_SSH_TIMEOUT    per-ssh seconds (default 90)
@@ -103,8 +104,10 @@ except ImportError:  # pragma: no cover - dell has PyYAML
     yaml = None
 
 HOME = Path.home()
+# ada-ha-events-* and ada-ha-scenario-reports are ops-plane collections
+# since the mddb-ops split — the leader copies are pre-split residue.
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 MDDB_CMS = os.environ.get(
     "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
@@ -914,7 +917,7 @@ def file_card(sig_row: dict, day: str, cards: list[dict]) -> str:
                      "real bug (TypeError/Unknown tool/NameError), not "
                      "infra noise.\n\nSignatures collapsed into this "
                      f"card:\n{listing}\n\n"
-                     f"Report: CMS page `{PAGE_SLUG}` + MDDB "
+                     f"Report: CMS page `{PAGE_SLUG}` + mddb-ops "
                      f"`{REPORTS_COLLECTION}` key `audit/session-{day}`.\n"
                      "Per-signature detail stays on the audit page; "
                      "signature cards refile individually only if the "
@@ -948,7 +951,7 @@ def file_card(sig_row: dict, day: str, cards: list[dict]) -> str:
         "spec": (f"Investigate Ada session-audit signature "
                  f"`{sig_row['sig']}`.\n\nLatest evidence: "
                  f"{sig_row['evidence'][:400]}\n\n"
-                 f"Report: CMS page `{PAGE_SLUG}` + MDDB "
+                 f"Report: CMS page `{PAGE_SLUG}` + mddb-ops "
                  f"`{REPORTS_COLLECTION}` key `audit/session-{day}`.\n"
                  "Decide: tool bug / schema-description issue / "
                  "display-side / correct-by-design friction; fix or "
@@ -1450,7 +1453,9 @@ def _run(args) -> int:
                 repo = Path(__file__).resolve().parents[2]
                 sys.path.insert(0, str(repo / "scripts" / "lib"))
                 import cms_index
-                cms_index.regen_reports_index(MDDB, written_by=GENERATOR)
+                # index lives in ada-cms-pages — on mddb-cms, not the
+                # leader (this pointed at :11023's stale copy before)
+                cms_index.regen_reports_index(MDDB_CMS, written_by=GENERATOR)
             except Exception as exc:
                 print(f"warn: reports-index regen: {exc}", file=sys.stderr)
         except Exception as exc:

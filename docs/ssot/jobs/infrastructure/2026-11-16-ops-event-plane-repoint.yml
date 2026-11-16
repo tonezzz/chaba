@@ -1,0 +1,152 @@
+title: chaba-side ada-ha-events-* surfaces repointed to mddb-ops :11025
+subtitle: >-
+  The 2026-10-23 ops split moved ada-ha-* telemetry to mddb-ops, but
+  chaba-side scripts kept using MDDB_BASE_URL :11023 — ops-event docs
+  landed on both planes and each side's readers saw a subset. This
+  repoint moves every repo surface's ops-collection traffic to :11025.
+id: 2026-11-16-ops-event-plane-repoint
+status: done
+owner: devin-dispatch
+project: chaba
+card: ops-event-plane-split-brain-fix
+branch: dispatch/20261116-113144-follow-up-to-ops-event-plane-s
+started: "2026-11-16"
+
+diagnosis:
+  audit_card: ops-event-plane-split-brain-audit (free-lane artifact
+    evals/opencode-lane/out/ops-event-plane-split-brain-audit.json,
+    verified PASS 2026-11-14).
+  root_cause: >
+    ada-voice MddbClient routes every ops collection (ada-ha-events-*,
+    ada-ha-snapshots-*, ada-ha-actions-*, ada-ha-recall-summary-*,
+    ada-ha-scenario-reports, host-logs, yomi-digest) to mddb-ops
+    http://100.123.163.11:11025 since 2026-10-23T13:15 ICT. Chaba-side
+    writers/readers still targeted the leader :11023 — writes landed
+    only on the leader's residue, reads missed ada-voice's ops-plane
+    docs.
+  audit_undercount: >
+    The audit listed 10 surfaces; repo sweep found 9 more touching
+    ops collections on the leader (kanban-act, house-distill,
+    render-report-feed, report-ada-debug, report-api events emit,
+    vector-reindex emit, recall-canary emit, budget-watch emit,
+    prune-old-docs retention targeting). 19 surfaces total.
+  live_evidence:
+    - ":11025 ada-ha-events-tony: 12,636 docs, kind=events newest today"
+    - ":11023 ada-ha-events-tony: 4,697 docs — pre-split residue"
+    - ":11023 ada-ha-scenario-reports rev growing — session-audit's
+      daily audit/session-* doc was still writing there today"
+    - ":11025 ops-event docs present (3601 scanned); last chaba-visible
+      ops-event ~2026-11-06"
+
+decisions:
+  per_surface:
+    - "ops-only scripts (single MDDB use = ada-ha-events-*): read
+      MDDB_OPS_URL defaulting to :11025 with NO MDDB_BASE_URL fallback —
+      a pinned leader URL (session-audit's unit env had one) must not
+      silently keep ops traffic on the leader. Covers ops-error-posts,
+      host-loads, kanban-dispatch, lesson_qc, key-watch, ops-digest,
+      ops-report (fallback chain removed), budget-watch."
+    - "mixed scripts: leader stays for bank/vector work, ops collections
+      move to a new MDDB_OPS base — embed-probe (vector-search +
+      vector-stats probe MUST stay leader: mddb-ops has no index),
+      memory-standard (banks + vector-search stay, events read+write
+      move), vector-reindex (reindex stays, emit moves), recall-canary
+      (bank probes stay, verdict emit moves), render-report-feed
+      (devin-handoff job ledger stays on leader, ops-events read moves)."
+    - "collection-routing dispatchers (_base() in kanban-act,
+      report-ada-debug) gained an _OPS_COLS prefix rule covering every
+      ops collection in this doc's table — not just events."
+    - "session-audit: ops-event read AND ada-ha-scenario-reports
+      read/write moved to ops (scenario-reports is a declared ops
+      collection). Also fixed a latent wrong-plane bug:
+      regen_reports_index ran against :11023's stale ada-cms-pages copy
+      — now MDDB_CMS (:11027) where the collection lives."
+    - "house-distill: snapshots+events reads moved to MDDB_OPS; the
+      ada-ha-bank-personal write correctly stays on the leader."
+    - "report-api: REPORT_EVENTS_URL now falls back to MDDB_OPS_URL and
+      defaults to :11025."
+    - "prune-old-docs: retention was sweeping the leader's FROZEN
+      ada-ha-events/snapshots residue while the live :11025 copies grew
+      unbounded (12.6k docs). Ada collections now sweep on
+      MDDB_ADA_OPS_URL (:11025). Distinct env name because host-logs
+      tooling already hijacks MDDB_OPS_URL for a different instance —
+      idc03 :11026. TWO ops-ish stores exist; noted in kb."
+  intentionally_kept_on_leader:
+    - "ada-ha-bank-* reads/writes (memory-standard, recall-canary,
+      house-distill bank write, render-report-feed devin-handoff) —
+      semantic memory per the split plan."
+    - "vector-search/vector-stats/vector-reindex calls (embed-probe,
+      memory-standard, recall-canary, vector-reindex) — the vector index
+      only exists on the leader; mddb-ops is no-embed by design."
+    - "ada-cms-* traffic (session-audit, kanban-act, report-ada-debug) —
+      mddb-cms :11027 via MDDB_CMS_URL, unchanged."
+
+changes:
+  - "scripts/ada/ops-error-posts.py: MDDB -> MDDB_OPS_URL :11025 (its only
+    MDDB use is ops-event reads; WP posts unaffected)"
+  - "scripts/host-loads.py: host_down/up ops-event emit -> :11025"
+  - "scripts/board/kanban-dispatch.py: kanban_retry ops-event emit -> :11025"
+  - "scripts/board/lesson_qc.py: lesson_qc ops-event emit -> :11025"
+  - "scripts/ops/key-watch.py: gemini ops-event scan + key_watch emit -> :11025"
+  - "scripts/ops-digest.py: ops-event digest read -> :11025"
+  - "scripts/ada/ops-report.py: dropped leader fallback -> :11025"
+  - "scripts/litellm/budget-watch.py: budget_watch emit -> :11025"
+  - "scripts/ada/embed-probe.py: added MDDB_OPS; _emit -> ops, probe stays leader"
+  - "scripts/mddb/vector-reindex.py: added MDDB_OPS; _emit -> ops, reindex stays leader"
+  - "scripts/ada/recall-canary.py: added MDDB_OPS; verdict emit -> ops"
+  - "scripts/ada/memory-standard.py: added MDDB_OPS; events budget read +
+    verdict write -> ops (the phantom/confirm_strip check has been
+    reading frozen residue since 10-23 — silently dead until now)"
+  - "scripts/ada/session-audit.py: ops-events read + scenario-reports
+    read/write -> MDDB_OPS; regen_reports_index -> MDDB_CMS (was
+    scanning :11023's stale ada-cms-pages)"
+  - "scripts/ada/kanban-act.py + scripts/report-ada-debug.py: _base()
+    dispatcher gained _OPS_COLS -> MDDB_OPS routing"
+  - "scripts/ada/house-distill.py: added MDDB_OPS; iter_docs (snapshots +
+    events) -> ops; bank write stays leader; topology docstring corrected"
+  - "scripts/chaba/render-report-feed.py: added MDDB_OPS; _mddb_ops_events
+    -> ops; _mddb_jobs (devin-handoff ledger) stays leader"
+  - "scripts/report/report-api.py: REPORT_EVENTS_URL falls back to
+    MDDB_OPS_URL, defaults :11025"
+  - "scripts/ada/prune-old-docs.py: ada-ha-events-*/snapshots retention
+    now sweeps MDDB_ADA_OPS_URL :11025 (was sweeping frozen leader
+    residue while live copies grew)"
+  - "docs/ssot/infrastructure/ssot.jobs.yml: session-audit,
+    chaba-host-loads, ops-error-posts env += MDDB_OPS_URL + transitional
+    MDDB_BASE_URL->ops (pre-repoint builds on unsynced checkouts land on
+    the right plane — house-timeline precedent)"
+  - "systemd/generated/{idc02/chaba-host-loads,idc03/ops-error-posts,
+    tony_omen/session-audit}.service: re-rendered with env pins"
+  - "docs/kb/mddb-ops-split.md: 'Chaba-side repoint' section — convention,
+    the :11025-vs-:11026 two-ops-stores note, open backfill item"
+
+verify:
+  static: "py_compile clean on all 19 touched scripts; ssot.jobs.yml
+    yaml.safe_load OK; repo sweep — zero files left referencing
+    ada-ha-events with a :11023-only base."
+  selftests: "ops-error-posts --selftest PASS; session-audit --selftest
+    PASS; key-watch --selftest PASS; budget-watch --selftest PASS."
+  routing: "import-level asserts — dispatchers route ada-ha-events-* /
+    scenario-reports / host-logs to :11025, ada-cms-* to :11027, banks
+    to :11023."
+  live: "ops-report.py --hours 720 read 3 real events from :11025;
+    ops-digest.py queried :11025 (all quiet — matches live state);
+    prune-old-docs --dry-run swept :11025 ada-ha-events-tony 12,636
+    docs (1,309 >30d) instead of leader residue."
+
+followups:
+  - "board request raised (backfill-decision-needed-repoint-branch-26e335):
+    post-split chaba-side ops-event docs (10-23..11-16) exist only on
+    the leader — copy to :11025 (recommended), skip, or copy+delete
+    residue (destructive, needs explicit approval)."
+  - "ada-ha-scenario-reports remains split beyond session-audit —
+    nest-train-loop, nest-overview, chaba-audit, report-distill,
+    bank-router-probe, bench-edge-cms, embed-space-eval still target
+    the leader. Same fix class; worth a follow-up card."
+  - "MDDB_OPS_URL name collision: :11026 host-logs users vs :11025 ada
+    plane. Convention documented in kb; a rename pass
+    (MDDB_ADA_OPS_URL everywhere for :11025) is optional cleanup."
+  - "non-jobs units (key-watch.service, kanban-dispatch.service,
+    mddb-embed-probe.timer, OpenClaw ops-digest cron) carry no env pins
+    — they pick up the :11025 code default on checkout sync; the brief
+    gap writes a few residue docs, self-heals."

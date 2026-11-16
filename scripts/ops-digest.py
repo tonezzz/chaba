@@ -5,7 +5,7 @@ No LLM involved: pulls ada-ha ops events for the last 24h straight from
 MDDB (/v1/search, kind=ops-event), counts by type, lists flagged ones,
 prints <=14 lines on stdout. The cron job announces stdout to Telegram.
 
-Env overrides: MDDB_BASE_URL, ADA_OPS_COLLECTION, OPS_WINDOW_H.
+Env overrides: MDDB_OPS_URL, ADA_OPS_COLLECTION, OPS_WINDOW_H.
 Exit 0 always — a fetch failure still prints an honest line.
 """
 import collections
@@ -22,8 +22,10 @@ SNAP_LOG = os.environ.get(
     "/home/tony/CascadeProjects/chaba-tony-dell/logs/mcp-health-snapshot.log")
 LINT = "/home/tony/CascadeProjects/chaba/scripts/monitor-coverage-lint.py"
 
+# ada-ha-events-* moved to the ops plane in the mddb-ops split — the
+# leader :11023 only carries pre-split residue now.
 MDDB_URL = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1"
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1"
 ).rstrip("/")
 COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 WINDOW_H = int(os.environ.get("OPS_WINDOW_H", "24"))

@@ -320,6 +320,11 @@ def build_ada() -> dict:
 
 MDDB_URL = os.environ.get("MDDB_BASE_URL",
                           "http://100.102.134.91:11023/v1").rstrip("/")
+# ada-ha-events-* moved to the ops plane in the mddb-ops split — the
+# leader copy is pre-split residue; the job ledger (devin-handoff bank)
+# stays on the leader.
+MDDB_OPS = os.environ.get("MDDB_OPS_URL",
+                          "http://100.123.163.11:11025/v1").rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION",
                                 "ada-ha-events-tony")
 OPS_WINDOW_H = 24
@@ -467,7 +472,7 @@ def _mddb_ops_events() -> list[dict]:
             "limit": 50,
         }).encode()
         req = urllib.request.Request(
-            f"{MDDB_URL}/search", data=payload,
+            f"{MDDB_OPS}/search", data=payload,
             headers={"content-type": "application/json"}, method="POST")
         with urllib.request.urlopen(req, timeout=10) as resp:
             docs = json.loads(resp.read())

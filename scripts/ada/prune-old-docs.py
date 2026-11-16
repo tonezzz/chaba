@@ -34,6 +34,11 @@ MDDB = "http://100.102.134.91:11023/v1"
 # ops telemetry lives on the no-embed ops DB (ssot.log-digest-standard)
 OPS_MDB = os.environ.get("MDDB_OPS_URL",
                          "http://100.102.134.91:11026/v1").rstrip("/")
+# ada-ha-* telemetry lives on a DIFFERENT ops store — mddb-ops on idc02
+# (docs/kb/mddb-ops-split.md). Distinct env name so a host-logs
+# MDDB_OPS_URL pin can't misroute the ada sweep.
+ADA_OPS_MDB = os.environ.get("MDDB_ADA_OPS_URL",
+                             "http://100.123.163.11:11025/v1").rstrip("/")
 
 # host-logs is ~260k docs across both DBs — 100-doc pages made the list
 # phase alone take ~30min (0.7s/page). 5000-doc pages stay ~1s even at
@@ -49,8 +54,17 @@ POLICY = {
     "ada-ha-snapshots-tony": ("refreshed_at", 30),
     "ada-ha-snapshots-michael": ("refreshed_at", 30),
 }
-# collections served from the ops DB instead of the leader
-OPS_COLLECTIONS = {"host-logs"}
+# collections served from an ops DB instead of the leader — host-logs
+# on idc03 :11026, ada-ha-* telemetry on idc02 :11025 (the mddb-ops
+# split moved them; the leader copies are frozen residue — sweeping
+# them is harmless but pointless, the live copies grow there).
+COLLECTION_BASE = {
+    "host-logs": OPS_MDB,
+    "ada-ha-events-tony": ADA_OPS_MDB,
+    "ada-ha-events-michael": ADA_OPS_MDB,
+    "ada-ha-snapshots-tony": ADA_OPS_MDB,
+    "ada-ha-snapshots-michael": ADA_OPS_MDB,
+}
 
 
 def post(path: str, body: dict, base: str = MDDB,
@@ -113,8 +127,8 @@ def sweep(collection: str, ts_key: str, days: int, dry: bool,
 def main() -> int:
     dry = "--dry-run" in sys.argv
     for coll, (ts_key, days) in POLICY.items():
-        base = OPS_MDB if coll in OPS_COLLECTIONS else MDDB
-        print(sweep(coll, ts_key, days, dry, base))
+        print(sweep(coll, ts_key, days, dry,
+                    COLLECTION_BASE.get(coll, MDDB)))
     # one-shot leader cleanup: host-logs migrated to the ops DB — the
     # stale leader copy still ages out on its own 14d window
     print(sweep("host-logs", "ts", 14, dry, MDDB))

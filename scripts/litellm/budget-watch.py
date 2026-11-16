@@ -31,7 +31,7 @@ on alert findings unless --dry-run. Quiet hours defer the push only
     python3 scripts/litellm/budget-watch.py --json fixture.json --dry-run
 
 Env: LITELLM_URL, LITELLM_MASTER_KEY, LITELLM_DB_CONTAINER,
-     MDDB_BASE_URL, BOARD_API, KEY_WATCH_RELAY_URL,
+     MDDB_OPS_URL, BOARD_API, KEY_WATCH_RELAY_URL,
      BUDGET_WATCH_WARN_PCT (default 80), BUDGET_WATCH_QUIET ("0-7"),
      BUDGET_WATCH_STATE, BUDGET_WATCH_RESEND_MIN.
 """
@@ -54,8 +54,10 @@ ICT = datetime.timezone(datetime.timedelta(hours=7))
 GW = os.environ.get("LITELLM_URL", "http://100.102.134.91:4000").rstrip("/")
 MASTER = os.environ.get("LITELLM_MASTER_KEY", "")
 DB_CONTAINER = os.environ.get("LITELLM_DB_CONTAINER", "litellm-db")
+# ops-event docs go to mddb-ops — ada-ha-events-* moved off the leader
+# in the mddb-ops split (:11023 is pre-split residue only).
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 BOARD_API = os.environ.get(
     "BOARD_API", "https://idc03.taila0626a.ts.net:10000").rstrip("/")
 OPS_COLLECTION = "ada-ha-events-tony"
