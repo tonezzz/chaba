@@ -40,7 +40,7 @@ Usage:
 
 Env:
   WP_BOARDS_ENV      wp-boards.env path (WP_SITE_URL/WP_APP_USER/WP_APP_PASSWORD)
-  MDDB_BASE_URL      mddb base (default http://100.102.134.91:11023/v1)
+  MDDB_OPS_URL       mddb-ops base (default http://100.123.163.11:11025/v1)
   OPS_ERROR_STATE    state file (default ~/.local/share/ada/ops-error-posts-state.json)
   ADA_TRANSCRIPT_DIR transcript dir for transcript_ref lookup
                      (default ~/.local/share/ada/transcripts)
@@ -63,8 +63,10 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+# ada-ha-events-* moved to the ops plane in the mddb-ops split — the
+# leader :11023 only carries pre-split residue now.
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 ENV_PATH = os.environ.get(
     "WP_BOARDS_ENV",
     os.path.expanduser("~/.config/secrets/wp-boards.env"))

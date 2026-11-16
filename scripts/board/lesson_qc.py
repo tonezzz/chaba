@@ -66,8 +66,10 @@ ICT = timezone(timedelta(hours=7))
 STATE_PATH = Path(os.environ.get(
     "LESSON_QC_STATE",
     str(Path.home() / ".local/share/board/lesson-qc-state.json")))
+# ops-event docs go to mddb-ops — ada-ha-events-* moved off the leader
+# in the mddb-ops split (:11023 is pre-split residue only).
 MDDB = os.environ.get(
-    "MDDB_BASE_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 
 JACCARD_MIN = 0.8
 LINE_CAP = 240

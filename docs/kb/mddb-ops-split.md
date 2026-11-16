@@ -140,6 +140,34 @@ the writers' sources (logs, events regenerate).
 - No live replication between leader and ops (the OOM lesson)
 - tony-dell follows only the leader — it doesn't need telemetry
 
+## Chaba-side repoint (2026-11-16, card ops-event-plane-split-brain-fix)
+
+Ada-voice had been routing all ops collections to :11025 since
+2026-10-23, but chaba-side scripts still used `MDDB_BASE_URL` :11023 —
+ops-event docs landed on both planes and each side's readers saw a
+subset. Repointed every repo surface touching ops collections:
+
+- ops-collection-only scripts now read `MDDB_OPS_URL` (default
+  `http://100.123.163.11:11025/v1`) — no `MDDB_BASE_URL` fallback, so a
+  leader pin can't silently pull ops traffic back.
+- mixed scripts keep the leader for banks/vector-search and emit/read
+  ops collections on `MDDB_OPS` (embed-probe, memory-standard,
+  vector-reindex, recall-canary, render-report-feed).
+- collection-routing dispatchers (`_base()` in kanban-act,
+  report-ada-debug) gained an `_OPS_COLS` prefix rule.
+- note there are TWO ops-ish instances: idc02 :11025 (ada-ha-*
+  telemetry, `MDDB_OPS_URL`) and idc03 :11026 (host-logs — some tools
+  unfortunately reuse `MDDB_OPS_URL` for it; prune-old-docs uses
+  `MDDB_ADA_OPS_URL` for the ada plane to avoid the collision).
+- job envs pin `MDDB_OPS_URL` + `MDDB_BASE_URL`->ops transitionally so
+  pre-repoint builds on unsynced checkouts land on the right plane
+  (house-timeline precedent).
+
+Open: post-split chaba-side ops-event docs that landed on the leader
+between 2026-10-23 and this repoint exist only there — copying them to
+:11025 (and later deleting leader residue) is a board request on the
+card, pending Tony.
+
 ## Read replica split (2026-10-06, ada-voice `backend/mddb_client.py`)
 
 A third routing layer for the idc01 read-only follower (`mode:"read"`,

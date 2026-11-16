@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """house-distill.py — distill one lane's raw MDDB telemetry into a house profile.
 
-MDDB topology on idc03 — THREE separate databases, not one:
-  mddb.service      primary   HTTP :11023  MCP :9000  ada-ha-* memory/telemetry
+MDDB topology — FOUR stores, not one:
+  mddb.service      primary   HTTP :11023  MCP :9000  ada-ha-* memory (banks)
   mddb-cms.service  cms store HTTP :11027            ada-cms-*, infra-ssot sync
-  mddb-ops.service  ops store                        host-logs, digests
-Reads/writes for ada-ha-* MUST go to the primary (:11023); cms-pages writes
-go to the cms store (:11027). A bank doc posted to :11027 lands in the wrong
-database where no persona backend will ever read it.
+  mddb-ops (idc02)  ops store HTTP :11025            host-logs, ada-ha-events-*,
+                                                   ada-ha-snapshots-*, digests
+Bank reads/writes go to the primary (:11023); telemetry reads
+(snapshots/events) go to the ops store (:11025) since the mddb-ops
+split; cms-pages writes go to the cms store (:11027). A bank doc posted
+anywhere else lands where no persona backend will ever read it.
 
 Outputs:
   * ada-cms-pages/house-profile-<instance>   browsable at
@@ -32,6 +34,10 @@ import urllib.request
 
 MDDB_PRIMARY = os.environ.get(
     "MDDB_PRIMARY_URL", "http://100.102.134.91:11023/v1").rstrip("/")
+# snapshots/events telemetry moved to the ops plane in the mddb-ops
+# split — the leader copies are pre-split residue.
+MDDB_OPS = os.environ.get(
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 MDDB_CMS = os.environ.get(
     "MDDB_CMS_URL", "http://100.102.134.91:11027/v1").rstrip("/")
 ENTITY_RE = re.compile(r"\(`([a-z_]+\.[a-z0-9_]+)`\):\s*(.+?)\s*$")
@@ -47,11 +53,12 @@ def _post(base: str, path: str, payload: dict, timeout: int = 60):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
-def iter_docs(collection: str, page: int = 500):
-    """All docs in a collection on the PRIMARY store (full contentMd)."""
+def iter_docs(collection: str, page: int = 500, base: str = MDDB_OPS):
+    """All docs in a collection (full contentMd). Default base is the
+    ops store — snapshot/event telemetry lives there since the split."""
     off = 0
     while True:
-        docs = _post(MDDB_PRIMARY, "search",
+        docs = _post(base, "search",
                      {"collection": collection, "query": "",
                       "limit": page, "offset": off})
         yield from docs

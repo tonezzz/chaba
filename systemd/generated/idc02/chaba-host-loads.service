@@ -6,3 +6,5 @@ Type=oneshot
 TimeoutStartSec=120
 ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/host-loads.py
 ExecStart=/bin/bash -c 'install -m644 %h/CascadeProjects/chaba/reports/host-loads/host-loads.yml %h/CascadeProjects/chaba/stacks/web/public/apps/system-report/data/host-loads.yml && install -m644 %h/CascadeProjects/chaba/reports/host-loads/host-loads.yml %h/web-srv/public/apps/system-report/data/host-loads.yml'
+Environment="MDDB_OPS_URL=http://100.123.163.11:11025/v1"
+Environment="MDDB_BASE_URL=http://100.123.163.11:11025/v1"

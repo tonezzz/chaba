@@ -22,10 +22,11 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-# Reads ada-ha-events-* — an ops collection once the split lands.
-MDDB_URL = (os.environ.get("MDDB_OPS_URL")
-            or os.environ.get("MDDB_BASE_URL",
-                              "http://100.102.134.91:11023/v1")).rstrip("/")
+# Reads ada-ha-events-* — an ops-plane collection since the mddb-ops
+# split; the leader :11023 copy is frozen residue, so a pinned
+# MDDB_BASE_URL must not pull this back to the leader.
+MDDB_URL = os.environ.get(
+    "MDDB_OPS_URL", "http://100.123.163.11:11025/v1").rstrip("/")
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION", "ada-ha-events-tony")
 DEFAULT_OUT = Path.home() / ".local/share/ada-review"
 
