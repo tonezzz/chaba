@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-fix
 title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
 column: doing
-updated: 2026-11-16 11:32
+updated: 2026-11-16 11:41
 priority: high
 tags:
 - mddb
@@ -68,8 +68,26 @@ comms:
   from: chaba
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-16 11:41
+  from: devin
+  text: 'raised request backfill-decision-needed-repoint-branch-26e335: Backfill decision needed: repoint branch
+    is done (18 surfaces -> mddb-ops :11025). Since 2026-10-23 chaba-side ops-event'
 action:
   type: dispatch
   status: running
   lane: codemod
   runner: idc02
+requests:
+- id: backfill-decision-needed-repoint-branch-26e335
+  ask: 'Backfill decision needed: repoint branch is done (18 surfaces -> mddb-ops :11025). Since 2026-10-23 chaba-side
+    ops-event docs (host_load, kanban_*, lesson_qc, embed_*, memory_standard, key_watch, budget_watch, vector_reindex,
+    recall_canary) landed ONLY on leader :11023 — ops-plane readers never saw them. Options: (a) copy post-10-23
+    chaba-emitted ops-event docs leader->:11025 so the ops plane has complete history (small, additive, no deletes)
+    ★recommended; (b) skip backfill — treat leader copies as residue like pre-split docs; (c) backfill AND delete
+    leader ada-ha-events-*/ops residue (destructive, separate approval wanted). Answer a/b/c.'
+  status: open
+  at: 2026-11-16 11:41
+  from: devin
+  options:
+  - proceed
+  - hold
