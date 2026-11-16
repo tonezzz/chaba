@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-fix
 title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
 column: doing
-updated: 2026-11-16 11:41
+updated: 2026-11-16 11:42
 priority: high
 tags:
 - mddb
@@ -72,6 +72,13 @@ comms:
   from: devin
   text: 'raised request backfill-decision-needed-repoint-branch-26e335: Backfill decision needed: repoint branch
     is done (18 surfaces -> mddb-ops :11025). Since 2026-10-23 chaba-side ops-event'
+- at: 2026-11-16 11:42
+  from: devin
+  text: 'Repoint done on dispatch/20261116-113144-follow-up-to-ops-event-plane-s (commit 4f9b8e12eb, not pushed).
+    Scope grew past the audit: 19 surfaces fixed, not 10 — sweep found 9 more (kanban-act, house-distill, render-report-feed,
+    report-ada-debug, report-api emit, vector-reindex emit, recall-canary emit, budget-watch emit, prune-old-docs).
+    Convention: ops-only scripts take MDDB_OPS_URL default :11025 with NO leader fallback; mixed scripts split (banks/vector
+    stay leader); _base() dispatchers route '
 action:
   type: dispatch
   status: running
