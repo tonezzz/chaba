@@ -1,7 +1,7 @@
 id: openchamber-ada-context-pack
 title: Add bounded Ada/SSOT context pack for OpenChamber OpenCode
 column: doing
-updated: 2026-11-16 18:47
+updated: 2026-11-16 20:41
 brief: 'Give OpenChamber/OpenCode a Devin-like bounded context load: profile + SSOT/education/Devin/card excerpts
   with provenance, read-only, before the agent loop instead of relying on ad-hoc tool discovery.'
 priority: high
@@ -48,3 +48,9 @@ comms:
     Smoke ok: ssot=3, devin=3, card=ADA-0141; only error was education read timeout. Updated .opencode/agents/ada.md
     + commands/ada.md (/ada context). Education lesson filed: openchamber-opencode-prompt-memory-flow. Remaining:
     wire OpenChamber instruction-entry injection'
+- at: 2026-11-16 20:41
+  from: devin
+  text: 'ada-voice parity: commit 6932d60 adds ada_context_pack/_context_card/_ssot_search/shared-deadline to canonical
+    opencode/ada_mcp.py. Verified: py_compile, tool-lint clean, 9 targeted tests pass, direct smoke card-ref 5.5s
+    ok card ADA-0141 mut[], global OpenChamber smoke /home/tony/ada-ocb-smoke returned ok card ADA-0141 mut[] (education/infrastructure/devin-mddb
+    timeouts remain). Not pushed/deployed.'
