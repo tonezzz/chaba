@@ -1,7 +1,7 @@
 id: ops-event-plane-split-brain-fix
 title: 'fix: chaba-side ada-ha-events-* surfaces still split across MDDB :11023/:11025'
 column: review
-updated: 2026-11-16 12:31
+updated: 2026-11-16 12:35
 priority: high
 tags:
 - mddb
@@ -127,6 +127,13 @@ comms:
 - at: 2026-11-16 12:31
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-16 12:35
+  from: devin
+  text: 'Backfill option (a) executed 2026-11-16. Enumerated kind=ops-event docs in ada-ha-events-{tony,kk,michael}
+    on leader :11023 for chaba-emitter types (host_up/down, kanban_*, lesson_qc, memory_standard, key_watch, budget_watch,
+    vector_reindex, recall_canary, embed_*, ops_error) with ts >= 2026-10-23. Copied 721/721 docs to mddb-ops :11025
+    via /add (same collection/key/lang/contentMd/meta — additive, idempotent upsert, zero deletes, leader residue
+    untouched). Per-type: host_up 249, host_down 246, m'
 action:
   type: dispatch
   status: done
