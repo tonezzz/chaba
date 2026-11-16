@@ -1,10 +1,27 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
 column: backlog
-updated: 2026-11-16 19:20
-spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually completed (BrokenPipeError on response write after client disconnect; duplicate comms resulted). /proc inspection: main thread ~92% CPU in do_poll; ~10 handler threads blocked in locks_lock_inode_wait on /tmp/board-api.lock; 4 external python clients also waiting on same lock. Sustained CPU ~37% average since Nov13. Writes DO complete (~10-20s each in journal) but latency is badly degraded and timeout-prone clients cause duplicate writes. Likely causes: lock hold time too long per write (render/sync inside critical section?), thundering-herd GET /cards polling, or a stuck/looping lock holder. Investigate: measure per-write lock hold time, consider moving render outside lock, add request timeouts, dedupe comm writes by client request id. Workaround used: direct card-file edit on served checkout (writer host) is safe - kanban-commit sweeps it.'
+updated: 2026-11-16 20:23
+spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
+  since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
+  behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
+  completed (BrokenPipeError on response write after client disconnect; duplicate comms resulted). /proc inspection:
+  main thread ~92% CPU in do_poll; ~10 handler threads blocked in locks_lock_inode_wait on /tmp/board-api.lock;
+  4 external python clients also waiting on same lock. Sustained CPU ~37% average since Nov13. Writes DO complete
+  (~10-20s each in journal) but latency is badly degraded and timeout-prone clients cause duplicate writes. Likely
+  causes: lock hold time too long per write (render/sync inside critical section?), thundering-herd GET /cards polling,
+  or a stuck/looping lock holder. Investigate: measure per-write lock hold time, consider moving render outside
+  lock, add request timeouts, dedupe comm writes by client request id. Workaround used: direct card-file edit on
+  served checkout (writer host) is safe - kanban-commit sweeps it.'
 ref: OPS-1314
 comms:
 - at: 2026-11-16 19:20
   from: devin
   text: card captured via direct served-checkout write (board-api itself was the congested service)
+- at: 2026-11-16 20:23
+  from: devin
+  text: 'DIAGNOSIS (2026-11-16 ~20:20 ICT). Write path: every POST serializes on /tmp/board-api.lock and inside
+    the flock runs load+mutate+save() where save()->_commit_write() shells out to git rev-parse/add/commit (10/15/15s
+    timeouts) — by design (autostash protection, board-api-writes-eaten-by-autostash-pops-515009). External contender:
+    git-safe-pull.sh holds the SAME flock across the whole pull+rebase+reconcile phase; when origin moved (frequent,
+    multi-host repo) the pull takes 1-6min and ALL writes q'
