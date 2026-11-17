@@ -1,7 +1,7 @@
 id: adobe-stock-upscaler-eval
 title: Evaluate open-source upscalers for stock pipeline
 column: doing
-updated: 2026-11-17 09:20
+updated: 2026-11-17 09:24
 brief: Benchmark Real-ESRGAN, SwinIR, SeeSR/OSEDiff on campaign assets; pick pipeline upscaler.
 priority: high
 program: adobe-stock
@@ -167,11 +167,17 @@ comms:
 - at: 2026-11-17 09:20
   from: chaba
   text: 'idc02 defers: runner at cap (3/3)'
+- at: 2026-11-17 09:24
+  from: tony-dell
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   sweep:
     failed_noted: 2026-11-09 09:33
   last_failure: 'exit=1 e-the-standard-upsca.service: Failed with result ''exit-code''. | devin-task-20261109-090841-goal-choose-the-standard-upsca.service:
     Consumed 34min 41.818s CPU time over 21min 47.609s wall clock time, 11.3G memory peak, 1.1G memory swap peak.'
   attempts: 1
+  lane: paid_frontier
+  model: litellm/gemini-2.5-flash
+  runner: tony-dell
