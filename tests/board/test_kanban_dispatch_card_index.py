@@ -93,6 +93,21 @@ class DispatchCardIndexTest(unittest.TestCase):
 
             self.assertEqual(["b"], [card["id"] for _, card in loaded])
 
+    def test_default_paths_follow_current_module_globals(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td) / "cards"
+            root.mkdir()
+            cache = Path(td) / "index.json"
+            (root / "queued.yml").write_text(
+                yaml.safe_dump({"id": "queued",
+                                "action": {"status": "queued"}}))
+
+            with patch.object(self.mod, "CARD_DIR", root), \
+                    patch.object(self.mod, "INDEX_FILE", cache):
+                loaded = self.mod.load_dispatch_cards()
+
+            self.assertEqual(["queued"], [card["id"] for _, card in loaded])
+
 
 if __name__ == "__main__":
     unittest.main()
