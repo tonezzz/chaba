@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 09:11
+updated: 2026-11-17 09:13
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -90,6 +90,15 @@ comms:
   from: chaba
   text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-183239-scheduled-per-lane-retention-j,
     branch dispatch/20261109-183239-scheduled-per-lane-retention-j on idc02'
+- at: 2026-11-17 09:11
+  from: chaba
+  text: 'merge-sweep GC: removed worktree /home/tony/CascadeProjects/dispatch-wt-20261109-183239-scheduled-per-lane-retention-j,
+    branch dispatch/20261109-183239-scheduled-per-lane-retention-j on idc02'
+- at: 2026-11-17 09:13
+  from: chaba
+  text: 'merge-sweep: dispatch/20261109-183239-scheduled-per-lane-retention-j already in origin/master but verified
+    withheld — branch is merged (2463 file(s) changed vs base) but the unit did not exit 0 (exit_code=1) — needs
+    a human look'
 action:
   type: dispatch
   repo: chaba
