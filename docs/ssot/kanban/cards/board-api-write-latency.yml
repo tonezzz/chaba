@@ -1,7 +1,7 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
 column: doing
-updated: 2026-11-17 17:10
+updated: 2026-11-17 17:12
 spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
   since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
   behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
@@ -39,6 +39,11 @@ comms:
   text: 'idc03 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
 - at: 2026-11-17 17:10
+  from: devin
+  text: 'investigating in dispatch worktree — code analysis done: pull-phase lock hold (git-safe-pull on BOTH checkouts
+    shares /tmp/board-api.lock) + SSH session-delivery/hide inside request lock are the two fixable hold-time drivers;
+    shipping bounded lock acquire + off-lock deliveries + comment dedupe'
+- at: 2026-11-17 17:12
   from: devin
   text: 'investigating in dispatch worktree — code analysis done: pull-phase lock hold (git-safe-pull on BOTH checkouts
     shares /tmp/board-api.lock) + SSH session-delivery/hide inside request lock are the two fixable hold-time drivers;
