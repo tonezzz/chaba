@@ -2,7 +2,7 @@ id: render-board-worktree-rglob-slow
 title: render-board.py _outcome_index rglobs docs/ssot/jobs across every dispatch-wt-* — ~60-100s per render on
   worktree-heavy hosts
 column: review
-updated: 2026-11-17 18:28
+updated: 2026-11-17 18:31
 brief: 'Found via OPS-0127 test profiling: kanban-dispatch runs render-board.py after every card mutation; _outcome_index()
   does root.rglob(''dispatch-outcome-*.md'') for EVERY dispatch-wt-* sibling of the repo. On hosts with 15+ worktrees
   this is ~60-100s per render, every dispatch pass. Tests now noop it; production still pays it.'
@@ -86,6 +86,10 @@ comms:
   text: 'auto-merge not done: no session repo for 20261117-180908-fix-outcome-index-in-scripts-r — close will block
     until merged'
 - at: 2026-11-17 18:28
+  from: chaba
+  text: 'auto-merge not done: no session repo for 20261117-180908-fix-outcome-index-in-scripts-r — close will block
+    until merged'
+- at: 2026-11-17 18:31
   from: chaba
   text: 'auto-merge not done: no session repo for 20261117-180908-fix-outcome-index-in-scripts-r — close will block
     until merged'
