@@ -1,7 +1,7 @@
 id: embed-free-lane-daily-budget
 title: Embed free-lane daily budget — protect the 1000/day Gemini quota from bulk jobs
 column: doing
-updated: 2026-11-17 23:37
+updated: 2026-11-17 23:38
 brief: gemini-embedding-2 free tier = 1000 embeds/day hard cap. The 2026-11-12/13 retry storm burned it in hours
   → 24h+ embed outage until quota reset. Retries are now bounded (mddb ad7d3f72) but a legitimate mass reindex can
   still exhaust the day by noon, starving interactive/query embeds until reset.
@@ -95,6 +95,9 @@ comms:
   from: tony-omen
   text: 'finished (failed): exit=1  status=1/FAILURE | @ IM_CONFIG_ENTRY=''profile'' XDG_SESSION_TYPE ='''' UID=1000
     PID=1204668 PPID=1202079 |   GTK_IM'
+- at: 2026-11-17 23:38
+  from: chaba
+  text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-18 00:08'
 requests:
 - id: where-should-the-daily-embed-budget-live-41c823
   ask: 'Where should the daily embed budget live? Note: query embeds bypass the worker queue entirely (vector-search
