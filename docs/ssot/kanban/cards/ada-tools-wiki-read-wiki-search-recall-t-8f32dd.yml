@@ -1,7 +1,7 @@
 id: ada-tools-wiki-read-wiki-search-recall-t-8f32dd
 title: 'Ada tools: wiki_read + wiki_search — recall the Education wiki'
 column: doing
-updated: 2026-11-14 14:14
+updated: 2026-11-17 09:17
 ref: ADA-1199
 comms:
 - at: 2026-11-08 13:49
@@ -1694,14 +1694,17 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:17
+  from: tony
+  text: retry requested
 action:
   type: dispatch
   repo: ada-voice
-  status: failed
+  status: queued
   lane: devin
-  runner: idc02
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
-    Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
-    2.730s CPU time.'
   sweep:
     failed_noted: 2026-11-09 09:49
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service:
+    Failed with result ''exit-code''. | devin-task-20261109-093928-ada-tools-wiki-read-wiki-searc.service: Consumed
+    2.730s CPU time.'
+  attempts: 1
