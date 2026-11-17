@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: review
-updated: 2026-11-17 21:43
+updated: 2026-11-17 22:10
 priority: high
 tags:
 - idc03
@@ -246,6 +246,13 @@ comms:
 - at: 2026-11-17 21:43
   from: chaba
   text: 'tony-omen retry backoff: fail 1/3 — next claim not before 11-17 22:13'
+- at: 2026-11-17 22:10
+  from: devin
+  text: 'RESOLVED — fix landed+deployed despite dispatch exit=1: commit af69a924e6 adds PAID_GEMINI_DAILY_CAP=2000
+    + HOURLY_CAP=150 to gemini-ollama-proxy.mjs; env set in mddb-gemini.env; service restarted 20:48. Verified live:
+    paid_calls_today=304 (was ~33.5k/day), cap-hit now hard-fails embeds by design (mddb marks failed, retryable)
+    instead of draining spend. Caller analysis in jobs/2026-11-17-gemini-ollama-proxy-paid-cap.yml: legitimate mddb+mddb-cms
+    embed traffic (~150-170 calls per page republish),'
 action:
   type: dispatch
   status: failed
