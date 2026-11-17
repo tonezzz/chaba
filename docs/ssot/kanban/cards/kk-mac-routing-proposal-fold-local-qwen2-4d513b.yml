@@ -359,6 +359,10 @@ comms:
   text: 'merge-sweep: dispatch/20261113-202232-card-judgment-eval-done-2026-1 conflicts with origin/master: docs/ssot/infrastructure/ssot.llm-gateway.yml,
     docs/ssot/ssot.dev-system.assessment.yml, scripts/board/lane-savings.py, scripts/devnest/kk_mac_llm.py, stacks/idc03/litellm/config.yaml
     — merge aborted, card stays for human resolution'
+- at: 2026-11-17 23:25
+  from: chaba
+  text: 'raised request merge-conflict-14: merge-sweep can''t land dispatch/20261113-202232-card-judgment-eval-done-2026-1:
+    4 commit(s) conflict with origin/master '
 action:
   type: dispatch
   repo: chaba
@@ -571,6 +575,19 @@ requests:
   - hold the card
   suggested: let devin resolve the conflict and land it ★
   answer: let devin resolve the conflict and land it ★
+- id: merge-conflict-14
+  ask: 'merge-sweep can''t land dispatch/20261113-202232-card-judgment-eval-done-2026-1: 4 commit(s) conflict with
+    origin/master in chaba — conflicted paths: docs/ssot/infrastructure/ssot.llm-gateway.yml, docs/ssot/ssot.dev-system.assessment.yml,
+    scripts/board/lane-savings.py, scripts/devnest/kk_mac_llm.py, stacks/idc03/litellm/config.yaml. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261113-202232-card-judgment-eval-done-2026-1
+    by hand, or retry/abandon the card.'
+  status: open
+  at: 2026-11-17 23:25
+  from: chaba
+  options:
+  - let devin resolve the conflict and land it ★
+  - drop this dispatch — re-dispatch fresh from current main
+  - hold the card
+  suggested: let devin resolve the conflict and land it ★
 review_kind: verify
 claim: {}
 awaiting_action: true
