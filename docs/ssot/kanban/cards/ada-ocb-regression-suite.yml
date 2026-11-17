@@ -1,7 +1,7 @@
 id: ada-ocb-regression-suite
 title: 'ada-ocb regression suite: per-feature tests + live smoke + calls.jsonl benchmark'
 column: doing
-updated: 2026-11-17 22:11
+updated: 2026-11-17 22:21
 brief: Lock in this week's ada-ocb improvements (context_pack, ssot_get, windowed excerpts, MDDB lessons, vector-search,
   board snapshots, string-row guards) with regression coverage so they can't silently rot.
 priority: high
@@ -64,10 +64,16 @@ comms:
   text: 'in progress: card had no action.repo so dispatch opened a chaba worktree; doing the ada-voice work in a
     local clone branched at ff2d6a1 (deployed ada-ocb tip — the feature line is unmerged/dangling, noted for follow-up).
     Writing 3 test files + ocb-smoke + ocb-bench + timer units.'
+- at: 2026-11-17 22:21
+  from: tony-omen
+  text: 'finished (failed): exit=1 0261117-220450-three-layers-in-ada-voice-1-un.service: Failed with result ''exit-code''.
+    | devin-task-20261117-2204'
 action:
   type: dispatch
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-omen
+  result: 'exit=1 0261117-220450-three-layers-in-ada-voice-1-un.service: Failed with result ''exit-code''. | devin-task-20261117-220450-three-layers-in-ada-voice-1-un.service:
+    Consumed 5min 51.935s CPU time over 15min 39.071s wall clock time, 2.4G memory peak.'
