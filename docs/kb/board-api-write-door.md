@@ -25,6 +25,7 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 |---|---|---|
 | `/card` | `{id?, title, column?, spec?, report?, action?, queue?, ...}` | new card YAML + commit |
 | `/comment` | `{id, from, text}` | card comms append |
+| **`/attach`** | `{id, filename, payload|b64|data, from?}` (alias `/upload`) | file/photo evidence → `docs/ssot/kanban/attachments/<id>/<file>` + comms link |
 | `/request` | `{id, ask, options?, suggested?, to?}` | card `requests[]` |
 | `/respond` | `{id, request_id?, answer|option}` | answer a request/ask |
 | `/action` | `{id, do: queue|close|hold|retry|claim|move|finish}` | card state |
@@ -38,6 +39,25 @@ pull the 5 MB `/cards` dump for one fact; `/card/<id>` and
 
 ## Endpoint notes
 
+- **`/attach`** — card file/photo evidence
+  (`board-attachments-photo-image-evidence`, 2026-11-17). `payload` is
+  base64 (a `data:` URI prefix is stripped); `filename` is sanitized to
+  `[A-Za-z0-9._-]` and must end in an image/pdf/video/text/archive
+  extension — anything servable as an executable content-type
+  (html/svg/js) is refused. The file lands at
+  `docs/ssot/kanban/attachments/<card-id>/<name>` — inside the repo, so
+  it commits and propagates like card YAML (same flock, one commit with
+  the card) — and a comms entry links it:
+  `attachment: <repo-path> — <name> (N B)`. Collisions suffix `-2`/`-3`
+  unless the bytes are identical (idempotent re-post). Cap
+  `BOARD_API_ATTACH_MAX_BYTES` (12 MiB decoded). The board UI can't see
+  that tree — `/srv/public` is all the web container mounts — so every
+  `render-board2.py` run mirrors it into
+  `stacks/web/public/apps/board2/attachments/` (gitignored), where
+  Caddy's file_server exposes `attachments/<id>/<file>`; board2 renders
+  a 📎 count badge on the tile, an Attachments thumbnail strip in the
+  card modal, and inline thumbs under any comms entry that carries a
+  repo path.
 - **`/job`** — `status` ∈ `queued|claimed|running|done|failed|stalled|
   cancelled`; `comms`/`note` appends `{at,from,text}` to a JSON log in
   `meta.comms` (cap 200); `parent` accepts a post id or a sibling job slug

@@ -10,6 +10,7 @@ real repo writes (BOARD_API_COMMIT=0 + tmp INBOX_DIR).
 
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import importlib.util
 import json
@@ -59,7 +60,8 @@ class DoorTestBase(unittest.TestCase):
         m = self.mod
         self._saved = {k: getattr(m, k) for k in
                        ("wp_api", "_gemini_thai", "_mddb_post", "_crn",
-                        "INBOX_DIR", "_th_cache", "_TH_CACHE_PATH")}
+                        "INBOX_DIR", "_th_cache", "_TH_CACHE_PATH",
+                        "ATTACH_DIR")}
         self.tmp = Path(tempfile.mkdtemp())
         m.INBOX_DIR = self.tmp / "focus-inbox"
         m.INBOX_DIR.mkdir()
@@ -311,6 +313,79 @@ class InboxDoorTest(DoorTestBase):
                      "priority must be")
         self.rejects(lambda: d({"text": "x", "tags": "ops"}, "ada"),
                      "tags must be a list")
+
+
+class AttachDoorTest(DoorTestBase):
+    """POST /attach (board-attachments-photo-image-evidence): file lands
+    under ATTACH_DIR/<card-id>/, comms carries the canonical repo path,
+    name collisions suffix -2, identical re-posts stay idempotent."""
+
+    def setUp(self):
+        super().setUp()
+        self.mod.ATTACH_DIR = self.tmp / "attachments"
+        self.card = {"id": "find-ups-replacement-batteries", "comms": []}
+        self.png = base64.b64encode(b"\x89PNG\r\n\x1a\nfakedata").decode()
+
+    def attach(self, **kw):
+        body = {"filename": "ups-battery.png", "payload": self.png, **kw}
+        return self.mod.do_attach(self.card, body, "tony")
+
+    def test_validation(self):
+        d = self.mod.do_attach
+        self.rejects(lambda: d(self.card, {}, "tony"), "filename required")
+        self.rejects(lambda: d(self.card, {"filename": "x.png"}, "tony"),
+                     "payload")
+        self.rejects(
+            lambda: d(self.card,
+                      {"filename": "x.png", "payload": "!!b64!!"}, "tony"),
+            "base64")
+        self.rejects(
+            lambda: d(self.card,
+                      {"filename": "evil.html", "payload": self.png}, "tony"),
+            "must end with")
+        self.rejects(
+            lambda: d(self.card,
+                      {"filename": "evil.svg", "payload": self.png}, "tony"),
+            "must end with")
+        self.rejects(
+            lambda: d(self.card,
+                      {"filename": "nope", "payload": self.png}, "tony"),
+            "must end with")
+
+    def test_stores_file_and_links_comms(self):
+        msg, files, rel = self.attach()
+        dest = self.mod.ATTACH_DIR / self.card["id"] / "ups-battery.png"
+        self.assertEqual(files, [dest])
+        self.assertTrue(dest.exists())
+        self.assertEqual(
+            rel, "docs/ssot/kanban/attachments/"
+                 "find-ups-replacement-batteries/ups-battery.png")
+        self.assertIn("attached ups-battery.png", msg)
+        self.assertTrue(any(
+            f"attachment: {rel}" in m["text"] and m["from"] == "tony"
+            for m in self.card["comms"]))
+
+    def test_filename_sanitized_and_traversal_killed(self):
+        _, files, rel = self.attach(filename="../a b/UPS (1).JPG")
+        self.assertEqual(files[0].parent.name, self.card["id"])
+        self.assertNotIn("..", files[0].name)
+        self.assertNotIn(" ", files[0].name)
+        self.assertTrue(files[0].name.endswith(".JPG"))
+
+    def test_data_uri_prefix_stripped(self):
+        _, files, _ = self.attach(
+            payload="data:image/png;base64," + self.png)
+        self.assertEqual(files[0].read_bytes(),
+                         base64.b64decode(self.png))
+
+    def test_collision_suffix_and_idempotent_repost(self):
+        _, f1, _ = self.attach()
+        _, f2, _ = self.attach(payload=base64.b64encode(b"other").decode())
+        self.assertEqual(f2[0].name, "ups-battery-2.png")
+        _, f3, _ = self.attach()   # same name + same bytes -> idempotent
+        self.assertEqual(f3[0], f1[0])
+        self.assertEqual(
+            len(list(self.mod.ATTACH_DIR.rglob("*.png"))), 2)
 
 
 class ReportDoorTest(DoorTestBase):
