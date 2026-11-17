@@ -849,6 +849,63 @@
           ]
         }
       ]
+    },
+    {
+      "title": "Services",
+      "path": "services",
+      "icon": "mdi:room-service",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "entities",
+          "title": "kk-mac",
+          "card_mod": {
+            "style": "\n    ha-entity {\n      --paper-item-icon-prefix-width: 30px;\n    }\n    state-icon {\n      margin-inline-end: 2px;\n    }\n"
+          },
+          "entities": [
+            {
+              "type": "section",
+              "label": "Vitals"
+            },
+            {
+              "entity": "binary_sensor.kk_mac_online",
+              "name": "online"
+            },
+            {
+              "entity": "sensor.kk_mac_uptime",
+              "name": "uptime"
+            },
+            {
+              "type": "section",
+              "label": "Chaba"
+            },
+            {
+              "entity": "binary_sensor.kk_mac_svc_device_telemetry",
+              "name": "device-telemetry"
+            },
+            {
+              "entity": "sensor.kk_mac_top_proc",
+              "name": "watching"
+            },
+            {
+              "type": "section",
+              "label": "DevNest"
+            },
+            {
+              "entity": "binary_sensor.kk_mac_svc_nest_worker",
+              "name": "nest-worker"
+            },
+            {
+              "entity": "sensor.kk_mac_svc_nest_worker_pending",
+              "name": "pending"
+            },
+            {
+              "entity": "sensor.kk_mac_svc_nest_worker_job",
+              "name": "job"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

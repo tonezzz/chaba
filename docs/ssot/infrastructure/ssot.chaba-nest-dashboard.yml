@@ -62,6 +62,18 @@ dashboard:
       aspect_ratio: 50%
       title: Tony HA — Hosts
       hide_background: false
+  - type: panel
+    title: Services
+    path: services
+    icon: mdi:room-service
+    show_icon_and_title: false
+    layout: {}
+    cards:
+    - type: iframe
+      url: https://tony-ha.surf-thailand.com/chaba-admin/services?kiosk
+      aspect_ratio: 50%
+      title: Tony HA — Services
+      hide_background: false
 topics:
 - name: Nest
   path: nest
@@ -134,8 +146,10 @@ topics:
   reports: tab=flood
 status:
   health: active — generated + pushed 2026-10-09, verified via playlive
-  last_updated: '2026-11-13'
+  last_updated: '2026-11-17'
   note: >-
     2026-11-13: extra_views added (or-panel, hosts, board) — live dashboard
     mutated over websocket on ada-ha; or-panel api route restored on the
     idc02 edge + web origin (see ssot.routes.yml or-panel-api).
+    2026-11-17: board view removed (duplicated chaba-admin kanban); services
+    view added after hosts (iframes tony-ha chaba-admin/services).
