@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: backlog
-updated: 2026-11-17 21:09
+updated: 2026-11-17 23:31
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -104,6 +104,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:31
+  from: chaba
+  text: classified as codemod (kw:config conf 1.00)
+- at: 2026-11-17 23:31
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
@@ -118,3 +124,9 @@ requests:
   suggested: Use Iceman Free for this project (recommended; verify it is free/available)
   answer: Use Iceman Free for this project (recommended; verify it is free/available)
 awaiting_action: true
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: codemod
+  lane_source: kw
