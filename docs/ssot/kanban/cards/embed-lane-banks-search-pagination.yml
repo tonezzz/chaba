@@ -1,7 +1,7 @@
 id: embed-lane-banks-search-pagination
 title: embed-lane banks sync misses docs past the 1000-doc /v1/search page cap
 column: backlog
-updated: 2026-11-17 18:43
+updated: 2026-11-17 18:45
 priority: medium
 tags:
 - mddb
@@ -38,3 +38,10 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:45
+  from: devin
+  text: 'Dispatch scope: fix scripts/embed/embed-lane.py::_docs to paginate /v1/search with offset until a short
+    page (server caps at 1000/page; see scripts/devnest/mddb_probe.py for the pattern), add/adjust a unit test covering
+    the multi-page path, run the repo''s relevant tests. Do NOT run the production backfill (`embed-lane.py banks`
+    against :11028) — after merge the daily embed-lane-banks.timer picks it up, or ops runs it manually. Report
+    the pre/post key-count behavior in comms.'
