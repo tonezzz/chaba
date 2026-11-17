@@ -1,7 +1,7 @@
 id: ada-scenario-casting-service-failed-on-i-340465
 title: ada-scenario-casting.service failed on idc03 (weekly casting benchmark)
 column: doing
-updated: 2026-11-17 23:37
+updated: 2026-11-17 23:38
 ref: ADA-0507
 comms:
 - at: 2026-10-12 15:43
@@ -94,6 +94,10 @@ comms:
 - at: 2026-11-17 23:37
   from: chaba
   text: started devin-task-20261117-233737-ada-scenario-casting-service-f on tony-macbook (dispatch)
+- at: 2026-11-17 23:38
+  from: tony-macbook
+  text: 'finished (failed): exit=1 in-task-20261117-233737-ada-scenario-casting-service-f.service: Failed with result
+    ''exit-code''. | devin-task-2026'
 requests:
 - id: the-weekly-ada-scenario-castin-b86681
   ask: The weekly ada-scenario-casting.service on idc03 failed due to a scenario lock (:8199) held over 30 minutes
@@ -115,8 +119,11 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
+  result: 'exit=1 in-task-20261117-233737-ada-scenario-casting-service-f.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233737-ada-scenario-casting-service-f.service: Consumed 12.360s CPU time over 11.403s
+    wall clock time, 202.4M memory peak.'
