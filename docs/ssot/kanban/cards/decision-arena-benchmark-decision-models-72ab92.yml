@@ -1,7 +1,7 @@
 id: decision-arena-benchmark-decision-models-72ab92
 title: 'decision-arena: benchmark decision models vs our real cases'
 column: doing
-updated: 2026-11-17 09:31
+updated: 2026-11-17 09:37
 brief: 'Benchmark Jev alternatives (jevos, Laya, AgentJev, our jev-student; real Jev API when keyed) on OUR decision
   corpus: jev-bench confirm-gate + tool-routing, doc-pilot pipeline-compat edges, stagnation cases. Same /v1/systemone
   wire format, identical state+questions per backend. Metrics: accuracy per type, ECE, latency, cost.'
@@ -104,9 +104,12 @@ comms:
 - at: 2026-11-17 09:31
   from: chaba
   text: 'idc03 defers: host overloaded (5m load/core 1.49 > 0.85)'
+- at: 2026-11-17 09:37
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   model: litellm/gemini-2.5-flash
   sweep:
@@ -115,3 +118,4 @@ action:
     Main process exited, code=exited, status=1/FAILURE | devin-task-20261107-190852-corpus-18-jev-bench-cases-4-pi.service:
     Failed with result ''exit-code''.'
   attempts: 1
+  runner: tony-omen
