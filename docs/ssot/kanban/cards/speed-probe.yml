@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
-column: backlog
-updated: 2026-11-17 23:35
+column: doing
+updated: 2026-11-17 23:38
 brief: probe
 ref: OPS-0812
 comms:
@@ -89,6 +89,9 @@ comms:
 - at: 2026-11-17 23:35
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-17 23:38
+  from: tony-omen
+  text: claimed
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -121,11 +124,11 @@ requests:
   suggested: repo-ssot-readonly
   answer: 'repo-ssot-readonly — Recommended: time git status/log plus SSOT validate and refs on the tony-dell chaba
     checkout; report raw timings only, no writes.'
-awaiting_action: true
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
+  runner: tony-omen
