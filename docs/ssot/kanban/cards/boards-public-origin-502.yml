@@ -1,7 +1,7 @@
 id: boards-public-origin-502
 title: Repair boards.surf-thailand.com origin 502
 column: done
-updated: 2026-11-17 18:35
+updated: 2026-11-17 18:36
 brief: Public boards.surf-thailand.com is returning Cloudflare 502; origin boards.h3.gizmo-thailand.com also returns
   nginx 502. Diagnose the external Plesk/WP upstream and restore the public boards surface.
 priority: high
@@ -143,6 +143,10 @@ comms:
 - at: 2026-11-17 18:35
   from: chaba
   text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:36
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
