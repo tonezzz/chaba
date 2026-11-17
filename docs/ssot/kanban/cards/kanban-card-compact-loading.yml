@@ -1,7 +1,7 @@
 id: kanban-card-compact-loading
 title: Compact Kanban comms and accelerate dispatch scans
 column: doing
-updated: 2026-11-17 19:00
+updated: 2026-11-17 19:13
 brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
 priority: medium
 tags:
@@ -62,3 +62,9 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 19:13
+  from: devin
+  text: 'Transplanted to fresh origin/master worktree. Commits: d388fc6a2f0 (scan cache), 176eb2119a5 (dynamic CARD_DIR/INDEX_FILE
+    defaults). After fixing a test-isolation bug, pytest -q tests/board passed: 597 tests, 8 subtests. Initial full-suite
+    attempt modified six local card YAML files because a captured CARD_DIR bypassed test fixtures; verified canonical
+    API state was unaffected. Left local artifacts untouched. No push/PR.'
