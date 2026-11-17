@@ -1,0 +1,20 @@
+id: kanban-card-compact-loading
+title: Compact Kanban comms and accelerate dispatch scans
+column: doing
+updated: 2026-11-17 17:39
+brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
+priority: medium
+tags:
+- kanban
+- dispatch
+- card-size
+spec: Keep the full card comms history recoverable. Normalize volatile load/capacity values when debouncing repeated
+  host-deferral notes. Add a rebuildable per-card signature index so kanban-dispatch only parses unchanged queued,
+  starting, and running cards in full. Rebuild safely when missing or corrupt; canonical YAML remains the source
+  of truth. Add tests for cache invalidation and deferral deduplication. Do not migrate historical comms to sidecars
+  or truncate them in this task.
+ref: KNB-0161
+comms:
+- at: 2026-11-17 17:39
+  from: tony
+  text: card captured via board-api
