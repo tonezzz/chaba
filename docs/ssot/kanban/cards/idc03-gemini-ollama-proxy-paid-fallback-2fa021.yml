@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: doing
-updated: 2026-11-17 19:40
+updated: 2026-11-17 20:37
 priority: high
 tags:
 - idc03
@@ -127,13 +127,16 @@ comms:
   text: 'merge-sweep: devin-task-20261117-192654-observed-2026-11-16-20-54-ict- failed — its branch isn''t auto-merged
     (unverified partial work). Retry the card or merge dispatch/20261117-192654-observed-2026-11-16-20-54-ict- by
     hand.'
+- at: 2026-11-17 20:37
+  from: devin
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
-  runner: tony-dell
-  result: 'exit=1 sk-20261117-192654-observed-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''. |
-    devin-task-20261117-192654-observed-2026-11-16-20-54-ict-.service: Consumed 20.136s CPU time over 2min 37.939s
-    wall clock time, 593.8M memory peak.'
   sweep:
     failed_noted: 2026-11-17 19:40
+  last_failure: 'exit=1 sk-20261117-192654-observed-2026-11-16-20-54-ict-.service: Failed with result ''exit-code''.
+    | devin-task-20261117-192654-observed-2026-11-16-20-54-ict-.service: Consumed 20.136s CPU time over 2min 37.939s
+    wall clock time, 593.8M memory peak.'
+  attempts: 1
