@@ -1,7 +1,7 @@
 id: ada-real-card-sweep-scenario-20261108
 title: Ada bounded real-card sweep scenario
 column: review
-updated: 2026-11-17 21:13
+updated: 2026-11-17 21:15
 priority: high
 tags:
 - ada
@@ -314,6 +314,10 @@ comms:
 - at: 2026-11-17 21:13
   from: chaba
   text: started devin-task-20261117-211341-run-ada-live-kanban-authority- on tony-omen (dispatch)
+- at: 2026-11-17 21:15
+  from: tony-omen
+  text: 'finished (failed): exit=1 evin-task-20261117-211341-run-ada-live-kanban-authority-.service: Failed with
+    result ''exit-code''. | devin-task-20'
 requests:
 - id: which-1-3-real-card-ids-may-ada-verify-a-fe2a79
   ask: Which 1-3 real card IDs may Ada verify and finish in the live sweep, and should I run the live ada-dev scenario
@@ -332,7 +336,7 @@ requests:
   answer: safe-review — Select at most 3 review_kind:triage/verify cards after evidence review
 action:
   type: dispatch
-  status: running
+  status: failed
   last_failure: 'no delivered work — head is an old base commit — nothing committed; unit: exit_code=1'
   attempts: 3
   lane: devin
@@ -341,5 +345,8 @@ action:
     stale_running: 2026-11-17 20:39
     zero_commit: 2026-11-17 20:39
   runner: tony-omen
+  result: 'exit=1 evin-task-20261117-211341-run-ada-live-kanban-authority-.service: Failed with result ''exit-code''.
+    | devin-task-20261117-211341-run-ada-live-kanban-authority-.service: Consumed 1.178s CPU time over 53.531s wall
+    clock time, 87.4M memory peak.'
 claim: {}
 review_kind: verify
