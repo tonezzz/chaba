@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
 column: backlog
-updated: 2026-11-17 18:37
+updated: 2026-11-17 18:51
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -26,7 +26,8 @@ action:
   - cpu
   target_host: idc02
   artifact: docs/reports/dispatcher-systemd-migration-2026-10-30-selective-install.md
-  status: idle
+  status: queued
+  lane: devin
 ref: OPS-0992
 comms:
 - at: 2026-10-30 01:26
@@ -86,3 +87,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:51
+  from: chaba
+  text: classified as devin (kw conf 1.00)
+- at: 2026-11-17 18:51
+  from: devin
+  text: queued for processing
