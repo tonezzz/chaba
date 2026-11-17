@@ -1,7 +1,7 @@
 id: kanban-card-compact-loading
 title: Compact Kanban comms and accelerate dispatch scans
 column: doing
-updated: 2026-11-17 18:47
+updated: 2026-11-17 18:53
 brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
 priority: medium
 tags:
@@ -51,3 +51,10 @@ comms:
     and KANBAN_PRIMER_GOOD=0. Queue-starvation emitted 5 passing tests but its process did not exit. Worktree is
     2339 commits behind origin/master and has unrelated card-file changes; I preserved them and will not commit/PR
     from this checkout.'
+- at: 2026-11-17 18:53
+  from: devin
+  text: 'Retargeted on current origin/master: defer metric normalization already exists upstream (OPS-1314), so
+    this branch now contains only the dispatch scan cache. Fresh worktree branch feat/kanban-card-scan-cache; 3
+    cache tests and 3 rails tests pass (primers disabled), plus py_compile/diff-check. Queue-starvation reports
+    5 passing tests but the process stays open. Local scan: 14.583s cold / 0.126s warm; 7 active cards full-loaded.
+    Unrelated card YAML edits appeared in the worktree; preserved, no com'
