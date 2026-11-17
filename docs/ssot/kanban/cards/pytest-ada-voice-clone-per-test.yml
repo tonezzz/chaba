@@ -1,0 +1,17 @@
+id: pytest-ada-voice-clone-per-test
+title: tests/ada patch-gate tests clone ada-voice ~65MB each — share one clone per session
+column: backlog
+updated: 2026-11-17 21:20
+priority: low
+spec: '~10 tests/ada/test_*.py patch-gate tests each run git clone --depth 1 of the ada-voice checkout into tmp_path
+  (~65MB incl .git packs + 23MB wasm vendor) = ~680MB per suite run on tmpfs /tmp. tmpfiles.d 2d aging (installed
+  2026-11-17) bounds retention but churn continues. Fix candidates: session-scoped clone fixture in tests/ada/conftest.py
+  + per-test copy-on-write or git worktree; or sparse-checkout excluding pwa/vendor. Careful: apply_patch mutates
+  the tree — shared clone needs per-test isolation.'
+note: Found during OPS-0128 /tmp quota investigation. Aging rule /etc/tmpfiles.d/pytest.conf already installed on
+  tony-omen — this card is the deeper fix.
+ref: ADA-0171
+comms:
+- at: 2026-11-17 21:20
+  from: devin
+  text: card captured via board-api
