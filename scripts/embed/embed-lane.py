@@ -74,6 +74,7 @@ SPACE = "nomic-embed-text"        # the vector space tag stored per line
 DOC_PREFIX = "search_document: "
 QRY_PREFIX = "search_query: "
 CHUNK = 1500                      # mddb chunk size — same granularity
+PAGE = 1000                       # /v1/search server page cap
 TAG_RE = re.compile(r"<[^>]+>")
 
 # Vector-searched tony collections (embed-space-eval BANK_COLLS) — the
@@ -369,11 +370,28 @@ def cmd_news(args, url, key):
 
 # ----------------------------------------------------------------- banks
 def _docs(base, coll, include_content):
-    d = _post(f"{base}/v1/search",
-              {"collection": coll, "limit": 10000,
-               "include_content": include_content}, timeout=120)
-    return d if isinstance(d, list) else (
-        d.get("results") or d.get("documents") or [])
+    """All docs in a collection. /v1/search caps a page at PAGE docs
+    regardless of the requested limit, so a single big-limit call
+    silently truncates larger collections (card
+    embed-lane-banks-search-pagination). Page by offset until a short
+    page — same loop shape as mddb_probe.cmd_expired."""
+    out, offset, seen = [], 0, set()
+    while True:
+        d = _post(f"{base}/v1/search",
+                  {"collection": coll, "limit": PAGE, "offset": offset,
+                   "include_content": include_content}, timeout=120)
+        page = d if isinstance(d, list) else (
+            d.get("results") or d.get("documents") or [])
+        fresh = [x for x in page if x.get("key") not in seen]
+        if page and not fresh:
+            break               # offset ignored — same page again
+        seen.update(x.get("key") for x in page)
+        out.extend(page)
+        offset += len(page)
+        if len(page) < PAGE:
+            break
+        time.sleep(0.05)
+    return out
 
 
 def _queue_depth():

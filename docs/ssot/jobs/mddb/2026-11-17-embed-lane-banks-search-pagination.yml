@@ -1,0 +1,77 @@
+title: embed-lane banks — /v1/search pagination fix + coverage backfill
+subtitle: _docs was reading only the first 1000-key page, so the daily
+  bank sync silently under-covered every collection >1000 docs
+icon: layers
+version: 1
+
+card: embed-lane-banks-search-pagination
+ref: MEM-0152
+date: 2026-11-17
+dispatch: 20261117-184837-scripts-embed-embed-lane-py-do (idc02)
+
+bug: |
+  scripts/embed/embed-lane.py::_docs POSTed /v1/search once with
+  limit=10000 and no offset. The mddb server caps a page at 1000 docs,
+  so collections larger than 1000 were compared against a truncated
+  key set on BOTH sides (target `have` and source listing). The daily
+  embed-lane-banks.service then reported success while the real gaps
+  grew: verified 2026-11-17, ada-ha-bank-devin-handoff -1432,
+  infrastructure-ssot -1132, ada-cms-pages -22, smaller in
+  kb-operations/devin-tony/documents.
+
+fix: |
+  _docs now pages by offset in PAGE=1000 steps until a short page —
+  same loop shape as scripts/devnest/mddb_probe.py:cmd_expired.
+  Guard: a full-size page whose keys were all already seen breaks the
+  loop (offset-ignored server would otherwise spin). Behavior
+  verified live: limit=10000 returns exactly 1000; offset=PAGE
+  returns the next slice.
+
+backfill: |
+  Ran `embed-lane.py banks` twice from the dispatch worktree on
+  idc02 (the unit's normal host):
+    pass 1 — 3115 docs delivered, 0 failed
+             (devin-handoff 1939, infrastructure-ssot 1132,
+             ada-cms-pages 25, devin-tony 19, others 0)
+    pass 2 — 198 docs delivered, 0 failed
+             (devin-handoff is live-written; +197 arrived during
+             pass 1, +1 cms-pages)
+  Queue throttle worked: paused /add at depth>=3000, resumed on
+  drain. Embed queue dropped=0 throughout.
+
+verify: |
+  Key-set diff source->mddb-embed over docs WITH contentMd is now 0
+  for all 24 BANK_COLLS (script: fetch both sides with paginated
+  _docs, diff keys, split by contentMd presence).
+  Caveat for future audits: 142 source docs across the surface have
+  NO contentMd on the leader/cms bank (largest: chaba-docs 15,
+  chaba-archive 12, ada-ha-bank-github 15, devin-kb 9) — they are
+  uncopyable by design (nothing to embed) and will always show as a
+  raw key-set diff. Compare against content-bearing docs only, or
+  they get re-flagged as missing.
+
+notes: |
+  * The embed pool upstream (idc03 :11436 -> ollama bge-m3) returned
+    504 "no upstream answered in time" bursts under the backfill
+    load; mddb-embed's circuit breaker backs off and requeues
+    (maxAttempts=50), so nothing is lost — drain just slows to
+    ~1 job/min while upstream is saturated. Queue depth ~1300 at
+    end of session, draining async, dropped=0.
+  * ada-ha-bank-personal-tony target has MORE keys than source
+    (197 vs 192) — source deletes do not propagate; the lane is
+    additive-only, by design.
+  * Daily service now compares full key sets, so per-day deltas
+    stay small and the upstream-504 window stays short.
+
+files:
+  - scripts/embed/embed-lane.py — _docs paginated (PAGE const added)
+  - scripts/devnest/mddb_probe.py — the pagination pattern source
+  - docs/ssot/jobs/mddb/2026-10-27-embedding-backfill-lane.yml — lane doc
+
+verify_cmds: |
+  python3 scripts/embed/embed-lane.py banks --dry-run   # todo should be ~0
+  python3 - <<'PY'
+  # per-coll key-set diff over content-bearing docs (see card)
+  PY
+  curl -s -X POST http://100.123.163.11:11028/v1/vector-stats -d '{}' \
+    | python3 -m json.tool    # queue depth + dropped
