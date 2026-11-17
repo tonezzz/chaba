@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
 column: backlog
-updated: 2026-11-17 21:13
+updated: 2026-11-17 23:33
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -69,6 +69,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:33
+  from: chaba
+  text: classified as codemod (kw:cap conf 1.00)
+- at: 2026-11-17 23:33
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
@@ -84,3 +90,9 @@ requests:
   suggested: close-on-restore
   answer: close-on-restore — auto-close when restored event lands
 awaiting_action: true
+action:
+  type: dispatch
+  repo: chaba
+  status: queued
+  lane: codemod
+  lane_source: kw
