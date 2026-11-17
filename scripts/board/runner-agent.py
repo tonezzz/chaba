@@ -200,6 +200,17 @@ def _host_key() -> str:
     rather than the import-time HOST_KEY constant so tests and
     RUNNER_HOST overrides stay consistent."""
     return _canon_host(HOST)
+
+
+def _act(card: dict) -> dict:
+    """card['action'] normalized to a dict. Marker cards carry a scalar
+    (e.g. action: 'spec-review'); normalize in place so read AND
+    mutation paths share the same object."""
+    a = card.get("action")
+    if not isinstance(a, dict):
+        a = {}
+        card["action"] = a
+    return a
 CAP = int(os.environ.get("RUNNER_CAP", "2"))
 MAX_LOAD_PC = float(os.environ.get("RUNNER_MAX_LOAD_PC", "1.0"))
 # OPS-1182: script-type claims are near-free (a 2s probe) and should not
@@ -295,7 +306,7 @@ JULES_AUTO_MERGE = os.environ.get("JULES_AUTO_MERGE", "0") == "1"
 def card_profile(card: dict) -> str:
     """Declared OpenCode profile: action.agent_profile (contract name)
     wins; action.profile is the pre-contract alias."""
-    a = card.get("action") or {}
+    a = _act(card)
     return str(a.get("agent_profile") or a.get("profile") or "").strip()
 
 
@@ -422,7 +433,7 @@ WAITING_KILL = "/tmp/no-kanban-dispatch"
 
 
 def _card_rec(card: dict) -> str:
-    a = card.get("action") or {}
+    a = _act(card)
     return str(card.get("recoverability")
                or a.get("recoverability") or "").strip().upper()
 
@@ -430,7 +441,7 @@ def _card_rec(card: dict) -> str:
 def _waiting_hold_reason(card: dict) -> str:
     """Strict-mode eligibility mirror of waiting_cards.evaluate —
     returns the first unmet requirement or ''."""
-    a = card.get("action") or {}
+    a = _act(card)
     if str(a.get("type") or "dispatch") not in ("dispatch", "script",
                                               "container"):
         return f"action.type={a.get('type')!r} has no executor"
@@ -527,7 +538,7 @@ def push_capable(repo: str) -> bool:
 def push_guard_reason(card: dict) -> str:
     """Why this host declines an otherwise-claimable dispatch card —
     "" when N/A (not dispatch, not claimable anyway, or push works)."""
-    a = card.get("action") or {}
+    a = _act(card)
     if (a.get("type") or "dispatch") != "dispatch" \
             or a.get("status") != "queued" \
             or (a.get("runner") and _canon_host(a["runner"]) != _host_key()) \
@@ -1173,7 +1184,7 @@ def close_out_merge(cid: str, ent: dict, card: dict) -> tuple:
                           "to merge"]
     except Exception:
         pass
-    a = card.get("action") or {}
+    a = _act(card)
     pseudo = {"id": cid,
               "expected_goals": card.get("expected_goals"),
               "action": {"type": "dispatch", "task_id": tid,
@@ -1337,7 +1348,7 @@ def finish_opencode_lane(cid: str, ent: dict, card: dict) -> tuple:
                   "mutating": audit["mutating_commands"],
                   "verifier_peeks": audit["verifier_peeks"]})
     notes, verdict, landed = [], {"verdict": "skip", "checks": {}}, False
-    a = card.get("action") or {}
+    a = _act(card)
     art_path = str(a.get("artifact") or "").strip()
     wt = Path(str(meta.get("worktree") or ""))
     if art_path:
@@ -1546,7 +1557,7 @@ def _claimable(card: dict) -> tuple:
     """(task type, block reason) — typ ""/reason text when unclaimable.
     The gate order IS claimable(); the reason feeds /ready verdicts so
     the board can say *why* a card waits instead of silently starving."""
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("status") != "queued":
         return "", "not queued"
     stale = self_stale_reason()
@@ -1703,7 +1714,7 @@ def executor_defer_reason(card: dict) -> str:
     could claim — "" when N/A. The note goes to the board so the card
     visibly waits for an OpenCode-capable runner instead of silently
     starving (or worse, silently falling back to devin)."""
-    a = card.get("action") or {}
+    a = _act(card)
     ex = str(a.get("executor") or "").strip()
     if a.get("status") != "queued" \
             or (a.get("runner") and _canon_host(a["runner"]) != _host_key()) \
@@ -2013,7 +2024,7 @@ def _resume_hint(unit: str) -> str:
 def card_gpu_need_mb(card: dict) -> int:
     """VRAM the card wants free before claiming: action.gpu.min_free_mb
     (bare int accepted), action.min_vram_mb / gpu_min_free_mb / vram_mb."""
-    a = card.get("action") or {}
+    a = _act(card)
     g = a.get("gpu")
     need = 0
     if isinstance(g, dict):
@@ -2062,7 +2073,7 @@ def gpu_free_mb() -> tuple:
 def gpu_preflight(card: dict) -> str:
     """'' when a card may be claimed, else the defer/refuse reason —
     evaluated BEFORE the claim POST so a deferred card stays queued."""
-    labels = set((card.get("action") or {}).get("labels") or [])
+    labels = set((_act(card)).get("labels") or [])
     if "gpu" not in labels:
         return ""
     need = max(card_gpu_need_mb(card), GPU_MIN_FREE_MB)
@@ -2372,7 +2383,7 @@ def start_kk_mac_lane(card: dict, unit: str) -> tuple:
     returns (KK_MAC_FALLBACK, "", reason) so the caller continues the
     card on the next lane under the same claim — never a silent devin
     run and never a starved card."""
-    a = card.get("action") or {}
+    a = _act(card)
     kme = kk_mac_module()
     if kme is None:
         return "", "", ("kk_mac_executor.py missing in this checkout — "
@@ -2508,7 +2519,7 @@ def finish_kk_mac_lane(cid: str, ent: dict, card: dict) -> tuple:
     except Exception:
         result = {}
     art = str(verdict.get("artifact")
-              or (card.get("action") or {}).get("artifact") or "")
+              or (_act(card)).get("artifact") or "")
     wt = Path(str(meta.get("worktree") or ""))
     landed = bool(art) and (wt / art).is_file()
     if landed:
@@ -2569,7 +2580,7 @@ S3_STAGED_PROFILES = {"ops-readonly", "ssot-research", "storage-dryrun"}
 
 
 def prepare_profile_dispatch(card, tid, prof, model, ocp):
-    a = card.get("action") or {}
+    a = _act(card)
     raw = a.get("lane_envelope")
     if not isinstance(raw, dict):
         raise ValueError("lane_envelope must be a complete job object")
@@ -2619,7 +2630,7 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
     meta.update(executor="opencode:profile-run", lane_envelope=env, opencode_binary=oc_bin,
                 verifier_sha256=hashlib.sha256(verifier.read_bytes()).hexdigest())
     meta_path.write_text(json.dumps(meta, indent=1))
-    alias = str((card.get("action") or {}).get("llm_key_alias") or "ada").strip().upper()
+    alias = str((_act(card)).get("llm_key_alias") or "ada").strip().upper()
     if alias not in ("ADA", "CHABA", "BENCH", "KK", "MICHAEL", "CLINE"):
         return "", "", "unknown profile credential alias"
     key_expr = "${LITELLM_KEY_" + alias + ":-}"
@@ -2646,7 +2657,7 @@ def launch_profile_dispatch(card, env, taskdir, worktree, tid):
 
 
 def start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
-    if not isinstance((card.get("action") or {}).get("lane_envelope"), dict):
+    if not isinstance((_act(card)).get("lane_envelope"), dict):
         return "", "", "OpenCode admission requires a complete action.lane_envelope; unstaged dispatch is held"
     return _start_opencode_lane(card, lane, unit)
 
@@ -2676,7 +2687,7 @@ def _start_opencode_lane(card: dict, lane: str, unit: str) -> tuple:
     oc_bin = opencode_bin()
     if not oc_bin:
         return "", "", "opencode is not installed on this runner"
-    a = card.get("action") or {}
+    a = _act(card)
     prof_id = str(card_profile(card) or LANE_PROFILES.get(lane) or "")
     if not prof_id:
         return "", "", f"no task profile for lane {lane or '(none)'} — " \
@@ -2864,7 +2875,7 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     if not nlm_available():
         return "", "", ("nlm_batch lane needs ~/.local/bin/nlm + "
                         "~/.notebooklm profile")
-    a = card.get("action") or {}
+    a = _act(card)
     cid = card.get("id") or ""
     repo = str(a.get("repo") or "chaba")
     dr = dr_module()
@@ -2928,7 +2939,7 @@ def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
         return True, []
     if str(meta.get("executor") or "") != "nlm_batch":
         return True, []
-    out = str((card.get("action") or {}).get("artifact") or "result.md")
+    out = str((_act(card)).get("artifact") or "result.md")
     art = taskdir / out
     if art.is_file() and art.stat().st_size:
         head = art.read_text()[:400].replace("\n", " ")
@@ -2956,7 +2967,7 @@ def start_nlm_lane(card: dict, unit: str) -> tuple:
     if not nlm_available():
         return "", "", ("nlm_batch lane needs ~/.local/bin/nlm + "
                         "~/.notebooklm profile")
-    a = card.get("action") or {}
+    a = _act(card)
     cid = card.get("id") or ""
     repo = str(a.get("repo") or "chaba")
     dr = dr_module()
@@ -3020,7 +3031,7 @@ def finish_nlm_lane(cid: str, ent: dict, card: dict) -> tuple:
         return True, []
     if str(meta.get("executor") or "") != "nlm_batch":
         return True, []
-    out = str((card.get("action") or {}).get("artifact") or "result.md")
+    out = str((_act(card)).get("artifact") or "result.md")
     art = taskdir / out
     if art.is_file() and art.stat().st_size:
         head = art.read_text()[:400].replace("\n", " ")
@@ -3052,7 +3063,7 @@ def start_jules_lane(card: dict, unit: str) -> tuple:
     if not js or not jules_keyed():
         return "", "", ("jules lane needs scripts/jules/jules.py and a "
                         "filled ~/.config/secrets/jules.env")
-    a = card.get("action") or {}
+    a = _act(card)
     cid = card.get("id") or ""
     repo = str(a.get("repo") or "chaba")
     slug = jules_repo_slug(repo)
@@ -3242,7 +3253,7 @@ def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
 def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
-    a = card.get("action") or {}
+    a = _act(card)
     unit = re.sub(r"[^a-zA-Z0-9_-]", "-",
                   f"runner-{cid}-{int(time.time())}")[:60]
     if typ == "container":
@@ -3508,7 +3519,7 @@ def finish_pass(st: dict) -> bool:
                 # the bounded lane declined after starting — mark the
                 # executor consumed on the local copy and run the next
                 # lane now; the card never requeues for it.
-                (card.setdefault("action", {}))["kk_mac_tried"] = True
+                (_act(card))["kk_mac_tried"] = True
                 u2, t2, e2 = start_task(card, "dispatch")
                 if e2 or not u2:
                     notes.append(f"kk_mac_local fell back ({kk_fb}) but "
@@ -3628,7 +3639,7 @@ def reconcile_pass(st: dict) -> bool:
     cards = (api("/cards") or {}).get("cards") or []
     for c in cards:
         cid = c.get("id") or ""
-        a = c.get("action") or {}
+        a = _act(c)
         if not cid or cid in st:
             continue
         if a.get("status") != "running" or a.get("runner") != HOST:
@@ -3728,7 +3739,7 @@ def blocker_released(blocker: dict) -> bool:
     """blocked_by releases when the blocker finished AND its merge
     didn't fail verification (dependents need its code on origin).
     Manual blockers release on column=done (closed by a human)."""
-    ba = blocker.get("action") or {}
+    ba = _act(blocker)
     if blocker.get("column") == "done":
         return True
     return ba.get("status") == "done" and ba.get("verified") is not False
@@ -3792,7 +3803,7 @@ def _note_capacity_skip(cap: str, exempt: set | None = None) -> None:
     except Exception:
         return
     for card in cards:
-        a = card.get("action") or {}
+        a = _act(card)
         if a.get("status") != "queued":
             continue
         if exempt and str(a.get("type") or "dispatch") in exempt:
@@ -3899,7 +3910,7 @@ def claim_pass(st: dict) -> bool:
             note_gpu_defer(card, reason)
             continue  # stays queued — a later pass or spec fix picks it up
         claim_body = {"id": cid, "do": "claim", "host": HOST}
-        a0 = card.get("action") or {}
+        a0 = _act(card)
         ex_decl = str(a0.get("executor") or "").strip()
         if ex_decl:
             # The declared executor rides the atomic claim so the board
@@ -3914,7 +3925,7 @@ def claim_pass(st: dict) -> bool:
         # the routing decision — classification stays out of it.
         if typ == "dispatch" and not ex_decl \
                 and os.environ.get("JEV_LANE", "0") == "1":
-            a = card.setdefault("action", {})
+            a = _act(card)
             # An explicit action.lane (pinned in the card YAML, e.g. the
             # OPS-0885 pilot cards) wins over claim-time classification —
             # re-classifying here clobbered pinned free_lane cards into
@@ -3969,7 +3980,7 @@ def claim_pass(st: dict) -> bool:
         _notify(cid, "start", f"claimed {typ} — {unit}")
         st[cid] = {"unit": unit, "type": typ, "tid": tid,
                    "at": int(time.time()),
-                   "gpu": "gpu" in set((card.get("action") or {})
+                   "gpu": "gpu" in set((_act(card))
                                       .get("labels") or [])}
         changed = True
         print(f"{cid}: claimed + started {unit}")
@@ -3988,7 +3999,7 @@ def verdict_pass(st: dict) -> None:
         verdicts = {}
         for c in cards:
             cid = c.get("id")
-            if not cid or (c.get("action") or {}).get("status") != "queued":
+            if not cid or (_act(c)).get("status") != "queued":
                 continue
             typ, reason = _claimable(c)
             if not typ:
