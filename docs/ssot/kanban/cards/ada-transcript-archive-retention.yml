@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 17:36
+updated: 2026-11-17 18:07
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -148,6 +148,13 @@ comms:
     now stay local, and dev mapping is limited to ada-dev/ada-kk-dev. ada-pi-pwa is excluded pending request pi-pwa-lane-classification
     because SSOT says retired/ADA_INSTANCE_ID=tony while idc03 systemd reports active. The ~5d source-loss claim
     remains unverified against local-fil'
+- at: 2026-11-17 18:07
+  from: devin
+  text: 'PWA follow-up: idc03 still has ada-pi-pwa.service active/running on loopback 127.0.0.1:8001, while Tailscale
+    Serve has no :8001 route and its root serves :8002. SSOT says ada-pi-pwa is retired and ADA_INSTANCE_ID=tony.
+    Recommendation: keep it excluded from dev transcript retention; separately audit local Caddy/app consumers,
+    then stop+disable and update SSOT only if no consumers remain. No service change was made. Request pi-pwa-lane-classification
+    remains open (suggested: exclude). PR #182 synt'
 action:
   type: dispatch
   repo: chaba
