@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 09:31
+updated: 2026-11-17 10:26
 priority: medium
 program: ai-workforce
 tags:
@@ -508,6 +508,13 @@ comms:
   from: tony-omen
   text: 'finished (failed): journal=exit-code   "status": "FAILED_PRECONDITION" |   } | } | devin-task-ada-expert-consult-tool-1794881640.service:
     M'
+- at: 2026-11-17 10:26
+  from: devin
+  text: 'Inspection: retry did not start code; tony-omen got HTTP 400 FAILED_PRECONDITION on Jules POST /sessions
+    (OPS-0156). Existing PR #12 is open, CI test passes, but it is not merged/deployed. Review blockers: map raw
+    gemini-3.5-flash to the gateway alias (gemini_pool.generate does this; this tool bypasses it); enforce spend/time/token/context
+    bounds and secret filtering; log a question hash, not raw prefix; record usage/cost. Current tests mock transport;
+    no live/billable smoke run was made.'
 action:
   type: dispatch
   repo: ada-voice
