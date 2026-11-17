@@ -1,7 +1,7 @@
 id: live-voice-burn-context-replay
 title: 'Live voice burn: context replay dominates (~85% text-in); ada-dev = 63% of fleet in-tokens'
 column: backlog
-updated: 2026-11-17 21:14
+updated: 2026-11-17 23:31
 note: 'Findings from the 2026-10-14 overnight dig (usage.jsonl + journald, 24h):
 
 
@@ -61,6 +61,12 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 23:31
+  from: chaba
+  text: classified as devin (fallback conf 0.40)
+- at: 2026-11-17 23:31
+  from: tony
+  text: re-spawned from report page
 requests:
 - id: overnight-usage-analysis-shows-928d43
   ask: Overnight usage analysis shows live voice burn is heavily dominated by text-in context replay (~85%, with
@@ -75,3 +81,9 @@ requests:
   from: backlog-spec-enrich
   answer: ★ Use repo ada-voice on host tony-dell to implement prompt-caching and fix TEST-POLLUTION usage logging
 awaiting_action: true
+action:
+  type: dispatch
+  repo: ada-voice
+  status: queued
+  lane: devin
+  lane_source: fallback
