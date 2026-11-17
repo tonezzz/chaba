@@ -1,7 +1,7 @@
 id: opencode-closeout-probe-omen
 title: OpenCode closeout probe pinned to tony-omen
 column: backlog
-updated: 2026-11-17 18:47
+updated: 2026-11-17 18:52
 brief: Validate dispatch-compatible OpenCode worktree and auto-merge on low-load tony-omen.
 priority: low
 program: chaba-ci
@@ -15,7 +15,9 @@ spec: Append one marker line to README.md, run OpenCode free_lane with flash-lit
 action:
   type: dispatch
   host: tony-omen
-  status: idle
+  status: queued
+  lane: free_lane
+  model: litellm/gemini-3.5-flash-lite
 ref: OPS-0876
 comms:
 - at: 2026-10-25 20:17
@@ -96,3 +98,9 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:52
+  from: chaba
+  text: classified as free_lane (kw conf 1.00)
+- at: 2026-11-17 18:52
+  from: devin
+  text: queued for processing
