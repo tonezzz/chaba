@@ -1,7 +1,7 @@
 id: vcast-gesture-control-with-yolo-detectio-bd5d28
 title: Vcast gesture control with YOLO detection
 column: backlog
-updated: 2026-11-17 18:59
+updated: 2026-11-17 20:04
 priority: medium
 note: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
 ref: MED-1064
@@ -40,6 +40,13 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:04
+  from: tony
+  text: 'answered the-vcast-gesture-control-task-e92e2b: Postpone the vcast gesture control task until the host
+    allocation is explicitly clarified.'
+- at: 2026-11-17 20:04
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 requests:
 - id: the-vcast-gesture-control-task-e92e2b
   ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking to
@@ -49,6 +56,8 @@ requests:
   - ★ Deploy the YOLO gesture control spec to idc03 after redeploying the runner-agent script.
   - Deploy the YOLO gesture control spec to mn01 after redeploying the runner-agent script.
   - Postpone the vcast gesture control task until the host allocation is explicitly clarified.
-  status: open
+  status: answered
   at: 2026-11-17 07:21
   from: backlog-spec-enrich
+  answer: Postpone the vcast gesture control task until the host allocation is explicitly clarified.
+awaiting_action: true
