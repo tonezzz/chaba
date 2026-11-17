@@ -60,6 +60,88 @@ class QueueClassifyTest(unittest.TestCase):
         self.assertEqual(card["action"]["lane"], "manual")
         self.assertEqual(card["action"].get("status"), "idle")
         self.assertEqual(res, "classified as manual — queue skipped")
+        # audit comm names the matched keyword so false positives are
+        # diagnosable from the card alone
+        self.assertIn("kw:hardware", card["comms"][-1]["text"])
+        self.assertEqual(card["action"]["lane_source"], "kw")
+        self.assertTrue(card.get("awaiting_action"))
+
+    @patch("urllib.request.urlopen")
+    def test_spend_in_spec_body_not_manual(self, mock_urlopen):
+        """dispatch-lane-classifier-spend-false-manual (2026-11-17): a
+        context-free 'spend' mention in the spec body must not force
+        manual — the work itself is dispatchable."""
+        mock_urlopen.side_effect = Exception("jevos down")
+        card = {"id": "c1",
+                "title": "idc03: gemini proxy paid-fallback spam — "
+                         "free circuit open",
+                "spec": "every request falls through to the paid model — "
+                        "this is uncontrolled spend, not just load",
+                "action": {}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertNotEqual(card["action"]["lane"], "manual")
+        self.assertTrue(res.startswith("queued"))
+
+    @patch("urllib.request.urlopen")
+    def test_costs_money_option_in_spec_not_manual(self, mock_urlopen):
+        """Second 2026-11-17 false positive: spec lists a priced option
+        as a Tony decision — the non-spend work stays dispatchable."""
+        mock_urlopen.side_effect = Exception("jevos down")
+        card = {"id": "c1",
+                "title": "idc03: structural capacity — resize VPS or "
+                         "migrate heavy services",
+                "spec": "OPTIONS: (a) resize VPS to 32GB (costs money — "
+                        "Tony decision); (b) migrate services. TASK: "
+                        "implement the non-spend option(s)",
+                "action": {}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertNotEqual(card["action"]["lane"], "manual")
+        self.assertTrue(res.startswith("queued"))
+
+    def test_spend_phrase_in_title_still_manual(self):
+        card = {"id": "c1", "title": "Approve OR top-up — this costs "
+                                     "money", "action": {}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertEqual(card["action"]["lane"], "manual")
+        self.assertIn("kw:costs money", card["comms"][-1]["text"])
+
+    def test_explicit_lane_wins_over_manual_title(self):
+        card = {"id": "c1", "title": "hardware rotation",
+                "action": {"lane": "devin"}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertEqual(card["action"]["lane"], "devin")
+        self.assertTrue(res.startswith("queued"))
+        self.assertNotIn("lane_source", card["action"])
+
+    @patch("urllib.request.urlopen")
+    def test_stamped_lane_reclassifies_on_requeue(self, mock_urlopen):
+        """A lane the classifier stamped (lane_source present) is
+        re-evaluated each queue — the fixed classifier unsticks cards
+        it previously misrouted instead of leaving them manual."""
+        mock_urlopen.side_effect = Exception("jevos down")
+        card = {"id": "c1",
+                "title": "idc03: gemini proxy paid-fallback spam",
+                "spec": "uncontrolled spend",
+                "action": {"status": "idle", "lane": "manual",
+                           "lane_source": "kw"}}
+        res = self.api.do_action(card, "queue", "devin")
+        self.assertNotEqual(card["action"]["lane"], "manual")
+        self.assertEqual(card["action"]["status"], "queued")
+        self.assertTrue(res.startswith("queued"))
+
+    def test_classify_reports_explicit_source(self):
+        """classify_lane honors an author lane (no lane_source) even on
+        a manual-keyword title — and reports source='explicit'."""
+        lane, src, conf = self.dr.classify_lane(
+            {"title": "hardware rotation",
+             "action": {"lane": "devin"}}, with_detail=True)
+        self.assertEqual((lane, src), ("devin", "explicit"))
+        # a classifier-stamped lane is NOT explicit — it re-classifies
+        lane, src, conf = self.dr.classify_lane(
+            {"title": "hardware rotation",
+             "action": {"lane": "codemod", "lane_source": "kw"}},
+            with_detail=True)
+        self.assertEqual((lane, src), ("manual", "kw:hardware"))
 
 
 class KkMacRouteUnitTest(unittest.TestCase):

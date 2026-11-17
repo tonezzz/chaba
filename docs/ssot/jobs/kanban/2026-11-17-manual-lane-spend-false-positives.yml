@@ -1,0 +1,102 @@
+title: "manual-lane keyword fix — spec-body spend mentions no longer force manual"
+subtitle: >-
+  The queue-time lane classifier forced three dispatchable cards onto the
+  manual lane on 2026-11-17 because bare 'spend' in LANE_KW matched
+  context-free spec text ('costs money — Tony decision', 'uncontrolled
+  spend', 'zero paid/model-key spend'). Fix: spend kws narrowed to
+  action phrases, manual kws match the TITLE only, classifier-stamped
+  lanes carry action.lane_source and are re-evaluated on re-queue, and
+  kw-manual audit comms now name the matched keyword.
+icon: 🎯
+id: 2026-11-17-manual-lane-spend-false-positives
+status: done
+owner: devin-dispatch
+project: chaba
+card: dispatch-lane-classifier-spend-false-manual
+started: "2026-11-17"
+completed: "2026-11-17"
+
+context:
+  bug: >-
+    classify_lane checked LANE_KW['manual'] against title+spec. Any spec
+    that discussed spend as decision context — an option the card itself
+    asks the agent to avoid — hit bare 'spend' and returned manual. Once
+    stamped, lane=manual stuck forever: _apply_classify_at_queue skipped
+    classification whenever action.lane was set, so even a corrected
+    classifier could never unstick the card (mddb-embed-free-first was
+    manually re-pinned manual->devin on 2026-11-12 and got RE-STUCK by
+    the same bug on a later queue).
+  false_positives_2026_11_17:
+    - idc03-structural-capacity-15gb-4core-per-2d787f (kw 'spend' via
+      'non-spend option(s)' / 'costs money — Tony decision')
+    - idc03-gemini-ollama-proxy-paid-fallback-2fa021 (kw 'spend' via
+      'uncontrolled spend')
+    - cline-card-review-lane (kw 'spend' via 'zero paid/model-key spend')
+
+decisions:
+  - id: a-spend-phrases
+    text: >-
+      Bare 'spend' replaced with action phrases — 'spend money',
+      'paid compute', 'real spend', 'costs money' — per card spec.
+  - id: b-title-only-manual
+    text: >-
+      Manual keywords match card.title only. A spend/hardware phrase in
+      the TITLE is the author flagging Tony's-hands work; the same words
+      in a spec body are decision context the card wants handled.
+      Other lanes still read title+spec — spec keywords correctly route
+      dispatchable work.
+  - id: c-explicit-wins-plus-provenance
+    text: >-
+      Explicit action.lane (no lane_source) always wins — now also inside
+      classify_lane itself, not just at call-site guards. The classifier
+      stamps action.lane_source (kw|jevos|fallback); a stamped lane is
+      re-classified on each queue so fixes self-heal. Caller lane writes
+      through the re-spawn door drop lane_source. kw-manual audit comms
+      name the matched keyword (kw:hardware) and set awaiting_action so
+      false positives are visible for triage.
+  - id: macbook-regexes-left-dead
+    text: >-
+      LANE_KW manual entries 'restore.*macbook' etc. are regex-shaped but
+      matched as substrings — dead since 2026-10-25. Deliberately left
+      dead: activating them would false-positive tony-macbook-restore-
+      enroll (dispatchable SSH/rsync work, not Tony's hands).
+
+validation:
+  corpus: >-
+    evals/results/jev/lane-corpus-regression-20261117.json — old-vs-new
+    classification over all 909 kanban cards: 0 regressions to manual,
+    42 cards unstuck from kw-manual (all spend/buy spec-body mentions),
+    44 other flips are all author-declared lanes now winning via the
+    explicit-lane path (intended). Six cards remain kw-manual — all
+    title hits on camera/rotation that were manual under old rules too
+    (pre-existing title noise; e.g. go2rtc-7-camera-producers is a
+    software card caught by 'camera' — candidate follow-up).
+  tests: >-
+    tests/board/test_queue_time_classify.py +8 cases — spec-body spend,
+    title spend-phrase, explicit win, stamped-lane re-classify,
+    audit kw in comm. Full tests/board suite: 612 run, only failure is
+    pre-existing missing pytest import in test_ada_job_envelope.
+  done_criterion: >-
+    Re-classified both 2026-11-17 FP cards: idc03-structural-capacity ->
+    codemod (kw:cap), idc03-gemini-ollama-proxy -> devin (explicit pin).
+    Both dispatchable; zero corpus regressions.
+
+follow_ups:
+  - >-
+    Remote runner-agents run installed copies (~/.local/bin/runner-agent)
+    that drifted from repo — the vendored LANE_KW/classify_lane copy was
+    updated in lockstep but each host needs the redeploy the defer comms
+    already ask for (scp scripts/board/runner-agent.py
+    <host>:~/.local/bin/runner-agent). Until then remote claim-time
+    classification still uses the old keyword set; queue-time board-api
+    classification (fixed here) is the primary gate.
+  - >-
+    scripts/devnest/shadow_eval.py has its own MANUAL_KW incl. bare
+    'spend' — separate devnest bench router, not the kanban lane;
+    untouched but worth the same treatment if it produces manual-gate
+    noise.
+  - >-
+    Title-level kw noise remains: 'camera' (go2rtc producers is a
+    software card) and 'rotation' (provider/model rotation cards) force
+    manual. If they produce false positives, same treatment: sharper
+    phrases or context windows.

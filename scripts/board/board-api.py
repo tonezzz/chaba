@@ -894,8 +894,14 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
     returns an abort message if classified as manual."""
     if not BOARD_CLASSIFY_AT_QUEUE:
         return None
-    if a.get("type") == "dispatch" and not a.get("lane") \
-            and not a.get("executor"):
+    # An explicit action.lane (author-set, no lane_source provenance) is
+    # the routing decision and always wins. A lane the classifier itself
+    # stamped (lane_source present) is re-evaluated on each queue so a
+    # fixed classifier unsticks cards it misrouted — a bare-lane check
+    # left kw-manual false positives stranded forever
+    # (dispatch-lane-classifier-spend-false-manual, 2026-11-17).
+    if a.get("type") == "dispatch" and not a.get("executor") \
+            and (not a.get("lane") or a.get("lane_source")):
         # bounded read-only classes self-route to the kk_mac lane
         # (kk-mac-auto-lane-classifier) — try-first, so a miss still
         # lands on the next lane under the same claim, never starves.
@@ -908,13 +914,15 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
                       f"(task_class={tc})")
             return None
         lane, source, conf = dr.classify_lane(card, with_detail=True)
+        a["lane"] = lane
+        a["lane_source"] = source.split(":", 1)[0]
         if lane == "manual":
-            a["lane"] = "manual"
             a["status"] = "idle"
+            card["awaiting_action"] = True  # surfaced for triage — a
+            # kw-manual hit may be a false positive worth fixing
             comms_add(card, "chaba",
                       f"classified as manual ({source} conf {conf:.2f})")
             return "classified as manual — queue skipped"
-        a["lane"] = lane
         if lane in dr.LANE_MODELS and not a.get("model"):
             a["model"] = dr.LANE_MODELS[lane]
         comms_add(card, "chaba",
@@ -1749,6 +1757,11 @@ def do_create(body: dict, frm: str) -> dict:
             for key in ACTION_KEYS:
                 if key in act:
                     a[key] = act[key]
+            if "lane" in act:
+                # a caller-declared lane is explicit routing — drop the
+                # classifier provenance or the next queue re-classifies
+                # over it (lane_source semantics: _apply_classify_at_queue)
+                a.pop("lane_source", None)
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         a.pop("runner", None)   # same re-arm semantics as /action do=queue

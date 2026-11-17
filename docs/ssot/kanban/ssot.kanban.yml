@@ -123,6 +123,13 @@ card_schema:
            first (dispatch_repos.classify_lane). Applies identically on
            kanban-dispatch and runner-agent claims — explicit model
            wins over lane."
+    lane_source: "provenance stamp the queue-time classifier writes next to
+           lane (kw|jevos|fallback — absent = author-declared). A
+           lane WITH lane_source is re-classified on each queue, so a
+           fixed classifier unsticks cards it misrouted; an author lane
+           without it always wins (dispatch-lane-classifier-spend-false-
+           manual, 2026-11-17). Board-owned — never set by hand except to
+           mark a classifier-written stamp for re-evaluation."
     labels: "optional list — capability requirements; a runner only claims
              the card if every label is in its RUNNER_LABELS (e.g. gpu).
              'desktop' is reserved as a host marker (not a card label): it
