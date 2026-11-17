@@ -12,6 +12,7 @@ Usage: render-board2.py [--if-changed]
 import hashlib
 import importlib.util
 import json
+import shutil
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -21,6 +22,11 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "docs/ssot/kanban/ssot.kanban.yml"
 STATE = REPO / "docs/ssot/kanban/.render-state-board2"
+# card attachments (board-api /attach) live in the repo under
+# docs/ssot/kanban/attachments/<card-id>/ — outside the web container's
+# /srv/public mount, so each render mirrors them into the app dir where
+# Caddy's file_server exposes them as attachments/<card-id>/<file>
+ATTACH_SRC = REPO / "docs/ssot/kanban/attachments"
 POLL_SECONDS = 10
 
 # reuse the data pipeline from render-board.py (same dir, dash filename)
@@ -209,6 +215,45 @@ const COLS = [
 ];
 
 function esc(s) { const d=document.createElement('div'); d.textContent=String(s??''); return d.innerHTML; }
+
+// ---- card attachments (board-api /attach) ----
+// comms entries carry the canonical repo path
+// 'docs/ssot/kanban/attachments/<card-id>/<file>'; the render mirrors
+// that tree next to this page, so the servable URL is attachments/<…>
+const ATT_RE = /docs\/ssot\/kanban\/attachments\/([A-Za-z0-9._\/-]+)/g;
+const ATT_IMG = /\.(jpe?g|png|gif|webp|avif|bmp|tiff?|heic|heif)$/i;
+function attachLinks(text) {
+  const out = [];
+  ATT_RE.lastIndex = 0;
+  let m;
+  while ((m = ATT_RE.exec(String(text ?? '')))) {
+    const rel = m[1].replace(/[./]+$/, '');
+    if (rel) out.push(rel);
+  }
+  return out;
+}
+function cardAttach(c) {
+  // unique attachment paths across the card's comms, first-seen order
+  const seen = new Set();
+  for (const m of (c.comms || [])) for (const rel of attachLinks(m.text || m.msg || '')) seen.add(rel);
+  return [...seen];
+}
+function attachUrl(rel) {
+  return 'attachments/' + rel.split('/').map(encodeURIComponent).join('/');
+}
+function thumbHtml(rel) {
+  const url = attachUrl(rel);
+  const nm = rel.split('/').pop();
+  return ATT_IMG.test(nm)
+    ? `<a href="${url}" target="_blank" rel="noopener" title="${esc(nm)}"><img src="${url}" loading="lazy" alt="${esc(nm)}" class="h-20 w-auto max-w-[140px] object-cover rounded border border-slate-600 hover:border-sky-400"></a>`
+    : `<a href="${url}" target="_blank" rel="noopener" title="${esc(nm)}" class="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sky-300 hover:text-sky-200">📎 ${esc(nm)}</a>`;
+}
+function attachHtml(text) {
+  const links = attachLinks(text);
+  if (!links.length) return '';
+  return '<div class="flex flex-wrap gap-1.5 mt-1">' + links.map(thumbHtml).join('') + '</div>';
+}
+
 function isLab(c) { return !!(c.lab && (c.lab.hypothesis || c.lab.metric || c.lab.outcome)); }
 // lab stays a virtual lane: lab cards appear there (sorted by review_by)
 // AND in their real column — same semantics the tabs had
@@ -275,12 +320,14 @@ function rowHtml(c, ctx) {
   const mv = movedIn[c.id];
   const ny = needYou(c);
   const ncm = (c.comms || []).length;
+  const nat = cardAttach(c).length;
   return `<div class="card${mv ? ' just-moved' : ''}" draggable="true" data-id="${esc(c.id)}"${c.brief ? ` title="${tip}"` : ''}>` +
     `<div class="ttl">${esc(c.title)}</div>` +
     (brief1 ? `<div class="brief-line">${esc(brief1)}</div>` : '') +
     `<div class="meta"><span class="chip-extra text-[9px] text-slate-500">${c.ref?`<b class="text-sky-400 font-semibold">${esc(c.ref)}</b> `:''}${esc(c.id)}</span>` +
     (mv ? `<span class="badge bg-sky-800/80 text-sky-100">⇄ ${esc(mv)}</span> ` : '') +
     `<span class="chip-extra">${badgeHtml(c, ctx)}</span>` +
+    (nat ? `<span class="badge bg-slate-700/80 text-slate-300" title="attachments">📎${nat}</span> ` : '') +
     (ny ? `<span class="badge bg-amber-800/80 text-amber-100" title="open requests/asks">❓${ny}</span> ` : '') +
     (ncm ? `<span class="badge bg-slate-700/80 text-slate-300" title="comments">💬${ncm}</span>` : '') +
     `</div></div>`;
@@ -668,10 +715,15 @@ function detailHtml(c) {
   h += field('note', c.note) + field('spec', c.spec) + field('verify', c.verify) + field('help', c.help);
   if (askOf(c)) h += askHtml(c);
   for (const r of (c.requests||[])) h += reqHtml(c, r);
+  const atts = cardAttach(c);
+  if (atts.length) {
+    h += '<div class="mt-3"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">📎 Attachments</div>' +
+      '<div class="flex flex-wrap gap-2">' + atts.map(thumbHtml).join('') + '</div></div>';
+  }
   const log = (c.comms||[]).slice(-20);
   if (log.length) {
     h += '<div class="mt-4"><div class="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Comms</div>' +
-      log.map(m => `<div class="text-xs border-l-2 border-slate-700 pl-2 py-1"><span class="text-slate-500">${esc(m.at||m.ts||'')} · ${esc(m.from||m.who||'')}</span><br>${esc(m.text||m.msg||'')}</div>`).join('') + '</div>';
+      log.map(m => `<div class="text-xs border-l-2 border-slate-700 pl-2 py-1"><span class="text-slate-500">${esc(m.at||m.ts||'')} · ${esc(m.from||m.who||'')}</span><br>${esc(m.text||m.msg||'')}${attachHtml(m.text||m.msg||'')}</div>`).join('') + '</div>';
   }
   h += `<div class="flex gap-1.5 mt-4"><input id="cm" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs" placeholder="comment…">` +
        `<button id="cm-btn" class="text-xs bg-slate-700 hover:bg-slate-600 rounded px-3">Post</button></div>`;
@@ -918,6 +970,41 @@ load();
 """
 
 
+def _tree_sig(d: Path) -> str:
+    """Cheap tree signature (names + size + mtime, no content reads) —
+    attachments can be multi-MB binaries, so a dir_hash-style content
+    hash would tax every --if-changed tick. A git pull lands new mtimes,
+    so pulled attachments still trigger the rerender+mirror."""
+    h = hashlib.sha256()
+    if d.is_dir():
+        for p in sorted(d.rglob("*")):
+            if not p.is_file():
+                continue
+            st = p.stat()
+            h.update(f"{p.relative_to(d)}:{st.st_size}:{st.st_mtime_ns};"
+                     .encode())
+    return h.hexdigest()
+
+
+def _mirror_attachments(src: Path, dst: Path) -> int:
+    """Mirror the canonical attachment tree into the board app dir.
+    Uploads are write-once (name collisions suffix, never rewrite), so a
+    size match means the mirror is current."""
+    if not src.is_dir():
+        return 0
+    n = 0
+    for f in src.rglob("*"):
+        if not f.is_file():
+            continue
+        d = dst / f.relative_to(src)
+        if d.exists() and d.stat().st_size == f.stat().st_size:
+            continue
+        d.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, d)
+        n += 1
+    return n
+
+
 def main():
     man = yaml.safe_load(MANIFEST.read_text())
     card_dir = REPO / man["card_dir"]
@@ -926,7 +1013,8 @@ def main():
     state_hash = None
     if "--if-changed" in sys.argv:
         state_hash = (_rb.dir_hash(card_dir)
-                      + _rb.dir_hash(card_dir / "archive"))
+                      + _rb.dir_hash(card_dir / "archive")
+                      + _tree_sig(ATTACH_SRC))
         if STATE.exists() and STATE.read_text().strip() == state_hash \
                 and out_path.exists():
             return 0
@@ -934,6 +1022,9 @@ def main():
         # — a crashed render must not poison the skip-set, OPS-1107).
 
     cards = _rb.load_cards(man)
+    # mirror attachments FIRST so a card comms link never renders a
+    # thumbnail whose file isn't servable yet
+    n_att = _mirror_attachments(ATTACH_SRC, out_path.parent / "attachments")
     # archived cards (cards/archive/*.yml) get their own payload + page —
     # off the main board, still browsable (KNB-1178)
     archive_cards = []
@@ -979,7 +1070,8 @@ def main():
     out_path.write_text(page)
     if state_hash is not None:
         STATE.write_text(state_hash + "\n")
-    print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver})")
+    print(f"wrote {out_path} + cards.json ({len(cards)} cards, v{ver}"
+          + (f", {n_att} attachments mirrored" if n_att else "") + ")")
     return 0
 
 

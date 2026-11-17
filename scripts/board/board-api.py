@@ -55,6 +55,20 @@ Endpoints (after prefix strip):
       report-loop-comment-delivery). devin|chaba comments are never
       echoed back: a session must not get its own progress posts, and
       chaba system notes are noise.
+  POST /attach   {id, filename, payload|b64|data, from?}
+      (alias /upload) — file/photo evidence on a card
+      (board-attachments-photo-image-evidence). payload is base64 (a
+      data: URI prefix is stripped). The file lands in the repo at
+      docs/ssot/kanban/attachments/<card-id>/<sanitized-name> — the
+      canonical store, committed with the card in one commit — and a
+      comms entry links it ('attachment: <repo-path> — <name> (N B)').
+      render-board2 mirrors the tree into apps/board2/attachments/ so
+      the board UI serves thumbnails. Filenames are sanitized to
+      [A-Za-z0-9._-] and must end in an ATTACH_EXTS extension (image
+      types plus pdf/video/text/archive — nothing servable as an
+      executable content-type). Name collisions suffix -2/-3/… unless
+      the bytes are identical (idempotent re-post). Size cap
+      BOARD_API_ATTACH_MAX_BYTES (default 12 MiB decoded).
   POST /request  {id, ask, request_id?, options?, suggested?, from?, to?}
       raises a requests[] entry {id, ask, status: open, at, from, to?};
       `to` defaults to tony (absent = tony). A request targeting tony
@@ -181,6 +195,21 @@ import publication as pub
 
 REPO = Path(__file__).resolve().parent.parent.parent
 CARD_DIR = REPO / "docs/ssot/kanban/cards"
+# /attach store (board-attachments-photo-image-evidence): kept inside the
+# repo so uploads commit + propagate exactly like card YAML; the board
+# app can't see this tree directly (/srv/public is all the web container
+# mounts) — render-board2 mirrors it under apps/board2/attachments/.
+ATTACH_DIR = REPO / "docs/ssot/kanban/attachments"
+ATTACH_MAX_BYTES = int(os.environ.get(
+    "BOARD_API_ATTACH_MAX_BYTES", str(12 * 1024 * 1024)))
+# extension whitelist — anything off-list could be served back from the
+# board origin with an executable content-type (html/svg/js = XSS)
+ATTACH_EXTS = {
+    "jpg", "jpeg", "png", "gif", "webp", "avif", "bmp", "tif", "tiff",
+    "heic", "heif",
+    "pdf", "mp4", "m4v", "mov", "webm", "mkv",
+    "txt", "log", "md", "csv", "json", "zip", "gz",
+}
 RENDER = REPO / "scripts/render-board.py"
 RENDER2 = REPO / "scripts/render-board2.py"
 LOCK = Path("/tmp/board-api.lock")
@@ -434,7 +463,7 @@ def load(p: Path) -> dict:
 _pending_label = ""
 
 
-def save(p: Path, card: dict) -> None:
+def save(p: Path, card: dict, extra: list | None = None) -> None:
     """Serialize, verify the dump re-parses as a mapping, then land it
     atomically. A card body that can't round-trip is refused BEFORE the
     file is touched — refuse/rollback at write time, not a corrupted
@@ -452,10 +481,10 @@ def save(p: Path, card: dict) -> None:
     tmp = p.with_suffix(".yml.tmp")
     tmp.write_text(text)
     tmp.replace(p)  # atomic — a crash mid-write can't leave a torn card
-    _commit_write(p, _pending_label or f"write {p.stem}")
+    _commit_write(p, _pending_label or f"write {p.stem}", extra=extra)
 
 
-def _commit_write(p: Path, label: str) -> None:
+def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
     """Commit a card write immediately. An uncommitted card edit in the
     served checkout is autostash bait — a pull --rebase stashes it and a
     failed pop resolves generated paths to HEAD upstream-wins, silently
@@ -473,7 +502,7 @@ def _commit_write(p: Path, label: str) -> None:
     if os.environ.get("BOARD_API_COMMIT", "1") == "0":
         return
     try:
-        paths = [p]
+        paths = [p] + [Path(x) for x in (extra or [])]
         seq = CARD_DIR / ".ref-seq"
         if seq.exists():
             paths.append(seq)  # ref allocation must persist with the card
@@ -1278,6 +1307,61 @@ def do_patch_relay(card: dict, body: dict, frm: str) -> tuple:
               f"{body.get('host') or frm} — {len(blob)}B bundle in "
               f"patch-inbox ({name}); merge-sweep will land it")
     return f"relayed {name}", name
+
+
+_ATTACH_NAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def do_attach(card: dict, body: dict, frm: str) -> tuple:
+    """POST /attach (alias /upload) — file/photo evidence on a card
+    (board-attachments-photo-image-evidence). The payload lands in the
+    repo at docs/ssot/kanban/attachments/<card-id>/<file> — canonical
+    store, committed with the card in one commit — and a comms entry
+    carries the repo path; render-board2 mirrors the tree into the
+    board app's public dir where the UI renders thumbnails.
+    Returns (message, [paths to commit alongside the card])."""
+    raw = str(body.get("filename") or "").strip()
+    if not raw:
+        raise ValueError("filename required")
+    # basename kills client-supplied directories; the char whitelist
+    # kills everything else (no spaces -> the comms-link regex stays
+    # trivial, no traversal, URL-safe as-is)
+    fn = _ATTACH_NAME_RE.sub("-", Path(raw).name).strip(".-")
+    if not fn or fn.startswith("."):
+        raise ValueError("bad filename")
+    ext = fn.rsplit(".", 1)[-1].lower() if "." in fn else ""
+    if ext not in ATTACH_EXTS:
+        raise ValueError(
+            f"filename must end with one of {sorted(ATTACH_EXTS)}")
+    b64 = str(body.get("payload") or body.get("b64")
+              or body.get("data") or "")
+    if b64[:64].lower().startswith("data:") and "," in b64[:128]:
+        b64 = b64.split(",", 1)[1]      # strip a data: URI prefix
+    try:
+        blob = base64.b64decode(b64, validate=True)
+    except Exception:
+        raise ValueError("payload must be base64")
+    if not blob:
+        raise ValueError("payload required")
+    if len(blob) > ATTACH_MAX_BYTES:
+        raise ValueError(f"attachment too large ({len(blob)} > "
+                         f"{ATTACH_MAX_BYTES} bytes)")
+    cid = _ATTACH_NAME_RE.sub("-", str(card.get("id") or "")) or "card"
+    ddir = ATTACH_DIR / cid
+    ddir.mkdir(parents=True, exist_ok=True)
+    dest = ddir / fn
+    n = 2
+    while dest.exists() and dest.read_bytes() != blob:
+        stem, _, e = fn.rpartition(".")
+        dest = ddir / f"{stem.rstrip('-')}-{n}.{e}"
+        n += 1
+    dest.write_bytes(blob)
+    # canonical repo-relative link (what the UI parses + what gets
+    # committed) — stable even when ATTACH_DIR is redirected in tests
+    rel = f"docs/ssot/kanban/attachments/{cid}/{dest.name}"
+    comms_add(card, frm,
+              f"attachment: {rel} — {raw[:80]} ({len(blob)} B)")
+    return f"attached {dest.name} ({len(blob)} B)", [dest], rel
 
 
 def do_request(card: dict, body: dict) -> str:
@@ -4089,6 +4173,14 @@ class H(BaseHTTPRequestHandler):
                     resp_extra = {"file": name}
                     card["updated"] = now()
                     save(p, card)
+                elif path in ("/attach", "/upload"):
+                    frm = actor(body)
+                    p = card_path(body.get("id") or body.get("card") or "")
+                    card = load(p)
+                    msg, files, rel = do_attach(card, body, frm)
+                    resp_extra = {"file": rel}
+                    card["updated"] = now()
+                    save(p, card, extra=files)
                 elif path == "/request":
                     p = card_path(body.get("id", ""))
                     card = load(p)

@@ -1,0 +1,64 @@
+title: "Card attachments — photo/image evidence via board-api /attach, thumbnails in board2"
+date: 2026-11-17
+card: board-attachments-photo-image-evidence-o-6fc9c2
+session: "dispatch-wt-20261117-085459-goal-implement-photo-and-image (idc02)"
+status: "implemented + e2e-verified in worktree; live on serving host after merge"
+
+endpoint:
+  path: "POST /attach (alias /upload) — same auth gate as all writes"
+  body: "{id|card, filename, payload|b64|data, from?}"
+  payload: "base64 bytes; a 'data:<mime>;base64,' URI prefix is stripped"
+  validation:
+    - "filename -> basename + [A-Za-z0-9._-] whitelist (no dirs, no spaces, URL-safe)"
+    - "extension must be in ATTACH_EXTS: images (jpg jpeg png gif webp avif bmp tif
+       tiff heic heif) + pdf + video (mp4 m4v mov webm mkv) + txt log md csv json
+       zip gz — anything servable as an executable content-type (html/svg/js)
+       is refused, so uploads can never XSS the board origin"
+    - "decoded size cap BOARD_API_ATTACH_MAX_BYTES (default 12 MiB)"
+  storage: "docs/ssot/kanban/attachments/<card-id>/<file> — inside the repo,
+    committed in the SAME commit as the card (save() extra-paths), so files
+    propagate like card YAML"
+  collisions: "same name + different bytes -> <stem>-2/-3; identical bytes ->
+    reuses the file (idempotent re-posts)"
+  comms_link: "'attachment: <repo-rel-path> — <orig-name> (N B)' appended by the
+    uploader's actor — the human-readable trail and the spec's linking mechanism.
+    Sanitized paths carry no spaces so YAML width-110 wrapping can't split them"
+
+serving_path:
+  problem: "attachments live outside stacks/web/public — the only tree the web
+    container bind-mounts at /srv/public — so Caddy can't see the canonical store"
+  solution: "render-board2.py mirrors docs/ssot/kanban/attachments/ into
+    stacks/web/public/apps/board2/attachments/ (gitignored, generated) on every
+    render — write-time render_async + the 60s chaba-board-render.timer. Caddy's
+    existing 'handle_path /apps/board2/* { file_server }' exposes them at
+    /apps/board2/attachments/<card-id>/<file>. --if-changed's state hash gained
+    a names+size+mtime tree signature so pulled-but-unchanged-card uploads still
+    trigger mirror; no content hashing (multi-MB binaries every 60s)"
+  downstreams: "web-srv-sync rsync of the served checkout carries the mirror to
+    the idc02 :8099 edge and the mn01 proxy with no extra config"
+
+board_ui:
+  detection: "ATT_RE parses 'docs/ssot/kanban/attachments/<rel>' out of any comms
+    text — hand-linked paths render too, not just /attach writes"
+  surfaces:
+    - "card tile: 📎<n> badge (unique attachments across comms)"
+    - "card modal: '📎 Attachments' thumbnail strip above Comms"
+    - "comms: inline thumbs under any entry carrying a repo path"
+    - "image ext -> <img> thumb (lazy, max-h 80px, click opens full); other ext
+      -> 📎 download chip"
+
+verified:
+  - "unit: 5 new AttachDoorTest cases (validation, storage+comms link,
+    sanitization/traversal, data: prefix, collision+idempotent) — 27/27 file pass"
+  - "suite: tests/board 593 passed"
+  - "live e2e in worktree: BOARD_API_PORT=18787 POST /attach of a real 4x4 PNG
+    -> file at docs/ssot/kanban/attachments/<card>/, comms link, collision
+    '-2' suffix, /upload alias, .html rejection; render-board2 mirrored the
+    file (served 200 image/png) and emitted the thumbnail JS; node-exercised
+    attachLinks/thumbHtml on the real comms text"
+
+followups:
+  - "Tony uploads the two real UPS photos to find-ups-replacement-batteries via
+    POST /attach once deployed; a board UI upload button is the natural next card"
+  - "multipart/form-data not supported — JSON base64 only (matches the API's
+    single-JSON-body model); clients sending browser FormData must b64 first"

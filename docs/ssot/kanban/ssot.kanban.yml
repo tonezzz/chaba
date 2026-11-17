@@ -317,6 +317,17 @@ write_path:
       knb-answer-action-triage."
     "POST /comment {id, from, text}": "appends comms; from ∈ devin|ada|chaba|tony;
       400 'text required' on empty/whitespace text"
+    "POST /attach {id, filename, payload|b64|data, from?} (alias /upload)":
+      "file/photo evidence (board-attachments-photo-image-evidence). Stores the
+      base64 payload at docs/ssot/kanban/attachments/<card-id>/<sanitized-name>
+      — inside the repo so it commits + propagates like card YAML — and appends
+      comms 'attachment: <repo-path> — <name> (N B)'. Filename whitelisted to
+      [A-Za-z0-9._-] with an image/pdf/video/text/archive extension (nothing
+      servable as executable content); collisions suffix -2/-3 unless bytes are
+      identical; cap BOARD_API_ATTACH_MAX_BYTES (12MiB). render-board2 mirrors
+      the tree into apps/board2/attachments/ (gitignored) where Caddy serves
+      attachments/<id>/<file>; board2 renders a 📎 tile badge, an Attachments
+      strip in the modal, and inline thumbs under the comms line."
     "POST /request {id, ask, request_id?, options?, suggested?, from?, to?}":
       "raises a requests[] entry {id, ask, status: open, at, from, to?,
       options?, suggested?}; id is request_id or a slugged ask. 400 on
