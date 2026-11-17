@@ -188,9 +188,17 @@ def _temps() -> tuple[float | None, dict]:
         if v.isdigit():
             name = z.split("thermal_zone")[1].split("/")[0]
             zones[f"zone{name}"] = round(int(v) / 1000.0, 1)
-    if not zones:
-        return None, {}
-    return round(max(zones.values()), 1), zones
+    if zones:
+        return round(max(zones.values()), 1), zones
+    if platform.system() == "Darwin":
+        # no sysfs on macOS — osx-cpu-temp (brew) reads SMC keys unprivileged
+        out = _run(["/opt/homebrew/bin/osx-cpu-temp"])
+        try:
+            t = float(out.split(":")[-1].strip().rstrip("C").strip())
+            return round(t, 1), {"cpu": round(t, 1)}
+        except (ValueError, IndexError):
+            return None, {}
+    return None, {}
 
 
 
