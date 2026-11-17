@@ -3875,11 +3875,16 @@ def queue_view() -> dict:
 class H(BaseHTTPRequestHandler):
     def _send(self, code: int, obj):
         body = json.dumps(obj, ensure_ascii=False, default=str).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            # client timed out/disconnected after the write already
+            # landed — the mutation is committed, only the reply is lost
+            sys.stderr.write("board-api reply dropped: client gone\n")
 
     def log_message(self, fmt, *args):
         sys.stderr.write("board-api %s\n" % (fmt % args))
