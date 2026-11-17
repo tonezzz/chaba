@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: review
-updated: 2026-11-17 21:29
+updated: 2026-11-17 21:30
 priority: high
 tags:
 - idc03
@@ -233,9 +233,12 @@ comms:
 - at: 2026-11-17 21:29
   from: devin
   text: retry requested
+- at: 2026-11-17 21:30
+  from: tony-omen
+  text: claimed
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: paid_frontier
   sweep:
     failed_noted: 2026-11-17 19:40
@@ -247,5 +250,6 @@ action:
     wall clock time, 75.7M memory peak.'
   attempts: 3
   model: litellm/gemini-2.5-flash
+  runner: tony-omen
 claim: {}
 review_kind: verify
