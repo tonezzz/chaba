@@ -197,11 +197,17 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:20
+  from: devin
+  text: 'Recovered 2026-11-17 ~19:0x: failure streak was index.lock races between board-api._commit_write and the
+    sweep during the 2179-commit backlog push. Pushed manually, then patched kanban-commit.sh with git_lock_retry
+    (commit 795ed24d5dc). Streak file clean; ticks green since. Root amplification (defer comms) fixed earlier same
+    day in 82fa7ee32c0.'
 id: ops-kanban-commit-guard
 title: 'kanban-commit blocked: unsafe staged state'
 column: review
 note: 'kanban-commit failed 3+ consecutive ticks — last: commit failed'
-updated: 2026-11-17 21:15
+updated: 2026-11-17 21:20
 action:
   status: done
 ref: KNB-0309
