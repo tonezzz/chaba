@@ -1,7 +1,7 @@
 id: dispatch-failed-cards-park-in-doing
 title: Failed/idle dispatch cards park in doing forever — no reaper returns them to backlog
-column: doing
-updated: 2026-11-17 21:07
+column: backlog
+updated: 2026-11-17 22:12
 brief: '2026-11-17 sweep found 43 cards in doing with zero live claims fleet-wide (/queue claimed=[]): 23 action.status=failed
   dispatch cards (mostly Nov-14 runner-agent-drift/push-guard defers), 7 action.status=done stuck in doing, 11 manual/no-action
   stale claims. kanban-dispatch defers leave cards in doing; nothing ever returns them to backlog or re-queues them,
@@ -75,6 +75,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:12
+  from: devin
+  text: moved doing -> backlog
 action:
   type: dispatch
   status: failed
