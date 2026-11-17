@@ -1,7 +1,7 @@
 id: idc03-gemini-ollama-proxy-paid-fallback-2fa021
 title: 'idc03: gemini-ollama-proxy paid-fallback spam — free circuit open, every embed burns paid quota'
 column: backlog
-updated: 2026-11-17 09:15
+updated: 2026-11-17 09:17
 priority: high
 tags:
 - idc03
@@ -25,6 +25,13 @@ comms:
 - at: 2026-11-17 09:15
   from: chaba
   text: classified as manual (kw conf 1.00)
+- at: 2026-11-17 09:17
+  from: devin
+  text: 'Evidence 2026-11-17 09:15 ICT: paid-fallback still live — 13,863 paid calls today; current rate ~222 req/10min
+    (~0.37/s sustained) via OpenRouter google/gemini-embedding-2. Path: clients -> embed-pool-shim.service (127.0.0.1,
+    races ollama vs proxy for mddb banks, MEM-0805) -> gemini-ollama-proxy :11435 -> paid fallback. embed-pool-shim
+    itself is 0% CPU/17d uptime — the stream is downstream clients embedding continuously (suspect: mddb bank writes
+    or a reindex loop — needs caller identification).'
 action:
   type: dispatch
   status: idle
