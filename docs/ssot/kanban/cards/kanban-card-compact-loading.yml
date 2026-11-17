@@ -1,7 +1,7 @@
 id: kanban-card-compact-loading
 title: Compact Kanban comms and accelerate dispatch scans
 column: doing
-updated: 2026-11-17 19:13
+updated: 2026-11-17 19:35
 brief: Reduce repeated deferral history and avoid reparsing unchanged inactive cards without deleting audit history.
 priority: medium
 tags:
@@ -68,3 +68,9 @@ comms:
     defaults). After fixing a test-isolation bug, pytest -q tests/board passed: 597 tests, 8 subtests. Initial full-suite
     attempt modified six local card YAML files because a captured CARD_DIR bypassed test fixtures; verified canonical
     API state was unaffected. Left local artifacts untouched. No push/PR.'
+- at: 2026-11-17 19:35
+  from: devin
+  text: Pushed and verified origin/feat/kanban-card-scan-cache-push at df22a3d8b2ac. Based on latest origin/master
+    at refresh; full board suite passes 613 tests + 8 subtests, focused tests and diff check pass. Push worktree
+    is clean. No PR opened; review/merge remain. Older worktrees still retain local card-file edits, not pushed;
+    live board was verified unaffected by the test artifacts.
