@@ -1,7 +1,7 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
-column: review
-updated: 2026-11-17 17:53
+column: done
+updated: 2026-11-17 17:54
 spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
   since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
   behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
@@ -124,6 +124,11 @@ comms:
 - at: 2026-11-17 17:53
   from: chaba
   text: 'worktree kept: unmerged commits — HEAD not in origin/master'
+- at: 2026-11-17 17:54
+  from: chaba
+  text: 'merge-sweep: merged 5290e884 (dispatch/20261117-165539-observed-2026-11-16-19-00-19-2 from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261117-165539-observed-2026-11-16-19-00-19-2.md)
+    — auto-closed'
 action:
   type: dispatch
   repo: chaba
@@ -132,9 +137,13 @@ action:
   runner: tony-omen
   result: 'exit=0  directly — production needs a `chaba-board-api` restart for the fixes to take effect. | devin-task-20261117-165539-observed-2026-11-16-19-00-19-2.service:
     Consumed 2min 47.225s CPU time over 17min 19.159s wall clock time, 1.3G memory peak.'
-  verified: false
+  verified: true
   sweep:
     stale_running: 2026-11-17 17:27
     dirty: 1
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-17 17:54
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261117-165539-observed-2026-11-16-19-00-19-2.md
