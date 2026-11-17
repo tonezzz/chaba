@@ -1,0 +1,64 @@
+title: Devin CLI fleet update verified — all hosts on 3000.12.57
+subtitle: >-
+  Card devin-cli-fleet-update-20261108 asked for CLI updates on
+  tony-omen, tony-dell, tony-macbook plus agent-state verification.
+  The 2026-11-08/15 sessions had already done the heavy lifting (TTY
+  updater on omen/dell, official installer on macbook); this pass
+  confirmed every host is on the latest release and healthy.
+id: 2026-11-17-devin-cli-fleet-update-verify
+status: done
+owner: devin-dispatch
+project: chaba
+card: devin-cli-fleet-update-20261108
+branch: dispatch/20261117-092521-update-devin-cli-on-tony-omen-
+started: "2026-11-17"
+
+verified_state:
+  tony-dell:
+    version: "3000.12.57 (96542e930752)"
+    update: "devin update (local PTY): already on latest"
+    doctor: "3/3 pass"
+    auth: "Logged in (via Devin), credentials.toml present"
+  tony-omen:
+    version: "3000.12.57 (96542e930752)"
+    update: "already on latest (script-PTY over plain SSH)"
+    doctor: "3/3 pass"
+    auth: "Logged in (via Devin)"
+    note: >-
+      ~/.local/bin/devin symlinks into
+      ~/.local/share/devin/cli/_versions/current — auto-update-enabled
+      layout. `devin` is NOT on PATH for non-interactive SSH shells;
+      call $HOME/.local/bin/devin.
+  tony-macbook:
+    version: "3000.12.57 (96542e930752)"
+    update: "already on latest (script-PTY over plain SSH)"
+    doctor: "3/3 pass"
+    auth: "Logged in (via Devin)"
+    note: >-
+      Reached directly over tailscale as `tony-macbook` (100.77.76.112)
+      from dell — no omen jump needed. `kk-macbook` resolves nowhere;
+      omen's ssh config also aliases `macbook`. Tailscale reports the
+      host as linux x86_64 despite the name.
+
+runbook_nugget:
+  non_tty_update_fix: >-
+    `devin update` exits 130 without a TTY (documented on this card
+    2026-11-08). A full interactive SSH session is NOT required —
+    wrap the command in util-linux `script` to give it a PTY:
+      ssh -o BatchMode=yes <host> \
+        'script -qec "$HOME/.local/bin/devin update" /dev/null'
+    Works over BatchMode (key-only, no prompting) non-interactive SSH
+    on both omen and the linux-based macbook. For the local host,
+    run `devin update` under any PTY.
+
+constraints_honored:
+  - "Devin Desktop not restarted on any host"
+  - "runner-agent timers untouched (still paused)"
+  - "no mcp-debug install attempted on macbook (intentionally absent)"
+  - "no pushes to git remotes; card mutations via board-api only"
+
+evidence:
+  - "dell: `devin update` → 'You are already on the latest version'; doctor 3/3"
+  - "omen: ssh script-PTY update → already latest; doctor 3/3"
+  - "macbook: ssh script-PTY update → already latest; doctor 3/3"
+  - "all three: `devin auth status` → Logged in (via Devin)"
