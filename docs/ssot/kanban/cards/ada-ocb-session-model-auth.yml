@@ -1,7 +1,7 @@
 id: ada-ocb-session-model-auth
 title: 'Ada OpenChamber new-session prompt fails: missing model API key'
 column: backlog
-updated: 2026-11-14 14:14
+updated: 2026-11-17 17:04
 brief: 'Read-only browser check of https://ada-ha.surf-thailand.com/chaba-admin/ada-ocb on 2026-11-12: blank New
   session view and session-list endpoints work. After one approved diagnostic prompt, OpenChamber created session
   ses_e2cdde286ffeAKJswC0WhnOnhS and POST /api/session/<id>/prompt returned HTTP 200, but the UI showed: ''Opencode
@@ -65,6 +65,13 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 17:04
+  from: devin
+  text: '2026-11-17: Installed the previously approved shared ada-sec1286 LiteLLM credential on tony-dell by sourcing
+    the canonical LITELLM_KEY_ADA entry; no key value recorded. Destination ~/.config/secrets/litellm-ada.env is
+    mode 0600. Restarted openchamber.service; service active, /health=ok, isOpenCodeReady=true, and service process
+    has LITELLM_KEY. No Gemini inference test has run, so end-to-end model success is not yet verified. The old
+    exposed ada key remains blocked; no top-up or budget change.'
 requests:
 - id: model-auth-remediation
   ask: 'How should we fix the selected model authentication failure for Ada OpenChamber sessions? The new-session
