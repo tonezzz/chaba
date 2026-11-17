@@ -138,10 +138,8 @@ def push_device(dev: str, token: str) -> str:
                 return "pch"
             return k
         top = sorted(zones.items(), key=lambda kv: -kv[1])[:5]
-        labels = "/".join(_zname(k) for k, _ in top)
-        values = "/".join(f"{v:g}" for _, v in top)
-        _push(token, f"sensor.{eid}_temps",
-              f"{labels}: {values}°"[:200], {
+        pairs = ",".join(f"{_zname(k)}:{v:g}°" for k, v in top)
+        _push(token, f"sensor.{eid}_temps", pairs[:200], {
             "friendly_name": f"{dev} temps",
             "icon": "mdi:thermometer-lines",
             **common_attrs(doc, age),
