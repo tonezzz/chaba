@@ -1,7 +1,7 @@
 id: dispatch-lane-classifier-spend-false-manual
 title: 'lane classifier: bare keyword spend forces manual — false-positives dispatchable cards'
 column: done
-updated: 2026-11-17 21:09
+updated: 2026-11-17 22:05
 brief: 'LANE_KW[manual] in scripts/board/dispatch_repos.py contains bare "spend" — any card spec mentioning spend
   (even "spend scope", "uncontrolled spend", "cap paid spend") classifies manual at conf 1.0 and can never be dispatched.
   Hit twice 2026-11-17: idc03-gemini-ollama-proxy-paid-fallback-2fa021 (work IS fixing spend) and ada-real-card-sweep-scenario-20261108
@@ -70,6 +70,10 @@ comms:
 - at: 2026-11-17 21:09
   from: chaba
   text: 'merge-sweep: verified — auto-closed (column -> done)'
+- at: 2026-11-17 22:05
+  from: chaba
+  text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
   status: done
