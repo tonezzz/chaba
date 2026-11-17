@@ -1,0 +1,21 @@
+id: chaba-nest-hosts-view-replace-tony-ha-if-053226
+title: chaba-nest hosts view — replace tony-ha iframe with native/mobile-friendly cards
+column: backlog
+updated: 2026-11-17 16:16
+priority: medium
+spec: 'https://ada-ha.surf-thailand.com/chaba-nest/hosts is a panel view with one iframe -> https://tony-ha.surf-thailand.com/chaba-admin/hosts
+  (lovelace.chaba_nest on ada-ha :8125). Problems: (1) double sidebar — full HA page iframed inside HA; (2) iframe
+  hits tony-ha.surf-thailand.com CF Access gate — blank on iPhone until a separate Access login; (3) aspect_ratio
+  50% unusable on mobile. Fix: replace the iframe with native content. Source data = entities cards in lovelace.chaba_admin
+  hosts view on tony-ha :8123 (sensor.kk_mac_*, sensor.tony_omen_* etc.). NOTE: those entities live on tony-ha —
+  check whether ada-ha :8125 has equivalents before choosing approach. Options: (a) native entities/markdown cards
+  on chaba-nest if entities exist on ada-ha; (b) small static/embed page on the idc02 web origin fetching the same
+  data; (c) keep iframe but fix mobile (full-height, hide inner chrome if HA supports). Done when: iPhone Safari
+  shows a single-sidebar hosts view with no Access-iframe dependency, verified on the live edge.'
+note: 'Related: chaba-nest board/nest/polity/security/traffic/flood views likely have the same iframe pattern —
+  audit siblings while in there; card per-view only if the pattern repeats.'
+ref: SYS-0157
+comms:
+- at: 2026-11-17 16:16
+  from: devin
+  text: card captured via board-api
