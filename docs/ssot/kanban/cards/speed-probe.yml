@@ -1,7 +1,7 @@
 id: speed-probe
 title: speed probe
 column: doing
-updated: 2026-11-17 23:38
+updated: 2026-11-17 23:39
 brief: probe
 ref: OPS-0812
 comms:
@@ -95,6 +95,10 @@ comms:
 - at: 2026-11-17 23:38
   from: chaba
   text: started devin-task-20261117-233837-speed-probe-rails-you-are-proc on tony-omen (dispatch)
+- at: 2026-11-17 23:39
+  from: tony-omen
+  text: 'finished (failed): exit=1 evin-task-20261117-233837-speed-probe-rails-you-are-proc.service: Failed with
+    result ''exit-code''. | devin-task-20'
 requests:
 - id: the-card-speed-probe-lacks-any-9a39e8
   ask: The card 'speed probe' lacks any specification regarding its purpose, target host, repository, or execution
@@ -130,8 +134,11 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: free_lane
   lane_source: kw
   model: litellm/gemini-3.5-flash-lite
   runner: tony-omen
+  result: 'exit=1 evin-task-20261117-233837-speed-probe-rails-you-are-proc.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233837-speed-probe-rails-you-are-proc.service: Consumed 52.968s CPU time over 29.981s
+    wall clock time, 1.4G memory peak.'
