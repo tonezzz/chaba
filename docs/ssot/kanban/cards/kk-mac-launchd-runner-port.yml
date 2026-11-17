@@ -1,7 +1,7 @@
 id: kk-mac-launchd-runner-port
 title: Port runner-agent dispatch to macOS launchd — kk-mac as a full dispatch runner
 column: done
-updated: 2026-11-17 18:09
+updated: 2026-11-17 18:25
 spec: 'KK approved full fleet use of kk-mac 2026-10-30. The dispatch lane is systemd-run-based; macOS needs a launchd
   equivalent of: transient task units, RuntimeMaxUSec bounds, exit_code durability, resource limits (nice/ulimit
   — no cgroup v2), journal capture via log show --predicate or redirect files. Scope: (a) runner-agent.py executor
@@ -96,6 +96,10 @@ comms:
 - at: 2026-11-17 18:09
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:25
+  from: chaba
+  text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   type: dispatch
