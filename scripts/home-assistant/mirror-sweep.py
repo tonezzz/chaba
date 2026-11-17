@@ -100,9 +100,16 @@ async def get_dashboard(url, token, retries=4):
             await asyncio.sleep(1 + attempt)
 
 
+# Keys whose values are service names (domain.service), not entity ids —
+# same syntax as entities, so they must be excluded or they lint as missing.
+SERVICE_KEYS = {"service", "perform_action"}
+
+
 def collect_entities(obj, out):
     if isinstance(obj, dict):
         for k, v in obj.items():
+            if k in SERVICE_KEYS:
+                continue
             if isinstance(v, str) and ENTITY_RE.match(v):
                 out.add(v)
             elif isinstance(v, (dict, list)):
