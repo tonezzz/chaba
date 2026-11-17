@@ -1,0 +1,39 @@
+id: ada-ocb-regression-suite
+title: 'ada-ocb regression suite: per-feature tests + live smoke + calls.jsonl benchmark'
+column: backlog
+updated: 2026-11-17 22:03
+brief: Lock in this week's ada-ocb improvements (context_pack, ssot_get, windowed excerpts, MDDB lessons, vector-search,
+  board snapshots, string-row guards) with regression coverage so they can't silently rot.
+priority: high
+tags:
+- ada
+- opencode
+- kanban
+- testing
+- benchmark
+spec: 'Three layers in ada-voice:
+
+
+  1. UNIT — one pytest file per bridge feature under tests/: test_opencode_ada_mcp_context_pack.py, test_opencode_ada_mcp_board_snapshots.py
+  (mock _get_json; assert compact->projected->hydrate resolution order, 20s TTL cache, string comms/requests/action
+  rows tolerated), test_opencode_ada_mcp_selection_gate.py. Convention: ada-ocb feature cards are not ''review''
+  without their test file.
+
+
+  2. LIVE SMOKE — scripts/ocb-smoke.py: import opencode/ada_mcp.py, run real tool functions against live board-api
+  + MDDB (ada_ssot_get tony-macbook spec, find_card ADA-0172, _pick_cards, ada_context_pack, preflight gate fields).
+  Assert ok=true, mutations_performed=[], elapsed < 8s per call. Exit nonzero on failure. Wire to an hourly user
+  timer; results appended as kind:benchmark doc in ada-ha-scenario-reports MDDB collection.
+
+
+  3. BENCHMARK — scripts/ocb-bench.py reading ~/.local/share/ada-control/calls.jsonl: per-tool ok-rate, p50/p95
+  elapsed, error classes -> kind:benchmark doc so latency/ok trends are measurable across deploys.
+
+
+  Verify: pytest tests/test_opencode_ada_mcp_*.py green in deploy gates; ocb-smoke.py run once manually with all-green
+  output; one benchmark doc lands in MDDB.'
+ref: ADA-0174
+comms:
+- at: 2026-11-17 22:03
+  from: devin
+  text: card captured via board-api
