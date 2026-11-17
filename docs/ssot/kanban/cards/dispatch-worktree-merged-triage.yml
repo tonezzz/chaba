@@ -1,7 +1,7 @@
 id: dispatch-worktree-merged-triage
 title: 16 unmerged dispatch worktrees on tony-dell — merge-sweep triage needed, do NOT blind-delete
 column: backlog
-updated: 2026-11-17 21:09
+updated: 2026-11-17 22:12
 priority: medium
 tags:
 - devnest
@@ -15,6 +15,7 @@ spec: 'Triage 2026-11-09: ~/CascadeProjects/dispatch-wt-* on tony-dell — 2 mer
   documented; matching card comms on the cards that spawned them.'
 action:
   type: manual
+  status: queued
 ref: OPS-1288
 comms:
 - at: 2026-11-09 17:39
@@ -69,3 +70,9 @@ comms:
   from: chaba
   text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 22:12
+  from: devin
+  text: queued for processing
+- at: 2026-11-17 22:12
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
