@@ -1,10 +1,22 @@
 id: stale-local-conflict-files-cleanup
-title: 'stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever'
+title: stale .local-conflict-* files accumulated in job checkouts — reconcile re-flags forever
 column: backlog
-updated: 2026-11-17 17:55
-spec: 'Found during OPS-1314 (board-api write latency). Permanent .local-conflict-* files never auto-resolve (they are flagged "needs manual reconcile" by design) and every git-safe-pull on every checkout re-flags them via reconcile-local-conflicts.py -> board comms. Census 2026-11-17: chaba-tony-dell (served) 18 files, chaba exec checkout on idc03 140 files, chaba-kanban-sync 18; other hosts likely similar. Mitigations landed in f2acf34614f: FLAG_DEDUP_H 6h->48h + defer-note debounce normalization. Remaining work: (1) triage the 140 exec-checkout conflicts — most are probably stale generated-file collisions (focus-inbox reports, .ref-seq) safe to resolve upstream-wins or delete after inspection; (2) consider making reconcile flag ONCE per file ever (not per 48h) or digesting flags into one comm per run; (3) investigate WHY conflicts accumulate — recurring producer collisions on focus-inbox/report-watch files suggest a sync bug worth fixing at source. Card comms on ops-local-conflict-guard were compacted 15.5k->264 on 2026-11-17.'
+updated: 2026-11-17 18:10
+spec: 'Found during OPS-1314 (board-api write latency). Permanent .local-conflict-* files never auto-resolve (they
+  are flagged "needs manual reconcile" by design) and every git-safe-pull on every checkout re-flags them via reconcile-local-conflicts.py
+  -> board comms. Census 2026-11-17: chaba-tony-dell (served) 18 files, chaba exec checkout on idc03 140 files,
+  chaba-kanban-sync 18; other hosts likely similar. Mitigations landed in f2acf34614f: FLAG_DEDUP_H 6h->48h + defer-note
+  debounce normalization. Remaining work: (1) triage the 140 exec-checkout conflicts — most are probably stale generated-file
+  collisions (focus-inbox reports, .ref-seq) safe to resolve upstream-wins or delete after inspection; (2) consider
+  making reconcile flag ONCE per file ever (not per 48h) or digesting flags into one comm per run; (3) investigate
+  WHY conflicts accumulate — recurring producer collisions on focus-inbox/report-watch files suggest a sync bug
+  worth fixing at source. Card comms on ops-local-conflict-guard were compacted 15.5k->264 on 2026-11-17.'
 ref: OPS-1315
 comms:
 - at: 2026-11-17 17:55
   from: devin
   text: carded during OPS-1314 fix work
+- at: 2026-11-17 18:10
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
