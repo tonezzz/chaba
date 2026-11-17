@@ -1,7 +1,7 @@
 id: ada-ocb-kanban-smoke
 title: 'ada-ocb kanban smoke: read-only card workflow verification'
 column: doing
-updated: 2026-11-17 21:47
+updated: 2026-11-17 21:48
 brief: Smoke card verifying the ada-ocb kanban tool path end-to-end without mutating the board.
 priority: low
 tags:
@@ -56,4 +56,17 @@ comms:
 - at: 2026-11-17 21:47
   from: devin
   text: 'verification running: exercising ada_mcp board read path (find_card/_board_cards/_compact_cards/_pick_cards/_context_card)'
+- at: 2026-11-17 21:48
+  from: devin
+  text: 'read-only board read-path verification vs live board-api (ada_mcp @ ff2d6a1) — all ok, zero mutations:
+
+    1. find_card ok: ''ada-ocb-kanban-smoke'' 0.997s -> ADA-0173 (doing); ''ADA-0172'' 0.837s -> ada-ocb-board-read-latency
+    (review). Both <10s.
+
+    2. _board_cards() ok 2.075s / 914 rows; _compact_cards() ok 0.609s / 914 rows.
+
+    3. _pick_cards ok: sweep 2.373s (3 picks), queue 2.563s (1 pick); ada_card_pick issued selection_token on every
+    pick, mutations_performed=[].
+
+    4. _context_card(''ada-ocb-kanban-smoke'''
 ref: ADA-0173
