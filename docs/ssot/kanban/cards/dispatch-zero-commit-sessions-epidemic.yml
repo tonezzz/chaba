@@ -1,7 +1,7 @@
 id: dispatch-zero-commit-sessions-epidemic
 title: dispatch sessions produce zero commits at high rate — root cause
 column: backlog
-updated: 2026-11-17 19:01
+updated: 2026-11-17 20:09
 spec: 'OPS-0894 fixed the closeout gate (empty branches no longer auto-close — held in review correctly). The SOURCE
   defect is unfixed and burning dispatches: 10+ sessions Oct 26-27 across hosts (tony-macbook, idc02, mn01) and
   lanes (deepseek-v4-pro, others) produced ZERO commits — pushed branch head = plain master commit, service often
@@ -128,6 +128,11 @@ comms:
   from: chaba
   text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 20:09
+  from: chaba
+  text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
+    the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
+    pins or teach a runner the capability'
 claim: {}
 review_kind: verify
 awaiting_action: true
