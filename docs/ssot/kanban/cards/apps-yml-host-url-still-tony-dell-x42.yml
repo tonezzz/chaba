@@ -1,17 +1,17 @@
 id: apps-yml-host-url-still-tony-dell-x42
 title: 'apps.yml: 42 entries still host_url tony-dell + canary blind to deployed apps index'
 column: backlog
-updated: 2026-11-17 18:42
+updated: 2026-11-17 21:08
 priority: medium
 tags:
 - ops
 - dell-migration
 - consumer-canary
-note: 'Found during timer-alert-idc03-consumer-canary (OPS-1149): the live /apps/ index renders a.host_url
-  + a.href for any app whose host != page host, and 42 entries in stacks/web/public/apps/apps.yml still
-  carry host_url https://tony-dell.taila0626a.ts.net. Links work today (dell edge still live) but they
-  are retired-hostname refs on a consumer surface the canary does not grep (its idc02 web-origin grep
-  covers ~/web-srv/caddy/Caddyfile only, not the deployed webroot). Work: (1) migrate each entrys h'
+note: 'Found during timer-alert-idc03-consumer-canary (OPS-1149): the live /apps/ index renders a.host_url + a.href
+  for any app whose host != page host, and 42 entries in stacks/web/public/apps/apps.yml still carry host_url https://tony-dell.taila0626a.ts.net.
+  Links work today (dell edge still live) but they are retired-hostname refs on a consumer surface the canary does
+  not grep (its idc02 web-origin grep covers ~/web-srv/caddy/Caddyfile only, not the deployed webroot). Work: (1)
+  migrate each entrys h'
 ref: OPS-1195
 comms:
 - at: 2026-11-08 13:20
@@ -44,7 +44,11 @@ comms:
 - at: 2026-11-17 19:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
+- at: 2026-11-17 21:08
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Migrate the 42 entries in stacks/web/public/apps/apps.yml that still carry host_url https://tony-dell.taila0626a.ts.net
-  to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The
-  repository is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
+  to the correct host configuration, and ensure the consumer canary covers the deployed apps index. The repository
+  is chaba and the host is tony-dell. The done-condition is verified when zero entries in stacks/web/public/apps/apps.yml
   reference tony-dell.taila0626a.ts.net and the consumer canary successfully greps the deployed apps index.
