@@ -162,7 +162,8 @@ def _outcome_file_slug(idx: dict, slug: str):
 def compute_checks(c: dict, runs_by_slug: dict, outcomes: dict) -> list:
     """Per-card verification chips; only for cards that had a dispatch run
     — or that already carry pipeline.verify goal evidence."""
-    a = c.get("action") or {}
+    _a = c.get("action")
+    a = _a if isinstance(_a, dict) else {}
     tid = str(a.get("task_id") or "")
     slug = _TASK_TS.sub("", tid) if tid else ""
     runs = runs_by_slug.get(slug, []) if slug else []

@@ -582,6 +582,24 @@ def save(p: Path, card: dict, extra: list | None = None) -> None:
     _commit_write(p, _pending_label or f"write {p.stem}", extra=extra)
 
 
+def _act(card: dict) -> dict:
+    """card['action'] read accessor — the schema says dict, but marker
+    cards carry scalars ('spec-review' on nest-mgr-v2-actuation). One bad
+    row must not 500 /queue or crash render-board for the whole board
+    (2026-11-17 outage)."""
+    a = card.get("action")
+    return a if isinstance(a, dict) else {}
+
+
+def _ensure_act(card: dict) -> dict:
+    """Write-path twin of _act: a scalar action is replaced with {} so
+    mutation can't TypeError on the marker string."""
+    a = card.get("action")
+    if not isinstance(a, dict):
+        card["action"] = a = {}
+    return a
+
+
 def _commit_write(p: Path, label: str, extra: list | None = None) -> None:
     """Commit a card write immediately. An uncommitted card edit in the
     served checkout is autostash bait — a pull --rebase stashes it and a
@@ -789,7 +807,7 @@ def hide_dispatch_session(card: dict) -> None:
     (2026-11-16: writers queued minutes). The 'hidden' comms note lands
     in a second locked write via _append_comms_note."""
     cid = str(card.get("id") or "")
-    snap = {"id": cid, "action": dict(card.get("action") or {})}
+    snap = {"id": cid, "action": dict(_act(card))}
 
     def work():
         note = _hide_dispatch_session_now(snap)
@@ -804,7 +822,7 @@ def _hide_dispatch_session_now(card: dict) -> str:
     ~30s timeout each). Returns the comms note text, '' on nothing to
     report. Never raises."""
     try:
-        a = card.get("action") or {}
+        a = _act(card)
         tid = a.get("task_id") or ""
         if not tid:
             return ""
@@ -836,7 +854,7 @@ def queue_starve_warn(card: dict) -> str:
     — never auto-flip the type, a manual card queued by hand may mean
     'not for dispatch'. Same for the executor contract: executor=manual
     means Tony's hands — automation never claims it."""
-    a = card.get("action") or {}
+    a = _act(card)
     t = str(a.get("type") or "dispatch")
     if t == "dispatch":
         if str(a.get("executor") or "") == "manual":
@@ -905,7 +923,7 @@ def _apply_classify_at_queue(card: dict, a: dict) -> str | None:
 
 
 def do_action(card: dict, verb: str, frm: str) -> str:
-    a = card.setdefault("action", {})
+    a = _ensure_act(card)
     card.pop("awaiting_action", None)  # any deliberate action is triage
     st = a.get("status", "idle")
     if verb == "queue":
@@ -978,7 +996,7 @@ def do_move(card: dict, body: dict, frm: str = "tony") -> str:
         # gate fails commits repo-wide (same rule do_finish enforces)
         card.setdefault("review_kind", "verify")
     if col == "done":
-        card.setdefault("action", {})["status"] = "done"
+        _ensure_act(card)["status"] = "done"
         card.setdefault("claim", {}).pop("session", None)
         hide_dispatch_session(card)
     comms_add(card, frm, f"moved {old} -> {col}")
@@ -993,7 +1011,7 @@ def do_archive(card: dict, frm: str, cap: bool = False) -> str:
     done card ages out, but never one with an unanswered request."""
     if card.get("column") != "done":
         raise ValueError("archive needs column=done")
-    verified = bool((card.get("action") or {}).get("verified"))
+    verified = bool((_act(card)).get("verified"))
     if not verified and not cap:
         raise ValueError("archive needs action.verified=true "
                          "(verified done work only) or cap=true")
@@ -1049,7 +1067,7 @@ def _unarchive_move(p: Path, card: dict) -> None:
 def do_claim(card: dict, body: dict) -> str:
     """Atomic first-wins claim for multi-host dispatch — runs under the
     request flock so two hosts can't both grab a queued card."""
-    a = card.setdefault("action", {})
+    a = _ensure_act(card)
     if a.get("status") != "queued":
         raise ValueError(f"not claimable (status={a.get('status', 'idle')})")
     host = (body.get("host") or "").strip()
@@ -1122,7 +1140,7 @@ def do_finish(card: dict, body: dict) -> str:
     """Remote runner reports its claimed task finished — status->done and
     column->review on success, status->failed (card stays put) on failure.
     Only the claiming host may finish a card."""
-    a = card.setdefault("action", {})
+    a = _ensure_act(card)
     host = (body.get("host") or "").strip()
     if not host:
         raise ValueError("finish needs host")
@@ -1211,7 +1229,7 @@ def do_ask_respond(card: dict, body: dict, frm: str) -> str:
     comms_add(card, frm, f"{verb} ask: {answer[:200]}")
     # answer recorded but nothing is armed to act on it — same triage
     # nudge as the requests[] path
-    a = card.get("action") or {}
+    a = _act(card)
     if (card.get("column") != "done"
             and a.get("status") not in ("queued", "running")):
         card["awaiting_action"] = True
@@ -1278,7 +1296,7 @@ def do_respond(card: dict, body: dict, frm: str) -> str:
                     executed_owned = True
             # answer recorded but nothing is armed to act on it —
             # flag for triage so the decision doesn't sit silent
-            a = card.get("action") or {}
+            a = _act(card)
             if (not executed_owned
                     and card.get("column") != "done"
                     and a.get("status") not in ("queued", "running")):
@@ -1330,7 +1348,7 @@ def _deliver_to_session(card: dict, record: dict) -> str:
     comms notes ('answer delivered…', 'comment saved but…'). Never
     raises: returns a short note for comms, or "" when the card has no
     running dispatch to feed."""
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("status") != "running":
         return ""
     kind = str(record.get("kind") or "answer")
@@ -1410,7 +1428,7 @@ def queue_delivery(card: dict, record: dict) -> None:
     minutes). The delivery itself is lock-free; only its result note needs
     the lock, appended by _append_comms_note in a second short write."""
     cid = str(card.get("id") or "")
-    snap = {"id": cid, "action": dict(card.get("action") or {})}
+    snap = {"id": cid, "action": dict(_act(card))}
     rec = dict(record)
 
     def work():
@@ -1719,7 +1737,7 @@ def do_create(body: dict, frm: str) -> dict:
         if on_exists == "error":
             raise ValueError(f"card {cid} already exists")
         card = load(p)
-        a = card.setdefault("action", {})
+        a = _ensure_act(card)
         st = a.get("status", "idle")
         if st in ("queued", "running"):
             return {"message": f"card {cid} already active ({st})",
@@ -1809,7 +1827,7 @@ def do_create(body: dict, frm: str) -> dict:
             card["deploy"]["note"] = dnote[:300]
     cmsg = None
     if body.get("queue"):
-        a = card.setdefault("action", {})
+        a = _ensure_act(card)
         a.setdefault("type", "dispatch")
         a["status"] = "queued"
         # same queue-time classification as /action do=queue (OPS-0838 +
@@ -1842,7 +1860,7 @@ def do_create(body: dict, frm: str) -> dict:
     warn_all = " ".join(x for x in (warn, uncl) if x)
     msg = f"card {cid} created in {col} as {card['ref']}"
     res = {"message": msg, "id": cid, "ref": card["ref"]}
-    a = card.get("action") or {}
+    a = _act(card)
     if a.get("status"):
         res["status"] = a["status"]
         if a["status"] == "queued":
@@ -3999,7 +4017,7 @@ def _project(card: dict, fields: set) -> dict:
         return card
     out = {k: card.get(k) for k in fields if k in card}
     if "action_status" in fields:
-        out["action_status"] = (card.get("action") or {}).get("status")
+        out["action_status"] = (_act(card)).get("status")
     return out
 
 
@@ -4017,7 +4035,7 @@ def card_query(cards: list, q: dict) -> dict:
     st = _q1(q, "action_status")
     if st:
         out = [c for c in out
-               if (c.get("action") or {}).get("status") == st]
+               if (_act(c)).get("status") == st]
     since = _q1(q, "since")
     if since:
         out = [c for c in out if str(c.get("updated") or "") >= since]
@@ -4061,7 +4079,7 @@ def queue_view() -> dict:
                 for v in [cv]}
 
     queued = [c for c in cards
-              if (c.get("action") or {}).get("status") == "queued"]
+              if (_act(c)).get("status") == "queued"]
     try:
         queued = dr.sort_claimable(queued)
     except Exception:
@@ -4070,7 +4088,7 @@ def queue_view() -> dict:
     out_q = []
     for i, c in enumerate(queued, 1):
         cid = c.get("id") or ""
-        a = c.get("action") or {}
+        a = _act(c)
         v = verdicts_for(cid)
         fresh = {h: x for h, x in v.items()
                  if now_ts - (x.get("at") or 0) <= READY_STALE_S}
@@ -4101,7 +4119,7 @@ def queue_view() -> dict:
                 active_by_card[a["id"]] = {"host": h, **a}
     claimed = []
     for c in cards:
-        a = c.get("action") or {}
+        a = _act(c)
         if a.get("status") not in ("claimed", "running"):
             continue
         cid = c.get("id") or ""
