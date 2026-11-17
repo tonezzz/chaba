@@ -108,6 +108,10 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261117-233851-2026-11-12-13-40-all-same-spac no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-17 23:40
+  from: tony-omen
+  text: 'finished (failed): exit=1 evin-task-20261117-233851-2026-11-12-13-40-all-same-spac.service: Failed with
+    result ''exit-code''. | devin-task-20'
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
@@ -125,7 +129,12 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: codemod
   lane_source: kw
   runner: tony-omen
+  sweep:
+    stale_running: 2026-11-17 23:40
+  result: 'exit=1 evin-task-20261117-233851-2026-11-12-13-40-all-same-spac.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233851-2026-11-12-13-40-all-same-spac.service: Consumed 1.430s CPU time over 16.156s wall
+    clock time, 81.3M memory peak.'
