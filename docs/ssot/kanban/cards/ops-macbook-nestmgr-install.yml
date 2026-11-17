@@ -1,7 +1,7 @@
 id: ops-macbook-nestmgr-install
 title: 'tony-macbook: install nest-mgr.service (host asleep)'
-column: review
-updated: 2026-11-17 19:25
+column: done
+updated: 2026-11-17 19:26
 priority: low
 spec: 'tony-macbook is Linux (Linux 7.0.0-42-generic) but offline/asleep (tailscale ping no reply, ssh timeout,
   beacon stale ~20min as of 2026-11-17 ~17:45). When it wakes: cd ~/CascadeProjects/chaba && git pull; bash stacks/services/nest-mgr/install.sh
@@ -101,6 +101,11 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261117-185233-tony-macbook-is-linux-linux-7- no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-17 19:26
+  from: chaba
+  text: 'merge-sweep: merged 263a503c (dispatch/20261117-185233-tony-macbook-is-linux-linux-7- from tony-omen) ->
+    origin/master — marked verified (exit_code=0; outcome doc dispatch-outcome-20261117-185233-tony-macbook-is-linux-linux-7-.md)
+    — auto-closed'
 action:
   type: dispatch
   status: done
@@ -109,6 +114,12 @@ action:
   result: 'exit=0 5233-tony-macbook-is-linux-linux-7-.md`; progress posted to the card; no commits or pushes. |
     devin-task-20261117-185233-tony-macbook-is-linux-linux-7-.service: Consumed 2.464s CPU time over 10min 57.037s
     wall clock time, 94.1M memory peak.'
-  verified: false
+  verified: true
+  sweep:
+    stale_running: 2026-11-17 19:25
 review_kind: verify
 claim: {}
+auto_close:
+  by: merge-sweep
+  at: 2026-11-17 19:26
+  note: verified — exit_code=0; outcome doc dispatch-outcome-20261117-185233-tony-macbook-is-linux-linux-7-.md
