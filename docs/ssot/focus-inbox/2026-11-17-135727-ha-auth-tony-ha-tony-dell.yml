@@ -1,0 +1,24 @@
+title: HA auth failure on tony-ha
+subtitle: "invalid-authentication attempt from tony-dell"
+icon: inbox
+focus:
+  label: "HA auth failure: tony-ha from tony-dell"
+  text: >-
+    Home Assistant logged a login/API attempt with invalid
+    authentication. instance=tony-ha source=tony-dell
+    log_ts=2026-11-17T13:55:25.911014+00:00 Detected 2026-11-17T13:57:27Z by ha-auth-watch. If this follows a
+    revoked or deleted token, mint a replacement long-lived token and
+    update the consumer.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [security, home-assistant, auth]
+  safe_to_parallel:
+    value: true
+    reason: read-only alert; remediation is per-consumer
+ownership:
+  owner: tony
+  locked: false
+  lock_reason: ""
+source:
+  date: 2026-11-17

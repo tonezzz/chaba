@@ -1,0 +1,24 @@
+title: HA auth failure on tony-ha
+subtitle: "invalid-authentication attempt from tony-omen"
+icon: inbox
+focus:
+  label: "HA auth failure: tony-ha from tony-omen"
+  text: >-
+    Home Assistant logged a login/API attempt with invalid
+    authentication. instance=tony-ha source=tony-omen
+    log_ts=2026-11-08T05:35:00.805527+00:00 Detected 2026-11-08T05:37:09Z by ha-auth-watch. If this follows a
+    revoked or deleted token, mint a replacement long-lived token and
+    update the consumer.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [security, home-assistant, auth]
+  safe_to_parallel:
+    value: true
+    reason: read-only alert; remediation is per-consumer
+ownership:
+  owner: tony
+  locked: false
+  lock_reason: ""
+source:
+  date: 2026-11-08
