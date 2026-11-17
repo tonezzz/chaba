@@ -3,34 +3,43 @@ title: Exec-checkout generated writes (focus-inbox, ada-memory) never reach the 
 column: backlog
 priority: normal
 kind: bugfix
-created: "2026-11-16"
+created: '2026-11-16'
 tags:
 - ops
 - single-writer
 - board-api
 - focus-inbox
 ref: OPS-0144
-brief: >-
-  Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01)
-  run producers that write generated files — docs/ssot/focus-inbox/*.yml alerts,
-  backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json —
-  directly into the working tree. Exec role cannot commit (pre-commit block), so
-  the content never reaches the idc03 served writer: alerts die locally, trees
-  accumulate drift (omen had 136 modified + stale untracked files, checkout 132
-  commits behind). Verified 2026-11-16 on omen: 10 stale untracked focus-inbox
-  alerts archived+removed, drift reset via repo-sync.
-spec: |-
-  Goal: generated writes from non-writer hosts land on the board, not in a dead working tree.
+brief: 'Hosts with exec-role chaba checkouts (omen confirmed; audit dell/idc02/mn01) run producers that write generated
+  files — docs/ssot/focus-inbox/*.yml alerts, backups/ada-memory/*.json dumps, routes.json, SSOT_OPTIMIZATION_WARNINGS.json
+  — directly into the working tree. Exec role cannot commit (pre-commit block), so the content never reaches the
+  idc03 served writer: alerts die locally, trees accumulate drift (omen had 136 modified + stale untracked files,
+  checkout 132 commits behind). Verified 2026-11-16 on omen: 10 stale untracked focus-inbox alerts archived+removed,
+  drift reset via repo-sync.'
+spec: 'Goal: generated writes from non-writer hosts land on the board, not in a dead working tree.
+
 
   Scope:
-  1. Inventory producers on omen writing into ~/CascadeProjects/chaba (report-watch, health->inbox, ada-memory backup job, routes.json regen).
+
+  1. Inventory producers on omen writing into ~/CascadeProjects/chaba (report-watch, health->inbox, ada-memory backup
+  job, routes.json regen).
+
   2. Repoint focus-inbox producers to board-api POST /inbox — see docs/kb/board-api-write-door.md.
-  3. ada-memory bank dumps: either commit them on the writer host (idc03) or declare exec-checkout copies ephemeral in ssot.
+
+  3. ada-memory bank dumps: either commit them on the writer host (idc03) or declare exec-checkout copies ephemeral
+  in ssot.
+
   4. Audit other exec checkouts (dell ~/CascadeProjects/chaba, mn01, idc02) for the same pattern.
 
-  Done when: a test alert fired on omen appears in the served checkout focus-inbox on idc03, and omen chaba stays clean after a producer run.
-updated: "2026-11-16 21:30"
+
+  Done when: a test alert fired on omen appears in the served checkout focus-inbox on idc03, and omen chaba stays
+  clean after a producer run.'
+updated: 2026-11-17 18:09
 comms:
-- at: "2026-11-16 21:30"
+- at: 2026-11-16 21:30
   from: devin
   text: card captured via board-api (direct served-checkout write — /card endpoint was lock-congested)
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
