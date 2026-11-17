@@ -581,6 +581,9 @@ Rails: you are processing kanban card '{id}' on runner '{host}'.
   you run: board-api appends it to $TASK_DIR/answers.jsonl (one JSON
   object per line: {{"at","card","from","request_id","answer"}}). Check
   that file before finishing; newest line wins per request_id.
+- End your dispatch-outcome doc with a `lessons:` list — 0-5 short
+  gotcha lines (one `- ` item each; `lessons: []` if none). The dispatch
+  primer harvests them into the next run's KNOWN_PITFALLS block.
 """.strip()
 
 # OpenCode profile agents hold no board-api write path — the read-only
@@ -1132,6 +1135,40 @@ def dr_module():
             import dispatch_repos as dr
             _DR = dr
             return _DR
+        except Exception:
+            continue
+    return None
+
+
+_DT = None
+_DT_TRIED = False
+
+
+def task_compose_module():
+    """Import dispatch_task — the shared primer/rails composer for the
+    devin task path (runner-agent-primer-coverage). Lives in
+    scripts/board in a repo checkout; runner-agent deploys as a single
+    file, so resolve it lazily on dr_module()'s candidate dirs. None
+    when no checkout carries it — devin_task_text then falls back to
+    bare spec+RAILS (warn-only, never blocks a claim)."""
+    global _DT, _DT_TRIED
+    if _DT_TRIED:
+        return _DT
+    _DT_TRIED = True
+    cands = []
+    env = os.environ.get("DISPATCH_REPOS_DIR")
+    if env:
+        cands.append(Path(env))
+    cands += [Path(__file__).resolve().parent,
+              Path.home() / "CascadeProjects/chaba/scripts/board"]
+    for d in cands:
+        if not (d / "dispatch_task.py").exists():
+            continue
+        sys.path.insert(0, str(d))
+        try:
+            import dispatch_task as dtc
+            _DT = dtc
+            return _DT
         except Exception:
             continue
     return None
@@ -3230,10 +3267,41 @@ def finish_jules_lane(cid: str, ent: dict, card: dict) -> tuple:
     return False, notes
 
 
+def devin_task_text(card: dict) -> tuple:
+    """(task_text, primer_note) for the devin dispatch path. Composes
+    through dispatch_task.compose_task — KNOWN_PITFALLS/KNOWN_GOOD
+    primer, RETRY_RAILS on requeue, REPORT_RAILS on report-linked — the
+    same blocks kanban-dispatch's build_task produces. Falls back to
+    bare spec+RAILS when the shared module is unimportable (stale
+    checkout): the primer is advisory and never blocks a claim.
+    primer_note is the card-comms text recording injected lines (''
+    when none). Devin path only — opencode/kk_mac lanes hold bounded
+    prompt contracts and must not grow these blocks."""
+    cid = card["id"]
+    rails = RAILS.format(id=cid, host=HOST, api=API)
+    dtc = task_compose_module()
+    if dtc is not None:
+        try:
+            task, pl, gl = dtc.compose_task(
+                card, host=HOST, api=API, rails=rails)
+            return task, dtc.primer_note(pl, gl)
+        except Exception as e:
+            print(f"warn: dispatch_task compose failed: {e}",
+                  file=sys.stderr)
+    return spec_text(card) + "\n\n" + rails, ""
+
+
+def spec_text(card: dict) -> str:
+    """Card spec, else title+note fallback (dispatch_task parity)."""
+    return (card.get("spec") or "").strip() or \
+        f"{card.get('title', '')}\n\n{card.get('note', '')}"
+
+
 def start_task(card: dict, typ: str) -> tuple:
     """Kick off the claimed card; returns (unit_name, task_id, error)."""
     cid = card["id"]
     a = card.get("action") or {}
+    primer_note = ""
     unit = re.sub(r"[^a-zA-Z0-9_-]", "-",
                   f"runner-{cid}-{int(time.time())}")[:60]
     if typ == "container":
@@ -3359,9 +3427,7 @@ def start_task(card: dict, typ: str) -> tuple:
             return start_opencode_lane(card, lane, unit)
         # no resolvable task profile -> generic build agent stays out
         # of unattended routing; the card takes the devin path
-        spec = (card.get("spec") or "").strip() or \
-            f"{card.get('title', '')}\n\n{card.get('note', '')}"
-        task = spec + "\n\n" + RAILS.format(id=cid, host=HOST, api=API)
+        task, primer_note = devin_task_text(card)
         if task_runtime() != "systemd":
             # claimable() already declines; double-guard so a forced
             # claim can never invoke the systemd-run-based launcher.
@@ -3430,6 +3496,12 @@ def start_task(card: dict, typ: str) -> tuple:
         tid = r.stdout.strip().splitlines()[-1].strip()
         unit = f"devin-task-{tid}"
         enforce_task_limits(unit)
+        if primer_note:
+            # board shows exactly what the session was primed with —
+            # kanban-dispatch start_pending parity. Posted here (not in
+            # claim_pass) so zombie-claim restarts log it too.
+            api("/comment", {"id": cid, "from": "chaba",
+                             "text": primer_note})
     return unit, tid, ""
 
 

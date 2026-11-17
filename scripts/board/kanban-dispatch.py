@@ -45,7 +45,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import dispatch_repos as dr
-import lesson_primer as lp
+import dispatch_task as dt
+import lesson_primer as lp  # tests patch lp.build/build_good via this handle
 import waiting_cards as wc
 
 REPO = Path(__file__).resolve().parent.parent.parent
@@ -324,31 +325,11 @@ Rails: you are processing kanban card '{id}' (docs/ssot/kanban/cards/{id}.yml).
   primer harvests them into the next run's KNOWN_PITFALLS block.
 """.strip()
 
-# Appended after TASK_RAILS when the card was requeued after a failed
-# attempt (action.attempts > 0 or action.last_failure set) — the next
-# session gets the failure evidence instead of a blind re-run.
-RETRY_RAILS = """
----
-This is attempt {n} for this card — the previous run did NOT merge/verify
-cleanly. Prior failure: {failure}
-- Read the card's comms for the full trail before starting:
-    curl -s {api}/cards | python3 -c "import sys,json; print(json.dumps([c.get('comms') for c in json.load(sys.stdin).get('cards',[]) if c.get('id')=='{id}'], indent=1))"
-- Fix the reported failure FIRST; do not repeat the failed approach.
-""".strip()
-
-# Design docs/design/report-session-loop.md §2b — appended after
-# TASK_RAILS when the card carries `report: <cms-slug>`; the session
-# keeps ada-cms-pages/<slug> updated via scripts/ada/cms-report-note.py.
-REPORT_RAILS = """
-This card is report-linked: ada-cms-pages/{slug}.
-- Read the report FIRST: python3 scripts/ada/cms-report-note.py {slug} --read
-- As you work, mirror progress into the report's session log:
-    python3 scripts/ada/cms-report-note.py {slug} --note "<what changed>"
-  (appends meta.timeline + the <!-- session-log:auto --> managed block;
-   merges meta per the writer contract — never bare-replace a page)
-- Before finishing: the report must reflect the outcome. The report is
-  the long-lived artifact; this card is the tracking surface.
-""".strip()
+# RETRY_RAILS/REPORT_RAILS moved to dispatch_task (single source shared
+# with runner-agent's devin path) — aliases keep the module surface the
+# tests and importers were written against.
+RETRY_RAILS = dt.RETRY_RAILS
+REPORT_RAILS = dt.REPORT_RAILS
 
 
 # Lesson/good lines injected into the most recent build_task call — read
@@ -359,40 +340,15 @@ LAST_GOOD_LINES: list = []
 
 def build_task(card: dict) -> str:
     """The text handed to `devin-dispatch start` — card spec (or
-    title+note) plus TASK_RAILS, a KNOWN_PITFALLS primer block when past
-    lessons match, a KNOWN_GOOD block when first-try-verified work
-    matches, plus REPORT_RAILS when report-linked."""
-    spec = (card.get("spec") or "").strip() \
-        or f"{card.get('title','')}\n\n{card.get('note','')}"
-    task = spec + "\n\n" + TASK_RAILS.format(id=card["id"], api=API)
-    repo = (card.get("action") or {}).get("repo", "chaba")
-    LAST_PRIMER_LINES.clear()
-    LAST_GOOD_LINES.clear()
-    if os.environ.get("KANBAN_PRIMER", "1") != "0":
-        try:
-            LAST_PRIMER_LINES.extend(lp.build(card, HOST, repo, REPO))
-        except Exception as e:  # primer is advisory — never block a run
-            print(f"warn: lesson primer failed: {e}", file=sys.stderr)
-    if LAST_PRIMER_LINES:
-        task += "\n\n" + lp.format_block(LAST_PRIMER_LINES, HOST, repo)
-    if os.environ.get("KANBAN_PRIMER_GOOD", "1") != "0":
-        try:
-            LAST_GOOD_LINES.extend(
-                lp.build_good(card, HOST, repo, REPO))
-        except Exception as e:  # good primer is advisory too
-            print(f"warn: good primer failed: {e}", file=sys.stderr)
-    if LAST_GOOD_LINES:
-        task += "\n\n" + lp.format_good_block(LAST_GOOD_LINES)
-    a = card.get("action") or {}
-    attempts = int(a.get("attempts") or 0)
-    if attempts > 0 or a.get("last_failure"):
-        task += "\n\n" + RETRY_RAILS.format(
-            id=card["id"], api=API, n=attempts + 1,
-            failure=str(a.get("last_failure")
-                        or "(no detail — inspect the card comms)")[:400])
-    slug = str(card.get("report") or "").strip()
-    if slug:
-        task += "\n\n" + REPORT_RAILS.format(slug=slug)
+    title+note) plus TASK_RAILS, then the shared blocks composed by
+    dispatch_task.compose_task: KNOWN_PITFALLS primer when past lessons
+    match, KNOWN_GOOD when first-try-verified work matches, RETRY_RAILS
+    on requeue, REPORT_RAILS when report-linked."""
+    task, primer, good = dt.compose_task(
+        card, host=HOST, api=API,
+        rails=TASK_RAILS.format(id=card["id"], api=API), root=REPO)
+    LAST_PRIMER_LINES[:] = primer
+    LAST_GOOD_LINES[:] = good
     return task
 
 
@@ -733,15 +689,9 @@ def start_pending(path: Path) -> str:
                   + (f" ({blurb})" if blurb else ""))
         _notify("start", card.get("id") or path.stem,
                 f"dispatched {task_id} on {repo}")
-        if LAST_PRIMER_LINES or LAST_GOOD_LINES:
-            msg = f"primer injected {len(LAST_PRIMER_LINES)} lesson(s)"
-            if LAST_PRIMER_LINES:
-                msg += ": " + "; ".join(
-                    l[:80] for l in LAST_PRIMER_LINES)
-            if LAST_GOOD_LINES:
-                msg += (" | good: " + "; ".join(
-                    l[:80] for l in LAST_GOOD_LINES))
-            comms_add(card, "chaba", msg)
+        note = dt.primer_note(LAST_PRIMER_LINES, LAST_GOOD_LINES)
+        if note:
+            comms_add(card, "chaba", note)
         save_card(path, card)
         return f"dispatched {task_id}"
     return _with_lock(apply)
