@@ -1,7 +1,7 @@
 id: kk-mac-routing-proposal-fold-local-qwen2-4d513b
 title: kk-mac routing proposal — fold local qwen2.5:32b into tool-call/summary/classify fallback chains
 column: review
-updated: 2026-11-17 22:10
+updated: 2026-11-17 23:18
 priority: medium
 spec: 'Card-judgment eval done 2026-11-13 (card kk-mac-card-judgment-eval, KNB-1087): kk-mac qwen2.5:32b scored
   action_accuracy 0.857 / deference 0.878 / corr_precision 0.909 / corr_recall 1.0 / 0 parse-fails on the 98-case
@@ -348,6 +348,12 @@ comms:
   from: chaba
   text: 'raised request merge-conflict-13: merge-sweep can''t land dispatch/20261113-202232-card-judgment-eval-done-2026-1:
     4 commit(s) conflict with origin/master '
+- at: 2026-11-17 23:18
+  from: tony
+  text: 'answered merge-conflict-13: let devin resolve the conflict and land it ★'
+- at: 2026-11-17 23:18
+  from: chaba
+  text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
 action:
   type: dispatch
   repo: chaba
@@ -551,7 +557,7 @@ requests:
     origin/master in chaba — conflicted paths: docs/ssot/infrastructure/ssot.llm-gateway.yml, docs/ssot/ssot.dev-system.assessment.yml,
     scripts/board/lane-savings.py, scripts/devnest/kk_mac_llm.py, stacks/idc03/litellm/config.yaml. Merge tony-dell:/home/tony/CascadeProjects/dispatch-wt-20261113-202232-card-judgment-eval-done-2026-1
     by hand, or retry/abandon the card.'
-  status: open
+  status: answered
   at: 2026-11-17 22:10
   from: chaba
   options:
@@ -559,6 +565,7 @@ requests:
   - drop this dispatch — re-dispatch fresh from current main
   - hold the card
   suggested: let devin resolve the conflict and land it ★
+  answer: let devin resolve the conflict and land it ★
 review_kind: verify
 claim: {}
 awaiting_action: true
