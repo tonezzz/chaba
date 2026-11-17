@@ -1,7 +1,7 @@
 id: render-job-writer-must-upload-output-to-78229c
 title: render_job writer must upload output to /wp/v2/media (output_url convention)
 column: doing
-updated: 2026-11-17 23:37
+updated: 2026-11-17 23:38
 note: follow-up to render-job display work 2026-10-15
 ref: OPS-0701
 comms:
@@ -91,6 +91,10 @@ comms:
 - at: 2026-11-17 23:37
   from: chaba
   text: started devin-task-20261117-233754-render-job-writer-must-upload- on tony-dell (dispatch)
+- at: 2026-11-17 23:38
+  from: tony-dell
+  text: 'finished (failed): exit=1  devin-task-20261117-233754-render-job-writer-must-upload-.service: Failed with
+    result ''exit-code''. | devin-task-'
 requests:
 - id: the-render-job-writer-needs-to-d0fd99
   ask: The render_job writer needs to upload output binaries to WordPress media endpoints rather than saving local
@@ -110,7 +114,10 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: devin
   lane_source: fallback
   runner: tony-dell
+  result: 'exit=1  devin-task-20261117-233754-render-job-writer-must-upload-.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233754-render-job-writer-must-upload-.service: Consumed 533ms CPU time over 4.320s wall
+    clock time, 71.6M memory peak.'
