@@ -11,7 +11,7 @@ priority: medium
 note: 'GET http://tony-omen.taila0626a.ts.net:8791/status failed: <urlopen error [Errno 111] Connection refused>'
 help: 'yt-live REST shim for voice/agent casting, on tony-omen:8791. Check: ssh tony-omen systemctl --user status
   yt-live-api; logs: ssh tony-omen journalctl --user -u yt-live-api -n 50'
-updated: 2026-11-17 18:23
+updated: 2026-11-17 18:40
 ref: MED-0306
 comms:
 - at: 2026-10-11 08:35
@@ -39,6 +39,10 @@ comms:
 - at: 2026-11-17 18:23
   from: chaba
   text: 'tony-omen defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:40
+  from: chaba
+  text: 'idc02 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action:
   status: done
