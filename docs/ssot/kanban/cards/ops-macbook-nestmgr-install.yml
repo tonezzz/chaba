@@ -1,7 +1,7 @@
 id: ops-macbook-nestmgr-install
 title: 'tony-macbook: install nest-mgr.service (host asleep)'
 column: doing
-updated: 2026-11-17 18:53
+updated: 2026-11-17 18:59
 priority: low
 spec: 'tony-macbook is Linux (Linux 7.0.0-42-generic) but offline/asleep (tailscale ping no reply, ssh timeout,
   beacon stale ~20min as of 2026-11-17 ~17:45). When it wakes: cd ~/CascadeProjects/chaba && git pull; bash stacks/services/nest-mgr/install.sh
@@ -57,6 +57,11 @@ comms:
   from: devin
   text: tony-macbook is awake now (tailscale ping 11ms direct). Installing nest-mgr via install.sh from dispatch
     worktree.
+- at: 2026-11-17 18:59
+  from: devin
+  text: nest-mgr installed+verified on tony-macbook (unit active, manager-state.json live, nest-tony-macbook CMS
+    page published). Also found runner-agent.service crashing on stale binary (AttributeError reconcile_pass) —
+    redeployed repo runner-agent.py per card comms; now running first clean pass over the queue.
 action:
   type: dispatch
   status: running
