@@ -1,10 +1,9 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: backlog
-updated: 2026-11-17
-brief: Turn nest-mgr from observer-governor into a controlled actuator that safely
-  restarts failed nodes and routes eligible queued work to idle hosts — without
-  bypassing owner/quota/leash gates. Build on the v1 census and the
+updated: 2026-11-17 18:34
+brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
+  eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
 priority: medium
 program: ai-workforce
@@ -15,111 +14,62 @@ tags:
 - actuation
 - rebalancing
 ref: nest-manager-node
-spec: |
-  GOAL
-  Improve DevNest throughput by acting on v1 census data in a bounded,
-  auditable way. v1 measures; v2 acts — but only through allowlisted,
-  gated actions.
-
-  NON-GOALS
-  - No parallel queue: work routing stays with
-    devnest-capacity-aware-dispatch / devnest_capacity_broker; nest-mgr
-    is a signal source and actuator, not a new scheduler.
-  - No synthetic work generation, no bypassing owner/quota gates.
-  - No actuation on production lanes without separate approval
-    (leash principle — ssot.nest-training.yml promotion_gate still binds).
-  - tony-macbook excluded until nest-mgr is actually installed there
-    (host was offline at install attempt).
-
-  ACTION MODES (config flag, default monitor-only)
-    monitor   - v1 behavior, unchanged (detect + report only)
-    recommend - compute actions, log + publish to CMS/state, execute nothing
-    guarded   - execute allowlisted actions only (below), per-host opt-in
-
-  GUARDED AUTO-RESTART POLICY
-  Eligible: allowlisted units only (explicit NEST_RESTART_OK=1 env on
-  the unit, or allowlist file ~/.local/share/nest/restart-allowlist).
-  Never restart: units with owner card:<id>, NEST_OWNER=none/unmanaged,
-  nest-mgr itself, units in "manual" state file, production lanes
-  unless separately approved.
-  Conditions (all required):
-    - state==failed on >=3 consecutive ticks (cooldown 5 min between
-      attempts; max 2 restarts/hour/unit)
-    - no active owner lock (check card claims + state file)
-    - unit's Restart= policy respected; only systemctl --user restart
-  Every action logged: {ts, host, unit, prior_state, action, reason,
-  outcome} appended to manager-state.json actions[] and surfaced in the
-  nest-<host> CMS page + Services card attributes.
-
-  WORK-STEALING / REBALANCING (phase 2, after restart pilot proves out)
-  Only for work already normalized by the capacity broker (task_id /
-  task_class / lane / model / artifact fields). nest-mgr never invents
-  jobs.
-  Eligible queued packages may be re-offered to idle hosts when:
-    - target host has free capacity (load/mem/disk headroom from
-      device-telemetry) and compatible runtime/model
-    - claim via lease file in MDDB (idempotent key = task_id+attempt)
-      to prevent duplicate dispatch; lease TTL + release on ack
-    - owner/quota gates pass (same gates as broker)
-    - not production side-effects without explicit approval
-  Pilot subset first: idc02 + con01 + mn01 (fresh installs, currently
-  0-2 active nodes — safe testbed). Do not touch tony-omen/idc03 until
-  pilot metrics look clean.
-
-  CIRCUIT BREAKERS / ROLLBACK
-  - Per-unit: after 2 failed restarts in an hour -> mark unit
-    "circuit-open", stop retrying, alert via CMS page.
-  - Per-host: >5 actions/hour -> host circuit-open, fall back to
-    monitor mode until manually reset (rm state file flag).
-  - Global kill switch: env NEST_MGR_MODE=monitor on unit drop-in +
-    daemon-reload; also a flag file ~/.local/share/nest/actuation.off
-    checked every tick.
-  - Rollback = revert to v1 binary; v1 never depended on action state.
-
-  AUDIT TRAIL
-  All recommendations and actions append to manager-state.json
-  (actions[] ring buffer, last 200) AND published into the nest-<host>
-  CMS page ("Actions" section) AND mirrored to HA via the existing
-  telemetry pipeline (svc_nest_mgr attribute rows). Nothing acts
-  silently.
-
-  SUCCESS METRICS (prove efficiency, not vibes)
-  - queue wait time (package -> first run), productive time per host,
-    verified success rate, fallback rate, restart success rate,
-    cost/GPU-time delta — reuse the broker's existing metric set.
-  - Compare 7-day windows before/after enabling guarded mode on pilot
-    hosts. Report on the nest-<host> page + a card comm.
-
-  ROLLOUT
-  Phase 0 (this card): spec + dry-run/recommend-mode implementation on
-    pilot hosts only, state-file logging, zero execution.
-  Phase 1: guarded auto-restart allowlist on pilot hosts, 1 week soak.
-  Phase 2: work-stealing for broker-normalized packages on pilot hosts.
-  Phase 3: evaluate expansion to omen/idc03/dell; per-host opt-in only.
-
-  INTEGRATION POINTS
-  - stacks/services/nest-mgr/nest-mgr.py (v1 census/probe/classify)
-  - scripts/devnest/devnest_capacity_broker.py + gdrive inbox/packs
-    (normalized package format + lease store)
-  - device-telemetry agent services probe (host capacity signals)
-  - telemetry-ha-push.py svc_nest_mgr sensors (visibility)
-  - kanban card claims (nest_nodes:) as ownership gate
+spec: "GOAL\nImprove DevNest throughput by acting on v1 census data in a bounded,\nauditable way. v1 measures; v2\
+  \ acts — but only through allowlisted,\ngated actions.\n\nNON-GOALS\n- No parallel queue: work routing stays with\n\
+  \  devnest-capacity-aware-dispatch / devnest_capacity_broker; nest-mgr\n  is a signal source and actuator, not\
+  \ a new scheduler.\n- No synthetic work generation, no bypassing owner/quota gates.\n- No actuation on production\
+  \ lanes without separate approval\n  (leash principle — ssot.nest-training.yml promotion_gate still binds).\n\
+  - tony-macbook excluded until nest-mgr is actually installed there\n  (host was offline at install attempt).\n\
+  \nACTION MODES (config flag, default monitor-only)\n  monitor   - v1 behavior, unchanged (detect + report only)\n\
+  \  recommend - compute actions, log + publish to CMS/state, execute nothing\n  guarded   - execute allowlisted\
+  \ actions only (below), per-host opt-in\n\nGUARDED AUTO-RESTART POLICY\nEligible: allowlisted units only (explicit\
+  \ NEST_RESTART_OK=1 env on\nthe unit, or allowlist file ~/.local/share/nest/restart-allowlist).\nNever restart:\
+  \ units with owner card:<id>, NEST_OWNER=none/unmanaged,\nnest-mgr itself, units in \"manual\" state file, production\
+  \ lanes\nunless separately approved.\nConditions (all required):\n  - state==failed on >=3 consecutive ticks (cooldown\
+  \ 5 min between\n    attempts; max 2 restarts/hour/unit)\n  - no active owner lock (check card claims + state\
+  \ file)\n  - unit's Restart= policy respected; only systemctl --user restart\nEvery action logged: {ts, host,\
+  \ unit, prior_state, action, reason,\noutcome} appended to manager-state.json actions[] and surfaced in the\n\
+  nest-<host> CMS page + Services card attributes.\n\nWORK-STEALING / REBALANCING (phase 2, after restart pilot\
+  \ proves out)\nOnly for work already normalized by the capacity broker (task_id /\ntask_class / lane / model /\
+  \ artifact fields). nest-mgr never invents\njobs.\nEligible queued packages may be re-offered to idle hosts when:\n\
+  \  - target host has free capacity (load/mem/disk headroom from\n    device-telemetry) and compatible runtime/model\n\
+  \  - claim via lease file in MDDB (idempotent key = task_id+attempt)\n    to prevent duplicate dispatch; lease\
+  \ TTL + release on ack\n  - owner/quota gates pass (same gates as broker)\n  - not production side-effects without\
+  \ explicit approval\nPilot subset first: idc02 + con01 + mn01 (fresh installs, currently\n0-2 active nodes — safe\
+  \ testbed). Do not touch tony-omen/idc03 until\npilot metrics look clean.\n\nCIRCUIT BREAKERS / ROLLBACK\n- Per-unit:\
+  \ after 2 failed restarts in an hour -> mark unit\n  \"circuit-open\", stop retrying, alert via CMS page.\n- Per-host:\
+  \ >5 actions/hour -> host circuit-open, fall back to\n  monitor mode until manually reset (rm state file flag).\n\
+  - Global kill switch: env NEST_MGR_MODE=monitor on unit drop-in +\n  daemon-reload; also a flag file ~/.local/share/nest/actuation.off\n\
+  \  checked every tick.\n- Rollback = revert to v1 binary; v1 never depended on action state.\n\nAUDIT TRAIL\n\
+  All recommendations and actions append to manager-state.json\n(actions[] ring buffer, last 200) AND published\
+  \ into the nest-<host>\nCMS page (\"Actions\" section) AND mirrored to HA via the existing\ntelemetry pipeline\
+  \ (svc_nest_mgr attribute rows). Nothing acts\nsilently.\n\nSUCCESS METRICS (prove efficiency, not vibes)\n- queue\
+  \ wait time (package -> first run), productive time per host,\n  verified success rate, fallback rate, restart\
+  \ success rate,\n  cost/GPU-time delta — reuse the broker's existing metric set.\n- Compare 7-day windows before/after\
+  \ enabling guarded mode on pilot\n  hosts. Report on the nest-<host> page + a card comm.\n\nROLLOUT\nPhase 0 (this\
+  \ card): spec + dry-run/recommend-mode implementation on\n  pilot hosts only, state-file logging, zero execution.\n\
+  Phase 1: guarded auto-restart allowlist on pilot hosts, 1 week soak.\nPhase 2: work-stealing for broker-normalized\
+  \ packages on pilot hosts.\nPhase 3: evaluate expansion to omen/idc03/dell; per-host opt-in only.\n\nINTEGRATION\
+  \ POINTS\n- stacks/services/nest-mgr/nest-mgr.py (v1 census/probe/classify)\n- scripts/devnest/devnest_capacity_broker.py\
+  \ + gdrive inbox/packs\n  (normalized package format + lease store)\n- device-telemetry agent services probe (host\
+  \ capacity signals)\n- telemetry-ha-push.py svc_nest_mgr sensors (visibility)\n- kanban card claims (nest_nodes:)\
+  \ as ownership gate\n"
 related_cards:
 - devnest-capacity-aware-dispatch
 - nest-manager-node
 comms:
 - at: 2026-11-17
   from: devin
-  text: 'Spec captured from chat. v1 (observer-governor, deployed on
-    idc02/idc03/con01/mn01/tony-omen/tony-dell) only observes — it
-    discovers nodes, adopts ownerless ones, health-checks, publishes
-    nest-<host> CMS pages. This card is the v2 proposal: controlled
-    actuation for real DevNest efficiency gains. Tony asked to spec it;
-    explicitly NOT to deploy actuation — design + dry-run/recommend
-    mode first. board-api write path was timing out; filed via
-    dispatch worktree card-file fallback.'
-requests: []
+  text: 'Spec captured from chat. v1 (observer-governor, deployed on idc02/idc03/con01/mn01/tony-omen/tony-dell)
+    only observes — it discovers nodes, adopts ownerless ones, health-checks, publishes nest-<host> CMS pages. This
+    card is the v2 proposal: controlled actuation for real DevNest efficiency gains. Tony asked to spec it; explicitly
+    NOT to deploy actuation — design + dry-run/recommend mode first. board-api write path was timing out; filed
+    via dispatch worktree card-file fallback.'
+- at: 2026-11-17 18:34
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action: {}
-review_kind: decide
+review_kind: design
 claim: {}
-awaiting_action: true
+awaiting_action: tony
