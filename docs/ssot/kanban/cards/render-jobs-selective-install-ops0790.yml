@@ -1,7 +1,7 @@
 id: render-jobs-selective-install-ops0790
 title: Scope systemd timer installation for OPS-0790 rollout
 column: doing
-updated: 2026-11-17 19:36
+updated: 2026-11-17 19:38
 brief: Prevent the approved host-by-host rollout from enabling unrelated timers while installing the 8 migrated
   dispatcher jobs.
 priority: high
@@ -106,3 +106,8 @@ comms:
 - at: 2026-11-17 19:36
   from: chaba
   text: started devin-task-20261117-193648-follow-up-to-the-accepted-ops- on idc02 (dispatch)
+- at: 2026-11-17 19:38
+  from: devin
+  text: Dispatched on idc02. The --ids implementation + report already landed via sibling card (commit 7b5f86014d,
+    card render-jobs-selective-install-ops0790-tonydell, closed 11-07). Verifying suite is green, then adding CLI-level
+    install tests that prove systemctl enable --now only receives selected timers.
