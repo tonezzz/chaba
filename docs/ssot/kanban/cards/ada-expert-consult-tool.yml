@@ -1,7 +1,7 @@
 id: ada-expert-consult-tool
 title: Ada expert-consultation tool — second opinion from stronger models + Nest history
 column: doing
-updated: 2026-11-17 13:50
+updated: 2026-11-17 13:52
 priority: medium
 program: ai-workforce
 tags:
@@ -526,6 +526,10 @@ comms:
     guard, bounded question/context/output tokens/wall time, question-hash and token usage events, safe provider
     errors, allowlisted consult aliases, and exact LITELLM_KEY_CONSULT transport override. Full Ada suite: 1760
     passed, 4 skipped; tool-lint clean. No provider call or depl'
+- at: 2026-11-17 13:52
+  from: devin
+  text: 'raised request consult-per-call-cap: Choose the per-call estimated USD ceiling, separate from the 30-day
+    virtual-key budget. The code preflights a conservati'
 action:
   type: dispatch
   repo: ada-voice
@@ -562,3 +566,19 @@ requests:
   - id: other-cap
     label: Other amount
   suggested: cap-5-30d
+- id: consult-per-call-cap
+  ask: Choose the per-call estimated USD ceiling, separate from the 30-day virtual-key budget. The code preflights
+    a conservative UTF-8-byte input ceiling plus max output tokens using per-alias rates, and refuses if the bound
+    exceeds the cap. Recommendation is $0.10/call; $0.25 allows larger consult-pro/consult-claude calls. Missing
+    rate config fails closed.
+  status: open
+  at: 2026-11-17 13:52
+  from: devin
+  options:
+  - id: cap-010-call
+    label: $0.10 / call — recommended
+  - id: cap-025-call
+    label: $0.25 / call
+  - id: other-call-cap
+    label: Other amount
+  suggested: cap-010-call
