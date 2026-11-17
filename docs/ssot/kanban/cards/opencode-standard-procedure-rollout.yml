@@ -1,6 +1,6 @@
 id: opencode-standard-procedure-rollout
 title: Pilot OpenCode on bounded standard procedures
-column: backlog
+column: doing
 updated: 2026-11-17 23:35
 brief: Expand OpenCode from a single supervised savings pilot to carefully bounded standard-procedure execution,
   without weakening existing gates.
@@ -97,6 +97,9 @@ comms:
 - at: 2026-11-17 23:35
   from: chaba
   text: 'mn01 defers: host overloaded (5m load/core 1.02 > 1.0)'
+- at: 2026-11-17 23:35
+  from: tony-omen
+  text: claimed
 requests:
 - id: opencode-procedure-rollout-scope
   ask: What scope should the next OpenCode standard-procedure rollout use?
@@ -114,10 +117,10 @@ requests:
   suggested: supervised-s0-s2
   answer: supervised-s0-s2 — Use OpenCode only for bounded read-only/report/doc/small-test procedures with isolated
     worktrees and independent verifiers; keep production actions human-gated and broad OPENCODE_LANES off.
-awaiting_action: true
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: devin
   lane_source: fallback
+  runner: tony-omen
