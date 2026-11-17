@@ -1,0 +1,51 @@
+id: answered-but-unexecuted-card-graveyard-3-3d4fe1
+title: Answered-but-unexecuted card graveyard — 39 backlog cards with dead answers; option picks carry no action
+column: backlog
+updated: 2026-11-17 23:28
+priority: high
+tags:
+- board
+- answer-sweep
+- kanban
+spec: 'Sweep 2026-11-17 (Tony request): 39 backlog cards hold answered-but-unexecuted requests. answer-sweep only
+  auto-fires hard verbs (queue/close/hold/none); option-picked and decision answers stay flagged forever — awaiting_action=True
+  with nothing acting. Same dead-letter class as the merge-conflict re-ask loop (KNB-0178) but inverted: there answers
+  re-asked, here they never execute.
+
+
+  Triage of the 39 (full data in session):
+
+  - ~15 answers are repo+host unblocks ("use repo chaba on tony-dell") or clear directives — spec-ready, need queueing:
+  oswe-eval blocked on Tony-provided items; mediawiki-sso needs Tony to register a Google OIDC client; kk-mac-video-render
+  blocked on host powered off; omen-lan-reservation needs MAC+IP from Tony.
+
+  - 2 answered "postpone" -> held via /action hold (req-47d7dd, vcast-gesture).
+
+  - rest are decisions needing spec/scope or spend gates (Veo render ~$2.52, Gemini 3 Pro route config, Colab withdrawn).
+
+
+  Improvement options to spec:
+
+  1. Option actions: emitters write options as dicts {id,label,action:queue|close|hold|spec} — answer-sweep already
+  supports per-option action but almost no request uses it (merge-sweep opts are plain strings).
+
+  2. repo+host unblock pattern: when ALL open asks on a card are answered and remaining gap is spec composition,
+  auto-compose spec from answers and arm dispatch (or raise one consolidated spec request).
+
+  3. Dead-letter aging: awaiting_action cards >7d get a weekly digest line / board section so they cannot pile up
+  silently.
+
+  4. Extend VERBS for observed decision answers (proceed/deploy-now already partially covered; postpone missing
+  -> cost me a manual hold tonight).
+
+  5. /respond idempotent-on-answered (200 not 400) — already noted on KNB-0178/KNB-0179.'
+action:
+  type: manual
+ref: KNB-0180
+comms:
+- at: 2026-11-17 23:28
+  from: tony
+  text: card captured via board-api
+- at: 2026-11-17 23:28
+  from: chaba
+  text: 'WARNING: action.type=manual — kanban-dispatch claims only type=dispatch; this card will starve in queue'
