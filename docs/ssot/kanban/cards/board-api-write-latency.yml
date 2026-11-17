@@ -1,7 +1,7 @@
 id: board-api-write-latency
 title: 'board-api: write endpoints queue >5min under lock contention (50 threads, ~90% CPU poll loop)'
 column: review
-updated: 2026-11-17 17:42
+updated: 2026-11-17 17:43
 spec: 'Observed 2026-11-16 ~19:00-19:20 ICT on idc03 during OPS-0135 close-out. chaba-board-api (pid long-lived
   since Nov13, 1.8GB RSS, 50 threads) serves GET /health + GET /cards instantly but POST /comment|/action queue
   behind /tmp/board-api.lock for minutes - client curls timed out at 30-60s while server-side handlers eventually
@@ -85,6 +85,9 @@ comms:
 - at: 2026-11-17 17:42
   from: chaba
   text: banked 61 outcome lesson(s) → devin-handoff bank
+- at: 2026-11-17 17:43
+  from: chaba
+  text: pushed dispatch/20261117-165539-observed-2026-11-16-19-00-19-2 to origin
 action:
   type: dispatch
   repo: chaba
