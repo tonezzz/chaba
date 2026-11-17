@@ -1,7 +1,7 @@
 id: ada-proactive-digest-morning-brief-via-t-3abb02
 title: Ada proactive digest — morning brief via TG/LINE relay
 column: doing
-updated: 2026-11-14 14:14
+updated: 2026-11-17 09:19
 ref: ADA-1201
 comms:
 - at: 2026-11-08 13:52
@@ -1773,13 +1773,16 @@ comms:
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 09:19
+  from: tony
+  text: retry requested
 action:
   type: dispatch
-  status: failed
+  status: queued
   lane: devin
-  runner: idc02
-  result: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:
-    Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
-    2.943s CPU time.'
   sweep:
     failed_noted: 2026-11-09 09:48
+  last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093821-ada-proactive-digest-morning-b.service:
+    Failed with result ''exit-code''. | devin-task-20261109-093821-ada-proactive-digest-morning-b.service: Consumed
+    2.943s CPU time.'
+  attempts: 1
