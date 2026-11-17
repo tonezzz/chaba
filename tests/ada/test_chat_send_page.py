@@ -62,7 +62,8 @@ def _clean_checkout(tmp_path: Path) -> Path:
     src = tmp_path / "ada-voice"
     for rel in ("backend", "tests"):
         shutil.copytree(ADA_PI / rel, src / rel,
-                        ignore=shutil.ignore_patterns("__pycache__"))
+                        ignore=shutil.ignore_patterns(
+                            "__pycache__", "voice-corpus"))
     for f in ADA_PI.iterdir():
         if f.is_file():
             shutil.copy2(f, src / f.name)

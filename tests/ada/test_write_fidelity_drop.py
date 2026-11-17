@@ -30,6 +30,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.ada._checkout import materialize_head
 from tests.ada._drops import check_patch, drop_guard_ok
 
 REPO = Path(__file__).resolve().parents[2]
@@ -92,8 +93,7 @@ def test_job_record_exists():
                     reason="no ada-voice checkout reachable")
 def test_patch_state_vs_checkout(tmp_path):
     dst = tmp_path / "ada-voice"
-    subprocess.run(["git", "clone", "-q", str(ADA_PI), str(dst)],
-                   check=True, timeout=120)
+    materialize_head(dst, ADA_PI)
     state = check_patch(PATCH, dst)
     assert drop_guard_ok([state]), \
         f"write-fidelity.patch {state} vs ada-voice checkout"
