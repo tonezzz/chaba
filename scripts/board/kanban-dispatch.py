@@ -479,8 +479,12 @@ def load_card(path: Path) -> dict:
     return card
 
 
-def load_dispatch_cards(card_dir: Path = CARD_DIR,
-                        cache_path: Path = INDEX_FILE) -> list:
+def load_dispatch_cards(card_dir: Path | None = None,
+                        cache_path: Path | None = None) -> list:
+    if card_dir is None:
+        card_dir = CARD_DIR
+    if cache_path is None:
+        cache_path = INDEX_FILE
     root = str(card_dir.resolve())
     try:
         payload = json.loads(cache_path.read_text())
