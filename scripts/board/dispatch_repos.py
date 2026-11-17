@@ -242,8 +242,15 @@ def executor_blurb(card: dict) -> str:
 # Keyword lane classifier — deterministic, validated on the lane corpus
 # (evals/results/jev/). Keyword hits run first; jevos is the fallback.
 LANE_KW = {
+    # Bare "spend" removed (dispatch-lane-classifier-spend-false-manual,
+    # 2026-11-17): context-free spend mentions in spec bodies — "costs
+    # money (Tony decision)", "uncontrolled spend", "zero paid spend" —
+    # stuck dispatchable cards on the manual lane. Only phrases that
+    # name an actual spend action stay; manual kws match the TITLE only
+    # (see classify_lane) so spec discussion can't force Tony's hands.
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
-               "spend", "order the", "blocked on tony", "rotation", "rekey",
+               "spend money", "paid compute", "real spend", "costs money",
+               "order the", "blocked on tony", "rotation", "rekey",
                "lease teardown", "sudo-gated", "restore.*macbook",
                "enroll.*macbook", "macbook.*restore", "macbook.*enroll"],
     "paid_frontier": ["test hook", "stagnation gate", "decision layer",
@@ -270,20 +277,39 @@ LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
 def classify_lane(card: dict, with_detail: bool = False):
     """Cheapest lane for this card: keyword-first, jevos gated fallback.
-    with_detail=True returns (lane, source, conf) for audit comms."""
+    with_detail=True returns (lane, source, conf) for audit comms;
+    source is 'explicit', 'kw:<matched keyword>', 'jevos', or
+    'fallback'.
+
+    An explicit action.lane (no lane_source provenance) is the author's
+    own routing and always wins. A lane stamped BY the classifier
+    carries action.lane_source and is re-evaluated, so a fixed
+    classifier unsticks cards it previously misrouted.
+
+    Manual-lane keywords match the TITLE only — a spec body that
+    discusses spend or hardware as decision context must not force the
+    card onto Tony's hands (dispatch-lane-classifier-spend-false-manual
+    false positives, 2026-11-17). Other lanes still read the spec."""
+    a = _act(card)
+    declared = str(a.get("lane") or "").strip()
+    if declared and not a.get("lane_source"):
+        return (declared, "explicit", 1.0) if with_detail else declared
+    title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
-    if any(k in text for k in LANE_KW["manual"]):
-        return ("manual", "kw", 1.0) if with_detail else "manual"
+    kw = next((k for k in LANE_KW["manual"] if k in title), None)
+    if kw:
+        return ("manual", f"kw:{kw}", 1.0) if with_detail else "manual"
     if re.search(LANE_COMPARE, text):
-        return ("paid_frontier", "kw", 1.0) if with_detail \
+        return ("paid_frontier", "kw:compare", 1.0) if with_detail \
             else "paid_frontier"
     for lane, kws in (("paid_frontier", LANE_KW["paid_frontier"]),
                       ("codemod", LANE_KW["codemod"]),
                       ("devin", LANE_KW["devin"]),
                       ("free_lane", LANE_KW["free_lane"])):
-        if any(k in text for k in kws):
-            return (lane, "kw", 1.0) if with_detail else lane
+        kw = next((k for k in kws if k in text), None)
+        if kw:
+            return (lane, f"kw:{kw}", 1.0) if with_detail else lane
     state = {"card": card.get("id"), "title": card.get("title", ""),
              "brief": (card.get("brief") or card.get("spec") or "")[:250]}
     q = {"lane": {"type": "choice",

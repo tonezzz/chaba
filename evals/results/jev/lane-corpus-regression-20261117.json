@@ -1,0 +1,707 @@
+{
+ "date": "2026-11-17",
+ "card": "dispatch-lane-classifier-spend-false-manual",
+ "cards": 909,
+ "flips": 86,
+ "regressions_to_manual": [],
+ "unstuck_from_manual": [
+  {
+   "id": "ada-consultant-bench-harness",
+   "title": "ada-consultant bench harness \u2014 per-model runner so the held bench card runs as script cards, not a Devin session",
+   "declared_lane": "jules",
+   "old": "manual",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-expert-consult-tool",
+   "title": "Ada expert-consultation tool \u2014 second opinion from stronger models + Nest history",
+   "declared_lane": "jules",
+   "old": "manual",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-kk-cms-traffic",
+   "title": "kk-ha CMS traffic feed \u2014 public cam dossiers into ada-cms-pages-kk",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "fallback",
+   "source": "fallback"
+  },
+  {
+   "id": "ada-lazy-schemas-arg-names",
+   "title": "Lazy decls: keep arg names + required (fix cold-tool empty-args regression)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:lock"
+  },
+  {
+   "id": "ada-real-card-sweep-scenario-20261108",
+   "title": "Ada bounded real-card sweep scenario",
+   "declared_lane": "devin",
+   "old": "manual",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-spend-guardrails-per-tool-daily-caps-a376c3",
+   "title": "Ada spend guardrails \u2014 per-tool daily caps + budget readout",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:cap"
+  },
+  {
+   "id": "ai-video-quality-control-plane",
+   "title": "Expand AI video generation quality control plane",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:pipeline"
+  },
+  {
+   "id": "board-cli-post-timeout-vs-big-card-writes",
+   "title": "board-cli 60s client timeout precedes board-api write completion on large cards",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:raise "
+  },
+  {
+   "id": "board-cli-request-ask-field",
+   "title": "Fix board-cli request subcommand \u2014 posts 'text' but API expects 'ask'",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "fallback",
+   "source": "fallback"
+  },
+  {
+   "id": "cline-card-review-lane",
+   "title": "Cline card-review lane \u2014 batch review-column cards through cline-kanban with drafted verdicts",
+   "declared_lane": "",
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:raise "
+  },
+  {
+   "id": "consultant-reroute-verify",
+   "title": "Verify consultant reroute: qwen3:8b first-filter + paid escalate",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:cap"
+  },
+  {
+   "id": "embed-bench-blocked-20261107",
+   "title": "embed-bench 403 + embed-probe down \u2014 casting bench gate closed",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:bench "
+  },
+  {
+   "id": "fleet-jobs-report-and-ada-verb",
+   "title": "fleet-jobs report \u2014 deterministic aggregator job + Ada report-verb read path (zero-token report)",
+   "declared_lane": "jules",
+   "old": "manual",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "gaussian-splatting-nest-video-poc",
+   "title": "Prototype Gaussian splat scene render for Ada Nest video lane",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:construct"
+  },
+  {
+   "id": "gemini-proxy-paid-last-resort-leg",
+   "title": "gemini-ollama-proxy: add paid-Gemini leg between free and Ollama (bounded outage spend)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "fallback",
+   "source": "fallback"
+  },
+  {
+   "id": "idc03-gemini-ollama-proxy-paid-fallback-2fa021",
+   "title": "idc03: gemini-ollama-proxy paid-fallback spam \u2014 free circuit open, every embed burns paid quota",
+   "declared_lane": "devin",
+   "old": "manual",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "idc03-structural-capacity-15gb-4core-per-2d787f",
+   "title": "idc03: structural capacity \u2014 15GB/4core permanently at ~13GB; resize VPS or migrate heavy services",
+   "declared_lane": "manual",
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:cap"
+  },
+  {
+   "id": "keywatch-absolute-spend-floor",
+   "title": "key-watch: warn on absolute remaining + spend rate",
+   "declared_lane": "paid_frontier",
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "kk-mac-ada-nest-onboarding",
+   "title": "kk-mac Ada Nest onboarding \u2014 Tailscale, power policy, dev tooling",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:host"
+  },
+  {
+   "id": "kk-mac-card-judgment-eval",
+   "title": "kk-mac card-judgment eval \u2014 can its local models replace paid side-call lanes?",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:script"
+  },
+  {
+   "id": "kk-mac-video-render-lane-ltx-video-mps-p-267f14",
+   "title": "kk-mac video render lane \u2014 LTX-Video MPS port + MLX LTX-2.3 eval",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:script"
+  },
+  {
+   "id": "lab-ada-session-boundaries",
+   "title": "Lab: Ada session boundaries \u2014 does forced context reset improve memory recall?",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:experiment"
+  },
+  {
+   "id": "lab-yolo-ha-detect",
+   "title": "Lab: YOLO object detect on HA cams",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:experiment"
+  },
+  {
+   "id": "llm-gateway-litellm",
+   "title": "LiteLLM gateway on idc \u2014 single API point: route, classify, benchmark, spend-cap",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:benchmark"
+  },
+  {
+   "id": "mddb-embed-free-first",
+   "title": "Flip mddb embed order: free Gemini first, OR fallback",
+   "declared_lane": "manual",
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:bench "
+  },
+  {
+   "id": "mddb-embed-providers-down-or-circuit-ope-fe7a91",
+   "title": "mddb embed providers down \u2014 OR circuit-open + Gemini 429 (vector-search dead on leader)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:bump"
+  },
+  {
+   "id": "mddb-embed-retry-cap",
+   "title": "Cap mddbd embed retry burst on provider recovery",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:cap"
+  },
+  {
+   "id": "mddb-embed-spend-cap",
+   "title": "MDDB embed spend: OR daily cap exhausted by device-telemetry volume \u2014 raise cap + route telemetry to mddb-ops",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:raise "
+  },
+  {
+   "id": "mn-dev-rename",
+   "title": "Rename michael-dev -> mn-dev (unit, container, dirs, ~119 SSOT refs)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:rename"
+  },
+  {
+   "id": "model-efficiency-refresh-deepseek-flint-providers",
+   "title": "Refresh model efficiency scorecard across providers",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "free_lane",
+   "source": "kw:report"
+  },
+  {
+   "id": "omen-battery-charge-policy",
+   "title": "omen battery charge policy \u2014 hysteresis via smart plug (no firmware threshold on HP Omen)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:automation"
+  },
+  {
+   "id": "or-direct-bypass-leak-audit",
+   "title": "Audit direct OpenRouter usage bypassing LiteLLM (~$1/day leak)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:host"
+  },
+  {
+   "id": "or-management-key-activity",
+   "title": "OR management key for per-call activity attribution",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:provision"
+  },
+  {
+   "id": "or-spend-observability-realtime-spend-ho-134232",
+   "title": "OR spend observability \u2014 realtime spend hook + OR panel report",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "free_lane",
+   "source": "kw:report"
+  },
+  {
+   "id": "rainy-day-spend-decisions",
+   "title": "Rainy-day spend decisions \u2014 OR credit + Devin default model",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "paid_frontier",
+   "source": "kw:bench "
+  },
+  {
+   "id": "restore-ada-spend-ledger-env",
+   "title": "Restore ada-ha-tony.env for ada-spend-ledger",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:config"
+  },
+  {
+   "id": "rk600-shutter-go-live",
+   "title": "RK600 shutter control: go-live checklist (blocked on motor repair)",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:lock"
+  },
+  {
+   "id": "rotate-ada-code-litellm-key-20261109",
+   "title": "Rotate exposed Ada-code LiteLLM key without weakening budget controls",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:lock"
+  },
+  {
+   "id": "timer-alert-idc03-ada-spend-ledger",
+   "title": "Timer ada-spend-ledger on idc03 failing",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "devin",
+   "source": "kw:host"
+  },
+  {
+   "id": "tony-lane-tool-profile",
+   "title": "Define tony-lane keep-list tool profile (same mechanism as kk-ha), render + measure token cut",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:lock"
+  },
+  {
+   "id": "tony-macbook-daytime-runner",
+   "title": "tony-macbook as daytime-elastic dispatch runner",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "fallback",
+   "source": "fallback"
+  },
+  {
+   "id": "tony-macbook-restore-enroll",
+   "title": "tony-macbook: restore KK files + enroll runner-agent",
+   "declared_lane": null,
+   "old": "manual",
+   "new": "codemod",
+   "source": "kw:cap"
+  }
+ ],
+ "other_flips": [
+  {
+   "id": "ada-opencode-live-demo-opsread",
+   "title": "Live demo \u2014 Ada\u2192OpenCode ops-readonly dispatch",
+   "declared_lane": "free_lane",
+   "old": "devin",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-proactive-digest-morning-brief-via-t-3abb02",
+   "title": "Ada proactive digest \u2014 morning brief via TG/LINE relay",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-prompt-slim",
+   "title": "Ada prompt slim \u2014 compact DEFAULT_ADA_INSTRUCTIONS to one-line rules + SSOT pointers",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-status-live-state-preference",
+   "title": "ada_status: prefer live telemetry over stale board records + freshness tags + contradiction flags",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-tools-command-reference",
+   "title": "Ada tools command reference \u2014 generated reviewable catalog (name/purpose/trigger/cost) + Ada what-can-you-do verb",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-tools-wiki-read-wiki-search-recall-t-8f32dd",
+   "title": "Ada tools: wiki_read + wiki_search \u2014 recall the Education wiki",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "ada-transcript-archive-retention",
+   "title": "Distill\u2192NotebookLM\u2192purge retention for ada transcripts + events",
+   "declared_lane": "paid_frontier",
+   "old": "codemod",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "adobe-stock-inpaint-defect-repair",
+   "title": "Inpaint-based defect repair lane for stock candidates",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "chaba-merge-gate-ada-drop10-rotted",
+   "title": "Chaba merge gate red \u2014 ada-voice drop 10 cast-loop patch rotted",
+   "declared_lane": "paid_frontier",
+   "old": "fallback",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "chaba-merge-gate-ada-drops-rot-audit",
+   "title": "Chaba merge gate still red \u2014 audit & repair all rotted ada-voice drops",
+   "declared_lane": "paid_frontier",
+   "old": "fallback",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "chore-tony-dell-worktree-sprawl",
+   "title": "tony-dell chaba worktree/branch sprawl cleanup",
+   "declared_lane": "free_lane",
+   "old": "codemod",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "devin-cli-fleet-update-20261108",
+   "title": "Update Devin CLI and verify agents on Omen, Dell, and MacBook",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "dispatch-model-pick-executor-mismatch",
+   "title": "Cheapest-model pick chooses litellm/<model> ids for devin-executor claims \u2014 task dies at launch",
+   "declared_lane": "paid_frontier",
+   "old": "devin",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "dispatch-prompt-regression-harness",
+   "title": "build_task regression harness \u2014 prompt-layer gates for rails and primer",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "dispatch-triage-arbiter-label-pass",
+   "title": "Arbiter label pass \u2014 dispatch-triage corpus (approved: strategy b)",
+   "declared_lane": "devin",
+   "old": "free_lane",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "dispatch-triage-corpus-inventory",
+   "title": "dispatch-triage specialist \u2014 corpus inventory and labeling strategy proposal",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "gdrive-root-consolidation-archive-dead-p-9c04d1",
+   "title": "Gdrive root consolidation \u2014 archive dead pilot dirs (phase A done, phase B carded)",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "hands-off-waiting-card-procedure",
+   "title": "Standardize hands-off processing for safe waiting cards",
+   "declared_lane": "devin",
+   "old": "free_lane",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "jack-opencode-cloudflare-prep-idc02",
+   "title": "Prepare Jack Cloudflare route with OpenCode on idc02",
+   "declared_lane": "free_lane",
+   "old": "devin",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "jack-opencode-cloudflare-prep",
+   "title": "Prepare Cloudflare route config for Jack OpenCode via OpenCode lane",
+   "declared_lane": "free_lane",
+   "old": "codemod",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "jules-lane-feedback-state-handling",
+   "title": "jules lane: AWAITING_USER_FEEDBACK sessions burn full timeout then fail \u2014 map the state to card surface, not death",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "kk-mac-auto-lane-classifier",
+   "title": "Auto-route bounded task classes to kk_mac_local at queue time",
+   "declared_lane": "paid_frontier",
+   "old": "fallback",
+   "new": "paid_frontier",
+   "source": "explicit"
+  },
+  {
+   "id": "kk-mac-routing-proposal-fold-local-qwen2-4d513b",
+   "title": "kk-mac routing proposal \u2014 fold local qwen2.5:32b into tool-call/summary/classify fallback chains",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "mddb-cms-compact-export-import",
+   "title": "Compact mddb-cms: 23G DB \u2192 export/import (est <1G live data)",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "narrated-comms-digest",
+   "title": "Narrated comms digest \u2014 each TG lane persona reads the day's digest aloud in-channel",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "nest-queue-health-kk-coverage",
+   "title": "nest-queue-health: extend snapshot to kk-llm + video queues + KK worker heartbeat",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "opencode-session-audit-parity",
+   "title": "Add OpenCode session audit parity with Chaba Voice audit",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "ops-1244b-one-claimer-jules",
+   "title": "OPS-1244b jules: merge kanban-dispatch into runner-agent as long-running claim service (sub of devnest-queue-consolidation)",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ops-1244c-queue-time-classify",
+   "title": "OPS-1244c jules: lane classify at queue time inside board-api (OPS-0838 \u2014 sub of devnest-queue-consolidation)",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "ops-1244d-janitor-merge",
+   "title": "OPS-1244d opencode: merge board sweep scripts into one janitor tick (sub of devnest-queue-consolidation)",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "runner-per-executor-caps",
+   "title": "runner-agent: per-executor claim caps + remote-lane load-gate exemption \u2014 stop jules/nlm idle slots starving local work",
+   "declared_lane": "jules",
+   "old": "codemod",
+   "new": "jules",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-idc02-runner-agent",
+   "title": "Timer runner-agent on idc02 disabled",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-idc03-kanban-sync",
+   "title": "Timer kanban-sync on idc03 failing",
+   "declared_lane": "devin",
+   "old": "codemod",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-idc03-log-shipper-severe",
+   "title": "Timer log-shipper-severe on idc03 failing",
+   "declared_lane": "devin",
+   "old": "codemod",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-idc03-mddb-embed-probe",
+   "title": "Timer mddb-embed-probe on idc03 failing",
+   "declared_lane": "devin",
+   "old": "codemod",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-idc03-runner-agent",
+   "title": "Timer runner-agent on idc03 disabled",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-mn01-runner-agent",
+   "title": "Timer runner-agent on mn01 disabled",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-tony-dell-chaba-repo-sync",
+   "title": "Timer chaba-repo-sync on tony-dell failing",
+   "declared_lane": "devin",
+   "old": "codemod",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-tony-omen-focus-dispatcher-overnight",
+   "title": "Timer focus-dispatcher-overnight on tony-omen failing",
+   "declared_lane": "devin",
+   "old": "codemod",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "timer-alert-tony-omen-runner-agent",
+   "title": "Timer runner-agent on tony-omen disabled",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  },
+  {
+   "id": "video-history-opencode-doc",
+   "title": "OpenCode: verify video history procedure",
+   "declared_lane": "free_lane",
+   "old": "fallback",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "video-history-opencode-repair",
+   "title": "OpenCode artifact repair: video history procedure",
+   "declared_lane": "free_lane",
+   "old": "codemod",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "video-queue-audit-opencode-repair",
+   "title": "OpenCode artifact repair: video queue audit",
+   "declared_lane": "free_lane",
+   "old": "codemod",
+   "new": "free_lane",
+   "source": "explicit"
+  },
+  {
+   "id": "wiki-education-write-cutover-make-wiki-t-7f2e7d",
+   "title": "wiki-education-write-cutover \u2014 make wiki the sole lesson store",
+   "declared_lane": "devin",
+   "old": "fallback",
+   "new": "devin",
+   "source": "explicit"
+  }
+ ],
+ "new_manual_titles": [
+  "gemini-live-cap-rekey",
+  "gesture-control-rebuild",
+  "go2rtc-7-camera-producers-return-empty-f-cc9176",
+  "hermes-openclaw-slot",
+  "openclaw-bench-per-model-scorecard-acros-3df00d",
+  "rotate-key-updates-ada-code-env"
+ ]
+}

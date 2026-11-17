@@ -338,8 +338,13 @@ def model_provider(model: str) -> str:
 
 
 LANE_KW = {
+    # Keep in lockstep with dispatch_repos.LANE_KW — this vendored copy
+    # runs on remote hosts where dispatch_repos is absent. Bare "spend"
+    # removed 2026-11-17 (dispatch-lane-classifier-spend-false-manual):
+    # context-free spend mentions in spec bodies forced manual.
     "manual": ["hardware", "buy", "usb cam", "camera", "physical",
-               "spend", "order the", "blocked on tony", "rotation", "rekey",
+               "spend money", "paid compute", "real spend", "costs money",
+               "order the", "blocked on tony", "rotation", "rekey",
                "lease teardown", "sudo-gated", "restore.*macbook",
                "enroll.*macbook", "macbook.*restore", "macbook.*enroll"],
     "paid_frontier": ["test hook", "stagnation gate", "decision layer",
@@ -364,11 +369,20 @@ LANE_COMPARE = r"(vs|versus|or)\s+(\w+\s+)?(lane|option|choice|path|approach)"
 
 
 def classify_lane(card: dict) -> str:
-    """Cheapest lane for this card (keyword-first, devin-safe fallback)."""
+    """Cheapest lane for this card (keyword-first, devin-safe fallback).
+    Lockstep with dispatch_repos.classify_lane: an explicit action.lane
+    (no lane_source provenance) wins; manual keywords match the TITLE
+    only so spec-body spend/hardware discussion can't force Tony's
+    hands (dispatch-lane-classifier-spend-false-manual, 2026-11-17)."""
     import re as _re
+    a = card.get("action") or {}
+    declared = str(a.get("lane") or "").strip()
+    if declared and not a.get("lane_source"):
+        return declared
+    title = card.get("title", "").lower()
     text = (card.get("title", "") + " " +
             (card.get("brief") or card.get("spec") or "")).lower()
-    if any(k in text for k in LANE_KW["manual"]):
+    if any(k in title for k in LANE_KW["manual"]):
         return "manual"
     if _re.search(LANE_COMPARE, text):
         return "paid_frontier"
