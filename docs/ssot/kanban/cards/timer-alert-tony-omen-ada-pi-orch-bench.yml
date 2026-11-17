@@ -1,14 +1,14 @@
 id: timer-alert-tony-omen-ada-pi-orch-bench
 title: Timer ada-pi-orch-bench on tony-omen failing
 column: backlog
-updated: 2026-11-16 06:55
+updated: 2026-11-17 18:07
 priority: high
 tags:
 - timer-alert
 - auto
 - by:timer-sentinel
-note: 'Last run (11-16 06:30) of `ada-pi-orch-bench.service` on `tony-omen` result=timeout — investigate
-  journal: `journalctl --user -u ada-pi-orch-bench.service` on the host. See CMS `timer-timeline-tony-omen`.'
+note: 'Last run (11-16 06:30) of `ada-pi-orch-bench.service` on `tony-omen` result=timeout — investigate journal:
+  `journalctl --user -u ada-pi-orch-bench.service` on the host. See CMS `timer-timeline-tony-omen`.'
 ref: ADA-0132
 comms:
 - at: 2026-11-16 06:45
@@ -21,9 +21,13 @@ comms:
 - at: 2026-11-16 13:20
   from: backlog-spec-enrich
   text: spec drafted by backlog-spec-enrich (gemini-3.5-flash-lite) — review before queueing
-spec: Investigate the timeout failure of `ada-pi-orch-bench.service` on host `tony-omen` by inspecting
-  the systemd user journal via `journalctl --user -u ada-pi-orch-bench.service` and referencing CMS `timer-timeline-tony-omen`.
-  The target host is `tony-omen` and the relevant repository is `ada-pi`. Constraints are to rely strictly
-  on the provided card details and host logs without inventing paths or making unauthorized system modifications.
-  The done-condition is met when the root cause of the timeout is identified from the journal and documented
-  alongside the CMS timeline reference.
+- at: 2026-11-17 18:07
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+spec: Investigate the timeout failure of `ada-pi-orch-bench.service` on host `tony-omen` by inspecting the systemd
+  user journal via `journalctl --user -u ada-pi-orch-bench.service` and referencing CMS `timer-timeline-tony-omen`.
+  The target host is `tony-omen` and the relevant repository is `ada-pi`. Constraints are to rely strictly on the
+  provided card details and host logs without inventing paths or making unauthorized system modifications. The done-condition
+  is met when the root cause of the timeout is identified from the journal and documented alongside the CMS timeline
+  reference.
