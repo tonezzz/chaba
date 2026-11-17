@@ -1,7 +1,7 @@
 id: jules-session-create-failed-precondition
 title: 'Jules executor: session creation returns FAILED_PRECONDITION on tony-omen'
 column: backlog
-updated: 2026-11-17 10:17
+updated: 2026-11-17 13:32
 brief: 'Two independent Jules dispatch attempts on tony-omen failed before agent work on 2026-11-17: ADA-1279 at
   09:01 and ADA-1084 at 09:14 ICT. Both journaled HTTP 400 POST /sessions with status FAILED_PRECONDITION. OPS-1049
   (executor wiring) is done; OPS-1295 covers a different case after a session exists (AWAITING_USER_FEEDBACK). Determine
@@ -25,3 +25,9 @@ comms:
 - at: 2026-11-17 10:17
   from: tony
   text: card captured via board-api
+- at: 2026-11-17 13:32
+  from: devin
+  text: 'Read-only RCA update: using idc03 credentials, Jules GET usage returned 0 sessions today and GET /sources
+    confirmed both tonezzz/chaba and tonezzz/ada-voice are connected. On tony-omen, the same usage read could not
+    resolve jules.googleapis.com at inspection time. No create-session probe was run. This does not explain the
+    earlier HTTP 400 precondition; compare Omen key/account and request inputs after DNS is healthy.'
