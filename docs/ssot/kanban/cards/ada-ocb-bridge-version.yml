@@ -1,0 +1,26 @@
+id: ada-ocb-bridge-version
+title: 'ada-ocb: bridge version handshake so stale MCP children are detectable'
+column: backlog
+updated: 2026-11-17 22:11
+brief: We found Devin's ada-control MCP running a 23-tool stale bridge while OpenChamber had 25 — no way to tell
+  which code a session is talking to. Add a version stamp.
+priority: medium
+tags:
+- ada
+- opencode
+- kanban
+- observability
+spec: 'In ada-voice opencode/ada_mcp.py: define BRIDGE_VERSION (git sha or semver string, injected at deploy or
+  read from a VERSION file). Include it in every tool response envelope (top-level ''bridge'' object: {version,
+  tools_count}) and log it at MCP startup. Optionally expose ada_bridge_info() tool returning version + feature
+  list. Update calls.jsonl audit wrapper to record bridge version per call. Verify: two bridge copies (canonical
+  vs stale) return different versions; OpenChamber session evidence shows which version served it. Cheap insurance
+  for the per-session/per-directory MCP child model.'
+action:
+  type: dispatch
+  repo: ada-voice
+ref: ADA-0177
+comms:
+- at: 2026-11-17 22:11
+  from: devin
+  text: card captured via board-api
