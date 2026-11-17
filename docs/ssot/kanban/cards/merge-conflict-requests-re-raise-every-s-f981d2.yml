@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
 column: backlog
-updated: 2026-11-17 23:18
+updated: 2026-11-17 23:19
 priority: high
 tags:
 - board
@@ -39,6 +39,9 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
+  status: queued
+  lane: codemod
+  lane_source: kw
 ref: KNB-0178
 comms:
 - at: 2026-11-17 22:19
@@ -54,6 +57,12 @@ comms:
 - at: 2026-11-17 23:18
   from: chaba
   text: answer recorded but no active action — card needs triage (queue it, or spec+arm an action)
+- at: 2026-11-17 23:19
+  from: chaba
+  text: classified as codemod (kw:raise  conf 1.00)
+- at: 2026-11-17 23:19
+  from: tony
+  text: queued for processing
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
@@ -69,4 +78,3 @@ requests:
     actually queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
   answer: signature-dedupe + execute-answer — stop re-asking on the same conflict AND make the resolve option actually
     queue a devin merge-resolution; drop marks for fresh re-dispatch, hold suppresses
-awaiting_action: true
