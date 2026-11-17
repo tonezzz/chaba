@@ -1,7 +1,7 @@
 id: ada-transcript-archive-retention
 title: Distill→NotebookLM→purge retention for ada transcripts + events
 column: doing
-updated: 2026-11-17 09:37
+updated: 2026-11-17 10:22
 spec: 'Scheduled per-lane retention job: (1) archive aging transcripts to NotebookLM (the README append-only deep-archive
   tier) BEFORE the implicit ~5d transcript loss; (2) cap ada-ha-events-* ops collections (~30d TTL or archive);
   (3) periodic supersede-merge of extract-* docs into canonical people/*/preferences/* docs. Verified need: Sept
@@ -124,6 +124,13 @@ comms:
   from: idc02
   text: 'finished (failed): exit=1 devin-task-20261117-090521-scheduled-per-lane-retention-j.service: Failed with
     result ''exit-code''. | devin-task-2'
+- at: 2026-11-17 10:22
+  from: devin
+  text: 'Inspection 2026-11-17: task failed at free-model rate limit after partial implementation. Preserved idc02
+    worktree /home/tony/CascadeProjects/dispatch-wt-20261117-090521-scheduled-per-lane-retention-j; offline test_lane_retention.py
+    passes 23/23. Task transcript reports one real kk transcript upload succeeded; timers are not deployed. Four-policy
+    request remains open; implementation default retains local transcripts (no purge). Hold retry for policy response
+    and capacity; resume the same worktre'
 action:
   type: dispatch
   repo: chaba
