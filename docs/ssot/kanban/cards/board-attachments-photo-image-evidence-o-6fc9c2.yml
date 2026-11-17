@@ -1,7 +1,7 @@
 id: board-attachments-photo-image-evidence-o-6fc9c2
 title: 'board attachments: photo/image evidence on cards'
 column: doing
-updated: 2026-11-17 09:15
+updated: 2026-11-17 09:19
 tags:
 - board
 - feature
@@ -167,6 +167,11 @@ comms:
   from: chaba
   text: 'merge-sweep: no session/worktree found for devin-task-20261109-093931-goal-implement-photo-and-image on
     idc02 — if the work was never pushed it may be gone'
+- at: 2026-11-17 09:19
+  from: devin
+  text: 'implemented + e2e-verified in worktree: POST /attach (alias /upload) {id,filename,b64} -> docs/ssot/kanban/attachments/<cid>/
+    + comms link, one commit; render-board2 mirrors into apps/board2/attachments/ and renders tile badge + modal
+    strip + inline comms thumbs. 27/27 mutation tests, 593 board tests pass. Live once merged + board-api restarts.'
 spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via board-api and render thumbnails
   in the Board UI. Host/Repo: tony-dell / chaba. Constraints: Provide POST /upload or /attach accepting id, filename,
   and payload, storing files under docs/ssot/kanban/attachments/<card-id>/ while linking them via comms entries,
@@ -181,6 +186,7 @@ action:
     failed_noted: 2026-11-09 09:49
     stale_running: 2026-11-17 08:57
     verify_hold: 2026-11-17 09:00
+    session_gone: 2026-11-17 09:15
   last_failure: 'exit=1 rocess exited, code=exited, status=1/FAILURE | devin-task-20261109-093931-goal-implement-photo-and-image.service:
     Failed with result ''exit-code''. | devin-task-20261109-093931-goal-implement-photo-and-image.service: Consumed
     2.040s CPU time.'
