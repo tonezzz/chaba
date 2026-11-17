@@ -1,7 +1,7 @@
 id: embed-legs-correlated-failure
 title: Why did Gemini and OR embed legs fail together
-column: backlog
-updated: 2026-11-17 23:36
+column: doing
+updated: 2026-11-17 23:38
 spec: '2026-11-12 ~13:40: ''all same-space providers down (OR circuit-open + Gemini failed)'' — OR was 402 over-cap
   (expected) but Gemini leg ALSO failed. Redundancy exists but correlated. Investigate Gemini leg failure (quota?
   key? same upstream?).'
@@ -98,6 +98,9 @@ comms:
   from: chaba
   text: 'mn01 defers: push guard: no push:chaba label and `git push --dry-run` fails in /home/tony/CascadeProjects/chaba
     — this host can''t land the branch, so the card stays queued for a host with push creds (card runner-push-cred-gap)'
+- at: 2026-11-17 23:38
+  from: tony-omen
+  text: claimed
 requests:
 - id: root-cause-found-gemini-429-quota-exhaus-73c15d
   ask: Root cause found (Gemini 429 quota exhaustion + OR over-cap). Probe now pages degradation/recovery. Close
@@ -112,10 +115,10 @@ requests:
     label: keep open for multi-key rotation work
   suggested: close-on-restore
   answer: close-on-restore — auto-close when restored event lands
-awaiting_action: true
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: tony-omen
