@@ -36,6 +36,7 @@ import argparse
 import datetime
 import json
 import os
+import subprocess
 import sys
 import urllib.request
 from pathlib import Path
@@ -260,7 +261,6 @@ def _git_added_cards(cards_dir: Path, start) -> dict[str, datetime.datetime]:
     """Card ids first committed since `start` — the truthful 'filed'
     signal (kanban-commit pushes the served checkout's cards every 15min).
     Empty dict when the dir isn't a git checkout."""
-    import subprocess
     try:
         r = subprocess.run(
             ["git", "-C", str(cards_dir), "log", "--diff-filter=A",
@@ -758,6 +758,8 @@ def main() -> int:
     p.add_argument("--meta", type=Path, default=META)
     p.add_argument("--output-dir", type=Path, default=OUT_DIR)
     p.add_argument("--no-cms", action="store_true")
+    p.add_argument("--no-narrate", action="store_true",
+                   help="skip the per-lane TG digest narration step")
     p.add_argument("--print", dest="print_only", action="store_true")
     args = p.parse_args()
 
@@ -831,14 +833,14 @@ def main() -> int:
             # MDDB /v1/add occasionally drops the response AFTER the write
             # lands — treat as warn; the page is verified via get below.
             print(f"warn: CMS publish response lost ({e})", file=sys.stderr)
+        comms_md = "\n".join(
+            [f"# Tony ↔ Team Digest — {edition.title()}",
+             "",
+             f"- Generated: {now_iso()} by `scripts/report-daily-brief.py`",
+             f"- Window: {_fmt(start)} -> {_fmt(end)}",
+             ""] + comms_section(cards, start, end)
+            + ["_Generated file — do not hand-edit._"])
         try:
-            comms_md = "\n".join(
-                [f"# Tony ↔ Team Digest — {edition.title()}",
-                 "",
-                 f"- Generated: {now_iso()} by `scripts/report-daily-brief.py`",
-                 f"- Window: {_fmt(start)} -> {_fmt(end)}",
-                 ""] + comms_section(cards, start, end)
-                + ["_Generated file — do not hand-edit._"])
             publish_cms(comms_md, edition,
                         f"comms digest: {len(tony_comms(cards, start, end))} asks, "
                         f"{len(unreplied_loops(cards))} open loops",
@@ -861,6 +863,19 @@ def main() -> int:
             print(f"CMS page verified: {CMS_SLUG} (updated {upd[0]})")
         except Exception as e:
             print(f"warn: CMS page verify failed ({e})", file=sys.stderr)
+        # Persona narration layer (card narrated-comms-digest): each live
+        # TG lane reads the digest in its own voice via POST /send.
+        # Best-effort — a narration hiccup never fails the brief.
+        if not args.no_narrate:
+            try:
+                subprocess.run(
+                    [sys.executable,
+                     str(REPO / "scripts" / "report-comms-narrate.py"),
+                     "--edition", edition, "--stdin"],
+                    input=comms_md, text=True, timeout=240, check=False)
+            except Exception as e:
+                print(f"warn: digest narration step failed ({e})",
+                      file=sys.stderr)
 
     print(f"edition={edition} status={status}")
     print(f"Wrote {artifact}")

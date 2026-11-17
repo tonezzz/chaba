@@ -40,6 +40,16 @@ narration_delivery:
     The digest isn't only a page — each live persona lane narrates it in
     its own voice. Lanes follow docs/kb/msg-lane-standard.md: one bot per
     persona, [<tag>] prefix, outbound only via loopback POST /send.
+  implementation: |
+    scripts/report-comms-narrate.py — invoked by report-daily-brief.py
+    right after the tony-team-digest CMS publish (--no-narrate skips);
+    the freshly rendered digest rides stdin, standalone runs re-fetch the
+    page from mddb. Voice text: LiteLLM `chat` alias via
+    scripts/ada/litellm_chat.py (mddb-gemini.env) — gemini-3.5-flash
+    normally, the chain's free -> OpenRouter -> lite -> local legs cover
+    billing/quota outages. Verified live 2026-11-17 (ada->Tony DM,
+    kaewta->KK-HA). Job doc:
+    docs/ssot/jobs/reports/2026-11-17-narrated-comms-digest.yml
   lanes:
     ada:    {relay: ada-tg-relay, listen: "127.0.0.1:8911", chats: "Tony DM + group", tag: ada, state: live}
     kaewta: {relay: ada-tg-relay-kk, listen: "127.0.0.1:8913", chats: "KK-HA group", tag: kaewta, state: live}
@@ -50,6 +60,7 @@ narration_delivery:
     format: "[<tag>] ≤10 lines, spoken register, ends with pointer to the tony-team-digest CMS page for detail"
     cadence: "with the digest edition — morning + evening"
     failures: "a failed lane posts '(digest narration failed)' on ITS OWN channel — never silence"
+    gotcha: "gateway `chat` upstreams are thinking models — reasoning tokens share the max_tokens budget; small caps truncate the visible reply mid-line (narrate uses 3000)"
 
 owner: devin
 enforcement: "daily-brief job (existing timers); new sections ride the same job run"
