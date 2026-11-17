@@ -1,7 +1,7 @@
 id: board-attachments-photo-image-evidence-o-6fc9c2
 title: 'board attachments: photo/image evidence on cards'
 column: doing
-updated: 2026-11-17 08:46
+updated: 2026-11-17 08:51
 tags:
 - board
 - feature
@@ -122,6 +122,9 @@ comms:
 - at: 2026-11-17 08:46
   from: tony
   text: retry requested
+- at: 2026-11-17 08:51
+  from: idc02
+  text: claimed
 spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via board-api and render thumbnails
   in the Board UI. Host/Repo: tony-dell / chaba. Constraints: Provide POST /upload or /attach accepting id, filename,
   and payload, storing files under docs/ssot/kanban/attachments/<card-id>/ while linking them via comms entries,
@@ -130,7 +133,7 @@ spec: 'Goal: Implement photo and image evidence attachments for Kanban cards via
   thumbnail in the board UI.'
 action:
   type: dispatch
-  status: queued
+  status: running
   lane: devin
   sweep:
     failed_noted: 2026-11-09 09:49
@@ -138,3 +141,4 @@ action:
     Failed with result ''exit-code''. | devin-task-20261109-093931-goal-implement-photo-and-image.service: Consumed
     2.040s CPU time.'
   attempts: 1
+  runner: idc02
