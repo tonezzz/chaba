@@ -9,7 +9,7 @@ note: 'Auto-recovered 2026-11-16: `ws` check passing again.'
 help: 'Dell Caddy proxies /apps/gev-live/ws -> idc02:8789 (gev-gemini bridge). Page ok + ws fail usually means the
   bridge is down or stuck (unit can read ''active'' while the process hangs — check the port): ssh idc02 systemctl
   --user status gev-gemini; ssh idc02 ss -tln | grep 8789; ssh idc02 systemctl --user restart gev-gemini'
-updated: 2026-11-17 18:39
+updated: 2026-11-17 21:05
 brief: 'An automated health check flagged: GEV ws /apps/gev-live/ws upgrade fails. Read the note, fix it, then close
   the card.'
 review_kind: triage
@@ -41,4 +41,8 @@ comms:
 - at: 2026-11-17 18:39
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:05
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
