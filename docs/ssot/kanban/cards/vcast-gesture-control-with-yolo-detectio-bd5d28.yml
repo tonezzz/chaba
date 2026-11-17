@@ -1,15 +1,14 @@
 id: vcast-gesture-control-with-yolo-detectio-bd5d28
 title: Vcast gesture control with YOLO detection
 column: backlog
-updated: 2026-11-14 14:10
+updated: 2026-11-17 18:08
 priority: medium
 note: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
 ref: MED-1064
 comms:
 - at: 2026-11-07 06:00
   from: ada
-  text: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load
-    low
+  text: Use YOLO instead of MediaPipe for hand-gesture tracking on vcast displays to keep device load low
 - at: 2026-11-14 14:10
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
@@ -21,12 +20,15 @@ comms:
 - at: 2026-11-17 07:21
   from: backlog-spec-enrich
   text: raised a decision request — spec needs owner input
+- at: 2026-11-17 18:08
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 requests:
 - id: the-vcast-gesture-control-task-e92e2b
-  ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking
-    to keep device load low, but the target host for vcast displays is not specified in the card or recent
-    communications, and potential target hosts (idc03 and mn01) are currently deferring execution due
-    to drifted runner-agent scripts.
+  ask: The vcast gesture control task requires deploying YOLO instead of MediaPipe for hand-gesture tracking to
+    keep device load low, but the target host for vcast displays is not specified in the card or recent communications,
+    and potential target hosts (idc03 and mn01) are currently deferring execution due to drifted runner-agent scripts.
   options:
   - ★ Deploy the YOLO gesture control spec to idc03 after redeploying the runner-agent script.
   - Deploy the YOLO gesture control spec to mn01 after redeploying the runner-agent script.
