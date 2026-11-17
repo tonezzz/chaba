@@ -1,7 +1,7 @@
 id: timer-alert-idc02-mddb-lab-pull
 title: Timer mddb-lab-pull on idc02 failing
 column: done
-updated: 2026-11-17 18:39
+updated: 2026-11-17 21:06
 priority: high
 tags:
 - timer-alert
@@ -77,6 +77,10 @@ comms:
 - at: 2026-11-17 18:39
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 21:06
+  from: chaba
+  text: 'tony-dell defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 spec: Investigate the failure of the user service `mddb-lab-pull.service` on host `idc02` which failed with exit-code
   on 2026-11-13 at 03:15. Inspect the systemd journal using `journalctl --user -u mddb-lab-pull.service` on `idc02`
