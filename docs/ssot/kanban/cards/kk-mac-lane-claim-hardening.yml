@@ -1,7 +1,7 @@
 id: kk-mac-lane-claim-hardening
 title: kk_mac lane hardening — non-armed hosts can claim+fail; idc02 opencode --dir drift breaks the executor
 column: review
-updated: 2026-11-17 18:08
+updated: 2026-11-17 18:13
 priority: medium
 tags:
 - devnest
@@ -154,5 +154,10 @@ comms:
   from: chaba
   text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:13
+  from: devin
+  text: 'sweep verify: claim-gate fix confirmed on origin/master runner-agent.py (kk_mac_servable defer path, lines
+    ~1606-1614); idc03 deployed copy md5-matches master. mn01/tony-omen checkouts ~140 behind but contain the code
+    — hourly repo-sync will converge. Closing.'
 review_kind: verify
 claim: {}
