@@ -1,7 +1,7 @@
 id: standardize-devin-workflows-error-handli-e19df2
 title: Standardize Devin workflows & error handling
 column: doing
-updated: 2026-11-17 23:41
+updated: 2026-11-17 23:43
 note: Standard work practice, from Tony.
 comms:
 - at: 2026-10-09 17:00
@@ -116,6 +116,13 @@ comms:
   from: chaba
   text: 'merge-sweep: devin-task-20261117-233843-standardize-devin-workflows-er no longer active on tony-omen but
     card still says running — sweeping its branch'
+- at: 2026-11-17 23:41
+  from: chaba
+  text: 'merge-sweep: verified gate failed — no delivered work — branch head == base tip — nothing committed; unit:
+    exit_code=1; auto-retry queued (attempt 1/2)'
+- at: 2026-11-17 23:43
+  from: tony-dell
+  text: claimed
 ref: DEV-0253
 requests:
 - id: the-card-requests-standardizin-648105
@@ -147,10 +154,16 @@ requests:
 action:
   type: dispatch
   repo: chaba
-  status: failed
+  status: running
   lane: devin
   lane_source: jevos
-  runner: tony-omen
   result: 'exit=1 evin-task-20261117-233843-standardize-devin-workflows-er.service: Failed with result ''exit-code''.
     | devin-task-20261117-233843-standardize-devin-workflows-er.service: Consumed 1.362s CPU time over 23.756s wall
     clock time, 80.4M memory peak.'
+  sweep:
+    stale_running: 2026-11-17 23:41
+    zero_commit: 2026-11-17 23:41
+  verified: false
+  last_failure: 'no delivered work — branch head == base tip — nothing committed; unit: exit_code=1'
+  runner: tony-dell
+claim: {}
