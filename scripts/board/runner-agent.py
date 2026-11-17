@@ -2082,6 +2082,14 @@ def gpu_preflight(card: dict) -> str:
     return ""
 
 
+def _defer_norm(reason: str) -> str:
+    """Volatile metrics stripped for the debounce compare — 'load/core
+    1.38' vs '2.76' is the same defer, not a new one (OPS-1314: the
+    exact-match check never fired and one queued card collected ~12k
+    defer comms)."""
+    return re.sub(r"\d+(?:\.\d+)?", "#", reason)
+
+
 def note_defer(card: dict, kind: str, reason: str,
                awaiting: bool = False) -> None:
     """Comment a defer/refuse — at most once per GPU_DEFER_SECS per
@@ -2097,7 +2105,8 @@ def note_defer(card: dict, kind: str, reason: str,
         log = {}
     ent = log.get(key) or {}
     now = int(time.time())
-    if ent.get("reason") == reason and \
+    nreason = _defer_norm(reason)
+    if _defer_norm(str(ent.get("reason") or "")) == nreason and \
             now - int(ent.get("at", 0)) < GPU_DEFER_SECS:
         return
     body = {"id": cid, "from": "chaba",
@@ -2105,7 +2114,7 @@ def note_defer(card: dict, kind: str, reason: str,
     if awaiting:
         body["awaiting_action"] = True
     api("/comment", body)
-    log[key] = {"at": now, "reason": reason}
+    log[key] = {"at": now, "reason": nreason}
     try:
         STATE_DIR.mkdir(parents=True, exist_ok=True)
         DEFER_FILE.write_text(json.dumps(log, indent=1))

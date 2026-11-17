@@ -272,7 +272,7 @@ def flag_via_api(cid: str | None, text: str) -> bool:
 
 
 FLAG_STATE = Path.home() / ".local/share/chaba-reconcile-flags.json"
-FLAG_DEDUP_H = int(os.environ.get("RECONCILE_FLAG_DEDUP_H", "6"))
+FLAG_DEDUP_H = int(os.environ.get("RECONCILE_FLAG_DEDUP_H", "48"))
 
 
 def _flag_key(text: str) -> str:

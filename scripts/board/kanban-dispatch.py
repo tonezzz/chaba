@@ -604,10 +604,27 @@ def _flush_notify() -> None:
 def _last_chaba_flag(card: dict, mark: str) -> str:
     """Most recent chaba comms line containing `mark`, '' when none —
     the card's comms are the debounce store for flag/defer notes."""
+    c = _last_chaba_flag_comm(card, mark)
+    return str(c.get("text") or "") if c else ""
+
+
+def _last_chaba_flag_comm(card: dict, mark: str) -> dict | None:
+    """Most recent chaba comms entry containing `mark` — callers that
+    need the `at` age (defer debounce) use this; text-only callers keep
+    _last_chaba_flag."""
     for c in reversed(card.get("comms") or []):
         if c.get("from") == "chaba" and mark in (c.get("text") or ""):
-            return c["text"]
-    return ""
+            return c
+    return None
+
+
+DEFER_NOTE_SECS = int(os.environ.get("KANBAN_DEFER_NOTE_SECS", "21600"))
+
+
+def _defer_norm(text: str) -> str:
+    """Volatile metrics stripped for defer debounce — 'load/core 1.38'
+    vs '2.76' is the same defer (OPS-1314)."""
+    return re.sub(r"\d+(?:\.\d+)?", "#", text)
 
 
 def _defer_note(path: Path, card: dict, reason: str) -> bool:
@@ -619,8 +636,17 @@ def _defer_note(path: Path, card: dict, reason: str) -> bool:
     only — one host's refusal is not a fleet verdict, so no
     awaiting_action."""
     text = f"{HOST} defers: {reason}"[:500]
-    if _last_chaba_flag(card, f"{HOST} defers:") == text:
-        return False
+    last = _last_chaba_flag_comm(card, f"{HOST} defers:")
+    if last:
+        try:
+            age = (datetime.now() - datetime.strptime(
+                str(last.get("at") or ""),
+                "%Y-%m-%d %H:%M")).total_seconds()
+        except Exception:
+            age = DEFER_NOTE_SECS + 1
+        if _defer_norm(str(last.get("text") or "")) == _defer_norm(text) \
+                and age < DEFER_NOTE_SECS:
+            return False
     comms_add(card, "chaba", text)
     save_card(path, card)
     return True
