@@ -1,7 +1,7 @@
 id: runner-agent-primer-coverage
 title: runner-agent primer coverage — 96% of dispatches bypass the tuned path
 column: doing
-updated: 2026-11-17 10:29
+updated: 2026-11-17 18:09
 brief: 'primer-efficacy measurement (2026-11-09 report): only kanban-dispatch.build_task injects KNOWN_PITFALLS
   — 15/41 dispatches post-launch. runner-agent.py (the dominant lane, ~893 dispatches, ~96%) builds spec+RAILS with
   no primer at all. Wire the primer into the runner-agent devin path.'
@@ -131,4 +131,8 @@ comms:
   text: 'tony-macbook defers: unclaimable by the declared runner fleet: push guard: `git push --dry-run` fails on
     the only eligible runner (tony-macbook) — it needs push:chaba creds or the card needs re-routing — fix action.labels/host
     pins or teach a runner the capability'
+- at: 2026-11-17 18:09
+  from: chaba
+  text: 'idc03 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 awaiting_action: true
