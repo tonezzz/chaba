@@ -1,7 +1,7 @@
 id: merge-conflict-requests-re-raise-every-s-f981d2
 title: merge-conflict requests re-raise every sweep after being answered — cards pop back up
-column: backlog
-updated: 2026-11-17 23:19
+column: doing
+updated: 2026-11-17 23:20
 priority: high
 tags:
 - board
@@ -39,9 +39,10 @@ spec: 'Symptom (Tony 2026-11-17): answered kanban cards keep popping back up wit
 action:
   type: dispatch
   repo: chaba
-  status: queued
+  status: running
   lane: codemod
   lane_source: kw
+  runner: idc02
 ref: KNB-0178
 comms:
 - at: 2026-11-17 22:19
@@ -63,6 +64,9 @@ comms:
 - at: 2026-11-17 23:19
   from: tony
   text: queued for processing
+- at: 2026-11-17 23:20
+  from: idc02
+  text: claimed
 requests:
 - id: fix-approach
   ask: How should answered merge-conflict requests be handled?
