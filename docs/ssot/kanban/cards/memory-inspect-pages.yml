@@ -1,7 +1,7 @@
 id: memory-inspect-pages
 title: Memory-inspection pages — per-lane bank snapshots into CMS
 column: doing
-updated: 2026-11-17 23:34
+updated: 2026-11-17 23:35
 brief: 'scripts/ada/bank-inspect.py dumps each ada-ha-bank-* (memory plane :11023) entries — subject -> attr ->
   kind/value + modified — into a memory-inspect page in THAT lane''s CMS collection (:11027). Timer/daily. Scope-respecting
   by construction: tony banks -> ada-cms-pages, michael/household -> ada-cms-pages-mn, etc. Renders free via chaba-cms-render
@@ -89,6 +89,10 @@ comms:
 - at: 2026-11-17 23:34
   from: chaba
   text: started devin-task-20261117-233430-implement-memory-inspection-pa on tony-macbook (dispatch)
+- at: 2026-11-17 23:35
+  from: tony-macbook
+  text: 'finished (failed): exit=1 evin-task-20261117-233430-implement-memory-inspection-pa.service: Failed with
+    result ''exit-code''. | devin-task-20'
 requests:
 - id: the-card-captures-a-requiremen-0886de
   ask: The card captures a requirement for memory-inspection pages with per-lane bank snapshots into the CMS, but
@@ -110,8 +114,11 @@ spec: Implement memory-inspection pages with per-lane bank snapshots into the CM
 action:
   type: dispatch
   repo: chaba
-  status: running
+  status: failed
   lane: paid_frontier
   lane_source: kw
   model: litellm/gemini-2.5-flash
   runner: tony-macbook
+  result: 'exit=1 evin-task-20261117-233430-implement-memory-inspection-pa.service: Failed with result ''exit-code''.
+    | devin-task-20261117-233430-implement-memory-inspection-pa.service: Consumed 9.695s CPU time over 5.315s wall
+    clock time, 249.3M memory peak.'
