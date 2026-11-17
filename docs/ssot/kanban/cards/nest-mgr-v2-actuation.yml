@@ -1,7 +1,7 @@
 id: nest-mgr-v2-actuation
 title: Spec + pilot nest-mgr v2 controlled actuation (auto-restart, guarded rebalancing)
 column: backlog
-updated: 2026-11-17 18:44
+updated: 2026-11-17 18:59
 brief: Turn nest-mgr from observer-governor into a controlled actuator that safely restarts failed nodes and routes
   eligible queued work to idle hosts — without bypassing owner/quota/leash gates. Build on the v1 census and the
   devnest-capacity-aware-dispatch lane machinery.
@@ -80,6 +80,10 @@ comms:
 - at: 2026-11-17 18:44
   from: chaba
   text: 'mn01 defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
+    — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
+- at: 2026-11-17 18:59
+  from: chaba
+  text: 'tony-macbook defers: installed runner-agent drifted from repo /home/tony/CascadeProjects/chaba/scripts/board/runner-agent.py
     — redeploy it (scp scripts/board/runner-agent.py <host>:~/.local/bin/runner-agent)'
 action: {}
 review_kind: design
