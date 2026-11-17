@@ -1,0 +1,26 @@
+id: board-api-compact-cards
+title: 'board-api: honor fields/compact projection server-side for /cards'
+column: backlog
+updated: 2026-11-17 22:11
+brief: The bridge now works around the 9MB /cards dump, but every other consumer still pays 13-16s. Make the projection
+  real server-side.
+priority: medium
+tags:
+- board-api
+- kanban
+- performance
+spec: 'In scripts/board/board-api.py (chaba repo): /cards?fields=a,b,c currently appears ignored for full-card fields
+  (returned ~8.8MB in 13s vs 1MB in 2s when comms excluded — verify actual behavior first; the earlier test may
+  have been payload-bound not param-bound). Implement true field projection incl. comms_tail (last N comms only)
+  and compact=2 tier (id/ref/title/column/priority/updated/brief/spec, no comms/action detail). Keep backward compat:
+  no params = current full dump. Verify: time curl /cards?fields=id,ref,title vs /cards?compact=2 on idc03; document
+  new params in the endpoint docstring. Consumers to update after: ada-voice _board_cards/_compact_cards can then
+  drop workarounds if faster.'
+action:
+  type: dispatch
+  repo: chaba
+ref: KNB-0176
+comms:
+- at: 2026-11-17 22:11
+  from: devin
+  text: card captured via board-api
