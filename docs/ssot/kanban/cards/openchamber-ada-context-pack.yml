@@ -1,7 +1,7 @@
 id: openchamber-ada-context-pack
 title: Add bounded Ada/SSOT context pack for OpenChamber OpenCode
 column: done
-updated: 2026-11-17 15:42
+updated: 2026-11-17 15:57
 brief: 'Give OpenChamber/OpenCode a Devin-like bounded context load: profile + SSOT/education/Devin/card excerpts
   with provenance, read-only, before the agent loop instead of relying on ad-hoc tool discovery.'
 priority: high
@@ -81,4 +81,11 @@ comms:
     ~0.3s for 168 lessons) with local ranking; board-api kept as fallback. Verified: recall_memory ~0.8s/3 hits/0
     errors; ada_context_pack 3.84s ok=true errors=[] mutations_performed=[]. DevNest bridge synced+committed dd96ad0.
     Lesson updated: lesson-eba4063e6a98.'
+- at: 2026-11-17 15:57
+  from: devin
+  text: 'education:/lesson timeout FIXED (ada-voice 50b74be, deployed idc03): board-api /lesson is WP-backed ~6-8s
+    vs ~1.5s bridge budget — structural timeout. _lesson_memory now reads MDDB chaba-lessons mirror (CMS /search,
+    ~0.3s for 168 lessons) with local ranking; board-api kept as fallback. Verified: recall_memory ~0.8s/3 MDDB
+    hits/0 errors; ada_context_pack 3.84s ok=true errors=[] mutations_performed=[]. DevNest bridge synced byte-identical
+    dd96ad0. Lesson lesson-eba4063e6a98 updated.'
 review_kind: verify
